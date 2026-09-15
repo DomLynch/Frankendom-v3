@@ -9,15 +9,15 @@ const cue = (name: CueName, gain: number, room: number, delay?: number): Cue => 
 export function cuesFor(events: CombatEvent[]): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [];
   for (const e of events) {
-    if (e.type === 'Hit') impacts.push(e.move === 'kick' ? cue('hit_kick', .85, .15) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', 1, .3) : cue('hit_flesh', .9, .25));
+    if (e.type === 'Hit') impacts.push(e.move === 'kick' ? cue('hit_kick', .95, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', 1, .3) : cue('hit_flesh', 1, .3));
     else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue('hit_flesh', .55, .2));
     else if (e.type === 'Parried') impacts.push(cue('parry', 1, .45));
-    else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', .95, .35) : cue('block', .9, .3));
+    else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', 1, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') impacts.push(cue('kill', 1, .4, .04));
-    else if (e.type === 'Charged') air.push(cue('charge', .2, .4));
-    else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .18, .1) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .36, .15) : cue('whoosh_light', .26, .1));
-    else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .35, .3));
-    else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('whoosh_light', .16, .1));   // placeholder until the body pass (cloth, sand)
+    else if (e.type === 'Charged') air.push(cue('charge', .12, .4));
+    else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .12, .12) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .24, .18) : cue('whoosh_light', .16, .12));
+    else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .26, .3));
+    else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('whoosh_light', .13, .12));   // placeholder until the body pass (cloth, sand)
   }
   return [...impacts, ...air].slice(0, 4);
 }
