@@ -101,6 +101,7 @@ export const CUE_PROBES: { name: string; events: CombatEvent[] }[] = [
   { name: 'dodged', events: [at('Dodged', { target: 1, move: 'light_right' })] },
   { name: 'missed', events: [at('AttackMissed', { move: 'light_right' })] },
   { name: 'staggered', events: [at('Staggered', { ticks: 24 })] },
+  { name: 'posture-broken', events: [at('PostureBroken', { target: 1 })] },   // silent until the audio lane gives the break a sound (slice Q makes it a regular beat)
   { name: 'exhausted', events: [at('StaminaExhausted')] },
   { name: 'killed', events: [at('Hit', { target: 1, move: 'heavy_overhead', damage: 27, location: 'torso', charged: true }), at('Killed', { target: 1, move: 'heavy_overhead', location: 'torso' })] },
 ];
