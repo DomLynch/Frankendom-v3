@@ -17,7 +17,8 @@ export function cuesFor(events: CombatEvent[]): Cue[] {
     else if (e.type === 'Charged') air.push(cue('charge', .1, .4));
     else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .09, .12) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .18, .18) : cue('whoosh_light', .12, .12));
     else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .2, .3));
-    else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('whoosh_light', .1, .12));   // placeholder until the body pass (cloth, sand)
+    else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('roll', .12, .12));
+    else if (e.type === 'ActionStarted' && e.action === 'backstep') air.push(cue('backstep', .09, .08));
   }
   return [...impacts, ...air].slice(0, 4);
 }
@@ -27,6 +28,7 @@ export const seeded = (seed: number) => () => { seed = (seed + 0x6d2b79f5) | 0; 
 // Next variant index: uniform over the others, so no cue repeats its last variant when it has more than one.
 export function nextVariant(random: () => number, count: number, last: number): number {
   if (count < 2) return 0;
+  if (last < 0 || last >= count) return Math.floor(random() * count);
   const pick = Math.floor(random() * (count - 1));
   return pick >= last ? pick + 1 : pick;
 }
