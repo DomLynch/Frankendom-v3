@@ -12,6 +12,10 @@ export const ROSTER = {
   wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'estoc', finishers: false },
 } as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: false }>;
 export type OpponentId = keyof typeof ROSTER;
+export function supportsFinishers(id: OpponentId): boolean {
+  const recipe = ROSTER[id];
+  return !('finishers' in recipe && recipe.finishers === false);
+}
 export const isOpponentId = (id: unknown): id is OpponentId => typeof id === 'string' && Object.hasOwn(ROSTER, id);
 // The insertion order is the existing introductory encounter sequence, never a career rank.
 export const ENCOUNTERS = (Object.keys(ROSTER) as OpponentId[]).map(id => ({ id, name: ROSTER[id].name }));
