@@ -4,7 +4,7 @@ import type { CueName } from './manifest.ts';
 // Event → cue mapping. Pure data: the simulation's events decide what is heard; gain, room send and pitch spread are per cue.
 // Order matters — the voice limiter serves cues in this order, so impacts come before air.
 export type Cue = { name: CueName; gain: number; room: number; delay?: number };
-const HEAVY = new Set(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'riposte']);
+const HEAVY = new Set(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'riposte', 'slash_riposte']);
 const cue = (name: CueName, gain: number, room: number, delay?: number): Cue => ({ name, gain, room, ...(delay ? { delay } : {}) });
 export function cuesFor(events: CombatEvent[]): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [];
