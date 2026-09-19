@@ -2,6 +2,7 @@ import type { CombatEvent } from '../combat.ts';
 import type { Finish } from '../duel.ts';
 import { RULES, type WeaponId } from '../moves.ts';
 import { selectFinisher, FINISHER_POSE, type FinisherId } from '../finishers.ts';
+import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CueName } from './manifest.ts';
 
 // Event → cue mapping. Pure data: the simulation's events decide what is heard; gain, room send and pitch spread are per cue.
@@ -10,7 +11,7 @@ export type Cue = { name: CueName; gain: number; room: number; delay?: number };
 const HEAVY = new Set(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'riposte', 'slash_riposte']);
 const cue = (name: CueName, gain: number, room: number, delay?: number): Cue => ({ name, gain, room, ...(delay ? { delay } : {}) });
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
-export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation): Cue[] {
+export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
   const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;
   const selected = pick ? presentation?.override ?? pick : null;
@@ -19,16 +20,18 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation)
   const severAt = (RULES.death / 60) / .75 * .05; // same 5% presentation-clock threshold as the visible decapitation
 
   for (const e of events) {
-    if (e.type === 'Hit') impacts.push(e.move === 'kick' ? cue('hit_kick', .95, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', 1, .3) : cue('hit_flesh', 1, .3));
-    else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue('hit_flesh', .55, .2));
+    const bone = e.target === 1 && opponent !== undefined && !hasBlood(opponent);
+    if (e.type === 'Hit') impacts.push(bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .95, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', 1, .3) : cue('hit_flesh', 1, .3));
+    else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue(bone ? 'bone_crack' : 'hit_flesh', .55, .2));
     else if (e.type === 'Parried') impacts.push(cue('parry', 1, .45));
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', 1, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') {
-      impacts.push(cue('death_voice', finisher === 'quietOne' ? .28 : .45, .1, .03));
+      if (!bone) impacts.push(cue('death_voice', finisher === 'quietOne' ? .28 : .45, .1, .03));
       // The impaled corpse kneels and stays on the blade; do not invent a floor slam for it.
       impacts.push(finisher === 'runThrough' ? cue('roll', .2, .12, .85) : finisher === 'opened' && gore ? cue('kill', .65, .25, 2.1) : finisher === 'quietOne' ? cue('kill', .4, .15, 2.6) : cue('kill', .65, .25, finisher ? 1.4 : .65));
       if (finisher === 'opened' && gore) impacts.push(cue('kill', .25, .12, 2.68));
-      if (gore && e.move !== 'kick' && deaths.length === 1) {
+      if (bone) impacts.push(cue('bone_crack', .5, .12, .65));
+      if (!bone && gore && e.move !== 'kick' && deaths.length === 1) {
         const stab = finisher !== 'quietOne' && finisher !== 'opened' && (finisher === 'runThrough' || e.move === 'thrust' || e.move === 'riposte' || (e.weapon ?? presentation?.weapons[e.actor]) === 'estoc');
         impacts.push(cue(stab ? 'flesh_stab' : 'flesh_cut', finisher === 'quietOne' ? .28 : .45, .05));
         if (finisher === 'decapitation' || finisher === 'opened') impacts.push(cue('flesh_tear', .55, .08, finisher === 'opened' ? .144 : severAt));

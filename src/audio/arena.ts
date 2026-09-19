@@ -1,9 +1,10 @@
+import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CombatEvent } from '../combat.ts';
 import { nextVariant, seeded } from './cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { spriteFormats, type Format } from './sprite.ts';
 
-export type ArenaFrame = { match: number; ended: boolean; tick: number };
+export type ArenaFrame = { match: number; ended: boolean; tick: number; opponent?: OpponentId };
 const URLS = {
   opus: new URL('../assets/arena-audio/arena.ogg', import.meta.url).href,
   aac: new URL('../assets/arena-audio/arena.m4a', import.meta.url).href,
@@ -61,7 +62,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
       if (sleeping) { sleeping = false; bedAt = time; accentAt = time + 12 + random() * 10; }
       if (!bellPlayed) { bellPlayed = true; if (frame.tick < 120 && time - opening < 2) play('bell', .22); }
       if (time >= bedAt) { const duration = play('bed', .15); bedAt = time + (duration ? duration - .9 : .1); }
-      const hit = events.find(e => e.type === 'Hit');
+      const hit = events.find(e => e.type === 'Hit' && (e.target !== 1 || frame.opponent === undefined || hasBlood(frame.opponent)));
       if (events.some(e => e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'GuardBroken')) contactAt = time;
       if (hit && time >= gruntAt) { play('grunt', .20, .04); gruntAt = time + .9; }
       const exciting = events.some(e => e.type === 'Parried' || e.type === 'GuardBroken' || (e.type === 'Hit' && (e.charged || /heavy|riposte|counter/.test(e.move ?? ''))));
