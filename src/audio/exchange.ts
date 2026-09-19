@@ -53,8 +53,8 @@ export function scriptExchange(): Exchange {
   intents[0].guard = true; press(0, 'parry');
   until(() => seen('Parried', 0)); beat('parry');
   intents[0].guard = false; until(() => player().phase === 'ready');
-  // riposte: the punish window turns the light into the thrust.
-  press(0, 'light'); until(() => seen('Hit', 0)); beat('riposte');
+  // riposte: choose Stab in the punish window for the thrust.
+  press(0, 'thrust'); until(() => seen('Hit', 0)); beat('riposte');
   until(() => player().phase === 'ready' && warden().phase === 'ready');
   // hit taken: the warden's cut lands on an open player.
   press(1, 'light'); until(() => seen('Hit', 1)); beat('hit taken');
