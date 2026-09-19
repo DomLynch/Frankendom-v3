@@ -1,11 +1,12 @@
 import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../duel.ts';
+import type { DeathPresentation } from './cues.ts';
 import { RULES } from '../moves.ts';
 
 // The fixed scripted exchange every audio iteration is judged on: both fighters are driven by hand through the real
 // simulation (no AI), so the same beats land on the same ticks and BEFORE/AFTER renders are like-for-like. The warden
 // starts wounded so the exchange ends in a death without padding the script with filler hits.
 export type Beat = { name: string; tick: number; events: string[] };
-export type Exchange = { ticks: { tick: number; events: CombatEvent[] }[]; beats: Beat[]; length: number };
+export type Exchange = { ticks: { tick: number; events: CombatEvent[]; presentation?: DeathPresentation }[]; beats: Beat[]; length: number };
 export const EXCHANGE_BEATS = ['walk', 'draw', 'light', 'light', 'heavy', 'guard', 'block', 'parry', 'riposte', 'hit taken', 'kick', 'death'] as const;
 const WARDEN_HEALTH = 80;   // 11 + 11 + 18 + 24 + 4 = 68 dealt before the charged heavy (27) kills
 export const forward = (): Intent['move'] => ({ x: 0, z: -1, yaw: 0, run: false });
@@ -19,7 +20,7 @@ export function scriptExchange(): Exchange {
   const step = () => {
     duel = stepDuel(duel, [{ ...intents[0] }, { ...intents[1] }]);
     intents[0].action = null; intents[1].action = null;   // actions are edge-triggered
-    if (duel.events.length) ticks.push({ tick: duel.tick, events: duel.events });
+    if (duel.events.length) ticks.push({ tick: duel.tick, events: duel.events, ...(duel.finish ? { presentation: { finish: duel.finish, weapons: [duel.fighters[0].weapon, duel.fighters[1].weapon], gore: true } } : {}) });
   };
   const until = (done: () => boolean, limit = 600) => { for (let i = 0; i < limit && !done(); i++) step(); if (!done()) throw new Error(`exchange stalled at tick ${duel.tick}`); };
   const press = (side: Side, action: Intent['action']) => { intents[side].action = action; step(); };
@@ -75,7 +76,7 @@ export function scriptExchange(): Exchange {
 
 // One synthetic event per cue the module could answer, rendered in isolation so each sound gets its own WAV and loudness row.
 const at = (type: CombatEvent['type'], extra: Partial<CombatEvent> = {}): CombatEvent => ({ tick: 3, actor: 0, ...extra, type });
-export const CUE_PROBES: { name: string; events: CombatEvent[] }[] = [
+export const CUE_PROBES: { name: string; events: CombatEvent[]; presentation?: DeathPresentation }[] = [
   { name: 'draw', events: [at('ActionStarted', { action: 'draw' })] },
   { name: 'swing-light', events: [at('AttackStarted', { move: 'light_right' })] },
   { name: 'swing-heavy', events: [at('AttackStarted', { move: 'heavy_overhead' })] },
@@ -105,3 +106,10 @@ export const CUE_PROBES: { name: string; events: CombatEvent[] }[] = [
   { name: 'exhausted', events: [at('StaminaExhausted')] },
   { name: 'killed', events: [at('Hit', { target: 1, move: 'heavy_overhead', damage: 27, location: 'torso', charged: true }), at('Killed', { target: 1, move: 'heavy_overhead', location: 'torso' })] },
 ];
+
+for (const override of ['plainDeath', 'splitCrown', 'decapitation', 'runThrough'] as const) {
+  for (const gore of [true, false]) CUE_PROBES.push({ name: `finish-${override}${gore ? '' : '-blood-off'}`, events: [at('Hit', { target: 1, move: 'heavy_overhead' }), at('Killed', { target: 1, move: 'heavy_overhead' })], presentation: { finish: { victim: 1, location: 'head', move: 'heavy_overhead', heading: 0 }, weapons: ['longsword', 'trident'], override, gore } });
+}
+CUE_PROBES.push({ name: 'player-death', events: [at('Hit', { actor: 1, target: 0, move: 'thrust' }), at('Killed', { actor: 1, target: 0, move: 'thrust' })] });
+CUE_PROBES.push({ name: 'kick-death', events: [at('Hit', { target: 1, move: 'kick' }), at('Killed', { target: 1, move: 'kick' })] });
+CUE_PROBES.push({ name: 'double-death', events: [at('Killed', { target: 1 }), at('Killed', { actor: 1, target: 0 })] });
