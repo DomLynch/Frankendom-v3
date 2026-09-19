@@ -3,7 +3,7 @@ import { nextVariant, seeded } from './cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { spriteFormats, type Format } from './sprite.ts';
 
-export type ArenaFrame = { match: number; ended: boolean };
+export type ArenaFrame = { match: number; ended: boolean; tick: number };
 const URLS = {
   opus: new URL('../assets/arena-audio/arena.ogg', import.meta.url).href,
   aac: new URL('../assets/arena-audio/arena.m4a', import.meta.url).href,
@@ -59,7 +59,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
       if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); return; }
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
       if (sleeping) { sleeping = false; bedAt = time; accentAt = time + 12 + random() * 10; }
-      if (!bellPlayed) { bellPlayed = true; if (time - opening < 2) play('bell', .22); }
+      if (!bellPlayed) { bellPlayed = true; if (frame.tick < 120 && time - opening < 2) play('bell', .22); }
       if (time >= bedAt) { const duration = play('bed', .15); bedAt = time + (duration ? duration - .9 : .1); }
       const hit = events.find(e => e.type === 'Hit');
       if (events.some(e => e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'GuardBroken')) contactAt = time;
