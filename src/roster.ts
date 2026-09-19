@@ -8,8 +8,8 @@ export const ROSTER = {
   goblin: { name: 'the Goblin', body: 'goblin', archetype: 'goblin', weapon: 'knife' },
   nightborn: { name: 'the Nightborn', body: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
   executioner: { name: 'the Executioner', body: 'executioner', archetype: 'executioner', weapon: 'scythe' },
-  minotaur: { name: 'the Minotaur', body: 'minotaur', archetype: 'pitborn', weapon: 'cleaver', finishers: false },
-  wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'estoc', finishers: false },
+  minotaur: { name: 'the Minotaur', body: 'minotaur', archetype: 'pitborn', weapon: 'maul', finishers: false },
+  wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'claws', finishers: false },
 } as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: false }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId): boolean {
