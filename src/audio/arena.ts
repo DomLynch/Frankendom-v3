@@ -4,7 +4,7 @@ import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { spriteFormats, type Format } from './sprite.ts';
 import { bellSamples } from './bell.ts';
 
-export type ArenaFrame = { match: number; ended: boolean; tick: number; opening?: boolean };
+export type ArenaFrame = { match: number; ended: boolean; tick: number; drawing?: boolean };
 const URLS = {
   opus: new URL('../assets/arena-audio/arena.ogg', import.meta.url).href,
   aac: new URL('../assets/arena-audio/arena.m4a', import.meta.url).href,
@@ -28,8 +28,6 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
     const time = now();
     for (const voice of voices) { try { voice.source.stop(time); } catch { /* ended */ } }
     voices.clear(); sleeping = true;
-    // A menu/load interruption must never ring a late opening bell on resume.
-    if (match !== undefined) bellPlayed = true;
   }
   function play(name: ArenaCue, gain: number, delay = 0) {
     if (name === 'bell' && !buffer && !bell) {
@@ -52,7 +50,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
   return {
     ready: () => ready,
     stop,
-    update(events: CombatEvent[], frame: ArenaFrame) {
+    update(events: CombatEvent[], frame: ArenaFrame, draw: boolean) {
       const time = now();
       // Expired nodes clean up onended; removing their accounting here also works with a scripted offline clock.
       for (const voice of voices) if (voice.until <= time) voices.delete(voice);
@@ -62,7 +60,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
         reactionAt = time + 2; gruntAt = time; contactAt = time;
       }
       if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); return; }
-      if (!bellPlayed) { bellPlayed = true; if (frame.opening ?? frame.tick < 120) play('bell', .22); }
+      if (!bellPlayed && draw) { bellPlayed = true; play('bell', .22); }
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
       if (sleeping) { sleeping = false; bedAt = time; accentAt = time + 12 + random() * 10; }
       if (time >= bedAt) { const duration = play('bed', .15); bedAt = time + (duration ? duration - .9 : .1); }
