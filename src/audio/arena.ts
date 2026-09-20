@@ -21,7 +21,7 @@ export async function loadArena(context: BaseAudioContext, formats: Format[] = s
 }
 
 // Independent voices/RNG: crowd cannot steal combat voices, change Foley variants or inherit the fatal gain boost.
-const ARENA_LEVEL = .7;   // owner 2026-09-20: the audience −30 % with the rest of the mix; the bell is exempt so it leads
+const ARENA_LEVEL = .4;   // owner 2026-09-20: the audience down with the rest of the mix (−30 % was inaudible on the phone: −3 dB, and the finish limiter ate it); the bell is exempt so it leads
 export function createArenaAudio(context: BaseAudioContext, destination: AudioNode, now: () => number) {
   type Voice = { source: AudioBufferSourceNode; until: number };
   const voices = new Set<Voice>(), last: Partial<Record<ArenaCue, number>> = {};
@@ -65,7 +65,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
         reactionAt = time + 2; gruntAt = time; contactAt = time;
       }
       if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); return; }
-      if (!bellPlayed && draw) { bellPlayed = true; play('bell', .62); }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
+      if (!bellPlayed && draw) { bellPlayed = true; play('bell', .9); }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
       if (sleeping) { sleeping = false; bedAt = time; accentAt = time + 12 + random() * 10; }
       if (time >= bedAt) { const duration = play('bed', .15); bedAt = time + (duration ? duration - .9 : .1); }
