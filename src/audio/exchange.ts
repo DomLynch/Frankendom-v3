@@ -22,7 +22,7 @@ export function scriptExchange(): Exchange {
     intents[0].action = null; intents[1].action = null;   // actions are edge-triggered
     if (duel.events.length) ticks.push({ tick: duel.tick, events: duel.events, ...(duel.finish ? { presentation: { finish: duel.finish, weapons: [duel.fighters[0].weapon, duel.fighters[1].weapon], gore: true } } : {}) });
   };
-  const until = (done: () => boolean, limit = 600) => { for (let i = 0; i < limit && !done(); i++) step(); if (!done()) throw new Error(`exchange stalled at tick ${duel.tick}`); };
+  const until = (done: () => boolean, limit = 600) => { for (let i = 0; i < limit && !done(); i++) step(); if (!done()) throw new Error(`exchange stalled at tick ${duel.tick} after beats ${beats.map(b => b.name).join(',')}`); };
   const press = (side: Side, action: Intent['action']) => { intents[side].action = action; step(); };
   const seen = (type: CombatEvent['type'], actor?: Side) => duel.events.some(e => e.type === type && (actor === undefined || e.actor === actor));
   const beat = (name: string) => beats.push({ name, tick: duel.tick, events: duel.events.map(e => `${e.type}${e.move ? `(${e.move})` : e.action ? `(${e.action})` : ''}${e.perfect ? ' perfect' : ''}`) });
@@ -43,7 +43,7 @@ export function scriptExchange(): Exchange {
   const rest = (stamina: number) => until(() => player().phase === 'ready' && player().stamina >= stamina);   // stand and breathe: the chain, block and kick cost more than one bar
   rest(75);
   // guard, block: the warden answers with a cut into a held guard (held early: an ordinary block, not a perfect one).
-  intents[0].guard = true; step(); beat('guard');
+  intents[0].guard = true; intents[0].guardDirection = 'low'; step(); beat('guard');   // directional guard: the Veteran's cuts are trident sweeps (direction 'low'), met by the low guard
   for (let i = 0; i < 6; i++) step();
   press(1, 'light'); until(() => seen('Blocked', 0)); beat('block');
   until(() => warden().phase === 'ready');
@@ -51,9 +51,9 @@ export function scriptExchange(): Exchange {
   // parry: the second cut is met with a guard tap six ticks before contact.
   press(1, 'light');
   until(() => warden().age === timing(warden()).windup - 6);
-  intents[0].guard = true; press(0, 'parry');
+  intents[0].guard = true; intents[0].guardDirection = 'low'; press(0, 'parry');   // his second sweep is parried low as well
   until(() => seen('Parried', 0)); beat('parry');
-  intents[0].guard = false; until(() => player().phase === 'ready');
+  intents[0].guard = false; intents[0].guardDirection = undefined; until(() => player().phase === 'ready');
   // riposte: choose Stab in the punish window for the thrust.
   press(0, 'thrust'); until(() => seen('Hit', 0)); beat('riposte');
   until(() => player().phase === 'ready' && warden().phase === 'ready');
