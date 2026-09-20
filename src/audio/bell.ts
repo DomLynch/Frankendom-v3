@@ -1,9 +1,10 @@
 // Original modal bell shared by the asset builder and the network-independent opening cue.
-export const BELL_SECONDS = 3.9;
+// Owner 2026-09-20: twice the ring (7.8 s, every partial's decay doubled) and +50 % level (arena.ts play gain .44 → .66).
+export const BELL_SECONDS = 7.8;
 export function bellSamples(rate: number): Float32Array {
   const data = new Float32Array(Math.round(BELL_SECONDS * rate));
   for (const [hz, gain, decay] of [[110, .8, 1.7], [331, .8, 1.5], [552, .45, 1.1], [763, .12, .7], [1136, .08, .4]]) {
-    for (let i = 0; i < data.length; i++) { const t = i / rate; data[i] += gain * Math.sin(t * 2 * Math.PI * hz) * Math.exp(-5 * t / (decay * 1.5)); }
+    for (let i = 0; i < data.length; i++) { const t = i / rate; data[i] += gain * Math.sin(t * 2 * Math.PI * hz) * Math.exp(-5 * t / (decay * 3)); }
   }
   let peak = 0, square = 0;
   for (let i = 0; i < data.length; i++) {
