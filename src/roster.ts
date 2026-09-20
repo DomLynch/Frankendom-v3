@@ -10,12 +10,13 @@ export const ROSTER = {
   goblin: { name: 'the Goblin', body: 'goblin', archetype: 'goblin', weapon: 'knife' },
   nightborn: { name: 'the Nightborn', body: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
   executioner: { name: 'the Executioner', body: 'executioner', archetype: 'executioner', weapon: 'scythe' },
-  // hold: built and kept, but off the beta ladder and out of the beta bundle until after beta (owner, 2026-09-20: Minotaur and
-  // Werewolf are Season 2). A held recipe stays a valid OpponentId so saved encounters still resolve (ladder.ts falls back).
+  // hold: built and kept, but off the beta ladder and out of the beta bundle until after beta. Owner, 2026-09-20: Minotaur and
+  // Werewolf are Season 2; Wraith and Skeleton held on the lead's reading of the same beta freeze (one flag each to reverse).
+  // A held recipe stays a valid OpponentId so saved encounters still resolve (ladder.ts falls back).
   minotaur: { name: 'the Minotaur', body: 'minotaur', archetype: 'pitborn', weapon: 'maul', finishers: ['opened'], hold: true },
-  wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'] },
+  wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'], hold: true },
   werewolf: { name: 'the Werewolf', body: 'werewolf', archetype: 'pitborn', weapon: 'cleaver', finishers: [], hold: true },
-  skeleton: { name: 'the Skeleton', body: 'skeleton', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false },
+  skeleton: { name: 'the Skeleton', body: 'skeleton', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false, hold: true },
 } as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
