@@ -2,7 +2,7 @@ import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CombatEvent } from '../combat.ts';
 import { nextVariant, seeded } from './cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
-import { spriteFormats, type Format } from './sprite.ts';
+import { fetchAsset, nextTask, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { bellSamples } from './bell.ts';
 
 export type ArenaFrame = { match: number; ended: boolean; tick: number; opponent?: OpponentId; drawing?: boolean };
@@ -10,8 +10,10 @@ const URLS = {
   opus: new URL('../assets/arena-audio/arena.ogg', import.meta.url).href,
   aac: new URL('../assets/arena-audio/arena.m4a', import.meta.url).href,
 };
-export async function loadArena(context: BaseAudioContext, formats: Format[] = spriteFormats(), fetcher: typeof fetch = (...args) => fetch(...args)): Promise<AudioBuffer | null> {
-  for (const format of formats) {
+export async function loadArena(context: BaseAudioContext, formats: Format[] = spriteFormats(), fetcher: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
+  for (const [attempt, format] of formats.entries()) {
+    if (attempt) await nextTask();
+    if (leaving()) break;   // never start the other codec while the page unloads (see sprite.ts)
     try { const response = await fetcher(URLS[format]); if (response.ok) return await context.decodeAudioData(await response.arrayBuffer()); }
     catch { /* Optional ambience: try the other codec, then leave combat alone. */ }
   }

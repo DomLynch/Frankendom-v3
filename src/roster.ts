@@ -10,12 +10,16 @@ export const ROSTER = {
   goblin: { name: 'the Goblin', body: 'goblin', archetype: 'goblin', weapon: 'knife' },
   nightborn: { name: 'the Nightborn', body: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
   executioner: { name: 'the Executioner', body: 'executioner', archetype: 'executioner', weapon: 'scythe' },
-  minotaur: { name: 'the Minotaur', body: 'minotaur', archetype: 'pitborn', weapon: 'maul', finishers: ['opened'] },
-  wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'] },
-  werewolf: { name: 'the Werewolf', body: 'werewolf', archetype: 'pitborn', weapon: 'cleaver', finishers: [] },
-  skeleton: { name: 'the Skeleton', body: 'skeleton', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false },
+  // hold: built and kept, but off the beta ladder and out of the beta bundle until after beta. Owner, 2026-09-20: Minotaur and
+  // Werewolf are Season 2; Wraith and Skeleton held on the lead's reading of the same beta freeze (one flag each to reverse).
+  // A held recipe stays a valid OpponentId so saved encounters still resolve (ladder.ts falls back).
+  minotaur: { name: 'the Minotaur', body: 'minotaur', archetype: 'pitborn', weapon: 'maul', finishers: ['opened'], hold: true },
+  wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'], hold: true },
+  werewolf: { name: 'the Werewolf', body: 'werewolf', archetype: 'pitborn', weapon: 'cleaver', finishers: [], hold: true },
+  skeleton: { name: 'the Skeleton', body: 'skeleton', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false, hold: true },
+  // Owner 2026-09-20: the Dwarf is playable now (not held) — flip `hold: true` to park him with the other creatures.
   dwarf: { name: 'the Dwarf', body: 'dwarf', archetype: 'veteran', weapon: 'trident', finishers: [] },
-} as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false }>;
+} as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
   const recipe = ROSTER[id];
@@ -31,5 +35,7 @@ export function hasBlood(id: OpponentId): boolean {
   return !('blood' in recipe && recipe.blood === false);
 }
 export const isOpponentId = (id: unknown): id is OpponentId => typeof id === 'string' && Object.hasOwn(ROSTER, id);
-// The insertion order is the existing introductory encounter sequence, never a career rank.
-export const ENCOUNTERS = (Object.keys(ROSTER) as OpponentId[]).map(id => ({ id, name: ROSTER[id].name }));
+export const isHeld = (id: OpponentId): boolean => 'hold' in ROSTER[id] && ROSTER[id].hold === true;
+// The insertion order is the existing introductory encounter sequence, never a career rank. Held recipes are listed (the journal
+// greys them) but are not rungs: ladder.ts skips them.
+export const ENCOUNTERS = (Object.keys(ROSTER) as OpponentId[]).map(id => ({ id, name: ROSTER[id].name, hold: isHeld(id) }));
