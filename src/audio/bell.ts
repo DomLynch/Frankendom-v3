@@ -5,13 +5,14 @@
 // the .66 / 3.9 s bell at the same −8 dBFS peak with the .80 play gain in arena.ts, which keeps the returning-player fallback
 // stacked with the draw swing under scripts/bell-start-check.mjs's −6 dBFS headroom.
 export const BELL_SECONDS = 3;
-const PARTIALS: [hz: number, gain: number, decay: number, phase: number][] = [[110, .3, 1.7, 0], [331, .9, 1.5, 2.30], [552, .55, 1.1, 1.28], [763, .15, .7, 4.59], [1136, .1, .4, 5.88]];
-const DRIVE = 1;
+const PARTIALS: [hz: number, gain: number, decay: number, phase: number][] = [[110, .3, 1.7, 0], [331, .9, 1.5, 1.26], [336, .35, 1.5, 4.19], [552, .55, 1.1, 4.77], [763, .15, .7, 3.38], [1136, .1, .4, 4.91]];   // 336 beats against 331 at 5 Hz: the warble of a big cast bell
+const DRIVE = 1, TREMOLO = { rate: 5.5, depth: .3, from: .25 };   // owner: "a vibrate effect" — an amplitude wobble that grows in after the strike
 export function bellSamples(rate: number): Float32Array {
   const data = new Float32Array(Math.round(BELL_SECONDS * rate));
   for (const [hz, gain, decay, phase] of PARTIALS) {
     for (let i = 0; i < data.length; i++) { const t = i / rate; data[i] += gain * Math.sin(t * 2 * Math.PI * hz + phase) * Math.exp(-5 * t / (decay * 1.5)); }
   }
+  for (let i = 0; i < data.length; i++) { const t = i / rate, grow = Math.min(1, t / TREMOLO.from); data[i] *= 1 - TREMOLO.depth * grow * (1 - Math.cos(2 * Math.PI * TREMOLO.rate * t)) / 2; }
   let loudest = 0; for (const v of data) loudest = Math.max(loudest, Math.abs(v));
   for (let i = 0; i < data.length; i++) data[i] = Math.tanh(data[i] / loudest * DRIVE) / Math.tanh(DRIVE) * loudest;   // cast-metal warmth, and a lower crest for the same ring
   let peak = 0, square = 0;
