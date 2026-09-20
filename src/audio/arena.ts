@@ -63,7 +63,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
         reactionAt = time + 2; gruntAt = time; contactAt = time;
       }
       if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); return; }
-      if (!bellPlayed && draw) { bellPlayed = true; play('bell', .66); }   // owner 2026-09-20: +50 % over the .44 of bell weight
+      if (!bellPlayed && draw) { bellPlayed = true; play('bell', .80); }   // owner 2026-09-20: "double the loudness" — the doubling is in the bell's audible partials (bell.ts); .80 keeps the fallback's peak headroom
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
       if (sleeping) { sleeping = false; bedAt = time; accentAt = time + 12 + random() * 10; }
       if (time >= bedAt) { const duration = play('bed', .15); bedAt = time + (duration ? duration - .9 : .1); }
