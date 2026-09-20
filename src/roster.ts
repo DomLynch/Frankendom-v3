@@ -14,6 +14,7 @@ export const ROSTER = {
   wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'] },
   werewolf: { name: 'the Werewolf', body: 'werewolf', archetype: 'pitborn', weapon: 'cleaver', finishers: [] },
   skeleton: { name: 'the Skeleton', body: 'skeleton', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false },
+  dwarf: { name: 'the Dwarf', body: 'dwarf', archetype: 'veteran', weapon: 'trident', finishers: [] },
 } as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
