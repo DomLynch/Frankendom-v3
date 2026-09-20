@@ -18,7 +18,9 @@ export const ROSTER = {
   werewolf: { name: 'the Werewolf', body: 'werewolf', archetype: 'pitborn', weapon: 'cleaver', finishers: [], hold: true },
   skeleton: { name: 'the Skeleton', body: 'skeleton', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false, hold: true },
   // Owner 2026-09-20: the Dwarf is playable now (not held) — flip `hold: true` to park him with the other creatures.
-  dwarf: { name: 'the Dwarf', body: 'dwarf', archetype: 'veteran', weapon: 'trident', finishers: [] },
+  // Owner 2026-09-20: Dwarf kills were landing plain. Reconstructed bodies list only finishers validated on that body; the
+  // Dwarf rig carries every finisher clip and each rotation outcome below was captured on him by the finisher harness.
+  dwarf: { name: 'the Dwarf', body: 'dwarf', archetype: 'dwarf', weapon: 'warhammer', finishers: ['splitCrown', 'decapitation', 'runThrough', 'opened', 'plainDeath'] },   // quietOne (picker-only) failed its spray check on him — not listed
 } as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
