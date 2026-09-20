@@ -26,8 +26,8 @@ export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null):
   return !('finishers' in recipe) || (!!finisher && (recipe.finishers as readonly FinisherId[]).includes(finisher));
 }
 // One presentation decision for the scene and audio; the owner's picker never overrides kill eligibility.
-export function resolveFinisher(id: OpponentId, finish: Finish, weapons: readonly [WeaponId, WeaponId], override: FinisherId | null = null): FinisherId | null {
-  const pick = selectFinisher(finish, weapons), selected = pick && (override ?? pick);
+export function resolveFinisher(id: OpponentId, finish: Finish, weapons: readonly [WeaponId, WeaponId], override: FinisherId | null = null, previous: FinisherId | null = null): FinisherId | null {
+  const pick = selectFinisher(finish, weapons, previous), selected = pick && (override ?? pick);
   return selected && supportsFinishers(id, selected) ? selected : null;
 }
 export function hasBlood(id: OpponentId): boolean {
