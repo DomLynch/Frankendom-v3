@@ -5,11 +5,11 @@
 // the .66 / 3.9 s bell at the same −8 dBFS peak with the .80 play gain in arena.ts, which keeps the returning-player fallback
 // stacked with the draw swing under scripts/bell-start-check.mjs's −6 dBFS headroom.
 export const BELL_SECONDS = 4;   // owner 2026-09-20 evening: 4 s, the wobble over its first 2 s, and louder still
-const PARTIALS: [hz: number, gain: number, decay: number, phase: number][] = [[110, .3, 1.7, 0], [331, .9, 1.5, 1.26], [336, .12, 1.5, 4.19], [552, .55, 1.1, 4.77], [763, .15, .7, 3.38], [1136, .1, .4, 4.91]];   // 336 beats against 331 at 5 Hz: the warble of a big cast bell
+const PARTIALS: [hz: number, gain: number, decay: number, phase: number][] = [[110, .3, 1.7, 0], [331, .9, 1.5, 1.26], [552, .55, 1.1, 4.77], [763, .15, .7, 3.38], [1136, .1, .4, 4.91]];   // no beating pair: the wobble is the vibrato below, which moves pitch and not level
 const DRIVE = 4;   // drive 4: a low crest, so the −6 dBFS peak wall carries the most ring it can (owner: "double the volume")
 // Owner 2026-09-20, late: "keep the wobble for the full 4 seconds, and the wobble should not reduce volume" — so the wobble is
-// pitch only: the amplitude tremolo is gone, and the 336 Hz partial that beat against 331 Hz (a 5 Hz volume dip) is trimmed to a
-// shimmer that no longer pulls the level down. The vibrato runs to the end of the bell.   // owner: "a vibrate effect" — an amplitude wobble that grows in after the strike
+// pitch only: the amplitude tremolo is gone, and the 336 Hz partial that beat against 331 Hz (a 5 Hz volume dip) is gone: residual
+// level ripple mean .5 dB (was 1.6 dB with it at .12, ~7 dB with the tremolo). The vibrato runs to the end of the bell.   // owner: "a vibrate effect" — an amplitude wobble that grows in after the strike
 // Owner 2026-09-20: "some vibrato, so it wobbles a bit, like a monk striking a big bronze gong". A struck gong's pitch is not fixed:
 // the sheet flexes and the partials wander, a slow wow that sets in after the strike. Each partial's frequency now swings ±1.5 %
 // at 4.2 Hz (against the 5.5 Hz tremolo, so the two never lock into one metronome), growing in over .3 s; the phase is accumulated
