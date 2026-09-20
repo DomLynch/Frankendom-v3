@@ -21,6 +21,7 @@ export async function loadArena(context: BaseAudioContext, formats: Format[] = s
 }
 
 // Independent voices/RNG: crowd cannot steal combat voices, change Foley variants or inherit the fatal gain boost.
+const ARENA_LEVEL = .7;   // owner 2026-09-20: the audience −30 % with the rest of the mix; the bell is exempt so it leads
 export function createArenaAudio(context: BaseAudioContext, destination: AudioNode, now: () => number) {
   type Voice = { source: AudioBufferSourceNode; until: number };
   const voices = new Set<Voice>(), last: Partial<Record<ArenaCue, number>> = {};
@@ -32,7 +33,8 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
     for (const voice of voices) { try { voice.source.stop(time); } catch { /* ended */ } }
     voices.clear(); sleeping = true;
   }
-  function play(name: ArenaCue, gain: number, delay = 0) {
+  function play(name: ArenaCue, cueGain: number, delay = 0) {
+    const gain = name === 'bell' ? cueGain : cueGain * ARENA_LEVEL;
     if (name === 'bell' && !buffer && !bell) {
       const samples = bellSamples(context.sampleRate); bell = context.createBuffer(1, samples.length, context.sampleRate); bell.getChannelData(0).set(samples);
     }
