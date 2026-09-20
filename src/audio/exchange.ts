@@ -5,7 +5,7 @@ import { RULES } from '../moves.ts';
 // The fixed scripted exchange every audio iteration is judged on: both fighters are driven by hand through the real
 // simulation (no AI), so the same beats land on the same ticks and BEFORE/AFTER renders are like-for-like. The warden
 // starts wounded so the exchange ends in a death without padding the script with filler hits.
-export type Beat = { name: string; tick: number; events: string[] };
+type Beat = { name: string; tick: number; events: string[] };
 export type Exchange = { ticks: { tick: number; events: CombatEvent[]; presentation?: DeathPresentation }[]; beats: Beat[]; length: number };
 export const EXCHANGE_BEATS = ['walk', 'draw', 'light', 'light', 'heavy', 'guard', 'block', 'parry', 'riposte', 'hit taken', 'kick', 'death'] as const;
 const WARDEN_HEALTH = 80;   // 11 + 11 + 18 + 24 + 4 = 68 dealt before the charged heavy (27) kills
