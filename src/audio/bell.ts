@@ -6,7 +6,7 @@
 // stacked with the draw swing under scripts/bell-start-check.mjs's −6 dBFS headroom.
 export const BELL_SECONDS = 4;   // owner 2026-09-20 evening: 4 s, the wobble over its first 2 s, and louder still
 const PARTIALS: [hz: number, gain: number, decay: number, phase: number][] = [[110, .3, 1.7, 0], [331, .9, 1.5, 1.26], [336, .35, 1.5, 4.19], [552, .55, 1.1, 4.77], [763, .15, .7, 3.38], [1136, .1, .4, 4.91]];   // 336 beats against 331 at 5 Hz: the warble of a big cast bell
-const DRIVE = 2, TREMOLO = { rate: 5.5, depth: .3, from: .25 };   // drive 2: a lower crest, so the same −6 dBFS peak wall carries ~2 dB more ring   // owner: "a vibrate effect" — an amplitude wobble that grows in after the strike
+const DRIVE = 4, TREMOLO = { rate: 5.5, depth: .3, from: .25 };   // drive 4: a low crest, so the −6 dBFS peak wall carries the most ring it can (owner: "double the volume")   // owner: "a vibrate effect" — an amplitude wobble that grows in after the strike
 // Owner 2026-09-20: "some vibrato, so it wobbles a bit, like a monk striking a big bronze gong". A struck gong's pitch is not fixed:
 // the sheet flexes and the partials wander, a slow wow that sets in after the strike. Each partial's frequency now swings ±1.5 %
 // at 4.2 Hz (against the 5.5 Hz tremolo, so the two never lock into one metronome), growing in over .3 s; the phase is accumulated
