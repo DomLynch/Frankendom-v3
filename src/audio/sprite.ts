@@ -1,7 +1,7 @@
 // Audio sprite loading: one file per format, picked by what the browser says it can play, decoded on the given context.
 // Safari plays AAC and not Ogg/Opus; Chrome and Android play both, and Opus is the smaller file.
 export type Format = 'opus' | 'aac';
-export const SPRITE_URLS: Record<Format, string> = {
+const SPRITE_URLS: Record<Format, string> = {
   opus: new URL('../assets/audio/sprite.ogg', import.meta.url).href,
   aac: new URL('../assets/audio/sprite.m4a', import.meta.url).href,
 };
