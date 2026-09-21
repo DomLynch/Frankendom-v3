@@ -1,0 +1,22 @@
+{
+  "murmur": {
+    "page": "https://freesound.org/people/SpliceSound/sounds/260122/",
+    "url": "https://cdn.freesound.org/previews/260/260122_1480854-hq.mp3",
+    "sha256": "4f4c9d381aa31ebaa4d354a74121f94653f831043b4c165ebe4d3d26bb55b94e",
+    "title": "Indoor adult murmur, medium group.wav",
+    "author": "SpliceSound",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "retrieved": "2026-09-19"
+  },
+  "jeer": {
+    "page": "https://freesound.org/people/deleted_user_2104797/sounds/324893/",
+    "url": "https://cdn.freesound.org/previews/324/324893_2104797-hq.mp3",
+    "sha256": "c41a48aeaefc4e8b06f472bf7b3b0e3e1dec8a048b4ef1a6180ae1baff10db8e",
+    "title": "Crowd Boo.wav",
+    "author": "deleted_user_2104797",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "retrieved": "2026-09-19"
+  }
+}
