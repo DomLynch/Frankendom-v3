@@ -4,7 +4,7 @@
 // found by search for the lowest first-cycle crest) and gently saturated. Measured: +6.3 dB in the phone band (> 300 Hz) over
 // the .66 / 3.9 s bell at the same −8 dBFS peak with the .80 play gain in arena.ts, which keeps the returning-player fallback
 // stacked with the draw swing under scripts/bell-start-check.mjs's −6 dBFS headroom.
-export const BELL_SECONDS = 4;   // owner 2026-09-20 evening: 4 s, louder still
+export const BELL_SECONDS = 3;   // owner 2026-09-21 00:30: "the bell is perfect, just reduce the length by 1 second" — 4 s → 3 s, voicing untouched
 // Owner 2026-09-20, 23:15: "use this sound" — a Tibetan gong (a shop's demo clip, not licensed for reuse, so it is the target and
 // not the asset). Measured from the clip 0.3–1.3 s after the strike: prime pair 251 / 267 Hz (their 16 Hz beat is the shimmer),
 // undertone 165 Hz, upper partials 362 / 526 / 613 / 777 Hz at −4…−6 dB; the level swells for ~1.5 s after the strike and then
