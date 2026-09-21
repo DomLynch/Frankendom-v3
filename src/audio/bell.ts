@@ -17,7 +17,7 @@ const DRIVE = 2;
 // partials open 2.1× louder and settle over the first second, a felt thud (low broadband burst) and a sagging low thump mark the
 // strike, and the first second is saturated a little harder for density. The ring and the wobble after 1 s are the live bell's.
 const STRIKE = { lift: 2.1, seconds: 1, thud: .45, thump: .55, drive: 3.25 };
-const TAPER = .15;   // amplitude lost per second, on top of the partials' own decay
+const TAPER = .25;   // amplitude lost per second, on top of the partials' own decay (owner 13:05: "25 % taper, so 75 % quieter by 3 s")
 const mulberry = (seed: number) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 // One-pole pair for the felt thud's band (80–900 Hz): a low-pass then a high-pass, both first order — enough for a thud.
 const band = (x: Float32Array, rate: number, lo: number, hi: number) => { const a = Math.exp(-2 * Math.PI * hi / rate), b = Math.exp(-2 * Math.PI * lo / rate); let l = 0, h = 0, p = 0; return x.map(v => { l = a * l + (1 - a) * v; const y = b * (h + l - p); p = l; h = y; return y; }); };
@@ -45,7 +45,7 @@ export function bellSamples(rate: number): Float32Array {
   for (let i = 0; i < data.length; i++) { const t = i / rate, k = DRIVE + (STRIKE.drive - DRIVE) * Math.exp(-3 * t / STRIKE.seconds); data[i] = Math.tanh(data[i] / loudest * k) / Math.tanh(k) * loudest; }
   loudest = 0; for (const v of data) loudest = Math.max(loudest, Math.abs(v));
   for (let i = 0; i < data.length; i++) data[i] = Math.tanh(data[i] / loudest * DRIVE) / Math.tanh(DRIVE) * loudest;   // cast-metal warmth, and a lower crest for the same ring
-  // Owner 2026-09-21 12:55: "taper it more to the end — 15 % per second, so 3 seconds is 45 % quieter": a linear fade on top of the ring's own decay.
+  // Owner 2026-09-21 12:55: "taper it more to the end — 25 % per second, so 3 seconds is 75 % quieter": a linear fade on top of the ring's own decay.
   for (let i = 0; i < data.length; i++) data[i] *= 1 - TAPER * (i / rate);
   let peak = 0, square = 0;
   for (let i = 0; i < data.length; i++) {
