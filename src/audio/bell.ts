@@ -12,6 +12,14 @@ export const BELL_SECONDS = 3;   // owner 2026-09-21 00:30: "the bell is perfect
 // everything above the prime, a mild pitch vibrato for the wobble, gentle drive (the heavier drive read as "worse").
 const PARTIALS: [hz: number, gain: number, decay: number, phase: number][] = [[165, .45, 9, 0], [251, 1, 10, 1.26], [267, .7, 10, 2.6], [362, .5, 8, 4.77], [526, .55, 7, 3.38], [613, .35, 6, 0.9], [777, .3, 5, 4.91]];
 const DRIVE = 2;
+// Owner 2026-09-21 12:40: "louder at the start, more of an impact for the first second, then taper off" — from three candidates he
+// chose the padded-mallet strike, "toned down: keep the original and 50 % of the new sound". So, at half of candidate A: the
+// partials open 2.1× louder and settle over the first second, a felt thud (low broadband burst) and a sagging low thump mark the
+// strike, and the first second is saturated a little harder for density. The ring and the wobble after 1 s are the live bell's.
+const STRIKE = { lift: 2.1, seconds: 1, thud: .45, thump: .55, drive: 3.25 };
+const mulberry = (seed: number) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// One-pole pair for the felt thud's band (80–900 Hz): a low-pass then a high-pass, both first order — enough for a thud.
+const band = (x: Float32Array, rate: number, lo: number, hi: number) => { const a = Math.exp(-2 * Math.PI * hi / rate), b = Math.exp(-2 * Math.PI * lo / rate); let l = 0, h = 0, p = 0; return x.map(v => { l = a * l + (1 - a) * v; const y = b * (h + l - p); p = l; h = y; return y; }); };
 const VIBRATO = { rate: 4.2, depth: .015, from: .3, until: BELL_SECONDS + 1, fade: 1 }, BLOOM = { above: 300, seconds: .4 };   // the swell: partials above the prime open over ~1.2 s (3 τ)
 const wobbleAt = (t: number, w: { from: number; until: number; fade: number }) => Math.min(1, t / w.from) * Math.max(0, Math.min(1, (w.until - t) / w.fade));
 export function bellSamples(rate: number): Float32Array {
@@ -21,17 +29,26 @@ export function bellSamples(rate: number): Float32Array {
     for (let i = 0; i < data.length; i++) {
       const t = i / rate, wobble = 1 + VIBRATO.depth * wobbleAt(t, VIBRATO) * Math.sin(2 * Math.PI * VIBRATO.rate * t);
       const bloom = hz > BLOOM.above ? 1 - .7 * Math.exp(-t / BLOOM.seconds) : 1;
-      data[i] += gain * bloom * Math.sin(angle) * Math.exp(-5 * t / (decay * 1.5));
+      const lift = 1 + (STRIKE.lift - 1) * Math.exp(-3 * t / STRIKE.seconds);
+      data[i] += gain * bloom * lift * Math.sin(angle) * Math.exp(-5 * t / (decay * 1.5));
       angle += 2 * Math.PI * hz * wobble / rate;
     }
   }
-  let loudest = 0; for (const v of data) loudest = Math.max(loudest, Math.abs(v));
+  // The mallet: a felt thud (band-limited noise, 90 ms) and a low thump whose pitch sags after the strike.
+  const random = mulberry(11), thud = band(Float32Array.from({ length: Math.round(.3 * rate) }, () => random() * 2 - 1), rate, 80, 900);
+  for (let i = 0; i < thud.length; i++) { const t = i / rate; data[i] += STRIKE.thud * thud[i] * Math.min(1, t / .002) * Math.exp(-6.9078 * Math.max(0, t - .002) / .09); }
+  let angle = 0;
+  for (let i = 0; i < Math.round(.6 * rate); i++) { const t = i / rate; angle += 2 * Math.PI * 95 * (1 + 1.6 * Math.exp(-t / .05)) / rate; data[i] += STRIKE.thump * Math.sin(angle) * Math.exp(-6.9078 * t / .35); }
+  // Density for the impact: harder saturation over the first second easing back to DRIVE, then the ring's own drive.
+  let loudest = 0; for (let i = 0; i < STRIKE.seconds * rate; i++) loudest = Math.max(loudest, Math.abs(data[i]));
+  for (let i = 0; i < data.length; i++) { const t = i / rate, k = DRIVE + (STRIKE.drive - DRIVE) * Math.exp(-3 * t / STRIKE.seconds); data[i] = Math.tanh(data[i] / loudest * k) / Math.tanh(k) * loudest; }
+  loudest = 0; for (const v of data) loudest = Math.max(loudest, Math.abs(v));
   for (let i = 0; i < data.length; i++) data[i] = Math.tanh(data[i] / loudest * DRIVE) / Math.tanh(DRIVE) * loudest;   // cast-metal warmth, and a lower crest for the same ring
   let peak = 0, square = 0;
   for (let i = 0; i < data.length; i++) {
     data[i] *= Math.min(1, i / Math.round(.003 * rate), (data.length - i - 1) / Math.round(.6 * rate));
     peak = Math.max(peak, Math.abs(data[i])); square += data[i] ** 2;
   }
-  const gain = Math.min(.5 / peak, .16 / Math.sqrt(square / data.length));   // peak-limited: the −6 dBFS wall in bell-start-check is the real ceiling
+  const gain = Math.min(.45 / peak, .18 / Math.sqrt(square / data.length));   // the −6 dBFS wall in bell-start-check is the ceiling: .45 × play gain .9 + the fallback draw swing stays under it
   return data.map(v => v * gain);
 }
