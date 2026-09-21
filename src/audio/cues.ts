@@ -24,6 +24,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     if (e.type === 'Hit') impacts.push(bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .95, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', 1, .3) : cue('hit_flesh', 1, .3));
     else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue(bone ? 'bone_crack' : 'hit_flesh', .55, .2));
     else if (e.type === 'Parried') impacts.push(cue('parry', 1, .45));
+    else if (e.type === 'Whipped') impacts.push(cue('whip', .85, .25));   // the anti-turtling lash: the only feedback it gets
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', 1, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') {
       if (!bone) impacts.push(cue('death_voice', finisher === 'quietOne' ? .28 : .45, .1, .03));
