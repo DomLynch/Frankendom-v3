@@ -4,7 +4,7 @@
 // found by search for the lowest first-cycle crest) and gently saturated. Measured: +6.3 dB in the phone band (> 300 Hz) over
 // the .66 / 3.9 s bell at the same −8 dBFS peak with the .80 play gain in arena.ts, which keeps the returning-player fallback
 // stacked with the draw swing under scripts/bell-start-check.mjs's −6 dBFS headroom.
-export const BELL_SECONDS = 3;   // owner 2026-09-21 00:30: "the bell is perfect, just reduce the length by 1 second" — 4 s → 3 s, voicing untouched
+export const BELL_SECONDS = 2.5;   // owner 2026-09-21 13:15: 2.5 s (was 3); the taper keeps its endpoint, 75 % quieter at the end
 // Owner 2026-09-20, 23:15: "use this sound" — a Tibetan gong (a shop's demo clip, not licensed for reuse, so it is the target and
 // not the asset). Measured from the clip 0.3–1.3 s after the strike: prime pair 251 / 267 Hz (their 16 Hz beat is the shimmer),
 // undertone 165 Hz, upper partials 362 / 526 / 613 / 777 Hz at −4…−6 dB; the level swells for ~1.5 s after the strike and then
@@ -17,7 +17,7 @@ const DRIVE = 2;
 // partials open 2.1× louder and settle over the first second, a felt thud (low broadband burst) and a sagging low thump mark the
 // strike, and the first second is saturated a little harder for density. The ring and the wobble after 1 s are the live bell's.
 const STRIKE = { lift: 2.1, seconds: 1, thud: .45, thump: .55, drive: 3.25 };
-const TAPER = .25;   // amplitude lost per second, on top of the partials' own decay (owner 13:05: "25 % taper, so 75 % quieter by 3 s")
+const TAPER = .75 / BELL_SECONDS;   // amplitude lost per second, on top of the partials' own decay: 75 % gone by the end (owner), i.e. 30 %/s at 2.5 s
 const mulberry = (seed: number) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 // One-pole pair for the felt thud's band (80–900 Hz): a low-pass then a high-pass, both first order — enough for a thud.
 const band = (x: Float32Array, rate: number, lo: number, hi: number) => { const a = Math.exp(-2 * Math.PI * hi / rate), b = Math.exp(-2 * Math.PI * lo / rate); let l = 0, h = 0, p = 0; return x.map(v => { l = a * l + (1 - a) * v; const y = b * (h + l - p); p = l; h = y; return y; }); };
