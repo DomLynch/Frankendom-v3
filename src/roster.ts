@@ -2,26 +2,30 @@ import type { WeaponId } from './moves.ts';
 import type { Finish } from './duel.ts';
 import { selectFinisher, type FinisherId } from './finishers.ts';
 
+// The rig: the skeleton family a body is built on, which is the blade table it fights with (src/blade-paths.ts bladePathsByRig; the
+// bake is per rig because the same knife sweeps a different arc in a goblin's hand than in a man's). 'hero' is the player skeleton and
+// every body reproportioned from it. A held creature without a bake of its own stays on the hero table it has always used.
+export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith';
 // Approved content recipes. Body names refer to existing offline appearance presets/GLBs;
 // archetypes own combat tuning in moves.ts. Adding an individual must not add AI branches.
 export const ROSTER = {
-  veteran: { name: 'the Veteran', body: 'veteran', archetype: 'veteran', weapon: 'trident' },
-  pitborn: { name: 'the Pitborn', body: 'pitborn', archetype: 'pitborn', weapon: 'cleaver' },
-  goblin: { name: 'the Goblin', body: 'goblin', archetype: 'goblin', weapon: 'knife' },
-  nightborn: { name: 'the Nightborn', body: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
-  executioner: { name: 'the Executioner', body: 'executioner', archetype: 'executioner', weapon: 'scythe' },
+  veteran: { name: 'the Veteran', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'trident' },
+  pitborn: { name: 'the Pitborn', body: 'pitborn', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver' },
+  goblin: { name: 'the Goblin', body: 'goblin', rig: 'goblin', archetype: 'goblin', weapon: 'knife' },
+  nightborn: { name: 'the Nightborn', body: 'nightborn', rig: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
+  executioner: { name: 'the Executioner', body: 'executioner', rig: 'hero', archetype: 'executioner', weapon: 'scythe' },
   // hold: built and kept, but off the beta ladder and out of the beta bundle until after beta. Owner, 2026-09-20: Minotaur and
   // Werewolf are Season 2; Wraith and Skeleton held on the lead's reading of the same beta freeze (one flag each to reverse).
   // A held recipe stays a valid OpponentId so saved encounters still resolve (ladder.ts falls back).
-  minotaur: { name: 'the Minotaur', body: 'minotaur', archetype: 'pitborn', weapon: 'maul', finishers: ['opened'], hold: true },
-  wraith: { name: 'the Wraith', body: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'], hold: true },
-  werewolf: { name: 'the Werewolf', body: 'werewolf', archetype: 'pitborn', weapon: 'cleaver', finishers: [], hold: true },
-  skeleton: { name: 'the Skeleton', body: 'skeleton', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false, hold: true },
+  minotaur: { name: 'the Minotaur', body: 'minotaur', rig: 'minotaur', archetype: 'pitborn', weapon: 'maul', finishers: ['opened'], hold: true },
+  wraith: { name: 'the Wraith', body: 'wraith', rig: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'], hold: true },
+  werewolf: { name: 'the Werewolf', body: 'werewolf', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver', finishers: [], hold: true },
+  skeleton: { name: 'the Skeleton', body: 'skeleton', rig: 'hero', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false, hold: true },
   // Owner 2026-09-20: the Dwarf is playable now (not held) — flip `hold: true` to park him with the other creatures.
   // Owner 2026-09-20: Dwarf kills were landing plain. Reconstructed bodies list only finishers validated on that body; the
   // Dwarf rig carries every finisher clip and each rotation outcome below was captured on him by the finisher harness.
-  dwarf: { name: 'the Dwarf', body: 'dwarf', archetype: 'dwarf', weapon: 'warhammer', finishers: ['splitCrown', 'decapitation', 'runThrough', 'opened', 'plainDeath'] },   // quietOne (picker-only) failed its spray check on him — not listed
-} as const satisfies Record<string, { name: string; body: string; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
+  dwarf: { name: 'the Dwarf', body: 'dwarf', rig: 'hero', archetype: 'dwarf', weapon: 'warhammer', finishers: ['splitCrown', 'decapitation', 'runThrough', 'opened', 'plainDeath'] },   // quietOne (picker-only) failed its spray check on him — not listed
+} as const satisfies Record<string, { name: string; body: string; rig: RigId; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
   const recipe = ROSTER[id];
