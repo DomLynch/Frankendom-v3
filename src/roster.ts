@@ -9,7 +9,7 @@ export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith';
 // Approved content recipes. Body names refer to existing offline appearance presets/GLBs;
 // archetypes own combat tuning in moves.ts. Adding an individual must not add AI branches.
 export const ROSTER = {
-  veteran: { name: 'the Veteran', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'trident' },
+  veteran: { name: 'the Centurion', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'trident' },
   pitborn: { name: 'the Pitborn', body: 'pitborn', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver' },
   goblin: { name: 'the Goblin', body: 'goblin', rig: 'goblin', archetype: 'goblin', weapon: 'knife' },
   nightborn: { name: 'the Nightborn', body: 'nightborn', rig: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
@@ -40,6 +40,10 @@ export function hasBlood(id: OpponentId): boolean {
   const recipe = ROSTER[id];
   return !('blood' in recipe && recipe.blood === false);
 }
+// The bare name, without the article the roster carries ("the Centurion" -> "Centurion"): what the HUD bars, the coaching lines and
+// the versus caption say. Identifiers (the id `veteran`, the body, the archetype, LootIds like `veteran.helmet`) are untouched by a
+// rename — only `name` above is player-facing.
+export const bareName = (id: OpponentId): string => ROSTER[id].name.replace(/^the /, '');
 export const isOpponentId = (id: unknown): id is OpponentId => typeof id === 'string' && Object.hasOwn(ROSTER, id);
 export const isHeld = (id: OpponentId): boolean => 'hold' in ROSTER[id] && ROSTER[id].hold === true;
 // The insertion order is the existing introductory encounter sequence, never a career rank. Held recipes are listed (the journal
