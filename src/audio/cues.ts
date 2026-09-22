@@ -21,8 +21,11 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
 
   for (const e of events) {
     const bone = e.target === 1 && opponent !== undefined && !hasBlood(opponent);
-    // Owner 2026-09-22: flesh wounds and weapon hits −25 % (parry, block and guard break stay as they are).
-    if (e.type === 'Hit') impacts.push(bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .71, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .75, .3) : cue('hit_flesh', .75, .3));
+    // Owner 2026-09-22: flesh wounds and weapon hits down; parry, block and guard break stay as they are. The first pass
+    // (1 → .75) barely moved the output — these gains feed the bus compressor (−20 dB, 5:1) before the ceiling, which gives
+    // most of a cue cut back: measured −2.5 dB nominal landed as −1 dB. At .3 the drop is real and targeted (rendered probes,
+    // same graph): hit-light −30.1 → −34.2 LUFS-I while blocked stays −29.1, so hits sit 5 dB under the guards, not 1 dB over.
+    if (e.type === 'Hit') impacts.push(bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .3, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .3, .3) : cue('hit_flesh', .3, .3));
     else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue(bone ? 'bone_crack' : 'hit_flesh', .55, .2));
     else if (e.type === 'Parried') impacts.push(cue('parry', 1, .45));
     else if (e.type === 'Whipped') impacts.push(cue('whip', .85, .25));   // the anti-turtling lash: the only feedback it gets
