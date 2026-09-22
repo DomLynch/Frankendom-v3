@@ -69,5 +69,16 @@
     "license": "Stated in the video description: \"Royalty free and safe to use — no copyright strikes. Free to use in your own video edits. Credit appreciated but not required.\" Weaker provenance than a CC licence (re-upload channel); not committed to the tree.",
     "note": "NOT committed. Rebuild: yt-dlp -f bestaudio -x --audio-format wav <page>; ffmpeg -i clip.wav -af \"atrim=start=0:duration=1.6,asetpts=PTS-STARTPTS\" -ac 1 -ar 48000 -c:a flac -compression_level 8 artifacts/audio/source-cache/slashkill.flac — sha256 above must match. Owner picked it 2026-09-21 (option 6 of six). hit_flesh/hit_heavy variants at pitch 1.",
     "retrieved": "2026-09-21"
+  },
+  "swordhit": {
+    "page": "https://freesound.org/people/CogFireStudios/sounds/547042/",
+    "url": "https://cdn.freesound.org/previews/547/547042_7614679-hq.mp3",
+    "sha256": "bfa9309e46739a5bd2fc4424b98f383a55e080012e5b0eec1bb747e910329bb9",
+    "title": "Hit Impact Sword 3",
+    "author": "CogFireStudios",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Owner picked it 2026-09-22 (candidate J of three CC0 freesound hits; \"this is good i like it\"). hit_flesh variant at pitch 1: the strike from 0 s, .62 s (tail is under -34 dBFS by .75 s).",
+    "retrieved": "2026-09-22"
   }
 }
