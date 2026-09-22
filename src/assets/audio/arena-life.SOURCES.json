@@ -18,5 +18,27 @@
     "license": "CC0-1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "retrieved": "2026-09-19"
+  },
+  "boohall": {
+    "page": "https://freesound.org/people/HowardV/sounds/264378/",
+    "url": "https://cdn.freesound.org/previews/264/264378_1654262-hq.mp3",
+    "sha256": "7c091f19f3a5c9774de3c18ac82e4de59d29ac451a34795e52f5d78f15d710af",
+    "title": "crowd booing",
+    "author": "HowardV",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Brief 13 wall-hugger jeer bed B (small-mob boos). Licence read on the sound page 2026-09-22.",
+    "retrieved": "2026-09-22"
+  },
+  "whistle": {
+    "page": "https://freesound.org/people/IAmAndyGoddard/sounds/393528/",
+    "url": "https://cdn.freesound.org/previews/393/393528_3758399-hq.mp3",
+    "sha256": "2b2581ca1fb13bf145fcff785772b6def8015c06cb8bee78eaba7f7a212ced85",
+    "title": "Cat Call Whistle.wav",
+    "author": "IAmAndyGoddard",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Brief 13 wall-hugger jeer bed B (wolf-whistles). Licence read on the sound page 2026-09-22.",
+    "retrieved": "2026-09-22"
   }
 }
