@@ -7,9 +7,13 @@ import type { CueName } from './manifest.ts';
 
 // Event → cue mapping. Pure data: the simulation's events decide what is heard; gain, room send and pitch spread are per cue.
 // Order matters — the voice limiter serves cues in this order, so impacts come before air.
-export type Cue = { name: CueName; gain: number; room: number; delay?: number };
+export type Cue = { name: CueName; gain: number; room: number; delay?: number; rate?: number };
 const HEAVY = new Set(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'riposte', 'slash_riposte']);
-const cue = (name: CueName, gain: number, room: number, delay?: number): Cue => ({ name, gain, room, ...(delay ? { delay } : {}) });
+const cue = (name: CueName, gain: number, room: number, delay?: number, rate?: number): Cue => ({ name, gain, room, ...(delay ? { delay } : {}), ...(rate ? { rate } : {}) });
+// The wall's six lorarii each keep one whip voice: guard 0 the deepest, guard 5 the thinnest, fixed so the same man always
+// sounds like himself over a long fight. An event with no `guard` (a replay written before the tell) plays at rate 1.
+const WHIP_RAISE = .4;   // seconds of the raise cue — the lash tick is what it has to land on, so `lead` becomes its delay
+const whipRate = (guard?: number) => guard === undefined ? 1 : .94 + Math.min(5, Math.max(0, guard)) * .024;
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
 export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
@@ -28,7 +32,11 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     if (e.type === 'Hit') impacts.push(bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .3, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .3, .3) : cue('hit_flesh', .3, .3));
     else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue(bone ? 'bone_crack' : 'hit_flesh', .55, .2));
     else if (e.type === 'Parried') impacts.push(cue('parry', 1, .45));
-    else if (e.type === 'Whipped') impacts.push(cue('whip', .85, .25));   // the anti-turtling lash: the only feedback it gets
+    // The anti-turtling lash and its tell. WhipRaised carries `lead`, the ticks until the lash, so the raise is delayed to end
+    // on the lash tick instead of opening a second of silence before it: 60 ticks before the first lash, 30 before a repeat.
+    // It is air, not an impact — quiet and far back in the room, because the man holding it is at the wall, not in the fight.
+    else if (e.type === 'Whipped') impacts.push(cue('whip', .85, .25, undefined, whipRate(e.guard)));
+    else if (e.type === 'WhipRaised') air.push(cue('whip_raise', .3, .5, Math.round(Math.max(0, (e.lead ?? 60) / 60 - WHIP_RAISE) * 1000) / 1000, whipRate(e.guard)));
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', 1, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') {
       if (!bone) impacts.push(cue('death_voice', finisher === 'quietOne' ? .28 : .45, .1, .03));
