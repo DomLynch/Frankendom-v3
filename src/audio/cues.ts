@@ -35,8 +35,10 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // The anti-turtling lash and its tell. WhipRaised carries `lead`, the ticks until the lash, so the raise is delayed to end
     // on the lash tick instead of opening a second of silence before it: 60 ticks before the first lash, 30 before a repeat.
     // It is air, not an impact — quiet and far back in the room, because the man holding it is at the wall, not in the fight.
+    // Gain .1, measured on the phone band (2026-09-23): at .3 the dense swell read −29.2 LUFS, level with the lash and a block;
+    // at .1 it sits 8.4 dB under the lash (−37.6), between a heavy swing and a light hit.
     else if (e.type === 'Whipped') impacts.push(cue('whip', .85, .25, undefined, whipRate(e.guard)));
-    else if (e.type === 'WhipRaised') air.push(cue('whip_raise', .3, .5, Math.round(Math.max(0, (e.lead ?? 60) / 60 - WHIP_RAISE) * 1000) / 1000, whipRate(e.guard)));
+    else if (e.type === 'WhipRaised') air.push(cue('whip_raise', .1, .5, Math.round(Math.max(0, (e.lead ?? 60) / 60 - WHIP_RAISE) * 1000) / 1000, whipRate(e.guard)));
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', 1, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') {
       if (!bone) impacts.push(cue('death_voice', finisher === 'quietOne' ? .28 : .45, .1, .03));

@@ -94,6 +94,10 @@ export const CUE_PROBES: { name: string; events: CombatEvent[]; presentation?: D
   { name: 'blocked-perfect', events: [at('Blocked', { target: 1, move: 'light_right', stamina: 12.5, perfect: true })] },
   { name: 'parried', events: [at('Parried', { target: 1, move: 'light_right' })] },
   { name: 'guard-broken', events: [at('GuardBroken', { target: 1, move: 'riposte', damage: 24, location: 'torso' })] },
+  // The wall whip (#511): the lash and its tell, so both are on the phone measure. Guard 2 (rate .988, the middle of the six
+  // voices); lead 60 is a first lash, so the raise lands .6 s in and ends on the lash tick.
+  { name: 'whipped', events: [at('Whipped', { actor: 0, target: 0, damage: 2, guard: 2 })] },
+  { name: 'whip-raised', events: [at('WhipRaised', { actor: 0, target: 0, lead: 60, guard: 2 })] },
   { name: 'guard', events: [at('ActionStarted', { action: 'guard' })] },
   { name: 'parry-attempt', events: [at('ActionStarted', { action: 'parry' })] },
   { name: 'feint', events: [at('ActionStarted', { action: 'feint' })] },
