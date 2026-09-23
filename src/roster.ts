@@ -9,8 +9,7 @@ export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith';
 // Approved content recipes. Body names refer to existing offline appearance presets/GLBs;
 // archetypes own combat tuning in moves.ts. Adding an individual must not add AI branches.
 export const ROSTER = {
-  // carries: loot pieces he wears in every fight, at every rung (presentation only; the rules are Combat's GuardProfile). Strategy (A), 2026-09-23: the scutum.
-  veteran: { name: 'the Centurion', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'gladius', carries: ['veteran.Shield'] },
+  veteran: { name: 'the Centurion', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'trident' },
   pitborn: { name: 'the Pitborn', body: 'pitborn', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver' },
   goblin: { name: 'the Goblin', body: 'goblin', rig: 'goblin', archetype: 'goblin', weapon: 'knife' },
   nightborn: { name: 'the Nightborn', body: 'nightborn', rig: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
@@ -26,7 +25,7 @@ export const ROSTER = {
   // Owner 2026-09-20: Dwarf kills were landing plain. Reconstructed bodies list only finishers validated on that body; the
   // Dwarf rig carries every finisher clip and each rotation outcome below was captured on him by the finisher harness.
   dwarf: { name: 'the Dwarf', body: 'dwarf', rig: 'hero', archetype: 'dwarf', weapon: 'warhammer', finishers: ['splitCrown', 'decapitation', 'runThrough', 'opened', 'plainDeath'] },   // quietOne (picker-only) failed its spray check on him — not listed
-} as const satisfies Record<string, { name: string; body: string; rig: RigId; archetype: string; weapon: WeaponId; carries?: readonly string[]; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
+} as const satisfies Record<string, { name: string; body: string; rig: RigId; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
   const recipe = ROSTER[id];
