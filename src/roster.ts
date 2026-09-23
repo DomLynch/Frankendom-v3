@@ -10,7 +10,7 @@ export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith';
 // archetypes own combat tuning in moves.ts. Adding an individual must not add AI branches.
 export const ROSTER = {
   // carries: loot pieces he wears in every fight, at every rung (presentation only; the rules are Combat's GuardProfile). Strategy (A), 2026-09-23: the scutum.
-  veteran: { name: 'the Centurion', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'trident', carries: ['veteran.Shield'] },
+  veteran: { name: 'the Centurion', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'gladius', carries: ['veteran.Shield'] },
   pitborn: { name: 'the Pitborn', body: 'pitborn', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver' },
   goblin: { name: 'the Goblin', body: 'goblin', rig: 'goblin', archetype: 'goblin', weapon: 'knife' },
   nightborn: { name: 'the Nightborn', body: 'nightborn', rig: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
