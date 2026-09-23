@@ -25,6 +25,9 @@ export const ROSTER = {
   // Owner 2026-09-20: Dwarf kills were landing plain. Reconstructed bodies list only finishers validated on that body; the
   // Dwarf rig carries every finisher clip and each rotation outcome below was captured on him by the finisher harness.
   dwarf: { name: 'the Dwarf', body: 'dwarf', rig: 'hero', archetype: 'dwarf', weapon: 'warhammer', finishers: ['splitCrown', 'decapitation', 'runThrough', 'opened', 'plainDeath'] },   // quietOne (picker-only) failed its spray check on him — not listed
+  // The Witch (Brief 16, beta on Dom's word 2026-09-23): a TRELLIS.2 reconstruction fitted to the Veteran's v1 rig (creatures.py
+  // `witch`), on the trident's polearm family until the Weapons lane's bladed staff lands. finishers: [] until each is measured on her.
+  witch: { name: 'the Witch', body: 'witch', rig: 'hero', archetype: 'witch', weapon: 'trident', finishers: [] },
 } as const satisfies Record<string, { name: string; body: string; rig: RigId; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
