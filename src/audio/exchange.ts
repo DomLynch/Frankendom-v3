@@ -1,6 +1,6 @@
 import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../duel.ts';
 import type { DeathPresentation } from './cues.ts';
-import { RULES } from '../moves.ts';
+import { OPPONENTS, RULES } from '../moves.ts';
 
 // The fixed scripted exchange every audio iteration is judged on: both fighters are driven by hand through the real
 // simulation (no AI), so the same beats land on the same ticks and BEFORE/AFTER renders are like-for-like. The warden
@@ -12,7 +12,7 @@ const WARDEN_HEALTH = 80;   // 11 + 11 + 18 + 24 + 4 = 68 dealt before the charg
 export const forward = (): Intent['move'] => ({ x: 0, z: -1, yaw: 0, run: false });
 
 export function scriptExchange(): Exchange {
-  let duel: Duel = initialDuel();
+  let duel: Duel = initialDuel({ ...OPPONENTS.veteran, weapon: 'trident' });   // the ruler stays the trident Veteran it was measured on: the Centurion's gladius (#547) stalls the script at tick 1003
   duel = { ...duel, fighters: [duel.fighters[0], { ...duel.fighters[1], health: WARDEN_HEALTH }] };
   const ticks: Exchange['ticks'] = [], beats: Beat[] = [];
   const intents: [Intent, Intent] = [idleIntent(), idleIntent()];
