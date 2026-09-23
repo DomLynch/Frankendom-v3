@@ -34,7 +34,7 @@ export const ROSTER = {
   // BUILD.knight's 1.18 (build-creatures.mjs knight), the reference's baked maul cut away. He carries the MAUL, drawn
   // from his own rebuild on Weapons' hero-rig Maul_* family (#572). Archetype `knight` is the Executioner's row copied
   // verbatim at his own scale until Combat's battery sets his own. Last rung, so no existing career shifts.
-  knight: { name: 'the Knight', body: 'knight', rig: 'hero', archetype: 'knight', weapon: 'maul', finishers: ['plainDeath'], hold: true },   // finishers: none validated on this body yet (the Dwarf rule); the harness pass adds them
+  knight: { name: 'the Knight', body: 'knight', rig: 'hero', archetype: 'knight', weapon: 'maul', finishers: ['plainDeath'] },   // finishers: none validated on this body yet (the Dwarf rule); the harness pass adds them
   // The Witch (Brief 16, beta on Dom's word 2026-09-23): a TRELLIS.2 reconstruction fitted to the Veteran's v1 rig (creatures.py
   // `witch`), on the trident's polearm family until the Weapons lane's bladed staff lands. finishers: [] until each is measured on her.
   witch: { name: 'the Witch', body: 'witch', rig: 'hero', archetype: 'witch', weapon: 'trident', finishers: [] },
