@@ -16,7 +16,7 @@ export const ROSTER = {
   executioner: { name: 'the Executioner', body: 'executioner', rig: 'hero', archetype: 'executioner', weapon: 'scythe' },
   // The Knight (Brief 17, beta on the owner's word 2026-09-23). The entry lands first because his donor build reads it
   // (scripts/warrior-recipe.mjs); until his own body is packed he stands in the Executioner's, with that file's baked scythe.
-  knight: { name: 'the Knight', body: 'executioner', rig: 'hero', archetype: 'executioner', weapon: 'scythe' },
+  knight: { name: 'the Knight', body: 'executioner', rig: 'hero', archetype: 'knight', weapon: 'scythe' },
   // hold: built and kept, but off the beta ladder and out of the beta bundle until after beta. Owner, 2026-09-20: Minotaur and
   // Werewolf are Season 2; Wraith and Skeleton held on the lead's reading of the same beta freeze (one flag each to reverse).
   // A held recipe stays a valid OpponentId so saved encounters still resolve (ladder.ts falls back).
