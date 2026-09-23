@@ -59,5 +59,49 @@
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "note": "Owner picked it 2026-09-22 (candidate J of three CC0 freesound hits; \"this is good i like it\"). hit_flesh variant at pitch 1: the strike from 0 s, .62 s (tail is under -34 dBFS by .75 s).",
     "retrieved": "2026-09-22"
+  },
+  "fleshslice": {
+    "page": "https://freesound.org/people/NeoSpica/sounds/504615/",
+    "url": "https://cdn.freesound.org/previews/504/504615_7704891-hq.mp3",
+    "sha256": "f8e3d47aa24053707ac879fbb1c2760d577ee56ba8b9869ddf09eadafcdc4bed",
+    "title": "Slicing through flesh",
+    "author": "NeoSpica",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Owner picked it 2026-09-23 (candidate B of twelve CC0 flesh landings, \"these are fine\"). hit_flesh variant at pitch 1: the take from 0.13 s, 0.75 s.",
+    "retrieved": "2026-09-23"
+  },
+  "bloodyblade": {
+    "page": "https://freesound.org/people/Kreastricon62/sounds/323525/",
+    "url": "https://cdn.freesound.org/previews/323/323525_4336114-hq.mp3",
+    "sha256": "1ec4bb7ec3e44484420f5aef4bcae592e1188163b60ca37b656a5c28587a3b7f",
+    "title": "Bloody Blade.wav",
+    "author": "Kreastricon62",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Owner picked it 2026-09-23 (candidate C of twelve CC0 flesh landings, \"these are fine\"). hit_flesh variant at pitch 1: the take from 0.07 s, 0.6 s.",
+    "retrieved": "2026-09-23"
+  },
+  "messystab": {
+    "page": "https://freesound.org/people/Logicogonist/sounds/811118/",
+    "url": "https://cdn.freesound.org/previews/811/811118_3797507-hq.mp3",
+    "sha256": "be244d2624cee30191b413d6edee212ae3e9f2916af589c0d4dc69a906884bb1",
+    "title": "messy stabber 1",
+    "author": "Logicogonist",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Owner picked it 2026-09-23 (candidate H of twelve CC0 flesh landings, \"these are fine\"). hit_flesh variant at pitch 1: the take from 4.23 s, 0.7 s.",
+    "retrieved": "2026-09-23"
+  },
+  "meatysplosh": {
+    "page": "https://freesound.org/people/magnuswaker/sounds/528834/",
+    "url": "https://cdn.freesound.org/previews/528/528834_11537497-hq.mp3",
+    "sha256": "2cd6428e8f2e06524bc621bd20b8bd200c72ed5bc27fb401d2d81772636c28f1",
+    "title": "Meaty Splosh",
+    "author": "magnuswaker",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Owner picked it 2026-09-23 (candidate J of twelve CC0 flesh landings, \"these are fine\"). hit_flesh variant at pitch 1: the take from 0.04 s, 0.7 s.",
+    "retrieved": "2026-09-23"
   }
 }
