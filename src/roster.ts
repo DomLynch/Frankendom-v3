@@ -25,6 +25,9 @@ export const ROSTER = {
   // Owner 2026-09-20: Dwarf kills were landing plain. Reconstructed bodies list only finishers validated on that body; the
   // Dwarf rig carries every finisher clip and each rotation outcome below was captured on him by the finisher harness.
   dwarf: { name: 'the Dwarf', body: 'dwarf', rig: 'hero', archetype: 'dwarf', weapon: 'warhammer', finishers: ['splitCrown', 'decapitation', 'runThrough', 'opened', 'plainDeath'] },   // quietOne (picker-only) failed its spray check on him — not listed
+  // Brief 15 (Dom, 2026-09-23: into beta now): a Norse woman on the realistic female body, reference A (#498), the gladius. Her archetype
+  // is a placeholder copy of the Pitborn's profile until Combat's retune (moves.ts ARCHETYPES.shieldmaiden).
+  shieldmaiden: { name: 'the Shieldmaiden', body: 'shieldmaiden', rig: 'hero', archetype: 'shieldmaiden', weapon: 'gladius' },
 } as const satisfies Record<string, { name: string; body: string; rig: RigId; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
 export type OpponentId = keyof typeof ROSTER;
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
