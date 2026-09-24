@@ -53,7 +53,9 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
         if (finisher === 'splitCrown') impacts.push(cue('bone_crack', .65, .07, (RULES.death / 60) / .75 * .045));
       }
     }
-    else if (e.type === 'Charged') air.push(cue('charge', .1, .4));
+    // Strategy 2026-09-24: the opponent's charge is her own cue, so the sound means "she is charging". Actor 1 is always the
+    // opponent (the player is actor 0), the same convention `bone` reads above. A little louder and further back than yours.
+    else if (e.type === 'Charged') air.push(e.actor === 1 ? cue('charge_foe', .12, .5) : cue('charge', .1, .4));
     else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .09, .12) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .18, .18) : cue('whoosh_light', .12, .12));
     else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .2, .3));
     else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('roll', .12, .12));
