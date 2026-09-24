@@ -7,7 +7,7 @@ import { bellSamples } from './bell.ts';
 
 // loiter: the wall-hug level, 0..1 — the larger fighter's `loiter / RULES.wall.loiter.ticks` (Brief 13): the crowd turns on
 // whoever hugs the wall, a bed that swells with it and drops the moment he leaves the band or swings (loiter resets to 0).
-export type ArenaFrame = { match: number; ended: boolean; tick: number; opponent?: OpponentId; drawing?: boolean; loiter?: number };
+export type ArenaFrame = { match: number; ended: boolean; tick: number; opponent?: OpponentId; drawing?: boolean; loiter?: number; holding?: boolean };   // holding: the opponent's swing is parked in its chamber (feedback.ts cuts her rising charge when it goes false)
 const URLS = {
   opus: new URL('../assets/arena-audio/arena.ogg', import.meta.url).href,
   aac: new URL('../assets/arena-audio/arena.m4a', import.meta.url).href,
