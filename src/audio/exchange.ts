@@ -85,6 +85,9 @@ export const CUE_PROBES: { name: string; events: CombatEvent[]; presentation?: D
   { name: 'attack-active', events: [at('AttackActive', { move: 'light_right' })] },
   { name: 'charging', events: [at('Charging', { move: 'heavy_overhead' })] },
   { name: 'charged', events: [at('Charged', { move: 'heavy_overhead' })] },
+  // The opponent's charge (#678) answers only actor 1; the actor-0 'charging' probe above is silent, so without this row it
+  // never reached the phone measure. Its hold (charge.max, .9 s) ends inside PROBE_LENGTH.
+  { name: 'charge-foe', events: [at('Charging', { actor: 1, move: 'heavy_overhead' })] },
   { name: 'hit-light', events: [at('Hit', { target: 1, move: 'light_right', damage: 11, location: 'torso' })] },
   { name: 'hit-heavy', events: [at('Hit', { target: 1, move: 'heavy_overhead', damage: 18, location: 'torso' })] },
   { name: 'hit-riposte', events: [at('Hit', { target: 1, move: 'riposte', damage: 24, location: 'torso' })] },
