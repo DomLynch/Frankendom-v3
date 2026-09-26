@@ -39,6 +39,8 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // at .1 it sits 8.4 dB under the lash (−37.6), between a heavy swing and a light hit.
     else if (e.type === 'Whipped') impacts.push(cue('whip', .85, .25, undefined, whipRate(e.guard)));
     else if (e.type === 'WhipRaised') air.push(cue('whip_raise', .1, .5, Math.round(Math.max(0, (e.lead ?? 60) / 60 - WHIP_RAISE) * 1000) / 1000, whipRate(e.guard)));
+    // Perfect block .55 (SCOPE 7 change B, measured 2026-09-26): its brighter, longer ring at 1 read −26.7 phone LUFS, over the
+    // parry; .55 sets it at −30.1, between a block (−30.5) and a parry (−29.7).
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', .55, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') {
       if (!bone) impacts.push(cue('death_voice', finisher === 'quietOne' ? .28 : .45, .1, .03));
