@@ -66,7 +66,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // Charging and climbs for the full charge.max, the tick the sim forces the swing; feedback.ts fades it the tick she releases,
     // feints or is staggered. Charging also fires for a merely chambered light, so only a move that charges starts it. Her
     // Charged adds nothing — the climb is already sounding. Yours stays the one-shot gather on your Charged.
-    else if (e.type === 'Charging' && e.actor === 1 && MOVES[e.move as MoveId]?.charges) air.push({ ...cue('charge_foe', .12, .5), hold: RULES.charge.max / 60 });
+    else if (e.type === 'Charging' && e.actor === 1 && MOVES[e.move as MoveId]?.charges) air.push({ ...cue('charge_foe', .07, .5), hold: RULES.charge.max / 60 });
     else if (e.type === 'Charged' && e.actor !== 1) air.push(cue('charge', .1, .4));
     else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .09, .12) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .18, .18) : cue('whoosh_light', .12, .12));
     else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .2, .3));
