@@ -41,14 +41,14 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     else if (e.type === 'WhipRaised') air.push(cue('whip_raise', .1, .5, Math.round(Math.max(0, (e.lead ?? 60) / 60 - WHIP_RAISE) * 1000) / 1000, whipRate(e.guard)));
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', 1, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') {
-      if (!bone) impacts.push(cue('death_voice', finisher === 'quietOne' ? .28 : .45, .1, .03));
+      if (!bone) impacts.push(cue('death_voice', .45, .1, .03));
       // The impaled corpse kneels and stays on the blade; do not invent a floor slam for it.
-      impacts.push(finisher === 'runThrough' ? cue('roll', .2, .12, .85) : finisher === 'opened' && gore ? cue('kill', .65, .25, 2.1) : finisher === 'quietOne' ? cue('kill', .4, .15, 2.6) : cue('kill', .65, .25, finisher ? 1.4 : .65));
+      impacts.push(finisher === 'runThrough' ? cue('roll', .2, .12, .85) : finisher === 'opened' && gore ? cue('kill', .65, .25, 2.1) : cue('kill', .65, .25, finisher ? 1.4 : .65));
       if (finisher === 'opened' && gore) impacts.push(cue('kill', .25, .12, 2.68));
       if (bone) impacts.push(cue('bone_crack', .5, .12, .65));
       if (!bone && gore && e.move !== 'kick' && deaths.length === 1) {
-        const stab = finisher !== 'quietOne' && finisher !== 'opened' && (finisher === 'runThrough' || e.move === 'thrust' || e.move === 'riposte' || (e.weapon ?? presentation?.weapons[e.actor]) === 'estoc');
-        impacts.push(cue(stab ? 'flesh_stab' : 'flesh_cut', finisher === 'quietOne' ? .28 : .45, .05));
+        const stab = finisher !== 'opened' && (finisher === 'runThrough' || e.move === 'thrust' || e.move === 'riposte' || (e.weapon ?? presentation?.weapons[e.actor]) === 'estoc');
+        impacts.push(cue(stab ? 'flesh_stab' : 'flesh_cut', .45, .05));
         if (finisher === 'decapitation' || finisher === 'opened') impacts.push(cue('flesh_tear', .55, .08, finisher === 'opened' ? .144 : severAt));
         if (finisher === 'splitCrown') impacts.push(cue('bone_crack', .65, .07, (RULES.death / 60) / .75 * .045));
       }
@@ -66,7 +66,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     else if (e.type === 'ActionStarted' && e.action === 'backstep') air.push(cue('backstep', .09, .08));
   }
   // The crowd backs either winner. A double fall has no winner and gets one startled gasp, never two cheers.
-  if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : finisher === 'quietOne' ? cue('crowd_gasp', .16, .12, 2.8) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
+  if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
   return [...impacts, ...air].slice(0, deaths.length ? 8 : 4).sort((a, b) => (a.delay ?? 0) - (b.delay ?? 0));
 }
 
