@@ -90,6 +90,7 @@ export const CUE_PROBES: { name: string; events: CombatEvent[]; presentation?: D
   { name: 'charge-foe', events: [at('Charging', { actor: 1, move: 'heavy_overhead' })] },
   { name: 'hit-light', events: [at('Hit', { target: 1, move: 'light_right', damage: 11, location: 'torso' })] },
   { name: 'hit-heavy', events: [at('Hit', { target: 1, move: 'heavy_overhead', damage: 18, location: 'torso' })] },
+  { name: 'hit-guarded', events: [at('Hit', { target: 1, move: 'light_right', damage: 11, location: 'torso', guarded: true })] },
   { name: 'hit-riposte', events: [at('Hit', { target: 1, move: 'riposte', damage: 24, location: 'torso' })] },
   { name: 'hit-kick', events: [at('Hit', { target: 1, move: 'kick', damage: 4, location: 'torso' })] },
   { name: 'hit-thrust', events: [at('Hit', { target: 1, move: 'thrust', damage: 14, location: 'torso' })] },
