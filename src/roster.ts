@@ -29,7 +29,7 @@ export const ROSTER = {
   // the player's longsword and clips (build-creatures.mjs plaguedoctor). Archetype `plagueDoctor` is the Nightborn's row
   // copied verbatim (the brief's closest fit to poke-and-withdraw) until Combat's battery sets his own. Last rung, so no existing career shifts. Id has no underscore:
   // loot_claims.opponent is ^[a-z]{1,32}$ (supabase/migrations/202609230001_server_awards.sql).
-  plaguedoctor: { name: 'the Plague Doctor', body: 'plaguedoctor', rig: 'hero', archetype: 'plagueDoctor', weapon: 'longsword', finishers: ['plainDeath'] },   // finishers: none validated on this body yet (the Dwarf rule); the harness pass adds them
+  plaguedoctor: { name: 'the Plague Doctor', body: 'plaguedoctor', rig: 'hero', archetype: 'plagueDoctor', weapon: 'estoc', finishers: ['plainDeath'] },   // finishers: none validated on this body yet (the Dwarf rule); the harness pass adds them
   // The Knight (Brief 17; owner 2026-09-23 via Lead and Strategy: launch → beta). A TRELLIS.2 body on a donor of the hero rig at
   // BUILD.knight's 1.18 (build-creatures.mjs knight), the reference's baked maul cut away. He carries the MAUL, drawn
   // from his own rebuild on Weapons' hero-rig Maul_* family (#572). Archetype `knight` is the Executioner's row copied
