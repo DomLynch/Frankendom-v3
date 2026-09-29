@@ -55,3 +55,16 @@ export function bellSamples(rate: number): Float32Array {
   const gain = Math.min(.45 / peak, .16 / Math.sqrt(square / data.length));   // the −6 dBFS wall in bell-start-check is the ceiling: .45 × play gain .9 + the fallback draw swing stays under it
   return data.map(v => v * gain);
 }
+
+// Built once per page while the main thread is idle, never on the Draw tap: synthesising it inline cost ~90 ms of a frame on a
+// ×4-throttled phone (Hero Look's trace, 2026-09-29). Fixed 48 kHz so it needs no AudioContext; a buffer at 48 kHz plays on any.
+// Until it is built, preparedBell() is undefined and the opening bell is skipped for that match (Strategy 2026-09-29).
+export const BELL_RATE = 48000;
+let prepared: Float32Array | undefined, preparing: Promise<void> | undefined;
+export function prepareBell(): Promise<void> {
+  return preparing ??= new Promise<void>(resolve => {
+    const build = () => { prepared = bellSamples(BELL_RATE); resolve(); };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(build, { timeout: 2000 }); else setTimeout(build, 0);
+  });
+}
+export const preparedBell = () => prepared;

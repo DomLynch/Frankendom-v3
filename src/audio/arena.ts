@@ -3,7 +3,7 @@ import type { CombatEvent } from '../combat.ts';
 import { nextVariant, seeded } from './cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { fetchAsset, nextTask, pageUnloading, spriteFormats, type Format } from './sprite.ts';
-import { bellSamples } from './bell.ts';
+import { BELL_RATE, preparedBell } from './bell.ts';
 
 // loiter: the wall-hug level, 0..1 — the larger fighter's `loiter / RULES.wall.loiter.ticks` (Brief 13): the crowd turns on
 // whoever hugs the wall, a bed that swells with it and drops the moment he leaves the band or swings (loiter resets to 0).
@@ -24,7 +24,7 @@ export async function loadArena(context: BaseAudioContext, formats: Format[] = s
 
 // Independent voices/RNG: crowd cannot steal combat voices, change Foley variants or inherit the fatal gain boost.
 const ARENA_LEVEL = .4;   // owner 2026-09-20: the audience down with the rest of the mix (−30 % was inaudible on the phone: −3 dB, and the finish limiter ate it); the bell is exempt so it leads
-export function createArenaAudio(context: BaseAudioContext, destination: AudioNode, now: () => number) {
+export function createArenaAudio(context: BaseAudioContext, destination: AudioNode, now: () => number, bellSource: () => Float32Array | undefined = preparedBell) {
   type Voice = { source: AudioBufferSourceNode; until: number };
   const voices = new Set<Voice>(), last: Partial<Record<ArenaCue, number>> = {};
   let buffer: AudioBuffer | null = null, match: number | undefined, random = seeded(1), bell: AudioBuffer | undefined;
@@ -62,9 +62,9 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
   }
   function play(name: ArenaCue, cueGain: number, delay = 0) {
     const gain = name === 'bell' ? cueGain : cueGain * ARENA_LEVEL;
-    if (name === 'bell' && !buffer && !bell) {
-      const samples = bellSamples(context.sampleRate); bell = context.createBuffer(1, samples.length, context.sampleRate); bell.getChannelData(0).set(samples);
-    }
+    // No arena bank yet: the idle-built bell (bell.ts), or none this match. Never synthesised here, on the Draw tap.
+    const samples = name === 'bell' && !buffer && !bell ? bellSource() : undefined;
+    if (samples) { bell = context.createBuffer(1, samples.length, BELL_RATE); bell.getChannelData(0).set(samples); }
     const audio = buffer ?? (name === 'bell' ? bell : null);
     if (!audio || voices.size >= 6) return 0;
     const variants = ARENA_MANIFEST[name], index = nextVariant(random, variants.length, last[name] ?? -1); last[name] = index;
