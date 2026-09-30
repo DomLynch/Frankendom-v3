@@ -27,7 +27,9 @@ export function playGate(context: BaseAudioContext, buffer: AudioBuffer, destina
     duration: buffer.duration,
     stop() {
       if (stopped) return; stopped = true;
-      const at = Math.max(context.currentTime, time);
+      // Not started yet: silence it outright and cancel it at its start time; a fade would still play a tick of the winch.
+      if (context.currentTime < time) { envelope.gain.value = 0; try { source.stop(time); } catch { /* ended */ } return; }
+      const at = context.currentTime;
       envelope.gain.cancelScheduledValues(at); envelope.gain.setValueAtTime(gain, at); envelope.gain.linearRampToValueAtTime(0, at + GATE_CUT);
       try { source.stop(at + GATE_CUT + .01); } catch { /* ended */ }
     },
