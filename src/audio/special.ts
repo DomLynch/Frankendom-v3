@@ -5,8 +5,10 @@
 // Each is its own small file because the sprite and the arena bank have no headroom. They play through the gate's player: same fade-out on a skipped beat.
 import { fetchAsset, nextTask, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { playGate } from './gate.ts';
-export const SPECIAL_CUES = ['charge', 'quake', 'tithe', 'redwind', 'hades', 'nyx', 'fistful', 'gone', 'liars', 'cracking', 'ashfall', 'windwall', 'baying', 'longshadow', 'harvest', 'theword', 'threeblows', 'rimshake', 'baredface', 'thering', 'aegis', 'avalon', 'foretold', 'theprice', 'plagueflies', 'poisonstain', 'lastbreath', 'thesling', 'wrath', 'storm'] as const;
+export const SPECIAL_CUES = ['charge', 'quake', 'tithe', 'redwind', 'hades', 'nyx', 'fistful', 'gone', 'liars', 'cracking', 'ashfall', 'windwall', 'baying', 'longshadow', 'harvest', 'theword', 'threeblows', 'rimshake', 'baredface', 'thering', 'aegis', 'avalon', 'foretold', 'theprice', 'plagueflies', 'poisonstain', 'lastbreath', 'thesling', 'wrath', 'storm', 'cuts', 'wake', 'stirring', 'tempo', 'pulse', 'drag', 'swing'] as const;
 export type SpecialCue = typeof SPECIAL_CUES[number];
+// The cue each `?special=<id>` preview plays (special-look.ts SPECIAL_TESTS / special-modes.ts SPECIAL_MODES): one line per move, so a lane's registry entry is not touched. A fight is never told.
+export const SPECIAL_CUE_OF: Readonly<Record<string, SpecialCue>> = { tithe: 'tithe', cuts: 'cuts', wake: 'wake', stirring: 'stirring', tempo: 'tempo', pulse: 'pulse', drag: 'drag', swing: 'swing' };
 const URLS: Record<SpecialCue, Record<Format, string>> = {
   charge: { opus: new URL('../assets/special-audio/charge.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/charge.m4a', import.meta.url).href },
   quake: { opus: new URL('../assets/special-audio/quake.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/quake.m4a', import.meta.url).href },
@@ -38,6 +40,13 @@ const URLS: Record<SpecialCue, Record<Format, string>> = {
   thesling: { opus: new URL('../assets/special-audio/thesling.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/thesling.m4a', import.meta.url).href },
   wrath: { opus: new URL('../assets/special-audio/wrath.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/wrath.m4a', import.meta.url).href },
   storm: { opus: new URL('../assets/special-audio/storm.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/storm.m4a', import.meta.url).href },
+  cuts: { opus: new URL('../assets/special-audio/cuts.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/cuts.m4a', import.meta.url).href },
+  wake: { opus: new URL('../assets/special-audio/wake.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/wake.m4a', import.meta.url).href },
+  stirring: { opus: new URL('../assets/special-audio/stirring.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/stirring.m4a', import.meta.url).href },
+  tempo: { opus: new URL('../assets/special-audio/tempo.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/tempo.m4a', import.meta.url).href },
+  pulse: { opus: new URL('../assets/special-audio/pulse.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/pulse.m4a', import.meta.url).href },
+  drag: { opus: new URL('../assets/special-audio/drag.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/drag.m4a', import.meta.url).href },
+  swing: { opus: new URL('../assets/special-audio/swing.ogg', import.meta.url).href, aac: new URL('../assets/special-audio/swing.m4a', import.meta.url).href },
 };
 // Fetch and decode the first format that works; null when none does (or the page is leaving), and the special plays in silence.
 export async function loadSpecial(cue: SpecialCue, context: BaseAudioContext, formats: Format[] = spriteFormats(), fetcher: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
