@@ -2,7 +2,7 @@ import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CombatEvent } from '../combat.ts';
 import { nextVariant, seeded } from './cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
-import { fetchAsset, nextTask, pageUnloading, spriteFormats, type Format } from './sprite.ts';
+import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { BELL_RATE, preparedBell } from './bell.ts';
 
 // loiter: the wall-hug level, 0..1 — the larger fighter's `loiter / RULES.wall.loiter.ticks` (Brief 13): the crowd turns on
@@ -13,13 +13,7 @@ const URLS = {
   aac: new URL('../assets/arena-audio/arena.m4a', import.meta.url).href,
 };
 export async function loadArena(context: BaseAudioContext, formats: Format[] = spriteFormats(), fetcher: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
-  for (const [attempt, format] of formats.entries()) {
-    if (attempt) await nextTask();
-    if (leaving()) break;   // never start the other codec while the page unloads (see sprite.ts)
-    try { const response = await fetcher(URLS[format]); if (response.ok) return await context.decodeAudioData(await response.arrayBuffer()); }
-    catch { /* Optional ambience: try the other codec, then leave combat alone. */ }
-  }
-  return null;
+  return loadFirst(URLS, context, formats, fetcher, leaving);
 }
 
 // Independent voices/RNG: crowd cannot steal combat voices, change Foley variants or inherit the fatal gain boost.
