@@ -1,4 +1,4 @@
-import type { CombatEvent } from '../combat.ts';
+import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import type { Finish } from '../duel.ts';
 import { MOVES, RULES, type MoveId, type WeaponId } from '../moves.ts';
 import { selectFinisher, FINISHER_POSE, type FinisherId } from '../finishers.ts';
@@ -15,7 +15,7 @@ const cue = (name: CueName, gain: number, room: number, delay?: number, rate?: n
 const WHIP_RAISE = .4;   // seconds of the raise cue — the lash tick is what it has to land on, so `lead` becomes its delay
 const whipRate = (guard?: number) => guard === undefined ? 1 : .94 + Math.min(5, Math.max(0, guard)) * .024;
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
-export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId): Cue[] {
+export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = []): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
   const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;
   const selected = pick ? presentation?.override ?? pick : null;
@@ -68,11 +68,17 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // Charged adds nothing — the climb is already sounding. Yours stays the one-shot gather on your Charged.
     else if (e.type === 'Charging' && e.actor === 1 && MOVES[e.move as MoveId]?.charges) air.push({ ...cue('charge_foe', .07, .5), hold: RULES.charge.max / 60 });
     else if (e.type === 'Charged' && e.actor !== 1) air.push(cue('charge', .1, .4));
+    // Clarity (Lead's brief 2026-10-06), no new sprite bytes. A whiff is a lone swish on the window's close, a lower, slower breath of the swing's
+    // own whoosh: air, never an impact, and no spark (nothing was struck). The opponent's whiff is the same cue: it is your opening.
+    else if (e.type === 'AttackMissed') air.push(cue('whoosh_light', .1, .1, undefined, .8));
     else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .09, .12) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .18, .18) : cue('whoosh_light', .12, .12));
     else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .2, .3));
     else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('roll', .12, .12));
     else if (e.type === 'ActionStarted' && e.action === 'backstep') air.push(cue('backstep', .09, .08));
   }
+  // A cut-off swing (derived in combat.ts clarityOf): a short pitched-up gasp under the hit, so being interrupted sounds unlike being hit
+  // while open. Stand-in voice: the death voice, small and high, until the audio lane records a grunt (then only this line changes).
+  for (const c of clarity) if (c.type === 'AttackInterrupted' && c.actor === 0 && !deaths.length) impacts.push(cue('death_voice', .16, .1, .02, 1.5));
   // The crowd backs either winner. A double fall has no winner and gets one startled gasp, never two cheers.
   if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
   return [...impacts, ...air].slice(0, deaths.length ? 8 : 4).sort((a, b) => (a.delay ?? 0) - (b.delay ?? 0));
