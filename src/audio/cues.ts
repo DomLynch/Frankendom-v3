@@ -15,7 +15,9 @@ const cue = (name: CueName, gain: number, room: number, delay?: number, rate?: n
 const WHIP_RAISE = .4;   // seconds of the raise cue — the lash tick is what it has to land on, so `lead` becomes its delay
 const whipRate = (guard?: number) => guard === undefined ? 1 : .94 + Math.min(5, Math.max(0, guard)) * .024;
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
-export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = []): Cue[] {
+// Dom has not signed off the interrupt voice (he rejected the first grunt, 2026-10-06): the slot is wired and tested but SILENT until he picks. His OK is this one constant.
+export const EFFORT_VOICE = false;
+export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
   const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;
   const selected = pick ? presentation?.override ?? pick : null;
@@ -78,7 +80,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
   }
   // A cut-off swing (derived in combat.ts clarityOf): a short effort grunt under the hit, so being interrupted sounds unlike
   // being hit while open and unlike dying. The foe's is the same cue slower (a deeper chest) and a little quieter.
-  for (const c of clarity) if (c.type === 'AttackInterrupted' && !deaths.length) impacts.push(c.actor === 0 ? cue('effort_voice', .2, .1, .02) : cue('effort_voice', .14, .12, .02, .84));
+  if (voice) for (const c of clarity) if (c.type === 'AttackInterrupted' && !deaths.length) impacts.push(c.actor === 0 ? cue('effort_voice', .2, .1, .02) : cue('effort_voice', .14, .12, .02, .84));
   // The crowd backs either winner. A double fall has no winner and gets one startled gasp, never two cheers.
   if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
   return [...impacts, ...air].slice(0, deaths.length ? 8 : 4).sort((a, b) => (a.delay ?? 0) - (b.delay ?? 0));
