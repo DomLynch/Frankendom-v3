@@ -76,9 +76,9 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('roll', .12, .12));
     else if (e.type === 'ActionStarted' && e.action === 'backstep') air.push(cue('backstep', .09, .08));
   }
-  // A cut-off swing (derived in combat.ts clarityOf): a short pitched-up gasp under the hit, so being interrupted sounds unlike being hit
-  // while open. Stand-in voice: the death voice, small and high, until the audio lane records a grunt (then only this line changes).
-  for (const c of clarity) if (c.type === 'AttackInterrupted' && c.actor === 0 && !deaths.length) impacts.push(cue('death_voice', .16, .1, .02, 1.5));
+  // A cut-off swing (derived in combat.ts clarityOf): a short effort grunt under the hit, so being interrupted sounds unlike
+  // being hit while open and unlike dying. The foe's is the same cue slower (a deeper chest) and a little quieter.
+  for (const c of clarity) if (c.type === 'AttackInterrupted' && !deaths.length) impacts.push(c.actor === 0 ? cue('effort_voice', .2, .1, .02) : cue('effort_voice', .14, .12, .02, .84));
   // The crowd backs either winner. A double fall has no winner and gets one startled gasp, never two cheers.
   if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
   return [...impacts, ...air].slice(0, deaths.length ? 8 : 4).sort((a, b) => (a.delay ?? 0) - (b.delay ?? 0));
