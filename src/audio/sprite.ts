@@ -26,15 +26,17 @@ export const pageUnloading = (): boolean => unloading;
 export const fetchAsset: typeof fetch = (input, init) => fetch(input, { ...init, signal: aborter?.signal });
 export const nextTask = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 // Fetch and decode the first format that works; null when none does (or the page is leaving), and the caller keeps its fallback.
-export async function loadSprite(context: BaseAudioContext, formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
+// The one codec-fallback loop: every audio loader (sprite, arena, gate, duel, special) is this call with its own URL map.
+export async function loadFirst(urls: Record<Format, string>, context: BaseAudioContext, formats: Format[] = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
   for (const [attempt, format] of formats.entries()) {
     if (attempt) await nextTask();
-    if (leaving()) break;
+    if (leaving()) break;   // never start the other codec while the page unloads
     try {
-      const response = await fetchImpl(SPRITE_URLS[format]);
+      const response = await fetchImpl(urls[format]);
       if (!response.ok) continue;
       return await context.decodeAudioData(await response.arrayBuffer());
     } catch { /* try the next format */ }
   }
   return null;
 }
+export const loadSprite = (context: BaseAudioContext, formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> => loadFirst(SPRITE_URLS, context, formats, fetchImpl, leaving);
