@@ -62,7 +62,7 @@ export function scriptExchange(): Exchange {
   until(() => player().phase === 'ready' && warden().phase === 'ready');
   // kick: the warden guards; a close kick opens it.
   rest(40); intents[1].guard = true;
-  duel = { ...duel, fighters: [duel.fighters[0], { ...duel.fighters[1], posture: 0, postureRest: 0 }] };   // RV29 (posture.hold 60): the cuts, block and parry above now fill his posture to a break, and the finishing heavy would be a critical; the scripted exchange keeps its charged heavy by starting the kick with a settled posture
+  until(() => warden().posture <= 50, 1500);   // RV29 (posture.hold 60): the cuts, block and parry above leave his posture high enough that the kick would break it (the finish would be a critical, not the charged heavy): he stands and recovers under the real drain first
   intents[0].move = forward(); until(() => distance(player().body, warden().body) <= 1.0); intents[0].move = { x: 0, z: 0, yaw: 0, run: false };
   press(0, 'kick'); until(() => seen('Hit', 0)); beat('kick');
   intents[1].guard = false;
