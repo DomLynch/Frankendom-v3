@@ -62,6 +62,7 @@ export function scriptExchange(): Exchange {
   until(() => player().phase === 'ready' && warden().phase === 'ready');
   // kick: the warden guards; a close kick opens it.
   rest(40); intents[1].guard = true;
+  until(() => warden().posture <= 50, 1500);   // RV29 (posture.hold 60): the cuts, block and parry above leave his posture high enough that the kick would break it (the finish would be a critical, not the charged heavy): he stands and recovers under the real drain first
   intents[0].move = forward(); until(() => distance(player().body, warden().body) <= 1.0); intents[0].move = { x: 0, z: 0, yaw: 0, run: false };
   press(0, 'kick'); until(() => seen('Hit', 0)); beat('kick');
   intents[1].guard = false;
