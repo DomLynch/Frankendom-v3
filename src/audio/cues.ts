@@ -19,7 +19,7 @@ const whipRate = (guard?: number) => guard === undefined ? 1 : .94 + Math.min(5,
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
 // Dom has not signed off the interrupt voice (he rejected the first grunt, 2026-10-06): the slot is wired and tested but SILENT until he picks. His OK is this one constant.
 export const EFFORT_VOICE = false;
-export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE, breakThud = false, defence = false): Cue[] {
+export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE, defence = false): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
   const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;
   const selected = pick ? presentation?.override ?? pick : null;
@@ -28,7 +28,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
   const severAt = (RULES.death / 60) / .75 * .05; // same 5% presentation-clock threshold as the visible decapitation
 
   for (const e of events) {
-    if (breakThud && e.type === 'PostureBroken') impacts.push(cue('bone_crack', .55, .05));   // ?look=breakbeat (break-beat.ts): a dry thud on the break, whoever's posture it was
+    if (e.type === 'PostureBroken') impacts.push(cue('bone_crack', .55, .05));   // a dry thud on the break, whoever's posture it was (Strategy 2026-10-07)
     const bone = e.target === 1 && opponent !== undefined && !hasBlood(opponent);
     // Owner 2026-09-22: flesh wounds and weapon hits down; parry, block and guard break stay as they are. The first pass
     // (1 → .75) barely moved the output — these gains feed the bus compressor (−20 dB, 5:1) before the ceiling, which gives
