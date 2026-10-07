@@ -5,6 +5,7 @@ import { selectFinisher, type FinisherId } from '../finishers.ts';
 import { poseOf, HAMSTRUNG_BEATS } from '../hamstrung.ts';
 import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CueName } from './manifest.ts';
+import { defenceGrade, GRADE_AUDIO } from '../defence-grade.ts';
 
 // Event → cue mapping. Pure data: the simulation's events decide what is heard; gain, room send and pitch spread are per cue.
 // Order matters — the voice limiter serves cues in this order, so impacts come before air.
@@ -18,7 +19,7 @@ const whipRate = (guard?: number) => guard === undefined ? 1 : .94 + Math.min(5,
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
 // Dom has not signed off the interrupt voice (he rejected the first grunt, 2026-10-06): the slot is wired and tested but SILENT until he picks. His OK is this one constant.
 export const EFFORT_VOICE = false;
-export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE, breakThud = false): Cue[] {
+export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE, breakThud = false, defence = false): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
   const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;
   const selected = pick ? presentation?.override ?? pick : null;
@@ -41,6 +42,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
       if (e.guarded) impacts.push(cue('block', .3, .2, undefined, .8));
     }
     else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue(bone ? 'bone_crack' : 'hit_flesh', .55, .2));
+    else if (defence && defenceGrade(e)) impacts.push(...GRADE_AUDIO[defenceGrade(e)!].map((l) => cue(l.name, l.gain, l.room, l.delay, l.rate)));   // ?look=defence (defence-grade.ts): the player's own Parried/Blocked by grade
     else if (e.type === 'Parried') impacts.push(cue('parry', 1, .45));
     // The anti-turtling lash and its tell. WhipRaised carries `lead`, the ticks until the lash, so the raise is delayed to end
     // on the lash tick instead of opening a second of silence before it: 60 ticks before the first lash, 30 before a repeat.
