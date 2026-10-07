@@ -2,7 +2,8 @@ import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import type { Finish } from '../duel.ts';
 import { MOVES, RULES, type MoveId, type WeaponId } from '../moves.ts';
 import { selectFinisher, type FinisherId } from '../finishers.ts';
-import { poseOf, HAMSTRUNG_BEATS } from '../hamstrung.ts';
+import { HAMSTRUNG_BEATS } from '../hamstrung.ts';
+import { poseOf, EXECUTION_BEATS, executionAt } from '../execution.ts';
 import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CueName } from './manifest.ts';
 import { defenceGrade, GRADE_AUDIO } from '../defence-grade.ts';
@@ -34,7 +35,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // (1 → .75) barely moved the output — these gains feed the bus compressor (−20 dB, 5:1) before the ceiling, which gives
     // most of a cue cut back: measured −2.5 dB nominal landed as −1 dB. At .3 the drop is real and targeted (rendered probes,
     // same graph): hit-light −30.1 → −34.2 LUFS-I while blocked stays −29.1, so hits sit 5 dB under the guards, not 1 dB over.
-    if (e.type === 'Hit' && finisher !== 'hamstrung') {   // Hamstrung's blows are timed on the scene (below), not on the killing tick
+    if (e.type === 'Hit' && finisher !== 'hamstrung' && finisher !== 'execution') {   // Hamstrung's and Execution's blows are timed on the scene (below), not on the killing tick
       impacts.push(bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .3, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .3, .3) : cue('hit_flesh', .3, .3));
       // SCOPE 7 change C (Lead 2026-09-25): a blow through a guard held on the wrong side (or a kick into a raised guard) is
       // `guarded` (Combat #750). It lands as a hit, with a quiet glancing scrape of steel under it: the block cue, low and slowed,
@@ -60,6 +61,13 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
         const { knee, back, duration, hold } = HAMSTRUNG_BEATS, kneeAt = knee * duration, backAt = back * duration + hold;
         impacts.push(cue('whoosh_heavy', .18, .18, kneeAt - .2), cue(gore ? 'flesh_cut' : 'hit_heavy', .6, .12, kneeAt), cue('death_voice', .35, .1, kneeAt + .06),
           cue('roll', .24, .12, kneeAt + hold + .65), cue('whoosh_light', .12, .12, backAt - .16), cue(gore ? 'flesh_stab' : 'hit_heavy', .65, .12, backAt));
+        continue;
+      }
+      if (finisher === 'execution') {
+        // The raise's whoosh before the held half-second (it hangs in silence), the cut at the nape, his voice breaking on it, then the body onto the sand.
+        const raiseAt = executionAt(EXECUTION_BEATS.raise), cutAt = executionAt(EXECUTION_BEATS.strike);
+        impacts.push(cue('whoosh_heavy', .18, .18, raiseAt - .25), cue(gore ? 'flesh_cut' : 'hit_heavy', .6, .12, cutAt), cue('death_voice', .35, .1, cutAt + .06),
+          cue('kill', .5, .25, cutAt + .55));
         continue;
       }
       if (!bone) impacts.push(cue('death_voice', .45, .1, .03));
@@ -93,7 +101,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
   // being hit while open and unlike dying. The foe's is the same cue slower (a deeper chest) and a little quieter.
   if (voice) for (const c of clarity) if (c.type === 'AttackInterrupted' && !deaths.length) impacts.push(c.actor === 0 ? cue('effort_voice', .2, .1, .02) : cue('effort_voice', .14, .12, .02, .84));
   // The crowd backs either winner. A double fall has no winner and gets one startled gasp, never two cheers.
-  if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : finisher === 'hamstrung' ? cue('crowd_cheer', .28, .16, HAMSTRUNG_BEATS.back * HAMSTRUNG_BEATS.duration + 2 * HAMSTRUNG_BEATS.hold + .4) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
+  if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : finisher === 'hamstrung' ? cue('crowd_cheer', .28, .16, HAMSTRUNG_BEATS.back * HAMSTRUNG_BEATS.duration + 2 * HAMSTRUNG_BEATS.hold + .4) : finisher === 'execution' ? cue('crowd_cheer', .28, .16, executionAt(EXECUTION_BEATS.strike) + .5) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
   return [...impacts, ...air].slice(0, deaths.length ? 8 : 4).sort((a, b) => (a.delay ?? 0) - (b.delay ?? 0));
 }
 
