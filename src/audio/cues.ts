@@ -1,7 +1,8 @@
 import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import type { Finish } from '../duel.ts';
 import { MOVES, RULES, type MoveId, type WeaponId } from '../moves.ts';
-import { selectFinisher, FINISHER_POSE, type FinisherId } from '../finishers.ts';
+import { selectFinisher, type FinisherId } from '../finishers.ts';
+import { poseOf, HAMSTRUNG_BEATS } from '../hamstrung.ts';
 import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CueName } from './manifest.ts';
 
@@ -17,21 +18,22 @@ const whipRate = (guard?: number) => guard === undefined ? 1 : .94 + Math.min(5,
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
 // Dom has not signed off the interrupt voice (he rejected the first grunt, 2026-10-06): the slot is wired and tested but SILENT until he picks. His OK is this one constant.
 export const EFFORT_VOICE = false;
-export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE): Cue[] {
+export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE, breakThud = false): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
   const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;
   const selected = pick ? presentation?.override ?? pick : null;
-  const finisher = selected && FINISHER_POSE[selected] ? selected : null;
+  const finisher = selected && poseOf(selected) ? selected : null;
   const gore = presentation?.gore !== false;
   const severAt = (RULES.death / 60) / .75 * .05; // same 5% presentation-clock threshold as the visible decapitation
 
   for (const e of events) {
+    if (breakThud && e.type === 'PostureBroken') impacts.push(cue('bone_crack', .55, .05));   // ?look=breakbeat (break-beat.ts): a dry thud on the break, whoever's posture it was
     const bone = e.target === 1 && opponent !== undefined && !hasBlood(opponent);
     // Owner 2026-09-22: flesh wounds and weapon hits down; parry, block and guard break stay as they are. The first pass
     // (1 → .75) barely moved the output — these gains feed the bus compressor (−20 dB, 5:1) before the ceiling, which gives
     // most of a cue cut back: measured −2.5 dB nominal landed as −1 dB. At .3 the drop is real and targeted (rendered probes,
     // same graph): hit-light −30.1 → −34.2 LUFS-I while blocked stays −29.1, so hits sit 5 dB under the guards, not 1 dB over.
-    if (e.type === 'Hit') {
+    if (e.type === 'Hit' && finisher !== 'hamstrung') {   // Hamstrung's blows are timed on the scene (below), not on the killing tick
       impacts.push(bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .3, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .3, .3) : cue('hit_flesh', .3, .3));
       // SCOPE 7 change C (Lead 2026-09-25): a blow through a guard held on the wrong side (or a kick into a raised guard) is
       // `guarded` (Combat #750). It lands as a hit, with a quiet glancing scrape of steel under it: the block cue, low and slowed,
@@ -51,6 +53,13 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // parry; .55 sets it at −30.1, between a block (−30.5) and a parry (−29.7).
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', .55, .35) : cue('block', 1, .35));
     else if (e.type === 'Killed') {
+      if (finisher === 'hamstrung') {
+        // Two blows, each held for the scene's hit-stop: the knee cut (the weapon falls and rolls), then the thrust into the back.
+        const { knee, back, duration, hold } = HAMSTRUNG_BEATS, kneeAt = knee * duration, backAt = back * duration + hold;
+        impacts.push(cue('whoosh_heavy', .18, .18, kneeAt - .2), cue(gore ? 'flesh_cut' : 'hit_heavy', .6, .12, kneeAt), cue('death_voice', .35, .1, kneeAt + .06),
+          cue('roll', .24, .12, kneeAt + hold + .65), cue('whoosh_light', .12, .12, backAt - .16), cue(gore ? 'flesh_stab' : 'hit_heavy', .65, .12, backAt));
+        continue;
+      }
       if (!bone) impacts.push(cue('death_voice', .45, .1, .03));
       // The impaled corpse kneels and stays on the blade; do not invent a floor slam for it.
       impacts.push(finisher === 'runThrough' ? cue('roll', .2, .12, .85) : finisher === 'opened' && gore ? cue('kill', .65, .25, 2.1) : cue('kill', .65, .25, finisher ? 1.4 : .65));
@@ -82,7 +91,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
   // being hit while open and unlike dying. The foe's is the same cue slower (a deeper chest) and a little quieter.
   if (voice) for (const c of clarity) if (c.type === 'AttackInterrupted' && !deaths.length) impacts.push(c.actor === 0 ? cue('effort_voice', .2, .1, .02) : cue('effort_voice', .14, .12, .02, .84));
   // The crowd backs either winner. A double fall has no winner and gets one startled gasp, never two cheers.
-  if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
+  if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : finisher === 'hamstrung' ? cue('crowd_cheer', .28, .16, HAMSTRUNG_BEATS.back * HAMSTRUNG_BEATS.duration + 2 * HAMSTRUNG_BEATS.hold + .4) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
   return [...impacts, ...air].slice(0, deaths.length ? 8 : 4).sort((a, b) => (a.delay ?? 0) - (b.delay ?? 0));
 }
 
