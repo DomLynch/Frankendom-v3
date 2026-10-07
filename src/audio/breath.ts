@@ -7,6 +7,8 @@ import type { OpponentId } from '../roster.ts';
 // so a band change or a rest only changes the next breath: nothing is ever cut off. Hits duck it; the end of the duel fades it.
 //   winded  faint, slow, nose-soft close-mic breath · tired  faster, heavier, mouth-bright · gassed  short ragged gasps ·
 //   second wind  one long release exhale as he leaves exhaustion.
+// ?look=fatigue-preview (Web's preview, Dom's spec: breathing may carry the winded/tired bands): the breathing layer's only switch while Dom has not signed the sound off.
+export const breathLook = (search: string): boolean => (new URLSearchParams(search).get('look') ?? '').split(',').includes('fatigue-preview');
 export type Body = { period: number; depth: number; pitch: number };   // × the man's pace · × level · × the band-pass centre
 const MAN: Body = { period: 1, depth: 1, pitch: 1 };
 // Per body: Goblin quick and shallow, big bodies slow and deep, the undead have no lungs. The hero is a man.
