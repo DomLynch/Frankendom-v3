@@ -17,7 +17,7 @@ export type CoachSession = {
   readonly pref: boolean;
   readonly spans: readonly CoachSpan[];
   readonly coached: boolean;                                   // the Coach played any tick of this fight (the "Coached" marker)
-  begin(seed: number, stance: PickedStance, tick: number, allowed?: boolean): void;   // a new fight: the saved pref arms the Coach from tick 0
+  begin(seed: number, stance: PickedStance, tick: number, allowed?: boolean, foe?: string): void;   // a new fight: the saved pref arms the Coach from tick 0
   set(on: boolean, tick: number, reason?: CoachStopReason): void;  // the menu toggle, the tag (reason 'tag') and the press hand-over ('tap') all come through here
   end(tick: number): void;                                     // the fight finished: closes an open span with reason 'end'
   pick(duel: Duel, player: () => Intent): Intent;              // ONE input source per tick; the player's thunk is only read when the Coach is off
@@ -25,15 +25,15 @@ export type CoachSession = {
 };
 
 export function createCoachSession(store: CoachStore, emit: (e: CoachEvent) => void, killed = false): CoachSession {
-  let driver: CoachDriver | null = null, seed = 0, stance: PickedStance = 'neutral', pref = !killed && loadCoachPref(store), spans: readonly CoachSpan[] = [], allowedNow = true;   // allowedNow: this fight may be coached (career or practice, not a replay): the menu chip honours it too
+  let driver: CoachDriver | null = null, seed = 0, stance: PickedStance = 'neutral', foe: string | undefined, pref = !killed && loadCoachPref(store), spans: readonly CoachSpan[] = [], allowedNow = true;   // allowedNow: this fight may be coached (career or practice, not a replay): the menu chip honours it too
   const startAt = (tick: number): void => {
-    driver ??= createCoachDriver(stance, seed);
+    driver ??= createCoachDriver(stance, seed, 'normal', 0, foe);
     if (driver.on) return;
     driver.start(tick); emit({ type: 'start', tick, stance });
   };
   return {
     get on() { return !!driver?.on; }, get pref() { return pref; }, get spans() { return driver?.spans ?? spans; }, get coached() { return (driver?.spans ?? spans).length > 0; },
-    begin(s, st, tick, allowed = true) { allowedNow = allowed; seed = s; stance = st; driver = null; spans = []; if (pref && allowed && !killed) startAt(tick); },
+    begin(s, st, tick, allowed = true, f) { allowedNow = allowed; seed = s; stance = st; foe = f; driver = null; spans = []; if (pref && allowed && !killed) startAt(tick); },
     set(on, tick, reason = 'menu') {
       if (killed) return;
       pref = on; saveCoachPref(store, on);
