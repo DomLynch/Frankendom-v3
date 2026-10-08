@@ -18,12 +18,6 @@ export async function loadArena(context: BaseAudioContext, formats: Format[] = s
 }
 
 // Independent voices/RNG: crowd cannot steal combat voices, change Foley variants or inherit the fatal gain boost.
-// The crowd heard from the Pit, through stone (Dom 2026-10-01): one cue of the arena bank through a lowpass at CROWD_CUTOFF_HZ and
-// CROWD_DB under the arena level. The cues rotate (CROWD_CUES); the caller never plays one twice in a row.
-export const CROWD_CUES = ['reaction', 'jeer', 'chant'] as const;   // the cheers, the boos, the chant
-export type CrowdCue = typeof CROWD_CUES[number];
-export const CROWD_CUTOFF_HZ = 800, CROWD_DB = -12;
-const CROWD_GAIN: Record<CrowdCue, number> = { reaction: .20, jeer: .13, chant: .12 };   // the cues' own arena levels (update() below)
 const ARENA_LEVEL = .4;   // owner 2026-09-20: the audience down with the rest of the mix (−30 % was inaudible on the phone: −3 dB, and the finish limiter ate it); the bell is exempt so it leads
 export function createArenaAudio(context: BaseAudioContext, destination: AudioNode, now: () => number, bellSource: () => Float32Array | undefined = preparedBell) {
   type Voice = { source: AudioBufferSourceNode; until: number };
@@ -80,24 +74,8 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
     source.start(time, audio === bell ? 0 : offset, seconds);
     return duration;
   }
-  // One crowd cue through stone: lowpass, CROWD_DB under the arena level. Silent (undefined) until the bank has decoded. stop() is idempotent.
-  function through(name: CrowdCue): { stop(): void } | undefined {
-    if (!buffer) return undefined;
-    const variants = ARENA_MANIFEST[name], index = nextVariant(random, variants.length, last[name] ?? -1); last[name] = index;
-    const [offset, seconds] = variants[index], time = now(), gain = CROWD_GAIN[name] * ARENA_LEVEL * 10 ** (CROWD_DB / 20);
-    const source = context.createBufferSource(), muffle = context.createBiquadFilter(), envelope = context.createGain();
-    muffle.type = 'lowpass'; muffle.frequency.value = CROWD_CUTOFF_HZ;
-    source.buffer = buffer; source.connect(muffle); muffle.connect(envelope); envelope.connect(destination);
-    envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(gain, time + .15);
-    envelope.gain.setValueAtTime(gain, time + seconds - .3); envelope.gain.linearRampToValueAtTime(0, time + seconds);
-    source.onended = () => { source.disconnect(); muffle.disconnect(); envelope.disconnect(); };
-    source.start(time, offset, seconds);
-    let stopped = false;
-    return { stop() { if (stopped) return; stopped = true; const at = now(); envelope.gain.cancelScheduledValues(at); envelope.gain.setValueAtTime(envelope.gain.value, at); envelope.gain.linearRampToValueAtTime(0, at + .1); try { source.stop(at + .11); } catch { /* ended */ } } };
-  }
   return {
     ready: () => ready,
-    through,
     stop,
     update(events: CombatEvent[], frame: ArenaFrame, draw: boolean) {
       const time = now();
