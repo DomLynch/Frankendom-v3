@@ -5,7 +5,7 @@ import { selectFinisher, type FinisherId } from './finishers.ts';
 // The rig: the skeleton family a body is built on, which is the blade table it fights with (src/blade-paths.ts bladePathsByRig; the
 // bake is per rig because the same knife sweeps a different arc in a goblin's hand than in a man's). 'hero' is the player skeleton and
 // every body reproportioned from it. A held creature without a bake of its own stays on the hero table it has always used.
-export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith' | 'wolf';
+export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith' | 'wolf' | 'boar';
 // Approved content recipes. Body names refer to existing offline appearance presets/GLBs;
 // archetypes own combat tuning in moves.ts. Adding an individual must not add AI branches.
 export const ROSTER = {
@@ -21,6 +21,8 @@ export const ROSTER = {
   // The Ash Wolf (Combat, 2026-10-07, mob beasts proposal docs/specs/origins/mob-fights-proposal.md): a quadruped on its own rig (src/assets/wolf.glb, Characters' #1662), the Goblin's
   // hit-and-run identity with a bite instead of a knife. Held: off the ladder and out of the beta bundle; a world mob row or ?opponent=wolf reaches it. Flee is the twist layer's flee-at.
   wolf: { name: 'the Ash Wolf', body: 'wolf', rig: 'wolf', archetype: 'wolf', weapon: 'bite', finishers: [], hold: true },
+  // The Tusked Boar (Combat, 2026-10-08, Dom: a boar in Zone 1): the wolf's pattern on Characters' boar export (src/assets/boar.glb, #1777): same seven-clip quadruped, the `bite` weapon, its own baked jaw table.
+  boar: { name: 'the Tusked Boar', body: 'boar', rig: 'boar', archetype: 'boar', weapon: 'bite', finishers: [], hold: true },
   wraith: { name: 'the Wraith', body: 'wraith', rig: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'], hold: true },
   werewolf: { name: 'the Werewolf', body: 'werewolf', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver', finishers: [], hold: true },
   skeleton: { name: 'the Skeleton', body: 'skeleton', rig: 'hero', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false, hold: true },
