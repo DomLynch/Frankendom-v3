@@ -1,8 +1,8 @@
 // createFight: the one entry a client uses to run a fight (K2). A thin facade over the existing sim (duel.ts stepDuel, ai.ts decide): it owns the Duel and the brains, nothing else, and adds no rule.
 // A slot is steered by an Intent the client gives it, or by a creature brain (profile) the fight runs itself. The Pit's page and Zone 1 both build on this; their own flow (match, aggro, leash) stays outside.
-import { decide, initialAi, type AiState } from '../ai.ts';
-import { idleIntent, stepDuel, type CombatEvent, type Duel, type Fighter, type Intent } from '../duel.ts';
-import { RULES, type AiProfile } from '../moves.ts';
+import { decide, initialAi, type AiState } from './ai.ts';
+import { idleIntent, stepDuel, type CombatEvent, type Duel, type Fighter, type Intent } from './duel.ts';
+import { RULES, type AiProfile } from './moves.ts';
 
 export type FightSlot = { fighter: Fighter; profile?: AiProfile; seed?: number };
 export type FightOptions = { fighters: readonly [FightSlot, FightSlot]; wall?: number; rules?: typeof RULES; onEvent?: (e: CombatEvent) => void };

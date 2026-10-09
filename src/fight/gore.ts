@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { bloodiesMaterial, FLOOR_POOLS, FLOOR_SPLASHES, multiplyOnto } from './finisher-blood.ts';
 export { multiplyOnto };
 import type { HitLocation } from '../blade.ts';
-import type { Direction } from '../moves.ts';
+import type { Direction } from './moves.ts';
 
 export type BloodMode = 'red' | 'dark' | 'off';
 type Rigs = { player: { anchor: THREE.Object3D }; opponent: { anchor: THREE.Object3D } };

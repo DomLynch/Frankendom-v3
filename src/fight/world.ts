@@ -1,16 +1,16 @@
 // Zone 1's combat (Dom via Strategy, 2026-10-08: Zone 1 is detached from the Pit, and "copy the Pit, write no rule twice"): continuous and open, no ring, no wall, no fight start or end, no FightRecord, no seed, no replay.
 // Pure and DOM-free: ONE step function over a world of free fighters in the world's own metres. EVERY fight rule - hit, guard, parry, perfect block, posture, roll, stamina, stagger, death, specials, stances - is the Pit's,
-// run through the Pit's own src/duel.ts / ai.ts / sim.ts (no copies; the duel carries its own wall, Duel.radius, out of reach here) by the adapter open-fight.ts; this file owns only what the Pit has no word for: who is in whose fight (aggro, the nearest foe, the hold-off ring
+// run through the Pit's own src/fight/duel.ts / ai.ts / sim.ts (no copies; the duel carries its own wall, Duel.radius, out of reach here) by the adapter open-fight.ts; this file owns only what the Pit has no word for: who is in whose fight (aggro, the nearest foe, the hold-off ring
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
-import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, type SkillId, type SpecialName } from '../moves.ts';
+import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, type SkillId, type SpecialName } from './moves.ts';
 import { CAPS, NAKED, type Loadout } from '../gear-stats.ts';
 import { GAMBIT_ODDS } from '../gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from '../stance.ts';
 import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
-import type { AiState } from '../ai.ts';
-import type { CombatEvent, Duel } from '../duel.ts';
+import type { AiState } from './ai.ts';
+import type { CombatEvent, Duel } from './duel.ts';
 
 const TICK = 1 / 60;
 const secs = (ticks: number): number => ticks * TICK;
@@ -85,7 +85,7 @@ export function creature(id: string, kind: string, x: number, z: number, facing 
 }
 /** A fighter with a picked stance ('neutral' = Balanced = none). The same four picks and the same signed per-mille table as the Pit (src/stance.ts), one kit everywhere. */
 export const withStance = (f: Fighter, pick: PickedStance): Fighter => ({ ...f, stance: asStance(pick) });
-/** Give a fighter a named special (SpecialName from src/moves.ts; `specialOf(opponent, level)` names the class's). It is ready RULES.special.first ticks in. */
+/** Give a fighter a named special (SpecialName from src/fight/moves.ts; `specialOf(opponent, level)` names the class's). It is ready RULES.special.first ticks in. */
 export const withSpecial = (f: Fighter, name: SpecialName): Fighter => ({ ...f, special: name, specialIn: secs(RULES.special.first) });
 /** A creature's stance mood: the Pit's own draw (src/stance.ts moodOf: half its home stance, half one of the other three), seeded from the injected `rand` instead of the fight seed. Call once at spawn. */
 export const withMood = (f: Fighter, rand: () => number): Fighter => withStance(f, moodOf(Math.floor(rand() * 4294967296) >>> 0, f.kind));
