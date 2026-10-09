@@ -33,7 +33,7 @@ export type CatalogueRow = {
   render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
   weapon: string;                               // the roster's weapon id (moves.ts WEAPONS); a creature's bite is a weapon too
   home: PickedStance;                           // the stance its mood favours (src/stance.ts HOME; 'neutral' when it has none)
-  voice: string | null;                         // the key of its throat in src/audio/creature.ts THROATS; null = silent
+  voice: string | null;                         // the key of its throat in src/fight/sound/creature.ts THROATS; null = silent
   look: { levels: readonly number[]; phone: boolean; tint: boolean };   // the Pit rungs that have a shipping look file (src/rank-look.ts SHIPPING_LOOKS), whether it also ships a phone LOD (PHONE_LOOKS), and whether its kit takes the rung's finish (src/rank-tint.ts: any armoured character with ranks)
   ladder: { order: number | null; hold: boolean };   // its place on the Pit ladder, 1 = first (src/ladder.ts LADDER); null while held off it (roster `hold`)
   wounds: Wounds | null;                        // how it is hurt and how it bleeds (K5); null = the Pit's own gore as today (the men and the goblin)
