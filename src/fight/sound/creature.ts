@@ -11,6 +11,12 @@ export const THROATS: Readonly<Record<string, Throat>> = {
   knight: { f0: 70, formants: [500, 900], rasp: .3 },
   witch: { f0: 190, formants: [450, 1700], rasp: .5 },
   minotaur: { f0: 55, formants: [450, 800], rasp: .5 },
+  // The Zone 1 beasts (Characters 2026-10-09, K8): starting points shaped from what the animals do, for Dom's ear to move. Wolf: a growl low in the 90-130 Hz band over an open, mid-high vowel,
+  // half breath. Boar: a short chesty grunt (~120-180 Hz) with a closed vowel and the most rasp of the three, the snort. Bear: the lowest throat in the pit, a roar fundamental near 60-70 Hz
+  // with a dark vowel, wide and rough.
+  wolf: { f0: 110, formants: [550, 1250], rasp: .45 },
+  boar: { f0: 150, formants: [420, 900], rasp: .6 },
+  bear: { f0: 62, formants: [350, 750], rasp: .55 },
 };
 // Length (s) and peak gain of each cue before the bus. bone_crack is .55 (audio/cues.ts), so every creature voice sits under an impact.
 export const CREATURE_CUES: Readonly<Record<CreatureCue, { length: number; gain: number }>> = { growl: { length: .9, gain: .2 }, bite: { length: .3, gain: .28 }, death: { length: 1.1, gain: .3 } };
