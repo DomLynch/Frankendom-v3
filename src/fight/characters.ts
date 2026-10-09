@@ -413,7 +413,7 @@ export function sizeBeast(warriors: { opponent: { anchor: Group } }, opponentId:
   const k = beastRenderScale(opponentId);
   if (k !== 1) warriors.opponent.anchor.scale.setScalar(k);
 }
-export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset, weapons: [WeaponId, WeaponId] = ['longsword', 'longsword']) {
+export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset, weapons: [WeaponId, WeaponId] = ['longsword', 'longsword'], solo = false) {   // solo: the caller poses ONE actor (a zone creature): the opponent is not built, `.opponent` aliases `.player`
   const hero = { asset, weapon: weapons[0], clips: fighterClips(asset, weapons[0], true) }, enemy = opponentAsset ? { asset: opponentAsset, weapon: weapons[1], clips: fighterClips(opponentAsset, weapons[1], false) } : undefined;
   if (!enemy && weapons[1] !== weapons[0]) throw new Error('A shared rig carries one weapon');
   function create(opponent: boolean) {
@@ -1068,5 +1068,6 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       boneWorld(name: string): Vector3 | null { const bone = root.getObjectByName(name); if (!bone) return null; root.updateWorldMatrix(true, true); return bone.getWorldPosition(new Vector3()); }
     };
   }
-  return { player: create(false), opponent: create(true) };
+  const player = create(false);
+  return { player, opponent: solo ? player : create(true) };
 }
