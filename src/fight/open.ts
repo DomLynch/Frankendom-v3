@@ -4,17 +4,31 @@
 // A failure is an answer, never a throw, and is not kept: a later caller (the gear sheet, a token that has since been renewed) asks again.
 import { call, storedToken, writerBase, type Offline } from '../writer-call.ts';
 
-export type OpenDeps = { storage: { getItem(key: string): string | null } | null; search: string; now?: () => number; fetch?: typeof fetch; timeoutMs?: number };
+export type OpenDeps = { storage: { getItem(key: string): string | null } | null; search: string; now?: () => number; fetch?: typeof fetch; timeoutMs?: number; retries?: number; retryMs?: number };
 export type OpenReply = { result: unknown };   // the writer's reply, as sent: each caller maps what it needs (the zone page its career, the gear sheet the character id)
 
 const once = new WeakMap<object, Promise<OpenReply | Offline>>();
 
 // 8 s, not the 4 s default: the gear sheet opens while the page is busy drawing the mannequin, and a late answer beats the device's ledger shown in its place.
+// A slow answer is not a refusal: a new account's first `open` also creates its character, and on a loaded box that took longer than the page waited (Dom's first /zone1/ visit, 2026-10-09: the writer
+// committed the character 1 s after the page gave up, the page stayed offline and its kill never reached the writer). `open` is idempotent, so a timeout, a dropped connection or a 5xx asks again
+// (twice by default) and finds the character; a refusal (401, 403, 404, 503 not installed) is final.
+const TRANSIENT = /^(timeout|network|http-5(?!03$)\d\d)$/;
+async function ask(d: OpenDeps, token: string | null): Promise<OpenReply | Offline> {
+  const opts = { base: writerBase(d.search), timeoutMs: d.timeoutMs ?? 8000, ...(d.fetch ? { fetch: d.fetch } : {}) };
+  let got = await call<OpenReply>('open', {}, token, (result) => ({ result }), opts);
+  for (let left = d.retries ?? 2; left > 0 && 'offline' in got && TRANSIENT.test(got.offline); left--) {
+    await new Promise((r) => setTimeout(r, d.retryMs ?? 1500));
+    got = await call<OpenReply>('open', {}, token, (result) => ({ result }), opts);
+  }
+  return got;
+}
+
 export function openAccount(d: OpenDeps): Promise<OpenReply | Offline> {
   const kept = d.storage && once.get(d.storage);
   if (kept) return kept;
   const token = storedToken(d.storage, (d.now ?? Date.now)());
-  const asked = call<OpenReply>('open', {}, token, (result) => ({ result }), { base: writerBase(d.search), timeoutMs: d.timeoutMs ?? 8000, ...(d.fetch ? { fetch: d.fetch } : {}) });
+  const asked = ask(d, token);
   if (d.storage && token) { once.set(d.storage, asked); void asked.then((got) => { if ('offline' in got && once.get(d.storage!) === asked) once.delete(d.storage!); }); }
   return asked;
 }
