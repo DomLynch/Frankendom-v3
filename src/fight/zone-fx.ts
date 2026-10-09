@@ -34,7 +34,7 @@ const IDLE_S = 12;   // a pair's effects stay (a corpse keeps its pool) this lon
 
 export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera }) {
   const dropTexture = impactTexture(false), splatTexture = impactTexture(true), kick = createWalkKick(host.camera), right = new THREE.Vector3();
-  type Slot = { fx: ReturnType<typeof createFightFx>; idle: number; struck?: [number, number] };
+  type Slot = { fx: ReturnType<typeof createFightFx>; idle: number; struck?: [number, number]; victim?: number };
   const live = new Map<string, Slot>(), free: Slot[] = [];
   const slotFor = (foe: string): Slot => {
     let s = live.get(foe);
@@ -55,7 +55,7 @@ export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera })
   return {
     /** Once a frame, after the loop stepped: the frame's contacts of every active pair, then the walk camera's kick on top of the placed camera. */
     frame(pairs: PairContacts[], dt: number): void {
-      for (const c of pairs) { if (!(c.kind in OPPONENTS)) continue; const s = slotFor(c.foe); s.idle = 0; s.fx.onContact(ctxOf(c, dt)); if (c.events.some((e) => e.type === 'Hit')) s.struck = [c.foeAt.x, c.foeAt.z]; }
+      for (const c of pairs) { if (!(c.kind in OPPONENTS)) continue; const s = slotFor(c.foe); s.idle = 0; s.fx.onContact(ctxOf(c, dt)); const hit = c.events.find((e) => e.type === 'Hit'); if (hit) { s.victim = hit.target; s.struck = hit.target === 1 ? [c.foeAt.x, c.foeAt.z] : [c.hero.x, c.hero.z]; } else s.victim = undefined; }
       for (const [foe, s] of live) {
         s.fx.update(dt);
         if ((s.idle += dt) > IDLE_S) { s.fx.splats.clear(true); s.fx.bodyWounds.clear(); live.delete(foe); free.push(s); }
@@ -65,6 +65,6 @@ export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera })
     /** Instances in use, for the browser checks. */
     active: () => live.size,
     /** Where each pair's contact sparks are and whether they are showing (world metres): the browser check compares them with the struck creature. */
-    probe: () => [...live].map(([foe, s]) => ({ foe, visible: s.fx.sparks.visible, at: s.fx.sparks.position.toArray(), struck: s.struck })),
+    probe: () => [...live].map(([foe, s]) => ({ foe, visible: s.fx.sparks.visible, at: s.fx.sparks.position.toArray(), struck: s.struck, victim: s.victim })),
   };
 }
