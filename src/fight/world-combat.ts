@@ -2,7 +2,7 @@
 // relief) and tells this his position; the loop owns hits, creature chase/telegraph/bite/leash. This file: which creatures are in the loop (those that come within the aggro ring, until they are
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
 import { AGGRO_M, creature, duelFor, duelOf, newWorld, pairs, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
-import { NAKED, type Loadout } from '../gear-stats.ts';
+import { NAKED, type Loadout } from './gear-stats.ts';
 import { OPPONENTS } from './moves.ts';
 import type { Duel } from './duel.ts';
 
