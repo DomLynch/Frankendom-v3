@@ -6,12 +6,11 @@ import * as THREE from 'three';
 import { OPPONENTS, RULES, weaponOf, type OpponentId } from '../moves.ts';
 import { hasBlood } from '../roster.ts';
 import { blockDust, HEAVY_CLASS, clashStrength, createClashSparks } from '../clash-sparks.ts';
-import { shoveFor } from '../camera-kick.ts';
+import { shoveFor, type Shove } from '../camera-kick.ts';
 import { ROLL_TUMBLE, attackerOf, impactShove } from '../hit-impact.ts';
 import { FLINCH_GAIN, isFleshHit, type Flinch, type armfeelFrom } from '../armfeel.ts';
 import type { createBurstPool } from '../armfeel-fx.ts';
 import type { createFootDust } from '../foot-dust.ts';
-import type { createCameraRig } from '../camera.ts';
 import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBladeBlood, createBodyWounds, createSplatPool } from './gore.ts';
 import type { FinisherId } from './finishers.ts';
@@ -19,12 +18,15 @@ import type { loadWarriors } from './characters.ts';
 import type { CombatEvent, Practice } from '../combat.ts';
 import type { State } from '../sim.ts';
 
+/** The camera-kick hints the effects emit: the host decides which camera takes them (the Pit's rig, a zone's walk camera). */
+export type CameraKick = { shove(heading: number, shove: Shove): void; tilt(angle: number, seconds: number, right?: number, drop?: number): void };
+
 /** What one frame's contact effects need from the scene that owns the rigs, the camera and the feet. */
 export type ContactCtx = {
   events: CombatEvent[]; practice: Practice; state: State; dt: number;
   blow: CombatEvent | undefined; contact: boolean | CombatEvent | undefined; killed: CombatEvent | undefined;
   finisher: FinisherId | null; detailedBlood: boolean;
-  rig: ReturnType<typeof createCameraRig>; blockHeavy: boolean[];
+  camera: THREE.Camera; kick: CameraKick; blockHeavy: boolean[];
   warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
   dustFeet: (THREE.Object3D | null)[]; dustPositions: THREE.Vector3[]; footDust: ReturnType<typeof createFootDust>;
   flinches: Flinch[] | null; burstPool: ReturnType<typeof createBurstPool> | null; feel: ReturnType<typeof armfeelFrom> | undefined; right: THREE.Vector3;
@@ -64,7 +66,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
   const blade = createBladeBlood();
   /** Every frame, after the frame's events are known: the camera kick, the sand, and on a contact the sparks, the flinch burst, the wounds, the splats and the blade blood. */
   function onContact(c: ContactCtx): void {
-    const { events, practice, state, dt, blow, contact, killed, finisher, detailedBlood, rig, blockHeavy, warriors, dustFeet, dustPositions, footDust, flinches, burstPool, feel, right, opponentId, bloodMode } = c;
+    const { events, practice, state, dt, blow, contact, killed, finisher, detailedBlood, camera, kick, blockHeavy, warriors, dustFeet, dustPositions, footDust, flinches, burstPool, feel, right, opponentId, bloodMode } = c;
     // Camera kick: what each contact does to the camera is camera-kick.ts's table (a heavy drops it 6 cm and holds, a light 1.2 cm, a
     // heavy block 2.8 cm, a parry flicks 2 cm sideways) — the guard shudders, the screen never shakes. Always on, reduced motion included (owner ruling 2026-09-29).
     // Every contact goes through hit-impact.ts first: a landed blow or a block knocks the camera away from it, a parry jolts it toward the attacker.
@@ -73,13 +75,13 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
     const shoveEvent = blow ?? (clashKick?.target !== undefined ? clashKick : undefined), shove = shoveEvent && (impactShove(shoveEvent, blowDirection(shoveEvent)) ?? shoveFor(shoveEvent));
     if (shoveEvent && shove && dt > 0) {
       // The blow's heading: a landed blow carries it; a block or parry takes the attacker's facing (the attacker is the event's target).
-      rig.shove(shoveEvent.heading ?? (shoveEvent.target && !blow ? practice.enemy.heading : state.heading), shove);
+      kick.shove(shoveEvent.heading ?? (shoveEvent.target && !blow ? practice.enemy.heading : state.heading), shove);
     }
     // The player's roll tumbles the frame the way of the roll (hit-impact.ts ROLL_TUMBLE; Dom's pick C, 2026-09-30).
     if (dt > 0 && events.some((e) => e.type === 'ActionStarted' && e.action === 'roll' && e.actor === 0)) {
-      const heading = practice.duel.fighters[0].body.heading, right = new THREE.Vector3().setFromMatrixColumn(rig.camera.matrixWorld, 0);
+      const heading = practice.duel.fighters[0].body.heading, right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
       const way = Math.sign(Math.sin(heading) * right.x + Math.cos(heading) * right.z) || 1;   // +1: the roll goes to screen right
-      rig.tilt(-way * ROLL_TUMBLE.angle, ROLL_TUMBLE.seconds, way * ROLL_TUMBLE.shift, ROLL_TUMBLE.dip);   // lean INTO the roll: right tips clockwise
+      kick.tilt(-way * ROLL_TUMBLE.angle, ROLL_TUMBLE.seconds, way * ROLL_TUMBLE.shift, ROLL_TUMBLE.dip);   // lean INTO the roll: right tips clockwise
     }
     if (clashKick?.type === 'Blocked') blockHeavy[clashKick.actor] = HEAVY_CLASS.has(clashKick.move ?? '');
     if (killed && dt > 0) c.setDip(c.DIP_FRAMES);
@@ -111,7 +113,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
         let px = bx, pz = bz;
         const along = blowDirection(blow);
         if (victim === 1 && (along === 'left' || along === 'right')) {   // the arrival side, as hit-impact.ts reads it: a blow on the opponent named 'right' arrives from screen right
-          right.setFromMatrixColumn(rig.camera.matrixWorld, 0);
+          right.setFromMatrixColumn(camera.matrixWorld, 0);
           const away = along === 'right' ? -1 : 1, mag = Math.hypot(bx * 0.6 + right.x * away, bz * 0.6 + right.z * away) || 1;
           px = (bx * 0.6 + right.x * away) / mag; pz = (bz * 0.6 + right.z * away) / mag;
         }
@@ -119,7 +121,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
         const scale = victim === 1 ? OPPONENTS[opponentId].scale : 1, y = (blow.location === 'head' ? 1.5 : blow.location === 'legs' ? 0.55 : 1.15) * scale;
         // The same blood on both bodies (Dom: it showed when he was hit, rarely when he hit): the foe is 2-3x further from the camera, so its drops are scaled up
         // to cover about the hero burst's screen size, and the spawn is pulled toward the camera (blood-style.ts foeBurstPull), clear of the hero's torso that covers the contact.
-        const cam = rig.camera.position, reach = (px: number, pz: number, py: number) => Math.hypot(cam.x - px, cam.y - py, cam.z - pz);
+        const cam = camera.position, reach = (px: number, pz: number, py: number) => Math.hypot(cam.x - px, cam.y - py, cam.z - pz);
         let sx = target.x - bx * 0.3, sz = target.z - bz * 0.3, sy = y, grow = 1;
         if (victim === 1) {
           const far = reach(target.x, target.z, y), near = reach(state.x, state.z, 1.15), pull = foeBurstPull(far, near);   // close up the hero covers the contact: bring the spawn toward the camera, same screen spot
