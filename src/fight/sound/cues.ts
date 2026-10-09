@@ -1,12 +1,12 @@
-import type { ClarityEvent, CombatEvent } from '../combat.ts';
-import type { Finish } from '../duel.ts';
-import { MOVES, RULES, type MoveId, type WeaponId } from '../moves.ts';
-import { selectFinisher, type FinisherId } from '../finishers.ts';
-import { HAMSTRUNG_BEATS } from '../hamstrung.ts';
-import { poseOf, EXECUTION_BEATS, executionAt } from '../execution.ts';
-import { hasBlood, type OpponentId } from '../roster.ts';
-import type { CueName } from './manifest.ts';
-import { defenceGrade, GRADE_AUDIO } from '../defence-grade.ts';
+import type { ClarityEvent, CombatEvent } from '../../combat.ts';
+import type { Finish } from '../../duel.ts';
+import { MOVES, RULES, type MoveId, type WeaponId } from '../../moves.ts';
+import { selectFinisher, type FinisherId } from '../../finishers.ts';
+import { HAMSTRUNG_BEATS } from '../../hamstrung.ts';
+import { poseOf, EXECUTION_BEATS, executionAt } from '../../execution.ts';
+import { hasBlood, type OpponentId } from '../../roster.ts';
+import type { CueName } from '../../audio/manifest.ts';
+import { defenceGrade, GRADE_AUDIO } from '../../defence-grade.ts';
 
 // Event → cue mapping. Pure data: the simulation's events decide what is heard; gain, room send and pitch spread are per cue.
 // Order matters — the voice limiter serves cues in this order, so impacts come before air.

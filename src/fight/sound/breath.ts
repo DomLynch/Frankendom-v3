@@ -1,5 +1,5 @@
-import type { Fatigue } from '../fatigue.ts';
-import type { OpponentId } from '../roster.ts';
+import type { Fatigue } from '../../fatigue.ts';
+import type { OpponentId } from '../../roster.ts';
 
 // Graded breathing (Lead's brief B, Dom: "make it realistic"). Synthesised (a looping noise through a band-pass, one gain envelope
 // per breath), so it adds nothing to the sprite. Read-only on the fatigue driver (src/fatigue.ts): `level` sets the pace and depth

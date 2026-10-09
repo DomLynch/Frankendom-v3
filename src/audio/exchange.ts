@@ -1,5 +1,5 @@
 import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../duel.ts';
-import type { DeathPresentation } from './cues.ts';
+import type { DeathPresentation } from '../fight/sound/cues.ts';
 import { RULES } from '../moves.ts';
 
 // The fixed scripted exchange every audio iteration is judged on: both fighters are driven by hand through the real
