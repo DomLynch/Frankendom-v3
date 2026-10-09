@@ -1,6 +1,6 @@
 import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CombatEvent } from '../combat.ts';
-import { nextVariant, seeded } from './cues.ts';
+import { nextVariant, seeded } from '../fight/sound/cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { BELL_RATE, preparedBell } from './bell.ts';
