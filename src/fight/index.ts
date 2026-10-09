@@ -4,12 +4,12 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
-export * from '../duel.ts';
-export * from '../ai.ts';
-export * from '../sim.ts';
-export * from '../moves.ts';
-export * from '../combat.ts';
-export * from '../play-radius.ts';
+export * from './duel.ts';
+export * from './ai.ts';
+export * from './sim.ts';
+export * from './moves.ts';
+export * from './combat.ts';
+export * from './play-radius.ts';
 export * from '../record.ts';
 export * from '../gear-stats.ts';
 export * from '../gambit.ts';

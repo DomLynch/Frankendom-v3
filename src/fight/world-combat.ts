@@ -3,8 +3,8 @@
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
 import { AGGRO_M, creature, duelFor, duelOf, newWorld, pairs, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 import { NAKED, type Loadout } from '../gear-stats.ts';
-import { OPPONENTS } from '../moves.ts';
-import type { Duel } from '../duel.ts';
+import { OPPONENTS } from './moves.ts';
+import type { Duel } from './duel.ts';
 
 export const ME = 'me', STEP = 1 / 60, JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */

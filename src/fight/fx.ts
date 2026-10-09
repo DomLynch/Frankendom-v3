@@ -3,7 +3,7 @@
 // src/scene.ts createScene()/render() with its text unchanged; the Pit's scene calls it every frame with the objects it owns (the camera rig, the rigs, the feet), and a zone can feed
 // it the same way. Presentation only: nothing here reads or writes the simulation.
 import * as THREE from 'three';
-import { OPPONENTS, RULES, weaponOf, type OpponentId } from '../moves.ts';
+import { OPPONENTS, RULES, weaponOf, type OpponentId } from './moves.ts';
 import { hasBlood } from '../roster.ts';
 import { blockDust, HEAVY_CLASS, clashStrength, createClashSparks } from '../clash-sparks.ts';
 import { shoveFor, type Shove } from '../camera-kick.ts';
@@ -15,8 +15,8 @@ import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBladeBlood, createBodyWounds, createSplatPool } from './gore.ts';
 import type { FinisherId } from './finishers.ts';
 import type { loadWarriors } from './characters.ts';
-import type { CombatEvent, Practice } from '../combat.ts';
-import type { State } from '../sim.ts';
+import type { CombatEvent, Practice } from './combat.ts';
+import type { State } from './sim.ts';
 
 /** The camera-kick hints the effects emit: the host decides which camera takes them (the Pit's rig, a zone's walk camera). */
 export type CameraKick = { shove(heading: number, shove: Shove): void; tilt(angle: number, seconds: number, right?: number, drop?: number): void };

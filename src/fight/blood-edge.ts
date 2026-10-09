@@ -7,8 +7,8 @@
 // player's shoulder): right -> left edge, left -> right. Head-on blows (overhead, thrust, low: ~3 in 4 of all blows) show BOTH edges at
 // HEAD_ON strength. LEFT and RIGHT only, never top or bottom. Each hit the player takes shows the next strip in order (smear, bleed, streak,
 // smear...); the count restarts when the tick goes backwards (a new fight or a replay), so a replay shows the same strips.
-import type { CombatEvent, Duel } from '../duel.ts';
-import { weaponOf, type Direction } from '../moves.ts';
+import type { CombatEvent, Duel } from './duel.ts';
+import { weaponOf, type Direction } from './moves.ts';
 
 export type Edge = 'left' | 'right';
 export const EDGE: Record<Direction, Edge | 'both'> = { right: 'left', left: 'right', overhead: 'both', thrust: 'both', low: 'both' };
