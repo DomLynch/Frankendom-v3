@@ -43,3 +43,7 @@ export async function openCharacter(d: OpenDeps): Promise<string | null> {
   const got = await openAccount(d);
   return 'offline' in got ? null : characterIdOf(got.result);
 }
+
+/** For the spawn tracker: the known id, else ask the door again (a failed open is not kept), so a character that came late is picked up before the first engage. */
+export const characterFor = (d: OpenDeps, known: () => string | null, learn: (id: string) => void) => (): string | null | Promise<string | null> =>
+  known() ?? openCharacter(d).then((id) => { if (id) learn(id); return id; });
