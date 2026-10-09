@@ -4,9 +4,9 @@
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
 import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, type SkillId, type SpecialName } from './moves.ts';
-import { CAPS, NAKED, type Loadout } from '../gear-stats.ts';
-import { GAMBIT_ODDS } from '../gambit.ts';
-import { asStance, moodOf, type PickedStance, type StanceId } from '../stance.ts';
+import { CAPS, NAKED, type Loadout } from './gear-stats.ts';
+import { GAMBIT_ODDS } from './gambit.ts';
+import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
 import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import type { AiState } from './ai.ts';
@@ -42,10 +42,10 @@ export type Fighter = {
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight
   returning: boolean;                                   // creature only: it gave up and is walking home (it heals to full on arrival, no event)
-  attack: number; res: number;                          // damage multipliers (src/gear-stats.ts Loadout): `attack` scales what it deals, `res` what it takes, chip included
+  attack: number; res: number;                          // damage multipliers (src/fight/gear-stats.ts Loadout): `attack` scales what it deals, `res` what it takes, chip included
   special: SpecialName | null; specialIn: number;       // the named special this fighter can cast (moves.ts specialOf), seconds until it is ready; with one, the SKILL button is the special (the Pit has one button)
   skill: SkillId | null;                                // the equipped skill (moves.ts SkillId, the Pit's `equippedSkill(profile.loot)`; null = none): the SKILL button fires its move when no special is set (duel.ts `Fighter.skill`)
-  stance?: StanceId;                                    // src/stance.ts: the Pit's table (absent = Balanced)
+  stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
   threat?: Record<string, Threat>;                      // creature only: its threat list (EQEmu hate list shape): who has hurt it. Threat picks the player it fights, damage is the credit (loot to the most). Dropped when he is dead, gone or out of sight for the give-up time; cleared on heal-home
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
@@ -83,11 +83,11 @@ export function creature(id: string, kind: string, x: number, z: number, facing 
   const lv = Math.min(MAX_LEVEL, Math.max(1, Math.round(level))), body = opponentAt(o, lv);
   return { ...fighter(id, 'creature', kind, x, z, facing, PLAYER_RADIUS * o.scale, body.health, body.poise), level: lv };
 }
-/** A fighter with a picked stance ('neutral' = Balanced = none). The same four picks and the same signed per-mille table as the Pit (src/stance.ts), one kit everywhere. */
+/** A fighter with a picked stance ('neutral' = Balanced = none). The same four picks and the same signed per-mille table as the Pit (src/fight/stance.ts), one kit everywhere. */
 export const withStance = (f: Fighter, pick: PickedStance): Fighter => ({ ...f, stance: asStance(pick) });
 /** Give a fighter a named special (SpecialName from src/fight/moves.ts; `specialOf(opponent, level)` names the class's). It is ready RULES.special.first ticks in. */
 export const withSpecial = (f: Fighter, name: SpecialName): Fighter => ({ ...f, special: name, specialIn: secs(RULES.special.first) });
-/** A creature's stance mood: the Pit's own draw (src/stance.ts moodOf: half its home stance, half one of the other three), seeded from the injected `rand` instead of the fight seed. Call once at spawn. */
+/** A creature's stance mood: the Pit's own draw (src/fight/stance.ts moodOf: half its home stance, half one of the other three), seeded from the injected `rand` instead of the fight seed. Call once at spawn. */
 export const withMood = (f: Fighter, rand: () => number): Fighter => withStance(f, moodOf(Math.floor(rand() * 4294967296) >>> 0, f.kind));
 /** The brain as the next bout will find it. retreatUntil / disengageUntil are absolute ticks of the bout that wrote them and a rebuilt bout restarts its clock at 0, so they are rebased onto the new clock (Auditor, #1939); lastTravel compared against the old bout's distance, so it restarts. The live bout keeps its own copy. */
 const carried = (ai: AiState, tick: number): AiState => ({ ...ai, retreatUntil: Math.max(0, ai.retreatUntil - tick), disengageUntil: Math.max(0, ai.disengageUntil - tick), lastTravel: 0 });

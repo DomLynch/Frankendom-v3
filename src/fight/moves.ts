@@ -178,7 +178,7 @@ export const RULES = {
   // hit for `damage` of the target's max health (`bossDamage` for an opponent from level `bossFrom`: career.ts level = 1 + wins, five
   // sub-ranks a title, so rank 8 begins at 36). Cast inside `reach`; the cooldown re-arms `cooldown` ticks after the RELEASE; first available `first` ticks in; after a release the caster starts no attack for `recovery` ticks (the presentation's 45; defence and movement stay his). Final numbers: Dom 2026-10-01, docs/briefs/specials/boss-special-balance-2026-10-01.md. One row,
   // so a ruling is a one-line change; PvP reads the same `damage`.
-  gambit: { stagger: 40 },   // RV33: the ticks a failed Gambit's thrower is staggered (src/gambit.ts: about 1 in 2 lands for 2x; the stagger is what makes it slightly worse than a heavy)
+  gambit: { stagger: 40 },   // RV33: the ticks a failed Gambit's thrower is staggered (src/fight/gambit.ts: about 1 in 2 lands for 2x; the stagger is what makes it slightly worse than a heavy)
   special: { windup: 120, cooldown: 1200, first: 1200, recovery: 45, reach: 3, damage: .2, bossDamage: .25, bossFrom: 36, interruptAt: .1, interruptCooldown: 480 },
   skillCooldown: 900,   // the equipped skill's cooldown (15 s): spent at commitment, so a whiff, a block, a parry and a stuffed windup all spend it; ticks down like parryCooldown (duel.ts)
   regen: 2 / 3, regenDelay: 45, guardRegen: .5, sprintCost: .2, exhaustRecover: 20, exhaustedStun: 36,   // RV29 (3B): a heavy-class blow or a kick landing on an exhausted fighter stuns `exhaustedStun` ticks (.6 s) longer; the existing hurt pose, no ground state
@@ -693,7 +693,7 @@ const ARCHETYPES: Record<(typeof ROSTER)[OpponentId]['archetype'], Omit<Opponent
   // spec): a cut-spammer farmed him (light spam 18/24 with the cleaver, 12 warhammer, 11 trident; cap 12) because his 14-tick reaction
   // was clamped to the shared 8 on a read spam and still met the cut late. anticipate 3 + lapse .3 → .2 take those three to 8, 7, 7;
   // read .7 → .75 keeps the knife's thrust-from-range row where it was (11/24; .2 lapse alone put it on the cap at 12).
-  // The value lives here, keyed by (opponent, level), because that is all a fight record carries: src/replay.ts rebuilds the profile
+  // The value lives here, keyed by (opponent, level), because that is all a fight record carries: src/fight/replay.ts rebuilds the profile
   // from OPPONENTS[opponent].profiles[level], so a value merged in from outside the sim would replay a different fight.
   executioner: { scale: 1.36, health: 160, poise: 12, profiles: { easy: PROFILES.easy, normal: { ...PROFILES.normal, anticipate: 3, lapse: .2, read: .75 }, hard: PROFILES.hard } },
   // The Knight (armoured, methodical; his own row, RV30, 2026-10-07, Strategy's identity line): the Executioner's archetype and cut-spam

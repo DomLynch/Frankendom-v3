@@ -3,8 +3,8 @@ import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, type Direction, type Gua
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from '../detmath.ts';
 import { rolledDamage, rollPercent } from '../roll.ts';
-import { GAMBIT_ODDS, gambitUnit, resolveGambit } from '../gambit.ts';
-import { stanced, type StanceId } from '../stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
+import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
+import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 
 // Symmetric 1v1 melee simulation. Both fighters obey the same rules through the same Intent; the AI is just another
 // intent source. Pure and fixed at 60 Hz: no renderer, clock, randomness or browser state. Presentation observes results.
@@ -47,9 +47,9 @@ export type Fighter = {
   special?: number;   // ticks of a committed special windup left; it releases on the tick it would reach 0
   castHurt?: number;   // damage taken since SpecialStarted while the windup counts down (RULES.special.interruptAt cuts the cast); absent when 0, so a cast nobody hits hashes as before
   specialRecover?: number;   // ticks left after a release in which the caster starts no attack (RULES.special.recovery); guard, roll and steps stay legal
-  feintEdge?: number;   // a TRICKSTER's feint opens a beat: ticks left in which the next swing he starts is a beating one (RULES.feintBeat, src/stance.ts); absent without that stance
+  feintEdge?: number;   // a TRICKSTER's feint opens a beat: ticks left in which the next swing he starts is a beating one (RULES.feintBeat, src/fight/stance.ts); absent without that stance
   beat?: true;   // the swing in hand began inside a feint's beat: it ignores a passively held guard (see the block branch); cleared by the next beginAttack
-  stance?: StanceId;   // the fight's stance for this fighter (src/stance.ts, RV34); absent = Neutral or no stances: today's fight, byte for byte
+  stance?: StanceId;   // the fight's stance for this fighter (src/fight/stance.ts, RV34); absent = Neutral or no stances: today's fight, byte for byte
   gambitOn?: true;   // this fighter may arm a Gambit (withGambit); absent = the fight has none, byte for byte
   gambit?: true;   // the swing in hand is an armed Gambit (a second heavy press after the chamber); cleared by the next beginAttack
   perk?: Perk;   // the patron's sidegrade (docs/specs/origins/patron-perks-sim.md), set once at duel start by withPerk; absent = today's fight, byte for byte
@@ -81,7 +81,7 @@ export type Finish = { victim: Side; location: HitLocation; move: MoveId; headin
 type EventType = 'SpecialStarted' | 'SpecialLanded' | 'SpecialFizzled' | 'SpecialInterrupted' | 'ActionStarted' | 'AttackStarted' | 'Charging' | 'Charged' | 'AttackActive' | 'AttackMissed' | 'Hit' | 'Blocked' | 'Parried' | 'GuardBroken' | 'PostureBroken' | 'Dodged' | 'Staggered' | 'StaminaExhausted' | 'Killed' | 'SharedHit' | 'Whipped' | 'WhipRaised' | 'GambitArmed' | 'GambitFailed';
 // Event sides: a blow that lands (Hit, GuardBroken, Killed) names the attacker as `actor` and the one struck as `target`; a defence that
 // succeeds (Blocked, Parried, Dodged) names the defender as `actor` and the attacker as `target`.
-export type CombatEvent = { tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean };   // gambit: a Hit that was a landed Gambit (src/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
+export type CombatEvent = { tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean };   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
 // WhipRaised: the lorarius lifts his whip, `lead` ticks before the lash that follows (RULES.wall.loiter.raise, or raiseAgain for a repeat) —
 // presentation scales its raise animation by `lead` rather than assuming one. Both whip events carry `guard`: which sixth of the wall the
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
@@ -90,8 +90,8 @@ export type CombatEvent = { tick: number; type: EventType; actor: Side; target?:
 export type Duel = { tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number }; gambit?: { seed: number; draws: number }; radius?: number };   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
 export { ROLL_BAND, rollPercent, rolledDamage } from '../roll.ts';   // the one definition (src/roll.ts), shared with origins/luck/luck.ts
 export const withRoll = (duel: Duel, seed: number): Duel => ({ ...duel, roll: { seed, hits: 0 } });
-// A fight with the Gambit (src/gambit.ts, RV33): the player's side may arm it, and its draws are a pure function of (seed, draw number). Absent = today's fight byte for byte.
-// A fight with stances (src/stance.ts, RV34): the fighters carry their stance. Neutral (undefined) adds nothing. Absent entirely = today's fight.
+// A fight with the Gambit (src/fight/gambit.ts, RV33): the player's side may arm it, and its draws are a pure function of (seed, draw number). Absent = today's fight byte for byte.
+// A fight with stances (src/fight/stance.ts, RV34): the fighters carry their stance. Neutral (undefined) adds nothing. Absent entirely = today's fight.
 export const withStances = (duel: Duel, player: StanceId | undefined, mood: StanceId | undefined): Duel => ({ ...duel, fighters: [player ? { ...duel.fighters[0], stance: player } : duel.fighters[0], mood ? { ...duel.fighters[1], stance: mood } : duel.fighters[1]] });
 export const withGambit = (duel: Duel, seed: number): Duel => ({ ...duel, gambit: { seed, draws: 0 }, fighters: [{ ...duel.fighters[0], gambitOn: true }, duel.fighters[1]] });
 
@@ -110,7 +110,7 @@ export const opponentFighter = (o: Opponent, body: State, phase: Phase = 'ready'
 // centre), `heroFacing` in radians as sim headings are (aim = atan2(dx, dz)); the foe faces the hero from where it stands, as at the marks. Both must lie inside the wall (RADIUS) and apart by more than a body, or it throws:
 // a pose that starts a fighter in the wall or in the other body is a caller bug, never a fight to clamp silently. Absent = today's marks, byte for byte.
 export type DuelPose = { hero: { x: number; z: number }; foe: { x: number; z: number }; heroFacing: number };
-// The one validity rule, shared with the record decoder (src/record.ts): a pose that fails it is refused, never clamped.
+// The one validity rule, shared with the record decoder (src/fight/record.ts): a pose that fails it is refused, never clamped.
 // `wall`: also check the live wall (RADIUS). The record decoder passes false: RADIUS is whatever the LAST fight set, and the wall belongs to the record's own circle, which poseBodies checks at replay under the record's version (Auditor, #1822).
 export const validatePose = (pose: DuelPose, wall = true): void => {
   const { hero, foe, heroFacing } = pose;
@@ -154,7 +154,7 @@ export const elapsed = (f: Fighter): number => f.age + f.charge;
 export const timing = (f: Fighter): Timing => f.chained && f.move ? movesOf(f)[f.move].chained! : movesOf(f)[f.move!];
 const isLight = (action: Action | null): boolean => action === 'light' || action === 'light_left' || action === 'light_right';
 const baseGuard = (f: Fighter, R: typeof RULES): GuardProfile => ({ costScale: 1, arc: R.guardArc, window: R.parry, recovery: R.parryRecovery, commits: false, stopsHeavy: false, heavyBreaks: false, wide: false, postureDecay: 1, ...f.guardProfile });
-// The Defensive stance widens the parry window by a quarter (src/stance.ts, `window`); no stance = the window untouched.
+// The Defensive stance widens the parry window by a quarter (src/fight/stance.ts, `window`); no stance = the window untouched.
 export const guardOf = (f: Fighter, R: typeof RULES = RULES): GuardProfile => { const g = baseGuard(f, R); return f.stance ? { ...g, window: Math.round(stanced(f, 'window', g.window)) } : g; };
 // Directional guard (owner 2026-09-20, on by default): a guard or parry covers ONE of the five attack sides. The side is the DEFENDER's:
 // facing each other, an attacker's `right` cut arrives on the defender's left, so a `left` guard meets a `right` cut; overhead, thrust
@@ -471,7 +471,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         const stop = a.move === 'thrust' && (counter || advancing);
         const rear = Math.abs(wrapAngle(aim(d.body, a.body) - d.body.heading)) > Math.PI - R.rear.arc / 2;
         const plain = Math.round(damage * (stop ? R.stopHit.damage : counter ? R.counter.damage : 1) * (rear ? (d.phase === 'hurt' ? R.rear.downed : R.rear.damage) : 1)), stun = Math.round(baseStun * (stop ? R.stopHit.stagger : counter ? R.counter.stagger : 1) * (rear ? R.rear.stagger : 1));
-        // The Gambit (src/gambit.ts): an armed swing that meets an open body draws once. Landed: the heavy's number times the odds' multiplier (capped from above 40% health), no shrug, the posture
+        // The Gambit (src/fight/gambit.ts): an armed swing that meets an open body draws once. Landed: the heavy's number times the odds' multiplier (capped from above 40% health), no shrug, the posture
         // times the same; failed: nobody is hurt and the thrower staggers. A guard, a parry or an evade settles it as the plain heavy (the draw is never taken).
         const g = a.gambit && duel.gambit ? resolveGambit(plain, gambitUnit(duel.gambit.seed, gdraws++), d.health, d.maxHealth) : null;
         const dealt = g?.landed ? g.damage : plain;

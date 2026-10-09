@@ -6,7 +6,7 @@
 import type { FinisherId } from './finishers.ts';
 import type { LootId } from '../loot.ts';
 import type { RigId } from '../roster.ts';
-import type { PickedStance } from '../stance.ts';
+import type { PickedStance } from './stance.ts';
 
 export type Shape = 'quadruped' | 'biped';
 export type Cut = { head: readonly string[]; neck: readonly string[]; spine: readonly string[]; limbs: Readonly<Record<string, readonly string[]>> };   // bone names (the rig's skin joints), by limb id; spine = the upper-spine bone a torso wound or a cut-through sprays from
@@ -32,7 +32,7 @@ export type CatalogueRow = {
   blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/fight/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
   render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
   weapon: string;                               // the roster's weapon id (moves.ts WEAPONS); a creature's bite is a weapon too
-  home: PickedStance;                           // the stance its mood favours (src/stance.ts HOME; 'neutral' when it has none)
+  home: PickedStance;                           // the stance its mood favours (src/fight/stance.ts HOME; 'neutral' when it has none)
   voice: string | null;                         // the key of its throat in src/fight/sound/creature.ts THROATS; null = silent
   look: { levels: readonly number[]; phone: boolean; tint: boolean };   // the Pit rungs that have a shipping look file (src/rank-look.ts SHIPPING_LOOKS), whether it also ships a phone LOD (PHONE_LOOKS), and whether its kit takes the rung's finish (src/rank-tint.ts: any armoured character with ranks)
   ladder: { order: number | null; hold: boolean };   // its place on the Pit ladder, 1 = first (src/ladder.ts LADDER); null while held off it (roster `hold`)
