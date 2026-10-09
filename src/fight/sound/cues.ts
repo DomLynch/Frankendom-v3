@@ -1,7 +1,7 @@
 import type { ClarityEvent, CombatEvent } from '../../combat.ts';
 import type { Finish } from '../../duel.ts';
 import { MOVES, RULES, type MoveId, type WeaponId } from '../../moves.ts';
-import { selectFinisher, type FinisherId } from '../../finishers.ts';
+import { selectFinisher, type FinisherId } from '../finishers.ts';
 import { HAMSTRUNG_BEATS } from '../../hamstrung.ts';
 import { poseOf, EXECUTION_BEATS, executionAt } from '../../execution.ts';
 import { hasBlood, type OpponentId } from '../../roster.ts';

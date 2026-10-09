@@ -3,14 +3,14 @@
 // recipe (an archetype and a level band: the numbers stay computed by moves.ts opponentAt, never copied), the animation set, the finisher bones, the blood profile, the loot table and
 // the legend citation. The Pit and every zone are clients of the same row: a new character is one row here, no code. Pure data: only `import type`, no DOM, no clock, no storage.
 // To extend: add the field to CatalogueRow, one check in catalogueProblems, one case in tests/catalogue.test.ts; nothing reads a row by position.
-import type { FinisherId } from '../finishers.ts';
+import type { FinisherId } from './finishers.ts';
 import type { LootId } from '../loot.ts';
 import type { RigId } from '../roster.ts';
 import type { PickedStance } from '../stance.ts';
 
 export type Shape = 'quadruped' | 'biped';
-export type Cut = { head: readonly string[]; neck: readonly string[]; limbs: Readonly<Record<string, readonly string[]>> };   // bone names (the rig's skin joints), by limb id
-export type FinisherTiming = { id: FinisherId; pose: string | null; seconds: number; measured: boolean };   // one per pick: the pose word characters.ts understands (null = no clip yet, plain death plays) and the seconds it takes (src/finishers.ts)
+export type Cut = { head: readonly string[]; neck: readonly string[]; spine: readonly string[]; limbs: Readonly<Record<string, readonly string[]>> };   // bone names (the rig's skin joints), by limb id; spine = the upper-spine bone a torso wound or a cut-through sprays from
+export type FinisherTiming = { id: FinisherId; pose: string | null; seconds: number; measured: boolean };   // one per pick: the pose word characters.ts understands (null = no clip yet, plain death plays) and the seconds it takes (src/fight/finishers.ts)
 export type Part = { id: string; bones: readonly string[]; vital: boolean; weight: number; cuttable: boolean; parent?: string };   // one hurtable region (World's #2000 schema): bone names are skin joints, parent = the part it hangs from (a cut here carries its descendants away), weight = share of hits
 export type Bodytype = { parts: readonly Part[] };   // what can be hurt on a body family that shares a skeleton (src/fight/body-tables.ts)
 export type Species = { blood: { start: string; end: string } | null; decal: { id: string; sizeM: number } | null; spray: number };   // how a species bleeds; spray is a multiple of the Pit's BLOOD counts for a man (1)
@@ -28,8 +28,8 @@ export type CatalogueRow = {
   armour: readonly LootId[];                    // the level-1 armour the character wears and drops from (src/loot.ts ids, no weapon); [] = a creature with no armour pieces
   stats: { archetype: string; levels: readonly [number, number] };   // moves.ts ARCHETYPES key and the level band it is met at; numbers come from opponentAt
   animations: { clips: readonly string[] };     // the clip names both assets carry
-  finisher: { cut: Cut | null; finishers: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/finishers.ts (last = plainDeath, the safe fallback)
-  blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
+  finisher: { cut: Cut | null; finishers: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback)
+  blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/fight/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
   render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
   weapon: string;                               // the roster's weapon id (moves.ts WEAPONS); a creature's bite is a weapon too
   home: PickedStance;                           // the stance its mood favours (src/stance.ts HOME; 'neutral' when it has none)
@@ -59,7 +59,7 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   if (!known.archetypes.has(row.stats.archetype) || !(row.stats.levels[0] >= 1 && row.stats.levels[1] >= row.stats.levels[0])) add('stats', 'stats', 'a known archetype and a level band');
   if (!row.animations.clips.length || new Set(row.animations.clips).size !== row.animations.clips.length) add('animations', 'animations.clips', 'distinct clip names');
   const { cut, finishers } = row.finisher;
-  if (cut && (!cut.head.length || !cut.neck.length || Object.keys(cut.limbs).length < 4 || Object.values(cut.limbs).some((b) => !b.length))) add('finisher', 'finisher.cut', 'a head, a neck and four limbs to cut at, or null');
+  if (cut && (!cut.head.length || !cut.neck.length || !cut.spine.length || Object.keys(cut.limbs).length < 4 || Object.values(cut.limbs).some((b) => !b.length))) add('finisher', 'finisher.cut', 'a head, a neck, an upper spine and four limbs to cut at, or null');
   if (!finishers.length || finishers.some((f) => !known.finishers.has(f)) || finishers.at(-1) !== 'plainDeath' || new Set(finishers).size !== finishers.length) add('finisher', 'finisher.finishers', 'Pit finishers, distinct, ending in plainDeath');
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
   if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);
