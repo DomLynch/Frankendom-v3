@@ -26,7 +26,7 @@ export function createFight({ fighters, wall, rules = RULES, onEvent }: FightOpt
         return brain.intent;
       };
       const next = stepDuel(duel, [pick(0), pick(1)], rules);
-      duel = { ...next, events: [] };
+      duel = next;   // like the Pit's practice.duel: the tick's events stay on the duel until the next step
       if (onEvent) for (const e of next.events) onEvent(e);
       return next.events;
     },
