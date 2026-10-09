@@ -88,7 +88,7 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   if (row.ranks.length ? row.ranks.length !== 10 || !row.ranks.every(named) || row.legend !== null : !row.legend || !('work' in row.legend ? row.legend.work.trim() : 'legendId' in row.legend ? row.legend.legendId : row.legend.pending)) add('legend', 'legend/ranks', 'a ranked opponent has ten named ranks and no creature citation; a creature has a citation, a legend id or a pending note');
   return bad;
 }
-/** The ways a bodytype's part tree is wrong (empty when right): one root (the trunk, never cuttable), every parent present, no cycles, weights above 0, a vital part. A head hangs from the neck and the neck from the trunk, so severing the neck takes the head with it. */
+/** The ways a bodytype's part tree is wrong (empty when right): one root (the trunk, never cuttable), every parent present, no cycles, weights above 0, a vital part. A head hangs from the neck and the neck from the trunk (ids `head` and `neck`, the schema's names), so severing the neck takes the head with it. */
 export function bodytypeProblems(bt: Bodytype): string[] {
   const bad: string[] = [], ids = new Set(bt.parts.map((p) => p.id)), byId = new Map(bt.parts.map((p) => [p.id, p]));
   if (ids.size !== bt.parts.length) bad.push('part ids must be unique');
@@ -101,6 +101,8 @@ export function bodytypeProblems(bt: Bodytype): string[] {
   if (roots.length !== 1) bad.push(`exactly one root part (the trunk), found ${roots.length}`);
   else if (roots[0]!.cuttable || !roots[0]!.vital) bad.push('the root is the trunk: vital, never cuttable');
   if (!bt.parts.some((p) => p.vital)) bad.push('a vital part');
+  const under = (id: string, of: string): boolean => { for (let at = byId.get(id), n = 0; at?.parent !== undefined && n <= bt.parts.length; at = byId.get(at.parent), n++) if (at.parent === of) return true; return false; };   // `id` hangs below `of`
+  if (byId.has('head') && byId.has('neck') && (!under('head', 'neck') || under('neck', 'head'))) bad.push('the head hangs from the neck, never the neck from the head');
   return bad;
 }
 export function catalogueRowsProblems(rows: readonly CatalogueRow[], known: Parameters<typeof catalogueProblems>[1]): RowIssue[] {
