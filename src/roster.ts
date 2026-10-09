@@ -1,6 +1,6 @@
 import type { WeaponId } from './moves.ts';
 import type { Finish } from './duel.ts';
-import { selectFinisher, type FinisherId } from './finishers.ts';
+import { selectFinisher, type FinisherId } from './fight/finishers.ts';
 
 // The rig: the skeleton family a body is built on, which is the blade table it fights with (src/blade-paths.ts bladePathsByRig; the
 // bake is per rig because the same knife sweeps a different arc in a goblin's hand than in a man's). 'hero' is the player skeleton and
