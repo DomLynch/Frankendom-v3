@@ -8,7 +8,7 @@ import { hasBlood } from '../roster.ts';
 import { blockDust, HEAVY_CLASS, clashStrength, createClashSparks } from '../clash-sparks.ts';
 import { shoveFor } from '../camera-kick.ts';
 import { ROLL_TUMBLE, attackerOf, impactShove } from '../hit-impact.ts';
-import { FLINCH_GAIN, isFleshHit, type Flinch } from '../armfeel.ts';
+import { FLINCH_GAIN, isFleshHit, type Flinch, type armfeelFrom } from '../armfeel.ts';
 import type { createBurstPool } from '../armfeel-fx.ts';
 import type { createFootDust } from '../foot-dust.ts';
 import type { createCameraRig } from '../camera.ts';
@@ -22,12 +22,12 @@ import type { State } from '../sim.ts';
 /** What one frame's contact effects need from the scene that owns the rigs, the camera and the feet. */
 export type ContactCtx = {
   events: CombatEvent[]; practice: Practice; state: State; dt: number;
-  blow: CombatEvent | undefined; contact: boolean; killed: CombatEvent | undefined;
+  blow: CombatEvent | undefined; contact: boolean | CombatEvent | undefined; killed: CombatEvent | undefined;
   finisher: FinisherId | null; detailedBlood: boolean;
   rig: ReturnType<typeof createCameraRig>; blockHeavy: boolean[];
   warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
   dustFeet: (THREE.Object3D | null)[]; dustPositions: THREE.Vector3[]; footDust: ReturnType<typeof createFootDust>;
-  flinches: [Flinch, Flinch] | null; burstPool: ReturnType<typeof createBurstPool> | null; feel: string | undefined; right: THREE.Vector3;
+  flinches: Flinch[] | null; burstPool: ReturnType<typeof createBurstPool> | null; feel: ReturnType<typeof armfeelFrom> | undefined; right: THREE.Vector3;
   opponentId: OpponentId; bloodMode: 'red' | 'dark' | 'off';
   DIP_FRAMES: number; setDip(frames: number): void;
 };
