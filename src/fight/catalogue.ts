@@ -6,9 +6,11 @@
 import type { FinisherId } from '../finishers.ts';
 import type { LootId } from '../loot.ts';
 import type { RigId } from '../roster.ts';
+import type { PickedStance } from '../stance.ts';
 
 export type Shape = 'quadruped' | 'biped';
 export type Cut = { head: readonly string[]; neck: readonly string[]; limbs: Readonly<Record<string, readonly string[]>> };   // bone names (the rig's skin joints), by limb id
+export type FinisherTiming = { id: FinisherId; pose: string | null; seconds: number; measured: boolean };   // one per pick: the pose word characters.ts understands (null = no clip yet, plain death plays) and the seconds it takes (src/finishers.ts)
 export type Legend = { work: string; author?: string; year?: number; locator?: string } | { legendId: string } | { pending: string };   // the same shapes as origins/mobs/row.ts SourceRef
 export type RankLegend = { name: string; source: string; backstory: string };   // the named opponent at one Pit rank (src/legends.ts), cosmetic text only
 export type CatalogueRow = {
@@ -21,19 +23,25 @@ export type CatalogueRow = {
   armour: readonly LootId[];                    // the level-1 armour the character wears and drops from (src/loot.ts ids, no weapon); [] = a creature with no armour pieces
   stats: { archetype: string; levels: readonly [number, number] };   // moves.ts ARCHETYPES key and the level band it is met at; numbers come from opponentAt
   animations: { clips: readonly string[] };     // the clip names both assets carry
-  finisher: { cut: Cut | null; finishers: readonly FinisherId[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/finishers.ts (last = plainDeath, the safe fallback)
+  finisher: { cut: Cut | null; finishers: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/finishers.ts (last = plainDeath, the safe fallback)
   blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
+  render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
+  weapon: string;                               // the roster's weapon id (moves.ts WEAPONS); a creature's bite is a weapon too
+  home: PickedStance;                           // the stance its mood favours (src/stance.ts HOME; 'neutral' when it has none)
+  voice: string | null;                         // the key of its throat in src/audio/creature.ts THROATS; null = silent
+  look: { levels: readonly number[]; phone: boolean; tint: boolean };   // the Pit rungs that have a shipping look file (src/rank-look.ts SHIPPING_LOOKS), whether it also ships a phone LOD (PHONE_LOOKS), and whether its kit takes the rung's finish (src/rank-tint.ts: any armoured character with ranks)
+  ladder: { order: number | null; hold: boolean };   // its place on the Pit ladder, 1 = first (src/ladder.ts LADDER); null while held off it (roster `hold`)
   loot: { table: string | null };               // a loot-table id; null = the Pit's own loot (src/loot.ts pieces), no zone table
   legend: Legend | null;                        // a creature's citation; null for a ranked opponent (its ranks carry the names)
   ranks: readonly RankLegend[];                 // the ten Pit ranks' named opponents, rank 1 first (src/legends.ts); [] for a creature
 };
 
-export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'dup-id';
+export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'render' | 'weapon' | 'home' | 'voice' | 'look' | 'ladder' | 'timing' | 'dup-id';
 export type RowIssue = { code: RowCode; path: string; message: string };
 const HEX = /^#[0-9a-f]{6}$/i, WORLD_MAX_TRIS = 10000;   // the world ceiling a row may not raise (the world goblin is ~8k)
 
 /** The ways a row is bad, empty when it is good. `known` supplies what only the caller can know (the roster ids, loot ids, tables, finishers, archetypes). */
-export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySet<string>; loot: ReadonlySet<string>; tables: ReadonlySet<string>; finishers: ReadonlySet<string>; archetypes: ReadonlySet<string> }): RowIssue[] {
+export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySet<string>; loot: ReadonlySet<string>; tables: ReadonlySet<string>; finishers: ReadonlySet<string>; archetypes: ReadonlySet<string>; weapons: ReadonlySet<string>; stances: ReadonlySet<string>; voices: ReadonlySet<string>; poses: ReadonlySet<string> }): RowIssue[] {
   const bad: RowIssue[] = [], add = (code: RowCode, path: string, message: string) => void bad.push({ code, path, message });
   if (!known.roster.has(row.id)) add('id', 'id', `${row.id} is not a roster id`);
   if (!row.name.trim()) add('id', 'name', 'a name');
@@ -49,6 +57,15 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   if (!finishers.length || finishers.some((f) => !known.finishers.has(f)) || finishers.at(-1) !== 'plainDeath' || new Set(finishers).size !== finishers.length) add('finisher', 'finisher.finishers', 'Pit finishers, distinct, ending in plainDeath');
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
   if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);
+  if (!(row.render.scale > 0 && row.render.scale <= 4)) add('render', 'render.scale', 'a draw scale in (0, 4]');
+  if (!known.weapons.has(row.weapon)) add('weapon', 'weapon', `${row.weapon} is not a weapon`);
+  if (!known.stances.has(row.home)) add('home', 'home', `${row.home} is not a stance pick`);
+  if (row.voice !== null && !known.voices.has(row.voice)) add('voice', 'voice', `${row.voice} has no throat`);
+  const { levels } = row.look;
+  if (!levels.every((l, i) => Number.isInteger(l) && l >= 1 && l <= 10 && (i === 0 || l > levels[i - 1]!)) || (levels.length > 0 && row.ranks.length !== 10) || typeof row.look.phone !== 'boolean' || (row.look.tint && !row.armour.length)) add('look', 'look', 'ascending rungs 1..10 on a ranked character, and a tint only where there is armour');
+  if (row.ladder.hold ? row.ladder.order !== null : !(Number.isInteger(row.ladder.order) && row.ladder.order! >= 1)) add('ladder', 'ladder', 'a held character has no order, a ladder one a 1-based order');
+  const { timing } = row.finisher;
+  if (timing.length !== finishers.length || timing.some((t, i) => t.id !== finishers[i] || !(t.seconds > 0 && t.seconds <= 10) || (t.pose !== null && !known.poses.has(t.pose)))) add('timing', 'finisher.timing', 'one entry per pick, in order, seconds in (0, 10], a known pose or null');
   const named = (r: RankLegend) => r.name.trim() && r.source.trim() && r.backstory.trim();
   if (row.ranks.length ? row.ranks.length !== 10 || !row.ranks.every(named) || row.legend !== null : !row.legend || !('work' in row.legend ? row.legend.work.trim() : 'legendId' in row.legend ? row.legend.legendId : row.legend.pending)) add('legend', 'legend/ranks', 'a ranked opponent has ten named ranks and no creature citation; a creature has a citation, a legend id or a pending note');
   return bad;
