@@ -3,8 +3,8 @@
 // Executioner: baying, longshadow, harvest. Dwarf: theword, threeblows, rimshake. Shieldmaiden: baredface, thering, aegis. Witch: avalon, foretold, theprice.
 // Plague Doctor: plagueflies, poisonstain, lastbreath. Knight: thesling, wrath, storm. Same clock: cast at 0, payoff on the strike.
 // Each is its own small file because the sprite and the arena bank have no headroom. They play through the gate's player: same fade-out on a skipped beat.
-import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from './sprite.ts';
-import { playGate } from './gate.ts';
+import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from '../../audio/sprite.ts';
+import { playGate } from '../../audio/gate.ts';
 export const SPECIAL_CUES = ['charge', 'quake', 'tithe', 'redwind', 'hades', 'nyx', 'fistful', 'gone', 'liars', 'cracking', 'ashfall', 'windwall', 'baying', 'longshadow', 'harvest', 'theword', 'threeblows', 'rimshake', 'baredface', 'thering', 'aegis', 'avalon', 'foretold', 'theprice', 'plagueflies', 'poisonstain', 'lastbreath', 'thesling', 'wrath', 'storm', 'cuts', 'wake', 'stirring', 'tempo', 'pulse', 'drag', 'swing'] as const;
 export type SpecialCue = typeof SPECIAL_CUES[number];
 // The cue each `?special=<id>` preview plays (special-look.ts SPECIAL_TESTS / special-modes.ts SPECIAL_MODES): one line per move, so a lane's registry entry is not touched. A fight is never told.
