@@ -3,7 +3,7 @@
 // recipe (an archetype and a level band: the numbers stay computed by moves.ts opponentAt, never copied), the animation set, the finisher bones, the blood profile, the loot table and
 // the legend citation. The Pit and every zone are clients of the same row: a new character is one row here, no code. Pure data: only `import type`, no DOM, no clock, no storage.
 // To extend: add the field to CatalogueRow, one check in catalogueProblems, one case in tests/catalogue.test.ts; nothing reads a row by position.
-import type { FinisherId } from '../fight/finishers.ts';
+import type { FinisherId } from './finishers.ts';
 import type { LootId } from '../loot.ts';
 import type { RigId } from '../roster.ts';
 import type { PickedStance } from '../stance.ts';
