@@ -16,3 +16,4 @@ export * from '../gambit.ts';
 export * from '../stance.ts';
 export * from '../twist.ts';
 export * from '../replay.ts';
+export { createWorldCombat, ME, JOIN_M, MAX_STEPS, kindOf, type WorldCombatDeps, type FightMob, type MobsPort, type MobPose } from './world-combat.ts';   // Zone 1's mount of the open-world loop (any client supplies the mob layer as a port)
