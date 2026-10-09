@@ -14,7 +14,6 @@ import type { createFootDust } from './foot-dust.ts';
 import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBladeBlood, createBodyWounds, createSplatPool } from './gore.ts';
 import type { FinisherId } from './finishers.ts';
-import type { loadWarriors } from './characters.ts';
 import type { CombatEvent, Practice } from './combat.ts';
 import type { State } from './sim.ts';
 
