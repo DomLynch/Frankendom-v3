@@ -4,6 +4,7 @@
 // give-up, heal-home, the page-driven hero position) stays in zone1.ts. Every departure from the Pit is marked `// open-world:`.
 import { OPPONENTS, RULES, opponentAt, profileAt, type AiProfile } from './moves.ts';
 import { OPEN_RADIUS } from './play-radius.ts';
+import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
 import { createFighter, idleIntent, opponentFighter, stepDuel, timing, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
@@ -66,19 +67,19 @@ function intentOf(input: Input, guarding: boolean, lock: boolean): Intent {
 }
 
 /** One world step of a bout: `ticks` Pit ticks (60 Hz). `a` is slot 0 (a player), `b` slot 1 (a creature or a player; undefined when alone). Writes the result into `a` and `b` (the caller's copies) and returns the events. */
-export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: Input, inputB: Input, dt: number): { bout: Bout; events: Event[] } {
+export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: Input, inputB: Input, dt: number, clock = 0): { bout: Bout; events: Event[] } {
   let duel = s.duel, ai = s.ai, guardA = a.phase === 'guard', guardB = b?.phase === 'guard';
   const out: Event[] = [], ticks = Math.max(1, Math.round(dt / TICK));
   const aMul = b ? b.attack * a.res : a.res, bMul = b ? a.attack * b.res : 1;   // open-world: damage a takes = base x the attacker's Attack x its own RES; scaling its pool by the inverse leaves the Pit's duel untouched
   for (let k = 0; k < ticks; k++) {
     const [pa, pb] = duel.fighters;
     // open-world: the places, facings, stances and effective health come from the world each tick (the page walks the players).
-    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health / aMul, maxHealth: a.maxHealth / aMul, stamina: a.stamina, posture: a.posture, skill: a.skill, ...(a.stance ? { stance: a.stance } : {}) };
+    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health / aMul, maxHealth: a.maxHealth / aMul, stamina: a.stamina, posture: a.posture, skill: a.skill, cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
     if (a.special && ha.specialShare === undefined) { ha.specialShare = a.level >= RULES.special.bossFrom ? RULES.special.bossDamage : RULES.special.damage; ha.specialName = a.special; ha.skillCooldown = Math.round(a.specialIn / TICK); }
     const hb: PitFighter = b
-      ? { ...pb, body: b.side === 'player' ? { ...pb.body, x: b.x, z: b.z, heading: pb.phase === 'roll' ? pb.body.heading : b.facing } : pb.body, health: b.health / bMul, maxHealth: b.maxHealth / bMul, ...(b.side === 'player' ? { stamina: b.stamina, posture: b.posture, skill: b.skill } : {}), ...(b.stance ? { stance: b.stance } : {}) }
+      ? { ...pb, cc: b.cc ?? emptyLadder, body: b.side === 'player' ? { ...pb.body, x: b.x, z: b.z, heading: pb.phase === 'roll' ? pb.body.heading : b.facing } : pb.body, health: b.health / bMul, maxHealth: b.maxHealth / bMul, ...(b.side === 'player' ? { stamina: b.stamina, posture: b.posture, skill: b.skill } : {}), ...(b.stance ? { stance: b.stance } : {}) }
       : { ...pb, body: { ...pb.body, x: a.x + FAR_M, z: a.z } };
-    const before: Duel = { ...duel, fighters: [ha, hb] };
+    const before: Duel = { ...duel, fighters: [ha, hb], ccBase: clock + k - duel.tick };   // the ladder's window is the world's clock, not this bout's own tick
     const press = (i: Input): Input => (k === 0 ? i : { x: i.x, z: i.z, run: i.run, guard: i.guard });   // open-world: a press (cut, roll, special) is one tick; the rest of a frame's ticks hold only the walk and the guard
     const intentA = intentOf(press(inputA), guardA, !!b); guardA = !!inputA.guard;
     let intentB: Intent = idleIntent();
@@ -87,6 +88,7 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
     const next = stepDuel(before, [intentA, intentB], OPEN_RULES);
     out.push(...eventsOf(next.events, [a.id, b?.id ?? ''], next, [a, b ?? a]));
     duel = { ...next, events: [] };
+    a.cc = next.fighters[0].cc; if (b) b.cc = next.fighters[1].cc;   // the world keeps the ladders: the next bout (or joiner) steps the same one
   }
   const [pa, pb] = duel.fighters;
   const write = (f: Fighter, p: PitFighter, mul: number): void => {

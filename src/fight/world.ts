@@ -11,6 +11,7 @@ import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
+import type { CcLadder } from './cc-ladder.ts';
 import type { CombatEvent, Duel } from './duel.ts';
 
 const TICK = 1 / 60;
@@ -48,6 +49,7 @@ export type Fighter = {
   skill: SkillId | null;                                // the equipped skill (moves.ts SkillId, the Pit's `equippedSkill(profile.loot)`; null = none): the SKILL button fires its move when no special is set (duel.ts `Fighter.skill`)
   stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
+  cc?: CcLadder;   // the crowd-control ladder (cc-ladder.ts): ONE per fighter, carried through every bout he is in, so three creatures on one hero step the same stun / knockdown ladder
   threat?: Record<string, Threat>;                      // creature only: its threat list (EQEmu hate list shape): who has hurt it. Threat picks the player it fights, damage is the credit (loot to the most). Dropped when he is dead, gone or out of sight for the give-up time; cleared on heal-home
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
 };
@@ -120,6 +122,7 @@ function separate(f: Fighter, all: Fighter[]): void {
 
 /** The next world: who fights whom, then every fight stepped on the Pit's duel; creatures that are not in a fight chase, hold off at the ring, give up or walk home. Never mutates its input. The Pit's brain decides every creature blow, so there is no randomness here. */
 export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>, dt: number): { world: World; events: Event[] } {
+  const clock = Math.round(world.time * 60);   // the world's clock in Pit ticks: the crowd-control ladder's window runs on it, across every bout
   const events: Event[] = [];
   const fighters = world.fighters.map((f) => ({ ...f, ...(f.threat ? { threat: Object.fromEntries(Object.entries(f.threat).map(([k, v]) => [k, { ...v }])) } : {}) })), aggro: World['aggro'] = {}, streams: World['streams'] = {};
   for (const [a, m] of Object.entries(world.aggro)) aggro[a] = { ...m };
@@ -171,7 +174,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
   for (const { a, b } of bouts) {
     const prev = world.streams[a.id], same = prev && prev.foe === (b?.id ?? null);
     const bout: Bout = same ? prev : openBout(a, b, prev && !same && prev.duel.fighters[0] ? prev.duel.fighters[0] : undefined);
-    const r = stepBout(bout, a, b ?? undefined, inputs[a.id] ?? IDLE_INPUT, b && b.side === 'player' ? inputs[b.id] ?? IDLE_INPUT : IDLE_INPUT, dt);
+    const r = stepBout(bout, a, b ?? undefined, inputs[a.id] ?? IDLE_INPUT, b && b.side === 'player' ? inputs[b.id] ?? IDLE_INPUT : IDLE_INPUT, dt, clock);
     if (b && b.side === 'creature' && r.bout.ai) b.brain = carried(r.bout.ai, r.bout.duel.tick);   // the brain lives on the creature, not in the fight
     if (b && b.side === 'creature' && !engagedWith(a, b.id)) events.push({ type: 'FightStarted', creature: b.id, player: a.id });
     streams[a.id] = r.bout; events.push(...r.events);
@@ -182,7 +185,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     for (const c of joined.get(a.id) ?? []) {
       const had = prevJoined.get(c.id) ?? (prev?.foe === c.id ? prev : undefined), jb = had ?? openBout(a, c);
       if (!engagedWith(a, c.id)) events.push({ type: 'FightStarted', creature: c.id, player: a.id });
-      const jr = stepBout(jb, a, c, passive, IDLE_INPUT, dt); r.bout.joined.push(jr.bout); events.push(...jr.events);
+      const jr = stepBout(jb, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);
       if (jr.bout.ai) c.brain = carried(jr.bout.ai, jr.bout.duel.tick);
       if (alive(a)) Object.assign(a, keep); else { Object.assign(a, { x: keep.x, z: keep.z, facing: keep.facing }); break; }   // killed by a joiner: he stays dead (Auditor, #1943); the other joiners stop
       if (alive(c) && Math.hypot(c.x - c.chaseX, c.z - c.chaseZ) > leashOf(c.kind)) { c.hunting = false; c.returning = true; c.phase = 'ready'; }
