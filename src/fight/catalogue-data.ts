@@ -215,3 +215,4 @@ export const CATALOGUE_ROWS: readonly CatalogueRow[] = [
       { name: "Athena", source: "Greek myth", backstory: "Goddess of wisdom and war, born armoured from her father's head. In Frankendom she fights as strategy itself, and the aegis turns every blow." },
     ] },
 ];
+export default CATALOGUE_ROWS;
