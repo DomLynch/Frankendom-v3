@@ -66,7 +66,7 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   if (cut && (!cut.head.length || !cut.neck.length || !cut.spine.length || Object.keys(cut.limbs).length < 4 || Object.values(cut.limbs).some((b) => !b.length))) add('finisher', 'finisher.cut', 'a head, a neck, an upper spine and four limbs to cut at, or null');
   if (!finishers.length || finishers.some((f) => !known.finishers.has(f)) || finishers.at(-1) !== 'plainDeath' || new Set(finishers).size !== finishers.length) add('finisher', 'finisher.finishers', 'Pit finishers, distinct, ending in plainDeath');
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
-  if (row.loot.table !== null && !known.tables.has(row.loot.table) && !(row.body && /^loottable:[a-z0-9-]+$/.test(row.loot.table))) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);   // a variant creature's table is its ZONE's (origins/zones/zone<N>/loot.ts): the zone gate checks it exists
+  if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);   // body and variant rows alike: the table must resolve (a typo would silently drop loot)
   if (!(row.render.scale > 0 && row.render.scale <= 4)) add('render', 'render.scale', 'a draw scale in (0, 4]');
   if (!known.weapons.has(row.weapon)) add('weapon', 'weapon', `${row.weapon} is not a weapon`);
   if (!known.stances.has(row.home)) add('home', 'home', `${row.home} is not a stance pick`);
