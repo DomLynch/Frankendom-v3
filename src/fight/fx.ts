@@ -1,6 +1,6 @@
 // Moving the Pit's contact effects into src/fight (K5/K6 P1): what a landed blow, a block or a parry does in the picture: the hit sparks, the splat pool, the body wounds, the blade
 // blood, the steel-on-steel clash sparks, the sand off a defender's feet, and the camera-kick DECISION (hit-impact.ts / camera-kick.ts tables). The code is the Pit's, moved out of
-// src/scene.ts createScene()/render() with its text unchanged; the Pit's scene calls it every frame with the objects it owns (the camera rig, the rigs, the feet), and a zone can feed
+// src/fight/scene.ts createScene()/render() with its text unchanged; the Pit's scene calls it every frame with the objects it owns (the camera rig, the rigs, the feet), and a zone can feed
 // it the same way. Presentation only: nothing here reads or writes the simulation.
 import * as THREE from 'three';
 import { OPPONENTS, RULES, weaponOf, type OpponentId } from './moves.ts';

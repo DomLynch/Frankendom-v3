@@ -59,7 +59,7 @@ export const FINISHER_POSE: Record<FinisherId, 'splitCrown' | 'decapitation' | '
 // How long each finisher actually takes to finish playing, in seconds from the Killed event — MEASURED, one number per
 // finisher, never one constant for all of them (Lead brief 2026-09-22, for Web's loot panel).
 //
-// What the runtime uses: nothing here. The game keys on the event — `view.finishPhase().complete` in src/scene.ts, which
+// What the runtime uses: nothing here. The game keys on the event — `view.finishPhase().complete` in src/fight/scene.ts, which
 // latches off the scene's own state (the victim's clip has run out, the camera has settled, a severed head has come to
 // rest). This table exists so Web can budget a layout against a real figure instead of a guessed delay, and so a drift in
 // the ceremony shows up as a changed number here rather than as a panel that lands too early.
