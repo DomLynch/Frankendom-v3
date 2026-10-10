@@ -14,7 +14,7 @@ export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THRE
   const feel = opts.feel ?? 'high', pools = new Map<string, ReturnType<typeof createBurstPool>>(), bleeders = createBleeders(), ground = new THREE.CircleGeometry(0.5, 12).rotateX(-Math.PI / 2);
   const spots: Spot[] = Array.from({ length: SPOTS }, () => {
     const mesh = new THREE.Mesh(ground, new THREE.MeshBasicMaterial({ color: '#3a0807', transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, toneMapped: false }));
-    mesh.visible = false; mesh.castShadow = false; mesh.receiveShadow = false; scene.add(mesh);
+    mesh.visible = false; mesh.castShadow = false; mesh.receiveShadow = false; mesh.userData.warmHidden = true; scene.add(mesh);   // warmOwn compiles it shown (compile skips hidden objects): a wound's ground mark must not link its program at the first hit
     return { mesh, age: 0, live: false };
   });
   let next = 0;
