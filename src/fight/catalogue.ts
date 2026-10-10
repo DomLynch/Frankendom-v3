@@ -32,7 +32,7 @@ export type CatalogueRow = {
   animations: { clips: readonly string[] };     // the clip names both assets carry
   finisher: { cut: Cut | null; finishers: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback)
   blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/fight/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
-  render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
+  render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/fight/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
   weapon: string;                               // the roster's weapon id (moves.ts WEAPONS); a creature's bite is a weapon too
   home: PickedStance;                           // the stance its mood favours (src/fight/stance.ts HOME; 'neutral' when it has none)
   voice: string | null;                         // the key of its throat in src/fight/sound/creature.ts THROATS; null = silent

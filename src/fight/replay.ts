@@ -6,7 +6,7 @@
 import { initialPractice, stepPractice, type Practice } from './combat.ts';
 import { LEVELS, OPPONENTS, opponentAt, profileAt } from './moves.ts';
 import { encodeRecord, type FightRecord } from './record.ts';
-import { underRecord } from '../detmath.ts';
+import { underRecord } from './detmath.ts';
 import { groupLayer, withIncoming } from '../pack.ts';
 import { skillOf } from '../loot.ts';
 import { specialOf, type SkillId, type SpecialName } from './moves.ts';

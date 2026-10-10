@@ -1,11 +1,11 @@
 import { decide, initialAi, readOpponent, type AiMode, type AiState } from './ai.ts';
-import type { HitLocation } from '../blade.ts';
+import type { HitLocation } from './blade.ts';
 import { inBufferWindow, initialDuel, legal, type DuelPose, withGambit, withSpecials, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
 import { asStance, moodOf, type PickedStance } from './stance.ts';
 import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, type AiProfile, type MoveId, type Opponent, type PathId, type SkillId, type SpecialName, type Weapon, type WeaponId } from './moves.ts';
 import type { State } from './sim.ts';
-import { M } from '../detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
-import { specialStage } from '../special-look.ts';
+import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
+import { specialStage } from './special-look.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
 export { PROFILES, OPPONENTS, RULES, MOVES } from './moves.ts';
 export type { Opponent, OpponentId, Level } from './moves.ts';
