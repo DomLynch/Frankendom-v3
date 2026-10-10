@@ -36,4 +36,4 @@ export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: on
 export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue player (K8 row 12: the zone page reaches it through here)
 export { creaturesLook, type CreatureCue } from './sound/creature.ts';   // ?look=creatures and the creature cue names
 export const loadFeedback = () => import('./sound/feedback.ts').then((m) => m.createFeedback());   // K8 slice 2: the Pit's cue player as a lazy chunk (the zone builds it at its first gesture, not with the page)
-export { createFollowCamera, inPassage, type Framing, type FollowState, type Passage } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
+export { createFollowCamera, inPassage, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
