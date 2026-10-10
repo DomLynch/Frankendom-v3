@@ -1,7 +1,7 @@
 import { AddEquation, Color, CustomBlending, DstColorFactor, DynamicDrawUsage, OneMinusSrcAlphaFactor, SRGBColorSpace, TextureLoader, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, Quaternion, SphereGeometry, Texture, Vector3 } from 'three';
 import type { FinisherId } from './finishers.ts';
-import { HAMSTRUNG_BEATS } from '../hamstrung.ts';
-import { EXECUTION_BEATS, executionAt } from '../execution.ts';
+import { HAMSTRUNG_BEATS } from './hamstrung.ts';
+import { EXECUTION_BEATS, executionAt } from './execution.ts';
 
 // Blood on the floor multiplies onto the sand: dst × lerp(1, texture, alpha·opacity). Premultiplied output makes alpha and opacity
 // fade it toward "no change" — never toward white, which a plain MultiplyBlending ignores opacity for.

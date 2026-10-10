@@ -1,0 +1,12 @@
+/* The zone's meters (createMeters in hud.ts): foe name and bar, your health, your stamina, and the hit vignette. The bars read --fill, which fillMeter sets, so no engine's <meter> pseudo bar is drawn. */
+.fm-meters { position: fixed; left: 12px; top: max(12px, env(safe-area-inset-top)); z-index: 4; width: 150px; pointer-events: none; font: 600 11px/1.2 Georgia, serif; color: #efe6d2; }
+.fm-meters[hidden] { display: none; }
+.fm-name { min-height: 13px; text-shadow: 0 1px 2px #000; }
+.fm-bar { display: block; width: 100%; box-sizing: border-box; -webkit-appearance: none; appearance: none; border: 0; border-radius: 0; background: linear-gradient(to right, var(--bar) var(--fill, 0%), rgba(0, 0, 0, 0.55) 0); }
+.fm-bar::-webkit-meter-bar, .fm-bar::-webkit-meter-optimum-value, .fm-bar::-webkit-meter-suboptimum-value, .fm-bar::-webkit-meter-even-less-good-value { background: transparent; }
+.fm-bar::-moz-meter-bar { background: transparent; }
+.fm-foe { --bar: #b4452e; height: 7px; margin: 2px 0; }
+.fm-hp { --bar: #5aa05a; height: 9px; margin: 6px 0 2px; }
+.fm-st { --bar: #c9b24a; height: 5px; }
+.fm-flash { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(transparent 40%, rgba(190, 30, 20, 0.55)); opacity: 0; transition: opacity 0.25s; }
+.fm-flash[data-on='true'] { opacity: 1; }

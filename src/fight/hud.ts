@@ -2,12 +2,12 @@
 // binding over the practice state — it never decides anything about the fight. `element` is injected so the entry point's
 // own lookup (and the VM test harness's fake document) is what it binds to.
 import { accepts, counterLine, practiceHint, type ClarityEvent, type CombatEvent, type Practice } from './combat.ts';
-import { defenceGrade, GRADE_LABEL } from '../defence-grade.ts';
+import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
 import { won } from '../ladder.ts';
 import { bareName } from '../roster.ts';
 import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../lessons.ts';
-import { createGapHistory } from '../kick-close.ts';
-import { staminaLow } from '../fatigue-preview.ts';
+import { createGapHistory } from './kick-close.ts';
+import { staminaLow } from './fatigue-preview.ts';
 import { SKILL_MOVE, weaponOf, type OpponentId } from './moves.ts';
 
 // Heavy-class contacts: bigger damage numbers here, a longer hit-stop in the frame loop.
@@ -16,6 +16,32 @@ export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', '
 export const KICK_LANDS = 1.5;
 
 export type HudView = { legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
+// The one bar drawing: a meter's max, its value and the --fill custom property the style sheets draw it from (a <meter>'s own pseudo bars differ per engine).
+export function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
+export function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
+
+// The meters a zone shows over the walk (health, stamina, the foe in reach, the hit flash): the same bar drawing the Pit's createHud uses (fillMeter / paintMeter), from plain numbers and with
+// no Practice, because the open-world loop has none. The page builds nothing of its own (tests/fight-no-twins.test.ts); the look is src/fight/meters.css.
+export type MeterState = { hp: number; maxHp: number; stamina: number; maxStamina: number; foe: { name: string; hp: number; max: number } | null };
+export function createMeters(parent: HTMLElement) {
+  const doc = parent.ownerDocument, make = <T extends HTMLElement>(tag: string, cls: string, label?: string): T => { const e = doc.createElement(tag) as T; e.className = cls; if (label) e.setAttribute('aria-label', label); return e; };
+  const root = make('div', 'fm-meters'), name = make('div', 'fm-name'), flashEl = make('div', 'fm-flash');
+  const foe = make<HTMLMeterElement>('meter', 'fm-bar fm-foe', 'Foe health'), hp = make<HTMLMeterElement>('meter', 'fm-bar fm-hp', 'Your health'), stamina = make<HTMLMeterElement>('meter', 'fm-bar fm-st', 'Your stamina');
+  root.hidden = true; root.append(name, foe, hp, stamina); parent.append(root, flashEl);
+  let flashTimer: ReturnType<typeof setTimeout> | undefined;
+  return {
+    /** Paint the meters; `shown` false hides them (the zone hides them while the hero is whole and nothing is in reach). */
+    update(state: MeterState, shown: boolean) {
+      root.hidden = !shown; if (!shown) return;
+      paintMeter(hp, state.hp, state.maxHp); paintMeter(stamina, state.stamina, state.maxStamina);
+      name.textContent = state.foe ? state.foe.name : '';
+      if (state.foe) paintMeter(foe, state.foe.hp, state.foe.max); else paintMeter(foe, 0, 1);
+    },
+    /** The hero was hit: a red vignette for a moment. */
+    flash() { flashEl.dataset.on = 'true'; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashEl.dataset.on = 'false'; }, 120); },
+  };
+}
+
 type Lookup = <T extends HTMLElement>(id: string) => T;
 
 export function createHud(element: Lookup) {
@@ -67,18 +93,11 @@ export function createHud(element: Lookup) {
       const key = `${practice.phase}:${practice.duel.fighters[0].lastMove ?? ''}:${practice.health}:${practice.playerHealth}:${Math.floor(staminaNow)}${lowNext ? 'L' : ''}:${Math.floor(practice.posture)}:${Math.floor(practice.enemyPosture)}:${hint}:${controlsReady}:${ok.join('')}${skillOk ? 1 : 0}:${practice.wound > 0}:${practice.exhausted}:${practice.threat}:${practice.threatMove}:${inKickReach}:${inSkillReach}:${view.replay ? 'r' : ''}${view.practiceOnly ? 'p' : ''}${view.stalled ? 's' : ''}${view.debug ? 'd' : ''}`;   // d: ?debug shown follows the test tools (#1093), so an admin opening them rewrites #debug
       if (key === lastHud) return;
       lastHud = key; staminaLowOn = lowNext;
-      health.max = practice.enemyMaxHealth;
-      playerHealth.max = practice.maxHealth; // an opponent may carry more than a man (moves.ts `Opponent.health`)
-      health.value = practice.health;
+      paintMeter(health, practice.health, practice.enemyMaxHealth);
+      paintMeter(playerHealth, practice.playerHealth, practice.maxHealth); // an opponent may carry more than a man (moves.ts `Opponent.health`)
       element('health-value').textContent = `${practice.health} / ${practice.enemyMaxHealth}`;
-      playerHealth.value = practice.playerHealth;
       element('player-health-value').textContent = `${practice.playerHealth} / ${practice.maxHealth}`;
-      for (const [meter, value, max] of [
-        [health, practice.health, practice.enemyMaxHealth],
-        [playerHealth, practice.playerHealth, practice.maxHealth],
-        [stamina, staminaNow, 100],
-      ] as const)
-        meter.style.setProperty('--fill', `${(value / max) * 100}%`);
+      fillMeter(stamina, staminaNow, 100);
       stamina.style.setProperty('--max', `${practice.maxStamina}%`);
       stamina.dataset.capped = String(practice.maxStamina < 100);   // a wound has lowered the ceiling: the bar draws a solid cap and a notch at --max (style.css)
       stamina.dataset.leg = String(practice.legWound); // attrition: the lost ceiling is shaded; a leg wound marks the bar

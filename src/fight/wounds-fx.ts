@@ -1,9 +1,9 @@
-// The blood a creature's wounds row draws in a zone fight (Release K5, src/fight/wounds.ts is the data side): the Pit's own pooled blood burst (src/armfeel-fx.ts, one draw call per colour)
+// The blood a creature's wounds row draws in a zone fight (Release K5, src/fight/wounds.ts is the data side): the Pit's own pooled blood burst (src/fight/armfeel-fx.ts, one draw call per colour)
 // at the part a hit landed on, then marks and drips on the ground as its hp falls through the row's tiers. Presentation only. A new creature is a catalogue row, never code here.
 // Body decals (marks ON the skin) stay the Pit's two-slot pool for now (src/fight/gore.ts createBodyWounds): the tiers' `decals` land as ground marks beside the creature.
 import * as THREE from 'three';
-import { createBurstPool } from '../armfeel-fx.ts';
-import type { Feel } from '../armfeel.ts';
+import { createBurstPool } from './armfeel-fx.ts';
+import type { Feel } from './armfeel.ts';
 import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBleeders, pickPart, sprayOf, unit, type WoundSpec } from './wounds.ts';
 

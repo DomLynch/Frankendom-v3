@@ -6,7 +6,7 @@ import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, 
 import type { State } from './sim.ts';
 import { M } from '../detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { specialStage } from '../special-look.ts';
-import { stepFatigue, type Fatigue } from '../fatigue.ts';
+import { stepFatigue, type Fatigue } from './fatigue.ts';
 export { PROFILES, OPPONENTS, RULES, MOVES } from './moves.ts';
 export type { Opponent, OpponentId, Level } from './moves.ts';
 export type { Intent, Action, CombatEvent, Duel, Fighter } from './duel.ts';
