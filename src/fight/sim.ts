@@ -1,4 +1,4 @@
-import { M } from '../detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
+import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 export const STEP = 1 / 60;
 import { PLAY_SCALE, RADIUS, spawnScale } from './play-radius.ts';
 export { PLAY_SCALE, RADIUS };   // the play circle (play-radius.ts): 8.55 m, 0.6 of it in Arena 1 from record version 23

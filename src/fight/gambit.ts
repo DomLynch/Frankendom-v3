@@ -2,7 +2,7 @@
 // tell and timing, and when it would connect a draw decides: it lands for `multiplier` times the heavy, or the thrower staggers and nobody is hurt. Odds are ONE constant, about 1 in 2 for about 2x
 // (Dom-approved 2026-10-07); the mean equals a heavy, and the self-stagger's punish cost makes it slightly worse (condition C1). src/fight/duel.ts applies it and origins/luck/luck.ts shows the same numbers
 // on the HUD, both importing THESE, so they cannot drift. A sim file: no Math.random, no clock, no transcendental.
-import { rollUnit } from '../roll.ts';
+import { rollUnit } from './roll.ts';
 export type GambitOdds = { chance: number; multiplier: number };
 export const GAMBIT_ODDS: GambitOdds = Object.freeze({ chance: 1 / 2, multiplier: 2 });
 export const GAMBIT_KILL_FLOOR = 0.4;   // C1: a landed Gambit never kills from above 40% of max health

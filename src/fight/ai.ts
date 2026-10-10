@@ -1,8 +1,8 @@
-import { STAB_ON } from '../stab-rule.ts';
+import { STAB_ON } from './stab-rule.ts';
 import { RULES, type AiProfile, type Direction, type MoveId, weaponOf } from './moves.ts';
 import { LATE_NOTICE } from './play-radius.ts';
 import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
-import { M } from '../detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
+import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 
 // Local opponent controller. It reads only committed duel state (never the other side's pending intent), notices a fresh
 // action `reaction` ticks late, and emits an ordinary Intent that stepDuel judges by the same rules as the player's.
