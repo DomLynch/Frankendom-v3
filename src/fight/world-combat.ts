@@ -6,7 +6,7 @@ import { NAKED, type Loadout } from './gear-stats.ts';
 import { OPPONENTS, type WeaponId } from './moves.ts';
 import type { CombatEvent, Duel, Finish } from './duel.ts';
 import { selectFinisher, finisherSeconds, type FinisherId } from './finishers.ts';
-import { creatureGore } from '../creature-gore.ts';
+import { catalogueRow } from './catalogue-rows.ts';
 
 export const ME = 'me', STEP = 1 / 60, JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */
@@ -36,7 +36,7 @@ type Fx = { finisher: FinisherId; fallS: number; hurtT: number; fallT: number; w
 
 /** How a creature dies: the engine's selectFinisher for the kill, kept to the creature's own row (CREATURE_GORE.finishers) and to what the client can play; plainDeath when none fits. */
 export function finishOf(kind: string, finish: Finish, weapons: readonly [WeaponId, WeaponId], canPlay: (f: FinisherId) => boolean = (f) => f === 'plainDeath'): FinisherId {
-  const row: readonly FinisherId[] = creatureGore(kind)?.finishers ?? ['plainDeath'], pick = selectFinisher(finish, weapons);
+  const row: readonly FinisherId[] = (catalogueRow(kind)?.finisher.cut ? catalogueRow(kind)!.finisher.finishers : ['plainDeath']), pick = selectFinisher(finish, weapons);
   return pick && row.includes(pick) && canPlay(pick) ? pick : 'plainDeath';
 }
 
