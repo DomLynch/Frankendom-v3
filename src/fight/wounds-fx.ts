@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { createBurstPool } from './armfeel-fx.ts';
 import type { Feel } from './armfeel.ts';
-import { bloodGrow, foeBurstPull } from './blood-style.ts';
+import { BLOOD, bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBleeders, pickPart, sprayOf, unit, type WoundSpec } from './wounds.ts';
 
 const SPOTS = 40, SPOT_LIFE = 25, DRIP_SIZE = 0.12, MARK_SPREAD = 0.45;   // marks in the ring; seconds a mark stays; m across a drip; m a body mark lands from the creature
@@ -19,6 +19,7 @@ export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THRE
   });
   let next = 0;
   const pool = (start: string, end: string) => { const k = start + end; let p = pools.get(k); if (!p) { p = createBurstPool(scene, { start, end }); pools.set(k, p); } return p; };
+  pool(BLOOD.start, BLOOD.end);   // made now, not at the first hit: the burst pool is an instanced MeshBasicMaterial whose program does not depend on the colour (an instance attribute), so one pool up front warms every species' (T4 2026-10-10: its link was the 'basic' program at engage)
   const mark = (x: number, z: number, size: number, colour: string) => {
     const s = spots[next++ % SPOTS]!;
     s.mesh.position.set(x, (opts.groundAt?.(x, z) ?? 0) + 0.02, z); s.mesh.scale.set(size, 1, size); s.mesh.material.color.set(colour);
