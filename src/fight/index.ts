@@ -27,3 +27,5 @@ export { catalogueBodyUrl, heroBodyUrl } from './catalogue-bodies.ts';   // a ro
 export { legendForLevel, LEGEND_OPPONENTS, type LegendOpponent } from '../legends.ts';   // the Pit's legend ladder (K12: the zone page and the Pit read it through the door)
 export { bareName } from '../roster.ts';   // a roster name without its article (K12)
 export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: one createFightFx per active pair
+export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue player (K8 row 12: the zone page reaches it through here)
+export { creaturesLook, type CreatureCue } from './sound/creature.ts';   // ?look=creatures and the creature cue names
