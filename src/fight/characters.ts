@@ -1,9 +1,9 @@
 // THE ACTOR DRIVER, in the shared fight core (src/fight/, Dom via Strategy 2026-10-09: the Pit and every zone play one fight, one animation system). Moved from src/characters.ts, which now re-exports it
 // so the Pit's importers are untouched; Zone 1 imports it from src/fight/index.ts. Nothing in this file changed but the relative paths.
-import { beastRenderScale } from '../beast-scale.ts';
+import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
-import { swingProgress } from '../blade.ts';
-export { swingProgress } from '../blade.ts';
+import { swingProgress } from './blade.ts';
+export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
 import { weaponOf, type Direction, type WeaponId } from './moves.ts';
 import { movesOf, type Fighter } from './duel.ts';
@@ -408,7 +408,7 @@ export const SHIELD_CARRY = {
   lifted: { elbow: new Vector3(.3, .55, .35).normalize(), wrist: new Vector3(-.2, 1, .25).normalize() },
   planted: { elbow: new Vector3(.3, -.75, .6).normalize(), wrist: new Vector3(.05, -1, .3).normalize() },
 } as const;
-// A beast is drawn at the size it is met walking (src/beast-scale.ts), by roster id: render only, the sim's capsule is untouched. scene.ts calls this once the foe's rig is built.
+// A beast is drawn at the size it is met walking (src/fight/beast-scale.ts), by roster id: render only, the sim's capsule is untouched. scene.ts calls this once the foe's rig is built.
 export function sizeBeast(warriors: { opponent: { anchor: Group } }, opponentId: string): void {
   const k = beastRenderScale(opponentId);
   if (k !== 1) warriors.opponent.anchor.scale.setScalar(k);
