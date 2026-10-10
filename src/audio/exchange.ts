@@ -1,6 +1,6 @@
-import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../duel.ts';
+import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../fight/duel.ts';
 import type { DeathPresentation } from '../fight/sound/cues.ts';
-import { RULES } from '../moves.ts';
+import { RULES } from '../fight/moves.ts';
 
 // The fixed scripted exchange every audio iteration is judged on: both fighters are driven by hand through the real
 // simulation (no AI), so the same beats land on the same ticks and BEFORE/AFTER renders are like-for-like. The warden

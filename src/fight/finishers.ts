@@ -1,5 +1,5 @@
-import type { Finish } from '../duel.ts';
-import type { WeaponId } from '../moves.ts';
+import type { Finish } from './duel.ts';
+import type { WeaponId } from './moves.ts';
 
 // Finishers & gore v1 (owner-authorized 2026-09-17, GAME_SPEC "Owner-authorized finishers & gore"). The simulation decided
 // the kill already: selection is a pure function of the Killed event's data (victim, location, move, heading) and the
