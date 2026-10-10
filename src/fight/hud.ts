@@ -37,6 +37,11 @@ export function createMeters(parent: HTMLElement) {
       name.textContent = state.foe ? state.foe.name : '';
       if (state.foe) paintMeter(foe, state.foe.hp, state.foe.max); else paintMeter(foe, 0, 1);
     },
+    /** Paint from the open-world loop itself (hero, the foe in reach, whether a fight is on); hidden while the hero is whole and nothing is in reach. */
+    feed(wc: { hero(): { health: number; max: number; stamina: number; maxStamina: number }; target(): { name: string; health: number; max: number } | null; inCombat(): boolean }) {
+      const h = wc.hero(), t = wc.target(), full = h.health >= h.max - 0.5 && h.stamina >= h.maxStamina - 0.5;
+      this.update({ hp: h.health, maxHp: h.max, stamina: h.stamina, maxStamina: h.maxStamina, foe: t ? { name: t.name, hp: t.health, max: t.max } : null }, !(full && !t && !wc.inCombat()));
+    },
     /** The hero was hit: a red vignette for a moment. */
     flash() { flashEl.dataset.on = 'true'; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashEl.dataset.on = 'false'; }, 120); },
   };
