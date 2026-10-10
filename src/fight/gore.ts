@@ -26,7 +26,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
       }),
     );
     splat.rotation.x = -Math.PI / 2;
-    splat.visible = false;
+    splat.visible = false; splat.userData.warmHidden = true;   // see fx.ts sparks: the first blood splat must not link its program mid-fight
     scene.add(splat);
     return { mesh: splat, life: 0, grow: 0, age: 0, dark: false, pool: false }; // grow: a kill pool spreads over ~2 s instead of appearing at once
   });
@@ -267,7 +267,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
   });
   const spots = Array.from({ length: DROPS.spots }, () => {
     const mesh = new THREE.Mesh(spotGeometry, new THREE.MeshBasicMaterial({ color: '#681a19', transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
-    mesh.visible = false; scene.add(mesh);
+    mesh.visible = false; mesh.userData.warmHidden = true; scene.add(mesh);   // the floor spots are an unmapped basic program of their own (T4 2026-10-10: Zone 1 still linked one 'basic' at engage with only the splat pool tagged)
     return { mesh, life: 0 };
   });
   let nextSpot = 0;
