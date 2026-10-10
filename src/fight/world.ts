@@ -9,6 +9,7 @@ import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
 import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
+import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
 import type { CombatEvent, Duel } from './duel.ts';
 
@@ -19,7 +20,7 @@ export const PLAYER_RADIUS = 0.425;                    // half the sim's 0.85 m 
 export const AGGRO_M = 9;                              // a creature that is hunting a player notices him inside this ring (World's mob layer decides who is in the world at all)
 export const SIGHT_M = 14;                              // a hunting creature keeps the player in sight inside this ring (hysteresis over AGGRO_M); past it the unseen clock runs
 export const ENGAGE_M = 4, ENGAGE_OUT_M = 6;           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
-export const MAX_ATTACKERS = 3;                         // creatures on one player at once (Dom: three on one): the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring
+export { MAX_ATTACKERS };   // creatures on one player at once (Dom: three on one): the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring
 export const HOLD_M = ENGAGE_M * 0.95;                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
 /** Creature levels (Dom: copy the Pit): a creature of level L has the Pit's own level body (moves.ts `opponentAt`: health and poise by level) and, in a fight, the Pit's level brain (`profileAt`). No Zone 1 scaling of our own. */
 export const MAX_LEVEL = LEVELS;

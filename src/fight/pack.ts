@@ -5,6 +5,7 @@
 //  2. The creature's THREAT LIST (`ThreatList`): who the creature turns on when several players hit it. Donor: AzerothCore ThreatManager (damage adds threat; the current victim changes only when another beats it
 //     by 110 %, casters 130 %; a list cap of 7; suppressed targets are used only when no online one is left). Deterministic: a pure function of the join order and the damage stream, ties go to the earlier joiner.
 import type { Practice } from './combat.ts';
+import { MAX_ATTACKERS } from './attackers.ts';
 import { idleIntent, opponentFighter, stepDuel, type Duel, type Intent } from './duel.ts';
 import { M } from './detmath.ts';
 import type { Opponent } from './moves.ts';
@@ -75,10 +76,9 @@ export function nextBout(pack: Pack, duel: Duel, fled = false): { pack: Pack; du
 // Each attacker fights their own Pit duel against their own copy of the creature; a copy attacks only its own attacker. The pool is shared by the one sim hook there is: Duel.incoming, the damage the OTHER streams dealt
 // last tick, which lands on this copy after its own blows (one tick of latency, identical live and on replay). Per-copy state that is not health (posture, poise, stagger, stance mood, a boss special) is per stream on
 // purpose: each attacker fights the creature they see, and a special fires once per stream. Every stream's record carries what it was fed (the incoming list) and when it was held idle, so each verifies ALONE.
-export const TOKENS = 3;   // attack tokens: at most this many copies attack at once (Dom: 3-4 active); the rest are HELD, idle in the sim, and the hold is recorded
 export type StreamLog = { incoming: [number, number][]; held: [number, number][]; dealt: [number, number][] };   // dealt: (tick, damage this attacker put on the creature), the ledger groupKill reads; it is not in the record (the replay re-derives it)
 export type StreamGroup = { duels: readonly Duel[]; carry: readonly number[]; tokens: number; logs: readonly StreamLog[] };
-export const startStreams = (duels: readonly Duel[], tokens = TOKENS): StreamGroup => {
+export const startStreams = (duels: readonly Duel[], tokens = MAX_ATTACKERS): StreamGroup => {
   if (duels.length < 2 || duels.length > THREAT_MAX) throw RangeError(`Streams: a shared-health group is 2..${THREAT_MAX} duels (a lone stream is the ordinary fight)`);
   return { duels, carry: duels.map(() => 0), tokens, logs: duels.map(() => ({ incoming: [], held: [], dealt: [] })) };
 };
