@@ -21,6 +21,9 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   onHeroHit(amount: number): void;  // red flash + the Hit clip
   onSwing?(): void;                 // the hero's own cut began (the page poses the hero from heroDuel() with the Pit's actor now; kept for hosts that want the beat)
   onTelegraph?(id: string, ms: number): void;
+  onCreatureHit?(spec: S, hit: { seed: number; kill: boolean; hpFrac: number; fromX: number; fromZ: number }): void;   // a creature was hit (its wounds row draws the blood; seed = the fight's tick and its id, so a replay bleeds the same)
+  onCreatureTick?(spec: S, t: { hpFrac: number; dt: number; x: number; z: number; seed: number }): void;   // every frame a creature is up and fighting (the row's tiers: drips and marks)
+  onCreatureGone?(id: string): void;   // it was released or has fallen
   onEvent?(ev: Event): void;       // every combat event, after the page has shown it (the spawn client, spawn-net.ts onCombatEvent)
   hero?: () => { gear: Loadout; level: number; health?: number };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
 };
@@ -32,9 +35,10 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, guardHeld = false, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
   const specs = new Map<string, S>(), fx = new Map<string, Fx>();
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
+  const seedOf = (id: string): number => { let h = steps; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761); return h >>> 0; };   // the fight's tick and a creature's id: a roll of presentation, the same on a replay
   const gearOf = () => { const { gear, level } = mine(), p = player(ME, 0, 0, 0, gear, level); return { attack: p.attack, res: p.res, level: p.level, shielded: p.shielded }; };
   const me = (): Fighter => world.fighters[0]!;
-  function release(id: string) { d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
+  function release(id: string) { d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
     specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, creature(p.spec.id, kind, p.x, p.z, 0, p.spec.level)] };
@@ -42,7 +46,11 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   function handle(ev: Event) {
     if (ev.type === 'Telegraph') { if (ev.id === ME) d.onSwing?.(); else { const f = fxOf(ev.id); f.windupT = 0.0001; f.windupMs = ev.ms; d.onTelegraph?.(ev.id, ev.ms); } }
     else if (ev.type === 'Swing' && ev.id !== ME) fxOf(ev.id).swingT = 0.0001;
-    else if (ev.type === 'Hit') { if (ev.victim === ME) d.onHeroHit(ev.damage); else { fxOf(ev.victim).hurtT = PULSE_S; } }
+    else if (ev.type === 'Hit') { if (ev.victim === ME) d.onHeroHit(ev.damage); else {
+      fxOf(ev.victim).hurtT = PULSE_S;
+      const v = world.fighters.find((f) => f.id === ev.victim), a = world.fighters.find((f) => f.id === ev.attacker), spec = specs.get(ev.victim);
+      if (v && a && spec) d.onCreatureHit?.(spec, { seed: seedOf(ev.victim), kill: v.phase === 'dead', hpFrac: Math.max(0, v.health) / v.maxHealth, fromX: a.x, fromZ: a.z });
+    } }
     else if (ev.type === 'Evaded') release(ev.id);   // it gave up, walked home and healed: back to its own wander
     else if (ev.type === 'Died') { if (ev.id === ME) { heroDead = true; d.onHeroDied(); } else { const f = fxOf(ev.id); f.fallT = 0.0001; } }
   }
@@ -73,6 +81,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
           continue;
         }
         x.hurtT = Math.max(0, x.hurtT - dt);
+        d.onCreatureTick?.(s, { hpFrac: Math.max(0, f.health) / f.maxHealth, dt, x: f.x, z: f.z, seed: seedOf(f.id) });
         mobs.drive(f.id, { x: f.x, z: f.z, facing: f.facing, moving: f.returning || (f.hunting && f.phase === 'ready' && Math.hypot(f.x - hero.x, f.z - hero.z) > 1.6), duel: duelFor(world, f.id) ?? undefined });   // the page poses its actor from the duel (the engine's actorPose)
         if (!f.hunting && !f.returning && Math.hypot(f.x - hero.x, f.z - hero.z) > DROP_M) release(f.id);
       }
