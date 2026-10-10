@@ -4,12 +4,13 @@
 import * as THREE from 'three';
 import { createBurstPool } from '../armfeel-fx.ts';
 import type { Feel } from '../armfeel.ts';
+import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBleeders, pickPart, sprayOf, unit, type WoundSpec } from './wounds.ts';
 
 const SPOTS = 40, SPOT_LIFE = 25, DRIP_SIZE = 0.12, MARK_SPREAD = 0.45;   // marks in the ring; seconds a mark stays; m across a drip; m a body mark lands from the creature
 type Spot = { mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>; age: number; live: boolean };
 
-export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THREE.Object3D | null, opts: { feel?: Feel; groundAt?: (x: number, z: number) => number } = {}) {
+export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THREE.Object3D | null, opts: { feel?: Feel; groundAt?: (x: number, z: number) => number; camera?: () => THREE.Camera | null; hero?: () => { x: number; z: number } } = {}) {
   const feel = opts.feel ?? 'high', pools = new Map<string, ReturnType<typeof createBurstPool>>(), bleeders = createBleeders(), ground = new THREE.CircleGeometry(0.5, 12).rotateX(-Math.PI / 2);
   const spots: Spot[] = Array.from({ length: SPOTS }, () => {
     const mesh = new THREE.Mesh(ground, new THREE.MeshBasicMaterial({ color: '#3a0807', transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, toneMapped: false }));
@@ -23,7 +24,7 @@ export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THRE
     s.mesh.position.set(x, (opts.groundAt?.(x, z) ?? 0) + 0.02, z); s.mesh.scale.set(size, 1, size); s.mesh.material.color.set(colour);
     s.mesh.material.opacity = 0.85; s.mesh.visible = true; s.age = 0; s.live = true;
   };
-  const v = new THREE.Vector3();
+  const v = new THREE.Vector3(), toCam = new THREE.Vector3(); let bursts = 0;
   return {
     /** A creature was hit: the Pit's burst at the part its row says (weighted by the part's share), flung away from the attacker. `seed` is the fight's (tick and id), so a replay bleeds the same. */
     hit(id: string, spec: WoundSpec, hit: { seed: number; kill: boolean; fromX: number; fromZ: number }): void {
@@ -31,7 +32,14 @@ export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THRE
       const part = pickPart(spec, unit(hit.seed)), bone = part.bones.map((b) => anchor.getObjectByName(b)).find(Boolean);
       (bone ?? anchor).getWorldPosition(v); if (!bone) v.y += 0.5;
       let dx = v.x - hit.fromX, dz = v.z - hit.fromZ; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-      pool(spray.start, spray.end).burst(feel, v.x, v.y, v.z, dx, dz, hit.kill, 1, spray.amount);
+      // The hero often stands between the camera and the creature: pull the burst toward the lens the way the Pit does for its foe (blood-style.ts), so it is seen on the creature, not behind him.
+      let grow = 1; const cam = opts.camera?.(), hero = opts.hero?.();
+      if (cam && hero) {
+        const far = cam.position.distanceTo(v), near = Math.hypot(cam.position.x - hero.x, cam.position.y - 1.1, cam.position.z - hero.z), pull = foeBurstPull(far, near);
+        v.addScaledVector(toCam.copy(cam.position).sub(v).normalize(), pull); grow = bloodGrow(far, near);
+      }
+      pool(spray.start, spray.end).burst(feel, v.x, v.y, v.z, dx, dz, hit.kill, grow, spray.amount);
+      bursts++;
     },
     /** Every frame a creature is up: the row's tiers turn into drips and marks on the ground under it. */
     tick(id: string, spec: WoundSpec, hpFrac: number, dt: number, x: number, z: number, seed: number): void {
@@ -40,6 +48,8 @@ export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THRE
       for (let i = 0; i < b.marks; i++) mark(x + (unit(seed + 211 + i) - 0.5) * 2 * MARK_SPREAD, z + (unit(seed + 307 + i) - 0.5) * 2 * MARK_SPREAD, spec.species.decal?.sizeM ?? 0.4, colour);
     },
     forget(id: string): void { bleeders.forget(id); },
+    /** For the browser checks: bursts made, particles alive now, ground marks live. */
+    debug: () => ({ bursts, alive: [...pools.values()].reduce((n, p) => n + p.alive, 0), marks: spots.filter((x) => x.live).length }),
     update(dt: number): void {
       for (const p of pools.values()) p.update(dt);
       for (const s of spots) if (s.live) { s.age += dt; const k = 1 - s.age / SPOT_LIFE; if (k <= 0) { s.live = false; s.mesh.visible = false; } else s.mesh.material.opacity = 0.85 * Math.min(1, k * 4); }
