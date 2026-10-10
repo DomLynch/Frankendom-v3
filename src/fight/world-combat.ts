@@ -4,7 +4,7 @@
 import { AGGRO_M, creature, duelFor, duelOf, newWorld, pairs, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 import { NAKED, type Loadout } from './gear-stats.ts';
 import { OPPONENTS } from './moves.ts';
-import type { Duel } from './duel.ts';
+import type { CombatEvent, Duel } from './duel.ts';
 
 export const ME = 'me', STEP = 1 / 60, JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */
@@ -24,22 +24,30 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   onEvent?(ev: Event): void;       // every combat event, after the page has shown it (the spawn client, spawn-net.ts onCombatEvent)
   hero?: () => { gear: Loadout; level: number; health?: number };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
 };
+/** One pair's frame of contacts for the client's effects: the Pit events the loop made this frame (ev.pit), the pair's duel, and where the two stand (world metres). Drained by takeContacts(). */
+export type PairContacts = { foe: string; kind: string; events: CombatEvent[]; duel: Duel; hero: { x: number; z: number; facing: number }; foeAt: { x: number; z: number; facing: number; health: number } };
 type Fx = { hurtT: number; fallT: number; windupT: number; windupMs: number; swingT: number };
 
 export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const mine = (): { gear: Loadout; level: number; health?: number } => d.hero?.() ?? { gear: NAKED, level: 1 };
   const body = (x: number, z: number, facing: number): Fighter => { const { gear, level, health } = mine(), p = player(ME, x, z, facing, gear, level); return health ? { ...p, health, maxHealth: health } : p; };
   let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, guardHeld = false, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
-  const specs = new Map<string, S>(), fx = new Map<string, Fx>();
+  const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>();
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
   const gearOf = () => { const { gear, level } = mine(), p = player(ME, 0, 0, 0, gear, level); return { attack: p.attack, res: p.res, level: p.level, shielded: p.shielded }; };
   const me = (): Fighter => world.fighters[0]!;
-  function release(id: string) { d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
+  function release(id: string) { d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
     specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, creature(p.spec.id, kind, p.x, p.z, 0, p.spec.level)] };
   }
+  /** The creature a Pit event belongs to: the one named in the event, else (the hero's own roll, guard, draw) his primary foe. */
+  function foeOfEvent(ev: Event): string | null {
+    const named = ev.type === 'Hit' || ev.type === 'Blocked' || ev.type === 'Parried' || ev.type === 'Dodged' || ev.type === 'Aggressed' ? [ev.attacker, ev.victim] : ev.type === 'FightStarted' ? [ev.creature] : 'id' in ev ? [ev.id] : [];
+    return named.find((id) => id !== ME && world.fighters.some((f) => f.id === id)) ?? pairs(world).find((p) => p.player === ME && p.primary)?.foe ?? null;
+  }
   function handle(ev: Event) {
+    if (ev.pit) { const foe = foeOfEvent(ev); if (foe) { const list = contacts.get(foe); if (list) list.push(ev.pit); else contacts.set(foe, [ev.pit]); } }
     if (ev.type === 'Telegraph') { if (ev.id === ME) d.onSwing?.(); else { const f = fxOf(ev.id); f.windupT = 0.0001; f.windupMs = ev.ms; d.onTelegraph?.(ev.id, ev.ms); } }
     else if (ev.type === 'Swing' && ev.id !== ME) fxOf(ev.id).swingT = 0.0001;
     else if (ev.type === 'Hit') { if (ev.victim === ME) d.onHeroHit(ev.damage); else { fxOf(ev.victim).hurtT = PULSE_S; } }
@@ -78,6 +86,15 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       }
       if (!stepped) return { dx: 0, dz: 0 };   // no step ran (dt 0 on the clock's first frame): the loop's body has not met the page's position yet, so it is not a displacement
       return { dx: me().x - hero.x, dz: me().z - hero.z };   // a roll's displacement (zero on foot); the page applies it with its own collision
+    },
+    /** Every pair's Pit events since the last call, with its duel and where the two stand: the client feeds them to its contact effects (src/fight/zone-fx.ts) once a frame. */
+    takeContacts(): PairContacts[] {
+      const out: PairContacts[] = [], h = me();
+      for (const [foe, events] of contacts) {
+        const f = world.fighters.find((q) => q.id === foe), duel = duelFor(world, foe); if (!f || !duel) continue;
+        out.push({ foe, kind: f.kind, events, duel, hero: { x: h.x, z: h.z, facing: h.facing }, foeAt: { x: f.x, z: f.z, facing: f.facing, health: f.health } });
+      }
+      contacts.clear(); return out;
     },
     /** After he died and stood up in town: a fresh body, nothing hunting him. */
     reset(hero: { x: number; z: number; facing: number }): void { for (const id of [...specs.keys()]) release(id); world = newWorld([body(hero.x, hero.z, hero.facing)]); heroDead = false; acc = 0; },
