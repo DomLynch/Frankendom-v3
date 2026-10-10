@@ -1,12 +1,12 @@
 import { ROSTER, supportsFinishers, resolveFinisher } from '../roster.ts';
 import * as THREE from 'three';
 import { SPECIAL_STRUCK, specialStage } from './special-look.ts';
-import { resolveSparringPreview } from '../sparring-specials.ts';
+import { resolveSparringPreview } from './sparring-specials.ts';
 import { gait, SPECIAL_MODES, type SpecialFx as ModeFx } from './special-modes.ts';
-import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from '../spell-school.ts';
+import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-school.ts';
 import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
-import { createBossTelegraph, telegraphFlag } from '../boss-telegraph.ts';
+import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '@sentry/browser';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -30,9 +30,9 @@ import { buildArena, type Arena } from '../arena.ts';
 import { arenaFor } from '../arena-themes.ts';
 import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
-import { createWitchfire } from '../witchfire.ts';
-import { createMiasmaMark, marksFlag } from '../miasma-mark.ts';
-import { createSkillImpact } from '../skill-impact.ts';
+import { createWitchfire } from './witchfire.ts';
+import { createMiasmaMark, marksFlag } from './miasma-mark.ts';
+import { createSkillImpact } from './skill-impact.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
 import { phoneTier, pixelCap } from './quality.ts';
 import { lookFrom } from '../look-flag.ts';
@@ -47,7 +47,7 @@ import { createCameraRig, framingLow, framingTall } from '../camera.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
 import { createFightFx, impactTexture } from './fx.ts';
 import { createSignatures, resolveSignature } from './signature.ts';
-import { scorch } from '../scorch.ts';
+import { scorch } from './scorch.ts';
 import './signature-dwarf.ts';   // registers the Dwarf's Hammer Stamp
 import './signature-knight.ts';   // the Knight's Rivet Burst registers itself
 import './signature-witch.ts';   // registers the Witch's Grasp

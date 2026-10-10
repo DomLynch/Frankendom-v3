@@ -5,7 +5,7 @@ import { classSpecialFor, type ClassSpecialId } from './class-special-identity.t
 import type { OpponentId } from '../roster.ts';
 import { bossSpecialId, type BossSpecialId } from './special-identity.ts';
 import { SPECIAL_TESTS, type SpecialTest } from './special-look.ts';
-import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from '../spell-school.ts';
+import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-school.ts';
 import { SPECIAL_MODES, type Pose, type SpecialFx, type SpecialMode } from './special-modes.ts';
 
 type Pair<T> = readonly [T, T];
