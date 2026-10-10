@@ -4,7 +4,7 @@
 // the legend citation. The Pit and every zone are clients of the same row: a new character is one row here, no code. Pure data: only `import type`, no DOM, no clock, no storage.
 // To extend: add the field to CatalogueRow, one check in catalogueProblems, one case in tests/catalogue.test.ts; nothing reads a row by position.
 import type { FinisherId } from './finishers.ts';
-import type { LootId } from './loot.ts';
+import type { LootId } from '../core/loot.ts';
 import type { RigId } from '../roster.ts';
 import type { PickedStance } from './stance.ts';
 
@@ -27,7 +27,7 @@ export type CatalogueRow = {
   shape: Shape;
   engine: { asset: string; tris: number };      // the full-detail GLB the duel draws, path from the repo root, and its triangle count (a measured fact)
   world: { asset: string; tris: number; generator: string | null; maxTris: number } | null;   // the generated LOD a zone draws (phone budget): tris is measured, maxTris the ceiling a row is refused above; the engine asset itself when it is already that light (generator null); null = none yet, so no zone may draw this row
-  armour: readonly LootId[];                    // the level-1 armour the character wears and drops from (src/fight/loot.ts ids, no weapon); [] = a creature with no armour pieces
+  armour: readonly LootId[];                    // the level-1 armour the character wears and drops from (src/core/loot.ts ids, no weapon); [] = a creature with no armour pieces
   stats: { archetype: string; levels: readonly [number, number] };   // moves.ts ARCHETYPES key and the level band it is met at; numbers come from opponentAt
   animations: { clips: readonly string[] };     // the clip names both assets carry
   finisher: { cut: Cut | null; finishers: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback)
@@ -39,7 +39,7 @@ export type CatalogueRow = {
   look: { levels: readonly number[]; phone: boolean; tint: boolean };   // the Pit rungs that have a shipping look file (src/fight/rank-look.ts SHIPPING_LOOKS), whether it also ships a phone LOD (PHONE_LOOKS), and whether its kit takes the rung's finish (src/fight/rank-tint.ts: any armoured character with ranks)
   ladder: { order: number | null; hold: boolean };   // its place on the Pit ladder, 1 = first (src/ladder.ts LADDER); null while held off it (roster `hold`)
   wounds: Wounds | null;                        // how it is hurt and how it bleeds (K5); null = the Pit's own gore as today (the men and the goblin)
-  loot: { table: string | null };               // a loot-table id; null = the Pit's own loot (src/fight/loot.ts pieces), no zone table
+  loot: { table: string | null };               // a loot-table id; null = the Pit's own loot (src/core/loot.ts pieces), no zone table
   legend: Legend | null;                        // a creature's citation; null for a ranked opponent (its ranks carry the names)
   ranks: readonly RankLegend[];                 // the ten Pit ranks' named opponents, rank 1 first (src/legends.ts); [] for a creature
 };
@@ -59,7 +59,7 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   if (!/\.glb$/.test(row.engine.asset) || (w && (!/\.glb$/.test(w.asset) || (w.asset === row.engine.asset && row.engine.tris > w.maxTris)))) add('asset', 'engine/world', 'a .glb engine asset, and a world asset that is a different file unless the engine asset is itself within the world ceiling');
   if (w && !(w.tris > 0 && w.tris <= w.maxTris && w.maxTris <= WORLD_MAX_TRIS)) add('budget', 'world.tris', `${w.tris} tris against a ceiling of ${w.maxTris} (at most ${WORLD_MAX_TRIS})`);
   if (w && !(row.engine.tris >= w.tris)) add('budget', 'engine.tris', 'the engine asset is not lighter than its LOD');
-  if (row.armour.some((id) => !known.loot.has(id))) add('armour', 'armour', 'src/fight/loot.ts ids only');
+  if (row.armour.some((id) => !known.loot.has(id))) add('armour', 'armour', 'src/core/loot.ts ids only');
   if (!known.archetypes.has(row.stats.archetype) || !(row.stats.levels[0] >= 1 && row.stats.levels[1] >= row.stats.levels[0])) add('stats', 'stats', 'a known archetype and a level band');
   if (!row.animations.clips.length || new Set(row.animations.clips).size !== row.animations.clips.length) add('animations', 'animations.clips', 'distinct clip names');
   const { cut, finishers } = row.finisher;

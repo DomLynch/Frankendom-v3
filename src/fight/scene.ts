@@ -15,8 +15,8 @@ import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { heroPreview } from '../hero-preview.ts';
 import { bakeSafeFinisher, lookBakeOffFrom, lookBakes, rankLookFlag, runThroughForced, rankLookFor, rankLookStream, SHIPPING_LOOKS } from './rank-look.ts';
-import { levelOf, type Tier } from '../grades.ts';
-import { kitWorn } from './loot.ts';
+import { levelOf, type Tier } from '../core/grades.ts';
+import { kitWorn } from '../core/loot.ts';
 import { standoffClock, standoffFlag, standoffPose } from './standoff.ts';
 import { actorPose, initialPractice, type CombatEvent, type Practice } from './combat.ts';
 import { ON_DEMAND_BEASTS, beastBodyUrl } from './beast-scale.ts';
@@ -527,7 +527,7 @@ export function createScene(
     restartStandoff() { standoff.restart(); },   // main.ts nextFight: the rematch plays the draw-in again (a no-op with ?standoff=0)
     opponentRoot: () => warriors?.opponent.anchor ?? null,   // the foe rig's root (undefined-safe): the Origins preview dresses a creature's cloth on it; the sim never reads it
     opponentWeapon: () => builtFoeWeapon,   // the weapon his rig was armed with (undefined until the rigs load)
-    // The player's worn loot by id (src/fight/loot.ts equipped set): applied now when the rigs and pieces are in, else when they land.
+    // The player's worn loot by id (src/core/loot.ts equipped set): applied now when the rigs and pieces are in, else when they land.
     // `tiers`: the rung each worn id was taken at (loot.ts Provenance.tier); an id without one shows Recruit's finish.
     wear(ids: readonly string[], tiers: Readonly<Record<string, Tier>> = {}) { worn = ids; wornTier = tiers; dress(); },
     // The rung the opponent is met at (grades.ts tierAt): at load and at each rematch, never mid-fight. A change re-dresses him and bakes the

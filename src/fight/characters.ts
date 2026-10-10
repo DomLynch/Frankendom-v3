@@ -26,7 +26,7 @@ import { HAMSTRUNG_BEATS } from './hamstrung.ts';
 import { EXECUTION_BEATS } from './execution.ts';
 import { prepareWeaponDrop } from './dropped-weapon.ts';
 import { tinted } from './rank-tint.ts';
-import type { Tier } from '../grades.ts';
+import type { Tier } from '../core/grades.ts';
 
 export const COMBAT_CLIPS = ['Armed', 'Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Guard', 'Return', 'Heavy', 'Riposte', 'ArmedWalk', 'StrafeLeft', 'StrafeRight', 'Kick', 'BlockImpact', 'Parry', 'Deflected'] as const;
 export const CLIPS = ['Idle', 'Walk', 'Jog', 'Run'] as const;
@@ -231,7 +231,7 @@ export function equipWeapon(hero: FighterAsset, part: FighterAsset): FighterAsse
 }
 // Loot (brief 5): the pieces of loot.glb, skinned to the hero rig with warrior.glb's bind (build-warrior.mjs WARRIOR_LOOT). Fetched on its own,
 // after the rigs, never as part of a fight's load; the player's actor wears the pieces (`wear`) once both are in. Each draw's userData names
-// its opponent, slot and layer; its id is `<opponent>.<slot>` (src/fight/loot.ts).
+// its opponent, slot and layer; its id is `<opponent>.<slot>` (src/core/loot.ts).
 export async function loadLoot(url: string): Promise<SkinnedMesh[]> {
   const asset = await retryTransient(() => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url));
   if (phoneTier()) budgetTextures(asset.scene, FIGHTER_TEXTURE_CAP);

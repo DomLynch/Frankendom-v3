@@ -6,7 +6,7 @@
 // and takes the grade's hue at a mean brightness moved toward the grade's, rgb = chroma(grade) · L · gain, gain = luma(grade) / luma(source),
 // clamped so no rung blows a piece to white or crushes it to black. One program for every rung (the grade rides uniforms).
 import { Color, MeshStandardMaterial, type Texture } from 'three';
-import { GRADES, classOf, gradeFor, levelOf, type Tier } from '../grades.ts';
+import { GRADES, classOf, gradeFor, levelOf, type Tier } from '../core/grades.ts';
 
 // How far toward the grade; the gain's bounds. Tuned on the Centurion's ten-rank sheet (375, local preview).
 // leatherAsTrim: GRADES' leather ladder is ten near-identical dark browns, so on the first sheet only the helmet carried the rung. Leather

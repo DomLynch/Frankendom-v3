@@ -8,7 +8,7 @@ import { LEVELS, OPPONENTS, opponentAt, profileAt } from './moves.ts';
 import { encodeRecord, type FightRecord } from './record.ts';
 import { underRecord } from './detmath.ts';
 import { groupLayer, withIncoming } from './pack.ts';
-import { skillOf } from './loot.ts';
+import { skillOf } from '../core/loot.ts';
 import { specialOf, type SkillId, type SpecialName } from './moves.ts';
 
 // The Special Moves a record's fight had (version 21's flag), as initialPractice takes them: every replay builds the fight through this one door.
