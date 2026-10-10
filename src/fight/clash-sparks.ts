@@ -40,7 +40,7 @@ export function createClashSparks(scene: THREE.Scene) {
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float sparkSize;').replace('gl_PointSize = size;', 'gl_PointSize = size * sparkSize;');
   };
   material.customProgramCacheKey = () => 'clash-sparks-v3';
-  const points = new THREE.Points(geometry, material); points.name = 'clash sparks'; points.frustumCulled = false; points.visible = false; scene.add(points);
+  const points = new THREE.Points(geometry, material); points.name = 'clash sparks'; points.frustumCulled = false; points.visible = false; points.userData.warmHidden = true; scene.add(points);   // warmOwn compiles it shown (compile skips hidden objects): its first use must not link a program mid-fight
   let cursor = 0, seed = 1; const last = new THREE.Vector3(NaN, NaN, NaN), late: { a: THREE.Vector3; b: THREE.Vector3; heading: number; strength: number; n: number }[] = [];
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };   // seeded: a capture is a capture
   const spawn = (a: THREE.Vector3, b: THREE.Vector3, heading: number, strength: number, n: number) => {

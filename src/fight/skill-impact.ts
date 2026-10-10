@@ -54,7 +54,7 @@ export function createSkillImpact(scene: THREE.Scene) {
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float impactSize;').replace('gl_PointSize = size;', 'gl_PointSize = size * impactSize;');
   };
   material.customProgramCacheKey = () => 'skill-impact-v1';
-  const points = new THREE.Points(geometry, material); points.name = 'skill impact'; points.frustumCulled = false; points.visible = false; scene.add(points);
+  const points = new THREE.Points(geometry, material); points.name = 'skill impact'; points.frustumCulled = false; points.visible = false; points.userData.warmHidden = true; scene.add(points);   // warmOwn compiles it shown (compile skips hidden objects): its first use must not link a program mid-fight
   let cursor = 0, seed = 7; const last = new THREE.Vector3(NaN, NaN, NaN), at = new THREE.Vector3(), colour = new THREE.Color();
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };   // seeded: a capture is a capture
   const born = (p: number, seconds: number, isFlash: boolean) => { life[p] = span[p] = seconds; flash[p] = isFlash ? 1 : 0; tint.set([colour.r, colour.g, colour.b], p * 3); positions.set([at.x, at.y, at.z], p * 3); };

@@ -27,7 +27,7 @@ export function createFootDust(scene: THREE.Scene, tone: DustTone = 'sand') {
       .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.a *= dustAlpha;');
   };
   material.customProgramCacheKey = () => 'foot-dust-v1';
-  const points = new THREE.Points(geometry, material); points.name = 'foot dust'; points.frustumCulled = false; points.visible = false; scene.add(points);
+  const points = new THREE.Points(geometry, material); points.name = 'foot dust'; points.frustumCulled = false; points.visible = false; points.userData.warmHidden = true; scene.add(points);   // warmOwn compiles it shown (compile skips hidden objects): its first use must not link a program mid-fight
   let cursor = 0;
   // `n` grains thrown from `at` outward and up; a foot plant is 5 small ones, a heavy landing on a planted foot 9 bigger ones.
   function spawn(at: THREE.Vector3, n: number, radius: number, speed: number, lift: number, size: number) {
