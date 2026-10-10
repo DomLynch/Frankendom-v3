@@ -98,6 +98,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
   const sparks = new THREE.Points(sparkGeometry, sparkMaterial);
   sparks.frustumCulled = false;
   sparks.visible = false;
+  sparks.userData.warmHidden = true;   // warmOwn compiles it while shown (compile skips hidden objects): the first hit must not link its program
   scene.add(sparks);
   const splats = createSplatPool(scene, splatTexture);
   let impactDuration = 0.18,

@@ -26,7 +26,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
       }),
     );
     splat.rotation.x = -Math.PI / 2;
-    splat.visible = false;
+    splat.visible = false; splat.userData.warmHidden = true;   // see fx.ts sparks: the first blood splat must not link its program mid-fight
     scene.add(splat);
     return { mesh: splat, life: 0, grow: 0, age: 0, dark: false, pool: false }; // grow: a kill pool spreads over ~2 s instead of appearing at once
   });

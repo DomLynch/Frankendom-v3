@@ -537,7 +537,10 @@ export function createScene(
     async warmOwn(lights: THREE.Object3D[]) {
       const borrowed = lights.map((light) => light.clone()); scene.add(...borrowed);
       try {
-        await settleWithin('warm-own', renderer.compileAsync(scene, camera), COMPILE_BOUND_MS);
+        // The hit effects (spark Points, blood splats) sit hidden until the first hit, and compile skips hidden objects: show the tagged ones for the synchronous collect, hide them again, then wait.
+        const hidden: THREE.Object3D[] = []; scene.traverse((o) => { if (o.userData.warmHidden && !o.visible) { o.visible = true; hidden.push(o); } });
+        let compiling: Promise<unknown>; try { compiling = renderer.compileAsync(scene, camera); } finally { for (const o of hidden) o.visible = false; }
+        await settleWithin('warm-own', compiling, COMPILE_BOUND_MS);
         const target = new THREE.WebGLRenderTarget(4, 4), before = renderer.getRenderTarget();
         try { renderer.setRenderTarget(target); renderer.render(scene, camera); } finally { renderer.setRenderTarget(before); target.dispose(); }
       } catch { /* a failed warm only means the first frame compiles, as before */ } finally {
