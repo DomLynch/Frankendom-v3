@@ -2,7 +2,7 @@
 // plus a filtered-noise transient on top of the game's own cue; a kill adds a longer, lower body and a rising sine chime. High and Low sound the same (the
 // prototype keeps its enhanced audio in Low); Off adds nothing, so the game's own sound is unchanged. Pure: feedback.ts schedules the layers.
 import type { CombatEvent } from '../combat.ts';
-import type { Feel } from '../../armfeel.ts';
+import type { Feel } from '../armfeel.ts';
 
 export type Layer = { kind: 'tone'; from: number; to: number; seconds: number; volume: number; wave: 'triangle' | 'sine' } | { kind: 'noise'; seconds: number; volume: number; highpass: number };
 export const OUTPUT_GAIN = 0.65;   // the prototype's output stage, before its compressor

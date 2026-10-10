@@ -2,12 +2,12 @@
 // binding over the practice state — it never decides anything about the fight. `element` is injected so the entry point's
 // own lookup (and the VM test harness's fake document) is what it binds to.
 import { accepts, counterLine, practiceHint, type ClarityEvent, type CombatEvent, type Practice } from './combat.ts';
-import { defenceGrade, GRADE_LABEL } from '../defence-grade.ts';
+import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
 import { won } from '../ladder.ts';
 import { bareName } from '../roster.ts';
 import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../lessons.ts';
-import { createGapHistory } from '../kick-close.ts';
-import { staminaLow } from '../fatigue-preview.ts';
+import { createGapHistory } from './kick-close.ts';
+import { staminaLow } from './fatigue-preview.ts';
 import { SKILL_MOVE, weaponOf, type OpponentId } from './moves.ts';
 
 // Heavy-class contacts: bigger damage numbers here, a longer hit-stop in the frame loop.

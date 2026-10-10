@@ -1,8 +1,8 @@
-import type { Fatigue } from '../../fatigue.ts';
+import type { Fatigue } from '../fatigue.ts';
 import type { OpponentId } from '../../roster.ts';
 
 // Graded breathing (Lead's brief B, Dom: "make it realistic"). Synthesised (a looping noise through a band-pass, one gain envelope
-// per breath), so it adds nothing to the sprite. Read-only on the fatigue driver (src/fatigue.ts): `level` sets the pace and depth
+// per breath), so it adds nothing to the sprite. Read-only on the fatigue driver (src/fight/fatigue.ts): `level` sets the pace and depth
 // continuously, `band` the character, `second` the recovery exhale. Every breath is a whole inhale-and-exhale that ends at zero,
 // so a band change or a rest only changes the next breath: nothing is ever cut off. Hits duck it; the end of the duel fades it.
 //   winded  faint, slow, nose-soft close-mic breath · tired  faster, heavier, mouth-bright · gassed  short ragged gasps ·

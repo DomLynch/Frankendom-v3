@@ -5,12 +5,12 @@
 import * as THREE from 'three';
 import { OPPONENTS, RULES, weaponOf, type OpponentId } from './moves.ts';
 import { hasBlood } from '../roster.ts';
-import { blockDust, HEAVY_CLASS, clashStrength, createClashSparks } from '../clash-sparks.ts';
-import { shoveFor, type Shove } from '../camera-kick.ts';
-import { ROLL_TUMBLE, attackerOf, impactShove } from '../hit-impact.ts';
-import { FLINCH_GAIN, isFleshHit, type Flinch, type armfeelFrom } from '../armfeel.ts';
-import type { createBurstPool } from '../armfeel-fx.ts';
-import type { createFootDust } from '../foot-dust.ts';
+import { blockDust, HEAVY_CLASS, clashStrength, createClashSparks } from './clash-sparks.ts';
+import { shoveFor, type Shove } from './camera-kick.ts';
+import { ROLL_TUMBLE, attackerOf, impactShove } from './hit-impact.ts';
+import { FLINCH_GAIN, isFleshHit, type Flinch, type armfeelFrom } from './armfeel.ts';
+import type { createBurstPool } from './armfeel-fx.ts';
+import type { createFootDust } from './foot-dust.ts';
 import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBladeBlood, createBodyWounds, createSplatPool } from './gore.ts';
 import type { FinisherId } from './finishers.ts';

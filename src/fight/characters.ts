@@ -1,7 +1,7 @@
 // THE ACTOR DRIVER, in the shared fight core (src/fight/, Dom via Strategy 2026-10-09: the Pit and every zone play one fight, one animation system). Moved from src/characters.ts, which now re-exports it
 // so the Pit's importers are untouched; Zone 1 imports it from src/fight/index.ts. Nothing in this file changed but the relative paths.
 import { beastRenderScale } from '../beast-scale.ts';
-import { spectralAppearance } from '../spectral.ts';
+import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from '../blade.ts';
 export { swingProgress } from '../blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
@@ -13,19 +13,19 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { budgetTextures, FIGHTER_TEXTURE_CAP, phoneTier } from '../quality.ts';
-import { splitSkull } from '../skull.ts';
-import { openWaist, openWaistSteps } from '../opened.ts';
-import { openPose, openWeight, NO_OPEN } from '../opening-pose.ts';
-import { stancePose, type Stance } from '../stance-pose.ts';
+import { splitSkull } from './skull.ts';
+import { openWaist, openWaistSteps } from './opened.ts';
+import { openPose, openWeight, NO_OPEN } from './opening-pose.ts';
+import { stancePose, type Stance } from './stance-pose.ts';
 import type { Opening } from './combat.ts';
-import { GUARD_DROP } from '../fatigue-tune.ts';
-import type { Fatigue } from '../fatigue.ts';
-import { type FatigueTune, breathe, fatigueLayer } from '../fatigue-layer.ts';
-import { fatigueRead, readRate } from '../fatigue-read.ts';
-import { HAMSTRUNG_BEATS } from '../hamstrung.ts';
-import { EXECUTION_BEATS } from '../execution.ts';
-import { prepareWeaponDrop } from '../dropped-weapon.ts';
-import { tinted } from '../rank-tint.ts';
+import { GUARD_DROP } from './fatigue-tune.ts';
+import type { Fatigue } from './fatigue.ts';
+import { type FatigueTune, breathe, fatigueLayer } from './fatigue-layer.ts';
+import { fatigueRead, readRate } from './fatigue-read.ts';
+import { HAMSTRUNG_BEATS } from './hamstrung.ts';
+import { EXECUTION_BEATS } from './execution.ts';
+import { prepareWeaponDrop } from './dropped-weapon.ts';
+import { tinted } from './rank-tint.ts';
 import type { Tier } from '../grades.ts';
 
 export const COMBAT_CLIPS = ['Armed', 'Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Guard', 'Return', 'Heavy', 'Riposte', 'ArmedWalk', 'StrafeLeft', 'StrafeRight', 'Kick', 'BlockImpact', 'Parry', 'Deflected'] as const;
@@ -954,13 +954,13 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           }
         }
       },
-      // Hamstrung (src/hamstrung.ts): the victim's weapon is cached at its release pose while he stands, so the knee blow costs no mesh work.
+      // Hamstrung (src/fight/hamstrung.ts): the victim's weapon is cached at its release pose while he stands, so the knee blow costs no mesh work.
       prepareHamstrung() {
         if (droppedWeapon) return;
         droppedWeapon = sample('Death_Hamstrung', HAMSTRUNG_BEATS.knee, () => prepareWeaponDrop(root, anchor));
         anchor.add(droppedWeapon.group);
       },
-      // Execution (src/execution.ts): the same cached weapon, released while he still stands (his pose at EXECUTION_BEATS.drop is the standing one, as at Hamstrung's knee).
+      // Execution (src/fight/execution.ts): the same cached weapon, released while he still stands (his pose at EXECUTION_BEATS.drop is the standing one, as at Hamstrung's knee).
       prepareExecution() {
         if (droppedWeapon) return;
         droppedWeapon = sample('Death_Execution', EXECUTION_BEATS.drop, () => prepareWeaponDrop(root, anchor));

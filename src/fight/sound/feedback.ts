@@ -10,7 +10,7 @@ import { prepareBell } from '../../audio/bell.ts';
 import { loadSpecial, playSpecial, type SpecialCue } from './special.ts';
 import { loadDuel, playDuel, type DuelCue } from './duel.ts';
 import { armfeelLayers, MAX_LAYERS, OUTPUT_GAIN } from './armfeel-sound.ts';
-import type { Feel } from '../../armfeel.ts';
+import type { Feel } from '../armfeel.ts';
 
 // Offline rendering host (scripts/audio-preview.mjs): a supplied OfflineAudioContext and a scripted clock stand in for the
 // page's AudioContext and its wall clock, so a fixed exchange renders to the same WAV every time. `sprite` null forces the
