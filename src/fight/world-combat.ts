@@ -127,6 +127,6 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     /** Frame health for the seamless receipt: sim steps run, fight time dropped by the 0.25 s catch-up cap, and how many frames dropped some. */
     stats: () => ({ steps, lostMs: Math.round(lostMs), hitches }),
     inCombat: () => world.fighters.slice(1).some((f) => f.phase !== 'dead' && f.hunting),
-    debug: () => world.fighters.map((f) => ({ id: f.id, phase: f.phase, hp: Math.round(f.health), x: +f.x.toFixed(1), z: +f.z.toFixed(1), hunting: f.hunting, returning: f.returning })),
+    debug: () => world.fighters.map((f) => ({ id: f.id, phase: f.phase, hp: Math.round(f.health), x: +f.x.toFixed(1), z: +f.z.toFixed(1), hunting: f.hunting, returning: f.returning, duel: pairs(world).some((p) => p.player === ME && p.foe === f.id) })),   // duel: in a duel with the player right now (the live pack check counts these against MAX_ATTACKERS)
   };
 }
