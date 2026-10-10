@@ -1,4 +1,4 @@
-import { bladePathsByRig } from '../blade-paths.ts';
+import { bladePathsByRig } from './blade-paths.ts';
 import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 

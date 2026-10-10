@@ -231,7 +231,7 @@ export function equipWeapon(hero: FighterAsset, part: FighterAsset): FighterAsse
 }
 // Loot (brief 5): the pieces of loot.glb, skinned to the hero rig with warrior.glb's bind (build-warrior.mjs WARRIOR_LOOT). Fetched on its own,
 // after the rigs, never as part of a fight's load; the player's actor wears the pieces (`wear`) once both are in. Each draw's userData names
-// its opponent, slot and layer; its id is `<opponent>.<slot>` (src/loot.ts).
+// its opponent, slot and layer; its id is `<opponent>.<slot>` (src/fight/loot.ts).
 export async function loadLoot(url: string): Promise<SkinnedMesh[]> {
   const asset = await retryTransient(() => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url));
   if (phoneTier()) budgetTextures(asset.scene, FIGHTER_TEXTURE_CAP);
