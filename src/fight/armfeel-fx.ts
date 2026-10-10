@@ -5,20 +5,20 @@ import { newParticle, tickParticle, type Feel, type Particle } from './armfeel.t
 import { BLOOD, bloodCount, makeRng, spawnBlood } from './blood-style.ts';
 
 // One shared 112-slot InstancedMesh, no shadows, one draw call. `burst` fills the next slots of the ring; `update` moves, shrinks and dims them.
-export function createBurstPool(scene: THREE.Scene) {
+export function createBurstPool(scene: THREE.Scene, colours: { start: string; end: string } = BLOOD) {   // `colours`: a species' own blood (src/fight/wounds-fx.ts); the Pit's is the default
   const rnd = makeRng(0x5eed1234);
   const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff' }), BLOOD.slots);   // unit-diameter droplets, unlit: the colour is the blood's own (a lit material came out bright red under the arena's sun), no glow
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mesh.frustumCulled = false; mesh.visible = false; mesh.castShadow = false; mesh.receiveShadow = false; mesh.name = 'armfeel burst';
-  mesh.setColorAt(0, new THREE.Color(BLOOD.start));   // allocates the instance colour buffer once, up front
+  mesh.setColorAt(0, new THREE.Color(colours.start));   // allocates the instance colour buffer once, up front
   scene.add(mesh);
-  const slots: Particle[] = Array.from({ length: BLOOD.slots }, newParticle), pose = new THREE.Object3D(), color = new THREE.Color(), start = new THREE.Color(BLOOD.start), end = new THREE.Color(BLOOD.end), up = new THREE.Vector3(0, 1, 0), heading = new THREE.Vector3();
+  const slots: Particle[] = Array.from({ length: BLOOD.slots }, newParticle), pose = new THREE.Object3D(), color = new THREE.Color(), start = new THREE.Color(colours.start), end = new THREE.Color(colours.end), up = new THREE.Vector3(0, 1, 0), heading = new THREE.Vector3();
   let next = 0, live = 0;
   return {
     mesh,
     get alive() { return live; },
     get capacity() { return slots.length; },
-    burst(feel: Feel, x: number, y: number, z: number, dx: number, dz: number, kill: boolean, grow = 1): void {
-      const count = bloodCount(feel, kill);
+    burst(feel: Feel, x: number, y: number, z: number, dx: number, dz: number, kill: boolean, grow = 1, amount = 1): void {   // amount: the multiple of the Pit's particle count (1 = a man)
+      const full = bloodCount(feel, kill), count = full === 0 ? 0 : Math.max(1, Math.round(full * amount));
       for (let i = 0; i < count; i++) spawnBlood(slots[next++ % slots.length], i, x, y, z, dx, dz, kill, feel, rnd, grow);
     },
     update(dt: number): void {

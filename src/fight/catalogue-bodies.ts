@@ -10,3 +10,8 @@ export function catalogueBodyUrl(id: string): string | undefined {
   const asset = catalogueRow(id)?.engine.asset;
   return asset ? bodies[asset.replace(/^src\//, '../')] : undefined;
 }
+
+export function heroBodyUrl(): string {
+  const bodies = import.meta.glob<string>('../assets/warrior.glb', { eager: true, query: '?url', import: 'default' });   // the hero's own body (K2 row 6): not a catalogue row
+  return bodies['../assets/warrior.glb'];
+}
