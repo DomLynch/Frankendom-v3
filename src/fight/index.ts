@@ -8,7 +8,7 @@ export type { WorldMount } from './scene.ts';
 export const loadScene = () => import('./scene.ts');   // K7 row 10: the fight scene is a lazy chunk (a static export pulled it out of pit-duel's chunk and its warm-up); same pattern as loadFeedback
 export { phoneTier, pixelCap, budgetTextures, FIGHTER_TEXTURE_CAP } from './quality.ts';   // the phone tier and texture budget (K7 row 16: moved from src/quality.ts)
 export { settleWithin, gateWithBound } from './warm-gate.ts';   // bounded warm-up waits (K7 row 16: moved from src/warm-gate.ts)
-export { createInput, SPRINT_PUSH, type ControlIntent } from '../input.ts';   // the touch/keyboard control layer (K2 row 5: the zone's page and sticks read it through the door)
+export { createInput, SPRINT_PUSH, type ControlIntent } from './input.ts';   // the touch/keyboard control layer (K2 row 5: the zone's page and sticks read it through the door)
 export * from './duel.ts';
 export * from './ai.ts';
 export * from './sim.ts';
