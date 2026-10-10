@@ -2,7 +2,7 @@
 // picks freely, never a timing change (no swing speed, parry window, i-frames, reach or input). Each entry is a signed per-mille delta on ONE quantity, read at its site in src/fight/duel.ts through
 // `stanced`, exactly as a patron perk is (`perked`): a fighter with no stance (Neutral) takes the unscaled value untouched, so no float drift and a stance-less fight is byte for byte as before.
 // A sim file: no Math.random, no clock, no transcendental. The numbers are Dom's table; the damage delta starts at +-5% (Lead), his +-10% is the ceiling the battery may raise it to.
-import { rollUnit } from '../roll.ts';
+import { rollUnit } from './roll.ts';
 export type StanceId = 'aggressive' | 'defensive' | 'trickster';
 export type PickedStance = StanceId | 'neutral';   // what a player picks (and a record names): Neutral is a real pick, the safe middle
 export const PICKS: readonly PickedStance[] = ['neutral', 'aggressive', 'defensive', 'trickster'];   // append only: the index is the record's 2-bit code
