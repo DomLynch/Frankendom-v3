@@ -21,14 +21,57 @@ import type { State } from './sim.ts';
 /** The camera-kick hints the effects emit: the host decides which camera takes them (the Pit's rig, a zone's walk camera). */
 export type CameraKick = { shove(heading: number, shove: Shove): void; tilt(angle: number, seconds: number, right?: number, drop?: number): void };
 
+// Two original alpha sprites, generated once; all impacts reuse the same GPU resources.
+export function impactTexture(splash: boolean) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+  const fill = ctx.createRadialGradient(64, 64, 8, 64, 64, 58);
+  fill.addColorStop(0, '#ffffffff');
+  fill.addColorStop(0.75, '#ffffffcc');
+  fill.addColorStop(1, '#ffffff00');
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  for (let i = 0; i <= 64; i++) {
+    const angle = (i / 64) * Math.PI * 2,
+      r = splash ? 33 + Math.sin(angle * 2 + 1) * 5 + Math.cos(angle * 3 + 2) * 4 + Math.sin(angle * 5 + 0.5) * 2 : 48;   // low, out-of-phase lobes: a lopsided blot, never a star
+    const x = 64 + Math.cos(angle) * r,
+      y = 64 + Math.sin(angle) * r * (splash ? 1 : 0.65);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  if (splash)
+    for (let i = 0; i < 17; i++) {
+      const a = i * 2.4,
+        r = 42 + (i % 4) * 4;
+      ctx.beginPath();
+      ctx.ellipse(
+        64 + Math.cos(a) * r,
+        64 + Math.sin(a) * r,
+        1.5 + (i % 3),
+        1 + (i % 2),
+        a,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    }
+  return new THREE.CanvasTexture(canvas);
+}
+
+/** The part of a Practice the effects read: the Pit's duel and a zone's per-pair stand-in both fill it. */
+export type ContactPractice = Pick<Practice, 'duel' | 'enemy' | 'enemyWoundSite' | 'woundSite' | 'health' | 'playerHealth'>;
+
 /** What one frame's contact effects need from the scene that owns the rigs, the camera and the feet. */
 export type ContactCtx = {
-  events: CombatEvent[]; practice: Practice; state: State; dt: number;
+  events: CombatEvent[]; practice: ContactPractice; state: State; dt: number;
   blow: CombatEvent | undefined; contact: boolean | CombatEvent | undefined; killed: CombatEvent | undefined;
   finisher: FinisherId | null; detailedBlood: boolean;
   camera: THREE.Camera; kick: CameraKick; blockHeavy: boolean[];
   warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
-  dustFeet: (THREE.Object3D | null)[]; dustPositions: THREE.Vector3[]; footDust: ReturnType<typeof createFootDust>;
+  dustFeet: (THREE.Object3D | null)[]; dustPositions: THREE.Vector3[]; footDust: ReturnType<typeof createFootDust> | null;
   flinches: Flinch[] | null; burstPool: ReturnType<typeof createBurstPool> | null; feel: ReturnType<typeof armfeelFrom> | undefined; right: THREE.Vector3;
   opponentId: OpponentId; bloodMode: 'red' | 'dark' | 'off';
   DIP_FRAMES: number; setDip(frames: number): void;
@@ -92,7 +135,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
       const defender = blow ? shoveEvent.target! : shoveEvent.actor, attackerAt = defender ? state : practice.enemy;
       const feet = [dustPositions[defender * 2], dustPositions[defender * 2 + 1]].filter((_f, i) => dustFeet[defender * 2 + i]);
       const rear = feet.sort((a, b) => Math.hypot(b.x - attackerAt.x, b.z - attackerAt.z) - Math.hypot(a.x - attackerAt.x, a.z - attackerAt.z))[0];
-      for (const foot of sand.feet === 'both' ? feet : rear ? [rear] : []) if (foot.y < 0.25) footDust.puff(foot, sand.strength);
+      for (const foot of sand.feet === 'both' ? feet : rear ? [rear] : []) if (foot.y < 0.25) footDust?.puff(foot, sand.strength);
     }
     if (contact && dt > 0) {
       const enemyHurt = blow?.target === 1,
