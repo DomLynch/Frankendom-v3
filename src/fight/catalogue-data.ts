@@ -1,6 +1,6 @@
 // The character catalogue's DATA (src/fight/catalogue.ts types it): one row per roster character; the ten Pit ranks' legends live inside the row. PURE DATA: one exported const of literals, only `import type`,
 // no calls, spreads or template strings, so the data-only path (scripts/lib/data-only.mjs) can carry a new or changed row without an Auditor review. The code that reads it is src/fight/catalogue-rows.ts.
-// GENERATED once by scripts/catalogue-convert.mjs from src/roster.ts, src/legends.ts, src/loot.ts and the GLBs (measured tri counts, clips, joints); this file is the source of truth from here on. A new character is
+// GENERATED once by scripts/catalogue-convert.mjs from src/roster.ts, src/legends.ts, src/fight/loot.ts and the GLBs (measured tri counts, clips, joints); this file is the source of truth from here on. A new character is
 // one row. World assets are generated from the engine asset by scripts/character/world_body.py; a row with world null has none yet, so no zone may draw it. The goblin is row #1 of the camp (Lead 2026-10-09).
 import type { CatalogueRow } from './catalogue.ts';
 
