@@ -1,5 +1,5 @@
 // What a catalogue row says about how a character LOOKS on screen, resolved for one meeting (K11 slice 1; Characters 2026-10-09): the draw scale, the Pit rung it is met at, the rank-look
-// file that rung ships, and whether its kit takes the rung's finish (src/rank-tint.ts). A zone mob is a character at a level, so a client asks here instead of keeping a second table
+// file that rung ships, and whether its kit takes the rung's finish (src/fight/rank-tint.ts). A zone mob is a character at a level, so a client asks here instead of keeping a second table
 // of scales and look files (origins/preview/mob-looks.ts). Per-CHARACTER dressing (cloth tint, soot, gear, spread) is not here: it stays in zone data, the row holds only the BODY's look.
 // Pure data in, data out: no DOM, no three.js.
 import { rankLookFor } from '../rank-look.ts';

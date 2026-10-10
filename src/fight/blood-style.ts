@@ -2,7 +2,7 @@
 // through preview options (a streaks, b spray + drops, b2 30% thinner, b3 35% thinner again / 20% longer / 15% darker, b4 = b3 with 10% less spray, 10% narrower, 20% longer, 10% darker).
 // Presentation only (nothing here is read by the simulation) and allocation-free per hit: it fills the pooled slots armfeel-fx.ts owns, with a seeded
 // generator, so the same fight draws the same blood on every run.
-import type { Feel, Particle } from '../armfeel.ts';
+import type { Feel, Particle } from './armfeel.ts';
 
 // slots: the pool's size; hit/kill: particles a hit/kill takes (Low takes a third, at least 2); drops: how many of those are the heavy ones; start/end: the colour over a life.
 export const BLOOD = { slots: 112, hit: 15, kill: 25, drops: { hit: 2, kill: 3 }, start: '#690f0d', end: '#200504' } as const;
