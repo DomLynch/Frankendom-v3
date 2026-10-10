@@ -267,7 +267,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
   });
   const spots = Array.from({ length: DROPS.spots }, () => {
     const mesh = new THREE.Mesh(spotGeometry, new THREE.MeshBasicMaterial({ color: '#681a19', transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
-    mesh.visible = false; scene.add(mesh);
+    mesh.visible = false; mesh.userData.warmHidden = true; scene.add(mesh);   // the floor spots are an unmapped basic program of their own (T4 2026-10-10: Zone 1 still linked one 'basic' at engage with only the splat pool tagged)
     return { mesh, life: 0 };
   });
   let nextSpot = 0;
