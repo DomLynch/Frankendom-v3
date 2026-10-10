@@ -22,7 +22,7 @@ export function cutOf(character: string, body: string): { head: readonly string[
 export const canPlayFinisher = (f: FinisherId): boolean => f === 'plainDeath' || f === 'decapitation';
 
 export function createZoneFinisher(scene: THREE.Scene, opts: { groundAt?: (x: number, z: number) => number; bleed?: (id: string, at: THREE.Vector3, from: { x: number; z: number }) => void } = {}) {
-  const heads = new Map<string, { head: SeveredHead; age: number; rig: CutRig }>(), cut = new Set<string>();
+  const heads = new Map<string, { head: SeveredHead; age: number }>(), cut = new Set<string>(), rigs = new Map<string, CutRig>();   // rigs: whose head is off, until it is released (the loose head's own life is shorter)
   const axis = new THREE.Vector3();
   function drop(id: string, dispose: boolean) {
     const h = heads.get(id); if (!h) return;
@@ -39,12 +39,12 @@ export function createZoneFinisher(scene: THREE.Scene, opts: { groundAt?: (x: nu
       if (!built) return;
       scene.add(built.group);
       axis.set(at.x - from.x, 0, at.z - from.z); if (axis.lengthSq() < 1e-6) axis.set(0, 0, 1); axis.normalize();
-      heads.set(id, { head: launchSeveredHead(built.group, built.radius, axis, Math.atan2(axis.x, axis.z)), age: 0, rig });
+      heads.set(id, { head: launchSeveredHead(built.group, built.radius, axis, Math.atan2(axis.x, axis.z)), age: 0 }); rigs.set(id, rig);
       if (neck) opts.bleed?.(id, neck, from);
     },
     /** The creature is gone from the world (respawn timer started): the rig grows its head back, the loose head stays to lie a while. */
     release(id: string): void {
-      cut.delete(id); const h = heads.get(id); h?.rig.unsever();
+      cut.delete(id); rigs.get(id)?.unsever(); rigs.delete(id);
     },
     update(dt: number): void {
       for (const [id, h] of heads) {
@@ -54,6 +54,6 @@ export function createZoneFinisher(scene: THREE.Scene, opts: { groundAt?: (x: nu
       }
     },
     heads: () => heads.size,
-    dispose(): void { for (const id of [...heads.keys()]) drop(id, true); cut.clear(); },
+    dispose(): void { for (const id of [...heads.keys()]) drop(id, true); for (const r of rigs.values()) r.unsever(); rigs.clear(); cut.clear(); },
   };
 }
