@@ -214,5 +214,12 @@ const CATALOGUE_ROWS: readonly CatalogueRow[] = [
       { name: "Brynhildr", source: "Norse myth", backstory: "The valkyrie cast down for choosing her own victor, sleeping in a ring of fire until a hero rode through. In Frankendom she fights as the chooser of the slain." },
       { name: "Athena", source: "Greek myth", backstory: "Goddess of wisdom and war, born armoured from her father's head. In Frankendom she fights as strategy itself, and the aegis turns every blow." },
     ] },
+  { id: "ember-wolf", body: "wolf", name: "Ember wolf", summary: "Its coat has burned down to the colour of a banked fire, and it hunts the Reach in a pack of two or three.", rig: "wolf", shape: "quadruped", engine: { asset: "src/assets/wolf.glb", tris: 20000 }, world: { asset: "public/world/wolf.glb", tris: 8000, generator: "scripts/character/world_body.py", maxTris: 8200 }, armour: [], stats: { archetype: "wolf", levels: [1, 1] }, animations: { clips: ["Idle", "Walk", "Run", "Flee", "Bite", "Hurt", "Death"] }, finisher: { cut: { head: ["head", "jaw"], neck: ["neck"], spine: ["spine3"], limbs: { foreL: ["front_up_L"], foreR: ["front_up_R"], hindL: ["hind_up_L"], hindR: ["hind_up_R"] } }, finishers: ["decapitation", "plainDeath"], timing: [
+        { id: "decapitation", pose: "decapitation", seconds: 3.2, measured: true },
+        { id: "plainDeath", pose: null, seconds: 2.4, measured: true },
+      ] }, blood: { start: "#5a0b0a", end: "#1c0403", amount: 0.7 }, render: { scale: 2 }, weapon: "bite", home: "neutral", voice: "wolf", look: { levels: [], phone: false, tint: false }, ladder: { order: null, hold: true }, wounds: { body: "quadruped", species: "beast", size: 0.7, bleedRate: 0.4, tiers: [
+        { below: 0.5, decals: 1, drip: 0.6 },
+        { below: 0.2, decals: 2, drip: 1.2 },
+      ] }, loot: { table: "loottable:ember-wolf" }, legend: { pending: "original" }, ranks: [] },
 ];
 export default CATALOGUE_ROWS;
