@@ -1,8 +1,8 @@
-import { bladeImpact, type HitLocation } from '../blade.ts';
+import { bladeImpact, type HitLocation } from './blade.ts';
 import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, isInterruptible, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
-import { M } from '../detmath.ts';
-import { rolledDamage, rollPercent } from '../roll.ts';
+import { M } from './detmath.ts';
+import { rolledDamage, rollPercent } from './roll.ts';
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 
@@ -88,7 +88,7 @@ export type CombatEvent = { tick: number; type: EventType; actor: Side; target?:
 // `roll`: the world-mob damage roll (Origins luck ruling, Dom 2026-10-07: +/-10% on every blow in both directions, in a world-mob fight only). Absent = the Pit, PvP and the
 // ladder: today's fight byte for byte. `hits` numbers the fight's blows in the order they resolve, so the draw is a pure function of (seed, hit) and a replay reproduces it.
 export type Duel = { tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number }; gambit?: { seed: number; draws: number }; radius?: number };   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
-export { ROLL_BAND, rollPercent, rolledDamage } from '../roll.ts';   // the one definition (src/roll.ts), shared with origins/luck/luck.ts
+export { ROLL_BAND, rollPercent, rolledDamage } from './roll.ts';   // the one definition (src/fight/roll.ts), shared with origins/luck/luck.ts
 export const withRoll = (duel: Duel, seed: number): Duel => ({ ...duel, roll: { seed, hits: 0 } });
 // A fight with the Gambit (src/fight/gambit.ts, RV33): the player's side may arm it, and its draws are a pure function of (seed, draw number). Absent = today's fight byte for byte.
 // A fight with stances (src/fight/stance.ts, RV34): the fighters carry their stance. Neutral (undefined) adds nothing. Absent entirely = today's fight.
