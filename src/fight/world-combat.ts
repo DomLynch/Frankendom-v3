@@ -2,9 +2,9 @@
 // relief) and tells this his position; the loop owns hits, creature chase/telegraph/bite/leash. This file: which creatures are in the loop (those that come within the aggro ring, until they are
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
 import { AGGRO_M, creature, duelFor, duelOf, newWorld, pairs, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
-import { NAKED, type Loadout } from '../gear-stats.ts';
-import { OPPONENTS } from '../moves.ts';
-import type { Duel } from '../duel.ts';
+import { NAKED, type Loadout } from './gear-stats.ts';
+import { OPPONENTS } from './moves.ts';
+import type { Duel } from './duel.ts';
 
 export const ME = 'me', STEP = 1 / 60, JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */
@@ -57,9 +57,9 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       if (!heroDead) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
       const want = acc + dt, cap = STEP * MAX_STEPS; acc = Math.min(want, cap);
       if (want > cap) { lostMs += (want - cap) * 1000; hitches++; if (hitches === 1 || hitches % 10 === 0) console.warn(`world-combat: a ${Math.round(dt * 1000)} ms frame dropped ${Math.round((want - cap) * 1000)} ms of fight time (${hitches} such frame(s), ${Math.round(lostMs)} ms lost in all)`); }
-      let first = true;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
+      let first = true, stepped = false;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
       while (acc >= STEP) {
-        acc -= STEP; steps++;
+        acc -= STEP; steps++; stepped = true;
         const m = me(); if (first) world = { ...world, fighters: [{ ...m, ...gearOf(), x: hero.x, z: hero.z, facing: m.phase === 'roll' ? m.facing : hero.facing }, ...world.fighters.slice(1)] }; first = false;
         const r = stepCombat(world, { [ME]: { x: 0, z: 0, attack: heroDead ? null : pendingAttack, guard: guardHeld && !heroDead, roll: heroDead ? null : pendingRoll } }, STEP); pendingAttack = null; pendingRoll = null;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }
@@ -76,6 +76,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
         mobs.drive(f.id, { x: f.x, z: f.z, facing: f.facing, moving: f.returning || (f.hunting && f.phase === 'ready' && Math.hypot(f.x - hero.x, f.z - hero.z) > 1.6), duel: duelFor(world, f.id) ?? undefined });   // the page poses its actor from the duel (the engine's actorPose)
         if (!f.hunting && !f.returning && Math.hypot(f.x - hero.x, f.z - hero.z) > DROP_M) release(f.id);
       }
+      if (!stepped) return { dx: 0, dz: 0 };   // no step ran (dt 0 on the clock's first frame): the loop's body has not met the page's position yet, so it is not a displacement
       return { dx: me().x - hero.x, dz: me().z - hero.z };   // a roll's displacement (zero on foot); the page applies it with its own collision
     },
     /** After he died and stood up in town: a fresh body, nothing hunting him. */

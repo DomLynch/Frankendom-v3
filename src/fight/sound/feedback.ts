@@ -1,4 +1,4 @@
-import type { ClarityEvent, CombatEvent } from '../../combat.ts';
+import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import { cuesFor, nextVariant, PITCH_SPREAD, seeded, type Cue, type DeathPresentation } from './cues.ts';
 import { MANIFEST, type CueName } from '../../audio/manifest.ts';
 import { loadSprite } from '../../audio/sprite.ts';

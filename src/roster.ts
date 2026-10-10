@@ -1,5 +1,5 @@
-import type { WeaponId } from './moves.ts';
-import type { Finish } from './duel.ts';
+import type { WeaponId } from './fight/moves.ts';
+import type { Finish } from './fight/duel.ts';
 import { selectFinisher, type FinisherId } from './fight/finishers.ts';
 
 // The rig: the skeleton family a body is built on, which is the blade table it fights with (src/blade-paths.ts bladePathsByRig; the
