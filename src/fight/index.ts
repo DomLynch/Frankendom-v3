@@ -18,4 +18,5 @@ export * from './twist.ts';
 export * from './replay.ts';
 export { createWorldCombat, ME, JOIN_M, MAX_STEPS, kindOf, type WorldCombatDeps, type FightMob, type MobsPort, type MobPose } from './world-combat.ts';   // Zone 1's mount of the open-world loop (any client supplies the mob layer as a port)
 export { createHud, HEAVY_MOVES, KICK_LANDS, type HudView } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, which re-exports it)
+export { openAccount, openCharacter, characterFor, characterIdOf, type OpenDeps, type OpenReply } from './open.ts';   // the page's one writer `open` (K7: the zone page reaches it through here)
 export { CATALOGUE, catalogueRow } from './catalogue-rows.ts';   // the character catalogue rows (K7: clients read a row through the door, not by module path)
