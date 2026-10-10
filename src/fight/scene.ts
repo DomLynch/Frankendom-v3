@@ -43,7 +43,7 @@ import { armfeelFrom, Flinch } from './armfeel.ts';
 import { createBurstPool } from './armfeel-fx.ts';
 import { createBloodEdge } from './blood-edge.ts';
 import { hideChildren } from '../stage-hide.ts';
-import { createCameraRig, framingLow, framingTall } from '../camera.ts';
+import { createCameraRig, framingLow, framingTall } from './camera.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
 import { createFightFx, impactTexture } from './fx.ts';
 import { createSignatures, resolveSignature } from './signature.ts';
