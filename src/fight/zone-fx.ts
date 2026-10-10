@@ -2,7 +2,7 @@
 // hints going to the zone's walk camera. No zone id and no per-zone code: every zone page that mounts the open-world loop calls this the same way. Presentation only.
 import * as THREE from 'three';
 import { OPPONENTS, type OpponentId } from './moves.ts';
-import type { Shove } from '../camera-kick.ts';
+import type { Shove } from './camera-kick.ts';
 import type { CombatEvent } from './combat.ts';
 import { createFightFx, impactTexture, type CameraKick, type ContactCtx } from './fx.ts';
 import type { PairContacts } from './world-combat.ts';
