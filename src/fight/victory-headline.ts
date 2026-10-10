@@ -2,7 +2,7 @@
 // Presentation only: no sim, record or reward change, no badge, no rank, no damage bonus. Pure: no DOM. The player is side 0; a Hit/GuardBroken names its attacker
 // as `actor`, a Blocked/Parried names the defender as `actor`, a PostureBroken names the broken fighter as `target` (src/fight/duel.ts).
 // Numbers over adjectives; nothing earned means nothing said (the autopsy's rule, src/autopsy.ts). The first that holds wins:
-import type { CombatEvent } from '../duel.ts';
+import type { CombatEvent } from './duel.ts';
 
 export const headlineFlag = (search: string) => (new URLSearchParams(search).get('look') ?? '').split(',').includes('headline');
 
