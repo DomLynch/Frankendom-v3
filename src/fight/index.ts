@@ -4,6 +4,7 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
+export { createInput, SPRINT_PUSH, type ControlIntent } from '../input.ts';   // the touch/keyboard control layer (K2 row 5: the zone's page and sticks read it through the door)
 export * from './duel.ts';
 export * from './ai.ts';
 export * from './sim.ts';
@@ -22,7 +23,7 @@ export { openAccount, openCharacter, characterFor, characterIdOf, type OpenDeps,
 export { woundSpec, type WoundSpec } from './wounds.ts';   // K5: a creature's wounds row (which part a hit lands on, how it bleeds)
 export { createWoundFx } from './wounds-fx.ts';   // K5: the blood and marks a wounds row draws in a zone fight
 export { CATALOGUE, catalogueRow } from './catalogue-rows.ts';   // the character catalogue rows (K7: clients read a row through the door, not by module path)
-export { catalogueBodyUrl } from './catalogue-bodies.ts';   // a row's engine body as a URL (K11: the zone fetches a body by roster id, not src/assets/<id>.glb by name)
+export { catalogueBodyUrl, heroBodyUrl } from './catalogue-bodies.ts';   // a row's engine body as a URL (K11: the zone fetches a body by roster id, not src/assets/<id>.glb by name)
 export { legendForLevel, LEGEND_OPPONENTS, type LegendOpponent } from '../legends.ts';   // the Pit's legend ladder (K12: the zone page and the Pit read it through the door)
 export { bareName } from '../roster.ts';   // a roster name without its article (K12)
 export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: one createFightFx per active pair
