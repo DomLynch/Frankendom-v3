@@ -20,3 +20,5 @@ export { createWorldCombat, ME, JOIN_M, MAX_STEPS, kindOf, type WorldCombatDeps,
 export { createHud, createMeters, fillMeter, paintMeter, HEAVY_MOVES, KICK_LANDS, type HudView, type MeterState } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, whose re-export shim is gone)
 export { openAccount, openCharacter, characterFor, characterIdOf, type OpenDeps, type OpenReply } from './open.ts';   // the page's one writer `open` (K7: the zone page reaches it through here)
 export { CATALOGUE, catalogueRow } from './catalogue-rows.ts';   // the character catalogue rows (K7: clients read a row through the door, not by module path)
+export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue player (K8 row 12: the zone page reaches it through here)
+export { creaturesLook, type CreatureCue } from './sound/creature.ts';   // ?look=creatures and the creature cue names
