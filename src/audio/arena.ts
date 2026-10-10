@@ -4,7 +4,7 @@ import { nextVariant, seeded } from '../fight/sound/cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { BELL_RATE, preparedBell } from './bell.ts';
-import type { Fatigue } from '../fatigue.ts';
+import type { Fatigue } from '../fight/fatigue.ts';
 
 // loiter: the wall-hug level, 0..1 — the larger fighter's `loiter / RULES.wall.loiter.ticks` (Brief 13): the crowd turns on
 // whoever hugs the wall, a bed that swells with it and drops the moment he leaves the band or swings (loiter resets to 0).
