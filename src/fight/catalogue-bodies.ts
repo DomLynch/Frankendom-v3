@@ -1,6 +1,6 @@
 // The engine body file of a catalogue row, as a URL a page can fetch (K7 row 7, K11: a zone asks the engine for a body by roster id instead of importing
 // src/assets/<id>.glb by name). The map holds the roster bodies the open world draws (goblin, knight, pitborn, witch: the same four files mobs-view bundled
-// before, so no build ships a new file); every other fighter reaches a page through src/scene.ts. The glob lives inside the call so node (tests) can load
+// before, so no build ships a new file); every other fighter reaches a page through src/fight/scene.ts. The glob lives inside the call so node (tests) can load
 // this module: Vite expands it at build time.
 import { catalogueRow } from './catalogue-rows.ts';
 

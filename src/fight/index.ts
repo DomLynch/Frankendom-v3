@@ -4,6 +4,7 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
+export { createScene, type WorldMount } from './scene.ts';   // the fight scene (K7 row 10): its asset globs are node-safe, so the barrel still loads under the unit tests
 export { phoneTier, pixelCap, budgetTextures, FIGHTER_TEXTURE_CAP } from './quality.ts';   // the phone tier and texture budget (K7 row 16: moved from src/quality.ts)
 export { settleWithin, gateWithBound } from './warm-gate.ts';   // bounded warm-up waits (K7 row 16: moved from src/warm-gate.ts)
 export { createInput, SPRINT_PUSH, type ControlIntent } from '../input.ts';   // the touch/keyboard control layer (K2 row 5: the zone's page and sticks read it through the door)
