@@ -7,7 +7,7 @@ import { initialPractice, stepPractice, type Practice } from './combat.ts';
 import { LEVELS, OPPONENTS, opponentAt, profileAt } from './moves.ts';
 import { encodeRecord, type FightRecord } from './record.ts';
 import { underRecord } from './detmath.ts';
-import { groupLayer, withIncoming } from '../pack.ts';
+import { groupLayer, withIncoming } from './pack.ts';
 import { skillOf } from './loot.ts';
 import { specialOf, type SkillId, type SpecialName } from './moves.ts';
 
@@ -26,7 +26,7 @@ export function verifyRecord(record: FightRecord, onTick?: (practice: Practice) 
 function verifyUnder(record: FightRecord, onTick?: (practice: Practice) => void): Verification {
   const opponent = OPPONENTS[record.opponent], profile = opponent && Number.isInteger(record.level) && record.level >= 1 && record.level <= LEVELS ? profileAt(opponent, record.level) : undefined;   // the warden at the record's level, exactly as main.ts steps it
   if (!opponent || !profile) return { ok: false, reason: 'unknown opponent or warden profile', practice: null };
-  const group = record.group;   // RV39: one stream of a shared-health group replays ALONE from the incoming damage and held spans its own record carries (src/pack.ts)
+  const group = record.group;   // RV39: one stream of a shared-health group replays ALONE from the incoming damage and held spans its own record carries (src/fight/pack.ts)
   let practice: Practice;
   try {   // a record this build cannot step (a weapon the hero rig has no blade table for, a rule that throws) is a refusal, not a crash
     practice = initialPractice(record.seed, opponentAt(opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose);

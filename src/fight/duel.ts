@@ -524,7 +524,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     }
     A.special--;
   }
-  // Shared creature health (RV39, N attackers on one creature, src/pack.ts): each attacker fights their own ordinary duel against their own copy of the creature, and `incoming` is the damage the OTHER streams dealt to it on the
+  // Shared creature health (RV39, N attackers on one creature, src/fight/pack.ts): each attacker fights their own ordinary duel against their own copy of the creature, and `incoming` is the damage the OTHER streams dealt to it on the
   // previous tick, summed by the lockstep layer. It lands after this tick's blows and specials, once (the returned duel does not carry it), and kills through the same door a blow does. Absent or 0 = today's fight byte for byte.
   if (duel.incoming && duel.incoming > 0 && fighters[1].health > 0) {
     const D = fighters[1], A = fighters[0], move: MoveId = A.lastMove ?? SKILL_MOVE.pommel;

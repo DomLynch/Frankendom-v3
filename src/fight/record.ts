@@ -129,7 +129,7 @@ export type RecordArena = Exclude<(typeof ARENAS)[number], undefined>;
 export const FIRST_ARENA_VERSION = 26;
 // One stream of a shared-health group (RV39): `n` streams in the group (2..7) and this one's `index`. Its record cannot be judged without the other n-1 records.
 // Each record is SELF-VERIFYING (Auditor, hole 1): `incoming` is the damage the other streams put on THIS creature copy, as (tick it landed, amount), and `held` the ticks the layer held this copy idle because the token cap
-// (src/pack.ts TOKENS) gave its turn to others, as [from, to) spans; replay applies both from the record, so one record verifies alone and a withheld sibling costs only its owner. crossCheck (src/pack.ts) compares the
+// (src/fight/pack.ts TOKENS) gave its turn to others, as [from, to) spans; replay applies both from the record, so one record verifies alone and a withheld sibling costs only its owner. crossCheck (src/fight/pack.ts) compares the
 // recorded incoming with the siblings' verified damage when they are present.
 export type RecordGroup = { n: number; index: number; incoming: readonly (readonly [number, number])[]; held: readonly (readonly [number, number])[] };
 export const GROUP_LIST_MAX = 4096;
