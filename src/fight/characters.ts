@@ -528,7 +528,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     let leaning = 0, leanDrive = 0;   // the charged-heavy lean's weight, 0..1, and the ease that drives it
     let tiltApplied = false;   // the mixer rewrites a bone only when its clip value changes (a held guard's does not), so the tilt is undone by hand before every update
     let speed = 0;
-    let severed = false;   // decapitation is once per kill; unsever() resets on rematch
+    let severed = false, severedBone: Object3D | null = null;   // decapitation is once per kill (and which bone it collapsed); unsever() resets on rematch
     let crown: ReturnType<typeof splitSkull> | undefined;
     let droppedWeapon: ReturnType<typeof prepareWeaponDrop> | undefined;
     // Probe a paired scene's contact pose without advancing clocks, fading the ghost or changing the live actor state.
@@ -821,17 +821,19 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // Decapitation (owner 2026-09-18): bake the fighter's OWN head — face, hair, whatever helm he wears — out of the skinned
       // draws into a static prop at its current pose, and collapse the rig's Head bone so the corpse reads headless. Runs once
       // per kill; the caller re-parents the returned group to the world and owns the ballistics (and disposes it on rematch).
-      sever() {
+      /** Cut the head off: bake the triangles the head bone(s) dominate into a loose prop and collapse the bone. `bones` = the rig's head bones (a catalogue row's finisher.cut.head; the Pit's humanoid rig is ['Head'], the default). */
+      sever(bones: readonly string[] = ['Head']) {
         if (severed) return null;
-        const bone = root.getObjectByName('Head');
+        const bone = bones.map((n) => root.getObjectByName(n)).find(Boolean);
         if (!bone) return null;
+        severedBone = bone;
         severed = true;
         root.updateWorldMatrix(true, true);
         root.updateMatrixWorld(true); // refresh SkinnedMesh bind inverses after actor movement before baking world vertices
         const group = new Group();
         root.traverse(object => {
           if (!(object instanceof SkinnedMesh) || !object.visible) return;   // only what he shows: a draw a loot piece or a rank look hid stays off the head too
-          const headIndex = object.skeleton.bones.findIndex(b => b.name === 'Head');
+          const headIndices = new Set<number>(); object.skeleton.bones.forEach((b, i) => { if (bones.includes(b.name)) headIndices.add(i); }); const headIndex = headIndices.size ? 0 : -1;
           const geometry = object.geometry, position = geometry.getAttribute('position'), skinIndex = geometry.getAttribute('skinIndex'), skinWeight = geometry.getAttribute('skinWeight');
           if (headIndex < 0 || !position || !skinIndex || !skinWeight) return;
           object.skeleton.update();   // bake from THIS frame's pose, not last render's
@@ -865,7 +867,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           const triangles = (index ? index.count : position.count) / 3;
           for (let t = 0; t < triangles; t++) {
             let weight = 0;
-            for (let k = 0; k < 3; k++) { const i = index ? index.getX(t * 3 + k) : t * 3 + k; for (let j = 0; j < 4; j++) if (skinIndex.getComponent(i, j) === headIndex) weight += skinWeight.getComponent(i, j); }
+            for (let k = 0; k < 3; k++) { const i = index ? index.getX(t * 3 + k) : t * 3 + k; for (let j = 0; j < 4; j++) if (headIndices.has(skinIndex.getComponent(i, j))) weight += skinWeight.getComponent(i, j); }
             if (weight / 3 < .5) continue;   // keep triangles the Head bone dominates: skull, scalp, helm — not the neck blend
             for (let k = 0; k < 3; k++) kept.push(vertex(index ? index.getX(t * 3 + k) : t * 3 + k));
           }
@@ -890,7 +892,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         droppedWeapon?.dispose(); droppedWeapon = undefined;
         if (!severed) return;
         severed = false;
-        root.getObjectByName('Head')?.scale.setScalar(1);
+        (severedBone ?? root.getObjectByName('Head'))?.scale.setScalar(1);
+        severedBone = null;
       },
       // The opened-waist bake snapshots what he wears; a re-dress at a new tier (a rematch after a rank-up) bakes it again, between fights.
       rebakeOpened() { if (!opened && !openedJob) return; opened?.dispose(); opened = undefined; openedJob = undefined; this.prepareOpened(); },

@@ -41,6 +41,12 @@ export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THRE
       pool(spray.start, spray.end).burst(feel, v.x, v.y, v.z, dx, dz, hit.kill, grow, spray.amount);
       bursts++;
     },
+    /** A cut (a head taken off): the species' blood at `at`, kill-sized and doubled, flung away from the killer. */
+    cut(spec: WoundSpec, at: THREE.Vector3, from: { x: number; z: number }): void {
+      const spray = sprayOf(spec); if (!spray) return;
+      let dx = at.x - from.x, dz = at.z - from.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      pool(spray.start, spray.end).burst(feel, at.x, at.y, at.z, dx, dz, true, 1, spray.amount * 2); bursts++;
+    },
     /** Every frame a creature is up: the row's tiers turn into drips and marks on the ground under it. */
     tick(id: string, spec: WoundSpec, hpFrac: number, dt: number, x: number, z: number, seed: number): void {
       const b = bleeders.tick(id, spec, hpFrac, dt), colour = spec.species.blood?.end; if (!colour) return;
