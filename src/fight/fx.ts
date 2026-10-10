@@ -14,7 +14,6 @@ import type { createFootDust } from './foot-dust.ts';
 import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBladeBlood, createBodyWounds, createSplatPool } from './gore.ts';
 import type { FinisherId } from './finishers.ts';
-import type { loadWarriors } from './characters.ts';
 import type { CombatEvent, Practice } from './combat.ts';
 import type { State } from './sim.ts';
 
@@ -61,6 +60,10 @@ export function impactTexture(splash: boolean) {
   return new THREE.CanvasTexture(canvas);
 }
 
+/** What the effects need of a fighter's rig: the Pit's loadWarriors actors and a zone creature's actor both fit it. */
+export type FxRig = { anchor: THREE.Object3D; boneWorld(name: string): THREE.Vector3 | null };
+export type FxRigs = { player: FxRig; opponent: FxRig };
+
 /** The part of a Practice the effects read: the Pit's duel and a zone's per-pair stand-in both fill it. */
 export type ContactPractice = Pick<Practice, 'duel' | 'enemy' | 'enemyWoundSite' | 'woundSite' | 'health' | 'playerHealth'>;
 
@@ -70,7 +73,7 @@ export type ContactCtx = {
   blow: CombatEvent | undefined; contact: boolean | CombatEvent | undefined; killed: CombatEvent | undefined;
   finisher: FinisherId | null; detailedBlood: boolean;
   camera: THREE.Camera; kick: CameraKick; blockHeavy: boolean[];
-  warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
+  warriors: FxRigs | undefined;
   dustFeet: (THREE.Object3D | null)[]; dustPositions: THREE.Vector3[]; footDust: ReturnType<typeof createFootDust> | null;
   flinches: Flinch[] | null; burstPool: ReturnType<typeof createBurstPool> | null; feel: ReturnType<typeof armfeelFrom> | undefined; right: THREE.Vector3;
   opponentId: OpponentId; bloodMode: 'red' | 'dark' | 'off';

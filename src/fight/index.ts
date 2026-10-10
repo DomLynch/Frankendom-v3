@@ -16,7 +16,7 @@ export * from './gambit.ts';
 export * from './stance.ts';
 export * from './twist.ts';
 export * from './replay.ts';
-export { createWorldCombat, ME, JOIN_M, MAX_STEPS, kindOf, type PairContacts, type WorldCombatDeps, type FightMob, type MobsPort, type MobPose } from './world-combat.ts';   // Zone 1's mount of the open-world loop (any client supplies the mob layer as a port)
+export { createWorldCombat, finishOf, ME, JOIN_M, MAX_STEPS, kindOf, type PairContacts, type WorldCombatDeps, type FightMob, type MobsPort, type MobPose } from './world-combat.ts';   // Zone 1's mount of the open-world loop (any client supplies the mob layer as a port)
 export { createHud, createMeters, fillMeter, paintMeter, HEAVY_MOVES, KICK_LANDS, type HudView, type MeterState } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, whose re-export shim is gone)
 export { openAccount, openCharacter, characterFor, characterIdOf, type OpenDeps, type OpenReply } from './open.ts';   // the page's one writer `open` (K7: the zone page reaches it through here)
 export { woundSpec, type WoundSpec } from './wounds.ts';   // K5: a creature's wounds row (which part a hit lands on, how it bleeds)

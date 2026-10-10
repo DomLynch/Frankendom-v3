@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { OPPONENTS, type OpponentId } from './moves.ts';
 import type { Shove } from './camera-kick.ts';
 import type { CombatEvent } from './combat.ts';
-import { createFightFx, impactTexture, type CameraKick, type ContactCtx } from './fx.ts';
+import { createFightFx, impactTexture, type CameraKick, type ContactCtx, type FxRig } from './fx.ts';
 import type { PairContacts } from './world-combat.ts';
 
 /** The hint sink for a walk camera that is placed afresh every frame (camera.position set, then lookAt): draw() adds the settling shove and tumble on top, and the next placement drops them. */
@@ -32,7 +32,10 @@ export function createWalkKick(camera: THREE.Camera): CameraKick & { draw(dt: nu
 
 const IDLE_S = 12;   // a pair's effects stay (a corpse keeps its pool) this long after its last contact, then the instance is cleared and goes back to the pool
 
-export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera }) {
+/** The host's rigs: the hero's actor and a creature's by id (null while there is none: the wound marks and blade blood then wait). */
+export type ZoneRigs = { hero(): FxRig | null; foe(id: string): FxRig | null };
+
+export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera; rigs?: ZoneRigs }) {
   const dropTexture = impactTexture(false), splatTexture = impactTexture(true), kick = createWalkKick(host.camera), right = new THREE.Vector3();
   type Slot = { fx: ReturnType<typeof createFightFx>; idle: number; struck?: [number, number]; victim?: number };
   const live = new Map<string, Slot>(), free: Slot[] = [];
@@ -44,12 +47,12 @@ export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera })
     return s;
   };
   function ctxOf(c: PairContacts, dt: number): ContactCtx {
-    const { events } = c, blow = events.find((e: CombatEvent) => e.type === 'Hit' || e.type === 'GuardBroken');
+    const { events } = c, hero = host.rigs?.hero(), foe = host.rigs?.foe(c.foe), blow = events.find((e: CombatEvent) => e.type === 'Hit' || e.type === 'GuardBroken');
     const at = (b: { x: number; z: number; facing: number }) => ({ x: b.x, z: b.z, heading: b.facing, distance: 0 });
     return {
       events, dt, blow, contact: blow || events.some((e) => e.type === 'Blocked' || e.type === 'Parried'), killed: events.find((e) => e.type === 'Killed'),
       practice: { duel: c.duel, enemy: at(c.foeAt), enemyWoundSite: blow?.location ?? 'torso', woundSite: blow?.location ?? 'torso', health: c.foeAt.health, playerHealth: c.duel.fighters[0].health },
-      state: at(c.hero), finisher: null, detailedBlood: false, camera: host.camera, kick, blockHeavy: [false, false], warriors: undefined,
+      state: at(c.hero), finisher: c.finisher ?? null, detailedBlood: false, camera: host.camera, kick, blockHeavy: [false, false], warriors: hero && foe ? { player: hero, opponent: foe } : undefined,
       dustFeet: [], dustPositions: [], footDust: null, flinches: null, burstPool: null, feel: undefined, right,
       opponentId: c.kind as OpponentId, bloodMode: 'red', DIP_FRAMES: 0, setDip: () => {},
     };
