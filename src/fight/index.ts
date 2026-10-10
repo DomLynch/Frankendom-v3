@@ -4,6 +4,8 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
+export { phoneTier, pixelCap, budgetTextures, FIGHTER_TEXTURE_CAP } from './quality.ts';   // the phone tier and texture budget (K7 row 16: moved from src/quality.ts)
+export { settleWithin, gateWithBound } from './warm-gate.ts';   // bounded warm-up waits (K7 row 16: moved from src/warm-gate.ts)
 export { createInput, SPRINT_PUSH, type ControlIntent } from '../input.ts';   // the touch/keyboard control layer (K2 row 5: the zone's page and sticks read it through the door)
 export * from './duel.ts';
 export * from './ai.ts';
@@ -29,3 +31,6 @@ export { catalogueBodyUrl, heroBodyUrl } from './catalogue-bodies.ts';   // a ro
 export { legendForLevel, LEGEND_OPPONENTS, type LegendOpponent } from '../legends.ts';   // the Pit's legend ladder (K12: the zone page and the Pit read it through the door)
 export { bareName } from '../roster.ts';   // a roster name without its article (K12)
 export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: one createFightFx per active pair
+export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue player (K8 row 12: the zone page reaches it through here)
+export { creaturesLook, type CreatureCue } from './sound/creature.ts';   // ?look=creatures and the creature cue names
+export const loadFeedback = () => import('./sound/feedback.ts').then((m) => m.createFeedback());   // K8 slice 2: the Pit's cue player as a lazy chunk (the zone builds it at its first gesture, not with the page)
