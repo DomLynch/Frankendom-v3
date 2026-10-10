@@ -7,7 +7,7 @@ import type { OpponentId } from '../roster.ts';
 import { actorPose, attackSpecs } from './combat.ts';
 import { specialStage, SPECIAL_RECOVER, type SpecialTest } from './special-look.ts';
 import { CUTS, CUT_GAP, cutAt, SLAM_AT } from './special-timing.ts';
-import { chargeGait } from '../charge-timing.ts';
+import { chargeGait } from './charge-timing.ts';
 import type { BossKind } from './special-boss-timing.ts';
 import type { DwarfShieldKind } from './special-fx-dwarf-shield.ts';
 import { classTravel, type ClassSpecial } from './special-class-timing.ts';
@@ -96,7 +96,7 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
   surtr: pitborn('surtr', -0.2),   // Ash Fall: the cleave drives him down
   typhon: pitborn('typhon', 0),   // Wind Wall: the gale and the lunge, no knee-dip
   // Nyx's Nightfall (nightfall-fx.ts, rank 10): the exposure drains to near-black, a cold moon rims the pair, a veil of darkness sweeps to the target.
-  nyx: { load: (scene, opponent, _exposure, camera) => import('../nightfall-fx.ts').then(({ createNightfallFx }) => createNightfallFx(scene, camera, opponent)), at: 'head', lift: -0.28 },
+  nyx: { load: (scene, opponent, _exposure, camera) => import('./nightfall-fx.ts').then(({ createNightfallFx }) => createNightfallFx(scene, camera, opponent)), at: 'head', lift: -0.28 },
   dwarf8: dwarfShield('dwarf8'), dwarf9: dwarfShield('dwarf9'), dwarf10: dwarfShield('dwarf10'),   // The Word, Three Blows, Rim Shake
   shield8: dwarfShield('shield8'), shield9: dwarfShield('shield9'), shield10: dwarfShield('shield10'),   // Bared Face, The Ring, Aegis Sweep
   // Rank 8 Red Wind (the Nightborn's Set): he holds his blade out level through the windup (the thrust clip's extended contact pose, held) and eases back to stance as it scours.
@@ -170,7 +170,7 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
   // Rank 9 The Charge (the Centurion's Alexander): a low dust line races along the ground and breaks over the foe's feet; his body is drawn riding the front (the anchors, `extra`) and
   // his gait runs it (`travel`: walking back to gather, then the armed run, charge-timing.ts). lift -0.28 is the default knee-dip, kept: the blow drops the foe a little.
   centurion: {
-    load: (scene, opponent) => import('../charge-fx.ts').then(({ createChargeFx }) => createChargeFx(scene, opponent)),
+    load: (scene, opponent) => import('./charge-fx.ts').then(({ createChargeFx }) => createChargeFx(scene, opponent)),
     at: 'feet', lift: -0.28,
     extra: (w) => [[w?.player.anchor ?? null, w?.opponent.anchor ?? null]],
     travel: (side, fighters) => { const stage = side === 1 ? specialStage(fighters[1]) : null; return stage?.stage === 'windup' ? chargeGait(stage.progress * RULES.special.windup) : undefined; },
