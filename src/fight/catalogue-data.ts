@@ -4,7 +4,7 @@
 // one row. World assets are generated from the engine asset by scripts/character/world_body.py; a row with world null has none yet, so no zone may draw it. The goblin is row #1 of the camp (Lead 2026-10-09).
 import type { CatalogueRow } from './catalogue.ts';
 
-export const CATALOGUE_ROWS: readonly CatalogueRow[] = [
+const CATALOGUE_ROWS: readonly CatalogueRow[] = [
   { id: "veteran", name: "the Centurion", rig: "hero", shape: "biped", engine: { asset: "src/assets/veteran.glb", tris: 58220 }, world: null, armour: ["veteran.Helmet", "veteran.Crest", "veteran.Body", "veteran.Arms", "veteran.Greaves", "veteran.Boots", "veteran.Gloves"], stats: { archetype: "veteran", levels: [1, 50] }, animations: { clips: ["Idle", "Walk", "Jog", "Run", "Armed", "Attack", "Hit", "Death", "Draw", "Roll", "Guard", "Return", "Heavy", "Riposte", "ArmedWalk", "StrafeLeft", "StrafeRight", "Kick", "BlockImpact", "Parry", "Deflected", "Death_SplitCrown", "Death_RunThrough", "Fin_RunThrough", "Trident_Idle", "Trident_Walk", "Trident_StrafeLeft", "Trident_StrafeRight", "Trident_Thrust", "Trident_ThrustChain", "Trident_Sweep", "Trident_High", "Trident_Guard", "Trident_BlockImpact", "Trident_Deflected", "Trident_Hit", "Trident_Death", "Death_QuietOne", "ArmedRun"] }, finisher: { cut: { head: ["Head"], neck: ["neck_01"], spine: ["spine_02"], limbs: { armL: ["upperarm_l"], armR: ["upperarm_r"], legL: ["thigh_l"], legR: ["thigh_r"] } }, finishers: ["splitCrown", "decapitation", "runThrough", "opened", "quietOne", "plainDeath"], timing: [
         { id: "splitCrown", pose: "splitCrown", seconds: 4.07, measured: true },
         { id: "decapitation", pose: "decapitation", seconds: 3.2, measured: true },
