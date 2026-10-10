@@ -19,7 +19,9 @@ export type Wounds = { body: string; species: string; size: number; bleedRate: n
 export type Legend = { work: string; author?: string; year?: number; locator?: string } | { legendId: string } | { pending: string };   // the same shapes as origins/mobs/row.ts SourceRef
 export type RankLegend = { name: string; source: string; backstory: string };   // the named opponent at one Pit rank (src/legends.ts), cosmetic text only
 export type CatalogueRow = {
-  id: string;                                   // the ROSTER id (src/roster.ts): the key a client resolves a character by
+  id: string;                                   // the ROSTER id (src/roster.ts): the key a client resolves a character by; a VARIANT row (`body` set) has its own id instead
+  body?: string;                                // a variant row (the Ember wolf on the Ash wolf's body): the roster id whose rig, assets and finishers it shares; checked against the roster in place of `id`
+  summary?: string;                             // one line of lore a zone's character card shows (a creature that is its own character, not just a body)
   name: string;
   rig: RigId;
   shape: Shape;
@@ -49,7 +51,9 @@ const HEX = /^#[0-9a-f]{6}$/i, WORLD_MAX_TRIS = 10000;   // the world ceiling a 
 /** The ways a row is bad, empty when it is good. `known` supplies what only the caller can know (the roster ids, loot ids, tables, finishers, archetypes). */
 export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySet<string>; loot: ReadonlySet<string>; tables: ReadonlySet<string>; finishers: ReadonlySet<string>; archetypes: ReadonlySet<string>; weapons: ReadonlySet<string>; stances: ReadonlySet<string>; voices: ReadonlySet<string>; poses: ReadonlySet<string>; bodytypes: Readonly<Record<string, Bodytype>>; species: Readonly<Record<string, Species>> }): RowIssue[] {
   const bad: RowIssue[] = [], add = (code: RowCode, path: string, message: string) => void bad.push({ code, path, message });
-  if (!known.roster.has(row.id)) add('id', 'id', `${row.id} is not a roster id`);
+  if (!known.roster.has(row.body ?? row.id)) add('id', row.body ? 'body' : 'id', `${row.body ?? row.id} is not a roster id`);
+  if (row.body !== undefined && row.body === row.id) add('id', 'body', 'a variant row names a different id than its body');
+  if (row.summary !== undefined && !row.summary.trim()) add('id', 'summary', 'a line of lore, or leave it out');
   if (!row.name.trim()) add('id', 'name', 'a name');
   const w = row.world;
   if (!/\.glb$/.test(row.engine.asset) || (w && (!/\.glb$/.test(w.asset) || (w.asset === row.engine.asset && row.engine.tris > w.maxTris)))) add('asset', 'engine/world', 'a .glb engine asset, and a world asset that is a different file unless the engine asset is itself within the world ceiling');
@@ -62,7 +66,7 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   if (cut && (!cut.head.length || !cut.neck.length || !cut.spine.length || Object.keys(cut.limbs).length < 4 || Object.values(cut.limbs).some((b) => !b.length))) add('finisher', 'finisher.cut', 'a head, a neck, an upper spine and four limbs to cut at, or null');
   if (!finishers.length || finishers.some((f) => !known.finishers.has(f)) || finishers.at(-1) !== 'plainDeath' || new Set(finishers).size !== finishers.length) add('finisher', 'finisher.finishers', 'Pit finishers, distinct, ending in plainDeath');
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
-  if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);
+  if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);   // body and variant rows alike: the table must resolve (a typo would silently drop loot)
   if (!(row.render.scale > 0 && row.render.scale <= 4)) add('render', 'render.scale', 'a draw scale in (0, 4]');
   if (!known.weapons.has(row.weapon)) add('weapon', 'weapon', `${row.weapon} is not a weapon`);
   if (!known.stances.has(row.home)) add('home', 'home', `${row.home} is not a stance pick`);
