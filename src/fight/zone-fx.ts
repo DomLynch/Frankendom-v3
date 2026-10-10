@@ -36,9 +36,11 @@ export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera })
   const dropTexture = impactTexture(false), splatTexture = impactTexture(true), kick = createWalkKick(host.camera), right = new THREE.Vector3();
   type Slot = { fx: ReturnType<typeof createFightFx>; idle: number; struck?: [number, number]; victim?: number };
   const live = new Map<string, Slot>(), free: Slot[] = [];
+  const newSlot = (): Slot => ({ fx: createFightFx({ scene: host.scene, dropTexture, splatTexture }), idle: 0 });
+  free.push(newSlot());   // the first pair's effects exist before any contact, so the zone's warm-up (planUpload) sees their materials and links their programs before [zone ready], not at the first hit
   const slotFor = (foe: string): Slot => {
     let s = live.get(foe);
-    if (!s) { s = free.pop() ?? { fx: createFightFx({ scene: host.scene, dropTexture, splatTexture }), idle: 0 }; live.set(foe, s); }
+    if (!s) { s = free.pop() ?? newSlot(); live.set(foe, s); }
     return s;
   };
   function ctxOf(c: PairContacts, dt: number): ContactCtx {
