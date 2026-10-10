@@ -20,4 +20,7 @@ export { createWorldCombat, ME, JOIN_M, MAX_STEPS, kindOf, type PairContacts, ty
 export { createHud, createMeters, fillMeter, paintMeter, HEAVY_MOVES, KICK_LANDS, type HudView, type MeterState } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, whose re-export shim is gone)
 export { openAccount, openCharacter, characterFor, characterIdOf, type OpenDeps, type OpenReply } from './open.ts';   // the page's one writer `open` (K7: the zone page reaches it through here)
 export { CATALOGUE, catalogueRow } from './catalogue-rows.ts';   // the character catalogue rows (K7: clients read a row through the door, not by module path)
+export { catalogueBodyUrl } from './catalogue-bodies.ts';   // a row's engine body as a URL (K11: the zone fetches a body by roster id, not src/assets/<id>.glb by name)
+export { legendForLevel, LEGEND_OPPONENTS, type LegendOpponent } from '../legends.ts';   // the Pit's legend ladder (K12: the zone page and the Pit read it through the door)
+export { bareName } from '../roster.ts';   // a roster name without its article (K12)
 export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: one createFightFx per active pair
