@@ -6,7 +6,7 @@ import { defenceGrade, GRADE_LABEL } from '../defence-grade.ts';
 import { won } from '../ladder.ts';
 import { bareName } from '../roster.ts';
 import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../lessons.ts';
-import { createGapHistory } from '../kick-close.ts';
+import { createGapHistory } from './kick-close.ts';
 import { staminaLow } from '../fatigue-preview.ts';
 import { SKILL_MOVE, weaponOf, type OpponentId } from './moves.ts';
 
