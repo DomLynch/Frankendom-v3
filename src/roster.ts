@@ -2,7 +2,7 @@ import type { WeaponId } from './fight/moves.ts';
 import type { Finish } from './fight/duel.ts';
 import { selectFinisher, type FinisherId } from './fight/finishers.ts';
 
-// The rig: the skeleton family a body is built on, which is the blade table it fights with (src/blade-paths.ts bladePathsByRig; the
+// The rig: the skeleton family a body is built on, which is the blade table it fights with (src/fight/blade-paths.ts bladePathsByRig; the
 // bake is per rig because the same knife sweeps a different arc in a goblin's hand than in a man's). 'hero' is the player skeleton and
 // every body reproportioned from it. A held creature without a bake of its own stays on the hero table it has always used.
 export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith' | 'wolf' | 'boar' | 'bear';

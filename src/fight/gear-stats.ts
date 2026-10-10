@@ -1,5 +1,5 @@
 // Gear stats (brief 19, deliverable 1): what a kit is worth, as two multipliers. Data only — nothing here changes a fight yet, and
-// `src/loot.ts`'s "visual cosmetics only, no stats" header stands until deliverable 5 puts a Loadout into `stepDuel`.
+// `src/fight/loot.ts`'s "visual cosmetics only, no stats" header stands until deliverable 5 puts a Loadout into `stepDuel`.
 //
 // TWO stats, not four, and the boundary is the point. `docs/progression-direction.md` (owner, 2026-09-19) puts POISE, health (VIG) and
 // stamina (END/DEX) in the Origin CHARACTER layer, and has the heavy armour classes COSTING stamina economy rather than granting it.
@@ -16,7 +16,7 @@
 // a longsword tell is a longsword tell at every tier — which is why every number here is a damage multiplier and none is a duration.
 // The caps below are the whole of that promise and `tests/gear-stats.test.ts` holds them exactly.
 import { levelOf, type Tier } from '../grades.ts';
-import { ARMOUR_SLOTS, WEAPON_SLOTS, isWeaponSlot, slotOf, type Loot, type LootId, type LootSlot } from '../loot.ts';
+import { ARMOUR_SLOTS, WEAPON_SLOTS, isWeaponSlot, slotOf, type Loot, type LootId, type LootSlot } from './loot.ts';
 import type { OpponentId } from '../roster.ts';
 
 // The two multipliers a fight is fought with. Both scale damage — Attack what you deal, RES what you take, chip included — and
@@ -109,7 +109,7 @@ export const fullSet = (tier: Tier, weapon?: (typeof WEAPON_SLOTS)[number]): Kit
   Object.fromEntries([...ARMOUR_SLOTS.filter(slot => SLOT_WEIGHT[slot] > 0), ...(weapon ? [weapon] : [])].map(slot => [slot, tier]));
 
 // ---- what the player is actually wearing ----------------------------------------------------------------------------------------
-// A `LootId` is `<opponent>.<slot>` (src/loot.ts) and carries NO tier. Nor is there a per-opponent kit-tier table to look one up in:
+// A `LootId` is `<opponent>.<slot>` (src/fight/loot.ts) and carries NO tier. Nor is there a per-opponent kit-tier table to look one up in:
 // a tier is a property of the FIGHT, not of the recipe (Strategy, 2026-09-22, withdrawing the per-opponent reading) — `tierAt(marks)`
 // in src/grades.ts is `rankFor(marks).title`, so the same Centurion is a Recruit's Centurion early and a Praetorian's later.
 //

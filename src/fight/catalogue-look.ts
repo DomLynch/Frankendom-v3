@@ -2,7 +2,7 @@
 // file that rung ships, and whether its kit takes the rung's finish (src/fight/rank-tint.ts). A zone mob is a character at a level, so a client asks here instead of keeping a second table
 // of scales and look files (origins/preview/mob-looks.ts). Per-CHARACTER dressing (cloth tint, soot, gear, spread) is not here: it stays in zone data, the row holds only the BODY's look.
 // Pure data in, data out: no DOM, no three.js.
-import { rankLookFor } from '../rank-look.ts';
+import { rankLookFor } from './rank-look.ts';
 import { rungOf } from '../legends.ts';
 import { catalogueRow } from './catalogue-rows.ts';
 
