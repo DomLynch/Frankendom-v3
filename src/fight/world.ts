@@ -137,7 +137,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     const sticky = prevFoe(a) === b.id || prevFoe(b) === a.id;
     if (dist(a, b) <= (sticky ? ENGAGE_OUT_M : ENGAGE_M)) { bouts.push({ a, b }); inFight.add(a.id); inFight.add(b.id); }
   }
-  // 2. Player against the nearest creature (the Pit's own pack model is a sequence of bouts, src/pack.ts startPack / nextBout: one fights the hero, the rest hold off at the ring until it falls); each creature fights one player.
+  // 2. Player against the nearest creature (the Pit's own pack model is a sequence of bouts, src/fight/pack.ts startPack / nextBout: one fights the hero, the rest hold off at the ring until it falls); each creature fights one player.
   // The creature chooses: of the free players in its reach it takes the one with the most threat (nearest on a tie; a foe it already has stays out to ENGAGE_OUT_M); each player then takes the nearest creature that chose him.
   const claimed = new Set<string>(), free = players.filter((p) => !inFight.has(p.id));
   const reach = (c: Fighter, p: Fighter) => dist(c, p) <= (engagedWith(p, c.id) ? ENGAGE_OUT_M : ENGAGE_M);

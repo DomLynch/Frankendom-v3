@@ -154,7 +154,7 @@ export const initialPractice = (seed = 731, opponent: Opponent = OPPONENTS.veter
   const armed = gambit === undefined ? duel : withGambit(duel, gambit);
   return project(stance === undefined ? armed : withStances(armed, asStance(stance), asStance(moodOf(seed, opponent.id))), initialAi(seed));
 };
-// `layer`: a world layer that rewrites the warden's intent AFTER decide() (src/mobkit.ts: signature moves; sparring.ts does the same for the dummy). Absent = today's fight, the same intent object.
+// `layer`: a world layer that rewrites the warden's intent AFTER decide() (src/fight/mobkit.ts: signature moves; sparring.ts does the same for the dummy). Absent = today's fight, the same intent object.
 export function stepPractice(current: Practice, intent: Intent, profile: AiProfile = PROFILES.normal, layer?: (duel: Duel, warden: Intent) => Intent): Practice {
   const warden = decide(current.duel, 1, current.ai, profile);
   return project(stepDuel(current.duel, [intent, layer ? layer(current.duel, warden.intent) : warden.intent]), warden.ai, current, intent);
