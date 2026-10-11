@@ -20,7 +20,7 @@ const LIVE_SPECIALS = true;
 import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, type SkillId, type WeaponId } from './moves.ts';
 import { recordPractice, recordRematch, saveTrial, type Trial } from '../trial.ts';
 import { recordResult, saveScorecard, type Scorecard } from '../scorecard.ts';
-import { awardMark, levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../career.ts';
+import { awardMark, levelOfMarks as levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../core/career-ladder.ts';
 import { autopsy } from '../autopsy.ts';
 import { readOpponent } from './ai.ts';
 import { idleIntent, roundPose, type Duel, type DuelPose } from './duel.ts';
