@@ -18,8 +18,8 @@ import type { PickedStance } from './stance.ts';
 // (version 21), so links made either way replay as they were fought.
 const LIVE_SPECIALS = true;
 import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, type SkillId, type WeaponId } from './moves.ts';
-import { recordPractice, recordRematch, saveTrial, type Trial } from '../trial.ts';
-import { recordResult, saveScorecard, type Scorecard } from '../scorecard.ts';
+import { loadTrial, recordPractice, recordRematch, saveTrial, type Trial } from '../trial.ts';
+import { loadScorecard, recordResult, saveScorecard, type Scorecard } from '../scorecard.ts';
 import { awardMark, levelOfMarks as levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../core/career-ladder.ts';
 import { autopsy } from '../autopsy.ts';
 import { readOpponent } from './ai.ts';
@@ -31,7 +31,7 @@ import { defeat, type LootId } from '../core/loot.ts';
 import { stepSparring, type SparringKit } from '../sparring.ts';
 import { createFirstLoss, type LessonId } from '../first-loss.ts';
 import { createTutorial, type TutorialStep } from '../tutorial.ts';
-import type { Profile, StoragePort } from '../core/profile.ts';
+import { loadProfile, type Profile, type StoragePort } from '../core/profile.ts';
 import { underRecord } from './detmath.ts';
 import { FIRST_STAB_VERSION, STAB_ON, setStab } from './stab-rule.ts';
 import { FIRST_LATE_NOTICE_VERSION, LATE_NOTICE, PLAY_SCALE, playScaleFor, setLateNotice, setPlayScale } from './play-radius.ts';
@@ -58,6 +58,11 @@ export type MatchPorts = { storage: StoragePort; trial: Trial; scorecard: Scorec
 // recorder), the autopsy lines, whether the player won and whether the fight counted (career only).
 export type Ended = { record: FightRecord | null; lines: string[]; won: boolean; rewarded: boolean };
 // The rematch seed: a different warden every rematch, deterministic from the last (the browser gate times the fixed 731 opener).
+// A match whose ports live in memory (the open world's sparring duel): nothing it does reaches localStorage. Built here so origins/ need not import the trial and scorecard loaders.
+export const memoryMatch = (opponent: Opponent, build: string, seed: number, level: number): Match => {
+  const memory = (): StoragePort => { const m = new Map<string, string>(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => { m.set(k, String(v)); } }; };
+  return new Match(opponent, build, { storage: memory(), trial: loadTrial(memory()), scorecard: loadScorecard(memory()), profile: loadProfile(memory(), () => build).profile }, seed, 'longsword', null, level);
+};
 export const nextSeed = (seed: number): number => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
 
 export class Match {

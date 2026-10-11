@@ -14,5 +14,6 @@ export { underRecord } from './detmath.ts';
 export { setStab, STAB_ON } from './stab-rule.ts';
 export { AFTER_HIT_TICKS, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow, type KitRow } from './mobkit.ts';
 export { SPEEDS } from './speeds.ts';
+export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
 export { PORTRAIT_KEYS } from '../legends.ts';
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
