@@ -4,7 +4,8 @@
 // plays the plain death. Presentation only; no creature is named here: a new creature is a catalogue row. The head lies about HEAD_LIFE seconds, then is disposed; the rig grows it back when it respawns.
 import * as THREE from 'three';
 import { catalogueRow } from './catalogue-rows.ts';
-import type { FinisherId } from './finishers.ts';
+import { finisherRow, type FinisherId } from './finishers.ts';
+import { isTemplate } from './finisher-look.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
 
 /** What the finisher needs of a creature's rig (the engine's Actor fits this structurally). */
@@ -18,8 +19,8 @@ export function cutOf(character: string, body: string): { head: readonly string[
   return cut && cut.head.length ? { head: cut.head, neck: cut.neck } : null;
 }
 
-/** Which finishers this client can show on a creature: the plain death always, the decapitation (the row decides whether this creature has a head to cut). */
-export const canPlayFinisher = (f: FinisherId): boolean => f === 'plainDeath' || f === 'decapitation';
+/** Which finishers this client can show on a creature: the finisher rows flagged `zone` (the plain death always; the decapitation, where the creature's row has a head to cut). */
+export const canPlayFinisher = (f: FinisherId): boolean => finisherRow(f)?.zone === true;
 
 export function createZoneFinisher(scene: THREE.Scene, opts: { groundAt?: (x: number, z: number) => number; bleed?: (id: string, at: THREE.Vector3, from: { x: number; z: number }) => void } = {}) {
   const heads = new Map<string, { head: SeveredHead; age: number }>(), cut = new Set<string>(), rigs = new Map<string, CutRig>();   // rigs: whose head is off, until it is released (the loose head's own life is shorter)
@@ -32,7 +33,7 @@ export function createZoneFinisher(scene: THREE.Scene, opts: { groundAt?: (x: nu
   return {
     /** One frame of a creature's death: `fall` is the clip's progress (0..1), `finisher` the engine's pick, `at` where it lies and `from` where the killer stands. */
     frame(id: string, spec: { character: string; body: string }, rig: CutRig, fall: number, finisher: FinisherId | undefined, at: { x: number; z: number }, from: { x: number; z: number }): void {
-      if (finisher !== 'decapitation' || fall < SEVER_AT || cut.has(id)) return;
+      if (!isTemplate(finisher ?? null, 'sever') || fall < SEVER_AT || cut.has(id)) return;   // only a severing finisher takes the head
       const bones = cutOf(spec.character, spec.body); if (!bones) return;
       cut.add(id);   // once per kill: a creature that cannot be cut is not retried every frame
       const neck = bones.neck.map((b) => rig.boneWorld(b)).find(Boolean) ?? null, built = rig.sever(bones.head);

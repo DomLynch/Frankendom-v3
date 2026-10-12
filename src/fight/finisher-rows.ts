@@ -20,6 +20,7 @@ export type FinisherBody = { victim: FinisherBodyPart; killer?: FinisherBodyPart
 // kill (the tear of a severed head, the crack of a split skull). A cue lands `at` seconds after the kill, or `atDeath` of the way through the slowed
 // death clip. Hamstrung's and Execution's are their templates' own beats (cues.ts), so their rows carry none.
 export type FinisherCue = { cue: string; gain: number; room: number; at?: number; atDeath?: number };
+// `zone` (zone-finisher.ts): an open-world client can show it on a zone creature (the plain death, and the decapitation where the creature's row has a head to cut).
 // `bakeFallback` (rank-look.ts bakeSafeFinisher): what a finisher that reads a waist-cut bake plays when that bake is still pending (a finisher that reads no
 // bake), if the body allows it; else the plain death.
 // `blood.start` (finisher-blood.ts): how far into the victim's clip the wound opens (the severed head's 5 %, the split skull's and the waist cut's 4.5 %).
@@ -35,7 +36,7 @@ export type FinisherSound = { fall: FinisherCue; goreFall?: FinisherCue; goreAft
 export type FinisherSide = { angle: number; eyeY: number; eyeYPerScale?: number; minBack: number; beyond?: number; beyondBody?: number; reachPad?: number; wideWhenBig?: boolean };
 export type FinisherCamera = { dolly: { push: number; slide: number; turn: number }; reveal?: { from: number; over: number; overBig?: number; side: string }; side?: FinisherSide };
 // `shelved`: the clip and pose stay, but the scene plays the plain fall in their place (the Quiet One left the game, Dom 2026-09-27; nothing picks it).
-export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; bakeFallback?: string; body?: FinisherBody; sound?: FinisherSound; blood: { start: number }; camera: FinisherCamera };
+export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; zone?: boolean; bakeFallback?: string; body?: FinisherBody; sound?: FinisherSound; blood: { start: number }; camera: FinisherCamera };
 export type FinisherTable = { rows: readonly FinisherRow[]; byId: ReadonlyMap<string, FinisherRow>; rotation: readonly string[] };
 
 const isTemplate = (v: unknown): v is FinisherTemplate => (FINISHER_TEMPLATES as readonly unknown[]).includes(v);
