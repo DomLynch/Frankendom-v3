@@ -282,7 +282,7 @@ export const fxOfMove = (move: string | undefined): string | undefined => { cons
 export const BASH_MOVE: MoveId = Object.values(SKILL_ROWS).find((r) => r.bash)!.move as MoveId;   // the hilt-bash skill's move (the row with `bash`)
 export const isSkillId = (id: unknown): id is SkillId => typeof id === 'string' && Object.hasOwn(SKILL_ROWS, id);
 /** The skill a move belongs to, or null: the row whose `move` it is. */
-export const skillOfMove = (move: string | undefined): SkillId | null => (move === undefined ? null : Object.values(SKILL_ROWS).find((r) => r.move === move)?.id ?? null);
+export const skillOfMove = (move: string | null | undefined): SkillId | null => (move == null ? null : Object.values(SKILL_ROWS).find((r) => r.move === move)?.id ?? null);
 export const WEAPONS: Record<WeaponId, Weapon> = LOADED.weapons;
 export const weaponOf = (id: WeaponId): Weapon => { const w = WEAPONS[id]; if (!w) throw Error(`unknown weapon "${id}"`); return w; };
 export const isWeaponId = (id: unknown): id is WeaponId => typeof id === 'string' && Object.hasOwn(WEAPONS, id);
