@@ -1,72 +1,94 @@
-// THE SHEET (Dom, 2026-10-12; programme section 2a): every player stat starts at 100 and tops out at 200, so the number-one player is 2x per stat and 4x in a fight. The 100 points above
-// base are budgeted by LAYER, so each layer visibly matters: level / Origin rank +50, a full gear set +25, skills by use +15, titles / favour / perks +10; layers add. Armour and magic
-// resist are two stats on the same line (plate 200 / 100, a robe the reverse). All of it is ROWS (src/fight/sheet-defs.json through the shared loader): a layer is a row (id, cap), a stat
-// is a row (id, record code, base, cap, optionally the layers that may feed it). A new stat is a row and a read at the site that uses it, never a switch over names. Bosses and
-// creatures are OFF the sheet: scaled by their own rows (the mitigation curve's 75% asymptote is theirs). No row may name a timing: the sheet moves damage, stamina and cast success, never a tell.
+// THE SHEET (Dom, 2026-10-13 00:1x, final; programme section 2a): level 1 to 100, TEN DIALS (attack, spellPower, armour, magicResist, health, stamina, poise, luck, focus, recovery), each
+// starting at 50 and maxing at 100. A player places 50 points at creation (any split) and gets 1 more per level: 150 at level 100, so at most three dials are maxed, never ten, and a
+// specialist is 2x on the dials they chose and 4x in a fight. Dials never touch timing. SKILLS are rows (open set, 0..100 each, grown by use) under a TOTAL cap of 500. GEAR is not on the sheet:
+// a worn set tilts two dials against each other by up to 25 (gear-rows.ts), applied on top. Titles and favour are prestige, not points. Bosses and creatures are OFF the sheet.
+// All of it is ROWS through the shared loader (src/fight/sheet-defs.json): a dial, a skill and the two pools carry their own base, cap and pool; a new dial or skill is a row. ONE build
+// validator (`validateBuild`) checks per-dial, per-skill and the budgets at load and on the writer (the server).
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import SHEET_DEFS from './sheet-defs.json' with { type: 'json' };
 import SHEET_MANIFEST from './sheet-defs.manifest.json' with { type: 'json' };
 
-export type SheetStat = { readonly id: string; readonly code: number; readonly base: number; readonly cap: number; readonly layers?: readonly string[]; readonly perk?: string; readonly perkSign?: 1 | -1 };   // perk/perkSign: the patron-perk stat row (origins/patrons/stat-defs.json) this stat reads, and which way: the same vocabulary, one reader
-export type Sheet = Readonly<Record<string, number>>;   // stat id -> the player's total on that stat's line (base..cap); a stat at its base is simply absent
-export type SheetLayers = Readonly<Record<string, Readonly<Record<string, number>>>>;   // layer id -> stat id -> points this layer adds (before the layer's cap)
+export type Dial = { readonly id: string; readonly code: number; readonly base: number; readonly cap: number; readonly floor: number; readonly pool: string };
+export type SkillRow = { readonly id: string; readonly base: number; readonly cap: number; readonly pool: string; readonly school?: string };
+export type PointsPool = { readonly id: string; readonly creation: number; readonly perLevel: number; readonly maxLevel: number };
+export type Sheet = Readonly<Record<string, number>>;   // dial id -> the player's EFFECTIVE value (build plus any gear tilt), floor..cap; a dial at its base is simply absent
+export type Build = { readonly level: number; readonly dials: Readonly<Record<string, number>>; readonly skills?: Readonly<Record<string, number>> };   // dials: points PLACED on each dial above its base; skills: each skill's value
 
-const TABLES = SHEET_MANIFEST.tables.map((t) => tableFromFile(t as Manifest, SHEET_DEFS, 'sheet-defs.json'));
-loadRegistry(TABLES);
-export const SHEET_LAYERS: Readonly<Record<string, number>> = Object.fromEntries(TABLES[0]!.rows.map((r) => [r.id as string, r.cap as number]));
-export const SHEET_STATS: readonly SheetStat[] = (TABLES[1]!.rows as unknown as readonly SheetStat[]).slice().sort((a, b) => a.code - b.code);
-const BY_ID = new Map(SHEET_STATS.map((r) => [r.id, r]));
-for (const [id, cap] of Object.entries(SHEET_LAYERS)) if (!Number.isInteger(cap) || cap < 1) throw Error(`sheet-defs layer "${id}": cap is a whole number of points from 1`);
-SHEET_STATS.forEach((r, i) => {
-  if (r.code !== i + 1) throw Error(`sheet-defs stat "${r.id}": codes run 1..n with no gap (the record is append only)`);
-  if ((r.perk === undefined) !== (r.perkSign === undefined) || (r.perkSign !== undefined && r.perkSign !== 1 && r.perkSign !== -1)) throw Error(`sheet-defs stat "${r.id}": perk and perkSign (1 or -1) come together`);
-  if (r.base < 1 || r.cap < r.base || r.cap > 255) throw Error(`sheet-defs stat "${r.id}": 1 <= base <= cap <= 255 (a record byte)`);
-  const fed = (r.layers ?? Object.keys(SHEET_LAYERS)).reduce((n, l) => n + (SHEET_LAYERS[l] ?? 0), 0);
-  if (r.cap - r.base > fed) throw Error(`sheet-defs stat "${r.id}": its cap is past what its layers can add (${fed} points)`);
+const TABLES = SHEET_MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, SHEET_DEFS, 'sheet-defs.json'));
+loadRegistry(TABLES);   // a skill's `school` names a row of school-defs.json; tests/gear-fight.test.ts checks it (this file stays free of anything the sim should not import)
+const rows = <T>(i: number): readonly T[] => TABLES[i]!.rows as unknown as readonly T[];
+export const POINTS: PointsPool = rows<PointsPool>(0)[0]!;
+export const SKILL_TOTAL: number = (rows<{ total: number }>(1)[0]!).total;
+export const DIALS: readonly Dial[] = rows<Dial>(2).slice().sort((a, b) => a.code - b.code);
+export const SHEET_SKILLS: readonly SkillRow[] = rows<SkillRow>(3);
+const DIAL = new Map(DIALS.map((d) => [d.id, d])), SKILL = new Map(SHEET_SKILLS.map((s) => [s.id, s]));
+if (rows<PointsPool>(0).length !== 1 || rows<unknown>(1).length !== 1) throw Error('sheet-defs: exactly one points pool and one skill pool');
+if (POINTS.creation < 0 || POINTS.perLevel < 0 || POINTS.maxLevel < 1) throw Error('sheet-defs points: creation and perLevel are not negative and maxLevel is at least 1');
+DIALS.forEach((d, i) => {
+  if (d.code !== i + 1) throw Error(`sheet-defs dial "${d.id}": codes run 1..n with no gap (the record is append only)`);
+  if (d.floor < 1 || d.floor > d.base || d.cap < d.base || d.cap > 255) throw Error(`sheet-defs dial "${d.id}": 1 <= floor <= base <= cap <= 255 (a record byte)`);
 });
+for (const s of SHEET_SKILLS) if (s.base < 0 || s.cap < s.base || s.cap > 255) throw Error(`sheet-defs skill "${s.id}": 0 <= base <= cap <= 255`);
 
-const base = (id: string): number => BY_ID.get(id)?.base ?? 100;
-// The one reader. A fighter with no sheet, or a stat at its base, is the plain number untouched (no float drift, as `perked` in duel.ts): `up` scales x by value/base (damage dealt, a cost),
-// `down` by base/value (damage taken: an armour of 200 takes half).
-export const statValue = (sheet: Sheet | undefined, id: string): number => sheet?.[id] ?? base(id);
-export const statUp = (sheet: Sheet | undefined, id: string, x: number): number => { const v = sheet?.[id]; return v ? (x * v) / base(id) : x; };
-export const statDown = (sheet: Sheet | undefined, id: string, x: number): number => { const v = sheet?.[id]; return v ? (x * base(id)) / v : x; };
+// The points a player of this level has to place: the creation allotment plus one per level (150 at level 100).
+export const pointsAt = (level: number): number => POINTS.creation + POINTS.perLevel * level;
+const baseOf = (id: string): number => DIAL.get(id)?.base ?? 50;
 
-// Validates a sheet at duel start and on a record's read: known stat ids, whole numbers from the stat's base to its cap. Returns the stats above base in code order, or undefined for none.
-export function checkSheet(sheet: Sheet | undefined): Sheet | undefined {
-  if (!sheet) return undefined;
-  for (const id of Object.keys(sheet)) {
-    const row = BY_ID.get(id), v = sheet[id]!;
-    if (!row) throw Error(`Sheet: "${id}" is not a stat row (sheet-defs.json stats)`);
-    if (!Number.isInteger(v) || v < row.base || v > row.cap) throw Error(`Sheet: ${id} is a whole number from ${row.base} to ${row.cap}`);
+// The ONE build validator, used when the rows load, on a character writer and in a test: every problem as a sentence, [] when the build is legal. Player dials never pass their cap (100),
+// placed points are whole and fit the level's budget, skills are rows within their cap, and their total stays under the skill pool (500).
+export function validateBuild(b: Build): string[] {
+  const out: string[] = [];
+  if (!Number.isInteger(b.level) || b.level < 1 || b.level > POINTS.maxLevel) out.push(`level ${String(b.level)} is a whole number from 1 to ${POINTS.maxLevel}`);
+  let placed = 0;
+  for (const [id, n] of Object.entries(b.dials)) {
+    const d = DIAL.get(id);
+    if (!d) { out.push(`"${id}" is not a dial row`); continue; }
+    if (!Number.isInteger(n) || n < 0) { out.push(`${id}: placed points are a whole number from 0`); continue; }
+    if (d.base + n > d.cap) out.push(`${id}: ${d.base} + ${n} is past its cap ${d.cap}`);
+    placed += n;
   }
+  if (Number.isInteger(b.level) && placed > pointsAt(b.level)) out.push(`${placed} points placed, the budget at level ${b.level} is ${pointsAt(b.level)}`);
+  let total = 0;
+  for (const [id, v] of Object.entries(b.skills ?? {})) {
+    const s = SKILL.get(id);
+    if (!s) { out.push(`"${id}" is not a skill row`); continue; }
+    if (!Number.isInteger(v) || v < s.base || v > s.cap) { out.push(`${id}: a whole number from ${s.base} to ${s.cap}`); continue; }
+    total += v;
+  }
+  if (total > SKILL_TOTAL) out.push(`skills total ${total}, the cap is ${SKILL_TOTAL}`);
+  return out;
+}
+
+// The sheet a build resolves to, with a gear tilt on top (dial id -> signed points, from gear-rows.ts `tiltOf`): each dial is base + placed + tilt, held between its floor and its cap.
+// A dial left at its base is absent; none at all is `undefined`, which the duel treats as no sheet (a build that never placed a point and wears nothing fights as before). Throws on an illegal build.
+export function sheetOf(b: Build, tilt: Readonly<Record<string, number>> = {}): Sheet | undefined {
+  const problems = validateBuild(b);
+  if (problems.length) throw Error(`Sheet: ${problems.join('; ')}`);
   const out: Record<string, number> = {};
-  for (const row of SHEET_STATS) if (sheet[row.id] !== undefined && sheet[row.id] !== row.base) out[row.id] = sheet[row.id]!;
+  for (const d of DIALS) {
+    const v = Math.max(d.floor, Math.min(d.cap, d.base + (b.dials[d.id] ?? 0) + (tilt[d.id] ?? 0)));
+    if (v !== d.base) out[d.id] = v;
+  }
+  for (const id of Object.keys(tilt)) if (!DIAL.has(id)) throw Error(`Sheet: "${id}" is not a dial row`);
   return Object.keys(out).length ? out : undefined;
 }
 
-// Layers add (the one place a cap is spelled out): each layer's points on a stat are held to +-the layer's cap (a weakness is negative), a stat takes only the layers its row lists, and the total is held between the stat's base and its cap.
-export function sheetOf(layers: SheetLayers): Sheet | undefined {
-  const out: Record<string, number> = {};
-  for (const [layer, stats] of Object.entries(layers)) {
-    if (!(layer in SHEET_LAYERS)) throw Error(`Sheet: "${layer}" is not a layer row (sheet-defs.json layers)`);
-    for (const [id, points] of Object.entries(stats)) {
-      const row = BY_ID.get(id);
-      if (!row) throw Error(`Sheet: "${id}" is not a stat row (sheet-defs.json stats)`);
-      if (!Number.isInteger(points)) throw Error(`Sheet: ${layer} adds whole points to ${id}`);
-      if (row.layers && !row.layers.includes(layer)) throw Error(`Sheet: ${id} takes no points from the ${layer} layer`);
-      out[id] = (out[id] ?? row.base) + Math.max(-SHEET_LAYERS[layer]!, Math.min(SHEET_LAYERS[layer]!, points));
-    }
+// The one reader. A fighter with no sheet, or a dial at its base, is the plain number untouched (no float drift, as `perked` in duel.ts): `up` scales x by value/base (damage dealt),
+// `down` by base/value (damage taken: an armour of 100 takes half).
+export const statValue = (sheet: Sheet | undefined, id: string): number => sheet?.[id] ?? baseOf(id);
+export const statUp = (sheet: Sheet | undefined, id: string, x: number): number => { const v = sheet?.[id]; return v === undefined ? x : (x * v) / baseOf(id); };
+export const statDown = (sheet: Sheet | undefined, id: string, x: number): number => { const v = sheet?.[id]; return v === undefined ? x : (x * baseOf(id)) / v; };
+
+// Validates an effective sheet at duel start and on a record's read: known dial ids, whole numbers from the dial's floor to its cap. Returns the dials off base in code order, or undefined for none.
+export function checkSheet(sheet: Sheet | undefined): Sheet | undefined {
+  if (!sheet) return undefined;
+  for (const id of Object.keys(sheet)) {
+    const d = DIAL.get(id), v = sheet[id]!;
+    if (!d) throw Error(`Sheet: "${id}" is not a dial row (sheet-defs.json dials)`);
+    if (!Number.isInteger(v) || v < d.floor || v > d.cap) throw Error(`Sheet: ${id} is a whole number from ${d.floor} to ${d.cap}`);
   }
-  for (const id of Object.keys(out)) out[id] = Math.max(BY_ID.get(id)!.base, Math.min(BY_ID.get(id)!.cap, out[id]!));
-  return checkSheet(out);
-}
-// The patron-perk reader folded in (Strategy: ONE generic reader over row fields): a perk resolves to per-mille deltas keyed by the perk stat rows (origins/patrons: `deltaOf(modifiers, stat)`),
-// and every sheet stat row that names a perk stat takes its delta as points, ten per-mille to a point, in the row's direction. The caller passes the reader, so this file imports nothing from
-// Origins: `sheetOf({ title: perkPoints((s) => deltaOf(mods, s)) })`. A new sheet stat that names a perk stat reads it with no code here.
-export function perkPoints(delta: (perkStat: string) => number): Readonly<Record<string, number>> {
   const out: Record<string, number> = {};
-  for (const r of SHEET_STATS) if (r.perk !== undefined && r.perkSign !== undefined) { const points = Math.round((r.perkSign * delta(r.perk)) / 10); if (points) out[r.id] = points; }
-  return out;
+  for (const d of DIALS) if (sheet[d.id] !== undefined && sheet[d.id] !== d.base) out[d.id] = sheet[d.id]!;
+  return Object.keys(out).length ? out : undefined;
 }
-export const statByCode = (code: number): SheetStat | undefined => SHEET_STATS[code - 1];
+export const dialByCode = (code: number): Dial | undefined => DIALS[code - 1];

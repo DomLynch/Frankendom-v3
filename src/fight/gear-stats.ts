@@ -18,8 +18,6 @@
 import { levelOf, type Tier } from '../core/grades.ts';
 import { ARMOUR_SLOTS, WEAPON_SLOTS, isWeaponSlot, slotOf, type Loot, type LootId, type LootSlot } from '../core/loot.ts';
 import type { OpponentId } from '../roster.ts';
-import { GEAR } from './gear-rows.ts';
-import { SHEET_LAYERS, sheetOf, type Sheet, type SheetLayers } from './sheet-rows.ts';
 
 // The two multipliers a fight is fought with. Both scale damage — Attack what you deal, RES what you take, chip included — and
 // neither touches posture (`shake`) or any timing.
@@ -27,10 +25,7 @@ import { SHEET_LAYERS, sheetOf, type Sheet, type SheetLayers } from './sheet-row
 // A record of multipliers rather than a fixed pair by design: brief 19 asks for a shape the Origin character layer EXTENDS rather than
 // replaces. That layer resolves item ids plus an approved allocation into the same kind of object, and its stats join as further
 // fields without this table changing.
-//
-// Wave A1 (PR1) widened it with two optional fields, so every existing `{ attack, res }` stays a Loadout: `weight` (kg worn, from the gear rows) and `resist` (per spell school, the
-// summed `resist` of the worn rows; school ids are rows of school-defs.json). `gearSheet` below folds a Loadout into the gear layer of the player's sheet, which the duel reads.
-export type Loadout = { attack: number; res: number; resist?: Readonly<Record<string, number>>; weight?: number };
+export type Loadout = { attack: number; res: number };
 // No gear: the exact identity. Every number here is what the game does today, so a naked loadout must be a no-op at the seam and a
 // naked fight must replay byte-identical to a record made before stats existed (that is deliverable 2's flag, proved against this).
 export const NAKED: Loadout = { attack: 1, res: 1 };
@@ -95,23 +90,7 @@ function multipliers(armour: number, weapon: number): Loadout {
 
 // The two multipliers for a kit. Total function: it validates nothing and throws nothing, because a fight must start with whatever
 // the player is actually wearing.
-export function loadoutFor(kit: Kit, worn: readonly string[] = [], level = 1): Loadout {
-  const base = tierLoadout(kit);
-  if (!worn.length) return base;   // no gear rows worn: exactly the tier loadout, byte for byte
-  // AzerothCore's armour curve: reduction = armour / (armour + K), K growing with the wearer's level, held to the rule's cap (physical taken is never cut past it).
-  const { armourBase, armourPerLevel, reductionCapPermille } = GEAR.rules, resist: Record<string, number> = {};
-  let armour = 0, weight = 0;
-  for (const id of worn) {
-    const row = GEAR.rows[id];
-    if (!row) throw Error(`loadoutFor: "${id}" is not a gear row (gear-defs.json)`);
-    armour += row.armour; weight += row.weight;
-    for (const [school, n] of Object.entries(row.resist)) resist[school] = (resist[school] ?? 0) + n;
-  }
-  const reduction = Math.min(reductionCapPermille, Math.floor((1000 * armour) / (armour + armourBase + armourPerLevel * level)));
-  return { attack: base.attack, res: (base.res * (1000 - reduction)) / 1000, resist, weight };
-}
-
-function tierLoadout(kit: Kit): Loadout {
+export function loadoutFor(kit: Kit): Loadout {
   let armour = 0, weapon = 0;
   for (const [slot, tier] of Object.entries(kit) as [LootSlot, Tier][]) {
     const points = pointsFor(tier, slot);
@@ -166,16 +145,3 @@ export const wholePoints = (l: Loadout): { atk: number; res: number } => ({
   atk: Math.round((l.attack - 1) * 100),
   res: Math.round((1 - l.res) * 100),
 });
-
-// A Loadout as the GEAR layer of the player's sheet (sheet-rows.ts, THE SHEET RULE): points on each stat's 100-200 line, whole numbers, each held to the gear layer's cap (+25 for a full set).
-// Attack: the Loadout's damage multiplier above 1; armour: how far its RES cut the damage taken (1/res above 1, so a RES of 0.8 is +25, exactly a full set); burden: the worn weight in
-// kg times the rule's per-mille per kg, as points. The naked loadout adds nothing. `resist` is carried on the Loadout and not folded here: the sheet's `resist` is the general magic
-// resist, and the duel reads it only when a damage event carries a school (the bricks, Wave B), so per-school resist waits for that.
-export function gearLayer(l: Loadout): Readonly<Record<string, number>> {
-  const { weightPermille } = GEAR.rules, cap = SHEET_LAYERS.gear!;
-  const pts = (n: number): number => Math.max(0, Math.min(cap, Math.round(n)));
-  return { attack: pts((l.attack - 1) * 100), armour: pts((1 / l.res - 1) * 100), burden: pts(((l.weight ?? 0) * weightPermille) / 10) };
-}
-// The player's sheet from the layers this build can fill (today: gear; level, skills and titles join when their lanes land) - `undefined` when every stat is at its base, which the duel
-// treats as no sheet at all (a naked fight is byte for byte what it was).
-export const gearSheet = (l: Loadout, others: SheetLayers = {}): Sheet | undefined => sheetOf({ ...others, gear: gearLayer(l) });

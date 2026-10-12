@@ -1,56 +1,32 @@
 {
-  "layers": [
-    {
-      "id": "level",
-      "cap": 50
-    },
-    {
-      "id": "gear",
-      "cap": 25
-    },
-    {
-      "id": "skill",
-      "cap": 15
-    },
-    {
-      "id": "title",
-      "cap": 10
-    }
+  "points": [
+    { "id": "points", "creation": 50, "perLevel": 1, "maxLevel": 100 }
   ],
-  "stats": [
-    {
-      "id": "attack",
-      "code": 1,
-      "base": 100,
-      "cap": 200,
-      "perk": "damageDealtPermille",
-      "perkSign": 1
-    },
-    {
-      "id": "armour",
-      "code": 2,
-      "base": 100,
-      "cap": 200,
-      "perk": "damageTakenPermille",
-      "perkSign": -1
-    },
-    {
-      "id": "resist",
-      "code": 3,
-      "base": 100,
-      "cap": 200
-    },
-    {
-      "id": "burden",
-      "code": 4,
-      "base": 100,
-      "cap": 125,
-      "layers": [
-        "gear",
-        "title"
-      ],
-      "perk": "staminaCostPermille",
-      "perkSign": 1
-    }
+  "skillpool": [
+    { "id": "skills", "total": 500 }
+  ],
+  "dials": [
+    { "id": "attack", "code": 1, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "spellPower", "code": 2, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "armour", "code": 3, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "magicResist", "code": 4, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "health", "code": 5, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "stamina", "code": 6, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "poise", "code": 7, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "luck", "code": 8, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "focus", "code": 9, "base": 50, "cap": 100, "floor": 1, "pool": "points" },
+    { "id": "recovery", "code": 10, "base": 50, "cap": 100, "floor": 1, "pool": "points" }
+  ],
+  "skills": [
+    { "id": "sword", "base": 0, "cap": 100, "pool": "skills" },
+    { "id": "axe", "base": 0, "cap": 100, "pool": "skills" },
+    { "id": "bow", "base": 0, "cap": 100, "pool": "skills" },
+    { "id": "fire-magic", "base": 0, "cap": 100, "pool": "skills", "school": "fire" },
+    { "id": "shadow-magic", "base": 0, "cap": 100, "pool": "skills", "school": "shadow" },
+    { "id": "poison-magic", "base": 0, "cap": 100, "pool": "skills", "school": "poison" },
+    { "id": "holy-magic", "base": 0, "cap": 100, "pool": "skills", "school": "holy" },
+    { "id": "frost-magic", "base": 0, "cap": 100, "pool": "skills", "school": "frost" },
+    { "id": "earth-magic", "base": 0, "cap": 100, "pool": "skills", "school": "earth" },
+    { "id": "wind-magic", "base": 0, "cap": 100, "pool": "skills", "school": "wind" }
   ]
 }

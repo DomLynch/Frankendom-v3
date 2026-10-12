@@ -1,38 +1,14 @@
 {
+  "tilts": [
+    { "id": "plate", "up": "armour", "down": "magicResist", "amount": 25 },
+    { "id": "robes", "up": "magicResist", "down": "armour", "amount": 25 }
+  ],
   "gear": [
-    {
-      "id": "light",
-      "preset": true,
-      "armour": 12,
-      "weight": 4,
-      "wearMax": 60,
-      "resist": {}
-    },
-    {
-      "id": "medium",
-      "preset": true,
-      "armour": 28,
-      "weight": 9,
-      "wearMax": 90,
-      "resist": {}
-    },
-    {
-      "id": "heavy",
-      "preset": true,
-      "armour": 50,
-      "weight": 16,
-      "wearMax": 140,
-      "resist": {}
-    }
+    { "id": "light", "preset": true, "tilt": "robes", "weight": 4, "wearMax": 60, "resist": {} },
+    { "id": "medium", "preset": true, "weight": 9, "wearMax": 90, "resist": {} },
+    { "id": "heavy", "preset": true, "tilt": "plate", "weight": 16, "wearMax": 140, "resist": {} }
   ],
   "rules": [
-    {
-      "id": "gear",
-      "armourBase": 80,
-      "armourPerLevel": 8,
-      "reductionCapPermille": 750,
-      "weightPermille": 5,
-      "resistPermille": 50
-    }
+    { "id": "gear", "tiltMax": 25 }
   ]
 }

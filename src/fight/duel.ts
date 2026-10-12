@@ -56,7 +56,7 @@ export type Fighter = {
   stance?: StanceId;   // the fight's stance for this fighter (src/fight/stance.ts, RV34); absent = Neutral or no stances: today's fight, byte for byte
   gambitOn?: true;   // this fighter may arm a Gambit (withGambit); absent = the fight has none, byte for byte
   gambit?: true;   // the swing in hand is an armed Gambit (a second heavy press after the chamber); cleared by the next beginAttack
-  sheet?: Sheet;   // the player's sheet (sheet-rows.ts: each stat on its 100-200 line; attack, armour and burden are read here, never a duration), set once at duel start by withSheet; absent = off the sheet (a boss, a creature) or all at base: today's fight, byte for byte
+  sheet?: Sheet;   // the player's sheet (sheet-rows.ts: ten dials, 50 base, 100 max): attack, armour, health, poise and recovery are read here (the rest are carried), never a duration; set once at duel start by withSheet; absent = off the sheet (a boss, a creature) or every dial at base: today's fight, byte for byte
   perk?: Perk;   // the patron's sidegrade (docs/specs/origins/patron-perks-sim.md), set once at duel start by withPerk; absent = today's fight, byte for byte
 };
 // A patron perk: signed per-mille integers, each scaling ONE quantity by (1000 + d) / 1000, at most two templates and never past ±PERK_MAX (3%).
@@ -142,7 +142,14 @@ export const initialDuel = (opponent: Opponent = OPPONENTS.veteran, weapon: Weap
 // The one door a patron fight is built through, after initialDuel (and withSpecials): the player's perk in slot 0, the foe's (PvP only; ladder foes carry none) in slot 1.
 // The door the sheet enters a fight through (Wave A1, RV48), after initialDuel (and withSpecials): slot 0's sheet and slot 1's (PvP only; a ladder foe is a creature row, off the sheet).
 // Validated against the stat rows (known ids, whole numbers from base to cap); a side with every stat at base is left exactly as it was.
-export const withSheet = (duel: Duel, sheets: readonly [Sheet | undefined, Sheet | undefined]): Duel => ({ ...duel, fighters: duel.fighters.map((f, i) => { const sh = checkSheet(sheets[i]); return sh ? { ...f, sheet: sh } : f; }) as Duel['fighters'] });
+export const withSheet = (duel: Duel, sheets: readonly [Sheet | undefined, Sheet | undefined]): Duel => ({ ...duel, fighters: duel.fighters.map((f, i) => {
+  const sh = checkSheet(sheets[i]);
+  if (!sh) return f;
+  const out: Fighter = { ...f, sheet: sh };
+  if (sh.health !== undefined) { out.maxHealth = Math.round(statUp(sh, 'health', f.maxHealth)); out.health = out.maxHealth; }   // the health dial scales the bar once, as the perk's vitality does
+  if (sh.recovery !== undefined) out.regen = statUp(sh, 'recovery', f.regen);   // recovery: stamina regeneration (a rate, never a duration of anything)
+  return out;
+}) as Duel['fighters'] });
 export const withPerks = (duel: Duel, perks: readonly [Perk | undefined, Perk | undefined]): Duel => ({ ...duel, fighters: [withPerk(duel.fighters[0], perks[0]), withPerk(duel.fighters[1], perks[1])] });
 
 // A fight with Special Moves: both fighters carry the rule's share (the opponent's is the boss share from RULES.special.bossFrom) and the first
@@ -238,14 +245,13 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   if (!before[0].health || !before[1].health) return { tick, fighters, finish: duel.finish, events, ...(duel.roll ? { roll: duel.roll } : {}), ...(duel.gambit ? { gambit: duel.gambit } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
   let gdraws = duel.gambit?.draws ?? 0;
   let hits = duel.roll?.hits ?? 0, lastRoll: number | undefined;   // the world-mob roll: a blow's health loss goes through rolled(); absent roll = the plain number
-  // The sheet (RV48): the attacker's attack scales a blow up and the target's armour scales it down (a 200 armour takes half) before the world roll; a blow is never scaled to nothing. No sheet on either side = the plain number.
+  // The sheet (RV48): the attacker's attack dial scales a blow up and the target's armour dial scales it down (an armour of 100 takes half) before the world roll; a blow is never scaled to nothing. No sheet on either side = the plain number.
   const geared = (base: number, from: Side, to: Side): number => {
     if (!before[from].sheet && !before[to].sheet) return base;
     const x = Math.round(statDown(before[to].sheet, 'armour', statUp(before[from].sheet, 'attack', base)));
     return base > 0 ? Math.max(1, x) : x;
   };
   const rolled = (base: number, from: Side, to: Side): number => { const b = geared(base, from, to); if (!duel.roll) return b; lastRoll = rollPercent(duel.roll.seed, hits++); return rolledDamage(b, lastRoll); };
-  const weighed = (f: Fighter, cost: number): number => statUp(f.sheet, 'burden', cost);   // worn weight (the burden stat) makes an attack or a dodge cost more stamina, never take longer
   const rollTag = () => (duel.roll && lastRoll !== undefined ? { roll: lastRoll } : {});
   const spend = (i: Side, cost: number) => {
     const f = fighters[i]; f.stamina = Math.max(0, f.stamina - cost); f.rest = R.regenDelay;
@@ -268,11 +274,11 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       // Direction locks at the press; without movement, roll away from the opponent. A roll grown out of a backstep pays the difference.
       const moving = M.hypot(intent.move.x, intent.move.z) > .1;
       next.body = { ...me.body, heading: moving ? advance(me.body, intent.move, foe.body, 1, wall).heading : aim(me.body, foe.body) + Math.PI };
-      next.phase = 'roll'; next.age = 0; spend(i, weighed(me, me.phase === 'backstep' ? R.rollCost - R.backstep.cost : R.rollCost)); events.push({ tick, type: 'ActionStarted', actor: i, action: 'roll' });
+      next.phase = 'roll'; next.age = 0; spend(i, me.phase === 'backstep' ? R.rollCost - R.backstep.cost : R.rollCost); events.push({ tick, type: 'ActionStarted', actor: i, action: 'roll' });
     } else if (action === 'backstep' && walled(me.body, -M.sin(me.body.heading), -M.cos(me.body.heading), wall)) {
       // Cornered: the wall is at the back, there is nowhere to step. The press is simply refused (a roll still works).
     } else if (action === 'backstep') {
-      next.phase = 'backstep'; next.age = 0; next.parrying = false; next.guardDirection = null; spend(i, weighed(me, R.backstep.cost)); events.push({ tick, type: 'ActionStarted', actor: i, action: 'backstep' });
+      next.phase = 'backstep'; next.age = 0; next.parrying = false; next.guardDirection = null; spend(i, R.backstep.cost); events.push({ tick, type: 'ActionStarted', actor: i, action: 'backstep' });
     } else if (action === 'skill' && me.specialShare !== undefined) {
       // Special: committed from this tick; the cooldown is spent at commitment. Out of reach the press is refused and nothing is spent.
       if (distance(me.body, foe.body) <= R.special.reach) {
@@ -280,7 +286,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         events.push({ tick, type: 'SpecialStarted', actor: i, ...(me.skill ? { move: SKILL_MOVE[me.skill] } : {}), ...(me.specialName ? { name: me.specialName } : {}) });
       }
     } else if (action === 'kick') {
-      beginAttack(next, 'kick', false, foe.body); spend(i, weighed(me, perked(me, 'thrift', movesOf(next).kick.stamina)));
+      beginAttack(next, 'kick', false, foe.body); spend(i, perked(me, 'thrift', movesOf(next).kick.stamina));
       if (intent.lock) next.body = { ...me.body, heading: aim(me.body, foe.body) };
       events.push({ tick, type: 'AttackStarted', actor: i, move: 'kick' });
     } else if (isLight(action) || action === 'heavy' || action === 'thrust' || action === 'skill') {
@@ -289,7 +295,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         const id = chooseMove(me, action!), def = movesOf(me)[id];
         // Chained timing: a listed follow-up inside the chain window, or a light out of an evade (dodge-attack).
         const follows = me.chain > 0 && me.lastMove !== null && !!movesOf(me)[me.lastMove].chain?.follow.includes(id);
-        beginAttack(next, id, !!def.chained && (follows || (isLight(action) && (me.evaded > 0 || me.phase === 'backstep'))), foe.body); spend(i, weighed(me, perked(me, 'thrift', def.stamina)));
+        beginAttack(next, id, !!def.chained && (follows || (isLight(action) && (me.evaded > 0 || me.phase === 'backstep'))), foe.body); spend(i, perked(me, 'thrift', def.stamina));
         if (action === 'skill') next.skillCooldown = R.skillCooldown;   // spent at commitment, with the stamina: a whiff, a block or a parry all spend it
         events.push({ tick, type: 'AttackStarted', actor: i, move: id, direction: def.direction });   // the side the blow comes from: what a guard must mirror (directional guard; the browser gate reads it)
       }
@@ -373,7 +379,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   const shake = (target: Side, amount: number) => {
     const T = fighters[target], O = fighters[1 - target];
     if (!T.health || amount <= 0) return;
-    T.posture = Math.min(R.posture.max, T.posture + perked(T, 'poise', amount)); T.postureRest = R.posture.hold;
+    T.posture = Math.min(R.posture.max, T.posture + statDown(T.sheet, 'poise', perked(T, 'poise', amount))); T.postureRest = R.posture.hold;
     if (T.posture < R.posture.max) return;
     T.posture = 0;
     const stun = stunned(T, 'postureBreak', R.posture.stun);

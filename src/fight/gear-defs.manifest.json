@@ -1,34 +1,7 @@
 {
   "tables": [
-    {
-      "table": "gear",
-      "file": "gear-defs.json",
-      "at": "gear",
-      "key": "id",
-      "required": {
-        "armour": "integer",
-        "weight": "number",
-        "wearMax": "integer",
-        "resist": "object"
-      },
-      "optional": {
-        "slot": "string",
-        "preset": "boolean",
-        "extends": "string"
-      }
-    },
-    {
-      "table": "gearrule",
-      "file": "gear-defs.json",
-      "at": "rules",
-      "key": "id",
-      "required": {
-        "armourBase": "integer",
-        "armourPerLevel": "integer",
-        "reductionCapPermille": "integer",
-        "weightPermille": "integer",
-        "resistPermille": "integer"
-      }
-    }
+    { "table": "tilt", "file": "gear-defs.json", "at": "tilts", "key": "id", "required": { "up": "string", "down": "string", "amount": "integer" } },
+    { "table": "gear", "file": "gear-defs.json", "at": "gear", "key": "id", "required": { "weight": "number", "wearMax": "integer", "resist": "object" }, "optional": { "slot": "string", "preset": "boolean", "extends": "string", "tilt": "string" }, "refs": { "tilt": "tilt" } },
+    { "table": "gearrule", "file": "gear-defs.json", "at": "rules", "key": "id", "required": { "tiltMax": "integer" } }
   ]
 }

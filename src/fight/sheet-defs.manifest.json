@@ -1,32 +1,8 @@
 {
   "tables": [
-    {
-      "table": "sheetlayer",
-      "file": "sheet-defs.json",
-      "at": "layers",
-      "key": "id",
-      "required": {
-        "cap": "integer"
-      }
-    },
-    {
-      "table": "sheetstat",
-      "file": "sheet-defs.json",
-      "at": "stats",
-      "key": "id",
-      "required": {
-        "code": "integer",
-        "base": "integer",
-        "cap": "integer"
-      },
-      "optional": {
-        "layers": "array",
-        "perk": "string",
-        "perkSign": "integer"
-      },
-      "refs": {
-        "layers[]": "sheetlayer"
-      }
-    }
+    { "table": "sheetpoints", "file": "sheet-defs.json", "at": "points", "key": "id", "required": { "creation": "integer", "perLevel": "integer", "maxLevel": "integer" } },
+    { "table": "skillpool", "file": "sheet-defs.json", "at": "skillpool", "key": "id", "required": { "total": "integer" } },
+    { "table": "sheetdial", "file": "sheet-defs.json", "at": "dials", "key": "id", "required": { "code": "integer", "base": "integer", "cap": "integer", "floor": "integer", "pool": "string" }, "unique": ["code"], "refs": { "pool": "sheetpoints" } },
+    { "table": "sheetskill", "file": "sheet-defs.json", "at": "skills", "key": "id", "required": { "base": "integer", "cap": "integer", "pool": "string" }, "optional": { "school": "string" }, "refs": { "pool": "skillpool" } }
   ]
 }
