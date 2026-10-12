@@ -1,0 +1,9 @@
+{
+  "about": "Resource pool DEFINITIONS (data, Combat 2026-10-12; Dom: nothing is locked, 150+ games are being decoded and pools will grow). One row per pool, keyed by id: the default a character starts with when its row (catalogue stats.pools) does not name it, min and optional max a row's value must respect, and `sim`: true = a rule reads it today (health and stamina: the sim reads them by name), false = carried as data until one does (it cannot change a fight, so the sim digest ignores it). Adding a pool is ONE row here: no code, no schema. health's default is the man's RULES.health (moves.ts), pinned by a test.",
+  "pools": [
+    { "id": "health", "default": 150, "min": 1, "sim": true },
+    { "id": "stamina", "default": 100, "min": 1, "sim": true },
+    { "id": "mana", "default": 0, "min": 0, "sim": false },
+    { "id": "focus", "default": 0, "min": 0, "sim": false }
+  ]
+}
