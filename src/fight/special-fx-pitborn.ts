@@ -4,6 +4,7 @@ import type { OpponentId } from '../roster.ts';
 import { specialGust } from './special-gust.ts';
 import { advanceCast, shadowPhase as castPhase, LAND_AT, type Cast, type isHadesShadow } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
+import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 
 // The Pitborn's rank 8-10 boss specials (Pitborn lane; Dom picked all three on 2026-10-01: Cracking Ground, Ash Fall, Wind Wall). One idea each, drawn
 // from the arena itself, no props, no glow, painted and irregular. Presentation only, on Red Wind's seam (special-timing.ts) and its painted strokes
@@ -38,14 +39,25 @@ function paintSheet(seed: number, look: SandLook) {
 
 // The Pitborn's cast test, passed to advanceCast as `is` (the seam's own isHadesShadow stays the Nightborn's): his Cleave on the opponent's side.
 export const isPitbornSpecial: typeof isHadesShadow = (opponent, actor, move) => opponent === 'pitborn' && actor === 1 && move === 'skill_cleave';
-export type PitbornKind = 'antaeus' | 'surtr' | 'typhon';
-export const PITBORN_KINDS: readonly PitbornKind[] = ['antaeus', 'surtr', 'typhon'];
+// The kinds are the family's rows of src/fight/special-defs.json (special-rows.ts). The templates are this module's verbs, each its own painting:
+// crack (seams split out from his feet, clods lift and drop), ashfall (soot, low smoke, ash drifting over the arena), gale (strokes and sand torn
+// toward the target, the crowd banners snapping). A row carries its counts, its opacity ceilings (day / Night Pit) and its grit tint.
+export const PITBORN_TEMPLATES = {
+  crack: ['cracks', 'clods', 'grit', 'crackAlpha', 'clodAlpha', 'gritAlpha', 'gritTint'],
+  ashfall: ['flakes', 'patches', 'smoke', 'patchAlpha', 'smokeAlpha', 'flakeAlpha'],
+  gale: ['streaks', 'sand', 'grit', 'strokeAlpha', 'sandAlpha', 'gritTint', 'over'],
+} as const;
+const ROWS = specialFamily(SPECIALS, 'pitborn', PITBORN_TEMPLATES);
+export type PitbornKind = string;
+export const PITBORN_KINDS: readonly PitbornKind[] = ROWS.map((r) => r.id);
+type DayNight = { day: number; night: number };
+type Params = { cracks: number; clods: number; grit: number; crackAlpha: number; clodAlpha: number; gritAlpha: number; gritTint: { day: string; night: string }; flakes: number; patches: number; smoke: number;
+  patchAlpha: DayNight; smokeAlpha: DayNight; flakeAlpha: DayNight; streaks: number; sand: number; strokeAlpha: DayNight; sandAlpha: DayNight; over: boolean };
 const BUILD = 30;   // ticks of visible build-up before the landing
-const CRACKS = 7, CLODS = 46, GRIT = 90, FLAKES = 150, PATCHES = 7, SMOKE = 9, STREAKS = 17, SAND = 82;
 // Opacity ceilings (Strategy's bar 10-01: haze <= 0.7 on the day sand, <= 0.4 on the Night Pit). HAZE = what hangs in the air and can wash the picture: Surtr's smoke
-// (0.55 / 0.3) and Typhon's gale strokes (0.7 / 0.4); pinned by tests/special-fx-pitborn.test.ts. Ground marks and specks are not haze: Antaeus's cracks (CAP) and clods,
-// Surtr's soot and flakes, Typhon's sand specks (small, each a few pixels; on the Night Pit they too are capped at 0.4).
-const CAP = 0.85;   // semi-transparent: both fighters stay readable through it
+// (0.55 / 0.3) and Typhon's gale strokes (0.7 / 0.4); pinned by tests/special-fx-pitborn.test.ts. Ground marks and specks are not haze: Antaeus's cracks (crackAlpha) and clods,
+// Surtr's soot and flakes, Typhon's sand specks (small, each a few pixels; on the Night Pit they too are capped at 0.4). Antaeus's crackAlpha (0.85) keeps the
+// seams semi-transparent: both fighters stay readable through it. The numbers live on the rows.
 
 // Ash: the Night Pit's exposure lifts any grey into a pale cloud (Strategy FAILed it 10-02), so there it is soot-black; the day look is unchanged.
 const ashLook = (exposure: number): SandLook => exposure > 1.5 ? { core: new THREE.Color(0.02, 0.018, 0.016), edge: new THREE.Color(0.06, 0.05, 0.042), dim: true }
@@ -139,26 +151,31 @@ export function createEarthFold(scene: THREE.Scene, opponent: OpponentId, exposu
 }
 
 export type PitbornSpecial = ReturnType<typeof createPitbornSpecial>;
-export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, kind: PitbornKind, exposure: number) {
+// `kind`: a ?special= id of this family, or a row itself (a row loaded through specialFamily: how a new special is drawn before it is in the file).
+export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, kind: PitbornKind | SpecialRow, exposure: number) {
+  const row = typeof kind === 'string' ? ROWS.find((r) => r.id === kind) : kind;
+  if (!row) throw Error(`unknown pitborn special "${String(kind)}"`);
+  const template = row.template as keyof typeof PITBORN_TEMPLATES, P = row.params as Partial<Params>, night = exposure > 1.5;
+  const is: typeof isHadesShadow = (o, actor, move) => o === row.opponent && actor === row.cast.actor && (row.cast.move === undefined || move === row.cast.move);
   const root = new THREE.Group(); root.name = 'special fx'; root.visible = false; scene.add(root);
-  const look = kind === 'antaeus' ? earthLook(exposure) : kind === 'surtr' ? ashLook(exposure) : galeLook(exposure);
+  const look = template === 'crack' ? earthLook(exposure) : template === 'ashfall' ? ashLook(exposure) : galeLook(exposure);
   const mat = (map: THREE.Texture, color = '#ffffff') => new THREE.MeshBasicMaterial({ map, color, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const spriteMat = (map: THREE.Texture, color = '#ffffff') => new THREE.SpriteMaterial({ map, color, transparent: true, opacity: 0, depthWrite: false, fog: true });
-  const over = kind === 'typhon';   // the gale draws in front of the fighters, so a Night Pit silhouette in the shadow band is still crossed by it
+  const over = P.over === true;   // the gale draws in front of the fighters, so a Night Pit silhouette in the shadow band is still crossed by it
   const sprites = (n: number, make: (i: number) => THREE.SpriteMaterial, name: string) => Array.from({ length: n }, (_, i) => { const s = new THREE.Sprite(make(i)); if (over) { s.material.depthTest = false; s.renderOrder = 6; } s.name = `${name} ${i}`; s.visible = false; root.add(s); return s; });
   const meshes = (n: number, g: THREE.BufferGeometry, make: (i: number) => THREE.Material, name: string) => Array.from({ length: n }, (_, i) => { const m = new THREE.Mesh(g, make(i)); if (over) { m.material.depthTest = false; m.renderOrder = 6; } m.name = `${name} ${i}`; m.frustumCulled = false; m.visible = false; root.add(m); return m; });
   const op = (o: THREE.Object3D, v: number) => { ((o as THREE.Mesh | THREE.Sprite).material as THREE.Material).opacity = v; o.visible = v > 0.01; };
-  const gritTint = kind === 'antaeus' ? (exposure > 1.5 ? '#14100c' : '#7a5a36') : kind === 'surtr' ? '#3a3a3c' : exposure > 1.5 ? '#14110d' : '#2a1a0c';
+  const gritTint = P.gritTint ? dayNight(P.gritTint, night) : '#ffffff';
 
-  const cracks = kind === 'antaeus' ? meshes(CRACKS, stripGeometry(), (i) => mat(crackMap(i * 7 + 2, look)), 'crack') : [];
+  const cracks = template === 'crack' ? meshes(P.cracks!, stripGeometry(), (i) => mat(crackMap(i * 7 + 2, look)), 'crack') : [];
   const tex = new Map<string, THREE.Texture>(), once = (key: string, make: () => THREE.Texture) => { let t = tex.get(key); if (!t) { t = make(); tex.set(key, t); } return t; };   // a texture per seed, shared by the sprites that use it
-  const clods = kind === 'antaeus' ? sprites(CLODS, (i) => spriteMat(once(`clod${i % 5}`, () => clodMap(i % 5 * 3 + 1, look))), 'clod') : [];
-  const grit = kind === 'surtr' ? [] : sprites(GRIT, () => spriteMat(once('grit', gritMap), gritTint), 'grit');
-  const flakes = kind === 'surtr' ? sprites(FLAKES, (i) => spriteMat(once(`flake${i % 6}`, () => flakeMap(i % 6 * 5 + 2, flakeLook(exposure)))), 'flake') : [];
-  const patches = kind === 'surtr' ? meshes(PATCHES, flatDisc(), (i) => mat(blobMap(i * 9 + 3, look, 2.2)), 'soot') : [];
-  const smoke = kind === 'surtr' ? sprites(SMOKE, (i) => spriteMat(blobMap(i * 13 + 8, smokeLook(exposure), 1.4)), 'smoke') : [];
-  const streaks = kind === 'typhon' ? meshes(STREAKS, stripGeometry(), (i) => mat(paintSheet(i * 5 + 31, look)), 'gale') : [];
-  const sand = kind === 'typhon' ? sprites(SAND, () => spriteMat(once('grit', gritMap), gritTint), 'sand') : [];
+  const clods = template === 'crack' ? sprites(P.clods!, (i) => spriteMat(once(`clod${i % 5}`, () => clodMap(i % 5 * 3 + 1, look))), 'clod') : [];
+  const grit = P.grit ? sprites(P.grit, () => spriteMat(once('grit', gritMap), gritTint), 'grit') : [];
+  const flakes = template === 'ashfall' ? sprites(P.flakes!, (i) => spriteMat(once(`flake${i % 6}`, () => flakeMap(i % 6 * 5 + 2, flakeLook(exposure)))), 'flake') : [];
+  const patches = template === 'ashfall' ? meshes(P.patches!, flatDisc(), (i) => mat(blobMap(i * 9 + 3, look, 2.2)), 'soot') : [];
+  const smoke = template === 'ashfall' ? sprites(P.smoke!, (i) => spriteMat(blobMap(i * 13 + 8, smokeLook(exposure), 1.4)), 'smoke') : [];
+  const streaks = template === 'gale' ? meshes(P.streaks!, stripGeometry(), (i) => mat(paintSheet(i * 5 + 31, look)), 'gale') : [];
+  const sand = template === 'gale' ? sprites(P.sand!, () => spriteMat(once('grit', gritMap), gritTint), 'sand') : [];
   const all = [...cracks, ...clods, ...grit, ...flakes, ...patches, ...smoke, ...streaks, ...sand];
   const caster = new THREE.Vector3(), target = new THREE.Vector3(), dir = new THREE.Vector3();
   let cast: Cast | null = null, clock = 0, lastTick = -1;
@@ -169,7 +186,7 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
     // `feet`: each side's feet midpoint on the sand in world space (null while a rig loads). Same call shape as Red Wind and the Shield Quake.
     render(dt: number, events: readonly CombatEvent[], fighters: readonly [Fighter, Fighter], tick: number, feet: readonly [THREE.Vector3 | null, THREE.Vector3 | null], yielding: boolean, anchor?: THREE.Object3D | null) {
       clock = tick !== lastTick ? tick : Math.min(tick + 1, clock + dt * 60); lastTick = tick;
-      cast = advanceCast(cast, events, fighters, tick, opponent, yielding, isPitbornSpecial);
+      cast = advanceCast(cast, events, fighters, tick, opponent, yielding, is);
       if (anchor) casterAnchor = anchor;
       const from = cast ? feet[cast.actor] : null, to = cast ? feet[1 - cast.actor] : null;
       if (!cast || !from || !to) { hide(); return; }
@@ -180,35 +197,35 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
       dir.set(target.x - caster.x, 0, target.z - caster.z); const gap = dir.length() || 1; dir.divideScalar(gap);
       const cx = (target.x + caster.x) / 2, cz = (target.z + caster.z) / 2, gy = Math.min(caster.y, target.y);
       root.visible = true; specialGust.k = 0;
-      if (kind === 'antaeus') {
+      if (template === 'crack') {
         cracks.forEach((m, i) => {   // seven seams split out from his feet in uneven lengths and headings, widest at the root; they hold, then close as the clods settle
           const len = build ** 0.7 * (1.6 + 2.4 * hash(i, 21)), wid = 1.1 + 0.8 * hash(i, 22);
           m.position.set(caster.x, gy + 0.03 + 0.003 * i, caster.z); m.rotation.y = Math.atan2(-dir.z, dir.x) + (i % 2 ? 1 : -1) * (0.45 + 1.1 * hash(i, 23)); m.scale.set(len, 1, wid);
-          op(m, CAP * (1 - post * post) * clamp01(build * 3));
+          op(m, P.crackAlpha! * (1 - post * post) * clamp01(build * 3));
         });
         clods.forEach((s, i) => {   // chunks lift off the seams, hang a beat, and drop back with the landing
           const a = hash(i, 24) * Math.PI * 2, r = 0.2 + 1.5 * hash(i, 25) * (0.35 + 0.65 * build), up = (0.12 + 0.85 * hash(i, 26)) * build * (1 - 0.9 * smooth(struck)) * (1 - post);
           s.position.set(caster.x + Math.cos(a) * r, gy + 0.06 + up, caster.z + Math.sin(a) * r);
-          s.scale.setScalar(0.08 + 0.16 * hash(i, 27)); op(s, 0.95 * clamp01(build * 2) * (1 - post * post));
+          s.scale.setScalar(0.08 + 0.16 * hash(i, 27)); op(s, P.clodAlpha! * clamp01(build * 2) * (1 - post * post));
         });
         grit.forEach((s, i) => {
           const a = hash(i, 28) * Math.PI * 2, r = 0.3 + 1.4 * hash(i, 29), up = (0.05 + 0.5 * hash(i, 30)) * build * (1 - post);
-          s.position.set(caster.x + Math.cos(a) * r, gy + 0.05 + up, caster.z + Math.sin(a) * r); s.scale.setScalar(0.04 + 0.05 * hash(i, 31)); op(s, 0.7 * live);
+          s.position.set(caster.x + Math.cos(a) * r, gy + 0.05 + up, caster.z + Math.sin(a) * r); s.scale.setScalar(0.04 + 0.05 * hash(i, 31)); op(s, P.gritAlpha! * live);
         });
-      } else if (kind === 'surtr') {
+      } else if (template === 'ashfall') {
         patches.forEach((m, i) => {   // soot scorched into the sand under him: torn dark patches creeping out, never a clean ring
           const a = hash(i, 41) * Math.PI * 2, r = 0.15 + 1.6 * hash(i, 42) * build, s = 1.3 + 1.2 * hash(i, 43);
           m.position.set(caster.x + Math.cos(a) * r, gy + 0.03 + 0.003 * i, caster.z + Math.sin(a) * r); m.rotation.y = hash(i, 44) * 6.3; m.scale.set(s * build, 1, s * build * 0.8);
-          op(m, (look.dim ? 0.4 : 0.9) * (1 - post * 0.8) * clamp01(build * 2));
+          op(m, dayNight(P.patchAlpha!, look.dim) * (1 - post * 0.8) * clamp01(build * 2));
         });
         smoke.forEach((s, i) => {   // a low smoke lying along the sand where he stands
           const a = hash(i, 45) * Math.PI * 2, r = 0.2 + 1.3 * hash(i, 46), rise = 0.12 + 0.3 * hash(i, 47) + 0.25 * build;
-          s.position.set(caster.x + Math.cos(a + t * 0.2) * r, gy + rise, caster.z + Math.sin(a + t * 0.2) * r); s.scale.setScalar((0.7 + 0.6 * hash(i, 48)) * (0.4 + 0.6 * build)); op(s, (look.dim ? 0.3 : 0.55) * build * (1 - post * post));
+          s.position.set(caster.x + Math.cos(a + t * 0.2) * r, gy + rise, caster.z + Math.sin(a + t * 0.2) * r); s.scale.setScalar((0.7 + 0.6 * hash(i, 48)) * (0.4 + 0.6 * build)); op(s, dayNight(P.smokeAlpha!, look.dim) * build * (1 - post * post));
         });
         flakes.forEach((s, i) => {   // ash drifts down over the whole arena, thickening: a flake only appears once the build passes its own threshold
           const fall = (t * (0.25 + 0.2 * hash(i, 31)) + hash(i, 32)) % 1, on = clamp01(build * 1.5 - hash(i, 36) * 0.5);
           s.position.set(cx + (hash(i, 33) - 0.5) * 7 + Math.sin(t * 1.7 + i) * 0.15, gy + 3.4 * (1 - fall), cz + (hash(i, 34) - 0.5) * 7);
-          s.scale.setScalar((look.dim ? 0.07 : 0.05) + (look.dim ? 0.08 : 0.07) * hash(i, 35)); (s.material as THREE.SpriteMaterial).rotation = hash(i, 37) * 6.3 + t * (hash(i, 38) - 0.5); op(s, (look.dim ? 0.4 : 0.75) * on * (1 - post * post));
+          s.scale.setScalar((look.dim ? 0.07 : 0.05) + (look.dim ? 0.08 : 0.07) * hash(i, 35)); (s.material as THREE.SpriteMaterial).rotation = hash(i, 37) * 6.3 + t * (hash(i, 38) - 0.5); op(s, dayNight(P.flakeAlpha!, look.dim) * on * (1 - post * post));
         });
       } else {
         // The wind IS the tell (Strategy 2026-10-02): it starts thin and low with the wind-up and grows over the whole 2 s to the full sweep at the release; he sways in it.
@@ -218,12 +235,12 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
         streaks.forEach((m, i) => {   // painted strokes torn along the wind, flat and tilted, running from behind him through to the target and past
           const span = gap + 4, run = (t * (1.8 + hash(i, 51)) * 2 + hash(i, 52) * span) % span, lat = (hash(i, 53) - 0.5) * 3.4 * (0.45 + 0.55 * wk), hgt = (0.04 + 1.1 * hash(i, 54)) * (0.25 + 0.75 * wk), len = (1.2 + 1.5 * hash(i, 55)) * (0.6 + 0.4 * wk);
           m.position.set(caster.x - dir.x * 1.8 + dir.x * (run - len) - dir.z * lat, gy + hgt, caster.z - dir.z * 1.8 + dir.z * (run - len) + dir.x * lat);
-          m.rotation.set((hash(i, 56) - 0.5) * 1.1, Math.atan2(-dir.z, dir.x), 0, 'YXZ'); m.scale.set(len, 1, 0.5 + 0.5 * hash(i, 57)); op(m, (look.dim ? 0.4 : 0.7) * gale * clamp01((wk * 1.25 - hash(i, 58) * 0.9) * 4));   // the Night Pit's pale strokes wash over both fighters at the peak: 30% lighter there
+          m.rotation.set((hash(i, 56) - 0.5) * 1.1, Math.atan2(-dir.z, dir.x), 0, 'YXZ'); m.scale.set(len, 1, 0.5 + 0.5 * hash(i, 57)); op(m, dayNight(P.strokeAlpha!, look.dim) * gale * clamp01((wk * 1.25 - hash(i, 58) * 0.9) * 4));   // the Night Pit's pale strokes wash over both fighters at the peak: 30% lighter there
         });
         sand.forEach((s, i) => {   // grit whipped sideways, fast
           const span = gap + 4, run = (t * (3.2 + 1.5 * hash(i, 61)) + hash(i, 62) * span) % span, lat = (hash(i, 63) - 0.5) * 3.6;
           s.position.set(caster.x - dir.x * 1.8 + dir.x * run - dir.z * lat, gy + 0.05 + 1.2 * hash(i, 64), caster.z - dir.z * 1.8 + dir.z * run + dir.x * lat);
-          s.scale.setScalar(0.05 + 0.07 * hash(i, 65)); op(s, (look.dim ? 0.4 : 0.8) * gale * clamp01((wk * 1.25 - hash(i, 66) * 0.9) * 4));
+          s.scale.setScalar(0.05 + 0.07 * hash(i, 65)); op(s, dayNight(P.sandAlpha!, look.dim) * gale * clamp01((wk * 1.25 - hash(i, 66) * 0.9) * 4));
         });
       }
     },
