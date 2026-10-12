@@ -1,3 +1,4 @@
+import { fieldOf } from './catalogue-rows.ts';
 import { spectralMaterial } from './spectral.ts';
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Group, Matrix3, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, Euler, SkinnedMesh, Vector3 } from 'three';
 
@@ -32,7 +33,7 @@ export function* openWaistSteps(root: Object3D, anchor: Group, cornerSupports = 
   const hip = pelvis.getWorldPosition(new Vector3()).applyMatrix4(inverse);
   const waist = hip.y + (spine.getWorldPosition(new Vector3()).applyMatrix4(inverse).y - hip.y) * .6;
   const group = new Group(); group.name = 'Opened';
-  const spectral = root.getObjectByName('CreatureBody')?.userData.creature === 'wraith';
+  const spectral = !!fieldOf(String(root.getObjectByName('CreatureBody')?.userData.creature), 'spectral');
   const materials = new Map<MeshStandardMaterial, MeshStandardMaterial>();
   const cut = new MeshStandardMaterial({ color: '#501c20', roughness: .88, side: DoubleSide, vertexColors: true });
   if (spectral) { cut.transparent = true; cut.depthWrite = false; }
