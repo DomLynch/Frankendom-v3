@@ -53,7 +53,7 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
   const looks: Record<string, WeaponLook> = {};
   for (const [id, r] of rows) {
     const look = r.look ?? {};
-    if (!isRecord(look) || Object.entries(look).some(([k, v]) => !LOOK_KEYS.includes(k) || typeof v !== 'boolean')) throw Error(`weapon-defs "${id}": look holds only ${LOOK_KEYS.join(', ')}, each true or false`);
+    if (!isRecord(look) || Object.entries(look).some(([k, v]) => !(LOOK_KEYS as readonly string[]).includes(k) || typeof v !== 'boolean')) throw Error(`weapon-defs "${id}": look holds only ${LOOK_KEYS.join(', ')}, each true or false`);
     looks[id] = look as WeaponLook;
   }
   return { weapons, player: order('player'), offered: order('offered'), defaultId: defaults[0]!.id as string, natural: [...rows.values()].filter((r) => r.natural === true).map((r) => r.id as string), looks };
