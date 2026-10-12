@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import type { Shove } from './camera-kick.ts';
-import type { FinisherId } from './finishers.ts';
+import { finisherRow, type FinisherId } from './finishers.ts';
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
@@ -84,7 +84,7 @@ export function finisherSidePose(
   killer: { x: number; z: number },
   fallen: { x: number; z: number },
   aspect: number,
-  finisher: 'runThrough' | 'splitCrown' | 'opened' = 'runThrough',
+  finisher: FinisherId,   // whose camera.side view (src/fight/finisher-defs.json)
   bodyScale = 1,
   reach = 0,   // Opened: farthest horizontal extent of any landed piece from the fallen's origin (0 = not measured)
 ) {
@@ -97,21 +97,24 @@ export function finisherSidePose(
     lookZ = (killer.z + fallen.z) / 2;
   // Split Crown (owner 2026-09-20): the seam runs front-to-back over a head that bows toward the killer, so a profile
   // hides it — a raised front-quarter (45°, higher eye) looks down onto the opened crown past the killer's shoulder.
-  const angle = finisher === 'splitCrown' ? Math.PI / 4 : finisher !== 'runThrough' ? Math.PI / 3 : (5 * Math.PI) / 12,
+  // (The angles and heights below are each finisher's row: camera.side.)
+  const view = finisherRow(finisher)?.camera.side;
+  if (!view) throw Error(`finisher "${finisher}" has no camera.side view`);
+  const angle = view.angle,
     sideward = Math.sin(angle),
     rearward = Math.cos(angle);
   // Horizontal half-width the phone must show: the killer→fallen axis seen at `angle` is foreshortened to gap/2·sin(angle),
   // and what lies beyond the fallen — a fixed body margin, or the measured reach of the pieces / the fallen rig — is not.
   // Asking for the unforeshortened gap pushed a large body's fit past the 11.5 m arena clamp near the wall, where the clamp
   // then silently undid the fit (release check 17 on fdd6032: Executioner, heading-π kill by the wall).
-  const beyond = finisher === 'opened' ? Math.max(1.5 * bodyScale, reach + 0.3) : 0.42;
+  const beyond = view.beyond ?? Math.max(view.beyondBody! * bodyScale, reach + view.reachPad!);
   const back = Math.max(
-    finisher === 'opened' ? 5.2 : 3.8,
+    view.minBack,
     ((gap / 2) * sideward + beyond) / (Math.tan((51 * Math.PI) / 360) * Math.min(aspect, 1)),
   );
   const side = (sign: number, front = 1) => ({
     x: lookX + (-uz * sign * sideward - ux * rearward * front) * back,
-    y: finisher === 'opened' ? 3.7 + 3 * (bodyScale - 1) : finisher === 'splitCrown' ? 4.2 : 3.1,
+    y: view.eyeY + (view.eyeYPerScale ?? 0) * (bodyScale - 1),
     z: lookZ + (ux * sign * sideward - uz * rearward * front) * back,
     lookX,
     lookY: 0.85,
@@ -120,7 +123,7 @@ export function finisherSidePose(
   // Large halves and a body lying full-length need the inward front-quarter options when the kill lands by the wall;
   // clamping an outward rear view alone squeezes the corpse out of the portrait frame.
   const candidates =
-    (finisher === 'opened' && bodyScale > 1) || reach > 0
+    (view.wideWhenBig && bodyScale > 1) || reach > 0
       ? [side(1), side(-1), side(1, -1), side(-1, -1)]
       : [side(1), side(-1)];
   const pose = candidates.reduce((best, p) => (Math.hypot(p.x, p.z) < Math.hypot(best.x, best.z) ? p : best));
@@ -172,7 +175,8 @@ export const TOUR = { delay: 5, afterSettle: 3, blendIn: 3, lap: 40, breathe: 25
 // camera has moved slower than SETTLE.speed for SETTLE.still seconds, and stays latched until the finish clears. `settledAt`
 // records the finish age at first latch — the arena cam starts TOUR.afterSettle seconds later, and moving again itself does
 // not unsettle the latch. The HUD reads `settled`, `touring` and `finishAge`.
-export const SETTLE = { min: 1.5, still: 0.4, speed: 0.02 } as const;   // seconds, seconds, metres per second
+export const SETTLE = { min: 1.5, still: 0.4, speed: 0.02 } as const;
+const DEFAULT_DOLLY = { push: 0.38, slide: 0.95, turn: 0.6 };   // a posed finish with no finisher row (no ceremony picked): the ordinary push-in, the one every finisher row but Decapitation also carries   // seconds, seconds, metres per second
 export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefersStillCamera()) {
   let finishPush = 0; // the authorized slow dolly over the death window (0 = off; respects prefers-reduced-motion)
   let shortFade = 1; // share of the short-opponent lock terms (cameraPose targetScale) in use: 1 in the fight, easing to 0 once a finish begins
@@ -269,9 +273,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         const killer = finish!.victim === 1 ? state : enemy;
         // Owner phone review 2026-09-20: Decapitation keeps its front view — no push-in and no look change, so the
         // detached head stays in frame (#167) — but slides to camera-right so the killer's back stops hiding the corpse.
-        const push = finish!.finisher === 'decapitation' ? 0 : 0.38,
-          slide = finish!.finisher === 'decapitation' ? 0.8 : 0.95,
-          turn = finish!.finisher === 'decapitation' ? 0.85 : 0.6;
+        const { push, slide, turn } = (finish!.finisher !== null && finisherRow(finish!.finisher)?.camera.dolly) || DEFAULT_DOLLY;   // the row's camera.dolly
         desired.x += (fallen.x - desired.x) * push * finishPush;
         desired.z += (fallen.z - desired.z) * push * finishPush;
         // Framing tune (same authorized dolly — still no cut, no FOV, no slow-mo): slide the camera laterally off the
@@ -295,33 +297,17 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
           look.y += (0.8 - look.y) * 0.7 * finishPush;
         }
       }
-      const finisher = finish?.finisher ?? null;
-      if (
-        locked &&
-        !still &&
-        finish?.victim === 1 &&
-        (finisher === 'runThrough' ||
-          finisher === 'splitCrown' ||
-          finisher === 'opened' ||
-          finisher === 'hamstrung' ||
-          finisher === 'execution')
-      ) {
-        // Hamstrung opens early (both blows land low, inside the first 0.64 of the clock) and takes Opened's raised three-quarter view; Execution takes the same one.
-        const t = THREE.MathUtils.clamp(
-            finisher === 'hamstrung' || finisher === 'execution'
-              ? (finish.clock - 0.01) / 0.2
-              : finisher === 'opened'
-                ? (finish.clock - 0.04) / (finish.big ? 0.6 : 0.4)
-                : (finish.clock - 0.45) / 0.55,
-            0,
-            1,
-          ),
+      const finisher = finish?.finisher ?? null, open = finisher !== null ? finisherRow(finisher)?.camera.reveal : undefined;
+      if (locked && !still && finish?.victim === 1 && open) {
+        // The row's camera.reveal: when the side view opens on the finisher clock and over how long (Hamstrung and Execution open early, both blows
+        // landing low inside the first 0.64 of the clock, and take Opened's raised three-quarter view; Opened opens wider for a big body).
+        const t = THREE.MathUtils.clamp((finish.clock - open.from) / (finish.big && open.overBig !== undefined ? open.overBig : open.over), 0, 1),
           reveal = t * t * (3 - 2 * t);
         const side = finisherSidePose(
           state,
           enemy,
           camera.aspect,
-          finisher === 'hamstrung' || finisher === 'execution' ? 'opened' : finisher,
+          open.side,
           finish.big ? 1.5 : 1,
           finish.reach ?? 0,
         );
