@@ -1,8 +1,9 @@
 {
-  "about": "Weapon DEFINITIONS (data, Combat 2026-10-12; Dom: everything as data). One row per weapon keyed by id. A row may `extends` another weapon and then holds only the fields that differ (objects merge field by field, anything else replaces); a base row holds its whole table. moves: MoveId -> MoveDef numbers; paths: PathId -> clip and timings; player/offered are the 1-based order of PLAYER_WEAPONS / PLAYER_WEAPONS_OFFERED. The engine verbs (MoveId, PathId, Direction, Material, Grip, guard kinds) stay code; a new weapon is one row here. Loader: src/fight/weapons.ts.",
+  "about": "Weapon DEFINITIONS (data, Combat 2026-10-12; Dom: everything as data). One row per weapon keyed by id. A row may `extends` another weapon and then holds only the fields that differ (objects merge field by field, anything else replaces); a base row holds its whole table. moves: MoveId -> MoveDef numbers; paths: PathId -> clip and timings; player/offered are the 1-based order of PLAYER_WEAPONS / PLAYER_WEAPONS_OFFERED. The engine verbs (MoveId, PathId, Direction, Material, Grip, guard kinds) stay code; a new weapon is one row here. Loader: src/fight/weapons.ts. Row markers, never inherited and never on the resolved Weapon (so they cannot move a fight): `default` (exactly one row: the weapon a fighter gets when none is named), `natural` (a creature's own weapon, not a player item), `look` (presentation flags: baked, pommelBash, lowerArm, stabs).",
   "weapons": [
   {
     "id": "longsword",
+    "default": true, "look": {"baked": true, "pommelBash": true},
     "player": 1,
     "offered": 1,
     "guard": "blade",
@@ -19,6 +20,7 @@
   },
   {
     "id": "trident",
+    "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 7,
     "offered": 3,
@@ -53,6 +55,7 @@
   },
   {
     "id": "cleaver",
+    "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 2,
     "offered": 8,
@@ -84,6 +87,7 @@
   },
   {
     "id": "estoc",
+    "look": {"pommelBash": true, "stabs": true},
     "extends": "longsword",
     "player": 4,
     "offered": 6,
@@ -106,6 +110,7 @@
   },
   {
     "id": "knife",
+    "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 3,
     "offered": 5,
@@ -138,6 +143,7 @@
   },
   {
     "id": "gladius",
+    "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 5,
     "offered": 7,
@@ -189,6 +195,7 @@
   },
   {
     "id": "maul",
+    "look": {"pommelBash": true},
     "extends": "cleaver",
     "player": 9,
     "offered": 9,
@@ -213,6 +220,7 @@
   },
   {
     "id": "reaper",
+    "look": {"lowerArm": false},
     "extends": "estoc",
     "moves": {
       "light_right": {"stepIn":0.15,"reach":2.55,"minReach":1.4},
@@ -244,6 +252,7 @@
   },
   {
     "id": "warhammer",
+    "look": {"pommelBash": true},
     "extends": "cleaver",
     "player": 6,
     "offered": 2,
@@ -278,6 +287,7 @@
   },
   {
     "id": "bite",
+    "natural": true,
     "extends": "knife",
     "paths": {
       "light_right": {"clip":"Bite"},

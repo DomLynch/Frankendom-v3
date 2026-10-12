@@ -5,6 +5,10 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import type { MoveDef, PathSpec, Weapon } from './moves.ts';
 import WEAPON_MANIFEST from './weapon-defs.manifest.json' with { type: 'json' };
 
+// Presentation flags a row may carry (never inherited, never on the Weapon, so they cannot move a fight): baked = the hero rig bakes this weapon (no equip file to load); pommelBash = a player equip plays the hilt-bash clip;
+// lowerArm = false keeps the spectral Wraith's attacking arm up for this weapon; stabs = the finishing sound is a stab for it.
+export const LOOK_KEYS = ['baked', 'pommelBash', 'lowerArm', 'stabs'] as const;
+export type WeaponLook = Partial<Record<(typeof LOOK_KEYS)[number], boolean>>;
 export type WeaponBase = { readonly moves: Readonly<Record<string, MoveDef>>; readonly paths: Readonly<Record<string, PathSpec>> };
 export type WeaponEnums = { readonly materials: readonly string[]; readonly guards: readonly string[]; readonly grips: readonly string[] };
 type Obj = Record<string, unknown>;
@@ -18,7 +22,7 @@ const merge = (base: unknown, over: unknown): unknown => {
   return changed ? out : base;
 };
 
-export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: WeaponBase, enums: WeaponEnums): { weapons: Record<string, Weapon>; player: string[]; offered: string[] } {
+export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: WeaponBase, enums: WeaponEnums): { weapons: Record<string, Weapon>; player: string[]; offered: string[]; defaultId: string; natural: string[]; looks: Record<string, WeaponLook> } {
   loadRegistry([tableFromFile(WEAPON_MANIFEST.tables[0] as Manifest, raw, 'weapon-defs.json')]);   // the shared loader (src/core/registry.ts): a missing or duplicate id and an `extends` that names no weapon are refused as file:row:id + the rule
   const rows = new Map<string, Obj>();
   for (const r of (raw.weapons ?? []) as Obj[]) rows.set(r.id as string, r);
@@ -27,7 +31,7 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
     const done = resolved.get(id); if (done) return done;
     if (chain.includes(id)) throw Error(`weapon-defs: "${id}" extends itself (${[...chain, id].join(' -> ')})`);
     const own: Obj = { ...rows.get(id)! }, parent = own.extends;
-    for (const k of ['id', 'extends', 'player', 'offered']) delete own[k];
+    for (const k of ['id', 'extends', 'player', 'offered', 'default', 'natural', 'look']) delete own[k];   // a row's own markers: never inherited, never on the Weapon
     const out = merge(parent === undefined ? { moves: base.moves, paths: base.paths } : resolve(parent as string, [...chain, id]), own) as Obj;
     resolved.set(id, out);
     return out;
@@ -44,5 +48,13 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
     weapons[id] = { id, ...w } as unknown as Weapon;
   }
   const order = (field: 'player' | 'offered'): string[] => [...rows.values()].filter((r) => r[field] !== undefined).sort((a, b) => (a[field] as number) - (b[field] as number)).map((r) => r.id as string);
-  return { weapons, player: order('player'), offered: order('offered') };
+  const defaults = [...rows.values()].filter((r) => r.default === true);
+  if (defaults.length !== 1) throw Error('weapon-defs: exactly one row is the `default` weapon');
+  const looks: Record<string, WeaponLook> = {};
+  for (const [id, r] of rows) {
+    const look = r.look ?? {};
+    if (!isRecord(look) || Object.entries(look).some(([k, v]) => !LOOK_KEYS.includes(k) || typeof v !== 'boolean')) throw Error(`weapon-defs "${id}": look holds only ${LOOK_KEYS.join(', ')}, each true or false`);
+    looks[id] = look as WeaponLook;
+  }
+  return { weapons, player: order('player'), offered: order('offered'), defaultId: defaults[0]!.id as string, natural: [...rows.values()].filter((r) => r.natural === true).map((r) => r.id as string), looks };
 }

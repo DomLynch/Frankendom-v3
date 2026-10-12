@@ -5,7 +5,7 @@ import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
-import { weaponOf, type Direction, type WeaponId } from './moves.ts';
+import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type Direction, type WeaponId } from './moves.ts';
 import { movesOf, type Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { AnimationMixer, MathUtils, Group, Mesh, PropertyBinding, type Material, type Texture, MeshStandardMaterial, MeshBasicMaterial, Object3D, SkinnedMesh, Uint16BufferAttribute, Float32BufferAttribute, BufferGeometry, BufferAttribute, DoubleSide, Vector3, Quaternion, Matrix3, Matrix4, Box3, LoopOnce, type AnimationAction, type AnimationClip, type BufferAttribute as BufferAttributeType, Skeleton } from 'three';
@@ -155,7 +155,7 @@ async function loadFighter(url: string) {
 // rig carries, and the entry point fights with that one (drawn = simulated).
 // `opponentEquipUrl`: the equip file of a weapon the opponent's rig does not bake (the Centurion's gladius over his trident, SCOPE:76). It is
 // grafted onto his rig the same way; a file that fails is reported and he keeps the weapon his rig bakes (a fight never waits on it).
-export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = ['longsword', 'longsword'], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false) {
+export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false) {
   const equip = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
   const [hero, enemy, part, enemyPart] = await Promise.all([
     loadFighter(url),
@@ -193,7 +193,7 @@ export function armWarriors(hero: FighterAsset, enemy: FighterAsset | undefined,
   if (carry && enemy) withShieldCarry(enemy);
   if (part && !(part instanceof Error)) try { return { ...buildWarriors(equipWeapon(hero, part), enemy, weapons), playerWeapon: weapons[0] }; } catch (error) { part = error instanceof Error ? error : Error(String(error)); }
   if (part) equipFailed(part);
-  const playerWeapon: WeaponId = part ? 'longsword' : weapons[0];
+  const playerWeapon: WeaponId = part ? DEFAULT_WEAPON : weapons[0];
   return { ...buildWarriors(hero, enemy, [playerWeapon, weapons[1]]), playerWeapon };
 }
 // A player weapon's equip file (scripts/build-player-weapon.mjs, the #309 contract): its WeaponDrawn part, placed under hand_r exactly as
@@ -413,7 +413,7 @@ export function sizeBeast(warriors: { opponent: { anchor: Group } }, opponentId:
   const k = beastRenderScale(opponentId);
   if (k !== 1) warriors.opponent.anchor.scale.setScalar(k);
 }
-export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset, weapons: [WeaponId, WeaponId] = ['longsword', 'longsword'], solo = false) {   // solo: the caller poses ONE actor (a zone creature): the opponent is not built, `.opponent` aliases `.player`
+export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], solo = false) {   // solo: the caller poses ONE actor (a zone creature): the opponent is not built, `.opponent` aliases `.player`
   const hero = { asset, weapon: weapons[0], clips: fighterClips(asset, weapons[0], true) }, enemy = opponentAsset ? { asset: opponentAsset, weapon: weapons[1], clips: fighterClips(opponentAsset, weapons[1], false) } : undefined;
   if (!enemy && weapons[1] !== weapons[0]) throw new Error('A shared rig carries one weapon');
   function create(opponent: boolean) {
@@ -794,7 +794,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         root.position.z = -Math.abs(recoil)*.045;
         // The enlarged Wraith lowers its attacking arm toward the original strike height.
         // Blend through wind-up/recovery; keep its body, grip and simulation untouched.
-        if (spectral && weapon !== 'reaper' && upperArm?.parent && pose === 'attack') {
+        if (spectral && WEAPON_LOOK[weapon]?.lowerArm !== false && upperArm?.parent && pose === 'attack') {
           root.updateWorldMatrix(true, true);
           const middle = blade.localToWorld(new Vector3(0, (segment[0] + segment[1]) / 2, 0));
           const target = root.worldToLocal(middle.clone()); target.y /= root.scale.y;

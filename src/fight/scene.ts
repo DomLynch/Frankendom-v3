@@ -20,7 +20,7 @@ import { kitWorn } from '../core/loot.ts';
 import { standoffClock, standoffFlag, standoffPose } from './standoff.ts';
 import { actorPose, initialPractice, type CombatEvent, type Practice } from './combat.ts';
 import { ON_DEMAND_BEASTS, beastBodyUrl } from './beast-scale.ts';
-import { OPPONENTS, PLAYER_WEAPONS, RULES, opponentAt, weaponOf, type OpponentId, type WeaponId } from './moves.ts';
+import { OPPONENTS, PLAYER_WEAPONS, RULES, opponentAt, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type OpponentId, type WeaponId } from './moves.ts';
 import { type FinisherId } from './finishers.ts';
 import { HAMSTRUNG_BEATS, HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, hamstrungPick, resolveHamstrung } from './hamstrung.ts';
 import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, EXECUTION_VICTIMS, executionPick, poseOf, resolveExecution } from './execution.ts';
@@ -71,7 +71,7 @@ const EQUIP_URLS = globbed(() => import.meta.glob<string>('../assets/weapons/pla
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // A rank look's pre-swap bake takes up to this many ms of each frame (it runs while the fight plays; one bounded step is ~8 ms at worst).
 const LOOK_BAKE_MS = 6;
-export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapon) => weapon === 'longsword' || equipUrl(weapon));
+export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapon) => WEAPON_LOOK[weapon]?.baked || equipUrl(weapon));
 // In-world fights (Origins ?worldfight, Dom 2026-10-07: "the Pit's own fight, where you stand, without the arena"). With a mount the duel scene is the same scene it always is, with
 // the Pit's rigs, effects and locked camera in the arena's own coordinates, except that no arena, crowd or arena light is built: `holder` (the page's world, moved in by the page) is
 // the ground, `background` and `fog` are the world's, and the page's renderer draws it (no second GL context). The page places `holder` with the inverse of where the duel stands in
@@ -88,7 +88,7 @@ export function createScene(
   arenaOverride?: string,   // ?arena=3b: a dev look / still capture; otherwise the ladder band picks (arena-themes.ts)
   // The player's weapon, as the Match fights it. A promise when the page is still waiting on a kill link (the record
   // decides the weapon): the rigs load once it settles, so the hand always holds what the simulation swings.
-  playerWeapon: WeaponId | Promise<WeaponId> = 'longsword',
+  playerWeapon: WeaponId | Promise<WeaponId> = DEFAULT_WEAPON,
   // The weapon the player's rig carries once it is built: the one asked for, or the longsword when its equip file failed. Called before
   // the 'ready' status, so the entry point can re-arm the fight (drawn = simulated) before the card lifts.
   playerDrawn: (weapon: WeaponId) => void = () => {},
@@ -348,8 +348,8 @@ export function createScene(
     weapons.then((pair) => {
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
-      const opponentEquip = pair[1] === (peer ? 'longsword' : ROSTER[opponentId].weapon) ? undefined : equipUrl(pair[1]);   // the hero's rig bakes the longsword
-      const load = (hero: string) => peer ? loadPeerWarriors(hero, pair, pair[0] === 'longsword' ? undefined : equipUrl(pair[0]), opponentEquip, (error) => captureException(error, { tags: { equip: pair[1] } })) : loadWarriors(hero, foeUrl(opponentId), pair, pair[0] === 'longsword' ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
+      const opponentEquip = pair[1] === (peer ? DEFAULT_WEAPON : ROSTER[opponentId].weapon) ? undefined : equipUrl(pair[1]);   // the hero's rig bakes the longsword
+      const load = (hero: string) => peer ? loadPeerWarriors(hero, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), opponentEquip, (error) => captureException(error, { tags: { equip: pair[1] } })) : loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
       return heroUrl ? load(heroUrl).catch(() => load(fighterUrls['../assets/warrior.glb']!)) : load(fighterUrls['../assets/warrior.glb']!);
     }),
     arena.ready,

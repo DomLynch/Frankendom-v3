@@ -3,7 +3,7 @@
 // run through the Pit's own src/fight/duel.ts / ai.ts / sim.ts (no copies; the duel carries its own wall, Duel.radius, out of reach here) by the adapter open-fight.ts; this file owns only what the Pit has no word for: who is in whose fight (aggro, the nearest foe, the hold-off ring
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
-import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, type SkillId, type SpecialName } from './moves.ts';
+import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type SkillId, type SpecialName } from './moves.ts';
 import { CAPS, NAKED, type Loadout } from './gear-stats.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
@@ -232,7 +232,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
 
 // The Pit kit's extremes, read from the tables so a new weapon or skill moves the bound with it (no number is copied here): the biggest base blow of any weapon move, the fastest windup and the fastest cycle of any damaging move.
 const KIT = (() => {
-  const moves = Object.values(WEAPONS).filter(w => w.id !== 'bite').flatMap(w => Object.values(w.moves)).filter(m => m.damage > 0);
+  const moves = Object.values(WEAPONS).filter(w => !NATURAL_WEAPONS.has(w.id)).flatMap(w => Object.values(w.moves)).filter(m => m.damage > 0);
   const cycle = (m: (typeof moves)[number]) => { const t = m.chained ?? m; return t.windup + t.active + t.recovery; };
   return { damage: Math.max(...moves.map(m => m.damage)), windup: Math.min(...moves.map(m => (m.chained ?? m).windup)), cycle: Math.min(...moves.map(cycle)) };
 })();

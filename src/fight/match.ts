@@ -17,7 +17,7 @@ import type { PickedStance } from './stance.ts';
 // Phase two: class B from Veteran and all boss tiers are enabled in valid PvE fights. A record carries its own flag
 // (version 21), so links made either way replay as they were fought.
 const LIVE_SPECIALS = true;
-import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, type SkillId, type WeaponId } from './moves.ts';
+import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, DEFAULT_WEAPON, type SkillId, type WeaponId } from './moves.ts';
 import { loadTrial, recordPractice, recordRematch, saveTrial, type Trial } from '../trial.ts';
 import { loadScorecard, recordResult, saveScorecard, type Scorecard } from '../scorecard.ts';
 import { awardMark, levelOfMarks as levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../core/career-ladder.ts';
@@ -61,7 +61,7 @@ export type Ended = { record: FightRecord | null; lines: string[]; won: boolean;
 // A match whose ports live in memory (the open world's sparring duel): nothing it does reaches localStorage. Built here so origins/ need not import the trial and scorecard loaders.
 export const memoryMatch = (opponent: Opponent, build: string, seed: number, level: number): Match => {
   const memory = (): StoragePort => { const m = new Map<string, string>(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => { m.set(k, String(v)); } }; };
-  return new Match(opponent, build, { storage: memory(), trial: loadTrial(memory()), scorecard: loadScorecard(memory()), profile: loadProfile(memory(), () => build).profile }, seed, 'longsword', null, level);
+  return new Match(opponent, build, { storage: memory(), trial: loadTrial(memory()), scorecard: loadScorecard(memory()), profile: loadProfile(memory(), () => build).profile }, seed, DEFAULT_WEAPON, null, level);
 };
 export const nextSeed = (seed: number): number => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
 
@@ -112,7 +112,7 @@ export class Match {
   private readonly build: string;
   private readonly ports: MatchPorts;
   // `level` is the career's (main.ts, career.ts levelOf): set before begin(), so the first fight's recorder is born on it.
-  constructor(opponent: Opponent, build: string, ports: MatchPorts, seed = 731, weapon: WeaponId = 'longsword', skill: SkillId | null = null, level: number = PRESET_LEVEL.normal) {
+  constructor(opponent: Opponent, build: string, ports: MatchPorts, seed = 731, weapon: WeaponId = DEFAULT_WEAPON, skill: SkillId | null = null, level: number = PRESET_LEVEL.normal) {
     this.opponent = opponent; this.build = build; this.ports = ports;
     this.seed = seed; this.weapon = weapon; this.skill = skill; this.level = level;
     this.practice = initialPractice(seed, opponentAt(opponent, this.level), this.weapon, this.skill);
@@ -232,13 +232,13 @@ export class Match {
   // The scripted first loss (src/first-loss.ts): the longsword against this warden at easy's body, a script for his swings, the fight lost on purpose.
   // `onLesson` fires once per lesson in teaching order (the page turns each id into a prompt); a rematch tells it again. Nothing is recorded or awarded.
   startLesson(onLesson: (id: LessonId) => void): void {
-    this.onLesson = onLesson; this.weapon = 'longsword'; this.skill = null; this.dummy = false; this.level = PRESET_LEVEL.easy;
+    this.onLesson = onLesson; this.weapon = DEFAULT_WEAPON; this.skill = null; this.dummy = false; this.level = PRESET_LEVEL.easy;
     this.begin('lesson');
   }
   // The tutorial start scene (src/tutorial.ts): the longsword against a slow warden who waits on each step. `onDone` fires once per step, in order.
   // Nothing is recorded or awarded; the fight never ends by itself.
   startTutorial(onDone: (id: TutorialStep) => void): void {
-    this.onTutorial = onDone; this.weapon = 'longsword'; this.skill = null; this.dummy = false; this.level = PRESET_LEVEL.easy;
+    this.onTutorial = onDone; this.weapon = DEFAULT_WEAPON; this.skill = null; this.dummy = false; this.level = PRESET_LEVEL.easy;
     this.begin('tutorial');
   }
   // A live duel (src/net/pvp.ts): the driver owns the fight from here; the page reloads to leave it.

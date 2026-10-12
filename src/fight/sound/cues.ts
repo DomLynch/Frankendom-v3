@@ -1,6 +1,6 @@
 import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import type { Finish } from '../duel.ts';
-import { MOVES, RULES, type MoveId, type WeaponId } from '../moves.ts';
+import { MOVES, RULES, WEAPON_LOOK, type MoveId, type WeaponId } from '../moves.ts';
 import { selectFinisher, type FinisherId } from '../finishers.ts';
 import { HAMSTRUNG_BEATS } from '../hamstrung.ts';
 import { poseOf, EXECUTION_BEATS, executionAt } from '../execution.ts';
@@ -76,7 +76,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
       if (finisher === 'opened' && gore) impacts.push(cue('kill', .25, .12, 2.68));
       if (bone) impacts.push(cue('bone_crack', .5, .12, .65));
       if (!bone && gore && e.move !== 'kick' && deaths.length === 1) {
-        const stab = finisher !== 'opened' && (finisher === 'runThrough' || e.move === 'thrust' || e.move === 'riposte' || (e.weapon ?? presentation?.weapons[e.actor]) === 'estoc');
+        const stab = finisher !== 'opened' && (finisher === 'runThrough' || e.move === 'thrust' || e.move === 'riposte' || WEAPON_LOOK[e.weapon ?? presentation?.weapons[e.actor] ?? '']?.stabs === true);
         impacts.push(cue(stab ? 'flesh_stab' : 'flesh_cut', .45, .05));
         if (finisher === 'decapitation' || finisher === 'opened') impacts.push(cue('flesh_tear', .55, .08, finisher === 'opened' ? .144 : severAt));
         if (finisher === 'splitCrown') impacts.push(cue('bone_crack', .65, .07, (RULES.death / 60) / .75 * .045));

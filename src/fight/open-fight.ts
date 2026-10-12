@@ -2,7 +2,7 @@
 // stepped by the Pit's own `src/fight/duel.ts stepDuel` (the duel carries radius OPEN_RADIUS: no ring wall, the one open-world departure), with the creature brain `src/fight/ai.ts decide` (profileAt rows) when the foe is a creature. This file is the adapter and nothing else: it builds the Pit fighters from the
 // world's Fighters, maps live Input to a Pit Intent, steps the duel at its fixed 60 Hz, and writes the result back into the world's Fighters and Events. The world layer (aggro, chase to the engage ring, leash,
 // give-up, heal-home, the page-driven hero position) stays in zone1.ts. Every departure from the Pit is marked `// open-world:`.
-import { OPPONENTS, RULES, opponentAt, profileAt, type AiProfile } from './moves.ts';
+import { OPPONENTS, RULES, opponentAt, profileAt, DEFAULT_WEAPON, type AiProfile } from './moves.ts';
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
@@ -21,10 +21,10 @@ const body = (f: Fighter) => ({ x: f.x, z: f.z, heading: f.facing, distance: 0 }
 /** The Pit fighter for a world Fighter. A creature's body and brain are the Pit's own level rows (moves.ts opponentAt / profileAt). */
 const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
   ? opponentFighter(opponentAt(OPPONENTS[f.kind as keyof typeof OPPONENTS], f.level), body(f), 'ready')
-  : createFighter(body(f), 'ready', 'longsword'));
+  : createFighter(body(f), 'ready', DEFAULT_WEAPON));
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
 export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter): Bout {
-  const h = carry ?? pitOf(hero), c = foe ? pitOf(foe) : createFighter({ x: hero.x + FAR_M, z: hero.z, heading: 0, distance: 0 }, 'ready', 'longsword', 1, 0, 1e9);
+  const h = carry ?? pitOf(hero), c = foe ? pitOf(foe) : createFighter({ x: hero.x + FAR_M, z: hero.z, heading: 0, distance: 0 }, 'ready', DEFAULT_WEAPON, 1, 0, 1e9);
   const o = foe?.side === 'creature' ? OPPONENTS[foe.kind as keyof typeof OPPONENTS] : null;
   return { foe: foe?.id ?? null, duel: { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS }, ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };
 }

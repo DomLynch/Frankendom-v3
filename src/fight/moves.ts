@@ -1,5 +1,5 @@
 import WEAPON_DEFS from './weapon-defs.json' with { type: 'json' };
-import { loadWeaponDefs } from './weapons.ts';
+import { loadWeaponDefs, type WeaponLook } from './weapons.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 export type { OpponentId, RigId } from '../roster.ts';
@@ -271,6 +271,9 @@ export type Weapon = { id: WeaponId; moves: Record<MoveId, MoveDef>; paths: Reco
 // tests and scripts have always imported; each is a row of the loaded table.
 const LOADED = loadWeaponDefs(WEAPON_DEFS, { moves: MOVES, paths: PATHS }, { materials: MATERIALS, guards: GUARDS, grips: GRIPS });
 export const WEAPONS: Record<WeaponId, Weapon> = LOADED.weapons;
+export const DEFAULT_WEAPON: WeaponId = LOADED.defaultId;   // the row marked `default`: the weapon a fighter gets when none is named
+export const WEAPON_LOOK: Readonly<Record<WeaponId, WeaponLook>> = LOADED.looks;   // the rows' presentation flags (baked, pommelBash, lowerArm, stabs); not on the Weapon, so they move no fight
+export const NATURAL_WEAPONS: ReadonlySet<WeaponId> = new Set(LOADED.natural);   // a creature's own weapon (the bite), not a player item
 export const weaponOf = (id: WeaponId): Weapon => { const w = WEAPONS[id]; if (!w) throw Error(`unknown weapon "${id}"`); return w; };
 export const isWeaponId = (id: unknown): id is WeaponId => typeof id === 'string' && Object.hasOwn(WEAPONS, id);
 export const LONGSWORD = WEAPONS.longsword!, TRIDENT = WEAPONS.trident!, CLEAVER = WEAPONS.cleaver!, KNIFE = WEAPONS.knife!, ESTOC = WEAPONS.estoc!, GLADIUS = WEAPONS.gladius!, SCYTHE = WEAPONS.scythe!;
