@@ -1,0 +1,298 @@
+{
+  "about": "Weapon DEFINITIONS (data, Combat 2026-10-12; Dom: everything as data). One row per weapon keyed by id. A row may `extends` another weapon and then holds only the fields that differ (objects merge field by field, anything else replaces); a base row holds its whole table. moves: MoveId -> MoveDef numbers; paths: PathId -> clip and timings; player/offered are the 1-based order of PLAYER_WEAPONS / PLAYER_WEAPONS_OFFERED. The engine verbs (MoveId, PathId, Direction, Material, Grip, guard kinds) stay code; a new weapon is one row here. Loader: src/fight/weapons.ts.",
+  "weapons": [
+  {
+    "id": "longsword",
+    "player": 1,
+    "offered": 1,
+    "guard": "blade",
+    "material": "iron",
+    "reach": 2,
+    "grip": "two-hand",
+    "fight": {"thrustShare":0.2,"close":1.15},
+    "moves": {
+
+    },
+    "paths": {
+
+    }
+  },
+  {
+    "id": "trident",
+    "extends": "longsword",
+    "player": 7,
+    "offered": 3,
+    "moves": {
+      "light_right": {"direction":"low","chained":{"windup":18,"recovery":20},"chain":{"follow":["light_left","thrust"]},"windup":22,"recovery":24,"damage":12,"stagger":26,"knockback":5,"stepIn":0.3,"feintUntil":11,"reach":1.75,"posture":18,"chamber":10},
+      "light_left": {"direction":"low","chained":{"windup":18,"recovery":20},"chain":{"follow":["light_right","thrust"]},"windup":22,"recovery":24,"damage":12,"stagger":26,"knockback":5,"stepIn":0.3,"feintUntil":11,"reach":1.75,"posture":18,"chamber":10},
+      "heavy_overhead": {"chained":{"windup":24,"recovery":33},"windup":34,"recovery":33,"damage":20,"stamina":38,"staminaDamage":35,"chip":0.5,"stepIn":0.45,"feintUntil":12,"reach":2.15,"posture":36,"chamber":11},
+      "thrust": {"chainPath":"riposte","chained":{"windup":12,"active":5,"recovery":19},"chain":{"window":16,"follow":["thrust"]},"recovery":23,"damage":12,"stamina":22,"staminaDamage":22,"reach":2.25,"minReach":1},
+      "slash_riposte": {"direction":"low","reach":1.75},
+      "riposte": {"reach":2.1},
+      "heavy_riposte": {"windup":22,"recovery":27,"reach":2.15},
+      "heavy_counter": {"windup":22,"recovery":27,"reach":2.15},
+      "critical": {"windup":22,"recovery":27,"reach":2.15}
+    },
+    "paths": {
+      "light_right": {"clip":"Trident_Sweep","windup":22,"recovery":24},
+      "light_left": {"clip":"Trident_Sweep","windup":22,"recovery":24},
+      "light_right_chain": {"clip":"Trident_Sweep","windup":18,"recovery":20},
+      "light_left_chain": {"clip":"Trident_Sweep","windup":18,"recovery":20},
+      "heavy_overhead": {"clip":"Trident_High","windup":34,"recovery":33},
+      "heavy_overhead_chain": {"clip":"Trident_High","windup":24,"recovery":33},
+      "thrust": {"clip":"Trident_Thrust","recovery":23},
+      "slash_riposte": {"clip":"Trident_Sweep"},
+      "riposte": {"clip":"Trident_ThrustChain"},
+      "heavy_riposte": {"clip":"Trident_High","windup":22,"recovery":27}
+    },
+    "guard": "shaft",
+    "material": "bronze",
+    "reach": 2.25,
+    "guardProfile": {"costScale":1.15,"heavyBreaks":true},
+    "fight": {"thrustShare":0.6,"close":1.4}
+  },
+  {
+    "id": "cleaver",
+    "extends": "longsword",
+    "player": 2,
+    "offered": 8,
+    "moves": {
+      "light_right": {"chained":{"windup":18,"recovery":22},"windup":22,"recovery":26,"damage":17,"stamina":28,"staminaDamage":24,"stagger":26,"chip":0.2,"knockback":5,"stepIn":0.36,"feintUntil":11,"posture":26,"chamber":10},
+      "light_left": {"chained":{"windup":18,"recovery":22},"windup":22,"recovery":26,"damage":9,"stamina":24,"staminaDamage":30,"stagger":32,"knockback":6,"stepIn":0.36,"feintUntil":11,"posture":34,"chamber":10},
+      "heavy_overhead": {"chained":{"windup":26,"active":6,"recovery":36},"windup":36,"active":6,"recovery":36,"damage":26,"stamina":42,"staminaDamage":45,"stagger":30,"poiseFrom":22,"chip":0.5,"stepIn":0.48,"feintUntil":12,"posture":42,"chamber":12},
+      "thrust": {"windup":18,"recovery":26,"damage":7,"stamina":18,"staminaDamage":14,"stagger":14,"stepIn":0.87,"posture":10,"chamber":9},
+      "slash_riposte": {"recovery":21,"damage":28},
+      "riposte": {"recovery":21,"damage":28},
+      "heavy_riposte": {"windup":22,"active":6,"recovery":29,"damage":34},
+      "heavy_counter": {"windup":22,"active":6,"recovery":29,"damage":24},
+      "critical": {"windup":22,"active":6,"recovery":29,"damage":46}
+    },
+    "paths": {
+      "light_right": {"windup":22,"recovery":26},
+      "light_left": {"windup":22,"recovery":26},
+      "light_right_chain": {"windup":18,"recovery":22},
+      "light_left_chain": {"windup":18,"recovery":22},
+      "heavy_overhead": {"windup":36,"active":6,"recovery":36},
+      "heavy_overhead_chain": {"windup":26,"active":6,"recovery":36},
+      "thrust": {"windup":18,"recovery":26},
+      "slash_riposte": {"recovery":21},
+      "riposte": {"recovery":21},
+      "heavy_riposte": {"windup":22,"active":6,"recovery":29}
+    },
+    "grip": "one-hand",
+    "fight": {"thrustShare":0.1}
+  },
+  {
+    "id": "estoc",
+    "extends": "longsword",
+    "player": 4,
+    "offered": 6,
+    "moves": {
+      "light_right": {"damage":9,"staminaDamage":12,"stagger":20,"reach":1.95,"posture":16},
+      "light_left": {"damage":9,"staminaDamage":12,"stagger":20,"reach":1.95,"posture":16},
+      "heavy_overhead": {"damage":15,"staminaDamage":26,"chip":0.25,"reach":2.2,"posture":28},
+      "thrust": {"chainPath":"riposte","chained":{"windup":12,"active":5,"recovery":19},"chain":{"window":14,"follow":["thrust"]},"damage":14,"staminaDamage":22,"reach":2.3,"posture":18},
+      "slash_riposte": {"damage":26,"reach":1.95},
+      "riposte": {"damage":26,"reach":1.95},
+      "heavy_riposte": {"reach":2.2},
+      "heavy_counter": {"reach":2.2},
+      "critical": {"reach":2.2},
+      "skill_pommel": {"windup":22}
+    },
+    "material": "steel",
+    "reach": 2.3,
+    "grip": "one-hand",
+    "fight": {"thrustShare":0.75}
+  },
+  {
+    "id": "knife",
+    "extends": "longsword",
+    "player": 3,
+    "offered": 5,
+    "moves": {
+      "light_right": {"chained":{"windup":12,"active":6,"recovery":14},"chain":{"window":14,"follow":["light_left","thrust","heavy_overhead"]},"windup":14,"active":6,"recovery":16,"damage":10,"stamina":18,"staminaDamage":10,"stagger":18,"knockback":2,"feintUntil":6,"reach":1.2,"posture":14,"chamber":6},
+      "light_left": {"chained":{"windup":12,"active":6,"recovery":14},"chain":{"window":14,"follow":["light_right","thrust","heavy_overhead"]},"windup":14,"active":6,"recovery":16,"damage":10,"stamina":18,"staminaDamage":10,"stagger":18,"knockback":2,"feintUntil":6,"reach":1.2,"posture":14,"chamber":6},
+      "heavy_overhead": {"chained":{"windup":16,"recovery":26},"windup":22,"recovery":26,"damage":14,"stamina":26,"staminaDamage":20,"stagger":20,"poise":0,"poiseFrom":0,"chip":0.2,"knockback":3,"feintUntil":8,"reach":1.55,"posture":24,"chamber":7},
+      "thrust": {"windup":12,"active":4,"recovery":20,"damage":9,"stamina":14,"staminaDamage":12,"stagger":14,"knockback":2,"feintUntil":5,"reach":1.45,"posture":12,"chamber":5},
+      "slash_riposte": {"active":4,"recovery":15,"damage":18,"stamina":16,"feintUntil":5,"reach":1.2},
+      "riposte": {"active":4,"recovery":15,"damage":18,"stamina":16,"feintUntil":5,"reach":1.2},
+      "heavy_riposte": {"windup":16,"recovery":20,"damage":22,"stamina":26,"reach":1.55},
+      "heavy_counter": {"windup":16,"recovery":20,"damage":16,"stamina":26,"reach":1.55,"posture":22},
+      "critical": {"windup":16,"recovery":20,"damage":30,"stamina":20,"reach":1.55}
+    },
+    "paths": {
+      "light_right": {"windup":14,"active":6,"recovery":16},
+      "light_left": {"windup":14,"active":6,"recovery":16},
+      "light_right_chain": {"windup":12,"active":6,"recovery":14},
+      "light_left_chain": {"windup":12,"active":6,"recovery":14},
+      "heavy_overhead": {"windup":22,"recovery":26},
+      "heavy_overhead_chain": {"windup":16,"recovery":26},
+      "thrust": {"windup":12,"active":4,"recovery":20},
+      "slash_riposte": {"active":4,"recovery":15},
+      "riposte": {"active":4,"recovery":15},
+      "heavy_riposte": {"windup":16,"recovery":20}
+    },
+    "reach": 1.45,
+    "grip": "one-hand",
+    "fight": {"thrustShare":0.4,"close":1}
+  },
+  {
+    "id": "gladius",
+    "extends": "longsword",
+    "player": 5,
+    "offered": 7,
+    "moves": {
+      "light_right": {"damage":12,"reach":1.42},
+      "light_left": {"damage":12,"reach":1.42},
+      "heavy_overhead": {"damage":16,"reach":1.67},
+      "thrust": {"damage":13,"reach":1.77},
+      "slash_riposte": {"reach":1.42},
+      "riposte": {"reach":1.42},
+      "heavy_riposte": {"reach":1.67},
+      "heavy_counter": {"reach":1.67},
+      "critical": {"reach":1.67}
+    },
+    "material": "steel",
+    "reach": 1.77,
+    "grip": "one-hand",
+    "fight": {"thrustShare":0.5,"close":1}
+  },
+  {
+    "id": "scythe",
+    "extends": "longsword",
+    "player": 8,
+    "offered": 4,
+    "moves": {
+      "light_right": {"chained":{"windup":18,"recovery":20},"windup":24,"recovery":26,"damage":16,"stamina":28,"staminaDamage":20,"stagger":26,"chip":0.25,"knockback":5,"feintUntil":12,"reach":2.1,"minReach":1.4,"posture":24,"chamber":10},
+      "light_left": {"chained":{"windup":18,"recovery":20},"windup":24,"recovery":26,"damage":16,"stamina":28,"staminaDamage":20,"stagger":26,"chip":0.25,"knockback":5,"feintUntil":12,"reach":2.1,"minReach":1.4,"posture":24,"chamber":10},
+      "heavy_overhead": {"chained":{"windup":24,"recovery":33},"windup":36,"recovery":33,"damage":22,"stamina":38,"staminaDamage":35,"stagger":28,"chip":0.5,"knockback":5,"stepIn":0.5,"feintUntil":13,"reach":2.3,"posture":36,"chamber":11},
+      "thrust": {"chain":{"window":14,"follow":["light_right"]},"windup":14,"active":4,"recovery":30,"damage":8,"stamina":18,"staminaDamage":14,"stagger":16,"stepIn":0.8,"feintUntil":8,"reach":2.1,"posture":12,"chamber":6},
+      "slash_riposte": {"reach":2.1,"minReach":1.4},
+      "riposte": {"reach":1.7}
+    },
+    "paths": {
+      "light_right": {"clip":"Scythe_Reap","windup":24,"recovery":26},
+      "light_left": {"clip":"Scythe_Reap","windup":24,"recovery":26},
+      "light_right_chain": {"clip":"Scythe_Reap","windup":18,"recovery":20},
+      "light_left_chain": {"clip":"Scythe_Reap","windup":18,"recovery":20},
+      "heavy_overhead": {"clip":"Scythe_High","windup":36,"recovery":33},
+      "heavy_overhead_chain": {"clip":"Scythe_High","windup":24,"recovery":33},
+      "thrust": {"clip":"Scythe_Thrust","windup":14,"active":4,"recovery":30},
+      "slash_riposte": {"clip":"Scythe_Reap"},
+      "riposte": {"clip":"Scythe_Chain","source":0.3},
+      "heavy_riposte": {"clip":"Scythe_High","windup":22}
+    },
+    "guard": "shaft",
+    "reach": 2.1,
+    "guardProfile": {"costScale":1.15,"heavyBreaks":true},
+    "fight": {"thrustShare":0.1,"close":2}
+  },
+  {
+    "id": "maul",
+    "extends": "cleaver",
+    "player": 9,
+    "offered": 9,
+    "moves": {
+      "thrust": {"stepIn":0.3,"reach":1.4}
+    },
+    "paths": {
+      "light_right": {"clip":"Maul_Slash"},
+      "light_left": {"clip":"Maul_Slash"},
+      "light_right_chain": {"clip":"Maul_Slash"},
+      "light_left_chain": {"clip":"Maul_Slash"},
+      "heavy_overhead": {"clip":"Maul_Heavy"},
+      "heavy_overhead_chain": {"clip":"Maul_Heavy"},
+      "thrust": {"clip":"Maul_Thrust"},
+      "slash_riposte": {"clip":"Maul_Slash"},
+      "riposte": {"clip":"Maul_Thrust"},
+      "heavy_riposte": {"clip":"Maul_Heavy"}
+    },
+    "guard": "shaft",
+    "material": "wood",
+    "grip": "two-hand"
+  },
+  {
+    "id": "reaper",
+    "extends": "estoc",
+    "moves": {
+      "light_right": {"stepIn":0.15,"reach":2.55,"minReach":1.4},
+      "light_left": {"stepIn":0.15,"reach":2.55,"minReach":1.4},
+      "heavy_overhead": {"stepIn":0.15,"reach":2.1,"minReach":1.4},
+      "thrust": {"stepIn":0.15,"reach":2,"minReach":1.4},
+      "slash_riposte": {"stepIn":0.15,"reach":2.55,"minReach":1.4},
+      "riposte": {"stepIn":0.15,"reach":2,"minReach":1.4},
+      "heavy_riposte": {"stepIn":0.15,"reach":2.1,"minReach":1.4},
+      "heavy_counter": {"stepIn":0.15,"reach":2.1,"minReach":1.4},
+      "critical": {"stepIn":0.15,"reach":2.1,"minReach":1.4}
+    },
+    "paths": {
+      "light_right": {"clip":"Reaper_Slash"},
+      "light_left": {"clip":"Reaper_Slash"},
+      "light_right_chain": {"clip":"Reaper_Slash"},
+      "light_left_chain": {"clip":"Reaper_Slash"},
+      "heavy_overhead": {"clip":"Reaper_Heavy"},
+      "heavy_overhead_chain": {"clip":"Reaper_Heavy"},
+      "thrust": {"clip":"Reaper_Thrust"},
+      "slash_riposte": {"clip":"Reaper_Slash"},
+      "riposte": {"clip":"Reaper_Thrust"},
+      "heavy_riposte": {"clip":"Reaper_Heavy"}
+    },
+    "guard": "shaft",
+    "reach": 2.55,
+    "grip": "two-hand",
+    "fight": {"thrustShare":0.15,"close":1.9}
+  },
+  {
+    "id": "warhammer",
+    "extends": "cleaver",
+    "player": 6,
+    "offered": 2,
+    "moves": {
+      "light_right": {"damage":15,"staminaDamage":20,"stagger":28,"chip":0,"posture":30},
+      "light_left": {"damage":15,"stamina":28,"staminaDamage":20,"stagger":28,"posture":30},
+      "heavy_overhead": {"damage":24,"staminaDamage":40,"stagger":32,"poise":0,"chip":0.3,"posture":48},
+      "thrust": {"stepIn":0.3,"reach":1.4},
+      "slash_riposte": {"damage":18},
+      "riposte": {"damage":18},
+      "heavy_riposte": {"damage":24},
+      "heavy_counter": {"damage":14},
+      "critical": {"damage":34},
+      "skill_pommel": {"windup":22}
+    },
+    "paths": {
+      "light_right": {"clip":"Warhammer_Slash"},
+      "light_left": {"clip":"Warhammer_Slash"},
+      "light_right_chain": {"clip":"Warhammer_Slash"},
+      "light_left_chain": {"clip":"Warhammer_Slash"},
+      "heavy_overhead": {"clip":"Warhammer_Heavy"},
+      "heavy_overhead_chain": {"clip":"Warhammer_Heavy"},
+      "thrust": {"clip":"Warhammer_Thrust"},
+      "slash_riposte": {"clip":"Warhammer_Slash"},
+      "riposte": {"clip":"Warhammer_Thrust"},
+      "heavy_riposte": {"clip":"Warhammer_Heavy"}
+    },
+    "guard": "shaft",
+    "reach": 1.4,
+    "grip": "two-hand",
+    "guardProfile": {"costScale":1.15,"heavyBreaks":true}
+  },
+  {
+    "id": "bite",
+    "extends": "knife",
+    "paths": {
+      "light_right": {"clip":"Bite"},
+      "light_left": {"clip":"Bite"},
+      "light_right_chain": {"clip":"Bite"},
+      "light_left_chain": {"clip":"Bite"},
+      "heavy_overhead": {"clip":"Bite"},
+      "heavy_overhead_chain": {"clip":"Bite"},
+      "thrust": {"clip":"Bite"},
+      "slash_riposte": {"clip":"Bite"},
+      "riposte": {"clip":"Bite"},
+      "heavy_riposte": {"clip":"Bite"}
+    },
+    "material": "wood",
+    "fight": {"thrustShare":0.5,"close":0.9}
+  }
+  ]
+}
