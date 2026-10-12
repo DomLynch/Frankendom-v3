@@ -1,7 +1,9 @@
 // Weapons as data (Combat, core slice 4, 2026-10-12): the loader for src/fight/weapon-defs.json. A row is a weapon keyed by id; it may `extends` another row and then holds only the fields that differ
 // (objects merge field by field, anything else replaces); a row with no `extends` is resolved over the ENGINE's base move and path tables (moves.ts MOVES / PATHS, the verbs). Nothing here names a weapon:
 // a new weapon is one row. The resolved table is checked whole, so a row that forgets a move, names an unknown material or extends itself is refused at load, never found mid-fight.
+import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import type { MoveDef, PathSpec, Weapon } from './moves.ts';
+import WEAPON_MANIFEST from './weapon-defs.manifest.json' with { type: 'json' };
 
 export type WeaponBase = { readonly moves: Readonly<Record<string, MoveDef>>; readonly paths: Readonly<Record<string, PathSpec>> };
 export type WeaponEnums = { readonly materials: readonly string[]; readonly guards: readonly string[]; readonly grips: readonly string[] };
@@ -17,19 +19,15 @@ const merge = (base: unknown, over: unknown): unknown => {
 };
 
 export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: WeaponBase, enums: WeaponEnums): { weapons: Record<string, Weapon>; player: string[]; offered: string[] } {
+  loadRegistry([tableFromFile(WEAPON_MANIFEST.tables[0] as Manifest, raw, 'weapon-defs.json')]);   // the shared loader (src/core/registry.ts): a missing or duplicate id and an `extends` that names no weapon are refused as file:row:id + the rule
   const rows = new Map<string, Obj>();
-  (raw.weapons ?? []).forEach((r, i) => {
-    if (!isObj(r) || typeof r.id !== 'string' || !r.id) throw Error(`weapon-defs row ${i}: id is a non-empty string`);
-    if (rows.has(r.id)) throw Error(`weapon-defs: duplicate weapon "${r.id}"`);
-    rows.set(r.id, r);
-  });
+  for (const r of (raw.weapons ?? []) as Obj[]) rows.set(r.id as string, r);
   const resolved = new Map<string, Obj>();
   const resolve = (id: string, chain: readonly string[]): Obj => {
     const done = resolved.get(id); if (done) return done;
     if (chain.includes(id)) throw Error(`weapon-defs: "${id}" extends itself (${[...chain, id].join(' -> ')})`);
     const own: Obj = { ...rows.get(id)! }, parent = own.extends;
     for (const k of ['id', 'extends', 'player', 'offered']) delete own[k];
-    if (parent !== undefined && (typeof parent !== 'string' || !rows.has(parent))) throw Error(`weapon-defs "${id}": extends "${String(parent)}", which is no weapon`);
     const out = merge(parent === undefined ? { moves: base.moves, paths: base.paths } : resolve(parent as string, [...chain, id]), own) as Obj;
     resolved.set(id, out);
     return out;

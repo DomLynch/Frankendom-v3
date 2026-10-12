@@ -1,0 +1,15 @@
+{
+  "tables": [
+    {
+      "table": "pool",
+      "file": "pool-defs.json",
+      "at": "pools",
+      "key": "id",
+      "required": {
+        "default": "number",
+        "min": "number",
+        "sim": "boolean"
+      }
+    }
+  ]
+}
