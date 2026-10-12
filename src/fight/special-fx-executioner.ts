@@ -106,7 +106,9 @@ function surface(fn: (l: number, a: number) => P3, nl = 14, na = 4) {
 // The boss's `look` row (bosses.json) holds both palettes (Reaper's scythe: dried-blood brown by day, darker than the sand; dark clay-brown by night too, never pale over a fighter).
 export const bossLook = (kind: BossKind | SpecialRow, exposure: number): Look => {
   // A special with no bosses.json row yet (a new row being tried) carries its own `look` param; a boss's palette is always its bosses.json row.
-  const row = rowOf(kind), dim = exposure > 1.5, l = (bossRow(row.id)?.look ?? (row.params as { look: { day: Pal; night: Pal } }).look)[dim ? 'night' : 'day'], c = (v: readonly number[]) => new THREE.Color(v[0], v[1], v[2]);
+  const row = rowOf(kind), pal = bossRow(row.id)?.look ?? (row.params as { look?: { day: Pal; night: Pal } }).look;
+  if (!pal) throw Error(`executioner special "${row.id}" has no look: give it a bosses.json row or a params.look`);
+  const dim = exposure > 1.5, l = pal[dim ? 'night' : 'day'], c = (v: readonly number[]) => new THREE.Color(v[0], v[1], v[2]);
   return { core: c(l.core), edge: c(l.edge), dim };
 };
 const cutLook = (dim: boolean): Look => dim ? { core: new THREE.Color(0.02, 0.011, 0.007), edge: new THREE.Color(0.04, 0.022, 0.013), dim } : { core: new THREE.Color(0.12, 0.065, 0.03), edge: new THREE.Color(0.5, 0.35, 0.19), dim };   // the cut sand: dark earth, pale dry rim
