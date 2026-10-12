@@ -1,0 +1,10 @@
+{
+  "specials": [
+    { "id": "antaeus", "family": "pitborn", "template": "crack", "opponent": "pitborn", "cast": { "actor": 1, "move": "skill_cleave" },
+      "params": { "cracks": 7, "clods": 46, "grit": 90, "crackAlpha": 0.85, "clodAlpha": 0.95, "gritAlpha": 0.7, "gritTint": { "day": "#7a5a36", "night": "#14100c" } } },
+    { "id": "surtr", "family": "pitborn", "template": "ashfall", "opponent": "pitborn", "cast": { "actor": 1, "move": "skill_cleave" },
+      "params": { "flakes": 150, "patches": 7, "smoke": 9, "patchAlpha": { "day": 0.9, "night": 0.4 }, "smokeAlpha": { "day": 0.55, "night": 0.3 }, "flakeAlpha": { "day": 0.75, "night": 0.4 } } },
+    { "id": "typhon", "family": "pitborn", "template": "gale", "opponent": "pitborn", "cast": { "actor": 1, "move": "skill_cleave" },
+      "params": { "streaks": 17, "sand": 82, "grit": 90, "strokeAlpha": { "day": 0.7, "night": 0.4 }, "sandAlpha": { "day": 0.8, "night": 0.4 }, "gritTint": { "day": "#2a1a0c", "night": "#14110d" }, "over": true } }
+  ]
+}

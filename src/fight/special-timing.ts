@@ -1,4 +1,5 @@
-import { RULES, SKILL_MOVE } from './moves.ts';
+import { RULES, SKILL_MOVE, type SkillId } from './moves.ts';
+import { SKILLS } from '../core/loot.ts';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { SPECIAL_RECOVER } from './special-look.ts';   // Combat's: the caster's return to stance runs on the same 45 ticks
@@ -21,10 +22,13 @@ export const cutAt = (i: number) => LAND_AT - (CUTS - 1 - i) * CUT_GAP;   // the
 
 // Which cast gets the shadow: Hades is the Nightborn's rank-9 boss, the opponent's side, on his class skill. Every other special draws nothing
 // until it has its own art.
-export const isHadesShadow = (opponent: OpponentId, actor: number, move?: string) => opponent === 'nightborn' && actor === 1 && move === 'skill_lunge';
+// A class skill's cast on the opponent's side: the skill's row (core/loot.ts SKILLS) says whose it is and SKILL_MOVE its move, so no effect names an opponent.
+// `anyMove`: every cast of that fighter, whatever the move.
+export const skillCast = (skill: SkillId, anyMove = false) => (opponent: OpponentId, actor: number, move?: string) => opponent === SKILLS[skill].opponent && actor === 1 && (anyMove || move === SKILL_MOVE[skill]);
+export const isHadesShadow = skillCast('lunge');
 
 // The Centurion's rank-10 boss special, Blood Tithe (Mars): the veteran's Scutum Shove skill on the opponent's side, previewed only on ?special=tithe: Blood Tithe passes this as advanceCast's `is`, so Hades' Shadow (the default test) never draws on the Centurion.
-export const isBloodTithe = (opponent: OpponentId, actor: number, move?: string) => opponent === 'veteran' && actor === 1 && move === 'skill_shove';
+export const isBloodTithe = skillCast('shove');
 
 export type SpecialKind = 'hades' | 'set';   // which art draws the cast; the timeline below is the same for both (the one 120)
 export type Cast = { actor: number; start: number; landed: number | null; fizzled: number | null };

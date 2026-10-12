@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
-import { advanceCast, shadowPhase, FALL_AT, type Cast, type isHadesShadow } from './special-timing.ts';
+import { advanceCast, shadowPhase, FALL_AT, skillCast, type Cast, type isHadesShadow } from './special-timing.ts';
 import { clamp01, hash, smooth } from './fx-math.ts';
 
 // The Goblin's boss specials at ranks 8, 9, 10, GREY-BOX (Goblin lane, 2026-10-01; proposal sent to Strategy, who put it to Dom; nothing here is
@@ -54,7 +54,7 @@ export type GoblinAnchors = { caster: THREE.Vector3; feet: THREE.Vector3 | null;
 export type GoblinFrame = { hide: boolean; offset: THREE.Vector3 | null };
 // The cast test this effect hands advanceCast (World's seam, #1120): every cast of his, on the opponent's side, whatever his class skill. Hades' own test
 // stays the default, so a Goblin cast opens no cast anywhere that did not ask for this effect.
-export const isGoblinCast: typeof isHadesShadow = (opponent, actor) => opponent === 'goblin' && actor === 1;
+export const isGoblinCast: typeof isHadesShadow = skillCast('jab', true);
 export type GoblinSpecialFx = ReturnType<typeof createGoblinSpecial>;
 
 // Common A: a stationary, foot-sized gather and one low flick on the accepted jab payoff.
@@ -66,7 +66,7 @@ export function createKnuckleDirt(scene: THREE.Scene, opponent: OpponentId, expo
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: i % 6 === 0 ? edge : look.core, transparent: true, opacity: 0, depthWrite: false, fog: true }));
     s.visible = false; s.scale.setScalar(0.055 + 0.025 * hash(i, 31)); root.add(s); return s;
   });
-  const accepts: typeof isHadesShadow = (id, actor, move) => id === 'goblin' && actor === 1 && move === 'skill_jab';
+  const accepts: typeof isHadesShadow = skillCast('jab');
   let cast: Cast | null = null, anchored = false;
   const hide = () => { root.visible = false; for (const s of grains) { s.visible = false; s.material.opacity = 0; } };
   return {
