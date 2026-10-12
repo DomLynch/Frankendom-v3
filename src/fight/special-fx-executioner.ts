@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
-import { advanceCast, shadowPhase, LAND_AT, type Cast } from './special-timing.ts';
+import { advanceCast, shadowPhase, skillCast, LAND_AT, type Cast } from './special-timing.ts';
 import { crowdWave } from '../arena.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
-import { bossRow, classSkillOf, kindsOf, type BossKind } from './boss-rows.ts';
+import { bossRow, kindsOf, type BossKind } from './boss-rows.ts';
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 
 // The Executioner's boss specials, rank 8, 9 and 10 (Executioner lane; Dom's picks via Strategy 2026-10-01). PREVIEW ONLY, behind ?special=<kind>, on the
@@ -111,7 +111,7 @@ const cutLook = (dim: boolean): Look => dim ? { core: new THREE.Color(0.02, 0.01
 
 type Piece = { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial };
 // Which cast gets these arts: the Executioner's class skill, the Reaping Blow. Passed to advanceCast as its own test, so the shared timeline never sees it.
-export const isExecutionerCast = (opponent: OpponentId, actor: number, move?: string) => opponent === 'executioner' && actor === 1 && move === classSkillOf('executioner', 'executioner');
+export const isExecutionerCast = skillCast('reaping');
 
 // Class B: a broken, caster-local furrow. Reuses painted sheets only; no boss
 // crowd, lighting or arena resources. The current equipped pose remains native.
