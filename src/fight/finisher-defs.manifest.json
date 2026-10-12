@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "finisher", "file": "finisher-defs.json", "at": "finishers", "key": "id", "required": { "template": "string", "rotation": "boolean", "pose": "any" }, "refs": { "secondsFrom": "finisher" } }
+  ]
+}
