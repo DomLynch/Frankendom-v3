@@ -16,14 +16,20 @@ export type FinisherPose = (typeof FINISHER_POSES)[number];
 // `rotation`: in the automatic pick (file order is the pool order, which selectFinisher's hash indexes, so reordering rows moves picks).
 // `pose`: the clip word characters.ts plays, null = the plain Death. `seconds`: the MEASURED duration (finishers.ts FINISHER_SECONDS);
 // a finisher with no clip of its own names the row it borrows its figure from in `secondsFrom` instead, and reports it as not measured.
-export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string };
+// `camera` (camera.ts): the death-window dolly every finisher gets (push toward the fallen, slide off the killer's axis, turn the look); the late
+// side-view `reveal` (when on the finisher clock it opens and over how long, and whose `side` view it takes); and a `side` view of its own: the angle
+// off the killer→fallen axis (radians), the eye height (plus eyeYPerScale per unit of extra body scale), the minimum distance back, what must show
+// beyond the fallen (a fixed margin, or beyondBody × body scale against the measured reach + reachPad), and whether a big body widens the choices.
+export type FinisherSide = { angle: number; eyeY: number; eyeYPerScale?: number; minBack: number; beyond?: number; beyondBody?: number; reachPad?: number; wideWhenBig?: boolean };
+export type FinisherCamera = { dolly: { push: number; slide: number; turn: number }; reveal?: { from: number; over: number; overBig?: number; side: string }; side?: FinisherSide };
+export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; camera: FinisherCamera };
 export type FinisherTable = { rows: readonly FinisherRow[]; byId: ReadonlyMap<string, FinisherRow>; rotation: readonly string[] };
 
 const isTemplate = (v: unknown): v is FinisherTemplate => (FINISHER_TEMPLATES as readonly unknown[]).includes(v);
 
 // The shared loader first (bad key, duplicate id, missing field, wrong type, a secondsFrom naming no finisher: file:row:id + the rule),
-// then what a manifest cannot say: the template is a verb the engine has, a pose is a clip word or null, and a row has exactly one of a
-// measured `seconds` and a `secondsFrom` that names a measured row.
+// then what a manifest cannot say: the template is a verb the engine has, a pose is a clip word or null, a row has exactly one of a
+// measured `seconds` and a `secondsFrom` that names a measured row, and a camera reveal takes a side view some row defines.
 export function loadFinisherDefs(raw: unknown, manifest: Manifest, file = 'finisher-defs.json'): FinisherTable {
   const table = tableFromFile(manifest, raw, file);
   loadRegistry([table]);
@@ -36,6 +42,10 @@ export function loadFinisherDefs(raw: unknown, manifest: Manifest, file = 'finis
     if ((r.seconds === undefined) === (r.secondsFrom === undefined)) problems.push(`${at} needs exactly one of seconds and secondsFrom`);
     else if (r.seconds !== undefined && !measured(r)) problems.push(`${at} seconds must be a positive number`);
     else if (r.secondsFrom !== undefined && !measured(byId.get(r.secondsFrom))) problems.push(`${at} secondsFrom "${r.secondsFrom}" must name a row with measured seconds`);
+    const { reveal, side } = r.camera, num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+    if (reveal && (!num(reveal.from) || !num(reveal.over) || reveal.over <= 0 || (reveal.overBig !== undefined && !(num(reveal.overBig) && reveal.overBig > 0)))) problems.push(`${at} camera.reveal needs from and a positive over (and overBig, when given)`);
+    if (reveal && !byId.get(reveal.side)?.camera.side) problems.push(`${at} camera.reveal.side "${reveal.side}" must name a row with a camera.side view`);
+    if (side && (![side.angle, side.eyeY, side.minBack].every(num) || (side.beyond === undefined ? !(num(side.beyondBody) && num(side.reachPad)) : !num(side.beyond)))) problems.push(`${at} camera.side needs angle, eyeY, minBack and either beyond or beyondBody + reachPad`);
   });
   if (problems.length) throw Error(problems.join('\n'));
   return { rows, byId, rotation: rows.filter((r) => r.rotation).map((r) => r.id) };
