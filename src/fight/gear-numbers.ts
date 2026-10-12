@@ -17,7 +17,7 @@ export const gearNumbers = (loot: Loot | undefined): Record<string, number> => {
 };
 
 // The player's build (Wave A1 PR1b): level and the points placed on the ten dials. Backend stores it (the account / character field, written through `validateBuild`, no second validator) and Web
-// builds the creation sliders on it; until the field exists every player is the default build, level 1 with every dial at its base of 50. The real build drops in HERE, with no sim change.
-export function buildOf(profile?: Profile): Build { void profile; return { level: 1, placed: {} }; }
+// builds the creation sliders on it; until the field exists every player is the default build, level 0 with every dial at its base of 0 (the re-locked sheet). The real build drops in HERE, with no sim change.
+export function buildOf(profile?: Profile): Build { void profile; return { level: 0, placed: {} }; }
 // The sheet a live fight is fought with: the player's build with the worn set's deltas on top, `undefined` when nothing is off base (the naked, default-build fight, byte for byte).
 export const sheetOfLoot = (loot: Loot | undefined, build: Build = buildOf()): Sheet | undefined => sheetOf(build, wornGear(loot?.equipped ?? {}, tierLookup(loot)));
