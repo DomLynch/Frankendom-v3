@@ -2,20 +2,21 @@ import type { WeaponId } from './fight/moves.ts';
 import type { Finish } from './fight/duel.ts';
 import { selectFinisher, type FinisherId } from './fight/finishers.ts';
 import CATALOGUE_ROWS from './fight/catalogue-data.ts';
+import type CATALOGUE_DEFS from './fight/catalogue-defs.ts';
 
 // The rig: the skeleton family a body is built on, which is the blade table it fights with (src/fight/blade-paths.ts bladePathsByRig; the
 // bake is per rig because the same knife sweeps a different arc in a goblin's hand than in a man's). 'hero' is the player skeleton and
 // every body reproportioned from it. A held creature without a bake of its own stays on the hero table it has always used.
-export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith' | 'wolf' | 'boar' | 'bear';
+export type RigId = (typeof CATALOGUE_DEFS.rigs)[number]['id'];   // derived from the catalogue-defs.ts rigs rows: a new rig family is one row there
 // The roster is the character catalogue's body rows (src/fight/catalogue-data.ts, pure data): a new opponent is one row there, with an archetype and weapon that already exist.
 // Archetypes own combat tuning in moves.ts; adding an individual must not add AI branches. A recipe keeps the shape it always had (name, body, rig, archetype, weapon, then finishers
 // / blood / hold only when the row says so), derived from the row: `finisher.allowed` absent = every finisher, `blood` null = bloodless, `ladder.hold` = off the ladder.
 type Row = (typeof CATALOGUE_ROWS)[number];
 type BodyRow = Exclude<Row, { body: string }>;
-type Recipe<R extends BodyRow> = { name: R['name']; body: R['id']; rig: R['rig']; archetype: R['stats']['archetype']; weapon: R['weapon'] }
+type Recipe<R extends BodyRow> = { name: R['name']; body: R['id']; rig: R['rig']; archetype: R['stats']['archetype']; weapon: R['fields']['weapon'] }
   & (R['stats'] extends { pools: infer P } ? { pools: P } : unknown) & (R extends { finisher: { allowed: infer F } } ? { finishers: F } : unknown) & (R['blood'] extends null ? { blood: false } : unknown) & (R['ladder']['hold'] extends true ? { hold: true } : unknown);
 const recipeOf = (r: BodyRow) => ({
-  name: r.name, body: r.id, rig: r.rig, archetype: r.stats.archetype, weapon: r.weapon,
+  name: r.name, body: r.id, rig: r.rig, archetype: r.stats.archetype, weapon: r.fields.weapon,
   ...('pools' in r.stats ? { pools: r.stats.pools } : {}),
   ...('allowed' in r.finisher ? { finishers: r.finisher.allowed } : {}), ...(r.blood === null ? { blood: false } : {}), ...(r.ladder.hold ? { hold: true } : {}),
 });

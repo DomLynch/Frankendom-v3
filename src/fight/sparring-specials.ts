@@ -1,22 +1,24 @@
 // Independent admin test selections; neither changes fighter identity or the saved kit.
+import { BOSSES } from './boss-rows.ts';
 import { LEVELS, LEVEL_ANCHORS, PLAYER_WEAPONS, type SkillId, type WeaponId } from './moves.ts';
 import { SPECIAL_TESTS, specialParam, type SpecialTest } from './special-look.ts';
 import { SPARRING_SKILLS, sparringAsked, sparringParam, type SparringKit, type SparringLevel } from '../sparring.ts';
 import { isOpponentId } from '../roster.ts';
 import { SUPPORTED_PLAYER_SPECIALS, validateSparringSpecialSelection, type SparringSpecialSelection } from './sparring-special-runtime.ts';
 
-export const SPECIAL_LABELS = {
+const HAND_LABELS: Readonly<Record<string, string>> = {
   setfoot: 'Set Foot', heelreap: 'Heel Reap', lunge: 'Pale Lunge', knuckledirt: 'Knuckle Dirt', cleaverset: 'Cleaver Set', groundset: 'Ground Set', cutmark: 'Cut Mark',
   wake: 'Stone Wake', stirring: 'Stirring', tempo: "Doctor's Tempo", pulse: 'Taking the Pulse', drag: 'Ground Drag', swing: 'Held Swing',
   cuts: 'Seven Cuts', standfast: 'Stand Fast', ratrun: 'Rat Run', blackfurrow: 'Black Furrow',
   earthfold: 'Earth Fold', ironsettle: 'Iron Settle', gatherededge: 'Gathered Edge',
   shield: 'Shield Quake', centurion: 'The Charge', tithe: 'Blood Tithe',
   set: 'Red Wind', hades: "Hades' Shadow", nyx: 'Nyx Nightfall',
-  mist: 'Avalon Mist', echo: 'Foretold Step', price: 'The Price', flies: 'Plague Flies', stain: 'Poison Stain', breath: 'Last Breath',
-  reynard: 'Dirty Fistful', hermes: 'Gone', loki: 'Three Liars', arawn: 'Baying Circle', thanatos: 'Long Shadow', reaper: 'Harvest Sweep',
+  reynard: 'Dirty Fistful', hermes: 'Gone', loki: 'Three Liars',
   dwarf8: 'The Word', dwarf9: 'Three Blows', dwarf10: 'Rim Shake', shield8: 'Bared Face', shield9: 'The Ring', shield10: 'Aegis Sweep',
-  sling: 'The Sling', haze: 'Wrath', storm: 'Storm Follows Him', antaeus: 'Cracking Ground', surtr: 'Ash Fall', typhon: 'Wind Wall',
-} as const satisfies Record<SpecialTest, string>;
+  antaeus: 'Cracking Ground', surtr: 'Ash Fall', typhon: 'Wind Wall',
+};
+// A boss's name is its bosses.json row's `label`; the rest are still hand-written (not rows yet).
+export const SPECIAL_LABELS: Readonly<Record<string, string>> = { ...HAND_LABELS, ...Object.fromEntries(BOSSES.map((r) => [r.id, r.label])) };
 export const SPECIAL_BANDS = ['L1–3', 'L4–7', 'L8', 'L9', 'L10'] as const;
 export function specialBand(level: number): number | null {
   if (!Number.isInteger(level) || level < 1 || level > LEVELS) return null;
