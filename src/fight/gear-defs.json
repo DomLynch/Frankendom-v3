@@ -1,14 +1,126 @@
 {
-  "tilts": [
-    { "id": "plate", "up": "armour", "down": "magicResist", "amount": 25 },
-    { "id": "robes", "up": "magicResist", "down": "armour", "amount": 25 }
+  "sets": [
+    {
+      "id": "plate",
+      "shape": {
+        "armour": 25,
+        "magicResist": -25
+      },
+      "quality": {
+        "armour": 2,
+        "health": 2,
+        "poise": 1
+      }
+    },
+    {
+      "id": "robes",
+      "shape": {
+        "magicResist": 25,
+        "armour": -25
+      },
+      "quality": {
+        "magicResist": 2,
+        "spellPower": 2,
+        "focus": 1
+      }
+    },
+    {
+      "id": "leathers",
+      "shape": {
+        "stamina": 25,
+        "armour": -25
+      },
+      "quality": {
+        "stamina": 2,
+        "recovery": 2,
+        "luck": 1
+      }
+    }
+  ],
+  "owners": [
+    {
+      "id": "veteran",
+      "set": "plate"
+    },
+    {
+      "id": "pitborn",
+      "set": "plate"
+    },
+    {
+      "id": "minotaur",
+      "set": "plate"
+    },
+    {
+      "id": "executioner",
+      "set": "plate"
+    },
+    {
+      "id": "dwarf",
+      "set": "plate"
+    },
+    {
+      "id": "knight",
+      "set": "plate"
+    },
+    {
+      "id": "shieldmaiden",
+      "set": "plate"
+    },
+    {
+      "id": "witch",
+      "set": "robes"
+    },
+    {
+      "id": "plaguedoctor",
+      "set": "robes"
+    },
+    {
+      "id": "wraith",
+      "set": "robes"
+    },
+    {
+      "id": "nightborn",
+      "set": "robes"
+    },
+    {
+      "id": "goblin",
+      "set": "leathers"
+    },
+    {
+      "id": "werewolf",
+      "set": "leathers"
+    }
   ],
   "gear": [
-    { "id": "light", "preset": true, "tilt": "robes", "weight": 4, "wearMax": 60, "resist": {} },
-    { "id": "medium", "preset": true, "weight": 9, "wearMax": 90, "resist": {} },
-    { "id": "heavy", "preset": true, "tilt": "plate", "weight": 16, "wearMax": 140, "resist": {} }
+    {
+      "id": "light",
+      "preset": true,
+      "set": "leathers",
+      "weight": 4,
+      "wearMax": 60,
+      "resist": {}
+    },
+    {
+      "id": "medium",
+      "preset": true,
+      "weight": 9,
+      "wearMax": 90,
+      "resist": {}
+    },
+    {
+      "id": "heavy",
+      "preset": true,
+      "set": "plate",
+      "weight": 16,
+      "wearMax": 140,
+      "resist": {}
+    }
   ],
   "rules": [
-    { "id": "gear", "tiltMax": 25 }
+    {
+      "id": "gear",
+      "shapeMax": 25,
+      "qualityMax": 25
+    }
   ]
 }
