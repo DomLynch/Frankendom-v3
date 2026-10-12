@@ -4,6 +4,11 @@ import type { OpponentId } from '../roster.ts';
 import { specialGust } from './special-gust.ts';
 import { advanceCast, shadowPhase as castPhase, LAND_AT, skillCast, type Cast, type isHadesShadow } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
+import { sin as detSin } from './detmath.ts';
+
+// The ash flakes' hash and drift, on detmath's sin (fdlibm in plain + - * /, the same bits on every CPU and engine): `fall` wraps with % 1, so one
+// ulp of a native Math.sin (V8 on Apple arm64 vs x64 Linux) moves a flake 3.4 m (Surtr's rows hash differed on the Mac from tick 148, Strategy 2026-10-12).
+const flakeHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 
 // The Pitborn's rank 8-10 boss specials (Pitborn lane; Dom picked all three on 2026-10-01: Cracking Ground, Ash Fall, Wind Wall). One idea each, drawn
@@ -224,9 +229,9 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
           s.position.set(caster.x + Math.cos(a + t * 0.2) * r, gy + rise, caster.z + Math.sin(a + t * 0.2) * r); s.scale.setScalar((0.7 + 0.6 * hash(i, 48)) * (0.4 + 0.6 * build)); op(s, dayNight(P.smokeAlpha!, look.dim) * build * (1 - post * post));
         });
         flakes.forEach((s, i) => {   // ash drifts down over the whole arena, thickening: a flake only appears once the build passes its own threshold
-          const fall = (t * (0.25 + 0.2 * hash(i, 31)) + hash(i, 32)) % 1, on = clamp01(build * 1.5 - hash(i, 36) * 0.5);
-          s.position.set(cx + (hash(i, 33) - 0.5) * 7 + Math.sin(t * 1.7 + i) * 0.15, gy + 3.4 * (1 - fall), cz + (hash(i, 34) - 0.5) * 7);
-          s.scale.setScalar((look.dim ? 0.07 : 0.05) + (look.dim ? 0.08 : 0.07) * hash(i, 35)); (s.material as THREE.SpriteMaterial).rotation = hash(i, 37) * 6.3 + t * (hash(i, 38) - 0.5); op(s, dayNight(P.flakeAlpha!, look.dim) * on * (1 - post * post));
+          const fall = (t * (0.25 + 0.2 * flakeHash(i, 31)) + flakeHash(i, 32)) % 1, on = clamp01(build * 1.5 - flakeHash(i, 36) * 0.5);
+          s.position.set(cx + (flakeHash(i, 33) - 0.5) * 7 + detSin(t * 1.7 + i) * 0.15, gy + 3.4 * (1 - fall), cz + (flakeHash(i, 34) - 0.5) * 7);
+          s.scale.setScalar((look.dim ? 0.07 : 0.05) + (look.dim ? 0.08 : 0.07) * flakeHash(i, 35)); (s.material as THREE.SpriteMaterial).rotation = flakeHash(i, 37) * 6.3 + t * (flakeHash(i, 38) - 0.5); op(s, dayNight(P.flakeAlpha!, look.dim) * on * (1 - post * post));
         });
       } else {
         // The wind IS the tell (Strategy 2026-10-02): it starts thin and low with the wind-up and grows over the whole 2 s to the full sweep at the release; he sways in it.
