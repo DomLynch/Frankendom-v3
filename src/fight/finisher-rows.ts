@@ -36,7 +36,9 @@ export type FinisherSound = { fall: FinisherCue; goreFall?: FinisherCue; goreAft
 export type FinisherSide = { angle: number; eyeY: number; eyeYPerScale?: number; minBack: number; beyond?: number; beyondBody?: number; reachPad?: number; wideWhenBig?: boolean };
 export type FinisherCamera = { dolly: { push: number; slide: number; turn: number }; reveal?: { from: number; over: number; overBig?: number; side: string }; side?: FinisherSide };
 // `shelved`: the clip and pose stay, but the scene plays the plain fall in their place (the Quiet One left the game, Dom 2026-09-27; nothing picks it).
-export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; zone?: boolean; bakeFallback?: string; body?: FinisherBody; sound?: FinisherSound; blood: { start: number }; camera: FinisherCamera };
+// `label`: the finisher's name on screen. `picker`: its place in the dev picker (main.ts), absent = not offered; a position, because the file's
+// order is the rotation's pool order and cannot follow the picker's.
+export type FinisherRow = { id: string; label: string; picker?: number; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; zone?: boolean; bakeFallback?: string; body?: FinisherBody; sound?: FinisherSound; blood: { start: number }; camera: FinisherCamera };
 export type FinisherTable = { rows: readonly FinisherRow[]; byId: ReadonlyMap<string, FinisherRow>; rotation: readonly string[] };
 
 const isTemplate = (v: unknown): v is FinisherTemplate => (FINISHER_TEMPLATES as readonly unknown[]).includes(v);
@@ -65,6 +67,8 @@ export function loadFinisherDefs(raw: unknown, manifest: Manifest, file = 'finis
     if (reveal && !byId.get(reveal.side)?.camera.side) problems.push(`${at} camera.reveal.side "${reveal.side}" must name a row with a camera.side view`);
     if (side && (![side.angle, side.eyeY, side.minBack].every(num) || (side.beyond === undefined ? !(num(side.beyondBody) && num(side.reachPad)) : !num(side.beyond)))) problems.push(`${at} camera.side needs angle, eyeY, minBack and either beyond or beyondBody + reachPad`);
   });
+  const places = rows.flatMap((r) => (r.picker === undefined ? [] : [r.picker]));
+  if (rows.some((r) => r.picker !== undefined && !Number.isInteger(r.picker)) || new Set(places).size !== places.length) problems.push(`${file}: picker places must be distinct integers`);
   const words = rows.flatMap((r) => (r.body ? [r.body.victim.pose, ...(r.body.killer ? [r.body.killer.pose] : [])] : []));
   for (const w of words) if (words.indexOf(w) !== words.lastIndexOf(w)) { problems.push(`${file}: body pose "${w}" is used twice (a rig's pose word names one finisher body)`); break; }
   if (problems.length) throw Error(problems.join('\n'));

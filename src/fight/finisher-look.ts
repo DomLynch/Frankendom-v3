@@ -26,3 +26,5 @@ export const bodyPoseOf = (id: FinisherId): string | null => finisherRow(id)?.bo
 // What a finisher that reads a waist-cut bake plays while that bake is still pending (rank-look.ts bakeSafeFinisher): its row's bakeFallback, a finisher
 // that reads no bake, if the body allows it; else the plain death.
 export const bakeFallbackFor = (id: FinisherId, allows: (f: FinisherId) => boolean): FinisherId => { const f = finisherRow(id)?.bakeFallback; return f !== undefined && allows(f) ? f : PLAIN_DEATH; };
+// The dev picker's options (main.ts): the rows with a `picker` place, in that order, as [id, label].
+export const PICKER_OPTIONS: readonly (readonly [FinisherId, string])[] = FINISHERS.rows.filter((r) => r.picker !== undefined).sort((a, b) => a.picker! - b.picker!).map((r) => [r.id, r.label] as const);
