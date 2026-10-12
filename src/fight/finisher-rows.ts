@@ -22,7 +22,8 @@ export type FinisherPose = (typeof FINISHER_POSES)[number];
 // beyond the fallen (a fixed margin, or beyondBody × body scale against the measured reach + reachPad), and whether a big body widens the choices.
 export type FinisherSide = { angle: number; eyeY: number; eyeYPerScale?: number; minBack: number; beyond?: number; beyondBody?: number; reachPad?: number; wideWhenBig?: boolean };
 export type FinisherCamera = { dolly: { push: number; slide: number; turn: number }; reveal?: { from: number; over: number; overBig?: number; side: string }; side?: FinisherSide };
-export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; camera: FinisherCamera };
+// `shelved`: the clip and pose stay, but the scene plays the plain fall in their place (the Quiet One left the game, Dom 2026-09-27; nothing picks it).
+export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; camera: FinisherCamera };
 export type FinisherTable = { rows: readonly FinisherRow[]; byId: ReadonlyMap<string, FinisherRow>; rotation: readonly string[] };
 
 const isTemplate = (v: unknown): v is FinisherTemplate => (FINISHER_TEMPLATES as readonly unknown[]).includes(v);
