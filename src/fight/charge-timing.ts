@@ -1,3 +1,4 @@
+import { fxOfMove } from './moves.ts';
 import { CAST_MARGIN, LAND_AT, type Cast } from './special-timing.ts';
 import { SPECIAL_RECOVER } from './special-look.ts';
 import { smooth } from './fx-math.ts';
@@ -15,7 +16,7 @@ export const RACE_FROM = LAND_AT - RACE, SETTLE = SPECIAL_RECOVER, DISSOLVE = 20
 export const CUE_LEAD = 57, CUE_AT = LAND_AT - CUE_LEAD;
 
 // The Centurion is the rank-9 boss of his own ladder and casts his class skill, the Scutum Shove: the shield charge.
-export const isCharge = (opponent: string, actor: number, move?: string) => opponent === 'veteran' && actor === 1 && move === 'skill_shove';
+export const isCharge = (opponent: string, actor: number, move?: string) => opponent === 'veteran' && actor === 1 && fxOfMove(move) === 'charge';
 
 // `front` 0..1: how far the dust has raced (eased in: a gallop gathers speed). `settle` 0..1 after the landing (null before). `fade` 1..0 on a fizzle.
 // Null when nothing is drawn.

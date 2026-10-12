@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
-import { weaponOf } from './moves.ts';
+import { fxMove, fxOfMove, weaponOf } from './moves.ts';
 import type { MarkLook, SignatureMarks } from './signature.ts';
 
 // Presentation only: the Witch-fire's scorch (Strategy via Lead, 2026-09-25: "the hit leaves a mark"). A Witch-fire that LANDS (a `Hit` of
@@ -61,7 +61,7 @@ export const scorchLook = (tick: number): MarkLook => ({
   tilt: ((Math.imul(tick, 2654435761) >>> 0) / 4294967296 * 2 - 1) * SCORCH.tilt,   // seeded from the tick: a replay scorches the same way
 });
 
-export const scorches = (event: CombatEvent): boolean => event.type === 'Hit' && event.move === 'skill_witchfire' && event.target !== undefined && !!event.location;
+export const scorches = (event: CombatEvent): boolean => event.type === 'Hit' && fxOfMove(event.move) === 'witchfire' && event.target !== undefined && !!event.location;
 
 // Burn this frame's landed Witch-fires onto their targets. `roots` and `scale` per side, as the signature frame carries them.
 export function scorch(events: readonly CombatEvent[], fighters: readonly Fighter[], roots: readonly (THREE.Object3D | null)[], scale: readonly number[], marks: Pick<SignatureMarks, 'body'>): number {
@@ -70,7 +70,7 @@ export function scorch(events: readonly CombatEvent[], fighters: readonly Fighte
     if (!scorches(event)) continue;
     const victim = event.target as 0 | 1, root = roots[victim], attacker = fighters[event.actor];
     if (!root || !attacker) continue;
-    const direction = weaponOf(attacker.weapon).moves.skill_witchfire.direction;
+    const direction = weaponOf(attacker.weapon).moves[fxMove('witchfire')].direction;
     if (marks.body(victim, root, { location: event.location!, direction, heading: fighters[victim].body.heading }, scorchLook(event.tick), scale[victim])) burnt++;
   }
   return burnt;

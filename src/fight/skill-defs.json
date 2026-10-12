@@ -1,0 +1,109 @@
+{
+ "about": "Skill DEFINITIONS (data, Combat 2026-10-12; Lead's everything-as-data series, item 5). One row per skill, keyed by id. SIM fields (they move a fight or a record, so they reach the sim digest): code (the record byte, append only, 1..n; 0 is none), move (the MoveId it fires: a verb in moves.ts MOVES, whose timing numbers stay engine-side), opponent (the opponent whose kill offers it, null = never offered), dayOne (the hero's starting skill, exactly one row), tell (an AI tellReaction answers it). PRESENTATION fields (Characters owns more of these; none reaches the digest): name (the label), clip (which legacy attack clip it plays: heavy, thrust or light), impactTint (the landed-blow flash colour; absent = no generic flash), bash (the hilt-bash clip on the weapons that have one), fx (a code verb a skill module answers to: witchfire, miasma, charge). A new skill is ONE row here plus its MoveDef verb.",
+ "skills": [
+  {
+   "id": "witchfire",
+   "code": 1,
+   "move": "skill_witchfire",
+   "name": "Witch-fire",
+   "opponent": "witch",
+   "clip": "heavy",
+   "fx": "witchfire"
+  },
+  {
+   "id": "pommel",
+   "code": 2,
+   "move": "skill_pommel",
+   "name": "Pommel Strike",
+   "opponent": null,
+   "clip": "thrust",
+   "dayOne": true,
+   "impactTint": "#d4dae2",
+   "tell": true,
+   "bash": true
+  },
+  {
+   "id": "lunge",
+   "code": 3,
+   "move": "skill_lunge",
+   "name": "Estoc Lunge",
+   "opponent": "nightborn",
+   "clip": "thrust",
+   "impactTint": "#9a86ff"
+  },
+  {
+   "id": "reaping",
+   "code": 4,
+   "move": "skill_reaping",
+   "name": "Reaping Blow",
+   "opponent": "executioner",
+   "clip": "heavy",
+   "impactTint": "#c0202a"
+  },
+  {
+   "id": "shove",
+   "code": 5,
+   "move": "skill_shove",
+   "name": "Scutum Shove",
+   "opponent": "veteran",
+   "clip": "thrust",
+   "fx": "charge",
+   "impactTint": "#d9a441"
+  },
+  {
+   "id": "jab",
+   "code": 6,
+   "move": "skill_jab",
+   "name": "Dirty Jab",
+   "opponent": "goblin",
+   "clip": "light",
+   "impactTint": "#e0c040"
+  },
+  {
+   "id": "cleave",
+   "code": 7,
+   "move": "skill_cleave",
+   "name": "Butcher's Cleave",
+   "opponent": "pitborn",
+   "clip": "heavy",
+   "impactTint": "#e0561c"
+  },
+  {
+   "id": "stomp",
+   "code": 8,
+   "move": "skill_stomp",
+   "name": "Anvil Stomp",
+   "opponent": "dwarf",
+   "clip": "heavy",
+   "impactTint": "#b89468"
+  },
+  {
+   "id": "miasma",
+   "code": 9,
+   "move": "skill_miasma",
+   "name": "Miasma",
+   "opponent": "plaguedoctor",
+   "clip": "heavy",
+   "fx": "miasma",
+   "impactTint": "#b07ad0"
+  },
+  {
+   "id": "ironrush",
+   "code": 10,
+   "move": "skill_ironrush",
+   "name": "Iron Rush",
+   "opponent": "knight",
+   "clip": "thrust",
+   "impactTint": "#9fb6cc"
+  },
+  {
+   "id": "hewer",
+   "code": 11,
+   "move": "skill_hewer",
+   "name": "Shield-Hewer",
+   "opponent": "shieldmaiden",
+   "clip": "light",
+   "impactTint": "#4aa3df"
+  }
+ ]
+}

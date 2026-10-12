@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { movesOf, type Fighter } from './duel.ts';
-import { MOVES } from './moves.ts';
+import { MOVES, fxMove } from './moves.ts';
+const WF = fxMove('witchfire');   // the move of the skill row whose fx is witchfire
 
 // Presentation only: the Witch-fire skill's fire (docs/briefs/skill-witch-arm.md (b); the green glow, the gout and the embers are Visuals &
 // World's). Read from the sim's own clock, never from events: a fighter in `attack` with `skill_witchfire` is at tick `age` of the move, so
@@ -11,12 +12,12 @@ import { MOVES } from './moves.ts';
 // One pool, one draw call, no per-frame allocation (the clash-sparks.ts pattern); no light, so no shader recompile when it starts.
 // The reference row's timing and reach (the longsword); the effect itself reads the caster's own weapon table (movesOf), so a per-weapon
 // row that changes the reach or the windup moves the fire with it.
-export const WITCHFIRE = { windup: MOVES.skill_witchfire.windup, active: MOVES.skill_witchfire.active, reach: MOVES.skill_witchfire.reach, cone: 0.3 } as const;   // cone: half-angle, radians
+export const WITCHFIRE = { windup: MOVES[WF].windup, active: MOVES[WF].active, reach: MOVES[WF].reach, cone: 0.3 } as const;   // cone: half-angle, radians
 const POOL = 200;   // a full gout (6 active ticks x 16 + the 8-tick tail) with the licks and embers, none recycled while still burning
 export type WitchfireStage = 'windup' | 'active' | 'recovery' | null;
 export function witchfireStage(f: Pick<Fighter, 'phase' | 'move' | 'age' | 'weapon'>): WitchfireStage {
-  if (f.phase !== 'attack' || f.move !== 'skill_witchfire') return null;
-  const { windup, active } = movesOf(f).skill_witchfire;
+  if (f.phase !== 'attack' || f.move !== WF) return null;
+  const { windup, active } = movesOf(f)[WF];
   return f.age < windup ? 'windup' : f.age < windup + active ? 'active' : 'recovery';
 }
 
@@ -86,7 +87,7 @@ export function createWitchfire(scene: THREE.Scene) {
         const ticks = lastAge[i] < 0 ? 1 : Math.max(0, f.age - lastAge[i]); lastAge[i] = f.age;   // new sim ticks this frame (0 in a hit-stop)
         if (stage === 'windup') {
           // Kindling: the glow grows with the windup's progress, with a flame's flicker, and a few licks curl up off the palm.
-          const move = movesOf(f).skill_witchfire, t = (f.age + 1) / move.windup;
+          const move = movesOf(f)[WF], t = (f.age + 1) / move.windup;
           glow.visible = true; glow.position.copy(palm); glow.scale.setScalar(0.2 + 0.6 * t * (0.9 + random() * 0.2));   // wider than the forearm, so the body never hides it
           glow.material.opacity = 0.45 + 0.5 * t;
           for (let n = 0; n < ticks; n++) if (random() < 0.3 + 0.6 * t) emit(2, 0.7, 0.9, 0.22, 0.4, 0.12 + 0.12 * t, 1.6);
@@ -95,12 +96,12 @@ export function createWitchfire(scene: THREE.Scene) {
           glow.visible = true; glow.position.copy(palm); glow.scale.setScalar(0.9); glow.material.opacity = 1;
           // On the impact tick (the sim lands the hit on the first active tick) the gout is born along the whole reach at once, so the frame
           // that shows the hit shows the fire ON the target, through the hit-stop that holds it (Lead: consequence is judged on that frame).
-          const move = movesOf(f).skill_witchfire; jet = f.age === move.windup ? move.reach * 0.9 : 0.15;
+          const move = movesOf(f)[WF]; jet = f.age === move.windup ? move.reach * 0.9 : 0.15;
           for (let n = 0; n < ticks * 16; n++) emit(0, move.reach * 8, WITCHFIRE.cone, 0.26, 0.42, 0.34, 0.05);
           jet = 0.15;
         } else {
           // The recovery: the glow gutters out over the first third, and embers fall from the palm.
-          const move = movesOf(f).skill_witchfire, since = f.age - move.windup - move.active, fade = Math.max(0, 1 - since / 12);
+          const move = movesOf(f)[WF], since = f.age - move.windup - move.active, fade = Math.max(0, 1 - since / 12);
           // The gout's tail: the jet thins over the first 8 recovery ticks instead of cutting off on the last active tick.
           for (let n = 0; n < ticks * Math.max(0, 8 - since); n++) emit(0, move.reach * 6.5, WITCHFIRE.cone * 0.8, 0.2, 0.34, 0.26, 0.05);
           glow.visible = fade > 0; glow.position.copy(palm); glow.scale.setScalar(0.5 * fade + 0.08); glow.material.opacity = fade * 0.8;
