@@ -72,6 +72,20 @@ const foretold: SpecialMode['travel'] = (side, fighters) => (side === 0 && (figh
 export const FX_VERBS: Readonly<Record<string, (row: BossRow) => SpecialMode>> = {
   executioner: (r) => ({ load: (scene, opponent, exposure) => loadExecutioner(scene, opponent, r.id, exposure), at: r.at, lift: r.lift }),   // ground art off the feet, the caster in Combat's placeholder heavy raise
   boss: (r) => boss(r.id, r.at, r.lift, r.travel ? TRAVEL_VERBS[r.travel] : undefined),
+  goblin: (r) => ({ load: (scene, opponent, exposure) => loadGoblin(r.id as GoblinSpecial, scene, opponent, exposure), at: r.at, lift: r.lift, hideTrail: true, extra: goblinExtra, ...(r.held ? { held: HELD_VERBS[r.held] } : {}) }),   // the Goblin's rank 8-10 bosses (special-fx-goblin.ts): the effect gets the target's feet, his rig anchor and head, and hides or shifts the caster itself, so nothing in scene.ts
+  redwind: (r) => ({ load: (scene, opponent, exposure) => import('./special-fx-wind.ts').then(({ createRedWind, sandLook }) => createRedWind(scene, opponent, sandLook(exposure))), at: r.at, lift: r.lift, ...(r.held ? { held: HELD_VERBS[r.held] } : {}) }),   // Rank 8 Red Wind: the sand burst off his feet
+  hades: (r) => ({ load: (scene, opponent) => import('./special-fx.ts').then(({ createSpecialFx }) => createSpecialFx(scene, opponent)), at: r.at, lift: r.lift }),   // Hades' cloud: what a mode-less special loads
+  nightfall: (r) => ({ load: (scene, opponent, _exposure, camera) => import('./nightfall-fx.ts').then(({ createNightfallFx }) => createNightfallFx(scene, camera, opponent)), at: r.at, lift: r.lift }),   // Nyx's Nightfall: the exposure drains to near-black, a cold moon rims the pair
+};
+export const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']>>> = {
+  ready: (pose, side, fighters) => (side === 1 && specialStage(fighters[1]) ? { pose: { ...pose, pose: 'ready', progress: 0 } } : { pose }),   // plain stance, not Combat's blade-raise: Reynard's scoop is the tell
+  thrust: (pose, side, fighters) => {   // he holds his blade out level through the windup (the thrust clip's extended contact pose, held) and eases back to stance as it scours
+    if (side !== 1) return { pose };
+    const stage = specialStage(fighters[side]);
+    if (!stage) return { pose };
+    const spec = attackSpecs(fighters[side].weapon).thrust, c = spec.contact / spec.recovery;
+    return { pose: { pose: 'attack', attack: 'thrust', contact: c, progress: stage.stage === 'windup' ? c : c + (1 - c) * stage.progress } };
+  },
 };
 export const TRAVEL_VERBS: Readonly<Record<string, NonNullable<SpecialMode['travel']>>> = { foretold };
 const bossModes = () => Object.fromEntries(BOSSES.map((r) => [r.id, FX_VERBS[r.fx](r)])) as Partial<Record<SpecialTest, SpecialMode>>;
@@ -104,22 +118,8 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
   antaeus: pitborn('antaeus', 0.12),   // Cracking Ground: seams split out of the sand from his own feet toward the target
   surtr: pitborn('surtr', -0.2),   // Ash Fall: the cleave drives him down
   typhon: pitborn('typhon', 0),   // Wind Wall: the gale and the lunge, no knee-dip
-  // Nyx's Nightfall (nightfall-fx.ts, rank 10): the exposure drains to near-black, a cold moon rims the pair, a veil of darkness sweeps to the target.
-  nyx: { load: (scene, opponent, _exposure, camera) => import('./nightfall-fx.ts').then(({ createNightfallFx }) => createNightfallFx(scene, camera, opponent)), at: 'head', lift: -0.28 },
   dwarf8: dwarfShield('dwarf8'), dwarf9: dwarfShield('dwarf9'), dwarf10: dwarfShield('dwarf10'),   // The Word, Three Blows, Rim Shake
   shield8: dwarfShield('shield8'), shield9: dwarfShield('shield9'), shield10: dwarfShield('shield10'),   // Bared Face, The Ring, Aegis Sweep
-  // Rank 8 Red Wind (the Nightborn's Set): he holds his blade out level through the windup (the thrust clip's extended contact pose, held) and eases back to stance as it scours.
-  set: {
-    load: (scene, opponent, exposure) => import('./special-fx-wind.ts').then(({ createRedWind, sandLook }) => createRedWind(scene, opponent, sandLook(exposure))),
-    at: 'feet', lift: 0.12,
-    held(pose, side, fighters) {
-      if (side !== 1) return { pose };
-      const stage = specialStage(fighters[side]);
-      if (!stage) return { pose };
-      const spec = attackSpecs(fighters[side].weapon).thrust, c = spec.contact / spec.recovery;
-      return { pose: { pose: 'attack', attack: 'thrust', contact: c, progress: stage.stage === 'windup' ? c : c + (1 - c) * stage.progress } };
-    },
-  },
   // The Nightborn's rank 4-7 class special (special-fx-nightborn.ts; Dom 2026-10-01: dark ink only, nothing pale or glowing). Seven Cuts (ranks 4-7): the blade plays six cuts and the thrust in the last 24 ticks of the windup, the thrust held at contact range.
   cuts: {
     load: (scene, opponent) => import('./special-fx-nightborn.ts').then(({ createSevenCuts }) => createSevenCuts(scene, opponent)),
@@ -160,13 +160,7 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
     },
   },
 
-  // The Goblin's rank 8, 9, 10 bosses (Reynard the Fox, Hermes, Loki), grey-box (special-fx-goblin.ts): the effect gets the target's feet, then his rig anchor and the
-  // target's head; it hides or shifts the caster's anchor itself (Reynard drops to scoop, Hermes vanishes, Loki lunges), so there is nothing in scene.ts.
-  reynard: { load: (scene, opponent, exposure) => loadGoblin('reynard', scene, opponent, exposure), at: 'feet', lift: -0.06, hideTrail: true, extra: goblinExtra,
-    held: (pose, side, fighters) => (side === 1 && specialStage(fighters[1]) ? { pose: { ...pose, pose: 'ready', progress: 0 } } : { pose }) },   // plain stance, not Combat's blade-raise: the scoop is the tell
   ratrun: { load: (scene, opponent, exposure) => loadGoblin('ratrun', scene, opponent, exposure), at: 'feet', lift: -0.1, hideTrail: true, extra: goblinExtra },
-  hermes: { load: (scene, opponent, exposure) => loadGoblin('hermes', scene, opponent, exposure), at: 'feet', lift: -0.1, hideTrail: true, extra: goblinExtra },
-  loki: { load: (scene, opponent, exposure) => loadGoblin('loki', scene, opponent, exposure), at: 'feet', lift: -0.1, hideTrail: true, extra: goblinExtra },
   // Rank 9 The Charge (the Centurion's Alexander): a low dust line races along the ground and breaks over the foe's feet; his body is drawn riding the front (the anchors, `extra`) and
   // his gait runs it (`travel`: walking back to gather, then the armed run, charge-timing.ts). lift -0.28 is the default knee-dip, kept: the blow drops the foe a little.
   centurion: {
