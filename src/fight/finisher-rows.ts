@@ -8,10 +8,13 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 // re-skinned onto the victim); those two fetch their clips lazily and each has its own scene path.
 export const FINISHER_TEMPLATES = ['fall', 'cleave', 'sever', 'impale', 'bisect', 'hamstring', 'execute'] as const;
 export type FinisherTemplate = (typeof FINISHER_TEMPLATES)[number];
-// The clip words characters.ts `update` plays a finisher body with. Each one is still its own branch there, so the set is code until the
-// characters.ts consumer pass turns those branches into row fields; a row's pose must be one of them (or null, the plain Death).
-export const FINISHER_POSES = ['splitCrown', 'decapitation', 'runThrough', 'quietOne', 'opened'] as const;
-export type FinisherPose = (typeof FINISHER_POSES)[number];
+// A row's `pose` is its clip word (null: the plain Death). characters.ts no longer branches on the word: what it plays for a finisher body is the
+// row's `body` (the victim's and the killer's pose words and the clip role each plays), and the template picks any code path of its own.
+export type FinisherPose = string;
+// `body` (characters.ts): the pose word the scene hands each rig and the clip role it plays. `victim` falls (a dead pose); `killer`, when the scene
+// has the killer act (Run Through's held drive, Hamstrung's and Execution's strikes), holds its pose at full weight.
+export type FinisherBodyPart = { pose: string; role: string };
+export type FinisherBody = { victim: FinisherBodyPart; killer?: FinisherBodyPart };
 
 // `rotation`: in the automatic pick (file order is the pool order, which selectFinisher's hash indexes, so reordering rows moves picks).
 // `pose`: the clip word characters.ts plays, null = the plain Death. `seconds`: the MEASURED duration (finishers.ts FINISHER_SECONDS);
@@ -23,7 +26,7 @@ export type FinisherPose = (typeof FINISHER_POSES)[number];
 export type FinisherSide = { angle: number; eyeY: number; eyeYPerScale?: number; minBack: number; beyond?: number; beyondBody?: number; reachPad?: number; wideWhenBig?: boolean };
 export type FinisherCamera = { dolly: { push: number; slide: number; turn: number }; reveal?: { from: number; over: number; overBig?: number; side: string }; side?: FinisherSide };
 // `shelved`: the clip and pose stay, but the scene plays the plain fall in their place (the Quiet One left the game, Dom 2026-09-27; nothing picks it).
-export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; camera: FinisherCamera };
+export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; body?: FinisherBody; camera: FinisherCamera };
 export type FinisherTable = { rows: readonly FinisherRow[]; byId: ReadonlyMap<string, FinisherRow>; rotation: readonly string[] };
 
 const isTemplate = (v: unknown): v is FinisherTemplate => (FINISHER_TEMPLATES as readonly unknown[]).includes(v);
@@ -39,7 +42,8 @@ export function loadFinisherDefs(raw: unknown, manifest: Manifest, file = 'finis
   rows.forEach((r, i) => {
     const at = `${file}:${i}:${r.id}`, measured = (x: FinisherRow | undefined) => typeof x?.seconds === 'number' && Number.isFinite(x.seconds) && x.seconds > 0;
     if (!isTemplate(r.template)) problems.push(`${at} template "${String(r.template)}" is not an engine verb (${FINISHER_TEMPLATES.join(', ')})`);
-    if (r.pose !== null && !(FINISHER_POSES as readonly unknown[]).includes(r.pose)) problems.push(`${at} pose "${String(r.pose)}" is not a clip word characters.ts plays (${FINISHER_POSES.join(', ')}) or null`);
+    if (r.pose !== null && (typeof r.pose !== 'string' || r.pose === '')) problems.push(`${at} pose must be a clip word or null`);
+    for (const part of r.body ? [r.body.victim, r.body.killer] : []) if (part !== undefined && !(typeof part?.pose === 'string' && part.pose && typeof part.role === 'string' && part.role)) problems.push(`${at} body parts need a pose word and a clip role`);
     if ((r.seconds === undefined) === (r.secondsFrom === undefined)) problems.push(`${at} needs exactly one of seconds and secondsFrom`);
     else if (r.seconds !== undefined && !measured(r)) problems.push(`${at} seconds must be a positive number`);
     else if (r.secondsFrom !== undefined && !measured(byId.get(r.secondsFrom))) problems.push(`${at} secondsFrom "${r.secondsFrom}" must name a row with measured seconds`);
@@ -48,6 +52,8 @@ export function loadFinisherDefs(raw: unknown, manifest: Manifest, file = 'finis
     if (reveal && !byId.get(reveal.side)?.camera.side) problems.push(`${at} camera.reveal.side "${reveal.side}" must name a row with a camera.side view`);
     if (side && (![side.angle, side.eyeY, side.minBack].every(num) || (side.beyond === undefined ? !(num(side.beyondBody) && num(side.reachPad)) : !num(side.beyond)))) problems.push(`${at} camera.side needs angle, eyeY, minBack and either beyond or beyondBody + reachPad`);
   });
+  const words = rows.flatMap((r) => (r.body ? [r.body.victim.pose, ...(r.body.killer ? [r.body.killer.pose] : [])] : []));
+  for (const w of words) if (words.indexOf(w) !== words.lastIndexOf(w)) { problems.push(`${file}: body pose "${w}" is used twice (a rig's pose word names one finisher body)`); break; }
   if (problems.length) throw Error(problems.join('\n'));
   return { rows, byId, rotation: rows.filter((r) => r.rotation).map((r) => r.id) };
 }

@@ -21,7 +21,7 @@ import { standoffClock, standoffFlag, standoffPose } from './standoff.ts';
 import { actorPose, initialPractice, type CombatEvent, type Practice } from './combat.ts';
 import { ON_DEMAND_BEASTS, beastBodyUrl } from './beast-scale.ts';
 import { OPPONENTS, PLAYER_WEAPONS, RULES, opponentAt, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type OpponentId, type WeaponId } from './moves.ts';
-import { type FinisherId } from './finishers.ts';
+import { finisherRow, type FinisherId } from './finishers.ts';
 import { anyOfTemplate, isPlainDeath, isShelved, isTemplate } from './finisher-look.ts';
 import { HAMSTRUNG_BEATS, HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, hamstrungPick, resolveHamstrung } from './hamstrung.ts';
 import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, EXECUTION_VICTIMS, executionPick, poseOf, resolveExecution } from './execution.ts';
@@ -893,6 +893,7 @@ export function createScene(
       const runThroughHold = isTemplate(finisher, 'impale') && practice.finish?.victim === 1;
       const hamstrungFinish = isTemplate(finisher, 'hamstring') && practice.finish?.victim === 1;
       const executionFinish = isTemplate(finisher, 'execute') && practice.finish?.victim === 1;
+      const killerPose = practice.finish?.victim === 1 && finisher !== null ? finisherRow(finisher)?.body?.killer?.pose : undefined;   // the killer's own body in the finisher (its row's body.killer): Run Through's held drive, Hamstrung's and Execution's strikes
       // Owner 2026-09-18: savour the killshot — a cinematic finisher's corpse animates at 0.75× on a presentation clock that
       // may run past the sim window (the spec's "presentation may hold past the window": no simulation slow motion, the
       // 144-tick death and the hit-stop are untouched). A plain-death pick plays at full speed, exactly like an unadorned kill.
@@ -920,7 +921,7 @@ export function createScene(
         opponent.rotation.y = practice.enemy.heading;
         executionSteps = warriors.player.executionStep(EXECUTION_BEATS.strike, warriors.opponent.executionContacts().nape);
       }
-      const mineGait = runtimeSpecial ? runtimeSpecial.gait(0, practice.duel.fighters, dx * Math.sin(state.heading) + dz * Math.cos(state.heading) < -0.0001 ? -travel : travel, hamstrungFinish ? 'hamstrungStrike' : executionFinish ? 'executionStrike' : runThroughHold ? 'runThroughHold' : playerDefence?.pose || mine.pose) : gait(mode, 0, practice.duel.fighters, dx * Math.sin(state.heading) + dz * Math.cos(state.heading) < -0.0001 ? -travel : travel, hamstrungFinish ? 'hamstrungStrike' : executionFinish ? 'executionStrike' : runThroughHold ? 'runThroughHold' : playerDefence?.pose || mine.pose);   // a mode may have him running or backing (special-modes.ts travel)
+      const mineGait = runtimeSpecial ? runtimeSpecial.gait(0, practice.duel.fighters, dx * Math.sin(state.heading) + dz * Math.cos(state.heading) < -0.0001 ? -travel : travel, killerPose ?? (playerDefence?.pose || mine.pose)) : gait(mode, 0, practice.duel.fighters, dx * Math.sin(state.heading) + dz * Math.cos(state.heading) < -0.0001 ? -travel : travel, killerPose ?? (playerDefence?.pose || mine.pose));   // a mode may have him running or backing (special-modes.ts travel)
       warriors?.player.update(
         mineGait.travel,
         animationDt,
