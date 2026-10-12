@@ -557,7 +557,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     return {
       anchor,
       // Rank finish on the weapon (Lead via Strategy, 2026-09-27: per-rank weapon looks): the armour's tint (rank-tint.ts) over the weapon's own
-      // maps, so no GLB byte changes. What takes it is grades.ts CLASS_OF (blade metal, fittings trim; wood, stone and bone stay). No tier = its own finish.
+      // maps, so no GLB byte changes. What takes it is the drawMaterials rows read by grades.ts classOf (blade metal, fittings trim; wood, stone and bone stay). No tier = its own finish.
       grade(tier: Tier | undefined) { for (const [draw, own] of weaponDraws) draw.material = tier ? tinted(own, tier) : own; },
       // Weapon shape per rank band (weapon-shapes.ts): the band's mesh in place of the weapon's own draws, hung on the weapon node itself (the
       // file's frame is the node's: hand at the origin, +Y along the weapon), so it follows every clip and the draw/sheathe swap. The node, its
