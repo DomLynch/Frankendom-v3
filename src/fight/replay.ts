@@ -10,6 +10,7 @@ import { underRecord } from './detmath.ts';
 import { groupLayer, withIncoming } from './pack.ts';
 import { skillOf } from '../core/loot.ts';
 import { specialOf, type SkillId, type SpecialName } from './moves.ts';
+import type { Sheet } from './sheet-rows.ts';
 
 // The Special Moves a record's fight had (version 21's flag), as initialPractice takes them: every replay builds the fight through this one door.
 export const recordSpecials = (record: Pick<FightRecord, 'specials' | 'level' | 'opponent'>): { level: number; aiSkill: SkillId | null; name?: SpecialName } | undefined =>
@@ -20,7 +21,19 @@ export const MAX_SHARE_CHARS = 4096;   // a guest's link carries the record itse
 export type Verification = { ok: true; practice: Practice } | { ok: false; reason: string; practice: Practice | null };
 
 // Steps the record headless and checks that the fight finished on its last recorded tick with the recorded outcome.
-export function verifyRecord(record: FightRecord, onTick?: (practice: Practice) => void): Verification {   // onTick: called after every stepped tick (src/group-verify.ts reads the damage each stream dealt)
+// A record's sheet is the CLIENT's claim (a dial at 100 is a free 2x), so a verifier that grants anything on a replay must not take it on trust: by default a record that carries a sheet is REFUSED.
+// `sheet` says how to take it: a Sheet = the one the server holds for this player (`sheetOf(storedBuild, wornGear)`), accepted only when the record's equals it; 'trust' = the caller's own fight
+// (the page checking the fight it just played before it shares it), where nothing is granted on the strength of it. Records without a sheet are not affected.
+export type VerifyOptions = { sheet?: Sheet | 'trust' };
+const sameSheet = (a: Sheet, b: Sheet): boolean => { const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => a[k] === b[k]); };
+export function sheetRefusal(record: Pick<FightRecord, 'sheet'>, option?: Sheet | 'trust'): string | null {
+  if (!record.sheet || option === 'trust') return null;
+  if (!option) return 'the record carries a sheet (v48) and the server holds no build for this player to check it against';
+  return sameSheet(option, record.sheet) ? null : 'the record\'s sheet is not the one the player\'s stored build and worn gear give';
+}
+export function verifyRecord(record: FightRecord, onTick?: (practice: Practice) => void, opts: VerifyOptions = {}): Verification {
+  const refused = sheetRefusal(record, opts.sheet);
+  if (refused) return { ok: false, reason: refused, practice: null };   // onTick: called after every stepped tick (src/group-verify.ts reads the damage each stream dealt)
   return underRecord(record, () => verifyUnder(record, onTick));   // the record's version picks the sim's math (detmath.ts), here and in every replay
 }
 function verifyUnder(record: FightRecord, onTick?: (practice: Practice) => void): Verification {

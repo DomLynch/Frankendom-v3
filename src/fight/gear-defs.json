@@ -1,23 +1,101 @@
 {
-  "tilts": [
+  "sets": [
     {
       "id": "plate",
-      "up": "armour",
-      "down": "magicResist",
-      "amount": 25
+      "shape": {
+        "armour": 25,
+        "magicResist": -25
+      },
+      "quality": {
+        "armour": 2,
+        "health": 2,
+        "poise": 1
+      }
     },
     {
       "id": "robes",
-      "up": "magicResist",
-      "down": "armour",
-      "amount": 25
+      "shape": {
+        "magicResist": 25,
+        "armour": -25
+      },
+      "quality": {
+        "magicResist": 2,
+        "spellPower": 2,
+        "focus": 1
+      }
+    },
+    {
+      "id": "leathers",
+      "shape": {
+        "stamina": 25,
+        "armour": -25
+      },
+      "quality": {
+        "stamina": 2,
+        "recovery": 2,
+        "luck": 1
+      }
+    }
+  ],
+  "owners": [
+    {
+      "id": "veteran",
+      "set": "plate"
+    },
+    {
+      "id": "pitborn",
+      "set": "plate"
+    },
+    {
+      "id": "minotaur",
+      "set": "plate"
+    },
+    {
+      "id": "executioner",
+      "set": "plate"
+    },
+    {
+      "id": "dwarf",
+      "set": "plate"
+    },
+    {
+      "id": "knight",
+      "set": "plate"
+    },
+    {
+      "id": "shieldmaiden",
+      "set": "plate"
+    },
+    {
+      "id": "witch",
+      "set": "robes"
+    },
+    {
+      "id": "plaguedoctor",
+      "set": "robes"
+    },
+    {
+      "id": "wraith",
+      "set": "robes"
+    },
+    {
+      "id": "nightborn",
+      "set": "robes"
+    },
+    {
+      "id": "goblin",
+      "set": "leathers"
+    },
+    {
+      "id": "werewolf",
+      "set": "leathers"
     }
   ],
   "gear": [
     {
       "id": "light",
       "preset": true,
-      "tilt": "robes",
+      "set": "leathers",
       "weight": 4,
       "wearMax": 60,
       "resist": {}
@@ -32,7 +110,7 @@
     {
       "id": "heavy",
       "preset": true,
-      "tilt": "plate",
+      "set": "plate",
       "weight": 16,
       "wearMax": 140,
       "resist": {}
@@ -41,53 +119,8 @@
   "rules": [
     {
       "id": "gear",
-      "tiltMax": 25
-    }
-  ],
-  "sets": [
-    {
-      "id": "veteran",
-      "tilt": "plate"
-    },
-    {
-      "id": "pitborn",
-      "tilt": "plate"
-    },
-    {
-      "id": "minotaur",
-      "tilt": "plate"
-    },
-    {
-      "id": "executioner",
-      "tilt": "plate"
-    },
-    {
-      "id": "dwarf",
-      "tilt": "plate"
-    },
-    {
-      "id": "knight",
-      "tilt": "plate"
-    },
-    {
-      "id": "shieldmaiden",
-      "tilt": "plate"
-    },
-    {
-      "id": "witch",
-      "tilt": "robes"
-    },
-    {
-      "id": "plaguedoctor",
-      "tilt": "robes"
-    },
-    {
-      "id": "wraith",
-      "tilt": "robes"
-    },
-    {
-      "id": "nightborn",
-      "tilt": "robes"
+      "shapeMax": 25,
+      "qualityMax": 25
     }
   ]
 }

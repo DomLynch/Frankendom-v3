@@ -123,6 +123,11 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   48: [],   // the sheet (Wave A1 PR1): only a fight with the sheet flag (bit 7, v48) moves, no sheet-less fight is reached
   32: [],   // patron perks: a no-patron fight writes 31 and steps as before; a patron record is v32 and no older fight is reached
 };
+// A sheet fight names WHICH stored build it claims (Backend keeps append-only build versions; the sweep loads that exact one): the character's id and the build's version. Both or neither: neither means
+// the default build (level 1, every dial at base) with whatever gear was worn. A build reference without a sheet is nothing to check, so it is refused.
+const CHARACTER_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const buildRefBad = (r: { sheet?: Sheet; characterId?: string; buildVersion?: number }): boolean =>
+  (r.characterId === undefined) !== (r.buildVersion === undefined) || (r.characterId !== undefined && (!r.sheet || !CHARACTER_ID.test(r.characterId) || !Number.isInteger(r.buildVersion) || r.buildVersion! < 1 || r.buildVersion! > 0xffffffff));
 // A record states the era its fight was fought in (play-radius.ts): this build's version when the circle in force is the one this build fights `opponent` in AND late
 // notice is on (a live fight); the version before the ramp when the circle is right but the ramp was never turned on; the version before the circle when neither is
 // (a headless run that never set them, a script). Each replays to the fight it recorded, because the version picks both (detmath.ts underRecord). (N4: the pre-circle
@@ -153,7 +158,7 @@ const groupBad = (g: RecordGroup, ticks: number): boolean => {
   return false;
 };
 const groupLen = (g: RecordGroup | undefined): number => (g ? 1 + 2 + 6 * g.incoming.length + 2 + 8 * g.held.length : 0);
-export type RecordMeta = { sheet?: Sheet; arena?: RecordArena; build: string; opponent: OpponentId; weapon: WeaponId; skill?: SkillId; level: number; seed: number; specials?: boolean; patron?: number; gambit?: boolean; stances?: PickedStance; pose?: DuelPose; group?: RecordGroup };   // stances: the fight had stances (version 34), the player's pick; absent = none   // gambit: the fight had the Gambit (version 33; absent = off)   // patron: the player's patron id 1..255 (version 32; absent = none)   // specials: the fight had Special Moves (version 21; absent = off)   // skill: the player's equipped skill; absent = none. level: the opponent's ladder level, 1–46 (moves.ts profileAt; version 16)
+export type RecordMeta = { sheet?: Sheet; characterId?: string; buildVersion?: number; arena?: RecordArena; build: string; opponent: OpponentId; weapon: WeaponId; skill?: SkillId; level: number; seed: number; specials?: boolean; patron?: number; gambit?: boolean; stances?: PickedStance; pose?: DuelPose; group?: RecordGroup };   // stances: the fight had stances (version 34), the player's pick; absent = none   // gambit: the fight had the Gambit (version 33; absent = off)   // patron: the player's patron id 1..255 (version 32; absent = none)   // specials: the fight had Special Moves (version 21; absent = off)   // skill: the player's equipped skill; absent = none. level: the opponent's ladder level, 1–46 (moves.ts profileAt; version 16)
 export type FightRecord = RecordMeta & { v: RecordVersion; ticks: number; outcome: Outcome; intents: Intent[] };
 
 // Quantization: the stick to 1/127 per axis, the camera yaw to 1/128 of a half-turn (about 1.4°). The live game steps the
@@ -185,7 +190,8 @@ export function createRecorder(meta: RecordMeta) {
   const era = stampedVersion(meta.opponent);
   if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
   const version = meta.sheet ? FIRST_SHEET_VERSION : meta.group ? FIRST_GROUP_VERSION : meta.pose ? FIRST_POSE_VERSION : meta.stances ? FIRST_STANCE_VERSION : meta.gambit ? FIRST_GAMBIT_VERSION : meta.patron ? PATRON_VERSION : era;   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
-  if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
+  if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };
+  if (buildRefBad(meta)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
   if (meta.pose) meta = { ...meta, pose: roundPose(meta.pose) };   // the fight started from the rounded pose (duel.ts poseBodies), so the record names those same bits
   if (version < FIRST_ARENA_VERSION && meta.arena) { meta = { ...meta }; delete meta.arena; }   // an older era has no arena byte: a script run in the old circle names none
   const intents: Intent[] = [];
@@ -219,6 +225,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   if (r.sheet && r.v < FIRST_SHEET_VERSION) throw Error('Fight record: a sheet on a version that has no flag for it');
   if ((r.v as number) === FIRST_SHEET_VERSION && !r.sheet) throw Error('Fight record: a version 48 record names its sheet');
   const sheetMods = r.sheet ? checkSheet(r.sheet) : undefined;
+  if (buildRefBad(r)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');
   if (r.sheet && !sheetMods) throw Error('Fight record: a sheet flag with no dial off base');
   if (r.group && r.v < FIRST_GROUP_VERSION) throw Error('Fight record: a group on a version that has no flag for it');
   if (r.v === FIRST_GROUP_VERSION && !r.group) throw Error('Fight record: a version 39 record names its group');
@@ -242,7 +249,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   if (arenaCode < 0 || (arenaCode > 0 && r.v < FIRST_ARENA_VERSION)) throw Error('Fight record: unknown arena, or an arena on a version that has no byte for it');
   const withArena = r.v >= FIRST_ARENA_VERSION ? 1 : 0, withPatron = r.v >= FIRST_PATRON_VERSION ? 1 : 0;
   if (r.patron !== undefined && (!Number.isInteger(r.patron) || r.patron < 1 || r.patron > 255 || !withPatron)) throw Error('Fight record: unknown patron, or a patron on a version that has no byte for it');
-  const n = r.ticks, head = 3 + 1 + build.length + 1 + opp.length + 1 + wpn.length + 1 + 1 + withArena + withPatron + (r.pose ? 20 : 0) + groupLen(r.group) + (sheetMods ? 1 + 2 * Object.keys(sheetMods).length : 0) + 1 + 4 + 4 + 1, out = new Uint8Array(head + 6 * n), dv = new DataView(out.buffer);
+  const n = r.ticks, head = 3 + 1 + build.length + 1 + opp.length + 1 + wpn.length + 1 + 1 + withArena + withPatron + (r.pose ? 20 : 0) + groupLen(r.group) + (sheetMods ? 1 + 2 * Object.keys(sheetMods).length + 1 + (r.characterId?.length ?? 0) + 4 : 0) + 1 + 4 + 4 + 1, out = new Uint8Array(head + 6 * n), dv = new DataView(out.buffer);
   let o = 0;
   out[o++] = 0x46; out[o++] = 0x4b; out[o++] = r.v;
   out[o++] = build.length; out.set(build, o); o += build.length;
@@ -256,7 +263,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
     dv.setUint16(o, r.group.held.length, true); o += 2;
     for (const [from, to] of r.group.held) { dv.setUint32(o, from, true); o += 4; dv.setUint32(o, to, true); o += 4; }
   }
-  if (sheetMods) { const stats = DIALS.filter((st) => sheetMods[st.id]); out[o++] = stats.length; for (const st of stats) { out[o++] = st.code; out[o++] = sheetMods[st.id]!; } }
+  if (sheetMods) { const stats = DIALS.filter((st) => sheetMods[st.id]); out[o++] = stats.length; for (const st of stats) { out[o++] = st.code; out[o++] = sheetMods[st.id]!; } const cid = ascii(r.characterId ?? ''); out[o++] = cid.length; out.set(cid, o); o += cid.length; dv.setUint32(o, r.buildVersion ?? 0, true); o += 4; }
   out[o++] = level; dv.setUint32(o, r.seed >>> 0, true); o += 4; dv.setUint32(o, n, true); o += 4; out[o] = outcome;
   const col = (k: number) => head + k * n;
   let prevYaw = 0;
@@ -322,6 +329,16 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
     try { sheet = checkSheet(mods); } catch { throw Error('Fight record: unknown sheet'); }
     if (!sheet || Object.keys(sheet).length !== count) throw Error('Fight record: unknown sheet');   // a pair at base is not how the writer says it
   }
+  let characterId: string | undefined, buildVersion: number | undefined;
+  if (sheet) {
+    if (o + 1 > bytes.length) throw Error('Fight record: truncated');
+    const len = bytes[o++]!;
+    if (len > 64 || o + len + 4 > bytes.length) throw Error('Fight record: unknown sheet');
+    let id = ''; for (let k = 0; k < len; k++) id += String.fromCharCode(bytes[o + k]!); o += len;
+    const version = dv.getUint32(o, true); o += 4;
+    if (len) { characterId = id; buildVersion = version; }
+    if (buildRefBad({ sheet, ...(characterId !== undefined ? { characterId, buildVersion } : {}) }) || (!len && version)) throw Error('Fight record: unknown sheet');
+  }
   if (o + 1 + 4 + 4 + 1 > bytes.length) throw Error('Fight record: truncated');
   const level = bytes[o++], seed = dv.getUint32(o, true); o += 4; const n = dv.getUint32(o, true); o += 4; const outcome = OUTCOMES[bytes[o++]];
   if (level < 1 || level > LEVELS || !outcome) throw Error('Fight record: unknown level or outcome');
@@ -345,7 +362,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   }
   // The version PARSED, not the constant: returning `RECORD_VERSION` here would let a decode-then-repack silently relabel an older
   // record as this build's, and packRecord's guard above would then throw on a record this function had just called well-formed.
-  return { v: v as RecordVersion, build, opponent, weapon, ...(skill ? { skill } : {}), ...(arena ? { arena } : {}), level, seed, ...(flag & 1 ? { specials: true } : {}), ...(flag & 2 ? { gambit: true } : {}), ...(flag & 4 ? { stances: PICKS[(flag >> 3) & 3] } : {}), ...(patron ? { patron } : {}), ...(sheet ? { sheet } : {}), ...(pose ? { pose } : {}), ...(group ? { group } : {}), ticks: n, outcome, intents };
+  return { v: v as RecordVersion, build, opponent, weapon, ...(skill ? { skill } : {}), ...(arena ? { arena } : {}), level, seed, ...(flag & 1 ? { specials: true } : {}), ...(flag & 2 ? { gambit: true } : {}), ...(flag & 4 ? { stances: PICKS[(flag >> 3) & 3] } : {}), ...(patron ? { patron } : {}), ...(sheet ? { sheet } : {}), ...(characterId !== undefined ? { characterId, buildVersion } : {}), ...(pose ? { pose } : {}), ...(group ? { group } : {}), ticks: n, outcome, intents };
 }
 
 // ---- transport: gzip + base64url (no padding). CompressionStream is in every browser the game targets and in Node ≥ 18. --------
