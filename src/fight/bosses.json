@@ -243,5 +243,39 @@
   "lift": -0.1,
   "cue": "liars",
   "classSkill": "skill_jab"
+ },
+ {
+  "id": "set",
+  "label": "Red Wind",
+  "opponent": "nightborn",
+  "rank": 8,
+  "fx": "redwind",
+  "at": "feet",
+  "lift": 0.12,
+  "cue": "redwind",
+  "classSkill": "skill_lunge",
+  "held": "thrust"
+ },
+ {
+  "id": "hades",
+  "label": "Hades' Shadow",
+  "opponent": "nightborn",
+  "rank": 9,
+  "fx": "hades",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "hades",
+  "classSkill": "skill_lunge"
+ },
+ {
+  "id": "nyx",
+  "label": "Nyx Nightfall",
+  "opponent": "nightborn",
+  "rank": 10,
+  "fx": "nightfall",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "nyx",
+  "classSkill": "skill_lunge"
  }
 ]

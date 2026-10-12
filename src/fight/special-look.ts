@@ -24,7 +24,7 @@ const HAND_TESTS = {
   cleaverset: { opponent: 'pitborn', level: 6, first: 180 },
   groundset: { opponent: 'dwarf', level: 6, first: 180 },
   cutmark: { opponent: 'shieldmaiden', level: 6, first: 180 },
- hades: { opponent: 'nightborn', level: 41, first: 180 }, set: { opponent: 'nightborn', level: 36, first: 180 }, cuts: { opponent: 'nightborn', level: 31, first: 180 }, nyx: { opponent: 'nightborn', level: 46, first: 180 }, shield: { opponent: 'veteran', level: 36, first: 180 }, tithe: { opponent: 'veteran', level: 46, first: 180 }, centurion: { opponent: 'veteran', level: 41, first: 180 }, standfast: { opponent: 'veteran', level: 21, first: 180 },
+ cuts: { opponent: 'nightborn', level: 31, first: 180 }, shield: { opponent: 'veteran', level: 36, first: 180 }, tithe: { opponent: 'veteran', level: 46, first: 180 }, centurion: { opponent: 'veteran', level: 41, first: 180 }, standfast: { opponent: 'veteran', level: 21, first: 180 },
   // The Goblin's rank 8, 9, 10 bosses (Reynard the Fox, Hermes, Loki: levels 36, 41, 46), grey-box previews (special-fx-goblin.ts; special-modes.ts).
   // Selected Goblin ranks 4-7 presentation; preview at Master I, runtime level selection belongs to Combat.
   ratrun: { opponent: 'goblin', level: 31, first: 180 },

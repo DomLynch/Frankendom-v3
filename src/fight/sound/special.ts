@@ -12,7 +12,6 @@ export type SpecialCue = typeof SPECIAL_CUES[number];
 export const SPECIAL_CUE_OF: Readonly<Record<string, SpecialCue>> = {
   ...Object.fromEntries(BOSSES.map((r) => [r.id, r.cue as SpecialCue])),   // every boss with a bosses.json row: a cue on the bosses.json row
   shield: 'quake', centurion: 'charge', tithe: 'tithe',
-  set: 'redwind', hades: 'hades', nyx: 'nyx',
   antaeus: 'cracking', surtr: 'ashfall', typhon: 'windwall',
   dwarf8: 'theword', dwarf9: 'threeblows', dwarf10: 'rimshake',
   shield8: 'baredface', shield9: 'thering', shield10: 'aegis',
