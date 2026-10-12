@@ -18,6 +18,7 @@ export * from './combat.ts';
 export * from './play-radius.ts';
 export * from './record.ts';
 export * from './gear-stats.ts';
+export * from './gear-numbers.ts';
 export * from './gambit.ts';
 export * from './stance.ts';
 export * from './twist.ts';
