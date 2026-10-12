@@ -12,10 +12,12 @@ export type Manifest = {
   fan?: string;
   key: string;                        // the id field
   required: Record<string, FieldType>;  // field path -> type; `a.b` descends, `a[]` checks every element
+  optional?: Record<string, FieldType>; // field path -> type, checked only when the field is present (absent = fine)
+  unique?: string[];                    // field paths whose present values must differ between rows of this table
   refs?: Record<string, string>;        // field path -> table whose ids the value (or each element) must be
 };
 export type TableData = { manifest: Manifest; rows: readonly Record<string, unknown>[]; file?: string };
-export type Problem = { file: string; row: number; id: string; rule: 'duplicate-id' | 'unknown-ref' | 'missing-field' | 'wrong-type' | 'bad-key' | 'bad-manifest'; message: string };
+export type Problem = { file: string; row: number; id: string; rule: 'duplicate-id' | 'unknown-ref' | 'missing-field' | 'wrong-type' | 'duplicate-value' | 'bad-key' | 'bad-manifest'; message: string };
 export type Registry = { ids: ReadonlyMap<string, ReadonlySet<string>>; rows: ReadonlyMap<string, ReadonlyMap<string, Record<string, unknown>>> };
 
 export class RegistryError extends Error {
@@ -78,7 +80,7 @@ export function checkTables(tables: readonly TableData[], external: Readonly<Rec
   }
   // Pass 2: required fields, types, refs.
   for (const t of tables) {
-    const { required, refs = {}, table } = t.manifest, file = fileOf(t);
+    const { required, optional = {}, unique = [], refs = {}, table } = t.manifest, file = fileOf(t), claimed = new Map<string, Map<string, string>>(unique.map((f) => [f, new Map()]));
     for (const [field, to] of Object.entries(refs)) if (!ids.has(to)) problems.push({ file, row: -1, id: table, rule: 'bad-manifest', message: `${field} refs table "${to}", which is not registered` });
     t.rows.forEach((row, i) => {
       if (!isObj(row)) { problems.push({ file, row: i, id: '?', rule: 'wrong-type', message: 'a row must be an object' }); return; }
@@ -87,6 +89,17 @@ export function checkTables(tables: readonly TableData[], external: Readonly<Rec
         for (const v of valuesAt(row, field)) {
           if (v === undefined) problems.push({ file, row: i, id, rule: 'missing-field', message: `${field} is required` });
           else if (!typeOk(v, type)) problems.push({ file, row: i, id, rule: 'wrong-type', message: `${field} must be ${type}` });
+        }
+      }
+      for (const [field, type] of Object.entries(optional)) {
+        for (const v of valuesAt(row, field)) if (v !== undefined && !typeOk(v, type)) problems.push({ file, row: i, id, rule: 'wrong-type', message: `${field} must be ${type}` });
+      }
+      for (const [field, owners] of claimed) {
+        for (const v of valuesAt(row, field)) {
+          if (v === undefined) continue;
+          const k = JSON.stringify(v), first = owners.get(k);
+          if (first !== undefined) problems.push({ file, row: i, id, rule: 'duplicate-value', message: `${field} ${k} is already on ${first}` });
+          else owners.set(k, id);
         }
       }
       for (const [field, to] of Object.entries(refs)) {
