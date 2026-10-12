@@ -56,7 +56,7 @@ export type Fighter = {
   stance?: StanceId;   // the fight's stance for this fighter (src/fight/stance.ts, RV34); absent = Neutral or no stances: today's fight, byte for byte
   gambitOn?: true;   // this fighter may arm a Gambit (withGambit); absent = the fight has none, byte for byte
   gambit?: true;   // the swing in hand is an armed Gambit (a second heavy press after the chamber); cleared by the next beginAttack
-  sheet?: Sheet;   // the player's sheet (sheet-rows.ts: ten dials, 50 base, 100 max): attack, armour, health, poise and recovery are read here (the rest are carried), never a duration; set once at duel start by withSheet; absent = off the sheet (a boss, a creature) or every dial at base: today's fight, byte for byte
+  sheet?: Sheet;   // the player's sheet (sheet-rows.ts: ten dials, 0 base, 100 max): attack, armour, health, poise and recovery are read here (the rest are carried), never a duration; set once at duel start by withSheet; absent = off the sheet (a boss, a creature) or every dial at base: today's fight, byte for byte
   perk?: Perk;   // the patron's sidegrade (docs/specs/origins/patron-perks-sim.md), set once at duel start by withPerk; absent = today's fight, byte for byte
 };
 // A patron perk: signed per-mille integers, each scaling ONE quantity by (1000 + d) / 1000, at most two templates and never past ±PERK_MAX (3%).
