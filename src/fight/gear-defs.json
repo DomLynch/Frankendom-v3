@@ -1,14 +1,93 @@
 {
   "tilts": [
-    { "id": "plate", "up": "armour", "down": "magicResist", "amount": 25 },
-    { "id": "robes", "up": "magicResist", "down": "armour", "amount": 25 }
+    {
+      "id": "plate",
+      "up": "armour",
+      "down": "magicResist",
+      "amount": 25
+    },
+    {
+      "id": "robes",
+      "up": "magicResist",
+      "down": "armour",
+      "amount": 25
+    }
   ],
   "gear": [
-    { "id": "light", "preset": true, "tilt": "robes", "weight": 4, "wearMax": 60, "resist": {} },
-    { "id": "medium", "preset": true, "weight": 9, "wearMax": 90, "resist": {} },
-    { "id": "heavy", "preset": true, "tilt": "plate", "weight": 16, "wearMax": 140, "resist": {} }
+    {
+      "id": "light",
+      "preset": true,
+      "tilt": "robes",
+      "weight": 4,
+      "wearMax": 60,
+      "resist": {}
+    },
+    {
+      "id": "medium",
+      "preset": true,
+      "weight": 9,
+      "wearMax": 90,
+      "resist": {}
+    },
+    {
+      "id": "heavy",
+      "preset": true,
+      "tilt": "plate",
+      "weight": 16,
+      "wearMax": 140,
+      "resist": {}
+    }
   ],
   "rules": [
-    { "id": "gear", "tiltMax": 25 }
+    {
+      "id": "gear",
+      "tiltMax": 25
+    }
+  ],
+  "sets": [
+    {
+      "id": "veteran",
+      "tilt": "plate"
+    },
+    {
+      "id": "pitborn",
+      "tilt": "plate"
+    },
+    {
+      "id": "minotaur",
+      "tilt": "plate"
+    },
+    {
+      "id": "executioner",
+      "tilt": "plate"
+    },
+    {
+      "id": "dwarf",
+      "tilt": "plate"
+    },
+    {
+      "id": "knight",
+      "tilt": "plate"
+    },
+    {
+      "id": "shieldmaiden",
+      "tilt": "plate"
+    },
+    {
+      "id": "witch",
+      "tilt": "robes"
+    },
+    {
+      "id": "plaguedoctor",
+      "tilt": "robes"
+    },
+    {
+      "id": "wraith",
+      "tilt": "robes"
+    },
+    {
+      "id": "nightborn",
+      "tilt": "robes"
+    }
   ]
 }

@@ -11,11 +11,11 @@ import GEAR_MANIFEST from './gear-defs.manifest.json' with { type: 'json' };
 
 export type Tilt = { readonly id: string; readonly up: string; readonly down: string; readonly amount: number };
 export type GearRow = { readonly id: string; readonly slot: string | null; readonly preset: boolean; readonly tilt: string | null; readonly weight: number; readonly wearMax: number; readonly resist: Readonly<Record<string, number>> };
-export type GearTable = { readonly tilts: Readonly<Record<string, Tilt>>; readonly rows: Readonly<Record<string, GearRow>>; readonly tiltMax: number };
+export type GearTable = { readonly tilts: Readonly<Record<string, Tilt>>; readonly rows: Readonly<Record<string, GearRow>>; readonly sets: Readonly<Record<string, string>>; readonly tiltMax: number };   // sets: loot opponent id -> the tilt its armour set gives (an opponent no row names gives none: the medium preset)
 
 type RawRow = { id: string; slot?: string; preset?: boolean; extends?: string; tilt?: string; weight: number; wearMax: number; resist: Record<string, number> };
 
-export function loadGearDefs(raw: { tilts?: readonly unknown[]; gear?: readonly unknown[]; rules?: readonly unknown[] }, schools: readonly string[] = SCHOOL_IDS, slots: readonly string[] = ARMOUR_SLOTS, dials: readonly string[] = DIALS.map((d) => d.id)): GearTable {
+export function loadGearDefs(raw: { tilts?: readonly unknown[]; gear?: readonly unknown[]; sets?: readonly unknown[]; rules?: readonly unknown[] }, schools: readonly string[] = SCHOOL_IDS, slots: readonly string[] = ARMOUR_SLOTS, dials: readonly string[] = DIALS.map((d) => d.id)): GearTable {
   loadRegistry(GEAR_MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, raw, 'gear-defs.json')));
   const rules = (raw.rules ?? []) as readonly { id: string; tiltMax: number }[];
   if (rules.length !== 1 || rules[0]!.id !== 'gear' || rules[0]!.tiltMax < 1) throw Error('gear-defs: exactly one rule row, "gear", with a tiltMax from 1');
@@ -36,7 +36,8 @@ export function loadGearDefs(raw: { tilts?: readonly unknown[]; gear?: readonly 
     for (const [school, n] of Object.entries(resist)) if (!schools.includes(school) || !Number.isInteger(n) || Math.abs(n) > 4) throw Error(`gear-defs "${r.id}": resist ${school} is a school row and a whole number within +-4`);
     out[r.id] = { id: r.id, slot, preset, tilt: r.tilt ?? base?.tilt ?? null, weight: r.weight, wearMax: r.wearMax, resist };
   }
-  return { tilts, rows: out, tiltMax };
+  const sets = Object.fromEntries(((raw.sets ?? []) as readonly { id: string; tilt: string }[]).map((s) => [s.id, s.tilt]));
+  return { tilts, rows: out, sets, tiltMax };
 }
 
 export const GEAR: GearTable = loadGearDefs(GEAR_DEFS);
