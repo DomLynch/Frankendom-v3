@@ -1,5 +1,9 @@
 import type { Finish } from './duel.ts';
+import type { Manifest } from '../core/registry.ts';
 import type { WeaponId } from './moves.ts';
+import { loadFinisherDefs, type FinisherPose, type FinisherRow } from './finisher-rows.ts';
+import FINISHER_DEFS from './finisher-defs.json' with { type: 'json' };
+import FINISHER_MANIFEST from './finisher-defs.manifest.json' with { type: 'json' };
 
 // Finishers & gore v1 (owner-authorized 2026-09-17, GAME_SPEC "Owner-authorized finishers & gore"). The simulation decided
 // the kill already: selection is a pure function of the Killed event's data (victim, location, move, heading) and the
@@ -7,10 +11,15 @@ import type { WeaponId } from './moves.ts';
 // finisher. v1 has no weapon-dependent row (one table for every weapon); the weapons argument pins the contract for the
 // per-weapon rows a later pass may add. Presentation falls back to the plain Death clip for any finisher whose clip has
 // not shipped yet (ship order: Split Crown end-to-end first, then the set).
-export type FinisherId = 'splitCrown' | 'decapitation' | 'runThrough' | 'plainDeath' | 'quietOne' | 'opened' | 'hamstrung' | 'execution';
+// A finisher is a row of src/fight/finisher-defs.json (finisher-rows.ts loads it through the shared registry): ids are open strings,
+// checked against the loaded rows, and a new finisher is one row naming its template.
+export type FinisherId = string;
+export const FINISHERS = loadFinisherDefs(FINISHER_DEFS, FINISHER_MANIFEST.tables[0] as Manifest);
+export const finisherRow = (id: FinisherId): FinisherRow | undefined => FINISHERS.byId.get(id);
 
-// The beta rotation pool (owner 2026-09-20): five outcomes, evenly drawn (measured 19.6–20.6 % each over 20 000 kill events).
-export const ROTATION = ['splitCrown', 'decapitation', 'runThrough', 'plainDeath', 'opened'] as const satisfies readonly FinisherId[];
+// The beta rotation pool (owner 2026-09-20): five outcomes, evenly drawn (measured 19.6–20.6 % each over 20 000 kill events). The
+// rows flagged `rotation`, in file order.
+export const ROTATION: readonly FinisherId[] = FINISHERS.rotation;
 
 // `previous` is the ceremony the last fight actually showed (owner 2026-09-20: "the same finish can't appear twice in a
 // row — keeps it fresh"). It is excluded from the pool for this kill; the pick stays a pure function of the kill event
@@ -45,16 +54,7 @@ export function selectFinisher(finish: Finish, weapons: readonly [WeaponId, Weap
 // beat gripping it, then kneels with it still embedded. Quiet One clutches the throat and collapses onto its side.
 // Opened uses the existing upright jolt, followed by a separately posed waist bake; off keeps the intact collapse.
 // Victim clips are 2.4 s, authored per rig and played at 0.75x on the presentation clock.
-export const FINISHER_POSE: Record<FinisherId, 'splitCrown' | 'decapitation' | 'runThrough' | 'quietOne' | 'opened' | null> = {
-  splitCrown: 'splitCrown',
-  decapitation: 'decapitation',
-  runThrough: 'runThrough',
-  plainDeath: null,
-  quietOne: 'quietOne',
-  opened: 'opened',
-  hamstrung: null,
-  execution: null,
-};
+export const FINISHER_POSE: Readonly<Record<FinisherId, FinisherPose | null>> = Object.fromEntries(FINISHERS.rows.map((r) => [r.id, r.pose]));
 
 // How long each finisher actually takes to finish playing, in seconds from the Killed event — MEASURED, one number per
 // finisher, never one constant for all of them (Lead brief 2026-09-22, for Web's loot panel).
@@ -70,18 +70,12 @@ export const FINISHER_POSE: Record<FinisherId, 'splitCrown' | 'decapitation' | '
 // automatic rotation, so its window is the dev picker's own path on a real kill, as the harness labels it). Receipt:
 // `artifacts/character/finisher-durations/finisher-durations.json`. Re-measure with that command when a clip, the camera
 // or the finisher clock changes — the harness asserts the latch fires and agrees with the scene's own finish age.
-export const FINISHER_SECONDS = {
-  splitCrown: 4.07,
-  decapitation: 3.2,
-  runThrough: 4.12,
-  plainDeath: 2.4,
-  quietOne: 3.77,
-  opened: 3.2,
-} as const satisfies Record<Exclude<FinisherId, 'hamstrung' | 'execution'>, number>;
+export const FINISHER_SECONDS: Readonly<Record<FinisherId, number>> = Object.fromEntries(FINISHERS.rows.flatMap((r) => (r.seconds === undefined ? [] : [[r.id, r.seconds]])));
 
-// Hamstrung and Execution have no clip yet (FINISHER_POSE null): the plain death plays in their place, so their duration is
-// DERIVED from the measured plain death, not measured in its own right. Everything else is the measured number above.
+// A finisher with no clip of its own yet (Hamstrung, Execution: FINISHER_POSE null) plays another's fall, so its duration is DERIVED from
+// the row its `secondsFrom` names (the plain death), not measured in its own right. Everything else is the measured number above.
 export function finisherSeconds(id: FinisherId): { seconds: number; measured: boolean } {
-  const measured = (FINISHER_SECONDS as Partial<Record<FinisherId, number>>)[id];
-  return measured === undefined ? { seconds: FINISHER_SECONDS.plainDeath, measured: false } : { seconds: measured, measured: true };
+  const row = finisherRow(id);
+  if (!row) throw Error(`unknown finisher "${id}"`);
+  return row.seconds !== undefined ? { seconds: row.seconds, measured: true } : { seconds: FINISHER_SECONDS[row.secondsFrom!]!, measured: false };
 }
