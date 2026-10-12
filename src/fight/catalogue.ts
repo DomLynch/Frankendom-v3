@@ -46,7 +46,7 @@ export type CatalogueRow = {
 };
 
 export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'render' | 'home' | 'voice' | 'look' | 'ladder' | 'timing' | 'wounds' | 'bodytype' | 'field' | 'rig' | 'sparring' | 'dup-id' | 'dup-sparring';
-export type FieldDef = { id: string; kind: 'ref'; of: string; required?: boolean } | { id: string; kind: 'number'; min?: number; max?: number; required?: boolean };
+export type FieldDef = { id: string; sim: boolean; required?: boolean } & ({ kind: 'ref'; of: string } | { kind: 'number'; min?: number; max?: number });
 export type CatalogueDefs = { fields: readonly FieldDef[]; rigs: readonly { id: string }[] };
 export type RowIssue = { code: RowCode; path: string; message: string };
 const HEX = /^#[0-9a-f]{6}$/i, WORLD_MAX_TRIS = 10000;   // the world ceiling a row may not raise (the world goblin is ~8k)
