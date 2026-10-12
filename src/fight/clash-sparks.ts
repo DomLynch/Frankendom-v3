@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { CombatEvent } from './duel.ts';
 import type { Weapon } from './moves.ts';
+import { materialRow } from '../core/contracts/definitions.ts';
 
 // Presentation only: metal sparks for a blade meeting a blade. A few thin fragments struck off the attacking blade itself, each its own
 // speed, angle, life, thickness and streak length (owner 2026-09-20, three times: nothing uniform, nothing yellow, nothing bright or thick
@@ -12,7 +13,7 @@ import type { Weapon } from './moves.ts';
 export const HEAVY_CLASS = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical']);
 export function clashStrength(event: CombatEvent, defender: Weapon): number {
   if ((event.type !== 'Blocked' && event.type !== 'Parried') || event.target === undefined) return 0;
-  if (!['iron', 'steel', 'bronze'].includes(event.material ?? '') || defender.guard !== 'blade' || defender.material === 'wood') return 0;
+  if (!materialRow(event.material ?? '').sparks || defender.guard !== 'blade' || materialRow(defender.material).dull) return 0;
   return event.type === 'Parried' ? 0.9 : HEAVY_CLASS.has(event.move ?? '') ? 0.8 : event.perfect ? 0.65 : 0.4;
 }
 // Block feedback (SCOPE 7, pick C): the sand a contact kicks off the defender's feet, or null for none. A heavy landing on a planted man or
