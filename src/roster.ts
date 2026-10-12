@@ -1,55 +1,25 @@
 import type { WeaponId } from './fight/moves.ts';
 import type { Finish } from './fight/duel.ts';
 import { selectFinisher, type FinisherId } from './fight/finishers.ts';
+import CATALOGUE_ROWS from './fight/catalogue-data.ts';
 
 // The rig: the skeleton family a body is built on, which is the blade table it fights with (src/fight/blade-paths.ts bladePathsByRig; the
 // bake is per rig because the same knife sweeps a different arc in a goblin's hand than in a man's). 'hero' is the player skeleton and
 // every body reproportioned from it. A held creature without a bake of its own stays on the hero table it has always used.
 export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith' | 'wolf' | 'boar' | 'bear';
-// Approved content recipes. Body names refer to existing offline appearance presets/GLBs;
-// archetypes own combat tuning in moves.ts. Adding an individual must not add AI branches.
-export const ROSTER = {
-  veteran: { name: 'the Centurion', body: 'veteran', rig: 'hero', archetype: 'veteran', weapon: 'trident' },
-  pitborn: { name: 'the Pitborn', body: 'pitborn', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver' },
-  goblin: { name: 'the Goblin', body: 'goblin', rig: 'goblin', archetype: 'goblin', weapon: 'knife' },
-  nightborn: { name: 'the Nightborn', body: 'nightborn', rig: 'nightborn', archetype: 'nightborn', weapon: 'estoc' },
-  executioner: { name: 'the Executioner', body: 'executioner', rig: 'hero', archetype: 'executioner', weapon: 'scythe' },
-  // hold: built and kept, but off the beta ladder and out of the beta bundle until after beta. Owner, 2026-09-20: Minotaur and
-  // Werewolf are Season 2; Wraith and Skeleton held on the lead's reading of the same beta freeze (one flag each to reverse).
-  // A held recipe stays a valid OpponentId so saved encounters still resolve (ladder.ts falls back).
-  minotaur: { name: 'the Minotaur', body: 'minotaur', rig: 'minotaur', archetype: 'pitborn', weapon: 'maul', finishers: ['opened'], hold: true },
-  // The Ash Wolf (Combat, 2026-10-07, mob beasts proposal docs/specs/origins/mob-fights-proposal.md): a quadruped on its own rig (src/assets/wolf.glb, Characters' #1662), the Goblin's
-  // hit-and-run identity with a bite instead of a knife. Held: off the ladder and out of the beta bundle; a world mob row or ?opponent=wolf reaches it. Flee is the twist layer's flee-at.
-  wolf: { name: 'the Ash Wolf', body: 'wolf', rig: 'wolf', archetype: 'wolf', weapon: 'bite', finishers: [], hold: true },
-  // The Tusked Boar (Combat, 2026-10-08, Dom: a boar in Zone 1): the wolf's pattern on Characters' boar export (src/assets/boar.glb, #1777): same seven-clip quadruped, the `bite` weapon, its own baked jaw table.
-  boar: { name: 'the Tusked Boar', body: 'boar', rig: 'boar', archetype: 'boar', weapon: 'bite', finishers: [], hold: true },
-  // The Cinder Bear (Combat, 2026-10-08, Dom: bears after the boar): the boar's pattern on Characters' bear export (src/assets/bear.glb, #1781).
-  bear: { name: 'the Cinder Bear', body: 'bear', rig: 'bear', archetype: 'bear', weapon: 'bite', finishers: [], hold: true },
-  wraith: { name: 'the Wraith', body: 'wraith', rig: 'wraith', archetype: 'nightborn', weapon: 'reaper', finishers: ['opened'], hold: true },
-  werewolf: { name: 'the Werewolf', body: 'werewolf', rig: 'hero', archetype: 'pitborn', weapon: 'cleaver', finishers: [], hold: true },
-  skeleton: { name: 'the Skeleton', body: 'skeleton', rig: 'hero', archetype: 'veteran', weapon: 'trident', finishers: [], blood: false, hold: true },
-  // Owner 2026-09-20: the Dwarf is playable now (not held) — flip `hold: true` to park him with the other creatures.
-  // Owner 2026-09-20: Dwarf kills were landing plain. Reconstructed bodies list only finishers validated on that body; the
-  // Dwarf rig carries every finisher clip and each rotation outcome below was captured on him by the finisher harness.
-  dwarf: { name: 'the Dwarf', body: 'dwarf', rig: 'hero', archetype: 'dwarf', weapon: 'warhammer', finishers: ['splitCrown', 'decapitation', 'runThrough', 'opened', 'plainDeath'] },   // quietOne (picker-only) failed its spray check on him — not listed
-  // The Plague Doctor (Brief 18; owner 2026-09-23 via Lead: launch → beta, "put them live now"). A TRELLIS.2 body on the hero rig with
-  // the player's longsword and clips (build-creatures.mjs plaguedoctor). Archetype `plagueDoctor` is the Nightborn's row
-  // copied verbatim (the brief's closest fit to poke-and-withdraw) until Combat's battery sets his own. Last rung, so no existing career shifts. Id has no underscore:
-  // loot_claims.opponent is ^[a-z]{1,32}$ (supabase/migrations/202609230001_server_awards.sql).
-  plaguedoctor: { name: 'the Plague Doctor', body: 'plaguedoctor', rig: 'hero', archetype: 'plagueDoctor', weapon: 'estoc', finishers: ['plainDeath'] },   // finishers: none validated on this body yet (the Dwarf rule); the harness pass adds them
-  // The Knight (Brief 17; owner 2026-09-23 via Lead and Strategy: launch → beta). A TRELLIS.2 body on a donor of the hero rig at
-  // BUILD.knight's 1.18 (build-creatures.mjs knight), the reference's baked maul cut away. He carries the MAUL, drawn
-  // from his own rebuild on Weapons' hero-rig Maul_* family (#572). Archetype `knight` is the Executioner's row copied
-  // verbatim at his own scale until Combat's battery sets his own. Last rung, so no existing career shifts.
-  knight: { name: 'the Knight', body: 'knight', rig: 'hero', archetype: 'knight', weapon: 'maul', finishers: ['plainDeath'] },   // finishers: none validated on this body yet (the Dwarf rule); the harness pass adds them
-  // The Witch (Brief 16, beta on Dom's word 2026-09-23): a TRELLIS.2 reconstruction fitted to the Veteran's v1 rig (creatures.py
-  // `witch`), on the trident's polearm family until the Weapons lane's bladed staff lands. finishers: [] until each is measured on her.
-  witch: { name: 'the Witch', body: 'witch', rig: 'hero', archetype: 'witch', weapon: 'trident', finishers: [] },
-  // Brief 15 (Dom, 2026-09-23: into beta now): a Norse woman on the realistic female body, reference A (#498), the gladius. Her archetype
-  // is a placeholder copy of the Pitborn's profile until Combat's retune (moves.ts ARCHETYPES.shieldmaiden).
-  shieldmaiden: { name: 'the Shieldmaiden', body: 'shieldmaiden', rig: 'hero', archetype: 'shieldmaiden', weapon: 'gladius' },
-} as const satisfies Record<string, { name: string; body: string; rig: RigId; archetype: string; weapon: WeaponId; finishers?: readonly FinisherId[]; blood?: false; hold?: true }>;
-export type OpponentId = keyof typeof ROSTER;
+// The roster is the character catalogue's body rows (src/fight/catalogue-data.ts, pure data): a new opponent is one row there, with an archetype and weapon that already exist.
+// Archetypes own combat tuning in moves.ts; adding an individual must not add AI branches. A recipe keeps the shape it always had (name, body, rig, archetype, weapon, then finishers
+// / blood / hold only when the row says so), derived from the row: `finisher.allowed` absent = every finisher, `blood` null = bloodless, `ladder.hold` = off the ladder.
+type Row = (typeof CATALOGUE_ROWS)[number];
+type BodyRow = Exclude<Row, { body: string }>;
+type Recipe<R extends BodyRow> = { name: R['name']; body: R['id']; rig: R['rig']; archetype: R['stats']['archetype']; weapon: R['weapon'] }
+  & (R extends { finisher: { allowed: infer F } } ? { finishers: F } : unknown) & (R['blood'] extends null ? { blood: false } : unknown) & (R['ladder']['hold'] extends true ? { hold: true } : unknown);
+const recipeOf = (r: BodyRow) => ({
+  name: r.name, body: r.id, rig: r.rig, archetype: r.stats.archetype, weapon: r.weapon,
+  ...('allowed' in r.finisher ? { finishers: r.finisher.allowed } : {}), ...(r.blood === null ? { blood: false } : {}), ...(r.ladder.hold ? { hold: true } : {}),
+});
+export const ROSTER = Object.fromEntries(CATALOGUE_ROWS.filter((r): r is BodyRow => !('body' in r)).map((r) => [r.id, recipeOf(r)])) as unknown as { [R in BodyRow as R['id']]: Recipe<R> };
+export type OpponentId = BodyRow['id'];
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
   const recipe = ROSTER[id];
   return !('finishers' in recipe) || (!!finisher && (recipe.finishers as readonly FinisherId[]).includes(finisher));

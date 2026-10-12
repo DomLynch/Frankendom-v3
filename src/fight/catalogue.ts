@@ -30,7 +30,7 @@ export type CatalogueRow = {
   armour: readonly LootId[];                    // the level-1 armour the character wears and drops from (src/core/loot.ts ids, no weapon); [] = a creature with no armour pieces
   stats: { archetype: string; levels: readonly [number, number] };   // moves.ts ARCHETYPES key and the level band it is met at; numbers come from opponentAt
   animations: { clips: readonly string[] };     // the clip names both assets carry
-  finisher: { cut: Cut | null; finishers: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback)
+  finisher: { cut: Cut | null; finishers: readonly FinisherId[]; allowed?: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback); `allowed` is the roster's gate (src/roster.ts supportsFinishers), absent = every finisher
   blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/fight/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
   render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/fight/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
   weapon: string;                               // the roster's weapon id (moves.ts WEAPONS); a creature's bite is a weapon too
