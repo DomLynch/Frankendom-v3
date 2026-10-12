@@ -28,6 +28,7 @@ export const EXECUTIONER_TEMPLATES = {
 const ROWS = specialFamily(SPECIALS, 'executioner', EXECUTIONER_TEMPLATES);
 const rowOf = (kind: BossKind | SpecialRow): SpecialRow => { const r = typeof kind === 'string' ? ROWS.find((x) => x.id === kind) : kind; if (!r) throw Error(`unknown executioner special "${String(kind)}"`); return r; };
 type DayNight<T> = { day: T; night: T };
+type Pal = { core: readonly number[]; edge: readonly number[] };
 type Params = { trails: number; rimRadius: number; trailAlpha: number; puffs: number; puffColor: DayNight<string>; puffAlpha: number;
   gritSize: number; gritShade: number; gritAlpha: number; shadowAlpha: DayNight<number>; poolAlpha: DayNight<number>; dimAlpha: DayNight<number>; crescentAlpha: DayNight<number>; cutAlpha: number };
 export const BUILD = 30;   // ticks of visible build-up before the landing (0.5 s; Dom: a 1-2 s build-up was too slow on Red Wind)
@@ -104,7 +105,8 @@ function surface(fn: (l: number, a: number) => P3, nl = 14, na = 4) {
 // Day sand is pale: dust trails go lighter-than-sand through a darker core; the pit's clay is dark: they go pale on it.
 // The boss's `look` row (bosses.json) holds both palettes (Reaper's scythe: dried-blood brown by day, darker than the sand; dark clay-brown by night too, never pale over a fighter).
 export const bossLook = (kind: BossKind | SpecialRow, exposure: number): Look => {
-  const dim = exposure > 1.5, l = bossRow(rowOf(kind).id)!.look![dim ? 'night' : 'day'], c = (v: readonly number[]) => new THREE.Color(v[0], v[1], v[2]);
+  // A special with no bosses.json row yet (a new row being tried) carries its own `look` param; a boss's palette is always its bosses.json row.
+  const row = rowOf(kind), dim = exposure > 1.5, l = (bossRow(row.id)?.look ?? (row.params as { look: { day: Pal; night: Pal } }).look)[dim ? 'night' : 'day'], c = (v: readonly number[]) => new THREE.Color(v[0], v[1], v[2]);
   return { core: c(l.core), edge: c(l.edge), dim };
 };
 const cutLook = (dim: boolean): Look => dim ? { core: new THREE.Color(0.02, 0.011, 0.007), edge: new THREE.Color(0.04, 0.022, 0.013), dim } : { core: new THREE.Color(0.12, 0.065, 0.03), edge: new THREE.Color(0.5, 0.35, 0.19), dim };   // the cut sand: dark earth, pale dry rim
