@@ -277,5 +277,104 @@
   "lift": -0.28,
   "cue": "nyx",
   "classSkill": "skill_lunge"
+ },
+ {
+  "id": "dwarf8",
+  "label": "The Word",
+  "opponent": "dwarf",
+  "rank": 8,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "theword",
+  "classSkill": "skill_stomp"
+ },
+ {
+  "id": "dwarf9",
+  "label": "Three Blows",
+  "opponent": "dwarf",
+  "rank": 9,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "threeblows",
+  "classSkill": "skill_stomp"
+ },
+ {
+  "id": "dwarf10",
+  "label": "Rim Shake",
+  "opponent": "dwarf",
+  "rank": 10,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "rimshake",
+  "classSkill": "skill_stomp"
+ },
+ {
+  "id": "shield8",
+  "label": "Bared Face",
+  "opponent": "shieldmaiden",
+  "rank": 8,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "baredface",
+  "classSkill": "skill_hewer"
+ },
+ {
+  "id": "shield9",
+  "label": "The Ring",
+  "opponent": "shieldmaiden",
+  "rank": 9,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "thering",
+  "classSkill": "skill_hewer"
+ },
+ {
+  "id": "shield10",
+  "label": "Aegis Sweep",
+  "opponent": "shieldmaiden",
+  "rank": 10,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "aegis",
+  "classSkill": "skill_hewer"
+ },
+ {
+  "id": "antaeus",
+  "label": "Cracking Ground",
+  "opponent": "pitborn",
+  "rank": 8,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": 0.12,
+  "cue": "cracking",
+  "classSkill": "skill_cleave"
+ },
+ {
+  "id": "surtr",
+  "label": "Ash Fall",
+  "opponent": "pitborn",
+  "rank": 9,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": -0.2,
+  "cue": "ashfall",
+  "classSkill": "skill_cleave"
+ },
+ {
+  "id": "typhon",
+  "label": "Wind Wall",
+  "opponent": "pitborn",
+  "rank": 10,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": 0,
+  "cue": "windwall",
+  "classSkill": "skill_cleave"
  }
 ]
