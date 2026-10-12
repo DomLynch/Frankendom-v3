@@ -73,6 +73,7 @@ const smokeLook = (exposure: number): SandLook => exposure > 1.5 ? { core: new T
 // The gale's grit: a near-black brown core with a pale torn edge on the day sand (pale grey, then sand-brown, vanished against it); near-black warm grey on the Night Pit (pale strokes FAILed 10-02).
 const galeLook = (exposure: number): SandLook => exposure > 1.5 ? { core: new THREE.Color(0.02, 0.018, 0.015), edge: new THREE.Color(0.035, 0.031, 0.026), dim: true }
   : { core: new THREE.Color(0.022, 0.014, 0.008), edge: new THREE.Color(0.46, 0.35, 0.2), dim: false };
+const LOOK_OF: Record<keyof typeof PITBORN_TEMPLATES, (exposure: number) => SandLook> = { crack: earthLook, ashfall: ashLook, gale: galeLook };   // the sand's colour per template verb
 
 const texture = (n: number, fill: (x: number, y: number, put: (r: number, g: number, b: number, a: number) => void) => void) => {
   const px = new Uint8Array(n * n * 4);
@@ -158,7 +159,7 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
   const template = row.template as keyof typeof PITBORN_TEMPLATES, P = row.params as Partial<Params>, night = exposure > 1.5;
   const is: typeof isHadesShadow = (o, actor, move) => o === row.opponent && actor === row.cast.actor && (row.cast.move === undefined || move === row.cast.move);
   const root = new THREE.Group(); root.name = 'special fx'; root.visible = false; scene.add(root);
-  const look = template === 'crack' ? earthLook(exposure) : template === 'ashfall' ? ashLook(exposure) : galeLook(exposure);
+  const look = LOOK_OF[template](exposure);
   const mat = (map: THREE.Texture, color = '#ffffff') => new THREE.MeshBasicMaterial({ map, color, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const spriteMat = (map: THREE.Texture, color = '#ffffff') => new THREE.SpriteMaterial({ map, color, transparent: true, opacity: 0, depthWrite: false, fog: true });
   const over = P.over === true;   // the gale draws in front of the fighters, so a Night Pit silhouette in the shadow band is still crossed by it
@@ -171,9 +172,9 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
   const tex = new Map<string, THREE.Texture>(), once = (key: string, make: () => THREE.Texture) => { let t = tex.get(key); if (!t) { t = make(); tex.set(key, t); } return t; };   // a texture per seed, shared by the sprites that use it
   const clods = template === 'crack' ? sprites(P.clods!, (i) => spriteMat(once(`clod${i % 5}`, () => clodMap(i % 5 * 3 + 1, look))), 'clod') : [];
   const grit = P.grit ? sprites(P.grit, () => spriteMat(once('grit', gritMap), gritTint), 'grit') : [];
-  const flakes = template === 'ashfall' ? sprites(P.flakes!, (i) => spriteMat(once(`flake${i % 6}`, () => flakeMap(i % 6 * 5 + 2, flakeLook(exposure)))), 'flake') : [];
-  const patches = template === 'ashfall' ? meshes(P.patches!, flatDisc(), (i) => mat(blobMap(i * 9 + 3, look, 2.2)), 'soot') : [];
-  const smoke = template === 'ashfall' ? sprites(P.smoke!, (i) => spriteMat(blobMap(i * 13 + 8, smokeLook(exposure), 1.4)), 'smoke') : [];
+  const flakes = P.flakes ? sprites(P.flakes, (i) => spriteMat(once(`flake${i % 6}`, () => flakeMap(i % 6 * 5 + 2, flakeLook(exposure)))), 'flake') : [];
+  const patches = P.patches ? meshes(P.patches, flatDisc(), (i) => mat(blobMap(i * 9 + 3, look, 2.2)), 'soot') : [];
+  const smoke = P.smoke ? sprites(P.smoke, (i) => spriteMat(blobMap(i * 13 + 8, smokeLook(exposure), 1.4)), 'smoke') : [];
   const streaks = template === 'gale' ? meshes(P.streaks!, stripGeometry(), (i) => mat(paintSheet(i * 5 + 31, look)), 'gale') : [];
   const sand = template === 'gale' ? sprites(P.sand!, () => spriteMat(once('grit', gritMap), gritTint), 'sand') : [];
   const all = [...cracks, ...clods, ...grit, ...flakes, ...patches, ...smoke, ...streaks, ...sand];
@@ -212,7 +213,7 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
           const a = hash(i, 28) * Math.PI * 2, r = 0.3 + 1.4 * hash(i, 29), up = (0.05 + 0.5 * hash(i, 30)) * build * (1 - post);
           s.position.set(caster.x + Math.cos(a) * r, gy + 0.05 + up, caster.z + Math.sin(a) * r); s.scale.setScalar(0.04 + 0.05 * hash(i, 31)); op(s, P.gritAlpha! * live);
         });
-      } else if (template === 'ashfall') {
+      } else if (flakes.length || patches.length || smoke.length) {
         patches.forEach((m, i) => {   // soot scorched into the sand under him: torn dark patches creeping out, never a clean ring
           const a = hash(i, 41) * Math.PI * 2, r = 0.15 + 1.6 * hash(i, 42) * build, s = 1.3 + 1.2 * hash(i, 43);
           m.position.set(caster.x + Math.cos(a) * r, gy + 0.03 + 0.003 * i, caster.z + Math.sin(a) * r); m.rotation.y = hash(i, 44) * 6.3; m.scale.set(s * build, 1, s * build * 0.8);
