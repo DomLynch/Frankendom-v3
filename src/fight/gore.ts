@@ -179,6 +179,17 @@ const surfaceNormal = new THREE.Vector3(), surfaceMat = new THREE.Matrix3();
 // 2026-09-25 heap profile put at 217 MB/s of garbage in an idle phone-tier fight: the heap sawtooth behind the ~1 s stalls on
 // the base arena. Same maths without the spread: 36 MB/s (upstream dev still spreads, checked the same day). Every caller
 // benefits (characters.ts loot fitting, opened.ts), since the override lives on the prototype.
+// One surface ray transforms the three vertices of EVERY triangle of every skin (Mesh.raycast), so a vertex shared by ~6 triangles is skinned ~6 times,
+// each time with a fresh bone-matrix product per bone. The pose cannot change inside one ray: skinPass() brackets a ray, and within it each skin's vertex is
+// skinned once (a Float64 memo, so every later read is the same double the first one returned) and each bone's product is built once. Outside a pass nothing is cached.
+let skinning = false, skinStamp = 0;
+const boneMemo = new WeakMap<THREE.Skeleton, { mats: THREE.Matrix4[]; stamp: number[] }>(), vertexMemo = new WeakMap<THREE.Object3D, { xyz: Float64Array; stamp: Uint32Array }>();
+function boneProduct(skeleton: THREE.Skeleton, bone: number): THREE.Matrix4 {
+  let memo = boneMemo.get(skeleton); if (!memo) { memo = { mats: [], stamp: [] }; boneMemo.set(skeleton, memo); }
+  if (memo.stamp[bone] !== skinStamp) { (memo.mats[bone] ??= new THREE.Matrix4()).multiplyMatrices(skeleton.bones[bone].matrixWorld, skeleton.boneInverses[bone]); memo.stamp[bone] = skinStamp; }
+  return memo.mats[bone];
+}
+function skinPass<T>(ray: () => T): T { skinStamp++; skinning = true; try { return ray(); } finally { skinning = false; } }
 const boneIndex = new THREE.Vector4(), boneWeight = new THREE.Vector4(), boneBase = new THREE.Vector4(), boneScratch = new THREE.Vector4(), boneMatrix = new THREE.Matrix4();
 THREE.SkinnedMesh.prototype.applyBoneTransform = function (this: THREE.SkinnedMesh, index: number, target: THREE.Vector3 | THREE.Vector4) {
   const { skeleton, geometry } = this, out = target as THREE.Vector4, homogeneous = (target as THREE.Vector4).isVector4;
@@ -190,12 +201,21 @@ THREE.SkinnedMesh.prototype.applyBoneTransform = function (this: THREE.SkinnedMe
     const weight = boneWeight.getComponent(i);
     if (weight === 0) continue;
     const bone = boneIndex.getComponent(i);
-    boneMatrix.multiplyMatrices(skeleton.bones[bone].matrixWorld, skeleton.boneInverses[bone]);
-    out.addScaledVector(boneScratch.copy(boneBase).applyMatrix4(boneMatrix), weight);
+    out.addScaledVector(boneScratch.copy(boneBase).applyMatrix4(skinning ? boneProduct(skeleton, bone) : boneMatrix.multiplyMatrices(skeleton.bones[bone].matrixWorld, skeleton.boneInverses[bone])), weight);
   }
   if (homogeneous) out.w = boneBase.w;   // the homogeneous coordinate survives the vector operations, as upstream keeps it
   return out.applyMatrix4(this.bindMatrixInverse);
 } as typeof THREE.SkinnedMesh.prototype.applyBoneTransform;
+const meshVertex = THREE.Mesh.prototype.getVertexPosition;
+THREE.SkinnedMesh.prototype.getVertexPosition = function (this: THREE.SkinnedMesh, index: number, target: THREE.Vector3) {
+  if (!skinning) return meshVertex.call(this, index, target);
+  const count = this.geometry.attributes.position.count; let memo = vertexMemo.get(this);
+  if (!memo || memo.stamp.length !== count) { memo = { xyz: new Float64Array(count * 3), stamp: new Uint32Array(count) }; vertexMemo.set(this, memo); }
+  const k = index * 3;
+  if (memo.stamp[index] === skinStamp) return target.set(memo.xyz[k], memo.xyz[k + 1], memo.xyz[k + 2]);
+  meshVertex.call(this, index, target); memo.xyz[k] = target.x; memo.xyz[k + 1] = target.y; memo.xyz[k + 2] = target.z; memo.stamp[index] = skinStamp;
+  return target;
+} as typeof THREE.SkinnedMesh.prototype.getVertexPosition;
 const skinCache = new WeakMap<THREE.Object3D, THREE.Object3D[]>();
 function skinsOf(root: THREE.Object3D): THREE.Object3D[] {
   let skins = skinCache.get(root);
@@ -207,7 +227,7 @@ export function surfaceHit(root: THREE.Object3D, bone: THREE.Object3D, normal: T
   if (!skins.length) return null;
   bone.getWorldPosition(surfaceBone); surfaceFrom.copy(surfaceBone).addScaledVector(normal, SURFACE.reach); surfaceDir.copy(normal).negate();
   surfaceRay.set(surfaceFrom, surfaceDir); surfaceRay.far = SURFACE.reach;
-  const met = surfaceRay.intersectObjects(skins, false)[0];
+  const met = skinPass(() => surfaceRay.intersectObjects(skins, false)[0]);
   if (!met || !met.normal) return null;
   const r = SURFACE.reach - met.distance;   // how far out from the bone the surface is; a stray polygon must stay in the slot's neighbourhood
   if (r < 0.01) return null;
@@ -223,13 +243,13 @@ function surfaceReach(root: THREE.Object3D, point: THREE.Vector3, normal: THREE.
   const skins = skinsOf(root).filter((o) => o.visible);
   if (!skins.length) return max;
   let reach = 0;
-  for (let i = 1; i <= 4; i++) {
+  skinPass(() => { for (let i = 1; i <= 4; i++) {   // the four rays share one pose: one pass
     const step = (max * i) / 4;
     surfaceFrom.copy(point).addScaledVector(down, step).addScaledVector(normal, 0.05);
     surfaceDir.copy(normal).negate(); surfaceRay.set(surfaceFrom, surfaceDir); surfaceRay.far = 0.1;
     if (!surfaceRay.intersectObjects(skins, false).length) break;
     reach = step;
-  }
+  } });
   return reach;
 }
 // The radius that the site table's guess is clamped to when a surface was met, kept for the fallback path and the tests.
