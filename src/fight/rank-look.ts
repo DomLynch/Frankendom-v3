@@ -45,6 +45,7 @@ import type { Practice } from './combat.ts';
 import { offFlag } from '../off-flag.ts';
 import type { Phase } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
+import { bakeFallbackFor, isTemplate } from './finisher-look.ts';
 
 const FLAG = /^\/looks\/[A-Za-z0-9_@.-]+\.glb$/;
 export function rankLookFlag(search: string): string | undefined {
@@ -127,7 +128,7 @@ export function rankLookStream<T>(load: () => Promise<T> | undefined, apply: (lo
 // pending plays a finisher that reads no bake, for that fight, and is logged; never a stall, never a cut through an unbaked helm.
 // Finishers' pick (22:4x, Lead confirmed): runThrough, a pose and the blade through spine_02, nothing cut; plainDeath where he does not allow it.
 export const bakeSafeFinisher = (finisher: FinisherId | null, victim: number, pending: boolean, allows: (f: FinisherId) => boolean = () => true): FinisherId | null =>
-  finisher === 'opened' && victim === 1 && pending ? (allows('runThrough') ? 'runThrough' : 'plainDeath') : finisher;
+  isTemplate(finisher, 'bisect') && victim === 1 && pending ? bakeFallbackFor(finisher!, allows) : finisher;   // the row's bakeFallback, else the plain death (finisher-look.ts; Combat B with Characters' OK, 2026-10-12)
 // Forced, not a fallback (Strategy 22:27 via Lead): until the pre-swap bake passes row C with its three conditions, the closed helms at
 // L8–L10 play runThrough wherever opened was picked, and no waist-cut bake is taken for these looks at all (none before the swap, none
 // stepped after it, none at a rematch). The Dwarf (#1030) is ruled the same. Remove a set here once its row C passes.

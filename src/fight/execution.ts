@@ -3,6 +3,7 @@ import type { Finish } from './duel.ts';
 import type { WeaponId } from './moves.ts';
 import type { OpponentId } from '../roster.ts';
 import { HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, poseOf as hamstrungPoseOf } from './hamstrung.ts';
+import { bodyPoseOf, isTemplate, PLAIN_DEATH } from './finisher-look.ts';
 
 // Execution: a paired finisher (Death_Execution on the victim, Fin_Execution on the killer), GAME_SPEC's "the one ceremonial beat: a held
 // half-second before the blow lands". The victim is forced to his knees and turned away, his weapon let go; the killer steps in behind him,
@@ -34,12 +35,12 @@ export const EXECUTION_FLOOR_MARKS: readonly number[] = [.15, .2, EXECUTION_BEAT
 
 // resolveHamstrung's rule for the other paired pick: the picker never overrides kill eligibility, and a body without the clip plays no ceremony for it.
 export function resolveExecution(id: OpponentId, finish: Finish, weapons: readonly [WeaponId, WeaponId], override: FinisherId | null, previous: FinisherId | null, resolved: FinisherId | null): FinisherId | null {
-  if (override !== 'execution') return resolved;
-  return EXECUTION_VICTIMS.includes(id) && selectFinisher(finish, weapons, previous) ? 'execution' : null;
+  if (!isTemplate(override, 'execute')) return resolved;
+  return EXECUTION_VICTIMS.includes(id) && selectFinisher(finish, weapons, previous) ? override : null;
 }
 
-// poseOf (src/fight/hamstrung.ts) with Execution's pose word added; finishers.ts's table stays as it was.
-export const poseOf = (id: FinisherId): ReturnType<typeof hamstrungPoseOf> | 'execution' => id === 'execution' ? 'execution' : hamstrungPoseOf(id);
+// poseOf (src/fight/hamstrung.ts) with an execute row's own pose word added (its body.victim.pose).
+export const poseOf = (id: FinisherId): string | null => isTemplate(id, 'execute') ? bodyPoseOf(id) : hamstrungPoseOf(id);
 
 // One id for picture and audio, as hamstrungPick: clips not installed by the kill means the plain death for both.
-export const executionPick = (pick: FinisherId | null, installed: boolean): FinisherId | null => pick === 'execution' && !installed ? 'plainDeath' : pick;
+export const executionPick = (pick: FinisherId | null, installed: boolean): FinisherId | null => isTemplate(pick, 'execute') && !installed ? PLAIN_DEATH : pick;
