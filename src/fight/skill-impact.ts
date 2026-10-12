@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
+import { SKILL_ROWS } from './moves.ts';
 
 // Presentation only: the shared SKILL-IMPACT kit (Strategy via Lead, 2026-09-26, SCOPE 8). Every skill move ships on it: a landed `Hit`
 // whose move is `skill_<id>` throws a short tinted flash at the contact and a fan of dust and sparks, in that move's colour. Driven by the
@@ -9,26 +10,16 @@ import type { CombatEvent, Fighter } from './duel.ts';
 
 // Each move's tint, keyed by SkillId (move id = skill_<id>; Lead fixed the ids 2026-09-26). Pommel is neutral steel, and nothing here is
 // green: green is Witch-fire's, and the warden's cue. A skill move not in the table yet flashes the neutral default the day it lands.
-export const IMPACT_TINT: Readonly<Record<string, string>> = {
-  pommel: '#d4dae2',     // day one, every player: cold steel, no hue
-  lunge: '#9a86ff',      // Nightborn: night violet
-  reaping: '#c0202a',    // Executioner: the headsman's red
-  shove: '#d9a441',      // Centurion: scutum bronze
-  jab: '#e0c040',        // Goblin: dirty yellow
-  cleave: '#e0561c',     // Pitborn: forge orange
-  stomp: '#b89468',      // Dwarf: stone dust
-  miasma: '#b07ad0',     // Plague Doctor: bruised mauve (the cloud is bespoke)
-  ironrush: '#9fb6cc',   // Knight: blued iron
-  hewer: '#4aa3df',      // Shieldmaiden: fjord blue
-};
+export const IMPACT_TINT: Readonly<Record<string, string>> = Object.fromEntries(Object.values(SKILL_ROWS).filter((r) => r.impactTint).map((r) => [r.id, r.impactTint!]));   // the skill rows' impactTint (skill-defs.json; Characters owns the colours)
 export const IMPACT_DEFAULT = '#e6e0d4';
 export const IMPACT = { flash: 0.12, flashSize: 0.9, sparks: 10, life: 0.4, reach: 0.28 } as const;   // seconds, metres
 const HEIGHT = { head: 1.62, torso: 1.2, legs: 0.62 } as const;   // the contact's height on a scale-1 body, by the sim's hit location
 
 // What a landed skill blow throws, or null: a Hit on a `skill_*` move other than Witch-fire. A blow taken through a raised guard is half.
 export function impactOf(event: CombatEvent): { id: string; tint: string; strength: number } | null {
-  if (event.type !== 'Hit' || event.target === undefined || !event.move?.startsWith('skill_') || event.move === 'skill_witchfire') return null;
-  const id = event.move.slice('skill_'.length);
+  if (event.type !== 'Hit' || event.target === undefined || !event.move?.startsWith('skill_')) return null;
+  const id = event.move.slice('skill_'.length), row = SKILL_ROWS[id];
+  if (row && !row.impactTint) return null;   // a skill with its own effect (Witch-fire) has no generic flash
   return { id, tint: IMPACT_TINT[id] ?? IMPACT_DEFAULT, strength: event.guarded ? 0.5 : 1 };
 }
 

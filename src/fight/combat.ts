@@ -2,7 +2,7 @@ import { decide, initialAi, readOpponent, type AiMode, type AiState } from './ai
 import type { HitLocation } from './blade.ts';
 import { inBufferWindow, initialDuel, legal, type DuelPose, withGambit, withSpecials, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
 import { asStance, moodOf, type PickedStance } from './stance.ts';
-import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type AiProfile, type MoveId, type Opponent, type PathId, type SkillId, type SpecialName, type Weapon, type WeaponId } from './moves.ts';
+import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, BASH_MOVE, SKILL_ROWS, skillOfMove, type AiProfile, type MoveId, type Opponent, type PathId, type SkillId, type SpecialName, type Weapon, type WeaponId } from './moves.ts';
 import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { specialStage } from './special-look.ts';
@@ -29,7 +29,7 @@ export const attackSpecs = (weapon: WeaponId) => {
     light: clipSpec(w, 'light_right', 'light_right'), return: clipSpec(w, 'light_left_chain', 'light_left'), heavy: clipSpec(w, 'heavy_overhead', 'heavy_overhead'),
     riposte: clipSpec(w, 'riposte', 'riposte'), slashRiposte: clipSpec(w, 'slash_riposte', 'slash_riposte'), thrust: clipSpec(w, 'thrust', 'thrust'),
     // The Pommel Strike's own clip (Skill_Pommel, hero rig): a cone move with no blade path, so its contact key is the clip's own .45 (18/40).
-    pommel: { contact: w.moves.skill_pommel.windup, recovery: total(w.moves.skill_pommel), damage: w.moves.skill_pommel.damage, reach: w.moves.skill_pommel.reach, cost: w.moves.skill_pommel.stamina, source: 18 / 40 },
+    pommel: { contact: w.moves[BASH_MOVE].windup, recovery: total(w.moves[BASH_MOVE]), damage: w.moves[BASH_MOVE].damage, reach: w.moves[BASH_MOVE].reach, cost: w.moves[BASH_MOVE].stamina, source: 18 / 40 },
   };
 };
 export const ATTACKS = attackSpecs(DEFAULT_WEAPON);
@@ -95,13 +95,13 @@ export type Practice = {
 // sword grips play the hero's Skill_Pommel; the hafted trident, warhammer and maul their own <Family>_Pommel butt strike (Strategy 2026-09-29).
 export const POMMEL_BASH: ReadonlySet<WeaponId> = new Set(Object.keys(WEAPON_LOOK).filter((id) => WEAPON_LOOK[id]!.pommelBash));   // the weapon rows' look.pommelBash
 const clipOf = (f: Fighter): Attack => {
-  const move = f.lastMove;
+  const move = f.lastMove, skill = SKILL_ROWS[skillOfMove(move) ?? ''];
   return move === 'slash_riposte' ? 'slashRiposte'
     : move === 'light_left' ? 'return'
-    : move === 'heavy_overhead' || move === 'heavy_riposte' || move === 'heavy_counter' || move === 'critical' || move === 'skill_witchfire' || move === 'skill_reaping' || move === 'skill_cleave' || move === 'skill_stomp' || move === 'skill_miasma' ? 'heavy'   // the Witch-fire plays the heavy clip until its own (#732) lands
+    : move === 'heavy_overhead' || move === 'heavy_riposte' || move === 'heavy_counter' || move === 'critical' || skill?.clip === 'heavy' ? 'heavy'   // the Witch-fire plays the heavy clip until its own (#732) lands
     : move === 'riposte' || (move === 'thrust' && f.chained) ? 'riposte'
-    : move === 'skill_pommel' && POMMEL_BASH.has(f.weapon) ? 'pommel'   // the hilt bash (Skill_Pommel): the longsword, the knife (every player's first take), the estoc and the cleaver (2026-09-28), the gladius, the trident, the warhammer and the maul (Strategy 2026-09-29); other weapons (the scythe) keep the thrust clip until theirs lands
-    : move === 'thrust' || move === 'skill_pommel' || move === 'skill_lunge' || move === 'skill_ironrush' || move === 'skill_shove' ? 'thrust' : 'light';   // SCOPE 8: each skill plays its timing row's clip (the kick-timed Shove, a push, the thrust's) until its own lands
+    : skill?.bash && POMMEL_BASH.has(f.weapon) ? 'pommel'   // the hilt bash (Skill_Pommel): the longsword, the knife (every player's first take), the estoc and the cleaver (2026-09-28), the gladius, the trident, the warhammer and the maul (Strategy 2026-09-29); other weapons (the scythe) keep the thrust clip until theirs lands
+    : move === 'thrust' || skill?.clip === 'thrust' ? 'thrust' : 'light';   // SCOPE 8: each skill plays its timing row's clip (the kick-timed Shove, a push, the thrust's) until its own lands
 };
 const legacyPhase = (f: Fighter): LegacyPhase => f.phase === 'attack' && f.move === 'kick' ? 'kick' : f.phase;
 const RESULTS: Partial<Record<CombatEvent['type'], [Result, Result]>> = {
@@ -182,10 +182,9 @@ export function actorPose(s: Practice, side: Side): { pose: Pose; progress: numb
   return { pose, progress: Math.min(1, f.age / Math.max(1, duration)), attack, contact };
 }
 
-const NAMES: Record<MoveId, string> = {
+const NAMES: Partial<Record<MoveId, string>> = {   // a skill's name is its row's (skill-defs.json)
   light_right: 'right cut', light_left: 'left cut', heavy_overhead: 'heavy', thrust: 'thrust', riposte: 'riposte',
-  slash_riposte: 'counter slash', heavy_riposte: 'heavy riposte', critical: 'critical', heavy_counter: 'guard counter', kick: 'kick', skill_witchfire: 'Witch-fire', skill_pommel: 'Pommel Strike',
-  skill_lunge: 'Estoc Lunge', skill_reaping: 'Reaping Blow', skill_shove: 'Scutum Shove', skill_jab: 'Dirty Jab', skill_cleave: 'Butcher\'s Cleave', skill_stomp: 'Anvil Stomp', skill_miasma: 'Miasma', skill_ironrush: 'Iron Rush', skill_hewer: 'Shield-Hewer',
+  slash_riposte: 'counter slash', heavy_riposte: 'heavy riposte', critical: 'critical', heavy_counter: 'guard counter', kick: 'kick',
 };
 // `foe`: the opponent's own name without its article ("Centurion", "Goblin"), so the coaching lines name whoever is in the arena
 // (Dom via Strategy, 2026-09-22: "warden" leaves every player-facing string; identifiers keep it). The default covers the callers
@@ -213,7 +212,7 @@ export function practiceHint(s: Practice, foe = 'Opponent', legend?: string): st
   if (me.exhausted) return 'Exhausted';
   if (s.phase === 'ready' && s.chain > 0) return 'Follow-through';
   if (s.result !== 'none' && s.resultAge < 120) {
-    const name = me.chained ? 'follow-up' : NAMES[me.lastMove ?? 'light_right'];
+    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
     const wall = (text: string) => s.resultWalled ? ` · ${text}` : '';
     return {
       kicked: 'Kick connected',

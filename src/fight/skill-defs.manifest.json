@@ -1,0 +1,16 @@
+{
+  "tables": [
+    {
+      "table": "skill",
+      "file": "skill-defs.json",
+      "at": "skills",
+      "key": "id",
+      "required": {
+        "code": "integer",
+        "move": "string",
+        "name": "string",
+        "clip": "string"
+      }
+    }
+  ]
+}

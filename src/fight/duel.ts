@@ -1,5 +1,5 @@
 import { bladeImpact, type HitLocation } from './blade.ts';
-import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, isInterruptible, type Timing, type WeaponId } from './moves.ts';
+import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
 import { poolsOf, type PoolValues } from './pools.ts';
@@ -187,7 +187,7 @@ export function inBufferWindow(f: Fighter): boolean {
   return length !== null && f.age >= length - RULES.bufferWindow;
 }
 function chooseMove(f: Fighter, action: Action): MoveId {
-  if (action === 'skill') return SKILL_MOVE[f.skill ?? 'witchfire'];   // the equipped skill's move (legal() refuses SKILL with none); never a riposte or a counter, whatever window is open
+  if (action === 'skill') return SKILL_MOVE[f.skill ?? DAY_ONE_SKILL]!;   // the equipped skill's move (legal() refuses SKILL with none); never a riposte or a counter, whatever window is open
   if (action === 'heavy') return f.critical > 0 ? 'critical' : f.punish > 0 ? 'heavy_riposte' : f.counterWindow > 0 ? 'heavy_counter' : 'heavy_overhead';
   if (action === 'kick') return 'kick';
   if (f.punish > 0) return action === 'thrust' ? 'riposte' : 'slash_riposte';
@@ -208,7 +208,7 @@ export function legal(f: Fighter, action: Action): boolean {
   if (action === 'heavy' || action === 'thrust') return (standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina;
   if (action === 'kick') return standing && f.stamina >= movesOf(f).kick.stamina;
   if (action === 'skill' && f.specialShare !== undefined) return !f.skillCooldown && (standing || stepTail);   // a special: no stamina, any class
-  if (action === 'skill') return f.skill !== null && !f.skillCooldown && (standing || stepTail) && f.stamina >= movesOf(f)[SKILL_MOVE[f.skill]].stamina;   // as a heavy, plus an equipped skill that has cooled
+  if (action === 'skill') return f.skill !== null && !f.skillCooldown && (standing || stepTail) && f.stamina >= movesOf(f)[SKILL_MOVE[f.skill]!].stamina;   // as a heavy, plus an equipped skill that has cooled
   if (action === 'dodge') return (standing && f.stamina >= RULES.rollCost) || (stepping && f.stamina >= RULES.rollCost - RULES.backstep.cost);   // holding the control turns the step into a roll
   if (action === 'backstep') return standing && f.stamina >= RULES.backstep.cost;
   return (f.phase === 'ready' && !f.exposed) || feintable(f);
@@ -507,7 +507,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     if (!releasing[i]) continue;
     A.special = 0; delete A.castHurt; A.skillCooldown = R.special.cooldown; A.specialRecover = R.special.recovery;   // re-armed and held back from attacking, counted from the release
     if (!standing[j]) continue;
-    const move: MoveId = SKILL_MOVE[A.skill ?? 'pommel'], damage = Math.round(A.specialShare! * D.maxHealth);
+    const move: MoveId = SKILL_MOVE[A.skill ?? DAY_ONE_SKILL]!, damage = Math.round(A.specialShare! * D.maxHealth);
     D.health = Math.max(0, D.health - damage);
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}) });
     if (D.health) continue;
@@ -536,7 +536,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // Shared creature health (RV39, N attackers on one creature, src/fight/pack.ts): each attacker fights their own ordinary duel against their own copy of the creature, and `incoming` is the damage the OTHER streams dealt to it on the
   // previous tick, summed by the lockstep layer. It lands after this tick's blows and specials, once (the returned duel does not carry it), and kills through the same door a blow does. Absent or 0 = today's fight byte for byte.
   if (duel.incoming && duel.incoming > 0 && fighters[1].health > 0) {
-    const D = fighters[1], A = fighters[0], move: MoveId = A.lastMove ?? SKILL_MOVE.pommel;
+    const D = fighters[1], A = fighters[0], move: MoveId = A.lastMove ?? SKILL_MOVE[DAY_ONE_SKILL]!;
     D.health = Math.max(0, D.health - duel.incoming);
     events.push({ tick, type: 'SharedHit', actor: 0, target: 1, damage: duel.incoming });
     if (!D.health) {
