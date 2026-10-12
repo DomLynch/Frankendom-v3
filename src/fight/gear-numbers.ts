@@ -3,7 +3,7 @@
 // Lives here, not in src/core, because the core imports nothing from src/fight; the Pit and the zone both hand it to the sheet.
 import { TIERS } from '../core/grades.ts';
 import type { Loot } from '../core/loot.ts';
-import { kitFrom, loadoutFor, wholePoints, wornTilt, type TierOf } from './gear-stats.ts';
+import { kitFrom, loadoutFor, wholePoints, wornGear, type TierOf } from './gear-stats.ts';
 import { sheetOf, type Build, type Sheet } from './sheet-rows.ts';
 import type { Profile } from '../core/profile.ts';
 import { RULES } from './moves.ts';
@@ -18,6 +18,6 @@ export const gearNumbers = (loot: Loot | undefined): Record<string, number> => {
 
 // The player's build (Wave A1 PR1b): level and the points placed on the ten dials. Backend stores it (the account / character field, written through `validateBuild`, no second validator) and Web
 // builds the creation sliders on it; until the field exists every player is the default build, level 1 with every dial at its base of 50. The real build drops in HERE, with no sim change.
-export function buildOf(profile?: Profile): Build { void profile; return { level: 1, dials: {} }; }
-// The sheet a live fight is fought with: the player's build with the worn set's tilt on top, `undefined` when nothing is off base (the naked, default-build fight, byte for byte).
-export const sheetOfLoot = (loot: Loot | undefined, build: Build = buildOf()): Sheet | undefined => sheetOf(build, wornTilt(loot?.equipped ?? {}, tierLookup(loot)));
+export function buildOf(profile?: Profile): Build { void profile; return { level: 1, placed: {} }; }
+// The sheet a live fight is fought with: the player's build with the worn set's deltas on top, `undefined` when nothing is off base (the naked, default-build fight, byte for byte).
+export const sheetOfLoot = (loot: Loot | undefined, build: Build = buildOf()): Sheet | undefined => sheetOf(build, wornGear(loot?.equipped ?? {}, tierLookup(loot)));

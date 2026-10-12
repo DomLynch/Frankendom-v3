@@ -18,7 +18,7 @@
 import { levelOf, type Tier } from '../core/grades.ts';
 import { ARMOUR_SLOTS, WEAPON_SLOTS, isWeaponSlot, slotOf, type Loot, type LootId, type LootSlot } from '../core/loot.ts';
 import type { OpponentId } from '../roster.ts';
-import { GEAR, tiltOf } from './gear-rows.ts';
+import { GEAR, gearDeltas } from './gear-rows.ts';
 
 // The two multipliers a fight is fought with. Both scale damage — Attack what you deal, RES what you take, chip included — and
 // neither touches posture (`shake`) or any timing.
@@ -147,15 +147,18 @@ export const wholePoints = (l: Loadout): { atk: number; res: number } => ({
   res: Math.round((1 - l.res) * 100),
 });
 
-// The tilt the worn SET gives (Wave A1, Dom's sheet rule: gear is not on the sheet, a set moves two dials against each other by up to 25). Each worn piece belongs to the set of the opponent it
-// dropped from (gear-defs.json `sets` rows: plate, robes; an opponent no row names gives none) and counts for its slot weight at the rung it was won at (the same points as `loadoutFor`).
-// ONE set is worn: the tilt with the most points wins (ties go to the lower id), the rest are ignored, and its fraction of a full set (900 points) scales the 25. No piece with a rung, no tilt.
-export function wornTilt(equipped: Loot['equipped'], tierOf: TierOf): Readonly<Record<string, number>> {
-  const points: Record<string, number> = {};
+// The dial deltas the worn SET gives (Wave A1, Dom's locked sheet, option C: a full set is worth 50 on top of the build, 25 shape and 25 quality). Each worn piece belongs to the set of the opponent it
+// dropped from (gear-defs.json `owners` rows; an opponent no row names gives none) and counts for its slot weight (100 across the six wearing slots). ONE set is worn: the set with the most
+// worn weight wins (ties go to the lower id) and the rest are ignored. Coverage = its worn slot weight over 100 (scales the shape); quality = each piece's weight times the rung it was won at
+// (Recruit 0 up to Origin 1, a piece with no rung counts for coverage but adds no quality) over 100. No piece with a rung of a set, no deltas.
+export function wornGear(equipped: Loot['equipped'], tierOf: TierOf): Readonly<Record<string, number>> {
+  const weight: Record<string, number> = {}, quality: Record<string, number> = {};
   for (const id of Object.values(equipped) as LootId[]) {
-    const tier = tierOf(id), tilt = GEAR.sets[opponentOf(id)];
-    if (tier && tilt) points[tilt] = (points[tilt] ?? 0) + pointsFor(tier, slotOf(id));
+    const tier = tierOf(id), set = GEAR.owners[opponentOf(id)];
+    if (!tier || !set) continue;
+    const w = SLOT_WEIGHT[slotOf(id)];
+    weight[set] = (weight[set] ?? 0) + w; quality[set] = (quality[set] ?? 0) + w * ((levelOf(tier) - 1) / 9);
   }
-  const best = Object.entries(points).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
-  return best && best[1] > 0 ? tiltOf(best[0], Math.min(1, best[1] / FULL_POINTS)) : {};
+  const best = Object.entries(weight).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+  return best && best[1] > 0 ? gearDeltas(best[0], best[1] / 100, quality[best[0]]! / 100) : {};
 }
