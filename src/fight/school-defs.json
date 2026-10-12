@@ -1,0 +1,11 @@
+{
+  "schools": [
+    { "id": "fire", "color": "#ff7a1f" },
+    { "id": "shadow", "color": "#8a4fe0" },
+    { "id": "poison", "color": "#6fd13a" },
+    { "id": "holy", "color": "#f4cd4a" },
+    { "id": "frost", "color": "#9ad4ff" },
+    { "id": "earth", "color": "#b08a4e" },
+    { "id": "wind", "color": "#bfe6d6" }
+  ]
+}

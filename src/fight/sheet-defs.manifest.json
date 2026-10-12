@@ -1,0 +1,20 @@
+{
+  "tables": [
+    {
+      "table": "sheetlayer",
+      "file": "sheet-defs.json",
+      "at": "layers",
+      "key": "id",
+      "required": { "cap": "integer" }
+    },
+    {
+      "table": "sheetstat",
+      "file": "sheet-defs.json",
+      "at": "stats",
+      "key": "id",
+      "required": { "code": "integer", "base": "integer", "cap": "integer" },
+      "optional": { "layers": "array" },
+      "refs": { "layers[]": "sheetlayer" }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "tables": [
+    {
+      "table": "gear",
+      "file": "gear-defs.json",
+      "at": "gear",
+      "key": "id",
+      "required": {
+        "armour": "integer",
+        "weight": "number",
+        "wearMax": "integer",
+        "resist": "object"
+      },
+      "optional": {
+        "slot": "string",
+        "preset": "boolean",
+        "extends": "string"
+      }
+    },
+    {
+      "table": "gearrule",
+      "file": "gear-defs.json",
+      "at": "rules",
+      "key": "id",
+      "required": {
+        "armourBase": "integer",
+        "armourPerLevel": "integer",
+        "reductionCapPermille": "integer",
+        "weightPermille": "integer",
+        "resistPermille": "integer"
+      }
+    }
+  ]
+}
