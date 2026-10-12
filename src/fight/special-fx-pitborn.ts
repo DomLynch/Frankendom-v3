@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { specialGust } from './special-gust.ts';
-import { advanceCast, shadowPhase as castPhase, LAND_AT, type Cast, type isHadesShadow } from './special-timing.ts';
+import { advanceCast, shadowPhase as castPhase, LAND_AT, skillCast, type Cast, type isHadesShadow } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 
@@ -38,7 +38,7 @@ function paintSheet(seed: number, look: SandLook) {
 }
 
 // The Pitborn's cast test, passed to advanceCast as `is` (the seam's own isHadesShadow stays the Nightborn's): his Cleave on the opponent's side.
-export const isPitbornSpecial: typeof isHadesShadow = (opponent, actor, move) => opponent === 'pitborn' && actor === 1 && move === 'skill_cleave';
+export const isPitbornSpecial: typeof isHadesShadow = skillCast('cleave');
 // The kinds are the family's rows of src/fight/special-defs.json (special-rows.ts). The templates are this module's verbs, each its own painting:
 // crack (seams split out from his feet, clods lift and drop), ashfall (soot, low smoke, ash drifting over the arena), gale (strokes and sand torn
 // toward the target, the crowd banners snapping). A row carries its counts, its opacity ceilings (day / Night Pit) and its grit tint.

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
-import { advanceCast, castPhase, LAND_AT, RIPPLE, SLAM_AT, type Cast } from './special-timing.ts';
+import { advanceCast, castPhase, LAND_AT, RIPPLE, SLAM_AT, skillCast, type Cast } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 
 // Red Wind's painted-stroke helpers (Nightborn lane, special-fx-wind.ts on #1220), copied here so this preview stacks on #1120 alone, not on Red Wind.
@@ -79,7 +79,7 @@ function dustBlob(seed: number, look: SandLook) {
 
 type Piece = { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial };
 // Which cast gets the quake: the Centurion's class skill, the Scutum Shove. Passed to advanceCast as its own test, so the shared timeline (and Hades' cloud) never sees it.
-export const isShieldQuake = (opponent: OpponentId, actor: number, move?: string) => opponent === 'veteran' && actor === 1 && move === 'skill_shove';
+export const isShieldQuake = skillCast('shove');
 export type ShieldQuake = ReturnType<typeof createShieldQuake>;
 export function createShieldQuake(scene: THREE.Scene, opponent: OpponentId, look: SandLook) {
   const root = new THREE.Group(); root.name = 'special fx'; root.visible = false; scene.add(root);
