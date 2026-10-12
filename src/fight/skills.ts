@@ -22,7 +22,7 @@ export function loadSkillDefs(raw: { skills?: readonly unknown[] }, moves: Reado
     if (r.code < 1 || byCode[r.code] !== undefined) throw Error(`skill-defs "${r.id}": code ${r.code} is not a free number from 1`);
     byCode[r.code] = r.id; rows[r.id] = r;
   }
-  if (byCode.some((c) => c === undefined)) throw Error('skill-defs: codes run 1..n with no gap (the record byte is append only)');
+  if (Array.from(byCode).some((c) => c === undefined)) throw Error('skill-defs: codes run 1..n with no gap (the record byte is append only)');
   const first = defs.filter((r) => r.dayOne);
   if (first.length !== 1) throw Error('skill-defs: exactly one row is the dayOne skill');
   return { rows, byCode, dayOne: first[0]!.id };
