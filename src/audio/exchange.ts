@@ -1,6 +1,8 @@
 import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../fight/duel.ts';
 import type { DeathPresentation } from '../fight/sound/cues.ts';
 import { RULES } from '../fight/moves.ts';
+import { ROTATION } from '../fight/finishers.ts';
+import { PLAIN_DEATH } from '../fight/finisher-look.ts';
 
 // The fixed scripted exchange every audio iteration is judged on: both fighters are driven by hand through the real
 // simulation (no AI), so the same beats land on the same ticks and BEFORE/AFTER renders are like-for-like. The warden
@@ -116,7 +118,8 @@ export const CUE_PROBES: { name: string; events: CombatEvent[]; presentation?: D
   { name: 'killed', events: [at('Hit', { target: 1, move: 'heavy_overhead', damage: 27, location: 'torso', charged: true }), at('Killed', { target: 1, move: 'heavy_overhead', location: 'torso' })] },
 ];
 
-for (const override of ['plainDeath', 'splitCrown', 'decapitation', 'runThrough', 'opened'] as const) {
+// Every automatic outcome (the rotation rows of src/fight/finisher-defs.json), the plain death first: one probe each, with and without blood.
+for (const override of [PLAIN_DEATH, ...ROTATION.filter((id) => id !== PLAIN_DEATH)]) {
   for (const gore of [true, false]) CUE_PROBES.push({ name: `finish-${override}${gore ? '' : '-blood-off'}`, events: [at('Hit', { target: 1, move: 'heavy_overhead' }), at('Killed', { target: 1, move: 'heavy_overhead' })], presentation: { finish: { victim: 1, location: 'head', move: 'heavy_overhead', heading: 0 }, weapons: ['longsword', 'trident'], override, gore } });
 }
 CUE_PROBES.push({ name: 'player-death', events: [at('Hit', { actor: 1, target: 0, move: 'thrust' }), at('Killed', { actor: 1, target: 0, move: 'thrust' })] });
