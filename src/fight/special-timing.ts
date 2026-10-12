@@ -30,7 +30,6 @@ export const isHadesShadow = skillCast('lunge');
 // The Centurion's rank-10 boss special, Blood Tithe (Mars): the veteran's Scutum Shove skill on the opponent's side, previewed only on ?special=tithe: Blood Tithe passes this as advanceCast's `is`, so Hades' Shadow (the default test) never draws on the Centurion.
 export const isBloodTithe = skillCast('shove');
 
-export type SpecialKind = 'hades' | 'set';   // which art draws the cast; the timeline below is the same for both (the one 120)
 export type Cast = { actor: number; start: number; landed: number | null; fizzled: number | null };
 export type ShadowPhase = { phase: 'gather' | 'fall' | 'recover' | 'dissolve' | 'done'; k: number; age: number };
 

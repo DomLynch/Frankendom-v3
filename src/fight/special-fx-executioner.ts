@@ -5,6 +5,7 @@ import { advanceCast, shadowPhase, LAND_AT, type Cast } from './special-timing.t
 import { crowdWave } from '../arena.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 import { bossRow, classSkillOf, kindsOf, type BossKind } from './boss-rows.ts';
+import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 
 // The Executioner's boss specials, rank 8, 9 and 10 (Executioner lane; Dom's picks via Strategy 2026-10-01). PREVIEW ONLY, behind ?special=<kind>, on the
 // seam of Hades' Shadow (special-timing.ts: the one 120-tick wind-up, SpecialStarted / Landed / Fizzled). Presentation only: it reads the sim's special
@@ -15,6 +16,20 @@ import { bossRow, classSkillOf, kindsOf, type BossKind } from './boss-rows.ts';
 //   reaper   (L10, level 46) Harvest Sweep:  one huge scythe crescent sweeps the frame, the sand is cut in a swath behind it, the crowd leans in a wave.
 export type { BossKind };
 export const BOSS_KINDS: readonly BossKind[] = kindsOf('executioner');   // the bosses.json rows with fx 'executioner'
+// The kinds are the family's rows of src/fight/special-defs.json (special-rows.ts); the templates are this module's three paintings: baying (dust trails
+// from the rim converging on the target), longShadow (his shadow reaching across the sand, the light dimming over the target) and harvest (the scythe
+// crescent, the cut swath, the crowd wave). A row carries its counts and opacity ceilings; the colours
+// (day / Night Pit) are the boss's own `look` in src/fight/bosses.json (boss-rows.ts), one palette per boss for every layer that paints him.
+export const EXECUTIONER_TEMPLATES = {
+  baying: ['trails', 'rimRadius', 'trailAlpha', 'puffs', 'puffColor', 'puffAlpha', 'gritSize', 'gritShade', 'gritAlpha'],
+  longShadow: ['shadowAlpha', 'poolAlpha', 'dimAlpha', 'gritSize', 'gritShade'],
+  harvest: ['crescentAlpha', 'cutAlpha', 'gritSize', 'gritShade', 'gritAlpha'],
+} as const;
+const ROWS = specialFamily(SPECIALS, 'executioner', EXECUTIONER_TEMPLATES);
+const rowOf = (kind: BossKind | SpecialRow): SpecialRow => { const r = typeof kind === 'string' ? ROWS.find((x) => x.id === kind) : kind; if (!r) throw Error(`unknown executioner special "${String(kind)}"`); return r; };
+type DayNight<T> = { day: T; night: T };
+type Params = { trails: number; rimRadius: number; trailAlpha: number; puffs: number; puffColor: DayNight<string>; puffAlpha: number;
+  gritSize: number; gritShade: number; gritAlpha: number; shadowAlpha: DayNight<number>; poolAlpha: DayNight<number>; dimAlpha: DayNight<number>; crescentAlpha: DayNight<number>; cutAlpha: number };
 export const BUILD = 30;   // ticks of visible build-up before the landing (0.5 s; Dom: a 1-2 s build-up was too slow on Red Wind)
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
@@ -87,9 +102,10 @@ function surface(fn: (l: number, a: number) => P3, nl = 14, na = 4) {
 
 // The colours (linear working space; the Night Pit is the arena with exposure above 1.5, where everything lifts so the unlit strokes hold on dark clay).
 // Day sand is pale: dust trails go lighter-than-sand through a darker core; the pit's clay is dark: they go pale on it.
-export const bossLook = (kind: BossKind, exposure: number): Look => {
-  const dim = exposure > 1.5, l = bossRow(kind)!.look![dim ? 'night' : 'day'], c = (v: readonly number[]) => new THREE.Color(v[0], v[1], v[2]);
-  return { core: c(l.core), edge: c(l.edge), dim };   // the scythe (reaper) is dried-blood brown by day (darker than the sand), dark clay-brown by night too (never pale over a fighter)
+// The boss's `look` row (bosses.json) holds both palettes (Reaper's scythe: dried-blood brown by day, darker than the sand; dark clay-brown by night too, never pale over a fighter).
+export const bossLook = (kind: BossKind | SpecialRow, exposure: number): Look => {
+  const dim = exposure > 1.5, l = bossRow(rowOf(kind).id)!.look![dim ? 'night' : 'day'], c = (v: readonly number[]) => new THREE.Color(v[0], v[1], v[2]);
+  return { core: c(l.core), edge: c(l.edge), dim };
 };
 const cutLook = (dim: boolean): Look => dim ? { core: new THREE.Color(0.02, 0.011, 0.007), edge: new THREE.Color(0.04, 0.022, 0.013), dim } : { core: new THREE.Color(0.12, 0.065, 0.03), edge: new THREE.Color(0.5, 0.35, 0.19), dim };   // the cut sand: dark earth, pale dry rim
 
@@ -169,11 +185,14 @@ export function createHeelReap(scene: THREE.Scene, opponent: OpponentId, exposur
   };
 }
 
-const TRAILS = 11, GRIT = 160;
-const RIM_R = 4.4;   // metres from the fighters' midpoint: where the trails start. The fight camera sees about this far, so they come in from the frame's edge; the arena's wall is further than the camera shows
+const GRIT = 160;   // the grit pool every template shares (one Points buffer)
 
 export type ExecutionerSpecial = ReturnType<typeof createExecutionerSpecial>;
-export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentId, kind: BossKind, look: Look) {
+// `kind`: a ?special= id of this family, or a row itself (a row loaded through specialFamily: how a new special is drawn before it is in the file).
+export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentId, kind: BossKind | SpecialRow, look: Look) {
+  const row = rowOf(kind), template = row.template as keyof typeof EXECUTIONER_TEMPLATES, P = row.params as Partial<Params>;
+  const TRAILS = P.trails ?? 0, RIM_R = P.rimRadius ?? 0;   // the Baying Circle's trails, and how far out on the rim they start (metres from the fighters' midpoint: the fight camera sees about this far)
+  const is = (o: OpponentId, actor: number, move?: string) => o === row.opponent && actor === row.cast.actor && (row.cast.move === undefined || move === row.cast.move);
   const root = new THREE.Group(); root.name = 'special fx'; root.visible = false; scene.add(root);
   const add = (g: THREE.BufferGeometry, map: THREE.Texture, name: string): Piece => {
     const mat = new THREE.MeshBasicMaterial({ map, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, fog: true });
@@ -184,13 +203,13 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
   const strip = (i: number, seed: number, wid: number, bend: number, rise = 0.05) => surface((l, a) => { const z = 1 - l; return [(a - 0.5) * wid * (1 - 0.3 * z) + bend * Math.sin(z * 3.1) * z, 0.025 + rise * Math.sin(a * Math.PI) * (0.4 + 0.6 * hash(i + seed, 5)), z]; }, 16, 4);
   const gritPos = new Float32Array(GRIT * 3).fill(-9), gritGeo = new THREE.BufferGeometry();
   gritGeo.setAttribute('position', new THREE.BufferAttribute(gritPos, 3).setUsage(THREE.DynamicDrawUsage));
-  const gritMat = new THREE.PointsMaterial({ size: kind === 'arawn' ? 0.07 : 0.13, sizeAttenuation: true, map: softDot(), color: (kind === 'reaper' ? cutLook(look.dim).edge : look.edge).clone().multiplyScalar(kind === 'arawn' ? 0.8 : 0.9), transparent: true, opacity: 0, depthWrite: false, fog: true });
+  const gritMat = new THREE.PointsMaterial({ size: P.gritSize!, sizeAttenuation: true, map: softDot(), color: (template === 'harvest' ? cutLook(look.dim).edge : look.edge).clone().multiplyScalar(P.gritShade!), transparent: true, opacity: 0, depthWrite: false, fog: true });
   const gritPoints = new THREE.Points(gritGeo, gritMat); gritPoints.name = 'boss grit'; gritPoints.frustumCulled = false; root.add(gritPoints);
   const setPiece = (p: Piece, opacity: number, cap: number) => { p.mat.opacity = clamp01(opacity) * cap; p.mesh.visible = opacity > 0.01; };
 
   const dim: THREE.Sprite[] = [], puffs: THREE.Sprite[] = [];
   const sprite = (size: number, seed: number, color: string, order = 0) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: poolMap(seed), color, transparent: true, opacity: 0, depthWrite: false, depthTest: order === 0, fog: true })); s.renderOrder = order; s.scale.setScalar(size); s.visible = false; root.add(s); return s; };
-  if (kind === 'arawn') for (let j = 0; j < 8; j++) puffs.push(sprite(0.5, j * 9 + 2, look.dim ? '#2c2219' : '#5a4a38'));   // the low torn puff where the trails meet
+  if (template === 'baying') for (let j = 0; j < P.puffs!; j++) puffs.push(sprite(0.5, j * 9 + 2, dayNight(P.puffColor!, look.dim)));   // the low torn puff where the trails meet
   // arawn: thin pale strokes, one per rim point
   const trailMaps = Array.from({ length: 6 }, (_, s) => sheet(s * 5 + 2));
   // thanatos: his shadow and the pool of shade at the target; the body-height dimming is soft sprites over the target
@@ -204,14 +223,14 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
     }, 28, 5);
   };
   let trails: Piece[] = [], shadow: Piece | null = null, pool: Piece | null = null, crescent: Piece | null = null, cuts: Piece[] = [];
-  if (kind === 'arawn') trails = Array.from({ length: TRAILS }, (_, i) => add(strip(i, 0, 0.3, 0), trailMaps[i % trailMaps.length], 'trail'));
-  if (kind === 'thanatos') {
+  if (template === 'baying') trails = Array.from({ length: TRAILS }, (_, i) => add(strip(i, 0, 0.3, 0), trailMaps[i % trailMaps.length], 'trail'));
+  if (template === 'longShadow') {
     const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-Math.PI / 2); g.translate(0, 0.02, 0);
     pool = add(g, poolMap(5), 'shade pool'); pool.mat.color.set('#0a0807');
     shadow = add(surface((l, a) => { const z = 1 - l, w = 0.95 * (1 - 0.45 * z) + 0.28 * smooth((z - 0.8) / 0.2); return [(a - 0.5) * w + Math.sin(z * 6) * 0.05 * z, 0.03, z]; }, 20, 5), shadowMap(41, look), 'long shadow');
     for (const s of [2.7, 2.2, 1.8]) dim.push(sprite(s, Math.round(s * 10), '#0b0908', 7));
   }
-  if (kind === 'reaper') {
+  if (template === 'harvest') {
     crescent = add(crescentGeo(0), sheet(17, look, true), 'crescent');
     cuts = [0, 1, 2].map((i) => add(strip(i, 40, 1.3 - 0.35 * i, 0.15, 0.1), cutMaps[i], 'swath'));
   }
@@ -219,7 +238,7 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
   const caster = new THREE.Vector3(), target = new THREE.Vector3(), dir = new THREE.Vector3(), side = new THREE.Vector3();
   const sweep = { from: 0, to: 1, front: 0, live: false, a0: 0, a1: 1 };   // the Harvest Sweep, for the crowd: angles round the arena of where it starts and ends
   let cast: Cast | null = null, clock = 0, lastTick = -1, have = false, schedule = trailSchedule(TRAILS, 0);
-  const hide = () => { root.visible = false; sweep.live = false; if (kind === 'reaper') crowdWave.lean = null; for (const p of [...trails, ...cuts, shadow, pool, crescent]) if (p) { p.mat.opacity = 0; p.mesh.visible = false; } dim.forEach((s) => (s.visible = false)); puffs.forEach((s) => (s.visible = false)); gritMat.opacity = 0; };
+  const hide = () => { root.visible = false; sweep.live = false; if (template === 'harvest') crowdWave.lean = null; for (const p of [...trails, ...cuts, shadow, pool, crescent]) if (p) { p.mat.opacity = 0; p.mesh.visible = false; } dim.forEach((s) => (s.visible = false)); puffs.forEach((s) => (s.visible = false)); gritMat.opacity = 0; };
   const putGrit = (fn: (i: number, out: P3) => void, opacity: number) => {
     const o: P3 = [0, 0, 0];
     for (let i = 0; i < GRIT; i++) { fn(i, o); gritPos[i * 3] = o[0]; gritPos[i * 3 + 1] = o[1]; gritPos[i * 3 + 2] = o[2]; }
@@ -240,7 +259,7 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
     render(dt: number, events: readonly CombatEvent[], fighters: readonly [Fighter, Fighter], tick: number, feet: readonly [THREE.Vector3 | null, THREE.Vector3 | null], yielding: boolean) {
       clock = tick !== lastTick ? tick : Math.min(tick + 1, clock + dt * 60); lastTick = tick;
       const before = cast;
-      cast = advanceCast(cast, events, fighters, tick, opponent, yielding, isExecutionerCast);
+      cast = advanceCast(cast, events, fighters, tick, opponent, yielding, is);
       if (!before && cast) {   // a new set of trails, a new crescent, for every cast
         schedule = trailSchedule(TRAILS, cast.start);
         trails.forEach((t, i) => { t.mesh.geometry.dispose(); t.mesh.geometry = strip(i, cast!.start, 0.3 + 0.25 * hash(i + cast!.start, 3), (hash(i + cast!.start, 4) - 0.5) * 0.6); });
@@ -257,7 +276,7 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
       dir.set(target.x - caster.x, 0, target.z - caster.z); const gap = Math.max(0.9, dir.length()); dir.normalize(); side.set(dir.z, 0, -dir.x);
       const h = (i: number, salt: number) => hash(i + seed * 5, salt);
 
-      if (kind === 'arawn') {
+      if (template === 'baying') {
         const turn = h(0, 61), mx = (caster.x + target.x) / 2, mz = (caster.z + target.z) / 2;
         const rim = (i: number) => { const ang = turn + ((i + 0.5 * (h(i, 62) - 0.5)) / TRAILS) * Math.PI * 2, r = RIM_R + 1.3 * h(i, 63); return [mx + Math.cos(ang) * r, mz + Math.sin(ang) * r] as const; };
         const headAt = (i: number, D: number) => { const { from, to } = schedule[i], run = clamp01((k - from) / Math.max(0.05, to - from)); return { run, head: (run * run * 0.5 + run * 0.5) * D, since: Math.max(0, (k - to) * BUILD) + Math.max(0, rel) }; };
@@ -265,28 +284,28 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
           const [sx, sz] = rim(i), ex = target.x + (h(i, 64) - 0.5) * 0.5, ez = target.z + (h(i, 65) - 0.5) * 0.5, D = Math.hypot(ex - sx, ez - sz), tail = 1.2 + 1.2 * h(i, 66);
           const { run, head, since } = headAt(i, D), start = lerp(Math.max(0, head - tail), D, smooth(since / 8)), len = Math.max(0.01, (run >= 1 ? D : head) - start);
           t.mesh.position.set(sx + ((ex - sx) / D) * start, 0, sz + ((ez - sz) / D) * start); t.mesh.rotation.y = Math.atan2(ex - sx, ez - sz); t.mesh.scale.set(1, 1, len);
-          setPiece(t, run > 0 ? (0.75 + 0.25 * h(i, 67)) * (1 - smooth(since / 10)) * fade : 0, 0.85);
+          setPiece(t, run > 0 ? (0.75 + 0.25 * h(i, 67)) * (1 - smooth(since / 10)) * fade : 0, P.trailAlpha!);
         });
         putGrit((i, o) => {   // a little dust thrown off each head, then one low puff where they meet
           const trail = i % TRAILS, [sx, sz] = rim(trail), D = Math.hypot(target.x - sx, target.z - sz), { run, head } = headAt(trail, D);
           if (rel >= 0) { o[0] = o[2] = 0; o[1] = -9; }
           else if (run > 0 && run < 1) { o[0] = sx + ((target.x - sx) / D) * (head - 0.15 * h(i, 71)) + (h(i, 72) - 0.5) * 0.3; o[1] = 0.04 + 0.22 * h(i, 73); o[2] = sz + ((target.z - sz) / D) * (head - 0.15 * h(i, 71)) + (h(i, 74) - 0.5) * 0.3; }
           else { o[0] = o[2] = 0; o[1] = -9; }
-        }, (k > 0 && rel < 0 ? 0.8 : 0) * fade);
+        }, (k > 0 && rel < 0 ? P.gritAlpha! : 0) * fade);
         puffs.forEach((q, j) => {   // the strike: a low torn puff of dust stands up round his feet, rolls out and settles
           const th = h(j, 68) * Math.PI * 2, grow = smooth(rel / 14), r = (0.1 + 0.45 * h(j, 69)) * (0.4 + 1.3 * grow);
           q.position.set(target.x + Math.cos(th) * r, target.y + 0.12 + 0.3 * grow * (0.5 + h(j, 70)), target.z + Math.sin(th) * r);
           q.scale.setScalar((0.5 + 0.5 * h(j, 71)) * (0.5 + 1.1 * grow)); q.visible = rel >= 0 && life > 0.02;
-          (q.material as THREE.SpriteMaterial).opacity = 0.5 * smooth(rel / 4) * (1 - smooth((rel - 6) / 34)) * fade;
+          (q.material as THREE.SpriteMaterial).opacity = P.puffAlpha! * smooth(rel / 4) * (1 - smooth((rel - 6) / 34)) * fade;
         });
-      } else if (kind === 'thanatos') {
+      } else if (template === 'longShadow') {
         const reach = smooth(k) * (rel >= 0 ? 1 - 0.5 * smooth((rel - 10) / 30) : 1), full = gap + 1.1;   // his shadow runs from his feet over the target's, then draws back
         shadow!.mesh.position.set(caster.x, 0, caster.z); shadow!.mesh.rotation.y = Math.atan2(dir.x, dir.z); shadow!.mesh.scale.set(1, 1, Math.max(0.01, reach * full));
-        setPiece(shadow!, smooth(k * 1.4) * life, look.dim ? 0.85 : 0.8);
-        pool!.mesh.position.set(target.x, 0, target.z); pool!.mesh.scale.set(3.6, 1, 3.6); setPiece(pool!, smooth((k - 0.2) / 0.8) * (rel >= 0 ? 1 - smooth((rel - 8) / 34) : 1) * fade, look.dim ? 0.9 : 0.62);
+        setPiece(shadow!, smooth(k * 1.4) * life, dayNight(P.shadowAlpha!, look.dim));
+        pool!.mesh.position.set(target.x, 0, target.z); pool!.mesh.scale.set(3.6, 1, 3.6); setPiece(pool!, smooth((k - 0.2) / 0.8) * (rel >= 0 ? 1 - smooth((rel - 8) / 34) : 1) * fade, dayNight(P.poolAlpha!, look.dim));
         dim.forEach((s, j) => {   // the light dims over the target: soft shade at body height over him only (never the caster), rising with the shadow
           s.position.set(target.x, target.y + 0.75 + 0.16 * j, target.z); s.visible = true;
-          (s.material as THREE.SpriteMaterial).opacity = (look.dim ? 0.2 : 0.26) * smooth((k - 0.35) / 0.65) * (rel >= 0 ? 1 - smooth((rel - 8) / 34) : 1) * fade;
+          (s.material as THREE.SpriteMaterial).opacity = dayNight(P.dimAlpha!, look.dim) * smooth((k - 0.35) / 0.65) * (rel >= 0 ? 1 - smooth((rel - 8) / 34) : 1) * fade;
         });
         gritMat.opacity = 0;
       } else {
@@ -294,20 +313,20 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
         const centre = (s: number, depth: number, v: THREE.Vector3) => v.copy(target).addScaledVector(side, s).addScaledVector(dir, depth);
         const at = centre(front, -0.5, new THREE.Vector3());
         crescent!.mesh.position.set(at.x, 0, at.z); crescent!.mesh.rotation.y = Math.atan2(dir.x, dir.z) + Math.PI; crescent!.mesh.scale.set(1, 1, 1);
-        setPiece(crescent!, live * fade, look.dim ? 0.4 : 0.6);
+        setPiece(crescent!, live * fade, dayNight(P.crescentAlpha!, look.dim));
         cuts.forEach((c, i) => {   // the sand cut behind it: three uneven strokes of dark earth lying across the lane, their heads trailing the blade
           const lag = 0.25 + 0.5 * h(i, 81), head = Math.max(S0, front - lag), from = centre(S0, (h(i, 82) - 0.5) * 0.9, new THREE.Vector3());
           c.mesh.position.set(from.x, 0, from.z); c.mesh.rotation.y = Math.atan2(side.x, side.z); c.mesh.scale.set(1, 1, Math.max(0.01, head - S0));
-          setPiece(c, (k > 0.05 || rel >= 0 ? 1 : 0) * (rel >= 0 ? 1 - smooth((rel - 10) / 34) : 0.95) * fade, 0.9);
+          setPiece(c, (k > 0.05 || rel >= 0 ? 1 : 0) * (rel >= 0 ? 1 - smooth((rel - 10) / 34) : 0.95) * fade, P.cutAlpha!);
         });
         putGrit((i, o) => {   // grit lifted along the swath, thrown up behind the blade and falling back
           const at2 = lerp(S0, Math.max(S0 + 0.1, front - 0.3), h(i, 83)), since = Math.max(0, (front - at2) / 14), up = Math.max(0, (0.6 + 1.5 * h(i, 84)) * since * 2 - 4 * since * since * 2);
           const q = centre(at2, (h(i, 85) - 0.5) * 1.3, new THREE.Vector3()); o[0] = q.x; o[1] = k > 0.05 || rel >= 0 ? 0.04 + up : -9; o[2] = q.z;
-        }, (k > 0.05 ? 0.8 : 0) * (rel >= 0 ? 1 - smooth((rel - 6) / 38) : 1) * fade);
+        }, (k > 0.05 ? P.gritAlpha! : 0) * (rel >= 0 ? 1 - smooth((rel - 6) / 38) : 1) * fade);
         const wall = (s: number) => { const q = centre(s, 9, new THREE.Vector3()); return angleOf(q.x, q.z); };
         sweep.a0 = wall(S0); sweep.a1 = wall(S1); sweep.front = (front - S0) / (S1 - S0); sweep.live = live * fade > 0.02; crowdWave.lean = sweep.live ? lean : null;   // registered only while the sweep runs
       }
-      if (kind !== 'reaper') sweep.live = false;
+      if (template !== 'harvest') sweep.live = false;
     },
     clear() { cast = null; have = false; hide(); },
   };
