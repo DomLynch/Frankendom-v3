@@ -13,9 +13,10 @@ export type RigId = 'hero' | 'goblin' | 'nightborn' | 'minotaur' | 'wraith' | 'w
 type Row = (typeof CATALOGUE_ROWS)[number];
 type BodyRow = Exclude<Row, { body: string }>;
 type Recipe<R extends BodyRow> = { name: R['name']; body: R['id']; rig: R['rig']; archetype: R['stats']['archetype']; weapon: R['weapon'] }
-  & (R extends { finisher: { allowed: infer F } } ? { finishers: F } : unknown) & (R['blood'] extends null ? { blood: false } : unknown) & (R['ladder']['hold'] extends true ? { hold: true } : unknown);
+  & (R['stats'] extends { pools: infer P } ? { pools: P } : unknown) & (R extends { finisher: { allowed: infer F } } ? { finishers: F } : unknown) & (R['blood'] extends null ? { blood: false } : unknown) & (R['ladder']['hold'] extends true ? { hold: true } : unknown);
 const recipeOf = (r: BodyRow) => ({
   name: r.name, body: r.id, rig: r.rig, archetype: r.stats.archetype, weapon: r.weapon,
+  ...('pools' in r.stats ? { pools: r.stats.pools } : {}),
   ...('allowed' in r.finisher ? { finishers: r.finisher.allowed } : {}), ...(r.blood === null ? { blood: false } : {}), ...(r.ladder.hold ? { hold: true } : {}),
 });
 export const ROSTER = Object.fromEntries(CATALOGUE_ROWS.filter((r): r is BodyRow => !('body' in r)).map((r) => [r.id, recipeOf(r)])) as unknown as { [R in BodyRow as R['id']]: Recipe<R> };

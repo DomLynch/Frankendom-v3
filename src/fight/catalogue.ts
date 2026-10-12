@@ -3,6 +3,7 @@
 // recipe (an archetype and a level band: the numbers stay computed by moves.ts opponentAt, never copied), the animation set, the finisher bones, the blood profile, the loot table and
 // the legend citation. The Pit and every zone are clients of the same row: a new character is one row here, no code. Pure data: only `import type`, no DOM, no clock, no storage.
 // To extend: add the field to CatalogueRow, one check in catalogueProblems, one case in tests/catalogue.test.ts; nothing reads a row by position.
+import type { Pools } from './pools.ts';
 import type { FinisherId } from './finishers.ts';
 import type { LootId } from '../core/loot.ts';
 import type { RigId } from '../roster.ts';
@@ -28,7 +29,7 @@ export type CatalogueRow = {
   engine: { asset: string; tris: number };      // the full-detail GLB the duel draws, path from the repo root, and its triangle count (a measured fact)
   world: { asset: string; tris: number; generator: string | null; maxTris: number } | null;   // the generated LOD a zone draws (phone budget): tris is measured, maxTris the ceiling a row is refused above; the engine asset itself when it is already that light (generator null); null = none yet, so no zone may draw this row
   armour: readonly LootId[];                    // the level-1 armour the character wears and drops from (src/core/loot.ts ids, no weapon); [] = a creature with no armour pieces
-  stats: { archetype: string; levels: readonly [number, number] };   // moves.ts ARCHETYPES key and the level band it is met at; numbers come from opponentAt
+  stats: { archetype: string; levels: readonly [number, number]; pools?: Partial<Pools> };   // moves.ts ARCHETYPES key and the level band it is met at; numbers come from opponentAt
   animations: { clips: readonly string[] };     // the clip names both assets carry
   finisher: { cut: Cut | null; finishers: readonly FinisherId[]; allowed?: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback); `allowed` is the roster's gate (src/roster.ts supportsFinishers), absent = every finisher
   blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/fight/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
@@ -61,6 +62,7 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   if (w && !(w.tris > 0 && w.tris <= w.maxTris && w.maxTris <= WORLD_MAX_TRIS)) add('budget', 'world.tris', `${w.tris} tris against a ceiling of ${w.maxTris} (at most ${WORLD_MAX_TRIS})`);
   if (w && !(row.engine.tris >= w.tris)) add('budget', 'engine.tris', 'the engine asset is not lighter than its LOD');
   if (row.armour.some((id) => !known.loot.has(id))) add('armour', 'armour', 'src/core/loot.ts ids only');
+  for (const [pool, v] of Object.entries(row.stats.pools ?? {})) if (!(pool === 'mana' || pool === 'focus' ? v >= 0 : v > 0) || !Number.isFinite(v) || !['health', 'stamina', 'mana', 'focus'].includes(pool)) add('stats', `stats.pools.${pool}`, 'pools: health and stamina above 0, mana and focus 0 or more (a pool the row does not name keeps today\'s default)');
   if (!known.archetypes.has(row.stats.archetype) || !(row.stats.levels[0] >= 1 && row.stats.levels[1] >= row.stats.levels[0])) add('stats', 'stats', 'a known archetype and a level band');
   if (!row.animations.clips.length || new Set(row.animations.clips).size !== row.animations.clips.length) add('animations', 'animations.clips', 'distinct clip names');
   const { cut, finishers } = row.finisher;
