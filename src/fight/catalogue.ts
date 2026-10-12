@@ -41,10 +41,11 @@ export type CatalogueRow = {
   wounds: Wounds | null;                        // how it is hurt and how it bleeds (K5); null = the Pit's own gore as today (the men and the goblin)
   loot: { table: string | null };               // a loot-table id; null = the Pit's own loot (src/core/loot.ts pieces), no zone table
   legend: Legend | null;                        // a creature's citation; null for a ranked opponent (its ranks carry the names)
+  sparring?: { order: number };                 // the Sparring tab's place for a ranked opponent, 1 = first (src/legends.ts LEGEND_OPPONENTS); required exactly when it has ranks
   ranks: readonly RankLegend[];                 // the ten Pit ranks' named opponents, rank 1 first (src/legends.ts); [] for a creature
 };
 
-export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'render' | 'weapon' | 'home' | 'voice' | 'look' | 'ladder' | 'timing' | 'wounds' | 'bodytype' | 'dup-id';
+export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'render' | 'weapon' | 'home' | 'voice' | 'look' | 'ladder' | 'timing' | 'wounds' | 'bodytype' | 'sparring' | 'dup-id' | 'dup-sparring';
 export type RowIssue = { code: RowCode; path: string; message: string };
 const HEX = /^#[0-9a-f]{6}$/i, WORLD_MAX_TRIS = 10000;   // the world ceiling a row may not raise (the world goblin is ~8k)
 
@@ -74,6 +75,7 @@ export function catalogueProblems(row: CatalogueRow, known: { roster: ReadonlySe
   const { levels } = row.look;
   if (!levels.every((l, i) => Number.isInteger(l) && l >= 1 && l <= 10 && (i === 0 || l > levels[i - 1]!)) || (levels.length > 0 && row.ranks.length !== 10) || typeof row.look.phone !== 'boolean' || (row.look.tint && !row.armour.length)) add('look', 'look', 'ascending rungs 1..10 on a ranked character, and a tint only where there is armour');
   if (row.ladder.hold ? row.ladder.order !== null : !(Number.isInteger(row.ladder.order) && row.ladder.order! >= 1)) add('ladder', 'ladder', 'a held character has no order, a ladder one a 1-based order');
+  if (row.ranks.length > 0 ? !(Number.isInteger(row.sparring?.order) && row.sparring!.order >= 1) : row.sparring !== undefined) add('sparring', 'sparring', 'a ranked opponent has a 1-based sparring.order, a character without ranks has none');
   const { timing } = row.finisher;
   if (timing.length !== finishers.length || timing.some((t, i) => t.id !== finishers[i] || !(t.seconds > 0 && t.seconds <= 10) || (t.pose !== null && !known.poses.has(t.pose)))) add('timing', 'finisher.timing', 'one entry per pick, in order, seconds in (0, 10], a known pose or null');
   if (row.wounds) {
@@ -110,6 +112,6 @@ export function bodytypeProblems(bt: Bodytype): string[] {
   return bad;
 }
 export function catalogueRowsProblems(rows: readonly CatalogueRow[], known: Parameters<typeof catalogueProblems>[1]): RowIssue[] {
-  const seen = new Set<string>();
-  return rows.flatMap((r, i) => [...(seen.has(r.id) ? [{ code: 'dup-id' as const, path: `[${i}].id`, message: `${r.id} twice` }] : []), ...(seen.add(r.id), catalogueProblems(r, known))].map((p) => ({ ...p, path: `[${i}].${p.path}` })));
+  const seen = new Set<string>(), orders = new Set<number>();
+  return rows.flatMap((r, i) => [...(seen.has(r.id) ? [{ code: 'dup-id' as const, path: `[${i}].id`, message: `${r.id} twice` }] : []), ...(r.sparring && orders.has(r.sparring.order) ? [{ code: 'dup-sparring' as const, path: `[${i}].sparring`, message: `sparring.order ${r.sparring.order} twice` }] : []), ...(seen.add(r.id), r.sparring && orders.add(r.sparring.order), catalogueProblems(r, known))].map((p) => ({ ...p, path: `[${i}].${p.path}` })));
 }
