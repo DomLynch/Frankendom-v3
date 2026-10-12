@@ -10,7 +10,6 @@ import { CUTS, CUT_GAP, cutAt, SLAM_AT } from './special-timing.ts';
 import { chargeGait } from './charge-timing.ts';
 import type { BossKind } from './special-boss-timing.ts';
 import { BOSSES, type BossRow } from './boss-rows.ts';
-import type { DwarfShieldKind } from './special-fx-dwarf-shield.ts';
 import { classTravel, type ClassSpecial } from './special-class-timing.ts';
 
 // The special-effect registry (Strategy 2026-10-01: thirty specials are coming, so a lane adds ONE entry here, not an if-branch in scene.ts). A mode is picked by the
@@ -75,6 +74,7 @@ export const FX_VERBS: Readonly<Record<string, (row: BossRow) => SpecialMode>> =
   goblin: (r) => ({ load: (scene, opponent, exposure) => loadGoblin(r.id as GoblinSpecial, scene, opponent, exposure), at: r.at, lift: r.lift, hideTrail: true, extra: goblinExtra, ...(r.held ? { held: HELD_VERBS[r.held] } : {}) }),   // the Goblin's rank 8-10 bosses (special-fx-goblin.ts): the effect gets the target's feet, his rig anchor and head, and hides or shifts the caster itself, so nothing in scene.ts
   redwind: (r) => ({ load: (scene, opponent, exposure) => import('./special-fx-wind.ts').then(({ createRedWind, sandLook }) => createRedWind(scene, opponent, sandLook(exposure))), at: r.at, lift: r.lift, ...(r.held ? { held: HELD_VERBS[r.held] } : {}) }),   // Rank 8 Red Wind: the sand burst off his feet
   hades: (r) => ({ load: (scene, opponent) => import('./special-fx.ts').then(({ createSpecialFx }) => createSpecialFx(scene, opponent)), at: r.at, lift: r.lift }),   // Hades' cloud: what a mode-less special loads
+  dwarfshield: (r) => ({ load: (scene, opponent, exposure) => import('./special-fx-dwarf-shield.ts').then(({ createBossFx }) => createBossFx(scene, opponent, r.id, exposure)), at: r.at, lift: r.lift }),   // the Dwarf's and the Shieldmaiden's ranks 8-10: one effect module, it reads both Head bones and poses nobody
   nightfall: (r) => ({ load: (scene, opponent, _exposure, camera) => import('./nightfall-fx.ts').then(({ createNightfallFx }) => createNightfallFx(scene, camera, opponent)), at: r.at, lift: r.lift }),   // Nyx's Nightfall: the exposure drains to near-black, a cold moon rims the pair
 };
 export const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']>>> = {
@@ -90,8 +90,6 @@ export const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']
 export const TRAVEL_VERBS: Readonly<Record<string, NonNullable<SpecialMode['travel']>>> = { foretold };
 const bossModes = () => Object.fromEntries(BOSSES.map((r) => [r.id, FX_VERBS[r.fx](r)])) as Partial<Record<SpecialTest, SpecialMode>>;
 
-// The Dwarf's and the Shieldmaiden's ranks 8-10 (Character lane, preview only): one entry each, all through special-fx-dwarf-shield.ts (a lazy chunk): it reads both Head bones, poses nobody.
-const dwarfShield = (kind: DwarfShieldKind): SpecialMode => ({ load: (scene, opponent, exposure) => import('./special-fx-dwarf-shield.ts').then(({ createBossFx }) => createBossFx(scene, opponent, kind, exposure)), at: 'head', lift: -0.28 });
 
 // The Witch's, the Plague Doctor's and the Knight's class specials (Weapons, special-fx-class.ts): ground marks darker than the floor, read off the feet; the two that walk (Doctor's Tempo, Ground Drag) are handed
 // the caster's rig anchor and write it absolutely every frame (the effect also reports the gait the rig plays, `classTravel`).
@@ -118,8 +116,6 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
   antaeus: pitborn('antaeus', 0.12),   // Cracking Ground: seams split out of the sand from his own feet toward the target
   surtr: pitborn('surtr', -0.2),   // Ash Fall: the cleave drives him down
   typhon: pitborn('typhon', 0),   // Wind Wall: the gale and the lunge, no knee-dip
-  dwarf8: dwarfShield('dwarf8'), dwarf9: dwarfShield('dwarf9'), dwarf10: dwarfShield('dwarf10'),   // The Word, Three Blows, Rim Shake
-  shield8: dwarfShield('shield8'), shield9: dwarfShield('shield9'), shield10: dwarfShield('shield10'),   // Bared Face, The Ring, Aegis Sweep
   // The Nightborn's rank 4-7 class special (special-fx-nightborn.ts; Dom 2026-10-01: dark ink only, nothing pale or glowing). Seven Cuts (ranks 4-7): the blade plays six cuts and the thrust in the last 24 ticks of the windup, the thrust held at contact range.
   cuts: {
     load: (scene, opponent) => import('./special-fx-nightborn.ts').then(({ createSevenCuts }) => createSevenCuts(scene, opponent)),
