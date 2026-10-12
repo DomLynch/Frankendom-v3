@@ -23,3 +23,6 @@ if (!PLAIN) throw Error('finisher-defs.json: no plain death (a fall row with pos
 export const PLAIN_DEATH: FinisherId = PLAIN.id;
 // The pose word a template's own finisher hands its victim rig (its row's body.victim.pose): Hamstrung's and Execution's rows keep `pose` null.
 export const bodyPoseOf = (id: FinisherId): string | null => finisherRow(id)?.body?.victim.pose ?? null;
+// What a finisher that reads a waist-cut bake plays while that bake is still pending (rank-look.ts bakeSafeFinisher): its row's bakeFallback, a finisher
+// that reads no bake, if the body allows it; else the plain death.
+export const bakeFallbackFor = (id: FinisherId, allows: (f: FinisherId) => boolean): FinisherId => { const f = finisherRow(id)?.bakeFallback; return f !== undefined && allows(f) ? f : PLAIN_DEATH; };
