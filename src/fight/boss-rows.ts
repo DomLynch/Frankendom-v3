@@ -5,7 +5,7 @@ import ROWS from './bosses.json' with { type: 'json' };
 import MANIFEST from './bosses.manifest.json' with { type: 'json' };
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 
-export type BossRow = { id: string; opponent: string; rank: number; fx: string; at: 'feet' | 'head'; lift: number; cue: string; classSkill: string; travel?: string; look?: { day: BossLook; night: BossLook } };
+export type BossRow = { id: string; label: string; opponent: string; rank: number; fx: string; at: 'feet' | 'head'; lift: number; cue: string; classSkill: string; travel?: string; look?: { day: BossLook; night: BossLook } };
 export type BossLook = { core: readonly [number, number, number]; edge: readonly [number, number, number] };
 export type BossKind = string;
 loadRegistry(MANIFEST.tables.map((m) => tableFromFile(m as Manifest, ROWS, `src/fight/${m.file}`)));   // the shared loader (src/core/registry.ts): a duplicate id, missing field or wrong type throws at load, never last-wins; scripts/registry-check.mjs runs the same check, plus the raw duplicate-key scan, at the gate

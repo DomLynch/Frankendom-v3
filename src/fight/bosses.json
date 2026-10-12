@@ -1,6 +1,7 @@
 [
  {
   "id": "arawn",
+  "label": "Baying Circle",
   "opponent": "executioner",
   "rank": 8,
   "fx": "executioner",
@@ -37,6 +38,7 @@
  },
  {
   "id": "thanatos",
+  "label": "Long Shadow",
   "opponent": "executioner",
   "rank": 9,
   "fx": "executioner",
@@ -73,6 +75,7 @@
  },
  {
   "id": "reaper",
+  "label": "Harvest Sweep",
   "opponent": "executioner",
   "rank": 10,
   "fx": "executioner",
@@ -109,6 +112,7 @@
  },
  {
   "id": "mist",
+  "label": "Avalon Mist",
   "opponent": "witch",
   "rank": 8,
   "fx": "boss",
@@ -119,6 +123,7 @@
  },
  {
   "id": "echo",
+  "label": "Foretold Step",
   "opponent": "witch",
   "rank": 9,
   "fx": "boss",
@@ -130,6 +135,7 @@
  },
  {
   "id": "price",
+  "label": "The Price",
   "opponent": "witch",
   "rank": 10,
   "fx": "boss",
@@ -140,6 +146,7 @@
  },
  {
   "id": "flies",
+  "label": "Plague Flies",
   "opponent": "plaguedoctor",
   "rank": 8,
   "fx": "boss",
@@ -150,6 +157,7 @@
  },
  {
   "id": "stain",
+  "label": "Poison Stain",
   "opponent": "plaguedoctor",
   "rank": 9,
   "fx": "boss",
@@ -160,6 +168,7 @@
  },
  {
   "id": "breath",
+  "label": "Last Breath",
   "opponent": "plaguedoctor",
   "rank": 10,
   "fx": "boss",
@@ -170,6 +179,7 @@
  },
  {
   "id": "sling",
+  "label": "The Sling",
   "opponent": "knight",
   "rank": 8,
   "fx": "boss",
@@ -180,6 +190,7 @@
  },
  {
   "id": "haze",
+  "label": "Wrath",
   "opponent": "knight",
   "rank": 9,
   "fx": "boss",
@@ -190,6 +201,7 @@
  },
  {
   "id": "storm",
+  "label": "Storm Follows Him",
   "opponent": "knight",
   "rank": 10,
   "fx": "boss",
