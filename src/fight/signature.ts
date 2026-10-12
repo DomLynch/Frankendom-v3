@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { bloodHidden, type BloodMode } from './blood-mode.ts';
 import type { CombatEvent, Fighter, Side } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { HEAVY_CLASS } from './clash-sparks.ts';
@@ -36,7 +37,7 @@ export type SignatureFrame = {
   roots: readonly [THREE.Object3D | null, THREE.Object3D | null];   // each fighter's rig root (the anchor the wounds use)
   scale: readonly [number, number];                                 // body scale per side (the opponent's OPPONENTS[id].scale)
   yielding: boolean;   // a finisher (or the plain death) is playing: transient effects stand down, marks stay (brief rule 3)
-  bloodMode: 'red' | 'dark' | 'off';   // the player's blood setting: a `blood` effect never fires on off, and draws dark on dark
+  bloodMode: BloodMode;   // the player's blood setting: a `blood` effect never fires on off, and draws dark on dark
   marks: SignatureMarks;
 };
 export type SignatureEffect = {
@@ -201,7 +202,7 @@ export function createSignatures(scene: THREE.Scene, opponent: OpponentId) {
     render(dt: number, events: readonly CombatEvent[], frame: Omit<SignatureFrame, 'marks'>, eye: THREE.Vector3 | null, hidden: readonly [boolean, boolean]) {
       if (effect === null && mode !== 'off') choose();   // an effect module that registered after the scene was built
       const full = { ...frame, marks };
-      if (effect && !frame.yielding && !(effect.blood && frame.bloodMode === 'off')) for (const event of events) if (effect.when(event, frame.fighters)) { effect.fire(event, full); fired++; }
+      if (effect && !frame.yielding && !(effect.blood && bloodHidden(frame.bloodMode))) for (const event of events) if (effect.when(event, frame.fighters)) { effect.fire(event, full); fired++; }
       effect?.update?.(dt, full);
       marks.update(dt, eye, hidden);
     },
