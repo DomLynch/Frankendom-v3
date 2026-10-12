@@ -175,8 +175,8 @@ export const TOUR = { delay: 5, afterSettle: 3, blendIn: 3, lap: 40, breathe: 25
 // camera has moved slower than SETTLE.speed for SETTLE.still seconds, and stays latched until the finish clears. `settledAt`
 // records the finish age at first latch — the arena cam starts TOUR.afterSettle seconds later, and moving again itself does
 // not unsettle the latch. The HUD reads `settled`, `touring` and `finishAge`.
-export const SETTLE = { min: 1.5, still: 0.4, speed: 0.02 } as const;
-const DEFAULT_DOLLY = { push: 0.38, slide: 0.95, turn: 0.6 };   // a posed finish with no finisher row (no ceremony picked): the ordinary push-in, the one every finisher row but Decapitation also carries   // seconds, seconds, metres per second
+export const SETTLE = { min: 1.5, still: 0.4, speed: 0.02 } as const;   // seconds, seconds, metres per second
+const DEFAULT_DOLLY = { push: 0.38, slide: 0.95, turn: 0.6 };   // a posed finish with no finisher row (no ceremony picked): the ordinary push-in, the one every finisher row but Decapitation also carries
 export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefersStillCamera()) {
   let finishPush = 0; // the authorized slow dolly over the death window (0 = off; respects prefers-reduced-motion)
   let shortFade = 1; // share of the short-opponent lock terms (cameraPose targetScale) in use: 1 in the fight, easing to 0 once a finish begins
