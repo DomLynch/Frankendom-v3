@@ -4,6 +4,7 @@ import type { OpponentId } from '../roster.ts';
 import { advanceCast, shadowPhase, LAND_AT, type Cast } from './special-timing.ts';
 import { crowdWave } from '../arena.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
+import { bossRow, classSkillOf, kindsOf, type BossKind } from './boss-rows.ts';
 
 // The Executioner's boss specials, rank 8, 9 and 10 (Executioner lane; Dom's picks via Strategy 2026-10-01). PREVIEW ONLY, behind ?special=<kind>, on the
 // seam of Hades' Shadow (special-timing.ts: the one 120-tick wind-up, SpecialStarted / Landed / Fizzled). Presentation only: it reads the sim's special
@@ -12,8 +13,8 @@ import { clamp01, hash, noise, smooth } from './fx-math.ts';
 //   arawn    (L8,  level 36) Baying Circle: pale dust trails run low along the sand from points on the rim and converge on the target; the last arrives on the landing.
 //   thanatos (L9,  level 41) Long Shadow:    the light dims over the target only and his shadow stretches across the sand to reach them; nothing flies.
 //   reaper   (L10, level 46) Harvest Sweep:  one huge scythe crescent sweeps the frame, the sand is cut in a swath behind it, the crowd leans in a wave.
-export type BossKind = 'arawn' | 'thanatos' | 'reaper';
-export const BOSS_KINDS: readonly BossKind[] = ['arawn', 'thanatos', 'reaper'];
+export type { BossKind };
+export const BOSS_KINDS: readonly BossKind[] = kindsOf('executioner');   // the bosses.json rows with fx 'executioner'
 export const BUILD = 30;   // ticks of visible build-up before the landing (0.5 s; Dom: a 1-2 s build-up was too slow on Red Wind)
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
@@ -87,16 +88,14 @@ function surface(fn: (l: number, a: number) => P3, nl = 14, na = 4) {
 // The colours (linear working space; the Night Pit is the arena with exposure above 1.5, where everything lifts so the unlit strokes hold on dark clay).
 // Day sand is pale: dust trails go lighter-than-sand through a darker core; the pit's clay is dark: they go pale on it.
 export const bossLook = (kind: BossKind, exposure: number): Look => {
-  const dim = exposure > 1.5, c = (r: number, g: number, b: number) => new THREE.Color(r, g, b);
-  if (kind === 'arawn') return dim ? { core: c(0.05, 0.034, 0.026), edge: c(0.11, 0.08, 0.06), dim } : { core: c(0.1, 0.055, 0.04), edge: c(0.2, 0.12, 0.08), dim };
-  if (kind === 'thanatos') return dim ? { core: c(0.003, 0.002, 0.002), edge: c(0.012, 0.009, 0.007), dim } : { core: c(0.004, 0.003, 0.003), edge: c(0.03, 0.024, 0.02), dim };
-  return dim ? { core: c(0.04, 0.028, 0.022), edge: c(0.05, 0.036, 0.028), dim } : { core: c(0.09, 0.055, 0.04), edge: c(0.2, 0.13, 0.09), dim };   // the scythe: dried-blood brown by day (darker than the sand), dark clay-brown by night too (never pale over a fighter)
+  const dim = exposure > 1.5, l = bossRow(kind)!.look![dim ? 'night' : 'day'], c = (v: readonly number[]) => new THREE.Color(v[0], v[1], v[2]);
+  return { core: c(l.core), edge: c(l.edge), dim };   // the scythe (reaper) is dried-blood brown by day (darker than the sand), dark clay-brown by night too (never pale over a fighter)
 };
 const cutLook = (dim: boolean): Look => dim ? { core: new THREE.Color(0.02, 0.011, 0.007), edge: new THREE.Color(0.04, 0.022, 0.013), dim } : { core: new THREE.Color(0.12, 0.065, 0.03), edge: new THREE.Color(0.5, 0.35, 0.19), dim };   // the cut sand: dark earth, pale dry rim
 
 type Piece = { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial };
 // Which cast gets these arts: the Executioner's class skill, the Reaping Blow. Passed to advanceCast as its own test, so the shared timeline never sees it.
-export const isExecutionerCast = (opponent: OpponentId, actor: number, move?: string) => opponent === 'executioner' && actor === 1 && move === 'skill_reaping';
+export const isExecutionerCast = (opponent: OpponentId, actor: number, move?: string) => opponent === 'executioner' && actor === 1 && move === classSkillOf('executioner', 'executioner');
 
 // Class B: a broken, caster-local furrow. Reuses painted sheets only; no boss
 // crowd, lighting or arena resources. The current equipped pose remains native.

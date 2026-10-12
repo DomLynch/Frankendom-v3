@@ -5,20 +5,18 @@
 // Each is its own small file because the sprite and the arena bank have no headroom. They play through the gate's player: same fade-out on a skipped beat.
 import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from '../../audio/sprite.ts';
 import { playGate } from '../../audio/gate.ts';
+import { BOSSES } from '../boss-rows.ts';
 export const SPECIAL_CUES = ['charge', 'quake', 'tithe', 'redwind', 'hades', 'nyx', 'fistful', 'gone', 'liars', 'cracking', 'ashfall', 'windwall', 'baying', 'longshadow', 'harvest', 'theword', 'threeblows', 'rimshake', 'baredface', 'thering', 'aegis', 'avalon', 'foretold', 'theprice', 'plagueflies', 'poisonstain', 'lastbreath', 'thesling', 'wrath', 'storm', 'cuts', 'wake', 'stirring', 'tempo', 'pulse', 'drag', 'swing'] as const;
 export type SpecialCue = typeof SPECIAL_CUES[number];
 // The cue each `?special=<id>` preview plays (special-look.ts SPECIAL_TESTS / special-modes.ts SPECIAL_MODES): one line per move, so a lane's registry entry is not touched. A fight is never told.
 export const SPECIAL_CUE_OF: Readonly<Record<string, SpecialCue>> = {
+  ...Object.fromEntries(BOSSES.map((r) => [r.id, r.cue as SpecialCue])),   // the twelve Executioner / Witch / Plague Doctor / Knight bosses: a cue on the bosses.json row
   shield: 'quake', centurion: 'charge', tithe: 'tithe',
   set: 'redwind', hades: 'hades', nyx: 'nyx',
   reynard: 'fistful', hermes: 'gone', loki: 'liars',
   antaeus: 'cracking', surtr: 'ashfall', typhon: 'windwall',
-  arawn: 'baying', thanatos: 'longshadow', reaper: 'harvest',
   dwarf8: 'theword', dwarf9: 'threeblows', dwarf10: 'rimshake',
   shield8: 'baredface', shield9: 'thering', shield10: 'aegis',
-  mist: 'avalon', echo: 'foretold', price: 'theprice',
-  flies: 'plagueflies', stain: 'poisonstain', breath: 'lastbreath',
-  sling: 'thesling', haze: 'wrath', storm: 'storm',
   cuts: 'cuts', wake: 'wake', stirring: 'stirring', tempo: 'tempo', pulse: 'pulse', drag: 'drag', swing: 'swing',
 };
 // One file pair per cue, named for it (src/assets/special-audio/<cue>.ogg|.m4a): built from SPECIAL_CUES as duel.ts builds its map (Vite resolves the static-prefix template).

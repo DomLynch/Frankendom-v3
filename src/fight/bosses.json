@@ -1,0 +1,201 @@
+[
+ {
+  "id": "arawn",
+  "opponent": "executioner",
+  "rank": 8,
+  "fx": "executioner",
+  "at": "feet",
+  "lift": -0.06,
+  "cue": "baying",
+  "classSkill": "skill_reaping",
+  "look": {
+   "day": {
+    "core": [
+     0.1,
+     0.055,
+     0.04
+    ],
+    "edge": [
+     0.2,
+     0.12,
+     0.08
+    ]
+   },
+   "night": {
+    "core": [
+     0.05,
+     0.034,
+     0.026
+    ],
+    "edge": [
+     0.11,
+     0.08,
+     0.06
+    ]
+   }
+  }
+ },
+ {
+  "id": "thanatos",
+  "opponent": "executioner",
+  "rank": 9,
+  "fx": "executioner",
+  "at": "feet",
+  "lift": -0.14,
+  "cue": "longshadow",
+  "classSkill": "skill_reaping",
+  "look": {
+   "day": {
+    "core": [
+     0.004,
+     0.003,
+     0.003
+    ],
+    "edge": [
+     0.03,
+     0.024,
+     0.02
+    ]
+   },
+   "night": {
+    "core": [
+     0.003,
+     0.002,
+     0.002
+    ],
+    "edge": [
+     0.012,
+     0.009,
+     0.007
+    ]
+   }
+  }
+ },
+ {
+  "id": "reaper",
+  "opponent": "executioner",
+  "rank": 10,
+  "fx": "executioner",
+  "at": "feet",
+  "lift": -0.1,
+  "cue": "harvest",
+  "classSkill": "skill_reaping",
+  "look": {
+   "day": {
+    "core": [
+     0.09,
+     0.055,
+     0.04
+    ],
+    "edge": [
+     0.2,
+     0.13,
+     0.09
+    ]
+   },
+   "night": {
+    "core": [
+     0.04,
+     0.028,
+     0.022
+    ],
+    "edge": [
+     0.05,
+     0.036,
+     0.028
+    ]
+   }
+  }
+ },
+ {
+  "id": "mist",
+  "opponent": "witch",
+  "rank": 8,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "avalon",
+  "classSkill": "skill_witchfire"
+ },
+ {
+  "id": "echo",
+  "opponent": "witch",
+  "rank": 9,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "foretold",
+  "classSkill": "skill_witchfire",
+  "travel": "foretold"
+ },
+ {
+  "id": "price",
+  "opponent": "witch",
+  "rank": 10,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "theprice",
+  "classSkill": "skill_witchfire"
+ },
+ {
+  "id": "flies",
+  "opponent": "plaguedoctor",
+  "rank": 8,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "plagueflies",
+  "classSkill": "skill_miasma"
+ },
+ {
+  "id": "stain",
+  "opponent": "plaguedoctor",
+  "rank": 9,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "poisonstain",
+  "classSkill": "skill_miasma"
+ },
+ {
+  "id": "breath",
+  "opponent": "plaguedoctor",
+  "rank": 10,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "lastbreath",
+  "classSkill": "skill_miasma"
+ },
+ {
+  "id": "sling",
+  "opponent": "knight",
+  "rank": 8,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "thesling",
+  "classSkill": "skill_ironrush"
+ },
+ {
+  "id": "haze",
+  "opponent": "knight",
+  "rank": 9,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "wrath",
+  "classSkill": "skill_ironrush"
+ },
+ {
+  "id": "storm",
+  "opponent": "knight",
+  "rank": 10,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "storm",
+  "classSkill": "skill_ironrush"
+ }
+]
