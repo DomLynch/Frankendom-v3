@@ -22,6 +22,7 @@ import { actorPose, initialPractice, type CombatEvent, type Practice } from './c
 import { ON_DEMAND_BEASTS, beastBodyUrl } from './beast-scale.ts';
 import { OPPONENTS, PLAYER_WEAPONS, RULES, opponentAt, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type OpponentId, type WeaponId } from './moves.ts';
 import { type FinisherId } from './finishers.ts';
+import { anyOfTemplate, isPlainDeath, isShelved, isTemplate } from './finisher-look.ts';
 import { HAMSTRUNG_BEATS, HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, hamstrungPick, resolveHamstrung } from './hamstrung.ts';
 import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, EXECUTION_VICTIMS, executionPick, poseOf, resolveExecution } from './execution.ts';
 import { createHamstrungAssets } from './hamstrung-assets.ts';
@@ -329,7 +330,7 @@ export function createScene(
     for (const map of maps) { await frame(); if (!lost()) renderer.initTexture(map); }
     // His waist-cut bake with the look in, before the swap (Lead's ruling on #1025 row C): steps within LOOK_BAKE_MS a frame, each step itself
     // bounded (opened.ts); the gate reads every step. A kill meanwhile cuts his base look, which is still the one on screen.
-    const rig = lookBakes(supportsFinishers(opponentId, 'opened'), url, lookBakeOff) ? warriors?.opponent : undefined, g = globalThis as { __rankLookSteps?: [number, string][] };
+    const rig = lookBakes(anyOfTemplate('bisect', (f) => supportsFinishers(opponentId, f)), url, lookBakeOff) ? warriors?.opponent : undefined, g = globalThis as { __rankLookSteps?: [number, string][] };
     rig?.prepareLook(look);
     for (let done = !rig; !done;) {
       await frame(); const start = performance.now();
@@ -360,7 +361,7 @@ export function createScene(
       if (!peer) sizeBeast(loaded, opponentId);   // a beast is drawn at the size it is met walking (src/fight/beast-scale.ts)
       dress();   // his kit before the opened-waist bake, so the cut body wears what the whole one did
       playerDrawn(loaded.playerWeapon);
-      if (supportsFinishers(opponentId, 'opened')) loaded.opponent.prepareOpened();
+      if (anyOfTemplate('bisect', (f) => supportsFinishers(opponentId, f))) loaded.opponent.prepareOpened();
       for (const proxy of [player, opponent]) {
         proxy.traverse((object) => {
           if (object instanceof THREE.Mesh) object.geometry.dispose();
@@ -433,7 +434,7 @@ export function createScene(
   let hamstrungLatch: boolean | null = null;   // hamstrungOk() as it stood on the first frame of this finish: the picture and the audio keep one answer for the whole kill
   // The kill picks its finisher (once Hamstrung is in the rotation), so the clips are fetched in the background once the fight is ready, on idle. Silent on failure: hamstrungPick keeps the plain death.
   const prefetchHamstrung = () => { const start = () => { wantHamstrung(true); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 4000 }); else setTimeout(start, 1500); };
-  const wantHamstrung = (prefetch = false) => { if ((prefetch || finisherOverride === 'hamstrung') && warriors && HAMSTRUNG_VICTIMS.includes(opponentId)) void hamstrungAssets.request(warriors); };
+  const wantHamstrung = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId)) void hamstrungAssets.request(warriors); };
   // Execution (src/fight/execution.ts) loads on the picker's choice only (no idle prefetch: it re-skins 12 poses), never as part of ready, and a failure is the plain death.
   const executionAssets = createHamstrungAssets(
     async () => { const [{ default: killer }, { default: victim }] = await Promise.all([import('../assets/execution-killer.json'), import('../assets/execution-victim-hero.json')]); return { killer, victim }; },
@@ -447,7 +448,7 @@ export function createScene(
   );
   const executionOk = () => executionAssets.ready(warriors);
   let executionLatch: boolean | null = null;   // executionOk() as it stood on the first frame of this finish (one answer for picture and audio)
-  const wantExecution = (prefetch = false) => { if ((prefetch || finisherOverride === 'execution') && warriors && EXECUTION_VICTIMS.includes(opponentId)) void executionAssets.request(warriors); };
+  const wantExecution = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'execute')) && warriors && EXECUTION_VICTIMS.includes(opponentId)) void executionAssets.request(warriors); };
   let executionSteps: THREE.Vector3 | null = null; // where the killer's anchor stands for the cut, solved once per finish
   let finishHold = 0; // Hamstrung: seconds left of the hit-stop a blow holds the scene for (the clock and both rigs stand still, the camera and the blood run on)
   let hamstrungSteps: { knee: THREE.Vector3; back: THREE.Vector3 } | null = null; // where the killer's anchor stands for each blow, solved once per finish
@@ -781,7 +782,7 @@ export function createScene(
             fightWeapons,
             hamstrungPick(finisherOverride, hamstrungLatch === true),
             lastFinisher,
-            resolveFinisher(opponentId, practice.finish, fightWeapons, picked === 'hamstrung' || picked === 'execution' ? null : picked, lastFinisher),
+            resolveFinisher(opponentId, practice.finish, fightWeapons, isTemplate(picked, 'hamstring', 'execute') ? null : picked, lastFinisher),
           ))
         : null;
       // Decided once per finish, on its first frame: an opened kill with his waist-cut bake still pending plays bakeSafeFinisher's pick (rank-look.ts).
@@ -799,12 +800,11 @@ export function createScene(
       // reads each step's ms; an opened kill that lands before the last step finishes it in openWaist() and is flagged.
       if (rankLook && warriors) {
         const g = globalThis as { __rankLookSteps?: [number, string][]; __rankLookDrained?: boolean };
-        if (killed && resolved === 'opened' && practice.finish?.victim === 1 && !lookForced && warriors.opponent.bakePending()) g.__rankLookDrained = true;
+        if (killed && isTemplate(resolved, 'bisect') && practice.finish?.victim === 1 && !lookForced && warriors.opponent.bakePending()) g.__rankLookDrained = true;
         const step = lookBakeOff || lookForced ? null : warriors.opponent.stepOpened(); if (step) (g.__rankLookSteps ??= []).push([step.ms, step.label]);
       }
-      // The Quiet One left the game (Dom, 2026-09-27) and nothing picks it; finishers.ts still names it because it is a kill-link-guarded
-      // file (tests/record-version-guard.test.ts): dropping it there waits for the next RECORD_VERSION bump.
-      const posed = finisher ? poseOf(finisher) : null, finisherPose = posed === 'quietOne' ? null : posed;
+      // A shelved row (the Quiet One left the game, Dom 2026-09-27; nothing picks it) keeps its clip but plays the plain fall.
+      const posed = finisher ? poseOf(finisher) : null, finisherPose = (isShelved(finisher) ? null : posed) as Parameters<NonNullable<typeof warriors>['opponent']['update']>[2] | null;   // a pose word characters.ts plays (a shelved clip's word is not one)
       const detailedBlood = finisher !== null && practice.finish?.victim === 1;
       if (
         practice.health === practice.enemyMaxHealth &&
@@ -829,7 +829,7 @@ export function createScene(
         }
         warriors?.player.unsever();
         warriors?.opponent.unsever();
-        if (supportsFinishers(opponentId, 'opened') && !lookForced) warriors?.opponent.prepareOpened();
+        if (anyOfTemplate('bisect', (f) => supportsFinishers(opponentId, f)) && !lookForced) warriors?.opponent.prepareOpened();
         if (hamstrungOk()) warriors?.opponent.prepareHamstrung();
         if (executionOk()) warriors?.opponent.prepareExecution();
       } // a fresh match: both bars full again
@@ -890,9 +890,9 @@ export function createScene(
       // Run Through revision (owner 2026-09-18): the blade STAYS through the body. The killer holds the downward drive
       // (Fin_RunThrough, keyed to settle by a quarter of the window then hold) on the same 0.75× finisher clock; the
       // tableau freezes at progress 1 for as long as the corpse kneels (practice.finish holds until rematch).
-      const runThroughHold = finisher === 'runThrough' && practice.finish?.victim === 1;
-      const hamstrungFinish = finisher === 'hamstrung' && practice.finish?.victim === 1;
-      const executionFinish = finisher === 'execution' && practice.finish?.victim === 1;
+      const runThroughHold = isTemplate(finisher, 'impale') && practice.finish?.victim === 1;
+      const hamstrungFinish = isTemplate(finisher, 'hamstring') && practice.finish?.victim === 1;
+      const executionFinish = isTemplate(finisher, 'execute') && practice.finish?.victim === 1;
       // Owner 2026-09-18: savour the killshot — a cinematic finisher's corpse animates at 0.75× on a presentation clock that
       // may run past the sim window (the spec's "presentation may hold past the window": no simulation slow motion, the
       // 144-tick death and the hit-stop are untouched). A plain-death pick plays at full speed, exactly like an unadorned kill.
@@ -956,17 +956,17 @@ export function createScene(
         CHARGE_LEAN[opponentId] ?? null,
         holdingCharge(practice.duel.fighters[1]),
       );
-      if (finisher === 'opened' && practice.finish?.victim === 1) {
+      if (isTemplate(finisher, 'bisect') && practice.finish?.victim === 1) {
         warriors?.opponent.openWaist(victimProgress, bloodMode);
       }
-      if (finisher === 'splitCrown' && practice.finish?.victim === 1)
+      if (isTemplate(finisher, 'cleave') && practice.finish?.victim === 1)
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
       // (the clip's first 9 %) — baked from the rig at that pose, popped along the killing blow, ballistic to a stop. Blood
       // 'off' keeps the head on: gore is presentation, like the rest of the layer.
       if (
         warriors &&
-        finisher === 'decapitation' &&
+        isTemplate(finisher, 'sever') &&
         bloodMode !== 'off' &&
         !severHead &&
         practice.finish?.victim === 1 &&
@@ -1002,7 +1002,7 @@ export function createScene(
       if (burstPool) burstPool.update(dt);
       if (flinches) for (const side of SIDES) {
         const root = side ? opponent : player, pivot = pivots[side], flinch = flinches[side];
-        if (practice.finish && finisher !== null && finisher !== 'plainDeath') flinch.clear();
+        if (practice.finish && finisher !== null && !isPlainDeath(finisher)) flinch.clear();
         const pose = flinch.update(frozen ? 0 : dt);
         if (!flinch.active) { pivot.position.set(0, 0, 0); pivot.quaternion.identity(); continue; }
         const r = root.rotation.y, c = Math.cos(r), s = Math.sin(r), mag = Math.hypot(pose.dx, pose.dz) || 1;
@@ -1037,7 +1037,7 @@ export function createScene(
       // The marks ride the final poses; a cinematic finisher's own gore takes over the victim's body (the plain death keeps his wounds).
       bodyWounds.update(dt, [warriors?.player.anchor ?? null, warriors?.opponent.anchor ?? null],
         [practice.playerHealth / practice.maxHealth, practice.health / practice.enemyMaxHealth], bloodMode,
-        [!!practice.finish && practice.finish.victim === 0 && finisher !== null && finisher !== 'plainDeath', detailedBlood && finisher !== 'plainDeath'],
+        [!!practice.finish && practice.finish.victim === 0 && finisher !== null && !isPlainDeath(finisher), detailedBlood && !isPlainDeath(finisher)],
         camera.position);   // the eye for the facing test: the camera is unparented, so its position is world
       // The signature effect answers this frame's events after the poses are final; it stands down while a finisher plays (the marks stay),
       // and a body the finisher's own gore has taken over hides its marks with its wounds.
@@ -1047,7 +1047,7 @@ export function createScene(
         scale: [1, OPPONENTS[opponentId].scale],
         yielding: !!practice.finish,
         bloodMode,
-      }, camera.position, [!!practice.finish && practice.finish.victim === 0 && finisher !== null && finisher !== 'plainDeath', detailedBlood && finisher !== 'plainDeath']);
+      }, camera.position, [!!practice.finish && practice.finish.victim === 0 && finisher !== null && !isPlainDeath(finisher), detailedBlood && !isPlainDeath(finisher)]);
       if (specialId && !previewBlocked && !specialFxLoading && practice.duel.fighters.some((f) => f.specialShare !== undefined)) {
         specialFxLoading = true; const token = previewGeneration, group = new THREE.Scene();
         group.name = 'special preview'; group.background = previewBackground?.clone() ?? null; previewGroup = group; scene.add(group);
@@ -1103,7 +1103,7 @@ export function createScene(
       // for the side-view fit.
       // Measured only while the victim clip still moves things, then frozen; monotonic, and its growth is rate-limited so
       // the camera's back-off never exceeds the reveal's per-frame step when a toppling piece's bounds jump (check 20).
-      if (finisher === 'opened' && practice.finish?.victim === 1 && warriors && victimProgress < 1) {
+      if (isTemplate(finisher, 'bisect') && practice.finish?.victim === 1 && warriors && victimProgress < 1) {
         const anchor = warriors.opponent.anchor, subject = anchor.getObjectByName('Opened');
         let measured = 0;
         if (subject?.visible) {
@@ -1116,7 +1116,7 @@ export function createScene(
           }
         }
         openedReach = Math.min(Math.max(openedReach, measured), openedReach + 0.015);   // ≤ 1.5 cm of reach per frame
-      } else if (finisher === 'execution' && practice.finish?.victim === 1 && warriors && victimProgress < 1) {
+      } else if (isTemplate(finisher, 'execute') && practice.finish?.victim === 1 && warriors && victimProgress < 1) {
         // He pitches forward a body's length away from the killer: the side view must have room for where he lands (the same measure, over his extremities).
         const anchor = warriors.opponent.anchor, origin = anchor.getWorldPosition(new THREE.Vector3());
         let measured = 0;
