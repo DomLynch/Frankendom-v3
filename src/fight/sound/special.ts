@@ -12,9 +12,6 @@ export type SpecialCue = typeof SPECIAL_CUES[number];
 export const SPECIAL_CUE_OF: Readonly<Record<string, SpecialCue>> = {
   ...Object.fromEntries(BOSSES.map((r) => [r.id, r.cue as SpecialCue])),   // every boss with a bosses.json row: a cue on the bosses.json row
   shield: 'quake', centurion: 'charge', tithe: 'tithe',
-  antaeus: 'cracking', surtr: 'ashfall', typhon: 'windwall',
-  dwarf8: 'theword', dwarf9: 'threeblows', dwarf10: 'rimshake',
-  shield8: 'baredface', shield9: 'thering', shield10: 'aegis',
   cuts: 'cuts', wake: 'wake', stirring: 'stirring', tempo: 'tempo', pulse: 'pulse', drag: 'drag', swing: 'swing',
 };
 // One file pair per cue, named for it (src/assets/special-audio/<cue>.ogg|.m4a): built from SPECIAL_CUES as duel.ts builds its map (Vite resolves the static-prefix template).
