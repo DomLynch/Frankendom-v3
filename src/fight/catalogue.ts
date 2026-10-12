@@ -6,7 +6,6 @@
 import { poolProblems, type PoolDef, type PoolValues } from './pools.ts';
 import type { FinisherId } from './finishers.ts';
 import type { LootId } from '../core/loot.ts';
-import type { RigId } from '../roster.ts';
 import type { PickedStance } from './stance.ts';
 
 export type Shape = 'quadruped' | 'biped';
@@ -24,7 +23,7 @@ export type CatalogueRow = {
   body?: string;                                // a variant row (the Ember wolf on the Ash wolf's body): the roster id whose rig, assets and finishers it shares; checked against the roster in place of `id`
   summary?: string;                             // one line of lore a zone's character card shows (a creature that is its own character, not just a body)
   name: string;
-  rig: RigId;
+  rig: string;                                  // a catalogue-defs.ts rigs row (roster.ts RigId is derived from them)
   shape: Shape;
   engine: { asset: string; tris: number };      // the full-detail GLB the duel draws, path from the repo root, and its triangle count (a measured fact)
   world: { asset: string; tris: number; generator: string | null; maxTris: number } | null;   // the generated LOD a zone draws (phone budget): tris is measured, maxTris the ceiling a row is refused above; the engine asset itself when it is already that light (generator null); null = none yet, so no zone may draw this row
@@ -34,7 +33,7 @@ export type CatalogueRow = {
   finisher: { cut: Cut | null; finishers: readonly FinisherId[]; allowed?: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback); `allowed` is the roster's gate (src/roster.ts supportsFinishers), absent = every finisher
   blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/fight/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
   render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/fight/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
-  weapon: string;                               // the roster's weapon id (moves.ts WEAPONS); a creature's bite is a weapon too
+  fields: Readonly<Record<string, string | number>>;   // the open attribute map: keys are catalogue-defs.ts `fields` rows ('weapon': the roster's weapon id, a creature's bite included); a new attribute is a defs row, never a type edit
   home: PickedStance;                           // the stance its mood favours (src/fight/stance.ts HOME; 'neutral' when it has none)
   voice: string | null;                         // the key of its throat in src/fight/sound/creature.ts THROATS; null = silent
   look: { levels: readonly number[]; phone: boolean; tint: boolean };   // the Pit rungs that have a shipping look file (src/fight/rank-look.ts SHIPPING_LOOKS), whether it also ships a phone LOD (PHONE_LOOKS), and whether its kit takes the rung's finish (src/fight/rank-tint.ts: any armoured character with ranks)
@@ -46,12 +45,14 @@ export type CatalogueRow = {
   ranks: readonly RankLegend[];                 // the ten Pit ranks' named opponents, rank 1 first (src/legends.ts); [] for a creature
 };
 
-export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'render' | 'weapon' | 'home' | 'voice' | 'look' | 'ladder' | 'timing' | 'wounds' | 'bodytype' | 'sparring' | 'dup-id' | 'dup-sparring';
+export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'render' | 'home' | 'voice' | 'look' | 'ladder' | 'timing' | 'wounds' | 'bodytype' | 'field' | 'rig' | 'sparring' | 'dup-id' | 'dup-sparring';
+export type FieldDef = { id: string; kind: 'ref'; of: string; required?: boolean } | { id: string; kind: 'number'; min?: number; max?: number; required?: boolean };
+export type CatalogueDefs = { fields: readonly FieldDef[]; rigs: readonly { id: string }[] };
 export type RowIssue = { code: RowCode; path: string; message: string };
 const HEX = /^#[0-9a-f]{6}$/i, WORLD_MAX_TRIS = 10000;   // the world ceiling a row may not raise (the world goblin is ~8k)
 
 /** The ways a row is bad, empty when it is good. `known` supplies what only the caller can know (the roster ids, loot ids, tables, finishers, archetypes). */
-export function catalogueProblems(row: CatalogueRow, known: { pools?: readonly PoolDef[]; roster: ReadonlySet<string>; loot: ReadonlySet<string>; tables: ReadonlySet<string>; finishers: ReadonlySet<string>; archetypes: ReadonlySet<string>; weapons: ReadonlySet<string>; stances: ReadonlySet<string>; voices: ReadonlySet<string>; poses: ReadonlySet<string>; bodytypes: Readonly<Record<string, Bodytype>>; species: Readonly<Record<string, Species>> }): RowIssue[] {
+export function catalogueProblems(row: CatalogueRow, known: { pools?: readonly PoolDef[]; roster: ReadonlySet<string>; loot: ReadonlySet<string>; tables: ReadonlySet<string>; finishers: ReadonlySet<string>; archetypes: ReadonlySet<string>; refs: Readonly<Record<string, ReadonlySet<string>>>; defs: CatalogueDefs; stances: ReadonlySet<string>; voices: ReadonlySet<string>; poses: ReadonlySet<string>; bodytypes: Readonly<Record<string, Bodytype>>; species: Readonly<Record<string, Species>> }): RowIssue[] {
   const bad: RowIssue[] = [], add = (code: RowCode, path: string, message: string) => void bad.push({ code, path, message });
   if (!known.roster.has(row.body ?? row.id)) add('id', row.body ? 'body' : 'id', `${row.body ?? row.id} is not a roster id`);
   if (row.body !== undefined && row.body === row.id) add('id', 'body', 'a variant row names a different id than its body');
@@ -71,7 +72,13 @@ export function catalogueProblems(row: CatalogueRow, known: { pools?: readonly P
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
   if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);   // body and variant rows alike: the table must resolve (a typo would silently drop loot)
   if (!(row.render.scale > 0 && row.render.scale <= 4)) add('render', 'render.scale', 'a draw scale in (0, 4]');
-  if (!known.weapons.has(row.weapon)) add('weapon', 'weapon', `${row.weapon} is not a weapon`);
+  if (!known.defs.rigs.some((r) => r.id === row.rig)) add('rig', 'rig', `${row.rig} is not a rig family (catalogue-defs.ts rigs)`);
+  for (const [key, value] of Object.entries(row.fields)) {
+    const def = known.defs.fields.find((f) => f.id === key);
+    if (!def) add('field', `fields.${key}`, `${key} is not a defined field (catalogue-defs.ts fields)`);
+    else if (def.kind === 'ref' ? typeof value !== 'string' || !known.refs[def.of]?.has(value) : !(typeof value === 'number' && Number.isFinite(value) && value >= (def.min ?? -Infinity) && value <= (def.max ?? Infinity))) add('field', `fields.${key}`, `${String(value)} is not a valid ${def.kind === 'ref' ? def.of : 'number'}`);
+  }
+  for (const def of known.defs.fields) if (def.required && !(def.id in row.fields)) add('field', `fields.${def.id}`, `${def.id} is required`);
   if (!known.stances.has(row.home)) add('home', 'home', `${row.home} is not a stance pick`);
   if (row.voice !== null && !known.voices.has(row.voice)) add('voice', 'voice', `${row.voice} has no throat`);
   const { levels } = row.look;
