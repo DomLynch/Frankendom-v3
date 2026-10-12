@@ -4,10 +4,10 @@ import * as THREE from 'three';
 // Presentation only: a small, fixed pool at descending foot plants, and a puff when a heavy blow lands on a planted stance. No idle haze or motion trails.
 // The dust takes its floor's tone so it never reads as a pale ring: sand keeps the warm tan, a paved or wet floor (Rain Yard, Cistern) a thin grey-brown,
 // the Night Pit's clay a dark brown a touch under the floor itself (Strategy's look on #1298). Ash Pit and Blood Sand are sand.
-export type DustTone = string;   // a dustTones row id (origins/arena/definitions.json)
-const toneRow = (tone: DustTone) => DUST_TONES[tone] ?? (() => { throw new Error(`unknown dust tone "${tone}" (origins/arena/definitions.json)`); })();
+export type DustTone = string;   // a dustTones row id (src/fight/arena-defs.json)
+const toneRow = (tone: DustTone) => DUST_TONES[tone] ?? (() => { throw new Error(`unknown dust tone "${tone}" (src/fight/arena-defs.json)`); })();
 export const dustToneFor = (theme: { textures: { floor: string }; wet?: number }): DustTone => {
-  const floor = FLOOR_ROWS[theme.textures.floor] ?? (() => { throw new Error(`unknown floor "${theme.textures.floor}" (origins/arena/definitions.json)`); })();
+  const floor = FLOOR_ROWS[theme.textures.floor] ?? (() => { throw new Error(`unknown floor "${theme.textures.floor}" (src/fight/arena-defs.json)`); })();
   return theme.wet !== undefined ? floor.wetDust : floor.dust;
 };
 export function createFootDust(scene: THREE.Scene, tone: DustTone = 'sand') {
