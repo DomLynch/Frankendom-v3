@@ -7,7 +7,7 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import SHEET_DEFS from './sheet-defs.json' with { type: 'json' };
 import SHEET_MANIFEST from './sheet-defs.manifest.json' with { type: 'json' };
 
-export type SheetStat = { readonly id: string; readonly code: number; readonly base: number; readonly cap: number; readonly layers?: readonly string[] };
+export type SheetStat = { readonly id: string; readonly code: number; readonly base: number; readonly cap: number; readonly layers?: readonly string[]; readonly perk?: string; readonly perkSign?: 1 | -1 };   // perk/perkSign: the patron-perk stat row (origins/patrons/stat-defs.json) this stat reads, and which way: the same vocabulary, one reader
 export type Sheet = Readonly<Record<string, number>>;   // stat id -> the player's total on that stat's line (base..cap); a stat at its base is simply absent
 export type SheetLayers = Readonly<Record<string, Readonly<Record<string, number>>>>;   // layer id -> stat id -> points this layer adds (before the layer's cap)
 
@@ -19,6 +19,7 @@ const BY_ID = new Map(SHEET_STATS.map((r) => [r.id, r]));
 for (const [id, cap] of Object.entries(SHEET_LAYERS)) if (!Number.isInteger(cap) || cap < 1) throw Error(`sheet-defs layer "${id}": cap is a whole number of points from 1`);
 SHEET_STATS.forEach((r, i) => {
   if (r.code !== i + 1) throw Error(`sheet-defs stat "${r.id}": codes run 1..n with no gap (the record is append only)`);
+  if ((r.perk === undefined) !== (r.perkSign === undefined) || (r.perkSign !== undefined && r.perkSign !== 1 && r.perkSign !== -1)) throw Error(`sheet-defs stat "${r.id}": perk and perkSign (1 or -1) come together`);
   if (r.base < 1 || r.cap < r.base || r.cap > 255) throw Error(`sheet-defs stat "${r.id}": 1 <= base <= cap <= 255 (a record byte)`);
   const fed = (r.layers ?? Object.keys(SHEET_LAYERS)).reduce((n, l) => n + (SHEET_LAYERS[l] ?? 0), 0);
   if (r.cap - r.base > fed) throw Error(`sheet-defs stat "${r.id}": its cap is past what its layers can add (${fed} points)`);
@@ -44,7 +45,7 @@ export function checkSheet(sheet: Sheet | undefined): Sheet | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
-// Layers add (the one place a cap is spelled out): each layer's points on a stat are held to the layer's cap and to zero, a stat takes only the layers its row lists, and the total is held to the stat's cap.
+// Layers add (the one place a cap is spelled out): each layer's points on a stat are held to +-the layer's cap (a weakness is negative), a stat takes only the layers its row lists, and the total is held between the stat's base and its cap.
 export function sheetOf(layers: SheetLayers): Sheet | undefined {
   const out: Record<string, number> = {};
   for (const [layer, stats] of Object.entries(layers)) {
@@ -54,10 +55,18 @@ export function sheetOf(layers: SheetLayers): Sheet | undefined {
       if (!row) throw Error(`Sheet: "${id}" is not a stat row (sheet-defs.json stats)`);
       if (!Number.isInteger(points)) throw Error(`Sheet: ${layer} adds whole points to ${id}`);
       if (row.layers && !row.layers.includes(layer)) throw Error(`Sheet: ${id} takes no points from the ${layer} layer`);
-      out[id] = (out[id] ?? row.base) + Math.max(0, Math.min(SHEET_LAYERS[layer]!, points));
+      out[id] = (out[id] ?? row.base) + Math.max(-SHEET_LAYERS[layer]!, Math.min(SHEET_LAYERS[layer]!, points));
     }
   }
-  for (const id of Object.keys(out)) out[id] = Math.min(BY_ID.get(id)!.cap, out[id]!);
+  for (const id of Object.keys(out)) out[id] = Math.max(BY_ID.get(id)!.base, Math.min(BY_ID.get(id)!.cap, out[id]!));
   return checkSheet(out);
+}
+// The patron-perk reader folded in (Strategy: ONE generic reader over row fields): a perk resolves to per-mille deltas keyed by the perk stat rows (origins/patrons: `deltaOf(modifiers, stat)`),
+// and every sheet stat row that names a perk stat takes its delta as points, ten per-mille to a point, in the row's direction. The caller passes the reader, so this file imports nothing from
+// Origins: `sheetOf({ title: perkPoints((s) => deltaOf(mods, s)) })`. A new sheet stat that names a perk stat reads it with no code here.
+export function perkPoints(delta: (perkStat: string) => number): Readonly<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const r of SHEET_STATS) if (r.perk !== undefined && r.perkSign !== undefined) { const points = Math.round((r.perkSign * delta(r.perk)) / 10); if (points) out[r.id] = points; }
+  return out;
 }
 export const statByCode = (code: number): SheetStat | undefined => SHEET_STATS[code - 1];

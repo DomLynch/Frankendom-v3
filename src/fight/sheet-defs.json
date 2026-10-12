@@ -1,14 +1,56 @@
 {
   "layers": [
-    { "id": "level", "cap": 50 },
-    { "id": "gear", "cap": 25 },
-    { "id": "skill", "cap": 15 },
-    { "id": "title", "cap": 10 }
+    {
+      "id": "level",
+      "cap": 50
+    },
+    {
+      "id": "gear",
+      "cap": 25
+    },
+    {
+      "id": "skill",
+      "cap": 15
+    },
+    {
+      "id": "title",
+      "cap": 10
+    }
   ],
   "stats": [
-    { "id": "attack", "code": 1, "base": 100, "cap": 200 },
-    { "id": "armour", "code": 2, "base": 100, "cap": 200 },
-    { "id": "resist", "code": 3, "base": 100, "cap": 200 },
-    { "id": "burden", "code": 4, "base": 100, "cap": 125, "layers": ["gear"] }
+    {
+      "id": "attack",
+      "code": 1,
+      "base": 100,
+      "cap": 200,
+      "perk": "damageDealtPermille",
+      "perkSign": 1
+    },
+    {
+      "id": "armour",
+      "code": 2,
+      "base": 100,
+      "cap": 200,
+      "perk": "damageTakenPermille",
+      "perkSign": -1
+    },
+    {
+      "id": "resist",
+      "code": 3,
+      "base": 100,
+      "cap": 200
+    },
+    {
+      "id": "burden",
+      "code": 4,
+      "base": 100,
+      "cap": 125,
+      "layers": [
+        "gear",
+        "title"
+      ],
+      "perk": "staminaCostPermille",
+      "perkSign": 1
+    }
   ]
 }
