@@ -8,10 +8,10 @@ import WEAPON_MANIFEST from './weapon-defs.manifest.json' with { type: 'json' };
 export type WeaponBase = { readonly moves: Readonly<Record<string, MoveDef>>; readonly paths: Readonly<Record<string, PathSpec>> };
 export type WeaponEnums = { readonly materials: readonly string[]; readonly guards: readonly string[]; readonly grips: readonly string[] };
 type Obj = Record<string, unknown>;
-const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
+const isRecord = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 // Objects merge field by field; anything else replaces. A merge that changes nothing returns the BASE object itself, so a row that overrides nothing of a table shares it (the longsword's moves ARE MOVES).
 const merge = (base: unknown, over: unknown): unknown => {
-  if (!isObj(base) || !isObj(over)) return over;
+  if (!isRecord(base) || !isRecord(over)) return over;
   const out: Obj = { ...base };
   let changed = false;
   for (const k of Object.keys(over)) { const m = merge(base[k], over[k]); if (!(k in base) || m !== base[k]) { out[k] = m; changed = true; } }
@@ -40,7 +40,7 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
     if (!enums.grips.includes(w.grip as string)) throw Error(`weapon-defs "${id}": grip "${String(w.grip)}" is not one of ${enums.grips.join(', ')}`);
     if (typeof w.reach !== 'number' || !Number.isFinite(w.reach)) throw Error(`weapon-defs "${id}": reach is a number`);
     if (!fight || typeof fight.thrustShare !== 'number' || typeof fight.close !== 'number') throw Error(`weapon-defs "${id}": fight needs thrustShare and close`);
-    for (const [table, must] of [['moves', base.moves], ['paths', base.paths]] as const) for (const key of Object.keys(must)) if (!isObj((w[table] as Obj)?.[key])) throw Error(`weapon-defs "${id}": ${table} has no "${key}"`);
+    for (const [table, must] of [['moves', base.moves], ['paths', base.paths]] as const) for (const key of Object.keys(must)) if (!isRecord((w[table] as Obj)?.[key])) throw Error(`weapon-defs "${id}": ${table} has no "${key}"`);
     weapons[id] = { id, ...w } as unknown as Weapon;
   }
   const order = (field: 'player' | 'offered'): string[] => [...rows.values()].filter((r) => r[field] !== undefined).sort((a, b) => (a[field] as number) - (b[field] as number)).map((r) => r.id as string);
