@@ -16,7 +16,7 @@ export type Bodytype = { parts: readonly Part[] };   // what can be hurt on a bo
 export type Species = { blood: { start: string; end: string } | null; decal: { id: string; sizeM: number } | null; spray: number };   // how a species bleeds; spray is a multiple of the Pit's BLOOD counts for a man (1)
 export type WoundTier = { below: number; decals: number; drip: number };   // at hp fraction below `below`: marks on the body and the drip as a multiple of bleedRate
 export type Wounds = { body: string; species: string; size: number; bleedRate: number; tiers: readonly WoundTier[] };   // a creature's wound row: the bodytype and species tables it reads, and its own numbers
-export type Legend = { work: string; author?: string; year?: number; locator?: string } | { legendId: string } | { pending: string };   // the same shapes as origins/mobs/row.ts SourceRef
+export type Legend = { work: string; author?: string; year?: number; locator?: string } | { legendId: string } | { pending: string };   // the same shapes as src/core/world/row.ts SourceRef
 export type RankLegend = { name: string; source: string; backstory: string };   // the named opponent at one Pit rank (src/legends.ts), cosmetic text only
 export type CatalogueRow = {
   id: string;                                   // the ROSTER id (src/roster.ts): the key a client resolves a character by; a VARIANT row (`body` set) has its own id instead
