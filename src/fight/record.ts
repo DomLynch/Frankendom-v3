@@ -106,8 +106,8 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   35: [],   // the Ash Wolf: a new held opponent; no existing fight is reached
   36: [],   // the Tusked Boar: a new held opponent; no existing fight is reached
   37: [],   // the Cinder Bear: a new held opponent; no existing fight is reached
-  44: [],
-  45: [],   // skills as data (skill-defs.json): the byte order and every move are unchanged, no fight is reached   // weapons as data (weapon-defs.json): the resolved table is byte-identical, no fight is reached
+  44: [],   // weapons as data (weapon-defs.json): the resolved table is byte-identical, no fight is reached
+  45: [],   // skills as data (skill-defs.json): the byte order and every move are unchanged, no fight is reached
   43: [],   // resource pools as data (pools.ts): every default equals what createFighter always used, so a row without pools fights byte for byte as v42; no fight is reached
   42: [],   // the roster is built from catalogue rows (20a): same opponents, same numbers; no fight is reached
   41: [],   // the shared crowd-control ladder is opt-in per fighter (Fighter.cc): a fight without one is byte for byte as v40; no fight is reached
