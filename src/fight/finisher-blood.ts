@@ -1,5 +1,6 @@
 import { AddEquation, Color, CustomBlending, DstColorFactor, DynamicDrawUsage, OneMinusSrcAlphaFactor, SRGBColorSpace, TextureLoader, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, Quaternion, SphereGeometry, Texture, Vector3 } from 'three';
-import type { FinisherId } from './finishers.ts';
+import { finisherRow, type FinisherId } from './finishers.ts';
+import { templateOf } from './finisher-look.ts';
 import { HAMSTRUNG_BEATS } from './hamstrung.ts';
 import { EXECUTION_BEATS, executionAt } from './execution.ts';
 
@@ -28,7 +29,10 @@ export function bloodiesMaterial(name: string, twoHanded: boolean): boolean {
 type Mode = 'red' | 'dark' | 'off';
 
 // Read after posing, separation and final actor headings. Every position is world space.
+// Each template wounds its own way (the waist halves, the knee and the back, the nape, the neck stump and the severed head, the skull seam, the
+// entry and the exit); a fall, or a finisher with no wound of its own, bleeds from where the blade went in.
 export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: Object3D | null, location = 'torso'): BloodSource[] {
+  const template = templateOf(kind);
   victim.updateWorldMatrix(true, true);
   const at = (name: string) => victim.getObjectByName(name)?.getWorldPosition(new Vector3());
   const neck = at('neck_01'), crown = at('Head'), chest = at('spine_02');
@@ -37,7 +41,7 @@ export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: O
   const forward = new Vector3(0,0,1).transformDirection(victim.matrixWorld);
   forward.addScaledVector(up,-forward.dot(up)).normalize();
   const source = (site: string, position: Vector3, direction: Vector3, strength = 1): BloodSource => ({site,position,direction:direction.normalize(),strength:strength*size});
-  if (kind === 'opened') {
+  if (template === 'bisect') {
     const opened = victim.getObjectByName('Opened');
     if (!opened?.visible) return [];
     return ['OpenedLegs','OpenedTorso'].flatMap((name,i) => {
@@ -49,7 +53,7 @@ export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: O
       return [source(i ? 'waist-torso' : 'waist-legs', cut.localToWorld(cut.geometry.boundingBox!.getCenter(new Vector3())), new Vector3(0,i ? -1 : 1,0).transformDirection(cut.matrixWorld),1.4)];
     });
   }
-  if (kind === 'hamstrung') {
+  if (template === 'hamstring') {
     // The knee is cut at the first blow, the back entered at the second (the second waits out the first blow's hit-stop).
     const knee = at('calf_r');
     return [
@@ -57,20 +61,20 @@ export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: O
       {...source('back-entry',chest.clone().addScaledVector(forward,-.13*size),forward.clone().negate().addScaledVector(up,.6),1.4),delay:HAMSTRUNG_BEATS.back*HAMSTRUNG_BEATS.duration+HAMSTRUNG_BEATS.hold,seed:8},
     ];
   }
-  if (kind === 'execution') {
+  if (template === 'execute') {
     // One wound, at the cut: the nape. He kneels turned away, so the back of his neck faces the killer (`forward`, the actor's heading, points at him).
     // The jet rises and leans toward the killer; the neck bone then rides him down onto his face, so the seep pools under the head. The head stays whole.
     const nape = neck.clone().addScaledVector(forward,.025*size);
     return [{...source('nape-cut',nape,forward.clone().addScaledVector(up,.9),1.2),delay:executionAt(EXECUTION_BEATS.strike),seed:8}];
   }
-  if (kind === 'decapitation') {
+  if (template === 'sever') {
     const sites = [source('neck-stump',neck.clone().addScaledVector(up,.035*size),up.clone().addScaledVector(forward,.35),1.35)];
     const cut = head?.getObjectByName('BloodHeadCut');
     if (cut) sites.push(source('detached-head',cut.getWorldPosition(new Vector3()),new Vector3(0,-1,0).transformDirection(cut.matrixWorld),.8));
     return sites;
   }
-  if (kind === 'splitCrown') return [source('skull-seam',crown.clone().addScaledVector(up,.045*size),up.clone().addScaledVector(forward,.4),1.15)];
-  if (kind === 'runThrough') return [
+  if (template === 'cleave') return [source('skull-seam',crown.clone().addScaledVector(up,.045*size),up.clone().addScaledVector(forward,.4),1.15)];
+  if (template === 'impale') return [
     source('chest-entry',chest.clone().addScaledVector(forward,.14*size),forward.clone(),1),
     source('back-exit',chest.clone().addScaledVector(forward,-.13*size),forward.clone().negate(),.85),
   ];
@@ -128,7 +132,7 @@ export function createFinisherBlood(map: Texture) {
       dt=Math.min(dt,.1);elapsed+=dt;
       if(mode==='off') {for(const p of particles)p.life=0;drops.count=0;return;}
       if(elapsed>=7 && !lateSeeded && stainCursor===0) { for(const s of sources)stain(s.position,.3,s.site);lateSeeded=sources.length>0; }
-      const start=kind==='decapitation' ? .05 : kind==='opened' || kind==='splitCrown' ? .045 : .01;
+      const start=finisherRow(kind)?.blood.start ?? .01;   // the row's blood.start; .01 for a kind no row names
       if(progress>=start && elapsed<7) sources.forEach((s,i)=>{
         if(elapsed<(s.delay??0))return;
         if(!seeded[i]) { seeded[i]=true; pending[i]=(pending[i]??0)+(s.seed??0); }   // the drops of the blow itself, thrown the frame the wound opens
