@@ -73,11 +73,16 @@ export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: O
     if (cut) sites.push(source('detached-head',cut.getWorldPosition(new Vector3()),new Vector3(0,-1,0).transformDirection(cut.matrixWorld),.8));
     return sites;
   }
-  if (template === 'cleave') return [source('skull-seam',crown.clone().addScaledVector(up,.045*size),up.clone().addScaledVector(forward,.4),1.15)];
-  if (template === 'impale') return [
-    source('chest-entry',chest.clone().addScaledVector(forward,.14*size),forward.clone(),1),
-    source('back-exit',chest.clone().addScaledVector(forward,-.13*size),forward.clone().negate(),.85),
-  ];
+  // The one-line wounds, by template verb (a table, so the verb names are keys, not compares).
+  const wounds: Partial<Record<string, () => ReturnType<typeof source>[]>> = {
+    cleave: () => [source('skull-seam',crown.clone().addScaledVector(up,.045*size),up.clone().addScaledVector(forward,.4),1.15)],
+    impale: () => [
+      source('chest-entry',chest.clone().addScaledVector(forward,.14*size),forward.clone(),1),
+      source('back-exit',chest.clone().addScaledVector(forward,-.13*size),forward.clone().negate(),.85),
+    ],
+  };
+  const wound = template === null ? undefined : wounds[template];
+  if (wound) return wound();
   return [source('blade-wound',location === 'head' ? crown : location === 'legs' ? at('thigh_r') ?? chest : chest,forward,.9)];
 }
 
