@@ -1,5 +1,5 @@
 // The bodytype and species tables a catalogue row's `wounds` reads (World's #2000 schema, K5): what can be hurt on a body family, and how a species bleeds. GENERATED once by
-// scripts/catalogue-convert.mjs (the bone names are the skin joints of the GLBs, read, not typed); this file is the source of truth from here on. A new body family is one entry, a new
+// the one-shot catalogue converter (since removed) (the bone names are the skin joints of the GLBs, read, not typed); this file is the source of truth from here on. A new body family is one entry, a new
 // creature is a `wounds` row. The trunk is the root part; a head hangs from the neck and the neck from the trunk, so severing the neck takes the head. Data only: no engine reads it yet.
 import type { Bodytype, Species } from './catalogue.ts';
 
