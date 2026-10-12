@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
-import { advanceCast, bossClock, shadowPhase, LAND_AT, type Cast } from './special-timing.ts';
+import { advanceCast, bossClock, shadowPhase, skillCast, LAND_AT, type Cast } from './special-timing.ts';
 import { hash } from './fx-math.ts';
 import { SPECIALS, specialFamily, type SpecialRow } from './special-rows.ts';
 
@@ -233,6 +233,8 @@ const puffTextures = () => [11, 23, 37].map((seed) => paint(64, (u, v, x, y) => 
 const fleckTextures = () => [5, 9].map((seed) => paint(16, (u, v) => { const r = Math.hypot(u, v) / (0.55 + 0.4 * wobble(Math.atan2(v, u) * 1.5, seed)); return clamp((1 - r) * 5); }));   // a hard-edged chip, no glow
 
 // Class B: sparse iron grains rise a handspan, hold, then settle once. No foot plant.
+// The Dwarf's Anvil Stomp and the Shieldmaiden's Shield-Hewer casts: the skill rows say whose they are (special-timing.ts skillCast).
+export const isStomp = skillCast('stomp'), isHewer = skillCast('hewer');
 export function createIronSettle(scene: THREE.Scene, opponent: OpponentId, exposure: number) {
   const root = new THREE.Group(); root.name = 'iron settle'; root.visible = false; scene.add(root);
   const night = exposure > 1.5, maps = fleckTextures(), palette = night ? NIGHT_IRON : IRON;
@@ -245,7 +247,7 @@ export function createIronSettle(scene: THREE.Scene, opponent: OpponentId, expos
   return {
     render(_dt: number, events: readonly CombatEvent[], fighters: readonly [Fighter, Fighter], tick: number, feet: readonly [THREE.Vector3 | null, THREE.Vector3 | null], yielding: boolean) {
       if (yielding) { cast = null; hide(); return; }
-      cast = advanceCast(cast, events, fighters, tick, opponent, false, (id, actor, move) => id === 'dwarf' && actor === 1 && move === 'skill_stomp');
+      cast = advanceCast(cast, events, fighters, tick, opponent, false, isStomp);
       const from = feet[1], to = feet[0]; if (!cast || !from || !to) { hide(); return; }
       const phase = shadowPhase(cast, tick), build = smooth(clamp(((cast.fizzled ?? tick) - cast.start) / (LAND_AT - 12)));
       const fade = phase.phase === 'recover' || phase.phase === 'dissolve' ? 1 - smooth(phase.k) : 1, settle = cast.landed === null ? 0 : smooth(clamp((tick - cast.landed) / 14));
@@ -275,7 +277,7 @@ export function createGatheredEdge(scene: THREE.Scene, opponent: OpponentId, exp
   return {
     render(_dt: number, events: readonly CombatEvent[], fighters: readonly [Fighter, Fighter], tick: number, feet: readonly [THREE.Vector3 | null, THREE.Vector3 | null], yielding: boolean) {
       if (yielding) { cast = null; hide(); return; }
-      cast = advanceCast(cast, events, fighters, tick, opponent, false, (id, actor, move) => id === 'shieldmaiden' && actor === 1 && move === 'skill_hewer');
+      cast = advanceCast(cast, events, fighters, tick, opponent, false, isHewer);
       const from = feet[1], to = feet[0]; if (!cast || !from || !to) { hide(); return; }
       const phase = shadowPhase(cast, tick), build = smooth(clamp(((cast.fizzled ?? tick) - cast.start) / (LAND_AT - 12)));
       const fade = phase.phase === 'recover' || phase.phase === 'dissolve' ? 1 - smooth(phase.k) : 1, sweep = cast.landed === null ? 0 : smooth(clamp((tick - cast.landed) / 14));
@@ -363,7 +365,7 @@ function createStanceMark(scene: THREE.Scene, opponent: OpponentId, exposure: nu
       if (tick < lastTick) { cast = null; lastStart = -Infinity; pickup = true; hide(); }
       lastTick = tick;
       if (yielding) { clear(); return; }
-      const is = (id: OpponentId, actor: number, move?: string) => id === (cut ? 'shieldmaiden' : 'dwarf') && actor === 1 && move === (cut ? 'skill_hewer' : 'skill_stomp');
+      const is = cut ? isHewer : isStomp;
       // Repeated frozen events cannot restart the clock, including after clear.
       for (const e of events) {
         if (e.type === 'SpecialStarted') {
