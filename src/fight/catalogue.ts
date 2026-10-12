@@ -37,6 +37,7 @@ export type CatalogueRow = {
   home: PickedStance;                           // the stance its mood favours (src/fight/stance.ts HOME; 'neutral' when it has none)
   voice: string | null;                         // the key of its throat in src/fight/sound/creature.ts THROATS; null = silent
   look: { levels: readonly number[]; phone: boolean; tint: boolean };   // the Pit rungs that have a shipping look file (src/fight/rank-look.ts SHIPPING_LOOKS), whether it also ships a phone LOD (PHONE_LOOKS), and whether its kit takes the rung's finish (src/fight/rank-tint.ts: any armoured character with ranks)
+  firstSight?: boolean;                         // the zone preview stands the player 15-25 m from this creature's camp and faces it, so it is the first thing he sees (origins/preview/mobs.ts spawnAmong); absent = no
   ladder: { order: number | null; hold: boolean };   // its place on the Pit ladder, 1 = first (src/ladder.ts LADDER); null while held off it (roster `hold`)
   wounds: Wounds | null;                        // how it is hurt and how it bleeds (K5); null = the Pit's own gore as today (the men and the goblin)
   loot: { table: string | null };               // a loot-table id; null = the Pit's own loot (src/core/loot.ts pieces), no zone table
@@ -72,6 +73,7 @@ export function catalogueProblems(row: CatalogueRow, known: { pools?: readonly P
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
   if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);   // body and variant rows alike: the table must resolve (a typo would silently drop loot)
   if (!(row.render.scale > 0 && row.render.scale <= 4)) add('render', 'render.scale', 'a draw scale in (0, 4]');
+  if (row.firstSight !== undefined && typeof row.firstSight !== 'boolean') add('render', 'firstSight', 'firstSight is true or absent');
   if (!known.defs.rigs.some((r) => r.id === row.rig)) add('rig', 'rig', `${row.rig} is not a rig family (catalogue-defs.ts rigs)`);
   for (const [key, value] of Object.entries(row.fields)) {
     const def = known.defs.fields.find((f) => f.id === key);
