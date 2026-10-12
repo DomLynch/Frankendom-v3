@@ -54,7 +54,7 @@ export function gearDeltas(setId: string, coverage = 1, quality = coverage): Rea
   const set = GEAR.sets[setId];
   if (!set) throw Error(`gearDeltas: "${setId}" is not a set row (gear-defs.json sets)`);
   const c = Math.max(0, Math.min(1, coverage)), out: Record<string, number> = {};
-  for (const [dial, n] of Object.entries(set.shape)) { const d = Math.round(n * c); if (d) out[dial] = d; }
+  for (const [dial, n] of Object.entries(set.shape)) { const d = Math.sign(n) * Math.round(Math.abs(n) * c); if (d) out[dial] = d; }   // rounded by magnitude, so what one dial gains the other loses
   const total = Math.round(GEAR.qualityMax * Math.max(0, Math.min(c, quality))), weights = Object.entries(set.quality), sum = weights.reduce((a, [, w]) => a + w, 0);
   const shares = weights.map(([dial, w]) => ({ dial, floor: Math.floor((total * w) / sum), rest: (total * w) % sum, code: DIALS.find((x) => x.id === dial)!.code }));
   let left = total - shares.reduce((a, s) => a + s.floor, 0);
