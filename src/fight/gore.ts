@@ -206,14 +206,14 @@ THREE.SkinnedMesh.prototype.applyBoneTransform = function (this: THREE.SkinnedMe
   if (homogeneous) out.w = boneBase.w;   // the homogeneous coordinate survives the vector operations, as upstream keeps it
   return out.applyMatrix4(this.bindMatrixInverse);
 } as typeof THREE.SkinnedMesh.prototype.applyBoneTransform;
-const meshVertex = THREE.Mesh.prototype.getVertexPosition;
+const skinnedVertex = THREE.SkinnedMesh.prototype.getVertexPosition;   // SkinnedMesh's own (Mesh's, then applyBoneTransform), never Mesh's alone
 THREE.SkinnedMesh.prototype.getVertexPosition = function (this: THREE.SkinnedMesh, index: number, target: THREE.Vector3) {
-  if (!skinning) return meshVertex.call(this, index, target);
+  if (!skinning) return skinnedVertex.call(this, index, target);
   const count = this.geometry.attributes.position.count; let memo = vertexMemo.get(this);
   if (!memo || memo.stamp.length !== count) { memo = { xyz: new Float64Array(count * 3), stamp: new Uint32Array(count) }; vertexMemo.set(this, memo); }
   const k = index * 3;
   if (memo.stamp[index] === skinStamp) return target.set(memo.xyz[k], memo.xyz[k + 1], memo.xyz[k + 2]);
-  meshVertex.call(this, index, target); memo.xyz[k] = target.x; memo.xyz[k + 1] = target.y; memo.xyz[k + 2] = target.z; memo.stamp[index] = skinStamp;
+  skinnedVertex.call(this, index, target); memo.xyz[k] = target.x; memo.xyz[k + 1] = target.y; memo.xyz[k + 2] = target.z; memo.stamp[index] = skinStamp;
   return target;
 } as typeof THREE.SkinnedMesh.prototype.getVertexPosition;
 const skinCache = new WeakMap<THREE.Object3D, THREE.Object3D[]>();
