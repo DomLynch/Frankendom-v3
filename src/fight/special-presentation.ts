@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { createTitheLighting, type TitheLight } from './special-lighting.ts';
 import type { CombatEvent, Fighter, Side } from './duel.ts';
-import { classSpecialFor, type ClassSpecialId } from './class-special-identity.ts';
+import { classSpecialFor } from './class-special-identity.ts';
 import type { OpponentId } from '../roster.ts';
-import { bossSpecialId, type BossSpecialId } from './special-identity.ts';
+import { bossSpecialId } from './special-identity.ts';
 import { SPECIAL_TESTS, type SpecialTest } from './special-look.ts';
 import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-school.ts';
 import { SPECIAL_MODES, type Pose, type SpecialFx, type SpecialMode } from './special-modes.ts';
@@ -12,7 +12,7 @@ type Pair<T> = readonly [T, T];
 type Warriors = Parameters<NonNullable<SpecialMode['extra']>>[0];
 export const casterPair = <T>(pair: Pair<T>, actor: Side): Pair<T> => actor === 1 ? pair : [pair[1], pair[0]];
 export const casterEvent = (event: CombatEvent, actor: Side): CombatEvent => actor === 1 ? event : { ...event, actor: (1 - event.actor) as Side, ...(event.target === undefined ? {} : { target: (1 - event.target) as Side }) };
-type SpecialId = BossSpecialId | ClassSpecialId;
+type SpecialId = string;   // an open set (typing only): a preview id is a bosses.json row id or a hand-written one
 export type SpecialFightIdentity = Readonly<{ opponent: OpponentId; level: number; presets?: readonly [SpecialTest | null, SpecialTest | null] }>;
 const modes: Partial<Record<SpecialId, SpecialMode>> = SPECIAL_MODES;
 const previews: Partial<Record<SpecialId, { opponent: OpponentId }>> = SPECIAL_TESTS;

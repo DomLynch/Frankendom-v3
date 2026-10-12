@@ -42,10 +42,9 @@ const HAND_TESTS = {
 } as const satisfies Record<string, { opponent: OpponentId; level: number; first: number }>;
 // The boss previews (Arawn..Storm: the Executioner's, Witch's, Plague Doctor's and Knight's ranks 8-10) are rows of src/fight/bosses.json (SIM_DATA), at the legend's rank: level 36 + (rank − 8) × 5.
 type PreviewTest = { opponent: OpponentId; level: number; first: number };
-type BossPreview = 'arawn' | 'thanatos' | 'reaper' | 'mist' | 'echo' | 'price' | 'flies' | 'stain' | 'breath' | 'sling' | 'haze' | 'storm';   // type only; tests/boss-rows.test.ts holds it equal to the rows
-const BOSS_TESTS = Object.fromEntries((BOSS_ROWS as readonly { id: string; opponent: string; rank: number }[]).map((r) => [r.id, { opponent: r.opponent as OpponentId, level: 36 + (r.rank - 8) * 5, first: 180 }])) as Record<BossPreview, PreviewTest>;
-export const SPECIAL_TESTS = { ...HAND_TESTS, ...BOSS_TESTS };
-export type SpecialTest = keyof typeof SPECIAL_TESTS;
+const BOSS_TESTS = Object.fromEntries((BOSS_ROWS as readonly { id: string; opponent: string; rank: number }[]).map((r) => [r.id, { opponent: r.opponent as OpponentId, level: 36 + (r.rank - 8) * 5, first: 180 }])) as Record<string, PreviewTest>;
+export const SPECIAL_TESTS: Readonly<Record<string, PreviewTest>> = { ...HAND_TESTS, ...BOSS_TESTS };
+export type SpecialTest = string;   // an open set: a preview id is a bosses.json row id or a hand-written one above; tests/boss-rows.test.ts checks every id has its name and mode
 export const specialParam = (search: string): SpecialTest | null => {
   const value = /[?&]special=(\w+)/i.exec(search)?.[1]?.toLowerCase();
   return value && Object.hasOwn(SPECIAL_TESTS, value) ? (value as SpecialTest) : null;
