@@ -17,3 +17,9 @@ const BODY_POSES = new Map<string, FinisherBodyPose>(FINISHERS.rows.flatMap((row
   ? [[row.body.victim.pose, { row, side: 'victim' as const, role: row.body.victim.role }] as const, ...(row.body.killer ? [[row.body.killer.pose, { row, side: 'killer' as const, role: row.body.killer.role }] as const] : [])]
   : []));
 export const finisherBodyPose = (pose: string): FinisherBodyPose | undefined => BODY_POSES.get(pose);
+// The plain death's id: the fall with no clip of its own (a staged pick whose clips are not installed by the kill falls back to it).
+const PLAIN = FINISHERS.rows.find((r) => r.template === 'fall' && r.pose === null);
+if (!PLAIN) throw Error('finisher-defs.json: no plain death (a fall row with pose null)');
+export const PLAIN_DEATH: FinisherId = PLAIN.id;
+// The pose word a template's own finisher hands its victim rig (its row's body.victim.pose): Hamstrung's and Execution's rows keep `pose` null.
+export const bodyPoseOf = (id: FinisherId): string | null => finisherRow(id)?.body?.victim.pose ?? null;
