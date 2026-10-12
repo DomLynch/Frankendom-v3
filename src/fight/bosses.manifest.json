@@ -1,0 +1,8 @@
+{
+  "tables": [
+    {
+      "table": "boss", "file": "bosses.json", "key": "id",
+      "required": { "id": "string", "label": "string", "opponent": "string", "rank": "integer", "fx": "string", "at": "string", "lift": "number", "cue": "string", "classSkill": "string" }
+    }
+  ]
+}

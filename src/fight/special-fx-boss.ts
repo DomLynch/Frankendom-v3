@@ -307,7 +307,9 @@ function stormFollows(root: THREE.Group, dim: boolean): Effect {
 export function createBossSpecial(scene: THREE.Scene, opponent: OpponentId, kind: BossKind, exposure: number, canvas?: HTMLElement) {
   const root = new THREE.Group(); root.name = 'special fx'; root.visible = false; scene.add(root);
   const dim = exposure > 1.5;   // the Night Pit
-  const effect = ({ mist: () => avalonMist(root, dim), echo: () => foretoldStep(root, dim), price: () => thePrice(canvas), flies: () => plagueFlies(root), stain: () => poisonStain(root, dim), breath: () => lastBreath(root, dim), sling: () => theSling(root, dim), haze: () => wrathHaze(root), storm: () => stormFollows(root, dim) })[kind]();
+  const make = ({ mist: () => avalonMist(root, dim), echo: () => foretoldStep(root, dim), price: () => thePrice(canvas), flies: () => plagueFlies(root), stain: () => poisonStain(root, dim), breath: () => lastBreath(root, dim), sling: () => theSling(root, dim), haze: () => wrathHaze(root), storm: () => stormFollows(root, dim) } as Record<string, (() => Effect) | undefined>)[kind];   // the boss mechanics: a row naming a kind with no maker here is a gate error (tests/boss-rows.test.ts)
+  if (!make) throw new Error(`no boss effect for "${kind}"`);
+  const effect = make();
   const from = new THREE.Vector3(), to = new THREE.Vector3(), fromHead = new THREE.Vector3(), toHead = new THREE.Vector3(), where: Where = { from, to, fromHead: null, toHead: null };
   let cast: Cast | null = null, clock = 0, lastTick = -1, have = false;
   // The Sling's turn and Wrath's tremor move the caster's own anchor (the presentation wrapper; the scene and the sim never read it). The turn (rotation.y, which the rig never
