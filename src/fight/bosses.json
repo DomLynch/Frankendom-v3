@@ -209,5 +209,39 @@
   "lift": -0.28,
   "cue": "storm",
   "classSkill": "skill_ironrush"
+ },
+ {
+  "id": "reynard",
+  "label": "Dirty Fistful",
+  "opponent": "goblin",
+  "rank": 8,
+  "fx": "goblin",
+  "at": "feet",
+  "lift": -0.06,
+  "cue": "fistful",
+  "classSkill": "skill_jab",
+  "held": "ready"
+ },
+ {
+  "id": "hermes",
+  "label": "Gone",
+  "opponent": "goblin",
+  "rank": 9,
+  "fx": "goblin",
+  "at": "feet",
+  "lift": -0.1,
+  "cue": "gone",
+  "classSkill": "skill_jab"
+ },
+ {
+  "id": "loki",
+  "label": "Three Liars",
+  "opponent": "goblin",
+  "rank": 10,
+  "fx": "goblin",
+  "at": "feet",
+  "lift": -0.1,
+  "cue": "liars",
+  "classSkill": "skill_jab"
  }
 ]

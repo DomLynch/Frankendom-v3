@@ -30,7 +30,6 @@ const HAND_TESTS = {
   ratrun: { opponent: 'goblin', level: 31, first: 180 },
   blackfurrow: { opponent: 'executioner', level: 21, first: 180 },
   earthfold: { opponent: 'pitborn', level: 21, first: 180 }, ironsettle: { opponent: 'dwarf', level: 21, first: 180 }, gatherededge: { opponent: 'shieldmaiden', level: 21, first: 180 },
-  reynard: { opponent: 'goblin', level: 36, first: 180 }, hermes: { opponent: 'goblin', level: 41, first: 180 }, loki: { opponent: 'goblin', level: 46, first: 180 },
   // The Dwarf's and the Shieldmaiden's ranks 8-10 (Character lane, preview only; level 5*(rank-1)+1 = 36, 41, 46), each drawing only its own move (special-fx-dwarf-shield.ts).
   dwarf8: { opponent: 'dwarf', level: 36, first: 180 }, dwarf9: { opponent: 'dwarf', level: 41, first: 180 }, dwarf10: { opponent: 'dwarf', level: 46, first: 180 },
   shield8: { opponent: 'shieldmaiden', level: 36, first: 180 }, shield9: { opponent: 'shieldmaiden', level: 41, first: 180 }, shield10: { opponent: 'shieldmaiden', level: 46, first: 180 },

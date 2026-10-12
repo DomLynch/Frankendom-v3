@@ -72,6 +72,10 @@ const foretold: SpecialMode['travel'] = (side, fighters) => (side === 0 && (figh
 export const FX_VERBS: Readonly<Record<string, (row: BossRow) => SpecialMode>> = {
   executioner: (r) => ({ load: (scene, opponent, exposure) => loadExecutioner(scene, opponent, r.id, exposure), at: r.at, lift: r.lift }),   // ground art off the feet, the caster in Combat's placeholder heavy raise
   boss: (r) => boss(r.id, r.at, r.lift, r.travel ? TRAVEL_VERBS[r.travel] : undefined),
+  goblin: (r) => ({ load: (scene, opponent, exposure) => loadGoblin(r.id as GoblinSpecial, scene, opponent, exposure), at: r.at, lift: r.lift, hideTrail: true, extra: goblinExtra, ...(r.held ? { held: HELD_VERBS[r.held] } : {}) }),   // the Goblin's rank 8-10 bosses (special-fx-goblin.ts): the effect gets the target's feet, his rig anchor and head, and hides or shifts the caster itself, so nothing in scene.ts
+};
+export const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']>>> = {
+  ready: (pose, side, fighters) => (side === 1 && specialStage(fighters[1]) ? { pose: { ...pose, pose: 'ready', progress: 0 } } : { pose }),   // plain stance, not Combat's blade-raise: Reynard's scoop is the tell
 };
 export const TRAVEL_VERBS: Readonly<Record<string, NonNullable<SpecialMode['travel']>>> = { foretold };
 const bossModes = () => Object.fromEntries(BOSSES.map((r) => [r.id, FX_VERBS[r.fx](r)])) as Partial<Record<SpecialTest, SpecialMode>>;
@@ -160,13 +164,7 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
     },
   },
 
-  // The Goblin's rank 8, 9, 10 bosses (Reynard the Fox, Hermes, Loki), grey-box (special-fx-goblin.ts): the effect gets the target's feet, then his rig anchor and the
-  // target's head; it hides or shifts the caster's anchor itself (Reynard drops to scoop, Hermes vanishes, Loki lunges), so there is nothing in scene.ts.
-  reynard: { load: (scene, opponent, exposure) => loadGoblin('reynard', scene, opponent, exposure), at: 'feet', lift: -0.06, hideTrail: true, extra: goblinExtra,
-    held: (pose, side, fighters) => (side === 1 && specialStage(fighters[1]) ? { pose: { ...pose, pose: 'ready', progress: 0 } } : { pose }) },   // plain stance, not Combat's blade-raise: the scoop is the tell
   ratrun: { load: (scene, opponent, exposure) => loadGoblin('ratrun', scene, opponent, exposure), at: 'feet', lift: -0.1, hideTrail: true, extra: goblinExtra },
-  hermes: { load: (scene, opponent, exposure) => loadGoblin('hermes', scene, opponent, exposure), at: 'feet', lift: -0.1, hideTrail: true, extra: goblinExtra },
-  loki: { load: (scene, opponent, exposure) => loadGoblin('loki', scene, opponent, exposure), at: 'feet', lift: -0.1, hideTrail: true, extra: goblinExtra },
   // Rank 9 The Charge (the Centurion's Alexander): a low dust line races along the ground and breaks over the foe's feet; his body is drawn riding the front (the anchors, `extra`) and
   // his gait runs it (`travel`: walking back to gather, then the armed run, charge-timing.ts). lift -0.28 is the default knee-dip, kept: the blow drops the foe a little.
   centurion: {
