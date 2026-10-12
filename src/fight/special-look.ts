@@ -5,7 +5,6 @@
 import { RULES } from './moves.ts';
 import type { Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
-import { BOSSES } from './boss-rows.ts';
 
 export const SPECIAL_RECOVER = 45;   // the cloud tears away and the caster returns to stance (Finishers, 2026-09-29: 30 read as a pop at phone size)
 export const SPECIAL_STRUCK = 45;   // the target's head-hit stagger after the strike (presentation only: the sim does not stagger him)
@@ -16,7 +15,6 @@ export const SPECIAL_STRUCK = 45;   // the target's head-hit stagger after the s
 // not the rule's 20 s, so the move is seen before a level-41 warden ends the fight; every cast after it keeps the 20 s cooldown.
 // `?special=cuts` is the Nightborn's ranks 4-7 Seven Cuts (shown at rank 7, level 31): special-fx-nightborn.ts.
 // `?special=set` is the Nightborn's rank-8 Red Wind (special-fx-wind.ts); `?special=tithe` is the Centurion's rank-10 Blood Tithe (Mars, special-tithe.ts); `?special=shield` is the Centurion's rank-8 Shield Quake (Ajax; docs/briefs/specials/centurion-l8-l10-2026-10-01.md): the ground ripple, special-fx-quake.ts; `?special=centurion` is his rank-9 Charge (Alexander): the dust line, charge-fx.ts.
-export type BossPreviewId = 'arawn' | 'thanatos' | 'reaper' | 'mist' | 'echo' | 'price' | 'flies' | 'stain' | 'breath' | 'sling' | 'haze' | 'storm';
 export const SPECIAL_TESTS = {
   setfoot: { opponent: 'veteran', level: 6, first: 180 },
   heelreap: { opponent: 'executioner', level: 6, first: 180 },
@@ -27,27 +25,24 @@ export const SPECIAL_TESTS = {
   cutmark: { opponent: 'shieldmaiden', level: 6, first: 180 },
  hades: { opponent: 'nightborn', level: 41, first: 180 }, set: { opponent: 'nightborn', level: 36, first: 180 }, cuts: { opponent: 'nightborn', level: 31, first: 180 }, nyx: { opponent: 'nightborn', level: 46, first: 180 }, shield: { opponent: 'veteran', level: 36, first: 180 }, tithe: { opponent: 'veteran', level: 46, first: 180 }, centurion: { opponent: 'veteran', level: 41, first: 180 }, standfast: { opponent: 'veteran', level: 21, first: 180 },
   // The boss grey-boxes (Multi Chars, special-fx-boss.ts), by the legend's own rank (level (rank − 1) × 5 + 1): the Witch's and the Plague Doctor's.
-  
-  
+  mist: { opponent: 'witch', level: 36, first: 180 }, echo: { opponent: 'witch', level: 41, first: 180 }, price: { opponent: 'witch', level: 46, first: 180 },
+  flies: { opponent: 'plaguedoctor', level: 36, first: 180 }, stain: { opponent: 'plaguedoctor', level: 41, first: 180 }, breath: { opponent: 'plaguedoctor', level: 46, first: 180 },
   // The Goblin's rank 8, 9, 10 bosses (Reynard the Fox, Hermes, Loki: levels 36, 41, 46), grey-box previews (special-fx-goblin.ts; special-modes.ts).
   // Selected Goblin ranks 4-7 presentation; preview at Master I, runtime level selection belongs to Combat.
   ratrun: { opponent: 'goblin', level: 31, first: 180 },
   blackfurrow: { opponent: 'executioner', level: 21, first: 180 },
   earthfold: { opponent: 'pitborn', level: 21, first: 180 }, ironsettle: { opponent: 'dwarf', level: 21, first: 180 }, gatherededge: { opponent: 'shieldmaiden', level: 21, first: 180 },
-  reynard: { opponent: 'goblin', level: 36, first: 180 }, hermes: { opponent: 'goblin', level: 41, first: 180 }, loki: { opponent: 'goblin', level: 46, first: 180 }, 
+  reynard: { opponent: 'goblin', level: 36, first: 180 }, hermes: { opponent: 'goblin', level: 41, first: 180 }, loki: { opponent: 'goblin', level: 46, first: 180 }, arawn: { opponent: 'executioner', level: 36, first: 180 }, thanatos: { opponent: 'executioner', level: 41, first: 180 }, reaper: { opponent: 'executioner', level: 46, first: 180 },
   // The Dwarf's and the Shieldmaiden's ranks 8-10 (Character lane, preview only; level 5*(rank-1)+1 = 36, 41, 46), each drawing only its own move (special-fx-dwarf-shield.ts).
   dwarf8: { opponent: 'dwarf', level: 36, first: 180 }, dwarf9: { opponent: 'dwarf', level: 41, first: 180 }, dwarf10: { opponent: 'dwarf', level: 46, first: 180 },
   shield8: { opponent: 'shieldmaiden', level: 36, first: 180 }, shield9: { opponent: 'shieldmaiden', level: 41, first: 180 }, shield10: { opponent: 'shieldmaiden', level: 46, first: 180 },
   // The Knight's three (Hector, Achilles, Thor), special-fx-boss.ts.
-  
+  sling: { opponent: 'knight', level: 36, first: 180 }, haze: { opponent: 'knight', level: 41, first: 180 }, storm: { opponent: 'knight', level: 46, first: 180 },
   // The Pitborn's ranks 8-10 (special-fx-pitborn.ts): Cracking Ground, Ash Fall, Wind Wall.
   antaeus: { opponent: 'pitborn', level: 36, first: 180 }, surtr: { opponent: 'pitborn', level: 41, first: 180 }, typhon: { opponent: 'pitborn', level: 46, first: 180 },
   // The Witch's, the Plague Doctor's and the Knight's class specials (Weapons; special-fx-class.ts): slot A is ranks 1-3 (rank 2, level 6), slot B ranks 4-7 (rank 5, level 21).
   wake: { opponent: 'witch', level: 6, first: 180 }, stirring: { opponent: 'witch', level: 21, first: 180 }, tempo: { opponent: 'plaguedoctor', level: 6, first: 180 }, pulse: { opponent: 'plaguedoctor', level: 21, first: 180 },
   drag: { opponent: 'knight', level: 6, first: 180 }, swing: { opponent: 'knight', level: 21, first: 180 },
-  // The twelve boss previews (Executioner, Witch, Plague Doctor, Knight) are the rows of bosses.json: opponent, rank (level = 36 + 5 * (rank - 8)). Their ids stay in the SpecialTest TYPE
-  // (BossPreviewId) because the label and registry tables elsewhere are typed on it; tests/boss-rows.test.ts fails when a row and BossPreviewId disagree.
-  ...(Object.fromEntries(BOSSES.map((r) => [r.id, { opponent: r.opponent, level: 36 + (r.rank - 8) * 5, first: 180 }])) as Record<BossPreviewId, { opponent: OpponentId; level: number; first: number }>),
 } as const satisfies Record<string, { opponent: OpponentId; level: number; first: number }>;
 export type SpecialTest = keyof typeof SPECIAL_TESTS;
 export const specialParam = (search: string): SpecialTest | null => {
