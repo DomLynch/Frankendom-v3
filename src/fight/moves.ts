@@ -163,8 +163,6 @@ export const MOVES: Record<MoveId, MoveDef> = {
   skill_ironrush: skill('skill_ironrush', THRUST_TIMING, { direction: 'thrust', damage: 10, stagger: 0, staminaDamage: 0, posture: 20, knockback: 3, stepIn: 1, reach: 2, poise: 24, poiseFrom: 8 }),   // the Knight's (RV15: damage 20 -> 10, stagger 22 -> 0, staminaDamage 30 -> 0, the same Goblin farm as the Lunge; estoc v Goblin 242/480 against Pommel + 40 = 266; the poise is its identity and stays): armoured from tick 8 against every plain blow (a light's stagger 24 equals a heavy's; the guard counter, critical and skills get through)
   skill_hewer: skill('skill_hewer', LIGHT_TIMING, { direction: 'right', damage: 18, stagger: 24, chip: 1, staminaDamage: 20, posture: 20, knockback: 4, stepIn: .4, reach: 1.4 }),   // the Shieldmaiden's Shield-Hewer: all of it through an ordinary block; a perfect block, parry or evade stops it. A side cut, not an overhead (Strategy 07:16): a shaft guard (heavyBreaks) breaks on any overhead, and a light-timed skill must never break one outright
 };
-// Every opponent's skill row, carried by every weapon table as the kick and the Witch-fire are.
-const OPPONENT_SKILLS = { skill_lunge: MOVES.skill_lunge, skill_reaping: MOVES.skill_reaping, skill_shove: MOVES.skill_shove, skill_jab: MOVES.skill_jab, skill_cleave: MOVES.skill_cleave, skill_stomp: MOVES.skill_stomp, skill_miasma: MOVES.skill_miasma, skill_ironrush: MOVES.skill_ironrush, skill_hewer: MOVES.skill_hewer };
 
 export const RULES = {
   health: 150,                    // a duel of 8–15 blows (the owner's target): 150 with the 40/s regeneration measured 10 hits / 38 s at normal in review

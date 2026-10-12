@@ -7,9 +7,14 @@ export type WeaponBase = { readonly moves: Readonly<Record<string, MoveDef>>; re
 export type WeaponEnums = { readonly materials: readonly string[]; readonly guards: readonly string[]; readonly grips: readonly string[] };
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
-const merge = (base: unknown, over: unknown): unknown => isObj(base) && isObj(over)
-  ? Object.fromEntries([...Object.keys(base), ...Object.keys(over).filter((k) => !(k in base))].map((k) => [k, k in over ? merge(base[k], over[k]) : base[k]]))
-  : over;
+// Objects merge field by field; anything else replaces. A merge that changes nothing returns the BASE object itself, so a row that overrides nothing of a table shares it (the longsword's moves ARE MOVES).
+const merge = (base: unknown, over: unknown): unknown => {
+  if (!isObj(base) || !isObj(over)) return over;
+  const out: Obj = { ...base };
+  let changed = false;
+  for (const k of Object.keys(over)) { const m = merge(base[k], over[k]); if (!(k in base) || m !== base[k]) { out[k] = m; changed = true; } }
+  return changed ? out : base;
+};
 
 export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: WeaponBase, enums: WeaponEnums): { weapons: Record<string, Weapon>; player: string[]; offered: string[] } {
   const rows = new Map<string, Obj>();
@@ -22,7 +27,8 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
   const resolve = (id: string, chain: readonly string[]): Obj => {
     const done = resolved.get(id); if (done) return done;
     if (chain.includes(id)) throw Error(`weapon-defs: "${id}" extends itself (${[...chain, id].join(' -> ')})`);
-    const { id: _id, extends: parent, player: _p, offered: _o, ...own } = rows.get(id)!;
+    const own: Obj = { ...rows.get(id)! }, parent = own.extends;
+    for (const k of ['id', 'extends', 'player', 'offered']) delete own[k];
     if (parent !== undefined && (typeof parent !== 'string' || !rows.has(parent))) throw Error(`weapon-defs "${id}": extends "${String(parent)}", which is no weapon`);
     const out = merge(parent === undefined ? { moves: base.moves, paths: base.paths } : resolve(parent as string, [...chain, id]), own) as Obj;
     resolved.set(id, out);
