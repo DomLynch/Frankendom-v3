@@ -1,19 +1,28 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
-import { advanceCast, bossClock, shadowPhase, LAND_AT, type Cast } from './special-timing.ts';
+import { advanceCast, bossClock, shadowPhase, skillCast, LAND_AT, type Cast } from './special-timing.ts';
 import { hash } from './fx-math.ts';
+import { SPECIALS, specialFamily, type SpecialRow } from './special-rows.ts';
 
 // The Dwarf's and the Shieldmaiden's rank 8-10 special moves (Character lane, 2026-10-01; PREVIEW ONLY, `?special=dwarf8|dwarf9|dwarf10|shield8|shield9|shield10`).
 // Presentation only: it reads the cast's clock and the two fighters' Head bones, never the sim, a rig's root or Math.random (every "random" is an index
 // hash, so the same inputs give the same particles). Each move is ONE idea painted out of the arena's own sand and dust: noise-shaped soft puffs for the
 // dust, hard little iron flecks for Three Blows' grit, pooled sprites, fog on, depth-tested so the ground dust sits among the legs. No props, no glow.
 // Loaded lazily by special-fx.ts only on one of these pages. The cast's clock is special-timing.ts bossClock: `rel` ticks to the landing.
-export type DwarfShieldKind = 'dwarf8' | 'dwarf9' | 'dwarf10' | 'shield8' | 'shield9' | 'shield10';
-export const DWARF_SHIELD_OPPONENT: Record<DwarfShieldKind, OpponentId> = { dwarf8: 'dwarf', dwarf9: 'dwarf', dwarf10: 'dwarf', shield8: 'shieldmaiden', shield9: 'shieldmaiden', shield10: 'shieldmaiden' };
-export const DWARF_SHIELD_KINDS = Object.keys(DWARF_SHIELD_OPPONENT) as DwarfShieldKind[];
-// Which cast a boss page draws: the opponent's own special (any move: the page's fight is the boss against the player), the opponent's side only.
-export const isDwarfShieldCast = (kind: DwarfShieldKind) => (opponent: OpponentId, actor: number) => opponent === DWARF_SHIELD_OPPONENT[kind] && actor === 1;
+// The kinds are the family's rows of src/fight/special-defs.json (special-rows.ts); the templates are the moves below (EFFECTS), each its own painting.
+// A row carries what the phone camera needs on top of the painted numbers (GAIN below: size, alpha, cap, and optionally tone and top) and its Night Pit
+// overrides (nightCap, nightDustSize, nightRimRing).
+const GAIN_PARAMS = ['size', 'alpha', 'cap'] as const;
+const ROWS = specialFamily(SPECIALS, 'dwarf-shield', { theWord: GAIN_PARAMS, threeBlows: GAIN_PARAMS, rimShake: GAIN_PARAMS, baredFace: GAIN_PARAMS, theRing: GAIN_PARAMS, aegisSweep: GAIN_PARAMS });
+type Gain = { size: number; alpha: number; cap: number; tone?: number; top?: number; nightCap?: number; nightDustSize?: number; nightRimRing?: boolean };
+const BY_ID = new Map(ROWS.map((r) => [r.id, r]));
+const rowOf = (kind: DwarfShieldKind | SpecialRow): SpecialRow => { const r = typeof kind === 'string' ? BY_ID.get(kind) : kind; if (!r) throw Error(`unknown dwarf-shield special "${String(kind)}"`); return r; };
+export type DwarfShieldKind = string;
+export const DWARF_SHIELD_OPPONENT: Readonly<Record<DwarfShieldKind, OpponentId>> = Object.fromEntries(ROWS.map((r) => [r.id, r.opponent as OpponentId]));
+export const DWARF_SHIELD_KINDS: readonly DwarfShieldKind[] = ROWS.map((r) => r.id);
+// Which cast a boss page draws: the row's opponent's own special (no `cast.move`: any move, the page's fight is the boss against the player), on the row's side.
+export const isDwarfShieldCast = (kind: DwarfShieldKind | SpecialRow) => { const row = rowOf(kind); return (opponent: OpponentId, actor: number) => opponent === row.opponent && actor === row.cast.actor; };
 export const DUST = 72, GRIT = 48, STRIDE = 8;   // pool sizes; a particle is x, y, z, width, height, rotation, opacity, tone (0..1 along the palette)
 export type Field = { dust: Float32Array; grit: Float32Array };
 export const makeField = (): Field => ({ dust: new Float32Array(DUST * STRIDE), grit: new Float32Array(GRIT * STRIDE) });
@@ -176,28 +185,28 @@ function aegisSweep(f: Field, rel: number, g: Geo) {
   }
 }
 
-const EFFECTS: Record<DwarfShieldKind, (f: Field, rel: number, g: Geo) => void> = { dwarf8: theWord, dwarf9: threeBlows, dwarf10: rimShake, shield8: baredFace, shield9: theRing, shield10: aegisSweep };
+const EFFECTS: Readonly<Record<string, (f: Field, rel: number, g: Geo) => void>> = { theWord, threeBlows, rimShake, baredFace, theRing, aegisSweep };
 // Pure: the same kind, `rel` and geometry fill the same particles. `fade` (a fizzle dissolving) scales every opacity.
-// What the phone camera needs on top of the painted numbers: how much bigger and how much denser the dust reads. The ceiling is the rule (Dom: cover is the wrong lever, mist must never hide a fighter): 0.7, and The Ring a thin wall at 0.4. Contrast does the reading instead: dark warm puffs and a dark underside (below).
+// A row's params (special-defs.json: size, alpha, cap, tone, top) are what the phone camera needs on top of the painted numbers: how much bigger and how much denser the dust reads. The ceiling is the rule (Dom: cover is the wrong lever, mist must never hide a fighter): 0.7, and The Ring a thin wall at 0.4. Contrast does the reading instead: dark warm puffs and a dark underside (below).
 // Strategy's day verdicts (25c1a1e1): a pale wash over the hero fails. `tone` darkens the dust to a grey-brown below the floor's value; `top` (m) keeps a puff under that height, so it never reaches his torso.
-const GAIN: Record<DwarfShieldKind, [size: number, alpha: number, cap: number, tone?: number, top?: number]> = { dwarf8: [2.1, 1.7, 0.7], dwarf9: [2.2, 1.8, 0.7, 0.3, 0.6], dwarf10: [2.0, 1.8, 0.7], shield8: [2.0, 1.7, 0.4, 0.3, 0.5], shield9: [2.0, 1.6, 0.4], shield10: [2.0, 1.7, 0.7, 0.3, 0.45] };
 // Night Pit (Strategy 2026-10-02: the first night films read pale grey/tan over the fighters): the dust is soot/umber, darker than the clay, and no puff is above NIGHT_CAP.
 // `night` false (the day arena) changes nothing: every day value is the one above.
 export const NIGHT_CAP = 0.4;
 // Rim Shake's rings are dark on a shadowed floor and vanish at 0.4 (Strategy 2026-10-02, option B): it keeps the night palette but takes the day ceiling.
-export const NIGHT_CAP_OF: Partial<Record<DwarfShieldKind, number>> = { dwarf10: 0.7 };
+export const NIGHT_CAP_OF: Readonly<Record<DwarfShieldKind, number>> = Object.fromEntries(ROWS.flatMap((r) => (typeof r.params.nightCap === 'number' ? [[r.id, r.params.nightCap]] : [])));
 // Rim Shake at night (Strategy 2026-10-02: dark on dark all but vanished; bigger grit did not help, the rim is out of frame): its dust rings near the pair are bigger, not lighter or denser than the 0.4 cap.
-export const NIGHT_DUST_SIZE: Partial<Record<DwarfShieldKind, number>> = { dwarf10: 1.7 };
-export function fillBoss(kind: DwarfShieldKind, f: Field, rel: number, g: Geo, fade = 1, night = false) {
+export const NIGHT_DUST_SIZE: Readonly<Record<DwarfShieldKind, number>> = Object.fromEntries(ROWS.flatMap((r) => (typeof r.params.nightDustSize === 'number' ? [[r.id, r.params.nightDustSize]] : [])));
+export function fillBoss(kind: DwarfShieldKind | SpecialRow, f: Field, rel: number, g: Geo, fade = 1, night = false) {
+  const row = rowOf(kind), gain = row.params as Gain;
   f.dust.fill(0); f.grit.fill(0);
-  EFFECTS[kind](f, rel, g);
-  if (night && kind === 'dwarf10') nightRimRing(f, rel, g);
-  const [size, alpha, cap, tone = 1, top = Infinity] = GAIN[kind];
+  EFFECTS[row.template]!(f, rel, g);
+  if (night && gain.nightRimRing) nightRimRing(f, rel, g);
+  const { size, alpha, cap, tone = 1, top = Infinity } = gain;
   for (let o = 0; o < f.dust.length; o += STRIDE) {
-    f.dust[o + 3] *= size; f.dust[o + 4] = Math.min(f.dust[o + 4] * size, top / 0.9); f.dust[o + 6] = Math.min(night ? Math.min(cap, NIGHT_CAP_OF[kind] ?? NIGHT_CAP) : cap, f.dust[o + 6] * alpha); f.dust[o + 7] *= tone;
+    f.dust[o + 3] *= size; f.dust[o + 4] = Math.min(f.dust[o + 4] * size, top / 0.9); f.dust[o + 6] = Math.min(night ? Math.min(cap, gain.nightCap ?? NIGHT_CAP) : cap, f.dust[o + 6] * alpha); f.dust[o + 7] *= tone;
     if (f.dust[o + 6] > 0) f.dust[o + 1] = Math.min(top - f.dust[o + 4] / 2, Math.max(f.dust[o + 1], f.dust[o + 4] * 0.4));   // never sinks into the floor (the sand would slice it flat), never rises past `top`
   }   // a puff never sinks into the floor: the sand would slice it flat along a straight line
-  const wide = night ? NIGHT_DUST_SIZE[kind] ?? 1 : 1;
+  const wide = night ? gain.nightDustSize ?? 1 : 1;
   if (wide !== 1) for (let o = 0; o < f.dust.length; o += STRIDE) { f.dust[o + 3] *= wide; f.dust[o + 4] *= wide; }
   if (fade < 1) for (const b of [f.dust, f.grit]) for (let o = 6; o < b.length; o += STRIDE) b[o] *= fade;
 }
@@ -224,6 +233,8 @@ const puffTextures = () => [11, 23, 37].map((seed) => paint(64, (u, v, x, y) => 
 const fleckTextures = () => [5, 9].map((seed) => paint(16, (u, v) => { const r = Math.hypot(u, v) / (0.55 + 0.4 * wobble(Math.atan2(v, u) * 1.5, seed)); return clamp((1 - r) * 5); }));   // a hard-edged chip, no glow
 
 // Class B: sparse iron grains rise a handspan, hold, then settle once. No foot plant.
+// The Dwarf's Anvil Stomp and the Shieldmaiden's Shield-Hewer casts: the skill rows say whose they are (special-timing.ts skillCast).
+export const isStomp = skillCast('stomp'), isHewer = skillCast('hewer');
 export function createIronSettle(scene: THREE.Scene, opponent: OpponentId, exposure: number) {
   const root = new THREE.Group(); root.name = 'iron settle'; root.visible = false; scene.add(root);
   const night = exposure > 1.5, maps = fleckTextures(), palette = night ? NIGHT_IRON : IRON;
@@ -236,7 +247,7 @@ export function createIronSettle(scene: THREE.Scene, opponent: OpponentId, expos
   return {
     render(_dt: number, events: readonly CombatEvent[], fighters: readonly [Fighter, Fighter], tick: number, feet: readonly [THREE.Vector3 | null, THREE.Vector3 | null], yielding: boolean) {
       if (yielding) { cast = null; hide(); return; }
-      cast = advanceCast(cast, events, fighters, tick, opponent, false, (id, actor, move) => id === 'dwarf' && actor === 1 && move === 'skill_stomp');
+      cast = advanceCast(cast, events, fighters, tick, opponent, false, isStomp);
       const from = feet[1], to = feet[0]; if (!cast || !from || !to) { hide(); return; }
       const phase = shadowPhase(cast, tick), build = smooth(clamp(((cast.fizzled ?? tick) - cast.start) / (LAND_AT - 12)));
       const fade = phase.phase === 'recover' || phase.phase === 'dissolve' ? 1 - smooth(phase.k) : 1, settle = cast.landed === null ? 0 : smooth(clamp((tick - cast.landed) / 14));
@@ -266,7 +277,7 @@ export function createGatheredEdge(scene: THREE.Scene, opponent: OpponentId, exp
   return {
     render(_dt: number, events: readonly CombatEvent[], fighters: readonly [Fighter, Fighter], tick: number, feet: readonly [THREE.Vector3 | null, THREE.Vector3 | null], yielding: boolean) {
       if (yielding) { cast = null; hide(); return; }
-      cast = advanceCast(cast, events, fighters, tick, opponent, false, (id, actor, move) => id === 'shieldmaiden' && actor === 1 && move === 'skill_hewer');
+      cast = advanceCast(cast, events, fighters, tick, opponent, false, isHewer);
       const from = feet[1], to = feet[0]; if (!cast || !from || !to) { hide(); return; }
       const phase = shadowPhase(cast, tick), build = smooth(clamp(((cast.fizzled ?? tick) - cast.start) / (LAND_AT - 12)));
       const fade = phase.phase === 'recover' || phase.phase === 'dissolve' ? 1 - smooth(phase.k) : 1, sweep = cast.landed === null ? 0 : smooth(clamp((tick - cast.landed) / 14));
@@ -354,7 +365,7 @@ function createStanceMark(scene: THREE.Scene, opponent: OpponentId, exposure: nu
       if (tick < lastTick) { cast = null; lastStart = -Infinity; pickup = true; hide(); }
       lastTick = tick;
       if (yielding) { clear(); return; }
-      const is = (id: OpponentId, actor: number, move?: string) => id === (cut ? 'shieldmaiden' : 'dwarf') && actor === 1 && move === (cut ? 'skill_hewer' : 'skill_stomp');
+      const is = cut ? isHewer : isStomp;
       // Repeated frozen events cannot restart the clock, including after clear.
       for (const e of events) {
         if (e.type === 'SpecialStarted') {
