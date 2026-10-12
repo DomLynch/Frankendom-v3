@@ -109,7 +109,6 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   44: [],   // weapons as data (weapon-defs.json): the resolved table is byte-identical, no fight is reached
   46: [],   // finishers as data (finisher-defs.json): the resolved table and every pick are byte-identical, no fight is reached
   45: [],   // skills as data (skill-defs.json): the byte order and every move are unchanged, no fight is reached
-  46: [],   // finishers as data (Combat B, provisional)
   47: [],   // weapon name switches as row fields: the resolved weapon table is unchanged, no fight is reached
   43: [],   // resource pools as data (pools.ts): every default equals what createFighter always used, so a row without pools fights byte for byte as v42; no fight is reached
   42: [],   // the roster is built from catalogue rows (20a): same opponents, same numbers; no fight is reached
