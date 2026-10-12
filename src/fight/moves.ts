@@ -1,4 +1,6 @@
 import WEAPON_DEFS from './weapon-defs.json' with { type: 'json' };
+import SKILL_DEFS from './skill-defs.json' with { type: 'json' };
+import { loadSkillDefs } from './skills.ts';
 import { loadWeaponDefs } from './weapons.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
@@ -8,10 +10,7 @@ export type { OpponentId, RigId } from '../roster.ts';
 // The engine (duel.ts) reads this table; nothing here may depend on rendering, clocks or browser state.
 export type MoveId = 'light_right' | 'light_left' | 'heavy_overhead' | 'thrust' | 'riposte' | 'slash_riposte' | 'heavy_riposte' | 'heavy_counter' | 'critical' | 'kick' | 'skill_witchfire' | 'skill_pommel'
   | 'skill_lunge' | 'skill_reaping' | 'skill_shove' | 'skill_jab' | 'skill_cleave' | 'skill_stomp' | 'skill_miasma' | 'skill_ironrush' | 'skill_hewer';
-export type SkillId = 'witchfire' | 'pommel' | 'lunge' | 'reaping' | 'shove' | 'jab' | 'cleave' | 'stomp' | 'miasma' | 'ironrush' | 'hewer';   // the equipped skill (docs/briefs/skill-witch-arm.md): one per duel, fired by the SKILL action; null on a fighter = none (every opponent in V1)
-// The move each skill fires: the one place a skill meets its MoveDef (duel.ts chooseMove, legal).
-export const SKILL_MOVE: Record<SkillId, MoveId> = { witchfire: 'skill_witchfire', pommel: 'skill_pommel',
-  lunge: 'skill_lunge', reaping: 'skill_reaping', shove: 'skill_shove', jab: 'skill_jab', cleave: 'skill_cleave', stomp: 'skill_stomp', miasma: 'skill_miasma', ironrush: 'skill_ironrush', hewer: 'skill_hewer' };
+export type SkillId = string;   // a row id in skill-defs.json (skills are data: a new skill is one row plus its MoveDef verb); the equipped skill (docs/briefs/skill-witch-arm.md): one per duel, fired by the SKILL action; null on a fighter = none (every opponent in V1)
 export type Direction = 'right' | 'left' | 'overhead' | 'thrust' | 'low';
 export type Timing = { windup: number; active: number; recovery: number };
 export const total = (t: Timing): number => t.windup + t.active + t.recovery;
@@ -270,6 +269,20 @@ export type Weapon = { id: WeaponId; moves: Record<MoveId, MoveDef>; paths: Reco
 // The weapons are DATA now (core slice 4): src/fight/weapon-defs.json, resolved over the engine's base MOVES / PATHS by the loader in weapons.ts. The named exports below are the same objects the
 // tests and scripts have always imported; each is a row of the loaded table.
 const LOADED = loadWeaponDefs(WEAPON_DEFS, { moves: MOVES, paths: PATHS }, { materials: MATERIALS, guards: GUARDS, grips: GRIPS });
+// The skills are DATA too (core slice 5): src/fight/skill-defs.json, loaded by skills.ts. SKILL_MOVE is the one place a skill meets its MoveDef (duel.ts chooseMove, legal); SKILL_BY_CODE is the record codec's table.
+const SKILLS_LOADED = loadSkillDefs(SKILL_DEFS, MOVES);
+export const SKILL_ROWS = SKILLS_LOADED.rows;
+export const SKILL_MOVE: Record<SkillId, MoveId> = Object.fromEntries(Object.values(SKILL_ROWS).map((r) => [r.id, r.move as MoveId]));
+export const SKILL_BY_CODE: readonly (SkillId | null)[] = SKILLS_LOADED.byCode;   // index = the record byte (0 = none), append only
+export const DAY_ONE_SKILL: SkillId = SKILLS_LOADED.dayOne;   // the hero's starting skill (Dom, 2026-09-25)
+/** The move a skill FX verb answers to (a row's `fx`, e.g. 'witchfire'): the presentation modules ask the rows, they name no skill. */
+export const fxMove = (fx: string): MoveId => { const r = Object.values(SKILL_ROWS).find((row) => row.fx === fx); if (!r) throw Error(`no skill row has fx "${fx}"`); return r.move as MoveId; };
+/** The fx verb of a move's skill row, or undefined. */
+export const fxOfMove = (move: string | undefined): string | undefined => { const id = skillOfMove(move); return id === null ? undefined : SKILL_ROWS[id]!.fx; };
+export const BASH_MOVE: MoveId = Object.values(SKILL_ROWS).find((r) => r.bash)!.move as MoveId;   // the hilt-bash skill's move (the row with `bash`)
+export const isSkillId = (id: unknown): id is SkillId => typeof id === 'string' && Object.hasOwn(SKILL_ROWS, id);
+/** The skill a move belongs to, or null: the row whose `move` it is. */
+export const skillOfMove = (move: string | null | undefined): SkillId | null => (move == null ? null : Object.values(SKILL_ROWS).find((r) => r.move === move)?.id ?? null);
 export const WEAPONS: Record<WeaponId, Weapon> = LOADED.weapons;
 export const weaponOf = (id: WeaponId): Weapon => { const w = WEAPONS[id]; if (!w) throw Error(`unknown weapon "${id}"`); return w; };
 export const isWeaponId = (id: unknown): id is WeaponId => typeof id === 'string' && Object.hasOwn(WEAPONS, id);

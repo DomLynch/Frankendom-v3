@@ -1,5 +1,5 @@
 import { STAB_ON } from './stab-rule.ts';
-import { RULES, type AiProfile, type Direction, type MoveId, weaponOf } from './moves.ts';
+import { RULES, SKILL_ROWS, type AiProfile, type Direction, type MoveId, weaponOf } from './moves.ts';
 import { LATE_NOTICE } from './play-radius.ts';
 import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
@@ -24,7 +24,7 @@ export const READ = {
   parryBoost: 2, parryCap: .85, chargeBoost: .4, kickBoost: .3, anticipate: 8, baitShare: .7, parkShare: .5, lateNotice: 6, holdTicks: 6, latch: 600, plus: 2, decay: 0,
 } as const;   // swings 11 / anticipate 8 (re-swept after the slice-P stamina economy): a cut-only player at normal still wins about a quarter of duels (owner: 5–8 of 24)
 // The tells a profile's tellReaction answers (RV19): the thrust and the pommel strike, the two blows a short weapon must meet early.
-const TELLS = new Set<string>(['thrust', 'skill_pommel']);
+const TELLS = new Set<string>(['thrust', ...Object.values(SKILL_ROWS).filter((r) => r.tell).map((r) => r.move)]);   // the skill rows flagged `tell` (the pommel strike)
 export const readOpponent = (h: Habits, profile?: AiProfile): Reads => {
   const swings = h.lights + h.heavies + h.thrusts;
   const oldSpam = swings >= READ.swings && h.lights / swings >= READ.lightShare;
