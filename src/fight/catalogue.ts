@@ -5,6 +5,7 @@
 // To extend: add the field to CatalogueRow, one check in catalogueProblems, one case in tests/catalogue.test.ts; nothing reads a row by position.
 import { poolProblems, type PoolDef, type PoolValues } from './pools.ts';
 import type { FinisherId } from './finishers.ts';
+import { PLAIN_DEATH } from './finisher-look.ts';
 import type { LootId } from '../core/loot.ts';
 import type { PickedStance } from './stance.ts';
 
@@ -68,7 +69,7 @@ export function catalogueProblems(row: CatalogueRow, known: { pools?: readonly P
   if (!row.animations.clips.length || new Set(row.animations.clips).size !== row.animations.clips.length) add('animations', 'animations.clips', 'distinct clip names');
   const { cut, finishers } = row.finisher;
   if (cut && (!cut.head.length || !cut.neck.length || !cut.spine.length || Object.keys(cut.limbs).length < 4 || Object.values(cut.limbs).some((b) => !b.length))) add('finisher', 'finisher.cut', 'a head, a neck, an upper spine and four limbs to cut at, or null');
-  if (!finishers.length || finishers.some((f) => !known.finishers.has(f)) || finishers.at(-1) !== 'plainDeath' || new Set(finishers).size !== finishers.length) add('finisher', 'finisher.finishers', 'Pit finishers, distinct, ending in plainDeath');
+  if (!finishers.length || finishers.some((f) => !known.finishers.has(f)) || finishers.at(-1) !== PLAIN_DEATH || new Set(finishers).size !== finishers.length) add('finisher', 'finisher.finishers', `Pit finishers, distinct, ending in ${PLAIN_DEATH}`);
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
   if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);   // body and variant rows alike: the table must resolve (a typo would silently drop loot)
   if (!(row.render.scale > 0 && row.render.scale <= 4)) add('render', 'render.scale', 'a draw scale in (0, 4]');
