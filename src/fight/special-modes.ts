@@ -51,9 +51,6 @@ const heldThrust = (f: Fighter, stage: NonNullable<ReturnType<typeof specialStag
 };
 const CUT_MOVES = ['light', 'return', 'heavy', 'return', 'light', 'riposte', 'thrust'] as const;   // six cuts, then the thrust
 const CUT_TICKS = Array.from({ length: CUTS }, (_, i) => cutAt(i));
-// The Pitborn's rank 8-10 bosses (special-fx-pitborn.ts, Dom's picks 2026-10-01): ground effects, drawn at the feet, on his Cleave's placeholder heavy raise (no `held` pose yet).
-const pitborn = (kind: 'antaeus' | 'surtr' | 'typhon', lift: number): SpecialMode => ({ load: (scene, opponent, exposure) => import('./special-fx-pitborn.ts').then(({ createPitbornSpecial }) => createPitbornSpecial(scene, opponent, kind, exposure)), at: 'feet', lift,
-  extra: (w) => [w?.opponent.anchor ?? null] });   // Typhon sways his body in the wind through the anchor; the other two ignore it
 const loadGoblin = (kind: GoblinSpecial, scene: THREE.Scene, opponent: OpponentId, exposure: number) => import('./special-fx-goblin.ts').then(({ createGoblinSpecial }) => createGoblinSpecial(scene, kind, exposure, opponent));
 const goblinExtra: NonNullable<SpecialMode['extra']> = (w) => [w?.opponent.anchor ?? null, w?.player.boneWorld('Head') ?? null];
 // A Witch / Plague Doctor boss special (Multi Chars, special-fx-boss.ts): a ground-and-air effect that reads both feet, both heads and the two anchors. The struck
@@ -75,6 +72,7 @@ export const FX_VERBS: Readonly<Record<string, (row: BossRow) => SpecialMode>> =
   redwind: (r) => ({ load: (scene, opponent, exposure) => import('./special-fx-wind.ts').then(({ createRedWind, sandLook }) => createRedWind(scene, opponent, sandLook(exposure))), at: r.at, lift: r.lift, ...(r.held ? { held: HELD_VERBS[r.held] } : {}) }),   // Rank 8 Red Wind: the sand burst off his feet
   hades: (r) => ({ load: (scene, opponent) => import('./special-fx.ts').then(({ createSpecialFx }) => createSpecialFx(scene, opponent)), at: r.at, lift: r.lift }),   // Hades' cloud: what a mode-less special loads
   dwarfshield: (r) => ({ load: (scene, opponent, exposure) => import('./special-fx-dwarf-shield.ts').then(({ createBossFx }) => createBossFx(scene, opponent, r.id, exposure)), at: r.at, lift: r.lift }),   // the Dwarf's and the Shieldmaiden's ranks 8-10: one effect module, it reads both Head bones and poses nobody
+  pitborn: (r) => ({ load: (scene, opponent, exposure) => import('./special-fx-pitborn.ts').then(({ createPitbornSpecial }) => createPitbornSpecial(scene, opponent, r.id as 'antaeus' | 'surtr' | 'typhon', exposure)), at: r.at, lift: r.lift, extra: (w) => [w?.opponent.anchor ?? null] }),   // the Pitborn's rank 8-10: ground effects at the feet on the Cleave's placeholder raise; Typhon sways his body through the anchor, the other two ignore it
   nightfall: (r) => ({ load: (scene, opponent, _exposure, camera) => import('./nightfall-fx.ts').then(({ createNightfallFx }) => createNightfallFx(scene, camera, opponent)), at: r.at, lift: r.lift }),   // Nyx's Nightfall: the exposure drains to near-black, a cold moon rims the pair
 };
 export const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']>>> = {
@@ -113,9 +111,6 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
   earthfold: { load: (scene, opponent, exposure) => import('./special-fx-pitborn.ts').then(({ createEarthFold }) => createEarthFold(scene, opponent, exposure)), at: 'feet', lift: -0.1, hideTrail: true },
   ironsettle: { load: (scene, opponent, exposure) => import('./special-fx-dwarf-shield.ts').then(({ createIronSettle }) => createIronSettle(scene, opponent, exposure)), at: 'feet', lift: -0.1, hideTrail: true },
   gatherededge: { load: (scene, opponent, exposure) => import('./special-fx-dwarf-shield.ts').then(({ createGatheredEdge }) => createGatheredEdge(scene, opponent, exposure)), at: 'feet', lift: -0.1, hideTrail: true },
-  antaeus: pitborn('antaeus', 0.12),   // Cracking Ground: seams split out of the sand from his own feet toward the target
-  surtr: pitborn('surtr', -0.2),   // Ash Fall: the cleave drives him down
-  typhon: pitborn('typhon', 0),   // Wind Wall: the gale and the lunge, no knee-dip
   // The Nightborn's rank 4-7 class special (special-fx-nightborn.ts; Dom 2026-10-01: dark ink only, nothing pale or glowing). Seven Cuts (ranks 4-7): the blade plays six cuts and the thrust in the last 24 ticks of the windup, the thrust held at contact range.
   cuts: {
     load: (scene, opponent) => import('./special-fx-nightborn.ts').then(({ createSevenCuts }) => createSevenCuts(scene, opponent)),

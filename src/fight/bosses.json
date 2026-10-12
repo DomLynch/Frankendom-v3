@@ -343,5 +343,38 @@
   "lift": -0.28,
   "cue": "aegis",
   "classSkill": "skill_hewer"
+ },
+ {
+  "id": "antaeus",
+  "label": "Cracking Ground",
+  "opponent": "pitborn",
+  "rank": 8,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": 0.12,
+  "cue": "cracking",
+  "classSkill": "skill_cleave"
+ },
+ {
+  "id": "surtr",
+  "label": "Ash Fall",
+  "opponent": "pitborn",
+  "rank": 9,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": -0.2,
+  "cue": "ashfall",
+  "classSkill": "skill_cleave"
+ },
+ {
+  "id": "typhon",
+  "label": "Wind Wall",
+  "opponent": "pitborn",
+  "rank": 10,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": 0,
+  "cue": "windwall",
+  "classSkill": "skill_cleave"
  }
 ]
