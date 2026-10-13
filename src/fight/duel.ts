@@ -9,7 +9,7 @@ import { poolsOf, type PoolValues } from './pools.ts';
 import { percentOf, rolledDamage, rollUnit, swarmBand } from './roll.ts';
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
-import { castOutcome, outcomeMult, type Outcome as CastOutcome, type Spell } from './spell-cast.ts';
+import { castOutcome, outcomeMult, type CastOutcome, type Spell } from './spell-cast.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 
 // Symmetric 1v1 melee simulation. Both fighters obey the same rules through the same Intent; the AI is just another

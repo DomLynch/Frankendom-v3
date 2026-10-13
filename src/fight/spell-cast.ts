@@ -13,7 +13,7 @@ import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 // spell_dbc (cost and effect as rows, a miss/resist outcome), Ryzom (the relative-level success table, programme 2b); shape only, no code copied.
 // A sim file: pure integer and IEEE basic maths (no transcendental, no clock, no Math.random); the draw is roll.ts's seeded stream, so a replay reproduces every outcome.
 // PROVISIONAL (Lead 2026-10-13, for Strategy/Dom to tune): credit, spread, the fizzle price, relDivisor and the bands are rows, not code.
-export type Outcome = 'critfail' | 'fail' | 'partial' | 'success' | 'crit';
+export type CastOutcome = 'critfail' | 'fail' | 'partial' | 'success' | 'crit';
 /** A spell resolved for one caster: plain numbers, so a duel state hashes and a replay builds exactly what the live fight built. `rel10` is the base relative level in tenths; the bands are in tenths too. */
 export type Spell = {
   readonly id: string;           // the legend id (the spell row id without `spell:`, also Provenance.legendId and Backend's grimoire key)
@@ -37,22 +37,22 @@ for (const [id, [root, level]] of Object.entries(INDEX)) if (!Object.hasOwn(BRIC
 export const SPELL_IDS: readonly string[] = Object.keys(INDEX);
 export const isSpellId = (id: string): boolean => Object.hasOwn(INDEX, id);
 
-const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+const clampTo = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 /** The spell `id` as `skill` (0-100, the caster's skill in its school) and `spellPower` (the sheet's dial, worn quality included) cast it; undefined for an id the catalogue does not hold. */
 export function resolveSpell(id: string, skill: number, spellPower = 0): Spell | undefined {
   if (!isSpellId(id)) return undefined;
   const [root, level] = INDEX[id]!, b = BRICKS[root]!, cost = b.cost + b.costPerLevel * level, credit = Math.round(spellPower * CAST.creditPerPoint);
   return {
     id, cost, share: RULES.special.damage * b.effect.magnitude * (1 + b.effect.perLevel * (level - 1)),
-    rel10: clamp(Math.round(10 * (skill + credit - 2 * cost) / CAST.relDivisor), -500, 500), spread10: CAST.spread * 10,
+    rel10: clampTo(Math.round(10 * (skill + credit - 2 * cost) / CAST.relDivisor), -500, 500), spread10: CAST.spread * 10,
     critFail10: b.success.critFailBelow * 10, fail10: b.success.failBelow * 10, partial10: b.success.partialBelow * 10, crit10: b.success.critFrom * 10,
     partialMult: b.success.partialMult, critMult: b.success.critMult,
   };
 }
 /** The outcome of one cast: `u` is the seeded unit draw in [0, 1) (roll.ts rollUnit). */
-export function castOutcome(s: Spell, u: number): Outcome {
-  const e = clamp(s.rel10 + Math.round((2 * u - 1) * s.spread10), -500, 500);
+export function castOutcome(s: Spell, u: number): CastOutcome {
+  const e = clampTo(s.rel10 + Math.round((2 * u - 1) * s.spread10), -500, 500);
   return e < s.critFail10 ? 'critfail' : e < s.fail10 ? 'fail' : e < s.partial10 ? 'partial' : e >= s.crit10 ? 'crit' : 'success';
 }
 /** What the outcome does to the landing: 0 is a fizzle (stamina spent, full cooldown, no damage). */
-export const outcomeMult = (s: Spell, o: Outcome): number => (o === 'crit' ? s.critMult : o === 'success' ? 1 : o === 'partial' ? s.partialMult : 0);
+export const outcomeMult = (s: Spell, o: CastOutcome): number => (o === 'crit' ? s.critMult : o === 'success' ? 1 : o === 'partial' ? s.partialMult : 0);
