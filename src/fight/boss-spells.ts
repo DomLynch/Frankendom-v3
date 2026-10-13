@@ -9,9 +9,15 @@ import SUN_COURT from './spells-sun-court.json' with { type: 'json' };
 import THORN_STEPPE from './spells-thorn-steppe.json' with { type: 'json' };
 
 export type SpellBricks = { readonly root: string; readonly modifiers: readonly string[]; readonly suffix: string | null };
-type SpellRow = { id: string; bricks: SpellBricks };
+type SpellRow = { id: string; school?: string; bricks: SpellBricks };
 
 export const SPELL_BRICKS: Readonly<Record<string, SpellBricks>> = Object.fromEntries(
   ([ASH_FRONTIER, BLACK_SAND, JADE_REACH, MARBLE_SHORE, RED_HOLLOW, SUN_COURT, THORN_STEPPE] as { spells: SpellRow[] }[])
     .flatMap((t) => t.spells).filter((r) => r.id.startsWith('spell:')).map((r) => [r.id.slice('spell:'.length), r.bricks] as const),
+);
+
+// The school each legend's spell belongs to (the practice pool's skill id: fire, shadow, poison, holy, frost, earth, wind); a legend whose row names none is absent.
+export const SPELL_SCHOOL: Readonly<Record<string, string>> = Object.fromEntries(
+  ([ASH_FRONTIER, BLACK_SAND, JADE_REACH, MARBLE_SHORE, RED_HOLLOW, SUN_COURT, THORN_STEPPE] as { spells: SpellRow[] }[])
+    .flatMap((t) => t.spells).filter((r) => r.id.startsWith('spell:') && typeof r.school === 'string').map((r) => [r.id.slice('spell:'.length), r.school!] as const),
 );
