@@ -1,0 +1,184 @@
+{
+ "bricks": [
+  {
+   "id": "crack",
+   "kind": "root",
+   "template": "crack",
+   "school": "earth",
+   "cost": 30,
+   "costPerLevel": 3,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "baying",
+   "kind": "root",
+   "template": "baying",
+   "school": "poison",
+   "cost": 25,
+   "costPerLevel": 3,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "theRing",
+   "kind": "root",
+   "template": "theRing",
+   "school": "holy",
+   "cost": 35,
+   "costPerLevel": 4,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "gale",
+   "kind": "root",
+   "template": "gale",
+   "school": "wind",
+   "cost": 30,
+   "costPerLevel": 3,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "longShadow",
+   "kind": "root",
+   "template": "longShadow",
+   "school": "shadow",
+   "cost": 25,
+   "costPerLevel": 3,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "ashfall",
+   "kind": "root",
+   "template": "ashfall",
+   "school": "fire",
+   "cost": 30,
+   "costPerLevel": 3,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "threeBlows",
+   "kind": "root",
+   "template": "threeBlows",
+   "school": "fire",
+   "cost": 45,
+   "costPerLevel": 5,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "theWord",
+   "kind": "root",
+   "template": "theWord",
+   "school": "holy",
+   "cost": 40,
+   "costPerLevel": 4,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  },
+  {
+   "id": "harvest",
+   "kind": "root",
+   "template": "harvest",
+   "school": "shadow",
+   "cost": 55,
+   "costPerLevel": 6,
+   "effect": {
+    "magnitude": 1.0,
+    "perLevel": 0.1
+   },
+   "success": {
+    "critFailBelow": -20,
+    "failBelow": 0,
+    "partialBelow": 20,
+    "critFrom": 50,
+    "partialMult": 0.5,
+    "critMult": 1.1
+   }
+  }
+ ]
+}
