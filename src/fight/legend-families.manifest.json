@@ -6,6 +6,7 @@
       "at": "legends",
       "key": "id",
       "required": { "name": "string", "source": "string", "backstory": "string" },
+      "optional": { "spellless": "boolean" },
       "unique": ["name"]
     },
     {

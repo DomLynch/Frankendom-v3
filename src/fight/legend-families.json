@@ -6,43 +6,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:veteran-1",
+     "legendId": "crixus",
      "rank": 1
     },
     {
-     "legendId": "legend:veteran-2",
+     "legendId": "ragnar",
      "rank": 2
     },
     {
-     "legendId": "legend:veteran-3",
+     "legendId": "beowulf",
      "rank": 3
     },
     {
-     "legendId": "legend:veteran-4",
+     "legendId": "spartacus",
      "rank": 4
     },
     {
-     "legendId": "legend:veteran-5",
+     "legendId": "miyamoto-musashi",
      "rank": 5
     },
     {
-     "legendId": "legend:veteran-6",
+     "legendId": "hannibal",
      "rank": 6
     },
     {
-     "legendId": "legend:veteran-7",
+     "legendId": "leonidas",
      "rank": 7
     },
     {
-     "legendId": "legend:veteran-8",
+     "legendId": "ajax",
      "rank": 8
     },
     {
-     "legendId": "legend:veteran-9",
+     "legendId": "alexander",
      "rank": 9
     },
     {
-     "legendId": "legend:veteran-10",
+     "legendId": "mars",
      "rank": 10
     }
    ]
@@ -53,43 +53,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:pitborn-1",
+     "legendId": "pit-thrall",
      "rank": 1
     },
     {
-     "legendId": "legend:pitborn-2",
+     "legendId": "cacus",
      "rank": 2
     },
     {
-     "legendId": "legend:pitborn-3",
+     "legendId": "redcap",
      "rank": 3
     },
     {
-     "legendId": "legend:pitborn-4",
+     "legendId": "gogmagog",
      "rank": 4
     },
     {
-     "legendId": "legend:pitborn-5",
+     "legendId": "grendel",
      "rank": 5
     },
     {
-     "legendId": "legend:pitborn-6",
+     "legendId": "polyphemus",
      "rank": 6
     },
     {
-     "legendId": "legend:pitborn-7",
+     "legendId": "humbaba",
      "rank": 7
     },
     {
-     "legendId": "legend:pitborn-8",
+     "legendId": "antaeus",
      "rank": 8
     },
     {
-     "legendId": "legend:pitborn-9",
+     "legendId": "surtr",
      "rank": 9
     },
     {
-     "legendId": "legend:pitborn-10",
+     "legendId": "typhon",
      "rank": 10
     }
    ]
@@ -100,43 +100,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:goblin-1",
+     "legendId": "sewer-imp",
      "rank": 1
     },
     {
-     "legendId": "legend:goblin-2",
+     "legendId": "kobold",
      "rank": 2
     },
     {
-     "legendId": "legend:goblin-3",
+     "legendId": "nain-rouge",
      "rank": 3
     },
     {
-     "legendId": "legend:goblin-4",
+     "legendId": "andvari",
      "rank": 4
     },
     {
-     "legendId": "legend:goblin-5",
+     "legendId": "alberich",
      "rank": 5
     },
     {
-     "legendId": "legend:goblin-6",
+     "legendId": "rumpelstiltskin",
      "rank": 6
     },
     {
-     "legendId": "legend:goblin-7",
+     "legendId": "puck",
      "rank": 7
     },
     {
-     "legendId": "legend:goblin-8",
+     "legendId": "reynard",
      "rank": 8
     },
     {
-     "legendId": "legend:goblin-9",
+     "legendId": "hermes",
      "rank": 9
     },
     {
-     "legendId": "legend:goblin-10",
+     "legendId": "loki",
      "rank": 10
     }
    ]
@@ -147,43 +147,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:nightborn-1",
+     "legendId": "night-page",
      "rank": 1
     },
     {
-     "legendId": "legend:nightborn-2",
+     "legendId": "lord-ruthven",
      "rank": 2
     },
     {
-     "legendId": "legend:nightborn-3",
+     "legendId": "varney",
      "rank": 3
     },
     {
-     "legendId": "legend:nightborn-4",
+     "legendId": "carmilla",
      "rank": 4
     },
     {
-     "legendId": "legend:nightborn-5",
+     "legendId": "erlking",
      "rank": 5
     },
     {
-     "legendId": "legend:nightborn-6",
+     "legendId": "mordred",
      "rank": 6
     },
     {
-     "legendId": "legend:nightborn-7",
+     "legendId": "vlad",
      "rank": 7
     },
     {
-     "legendId": "legend:nightborn-8",
+     "legendId": "set",
      "rank": 8
     },
     {
-     "legendId": "legend:nightborn-9",
+     "legendId": "hades",
      "rank": 9
     },
     {
-     "legendId": "legend:nightborn-10",
+     "legendId": "nyx",
      "rank": 10
     }
    ]
@@ -194,43 +194,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:executioner-1",
+     "legendId": "headsman",
      "rank": 1
     },
     {
-     "legendId": "legend:executioner-2",
+     "legendId": "ankou",
      "rank": 2
     },
     {
-     "legendId": "legend:executioner-3",
+     "legendId": "charon",
      "rank": 3
     },
     {
-     "legendId": "legend:executioner-4",
+     "legendId": "hel",
      "rank": 4
     },
     {
-     "legendId": "legend:executioner-5",
+     "legendId": "anubis",
      "rank": 5
     },
     {
-     "legendId": "legend:executioner-6",
+     "legendId": "ereshkigal",
      "rank": 6
     },
     {
-     "legendId": "legend:executioner-7",
+     "legendId": "morrigan",
      "rank": 7
     },
     {
-     "legendId": "legend:executioner-8",
+     "legendId": "arawn",
      "rank": 8
     },
     {
-     "legendId": "legend:executioner-9",
+     "legendId": "thanatos",
      "rank": 9
     },
     {
-     "legendId": "legend:executioner-10",
+     "legendId": "the-reaper",
      "rank": 10
     }
    ]
@@ -241,43 +241,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:dwarf-1",
+     "legendId": "forge-hand",
      "rank": 1
     },
     {
-     "legendId": "legend:dwarf-2",
+     "legendId": "alvis",
      "rank": 2
     },
     {
-     "legendId": "legend:dwarf-3",
+     "legendId": "regin",
      "rank": 3
     },
     {
-     "legendId": "legend:dwarf-4",
+     "legendId": "brokkr",
      "rank": 4
     },
     {
-     "legendId": "legend:dwarf-5",
+     "legendId": "eitri",
      "rank": 5
     },
     {
-     "legendId": "legend:dwarf-6",
+     "legendId": "wayland",
      "rank": 6
     },
     {
-     "legendId": "legend:dwarf-7",
+     "legendId": "kothar-wa-khasis",
      "rank": 7
     },
     {
-     "legendId": "legend:dwarf-8",
+     "legendId": "ptah",
      "rank": 8
     },
     {
-     "legendId": "legend:dwarf-9",
+     "legendId": "goibniu",
      "rank": 9
     },
     {
-     "legendId": "legend:dwarf-10",
+     "legendId": "hephaestus",
      "rank": 10
     }
    ]
@@ -288,43 +288,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:plaguedoctor-1",
+     "legendId": "beak",
      "rank": 1
     },
     {
-     "legendId": "legend:plaguedoctor-2",
+     "legendId": "paracelsus",
      "rank": 2
     },
     {
-     "legendId": "legend:plaguedoctor-3",
+     "legendId": "locusta",
      "rank": 3
     },
     {
-     "legendId": "legend:plaguedoctor-4",
+     "legendId": "medea",
      "rank": 4
     },
     {
-     "legendId": "legend:plaguedoctor-5",
+     "legendId": "circe",
      "rank": 5
     },
     {
-     "legendId": "legend:plaguedoctor-6",
+     "legendId": "sekhmet",
      "rank": 6
     },
     {
-     "legendId": "legend:plaguedoctor-7",
+     "legendId": "nergal",
      "rank": 7
     },
     {
-     "legendId": "legend:plaguedoctor-8",
+     "legendId": "apollo",
      "rank": 8
     },
     {
-     "legendId": "legend:plaguedoctor-9",
+     "legendId": "hecate",
      "rank": 9
     },
     {
-     "legendId": "legend:plaguedoctor-10",
+     "legendId": "resheph",
      "rank": 10
     }
    ]
@@ -335,43 +335,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:knight-1",
+     "legendId": "squire",
      "rank": 1
     },
     {
-     "legendId": "legend:knight-2",
+     "legendId": "bedivere",
      "rank": 2
     },
     {
-     "legendId": "legend:knight-3",
+     "legendId": "gawain",
      "rank": 3
     },
     {
-     "legendId": "legend:knight-4",
+     "legendId": "roland",
      "rank": 4
     },
     {
-     "legendId": "legend:knight-5",
+     "legendId": "el-cid",
      "rank": 5
     },
     {
-     "legendId": "legend:knight-6",
+     "legendId": "lancelot",
      "rank": 6
     },
     {
-     "legendId": "legend:knight-7",
+     "legendId": "siegfried",
      "rank": 7
     },
     {
-     "legendId": "legend:knight-8",
+     "legendId": "hector",
      "rank": 8
     },
     {
-     "legendId": "legend:knight-9",
+     "legendId": "achilles",
      "rank": 9
     },
     {
-     "legendId": "legend:knight-10",
+     "legendId": "thor",
      "rank": 10
     }
    ]
@@ -382,43 +382,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:witch-1",
+     "legendId": "hedge-witch",
      "rank": 1
     },
     {
-     "legendId": "legend:witch-2",
+     "legendId": "mother-shipton",
      "rank": 2
     },
     {
-     "legendId": "legend:witch-3",
+     "legendId": "grimhild",
      "rank": 3
     },
     {
-     "legendId": "legend:witch-4",
+     "legendId": "ceridwen",
      "rank": 4
     },
     {
-     "legendId": "legend:witch-5",
+     "legendId": "nimue",
      "rank": 5
     },
     {
-     "legendId": "legend:witch-6",
+     "legendId": "louhi",
      "rank": 6
     },
     {
-     "legendId": "legend:witch-7",
+     "legendId": "baba-yaga",
      "rank": 7
     },
     {
-     "legendId": "legend:witch-8",
+     "legendId": "morgan-le-fay",
      "rank": 8
     },
     {
-     "legendId": "legend:witch-9",
+     "legendId": "merlin",
      "rank": 9
     },
     {
-     "legendId": "legend:witch-10",
+     "legendId": "odin",
      "rank": 10
     }
    ]
@@ -429,43 +429,43 @@
    "region": "region:ash-frontier",
    "legends": [
     {
-     "legendId": "legend:shieldmaiden-1",
+     "legendId": "shield-girl",
      "rank": 1
     },
     {
-     "legendId": "legend:shieldmaiden-2",
+     "legendId": "hervor",
      "rank": 2
     },
     {
-     "legendId": "legend:shieldmaiden-3",
+     "legendId": "camilla",
      "rank": 3
     },
     {
-     "legendId": "legend:shieldmaiden-4",
+     "legendId": "lagertha",
      "rank": 4
     },
     {
-     "legendId": "legend:shieldmaiden-5",
+     "legendId": "boudica",
      "rank": 5
     },
     {
-     "legendId": "legend:shieldmaiden-6",
+     "legendId": "tomyris",
      "rank": 6
     },
     {
-     "legendId": "legend:shieldmaiden-7",
+     "legendId": "scathach",
      "rank": 7
     },
     {
-     "legendId": "legend:shieldmaiden-8",
+     "legendId": "penthesilea",
      "rank": 8
     },
     {
-     "legendId": "legend:shieldmaiden-9",
+     "legendId": "brynhildr",
      "rank": 9
     },
     {
-     "legendId": "legend:shieldmaiden-10",
+     "legendId": "athena",
      "rank": 10
     }
    ]
