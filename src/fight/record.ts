@@ -10,7 +10,7 @@
 // Nothing here talks to the network; recording stays in memory until a later slice's Share.
 import { roundPose, validatePose, type Action, type DuelPose, type Intent } from './duel.ts';
 import { checkSheet, DIALS, dialByCode, type Sheet } from './sheet-rows.ts';
-import { LEVELS, PLAYER_WEAPONS, SKILL_BY_CODE, type Direction, type SkillId, type WeaponId } from './moves.ts';
+import { LEVELS, OPPONENTS, PLAYER_WEAPONS, SKILL_BY_CODE, opponentAt, type Direction, type SkillId, type WeaponId } from './moves.ts';
 import type { OpponentId } from '../roster.ts';
 import { FIRST_LATE_NOTICE_VERSION, FIRST_SCALED_VERSION, LATE_NOTICE, PLAY_SCALE, playScaleFor } from './play-radius.ts';
 import { STAB_ON } from './stab-rule.ts';
@@ -18,7 +18,7 @@ import { FIRST_STANCE_ROWS_VERSION } from './stance-era.ts';
 import { FIRST_POISE_LADDER_VERSION } from './poise-era.ts';
 import { PICKS, type PickedStance } from './stance.ts';
 
-export const RECORD_VERSION = 54;   // 54: bump 54 (2026-10-13; Combat, the poise ladder, top-30 item 10, PROVISIONAL on 53, Lead's rulings) — a creature's poise gains a FLINCH tier between the shrug and the full stagger, and a full stagger buys poise-rest (poise-ladder.ts, rows in poise-ladder-defs.json). Era-keyed (poise-era.ts): a record below 54 keeps the single threshold, so REACH[54] is empty; every fight is stamped no lower than 54 because every creature fight with poise moves.
+export const RECORD_VERSION = 54;   // 54: bump 54 (2026-10-13; Combat, the poise ladder, top-30 item 10, PROVISIONAL on 53, Lead's rulings) — a creature's poise gains a FLINCH tier between the shrug and the full stagger, and a full stagger buys poise-rest (poise-ladder.ts, rows in poise-ladder-defs.json). Era-keyed (poise-era.ts): a record below 54 keeps the single threshold, so REACH[54] is empty; only a fight against a creature that has poise at its level is stamped 54 (ladderStamp), every other fight keeps its version byte for byte.
 // (53 follows)   // 53: bump 53 (2026-10-13; Combat, spells in fights v1, PROVISIONAL on 52, Lead's rulings) — a SPELL is cast through the SKILL slot's special (spell-cast.ts): the same windup, interrupt, cooldown and reach, plus a stamina cost at the commit and an outcome by skill at the release (fizzle, partial, success, crit) from rows (brick-defs.json, cast-rules.json). ONLY a spell fight moves: it carries a second flag byte and a spell block (id + the caster's skill) and is stamped 53; every other fight is written and replays byte for byte as before. The cast draws come from the fight's seed.
 // 52: bump 52 (2026-10-13; Combat, Wave A1 stance rows, provisional on 51) — TIMING IS SACRED (Strategy, external audit): the Defensive stance's parry window and guard-counter window (a quarter longer) are gone; stance rows (stance-defs.json through the registry) carry numbers only (the loader refuses a window), and Defensive gains damageTaken -100 and poise -100. A record BELOW 52 keeps the old windows through stance-era.ts (an era flag, as the play circle and the stab are), so REACH[52] is empty and every older link replays byte for byte. Before: 51: bump 51 (2026-10-13; Combat, Wave A1 live numbers, provisional on 50) — Lead's accepted CC numbers go live in the cc-defs.json / swarm-defs.json rows (windowFrom end; post-CC immunity stun 120 / knockdown 180; tiers and resists as RANK BANDS: unstoppable + iron rank 10, steadfast + stubborn ranks 8-9; swarm +3 a foe, cap 6 ranks 1-5 / 9 ranks 6-10). Only a fight that carries a ladder (the open world) or a roll moves; a recorded Pit fight carries neither, so no record is reached. Before: 50: bump 50 (2026-10-13; Combat B, Wave A1 steps 6+7, Lead's provisional number) — CC timing + immunity rows and the swarm band (cc-ladder.ts windowFrom / immunity / tiers / resists, catalogue fields immuneTier + resist; roll.ts SWARM_ROWS + Duel.roll.swarm/rank), all opt-in: no shipped fight names one, so every fight is byte for byte as v49.
 // 49: bump 49 (2026-10-13; Combat, Wave A1 PR2) — damage kinds as data.
@@ -84,7 +84,7 @@ export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
 // What a fight with no patron writes: the writer ceiling is RECORD_VERSION (32), but a record names the LOWEST version that can express its fight.
 // A literal 31 only while the ceiling is 32 (the v31 bytes a patron-less fight has always written); from the next bump on a no-patron fight is simply the current version, whose
 // header carries a patron byte of 0 (only v32 refuses a zero patron, because a v32 patron-less fight was always written as 31). Pinned by tests/record-version-guard.test.ts, which simulates RV33.
-export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 53 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
+export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 54 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
 export const FIRST_SPELL_VERSION = 53;   // RV53 (spells in fights): the fight carries a spell (second flag byte, bit 0, then the spell block: id len u8 + ascii, skill u8); ONLY a spell fight is written as v53
 export const FIRST_GAMBIT_VERSION = 33;
@@ -92,7 +92,7 @@ export const FIRST_STANCE_VERSION = 34;
 export const FIRST_POSE_VERSION = 38;
 export const FIRST_GROUP_VERSION = 39;
 export const FIRST_SHEET_VERSION = 48;   // RV48 (Wave A1 PR1): the fight carries the player's sheet (flag bit 7): a count byte, then (dial code u8, the dial's effective value u8) pairs, in code order, dials off base only; ONLY a sheet fight is written as v48
-export const PATRON_VERSION = (RECORD_VERSION as number) <= 53 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
+export const PATRON_VERSION = (RECORD_VERSION as number) <= 54 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
 // Each bump's REACH (the standing rule, Strategy 2026-09-28): the fights bump N can change, as (opponent, from level). A record of version
 // k is refused when any bump after k reaches its opponent at its level; everything else is read. Literals on purpose, not the data they
 // describe (LOADOUT_FROM, ROSTER): a reach records what that bump changed and must not move when the data moves later (that change bumps
@@ -146,6 +146,9 @@ const buildRefBad = (r: { sheet?: Sheet; characterId?: string; buildVersion?: nu
 // version is a constant; the old circle WITH the ramp has no version, and no live fight or shared link is that: only a script that turns the ramp on without the circle.)
 const OLD_CIRCLE_VERSION = FIRST_SCALED_VERSION - 1;
 const STAB_VERSION = 25;   // the last version without the arena byte; still written by nothing, still packable so a fixture can pin the old layout
+// The poise ladder (poise-ladder.ts) moves only a fight against a creature that has poise at the level it is fought at (nine creatures, every level but the first), so only those fights are stamped 54; every other
+// fight keeps the version it had, byte for byte, and a record below 54 replays the single threshold (poise-era.ts). Level/opponent come from the record itself, so a replay re-derives the same stamp.
+const ladderStamp = (opponent: string, level: number): number => { const o = Object.hasOwn(OPPONENTS, opponent) ? OPPONENTS[opponent as OpponentId] : undefined; return o && Number.isInteger(level) && level >= 1 && level <= LEVELS && opponentAt(o, level).poise > 0 ? FIRST_POISE_LADDER_VERSION : 0; };
 const stampedVersion = (opponent: string): number => PLAY_SCALE !== playScaleFor(opponent, RECORD_VERSION) ? OLD_CIRCLE_VERSION : !LATE_NOTICE ? FIRST_SCALED_VERSION : STAB_ON ? NO_PATRON_VERSION : FIRST_LATE_NOTICE_VERSION;   // the Goblin's stab is the newest era flag: late notice without it is the version before
 export type RecordVersion = (typeof READABLE_VERSIONS)[number];
 
@@ -204,7 +207,7 @@ export function createRecorder(meta: RecordMeta) {
   const era = stampedVersion(meta.opponent);
   if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet || meta.spell) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
   const flagged = meta.sheet ? FIRST_SHEET_VERSION : meta.group ? FIRST_GROUP_VERSION : meta.pose ? FIRST_POSE_VERSION : meta.stances ? FIRST_STANCE_VERSION : meta.gambit ? FIRST_GAMBIT_VERSION : meta.patron ? PATRON_VERSION : era;
-  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, version = Math.max(spelledV, FIRST_POISE_LADDER_VERSION);   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
+  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, version = Math.max(spelledV, ladderStamp(meta.opponent, meta.level));   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
   if (spellBad(meta)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');   // a stances fight is fought on the v52 stance rows (stance-era.ts: a Defensive stance has no longer window), so it is stamped no lower than v52   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
   if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };
   if (buildRefBad(meta)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
@@ -239,7 +242,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   // A gambit fight is v33; otherwise a patron fight is v32 and a patron-less one v31.
   const flaggedV = rec.sheet ? FIRST_SHEET_VERSION : rec.group ? FIRST_GROUP_VERSION : rec.pose ? FIRST_POSE_VERSION : rec.stances ? FIRST_STANCE_VERSION : rec.gambit ? FIRST_GAMBIT_VERSION : rec.patron ? PATRON_VERSION : NO_PATRON_VERSION;
   const stancedV = rec.stances ? Math.max(flaggedV, FIRST_STANCE_ROWS_VERSION) : flaggedV;
-  const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: Math.max(rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, FIRST_POISE_LADDER_VERSION) as RecordVersion } : rec;
+  const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: Math.max(rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, ladderStamp(rec.opponent, rec.level)) as RecordVersion } : rec;
   if (r.spell && r.v < FIRST_SPELL_VERSION) throw Error('Fight record: a spell on a version that has no flag for it');
   if ((r.v as number) === FIRST_SPELL_VERSION && !r.spell) throw Error('Fight record: a version 53 record names its spell');
   if (spellBad(r)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');
@@ -259,7 +262,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   if (r.stances && !PICKS.includes(r.stances)) throw Error('Fight record: unknown stance');
   if (r.gambit && r.v < FIRST_GAMBIT_VERSION) throw Error('Fight record: a gambit on a version that has no flag for it');
   if (r.v === FIRST_GAMBIT_VERSION && !r.gambit) throw Error('Fight record: a version 33 record names the gambit');
-  if (r.v !== RECORD_VERSION && (r.v as number) !== FIRST_SHEET_VERSION && r.v !== FIRST_GROUP_VERSION && r.v !== FIRST_POSE_VERSION && r.v !== FIRST_STANCE_VERSION && (r.v as number) !== FIRST_STANCE_ROWS_VERSION && r.v !== FIRST_GAMBIT_VERSION && r.v !== FIRST_PATRON_VERSION && r.v !== NO_PATRON_VERSION && r.v !== STAB_VERSION && r.v !== FIRST_LATE_NOTICE_VERSION && r.v !== FIRST_SCALED_VERSION && r.v !== OLD_CIRCLE_VERSION) throw Error(`Fight record: cannot pack version ${String(r.v)}`);
+  if (r.v !== RECORD_VERSION && (r.v as number) !== FIRST_SHEET_VERSION && r.v !== FIRST_GROUP_VERSION && r.v !== FIRST_POSE_VERSION && r.v !== FIRST_STANCE_VERSION && (r.v as number) !== FIRST_SPELL_VERSION && (r.v as number) !== FIRST_STANCE_ROWS_VERSION && r.v !== FIRST_GAMBIT_VERSION && r.v !== FIRST_PATRON_VERSION && r.v !== NO_PATRON_VERSION && r.v !== STAB_VERSION && r.v !== FIRST_LATE_NOTICE_VERSION && r.v !== FIRST_SCALED_VERSION && r.v !== OLD_CIRCLE_VERSION) throw Error(`Fight record: cannot pack version ${String(r.v)}`);
   if (r.intents.length !== r.ticks) throw Error('Fight record: ticks does not match the intent count');
   const build = ascii(r.build), opp = ascii(r.opponent), wpn = ascii(r.weapon), spellId = r.spell ? ascii(r.spell.id) : new Uint8Array(0);
   if (build.length > 255 || opp.length > 255 || wpn.length > 255) throw Error('Fight record: build, opponent or weapon id too long');
