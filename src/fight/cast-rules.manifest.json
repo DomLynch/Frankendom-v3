@@ -1,0 +1,15 @@
+{
+  "tables": [
+    {
+      "table": "castrule",
+      "file": "cast-rules.json",
+      "at": "rules",
+      "key": "id",
+      "required": {
+        "spread": "integer",
+        "relDivisor": "number",
+        "creditPerPoint": "number"
+      }
+    }
+  ]
+}

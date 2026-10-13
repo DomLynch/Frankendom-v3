@@ -4,11 +4,13 @@ import type { OpponentId } from '../roster.ts';
 import { specialGust } from './special-gust.ts';
 import { advanceCast, shadowPhase as castPhase, LAND_AT, skillCast, type Cast, type isHadesShadow } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
-import { sin as detSin } from './detmath.ts';
+import { atan2 as detAtan2, cos as detCos, sin as detSin } from './detmath.ts';
 
-// The ash flakes' hash and drift, on detmath's sin (fdlibm in plain + - * /, the same bits on every CPU and engine): `fall` wraps with % 1, so one
-// ulp of a native Math.sin (V8 on Apple arm64 vs x64 Linux) moves a flake 3.4 m (Surtr's rows hash differed on the Mac from tick 148, Strategy 2026-10-12).
-const flakeHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
+// Every per-frame number of createPitbornSpecial's render (its hash, sin, cos, atan2) is on detmath (fdlibm in plain + - * /, the same bits on every CPU
+// and engine): V8's native Math.sin rounds one ulp differently on Apple arm64 and x64 Linux, which put Surtr's flake 35 on the other side of a 1e-6 edge
+// on the Mac (#2436, Strategy 2026-10-12); the % wraps (ash fall, Typhon's runs) make an ulp worse still. Textures keep fx-math's hash (arguments past
+// detmath's exact range); the two ** (pow) stay native: detmath has no pow.
+const detHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 
 // The Pitborn's rank 8-10 boss specials (Pitborn lane; Dom picked all three on 2026-10-01: Cracking Ground, Ash Fall, Wind Wall). One idea each, drawn
@@ -205,48 +207,48 @@ export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, k
       root.visible = true; specialGust.k = 0;
       if (template === 'crack') {
         cracks.forEach((m, i) => {   // seven seams split out from his feet in uneven lengths and headings, widest at the root; they hold, then close as the clods settle
-          const len = build ** 0.7 * (1.6 + 2.4 * hash(i, 21)), wid = 1.1 + 0.8 * hash(i, 22);
-          m.position.set(caster.x, gy + 0.03 + 0.003 * i, caster.z); m.rotation.y = Math.atan2(-dir.z, dir.x) + (i % 2 ? 1 : -1) * (0.45 + 1.1 * hash(i, 23)); m.scale.set(len, 1, wid);
+          const len = build ** 0.7 * (1.6 + 2.4 * detHash(i, 21)), wid = 1.1 + 0.8 * detHash(i, 22);
+          m.position.set(caster.x, gy + 0.03 + 0.003 * i, caster.z); m.rotation.y = detAtan2(-dir.z, dir.x) + (i % 2 ? 1 : -1) * (0.45 + 1.1 * detHash(i, 23)); m.scale.set(len, 1, wid);
           op(m, P.crackAlpha! * (1 - post * post) * clamp01(build * 3));
         });
         clods.forEach((s, i) => {   // chunks lift off the seams, hang a beat, and drop back with the landing
-          const a = hash(i, 24) * Math.PI * 2, r = 0.2 + 1.5 * hash(i, 25) * (0.35 + 0.65 * build), up = (0.12 + 0.85 * hash(i, 26)) * build * (1 - 0.9 * smooth(struck)) * (1 - post);
-          s.position.set(caster.x + Math.cos(a) * r, gy + 0.06 + up, caster.z + Math.sin(a) * r);
-          s.scale.setScalar(0.08 + 0.16 * hash(i, 27)); op(s, P.clodAlpha! * clamp01(build * 2) * (1 - post * post));
+          const a = detHash(i, 24) * Math.PI * 2, r = 0.2 + 1.5 * detHash(i, 25) * (0.35 + 0.65 * build), up = (0.12 + 0.85 * detHash(i, 26)) * build * (1 - 0.9 * smooth(struck)) * (1 - post);
+          s.position.set(caster.x + detCos(a) * r, gy + 0.06 + up, caster.z + detSin(a) * r);
+          s.scale.setScalar(0.08 + 0.16 * detHash(i, 27)); op(s, P.clodAlpha! * clamp01(build * 2) * (1 - post * post));
         });
         grit.forEach((s, i) => {
-          const a = hash(i, 28) * Math.PI * 2, r = 0.3 + 1.4 * hash(i, 29), up = (0.05 + 0.5 * hash(i, 30)) * build * (1 - post);
-          s.position.set(caster.x + Math.cos(a) * r, gy + 0.05 + up, caster.z + Math.sin(a) * r); s.scale.setScalar(0.04 + 0.05 * hash(i, 31)); op(s, P.gritAlpha! * live);
+          const a = detHash(i, 28) * Math.PI * 2, r = 0.3 + 1.4 * detHash(i, 29), up = (0.05 + 0.5 * detHash(i, 30)) * build * (1 - post);
+          s.position.set(caster.x + detCos(a) * r, gy + 0.05 + up, caster.z + detSin(a) * r); s.scale.setScalar(0.04 + 0.05 * detHash(i, 31)); op(s, P.gritAlpha! * live);
         });
       } else if (flakes.length || patches.length || smoke.length) {
         patches.forEach((m, i) => {   // soot scorched into the sand under him: torn dark patches creeping out, never a clean ring
-          const a = hash(i, 41) * Math.PI * 2, r = 0.15 + 1.6 * hash(i, 42) * build, s = 1.3 + 1.2 * hash(i, 43);
-          m.position.set(caster.x + Math.cos(a) * r, gy + 0.03 + 0.003 * i, caster.z + Math.sin(a) * r); m.rotation.y = hash(i, 44) * 6.3; m.scale.set(s * build, 1, s * build * 0.8);
+          const a = detHash(i, 41) * Math.PI * 2, r = 0.15 + 1.6 * detHash(i, 42) * build, s = 1.3 + 1.2 * detHash(i, 43);
+          m.position.set(caster.x + detCos(a) * r, gy + 0.03 + 0.003 * i, caster.z + detSin(a) * r); m.rotation.y = detHash(i, 44) * 6.3; m.scale.set(s * build, 1, s * build * 0.8);
           op(m, dayNight(P.patchAlpha!, look.dim) * (1 - post * 0.8) * clamp01(build * 2));
         });
         smoke.forEach((s, i) => {   // a low smoke lying along the sand where he stands
-          const a = hash(i, 45) * Math.PI * 2, r = 0.2 + 1.3 * hash(i, 46), rise = 0.12 + 0.3 * hash(i, 47) + 0.25 * build;
-          s.position.set(caster.x + Math.cos(a + t * 0.2) * r, gy + rise, caster.z + Math.sin(a + t * 0.2) * r); s.scale.setScalar((0.7 + 0.6 * hash(i, 48)) * (0.4 + 0.6 * build)); op(s, dayNight(P.smokeAlpha!, look.dim) * build * (1 - post * post));
+          const a = detHash(i, 45) * Math.PI * 2, r = 0.2 + 1.3 * detHash(i, 46), rise = 0.12 + 0.3 * detHash(i, 47) + 0.25 * build;
+          s.position.set(caster.x + detCos(a + t * 0.2) * r, gy + rise, caster.z + detSin(a + t * 0.2) * r); s.scale.setScalar((0.7 + 0.6 * detHash(i, 48)) * (0.4 + 0.6 * build)); op(s, dayNight(P.smokeAlpha!, look.dim) * build * (1 - post * post));
         });
         flakes.forEach((s, i) => {   // ash drifts down over the whole arena, thickening: a flake only appears once the build passes its own threshold
-          const fall = (t * (0.25 + 0.2 * flakeHash(i, 31)) + flakeHash(i, 32)) % 1, on = clamp01(build * 1.5 - flakeHash(i, 36) * 0.5);
-          s.position.set(cx + (flakeHash(i, 33) - 0.5) * 7 + detSin(t * 1.7 + i) * 0.15, gy + 3.4 * (1 - fall), cz + (flakeHash(i, 34) - 0.5) * 7);
-          s.scale.setScalar((look.dim ? 0.07 : 0.05) + (look.dim ? 0.08 : 0.07) * flakeHash(i, 35)); (s.material as THREE.SpriteMaterial).rotation = flakeHash(i, 37) * 6.3 + t * (flakeHash(i, 38) - 0.5); op(s, dayNight(P.flakeAlpha!, look.dim) * on * (1 - post * post));
+          const fall = (t * (0.25 + 0.2 * detHash(i, 31)) + detHash(i, 32)) % 1, on = clamp01(build * 1.5 - detHash(i, 36) * 0.5);
+          s.position.set(cx + (detHash(i, 33) - 0.5) * 7 + detSin(t * 1.7 + i) * 0.15, gy + 3.4 * (1 - fall), cz + (detHash(i, 34) - 0.5) * 7);
+          s.scale.setScalar((look.dim ? 0.07 : 0.05) + (look.dim ? 0.08 : 0.07) * detHash(i, 35)); (s.material as THREE.SpriteMaterial).rotation = detHash(i, 37) * 6.3 + t * (detHash(i, 38) - 0.5); op(s, dayNight(P.flakeAlpha!, look.dim) * on * (1 - post * post));
         });
       } else {
         // The wind IS the tell (Strategy 2026-10-02): it starts thin and low with the wind-up and grows over the whole 2 s to the full sweep at the release; he sways in it.
         const wk = smooth(age / LAND_AT), gale = wk ** 1.3 * (1 - post * post);
         specialGust.k = gale;
-        if (casterAnchor) casterAnchor.rotation.z = Math.sin(clock / 60 * Math.PI * 2 * 1.1) * 0.16 * wk * (1 - post);
+        if (casterAnchor) casterAnchor.rotation.z = detSin(clock / 60 * Math.PI * 2 * 1.1) * 0.16 * wk * (1 - post);
         streaks.forEach((m, i) => {   // painted strokes torn along the wind, flat and tilted, running from behind him through to the target and past
-          const span = gap + 4, run = (t * (1.8 + hash(i, 51)) * 2 + hash(i, 52) * span) % span, lat = (hash(i, 53) - 0.5) * 3.4 * (0.45 + 0.55 * wk), hgt = (0.04 + 1.1 * hash(i, 54)) * (0.25 + 0.75 * wk), len = (1.2 + 1.5 * hash(i, 55)) * (0.6 + 0.4 * wk);
+          const span = gap + 4, run = (t * (1.8 + detHash(i, 51)) * 2 + detHash(i, 52) * span) % span, lat = (detHash(i, 53) - 0.5) * 3.4 * (0.45 + 0.55 * wk), hgt = (0.04 + 1.1 * detHash(i, 54)) * (0.25 + 0.75 * wk), len = (1.2 + 1.5 * detHash(i, 55)) * (0.6 + 0.4 * wk);
           m.position.set(caster.x - dir.x * 1.8 + dir.x * (run - len) - dir.z * lat, gy + hgt, caster.z - dir.z * 1.8 + dir.z * (run - len) + dir.x * lat);
-          m.rotation.set((hash(i, 56) - 0.5) * 1.1, Math.atan2(-dir.z, dir.x), 0, 'YXZ'); m.scale.set(len, 1, 0.5 + 0.5 * hash(i, 57)); op(m, dayNight(P.strokeAlpha!, look.dim) * gale * clamp01((wk * 1.25 - hash(i, 58) * 0.9) * 4));   // the Night Pit's pale strokes wash over both fighters at the peak: 30% lighter there
+          m.rotation.set((detHash(i, 56) - 0.5) * 1.1, detAtan2(-dir.z, dir.x), 0, 'YXZ'); m.scale.set(len, 1, 0.5 + 0.5 * detHash(i, 57)); op(m, dayNight(P.strokeAlpha!, look.dim) * gale * clamp01((wk * 1.25 - detHash(i, 58) * 0.9) * 4));   // the Night Pit's pale strokes wash over both fighters at the peak: 30% lighter there
         });
         sand.forEach((s, i) => {   // grit whipped sideways, fast
-          const span = gap + 4, run = (t * (3.2 + 1.5 * hash(i, 61)) + hash(i, 62) * span) % span, lat = (hash(i, 63) - 0.5) * 3.6;
-          s.position.set(caster.x - dir.x * 1.8 + dir.x * run - dir.z * lat, gy + 0.05 + 1.2 * hash(i, 64), caster.z - dir.z * 1.8 + dir.z * run + dir.x * lat);
-          s.scale.setScalar(0.05 + 0.07 * hash(i, 65)); op(s, dayNight(P.sandAlpha!, look.dim) * gale * clamp01((wk * 1.25 - hash(i, 66) * 0.9) * 4));
+          const span = gap + 4, run = (t * (3.2 + 1.5 * detHash(i, 61)) + detHash(i, 62) * span) % span, lat = (detHash(i, 63) - 0.5) * 3.6;
+          s.position.set(caster.x - dir.x * 1.8 + dir.x * run - dir.z * lat, gy + 0.05 + 1.2 * detHash(i, 64), caster.z - dir.z * 1.8 + dir.z * run + dir.x * lat);
+          s.scale.setScalar(0.05 + 0.07 * detHash(i, 65)); op(s, dayNight(P.sandAlpha!, look.dim) * gale * clamp01((wk * 1.25 - detHash(i, 66) * 0.9) * 4));
         });
       }
     },
