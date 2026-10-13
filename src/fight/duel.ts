@@ -7,7 +7,7 @@ import { M } from './detmath.ts';
 import { poolsOf, type PoolValues } from './pools.ts';
 import { rolledDamage, rollPercent } from './roll.ts';
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
-import { ccApply, type CcLadder, type CcSource } from './cc-ladder.ts';
+import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 
 // Symmetric 1v1 melee simulation. Both fighters obey the same rules through the same Intent; the AI is just another
@@ -47,6 +47,7 @@ export type Fighter = {
   skill: SkillId | null; skillCooldown: number;   // the equipped skill (null = none: every opponent in V1) and the ticks until it may fire again (RULES.skillCooldown)
   // Special Moves (RULES.special): present only when the fight has them (withSpecials); absent, the SKILL slot is the plain skill it always was.
   cc?: CcLadder;   // the crowd-control ladder this fighter's stuns step (cc-ladder.ts); present only in the open world, which shares the hero's across every bout. Absent = no diminishing returns: the Pit's fight, byte for byte
+  ccGuard?: CcGuard;   // its own immuneTier / resist rows (cc-ladder.ts, from the creature's catalogue fields); absent = none
   specialShare?: number;   // the share of the target's max health this fighter's special takes
   specialName?: SpecialName;   // which named special this fighter casts (moves.ts specialOf); absent = named by `skill`
   special?: number;   // ticks of a committed special windup left; it releases on the tick it would reach 0
@@ -237,7 +238,7 @@ function beginAttack(f: Fighter, id: MoveId, chained: boolean, foe: State): void
 export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES = RULES): Duel {
   const tick = duel.tick + 1, events: CombatEvent[] = [], before = duel.fighters, wall = duel.radius ?? RADIUS;   // the wall of THIS fight (RV40): the Pit's live circle unless the duel carries its own (the open world's is out of reach)
   // Crowd control lands through the target's ladder when it carries one (cc-ladder.ts: full, half, quarter, immune); without one the ticks are untouched.
-  const stunned = (f: Fighter, source: CcSource, ticks: number): number => { if (!f.cc) return ticks; const r = ccApply(f.cc, source, tick + (duel.ccBase ?? 0), ticks); f.cc = r.ladder; return r.ticks; };
+  const stunned = (f: Fighter, source: CcSource, ticks: number): number => { if (!f.cc) return ticks; const r = ccApply(f.cc, source, tick + (duel.ccBase ?? 0), ticks, CC_LADDER, f.ccGuard); f.cc = r.ladder; return r.ticks; };
   // A committed special windup: the caster stands and tracks the target, whatever the thumb does (no guard, roll, parry or step).
   if (before[0].special || before[1].special) intents = [before[0].special ? idleIntent() : intents[0], before[1].special ? idleIntent() : intents[1]];
   const fighters = before.map(f => ({ ...f, age: f.stall > 0 ? f.age : f.age + 1, stall: Math.max(0, f.stall - 1), wound: Math.max(0, f.wound - 1), chain: Math.max(0, f.chain - 1), parryCooldown: Math.max(0, f.parryCooldown - 1), skillCooldown: Math.max(0, f.skillCooldown - 1), punish: Math.max(0, f.punish - 1), critical: Math.max(0, f.critical - 1), posture: f.phase === 'hurt' || f.phase === 'dead' || f.postureRest > 0 ? f.posture : Math.max(0, f.posture - stanced(f, 'recover', R.posture.decay) * guardOf(f, R).postureDecay * (f.health < R.posture.bloodied * f.maxHealth ? R.posture.bloodiedDecay : 1)), postureRest: Math.max(0, f.postureRest - 1), rest: Math.max(0, f.rest - 1), exposed: Math.max(0, f.exposed - 1), evaded: Math.max(0, f.evaded - 1), counterWindow: Math.max(0, f.counterWindow - 1), buffer: f.buffer && f.buffer.ttl > 1 ? { ...f.buffer, ttl: f.buffer.ttl - 1 } : null })) as [Fighter, Fighter];
