@@ -54,7 +54,7 @@ export const DAILY_LEVEL = PRESET_LEVEL.normal;   // the server's daily verifier
 type Recorder = ReturnType<typeof createRecorder>;
 // What the page keeps and the match writes: the device's trial tally, scorecard and fighter profile, and the storage they save to.
 // `rank`: the career's rank level (main.ts: levelOf(careerMarks()), the server figure once there); absent, the device count's.
-export type MatchPorts = { storage: StoragePort; trial: Trial; scorecard: Scorecard; profile: Profile; rank?: () => number; arena?: () => RecordArena | undefined; sheet?: () => Sheet | undefined };   // arena: the arena this page built, named in a live fight's record (record.ts version 26)
+export type MatchPorts = { storage: StoragePort; trial: Trial; scorecard: Scorecard; profile: Profile; rank?: () => number; arena?: () => RecordArena | undefined; sheet?: () => Sheet | undefined; buildRef?: () => { characterId: string; buildVersion: number } | undefined };   // buildRef: the stored build a sheet fight names (RV48); read only when the fight carries a sheet   // arena: the arena this page built, named in a live fight's record (record.ts version 26)
 // The end of a fight, for the page to show: the record (null in a replay, or when a mid-fight difficulty change dropped the
 // recorder), the autopsy lines, whether the player won and whether the fight counted (career only).
 export type Ended = { record: FightRecord | null; lines: string[]; won: boolean; rewarded: boolean };
@@ -149,7 +149,7 @@ export class Match {
       this.skill = this.practice.duel.fighters[0].skill;
       this.specials = this.practice.duel.fighters.some(f => f.specialShare !== undefined);
     }
-    this.recorder = mode === 'replay' || mode === 'sparring' || mode === 'pvp' || mode === 'lesson' || mode === 'tutorial' ? null : createRecorder({ build: this.build, opponent: this.opponent.id, weapon: this.weapon, ...(this.ports.arena?.() ? { arena: this.ports.arena() } : {}), ...(this.skill ? { skill: this.skill } : {}), ...(this.specials ? { specials: true } : {}), ...(this.gambit ? { gambit: true } : {}), ...(this.stances ? { stances: this.stances } : {}), ...(this.sheet ? { sheet: this.sheet } : {}), ...(pose ? { pose } : {}), level: this.level, seed: this.seed });
+    this.recorder = mode === 'replay' || mode === 'sparring' || mode === 'pvp' || mode === 'lesson' || mode === 'tutorial' ? null : createRecorder({ build: this.build, opponent: this.opponent.id, weapon: this.weapon, ...(this.ports.arena?.() ? { arena: this.ports.arena() } : {}), ...(this.skill ? { skill: this.skill } : {}), ...(this.specials ? { specials: true } : {}), ...(this.gambit ? { gambit: true } : {}), ...(this.stances ? { stances: this.stances } : {}), ...(this.sheet ? { sheet: this.sheet, ...(this.ports.buildRef?.() ?? {}) } : {}), ...(pose ? { pose } : {}), level: this.level, seed: this.seed });
     this.recorded = false; this.ended = null; this.activeMs = 0;
     this.frameEvents = []; this.fightLog = [];
     this.lastRecord = null; this.lastDrop = null; this.lastSkill = null;
