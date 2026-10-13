@@ -1,0 +1,1842 @@
+{
+ "spells": [
+  {
+   "id": "spell:alvis",
+   "boss": "dwarf",
+   "boss_name": "Alvis",
+   "name": "All-Wise's Riddles",
+   "school": "wind",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The dwarf who asked for Thor's daughter and was kept talking until sunrise turned him to stone.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Alvis"
+  },
+  {
+   "id": "spell:andvari",
+   "boss": "goblin",
+   "boss_name": "Andvari",
+   "name": "Pike-Dwarf's Hoard",
+   "school": "earth",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The dwarf who lived as a pike and held a great hoard, until Loki took it and he cursed it.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Andvari"
+  },
+  {
+   "id": "spell:banshee",
+   "boss": "banshee",
+   "boss_name": "The Banshee",
+   "name": "Keening Warning",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Lady Wilde, Ancient Legends of Ireland",
+   "story": "The wailing woman of the Irish houses, whose cry tells a family that one of them will die.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:black-annis",
+   "boss": "black-annis",
+   "boss_name": "Black Annis",
+   "name": "Annis's Cave",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Charles James Billson, County Folk-Lore: Leicestershire and Rutland",
+   "story": "The blue-faced hag of the Leicester hills, who lurks in her cave and snatches strays.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:blue-men",
+   "boss": "blue-men-of-the-minch",
+   "boss_name": "The Blue Men of the Minch",
+   "name": "Storm-Channel Rhyme",
+   "school": "frost",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Donald A. Mackenzie, Wonder Tales from Scottish Myth and Legend (1917)",
+   "story": "Blue sea-men who swim the Minch and sink any boat whose skipper cannot match their rhyme.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:brokkr",
+   "boss": "dwarf",
+   "boss_name": "Brokkr",
+   "name": "Brokkr's Bellows",
+   "school": "fire",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The dwarf smith who forged the hammer while his brother kept the bellows steady.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Brokkr"
+  },
+  {
+   "id": "spell:kobold",
+   "boss": "goblin",
+   "boss_name": "Kobold",
+   "name": "Mine-Knocker's Prank",
+   "school": "earth",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "German folklore",
+   "story": "The knocking sprite of the German mines, who throws pebbles at the careless and hides your tools.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Kobold"
+  },
+  {
+   "id": "spell:puca",
+   "boss": "puca",
+   "boss_name": "The Puca",
+   "name": "Puca's Gallop",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Croker 1825; W. B. Yeats, Fairy and Folk Tales of the Irish Peasantry",
+   "story": "A shape-shifting spirit of the Irish roads who carries drunken riders on a wild night gallop.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:puck",
+   "boss": "goblin",
+   "boss_name": "Puck",
+   "name": "Hedge-Wanderer's Jest",
+   "school": "wind",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "English folklore",
+   "story": "The mischievous hob of English folklore, who leads night travellers in circles for sport.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Puck"
+  },
+  {
+   "id": "spell:redcap",
+   "boss": "pitborn",
+   "boss_name": "Redcap",
+   "name": "Blood-Cap's Dye",
+   "school": "fire",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Border folklore",
+   "story": "The border-tower goblin who dyes his cap in the blood of trespassers.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Redcap"
+  },
+  {
+   "id": "spell:rumpelstiltskin",
+   "boss": "goblin",
+   "boss_name": "Rumpelstiltskin",
+   "name": "Straw-Spinner's Price",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Grimm",
+   "story": "The little man who spun straw to gold for a price, and who stamped his name away.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Rumpelstiltskin"
+  },
+  {
+   "id": "spell:tatzelwurm",
+   "boss": "tatzelwurm",
+   "boss_name": "The Tatzelwurm",
+   "name": "Alpine Worm's Hiss",
+   "school": "poison",
+   "level": 1,
+   "region": "region:ash-frontier",
+   "source": "Johann Jakob Scheuchzer, Itinera per Helvetiae alpinas regiones",
+   "story": "The stub-legged worm of the Alpine passes, reported in the old travellers' accounts.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:alberich",
+   "boss": "goblin",
+   "boss_name": "Alberich",
+   "name": "Ring-Smith's Curse",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Nibelungenlied",
+   "story": "The Nibelung dwarf who forswore love for the gold and forged the ring that ruined heroes.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Alberich"
+  },
+  {
+   "id": "spell:baobhan-sith",
+   "boss": "baobhan-sith",
+   "boss_name": "The Baobhan Sith",
+   "name": "Highland Dancer's Hunger",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "John Gregorson Campbell, Superstitions of the Highlands and Islands of Scotland (1900); W. J. Watson, The Celtic Review 5 (1908-09)",
+   "story": "A beautiful dancer of the Highland bothies who drinks the hunters' blood by night.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:barghest",
+   "boss": "barghest",
+   "boss_name": "The Barghest",
+   "name": "Barghest's Prowl",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "William Henderson, Notes on the Folk-Lore of the Northern Counties of England and the Borders",
+   "story": "The black dog of the Yorkshire lanes, who walks the old road before a death.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cu-sith",
+   "boss": "cu-sith",
+   "boss_name": "The Cu-sith",
+   "name": "Green Hound's Bay",
+   "school": "earth",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "John Gregorson Campbell, Superstitions of the Highlands and Islands",
+   "story": "A great green hound of the Highlands whose three bays carry across the moor.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dullahan",
+   "boss": "dullahan",
+   "boss_name": "The Dullahan",
+   "name": "Headless Rider's Call",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Thomas Crofton Croker, Fairy Legends of the South of Ireland",
+   "story": "The headless rider of the Irish roads who halts at a door and calls a name.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:eitri",
+   "boss": "dwarf",
+   "boss_name": "Eitri",
+   "name": "Eitri's Anvil",
+   "school": "fire",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The dwarf smith, brother of Brokkr, whose forge made the gold-bristled boar and Thor's hammer.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Eitri"
+  },
+  {
+   "id": "spell:goibniu",
+   "boss": "dwarf",
+   "boss_name": "Goibniu",
+   "name": "Smith's Ale",
+   "school": "fire",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Cath Maige Tuired",
+   "story": "The smith of the Tuatha De Danann, whose spears never missed and whose ale kept the gods young.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Goibniu"
+  },
+  {
+   "id": "spell:kelpie",
+   "boss": "kelpie",
+   "boss_name": "The Kelpie",
+   "name": "Kelpie's Ford",
+   "school": "frost",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Robert Burns, Address to the Deil",
+   "story": "The Scottish river horse who offers a ride to the weary and drowns the rider in the pool.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:laidly-worm",
+   "boss": "laidly-worm-of-spindleston-heugh",
+   "boss_name": "The Laidly Worm of Spindleston Heugh",
+   "name": "Laidly Worm's Coil",
+   "school": "poison",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Robert Lambe, The Laidley Worm of Spindleston-Heughs (ballad)",
+   "story": "The loathly worm of Spindleston Heugh, once a princess, who was cursed by her stepmother.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:melusine",
+   "boss": "melusine",
+   "boss_name": "Melusine",
+   "name": "Serpent-Bride's Bath",
+   "region": "region:ash-frontier",
+   "school": "frost",
+   "level": 2,
+   "source": "Jean d'Arras, Roman de Melusine",
+   "story": "The fairy bride of the Lusignan tales, who bathes in secret on Saturdays and is half-serpent below.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:reynard",
+   "boss": "goblin",
+   "boss_name": "Reynard the Fox",
+   "name": "Fox's Pardon",
+   "school": "wind",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Medieval European fable",
+   "story": "The trickster fox of the medieval beast tales, who talks himself out of every trial.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Reynard the Fox"
+  },
+  {
+   "id": "spell:rubezahl",
+   "boss": "rubezahl",
+   "boss_name": "Rubezahl",
+   "name": "Mountain Lord's Mood",
+   "school": "wind",
+   "level": 2,
+   "region": "region:ash-frontier",
+   "source": "Johann Karl August Musaeus, Volksmaerchen der Deutschen",
+   "story": "The temperamental mountain spirit of the Giant Mountains, kind to the kind and fierce to the scornful.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ankou",
+   "boss": "executioner",
+   "boss_name": "Ankou",
+   "name": "Cart's Creak",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Breton folklore",
+   "story": "The Breton death-driver, whose cart creaks in the night and whose scythe is never idle.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Ankou"
+  },
+  {
+   "id": "spell:bisclavret",
+   "boss": "bisclavret",
+   "boss_name": "Bisclavret",
+   "name": "Lord Wolf's Return",
+   "school": "earth",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Marie de France, Bisclavret",
+   "story": "The lord who vanished three days a week as a wolf, until his wife stole his clothes.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:each-uisge",
+   "boss": "each-uisge",
+   "boss_name": "The Each-uisge",
+   "name": "Water-Horse's Plunge",
+   "school": "frost",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "John Gregorson Campbell, Superstitions of the Highlands and Islands",
+   "story": "The loch horse of the Highlands, fiercer than the kelpie, who carries riders to the bottom.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:glamr",
+   "boss": "glamr",
+   "boss_name": "Glamr",
+   "name": "Glamr's Stare",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Grettis saga",
+   "story": "The undead shepherd of Grettir's saga, whose stare once paralysed the strongest man.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:grimhild",
+   "boss": "witch",
+   "boss_name": "Grimhild",
+   "name": "Memory Draught",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Volsunga saga",
+   "story": "The queen who brewed a drink of forgetting and turned heroes against their oaths.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Grimhild"
+  },
+  {
+   "id": "spell:hati",
+   "boss": "hati",
+   "boss_name": "Hati",
+   "name": "Moon-Chaser's Leap",
+   "school": "frost",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Grimnismal; Snorri, Gylfaginning",
+   "story": "The wolf who runs after the moon, and who in the end will swallow it.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lord-ruthven",
+   "boss": "nightborn",
+   "boss_name": "Lord Ruthven",
+   "name": "Ruthven's Charm",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "The Vampyre, 1819",
+   "story": "The pale aristocrat of the 1819 story, who charms his way into every house and leaves it in ruin.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Lord Ruthven"
+  },
+  {
+   "id": "spell:mother-shipton",
+   "boss": "witch",
+   "boss_name": "Mother Shipton",
+   "name": "Cave Prophecy",
+   "school": "wind",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "English folklore",
+   "story": "The cave-born Yorkshire prophetess of the chapbooks, who foretold fires, wars and the fall of great men.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Mother Shipton"
+  },
+  {
+   "id": "spell:nuckelavee",
+   "boss": "nuckelavee",
+   "boss_name": "The Nuckelavee",
+   "name": "Skinless Rider",
+   "school": "poison",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Walter Traill Dennison, in The Scottish Antiquary",
+   "story": "The skinless horse-and-rider of Orkney, whose breath withers crops and whose terror is the sea.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:regin",
+   "boss": "dwarf",
+   "boss_name": "Regin",
+   "name": "Foster-Father's Plot",
+   "school": "fire",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Volsunga saga",
+   "story": "The smith who raised Sigurd and plotted for the dragon's gold, then fell to his own plot.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Regin"
+  },
+  {
+   "id": "spell:skoll",
+   "boss": "skoll",
+   "boss_name": "Skoll",
+   "name": "Sun-Chaser's Leap",
+   "school": "fire",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Grimnismal; Snorri, Gylfaginning",
+   "story": "The wolf who runs after the sun, and who in the end will devour it.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:wayland",
+   "boss": "dwarf",
+   "boss_name": "Wayland",
+   "name": "Smith's Lame Wings",
+   "school": "fire",
+   "level": 3,
+   "region": "region:ash-frontier",
+   "source": "Germanic legend",
+   "story": "The lamed smith of the Germanic tales who made himself wings and flew from his captor.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Wayland"
+  },
+  {
+   "id": "spell:carmilla",
+   "boss": "nightborn",
+   "boss_name": "Carmilla",
+   "name": "Carmilla's Embrace",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Le Fanu, 1872",
+   "story": "The courteous vampire of Le Fanu's tale, who befriends a girl in a lonely castle and drinks her slowly.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Carmilla"
+  },
+  {
+   "id": "spell:draugr",
+   "boss": "draugr",
+   "boss_name": "The Draugr",
+   "name": "Barrow-Walker's Weight",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Eyrbyggja saga; Grettis saga",
+   "story": "The risen dead of the Icelandic sagas, swollen and heavy, who guard their barrow-gold.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:erlking",
+   "boss": "nightborn",
+   "boss_name": "Erlking",
+   "name": "Erlking's Call",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "German folklore",
+   "story": "The elf-king of the German ballad, who calls to a child riding in his father's arms.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Erlking"
+  },
+  {
+   "id": "spell:gogmagog",
+   "boss": "pitborn",
+   "boss_name": "Gogmagog",
+   "name": "Giant's Cast",
+   "school": "earth",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Geoffrey of Monmouth",
+   "story": "The giant of Albion's founding tale, thrown from a cliff by Corineus the wrestler.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Gogmagog"
+  },
+  {
+   "id": "spell:herne",
+   "boss": "herne-the-hunter",
+   "boss_name": "Herne the Hunter",
+   "name": "Herne's Chase",
+   "school": "earth",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "William Shakespeare, The Merry Wives of Windsor",
+   "story": "The spectral huntsman of Windsor forest, antlered and wreathed in chains, who walks beneath an oak.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hervor",
+   "boss": "shieldmaiden",
+   "boss_name": "Hervor",
+   "name": "Cursed Blade's Oath",
+   "school": "fire",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Hervarar saga",
+   "story": "The shieldmaiden who raised her father's cursed sword from a burning barrow.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Hervor"
+  },
+  {
+   "id": "spell:loki",
+   "boss": "goblin",
+   "boss_name": "Loki",
+   "name": "Loki's Gambit",
+   "school": "fire",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The shape-changing trickster of the Norse tales, who makes the gods laugh and then pays dearly.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Loki"
+  },
+  {
+   "id": "spell:sinfjotli",
+   "boss": "sinfjotli",
+   "boss_name": "Sinfjotli",
+   "name": "Wolf-Skin's Bite",
+   "school": "earth",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Volsunga saga 8",
+   "story": "The son and nephew of Sigmund, who ran as a wolf with his father in the forest.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tam-lin",
+   "boss": "tam-lin",
+   "boss_name": "Tam Lin",
+   "name": "Elf-Knight's Hold",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "The Ballad of Tam Lin (Child 39)",
+   "story": "The knight held by the Fairy Queen, whom Janet won back by holding fast through every shape.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:thjazi",
+   "boss": "thjazi",
+   "boss_name": "Thjazi",
+   "name": "Eagle-Giant's Raid",
+   "school": "wind",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Snorri, Skaldskaparmal",
+   "story": "The giant who took the form of an eagle to seize Idunn and her apples.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:thrym",
+   "boss": "thrym",
+   "boss_name": "Thrym",
+   "name": "Hammer-Thief's Ransom",
+   "school": "frost",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Thrymskvida",
+   "story": "The giant who stole Thor's hammer and asked for Freyja's hand as ransom.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ysbaddaden",
+   "boss": "ysbaddaden",
+   "boss_name": "Ysbaddaden",
+   "name": "Giant's Tasks",
+   "school": "earth",
+   "level": 4,
+   "region": "region:ash-frontier",
+   "source": "Culhwch and Olwen",
+   "story": "The chief giant of Culhwch and Olwen, who set impossible tasks for his daughter's hand.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:balin",
+   "boss": "balin",
+   "boss_name": "Balin",
+   "name": "Dolorous Stroke",
+   "school": "fire",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Malory, Le Morte d'Arthur II",
+   "story": "The knight of the two swords who struck the Dolorous Blow and laid a kingdom waste.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bedivere",
+   "boss": "knight",
+   "boss_name": "Bedivere",
+   "name": "Last Knight's Oath",
+   "school": "holy",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Arthurian legend",
+   "story": "The last knight at Arthur's side, who cast the sword into the water.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Bedivere"
+  },
+  {
+   "id": "spell:count-dracula",
+   "boss": "count-dracula",
+   "boss_name": "Count Dracula",
+   "name": "Count's Midnight Welcome",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Bram Stoker, Dracula, 1897",
+   "story": "The Transylvanian count of Stoker's novel, who greets his guest at midnight and crosses the sea to hunt London.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:fisher-king",
+   "boss": "fisher-king",
+   "boss_name": "The Fisher King",
+   "name": "Wound That Will Not Close",
+   "school": "holy",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Chretien de Troyes, Perceval",
+   "story": "The crippled lord of the Grail castle, whose land withers until the right question is asked.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:grendel",
+   "boss": "pitborn",
+   "boss_name": "Grendel",
+   "name": "Mere-Walker's Fury",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Beowulf",
+   "story": "The night-walker of the mere who stalks the hall of Heorot and tears the sleepers.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Grendel"
+  },
+  {
+   "id": "spell:grendels-mother",
+   "boss": "grendels-mother",
+   "boss_name": "Grendel's Mother",
+   "name": "Mere-Dam's Grief",
+   "school": "frost",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Beowulf",
+   "story": "The monster of the mere who comes to Heorot to avenge her son, and takes the king's best friend.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lagertha",
+   "boss": "shieldmaiden",
+   "boss_name": "Lagertha",
+   "name": "Shieldmaiden's Rally",
+   "school": "fire",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Saxo Grammaticus",
+   "story": "The shieldmaiden of Saxo who fought bare-headed at Ragnar's side.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Lagertha"
+  },
+  {
+   "id": "spell:nimue",
+   "boss": "witch",
+   "boss_name": "Nimue",
+   "name": "Lake's Enchantment",
+   "school": "frost",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Arthurian legend",
+   "story": "The lady of the lake who bound the old enchanter in an everlasting sleep.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Nimue"
+  },
+  {
+   "id": "spell:questing-beast",
+   "boss": "questing-beast",
+   "boss_name": "The Questing Beast",
+   "name": "Questing Beast's Baying",
+   "school": "earth",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Malory; Post-Vulgate Queste",
+   "story": "The beast with a serpent's head and a leopard's body, with the noise of forty hounds in its belly.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sir-ironside",
+   "boss": "sir-ironside",
+   "boss_name": "Sir Ironside",
+   "name": "Red Knight's Sally",
+   "school": "fire",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Malory, Le Morte d'Arthur VII",
+   "story": "The Red Knight of the Red Lands, who proves a gentle lord in Malory's tale of Gareth.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:twrch-trwyth",
+   "boss": "twrch-trwyth",
+   "boss_name": "Twrch Trwyth",
+   "name": "Boar of the Combs",
+   "school": "earth",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Culhwch and Olwen",
+   "story": "The great boar-king who ranged over Wales and Cornwall with the comb and shears between his ears.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:varney",
+   "boss": "nightborn",
+   "boss_name": "Varney",
+   "name": "Varney's Feast",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:ash-frontier",
+   "source": "Varney the Vampire, 1847",
+   "story": "The tortured baronet of the penny serial, who feeds on the living and mourns it.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Varney"
+  },
+  {
+   "id": "spell:ceridwen",
+   "boss": "witch",
+   "boss_name": "Ceridwen",
+   "name": "Year's Cauldron",
+   "school": "poison",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Welsh myth",
+   "story": "The enchantress whose cauldron brewed a year for three drops of wisdom, then chased the thief through every shape.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Ceridwen"
+  },
+  {
+   "id": "spell:ferdiad",
+   "boss": "ferdiad",
+   "boss_name": "Ferdiad",
+   "name": "Ford's Four Days",
+   "school": "fire",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Tain Bo Cuailnge",
+   "story": "Cu Chulainn's foster-brother who held the ford against him for four days at Medb's command.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:green-knight",
+   "boss": "green-knight",
+   "boss_name": "The Green Knight",
+   "name": "Green Beheading",
+   "school": "earth",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Sir Gawain and the Green Knight",
+   "story": "The green challenger who offers a beheading game at Camelot, and keeps the bargain a year on.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gudrun",
+   "boss": "gudrun",
+   "boss_name": "Gudrun",
+   "name": "Gudrun's Vengeance",
+   "school": "fire",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Volsunga saga; Atlakvida",
+   "story": "The Volsung widow whose grief turned into a terrible vengeance on her husband's house.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hrungnir",
+   "boss": "hrungnir",
+   "boss_name": "Hrungnir",
+   "name": "Stone-Giant's Duel",
+   "school": "earth",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Snorri, Skaldskaparmal",
+   "story": "The stone-hearted giant who challenged Thor to a duel and was crushed beneath his own whetstone.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lambton-worm",
+   "boss": "lambton-worm",
+   "boss_name": "The Lambton Worm",
+   "name": "Wear Worm's Coil",
+   "school": "poison",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Cuthbert Sharp, The Bishoprick Garland",
+   "story": "The worm that coiled round Penshaw Hill after a young lord fished it from the Wear and cast it into a well.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mordred",
+   "boss": "nightborn",
+   "boss_name": "Mordred",
+   "name": "Camlann's Betrayal",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Arthurian legend",
+   "story": "The traitor of Camlann, who seized the crown and fell in the last battle with the king.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Mordred"
+  },
+  {
+   "id": "spell:morgan-le-fay",
+   "boss": "witch",
+   "boss_name": "Morgan le Fay",
+   "name": "Avalon's Sister",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Arthurian legend",
+   "story": "Arthur's half-sister, a healer and an enchantress, whose schemes unsettle Camelot.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Morgan le Fay"
+  },
+  {
+   "id": "spell:scathach",
+   "boss": "shieldmaiden",
+   "boss_name": "Scathach",
+   "name": "Warrior-Teacher's Gae",
+   "school": "fire",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Irish myth",
+   "story": "The warrior-woman of Skye, who trained Cu Chulainn in the arts of war.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Scathach"
+  },
+  {
+   "id": "spell:starkad",
+   "boss": "starkad",
+   "boss_name": "Starkad",
+   "name": "Starkad's Wager",
+   "school": "fire",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Saxo Grammaticus, Gesta Danorum 6-8",
+   "story": "The Danish champion cursed with three lifetimes of crime, who struck down his own lord.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:utgarda-loki",
+   "boss": "utgarda-loki",
+   "boss_name": "Utgarda-Loki",
+   "name": "Illusion's Trials",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Snorri, Gylfaginning 44-47",
+   "story": "The giant-king whose illusions set Thor to drain the sea, lift the cat and wrestle old age.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:vortigern",
+   "boss": "vortigern",
+   "boss_name": "Vortigern",
+   "name": "Fallen Tower",
+   "school": "earth",
+   "level": 6,
+   "region": "region:ash-frontier",
+   "source": "Geoffrey of Monmouth, Historia Regum Britanniae",
+   "story": "The high king whose tower kept falling, until the buried dragons were found.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:angantyr",
+   "boss": "angantyr",
+   "boss_name": "Angantyr",
+   "name": "Barrow-Father's Warning",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Hervarar saga",
+   "story": "The dead berserker in his burning barrow, who gave up the cursed sword only at his daughter's urging.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bodvar-bjarki",
+   "boss": "bodvar-bjarki",
+   "boss_name": "Bodvar Bjarki",
+   "name": "Bear-Champion",
+   "school": "earth",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Hrolfs saga kraka",
+   "story": "King Hrolf's champion who fought in the shape of a great bear while his body slept.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:boudica",
+   "boss": "shieldmaiden",
+   "boss_name": "Boudica",
+   "name": "Queen of the Iceni",
+   "school": "fire",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "British history",
+   "story": "The British queen who rose against the Roman governor and burned three cities.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Boudica"
+  },
+  {
+   "id": "spell:conall-cernach",
+   "boss": "conall-cernach",
+   "boss_name": "Conall Cernach",
+   "name": "Conall's Vengeance",
+   "school": "fire",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Tain Bo Cuailnge; Scela Mucce Meic Datho",
+   "story": "The Red Branch champion who kept a severed head in his belt and was famed for vengeance.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:diarmuid",
+   "boss": "diarmuid-ua-duibhne",
+   "boss_name": "Diarmuid Ua Duibhne",
+   "name": "Love-Spot's Glance",
+   "school": "fire",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Toraigheacht Dhiarmada agus Ghrainne",
+   "story": "The Fenian champion whose love-spot made women love him, and who fled with Grainne.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:fergus",
+   "boss": "fergus-mac-roich",
+   "boss_name": "Fergus mac Roich",
+   "name": "Fergus's Sword",
+   "school": "fire",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Tain Bo Cuailnge",
+   "story": "The exiled Ulster king whose broad sword could strike off the tops of hills.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gawain",
+   "boss": "knight",
+   "boss_name": "Gawain",
+   "name": "Sun-Strong Hour",
+   "school": "fire",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Arthurian legend",
+   "story": "The Orkney knight whose strength grew toward noon and ebbed as the sun went down.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Gawain"
+  },
+  {
+   "id": "spell:gullveig",
+   "boss": "gullveig",
+   "boss_name": "Gullveig",
+   "name": "Thrice-Burned Gold",
+   "school": "fire",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Voluspa",
+   "story": "The gold-drink of the Voluspa, burned three times and living still, who began the first war.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:macbeth",
+   "boss": "macbeth",
+   "boss_name": "Macbeth",
+   "name": "Moray's Crown",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Holinshed, Chronicles; Shakespeare, Macbeth",
+   "story": "The Scottish king of the play, who murders his guest for a crown and rules in fear until Birnam Wood comes.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:medb",
+   "boss": "medb",
+   "boss_name": "Medb",
+   "name": "Queen of Connacht",
+   "school": "fire",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Tain Bo Cuailnge",
+   "story": "The Connacht queen who set out on the cattle raid of Cooley to match her husband's wealth.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mimir",
+   "boss": "mimir",
+   "boss_name": "Mimir",
+   "name": "Well of Mimir",
+   "school": "holy",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Snorri, Ynglinga saga 4; Voluspa",
+   "story": "The wise being whose head Odin consulted at the well of knowledge.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:roland",
+   "boss": "knight",
+   "boss_name": "Roland",
+   "name": "Oliphant's Blast",
+   "school": "wind",
+   "level": 7,
+   "region": "region:ash-frontier",
+   "source": "Song of Roland",
+   "story": "The paladin of Charlemagne who blew his horn too late at Roncesvalles and died on the field.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Roland"
+  },
+  {
+   "id": "spell:aethelflaed",
+   "boss": "aethelflaed",
+   "boss_name": "Aethelflaed",
+   "name": "Lady of the Mercians",
+   "school": "holy",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Anglo-Saxon Chronicle (Mercian Register)",
+   "story": "The warrior-ruler of the Mercians in the tenth century, who built burhs against the Vikings; honourable Respectful win line.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:arawn",
+   "boss": "executioner",
+   "boss_name": "Arawn",
+   "name": "Annwn's Hunt",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Welsh myth",
+   "story": "The king of Annwn, who rode with his pale hounds and traded places with a mortal prince.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Arawn"
+  },
+  {
+   "id": "spell:black-agnes",
+   "boss": "black-agnes-of-dunbar",
+   "boss_name": "Black Agnes of Dunbar",
+   "name": "Dunbar's Defiance",
+   "school": "frost",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Andrew of Wyntoun, Orygynale Cronykil (c. 1420)",
+   "story": "The Countess of Dunbar, who held her castle for five months against the English siege in 1338; honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:grettir",
+   "boss": "grettir",
+   "boss_name": "Grettir",
+   "name": "Outlaw's Grip",
+   "school": "earth",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Grettis saga",
+   "story": "The strongest outlaw of Iceland, who wrestled the draugr Glamr and fought for nineteen years.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hel",
+   "boss": "executioner",
+   "boss_name": "Hel",
+   "name": "Hel's Half-Face",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The half-living, half-dead daughter of Loki, who rules the realm of the dishonourable dead.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Hel"
+  },
+  {
+   "id": "spell:ivar",
+   "boss": "ivar-the-boneless",
+   "boss_name": "Ivar the Boneless",
+   "name": "Serpent's Revenge",
+   "school": "fire",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Ragnarssona thattr; Anglo-Saxon Chronicle",
+   "story": "The Viking leader of the Great Heathen Army who avenged his father Ragnar upon Northumbria.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lancelot",
+   "boss": "knight",
+   "boss_name": "Lancelot",
+   "name": "Lake Knight's Sword",
+   "school": "fire",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Arthurian legend",
+   "story": "The greatest knight of the Round Table, torn between his king and his queen.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Lancelot"
+  },
+  {
+   "id": "spell:morrigan",
+   "boss": "executioner",
+   "boss_name": "The Morrigan",
+   "name": "Washer at the Ford",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Irish myth",
+   "story": "The Irish war-goddess of omens, who washes the armour of those who will die.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "The Morrigan"
+  },
+  {
+   "id": "spell:percival",
+   "boss": "percival",
+   "boss_name": "Percival",
+   "name": "Grail Fool's Question",
+   "school": "holy",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Chretien de Troyes, Perceval",
+   "story": "The innocent knight who saw the Grail procession and failed to ask the question.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ragnar",
+   "boss": "veteran",
+   "boss_name": "Ragnar Lothbrok",
+   "name": "Serpent-Pit Song",
+   "school": "fire",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Ragnar's saga",
+   "story": "The shaggy-breeched hero of the sagas who slew a great serpent for a princess; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Ragnar Lothbrok"
+  },
+  {
+   "id": "spell:siegfried",
+   "boss": "knight",
+   "boss_name": "Siegfried",
+   "name": "Dragon-Blood Bath",
+   "school": "fire",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Nibelungenlied",
+   "story": "The dragon-slayer of the Nibelungenlied, vulnerable only where a linden leaf had fallen.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Siegfried"
+  },
+  {
+   "id": "spell:tristan",
+   "boss": "tristan",
+   "boss_name": "Tristan",
+   "name": "Love-Potion's Pain",
+   "school": "fire",
+   "level": 8,
+   "region": "region:ash-frontier",
+   "source": "Gottfried von Strassburg, Tristan; Malory",
+   "story": "The knight of Cornwall who drank the love-potion meant for King Mark's bride.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:brynhildr",
+   "boss": "shieldmaiden",
+   "boss_name": "Brynhildr",
+   "name": "Ring of Flame",
+   "school": "fire",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The shieldmaiden ringed by fire who awaits the hero bold enough to cross it.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Brynhildr"
+  },
+  {
+   "id": "spell:cu-chulainn",
+   "boss": "cu-chulainn",
+   "boss_name": "Cu Chulainn",
+   "name": "Hound of Ulster's Rage",
+   "school": "fire",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Tain Bo Cuailnge",
+   "story": "The Hound of Ulster, whose warp-spasm in the Tain turned him into a terror to behold.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:fionn",
+   "boss": "fionn-mac-cumhaill",
+   "boss_name": "Fionn mac Cumhaill",
+   "name": "Salmon of Knowledge",
+   "school": "holy",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Macgnimartha Finn; Acallam na Senorach",
+   "story": "The leader of the Fianna, who burned his thumb on the salmon of wisdom and thereafter knew the truth.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hrolf-kraki",
+   "boss": "hrolf-kraki",
+   "boss_name": "Hrolf Kraki",
+   "name": "Hrolf's Hall",
+   "school": "holy",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Hrolfs saga kraka",
+   "story": "The Danish king of Hleidr, whose hall and champions were known in every northern saga.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:merlin",
+   "boss": "witch",
+   "boss_name": "Merlin",
+   "name": "Merlin's Prophecy",
+   "school": "holy",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Arthurian legend",
+   "story": "The enchanter of Arthur's court, whose prophecies of Geoffrey of Monmouth shaped a kingdom.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Merlin"
+  },
+  {
+   "id": "spell:odin",
+   "boss": "witch",
+   "boss_name": "Odin",
+   "name": "All-Father's Gaze",
+   "school": "holy",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The one-eyed wanderer who gave an eye for wisdom and hung nine nights for the runes.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Odin"
+  },
+  {
+   "id": "spell:surtr",
+   "boss": "pitborn",
+   "boss_name": "Surtr",
+   "name": "Surtr's Flame",
+   "school": "fire",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The fire-giant who will break the bridge and burn the world at Ragnarok.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Surtr"
+  },
+  {
+   "id": "spell:thor",
+   "boss": "knight",
+   "boss_name": "Thor",
+   "name": "Hammer-Thrower",
+   "school": "wind",
+   "level": 9,
+   "region": "region:ash-frontier",
+   "source": "Norse myth",
+   "story": "The thunder-god of the Norse tales, who fights the giants and wades the rivers of the world.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Thor"
+  },
+  {
+   "id": "spell:beowulf",
+   "boss": "veteran",
+   "boss_name": "Beowulf",
+   "name": "Dragon's Bane",
+   "school": "fire",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Beowulf",
+   "story": "The Geatish hero who slew Grendel and his mother, and in old age gave his life against the dragon.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Beowulf"
+  },
+  {
+   "id": "spell:fafnir",
+   "boss": "fafnir",
+   "boss_name": "Fafnir",
+   "name": "Fafnir's Hoard",
+   "school": "fire",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Volsunga saga; Fafnismal",
+   "story": "The dwarf who took the shape of a dragon to guard the cursed gold, and spoke to Sigurd as he died.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:fenrir",
+   "boss": "fenrir",
+   "boss_name": "Fenrir",
+   "name": "Gleipnir's Fetter",
+   "school": "frost",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Snorri, Prose Edda",
+   "story": "The great wolf bound by the gods with a cord of impossible things, who will break free at the end.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:galahad",
+   "boss": "galahad",
+   "boss_name": "Galahad",
+   "name": "Siege Perilous",
+   "school": "holy",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Malory; La Queste del Saint Graal",
+   "story": "The pure knight who sat in the Siege Perilous and achieved the Grail.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jormungandr",
+   "boss": "jormungandr",
+   "boss_name": "Jormungandr",
+   "name": "World-Serpent's Girth",
+   "school": "poison",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Snorri, Prose Edda",
+   "story": "The great serpent that encircles the world, whose poison fells Thor at the last.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nidhogg",
+   "boss": "nidhogg",
+   "boss_name": "Nidhogg",
+   "name": "Root-Gnawer",
+   "school": "poison",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Voluspa; Snorri, Gylfaginning",
+   "story": "The dragon that gnaws at the roots of the world-tree under the earth.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:uther-pendragon",
+   "boss": "uther-pendragon",
+   "boss_name": "Uther Pendragon",
+   "name": "Dragon-Star's Rule",
+   "school": "holy",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Geoffrey of Monmouth, Historia Regum Britanniae",
+   "story": "The king who saw a dragon in the sky, and begot Arthur by Merlin's art.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ymir",
+   "boss": "ymir",
+   "boss_name": "Ymir",
+   "name": "First Giant's Frost",
+   "school": "frost",
+   "level": 10,
+   "region": "region:ash-frontier",
+   "source": "Snorri, Gylfaginning",
+   "story": "The first giant, from whose body the gods made earth, sea and sky.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  }
+ ]
+}
