@@ -1,6 +1,7 @@
 import { ROSTER, supportsFinishers, resolveFinisher } from '../roster.ts';
 import * as THREE from 'three';
 import { SPECIAL_STRUCK, specialStage } from './special-look.ts';
+import { bloodHidden, type BloodMode } from './blood-mode.ts';
 import { resolveSparringPreview } from './sparring-specials.ts';
 import { gait, SPECIAL_MODES, type SpecialFx as ModeFx } from './special-modes.ts';
 import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-school.ts';
@@ -78,7 +79,7 @@ export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapo
 // the ground, `background` and `fog` are the world's, and the page's renderer draws it (no second GL context). The page places `holder` with the inverse of where the duel stands in
 // the world. Without a mount (every Pit and game page) none of this runs.
 export type WorldMount = { renderer: THREE.WebGLRenderer; holder: THREE.Object3D; background: THREE.Color | THREE.Texture | null; fog: THREE.Fog | THREE.FogExp2 | null; walkCam?: { back: number; up: number } };   // walkCam: the walk camera's distance behind the hero and height (metres): a world fight keeps them and only the aim locks on
-const worldArena = (): Arena => ({ group: new THREE.Group(), floor: new THREE.Mesh(), sky: Object.assign(new THREE.Texture(), { image: { width: 1 } }), materials: undefined, ready: Promise.resolve(), update() {}, raiseGate() {} }) as unknown as Arena;
+const worldArena = (): Arena => ({ group: new THREE.Group(), floor: new THREE.Mesh(), sky: Object.assign(new THREE.Texture(), { image: { width: 1 } }), materials: undefined, ready: Promise.resolve(), update() {}, raiseGate() {}, thinCrowd() {} }) as unknown as Arena;
 export function createScene(
   canvas: HTMLCanvasElement,
   // `kind` is the machine-readable outcome; `status` is only ever display text — main.ts must never infer readiness or
@@ -408,7 +409,7 @@ export function createScene(
   let bloodSources: ReturnType<typeof finisherBloodSources> = [];
   const fx = createFightFx({ scene, dropTexture, splatTexture });   // moving the Pit's contact effects into src/fight/fx.ts
   const { clash, sparks, splats, bodyWounds, blade } = fx;
-  let bloodMode: 'red' | 'dark' | 'off' = 'red';
+  let bloodMode: BloodMode = 'red';
   let finisherOverride: FinisherId | null = null; // dev/test pick (owner 2026-09-19): swap which finisher plays on a ceremonial kill; null = the spec's selection
   // Rotation memory (owner 2026-09-20: never the same ceremony twice in a row). `lastFinisher` is the ceremony the previous
   // fight showed and feeds this fight's pick; `fightFinisher` is this fight's, rolled into `lastFinisher` when the next
@@ -627,9 +628,9 @@ export function createScene(
         })),
       };
     },
-    setBloodMode(mode: 'red' | 'dark' | 'off') {
+    setBloodMode(mode: BloodMode) {
       bloodMode = mode;
-      finisherBlood.group.visible = mode !== 'off' && bloodSources.length > 0;
+      finisherBlood.group.visible = !bloodHidden(mode) && bloodSources.length > 0;
       splats.clear(true);
       if (fx.state.flesh) {
         fx.state.impact = 0;
@@ -678,6 +679,13 @@ export function createScene(
         if (!world) renderer.setPixelRatio(ratio);   // a world mount keeps the page's renderer as it is
         resize();
       }
+    },
+    // The client governor's levers (governor.ts), the ones that cut draws and triangles (quality.ts already lowers the pixel ratio on frame time): 'shadows' turns the sun's shadow pass off (it re-draws every caster),
+    // 'crowd' drops every second spectator.
+    degrade(lever: 'shadows' | 'crowd') {
+      if (lever === 'crowd') { arena.thinCrowd(); return; }
+      renderer.shadowMap.enabled = false; sun.castShadow = false;
+      scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined; if (m) for (const x of Array.isArray(m) ? m : [m]) x.needsUpdate = true; });   // the programs drop their shadow code
     },
     restoreGraphics() {
       this.lowerResolution();
@@ -838,7 +846,7 @@ export function createScene(
       fx.update(dt);   // moving the Pit's contact effects into src/fight/fx.ts: the clash sparks, the generic sparks, the splats
       // The severed head (decapitation): gravity, a bounce or two, then a roll without slipping until friction stops it.
       if (severHead) {
-        severHead.group.visible = bloodMode !== 'off';
+        severHead.group.visible = !bloodHidden(bloodMode);
         stepSeveredHead(severHead, dt);
       }
       let animationDt = frozen ? 0 : dt;   // a Hamstrung blow's hit-stop zeroes it below
@@ -968,7 +976,7 @@ export function createScene(
       if (
         warriors &&
         isTemplate(finisher, 'sever') &&
-        bloodMode !== 'off' &&
+        !bloodHidden(bloodMode) &&
         !severHead &&
         practice.finish?.victim === 1 &&
         victimProgress >= 0.05 &&
