@@ -1,18 +1,13 @@
 import * as THREE from 'three';
 import { SCHOOLS, type School } from './schools.ts';
+import SCHOOL_ROWS from './special-schools.json' with { type: 'json' };
 
 // One colour per spell school (Strategy brief #1507 item 4: WoW, EverQuest). A LOOK TEST behind `?look=schools`, presentation only: no sim, no new particles, no
 // new files in the default path. Every special's effect (trail, ground mark, status tint) is drawn in its own scene group (special-presentation.ts); with the flag on
 // each material in that group is pulled to its school's colour, so a busy fight reads on a phone by colour. Specials with no school here keep their own colours.
 export { SCHOOLS, type School };   // the schools are rows (school-defs.json, schools.ts), not a union
 // Keyed by the special's id (special-identity.ts / class-special-identity.ts). One line per special, so Strategy can re-map in review.
-export const SCHOOL_OF: Readonly<Record<string, School>> = {
-  surtr: 'fire', haze: 'fire', wake: 'fire',                          // Ash Fall, Achilles' wrath, the Witch's wake
-  hades: 'shadow', nyx: 'shadow', thanatos: 'shadow', echo: 'shadow', price: 'shadow', stirring: 'shadow',
-  flies: 'poison', stain: 'poison', breath: 'poison', tempo: 'poison', pulse: 'poison',
-  tithe: 'holy', centurion: 'holy',
-  mist: 'frost', storm: 'frost',
-};
+export const SCHOOL_OF: Readonly<Record<string, School>> = Object.fromEntries((SCHOOL_ROWS.rows as readonly { id: string; school: School }[]).map((r) => [r.id, r.school]));   // special-schools.json: one row per special
 const looks = (search: string) => (new URLSearchParams(search).get('look') ?? '').split(',');
 // Dom's pick (Strategy, 2026-10-07): SOFT is the shipped default. `?look=schools-off` is today's own colours (the before frame); `?look=schools` plain and `schools3` dark stay for comparison.
 export const schoolsFlag = (search: string) => !looks(search).includes('schools-off');
