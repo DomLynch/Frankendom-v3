@@ -10,8 +10,8 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import SHEET_DEFS from './sheet-defs.json' with { type: 'json' };
 import SHEET_MANIFEST from './sheet-defs.manifest.json' with { type: 'json' };
 
-export type Dial = { readonly id: string; readonly name: string; readonly code: number; readonly base: number; readonly cap: number; readonly floor: number; readonly pool: string };
-export type SkillRow = { readonly id: string; readonly name: string; readonly base: number; readonly cap: number; readonly pool: string };
+export type Dial = { readonly id: string; readonly code: number; readonly base: number; readonly cap: number; readonly floor: number; readonly pool: string };
+export type SkillRow = { readonly id: string; readonly base: number; readonly cap: number; readonly pool: string };
 export type PointsPool = { readonly id: string; readonly perLevel: number; readonly maxLevel: number; readonly total: number; readonly gear: number };   // gear: the most a worn set adds in all (25 shape + 25 quality)
 export type Sheet = Readonly<Record<string, number>>;   // dial id -> the player's EFFECTIVE value (build plus any worn gear), floor..cap; a dial at its base is simply absent
 // A stored build (Backend's field): the level, and `placed` = the points placed on each row (a dial id or a skill id; a dial point lifts the dial at once, a skill point lifts that skill's CEILING).

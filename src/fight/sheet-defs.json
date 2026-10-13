@@ -15,8 +15,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Attack"
+      "pool": "points"
     },
     {
       "id": "spellPower",
@@ -24,8 +23,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Spell Power"
+      "pool": "points"
     },
     {
       "id": "armour",
@@ -33,8 +31,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Armour"
+      "pool": "points"
     },
     {
       "id": "magicResist",
@@ -42,8 +39,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Magic Resist"
+      "pool": "points"
     },
     {
       "id": "health",
@@ -51,8 +47,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Health"
+      "pool": "points"
     },
     {
       "id": "stamina",
@@ -60,8 +55,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Stamina"
+      "pool": "points"
     },
     {
       "id": "poise",
@@ -69,8 +63,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Poise"
+      "pool": "points"
     },
     {
       "id": "luck",
@@ -78,8 +71,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Luck"
+      "pool": "points"
     },
     {
       "id": "focus",
@@ -87,8 +79,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Focus"
+      "pool": "points"
     },
     {
       "id": "recovery",
@@ -96,8 +87,7 @@
       "base": 0,
       "cap": 100,
       "floor": 0,
-      "pool": "points",
-      "name": "Recovery"
+      "pool": "points"
     }
   ],
   "skills": [
@@ -105,78 +95,67 @@
       "id": "sword",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Sword"
+      "pool": "points"
     },
     {
       "id": "axe",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Axe"
+      "pool": "points"
     },
     {
       "id": "spear",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Spear"
+      "pool": "points"
     },
     {
       "id": "bow",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Bow"
+      "pool": "points"
     },
     {
       "id": "fire",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Fire"
+      "pool": "points"
     },
     {
       "id": "frost",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Frost"
+      "pool": "points"
     },
     {
       "id": "shadow",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Shadow"
+      "pool": "points"
     },
     {
       "id": "earth",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Earth"
+      "pool": "points"
     },
     {
       "id": "wind",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Wind"
+      "pool": "points"
     },
     {
       "id": "holy",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Holy"
+      "pool": "points"
     },
     {
       "id": "poison",
       "base": 0,
       "cap": 100,
-      "pool": "points",
-      "name": "Poison"
+      "pool": "points"
     }
   ]
 }
