@@ -25,6 +25,10 @@ export const GEAR_IN_FIGHTS: boolean = true;
 // An illegal stored build gives none (the server would refuse it too). `own.ref` is the reference the record names; null = the default build, which a sheet with no reference claims.
 export const sheetFor = (loot: Loot | undefined, own: { level: number; placed: Record<string, number> } | undefined): Sheet | undefined =>
   own && validateBuild({ level: own.level, placed: own.placed }).length === 0 ? sheetOf({ level: own.level, placed: own.placed }, wornGear(loot?.equipped ?? {}, tierLookup(loot))) : undefined;
+// The sheet a signed-in career fight is fought on (Auditor 2026-10-13): the sweeps check the worn gear the SERVER holds (origins_items, frozen at settle), and a signed-in player's equips go to the server and its shadow
+// (gear-server.ts), never to the device ledger `real.loot`. So the worn set is read from the server's view, and only once it has answered; until then there is no sheet (a naked fight, as before the flip).
+export const fightSheet = (real: { loot?: Loot }, own: { level: number; placed: Record<string, number> } | undefined, gear: { ready(): boolean; profileFor(real: { loot?: Loot }): { loot?: Loot } } | undefined): Sheet | undefined =>
+  gear?.ready() ? sheetFor(gear.profileFor(real).loot, own) : undefined;
 export function buildOf(profile?: Profile): Build { void profile; return { level: 0, placed: {} }; }
 // The sheet a live fight is fought with: the player's build with the worn set's deltas on top, `undefined` when nothing is off base (the naked, default-build fight, byte for byte).
 export const sheetOfLoot = (loot: Loot | undefined, build: Build = buildOf()): Sheet | undefined => sheetOf(build, wornGear(loot?.equipped ?? {}, tierLookup(loot)));
