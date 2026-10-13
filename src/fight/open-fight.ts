@@ -11,8 +11,7 @@ import type { Event, Fighter, Input, Phase } from './world.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
 export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[] };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
-// open-world: the open world has no guard-side thumb: a held guard covers the blow from the front (RULES.directionalGuard off), the Pit's other rules stand.
-const OPEN_RULES = { ...RULES, directionalGuard: false } as unknown as typeof RULES;
+// open-world: the guard-side thumbs exist here as they always have in the Pit (Dom 2026-10-13): the world steps the Pit's RULES unchanged (directionalGuard on) and carries the held side in the Input (intentOf).
 const TICK = 1 / 60, FAR_M = 1000;
 export const IDLE_INPUT: Input = { x: 0, z: 0 };
 const seedOf = (id: string): number => { let h = 731; for (const c of id) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0; return h; };
@@ -68,7 +67,7 @@ function intentOf(input: Input, guarding: boolean, lock: boolean): Intent {
   const base = idleIntent();
   const action = input.special || input.skill ? 'skill' : input.roll ? 'dodge' : input.attack === 'heavy' ? 'heavy' : input.attack === 'thrust' ? 'thrust' : input.attack === 'kick' ? 'kick' : input.attack === 'light' ? 'light' : input.guard && !guarding ? 'parry' : null;   // open-world: a guard pressed fresh is the Pit's parry tap, held it is the standing guard
   const move = input.roll ? { x: input.roll.x, z: input.roll.z, yaw: 0, run: false } : { x: input.x, z: input.z, yaw: 0, run: !!input.run };
-  return { ...base, move, action, guard: !!input.guard, lock };   // open-world: lock-on is the Pit's (he turns toward the foe while ready and in a windup); alone there is nothing to lock
+  return { ...base, move, action, guard: !!input.guard, ...(input.guard && input.guardDirection ? { guardDirection: input.guardDirection } : {}), lock };   // open-world: lock-on is the Pit's (he turns toward the foe while ready and in a windup); alone there is nothing to lock
 }
 
 /** One world step of a bout: `ticks` Pit ticks (60 Hz). `a` is slot 0 (a player), `b` slot 1 (a creature or a player; undefined when alone). Writes the result into `a` and `b` (the caller's copies) and returns the events. */
@@ -90,7 +89,7 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
     let intentB: Intent = idleIntent();
     if (b && ai && s.profile) { const brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent; }
     else if (b) { intentB = intentOf(press(inputB), guardB, true); guardB = !!inputB.guard; }
-    const next = stepDuel(before, [intentA, intentB], OPEN_RULES);
+    const next = stepDuel(before, [intentA, intentB]);
     out.push(...eventsOf(next.events, [a.id, b?.id ?? ''], next, [a, b ?? a]));
     duel = { ...next, events: [] };
     a.cc = next.fighters[0].cc; if (b) b.cc = next.fighters[1].cc;   // the world keeps the ladders: the next bout (or joiner) steps the same one

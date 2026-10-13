@@ -3,7 +3,8 @@
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
 import { AGGRO_M, duelFor, duelOf, newWorld, pairs, player, type Event, type Fighter, type World } from './world.ts';
 import { NAKED, type Loadout } from './gear-stats.ts';
-import { OPPONENTS, DEFAULT_WEAPON, type WeaponId } from './moves.ts';
+import { OPPONENTS, DEFAULT_WEAPON, type Direction, type WeaponId } from './moves.ts';
+import type { Sheet } from './sheet-rows.ts';
 import type { CombatEvent, Duel, Finish } from './duel.ts';
 import { selectFinisher, finisherSeconds, type FinisherId } from './finishers.ts';
 import { catalogueRow } from './catalogue-rows.ts';
@@ -31,7 +32,7 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   onCreatureGone?(id: string): void;   // it was released or has fallen
   onEvent?(ev: Event): void;       // every combat event, after the page has shown it (the spawn client, spawn-net.ts onCombatEvent)
   canPlay?: (finisher: FinisherId) => boolean;   // which finishers this client can show on a creature (default: plainDeath only); the pick is selectFinisher cut down to the creature's row (src/creature-gore.ts) and to these
-  hero?: () => { gear: Loadout; level: number; health?: number };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
+  hero?: () => { gear: Loadout; level: number; health?: number; weapon?: WeaponId; sheet?: Sheet };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
 };
 /** One pair's frame of contacts for the client's effects: the Pit events the loop made this frame (ev.pit), the pair's duel, and where the two stand (world metres). Drained by takeContacts(). */
 export type PairContacts = { foe: string; kind: string; finisher?: FinisherId; events: CombatEvent[]; duel: Duel; hero: { x: number; z: number; facing: number }; foeAt: { x: number; z: number; facing: number; health: number } };
@@ -44,16 +45,16 @@ export function finishOf(kind: string, finish: Finish, weapons: readonly [Weapon
 }
 
 export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
-  const mine = (): { gear: Loadout; level: number; health?: number } => d.hero?.() ?? { gear: NAKED, level: 1 };
-  const body = (x: number, z: number, facing: number): Fighter => { const { gear, level, health } = mine(), p = player(ME, x, z, facing, gear, level); return health ? { ...p, health, maxHealth: health } : p; };
-  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, guardHeld = false, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
+  const mine = (): { gear: Loadout; level: number; health?: number; weapon?: WeaponId; sheet?: Sheet } => d.hero?.() ?? { gear: NAKED, level: 1 };
+  const body = (x: number, z: number, facing: number): Fighter => { const { gear, level, health, weapon, sheet } = mine(), p = player(ME, x, z, facing, gear, level, null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
+  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
   const seedOf = (id: string): number => { let h = steps; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761); return h >>> 0; };   // the fight's tick and a creature's id: a roll of presentation, the same on a replay
   const gearOf = () => { const { gear, level } = mine(), p = player(ME, 0, 0, 0, gear, level); return { attack: p.attack, res: p.res, level: p.level, shielded: p.shielded }; };
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
-  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, attack: g.attack, res: g.res, weapon: DEFAULT_WEAPON, health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
+  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, attack: g.attack, res: g.res, weapon: mine().weapon ?? DEFAULT_WEAPON, health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
   function release(id: string) { recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
@@ -85,7 +86,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     press(kind: 'light' | 'heavy' | 'thrust' | 'kick' = 'light') { pendingAttack = kind; },
     /** A roll / dodge pressed: the world-axis direction (zero = where he faces). */
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
-    guard(held: boolean) { guardHeld = held; },
+    guard(held: boolean, side: Direction | null = null) { guardHeld = held; guardSide = side; },
     update(dt: number, hero: { x: number; z: number; facing: number }): { dx: number; dz: number } {
       const mobs = d.mobs(); if (!mobs) return { dx: 0, dz: 0 };
       if (!heroDead) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
@@ -95,7 +96,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       while (acc >= STEP) {
         acc -= STEP; steps++; stepped = true;
         for (const p of pairs(world)) lastDuel.set(p.foe, p.duel);
-        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll); first = false;
+        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll, guardSide); first = false;
         recorder.step(step);
         const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }

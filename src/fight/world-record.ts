@@ -5,7 +5,7 @@
 import { CAPS } from './gear-caps.ts';
 import { M } from './detmath.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
-import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type WeaponId } from './moves.ts';
+import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
@@ -15,6 +15,7 @@ export const WORLD_SIM_VERSION = 4;
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
 const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'kick'];
+const SIDES: readonly (Direction | null)[] = [null, 'right', 'left', 'overhead', 'thrust', 'low'];   // the held guard side (the Pit's thumbs), packed in flag bits 6-8; absent = the straight guard
 /** The most a pose may move between two steps, m/s: a run, or a roll's own displacement (the hero's cut reaches no farther). Measured against a real roll in world-record.test.ts. */
 export const MAX_HERO_MPS = 12;
 export const MAX_CREATURES = 8, MAX_EVENTS = 256;
@@ -27,7 +28,7 @@ export type RecordHero = { level: number; attack: number; res: number; weapon: W
 export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number };   // the creature at its pose (m) when it joined, before step s
 export type ReleaseEvent = { s: number; id: string };
 /** One step: the pose the page gave the loop (null = the loop's own body), the presses (attack and roll already nulled when the hero is dead), and the held guard. Integers: cm, milliradian, thousandths. */
-export type WorldStep = { pose: { x: number; z: number; f: number } | null; guard: boolean; attack: Press | null; roll: { x: number; z: number } | null };
+export type WorldStep = { pose: { x: number; z: number; f: number } | null; guard: boolean; gd: Direction | null; attack: Press | null; roll: { x: number; z: number } | null };
 export type WorldRecord = { rv: number; wv: number; hero: RecordHero; joins: JoinEvent[]; releases: ReleaseEvent[]; steps: WorldStep[] };
 
 export const cm = (v: number): number => Math.round(v * 100) || 0, mrad = (v: number): number => Math.round(v * 1000) || 0;   // || 0: never -0
@@ -37,12 +38,12 @@ const fromCm = (n: number): number => n / 100, fromMrad = (n: number): number =>
 export function stepHero(world: World, step: WorldStep, gear: { attack: number; res: number; level: number; shielded: boolean }): { world: World; events: Event[] } {
   let w = world;
   if (step.pose) { const m = w.fighters[0]!; w = { ...w, fighters: [{ ...m, ...gear, x: fromCm(step.pose.x), z: fromCm(step.pose.z), facing: m.phase === 'roll' ? m.facing : fromMrad(step.pose.f) }, ...w.fighters.slice(1)] }; }
-  return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, guard: step.guard, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
+  return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, guard: step.guard, guardDirection: step.gd, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
 }
 export const joinFighter = (j: JoinEvent): Fighter => creature(j.id, j.kind, fromCm(j.x), fromCm(j.z), 0, j.level);
 /** The page's numbers, quantized: what the live loop must step with so a replay matches. */
-export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null): WorldStep => ({
-  pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null,
+export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null, gd: Direction | null = null): WorldStep => ({
+  pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, gd: guard ? gd : null, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null,
 });
 /** The ladder holds no mark that still counts at `tick` (the world clock in Pit ticks): every mark is older than its kind's window (cc-ladder.ts markOf, same test, same `end ?? last` reference), so the next landing finds
  *  it exactly as it would find an empty ladder, now and at every later tick. The ladder is never pruned, so 'empty' would stay false for the rest of the session after one stun; 'quiet' is the same fact. */
@@ -84,7 +85,7 @@ export function packWorldRecord(r: WorldRecord): Uint8Array {
   let px = 0, pz = 0, pf = 0;
   const body: number[] = [];
   for (const s of r.steps) {
-    putVar(body, (s.pose ? 1 : 0) | (s.guard ? 2 : 0) | (PRESSES.indexOf(s.attack) << 2) | (s.roll ? 32 : 0));
+    putVar(body, (s.pose ? 1 : 0) | (s.guard ? 2 : 0) | (PRESSES.indexOf(s.attack) << 2) | (s.roll ? 32 : 0) | (SIDES.indexOf(s.guard ? s.gd : null) << 6));
     if (s.pose) { putVar(body, zig(s.pose.x - px)); putVar(body, zig(s.pose.z - pz)); putVar(body, zig(s.pose.f - pf)); px = s.pose.x; pz = s.pose.z; pf = s.pose.f; }
     if (s.roll) { putVar(body, zig(s.roll.x)); putVar(body, zig(s.roll.z)); }
   }
@@ -107,11 +108,11 @@ export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   const releases = h.r.map((e): ReleaseEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string') throw Error('World record: bad release'); return { s: e[0], id: e[1] }; });
   const steps: WorldStep[] = []; let px = 0, pz = 0, pf = 0;
   for (let k = 0; k < h.n; k++) {
-    const fl = get(), attack = PRESSES[(fl >> 2) & 7]; if (attack === undefined || fl >= 64) throw Error('World record: bad step');
+    const fl = get(), attack = PRESSES[(fl >> 2) & 7], gd = SIDES[(fl >> 6) & 7]; if (attack === undefined || gd === undefined || fl >= 512 || (gd !== null && !(fl & 2))) throw Error('World record: bad step');
     let pose: WorldStep['pose'] = null, roll: WorldStep['roll'] = null;
     if (fl & 1) { px += unzig(get()); pz += unzig(get()); pf += unzig(get()); pose = { x: px, z: pz, f: pf }; }
     if (fl & 32) roll = { x: unzig(get()), z: unzig(get()) };
-    steps.push({ pose, guard: !!(fl & 2), attack, roll });
+    steps.push({ pose, guard: !!(fl & 2), gd, attack, roll });
   }
   if (i !== bytes.length) throw Error('World record: trailing bytes');
   return { rv: h.v, wv: h.w, hero, joins, releases, steps };
