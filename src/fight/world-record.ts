@@ -2,10 +2,9 @@
 // and see the kill before anything spendable or permanent pays. It owns no rule: `stepHero` below is the ONE place a frame step is made, called by the live loop and by the replay alike, and the sim is stepCombat.
 // A record is a window: it opens when a creature joins an empty loop and carries the hero's body at that moment (claims, bounded by the replay), every join and release, and per step the page's pose and presses.
 // Poses and presses are quantized BEFORE the live loop uses them (cm, milliradian), so the replay sees exactly the numbers the page's sim saw. This is a Zone 1 module, not the Pit's FightRecord. The header stamps the sim's RECORD_VERSION: the replay runs only a record of its own version (a stale one is the no-record tier, not fraud).
-import { CAPS } from './gear-caps.ts';
 import { M } from './detmath.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
-import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type Direction, type WeaponId } from './moves.ts';
+import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { DIALS, SHEET_SKILLS, checkSheet, statUp, type Sheet } from './sheet-rows.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
@@ -25,7 +24,7 @@ export const MAX_WORLD_TICKS = 18_000;
 export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */
-export type RecordHero = { level: number; attack: number; res: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet };   // sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
+export type RecordHero = { level: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet };   // sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
 export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number; seed?: number };   // the creature at its pose (m) when it joined, before step s
 export type ReleaseEvent = { s: number; id: string };
 /** One step: the pose the page gave the loop (null = the loop's own body), the presses (attack and roll already nulled when the hero is dead), and the held guard. Integers: cm, milliradian, thousandths. */
@@ -36,7 +35,7 @@ export const cm = (v: number): number => Math.round(v * 100) || 0, mrad = (v: nu
 const fromCm = (n: number): number => n / 100, fromMrad = (n: number): number => n / 1000;
 
 /** The ONE frame step: the first step of a page frame takes the page's pose (and re-applies his gear); the rest keep the loop's body. Used by the live loop and the replay, so they cannot differ. */
-export function stepHero(world: World, step: WorldStep, gear: { attack: number; res: number; level: number; shielded: boolean }): { world: World; events: Event[] } {
+export function stepHero(world: World, step: WorldStep, gear: { level: number; shielded: boolean }): { world: World; events: Event[] } {
   let w = world;
   if (step.pose) { const m = w.fighters[0]!; w = { ...w, fighters: [{ ...m, ...gear, x: fromCm(step.pose.x), z: fromCm(step.pose.z), facing: m.phase === 'roll' ? m.facing : fromMrad(step.pose.f) }, ...w.fighters.slice(1)] }; }
   return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, guard: step.guard, guardDirection: step.gd, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
@@ -56,7 +55,7 @@ export function heroClean(world: World): boolean {
   return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
     && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && d.move === null && d.phase !== 'dead'));
 }
-export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, { attack: h.attack, res: h.res }, h.level, null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
+export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, h.level, null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
 
 // ---- the recorder: the live loop feeds it, the page asks for the packed record at a kill -----------------------------------------------
 export function createWorldRecorder() {
@@ -152,9 +151,8 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   if (r.wv !== WORLD_SIM_VERSION) return bad('sim version');   // the WORLD sim files moved (tests/world-sim-guard.test.ts): same reason as the Pit's, no verdict on the player
   if (r.rv !== RECORD_VERSION) return bad('sim version');   // the sim moved since the page wrote it: not a verdict on the player
   if (n === 0 || n > MAX_WORLD_TICKS) return bad('ticks');
-  if (h.weapon !== DEFAULT_WEAPON) return bad('weapon');   // the sim honours any hero weapon (open-fight.ts heroSheeted), but nothing on the server binds the record's weapon to the character's held one (Auditor, #2569), so a forged record could claim the strongest: the replay takes DEFAULT_WEAPON only. LIFT: when the ledger's held weapon reaches HeroLimit (Backend #2557) PR 5 restores `PLAYER_WEAPONS.includes(h.weapon)` and checks it against HeroLimit.weapon.
+  if (!PLAYER_WEAPONS.includes(h.weapon)) return bad('weapon');   // the sim honours the hero's weapon (open-fight.ts heroSheeted): any weapon a player can wield; which one the account HOLDS is the server's check (HeroLimit.weapon, origins/server/world-verify.ts: the ledger's main hand or DEFAULT_WEAPON)
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
-  if (!(h.attack >= 1 && h.attack <= CAPS.attack) || !(h.res >= CAPS.res && h.res <= 1)) return bad('hero gear');
   if (h.sheet) { try { checkSheet(h.sheet); } catch { return bad('hero sheet'); } }   // known dials, floor..cap, and a legal point budget
   if (!(h.health > 0 && h.health <= (h.sheet ? Math.round(statUp(h.sheet, 'health', RULES.health)) : RULES.health)) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
   const ids = new Set<string>();
@@ -165,7 +163,7 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   for (const e of r.releases) if (e.s < 0 || e.s > n || !ids.has(e.id)) return bad('release');
   const order = (a: { s: number }[]) => a.every((e, k) => k === 0 || a[k - 1]!.s <= e.s); if (!order(r.joins) || !order(r.releases)) return bad('order');
   if (!r.steps[0]!.pose) return bad('pose');
-  const gear = { attack: h.sheet ? 1 : h.attack, res: h.sheet ? 1 : h.res, level: h.level, shielded: false };   // with a sheet the dials carry Attack and armour (world.ts player)
+  const gear = { level: h.level, shielded: false };   // the sheet carries Attack and armour (world.ts player)
   let world = newWorld([startBody(h)]), dead = false, last: { x: number; z: number; k: number } | null = null, ji = 0, ri = 0;
   const kills: string[] = [], killStep: Record<string, number> = {}, joined = new Set<string>();
   const events = (k: number): string | null => {

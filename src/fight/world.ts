@@ -5,7 +5,7 @@
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
 import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type Direction, type SkillId, type SpecialName, type WeaponId } from './moves.ts';
 import type { Sheet } from './sheet-rows.ts';
-import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
+import { CAPS } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
 import { SPEEDS, chaseSpeed, giveUpOf, leashOf } from './speeds.ts';
@@ -49,7 +49,6 @@ export type Fighter = {
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight
   returning: boolean;                                   // creature only: it gave up and is walking home (it heals to full on arrival, no event)
-  attack: number; res: number;                          // damage multipliers (src/fight/gear-stats.ts Loadout): `attack` scales what it deals, `res` what it takes, chip included
   special: SpecialName | null; specialIn: number;       // the named special this fighter can cast (moves.ts specialOf), seconds until it is ready; with one, the SKILL button is the special (the Pit has one button)
   skill: SkillId | null;                                // the equipped skill (moves.ts SkillId, the Pit's `equippedSkill(profile.loot)`; null = none): the SKILL button fires its move when no special is set (duel.ts `Fighter.skill`)
   stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
@@ -84,18 +83,15 @@ const OPPONENT = (kind: string) => (OPPONENTS as Record<string, (typeof OPPONENT
 
 function fighter(id: string, side: Fighter['side'], kind: string, x: number, z: number, facing: number, radius: number, health: number, poise: number): Fighter {
   return { id, side, kind, x, z, facing, radius, health, maxHealth: health, stamina: STAMINA_MAX, maxStamina: STAMINA_MAX, poise, phase: 'ready', t: 0, posture: 0, exhausted: false,
-    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, attack: 1, res: 1, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
+    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
 }
-/** The player, with his gear's Loadout (NAKED = the identity: no gear changes nothing). */
-export const player = (id: string, x: number, z: number, facing = 0, gear: Loadout = NAKED, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet }): Fighter => {
-  const base: Fighter = { ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), attack: gear.attack, res: gear.res, level, shielded: level < PROTECT_LEVEL, skill };
+/** The player: the Pit's own hero (createFighter + withSheet), his bar and poise from that builder; no gear multiplier lives in the world (the sheet carries Attack and armour). */
+export const player = (id: string, x: number, z: number, facing = 0, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet }): Fighter => {
+  const base: Fighter = { ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), level, shielded: level < PROTECT_LEVEL, skill };
   if (build?.weapon !== undefined) base.weapon = build.weapon;
-  if (build?.sheet !== undefined) {
-    // The Pit's own sheet door sizes the bar (the health dial); a sheet carries the gear's Attack and armour itself, so the world's Loadout multipliers stay out of the way (no double count).
-    base.sheet = build.sheet; base.attack = 1; base.res = 1;
-    const sized = heroSheeted(base);
-    base.maxHealth = sized.maxHealth; base.health = sized.maxHealth;
-  }
+  if (build?.sheet !== undefined) base.sheet = build.sheet;
+  const sized = heroSheeted(base);   // the Pit's builder sizes the bar and the poise (no sheet = createFighter's own hero)
+  base.maxHealth = sized.maxHealth; base.health = sized.maxHealth; base.poise = sized.poise;
   return base;
 };
 /** How many creatures of this kind may be on one player at once: the catalogue row's `atOnce` field, never above MAX_ATTACKERS (the one attacker cap, attackers.ts); absent = the cap. A lower row value holds the rest at the ring (Lead, 2026-10-13: the goblin camps, until Combat's retune). */
