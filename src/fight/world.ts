@@ -4,6 +4,7 @@
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
 import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type SkillId, type SpecialName } from './moves.ts';
+import { worldRule } from './world-rules.ts';
 import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
@@ -20,20 +21,20 @@ import type { CombatEvent, Duel } from './duel.ts';
 const TICK = 1 / 60;
 const secs = (ticks: number): number => ticks * TICK;
 export const STAMINA_MAX = 100;                       // duel.ts createFighter: the bar every fighter starts with
-export const PLAYER_RADIUS = 0.425;                    // half the sim's 0.85 m fighter spacing (sim.ts)
+export const PLAYER_RADIUS = worldRule('playerRadius');                    // half the sim's 0.85 m fighter spacing (sim.ts)
 export { AGGRO_M, SIGHT_M };   // (src/fight/threat-defs.json awareness rows)
 // AGGRO_M: a creature that is hunting a player notices him inside this ring (World's mob layer decides who is in the world at all)
 // SIGHT_M: a hunting creature keeps the player in sight inside this ring (hysteresis over AGGRO_M); past it the unseen clock runs
-export const ENGAGE_M = 4, ENGAGE_OUT_M = 6;           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
+export const ENGAGE_M = worldRule('engage'), ENGAGE_OUT_M = worldRule('engageOut');           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
 export { MAX_ATTACKERS };   // creatures on one player at once (Dom: three on one): the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring
-export const HOLD_M = ENGAGE_M * 0.95;                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
+export const HOLD_M = ENGAGE_M * worldRule('holdFactor');                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
 /** Creature levels (Dom: copy the Pit): a creature of level L has the Pit's own level body (moves.ts `opponentAt`: health and poise by level) and, in a fight, the Pit's level brain (`profileAt`). No Zone 1 scaling of our own. */
 export const MAX_LEVEL = LEVELS;
 export const levelHealth = (kind: string, level: number): number => opponentAt(OPPONENT(kind)!, level).health;
 /** PvP (Dom via Strategy): no toggle. The SERVER sets `Fighter.pvp` each step to "attackable here, now" (wild zone = true, safe-town volume = false); the rules below decide between two such players.
  *  Under PROTECT_LEVEL a player is shielded until his own first attack; nobody may fight a player more than MAX_LEVEL_GAP levels away. A player's blows always land on creatures, whatever the flags. */
-export const PROTECT_LEVEL = 3, MAX_LEVEL_GAP = 10;
-export const AGGRO_WINDOW_S = 60;                       // a player who hit you in the last minute is not "first" when you hit back
+export const PROTECT_LEVEL = worldRule('protectLevel'), MAX_LEVEL_GAP = worldRule('maxLevelGap');
+export const AGGRO_WINDOW_S = worldRule('aggroWindow');                       // a player who hit you in the last minute is not "first" when you hit back
 
 export type Phase = 'ready' | 'guard' | 'roll' | 'windup' | 'active' | 'recover' | 'stagger' | 'dead';
 export type Threat = { threat: number; damage: number; out: number };   // damage the player dealt it; seconds he has been out of its sight (EQEmu oor_count, in seconds)

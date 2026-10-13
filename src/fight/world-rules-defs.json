@@ -1,0 +1,16 @@
+{
+  "rules": [
+    { "id": "engage", "value": 4, "unit": "m" },
+    { "id": "engageOut", "value": 6, "unit": "m" },
+    { "id": "holdFactor", "value": 0.95, "unit": "ratio" },
+    { "id": "protectLevel", "value": 3, "unit": "level" },
+    { "id": "maxLevelGap", "value": 10, "unit": "level" },
+    { "id": "aggroWindow", "value": 60, "unit": "s" },
+    { "id": "playerRadius", "value": 0.425, "unit": "m" },
+    { "id": "joinPad", "value": 3, "unit": "m" },
+    { "id": "dropPad", "value": 8, "unit": "m" },
+    { "id": "fall", "value": 1.4, "unit": "s" },
+    { "id": "pulse", "value": 0.18, "unit": "s" },
+    { "id": "maxSteps", "value": 15, "unit": "steps" }
+  ]
+}

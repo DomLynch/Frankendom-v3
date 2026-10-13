@@ -3,6 +3,7 @@
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
 import { AGGRO_M, duelFor, duelOf, newWorld, pairs, player, type Event, type Fighter, type World } from './world.ts';
 import { NAKED, type Loadout } from './gear-stats.ts';
+import { worldRule } from './world-rules.ts';
 import { OPPONENTS, DEFAULT_WEAPON, type WeaponId } from './moves.ts';
 import type { CombatEvent, Duel, Finish } from './duel.ts';
 import { selectFinisher, finisherSeconds, type FinisherId } from './finishers.ts';
@@ -11,7 +12,7 @@ import { PLAIN_DEATH } from './finisher-look.ts';
 
 import { ME, STEP, cm, createWorldRecorder, heroClean, joinFighter, quantStep, stepHero, type RecordHero, type WorldRecord, type JoinEvent } from './world-record.ts';
 export { ME, STEP };
-export const JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
+export const JOIN_M = AGGRO_M + worldRule('joinPad'), DROP_M = AGGRO_M + worldRule('dropPad'), FALL_S = worldRule('fall'), PULSE_S = worldRule('pulse'), MAX_STEPS = worldRule('maxSteps');   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */
 export const kindOf = (body: string): string | null => (Object.prototype.hasOwnProperty.call(OPPONENTS, body) ? body : null);
 
