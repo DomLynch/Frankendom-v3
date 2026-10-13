@@ -23,3 +23,4 @@ export { PORTRAIT_KEYS } from '../legends.ts';
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
 export { MAX_HERO_MPS, MAX_WORLD_TICKS, decodeWorldRecord, encodeWorldRecord, replayWorldRecord, unpackWorldRecord, packWorldRecord, type WorldRecord, type RecordHero, type Replayed } from './world-record.ts';
 export * from './weapon-skills.ts';
+export * from './loot-deck.ts';   // loot decks with pity: the rows, the loader and the pure draw (Backend reads them here, no copy of the numbers)
