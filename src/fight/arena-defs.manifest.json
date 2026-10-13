@@ -1,0 +1,9 @@
+{
+  "tables": [
+    {"table": "weather", "file": "arena-defs.json", "at": "weather", "keyed": true, "key": "id", "required": {"order": "integer"}},
+    {"table": "bloodMode", "file": "arena-defs.json", "at": "bloodModes", "keyed": true, "key": "id", "required": {"order": "integer"}},
+    {"table": "floor", "file": "arena-defs.json", "at": "floors", "keyed": true, "key": "id", "required": {"order": "integer", "dust": "string", "wetDust": "string"}, "refs": {"dust": "dustTone", "wetDust": "dustTone"}},
+    {"table": "dustTone", "file": "arena-defs.json", "at": "dustTones", "keyed": true, "key": "id", "required": {"order": "integer", "color": "string", "opacity": "number"}},
+    {"table": "patch", "file": "arena-defs.json", "at": "patches", "keyed": true, "key": "id", "required": {"order": "integer"}}
+  ]
+}

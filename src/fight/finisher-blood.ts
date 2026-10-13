@@ -1,6 +1,7 @@
 import { AddEquation, Color, CustomBlending, DstColorFactor, DynamicDrawUsage, OneMinusSrcAlphaFactor, SRGBColorSpace, TextureLoader, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, Quaternion, SphereGeometry, Texture, Vector3 } from 'three';
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { templateOf } from './finisher-look.ts';
+import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { HAMSTRUNG_BEATS } from './hamstrung.ts';
 import { EXECUTION_BEATS, executionAt } from './execution.ts';
 
@@ -26,7 +27,7 @@ const RECONSTRUCTED_HEAD = /^Weapon[A-Z]\w*$/;
 export function bloodiesMaterial(name: string, twoHanded: boolean): boolean {
   return twoHanded ? !HANDLE_MATERIAL.test(name) : name === 'Blade' || (RECONSTRUCTED_HEAD.test(name) && !HANDLE_MATERIAL.test(name));
 }
-type Mode = 'red' | 'dark' | 'off';
+type Mode = BloodMode;
 
 // Read after posing, separation and final actor headings. Every position is world space.
 // Each template wounds its own way (the waist halves, the knee and the back, the nape, the neck stump and the severed head, the skull seam, the
@@ -129,13 +130,13 @@ export function createFinisherBlood(map: Texture) {
     update(dt: number, kind: FinisherId | null, progress: number, sources: readonly BloodSource[], mode: Mode) {
       if (!kind) { if(active)reset(); return; }
       if(active!==kind) {reset();active=kind;}
-      group.visible=mode!=='off';
-      dropMaterial.color.set(mode==='dark' ? '#342127' : '#740f19'); tint=mode==='dark' ? '#2b2226' : '#68121a';
-      for(const m of poolMaterials)m.color.set(photo ? (mode==='dark' ? '#a8a0a0' : '#ffffff') : tint);   // multiplied: white = the texture's own crimson
+      group.visible=!bloodHidden(mode);
+      dropMaterial.color.set(bloodDark(mode) ? '#342127' : '#740f19'); tint=bloodDark(mode) ? '#2b2226' : '#68121a';
+      for(const m of poolMaterials)m.color.set(photo ? (bloodDark(mode) ? '#a8a0a0' : '#ffffff') : tint);   // multiplied: white = the texture's own crimson
       // Hold state at zero dt; off hides and clears airborne drops but never freezes the bleed clock.
       if(dt<=0)return;
       dt=Math.min(dt,.1);elapsed+=dt;
-      if(mode==='off') {for(const p of particles)p.life=0;drops.count=0;return;}
+      if(bloodHidden(mode)) {for(const p of particles)p.life=0;drops.count=0;return;}
       if(elapsed>=7 && !lateSeeded && stainCursor===0) { for(const s of sources)stain(s.position,.3,s.site);lateSeeded=sources.length>0; }
       const start=finisherRow(kind)?.blood.start ?? .01;   // the row's blood.start; .01 for a kind no row names
       if(progress>=start && elapsed<7) sources.forEach((s,i)=>{
