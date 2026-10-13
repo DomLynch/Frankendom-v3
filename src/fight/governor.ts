@@ -2,9 +2,9 @@ import budgets from './governor-budgets.json' with { type: 'json' };
 
 // The client governor (top-30 row 26, Web half): draw calls and triangles per frame against a per-tier budget row (governor-budgets.json, p90 of the tier's real scenes, so today's
 // play never trips it). The page samples renderer.info once per playable frame; a window is the median of `windowFrames` samples, and `overWindows` windows in a row over either budget
-// pull the next lever of the ladder. One way only, for the page's lifetime (like scene.ts lowerResolution): there is no step back up, so it can never flap. Pure: no DOM, no three.
+// pull the next lever of the ladder. One way only, for the page's lifetime (the pixel ratio is not a lever here: quality.ts lowers it on frame time, the right signal for it): there is no step back up, so it can never flap. Pure: no DOM, no three.
 
-export type Lever = 'resolution' | 'shadows';
+export type Lever = 'shadows' | 'crowd';
 export interface Budget { draws: number; tris: number }
 export interface GovernorRow { tiers: Record<string, Budget>; ladder: readonly Lever[]; windowFrames: number; overWindows: number }
 
