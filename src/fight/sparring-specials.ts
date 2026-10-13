@@ -1,18 +1,13 @@
 // Independent admin test selections; neither changes fighter identity or the saved kit.
 import { BOSSES } from './boss-rows.ts';
+import LABELS from './special-labels.json' with { type: 'json' };
 import { LEVELS, LEVEL_ANCHORS, PLAYER_WEAPONS, type SkillId, type WeaponId } from './moves.ts';
 import { SPECIAL_TESTS, specialParam, type SpecialTest } from './special-look.ts';
 import { SPARRING_SKILLS, sparringAsked, sparringParam, type SparringKit, type SparringLevel } from '../sparring.ts';
 import { isOpponentId } from '../roster.ts';
 import { SUPPORTED_PLAYER_SPECIALS, validateSparringSpecialSelection, type SparringSpecialSelection } from './sparring-special-runtime.ts';
 
-const HAND_LABELS: Readonly<Record<string, string>> = {
-  setfoot: 'Set Foot', heelreap: 'Heel Reap', lunge: 'Pale Lunge', knuckledirt: 'Knuckle Dirt', cleaverset: 'Cleaver Set', groundset: 'Ground Set', cutmark: 'Cut Mark',
-  wake: 'Stone Wake', stirring: 'Stirring', tempo: "Doctor's Tempo", pulse: 'Taking the Pulse', drag: 'Ground Drag', swing: 'Held Swing',
-  cuts: 'Seven Cuts', standfast: 'Stand Fast', ratrun: 'Rat Run', blackfurrow: 'Black Furrow',
-  earthfold: 'Earth Fold', ironsettle: 'Iron Settle', gatherededge: 'Gathered Edge',
-  shield: 'Shield Quake', centurion: 'The Charge', tithe: 'Blood Tithe',
-};
+const HAND_LABELS: Readonly<Record<string, string>> = Object.fromEntries((LABELS.rows as readonly { id: string; label: string }[]).map((r) => [r.id, r.label]));   // special-labels.json: the names of the specials that are not boss rows
 // A boss's name is its bosses.json row's `label`; the rest are still hand-written (not rows yet).
 export const SPECIAL_LABELS: Readonly<Record<string, string>> = { ...HAND_LABELS, ...Object.fromEntries(BOSSES.map((r) => [r.id, r.label])) };
 export const SPECIAL_BANDS = ['L1–3', 'L4–7', 'L8', 'L9', 'L10'] as const;
