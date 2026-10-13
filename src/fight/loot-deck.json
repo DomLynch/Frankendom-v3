@@ -9,8 +9,8 @@
     { "id": "deck-empty", "clearsPity": false, "reshuffles": true, "note": "every card drawn: reshuffle; the miss streak carries over" }
   ],
   "decks": [
-    { "id": "ranked", "scope": "account", "rolledAt": "spawn", "deckSize": 4, "hits": 1, "softPityFrom": 3, "pityStep": 25, "hardPity": 7, "resets": ["drop", "rank-up", "deck-empty"] },
-    { "id": "wild", "scope": "account", "rolledAt": "spawn", "deckSize": 6, "hits": 1, "softPityFrom": 4, "pityStep": 15, "hardPity": 10, "resets": ["drop", "deck-empty"] },
-    { "id": "boss", "scope": "account", "rolledAt": "spawn", "deckSize": 2, "hits": 1, "softPityFrom": 1, "pityStep": 50, "hardPity": 3, "resets": ["drop", "deck-empty"] }
+    { "id": "ranked", "scope": "account", "rolledAt": "spawn", "deckSize": 4, "hits": 1, "softPityFrom": 3, "pityStep": 25, "hardPity": 4, "resets": ["drop", "rank-up", "deck-empty"] },
+    { "id": "wild", "scope": "account", "rolledAt": "spawn", "deckSize": 6, "hits": 1, "softPityFrom": 4, "pityStep": 15, "hardPity": 7, "resets": ["drop", "deck-empty"] },
+    { "id": "boss", "scope": "account", "rolledAt": "spawn", "deckSize": 2, "hits": 1, "softPityFrom": 1, "pityStep": 50, "hardPity": 1, "resets": ["drop", "deck-empty"] }
   ]
 }
