@@ -8,7 +8,7 @@ import type { Sheet } from './sheet-rows.ts';
 import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
-import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
+import { SPEEDS, chaseSpeed, giveUpOf, leashOf } from './speeds.ts';
 import { AGGRO_M, SIGHT_M, threatOf } from './threat.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { IDLE_INPUT, heroSheeted, openBout, stepBout, type Bout } from './open-fight.ts';
@@ -97,6 +97,8 @@ export const player = (id: string, x: number, z: number, facing = 0, gear: Loado
   }
   return base;
 };
+/** How many creatures of this kind may be on one player at once: the catalogue row's `atOnce` field, never above MAX_ATTACKERS (the one attacker cap, attackers.ts); absent = the cap. A lower row value holds the rest at the ring (Lead, 2026-10-13: the goblin camps, until Combat's retune). */
+const atOnce = (c: Fighter): number => (fieldOf(c.kind, 'atOnce') as number | undefined) ?? MAX_ATTACKERS;
 /** A creature of `kind` (a moves.ts ROSTER id) at `level` (default: the easy anchor, the roster row): its health, poise and body scale are the Pit's own level rows (`opponentAt`). */
 export function creature(id: string, kind: string, x: number, z: number, facing = 0, level: number = LEVEL_ANCHORS.easy): Fighter {
   const o = OPPONENT(kind);
@@ -187,7 +189,13 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
   for (const p of players) {
     if (inFight.has(p.id)) continue;
     const foe = foes.get(p.id) ?? null;
-    if (foe) for (const c of (joiners.get(p.id) ?? []).sort((x, y) => (y.threat?.[p.id]?.threat ?? 0) - (x.threat?.[p.id]?.threat ?? 0) || dist(x, p) - dist(y, p)).slice(0, MAX_ATTACKERS - 1)) { joined.set(p.id, [...(joined.get(p.id) ?? []), c]); inFight.add(c.id); if (!c.hunting) { c.hunting = true; c.chaseX = c.x; c.chaseZ = c.z; c.unseen = 0; } }
+    if (foe) {
+      let on = 1;   // the foe is the first attacker; a joiner is taken only while the count is under the cap and under its own and the foe's row cap
+      for (const c of (joiners.get(p.id) ?? []).sort((x, y) => (y.threat?.[p.id]?.threat ?? 0) - (x.threat?.[p.id]?.threat ?? 0) || dist(x, p) - dist(y, p))) {
+        if (on >= Math.min(MAX_ATTACKERS, atOnce(foe), atOnce(c))) continue;
+        on++; joined.set(p.id, [...(joined.get(p.id) ?? []), c]); inFight.add(c.id); if (!c.hunting) { c.hunting = true; c.chaseX = c.x; c.chaseZ = c.z; c.unseen = 0; }
+      }
+    }
     if (foe) { inFight.add(foe.id); if (!foe.hunting) { foe.hunting = true; foe.chaseX = foe.x; foe.chaseZ = foe.z; foe.unseen = 0; } }   // inside the engage ring it is on the prey whether or not it saw him
     inFight.add(p.id); bouts.push({ a: p, b: foe });   // 3. no foe in reach: the player is alone in his bout (swings at air, guards, rolls, regains stamina on the Pit's rules)
   }
@@ -228,7 +236,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     f.t += dt; f.phase = 'ready';
     for (const [id, t] of Object.entries(f.threat ?? {})) {   // forget: the player is dead or gone, or has been out of its sight for the give-up time (EQEmu RemoveStaleEntries, in seconds)
       const q = players.find((x) => x.id === id);
-      if (!q) delete f.threat![id]; else if (dist(f, q) > SIGHT_M) { t.out += dt; if (t.out >= GIVE_UP_UNSEEN_S) delete f.threat![id]; } else t.out = 0;
+      if (!q) delete f.threat![id]; else if (dist(f, q) > SIGHT_M) { t.out += dt; if (t.out >= giveUpOf(f.kind)) delete f.threat![id]; } else t.out = 0;
     }
     if (f.exhausted && f.stamina >= RULES.exhaustRecover) f.exhausted = false;
     f.stamina = Math.min(f.maxStamina, f.stamina + RULES.regen * 60 * dt);
@@ -237,10 +245,10 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
       const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
       if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
       else { f.facing = M.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
-    } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < GIVE_UP_UNSEEN_S : dist(f, prey) <= AGGRO_M)) {
+    } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < giveUpOf(f.kind) : dist(f, prey) <= AGGRO_M)) {
       if (!f.hunting) { f.hunting = true; f.chaseX = f.x; f.chaseZ = f.z; f.unseen = 0; }
       f.unseen = dist(f, prey) > SIGHT_M ? f.unseen + dt : 0;
-      if (f.unseen >= GIVE_UP_UNSEEN_S || M.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
+      if (f.unseen >= giveUpOf(f.kind) || M.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
       else {
         f.facing = aim(f, prey);
         if (dist(f, prey) > HOLD_M) { const step = Math.min(chaseSpeed(f.kind) * dt, dist(f, prey) - HOLD_M); f.x += M.sin(f.facing) * step; f.z += M.cos(f.facing) * step; }   // closes to just inside the engage ring and waits: the engaged foe fights, the rest hold off
