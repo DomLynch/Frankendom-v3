@@ -6,6 +6,7 @@
       "at": "armourWeight",
       "key": "id",
       "required": {
+        "dial": "string",
         "castPenalty": "integer",
         "note": "string"
       }
