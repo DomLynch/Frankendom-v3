@@ -6,7 +6,7 @@ import { CAPS } from './gear-stats.ts';
 import { M } from './detmath.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
 import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type WeaponId } from './moves.ts';
-import { MAX_RECORD_BYTES, MAX_RECORD_TICKS, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
+import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
@@ -18,6 +18,8 @@ const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'k
 /** The most a pose may move between two steps, m/s: a run, or a roll's own displacement (the hero's cut reaches no farther). Measured against a real roll in world-record.test.ts. */
 export const MAX_HERO_MPS = 12;
 export const MAX_CREATURES = 8, MAX_EVENTS = 256;
+/** Five minutes of world fight: a window past it is not recorded, not unpacked, not replayed (a replay of the decoder's old 108k ticks cost a second on the writer). */
+export const MAX_WORLD_TICKS = 18_000;
 export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */
@@ -63,7 +65,7 @@ export function createWorldRecorder() {
     active: (): boolean => rec !== null && !over,
     join(id: string, kind: string, x: number, z: number, level: number): void { if (rec && !over) rec.joins.push({ s: steps, id, kind, x: cm(x), z: cm(z), level }); },
     release(id: string): void { if (rec && !over) rec.releases.push({ s: steps, id }); },
-    step(s: WorldStep): void { if (!rec || over) return; if (steps >= MAX_RECORD_TICKS || rec.joins.length + rec.releases.length > MAX_EVENTS) { over = true; return; } rec.steps.push(s); steps++; },
+    step(s: WorldStep): void { if (!rec || over) return; if (steps >= MAX_WORLD_TICKS || rec.joins.length + rec.releases.length > MAX_EVENTS) { over = true; return; } rec.steps.push(s); steps++; },
     steps: (): number => steps,
     /** The window so far, or null (none open, or it grew past its bounds). */
     take(): WorldRecord | null { return rec && !over && rec.steps.length > 0 ? { rv: rec.rv, wv: rec.wv, hero: rec.hero, joins: [...rec.joins], releases: [...rec.releases], steps: [...rec.steps] } : null; },
@@ -99,7 +101,7 @@ export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   let h: { v: number; w: number; h: RecordHero; j: unknown[][]; r: unknown[][]; n: number };
   try { h = JSON.parse(new TextDecoder().decode(bytes.subarray(i, i + hl))); } catch { throw Error('World record: bad header'); }
   i += hl;
-  if (!h || typeof h !== 'object' || !isInt(h.v) || !isInt(h.w) || !isInt(h.n) || h.n < 0 || h.n > MAX_RECORD_TICKS || !Array.isArray(h.j) || !Array.isArray(h.r) || h.j.length > MAX_EVENTS || h.r.length > MAX_EVENTS) throw Error('World record: bad header');
+  if (!h || typeof h !== 'object' || !isInt(h.v) || !isInt(h.w) || !isInt(h.n) || h.n < 0 || h.n > MAX_WORLD_TICKS || !Array.isArray(h.j) || !Array.isArray(h.r) || h.j.length > MAX_EVENTS || h.r.length > MAX_EVENTS) throw Error('World record: bad header');
   const hero = h.h; if (!hero || typeof hero !== 'object') throw Error('World record: bad hero');
   const joins = h.j.map((e): JoinEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string' || typeof e[2] !== 'string' || !isInt(e[3]) || !isInt(e[4]) || !isInt(e[5])) throw Error('World record: bad join'); return { s: e[0], id: e[1], kind: e[2], x: e[3], z: e[4], level: e[5] }; });
   const releases = h.r.map((e): ReleaseEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string') throw Error('World record: bad release'); return { s: e[0], id: e[1] }; });
@@ -133,12 +135,12 @@ export async function decodeWorldRecord(s: string): Promise<WorldRecord> {
 // ---- the replay: bounds first, then the same loop ------------------------------------------------------------------------------------------------
 export type Replayed = { ok: true; kills: string[]; heroDied: boolean; ticks: number; killStep: Record<string, number>; joins: JoinEvent[]; hero: RecordHero } | { ok: false; reason: string };
 const bad = (reason: string): Replayed => ({ ok: false, reason });
-/** Run a record through the world loop and report who the hero killed and whether he lived. Pure; bounded by MAX_RECORD_TICKS. Refuses (never throws) what no honest page could have produced. */
+/** Run a record through the world loop and report who the hero killed and whether he lived. Pure; bounded by MAX_WORLD_TICKS. Refuses (never throws) what no honest page could have produced. */
 export function replayWorldRecord(r: WorldRecord): Replayed {
   const h = r.hero, n = r.steps.length;
   if (r.wv !== WORLD_SIM_VERSION) return bad('sim version');   // the WORLD sim files moved (tests/world-sim-guard.test.ts): same reason as the Pit's, no verdict on the player
   if (r.rv !== RECORD_VERSION) return bad('sim version');   // the sim moved since the page wrote it: not a verdict on the player
-  if (n === 0 || n > MAX_RECORD_TICKS) return bad('ticks');
+  if (n === 0 || n > MAX_WORLD_TICKS) return bad('ticks');
   if (h.weapon !== DEFAULT_WEAPON) return bad('weapon');   // the world sim fights every hero with DEFAULT_WEAPON (open-fight.ts pitOf): a record that claims another is refused until the sim honours it
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
   if (!(h.attack >= 1 && h.attack <= CAPS.attack) || !(h.res >= CAPS.res && h.res <= 1)) return bad('hero gear');
