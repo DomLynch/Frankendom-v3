@@ -9,6 +9,7 @@ export * from './replay.ts';
 export * from './twist.ts';
 export * from './gambit.ts';
 export * from './gear-stats.ts';
+export { GEAR } from './gear-rows.ts';
 export * from './play-radius.ts';
 export { underRecord } from './detmath.ts';
 export { validateBuild, SHEET_SKILLS } from './sheet-rows.ts';   // the build field's one validation seam (origins/server/build.ts); SHEET_SKILLS: a skill's base for the spell check
