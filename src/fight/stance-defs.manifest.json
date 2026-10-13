@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "stance", "file": "stance-defs.json", "at": "stances", "key": "id", "required": {} }
+  ]
+}
