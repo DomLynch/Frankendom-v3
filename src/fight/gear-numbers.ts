@@ -3,7 +3,7 @@
 // Lives here, not in src/core, because the core imports nothing from src/fight; the Pit and the zone both hand it to the sheet.
 import { TIERS } from '../core/grades.ts';
 import type { Loot } from '../core/loot.ts';
-import { kitFrom, loadoutFor, wholePoints, wornGear, type TierOf } from './gear-stats.ts';
+import { kitFrom, loadoutFor, wholePoints, wornGear, type Loadout, type TierOf } from './gear-stats.ts';
 import { sheetOf, validateBuild, type Build, type Sheet } from './sheet-rows.ts';
 import type { Profile } from '../core/profile.ts';
 import { RULES } from './moves.ts';
@@ -11,6 +11,8 @@ import { STAMINA_MAX } from './world.ts';
 
 // Each worn piece counts at the rung it was won at (`loot.taken[id].tier`); a piece with no recorded rung counts as nothing. One lookup for the strip's numbers and the fight's tilt.
 const tierLookup = (loot: Loot | undefined): TierOf => (id) => { const level = loot?.taken?.[id]?.tier; return level ? TIERS[level - 1] : undefined; };
+/** The Loadout (Attack out, RES in) a character's worn set gives: the Zone 1 hero's gear, the ONE derivation the server repeats from the held rows (origins/server/worn-gear.ts loadoutOf) to bound a world record's claim. */
+export const loadoutOfLoot = (loot: Loot | undefined): Loadout => loadoutFor(kitFrom(loot?.equipped ?? {}, tierLookup(loot)));
 export const gearNumbers = (loot: Loot | undefined): Record<string, number> => {
   const { atk, res } = wholePoints(loadoutFor(kitFrom(loot?.equipped ?? {}, tierLookup(loot))));
   return { health: RULES.health, stamina: STAMINA_MAX, attack: atk, res };
