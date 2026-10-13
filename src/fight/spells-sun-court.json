@@ -1,0 +1,1604 @@
+{
+ "spells": [
+  {
+   "id": "spell:ahuizotl",
+   "boss": "ahuizotl",
+   "boss_name": "Ahuizotl the Water Dog",
+   "name": "Hand-Tailed Drag",
+   "school": "frost",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A dog-like water beast with a hand on its tail, who pulls bathers under.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:axolotl",
+   "boss": "axolotl",
+   "boss_name": "Axolotl the Lake Salamander",
+   "name": "Lake Salamander",
+   "school": "frost",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Nahua folklore (Sahagun)",
+   "story": "A salamander of the lake who never grew up, and grows back every limb.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ccoa",
+   "boss": "ccoa",
+   "boss_name": "Ccoa the Hail Cat",
+   "name": "Hailstone Cat",
+   "school": "wind",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Quechua folklore (Cieza)",
+   "story": "A grey cat of the mountains that sends hail on the crops when its eyes flash.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chaneque",
+   "boss": "chaneque",
+   "boss_name": "Chaneque of the Spring",
+   "name": "Spring-Sprite's Prank",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Nahua folklore (Sahagun)",
+   "story": "A small guardian of the water and woods who leads wanderers astray and takes a fright from them.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:eagle-warrior",
+   "boss": "eagle-warrior",
+   "boss_name": "Eagle Warrior of the Mexica",
+   "name": "Eagle Dive",
+   "school": "wind",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A warrior of the eagle order in a feathered suit and a beaked helm, who dives on his foe.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jaguar-warrior",
+   "boss": "jaguar-warrior",
+   "boss_name": "Jaguar Warrior of the Mexica",
+   "name": "Jaguar Pelt Charge",
+   "school": "earth",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A warrior of the jaguar order in a spotted pelt and a wooden helm, who charges with a macuahuitl.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:owl-packstrap",
+   "boss": "owl-packstrap",
+   "boss_name": "Packstrap the Owl Messenger",
+   "name": "Messenger's Burden",
+   "school": "wind",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "Another owl messenger of the lords of Xibalba, who carries the summons.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:owl-wing",
+   "boss": "owl-wing",
+   "boss_name": "Wing the Owl Messenger",
+   "name": "Owl's Message",
+   "school": "wind",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "One of the owl messengers of Xibalba, who calls the heroes to the lords.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tecolotl-omen",
+   "boss": "tecolotl-omen",
+   "boss_name": "Tecolotl the Owl of Omens",
+   "name": "Omen Hoot",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The owl whose hoot at night was a bad omen in the old city, and the fighter feels it.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tlacuache",
+   "boss": "tlacuache",
+   "boss_name": "Tlacuache the Fire-Thief",
+   "name": "Opossum's Ember",
+   "school": "fire",
+   "level": 1,
+   "region": "region:sun-court",
+   "source": "Nahua folklore",
+   "story": "The opossum who stole fire for the people and carries the scorched tail.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:amaru",
+   "boss": "amaru",
+   "boss_name": "Amaru the Great Serpent",
+   "name": "Two-Headed Serpent",
+   "school": "poison",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Andean tradition (Garcilaso)",
+   "story": "A two-headed serpent of the Andes with a head at each end, which coils round the mountain.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:camazotz",
+   "boss": "camazotz",
+   "boss_name": "Camazotz the Death Bat",
+   "name": "Death Bat's Dive",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The bat of the House of Bats in Xibalba, who dives out of the dark at the young heroes.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chanka-warrior",
+   "boss": "chanka-warrior",
+   "boss_name": "Chanka Warrior",
+   "name": "Chanka Sling",
+   "school": "earth",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "A warrior of the Chanka nation who slings stones from the ridge and marches on Cusco.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chichimec-archer",
+   "boss": "chichimec-archer",
+   "boss_name": "Chichimec Archer",
+   "name": "Wild Archer's Volley",
+   "school": "wind",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "A hunter of the northern plains who never farmed and never missed.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cuachic",
+   "boss": "cuachic",
+   "boss_name": "Cuachic the Shorn One",
+   "name": "Shorn One's Vow",
+   "school": "earth",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "A Mexica captain who shaved his head and swore never to retreat in battle.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:itzcuintli",
+   "boss": "itzcuintli",
+   "boss_name": "Itzcuintli the Dog of the Dead",
+   "name": "Dog's Guide",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The dog who carries the dead across the river to the nine-fold land.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nahualli",
+   "boss": "nahualli",
+   "boss_name": "Nahualli the Shape-Shifter",
+   "name": "Shape-Shifter's Turn",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A sorcerer who changes into a beast and back again in the dark.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sachamama",
+   "boss": "sachamama",
+   "boss_name": "Sachamama the Forest Mother",
+   "name": "Forest Mother's Coil",
+   "school": "earth",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Quechua folklore",
+   "story": "A great snake that lies still in the forest until moss grows on her back, then strikes.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tlacatecolotl",
+   "boss": "tlacatecolotl",
+   "boss_name": "Tlacatecolotl the Owl-Man",
+   "name": "Owl-Man's Spell",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A sorcerer who takes the owl's shape at night to spoil the hearth.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yacumama",
+   "boss": "yacumama",
+   "boss_name": "Yacumama the Water Mother",
+   "name": "Water Mother's Wave",
+   "school": "frost",
+   "level": 2,
+   "region": "region:sun-court",
+   "source": "Quechua folklore",
+   "story": "A huge serpent of the river that swallows boats and the waterside.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:blood-gatherer",
+   "boss": "blood-gatherer",
+   "boss_name": "Blood Gatherer",
+   "name": "Gathering of Blood",
+   "school": "poison",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba whose power was over the blood of the living, and sickened the heroes.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bloody-claws",
+   "boss": "bloody-claws",
+   "boss_name": "Bloody Claws",
+   "name": "Raking Claws",
+   "school": "poison",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba, named for his claws, who rakes at travellers on the road.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bloody-teeth",
+   "boss": "bloody-teeth",
+   "boss_name": "Bloody Teeth",
+   "name": "Hungry Teeth",
+   "school": "poison",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba, named for his teeth, who bites at the heroes on the road.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bone-scepter",
+   "boss": "bone-scepter",
+   "boss_name": "Bone Scepter",
+   "name": "Bone Rod",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba who wields a staff of bone and strikes the traveller thin.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chachapoya-warrior",
+   "boss": "chachapoya-warrior",
+   "boss_name": "Chachapoya Cloud Warrior",
+   "name": "Cloud Warrior's Sling",
+   "school": "wind",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "A warrior of the cloud forest, whose fortress stands above the mist.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cihuateteo",
+   "boss": "cihuateteo",
+   "boss_name": "Cihuateteo the Spirit-Women",
+   "name": "Crossroads Wail",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The spirits of women who died in childbirth, who haunt the crossroads at night.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:flying-scab",
+   "boss": "flying-scab",
+   "boss_name": "Flying Scab",
+   "name": "Scab Sickness",
+   "school": "poison",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba who made men break out in sores, and blighted the travellers.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jaundice-master",
+   "boss": "jaundice-master",
+   "boss_name": "Jaundice Master",
+   "name": "Yellow Sickness",
+   "school": "poison",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba who turns the skin yellow and brings jaundice.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pus-master",
+   "boss": "pus-master",
+   "boss_name": "Pus Master",
+   "name": "Pus Swelling",
+   "school": "poison",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba who swells the limbs of the living with pus.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:skull-scepter",
+   "boss": "skull-scepter",
+   "boss_name": "Skull Scepter",
+   "name": "Skull Rod",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba who wields a staff topped by a skull.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bat-house",
+   "boss": "bat-house",
+   "boss_name": "Bat House of Xibalba",
+   "name": "House of Bats",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The house of bats, with Camazotz at the centre, where the heroes were pressed to the floor.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cold-house",
+   "boss": "cold-house",
+   "boss_name": "Cold House of Xibalba",
+   "name": "House of Cold",
+   "school": "frost",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The house of cold where hail comes down and freezes the unwary.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dark-house",
+   "boss": "dark-house",
+   "boss_name": "Dark House of Xibalba",
+   "name": "House of Dark",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The first house of the trial, where the torch and the cigars were given to be returned whole.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:fire-house",
+   "boss": "fire-house",
+   "boss_name": "Fire House of Xibalba",
+   "name": "House of Fire",
+   "school": "fire",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The house of fire where the heroes were put to burn, and came out whole.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:harpy-eagle",
+   "boss": "harpy-eagle",
+   "boss_name": "Harpy Eagle of the Canopy",
+   "name": "Canopy Strike",
+   "school": "wind",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Mesoamerican folklore",
+   "story": "The great eagle of the rainforest that hunts monkeys and sloths in the canopy.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jaguar-house",
+   "boss": "jaguar-house",
+   "boss_name": "Jaguar House of Xibalba",
+   "name": "House of Jaguars",
+   "school": "earth",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The house where jaguars crowd the room and press upon the heroes.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:moche-runner",
+   "boss": "moche-runner",
+   "boss_name": "Moche Runner",
+   "name": "Runner's Messenger",
+   "school": "wind",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Moche iconography",
+   "story": "A runner of the Moche painted in the pots, who carries a bag of beans over the desert.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nahual-jaguar",
+   "boss": "nahual-jaguar",
+   "boss_name": "Nahual Jaguar",
+   "name": "Night Jaguar",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A sorcerer in the shape of a jaguar who hunts in the dark.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:razor-house",
+   "boss": "razor-house",
+   "boss_name": "Razor House of Xibalba",
+   "name": "House of Knives",
+   "school": "earth",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The house where the knives talk among themselves and cut whoever steps in.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yacana",
+   "boss": "yacana",
+   "boss_name": "Yacana the Dark Llama",
+   "name": "Dark Llama's Star",
+   "school": "holy",
+   "level": 4,
+   "region": "region:sun-court",
+   "source": "Andean tradition (Garcilaso)",
+   "story": "A llama in the dark nebula of the Milky Way, who drinks the rivers.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:capac-yupanqui",
+   "boss": "capac-yupanqui",
+   "boss_name": "Capac Yupanqui the Conqueror",
+   "name": "Conqueror's Spear",
+   "school": "earth",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Garcilaso, Royal Commentaries",
+   "story": "The Inca prince of the early chronicles who won the lands of the south.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:centzon-huitznahua",
+   "boss": "centzon-huitznahua",
+   "boss_name": "Centzon Huitznahua the Four Hundred",
+   "name": "Four Hundred Southerners",
+   "school": "wind",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The four hundred brothers who were born with hatred and attacked at Coatepec.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chimalmat",
+   "boss": "chimalmat",
+   "boss_name": "Chimalmat the Giantess",
+   "name": "Giantess's Pride",
+   "school": "earth",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The wife of Seven Macaw and mother of the giants, who stood by her proud husband.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:eight-deer",
+   "boss": "eight-deer",
+   "boss_name": "Eight Deer Jaguar Claw",
+   "name": "Warlord's Conquest",
+   "school": "fire",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Codex Zouche-Nuttall",
+   "story": "A Mixtec warlord of the codices who conquered many towns and rose to rule Tilantongo.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hunac-ceel",
+   "boss": "hunac-ceel",
+   "boss_name": "Hunac Ceel the Conqueror",
+   "name": "Conqueror's Leap",
+   "school": "fire",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Chilam Balam",
+   "story": "The Maya lord who took Chichen Itza's power and went on to rule at Mayapan.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:itzcoatl",
+   "boss": "itzcoatl",
+   "boss_name": "Itzcoatl the Obsidian Serpent",
+   "name": "Obsidian Serpent",
+   "school": "fire",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "The Mexica ruler who broke the tyrant Maxtla and made the Triple Alliance.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mama-huaco",
+   "boss": "mama-huaco",
+   "boss_name": "Mama Huaco the Warrior Queen",
+   "name": "Bolas Throw",
+   "school": "wind",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "A legendary Inca ancestress who flung her bolas and won her battles.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:maxtla",
+   "boss": "maxtla",
+   "boss_name": "Maxtla the Tepanec Tyrant",
+   "name": "Tyrant's Hand",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "The Tepanec lord who killed a king and held the valley in fear.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tzitzimitl",
+   "boss": "tzitzimitl",
+   "boss_name": "Tzitzimitl the Star Demon",
+   "name": "Falling Stars",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A star-demon that was said to fall at an eclipse and eat the people.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:uscovilca",
+   "boss": "uscovilca",
+   "boss_name": "Uscovilca the Chanka General",
+   "name": "General's Advance",
+   "school": "earth",
+   "level": 5,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "The Chanka general who marched on Cusco and nearly took the city.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cabracan",
+   "boss": "cabracan",
+   "boss_name": "Cabracan the Earthquake",
+   "name": "Mountain-Shaker",
+   "school": "earth",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The younger son of Seven Macaw, who shook the mountains and levelled them.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:huallallo",
+   "boss": "huallallo",
+   "boss_name": "Huallallo Carhuincho",
+   "name": "Fire Eater",
+   "school": "fire",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Huarochiri Manuscript",
+   "story": "The fire-giant of the old Yauyos mountains, who ate the children and who was driven out.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nezahualcoyotl",
+   "boss": "nezahualcoyotl",
+   "boss_name": "Nezahualcoyotl the Poet-King",
+   "name": "Fasting Coyote",
+   "school": "holy",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "The poet-king of Texcoco, who built the gardens and wrote the songs; an honourable foe.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:santa-elena-giants",
+   "boss": "santa-elena-giants",
+   "boss_name": "Giants of Santa Elena",
+   "name": "Giants' Landing",
+   "school": "earth",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru / Garcilaso",
+   "story": "Giants said to have landed on the coast of Ecuador, who dug wells in the rock and were burned from the sky.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:seven-macaw",
+   "boss": "seven-macaw",
+   "boss_name": "Seven Macaw (Vucub Caquix)",
+   "name": "False Sun",
+   "school": "fire",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The proud bird-lord who claimed to be the sun and moon, and shot down by the twin hero.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:stabbing-master",
+   "boss": "stabbing-master",
+   "boss_name": "Stabbing Master",
+   "name": "Stabbing Master's Thrust",
+   "school": "earth",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba who stabs those who pass, and is quick with the point.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sweepings-master",
+   "boss": "sweepings-master",
+   "boss_name": "Sweepings Master",
+   "name": "Filth Heap",
+   "school": "poison",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "A lord of Xibalba whose domain is the sweepings, he buries travellers in filth.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tlacaelel",
+   "boss": "tlacaelel",
+   "boss_name": "Tlacaelel the Hidden Hand",
+   "name": "Counsel from the Shadow",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "The counsellor who stood behind four Mexica rulers and rewrote their history.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:xiuhcoatl",
+   "boss": "xiuhcoatl",
+   "boss_name": "Xiuhcoatl the Fire Serpent",
+   "name": "Fire Serpent's Strike",
+   "school": "fire",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The turquoise fire serpent, the weapon of the sun's war-band.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zipacna",
+   "boss": "zipacna",
+   "boss_name": "Zipacna the Mountain-Maker",
+   "name": "Mountain-Raiser",
+   "school": "earth",
+   "level": 6,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The elder son of Seven Macaw, who raised the mountains in a night.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ayar-auca",
+   "boss": "ayar-auca",
+   "boss_name": "Ayar Auca the Winged",
+   "name": "Winged Brother's Flight",
+   "school": "wind",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Garcilaso, Royal Commentaries",
+   "story": "The Inca founder-brother who grew wings and flew to a hilltop to turn to stone.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ayar-cachi",
+   "boss": "ayar-cachi",
+   "boss_name": "Ayar Cachi the Slinger",
+   "name": "Mountain-Splitting Sling",
+   "school": "earth",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Garcilaso, Royal Commentaries",
+   "story": "The Inca founder-brother whose sling split the hills, and who was sealed in a cave.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ayar-uchu",
+   "boss": "ayar-uchu",
+   "boss_name": "Ayar Uchu the Stone",
+   "name": "Brother Turned to Stone",
+   "school": "earth",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Garcilaso, Royal Commentaries",
+   "story": "The Inca founder-brother who sat on the sacred hill and became a stone.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ballplayer",
+   "boss": "ballplayer",
+   "boss_name": "Champion of the Ball Court",
+   "name": "Rubber Ball Strike",
+   "school": "earth",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "A champion of the ball game, who struck the heavy rubber ball with his hip.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cipactli",
+   "boss": "cipactli",
+   "boss_name": "Cipactli the Earth Crocodile",
+   "name": "Earth Crocodile",
+   "school": "earth",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The great crocodile of the first waters, from whom the earth was made.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cuetlachtli",
+   "boss": "cuetlachtli",
+   "boss_name": "Wolf Warrior of the Mexica",
+   "name": "Wolf Order's Charge",
+   "school": "earth",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A warrior of the wolf order in a pelt and a wooden helm, who runs at the foe in a pack.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kiqab",
+   "boss": "kiqab",
+   "boss_name": "K'iq'ab the K'iche' Conqueror",
+   "name": "Highland Conquest",
+   "school": "fire",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The great K'iche' king, who is named in the Popol Vuh as winning the highlands.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mimixcoa",
+   "boss": "mimixcoa",
+   "boss_name": "Mimixcoa the Cloud Serpents",
+   "name": "Cloud Serpents",
+   "school": "wind",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The cloud-serpents, the first hunters, who were shot down by the sky.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mimixcoa-hunter",
+   "boss": "mimixcoa-hunter",
+   "boss_name": "Plains Hunter of the Cloud-Serpents",
+   "name": "Hunter's Cloud-Arrow",
+   "school": "wind",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A hunter of the northern plains who follows the cloud-serpents with a bow.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:otomi-warrior",
+   "boss": "otomi-warrior",
+   "boss_name": "Otomi Warrior",
+   "name": "Otomi Sling",
+   "school": "wind",
+   "level": 7,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "A fierce warrior of the Otomi, who fought in front of the Mexica line with a sling.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:axayacatl",
+   "boss": "axayacatl",
+   "boss_name": "Axayacatl the Water Face",
+   "name": "Water-Face's Charge",
+   "school": "fire",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "The Mexica tlatoani who beat Tlatelolco and led armies west.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bird-jaguar",
+   "boss": "bird-jaguar",
+   "boss_name": "Bird Jaguar IV of Yaxchilan",
+   "name": "Bird Jaguar's Spear",
+   "school": "fire",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Yaxchilan inscriptions",
+   "story": "A king of Yaxchilan, who recorded his captures on the lintels.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:inca-roca",
+   "boss": "inca-roca",
+   "boss_name": "Inca Roca of Cusco",
+   "name": "Roca's Schools",
+   "school": "earth",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "The sixth Inca of the old chronicles, who founded the first school in Cusco and conquered the nearby valleys.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:minchancaman",
+   "boss": "minchancaman",
+   "boss_name": "Minchancaman of the Chimu",
+   "name": "Chimu King's Gold",
+   "school": "earth",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "The last independent king of the Chimu, who ruled the coast from Chan Chan.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:moctezuma-ilhuicamina",
+   "boss": "moctezuma-ilhuicamina",
+   "boss_name": "Moctezuma Ilhuicamina the Sky-Archer",
+   "name": "Arrow at the Sky",
+   "school": "wind",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "The fifth Mexica ruler, who shot an arrow into the sky; he died in 1469, and the player faces a king of the old city.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pachacuti",
+   "boss": "pachacuti",
+   "boss_name": "Pachacuti Inca Yupanqui",
+   "name": "Earth-Shaker's Order",
+   "school": "earth",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "The Inca who turned a small kingdom into an empire and rebuilt Cusco.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tupac-yupanqui",
+   "boss": "tupac-yupanqui",
+   "boss_name": "Tupac Yupanqui the Conquering Inca",
+   "name": "Conquering March",
+   "school": "wind",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Cieza de Leon, Chronicle of Peru",
+   "story": "The Inca who marched down the coast and conquered the Chimu.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:waxaklajuun",
+   "boss": "waxaklajuun",
+   "boss_name": "Waxaklajuun Ubaah K'awiil of Copan",
+   "name": "Eighteen Images",
+   "school": "fire",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Copan inscriptions",
+   "story": "The thirteenth king of Copan, whose reign of the eighth century raised the great plaza.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yax-kuk-mo",
+   "boss": "yax-kuk-mo",
+   "boss_name": "K'inich Yax K'uk' Mo of Copan",
+   "name": "Green Quetzal Macaw",
+   "school": "fire",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Copan inscriptions",
+   "story": "The founder of the Copan dynasty in the fifth century, who came from the west with a quetzal-feathered banner.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yuknoom-cheen",
+   "boss": "yuknoom-cheen",
+   "boss_name": "Yuknoom Ch'een of Calakmul",
+   "name": "Snake Kingdom's Reach",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:sun-court",
+   "source": "Calakmul inscriptions",
+   "story": "A king of the Snake Kingdom in the sixth century, who held the great alliance against Tikal.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:huemac",
+   "boss": "huemac",
+   "boss_name": "Huemac the Toltec King",
+   "name": "Dice with Tlaloc",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The last Toltec king, whose pride and gambling are said to have ruined Tula.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hun-batz",
+   "boss": "hun-batz",
+   "boss_name": "Hun Batz the Howler Monkey",
+   "name": "Howler's Trick",
+   "school": "wind",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The elder half-brother of the Hero Twins, who was tricked into a monkey's shape.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hun-came",
+   "boss": "hun-came",
+   "boss_name": "Hun-Came, One Death",
+   "name": "One Death",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The first lord of Xibalba, who sits on his throne and sends the first lord's trials.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hun-chouen",
+   "boss": "hun-chouen",
+   "boss_name": "Hun Chouen the Howler Monkey",
+   "name": "Howler's Song",
+   "school": "wind",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The other elder half-brother of the Hero Twins, who plays the flute and makes everyone laugh.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hunahpu",
+   "boss": "hunahpu",
+   "boss_name": "Hunahpu the Hero Twin",
+   "name": "Blowgun Shot",
+   "school": "wind",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The elder Hero Twin, who shot down Seven Macaw and outplayed the lords; the player stands against a champion.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jasaw-chan",
+   "boss": "jasaw-chan",
+   "boss_name": "Jasaw Chan K'awiil of Tikal",
+   "name": "Tikal's Victory",
+   "school": "fire",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Tikal inscriptions",
+   "story": "The Tikal king who broke Calakmul's power and restored his city.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lady-six-sky",
+   "boss": "lady-six-sky",
+   "boss_name": "Lady Six Sky of Naranjo",
+   "name": "Queen's Rule",
+   "school": "earth",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Naranjo inscriptions",
+   "story": "The queen of Naranjo who ruled for her young son and carried her city to power.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pakal",
+   "boss": "pakal",
+   "boss_name": "K'inich Janaab Pakal",
+   "name": "Palenque's Long Reign",
+   "school": "holy",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Palenque inscriptions",
+   "story": "The long-lived king of Palenque, who built the Temple of the Inscriptions; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:vucub-came",
+   "boss": "vucub-came",
+   "boss_name": "Vucub-Came, Seven Death",
+   "name": "Seven Death",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The second lord of Xibalba, who rules beside One Death over the underworld.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:xbalanque",
+   "boss": "xbalanque",
+   "boss_name": "Xbalanque the Hero Twin",
+   "name": "Jaguar Sun",
+   "school": "earth",
+   "level": 9,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The younger Hero Twin, who outwitted the lords of Xibalba; an honourable foe.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:calabash-tree",
+   "boss": "calabash-tree",
+   "boss_name": "The Calabash Tree of Xibalba",
+   "name": "Skull Tree",
+   "school": "earth",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The tree in Xibalba where the father of the Hero Twins hung, and whose fruit spoke to a maiden.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chicomoztoc",
+   "boss": "chicomoztoc",
+   "boss_name": "Chicomoztoc the Seven Caves",
+   "name": "Seven Caves",
+   "school": "earth",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The seven caves from which the peoples of the valley said they had emerged.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:coatepec",
+   "boss": "coatepec",
+   "boss_name": "Coatepec the Serpent Mountain",
+   "name": "Serpent Mountain",
+   "school": "earth",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The Serpent Mountain where the Four Hundred were beaten, and the mountain shakes.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:eagle-cactus",
+   "boss": "eagle-cactus",
+   "boss_name": "Eagle on the Cactus",
+   "name": "Omen of the Island",
+   "school": "wind",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Duran, History of the Indies",
+   "story": "The eagle on the prickly pear that showed the Mexica where to build.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:manco-capac",
+   "boss": "manco-capac",
+   "boss_name": "Manco Capac the Founder",
+   "name": "Golden Staff",
+   "school": "holy",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Garcilaso, Royal Commentaries",
+   "story": "The Inca founder of the old legend, who struck the golden staff into the earth at Cusco.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mictlan",
+   "boss": "mictlan",
+   "boss_name": "Mictlan the Nine Rivers",
+   "name": "Nine Rivers",
+   "school": "shadow",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The land of the dead with its nine levels and rivers, which the dead cross on their long journey.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:quinametzin",
+   "boss": "quinametzin",
+   "boss_name": "Quinametzin the Giants",
+   "name": "Giant's Fall",
+   "school": "earth",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The race of giants said to have lived before, who were broken by the later peoples.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tamoanchan",
+   "boss": "tamoanchan",
+   "boss_name": "Tamoanchan the Lost Garden",
+   "name": "Lost Garden",
+   "school": "wind",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The place of the broken tree where the flowers fell and the first people were born.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:texcoco-lake",
+   "boss": "texcoco-lake",
+   "boss_name": "Lake Texcoco",
+   "name": "Lake's Cold Rise",
+   "school": "frost",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Florentine Codex (Sahagun)",
+   "story": "The lake of the valley where the island city stood, rising cold and still.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:xibalba",
+   "boss": "xibalba",
+   "boss_name": "Xibalba the Place of Fear",
+   "name": "Underworld's Road",
+   "school": "shadow",
+   "level": 10,
+   "region": "region:sun-court",
+   "source": "Popol Vuh",
+   "story": "The underworld of the Popol Vuh, with its rivers and crossing roads, where the traveller must choose.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  }
+ ]
+}

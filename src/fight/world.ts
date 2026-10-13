@@ -11,7 +11,8 @@ import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
-import type { CcLadder } from './cc-ladder.ts';
+import { guardOfLevel, type CcGuard, type CcLadder } from './cc-ladder.ts';
+import { fieldOf } from './catalogue-rows.ts';
 import type { CombatEvent, Duel } from './duel.ts';
 
 const TICK = 1 / 60;
@@ -50,6 +51,7 @@ export type Fighter = {
   stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
   cc?: CcLadder;   // the crowd-control ladder (cc-ladder.ts): ONE per fighter, carried through every bout he is in, so three creatures on one hero step the same stun / knockdown ladder
+  ccGuard?: CcGuard;   // a creature's immuneTier / resist rows from its catalogue row (cc-ladder.ts); absent = none
   threat?: Record<string, Threat>;                      // creature only: its threat list (EQEmu hate list shape): who has hurt it. Threat picks the player it fights, damage is the credit (loot to the most). Dropped when he is dead, gone or out of sight for the give-up time; cleared on heal-home
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
 };
@@ -84,7 +86,10 @@ export function creature(id: string, kind: string, x: number, z: number, facing 
   const o = OPPONENT(kind);
   if (!o) throw new RangeError(`zone1: unknown creature kind ${kind}`);
   const lv = Math.min(MAX_LEVEL, Math.max(1, Math.round(level))), body = opponentAt(o, lv);
-  return { ...fighter(id, 'creature', kind, x, z, facing, PLAYER_RADIUS * o.scale, body.health, body.poise), level: lv };
+  const tier = fieldOf(kind, 'immuneTier'), resist = fieldOf(kind, 'resist'), ranked = guardOfLevel(lv);   // a catalogue row's own CC rows win; else the rank band its level falls in (cc-defs.json)
+  const ccGuard: CcGuard | undefined = tier !== undefined || resist !== undefined || ranked
+    ? { ...ranked, ...(tier !== undefined ? { immuneTier: String(tier) } : {}), ...(resist !== undefined ? { resist: String(resist) } : {}) } : undefined;
+  return { ...fighter(id, 'creature', kind, x, z, facing, PLAYER_RADIUS * o.scale, body.health, body.poise), level: lv, ...(ccGuard ? { ccGuard } : {}) };
 }
 /** A fighter with a picked stance ('neutral' = Balanced = none). The same four picks and the same signed per-mille table as the Pit (src/fight/stance.ts), one kit everywhere. */
 export const withStance = (f: Fighter, pick: PickedStance): Fighter => ({ ...f, stance: asStance(pick) });

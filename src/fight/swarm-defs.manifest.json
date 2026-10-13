@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "swarmrank", "file": "swarm-defs.json", "at": "ranks", "key": "id",
+      "required": { "rank": "integer", "perFoe": "integer", "cap": "integer" }, "unique": ["rank"] }
+  ]
+}
