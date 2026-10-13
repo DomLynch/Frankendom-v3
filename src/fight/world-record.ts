@@ -3,10 +3,14 @@
 // A record is a window: it opens when a creature joins an empty loop and carries the hero's body at that moment (claims, bounded by the replay), every join and release, and per step the page's pose and presses.
 // Poses and presses are quantized BEFORE the live loop uses them (cm, milliradian), so the replay sees exactly the numbers the page's sim saw. This is a Zone 1 module, not the Pit's FightRecord. The header stamps the sim's RECORD_VERSION: the replay runs only a record of its own version (a stale one is the no-record tier, not fraud).
 import { CAPS } from './gear-stats.ts';
+import { M } from './detmath.ts';
 import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, MAX_RECORD_TICKS, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
+// The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
+// RECORD_VERSION; a change to any of them, or a Pit sim bump, fails that test until this is bumped and the digest re-pinned. The packed record stamps it, and a verifier replays only a record of ITS OWN version.
+export const WORLD_SIM_VERSION = 1;
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
 const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'kick'];
@@ -84,7 +88,7 @@ export function packWorldRecord(r: WorldRecord): Uint8Array {
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && Math.abs(v) < 1e9;
 export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   let i = 0;
-  const get = (): number => { let n = 0, m = 1; for (;;) { if (i >= bytes.length) throw Error('World record: truncated'); const b = bytes[i++]!; n += (b & 127) * m; if (b < 128) return n; m *= 128; if (m > 2 ** 35) throw Error('World record: bad number'); } };
+  const get = (): number => { let n = 0, m = 1; for (;;) { if (i >= bytes.length) throw Error('World record: truncated'); const b = bytes[i++]!; n += (b & 127) * m; if (b < 128) return n; m *= 128; if (m > 34_359_738_368) throw Error('World record: bad number'); } };
   if (bytes[0] !== MAGIC[0] || bytes[1] !== MAGIC[1] || bytes[2] !== MAGIC[2]) throw Error('World record: not a world record');
   i = 3; const hl = get(); if (hl > 65_536 || i + hl > bytes.length) throw Error('World record: bad header');
   let h: { v: number; h: RecordHero; j: unknown[][]; r: unknown[][]; n: number };
@@ -159,7 +163,7 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
     if (dead && (s.attack || s.roll)) return bad('acted dead');
     if (s.pose) {
       const x = fromCm(s.pose.x), z = fromCm(s.pose.z);
-      if (last && Math.hypot(x - last.x, z - last.z) > MAX_HERO_MPS * STEP * (k - last.k) + 0.02) return bad('speed');
+      if (last && M.hypot(x - last.x, z - last.z) > MAX_HERO_MPS * STEP * (k - last.k) + 0.02) return bad('speed');
       last = { x, z, k };
     }
     const res = stepHero(world, s, gear); world = res.world;

@@ -8,6 +8,7 @@ import { CAPS, NAKED, type Loadout } from './gear-stats.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
 import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
+import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
@@ -108,8 +109,8 @@ export const duelOf = (world: World, id: string): Duel | null => world.streams[i
 export const duelFor = (world: World, creature: string): Duel | null => pairs(world).find((p) => p.foe === creature)?.duel ?? null;
 export const newWorld = (fighters: Fighter[]): World => ({ time: 0, fighters, aggro: {}, streams: {} });
 
-const dist = (a: Fighter, b: Fighter): number => Math.hypot(b.x - a.x, b.z - a.z);
-const aim = (from: Fighter, to: Fighter): number => Math.atan2(to.x - from.x, to.z - from.z);
+const dist = (a: Fighter, b: Fighter): number => M.hypot(b.x - a.x, b.z - a.z);
+const aim = (from: Fighter, to: Fighter): number => M.atan2(to.x - from.x, to.z - from.z);
 const alive = (f: Fighter): boolean => f.phase !== 'dead';
 /** May these two players fight? Both attackable here and now (the server's `pvp`), neither shielded, and not more than MAX_LEVEL_GAP levels apart. */
 const attackable = (a: Fighter, b: Fighter): boolean => a.pvp && b.pvp && !a.shielded && !b.shielded && Math.abs(a.level - b.level) <= MAX_LEVEL_GAP;
@@ -118,7 +119,7 @@ const attackable = (a: Fighter, b: Fighter): boolean => a.pvp && b.pvp && !a.shi
 function separate(f: Fighter, all: Fighter[]): void {
   for (const o of all) {
     if (o === f || o.side !== 'creature' || !alive(o)) continue;
-    const dx = f.x - o.x, dz = f.z - o.z, d = Math.hypot(dx, dz), min = f.radius + o.radius;
+    const dx = f.x - o.x, dz = f.z - o.z, d = M.hypot(dx, dz), min = f.radius + o.radius;
     if (d >= min) continue;
     const ux = d > 1e-6 ? dx / d : 1, uz = d > 1e-6 ? dz / d : 0, push = (min - d) / 2;
     f.x += ux * push; f.z += uz * push; o.x -= ux * push; o.z -= uz * push;
@@ -193,7 +194,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
       const jr = stepBout(jb, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);
       if (jr.bout.ai) c.brain = carried(jr.bout.ai, jr.bout.duel.tick);
       if (alive(a)) Object.assign(a, keep); else { Object.assign(a, { x: keep.x, z: keep.z, facing: keep.facing }); break; }   // killed by a joiner: he stays dead (Auditor, #1943); the other joiners stop
-      if (alive(c) && Math.hypot(c.x - c.chaseX, c.z - c.chaseZ) > leashOf(c.kind)) { c.hunting = false; c.returning = true; c.phase = 'ready'; }
+      if (alive(c) && M.hypot(c.x - c.chaseX, c.z - c.chaseZ) > leashOf(c.kind)) { c.hunting = false; c.returning = true; c.phase = 'ready'; }
     }
     if (b && b.side === 'creature') for (const e of r.events) if (e.type === 'Hit' && e.attacker === a.id && e.victim === b.id) { const t = ((b.threat ??= {})[a.id] ??= { threat: 0, damage: 0, out: 0 }); t.threat += e.damage; t.damage += e.damage; }   // credit and threat from what actually landed
     if (b && b.side === 'player') for (const e of r.events) {   // player against player: log who struck first (a blow that hit, was blocked, parried or dodged)
@@ -203,7 +204,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
       events.push({ type: 'Aggressed', attacker: hit[0]!, victim: hit[1]!, first: back === undefined || world.time - back > AGGRO_WINDOW_S });
       (aggro[hit[0]!] ??= {})[hit[1]!] = world.time;
     }
-    if (b && b.side === 'creature' && alive(b) && Math.hypot(b.x - b.chaseX, b.z - b.chaseZ) > leashOf(b.kind)) { b.hunting = false; b.returning = true; b.phase = 'ready'; }   // the leash is the world layer's, on the duel too
+    if (b && b.side === 'creature' && alive(b) && M.hypot(b.x - b.chaseX, b.z - b.chaseZ) > leashOf(b.kind)) { b.hunting = false; b.returning = true; b.phase = 'ready'; }   // the leash is the world layer's, on the duel too
   }
 
   // The world layer for every creature not in a fight: chase to the hold ring (and wait there), give up, walk home.
@@ -218,16 +219,16 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     f.stamina = Math.min(f.maxStamina, f.stamina + RULES.regen * 60 * dt);
     const prey = players.sort((a, b) => dist(f, a) - dist(f, b))[0];
     if (f.returning) {   // gave up: walks home at its amble, heals to full on arrival (no event)
-      const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = Math.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
+      const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
       if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
-      else { f.facing = Math.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
+      else { f.facing = M.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
     } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < GIVE_UP_UNSEEN_S : dist(f, prey) <= AGGRO_M)) {
       if (!f.hunting) { f.hunting = true; f.chaseX = f.x; f.chaseZ = f.z; f.unseen = 0; }
       f.unseen = dist(f, prey) > SIGHT_M ? f.unseen + dt : 0;
-      if (f.unseen >= GIVE_UP_UNSEEN_S || Math.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
+      if (f.unseen >= GIVE_UP_UNSEEN_S || M.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
       else {
         f.facing = aim(f, prey);
-        if (dist(f, prey) > HOLD_M) { const step = Math.min(chaseSpeed(f.kind) * dt, dist(f, prey) - HOLD_M); f.x += Math.sin(f.facing) * step; f.z += Math.cos(f.facing) * step; }   // closes to just inside the engage ring and waits: the engaged foe fights, the rest hold off
+        if (dist(f, prey) > HOLD_M) { const step = Math.min(chaseSpeed(f.kind) * dt, dist(f, prey) - HOLD_M); f.x += M.sin(f.facing) * step; f.z += M.cos(f.facing) * step; }   // closes to just inside the engage ring and waits: the engaged foe fights, the rest hold off
         separate(f, fighters);
       }
     } else if (f.hunting) { f.hunting = false; f.returning = true; f.unseen = 0; }   // nobody left to hunt (the prey is dead or gone)
