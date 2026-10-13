@@ -11,6 +11,9 @@
     { "id": "dropPad", "value": 8, "unit": "m" },
     { "id": "fall", "value": 1.4, "unit": "s" },
     { "id": "pulse", "value": 0.18, "unit": "s" },
-    { "id": "maxSteps", "value": 15, "unit": "steps" }
+    { "id": "maxSteps", "value": 15, "unit": "steps" },
+    { "id": "creatureNotice", "value": 7, "unit": "m" },
+    { "id": "namedNotice", "value": 9, "unit": "m" },
+    { "id": "noticeHold", "value": 1.5, "unit": "m" }
   ]
 }

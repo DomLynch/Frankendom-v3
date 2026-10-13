@@ -26,3 +26,4 @@ export { LEGEND_FAMILIES, isSpellless, legendText } from './legend-families.ts';
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
 export { MAX_HERO_MPS, MAX_WORLD_TICKS, decodeWorldRecord, encodeWorldRecord, replayWorldRecord, unpackWorldRecord, packWorldRecord, type WorldRecord, type RecordHero, type Replayed } from './world-record.ts';
 export * from './weapon-skills.ts';
+export { worldRule } from './world-rules.ts';   // the open-world rules as rows (world-sim.ts reads its notice rings from them)
