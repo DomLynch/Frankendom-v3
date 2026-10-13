@@ -21,5 +21,6 @@ export { SPEEDS } from './speeds.ts';
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
 export { PORTRAIT_KEYS } from '../legends.ts';
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
+export { MAX_HERO_MPS, MAX_WORLD_TICKS, decodeWorldRecord, encodeWorldRecord, replayWorldRecord, unpackWorldRecord, packWorldRecord, type WorldRecord, type RecordHero, type Replayed } from './world-record.ts';
 export * from './weapon-skills.ts';
 export * from './boss-spells.ts';
