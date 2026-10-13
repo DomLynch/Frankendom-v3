@@ -16,6 +16,7 @@ export type { Sheet } from './sheet-rows.ts';
 export { expectedSheet, NO_BUILD, type BuildLoader } from './build-check.ts';   // a record's build reference -> the sheet it must fight with (sweeps, encounter settle)
 export { setStab, STAB_ON } from './stab-rule.ts';
 export { setStanceRows, STANCE_ROWS_ON } from './stance-era.ts';
+export { setPoiseLadder, POISE_LADDER_ON } from './poise-era.ts';
 export { AFTER_HIT_TICKS, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow, type KitRow } from './mobkit.ts';
 export { SPEEDS } from './speeds.ts';
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
