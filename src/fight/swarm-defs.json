@@ -1,0 +1,14 @@
+{
+  "ranks": [
+    {"id": "rank1", "rank": 1, "perFoe": 0, "cap": 0},
+    {"id": "rank2", "rank": 2, "perFoe": 0, "cap": 0},
+    {"id": "rank3", "rank": 3, "perFoe": 0, "cap": 0},
+    {"id": "rank4", "rank": 4, "perFoe": 0, "cap": 0},
+    {"id": "rank5", "rank": 5, "perFoe": 0, "cap": 0},
+    {"id": "rank6", "rank": 6, "perFoe": 0, "cap": 0},
+    {"id": "rank7", "rank": 7, "perFoe": 0, "cap": 0},
+    {"id": "rank8", "rank": 8, "perFoe": 0, "cap": 0},
+    {"id": "rank9", "rank": 9, "perFoe": 0, "cap": 0},
+    {"id": "rank10", "rank": 10, "perFoe": 0, "cap": 0}
+  ]
+}

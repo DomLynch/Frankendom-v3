@@ -11,6 +11,8 @@ const CATALOGUE_DEFS = {
     { id: "spectral", kind: "number", min: 1, max: 1, sim: false },
     { id: "nightBronze", kind: "number", min: 1, max: 10, sim: false },
     { id: "crowd", kind: "number", min: 1, max: 8, sim: false },
+    { id: "immuneTier", kind: "ref", of: "ccTiers", sim: true },   // the CC families it never takes (cc-ladder.ts CC_LADDER.tiers; programme item 7)
+    { id: "resist", kind: "ref", of: "ccResists", sim: true },   // the percent of each CC it keeps (cc-ladder.ts CC_LADDER.resists)
   ],
   rigs: [
     { id: "hero" }, { id: "goblin" }, { id: "nightborn" }, { id: "minotaur" }, { id: "wraith" }, { id: "wolf" }, { id: "boar" }, { id: "bear" },
