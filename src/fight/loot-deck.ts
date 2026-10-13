@@ -10,7 +10,22 @@ export type LootDeckRow = { id: string; scope: string; rolledAt: string; deckSiz
 export type LootDeckReset = { id: string; clearsPity: boolean; reshuffles: boolean; note: string };
 export type DeckState = { left: number; hitsLeft: number; misses: number };
 
-export const loadLootDecks = (data: unknown = DECK_DATA) => loadRegistry((MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile(m, data, 'loot-deck.json')));
+// The registry checks types and refs; these are the relations inside a deck row (a typo row must not load: dropChance would clamp it to 1 and hide it).
+export function checkDeckRelations(data: { decks: LootDeckRow[] }): void {
+  const bad: string[] = [];
+  for (const d of data.decks) {
+    if (!(d.deckSize >= 1)) bad.push(`${d.id}: deckSize must be >= 1`);
+    if (!(d.hits >= 1 && d.hits <= d.deckSize)) bad.push(`${d.id}: hits ${d.hits} must be 1..deckSize ${d.deckSize}`);
+    if (!(d.softPityFrom >= 1 && d.softPityFrom <= d.hardPity)) bad.push(`${d.id}: softPityFrom ${d.softPityFrom} must be 1..hardPity ${d.hardPity}`);
+    if (!(d.pityStep > 0 && d.pityStep <= 100)) bad.push(`${d.id}: pityStep ${d.pityStep} must be in (0, 100]`);
+  }
+  if (bad.length) throw new Error(`loot-deck relations: ${bad.join('; ')}`);
+}
+export const loadLootDecks = (data: unknown = DECK_DATA) => {
+  const reg = loadRegistry((MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile(m, data, 'loot-deck.json')));
+  checkDeckRelations(data as { decks: LootDeckRow[] });
+  return reg;
+};
 loadLootDecks();
 export const LOOT_DECKS: readonly LootDeckRow[] = DECK_DATA.decks;
 export const LOOT_DECK_RESETS: readonly LootDeckReset[] = DECK_DATA.resets;
