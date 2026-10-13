@@ -1,0 +1,11 @@
+{
+  "firstPass": true,
+  "source": "perf_beacons p90 per gfx_tier, 2026-09-28..2026-10-12 (290 full, 196 phone fights): select gfx_tier, percentile_cont(0.9) within group (order by draws), percentile_cont(0.9) within group (order by tris) from perf_beacons group by gfx_tier. Rounded up to the next whole number; for Dom to tune.",
+  "tiers": {
+    "phone": { "draws": 139, "tris": 403500 },
+    "full": { "draws": 127, "tris": 418500 }
+  },
+  "ladder": ["resolution", "shadows"],
+  "windowFrames": 120,
+  "overWindows": 3
+}

@@ -679,6 +679,12 @@ export function createScene(
         resize();
       }
     },
+    // The client governor's levers (governor.ts): 'resolution' is lowerResolution; 'shadows' turns the sun's shadow pass off (it re-draws every caster, so it is the largest draw/triangle cut left).
+    degrade(lever: 'resolution' | 'shadows') {
+      if (lever === 'resolution') { this.lowerResolution(); return; }
+      renderer.shadowMap.enabled = false; sun.castShadow = false;
+      scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined; if (m) for (const x of Array.isArray(m) ? m : [m]) x.needsUpdate = true; });   // the programs drop their shadow code
+    },
     restoreGraphics() {
       this.lowerResolution();
       rebuildEnvironment();
