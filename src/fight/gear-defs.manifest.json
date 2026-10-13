@@ -7,7 +7,11 @@
       "key": "id",
       "required": {
         "shape": "object",
-        "quality": "object"
+        "quality": "object",
+        "weightClass": "string"
+      },
+      "refs": {
+        "weightClass": "armourWeight"
       }
     },
     {
@@ -30,7 +34,8 @@
       "required": {
         "weight": "number",
         "wearMax": "integer",
-        "resist": "object"
+        "resist": "object",
+        "weightClass": "string"
       },
       "optional": {
         "slot": "string",
@@ -39,7 +44,8 @@
         "set": "string"
       },
       "refs": {
-        "set": "gearset"
+        "set": "gearset",
+        "weightClass": "armourWeight"
       }
     },
     {
