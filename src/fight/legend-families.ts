@@ -1,18 +1,11 @@
 // The ONE legend key (Lead 2026-10-13) is a spell row's id without `spell:` ("alvis"), the key Backend's grimoire grants by and a kill's provenance writes. A legend row's id is that key;
-// a legend with no spell row is listed `spellless: true` (52 of the 100 rank legends today) and its id is a slug of its name. A legend whose id names no spell row and is not listed spellless fails at load.
+// a legend with no spell row is listed `spellless: true` (52 of the 100 rank legends today) and its id is a slug of its name. The page reads only that flag (the 700-row spell catalogue stays out of the entry bundle); tests/legend-families.test.ts checks every id against the spell rows.
 // Legend families as data: a family row names the legends that may wear one opponent's rank, any number per rank. The two tables (legend-rows.json, legend-families.json)
 // load through the shared loader (src/core/registry.ts); a family's legendIds are checked against the legend table at load. Cosmetic only, like src/legends.ts.
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import { makeRng } from './blood-style.ts';
 import FAMILIES from './legend-families.json' with { type: 'json' };
 import LEGENDS from './legend-rows.json' with { type: 'json' };
-import ASH_FRONTIER from './spells-ash-frontier.json' with { type: 'json' };
-import BLACK_SAND from './spells-black-sand.json' with { type: 'json' };
-import JADE_REACH from './spells-jade-reach.json' with { type: 'json' };
-import MARBLE_SHORE from './spells-marble-shore.json' with { type: 'json' };
-import RED_HOLLOW from './spells-red-hollow.json' with { type: 'json' };
-import SUN_COURT from './spells-sun-court.json' with { type: 'json' };
-import THORN_STEPPE from './spells-thorn-steppe.json' with { type: 'json' };
 import MANIFEST from './legend-families.manifest.json' with { type: 'json' };
 
 export type FamilyLegend = { name: string; source: string; backstory: string };
@@ -23,13 +16,10 @@ const [LEGEND_MANIFEST, FAMILY_MANIFEST] = MANIFEST.tables as unknown as Manifes
 const LEGEND_TABLE = tableFromFile(LEGEND_MANIFEST!, LEGENDS, 'legend-rows.json');
 loadRegistry([LEGEND_TABLE, tableFromFile(FAMILY_MANIFEST!, FAMILIES, 'legend-families.json')]);
 
-const SPELL_KEYS = new Set(([ASH_FRONTIER, BLACK_SAND, JADE_REACH, MARBLE_SHORE, RED_HOLLOW, SUN_COURT, THORN_STEPPE] as { spells: { id: string }[] }[]).flatMap((t) => t.spells.map((r) => r.id.slice('spell:'.length))));
-for (const r of LEGEND_TABLE.rows) if (SPELL_KEYS.has(r.id as string) === (r.spellless === true)) throw new Error(`legend ${String(r.id)}: ${r.spellless ? 'is listed spellless but names a spell row' : 'names no spell row and is not listed spellless'}`);
-
 const TEXT = new Map(LEGEND_TABLE.rows.map((r) => [r.id as string, { name: r.name, source: r.source, backstory: r.backstory } as FamilyLegend]));
 export const LEGEND_FAMILIES: readonly LegendFamily[] = FAMILIES.families;
 export const familyOf = (opponent: string): LegendFamily | null => LEGEND_FAMILIES.find((f) => f.opponent === opponent) ?? null;
-export const isSpellless = (legendId: string): boolean => !SPELL_KEYS.has(legendId);
+export const isSpellless = (legendId: string): boolean => (LEGEND_TABLE.rows.find((r) => r.id === legendId)?.spellless ?? false) === true;
 export const legendText = (legendId: string): FamilyLegend | null => TEXT.get(legendId) ?? null;
 
 // The legends that may wear `rank` (1..10), in the family row's order.
