@@ -13,3 +13,7 @@ export const DISENGAGE_M = 12, DISENGAGE_S = 3;   // the hero-side disengage: a 
 export const ENGAGE_GAP_MAX_M = 6.5, COMMIT_RANGE_M = 8;   // Strategy's spec numbers the disengage must stay beyond (the max start gap before spawnScale, the commit range)
 export const chaseSpeed = (kind: string): number => (fieldOf(kind, 'chase') as number | undefined) ?? SPEEDS.creature.chase;   // a row's `chase` field (the wolf's 6.0), else the default
 export const leashOf = (kind: string): number => (fieldOf(kind, 'leash') as number | undefined) ?? LEASH.default;
+export const giveUpOf = (kind: string): number => (fieldOf(kind, 'giveUp') as number | undefined) ?? GIVE_UP_UNSEEN_S;   // a row's `giveUp` (s out of sight before it gives up), else the default
+/** The chase trio (World, top-30 row 21): how fast a creature chases, how far from where the chase started it follows, and how long it keeps hunting a prey it cannot see. Each is a catalogue row field
+ *  (`chase`, `leash`, `giveUp`) with today's default, so a creature with none behaves exactly as before; a new creature's chase is one row, never a new branch. */
+export const chaseTrio = (kind: string): { readonly speed: number; readonly leash: number; readonly giveUp: number } => ({ speed: chaseSpeed(kind), leash: leashOf(kind), giveUp: giveUpOf(kind) });

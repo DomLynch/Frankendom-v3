@@ -7,6 +7,7 @@ const CATALOGUE_DEFS = {
     { id: "weapon", kind: "ref", of: "weapons", required: true, sim: true },
     { id: "chase", kind: "number", min: 0.1, max: 12, sim: false },
     { id: "leash", kind: "number", min: 1, max: 200, sim: false },
+    { id: "giveUp", kind: "number", min: 1, max: 120, sim: false },
     { id: "shieldFromLevel", kind: "number", min: 2, max: 10, sim: false },
     { id: "spectral", kind: "number", min: 1, max: 1, sim: false },
     { id: "nightBronze", kind: "number", min: 1, max: 10, sim: false },
