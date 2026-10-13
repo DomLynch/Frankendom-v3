@@ -1,0 +1,1604 @@
+{
+ "spells": [
+  {
+   "id": "spell:akaname",
+   "boss": "akaname",
+   "boss_name": "Akaname the Filth-Licker",
+   "name": "Filth Lick",
+   "school": "poison",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A long-tongued spirit that licks the grime of old bath-houses, and leaves a sickness behind.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bake-danuki",
+   "boss": "bake-danuki",
+   "boss_name": "Bake-danuki the Leaf-Trickster",
+   "name": "Leaf Illusion",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A shape-changing raccoon dog who turns a leaf into a coin, or a fighter into a fool.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dokkaebi",
+   "boss": "dokkaebi",
+   "boss_name": "Dokkaebi of the Club",
+   "name": "Magic Club",
+   "school": "earth",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "A goblin of the old tales with a magic club that conjures what he wants, and he is fond of wrestling.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hitotsume-kozo",
+   "boss": "hitotsume-kozo",
+   "boss_name": "Hitotsume-kozo the One-Eyed Boy",
+   "name": "One-Eyed Fright",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A one-eyed boy who appears on the road at dusk, he startles more than he harms.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jiangshi",
+   "boss": "jiangshi",
+   "boss_name": "Jiangshi the Hopping Corpse",
+   "name": "Hopping Corpse",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Liaozhai (Pu Songling)",
+   "story": "A stiff corpse that hops after the living on the road home, with its arms held out.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kamaitachi",
+   "boss": "kamaitachi",
+   "boss_name": "Kamaitachi the Sickle-Weasel",
+   "name": "Sickle Wind",
+   "school": "wind",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "Three weasels ride a whirlwind, one knocks down, one cuts, one salves, and only the cut is felt.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kappa",
+   "boss": "kappa",
+   "boss_name": "Kappa of the River",
+   "name": "Bowl of Water",
+   "school": "frost",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "The river imp with a dish of water on his head bows to a polite fighter, and spills it on a rude one.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ma-da",
+   "boss": "ma-da",
+   "boss_name": "Ma Da the Water Ghost",
+   "name": "Drowned Hand",
+   "school": "frost",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "The ghost of the drowned pulls travellers under at the river crossing.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shanxiao",
+   "boss": "shanxiao",
+   "boss_name": "Shanxiao the Mountain Imp",
+   "name": "Mountain Imp's Prank",
+   "school": "earth",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A one-legged mountain imp, who stamps the ground and rattles the stones.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:viradha",
+   "boss": "viradha",
+   "boss_name": "Viradha the Ogre",
+   "name": "Ogre's Seizure",
+   "school": "earth",
+   "level": 1,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A rakshasa of the Dandaka forest who seizes travellers in his arms and runs.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:imugi",
+   "boss": "imugi",
+   "boss_name": "Imugi the Lesser Dragon",
+   "name": "Not-Yet-Dragon",
+   "school": "frost",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "A great serpent that has not yet become a dragon, it is waiting on the river.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jorogumo",
+   "boss": "jorogumo",
+   "boss_name": "Jorogumo the Spider Woman",
+   "name": "Spider-Woman's Thread",
+   "school": "poison",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A spider who takes a woman's shape, she lures men to her web with a lute.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:maricha",
+   "boss": "maricha",
+   "boss_name": "Maricha the Golden Deer",
+   "name": "Golden Lure",
+   "school": "wind",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A rakshasa in the shape of a golden deer who draws his hunters away from the camp.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nian",
+   "boss": "nian",
+   "boss_name": "Nian the Winter Beast",
+   "name": "Year-End Hunger",
+   "school": "fire",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Chinese folklore",
+   "story": "The beast that comes at the end of the year, it fears the red and the fire of crackers.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nure-onna",
+   "boss": "nure-onna",
+   "boss_name": "Nure-onna the Wet Woman",
+   "name": "Serpent-Woman's Coil",
+   "school": "poison",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A serpent with a woman's head who waits on the shore with a bundle that grows heavy.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:qiongqi",
+   "boss": "qiongqi",
+   "boss_name": "Qiongqi the Winged Tiger",
+   "name": "Winged Tiger's Pounce",
+   "school": "wind",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A winged tiger of the mountains that devours honest men, and the wind is its wings.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rokurokubi",
+   "boss": "rokurokubi",
+   "boss_name": "Rokurokubi the Long-Necked",
+   "name": "Long Neck's Lunge",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "By day a woman, by night her neck stretches long, and it strikes from the dark.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:thach-python",
+   "boss": "thach-python",
+   "boss_name": "Python of Thach Sanh",
+   "name": "Mountain Python",
+   "school": "poison",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "A giant python that haunted the hill, which the woodcutter's son faced with an axe.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:umibozu",
+   "boss": "umibozu",
+   "boss_name": "Umibozu the Sea Monk",
+   "name": "Sea Monk's Wave",
+   "school": "frost",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A huge black shape that rises beside the ship in a calm, and the sea comes with it.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:xiangliu",
+   "boss": "xiangliu",
+   "boss_name": "Xiangliu the Nine-Headed Snake",
+   "name": "Marsh-Maker",
+   "school": "poison",
+   "level": 2,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A nine-headed serpent whose poison turns the ground to marsh where it passes.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bai-gu-jing",
+   "boss": "bai-gu-jing",
+   "boss_name": "Bai Gu Jing the White Bone Spirit",
+   "name": "Bone Illusion",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "A white-bone spirit who disguises herself three times to fool the pilgrims.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bulgasari",
+   "boss": "bulgasari",
+   "boss_name": "Bulgasari the Iron-Eater",
+   "name": "Iron Hunger",
+   "school": "earth",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "A beast that eats iron, grows with every needle, and shrugs off blades.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gashadokuro",
+   "boss": "gashadokuro",
+   "boss_name": "Gashadokuro the Skeleton Giant",
+   "name": "Bone Giant",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A giant made of the bones of the unburied, who wanders the night and bites.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hundun",
+   "boss": "hundun",
+   "boss_name": "Hundun the Shapeless",
+   "name": "Shapeless Chaos",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A faceless creature without holes in the face, who was killed by kindness.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nopperabo",
+   "boss": "nopperabo",
+   "boss_name": "Nopperabo the Faceless",
+   "name": "Faceless Fright",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A faceless figure who turns a stranger's face smooth, and the dark follows.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:red-boy",
+   "boss": "red-boy",
+   "boss_name": "Red Boy of the Fire Cave",
+   "name": "Samadhi Fire",
+   "school": "fire",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "A young demon of the Fire-Cloud cave who breathes a hot, red fire.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:taotie",
+   "boss": "taotie",
+   "boss_name": "Taotie the Glutton",
+   "name": "Glutton's Maw",
+   "school": "earth",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A glutton with a body and no end to its hunger, the beast on the old bronze vessels.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tataka",
+   "boss": "tataka",
+   "boss_name": "Tataka the Ogress",
+   "name": "Ogress's Boulders",
+   "school": "poison",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A rakshasi of the forest who hurls boulders at the sages of the grove.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tsuchigumo",
+   "boss": "tsuchigumo",
+   "boss_name": "Tsuchigumo the Earth Spider",
+   "name": "Earth Spider's Web",
+   "school": "earth",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Konjaku Monogatari",
+   "story": "A giant spider of the mountain caves who fought the Heian court, and caught its warriors in a web.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yamauba",
+   "boss": "yamauba",
+   "boss_name": "Yamauba the Mountain Hag",
+   "name": "Mountain Hag's Hunger",
+   "school": "earth",
+   "level": 3,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A hag of the mountain who feeds travellers, then eats them, and the mountain helps her.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cheonyeo",
+   "boss": "cheonyeo",
+   "boss_name": "Cheonyeo Gwisin the Maiden Ghost",
+   "name": "Unwed Ghost's Grief",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "The ghost of an unwed maiden who cannot rest, she wails in the dark.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gumiho",
+   "boss": "gumiho",
+   "boss_name": "Gumiho the Nine-Tailed Fox",
+   "name": "Fox-Bead",
+   "school": "fire",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "A fox with nine tails who takes a maiden's shape and hungers for livers.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kabandha",
+   "boss": "kabandha",
+   "boss_name": "Kabandha the Headless",
+   "name": "Long-Armed Seizure",
+   "school": "earth",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A headless rakshasa with arms a league long, who grabs everything that passes.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nhap-trang",
+   "boss": "nhap-trang",
+   "boss_name": "Quy Nhap Trang the Revenant",
+   "name": "Revenant's Rise",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "A corpse that rises at the touch of a black cat and stalks the living.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nue",
+   "boss": "nue",
+   "boss_name": "Nue the Chimera",
+   "name": "Nue's Cry",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A creature with a monkey's face, a tiger's limbs and a snake's tail, whose cry in the night ill-omens the court.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:spider-spirits",
+   "boss": "spider-spirits",
+   "boss_name": "Seven Spider Spirits",
+   "name": "Silk Web",
+   "school": "poison",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "Seven spiders in a cave who spin a web and wash in a hot spring.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:taowu",
+   "boss": "taowu",
+   "boss_name": "Taowu the Untamable",
+   "name": "Untamed Rage",
+   "school": "fire",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A tiger-like beast of the western wastes that never yields and never tires.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tengu",
+   "boss": "tengu",
+   "boss_name": "Tengu of the Crows",
+   "name": "Crow-Goblin's Gale",
+   "school": "wind",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A mountain goblin with a long nose or a beak, who fans up a gale.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ushi-oni",
+   "boss": "ushi-oni",
+   "boss_name": "Ushi-oni the Ox Demon",
+   "name": "Ox-Demon's Venom",
+   "school": "poison",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A bull-headed spider-bodied demon of the sea shore, whose breath poisons.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yellow-wind",
+   "boss": "yellow-wind",
+   "boss_name": "Yellow Wind Demon",
+   "name": "Yellow Wind",
+   "school": "wind",
+   "level": 4,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "A tiger-demon of Yellow Wind Ridge whose breath blinds the pilgrims.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bull-demon",
+   "boss": "bull-demon",
+   "boss_name": "Bull Demon King",
+   "name": "Bull Demon's Horns",
+   "school": "fire",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "The great bull who was sworn brother to the Monkey King, the fan-owner of Flaming Mountain.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dushana",
+   "boss": "dushana",
+   "boss_name": "Dushana the Brother",
+   "name": "Brother's Rank",
+   "school": "fire",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "Khara's brother and general, who leads the rakshasa line against the exile.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gonggong",
+   "boss": "gonggong",
+   "boss_name": "Gonggong the Water-Giant",
+   "name": "Flood Butting",
+   "school": "frost",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A water giant who butted Mount Buzhou in rage and tilted the sky and earth.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ibaraki",
+   "boss": "ibaraki",
+   "boss_name": "Ibaraki-doji the Oni",
+   "name": "Severed Arm",
+   "school": "fire",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Konjaku Monogatari / Heike",
+   "story": "The oni of Rashomon gate who lost an arm to a swordsman and comes back for it.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:iron-fan",
+   "boss": "iron-fan",
+   "boss_name": "Princess Iron Fan",
+   "name": "Banana Fan",
+   "school": "wind",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "The princess whose banana-leaf fan puts out fire or blows a man a thousand miles.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:khara",
+   "boss": "khara",
+   "boss_name": "Khara of Janasthana",
+   "name": "Khara's Chariot",
+   "school": "fire",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A rakshasa captain of fourteen thousand, who attacked the forest hermitage.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nurarihyon",
+   "boss": "nurarihyon",
+   "boss_name": "Nurarihyon the Slippery Gourd",
+   "name": "Uninvited Guest",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A slippery old figure who walks into a house like the master, and no one can say he is not.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:scorpion-demon",
+   "boss": "scorpion-demon",
+   "boss_name": "Scorpion Demon",
+   "name": "Poison Sting",
+   "school": "poison",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "A scorpion-woman of the Poison Enemy Mountain whose sting even a god cannot bear.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tamamo",
+   "boss": "tamamo",
+   "boss_name": "Tamamo-no-Mae the Fox Consort",
+   "name": "Killing-Stone Fox",
+   "school": "fire",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A nine-tailed fox in the guise of a court beauty who nearly brought down an emperor.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:xingtian",
+   "boss": "xingtian",
+   "boss_name": "Xingtian the Headless Dancer",
+   "name": "Headless Dance",
+   "school": "fire",
+   "level": 5,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "Beheaded in battle, he fights on, with his nipples as eyes and his navel as mouth.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:akampana",
+   "boss": "akampana",
+   "boss_name": "Akampana the Unshaken",
+   "name": "Unshaken Stand",
+   "school": "earth",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A rakshasa whose name means unshaken, killed by the monkey general.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:atikaya",
+   "boss": "atikaya",
+   "boss_name": "Atikaya the Giant",
+   "name": "Giant's Stride",
+   "school": "earth",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A giant of Lanka, the son of the ten-headed king, who rides a huge chariot.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ba-snake",
+   "boss": "ba-snake",
+   "boss_name": "Ba the Elephant-Swallower",
+   "name": "Elephant-Swallowing Coil",
+   "school": "poison",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A snake that swallows an elephant and spits the bones out three years later.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hyakki-yagyo",
+   "boss": "hyakki-yagyo",
+   "boss_name": "Hyakki Yagyo the Night Parade",
+   "name": "Hundred Demons' Parade",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A hundred demons parade down the street on summer nights, and a fighter who meets them is caught.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jangsan-beom",
+   "boss": "jangsan-beom",
+   "boss_name": "Jangsan Beom the Mountain Tiger",
+   "name": "Mountain Tiger's Roar",
+   "school": "earth",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "The great tiger of Jangsan, who haunts the pass and is the terror of the hunters.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:prahasta",
+   "boss": "prahasta",
+   "boss_name": "Prahasta the Commander",
+   "name": "Commander's Mace",
+   "school": "fire",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "The commander of Lanka's army, who fought with a mace in the great war.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shuten-doji",
+   "boss": "shuten-doji",
+   "boss_name": "Shuten-doji the Drunken Oni",
+   "name": "Drunken Oni's Feast",
+   "school": "fire",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "The king of oni on Mount Oe, who fed on the young and was drugged with sake.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yinglong",
+   "boss": "yinglong",
+   "boss_name": "Yinglong the Winged Dragon",
+   "name": "Rain-Dragon's Wings",
+   "school": "wind",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "The winged dragon that fought for the Yellow Emperor and drained the rain.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yuki-onna",
+   "boss": "yuki-onna",
+   "boss_name": "Yuki-onna the Snow Woman",
+   "name": "Snow Woman's Kiss",
+   "school": "frost",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A pale woman in the blizzard who breathes cold on travellers and freezes them.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zhulong",
+   "boss": "zhulong",
+   "boss_name": "Zhulong the Candle Dragon",
+   "name": "Candle Dragon's Breath",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A red dragon with a face like a man, who opens his eyes for day and shuts them for night.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bakasura",
+   "boss": "bakasura",
+   "boss_name": "Bakasura the Glutton",
+   "name": "Glutton's Cart",
+   "school": "earth",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Mahabharata",
+   "story": "A rakshasa of Ekachakra who ate a cart of food and the man who drove it.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:daji",
+   "boss": "daji",
+   "boss_name": "Daji the Fox-Queen",
+   "name": "Fox-Queen's Wile",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Investiture of the Gods",
+   "story": "A fox spirit in the form of a beauty who ruined a dynasty with cruelty.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gold-silver-horn",
+   "boss": "gold-silver-horn",
+   "boss_name": "Gold-Horn and Silver-Horn",
+   "name": "Gourd Binding",
+   "school": "fire",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "Two brothers of the Lotus Cave with a gourd that calls a name, and traps a soul.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jiuying",
+   "boss": "jiuying",
+   "boss_name": "Jiuying the Nine-Headed",
+   "name": "Nine Heads of Fire",
+   "school": "poison",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A nine-headed monster that breathes water and fire, killed by an archer.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:otakemaru",
+   "boss": "otakemaru",
+   "boss_name": "Otakemaru the Great Oni",
+   "name": "Great Oni's Brand",
+   "school": "fire",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "The oni king of Mount Suzuka, who ruled the pass with a hundred oni at his side.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rhino-spirits",
+   "boss": "rhino-spirits",
+   "boss_name": "Three Rhinoceros Spirits",
+   "name": "Three Horns",
+   "school": "earth",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "Three rhinoceros demons who pose as Buddhas in a temple to steal lamp-oil.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:samjokgu",
+   "boss": "samjokgu",
+   "boss_name": "Samjokgu the Three-Legged Hound",
+   "name": "Three-Legged Hound",
+   "school": "fire",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "A three-legged, fire-breathing hound of the old tales.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sojobo",
+   "boss": "sojobo",
+   "boss_name": "Sojobo the Great Tengu",
+   "name": "Kurama Swordmaster",
+   "school": "wind",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Heike Monogatari",
+   "story": "The great tengu of Mount Kurama who taught a boy to fight, and still has the sword.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tiangou",
+   "boss": "tiangou",
+   "boss_name": "Tiangou the Heavenly Dog",
+   "name": "Eclipse Hound",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A dog that eats the sun and the moon, and the sky grows dark.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yellow-lion",
+   "boss": "yellow-lion",
+   "boss_name": "Yellow Lion Demon",
+   "name": "Lion's Roar",
+   "school": "earth",
+   "level": 7,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "A yellow lion of Tiger Mountain who stole the rake and roars.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bai-ze",
+   "boss": "bai-ze",
+   "boss_name": "Bai Ze the Knowing Beast",
+   "name": "Beast of Knowing",
+   "school": "holy",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Chinese folklore",
+   "story": "A horned beast that speaks, and knows every spirit and monster under heaven; it names the fighter's faults.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:baku",
+   "boss": "baku",
+   "boss_name": "Baku the Dream-Eater",
+   "name": "Dream Eating",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A chimera that eats nightmares, and a fighter's courage with them.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bixi",
+   "boss": "bixi",
+   "boss_name": "Bixi the Tortoise Dragon",
+   "name": "Tortoise-Dragon's Weight",
+   "school": "earth",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Ming-dynasty Nine Sons",
+   "story": "The first son of the dragon, a tortoise that bears monuments on his back.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bulgae",
+   "boss": "bulgae",
+   "boss_name": "Bulgae the Fire Dog",
+   "name": "Fire-Dog's Chase",
+   "school": "fire",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "A dog that chased the sun and the moon to bite them and burned its mouth.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cuu-vi-ho",
+   "boss": "cuu-vi-ho",
+   "boss_name": "Cuu Vi Ho the Nine-Tailed Fox",
+   "name": "West Lake Fox",
+   "school": "fire",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "The nine-tailed fox of the West Lake, who was killed by the dragon king.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:namazu",
+   "boss": "namazu",
+   "boss_name": "Namazu the Earthquake Catfish",
+   "name": "Earthquake Thrash",
+   "school": "earth",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "The giant catfish under Japan which thrashes, and the earth shakes.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pulao",
+   "boss": "pulao",
+   "boss_name": "Pulao the Roaring Dragon",
+   "name": "Bell Roar",
+   "school": "wind",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Ming-dynasty Nine Sons",
+   "story": "The dragon's son who fears whales and roars on the bell.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:suanni",
+   "boss": "suanni",
+   "boss_name": "Suanni the Lion Dragon",
+   "name": "Smoke Lion",
+   "school": "fire",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Ming-dynasty Nine Sons",
+   "story": "The dragon's son that likes smoke and fire, and sits on the censer.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:surpanakha",
+   "boss": "surpanakha",
+   "boss_name": "Surpanakha the Rakshasi",
+   "name": "Rakshasi's Revenge",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Ramayana",
+   "story": "A rakshasi who was cut for her pursuit, and carried her grief to Lanka.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yazi",
+   "boss": "yazi",
+   "boss_name": "Yazi the Ferocious Dragon",
+   "name": "Yazi's Fury",
+   "school": "fire",
+   "level": 8,
+   "region": "region:jade-reach",
+   "source": "Ming-dynasty Nine Sons",
+   "story": "The warlike son of the dragon, whose fury is carved on sword hilts.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:azure-lion",
+   "boss": "azure-lion",
+   "boss_name": "Azure Lion King",
+   "name": "Great Sage's Rival",
+   "school": "earth",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "The first of the Three Demon Kings of Lion Camel Ridge, who swallowed a whole city.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dokkaebi-chief",
+   "boss": "dokkaebi-chief",
+   "boss_name": "Dokkaebi Chief",
+   "name": "Goblin King's Club",
+   "school": "earth",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Korean folklore",
+   "story": "The king of the goblins, whose club is as long as a tree.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:golden-peng",
+   "boss": "golden-peng",
+   "boss_name": "Golden-Winged Peng",
+   "name": "Peng's Wings",
+   "school": "wind",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "The Peng that was uncle of the Peacock and the third of the Three Demon Kings.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hannya",
+   "boss": "hannya",
+   "boss_name": "Hannya the Jealous Demon",
+   "name": "Jealous Mask",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Noh drama",
+   "story": "The horned demon-woman mask of the Noh, jealousy turned to rage.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kirmira",
+   "boss": "kirmira",
+   "boss_name": "Kirmira the Rakshasa",
+   "name": "Forest Guardian",
+   "school": "poison",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Mahabharata",
+   "story": "A rakshasa of the Kamyaka forest, brother of Bakasura, who blocked the exiles' way.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nine-headed-insect",
+   "boss": "nine-headed-insect",
+   "boss_name": "Nine-Headed Insect",
+   "name": "Insect Lord's Venom",
+   "school": "poison",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "A nine-headed insect lord of the Thousand Flower Cave, with a swarm.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nurikabe",
+   "boss": "nurikabe",
+   "boss_name": "Nurikabe the Wall",
+   "name": "Invisible Wall",
+   "school": "earth",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "An invisible wall that blocks the road at night, and slams the fighter.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sessho-seki",
+   "boss": "sessho-seki",
+   "boss_name": "Sessho-seki the Killing Stone",
+   "name": "Killing Stone",
+   "school": "earth",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "The stone that kills those who touch it, where the fox's ghost still sleeps.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:white-elephant",
+   "boss": "white-elephant",
+   "boss_name": "White Elephant King",
+   "name": "Long Trunk",
+   "school": "earth",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "The second of the Three Demon Kings, whose trunk could roll up a man.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yellow-robe",
+   "boss": "yellow-robe",
+   "boss_name": "Yellow Robe Monster",
+   "name": "Yellow Robe's Blade",
+   "school": "earth",
+   "level": 9,
+   "region": "region:jade-reach",
+   "source": "Journey to the West (Wu Cheng'en)",
+   "story": "A demon of Wave-Moon Cave in a yellow robe who carried off a princess.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bifang",
+   "boss": "bifang",
+   "boss_name": "Bifang the Fire Crane",
+   "name": "Crane's Wildfire",
+   "school": "fire",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A one-legged crane that brings strange fires wherever it lands.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ho-tinh",
+   "boss": "ho-tinh",
+   "boss_name": "Ho Tinh the Nine-Tailed",
+   "name": "Fox-Spirit of Thang Long",
+   "school": "fire",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "The white fox with nine tails that lived in the cave and stole children from the village.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kuchinawa",
+   "boss": "kuchinawa",
+   "boss_name": "Kuchinawa the Snake-Rope",
+   "name": "Snake-Rope's Coil",
+   "school": "poison",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A rope-like snake that hangs from the tree and coils on the unwary.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kui",
+   "boss": "kui",
+   "boss_name": "Kui the One-Legged Thunder",
+   "name": "Drum of Kui",
+   "school": "wind",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Classic of Mountains and Seas",
+   "story": "A one-legged beast of the eastern sea whose hide, drummed, rolled out thunder.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:moc-tinh",
+   "boss": "moc-tinh",
+   "boss_name": "Moc Tinh the Tree-Spirit",
+   "name": "Banyan Spirit",
+   "school": "earth",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "The thousand-year tree spirit that fed on passers-by and was felled by Lac Long Quan.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ngu-tinh",
+   "boss": "ngu-tinh",
+   "boss_name": "Ngu Tinh the Fish-Spirit",
+   "name": "Fish Spirit's Tide",
+   "school": "frost",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "A huge fish-spirit of the sea that swallows ships, slain by Thach Sanh's sword.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:omukade",
+   "boss": "omukade",
+   "boss_name": "Omukade the Mountain Centipede",
+   "name": "Giant Centipede",
+   "school": "poison",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Japanese folklore (Hearn)",
+   "story": "A centipede that wound seven times around Mount Mikami and was shot by an archer.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ten-crows",
+   "boss": "ten-crows",
+   "boss_name": "The Ten Golden Crows",
+   "name": "Ten Suns",
+   "school": "fire",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Huainanzi",
+   "story": "Ten sun-birds rose at once and scorched the earth until the archer shot nine.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:thuy-tinh",
+   "boss": "thuy-tinh",
+   "boss_name": "Thuy Tinh the Sea Lord",
+   "name": "Tide of Thuy Tinh",
+   "school": "frost",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Linh Nam Chich Quai",
+   "story": "The lord of the waters who raised a flood against the mountain lord out of jealousy.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zhenniao",
+   "boss": "zhenniao",
+   "boss_name": "Zhenniao the Poison-Feather Bird",
+   "name": "Poison Feathers",
+   "school": "poison",
+   "level": 10,
+   "region": "region:jade-reach",
+   "source": "Chinese folklore",
+   "story": "A bird whose feathers, dipped in wine, poison the cup.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  }
+ ]
+}
