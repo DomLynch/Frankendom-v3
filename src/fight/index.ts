@@ -32,8 +32,7 @@ export type { FinisherId } from './finishers.ts';
 export { createZoneFinisher, canPlayFinisher, cutOf, type CutRig } from './zone-finisher.ts';   // K6: a zone creature's decapitation, keyed by its catalogue row   // K5: the blood and marks a wounds row draws in a zone fight
 export { CATALOGUE, catalogueRow } from './catalogue-rows.ts';   // the character catalogue rows (K7: clients read a row through the door, not by module path)
 export { catalogueBodyUrl, heroBodyUrl } from './catalogue-bodies.ts';   // a row's engine body as a URL (K11: the zone fetches a body by roster id, not src/assets/<id>.glb by name)
-export { legendForLevel, LEGEND_OPPONENTS, rungTopLevel, type LegendOpponent } from '../legends.ts';   // the Pit's legend ladder (K12: the zone page and the Pit read it through the door)
-export { LEGEND_FAMILIES, legendText } from './legend-families.ts';   // which family and rank a legend wears (page-safe: the Pit page reads legends already; the spell catalogue stays behind origins/server/grimoire.ts)
+export { legendForLevel, LEGEND_OPPONENTS, type LegendOpponent } from '../legends.ts';   // the Pit's legend ladder (K12: the zone page and the Pit read it through the door)
 export { bareName } from '../roster.ts';   // a roster name without its article (K12)
 export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: one createFightFx per active pair
 export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue player (K8 row 12: the zone page reaches it through here)
