@@ -1,0 +1,5 @@
+{
+  "rules": [
+    { "id": "ladder", "flinchFrom": 1, "staggerFrom": 1.5, "flinchStagger": 0.5, "immunity": 60 }
+  ]
+}

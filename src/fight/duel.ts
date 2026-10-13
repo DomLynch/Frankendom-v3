@@ -2,6 +2,8 @@ import { bladeImpact, type HitLocation } from './blade.ts';
 import { checkSheet, statDown, statUp, type Sheet } from './sheet-rows.ts';
 import { kindOf } from './damage-kinds.ts';
 import { STANCE_ROWS_ON } from './stance-era.ts';
+import { POISE_LADDER_ON } from './poise-era.ts';
+import { LADDER, flinchTicks, poiseTier } from './poise-ladder.ts';
 import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
@@ -44,6 +46,7 @@ export type Fighter = {
   regen: number;   // stamina regeneration multiplier (moves.ts `Opponent.regen`; 1 = a man)
   speed: number;   // pace multiplier: walking, sprinting, the wind-up lunge and the backstep (moves.ts `Opponent.speed`; 1 = a man)
   poise: number;   // a plain clean hit dealing less than this never staggers this fighter (moves.ts `Opponent`); 0 = human
+  poiseRest?: number;   // v54 (poise-ladder.ts): ticks left of the poise-rest a full stagger started; a flinch inside it is a shrug. Absent = none, so a fight without the ladder hashes as before
   loiter: number;   // ticks spent within the wall band without attacking (RULES.wall.loiter); the lorarii whip at `ticks`
   lashed: boolean;   // the lorarii have already lashed him in this spell at the wall: the next whip is a repeat, so its tell is shorter
   skill: SkillId | null; skillCooldown: number;   // the equipped skill (null = none: every opponent in V1) and the ticks until it may fire again (RULES.skillCooldown)
@@ -252,6 +255,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // A committed special windup: the caster stands and tracks the target, whatever the thumb does (no guard, roll, parry or step).
   if (before[0].special || before[1].special) intents = [before[0].special ? idleIntent() : intents[0], before[1].special ? idleIntent() : intents[1]];
   const fighters = before.map(f => ({ ...f, age: f.stall > 0 ? f.age : f.age + 1, stall: Math.max(0, f.stall - 1), wound: Math.max(0, f.wound - 1), chain: Math.max(0, f.chain - 1), parryCooldown: Math.max(0, f.parryCooldown - 1), skillCooldown: Math.max(0, f.skillCooldown - 1), punish: Math.max(0, f.punish - 1), critical: Math.max(0, f.critical - 1), posture: f.phase === 'hurt' || f.phase === 'dead' || f.postureRest > 0 ? f.posture : Math.max(0, f.posture - stanced(f, 'recover', R.posture.decay) * guardOf(f, R).postureDecay * (f.health < R.posture.bloodied * f.maxHealth ? R.posture.bloodiedDecay : 1)), postureRest: Math.max(0, f.postureRest - 1), rest: Math.max(0, f.rest - 1), exposed: Math.max(0, f.exposed - 1), evaded: Math.max(0, f.evaded - 1), counterWindow: Math.max(0, f.counterWindow - 1), buffer: f.buffer && f.buffer.ttl > 1 ? { ...f.buffer, ttl: f.buffer.ttl - 1 } : null })) as [Fighter, Fighter];
+  for (const f of fighters) if (f.poiseRest) { if (f.poiseRest > 1) f.poiseRest--; else delete f.poiseRest; }
   for (const f of fighters) if (f.specialRecover) f.specialRecover--;
   for (const f of fighters) if (f.feintEdge) { f.feintEdge--; if (!f.feintEdge) delete f.feintEdge; }   // a trickster's feint beat runs down (RULES.feintBeat)
   if (!before[0].health || !before[1].health) return { tick, fighters, finish: duel.finish, events, ...(duel.roll ? { roll: duel.roll } : {}), ...(duel.gambit ? { gambit: duel.gambit } : {}), ...(duel.cast ? { cast: duel.cast } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
@@ -528,9 +532,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         }
         if (!def.path) spend(j, def.staminaDamage);
         // Poise: a brute shrugs a plain blow under his threshold — no stagger, no knockback; the wound and the posture still count.
-        const shrugged = !g && (poised || (dealt < d.poise && !counter && !stop && !rear && !charged));
+        // v54 (poise-ladder.ts): a creature with poise also has a FLINCH tier between the shrug and the full stagger, and a full stagger buys poise-rest. Below v54, or for a fighter without poise, the single threshold.
+        const tier = POISE_LADDER_ON && !g && !poised && d.poise > 0 && !counter && !stop && !rear && !charged ? poiseTier(dealt, d.poise, !!d.poiseRest) : null;
+        const shrugged = !g && (poised || (tier ? tier === 'shrug' : dealt < d.poise && !counter && !stop && !rear && !charged));
         const hit = rolled(dealt, i, j, pen); if (kind?.drain) spend(j, Math.round(hit * kind.drain)); wound(hit, shrugged ? 0 : def.knockback); events.push({ tick, type: 'Hit', actor: i, target: j, move: a.move, damage: hit, ...rollTag(), location, heading: a.body.heading, counter: counter || stop, rear, charged, ...(g ? { gambit: true } : {}), ...(beaten ? { beaten: true } : {}), ...(raised ? { guarded: true } : {}), weapon: weapon.id, material: weapon.material, ...(stop ? { stop: true } : {}), ...(trip ? { trip: true } : {}) });
-        if (!shrugged || !D.health) stagger(stun);
+        if (!shrugged || !D.health) stagger(tier === 'flinch' ? flinchTicks(stun) : stun);
+        if (tier === 'stagger' && D.health && LADDER.immunity) D.poiseRest = LADDER.immunity;
         shake(j, dealtPosture(def.posture * (counter ? R.counter.damage : 1) * (rear ? R.rear.posture : 1) * (g ? GAMBIT_ODDS.multiplier : 1)));
       }
     }
