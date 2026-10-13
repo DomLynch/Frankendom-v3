@@ -24,5 +24,6 @@ export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel
 export { PORTRAIT_KEYS, rungTopLevel } from '../legends.ts';
 export { LEGEND_FAMILIES, isSpellless, legendText } from './legend-families.ts';   // which family and rank a legend wears: the server prices a boss:<legend> fight from it (origins/boss/legend-boss.ts)
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
+export { hash32 } from './bout-seed.ts';
 export { MAX_HERO_MPS, MAX_WORLD_TICKS, decodeWorldRecord, encodeWorldRecord, replayWorldRecord, unpackWorldRecord, packWorldRecord, type WorldRecord, type RecordHero, type Replayed } from './world-record.ts';
 export * from './weapon-skills.ts';
