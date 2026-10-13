@@ -21,16 +21,18 @@ export type CcKind = {
   readonly windowFrom: 'land' | 'end';   // where that quiet counts from: the last landing (shipped), or the END of the last CC (the donors' rule)
   readonly immunity: number;   // ticks the target is immune to this kind once a CC of it ENDS (0 = none, shipped)
 };
+// A tier or resist row covers the career ranks `from`..`to` (1-10, five ladder levels a rank): a catalogue row is a kind, Lead's numbers are per rank, so a creature that names no row of its own takes the band its level falls in.
+export type Band = { readonly from: number; readonly to: number };
 export type CcRows = {
   readonly kinds: Readonly<Record<CcFamily, CcKind>>;
-  readonly tiers: Readonly<Record<string, { readonly immune: readonly CcFamily[] }>>;   // a creature row's `immuneTier` (catalogue field)
-  readonly resists: Readonly<Record<string, { readonly keep: number }>>;   // a creature row's `resist`: percent of each CC's ticks kept, after the ladder
+  readonly tiers: Readonly<Record<string, Band & { readonly immune: readonly CcFamily[] }>>;   // a creature row's `immuneTier` (catalogue field), or the rank band `from`..`to` it covers
+  readonly resists: Readonly<Record<string, Band & { readonly keep: number }>>;   // a creature row's `resist`: percent of each CC's ticks kept, after the ladder, or the rank band it covers
 };
 
 const tables = (CC_MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile(m, CC_DEFS, 'cc-defs.json'));
 loadRegistry(tables);   // ids, types and refs (a tier names real kinds); throws on any problem, never last-wins
 const rowsOf = <T>(name: string) => tables.find((t) => t.manifest.table === name)!.rows as unknown as (T & { id: string })[];
-export function ccRows(kinds: readonly CcKind[], tiers: readonly { id: string; immune: readonly CcFamily[] }[], resists: readonly { id: string; keep: number }[]): CcRows {
+export function ccRows(kinds: readonly CcKind[], tiers: readonly (Band & { id: string; immune: readonly CcFamily[] })[], resists: readonly (Band & { id: string; keep: number })[]): CcRows {
   const owner = new Map<string, string>();
   for (const k of kinds) {
     if (!k.steps.length || k.steps.some((s, i) => s < 0 || s > 100 || (i > 0 && s > k.steps[i - 1]!))) throw Error(`cc-defs kind "${k.id}": steps are percents 0-100, never rising`);
@@ -38,10 +40,22 @@ export function ccRows(kinds: readonly CcKind[], tiers: readonly { id: string; i
     for (const s of k.sources) { if (owner.has(s)) throw Error(`cc-defs: source ${s} is in kinds ${owner.get(s)} and ${k.id}`); owner.set(s, k.id); }
   }
   for (const r of resists) if (r.keep < 0 || r.keep > 100) throw Error(`cc-defs resist "${r.id}": keep is a percent 0-100`);
+  for (const [name, list] of [['tier', tiers], ['resist', resists]] as const) {
+    for (const b of list) if (!Number.isInteger(b.from) || !Number.isInteger(b.to) || b.from < 1 || b.to > 10 || b.from > b.to) throw Error(`cc-defs ${name} "${b.id}": a band is ranks from..to inside 1..10`);
+    for (const a of list) for (const b of list) if (a !== b && a.from <= b.to && b.from <= a.to) throw Error(`cc-defs ${name}: "${a.id}" and "${b.id}" cover the same rank`);
+  }
   const by = <T extends { id: string }>(xs: readonly T[]) => Object.fromEntries(xs.map((x) => [x.id, x])) as Record<string, T>;
   return { kinds: by(kinds), tiers: by(tiers), resists: by(resists) };
 }
-export const CC_LADDER: CcRows = ccRows(rowsOf<CcKind>('cckind'), rowsOf<{ immune: CcFamily[] }>('cctier'), rowsOf<{ keep: number }>('ccresist'));
+export const CC_LADDER: CcRows = ccRows(rowsOf<CcKind>('cckind'), rowsOf<Band & { immune: CcFamily[] }>('cctier'), rowsOf<Band & { keep: number }>('ccresist'));
+
+// The career rank of a ladder level (five levels a rank, career.ts: levels 36 / 41 / 46 are ranks 8 / 9 / 10), 1-10, and the guard its band gives a creature of that level; a rank no band covers has none.
+export const rankOfLevel = (level: number): number => Math.min(10, Math.max(1, Math.ceil(level / 5)));
+export const guardOfLevel = (level: number, rows = CC_LADDER): CcGuard | undefined => {
+  const rank = rankOfLevel(level), inBand = (b: Band): boolean => rank >= b.from && rank <= b.to;
+  const tier = Object.entries(rows.tiers).find(([, t]) => inBand(t))?.[0], resist = Object.entries(rows.resists).find(([, t]) => inBand(t))?.[0];
+  return tier !== undefined || resist !== undefined ? { ...(tier !== undefined ? { immuneTier: tier } : {}), ...(resist !== undefined ? { resist } : {}) } : undefined;
+};
 
 export const familyOf = (source: CcSource, rows = CC_LADDER): CcFamily => {
   for (const k of Object.values(rows.kinds)) if (k.sources.includes(source)) return k.id;

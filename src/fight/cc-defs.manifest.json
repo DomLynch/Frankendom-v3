@@ -3,8 +3,8 @@
     { "table": "cckind", "file": "cc-defs.json", "at": "kinds", "key": "id",
       "required": { "sources": "array", "sources[]": "string", "steps": "array", "steps[]": "integer", "window": "integer", "windowFrom": "string", "immunity": "integer" } },
     { "table": "cctier", "file": "cc-defs.json", "at": "tiers", "key": "id",
-      "required": { "immune": "array", "immune[]": "string" }, "refs": { "immune[]": "cckind" } },
+      "required": { "immune": "array", "immune[]": "string", "from": "integer", "to": "integer" }, "refs": { "immune[]": "cckind" } },
     { "table": "ccresist", "file": "cc-defs.json", "at": "resists", "key": "id",
-      "required": { "keep": "integer" } }
+      "required": { "keep": "integer", "from": "integer", "to": "integer" } }
   ]
 }
