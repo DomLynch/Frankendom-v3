@@ -49,7 +49,7 @@ const CATALOGUE_ROWS = [
         { id: "opened", pose: "opened", seconds: 3.2, measured: true },
         { id: "quietOne", pose: "quietOne", seconds: 3.77, measured: true },
         { id: "plainDeath", pose: null, seconds: 2.4, measured: true },
-      ] }, blood: { start: "#5a1410", end: "#1c0604", amount: 0.6 }, render: { scale: 1 }, fields: { weapon: "knife", crowd: 1 }, home: "trickster", voice: "goblin", look: { levels: [2, 3, 4, 5, 6, 7, 8, 9, 10], phone: false, tint: true }, ladder: { order: 3, hold: false }, sparring: { order: 3 }, wounds: null, loot: { table: "loottable:pit-goblin" }, legend: null, ranks: [
+      ] }, blood: { start: "#5a1410", end: "#1c0604", amount: 0.6 }, render: { scale: 1 }, fields: { weapon: "knife", crowd: 1, atOnce: 2 }, home: "trickster", voice: "goblin", look: { levels: [2, 3, 4, 5, 6, 7, 8, 9, 10], phone: false, tint: true }, ladder: { order: 3, hold: false }, sparring: { order: 3 }, wounds: null, loot: { table: "loottable:pit-goblin" }, legend: null, ranks: [
       { name: "Sewer Imp", source: "generic", backstory: "A gutter-born scrap of malice that lives on what the drains carry. In Frankendom he fights dirty, fast and low, and runs before anyone can catch him." },
       { name: "Kobold", source: "German folklore", backstory: "A house and mine spirit who helps when fed and plays cruel tricks when slighted. In Frankendom he fights as a grudge with a knife." },
       { name: "Nain Rouge", source: "French-Canadian folklore", backstory: "The red dwarf of the Detroit river, whose sighting warned of disaster and who cursed the man who struck him. In Frankendom he fights as ill luck." },
