@@ -9,7 +9,7 @@ import { selectFinisher, finisherSeconds, type FinisherId } from './finishers.ts
 import { catalogueRow } from './catalogue-rows.ts';
 import { PLAIN_DEATH } from './finisher-look.ts';
 
-import { ME, STEP, cm, createWorldRecorder, joinFighter, quantStep, stepHero, type RecordHero, type WorldRecord, type JoinEvent } from './world-record.ts';
+import { ME, STEP, cm, createWorldRecorder, heroClean, joinFighter, quantStep, stepHero, type RecordHero, type WorldRecord, type JoinEvent } from './world-record.ts';
 export { ME, STEP };
 export const JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */
@@ -57,7 +57,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   function release(id: string) { recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
-    if (specs.size === 0) recorder.open(heroBody());   // a creature joins an empty loop: a record window opens at his body now
+    if (specs.size === 0) { if (heroClean(world)) recorder.open(heroBody()); else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
     const j: JoinEvent = { s: 0, id: p.spec.id, kind, x: cm(p.x), z: cm(p.z), level: p.spec.level };   // the pose is quantized before the sim sees it, so a replay joins the same creature
     recorder.join(j.id, j.kind, p.x, p.z, j.level); specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, joinFighter(j)] };
   }
