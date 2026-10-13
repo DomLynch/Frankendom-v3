@@ -1,7 +1,7 @@
 // The ONE speed table of the open world (Dom via Strategy, 2026-10-08: "the same for every player"): the player's walk and run, a creature's amble and chase, the wolf's exception, the leash
 // and give-up numbers, the out-of-combat window and the hero-side disengage. Zone 1 WORLD LAYER only: nothing here is read by src/ (no sim change, no RECORD_VERSION). A fight that is
 // engaged runs on the sim's own pace (sim.ts: run 5.2 m/s x Opponent.speed), so the chase numbers below must never exceed what the sim would do for that creature (origins/preview/speeds.test.ts).
-import { fieldOf } from './catalogue-rows.ts';
+import { fieldOf } from './catalogue-fields.ts';
 export const SPEEDS = {
   player: { walk: 2.3, run: 5.2 },    // m/s: the gait table's walk and Run knot (main.ts took these from the Pit pad); the sim's own run is 5.2 (sim.ts advance)
   creature: { amble: 0.9, chase: 4.5 },   // m/s: slower than a running player (so running away works) except the wolf, who is faster and gives up sooner

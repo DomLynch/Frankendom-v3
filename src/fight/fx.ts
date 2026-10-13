@@ -4,6 +4,7 @@
 // it the same way. Presentation only: nothing here reads or writes the simulation.
 import * as THREE from 'three';
 import { OPPONENTS, RULES, weaponOf, type OpponentId } from './moves.ts';
+import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { hasBlood } from '../roster.ts';
 import { blockDust, HEAVY_CLASS, clashStrength, createClashSparks } from './clash-sparks.ts';
 import { shoveFor, type Shove } from './camera-kick.ts';
@@ -77,7 +78,7 @@ export type ContactCtx = {
   warriors: FxRigs | undefined;
   dustFeet: (THREE.Object3D | null)[]; dustPositions: THREE.Vector3[]; footDust: ReturnType<typeof createFootDust> | null;
   flinches: Flinch[] | null; burstPool: ReturnType<typeof createBurstPool> | null; feel: ReturnType<typeof armfeelFrom> | undefined; right: THREE.Vector3;
-  opponentId: OpponentId; bloodMode: 'red' | 'dark' | 'off';
+  opponentId: OpponentId; bloodMode: BloodMode;
   DIP_FRAMES: number; setDip(frames: number): void;
 };
 
@@ -146,7 +147,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
       const enemyHurt = blow?.target === 1,
         hurt = !!blow;
       const kick = blow?.move === 'kick';
-      flesh = hurt && (!enemyHurt || hasBlood(opponentId)) && !kick && bloodMode !== 'off';
+      flesh = hurt && (!enemyHurt || hasBlood(opponentId)) && !kick && !bloodHidden(bloodMode);
       impactDuration = flesh && killed ? 0.55 : flesh ? 0.34 : 0.18;
       impact = impactDuration;
       impactHeading = blow?.heading ?? state.heading;
@@ -215,7 +216,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
         hurt ? target.z : (state.z + practice.enemy.z) / 2,
       );
       sparkMaterial.color.set(
-        flesh ? (bloodMode === 'dark' ? '#3e2527' : '#a32b27') : kick || hurt ? '#b1a28a' : '#ffe4af',
+        flesh ? (bloodDark(bloodMode) ? '#3e2527' : '#a32b27') : kick || hurt ? '#b1a28a' : '#ffe4af',
       );
       sparkMaterial.blending = flesh || kick || hurt ? THREE.NormalBlending : THREE.AdditiveBlending;
       sparkMaterial.size = flesh ? 0.095 : 0.045;

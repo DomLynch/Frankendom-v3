@@ -7,8 +7,9 @@ import { bloodiesMaterial, FLOOR_POOLS, FLOOR_SPLASHES, multiplyOnto } from './f
 export { multiplyOnto };
 import type { HitLocation } from './blade.ts';
 import type { Direction } from './moves.ts';
+import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 
-export type BloodMode = 'red' | 'dark' | 'off';
+export type { BloodMode };
 type Rigs = { player: { anchor: THREE.Object3D }; opponent: { anchor: THREE.Object3D } };
 
 // Twelve pooled ground splats; a kill takes one as the corpse's spreading pool.
@@ -35,7 +36,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
   // multiply onto it (scripts/blood/floor-textures.py) — a near-black core, thin translucent edges the grain shows through, a spatter
   // halo — drawn with multiplyOnto(), so blood darkens the sand instead of painting over it. The canvas star stands in until they
   // land (and under node), with the old tint.
-  const tone = (mode: BloodMode) => (mode === 'dark' ? '#352426' : '#681a19');
+  const tone = (mode: BloodMode) => (bloodDark(mode) ? '#352426' : '#681a19');
   if (typeof document !== 'undefined')
     Promise.all([...FLOOR_POOLS, ...FLOOR_SPLASHES].map((f) => new THREE.TextureLoader().loadAsync(BLOOD_ASSET(f)))).then((all) => {
       for (const t of all) t.colorSpace = THREE.SRGBColorSpace;
@@ -53,7 +54,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
       splat.mesh.position.set(target.x, 0.022 + (splatIndex % 12) * 0.0001, target.z);
       splat.mesh.scale.set(0.22 + (splatIndex % 3) * 0.05, 0.13 + (splatIndex % 4) * 0.035, 1);
       splat.mesh.rotation.z = splatIndex * 2.4;
-      splat.age = 0; splat.dark = bloodMode === 'dark'; splat.pool = false; if (maps) multiplyOnto(splat.mesh.material, shape(false, splatIndex >> 1));   // >> 1: off the scale terms' period, so a shape never keeps one aspect
+      splat.age = 0; splat.dark = bloodDark(bloodMode); splat.pool = false; if (maps) multiplyOnto(splat.mesh.material, shape(false, splatIndex >> 1));   // >> 1: off the scale terms' period, so a shape never keeps one aspect
       splat.mesh.material.color.set(photo ? FLOOR_FRESH : tone(bloodMode));
     },
     // A kill: the corpse keeps pooling after the splashes fade (cleared on rematch like everything else).
@@ -64,7 +65,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
       pool.mesh.position.set(target.x, 0.03, target.z);
       pool.mesh.rotation.z = splatIndex * 2.4;
       pool.mesh.scale.set(0.3, 0.2, 1);
-      pool.age = 0; pool.dark = bloodMode === 'dark'; pool.pool = true; if (maps) multiplyOnto(pool.mesh.material, shape(true, splatIndex));
+      pool.age = 0; pool.dark = bloodDark(bloodMode); pool.pool = true; if (maps) multiplyOnto(pool.mesh.material, shape(true, splatIndex));
       pool.mesh.material.color.set(photo ? FLOOR_FRESH : tone(bloodMode));
     },
     update(dt: number) {
@@ -181,13 +182,26 @@ const surfaceNormal = new THREE.Vector3(), surfaceMat = new THREE.Matrix3();
 // benefits (characters.ts loot fitting, opened.ts), since the override lives on the prototype.
 // One surface ray transforms the three vertices of EVERY triangle of every skin (Mesh.raycast), so a vertex shared by ~6 triangles is skinned ~6 times,
 // each time with a fresh bone-matrix product per bone. The pose cannot change inside one ray: skinPass() brackets a ray, and within it each skin's vertex is
-// skinned once (a Float64 memo, so every later read is the same double the first one returned) and each bone's product is built once. Outside a pass nothing is cached.
+// skinned once (a Float64 memo, so every later read is the same double the first one returned) and each bone's product is built once. Outside a pass nothing is cached; across passes the memo lives only while the pose is bit-for-bit unchanged (samePose).
 let skinning = false, skinStamp = 0;
-const boneMemo = new WeakMap<THREE.Skeleton, { mats: THREE.Matrix4[]; stamp: number[] }>(), vertexMemo = new WeakMap<THREE.Object3D, { xyz: Float64Array; stamp: Uint32Array }>();
+const boneMemo = new WeakMap<THREE.Skeleton, { mats: THREE.Matrix4[]; stamp: number[] }>(), vertexMemo = new WeakMap<THREE.Object3D, { xyz: Float64Array; stamp: Uint32Array; epoch: number; pass: number; pose: Float64Array | null; skeleton: THREE.Skeleton | null; position: unknown; skinIndex: unknown; skinWeight: unknown }>();
 function boneProduct(skeleton: THREE.Skeleton, bone: number): THREE.Matrix4 {
   let memo = boneMemo.get(skeleton); if (!memo) { memo = { mats: [], stamp: [] }; boneMemo.set(skeleton, memo); }
   if (memo.stamp[bone] !== skinStamp) { (memo.mats[bone] ??= new THREE.Matrix4()).multiplyMatrices(skeleton.bones[bone].matrixWorld, skeleton.boneInverses[bone]); memo.stamp[bone] = skinStamp; }
   return memo.mats[bone];
+}
+// The finisher fires several surface rays in ONE frame (every wound at the kill), all over the same pose: skinning every vertex once per ray was the ~30 ms of the kill-frame hitch (T4 trace 2026-10-13,
+// surfaceHit > skinPass > intersectObjects). What a skinned vertex is depends only on the bones' world matrices and the bind matrix, so the memo survives a pass whose inputs are bit-for-bit the last pass's.
+function samePose(memo: { pose: Float64Array | null; skeleton: THREE.Skeleton | null; position: unknown; skinIndex: unknown; skinWeight: unknown }, skin: THREE.SkinnedMesh): boolean {
+  // The memo also belongs to THIS skeleton and THESE vertex buffers: a re-bind or a geometry swap (a gear change) at the same pose must not read the old skin's vertices.
+  const a = skin.geometry.attributes, same0 = memo.skeleton === skin.skeleton && memo.position === a.position && memo.skinIndex === a.skinIndex && memo.skinWeight === a.skinWeight;
+  memo.skeleton = skin.skeleton; memo.position = a.position; memo.skinIndex = a.skinIndex; memo.skinWeight = a.skinWeight;
+  const bones = skin.skeleton.bones, n = bones.length * 16 + 16; let same = same0 && memo.pose !== null && memo.pose.length === n;
+  const pose = same ? memo.pose! : (memo.pose = new Float64Array(n));
+  const bind = skin.bindMatrix.elements;
+  for (let i = 0; i < 16; i++) { if (pose[i] !== bind[i]) { same = false; pose[i] = bind[i]; } }
+  for (let b = 0; b < bones.length; b++) { const e = bones[b].matrixWorld.elements; for (let i = 0; i < 16; i++) { if (pose[16 + b * 16 + i] !== e[i]) { same = false; pose[16 + b * 16 + i] = e[i]; } } }
+  return same;
 }
 function skinPass<T>(ray: () => T): T { skinStamp++; skinning = true; try { return ray(); } finally { skinning = false; } }
 const boneIndex = new THREE.Vector4(), boneWeight = new THREE.Vector4(), boneBase = new THREE.Vector4(), boneScratch = new THREE.Vector4(), boneMatrix = new THREE.Matrix4();
@@ -210,10 +224,11 @@ const skinnedVertex = THREE.SkinnedMesh.prototype.getVertexPosition;   // Skinne
 THREE.SkinnedMesh.prototype.getVertexPosition = function (this: THREE.SkinnedMesh, index: number, target: THREE.Vector3) {
   if (!skinning) return skinnedVertex.call(this, index, target);
   const count = this.geometry.attributes.position.count; let memo = vertexMemo.get(this);
-  if (!memo || memo.stamp.length !== count) { memo = { xyz: new Float64Array(count * 3), stamp: new Uint32Array(count) }; vertexMemo.set(this, memo); }
+  if (!memo || memo.stamp.length !== count) { memo = { xyz: new Float64Array(count * 3), stamp: new Uint32Array(count), epoch: 1, pass: 0, pose: null, skeleton: null, position: null, skinIndex: null, skinWeight: null }; vertexMemo.set(this, memo); }
+  if (memo.pass !== skinStamp) { memo.pass = skinStamp; if (!samePose(memo, this)) memo.epoch++; }   // a new pass keeps the memo only if the pose is bit-for-bit the one it was skinned in
   const k = index * 3;
-  if (memo.stamp[index] === skinStamp) return target.set(memo.xyz[k], memo.xyz[k + 1], memo.xyz[k + 2]);
-  skinnedVertex.call(this, index, target); memo.xyz[k] = target.x; memo.xyz[k + 1] = target.y; memo.xyz[k + 2] = target.z; memo.stamp[index] = skinStamp;
+  if (memo.stamp[index] === memo.epoch) return target.set(memo.xyz[k], memo.xyz[k + 1], memo.xyz[k + 2]);
+  skinnedVertex.call(this, index, target); memo.xyz[k] = target.x; memo.xyz[k + 1] = target.y; memo.xyz[k + 2] = target.z; memo.stamp[index] = memo.epoch;
   return target;
 } as typeof THREE.SkinnedMesh.prototype.getVertexPosition;
 const skinCache = new WeakMap<THREE.Object3D, THREE.Object3D[]>();
@@ -397,7 +412,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
         const severity = Math.min(1, Math.max(0, (WOUND_THRESHOLD - health[side]) / WOUND_THRESHOLD)), root = roots[side];
         for (const mark of fighters[side]) {
           const bone = mark.used ? mark.bone : null;
-          const show = !!bone && !!root && health[side] <= WOUND_THRESHOLD && bloodMode !== 'off' && !hidden[side];
+          const show = !!bone && !!root && health[side] <= WOUND_THRESHOLD && !bloodHidden(bloodMode) && !hidden[side];
           mark.group.visible = show;
           if (!show || !bone) continue;
           mark.age += dt;
@@ -419,7 +434,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
           shed(mark, severity, dry);
           if (eye && scratchEye.copy(eye).sub(mark.group.position).normalize().dot(normal) < -0.15) { mark.group.visible = false; continue; }
           const roughness = DRY.roughness[0] + (DRY.roughness[1] - DRY.roughness[0]) * dry;
-          scratchColor.copy(photo ? FRESH : CANVAS_FRESH).lerp(photo ? DRIED : CANVAS_DRIED, dry); if (bloodMode === 'dark') scratchColor.multiply(DARK_MODE);
+          scratchColor.copy(photo ? FRESH : CANVAS_FRESH).lerp(photo ? DRIED : CANVAS_DRIED, dry); if (bloodDark(bloodMode)) scratchColor.multiply(DARK_MODE);
           const fade = Math.min(1, mark.age / .25);
           mark.mark.scale.set(mark.width * (.9 + .5 * severity) * mark.scale, (.9 + .5 * severity) * mark.scale, 1);
           mark.mark.material.opacity = fade * (.75 + .25 * severity); mark.mark.material.color.copy(scratchColor); mark.mark.material.roughness = roughness;
@@ -444,7 +459,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
       for (const drop of drops) {
         if (!drop.live) continue;
         drop.vy -= DROPS.gravity * dt; drop.mesh.position.y += drop.vy * dt;
-        drop.mesh.visible = bloodMode !== 'off';
+        drop.mesh.visible = !bloodHidden(bloodMode);
         if (drop.mesh.position.y > DROPS.floor) continue;
         drop.live = false; drop.mesh.visible = false;
         const spot = spots[nextSpot++ % spots.length], size = DROPS.spot[0] + unit(lcg(drop.seed)) * (DROPS.spot[1] - DROPS.spot[0]);
@@ -453,10 +468,10 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
       }
       for (const spot of spots) {
         spot.life = Math.max(0, spot.life - dt);
-        spot.mesh.visible = spot.life > 0 && bloodMode !== 'off';
+        spot.mesh.visible = spot.life > 0 && !bloodHidden(bloodMode);
         if (!spot.mesh.visible) continue;
         spot.mesh.material.opacity = Math.min(1, spot.life / 3) * 0.9;
-        spot.mesh.material.color.set(!photo ? '#681a19' : bloodMode === 'dark' ? '#a8a0a0' : '#ffffff');
+        spot.mesh.material.color.set(!photo ? '#681a19' : bloodDark(bloodMode) ? '#a8a0a0' : '#ffffff');
       }
     },
     clear() { for (const side of fighters) for (const mark of side) { mark.used = false; mark.bone = null; mark.anchor = null; mark.group.visible = false; mark.age = 0; mark.runs = 0; for (const s of mark.strands) { s.live = false; s.mesh.visible = false; s.drop = Infinity; } }
@@ -502,7 +517,7 @@ export function createBladeBlood() {
             const bloodied = object.material as THREE.MeshStandardMaterial;
             bloodied.color
               .copy(original.color)
-              .lerp(new THREE.Color(bloodMode === 'dark' || twoHanded ? '#2a1516' : '#7a1410'), 0.55);
+              .lerp(new THREE.Color(bloodDark(bloodMode) || twoHanded ? '#2a1516' : '#7a1410'), 0.55);
             if (twoHanded) {
               bloodied.metalness = Math.min(original.metalness, 0.3);
               bloodied.roughness = Math.max(original.roughness, 0.7);

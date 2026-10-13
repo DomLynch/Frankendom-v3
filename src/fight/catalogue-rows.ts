@@ -6,4 +6,4 @@ import type { CatalogueDefs, CatalogueRow } from './catalogue.ts';
 export const CATALOGUE: readonly CatalogueRow[] = CATALOGUE_ROWS;   // this assignment is where every row is checked against CatalogueRow (the data file is `as const`, so src/roster.ts can derive OpponentId from it)
 export const catalogueRow = (id: string): CatalogueRow | null => CATALOGUE.find((r) => r.id === id) ?? null;
 export const DEFS: CatalogueDefs = CATALOGUE_DEFS;   // the field and rig definitions; this assignment checks their shape
-export const fieldOf = (id: string, key: string): string | number | boolean | undefined => catalogueRow(id)?.fields[key];   // a row's open attribute, or undefined when the row (or the key) is absent
+export { fieldOf } from './catalogue-fields.ts';   // a row's open attribute, or undefined when the row (or the key) is absent (read from the data directly, inside the sim boundary)
