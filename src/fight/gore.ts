@@ -184,7 +184,7 @@ const surfaceNormal = new THREE.Vector3(), surfaceMat = new THREE.Matrix3();
 // each time with a fresh bone-matrix product per bone. The pose cannot change inside one ray: skinPass() brackets a ray, and within it each skin's vertex is
 // skinned once (a Float64 memo, so every later read is the same double the first one returned) and each bone's product is built once. Outside a pass nothing is cached; across passes the memo lives only while the pose is bit-for-bit unchanged (samePose).
 let skinning = false, skinStamp = 0;
-const boneMemo = new WeakMap<THREE.Skeleton, { mats: THREE.Matrix4[]; stamp: number[] }>(), vertexMemo = new WeakMap<THREE.Object3D, { xyz: Float64Array; stamp: Uint32Array; epoch: number; pass: number; pose: Float64Array | null }>();
+const boneMemo = new WeakMap<THREE.Skeleton, { mats: THREE.Matrix4[]; stamp: number[] }>(), vertexMemo = new WeakMap<THREE.Object3D, { xyz: Float64Array; stamp: Uint32Array; epoch: number; pass: number; pose: Float64Array | null; skeleton: THREE.Skeleton | null; position: unknown; skinIndex: unknown; skinWeight: unknown }>();
 function boneProduct(skeleton: THREE.Skeleton, bone: number): THREE.Matrix4 {
   let memo = boneMemo.get(skeleton); if (!memo) { memo = { mats: [], stamp: [] }; boneMemo.set(skeleton, memo); }
   if (memo.stamp[bone] !== skinStamp) { (memo.mats[bone] ??= new THREE.Matrix4()).multiplyMatrices(skeleton.bones[bone].matrixWorld, skeleton.boneInverses[bone]); memo.stamp[bone] = skinStamp; }
@@ -192,8 +192,11 @@ function boneProduct(skeleton: THREE.Skeleton, bone: number): THREE.Matrix4 {
 }
 // The finisher fires several surface rays in ONE frame (every wound at the kill), all over the same pose: skinning every vertex once per ray was the ~30 ms of the kill-frame hitch (T4 trace 2026-10-13,
 // surfaceHit > skinPass > intersectObjects). What a skinned vertex is depends only on the bones' world matrices and the bind matrix, so the memo survives a pass whose inputs are bit-for-bit the last pass's.
-function samePose(memo: { pose: Float64Array | null }, skin: THREE.SkinnedMesh): boolean {
-  const bones = skin.skeleton.bones, n = bones.length * 16 + 16; let same = memo.pose !== null && memo.pose.length === n;
+function samePose(memo: { pose: Float64Array | null; skeleton: THREE.Skeleton | null; position: unknown; skinIndex: unknown; skinWeight: unknown }, skin: THREE.SkinnedMesh): boolean {
+  // The memo also belongs to THIS skeleton and THESE vertex buffers: a re-bind or a geometry swap (a gear change) at the same pose must not read the old skin's vertices.
+  const a = skin.geometry.attributes, same0 = memo.skeleton === skin.skeleton && memo.position === a.position && memo.skinIndex === a.skinIndex && memo.skinWeight === a.skinWeight;
+  memo.skeleton = skin.skeleton; memo.position = a.position; memo.skinIndex = a.skinIndex; memo.skinWeight = a.skinWeight;
+  const bones = skin.skeleton.bones, n = bones.length * 16 + 16; let same = same0 && memo.pose !== null && memo.pose.length === n;
   const pose = same ? memo.pose! : (memo.pose = new Float64Array(n));
   const bind = skin.bindMatrix.elements;
   for (let i = 0; i < 16; i++) { if (pose[i] !== bind[i]) { same = false; pose[i] = bind[i]; } }
@@ -221,7 +224,7 @@ const skinnedVertex = THREE.SkinnedMesh.prototype.getVertexPosition;   // Skinne
 THREE.SkinnedMesh.prototype.getVertexPosition = function (this: THREE.SkinnedMesh, index: number, target: THREE.Vector3) {
   if (!skinning) return skinnedVertex.call(this, index, target);
   const count = this.geometry.attributes.position.count; let memo = vertexMemo.get(this);
-  if (!memo || memo.stamp.length !== count) { memo = { xyz: new Float64Array(count * 3), stamp: new Uint32Array(count), epoch: 1, pass: 0, pose: null }; vertexMemo.set(this, memo); }
+  if (!memo || memo.stamp.length !== count) { memo = { xyz: new Float64Array(count * 3), stamp: new Uint32Array(count), epoch: 1, pass: 0, pose: null, skeleton: null, position: null, skinIndex: null, skinWeight: null }; vertexMemo.set(this, memo); }
   if (memo.pass !== skinStamp) { memo.pass = skinStamp; if (!samePose(memo, this)) memo.epoch++; }   // a new pass keeps the memo only if the pose is bit-for-bit the one it was skinned in
   const k = index * 3;
   if (memo.stamp[index] === memo.epoch) return target.set(memo.xyz[k], memo.xyz[k + 1], memo.xyz[k + 2]);
