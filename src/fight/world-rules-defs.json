@@ -24,6 +24,11 @@
     { "id": "campMax", "value": 4, "unit": "creatures" },
     { "id": "bossCampMax", "value": 6, "unit": "creatures" },
     { "id": "campGap", "value": 6, "unit": "m" },
-    { "id": "respawnDefault", "value": 300, "unit": "s" }
+    { "id": "respawnDefault", "value": 300, "unit": "s" },
+    { "id": "acrossSeconds", "value": 45, "unit": "s" },
+    { "id": "hopSeconds", "value": 15, "unit": "s" },
+    { "id": "firstFightSeconds", "value": 10, "unit": "s" },
+    { "id": "openerClear", "value": 15, "unit": "m" },
+    { "id": "openerFar", "value": 40, "unit": "m" }
   ]
 }
