@@ -19,21 +19,9 @@ import { levelOf, type Tier } from '../core/grades.ts';
 import { ARMOUR_SLOTS, WEAPON_SLOTS, isWeaponSlot, slotOf, type Loot, type LootId, type LootSlot } from '../core/loot.ts';
 import type { OpponentId } from '../roster.ts';
 import { GEAR, gearDeltas } from './gear-rows.ts';
+import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 
-// The two multipliers a fight is fought with. Both scale damage — Attack what you deal, RES what you take, chip included — and
-// neither touches posture (`shake`) or any timing.
-//
-// A record of multipliers rather than a fixed pair by design: brief 19 asks for a shape the Origin character layer EXTENDS rather than
-// replaces. That layer resolves item ids plus an approved allocation into the same kind of object, and its stats join as further
-// fields without this table changing.
-export type Loadout = { attack: number; res: number };
-// No gear: the exact identity. Every number here is what the game does today, so a naked loadout must be a no-op at the seam and a
-// naked fight must replay byte-identical to a record made before stats existed (that is deliverable 2's flag, proved against this).
-export const NAKED: Loadout = { attack: 1, res: 1 };
-
-// What a full Origin set is worth. Attack gets the smaller range on purpose (brief 19): raw damage is what kill timings, finisher
-// windows and the fight-length pins are measured against, so it moves least.
-export const CAPS = { attack: 1.15, res: 0.80 } as const;
+export { CAPS, NAKED, type Loadout };   // defined in gear-caps.ts (inside the sim boundary); re-exported so every existing import keeps working
 
 // One number per tier per slot (brief 19: "no hand values per piece"). The number is a slot's COVERAGE WEIGHT, and the tier scales it
 // linearly by its place on the ladder ABOVE THE BOTTOM RUNG — `levelOf - 1` over 9, so Recruit is 0 and Origin its whole weight. So the
