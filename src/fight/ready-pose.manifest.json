@@ -1,0 +1,15 @@
+{
+  "tables": [
+    {
+      "table": "readypose",
+      "file": "ready-pose.json",
+      "at": "rows",
+      "key": "id",
+      "required": {
+        "spine2": "number",
+        "spine3": "number",
+        "neck": "number"
+      }
+    }
+  ]
+}
