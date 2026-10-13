@@ -11,7 +11,7 @@ export const telegraphFlag = (search: string): boolean => /[?&]telegraph=(1|on|r
 // CASTER TELL (Combat #7a, Lead 2026-10-13: spells are live, so a cast must be readable coming): the same ring, for ANY fighter mid-cast of a spell (either side), always on, tinted with the spell's school (school-defs.json). Boss specials keep the orange ring behind the flag.
 const SPELLS = (SPELL_INDEX as unknown as { spells: Record<string, readonly [string, number]> }).spells;
 export const spellColor = (id: string): number | undefined => { const root = SPELLS[id]?.[0], hex = root ? SCHOOLS[BRICKS[root]?.school ?? ''] : undefined; return hex ? parseInt(hex.slice(1), 16) : undefined; };
-// ?spell=<id>[&spellskill=N] (look test for the stills, Lead 2026-10-13): the fight casts that spell through the skill slot, its first cast available at once, until the client wire (the equipped grimoire) lands. The id is only ever
+// ?spell=<id>[&spellskill=N] (look test for the stills, Lead 2026-10-13): the fight casts that spell through the skill slot (the Match's own spell port, as the client wire will), until the client wire (the equipped grimoire) lands. The id is only ever
 // read from the address and resolved through spell-cast.ts's rows (isSpellId); no spell, number or colour lives here. Absent flag or an id that is no row = undefined, so the game is today's.
 export const spellLook = (search: string): { id: string; skill: number } | undefined => {
   const q = new URLSearchParams(search), id = q.get('spell') ?? '', skill = Number(q.get('spellskill') ?? 0);
