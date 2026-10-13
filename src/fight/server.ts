@@ -20,3 +20,4 @@ export { SPEEDS } from './speeds.ts';
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
 export { PORTRAIT_KEYS } from '../legends.ts';
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
+export * from './weapon-skills.ts';
