@@ -8,6 +8,7 @@ import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
 import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
+import { AGGRO_M, SIGHT_M, threatOf } from './threat.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
@@ -20,8 +21,9 @@ const TICK = 1 / 60;
 const secs = (ticks: number): number => ticks * TICK;
 export const STAMINA_MAX = 100;                       // duel.ts createFighter: the bar every fighter starts with
 export const PLAYER_RADIUS = 0.425;                    // half the sim's 0.85 m fighter spacing (sim.ts)
-export const AGGRO_M = 9;                              // a creature that is hunting a player notices him inside this ring (World's mob layer decides who is in the world at all)
-export const SIGHT_M = 14;                              // a hunting creature keeps the player in sight inside this ring (hysteresis over AGGRO_M); past it the unseen clock runs
+export { AGGRO_M, SIGHT_M };   // (src/fight/threat-defs.json awareness rows)
+// AGGRO_M: a creature that is hunting a player notices him inside this ring (World's mob layer decides who is in the world at all)
+// SIGHT_M: a hunting creature keeps the player in sight inside this ring (hysteresis over AGGRO_M); past it the unseen clock runs
 export const ENGAGE_M = 4, ENGAGE_OUT_M = 6;           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
 export { MAX_ATTACKERS };   // creatures on one player at once (Dom: three on one): the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring
 export const HOLD_M = ENGAGE_M * 0.95;                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
@@ -196,7 +198,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
       if (alive(a)) Object.assign(a, keep); else { Object.assign(a, { x: keep.x, z: keep.z, facing: keep.facing }); break; }   // killed by a joiner: he stays dead (Auditor, #1943); the other joiners stop
       if (alive(c) && M.hypot(c.x - c.chaseX, c.z - c.chaseZ) > leashOf(c.kind)) { c.hunting = false; c.returning = true; c.phase = 'ready'; }
     }
-    if (b && b.side === 'creature') for (const e of r.events) if (e.type === 'Hit' && e.attacker === a.id && e.victim === b.id) { const t = ((b.threat ??= {})[a.id] ??= { threat: 0, damage: 0, out: 0 }); t.threat += e.damage; t.damage += e.damage; }   // credit and threat from what actually landed
+    if (b && b.side === 'creature') for (const e of r.events) if (e.type === 'Hit' && e.attacker === a.id && e.victim === b.id) { const t = ((b.threat ??= {})[a.id] ??= { threat: 0, damage: 0, out: 0 }); t.threat += threatOf('damage', e.damage); t.damage += e.damage; }   // credit and threat from what actually landed
     if (b && b.side === 'player') for (const e of r.events) {   // player against player: log who struck first (a blow that hit, was blocked, parried or dodged)
       const hit = e.type === 'Hit' ? [e.attacker, e.victim] : e.type === 'Blocked' || e.type === 'Parried' || e.type === 'Dodged' ? [e.attacker, e.victim] : null;
       if (!hit) continue;
