@@ -1,14 +1,22 @@
 import * as THREE from 'three';
 import { RULES } from './moves.ts';
 import type { Fighter } from './duel.ts';
+import { BRICKS } from './spell-cast.ts';
+import { SCHOOLS } from './schools.ts';
+import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
 // under the hero: where the blow will land, so a roll is the answer without any text. Read off the sim's own windup ticks (specialStage's source), never written back.
 export const telegraphFlag = (search: string): boolean => /[?&]telegraph=(1|on|ring)\b/i.test(search);
+// CASTER TELL (Combat #7a, Lead 2026-10-13: spells are live, so a cast must be readable coming): the same ring, for ANY fighter mid-cast of a spell (either side), always on, tinted with the spell's school (school-defs.json). Boss specials keep the orange ring behind the flag.
+const SPELLS = (SPELL_INDEX as unknown as { spells: Record<string, readonly [string, number]> }).spells;
+export const spellColor = (id: string): number | undefined => { const root = SPELLS[id]?.[0], hex = root ? SCHOOLS[BRICKS[root]?.school ?? ''] : undefined; return hex ? parseInt(hex.slice(1), 16) : undefined; };
 const ROLL_TICKS = 24;   // the last stretch of the windup, when the ring flashes: the roll window
-export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'>): { fill: number; flash: boolean } | null => {
-  if (caster.specialShare !== RULES.special.bossDamage || !caster.special || !caster.health) return null;
-  return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS };
+export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'> & { spell?: { id: string } }, bosses = true): { fill: number; flash: boolean; color?: number } | null => {
+  if (!caster.special || !caster.health) return null;
+  const color = caster.spell ? spellColor(caster.spell.id) : undefined;
+  if (!caster.spell && !(bosses && caster.specialShare === RULES.special.bossDamage)) return null;
+  return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS, ...(color !== undefined ? { color } : {}) };
 };
 
 export function createBossTelegraph(scene: THREE.Scene) {
@@ -20,12 +28,14 @@ export function createBossTelegraph(scene: THREE.Scene) {
   const ring = make(new THREE.RingGeometry(0.92, 1, 48), 0xff5a1f), fill = make(new THREE.CircleGeometry(1, 48), 0xd83a10);
   scene.add(group);
   return {
-    update(boss: Fighter, at: THREE.Vector3 | null, tick: number) {
-      const look = telegraphLook(boss);
+    update(boss: Fighter, at: THREE.Vector3 | null, tick: number, bosses = true) {
+      const look = telegraphLook(boss, bosses);
       group.visible = !!look && !!at;
       if (!look || !at) return;
       const radius = RULES.special.reach * 0.4;   // 1.2 m: about a body and a half, readable at 375 wide on the fight camera
       group.position.set(at.x, at.y + 0.03, at.z); group.scale.setScalar(radius);
+      const tint = look.color;
+      ring.material.color.setHex(tint ?? 0xff5a1f); fill.material.color.setHex(tint ?? 0xd83a10);
       const pulse = look.flash ? 0.65 + 0.35 * Math.sin(tick * 0.9) : 1;
       ring.material.opacity = (0.3 + 0.5 * look.fill) * pulse;
       fill.scale.setScalar(Math.max(0.02, look.fill)); fill.material.opacity = (0.12 + 0.3 * look.fill * look.fill) * pulse;
