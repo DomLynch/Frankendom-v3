@@ -6,6 +6,7 @@ import { swingProgress } from './blade.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type Direction, type WeaponId } from './moves.ts';
+import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { movesOf, type Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { AnimationMixer, MathUtils, Group, Mesh, PropertyBinding, type Material, type Texture, MeshStandardMaterial, MeshBasicMaterial, Object3D, SkinnedMesh, Uint16BufferAttribute, Float32BufferAttribute, BufferGeometry, BufferAttribute, DoubleSide, Vector3, Quaternion, Matrix3, Matrix4, Box3, LoopOnce, type AnimationAction, type AnimationClip, type BufferAttribute as BufferAttributeType, Skeleton } from 'three';
@@ -995,19 +996,19 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         return sample('Fin_Hamstrung', progress, () => { this.aimBladeAt(target); return anchor.position.clone(); });
       },
       // Both the intact rig and the cached pieces follow the same presentation clock; modes can change mid-finish.
-      openWaist(progress: number, mode: 'red' | 'dark' | 'off') {
+      openWaist(progress: number, mode: BloodMode) {
         if (progress < .045) return;
-        if (!opened && mode !== 'off') this.prepareOpened();
+        if (!opened && !bloodHidden(mode)) this.prepareOpened();
         if (!opened) return;
-        if (mode !== 'off' && !opened.group.parent) anchor.add(opened.group);
-        opened.group.visible = mode !== 'off'; root.visible = mode === 'off';
-        opened.update(progress, mode === 'dark', spectralLife);
+        if (!bloodHidden(mode) && !opened.group.parent) anchor.add(opened.group);
+        opened.group.visible = !bloodHidden(mode); root.visible = bloodHidden(mode);
+        opened.update(progress, bloodDark(mode), spectralLife);
       },
       // Skull-only split, owner 2026-09-19. Reuse the proven head bake; keep the halves attached through the collapse.
-      splitCrown(progress: number, mode: 'red' | 'dark' | 'off') {
+      splitCrown(progress: number, mode: BloodMode) {
         const bone = root.getObjectByName('Head');
         if (!bone || progress < .045) return;
-        if (!crown && mode !== 'off') {
+        if (!crown && !bloodHidden(mode)) {
           root.updateWorldMatrix(true, true);
           root.updateMatrixWorld(true);   // SkinnedMesh refreshes bindMatrixInverse here, including before the first render
           const inverse = bone.matrixWorld.clone().invert(), head = this.sever();
@@ -1021,9 +1022,9 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         }
         if (!crown) return;
         crown.group.position.copy(bone.position); crown.group.quaternion.copy(bone.quaternion);
-        crown.group.visible = mode !== 'off'; bone.scale.setScalar(mode === 'off' ? 1 : .0001);
+        crown.group.visible = !bloodHidden(mode); bone.scale.setScalar(bloodHidden(mode) ? 1 : .0001);
         const t = Math.min(1, (progress - .045) / .12);
-        crown.open(t*t*(3 - 2*t), mode === 'dark');
+        crown.open(t*t*(3 - 2*t), bloodDark(mode));
       },
       // Apply after both rigs and their scene transforms update. Put the MIDDLE of the blade through the chest,
       // not the shoulder→tip ray. A grounded presentation step supplies reach without stretching bones or the weapon.
