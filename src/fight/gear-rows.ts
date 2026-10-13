@@ -7,13 +7,14 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import { ARMOUR_SLOTS } from '../core/loot.ts';
 import { DIALS } from './sheet-rows.ts';
+import { RECORD_VERSION } from './record.ts';
 import { SCHOOL_IDS } from './schools.ts';
 import GEAR_DEFS from './gear-defs.json' with { type: 'json' };
 import GEAR_MANIFEST from './gear-defs.manifest.json' with { type: 'json' };
 import WEIGHT_ROWS from './armour-weights.json' with { type: 'json' };
 import WEIGHT_MANIFEST from './armour-weights.manifest.json' with { type: 'json' };
 
-export type ArmourWeight = { readonly id: string; readonly dial: string; readonly castPenalty: number; readonly note: string };   // castPenalty: sheet points the class takes off its `dial` (spellPower) when the set is worn, scaled by coverage (gearDeltas)
+export type ArmourWeight = { readonly id: string; readonly dial: string; readonly fromRecordVersion: number; readonly castPenalty: number; readonly note: string };   // castPenalty: sheet points the class takes off its `dial` (spellPower) when the set is worn, scaled by coverage (gearDeltas)
 export type GearSet = { readonly id: string; readonly weightClass: string; readonly shape: Readonly<Record<string, number>>; readonly quality: Readonly<Record<string, number>> };
 export type GearRow = { readonly id: string; readonly weightClass: string; readonly slot: string | null; readonly preset: boolean; readonly set: string | null; readonly weight: number; readonly wearMax: number; readonly resist: Readonly<Record<string, number>> };
 export type GearTable = { readonly sets: Readonly<Record<string, GearSet>>; readonly owners: Readonly<Record<string, string>>; readonly rows: Readonly<Record<string, GearRow>>; readonly shapeMax: number; readonly qualityMax: number; readonly weights: Readonly<Record<string, ArmourWeight>> };   // weights: weight class -> sheet points off spellPower; owners: loot opponent id -> the set its armour belongs to
@@ -23,7 +24,7 @@ type RawRow = { id: string; weightClass: string; slot?: string; preset?: boolean
 export function loadGearDefs(raw: { sets?: readonly unknown[]; owners?: readonly unknown[]; gear?: readonly unknown[]; rules?: readonly unknown[] }, schools: readonly string[] = SCHOOL_IDS, slots: readonly string[] = ARMOUR_SLOTS, dials: readonly string[] = DIALS.map((d) => d.id), weightRaw: { armourWeight?: readonly unknown[] } = WEIGHT_ROWS): GearTable {
   loadRegistry([...WEIGHT_MANIFEST.tables, ...GEAR_MANIFEST.tables].map((t) => tableFromFile(t as unknown as Manifest, t.table === 'armourWeight' ? weightRaw : raw, t.table === 'armourWeight' ? 'armour-weights.json' : 'gear-defs.json')));
   const weights = Object.fromEntries(((weightRaw.armourWeight ?? []) as readonly ArmourWeight[]).map((w) => [w.id, w]));
-  for (const w of Object.values(weights)) if (!dials.includes(w.dial) || !Number.isInteger(w.castPenalty) || w.castPenalty < 0) throw Error(`armour-weights "${w.id}": dial is a dial row and castPenalty a whole number from 0`);
+  for (const w of Object.values(weights)) if (!dials.includes(w.dial) || !Number.isInteger(w.castPenalty) || w.castPenalty < 0 || !Number.isInteger(w.fromRecordVersion) || w.fromRecordVersion < 1) throw Error(`armour-weights "${w.id}": dial is a dial row, castPenalty a whole number from 0 and fromRecordVersion a record version`);
   const rules = (raw.rules ?? []) as readonly { id: string; shapeMax: number; qualityMax: number }[];
   if (rules.length !== 1 || rules[0]!.id !== 'gear' || rules[0]!.shapeMax < 1 || rules[0]!.qualityMax < 1) throw Error('gear-defs: exactly one rule row, "gear", with a shapeMax and a qualityMax from 1');
   const { shapeMax, qualityMax } = rules[0]!, sets: Record<string, GearSet> = {};
@@ -55,7 +56,7 @@ export const GEAR: GearTable = loadGearDefs(GEAR_DEFS);
 // A worn set's dial deltas. `coverage` (0..1) is how much of the set is worn by slot weight; the shape deltas scale with it. `quality` (0..1, never past `coverage`) is the worn pieces' quality
 // share (common 0 to legendary 1, weighted by slot): `qualityMax` x quality points are spread over the set row's quality weights by largest remainder (ties to the lower dial code), so the whole
 // number of points is always spent. A full legendary set is 25 of shape plus 25 of quality; a full common set is 25 of shape and no quality.
-export function gearDeltas(setId: string, coverage = 1, quality = coverage): Readonly<Record<string, number>> {
+export function gearDeltas(setId: string, coverage = 1, quality = coverage, version: number = RECORD_VERSION): Readonly<Record<string, number>> {
   const set = GEAR.sets[setId];
   if (!set) throw Error(`gearDeltas: "${setId}" is not a set row (gear-defs.json sets)`);
   const c = Math.max(0, Math.min(1, coverage)), out: Record<string, number> = {};
@@ -65,7 +66,7 @@ export function gearDeltas(setId: string, coverage = 1, quality = coverage): Rea
   let left = total - shares.reduce((a, s) => a + s.floor, 0);
   for (const s of [...shares].sort((a, b) => b.rest - a.rest || a.code - b.code)) { if (left-- > 0) s.floor++; }
   for (const s of shares) if (s.floor) out[s.dial] = (out[s.dial] ?? 0) + s.floor;
-  const w = GEAR.weights[set.weightClass], taken = w ? Math.round(w.castPenalty * c) : 0;   // the weight class takes its castPenalty off its dial (armour-weights.json), scaled by how much of the set is worn
+  const w = GEAR.weights[set.weightClass], taken = w && version >= w.fromRecordVersion ? Math.round(w.castPenalty * c) : 0;   // the weight class takes its castPenalty off its dial (armour-weights.json), scaled by how much of the set is worn, and only for a fight recorded at fromRecordVersion or later (`version`: the page passes the build's own, a verifier the record's, so an older record recomputes WITHOUT it)
   if (w && taken) { const left = (out[w.dial] ?? 0) - taken; if (left) out[w.dial] = left; else delete out[w.dial]; }
   return out;
 }
