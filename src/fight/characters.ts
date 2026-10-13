@@ -526,7 +526,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // ?look=stances (stance-pose.ts): the stance's extra bones, restored before every update; empty and untouched without the flag.
     let stance: Stance = 'neutral', stanceW = 0, stanceClock = 0, stanceApplied = false;
     const stanceBones = ['pelvis', 'thigh_l', 'thigh_r', 'calf_l', 'calf_r', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'Head', 'upperarm_r', 'lowerarm_r', 'upperarm_l'].map(n => root.getObjectByName(n)), stanceSaved = stanceBones.map(() => new Quaternion()), stancePelvis = new Vector3();
-    // ?look=upright (upright-ready.ts): this body's ready-pose offset on spine_02, spine_03 and neck_01, restored before every update; undefined and untouched without the flag.
+    // upright ready pose (upright-ready.ts): this body's ready-pose offset on spine_02, spine_03 and neck_01, restored before every update; undefined and untouched without the flag.
     let upright: ReadyOffset | undefined, uprightW = 0, uprightApplied = false;
     const uprightBones = ['spine_02', 'spine_03', 'neck_01'].map(n => root.getObjectByName(n)), uprightSaved = uprightBones.map(() => new Quaternion());
     const turnAbout = (bone: Object3D | null | undefined, axis: Vector3, angle: number) => {   // a world-axis turn of a bone (the clavicles' own axes are not the fighter's)
@@ -704,7 +704,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // Fatigue (fatigue.ts, Lead's brief B): the driver's value for this body this frame, and the body's own tuning (Goblin quick and shallow, Executioner slow and deep).
       opening(o: Opening | null) { open = o; },   // opening-pose.ts: this body's open stagger (Practice.opening when its side is this body), or null
       fatigue(f: Pick<Fatigue, 'level' | 'gassed' | 'second'>, t?: FatigueTune) { tired = f; tune = t; },
-      setUpright(o: ReadyOffset | undefined) { upright = o; },   // upright-ready.ts: this body's ready-pose offset (look test only; undefined = nothing)
+      setUpright(o: ReadyOffset | undefined) { upright = o; },   // upright-ready.ts: this body's ready-pose offset (undefined = nothing)
       setStance(s: Stance) { stance = s; },   // stance-pose.ts: this body's stance (look test only; neutral = nothing)
       worn: (): readonly SkinnedMesh[] => worn,
       covered: (): readonly Mesh[] => [...covered.keys()],   // his own draws a `replace` piece hides (the debug probe asserts they stay hidden)
@@ -788,7 +788,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           }
         }
         uprightW += (Number(!!upright && !dead && (pose === 'ready' || pose === 'guard')) - uprightW) * ease;
-        if (upright && uprightW > .001) {   // ?look=upright: the counter-pitch on the calm pose (upright-ready.ts); restored at the top of the next update
+        if (upright && uprightW > .001) {   // the counter-pitch on the calm pose (upright-ready.ts); restored at the top of the next update
           const b = uprightBones; b.forEach((bone, i) => bone && uprightSaved[i].copy(bone.quaternion)); uprightApplied = true;
           if (b[0]) b[0].rotation.x += upright.spine2 * uprightW; if (b[1]) b[1].rotation.x += upright.spine3 * uprightW; if (b[2]) b[2].rotation.x += upright.neck * uprightW;
         }

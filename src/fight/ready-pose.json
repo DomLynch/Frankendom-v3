@@ -2,9 +2,6 @@
   "rows": [
     { "id": "hero", "spine2": -8, "spine3": -8, "neck": 10 },
     { "id": "executioner", "spine2": -8, "spine3": -8, "neck": 10 },
-    { "id": "veteran", "spine2": -8, "spine3": -8, "neck": 10 },
-    { "id": "hero-full", "spine2": -12, "spine3": -16, "neck": 14 },
-    { "id": "executioner-full", "spine2": -12, "spine3": -16, "neck": 14 },
-    { "id": "veteran-full", "spine2": -12, "spine3": -16, "neck": 14 }
+    { "id": "veteran", "spine2": -8, "spine3": -8, "neck": 10 }
   ]
 }
