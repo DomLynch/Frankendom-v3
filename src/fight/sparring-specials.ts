@@ -12,10 +12,6 @@ const HAND_LABELS: Readonly<Record<string, string>> = {
   cuts: 'Seven Cuts', standfast: 'Stand Fast', ratrun: 'Rat Run', blackfurrow: 'Black Furrow',
   earthfold: 'Earth Fold', ironsettle: 'Iron Settle', gatherededge: 'Gathered Edge',
   shield: 'Shield Quake', centurion: 'The Charge', tithe: 'Blood Tithe',
-  set: 'Red Wind', hades: "Hades' Shadow", nyx: 'Nyx Nightfall',
-  reynard: 'Dirty Fistful', hermes: 'Gone', loki: 'Three Liars',
-  dwarf8: 'The Word', dwarf9: 'Three Blows', dwarf10: 'Rim Shake', shield8: 'Bared Face', shield9: 'The Ring', shield10: 'Aegis Sweep',
-  antaeus: 'Cracking Ground', surtr: 'Ash Fall', typhon: 'Wind Wall',
 };
 // A boss's name is its bosses.json row's `label`; the rest are still hand-written (not rows yet).
 export const SPECIAL_LABELS: Readonly<Record<string, string>> = { ...HAND_LABELS, ...Object.fromEntries(BOSSES.map((r) => [r.id, r.label])) };

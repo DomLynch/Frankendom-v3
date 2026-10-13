@@ -24,18 +24,14 @@ const HAND_TESTS = {
   cleaverset: { opponent: 'pitborn', level: 6, first: 180 },
   groundset: { opponent: 'dwarf', level: 6, first: 180 },
   cutmark: { opponent: 'shieldmaiden', level: 6, first: 180 },
- hades: { opponent: 'nightborn', level: 41, first: 180 }, set: { opponent: 'nightborn', level: 36, first: 180 }, cuts: { opponent: 'nightborn', level: 31, first: 180 }, nyx: { opponent: 'nightborn', level: 46, first: 180 }, shield: { opponent: 'veteran', level: 36, first: 180 }, tithe: { opponent: 'veteran', level: 46, first: 180 }, centurion: { opponent: 'veteran', level: 41, first: 180 }, standfast: { opponent: 'veteran', level: 21, first: 180 },
+ cuts: { opponent: 'nightborn', level: 31, first: 180 }, shield: { opponent: 'veteran', level: 36, first: 180 }, tithe: { opponent: 'veteran', level: 46, first: 180 }, centurion: { opponent: 'veteran', level: 41, first: 180 }, standfast: { opponent: 'veteran', level: 21, first: 180 },
   // The Goblin's rank 8, 9, 10 bosses (Reynard the Fox, Hermes, Loki: levels 36, 41, 46), grey-box previews (special-fx-goblin.ts; special-modes.ts).
   // Selected Goblin ranks 4-7 presentation; preview at Master I, runtime level selection belongs to Combat.
   ratrun: { opponent: 'goblin', level: 31, first: 180 },
   blackfurrow: { opponent: 'executioner', level: 21, first: 180 },
   earthfold: { opponent: 'pitborn', level: 21, first: 180 }, ironsettle: { opponent: 'dwarf', level: 21, first: 180 }, gatherededge: { opponent: 'shieldmaiden', level: 21, first: 180 },
-  reynard: { opponent: 'goblin', level: 36, first: 180 }, hermes: { opponent: 'goblin', level: 41, first: 180 }, loki: { opponent: 'goblin', level: 46, first: 180 },
   // The Dwarf's and the Shieldmaiden's ranks 8-10 (Character lane, preview only; level 5*(rank-1)+1 = 36, 41, 46), each drawing only its own move (special-fx-dwarf-shield.ts).
-  dwarf8: { opponent: 'dwarf', level: 36, first: 180 }, dwarf9: { opponent: 'dwarf', level: 41, first: 180 }, dwarf10: { opponent: 'dwarf', level: 46, first: 180 },
-  shield8: { opponent: 'shieldmaiden', level: 36, first: 180 }, shield9: { opponent: 'shieldmaiden', level: 41, first: 180 }, shield10: { opponent: 'shieldmaiden', level: 46, first: 180 },
   // The Pitborn's ranks 8-10 (special-fx-pitborn.ts): Cracking Ground, Ash Fall, Wind Wall.
-  antaeus: { opponent: 'pitborn', level: 36, first: 180 }, surtr: { opponent: 'pitborn', level: 41, first: 180 }, typhon: { opponent: 'pitborn', level: 46, first: 180 },
   // The Witch's, the Plague Doctor's and the Knight's class specials (Weapons; special-fx-class.ts): slot A is ranks 1-3 (rank 2, level 6), slot B ranks 4-7 (rank 5, level 21).
   wake: { opponent: 'witch', level: 6, first: 180 }, stirring: { opponent: 'witch', level: 21, first: 180 }, tempo: { opponent: 'plaguedoctor', level: 6, first: 180 }, pulse: { opponent: 'plaguedoctor', level: 21, first: 180 },
   drag: { opponent: 'knight', level: 6, first: 180 }, swing: { opponent: 'knight', level: 21, first: 180 },

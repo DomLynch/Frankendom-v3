@@ -15,6 +15,16 @@ export type FinisherPose = string;
 // has the killer act (Run Through's held drive, Hamstrung's and Execution's strikes), holds its pose at full weight.
 export type FinisherBodyPart = { pose: string; role: string };
 export type FinisherBody = { victim: FinisherBodyPart; killer?: FinisherBodyPart };
+// `sound` (sound/cues.ts): what the kill sounds like. `fall` is the body meeting the sand (its gore variant `goreFall`, then `goreAfter` when gore is
+// on); `stab` forces (true) or forbids (false) the stab over the cut, absent = the killing move decides; `wound` follows the cut on a gory single
+// kill (the tear of a severed head, the crack of a split skull). A cue lands `at` seconds after the kill, or `atDeath` of the way through the slowed
+// death clip. Hamstrung's and Execution's are their templates' own beats (cues.ts), so their rows carry none.
+export type FinisherCue = { cue: string; gain: number; room: number; at?: number; atDeath?: number };
+// `zone` (zone-finisher.ts): an open-world client can show it on a zone creature (the plain death, and the decapitation where the creature's row has a head to cut).
+// `bakeFallback` (rank-look.ts bakeSafeFinisher): what a finisher that reads a waist-cut bake plays when that bake is still pending (a finisher that reads no
+// bake), if the body allows it; else the plain death.
+// `blood.start` (finisher-blood.ts): how far into the victim's clip the wound opens (the severed head's 5 %, the split skull's and the waist cut's 4.5 %).
+export type FinisherSound = { fall: FinisherCue; goreFall?: FinisherCue; goreAfter?: readonly FinisherCue[]; stab?: boolean; wound?: readonly FinisherCue[] };
 
 // `rotation`: in the automatic pick (file order is the pool order, which selectFinisher's hash indexes, so reordering rows moves picks).
 // `pose`: the clip word characters.ts plays, null = the plain Death. `seconds`: the MEASURED duration (finishers.ts FINISHER_SECONDS);
@@ -26,7 +36,9 @@ export type FinisherBody = { victim: FinisherBodyPart; killer?: FinisherBodyPart
 export type FinisherSide = { angle: number; eyeY: number; eyeYPerScale?: number; minBack: number; beyond?: number; beyondBody?: number; reachPad?: number; wideWhenBig?: boolean };
 export type FinisherCamera = { dolly: { push: number; slide: number; turn: number }; reveal?: { from: number; over: number; overBig?: number; side: string }; side?: FinisherSide };
 // `shelved`: the clip and pose stay, but the scene plays the plain fall in their place (the Quiet One left the game, Dom 2026-09-27; nothing picks it).
-export type FinisherRow = { id: string; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; body?: FinisherBody; camera: FinisherCamera };
+// `label`: the finisher's name on screen. `picker`: its place in the dev picker (main.ts), absent = not offered; a position, because the file's
+// order is the rotation's pool order and cannot follow the picker's.
+export type FinisherRow = { id: string; label: string; picker?: number; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; zone?: boolean; bakeFallback?: string; body?: FinisherBody; sound?: FinisherSound; blood: { start: number }; camera: FinisherCamera };
 export type FinisherTable = { rows: readonly FinisherRow[]; byId: ReadonlyMap<string, FinisherRow>; rotation: readonly string[] };
 
 const isTemplate = (v: unknown): v is FinisherTemplate => (FINISHER_TEMPLATES as readonly unknown[]).includes(v);
@@ -38,20 +50,25 @@ export function loadFinisherDefs(raw: unknown, manifest: Manifest, file = 'finis
   const table = tableFromFile(manifest, raw, file);
   loadRegistry([table]);
   const rows = table.rows as readonly FinisherRow[], byId = new Map(rows.map((r) => [r.id, r]));
-  const problems: string[] = [];
+  const problems: string[] = [], num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
   rows.forEach((r, i) => {
     const at = `${file}:${i}:${r.id}`, measured = (x: FinisherRow | undefined) => typeof x?.seconds === 'number' && Number.isFinite(x.seconds) && x.seconds > 0;
     if (!isTemplate(r.template)) problems.push(`${at} template "${String(r.template)}" is not an engine verb (${FINISHER_TEMPLATES.join(', ')})`);
     if (r.pose !== null && (typeof r.pose !== 'string' || r.pose === '')) problems.push(`${at} pose must be a clip word or null`);
+    const cueOk = (c: FinisherCue | undefined) => !!c && typeof c.cue === 'string' && !!c.cue && num(c.gain) && num(c.room) && (num(c.at) !== num(c.atDeath));
+    if (r.template === 'hamstring' || r.template === 'execute' ? r.sound !== undefined : !cueOk(r.sound?.fall)) problems.push(`${at} sound: a ${r.template} row ${r.template === 'hamstring' || r.template === 'execute' ? 'sounds on its template\'s own beats and carries none' : 'needs sound.fall'}`);
+    for (const c of r.sound ? [r.sound.goreFall, ...(r.sound.goreAfter ?? []), ...(r.sound.wound ?? [])] : []) if (c !== undefined && !cueOk(c)) problems.push(`${at} sound cues need a cue, gain, room and exactly one of at and atDeath`);
     for (const part of r.body ? [r.body.victim, r.body.killer] : []) if (part !== undefined && !(typeof part?.pose === 'string' && part.pose && typeof part.role === 'string' && part.role)) problems.push(`${at} body parts need a pose word and a clip role`);
     if ((r.seconds === undefined) === (r.secondsFrom === undefined)) problems.push(`${at} needs exactly one of seconds and secondsFrom`);
     else if (r.seconds !== undefined && !measured(r)) problems.push(`${at} seconds must be a positive number`);
     else if (r.secondsFrom !== undefined && !measured(byId.get(r.secondsFrom))) problems.push(`${at} secondsFrom "${r.secondsFrom}" must name a row with measured seconds`);
-    const { reveal, side } = r.camera, num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+    const { reveal, side } = r.camera;
     if (reveal && (!num(reveal.from) || !num(reveal.over) || reveal.over <= 0 || (reveal.overBig !== undefined && !(num(reveal.overBig) && reveal.overBig > 0)))) problems.push(`${at} camera.reveal needs from and a positive over (and overBig, when given)`);
     if (reveal && !byId.get(reveal.side)?.camera.side) problems.push(`${at} camera.reveal.side "${reveal.side}" must name a row with a camera.side view`);
     if (side && (![side.angle, side.eyeY, side.minBack].every(num) || (side.beyond === undefined ? !(num(side.beyondBody) && num(side.reachPad)) : !num(side.beyond)))) problems.push(`${at} camera.side needs angle, eyeY, minBack and either beyond or beyondBody + reachPad`);
   });
+  const places = rows.flatMap((r) => (r.picker === undefined ? [] : [r.picker]));
+  if (rows.some((r) => r.picker !== undefined && !Number.isInteger(r.picker)) || new Set(places).size !== places.length) problems.push(`${file}: picker places must be distinct integers`);
   const words = rows.flatMap((r) => (r.body ? [r.body.victim.pose, ...(r.body.killer ? [r.body.killer.pose] : [])] : []));
   for (const w of words) if (words.indexOf(w) !== words.lastIndexOf(w)) { problems.push(`${file}: body pose "${w}" is used twice (a rig's pose word names one finisher body)`); break; }
   if (problems.length) throw Error(problems.join('\n'));

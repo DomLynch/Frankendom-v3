@@ -2,6 +2,7 @@ import { FINISHER_POSE, selectFinisher, type FinisherId } from './finishers.ts';
 import type { Finish } from './duel.ts';
 import type { WeaponId } from './moves.ts';
 import { isHeld, ROSTER, type OpponentId } from '../roster.ts';
+import { bodyPoseOf, isTemplate, PLAIN_DEATH } from './finisher-look.ts';
 
 // Hamstrung: a paired finisher (Death_Hamstrung on the victim, Fin_Hamstrung on the killer): a low cut at the knee, then a thrust
 // into the back. Presentation only. It lives here, not in finishers.ts or roster.ts, because both are in the kill-link guard's
@@ -24,13 +25,13 @@ export const HAMSTRUNG_SOURCE_PELVIS = .95;
 // and the player's own death keep no ceremony), and a body without Death_Hamstrung plays no ceremony for it rather than a missing
 // clip (roster.ts would pass the pick through for any body that lists no `finishers`). Every other pick is exactly `resolved`.
 export function resolveHamstrung(id: OpponentId, finish: Finish, weapons: readonly [WeaponId, WeaponId], override: FinisherId | null, previous: FinisherId | null, resolved: FinisherId | null): FinisherId | null {
-  if (override !== 'hamstrung') return resolved;
-  return HAMSTRUNG_VICTIMS.includes(id) && selectFinisher(finish, weapons, previous) ? 'hamstrung' : null;
+  if (!isTemplate(override, 'hamstring')) return resolved;
+  return HAMSTRUNG_VICTIMS.includes(id) && selectFinisher(finish, weapons, previous) ? override : null;
 }
 
-// FINISHER_POSE[id] with Hamstrung's pose word added (the table itself stays as it was, for the same reason as above).
-export const poseOf = (id: FinisherId): NonNullable<(typeof FINISHER_POSE)[FinisherId]> | 'hamstrung' | null => id === 'hamstrung' ? 'hamstrung' : FINISHER_POSE[id];
+// FINISHER_POSE[id], with a hamstring row's own pose word (its body.victim.pose; its `pose` stays null, as the rows were when this module began).
+export const poseOf = (id: FinisherId): string | null => isTemplate(id, 'hamstring') ? bodyPoseOf(id) : FINISHER_POSE[id] ?? null;
 
 // The picker's Hamstrung pick as the scene AND the audio must both read it, decided once per finish: if the clips are not installed by the kill, the
 // pick becomes the plain death for the picture and for the cues (src/audio/cues.ts keys on this id), so no knee or back sound plays over a plain fall.
-export const hamstrungPick = (pick: FinisherId | null, installed: boolean): FinisherId | null => pick === 'hamstrung' && !installed ? 'plainDeath' : pick;
+export const hamstrungPick = (pick: FinisherId | null, installed: boolean): FinisherId | null => isTemplate(pick, 'hamstring') && !installed ? PLAIN_DEATH : pick;

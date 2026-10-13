@@ -10,13 +10,8 @@ export const SPECIAL_CUES = ['charge', 'quake', 'tithe', 'redwind', 'hades', 'ny
 export type SpecialCue = typeof SPECIAL_CUES[number];
 // The cue each `?special=<id>` preview plays (special-look.ts SPECIAL_TESTS / special-modes.ts SPECIAL_MODES): one line per move, so a lane's registry entry is not touched. A fight is never told.
 export const SPECIAL_CUE_OF: Readonly<Record<string, SpecialCue>> = {
-  ...Object.fromEntries(BOSSES.map((r) => [r.id, r.cue as SpecialCue])),   // the twelve Executioner / Witch / Plague Doctor / Knight bosses: a cue on the bosses.json row
+  ...Object.fromEntries(BOSSES.map((r) => [r.id, r.cue as SpecialCue])),   // every boss with a bosses.json row: a cue on the bosses.json row
   shield: 'quake', centurion: 'charge', tithe: 'tithe',
-  set: 'redwind', hades: 'hades', nyx: 'nyx',
-  reynard: 'fistful', hermes: 'gone', loki: 'liars',
-  antaeus: 'cracking', surtr: 'ashfall', typhon: 'windwall',
-  dwarf8: 'theword', dwarf9: 'threeblows', dwarf10: 'rimshake',
-  shield8: 'baredface', shield9: 'thering', shield10: 'aegis',
   cuts: 'cuts', wake: 'wake', stirring: 'stirring', tempo: 'tempo', pulse: 'pulse', drag: 'drag', swing: 'swing',
 };
 // One file pair per cue, named for it (src/assets/special-audio/<cue>.ogg|.m4a): built from SPECIAL_CUES as duel.ts builds its map (Vite resolves the static-prefix template).

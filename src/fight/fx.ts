@@ -14,6 +14,7 @@ import type { createFootDust } from './foot-dust.ts';
 import { bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBladeBlood, createBodyWounds, createSplatPool } from './gore.ts';
 import type { FinisherId } from './finishers.ts';
+import { isTemplate } from './finisher-look.ts';
 import type { CombatEvent, Practice } from './combat.ts';
 import type { State } from './sim.ts';
 
@@ -218,7 +219,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
       );
       sparkMaterial.blending = flesh || kick || hurt ? THREE.NormalBlending : THREE.AdditiveBlending;
       sparkMaterial.size = flesh ? 0.095 : 0.045;
-      if (finisher === 'opened' && enemyHurt && warriors) {
+      if (isTemplate(finisher, 'bisect') && enemyHurt && warriors) {
         const hip = warriors.opponent.boneWorld('pelvis'),
           spine = warriors.opponent.boneWorld('spine_01');
         if (hip && spine) sparks.position.copy(hip.lerp(spine, 0.6));

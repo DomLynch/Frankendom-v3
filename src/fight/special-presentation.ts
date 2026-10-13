@@ -68,7 +68,7 @@ export function createSpecialPresentation(scene: THREE.Scene, exposure: number, 
       for (const side of [0, 1] as const) {
         const fighter = fighters[side], id = fighter.specialShare === undefined ? null : fight?.presets ? fight.presets[side] : bossSpecialId(fighter.specialName ?? null) ?? (side === 1 && fight ? classSpecialFor(fight.opponent, fight.level) : null);
         const opponent = id ? previews[id]?.opponent ?? fight?.opponent : undefined;
-        if (!id || !opponent || (id !== 'hades' && !modes[id])) { if (slots[side]) discard(slots[side]!); slots[side] = undefined; continue; }
+        if (!id || !opponent || !modes[id]) { if (slots[side]) discard(slots[side]!); slots[side] = undefined; continue; }
         if (!slots[side] || slots[side]!.id !== id) select(side, id, opponent);
       }
       for (const event of events) {

@@ -1,5 +1,5 @@
 {
   "tables": [
-    { "table": "finisher", "file": "finisher-defs.json", "at": "finishers", "key": "id", "required": { "template": "string", "rotation": "boolean", "pose": "any", "camera": "object", "camera.dolly.push": "number", "camera.dolly.slide": "number", "camera.dolly.turn": "number" }, "refs": { "secondsFrom": "finisher", "camera.reveal.side": "finisher" } }
+    { "table": "finisher", "file": "finisher-defs.json", "at": "finishers", "key": "id", "required": { "label": "string", "template": "string", "rotation": "boolean", "pose": "any", "camera": "object", "camera.dolly.push": "number", "camera.dolly.slide": "number", "camera.dolly.turn": "number", "blood.start": "number" }, "refs": { "secondsFrom": "finisher", "camera.reveal.side": "finisher", "bakeFallback": "finisher" } }
   ]
 }
