@@ -1,0 +1,14 @@
+{
+  "tables": [
+    { "table": "loot-roll-point", "file": "loot-deck.json", "at": "rollPoints", "key": "id", "required": { "note": "string" } },
+    { "table": "loot-deck-reset", "file": "loot-deck.json", "at": "resets", "key": "id", "required": { "clearsPity": "boolean", "reshuffles": "boolean", "note": "string" } },
+    {
+      "table": "loot-deck",
+      "file": "loot-deck.json",
+      "at": "decks",
+      "key": "id",
+      "required": { "scope": "string", "rolledAt": "string", "deckSize": "integer", "hits": "integer", "softPityFrom": "integer", "pityStep": "integer", "hardPity": "integer", "resets": "array" },
+      "refs": { "rolledAt": "loot-roll-point", "resets[]": "loot-deck-reset" }
+    }
+  ]
+}
