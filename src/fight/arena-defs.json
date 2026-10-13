@@ -1,0 +1,31 @@
+{
+  "weather": {
+    "ash":    {"order": 1},
+    "embers": {"order": 2, "rises": true},
+    "rain":   {"order": 3, "falls": true, "streaks": true, "radius": 11, "phoneCount": 500},
+    "dust":   {"order": 4, "low": true},
+    "drips":  {"order": 5, "falls": true}
+  },
+  "bloodModes": {
+    "red":  {"order": 1},
+    "dark": {"order": 2, "dark": true},
+    "off":  {"order": 3, "hidden": true}
+  },
+  "floors": {
+    "sand": {"order": 1, "dust": "sand",  "wetDust": "stone"},
+    "flag": {"order": 2, "dust": "stone", "wetDust": "stone"},
+    "clay": {"order": 3, "dust": "clay",  "wetDust": "clay"}
+  },
+  "dustTones": {
+    "sand":  {"order": 1, "color": "#b99a68", "opacity": 0.6},
+    "stone": {"order": 2, "color": "#7a7062", "opacity": 0.36},
+    "clay":  {"order": 3, "color": "#2a1c1a", "opacity": 0.4}
+  },
+  "patches": {
+    "sand":   {"order": 1},
+    "flag":   {"order": 2},
+    "clay":   {"order": 3},
+    "puddle": {"order": 4, "water": true},
+    "blood":  {"order": 5}
+  }
+}
