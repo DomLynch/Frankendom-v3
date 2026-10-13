@@ -3,13 +3,14 @@
 // run through the Pit's own src/fight/duel.ts / ai.ts / sim.ts (no copies; the duel carries its own wall, Duel.radius, out of reach here) by the adapter open-fight.ts; this file owns only what the Pit has no word for: who is in whose fight (aggro, the nearest foe, the hold-off ring
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
-import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type SkillId, type SpecialName } from './moves.ts';
+import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type SkillId, type SpecialName, type WeaponId } from './moves.ts';
+import type { Sheet } from './sheet-rows.ts';
 import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
 import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
-import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
+import { IDLE_INPUT, heroSheeted, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
 import { guardOfLevel, type CcGuard, type CcLadder } from './cc-ladder.ts';
@@ -50,6 +51,8 @@ export type Fighter = {
   special: SpecialName | null; specialIn: number;       // the named special this fighter can cast (moves.ts specialOf), seconds until it is ready; with one, the SKILL button is the special (the Pit has one button)
   skill: SkillId | null;                                // the equipped skill (moves.ts SkillId, the Pit's `equippedSkill(profile.loot)`; null = none): the SKILL button fires its move when no special is set (duel.ts `Fighter.skill`)
   stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
+  weapon?: WeaponId;                                    // the hero's drawn weapon (absent = the Pit's DEFAULT_WEAPON): open-fight.ts builds his Pit fighter with it, as initialDuel does; a creature's is its row's
+  sheet?: Sheet;                                        // the hero's sheet (Wave A1, sheet-rows.ts): the Pit's own withSheet runs on his Pit fighter, so the dials (health, attack, armour, poise, recovery ...) mean here what they mean in the Pit; absent = no sheet, today's hero
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
   cc?: CcLadder;   // the crowd-control ladder (cc-ladder.ts): ONE per fighter, carried through every bout he is in, so three creatures on one hero step the same stun / knockdown ladder
   ccGuard?: CcGuard;   // a creature's immuneTier / resist rows from its catalogue row (cc-ladder.ts); absent = none
@@ -81,7 +84,17 @@ function fighter(id: string, side: Fighter['side'], kind: string, x: number, z: 
     homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, attack: 1, res: 1, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
 }
 /** The player, with his gear's Loadout (NAKED = the identity: no gear changes nothing). */
-export const player = (id: string, x: number, z: number, facing = 0, gear: Loadout = NAKED, level = 1, skill: SkillId | null = null): Fighter => ({ ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), attack: gear.attack, res: gear.res, level, shielded: level < PROTECT_LEVEL, skill });
+export const player = (id: string, x: number, z: number, facing = 0, gear: Loadout = NAKED, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet }): Fighter => {
+  const base: Fighter = { ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), attack: gear.attack, res: gear.res, level, shielded: level < PROTECT_LEVEL, skill };
+  if (build?.weapon !== undefined) base.weapon = build.weapon;
+  if (build?.sheet !== undefined) {
+    // The Pit's own sheet door sizes the bar (the health dial); a sheet carries the gear's Attack and armour itself, so the world's Loadout multipliers stay out of the way (no double count).
+    base.sheet = build.sheet; base.attack = 1; base.res = 1;
+    const sized = heroSheeted(base);
+    base.maxHealth = sized.maxHealth; base.health = sized.maxHealth;
+  }
+  return base;
+};
 /** A creature of `kind` (a moves.ts ROSTER id) at `level` (default: the easy anchor, the roster row): its health, poise and body scale are the Pit's own level rows (`opponentAt`). */
 export function creature(id: string, kind: string, x: number, z: number, facing = 0, level: number = LEVEL_ANCHORS.easy): Fighter {
   const o = OPPONENT(kind);

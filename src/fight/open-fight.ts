@@ -6,7 +6,7 @@ import { OPPONENTS, RULES, opponentAt, profileAt, DEFAULT_WEAPON, type AiProfile
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
-import { createFighter, idleIntent, opponentFighter, stepDuel, timing, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
+import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withSheet, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
@@ -21,7 +21,12 @@ const body = (f: Fighter) => ({ x: f.x, z: f.z, heading: f.facing, distance: 0 }
 /** The Pit fighter for a world Fighter. A creature's body and brain are the Pit's own level rows (moves.ts opponentAt / profileAt). */
 const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
   ? opponentFighter(opponentAt(OPPONENTS[f.kind as keyof typeof OPPONENTS], f.level), body(f), 'ready')
-  : createFighter(body(f), 'ready', DEFAULT_WEAPON));
+  : heroSheeted(f));
+/** The hero's Pit fighter as the Pit builds it (initialDuel: createFighter with his weapon; withSheet: his sheet's bar and recovery, the sheet itself carried on the fighter so stepDuel reads its dials). No weapon = DEFAULT_WEAPON, no sheet = today's hero. */
+export function heroSheeted(f: Fighter): PitFighter {
+  const hero = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON);
+  return f.sheet ? withSheet({ tick: 0, fighters: [hero, hero], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : hero;
+}
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
 export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter): Bout {
   const h = carry ?? pitOf(hero), c = foe ? pitOf(foe) : createFighter({ x: hero.x + FAR_M, z: hero.z, heading: 0, distance: 0 }, 'ready', DEFAULT_WEAPON, 1, 0, 1e9);

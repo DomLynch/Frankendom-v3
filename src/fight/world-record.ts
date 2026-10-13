@@ -54,7 +54,7 @@ export function heroClean(world: World): boolean {
   return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
     && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && d.move === null && d.phase !== 'dead'));
 }
-export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, { attack: h.attack, res: h.res }, h.level); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
+export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, { attack: h.attack, res: h.res }, h.level, null, { weapon: h.weapon }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
 
 // ---- the recorder: the live loop feeds it, the page asks for the packed record at a kill -----------------------------------------------
 export function createWorldRecorder() {
@@ -141,7 +141,7 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   if (r.wv !== WORLD_SIM_VERSION) return bad('sim version');   // the WORLD sim files moved (tests/world-sim-guard.test.ts): same reason as the Pit's, no verdict on the player
   if (r.rv !== RECORD_VERSION) return bad('sim version');   // the sim moved since the page wrote it: not a verdict on the player
   if (n === 0 || n > MAX_WORLD_TICKS) return bad('ticks');
-  if (h.weapon !== DEFAULT_WEAPON) return bad('weapon');   // the world sim fights every hero with DEFAULT_WEAPON (open-fight.ts pitOf): a record that claims another is refused until the sim honours it
+  if (!PLAYER_WEAPONS.includes(h.weapon)) return bad('weapon');   // the sim honours the hero's weapon (open-fight.ts heroSheeted): any weapon a player can wield; which ones the account HOLDS is the server's check (origins/server/world-verify.ts)
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
   if (!(h.attack >= 1 && h.attack <= CAPS.attack) || !(h.res >= CAPS.res && h.res <= 1)) return bad('hero gear');
   if (!(h.health > 0 && h.health <= RULES.health) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
