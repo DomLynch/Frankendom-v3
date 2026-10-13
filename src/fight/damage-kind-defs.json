@@ -1,0 +1,7 @@
+{
+  "kinds": [
+    { "id": "slash", "drain": 0.6, "posture": 1, "penetration": 0 },
+    { "id": "crush", "drain": 0, "posture": 1.5, "penetration": 0 },
+    { "id": "pierce", "drain": 0, "posture": 1, "penetration": 0.5 }
+  ]
+}

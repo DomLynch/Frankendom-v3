@@ -1,0 +1,15 @@
+{
+  "tables": [
+    {
+      "table": "damagekind",
+      "file": "damage-kind-defs.json",
+      "at": "kinds",
+      "key": "id",
+      "required": {
+        "drain": "number",
+        "posture": "number",
+        "penetration": "number"
+      }
+    }
+  ]
+}

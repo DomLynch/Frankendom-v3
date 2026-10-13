@@ -10,7 +10,7 @@ import WEAPON_MANIFEST from './weapon-defs.manifest.json' with { type: 'json' };
 export const LOOK_KEYS = ['baked', 'pommelBash', 'lowerArm', 'stabs'] as const;
 export type WeaponLook = Partial<Record<(typeof LOOK_KEYS)[number], boolean>>;
 export type WeaponBase = { readonly moves: Readonly<Record<string, MoveDef>>; readonly paths: Readonly<Record<string, PathSpec>> };
-export type WeaponEnums = { readonly materials: readonly string[]; readonly guards: readonly string[]; readonly grips: readonly string[] };
+export type WeaponEnums = { readonly materials: readonly string[]; readonly guards: readonly string[]; readonly grips: readonly string[]; readonly kinds?: readonly string[] };
 type Obj = Record<string, unknown>;
 const isRecord = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 // Objects merge field by field; anything else replaces. A merge that changes nothing returns the BASE object itself, so a row that overrides nothing of a table shares it (the longsword's moves ARE MOVES).
@@ -44,6 +44,7 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
     if (!enums.grips.includes(w.grip as string)) throw Error(`weapon-defs "${id}": grip "${String(w.grip)}" is not one of ${enums.grips.join(', ')}`);
     if (typeof w.reach !== 'number' || !Number.isFinite(w.reach)) throw Error(`weapon-defs "${id}": reach is a number`);
     if (!fight || typeof fight.thrustShare !== 'number' || typeof fight.close !== 'number') throw Error(`weapon-defs "${id}": fight needs thrustShare and close`);
+    if (enums.kinds) for (const [mid, mv] of Object.entries((w.moves ?? {}) as Record<string, Obj>)) if (mv.damageKind !== undefined && !enums.kinds.includes(mv.damageKind as string)) throw Error(`weapon-defs "${id}": move "${mid}" damageKind "${String(mv.damageKind)}" is not one of ${enums.kinds.join(', ')}`);
     for (const [table, must] of [['moves', base.moves], ['paths', base.paths]] as const) for (const key of Object.keys(must)) if (!isRecord((w[table] as Obj)?.[key])) throw Error(`weapon-defs "${id}": ${table} has no "${key}"`);
     weapons[id] = { id, ...w } as unknown as Weapon;
   }
