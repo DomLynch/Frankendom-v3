@@ -8,6 +8,13 @@ export const rollUnit = (seed: number, hit: number): number => {
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;   // 2^32, a literal: the sim uses no **
 };
+// The swarm band (programme item 6, world fights only: a duel with no roll is untouched): each foe on the target past the first (the swarm) widens the band by
+// `perFoe` percent, at most `cap`, per rank of the fight (1-10). Rows, not constants; all zero as shipped, so the band stays ROLL_BAND until Lead rules the numbers.
+export const SWARM_ROWS: readonly { readonly rank: number; readonly perFoe: number; readonly cap: number }[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rank) => ({ rank, perFoe: 0, cap: 0 }));
+export const swarmBand = (swarm = 1, rank = 1, rows = SWARM_ROWS): number => {
+  const r = rows.find((x) => x.rank === rank);
+  return ROLL_BAND + (r ? Math.min(r.cap, r.perFoe * Math.max(0, swarm - 1)) : 0);
+};
 export const percentOf = (u: number, band = ROLL_BAND): number => Math.min(band, Math.floor(u * (2 * band + 1)) - band);
 export const rolledDamage = (base: number, percent: number): number => Math.max(1, Math.round(base * (1 + percent / 100)));
 export const rollPercent = (seed: number, hit: number): number => percentOf(rollUnit(seed, hit));

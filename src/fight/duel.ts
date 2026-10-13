@@ -5,7 +5,7 @@ import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterr
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
 import { poolsOf, type PoolValues } from './pools.ts';
-import { rolledDamage, rollPercent } from './roll.ts';
+import { percentOf, rolledDamage, rollUnit, swarmBand } from './roll.ts';
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
@@ -94,7 +94,7 @@ export type CombatEvent = { tick: number; type: EventType; actor: Side; target?:
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
 // `roll`: the world-mob damage roll (Origins luck ruling, Dom 2026-10-07: +/-10% on every blow in both directions, in a world-mob fight only). Absent = the Pit, PvP and the
 // ladder: today's fight byte for byte. `hits` numbers the fight's blows in the order they resolve, so the draw is a pure function of (seed, hit) and a replay reproduces it.
-export type Duel = { tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number }; gambit?: { seed: number; draws: number }; radius?: number; ccBase?: number };   // ccBase: ticks added to this duel's tick to give the world's clock, the ladder's window (open world only)   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
+export type Duel = { tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number; swarm?: number; rank?: number }; gambit?: { seed: number; draws: number }; radius?: number; ccBase?: number };   // ccBase: ticks added to this duel's tick to give the world's clock, the ladder's window (open world only)   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
 export { ROLL_BAND, rollPercent, rolledDamage } from './roll.ts';   // the one definition (src/fight/roll.ts), shared with origins/luck/luck.ts
 export const withRoll = (duel: Duel, seed: number): Duel => ({ ...duel, roll: { seed, hits: 0 } });
 // A fight with the Gambit (src/fight/gambit.ts, RV33): the player's side may arm it, and its draws are a pure function of (seed, draw number). Absent = today's fight byte for byte.
@@ -255,7 +255,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const x = Math.round(statDown(held, 'armour', statUp(before[from].sheet, 'attack', base)));
     return base > 0 ? Math.max(1, x) : x;
   };
-  const rolled = (base: number, from: Side, to: Side, pen = 0): number => { const b = geared(base, from, to, pen); if (!duel.roll) return b; lastRoll = rollPercent(duel.roll.seed, hits++); return rolledDamage(b, lastRoll); };
+  const rolled = (base: number, from: Side, to: Side, pen = 0): number => { const b = geared(base, from, to, pen); if (!duel.roll) return b; lastRoll = percentOf(rollUnit(duel.roll.seed, hits++), swarmBand(duel.roll.swarm, duel.roll.rank)); return rolledDamage(b, lastRoll); };   // the band widens with the swarm: the foes on the target (roll.ts SWARM_ROWS)
   const rollTag = () => (duel.roll && lastRoll !== undefined ? { roll: lastRoll } : {});
   const spend = (i: Side, cost: number) => {
     const f = fighters[i]; f.stamina = Math.max(0, f.stamina - cost); f.rest = R.regenDelay;
@@ -568,6 +568,6 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       events.push({ tick, type: 'Killed', actor: 0, target: 1, move, location: 'torso', heading: A.body.heading });
     }
   }
-  return { tick, fighters, finish, events, ...(duel.roll ? { roll: { seed: duel.roll.seed, hits } } : {}), ...(duel.gambit ? { gambit: { seed: duel.gambit.seed, draws: gdraws } } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
+  return { tick, fighters, finish, events, ...(duel.roll ? { roll: { ...duel.roll, hits } } : {}), ...(duel.gambit ? { gambit: { seed: duel.gambit.seed, draws: gdraws } } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
 }
 
