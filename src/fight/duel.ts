@@ -1,6 +1,7 @@
 import { bladeImpact, type HitLocation } from './blade.ts';
 import { checkSheet, statDown, statUp, type Sheet } from './sheet-rows.ts';
 import { kindOf } from './damage-kinds.ts';
+import { STANCE_ROWS_ON } from './stance-era.ts';
 import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
@@ -171,8 +172,8 @@ export const elapsed = (f: Fighter): number => f.age + f.charge;
 export const timing = (f: Fighter): Timing => f.chained && f.move ? movesOf(f)[f.move].chained! : movesOf(f)[f.move!];
 const isLight = (action: Action | null): boolean => action === 'light' || action === 'light_left' || action === 'light_right';
 const baseGuard = (f: Fighter, R: typeof RULES): GuardProfile => ({ costScale: 1, arc: R.guardArc, window: R.parry, recovery: R.parryRecovery, commits: false, stopsHeavy: false, heavyBreaks: false, wide: false, postureDecay: 1, ...f.guardProfile });
-// The Defensive stance widens the parry window by a quarter (src/fight/stance.ts, `window`); no stance = the window untouched.
-export const guardOf = (f: Fighter, R: typeof RULES = RULES): GuardProfile => { const g = baseGuard(f, R); return f.stance ? { ...g, window: Math.round(stanced(f, 'window', g.window)) } : g; };
+// A stance never moves the parry window (v52, stance-era.ts: timing is sacred). Only while a record BELOW v52 replays does the old Defensive window (a quarter longer, stance.ts LEGACY) apply.
+export const guardOf = (f: Fighter, R: typeof RULES = RULES): GuardProfile => { const g = baseGuard(f, R); return f.stance && !STANCE_ROWS_ON ? { ...g, window: Math.round(stanced(f, 'window', g.window)) } : g; };
 // Directional guard (owner 2026-09-20, on by default): a guard or parry covers ONE of the five attack sides. The side is the DEFENDER's:
 // facing each other, an attacker's `right` cut arrives on the defender's left, so a `left` guard meets a `right` cut; overhead, thrust
 // and low match by name. No side chosen (the thumb still on the button) is the straight guard, `thrust` — never "everything".
@@ -250,9 +251,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // The sheet (RV48): the attacker's attack dial scales a blow up and the target's armour dial scales it down (an armour of 100 takes half) before the world roll; a blow is never scaled to nothing. No sheet on either side = the plain number.
   // A pierce blow (RV49, damage-kinds.ts) ignores `pen` of the target's armour dial; pen 0 (every move today) is the plain read.
   const geared = (base: number, from: Side, to: Side, pen = 0): number => {
-    if (!before[from].sheet && !before[to].sheet) return base;
+    const sheeted = !!before[from].sheet || !!before[to].sheet;
+    if (!sheeted && !before[to].stance) return base;
     const armour = before[to].sheet?.armour, held = pen && armour ? { ...before[to].sheet, armour: Math.round(armour * (1 - pen)) } : before[to].sheet;
-    const x = Math.round(statDown(held, 'armour', statUp(before[from].sheet, 'attack', base)));
+    const y = sheeted ? statDown(held, 'armour', statUp(before[from].sheet, 'attack', base)) : base, z = stanced(before[to], 'damageTaken', y);   // v52: a stance's damageTaken row (Defensive takes 10% less); none = the number untouched
+    if (!sheeted && z === y) return base;   // a stance with no damageTaken row (Aggressive, Trickster) and no sheet: the blow is exactly what it was
+    const x = Math.round(z);
     return base > 0 ? Math.max(1, x) : x;
   };
   const rolled = (base: number, from: Side, to: Side, pen = 0): number => { const b = geared(base, from, to, pen); if (!duel.roll) return b; lastRoll = percentOf(rollUnit(duel.roll.seed, hits++), swarmBand(duel.roll.swarm, duel.roll.rank)); return rolledDamage(b, lastRoll); };   // the band widens with the swarm: the foes on the target (roll.ts SWARM_ROWS)
@@ -383,7 +387,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   const shake = (target: Side, amount: number) => {
     const T = fighters[target], O = fighters[1 - target];
     if (!T.health || amount <= 0) return;
-    T.posture = Math.min(R.posture.max, T.posture + statDown(T.sheet, 'poise', perked(T, 'poise', amount))); T.postureRest = R.posture.hold;
+    T.posture = Math.min(R.posture.max, T.posture + statDown(T.sheet, 'poise', stanced(T, 'poise', perked(T, 'poise', amount)))); T.postureRest = R.posture.hold;
     if (T.posture < R.posture.max) return;
     T.posture = 0;
     const stun = stunned(T, 'postureBreak', R.posture.stun);
@@ -484,7 +488,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       // A guard raised just in time (its first perfectBlock ticks as a block, never a parry window) pays half and stops the chip; the
       // discounted price is what has to be affordable.
       const perfect = d.age - g.window < R.perfectBlock, cost = perfect ? blockCost * R.perfectBlockCost : blockCost, chip = perfect ? 0 : Math.round(def.damage * def.chip * R.location[location]), taken = chip ? rolled(chip, i, j, pen) : 0;
-      spend(j, cost); D.counterWindow = stanced(d, 'counter', R.guardCounter);   // a block opens the guard-counter window (a Defensive stance's is a quarter longer)
+      spend(j, cost); D.counterWindow = STANCE_ROWS_ON ? R.guardCounter : stanced(d, 'counter', R.guardCounter);   // a block opens the guard-counter window (the same for every stance from v52; a Defensive record below it keeps its quarter longer)
       events.push({ tick, type: 'Blocked', actor: j, target: i, move: a.move, stamina: cost, perfect, weapon: weapon.id, material: weapon.material, ...(chip ? { damage: taken, ...rollTag() } : {}) });
       if (chip) { wound(taken, 0, false); if (!D.health) stagger(0); }   // chip never marks a wound, but it can still kill
       shake(j, dealtPosture(def.posture * (perfect ? R.posture.perfect : 1)));
