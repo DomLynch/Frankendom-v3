@@ -11,6 +11,7 @@ export * from './gambit.ts';
 export * from './gear-stats.ts';
 export * from './play-radius.ts';
 export { underRecord } from './detmath.ts';
+export { validateBuild } from './sheet-rows.ts';   // the build field's one validation seam (origins/server/build.ts)
 export { setStab, STAB_ON } from './stab-rule.ts';
 export { AFTER_HIT_TICKS, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow, type KitRow } from './mobkit.ts';
 export { SPEEDS } from './speeds.ts';
