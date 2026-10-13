@@ -18,6 +18,7 @@ import { splitSkull } from './skull.ts';
 import { openWaist, openWaistSteps } from './opened.ts';
 import { openPose, openWeight, NO_OPEN } from './opening-pose.ts';
 import { stancePose, type Stance } from './stance-pose.ts';
+import type { ReadyOffset } from './upright-ready.ts';
 import type { Opening } from './combat.ts';
 import { GUARD_DROP } from './fatigue-tune.ts';
 import type { Fatigue } from './fatigue.ts';
@@ -525,6 +526,9 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // ?look=stances (stance-pose.ts): the stance's extra bones, restored before every update; empty and untouched without the flag.
     let stance: Stance = 'neutral', stanceW = 0, stanceClock = 0, stanceApplied = false;
     const stanceBones = ['pelvis', 'thigh_l', 'thigh_r', 'calf_l', 'calf_r', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'Head', 'upperarm_r', 'lowerarm_r', 'upperarm_l'].map(n => root.getObjectByName(n)), stanceSaved = stanceBones.map(() => new Quaternion()), stancePelvis = new Vector3();
+    // ?look=upright (upright-ready.ts): this body's ready-pose offset on spine_02, spine_03 and neck_01, restored before every update; undefined and untouched without the flag.
+    let upright: ReadyOffset | undefined, uprightW = 0, uprightApplied = false;
+    const uprightBones = ['spine_02', 'spine_03', 'neck_01'].map(n => root.getObjectByName(n)), uprightSaved = uprightBones.map(() => new Quaternion());
     const turnAbout = (bone: Object3D | null | undefined, axis: Vector3, angle: number) => {   // a world-axis turn of a bone (the clavicles' own axes are not the fighter's)
       if (!bone?.parent || !angle) return;
       const parent = bone.parent.getWorldQuaternion(new Quaternion()), turn = new Quaternion().setFromAxisAngle(axis.clone().applyQuaternion(root.getWorldQuaternion(new Quaternion())), angle);
@@ -700,6 +704,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // Fatigue (fatigue.ts, Lead's brief B): the driver's value for this body this frame, and the body's own tuning (Goblin quick and shallow, Executioner slow and deep).
       opening(o: Opening | null) { open = o; },   // opening-pose.ts: this body's open stagger (Practice.opening when its side is this body), or null
       fatigue(f: Pick<Fatigue, 'level' | 'gassed' | 'second'>, t?: FatigueTune) { tired = f; tune = t; },
+      setUpright(o: ReadyOffset | undefined) { upright = o; },   // upright-ready.ts: this body's ready-pose offset (look test only; undefined = nothing)
       setStance(s: Stance) { stance = s; },   // stance-pose.ts: this body's stance (look test only; neutral = nothing)
       worn: (): readonly SkinnedMesh[] => worn,
       covered: (): readonly Mesh[] => [...covered.keys()],   // his own draws a `replace` piece hides (the debug probe asserts they stay hidden)
@@ -742,6 +747,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         if (aimedRotation && upperArm) upperArm.quaternion.copy(aimedRotation);
         aimedRotation = undefined;
         if (aimedOffHand) { offHand[0]!.quaternion.copy(aimedOffHand[0]); offHand[1]!.quaternion.copy(aimedOffHand[1]); aimedOffHand = undefined; }
+        if (uprightApplied) { uprightBones.forEach((b, i) => b?.quaternion.copy(uprightSaved[i])); uprightApplied = false; }
         if (stanceApplied) { stanceBones.forEach((b, i) => b?.quaternion.copy(stanceSaved[i])); stanceBones[0]?.position.copy(stancePelvis); stanceApplied = false; }
         if (readApplied) { readBones.forEach((b, i) => b?.quaternion.copy(readSaved[i])); readApplied = false; }
         if (tiltApplied) { tilted.forEach((b, i) => b.quaternion.copy(untilted[i])); tiltApplied = false; }
@@ -780,6 +786,11 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
             readGuard = 0;
             if (layer) { if (spine1) spine1.rotation.x += layer.hunch; if (spine2) spine2.rotation.x += layer.chest; if (upperArm) upperArm.rotation.x += layer.arm; }
           }
+        }
+        uprightW += (Number(!!upright && !dead && (pose === 'ready' || pose === 'guard')) - uprightW) * ease;
+        if (upright && uprightW > .001) {   // ?look=upright: the counter-pitch on the calm pose (upright-ready.ts); restored at the top of the next update
+          const b = uprightBones; b.forEach((bone, i) => bone && uprightSaved[i].copy(bone.quaternion)); uprightApplied = true;
+          if (b[0]) b[0].rotation.x += upright.spine2 * uprightW; if (b[1]) b[1].rotation.x += upright.spine3 * uprightW; if (b[2]) b[2].rotation.x += upright.neck * uprightW;
         }
         stanceW += (Number(stance !== 'neutral' && !dead && (pose === 'ready' || pose === 'guard')) - stanceW) * ease; stanceClock += step;
         if (stanceW > .001) {   // ?look=stances: the stance's bones on top of the calm pose (stance-pose.ts); restored at the top of the next update
