@@ -23,6 +23,7 @@
     { "id": "rareDefault", "value": 0.05, "unit": "ratio" },
     { "id": "campMax", "value": 4, "unit": "creatures" },
     { "id": "bossCampMax", "value": 6, "unit": "creatures" },
-    { "id": "campGap", "value": 6, "unit": "m" }
+    { "id": "campGap", "value": 6, "unit": "m" },
+    { "id": "respawnDefault", "value": 300, "unit": "s" }
   ]
 }
