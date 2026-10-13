@@ -84,6 +84,8 @@ function fighter(id: string, side: Fighter['side'], kind: string, x: number, z: 
 }
 /** The player, with his gear's Loadout (NAKED = the identity: no gear changes nothing). */
 export const player = (id: string, x: number, z: number, facing = 0, gear: Loadout = NAKED, level = 1, skill: SkillId | null = null): Fighter => ({ ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), attack: gear.attack, res: gear.res, level, shielded: level < PROTECT_LEVEL, skill });
+/** How many creatures of this kind may be on one player at once: the catalogue row's `atOnce` field, never above MAX_ATTACKERS (the one attacker cap, attackers.ts); absent = the cap. A lower row value holds the rest at the ring (Lead, 2026-10-13: the goblin camps, until Combat's retune). */
+const atOnce = (c: Fighter): number => (fieldOf(c.kind, 'atOnce') as number | undefined) ?? MAX_ATTACKERS;
 /** A creature of `kind` (a moves.ts ROSTER id) at `level` (default: the easy anchor, the roster row): its health, poise and body scale are the Pit's own level rows (`opponentAt`). */
 export function creature(id: string, kind: string, x: number, z: number, facing = 0, level: number = LEVEL_ANCHORS.easy): Fighter {
   const o = OPPONENT(kind);
@@ -174,7 +176,13 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
   for (const p of players) {
     if (inFight.has(p.id)) continue;
     const foe = foes.get(p.id) ?? null;
-    if (foe) for (const c of (joiners.get(p.id) ?? []).sort((x, y) => (y.threat?.[p.id]?.threat ?? 0) - (x.threat?.[p.id]?.threat ?? 0) || dist(x, p) - dist(y, p)).slice(0, MAX_ATTACKERS - 1)) { joined.set(p.id, [...(joined.get(p.id) ?? []), c]); inFight.add(c.id); if (!c.hunting) { c.hunting = true; c.chaseX = c.x; c.chaseZ = c.z; c.unseen = 0; } }
+    if (foe) {
+      let on = 1;   // the foe is the first attacker; a joiner is taken only while the count is under the cap and under its own and the foe's row cap
+      for (const c of (joiners.get(p.id) ?? []).sort((x, y) => (y.threat?.[p.id]?.threat ?? 0) - (x.threat?.[p.id]?.threat ?? 0) || dist(x, p) - dist(y, p))) {
+        if (on >= Math.min(MAX_ATTACKERS, atOnce(foe), atOnce(c))) continue;
+        on++; joined.set(p.id, [...(joined.get(p.id) ?? []), c]); inFight.add(c.id); if (!c.hunting) { c.hunting = true; c.chaseX = c.x; c.chaseZ = c.z; c.unseen = 0; }
+      }
+    }
     if (foe) { inFight.add(foe.id); if (!foe.hunting) { foe.hunting = true; foe.chaseX = foe.x; foe.chaseZ = foe.z; foe.unseen = 0; } }   // inside the engage ring it is on the prey whether or not it saw him
     inFight.add(p.id); bouts.push({ a: p, b: foe });   // 3. no foe in reach: the player is alone in his bout (swings at air, guards, rolls, regains stamina on the Pit's rules)
   }
