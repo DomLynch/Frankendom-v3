@@ -1,15 +1,17 @@
 // The mount of Zone 1's own combat loop (Combat's pure src/fight/world.ts) in the walk: no duel, no ring, no fight start or end (Dom 2026-10-08). The page walks the hero (collisions,
 // relief) and tells this his position; the loop owns hits, creature chase/telegraph/bite/leash. This file: which creatures are in the loop (those that come within the aggro ring, until they are
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
-import { AGGRO_M, creature, duelFor, duelOf, newWorld, pairs, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
+import { AGGRO_M, duelFor, duelOf, newWorld, pairs, player, type Event, type Fighter, type World } from './world.ts';
 import { NAKED, type Loadout } from './gear-stats.ts';
-import { OPPONENTS, type WeaponId } from './moves.ts';
+import { OPPONENTS, DEFAULT_WEAPON, type WeaponId } from './moves.ts';
 import type { CombatEvent, Duel, Finish } from './duel.ts';
 import { selectFinisher, finisherSeconds, type FinisherId } from './finishers.ts';
 import { catalogueRow } from './catalogue-rows.ts';
 import { PLAIN_DEATH } from './finisher-look.ts';
 
-export const ME = 'me', STEP = 1 / 60, JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
+import { ME, STEP, cm, createWorldRecorder, heroClean, joinFighter, quantStep, stepHero, type RecordHero, type WorldRecord, type JoinEvent } from './world-record.ts';
+export { ME, STEP };
+export const JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */
 export const kindOf = (body: string): string | null => (Object.prototype.hasOwnProperty.call(OPPONENTS, body) ? body : null);
 
@@ -50,10 +52,14 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const seedOf = (id: string): number => { let h = steps; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761); return h >>> 0; };   // the fight's tick and a creature's id: a roll of presentation, the same on a replay
   const gearOf = () => { const { gear, level } = mine(), p = player(ME, 0, 0, 0, gear, level); return { attack: p.attack, res: p.res, level: p.level, shielded: p.shielded }; };
   const me = (): Fighter => world.fighters[0]!;
-  function release(id: string) { d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
+  const recorder = createWorldRecorder();
+  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, attack: g.attack, res: g.res, weapon: DEFAULT_WEAPON, health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
+  function release(id: string) { recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
-    specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, creature(p.spec.id, kind, p.x, p.z, 0, p.spec.level)] };
+    if (specs.size === 0) { if (heroClean(world)) recorder.open(heroBody()); else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
+    const j: JoinEvent = { s: 0, id: p.spec.id, kind, x: cm(p.x), z: cm(p.z), level: p.spec.level };   // the pose is quantized before the sim sees it, so a replay joins the same creature
+    recorder.join(j.id, j.kind, p.x, p.z, j.level); specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, joinFighter(j)] };
   }
   /** The creature a Pit event belongs to: the one named in the event, else (the hero's own roll, guard, draw) his primary foe. */
   function foeOfEvent(ev: Event): string | null {
@@ -89,8 +95,9 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       while (acc >= STEP) {
         acc -= STEP; steps++; stepped = true;
         for (const p of pairs(world)) lastDuel.set(p.foe, p.duel);
-        const m = me(); if (first) world = { ...world, fighters: [{ ...m, ...gearOf(), x: hero.x, z: hero.z, facing: m.phase === 'roll' ? m.facing : hero.facing }, ...world.fighters.slice(1)] }; first = false;
-        const r = stepCombat(world, { [ME]: { x: 0, z: 0, attack: heroDead ? null : pendingAttack, guard: guardHeld && !heroDead, roll: heroDead ? null : pendingRoll } }, STEP); pendingAttack = null; pendingRoll = null;
+        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll); first = false;
+        recorder.step(step);
+        const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }
       }
       pendingAttack = null; pendingRoll = null;
@@ -119,7 +126,9 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       contacts.clear(); return out;
     },
     /** After he died and stood up in town: a fresh body, nothing hunting him. */
-    reset(hero: { x: number; z: number; facing: number }): void { for (const id of [...specs.keys()]) release(id); world = newWorld([body(hero.x, hero.z, hero.facing)]); heroDead = false; acc = 0; },
+    reset(hero: { x: number; z: number; facing: number }): void { for (const id of [...specs.keys()]) release(id); recorder.discard(); world = newWorld([body(hero.x, hero.z, hero.facing)]); heroDead = false; acc = 0; },
+    /** The record of the fight so far (open since a creature joined an empty loop), packed for kill_report, or null (none, or it outgrew its bounds). Call it from onKill: the window stays until the next one opens. */
+    record: (): WorldRecord | null => recorder.take(),
     /** The hero's own duel, for the engine's actorPose (null before his first step). */
     heroDuel() { return duelOf(world, ME); },
     hero: () => { const m = me(); return { health: m.health, max: m.maxHealth, stamina: m.stamina, maxStamina: m.maxStamina, phase: m.phase, facing: m.facing, posture: m.posture, exhausted: m.exhausted, dead: heroDead }; },

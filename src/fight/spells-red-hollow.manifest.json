@@ -24,7 +24,9 @@
         "name"
       ],
       "refs": {
-        "school": "school"
+        "school": "school",
+        "bricks.root": "brick",
+        "bricks.modifiers[]": "brick"
       }
     }
   ]
