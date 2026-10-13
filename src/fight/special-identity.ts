@@ -14,13 +14,13 @@ const BOSS_SPECIAL_IDS = {
   avalonmist: 'mist', foretoldstep: 'echo', theprice: 'price',
   plagueflies: 'flies', poisonstain: 'stain', lastbreath: 'breath',
   thesling: 'sling', wrath: 'haze', stormfollowshim: 'storm',
-} as const satisfies Record<SpecialName, string>;
+} as const;   // every special in special-set-defs.json has an id here: tests/special-identity.test.ts
 
-export type BossSpecialId = typeof BOSS_SPECIAL_IDS[SpecialName];
+export type BossSpecialId = typeof BOSS_SPECIAL_IDS[keyof typeof BOSS_SPECIAL_IDS];
 
 // Resolve the name captured by the accepted event, independently of later UI state.
 export function bossSpecialId(name: SpecialName | null): BossSpecialId | null {
-  return name && Object.hasOwn(BOSS_SPECIAL_IDS, name) ? BOSS_SPECIAL_IDS[name] : null;
+  return name && Object.hasOwn(BOSS_SPECIAL_IDS, name) ? BOSS_SPECIAL_IDS[name as keyof typeof BOSS_SPECIAL_IDS] : null;
 }
 
 export function bossSpecialFor(opponent: OpponentId, level: number): BossSpecialId | null {

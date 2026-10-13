@@ -5,6 +5,7 @@ import { loadSkillDefs } from './skills.ts';
 import { loadWeaponDefs, type WeaponLook } from './weapons.ts';
 import { DAMAGE_KIND_IDS } from './damage-kinds.ts';
 import { RULES } from './rules.ts';
+import { SPECIAL_SETS, SPECIAL_RANK_LEVELS } from './special-set-rows.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 export type { OpponentId, RigId } from '../roster.ts';
@@ -304,29 +305,17 @@ export const OPPONENTS = Object.fromEntries(Object.entries(ROSTER).map(([id, rec
 // disengage, circle, step, interrupt, kick, dash) stay at easy's from 1 to 6, so the orc still chains, the goblin never guards.
 // At an anchor level the anchor itself is returned, so levels 6 / 18 / 46 fight exactly as easy / normal / hard did (same RNG draws).
 export const LEVELS = 50;   // 46 anchored the hard table; 47–50 are Origin II–V (the tail past hard, TAIL below)
-// The named special an opponent casts at a ladder level (Strategy 2026-10-01, docs/briefs/specials/): ranks 8 / 9 / 10 (career.ts: five levels a rank, so 36 / 41 / 46).
-// Identity only: windup, share, cooldown and the unblockable release are RULES.special for every special. Null = the opponent's class skill names it (below rank 8, or no set).
-// The Centurion's id is 'veteran'. The picks are the briefs' starred ones.
-export const SPECIAL_SETS = {
-  veteran: ['quake', 'charge', 'tithe'],   // Shield Quake, The Charge, Blood Tithe
-  nightborn: ['redwind', 'hadesshadow', 'nyxnightfall'],   // Red Wind, Hades' Shadow, Nyx Nightfall
-  executioner: ['bayingcircle', 'longshadow', 'harvestsweep'],   // Arawn, Thanatos, The Reaper
-  goblin: ['dirtyfistful', 'gone', 'threeliars'],   // Reynard, Hermes, Loki
-  pitborn: ['crackingground', 'ashfall', 'windwall'],   // Antaeus, Surtr, Typhon
-  dwarf: ['theword', 'threeblows', 'rimshake'],   // Ptah, Goibniu, Hephaestus
-  shieldmaiden: ['baredface', 'thering', 'aegissweep'],   // Penthesilea, Brynhildr, Athena
-  witch: ['avalonmist', 'foretoldstep', 'theprice'],   // Morgan le Fay, Merlin, Odin
-  plaguedoctor: ['plagueflies', 'poisonstain', 'lastbreath'],   // Apollo, Hecate, Resheph
-  knight: ['thesling', 'wrath', 'stormfollowshim'],   // Hector, Achilles, Thor
-} as const;
-export type SpecialName = typeof SPECIAL_SETS[keyof typeof SPECIAL_SETS][number];
+// The named special an opponent casts at a ladder level is a ROW (special-set-defs.json, built by special-set-rows.ts; notes in docs/specs/combat/special-set-notes.md): ranks 8 / 9 / 10, levels 36 / 41 / 46.
+export { SPECIAL_SETS };
+export type SpecialName = string;   // a special's id is a row id in special-set-defs.json (ids stay strings; tests/special-identity.test.ts checks every one has a boss id)
 // Per-special data rows: only the exceptions are listed. `interruptible` defaults to true (RULES.special.interruptAt); a boss the ladder sweep says must not be cut gets `{ interruptible: false }` here.
 export const SPECIAL_ROWS: Partial<Record<SpecialName, { interruptible?: boolean }>> = {};
 export const isInterruptible = (name: SpecialName | undefined): boolean => name === undefined || SPECIAL_ROWS[name]?.interruptible !== false;
 export const specialOf = (opponent: OpponentId, level: number): SpecialName | null => {
-  const set = (SPECIAL_SETS as Partial<Record<OpponentId, readonly SpecialName[]>>)[opponent];
-  return set && level >= 36 ? set[level >= 46 ? 2 : level >= 41 ? 1 : 0] : null;
-};export const LEVEL_ANCHORS = { novice: 1, easy: 6, normal: 18, hard: 46 } as const;
+  const set = Object.hasOwn(SPECIAL_SETS, opponent) ? SPECIAL_SETS[opponent] : undefined;
+  return set && level >= SPECIAL_RANK_LEVELS[0]! ? set[SPECIAL_RANK_LEVELS.filter((from) => level >= from).length - 1]! : null;
+};
+export const LEVEL_ANCHORS = { novice: 1, easy: 6, normal: 18, hard: 46 } as const;
 // The novice (Combat's L1 screen, 2026-09-27: tap-attack wins /48 at 48 seeds): slow to notice, rarely answers, swings a quarter as often.
 const novice = (easy: AiProfile): AiProfile => ({ ...easy, reaction: easy.reaction + 30, ...(easy.tellReaction === undefined ? {} : { tellReaction: easy.tellReaction + 30 }), accuracy: .1, parry: 0, dodge: 0, aggression: easy.aggression * .25, lapse: .95, read: .1 });
 // The novice BODY (option C, Strategy yes 2026-09-27 09:5x): no skill rule alone clears the level-1 gate, because a player's light never
