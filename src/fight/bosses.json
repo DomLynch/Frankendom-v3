@@ -34,10 +34,7 @@
      0.06
     ]
    }
-  },
-  "bricks": [
-   "skill_reaping"
-  ]
+  }
  },
  {
   "id": "thanatos",
@@ -74,10 +71,7 @@
      0.007
     ]
    }
-  },
-  "bricks": [
-   "skill_reaping"
-  ]
+  }
  },
  {
   "id": "reaper",
@@ -114,10 +108,7 @@
      0.028
     ]
    }
-  },
-  "bricks": [
-   "skill_reaping"
-  ]
+  }
  },
  {
   "id": "mist",
@@ -128,10 +119,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "avalon",
-  "classSkill": "skill_witchfire",
-  "bricks": [
-   "skill_witchfire"
-  ]
+  "classSkill": "skill_witchfire"
  },
  {
   "id": "echo",
@@ -143,10 +131,7 @@
   "lift": -0.28,
   "cue": "foretold",
   "classSkill": "skill_witchfire",
-  "travel": "foretold",
-  "bricks": [
-   "skill_witchfire"
-  ]
+  "travel": "foretold"
  },
  {
   "id": "price",
@@ -157,10 +142,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "theprice",
-  "classSkill": "skill_witchfire",
-  "bricks": [
-   "skill_witchfire"
-  ]
+  "classSkill": "skill_witchfire"
  },
  {
   "id": "flies",
@@ -171,10 +153,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "plagueflies",
-  "classSkill": "skill_miasma",
-  "bricks": [
-   "skill_miasma"
-  ]
+  "classSkill": "skill_miasma"
  },
  {
   "id": "stain",
@@ -185,10 +164,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "poisonstain",
-  "classSkill": "skill_miasma",
-  "bricks": [
-   "skill_miasma"
-  ]
+  "classSkill": "skill_miasma"
  },
  {
   "id": "breath",
@@ -199,10 +175,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "lastbreath",
-  "classSkill": "skill_miasma",
-  "bricks": [
-   "skill_miasma"
-  ]
+  "classSkill": "skill_miasma"
  },
  {
   "id": "sling",
@@ -213,10 +186,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "thesling",
-  "classSkill": "skill_ironrush",
-  "bricks": [
-   "skill_ironrush"
-  ]
+  "classSkill": "skill_ironrush"
  },
  {
   "id": "haze",
@@ -227,10 +197,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "wrath",
-  "classSkill": "skill_ironrush",
-  "bricks": [
-   "skill_ironrush"
-  ]
+  "classSkill": "skill_ironrush"
  },
  {
   "id": "storm",
@@ -241,10 +208,7 @@
   "at": "feet",
   "lift": -0.28,
   "cue": "storm",
-  "classSkill": "skill_ironrush",
-  "bricks": [
-   "skill_ironrush"
-  ]
+  "classSkill": "skill_ironrush"
  },
  {
   "id": "reynard",
@@ -256,10 +220,7 @@
   "lift": -0.06,
   "cue": "fistful",
   "classSkill": "skill_jab",
-  "held": "ready",
-  "bricks": [
-   "skill_jab"
-  ]
+  "held": "ready"
  },
  {
   "id": "hermes",
@@ -270,10 +231,7 @@
   "at": "feet",
   "lift": -0.1,
   "cue": "gone",
-  "classSkill": "skill_jab",
-  "bricks": [
-   "skill_jab"
-  ]
+  "classSkill": "skill_jab"
  },
  {
   "id": "loki",
@@ -284,10 +242,7 @@
   "at": "feet",
   "lift": -0.1,
   "cue": "liars",
-  "classSkill": "skill_jab",
-  "bricks": [
-   "skill_jab"
-  ]
+  "classSkill": "skill_jab"
  },
  {
   "id": "set",
@@ -299,10 +254,7 @@
   "lift": 0.12,
   "cue": "redwind",
   "classSkill": "skill_lunge",
-  "held": "thrust",
-  "bricks": [
-   "skill_lunge"
-  ]
+  "held": "thrust"
  },
  {
   "id": "hades",
@@ -313,10 +265,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "hades",
-  "classSkill": "skill_lunge",
-  "bricks": [
-   "skill_lunge"
-  ]
+  "classSkill": "skill_lunge"
  },
  {
   "id": "nyx",
@@ -327,10 +276,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "nyx",
-  "classSkill": "skill_lunge",
-  "bricks": [
-   "skill_lunge"
-  ]
+  "classSkill": "skill_lunge"
  },
  {
   "id": "dwarf8",
@@ -341,10 +287,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "theword",
-  "classSkill": "skill_stomp",
-  "bricks": [
-   "skill_stomp"
-  ]
+  "classSkill": "skill_stomp"
  },
  {
   "id": "dwarf9",
@@ -355,10 +298,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "threeblows",
-  "classSkill": "skill_stomp",
-  "bricks": [
-   "skill_stomp"
-  ]
+  "classSkill": "skill_stomp"
  },
  {
   "id": "dwarf10",
@@ -369,10 +309,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "rimshake",
-  "classSkill": "skill_stomp",
-  "bricks": [
-   "skill_stomp"
-  ]
+  "classSkill": "skill_stomp"
  },
  {
   "id": "shield8",
@@ -383,10 +320,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "baredface",
-  "classSkill": "skill_hewer",
-  "bricks": [
-   "skill_hewer"
-  ]
+  "classSkill": "skill_hewer"
  },
  {
   "id": "shield9",
@@ -397,10 +331,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "thering",
-  "classSkill": "skill_hewer",
-  "bricks": [
-   "skill_hewer"
-  ]
+  "classSkill": "skill_hewer"
  },
  {
   "id": "shield10",
@@ -411,10 +342,7 @@
   "at": "head",
   "lift": -0.28,
   "cue": "aegis",
-  "classSkill": "skill_hewer",
-  "bricks": [
-   "skill_hewer"
-  ]
+  "classSkill": "skill_hewer"
  },
  {
   "id": "antaeus",
@@ -425,10 +353,7 @@
   "at": "feet",
   "lift": 0.12,
   "cue": "cracking",
-  "classSkill": "skill_cleave",
-  "bricks": [
-   "skill_cleave"
-  ]
+  "classSkill": "skill_cleave"
  },
  {
   "id": "surtr",
@@ -439,10 +364,7 @@
   "at": "feet",
   "lift": -0.2,
   "cue": "ashfall",
-  "classSkill": "skill_cleave",
-  "bricks": [
-   "skill_cleave"
-  ]
+  "classSkill": "skill_cleave"
  },
  {
   "id": "typhon",
@@ -453,9 +375,6 @@
   "at": "feet",
   "lift": 0,
   "cue": "windwall",
-  "classSkill": "skill_cleave",
-  "bricks": [
-   "skill_cleave"
-  ]
+  "classSkill": "skill_cleave"
  }
 ]
