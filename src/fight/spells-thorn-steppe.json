@@ -1,0 +1,1606 @@
+{
+ "spells": [
+  {
+   "id": "spell:albasty",
+   "boss": "albasty",
+   "boss_name": "Albasty the Hag",
+   "name": "Hag's Night-Breath",
+   "school": "poison",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Turkic folklore",
+   "story": "A hag of the steppe who steals the strength of the sleeping with a breath.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:almas",
+   "boss": "almas",
+   "boss_name": "Almas the Wild Man",
+   "name": "Wild Man's Stride",
+   "school": "earth",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Mongolian folklore",
+   "story": "A shaggy wild man of the mountains who strides down onto travellers.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bannik",
+   "boss": "bannik",
+   "boss_name": "Bannik of the Bath-House",
+   "name": "Scalding Steam",
+   "school": "fire",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The bath-house spirit turns on those who forget him, and the steam burns.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hiisi-elk",
+   "boss": "hiisi-elk",
+   "boss_name": "Hiisi's Elk",
+   "name": "Elk of the Evil Wood",
+   "school": "earth",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A great elk, made by the spirit of the wood, charges from the trees.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:joukahainen",
+   "boss": "joukahainen",
+   "boss_name": "Joukahainen the Boaster",
+   "name": "Boaster's Bow",
+   "school": "wind",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A young singer who challenged Väinämöinen to a contest and lost, he still shoots his bow.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kikimora",
+   "boss": "kikimora",
+   "boss_name": "Kikimora of the Hearth",
+   "name": "Hearth Hag's Spite",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "A bog-hag who lives behind the stove, she whispers at night and spoils what she touches.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lempo",
+   "boss": "lempo",
+   "boss_name": "Lempo's Imp",
+   "name": "Imp's Mischief",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A small spirit of the wood and of lust sent by Lempo, it slips into the fighter's step.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ovinnik",
+   "boss": "ovinnik",
+   "boss_name": "Ovinnik of the Barn",
+   "name": "Barn Fire",
+   "school": "fire",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The barn spirit in the drying house is wary of strangers and sets the straw alight.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:poludnitsa",
+   "boss": "poludnitsa",
+   "boss_name": "Poludnitsa Lady Midday",
+   "name": "Noon Heat Haze",
+   "school": "fire",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "She walks the rye fields at noon and strikes down anyone who stays out in the heat.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rusalka",
+   "boss": "rusalka",
+   "boss_name": "Rusalka the Drowned Maiden",
+   "name": "Drowned Maiden's Pull",
+   "school": "frost",
+   "level": 1,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "A maiden who drowned in the river lures the careless to the cold water.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:emegen",
+   "boss": "emegen",
+   "boss_name": "Emegen the One-Eyed Giant",
+   "name": "One-Eyed Giant's Fist",
+   "school": "earth",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Nart sagas",
+   "story": "A one-eyed giant of the Caucasus mountains, he brings his fist down on the earth.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gorynych-whelp",
+   "boss": "gorynych-whelp",
+   "boss_name": "Gorynych's Whelp",
+   "name": "Whelp's Flame",
+   "school": "fire",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The three-headed dragon's whelp, still small, spits a thin flame from each mouth.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kalma",
+   "boss": "kalma",
+   "boss_name": "Kalma of the Grave",
+   "name": "Grave Smell",
+   "school": "poison",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The spirit of the corpse-smell in the Land of the Dead breathes foul air.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:leshy",
+   "boss": "leshy",
+   "boss_name": "Leshy of the Forest",
+   "name": "Lost in the Wood",
+   "school": "earth",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The lord of the forest turns every path back on itself and leads the fighter in circles.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:likho",
+   "boss": "likho",
+   "boss_name": "Likho One-Eye",
+   "name": "Ill Luck",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The one-eyed spirit of ill luck sits on the fighter's shoulder and bad fortune follows.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pohjola-bear",
+   "boss": "pohjola-bear",
+   "boss_name": "Bear of Pohjola",
+   "name": "Northern Bear",
+   "school": "earth",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A bear sent from the north to the forests of Väinölä, he rises on his hind legs.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pohjola-wolf",
+   "boss": "pohjola-wolf",
+   "boss_name": "Wolf of Pohjola",
+   "name": "Northern Wolf",
+   "school": "frost",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A wolf bred in the cold north by Louhi, he howls and the cold comes with the howl.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:surma",
+   "boss": "surma",
+   "boss_name": "Surma the Gate Hound",
+   "name": "Hound of the Gate",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The hound that guards the gate of Tuonela bays to keep the living out and the dead in.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tepegoz",
+   "boss": "tepegoz",
+   "boss_name": "Tepegoz the Cyclops",
+   "name": "Cyclops's Fist",
+   "school": "earth",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Book of Dede Korkut",
+   "story": "The one-eyed man-eater born to a shepherd lowers his head and swings.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:vodyanoy",
+   "boss": "vodyanoy",
+   "boss_name": "Vodyanoy the Water Spirit",
+   "name": "Whirlpool Grip",
+   "school": "frost",
+   "level": 2,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The old man of the millpond drags passers-by under with a green, weedy hand.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:alkonost",
+   "boss": "alkonost",
+   "boss_name": "Alkonost the Gale-Bird",
+   "name": "Gale-Bird's Song",
+   "school": "wind",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The bird of joy and calm, whose eggs calm the sea, rouses a gale when disturbed.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bukavac",
+   "boss": "bukavac",
+   "boss_name": "Bukavac the Horned Beast",
+   "name": "Marsh Bellow",
+   "school": "poison",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore",
+   "story": "A six-legged horned water beast of the marshes, it bellows and the water goes foul.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:div-mazandaran",
+   "boss": "div-mazandaran",
+   "boss_name": "Div of Mazandaran",
+   "name": "Cliff-Hurled Div",
+   "school": "earth",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "A demon of the Mazandaran mountains who hurls rocks at the king's army.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:firebird",
+   "boss": "firebird",
+   "boss_name": "Firebird of the Tsar's Garden",
+   "name": "Gold-Feather Blaze",
+   "school": "fire",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The bird of the golden apples sheds feathers of flame as it flies.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gamayun",
+   "boss": "gamayun",
+   "boss_name": "Gamayun the Prophet-Bird",
+   "name": "Doom-Song",
+   "school": "wind",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The bird with a woman's face sings of what is to come, and the song is the wind.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lemminkainen",
+   "boss": "lemminkainen",
+   "boss_name": "Lemminkäinen the Reckless",
+   "name": "Reckless Blade",
+   "school": "fire",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A reckless adventurer who goes north to woo and fight, he comes back each time with a new wound.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:louhi-eagle",
+   "boss": "louhi-eagle",
+   "boss_name": "Louhi's Eagle",
+   "name": "Eagle of the North",
+   "school": "wind",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "Louhi took the shape of an eagle to snatch the Sampo from the sea.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shishiga",
+   "boss": "shishiga",
+   "boss_name": "Shishiga of the Swamp",
+   "name": "Swamp-Dweller's Hex",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "A swamp-dweller who comes to travellers in the dark and chills them.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sirin",
+   "boss": "sirin",
+   "boss_name": "Sirin the Sorrow-Bird",
+   "name": "Sorrowful Lament",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The bird of sorrow sings so sweetly that the listener forgets to defend.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:upyr",
+   "boss": "upyr",
+   "boss_name": "Upyr the Restless",
+   "name": "Restless Hunger",
+   "school": "poison",
+   "level": 3,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "A dead man who will not lie still, he drinks the strength of the living.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:akvan",
+   "boss": "akvan",
+   "boss_name": "Akvan the Wind-Div",
+   "name": "Wind-Div's Throw",
+   "school": "wind",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "The demon in the shape of a wild ass who lifted a hero from the ground and flung him.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:arzhang",
+   "boss": "arzhang",
+   "boss_name": "Arzhang the Div",
+   "name": "Div Captain's Charge",
+   "school": "earth",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "A captain of the demons of Mazandaran, whose head is bigger than a mountain boulder.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bolotnik",
+   "boss": "bolotnik",
+   "boss_name": "Bolotnik of the Bog",
+   "name": "Bog Spirit's Mire",
+   "school": "poison",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The bog spirit drags careless wanderers under and holds them in the mire.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chernomor",
+   "boss": "chernomor",
+   "boss_name": "Chernomor the Black Dwarf",
+   "name": "Dwarf's Beard",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Pushkin, Ruslan and Lyudmila",
+   "story": "A dwarf-sorcerer whose power is in his beard, he flies by night.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:idolishche",
+   "boss": "idolishche",
+   "boss_name": "Idolishche the Foul",
+   "name": "Foul Idol's Hunger",
+   "school": "earth",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Russian byliny",
+   "story": "A giant of the steppe who eats an ox at a bite and sits as tall as a church.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kullervo",
+   "boss": "kullervo",
+   "boss_name": "Kullervo the Wronged",
+   "name": "Wronged Slave's Revenge",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A boy enslaved and betrayed, he is a sorry, furious fighter, and the player faces a grief.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mangas",
+   "boss": "mangas",
+   "boss_name": "Mangas of the Steppe",
+   "name": "Mangas's Roar",
+   "school": "earth",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Mongol epic (Geser)",
+   "story": "A many-headed ogre of the steppe epics, he lumbers into the fight with a club.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:solovei",
+   "boss": "solovei",
+   "boss_name": "Solovei the Nightingale-Robber",
+   "name": "Whistle of the Robber",
+   "school": "wind",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Russian byliny",
+   "story": "The robber in the oak whistles, and the trees bend flat to the ground.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tugarin",
+   "boss": "tugarin",
+   "boss_name": "Tugarin the Serpent",
+   "name": "Serpent's Fire",
+   "school": "fire",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Russian byliny",
+   "story": "A serpent-man of the steppe in Prince Vladimir's hall, he spits a thin flame.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:vipunen",
+   "boss": "vipunen",
+   "boss_name": "Vipunen the Giant Singer",
+   "name": "Buried Singer",
+   "school": "earth",
+   "level": 4,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "A giant buried in the earth, with trees growing through his body, he sings the old words.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hiisi",
+   "boss": "hiisi",
+   "boss_name": "Hiisi the Evil One",
+   "name": "Hiisi's Knot",
+   "school": "earth",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The sullen spirit of the evil woods hurls a stone from the dark.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:iku-turso",
+   "boss": "iku-turso",
+   "boss_name": "Iku-Turso Sea-Horn",
+   "name": "Sea-Horn's Rise",
+   "school": "frost",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The sea-horned monster of the Kalevala rises from the waves and the waves run cold.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kamus",
+   "boss": "kamus",
+   "boss_name": "Kamus of Kashan",
+   "name": "Kashan Champion's Arrow",
+   "school": "fire",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "A champion of Turan with a long bow, he rains arrows on the Persian line.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mangus-seven",
+   "boss": "mangus-seven",
+   "boss_name": "Mangus of the Seven Heads",
+   "name": "Seven-Headed Charge",
+   "school": "poison",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Mongol folklore",
+   "story": "A seven-headed ogre of the steppe tales, each head bites at once.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:marzanna",
+   "boss": "marzanna",
+   "boss_name": "Marzanna Winter's Death",
+   "name": "Winter's Death",
+   "school": "frost",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The straw woman of winter, carried to the river each spring, rises to hold the cold.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:morozko",
+   "boss": "morozko",
+   "boss_name": "Morozko Frost-Lord",
+   "name": "Morozko's Test",
+   "school": "frost",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The old man of the frost walks the forest and tests whoever he meets with cold.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rarog",
+   "boss": "rarog",
+   "boss_name": "Rarog the Fire-Falcon",
+   "name": "Fire-Falcon's Dive",
+   "school": "fire",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The fire-spirit, a falcon of flame, dives with a trail of sparks.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:samodiva",
+   "boss": "samodiva",
+   "boss_name": "Samodiva the Wood-Nymph",
+   "name": "Wood-Nymph's Dance",
+   "school": "wind",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Bulgarian folklore",
+   "story": "A wild forest maiden who dances men to exhaustion and strikes with a gust.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zduhac",
+   "boss": "zduhac",
+   "boss_name": "Zduhać the Storm-Watcher",
+   "name": "Storm-Watcher's Rage",
+   "school": "wind",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Serbian folklore",
+   "story": "A guardian of the village who fights storm-spirits in the clouds above the fields.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zmey-gorynych",
+   "boss": "zmey-gorynych",
+   "boss_name": "Zmey Gorynych the Three-Headed",
+   "name": "Three Heads",
+   "school": "fire",
+   "level": 5,
+   "region": "region:thorn-steppe",
+   "source": "Russian byliny",
+   "story": "The dragon of the mountains, with three heads and a flame for each, is the bane of the bogatyrs.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ahti",
+   "boss": "ahti",
+   "boss_name": "Ahti Lord of the Deep",
+   "name": "Deep's Pull",
+   "school": "frost",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The lord of the deep, with his wife Vellamo, he sends the cold wave.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:azhdaha",
+   "boss": "azhdaha",
+   "boss_name": "Azhdaha the Dragon",
+   "name": "Dragon's Venom",
+   "school": "poison",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "A dragon of the Persian waste whose breath and bite are poison to the hero.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:div-e-sepid",
+   "boss": "div-e-sepid",
+   "boss_name": "Div-e Sepid the White Div",
+   "name": "White Div's Boulder",
+   "school": "earth",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "The white demon of the mountains, who tore a mountain from its roots to throw.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:karkadann",
+   "boss": "karkadann",
+   "boss_name": "Karkadann the Horned Beast",
+   "name": "Horn of Karkadann",
+   "school": "earth",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Persian bestiary",
+   "story": "A one-horned beast of the Persian tales, great enough to lift an elephant.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mokosh",
+   "boss": "mokosh",
+   "boss_name": "Mokosh the Earth Mother",
+   "name": "Mother's Hand",
+   "school": "earth",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Primary Chronicle",
+   "story": "The old Slavic goddess of the damp earth, named in the chronicle, steadies the ground.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pakkanen",
+   "boss": "pakkanen",
+   "boss_name": "Pakkanen the Frost",
+   "name": "Frost's Bite",
+   "school": "frost",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The spirit of the frost in the north, Pakkanen is the son of Ukko.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:stribog",
+   "boss": "stribog",
+   "boss_name": "Stribog the Wind-God",
+   "name": "Wind-God's Blast",
+   "school": "wind",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Primary Chronicle",
+   "story": "The old Slavic wind-god, named in the chronicle, whose breath is the blast.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:svarog",
+   "boss": "svarog",
+   "boss_name": "Svarog the Smith-God",
+   "name": "Heavenly Forge",
+   "school": "fire",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Hypatian Codex",
+   "story": "The old Slavic god of fire and the forge, named in the chronicle, hammers the sun.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tuonetar",
+   "boss": "tuonetar",
+   "boss_name": "Tuonetar Queen of Tuonela",
+   "name": "Queen's Welcome",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The mistress of the Land of the Dead, who offers a cup of beer with frogs and worms.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:vellamo",
+   "boss": "vellamo",
+   "boss_name": "Vellamo Lady of the Waves",
+   "name": "Wave-Wife's Surge",
+   "school": "frost",
+   "level": 6,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The lady of the waves, the sea's queen, heaves up a swell.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:afrasiab",
+   "boss": "afrasiab",
+   "boss_name": "Afrasiab King of Turan",
+   "name": "Turan's Hatred",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "The king of Turan, who was Iran's long enemy, leads an army of the steppe.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bidad",
+   "boss": "bidad",
+   "boss_name": "Bidad the Sorcerer-Div",
+   "name": "Sorcerer's Spell",
+   "school": "fire",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "A sorcerer-div of Mazandaran who calls the storm and the fire.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chudo-yudo",
+   "boss": "chudo-yudo",
+   "boss_name": "Chudo-Yudo the Many-Headed",
+   "name": "Many Heads",
+   "school": "fire",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "A many-headed monster in the folk tale, defeated by cunning and a good club.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dazhbog",
+   "boss": "dazhbog",
+   "boss_name": "Dazhbog the Sun-Giver",
+   "name": "Sun-Giver's Blaze",
+   "school": "fire",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Primary Chronicle",
+   "story": "The old Slavic god of the sun, named in the chronicle, whose gift is light and burning.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:louhi",
+   "boss": "witch",
+   "boss_name": "Louhi Mistress of Pohjola",
+   "name": "Mistress's Curse",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The cunning, hard mistress of the north held the Sampo and sent the winter after the heroes.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Louhi"
+  },
+  {
+   "id": "spell:loviatar",
+   "boss": "loviatar",
+   "boss_name": "Loviatar Daughter of Tuoni",
+   "name": "Nine Plagues",
+   "school": "poison",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The blind maiden of Tuonela, who bore the nine diseases from the wind.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mora",
+   "boss": "mora",
+   "boss_name": "Mora the Night-Hag",
+   "name": "Night-Hag's Weight",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The night-hag sits on the chest of the sleeper, and the weight settles on the fighter.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:simurgh",
+   "boss": "simurgh",
+   "boss_name": "Simurgh the Ancient Bird",
+   "name": "Wings of the Simurgh",
+   "school": "wind",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "The great bird of Mount Alborz reared Zal, and her wings carry a storm.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:smok",
+   "boss": "smok",
+   "boss_name": "Smok of Wawel",
+   "name": "Wawel's Fire",
+   "school": "fire",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Kadlubek, Polish Chronicle",
+   "story": "The dragon beneath Wawel hill devoured sheep until a cobbler fed him a sulphur lamb.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tuonen-poika",
+   "boss": "tuonen-poika",
+   "boss_name": "Tuonen Poika the Ferryman",
+   "name": "Black River Fare",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The ferryman's son at the black river of Tuonela asks a price for the crossing.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:baba-yaga",
+   "boss": "witch",
+   "boss_name": "Baba Yaga of the Hen-Legs Hut",
+   "name": "Hut on Hen-Legs",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The witch of the forest hut on hen's legs, with a mortar and a pestle, who eats the unwary.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   },
+   "boss_legend": "Baba Yaga"
+  },
+  {
+   "id": "spell:borte-chino",
+   "boss": "borte-chino",
+   "boss_name": "Börte Chino the Blue Wolf",
+   "name": "Blue Wolf's Howl",
+   "school": "frost",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Secret History of the Mongols",
+   "story": "The blue wolf of the steppe origin tale howls, and the grey steppe answers.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:jamshid",
+   "boss": "jamshid",
+   "boss_name": "Jamshid the Proud",
+   "name": "Fallen Pride",
+   "school": "fire",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "A king who ruled well, he boasted that he was a god, and the glory left him.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:svetovid",
+   "boss": "svetovid",
+   "boss_name": "Svetovid the Four-Faced",
+   "name": "Four Faces",
+   "school": "holy",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Saxo Grammaticus",
+   "story": "The four-faced god of Arkona, noted by Saxo, who looks to every side.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:triglav",
+   "boss": "triglav",
+   "boss_name": "Triglav the Three-Headed",
+   "name": "Three-Headed God",
+   "school": "holy",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Medieval Pomeranian chronicles",
+   "story": "The three-headed god of the Pomeranians, noted by chroniclers, looks three ways.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tuonela-swan",
+   "boss": "tuonela-swan",
+   "boss_name": "Swan of Tuonela",
+   "name": "Black River Swan",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The black swan on the river of Tuonela glides in the dark water, and the dark water follows.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tuoni",
+   "boss": "tuoni",
+   "boss_name": "Tuoni Lord of the Dead",
+   "name": "Black River",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The lord of Tuonela rules the Land of the Dead beyond the black river.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:turul",
+   "boss": "turul",
+   "boss_name": "Turul the Magyar Falcon",
+   "name": "Falcon of the Magyars",
+   "school": "wind",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Gesta Hungarorum",
+   "story": "The great bird of the Magyar origin tale, which led them over the mountains.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:veles",
+   "boss": "veles",
+   "boss_name": "Veles the Horned",
+   "name": "Horned Lord's Herd",
+   "school": "earth",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Primary Chronicle",
+   "story": "The old Slavic cattle-god and the god of the lower world, named in the chronicle.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zahhak",
+   "boss": "zahhak",
+   "boss_name": "Zahhak the Serpent King",
+   "name": "Shoulder Serpents",
+   "school": "poison",
+   "level": 8,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "A tyrant king who bore two serpents on his shoulders, and the serpents feed on the fighter.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:alan-gua",
+   "boss": "alan-gua",
+   "boss_name": "Alan Gua of the Light",
+   "name": "Golden Light",
+   "school": "holy",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Secret History of the Mongols",
+   "story": "The foremother of the Mongols, who bore sons by a golden beam of light.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ilmarinen",
+   "boss": "ilmarinen",
+   "boss_name": "Ilmarinen the Eternal Smith",
+   "name": "Smith's Hammer",
+   "school": "fire",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The smith who forged the sky-dome and the Sampo, the player faces a master.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:koschei",
+   "boss": "koschei",
+   "boss_name": "Koschei the Deathless",
+   "name": "Needle in the Egg",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The deathless old man whose life is hidden in a needle, in an egg, in a duck, in a chest.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:perun",
+   "boss": "perun",
+   "boss_name": "Perun the Thunderer",
+   "name": "Oak and Thunder",
+   "school": "wind",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Primary Chronicle",
+   "story": "The old Slavic god of thunder, named in the chronicle, whose axe is the thunderbolt.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rostam",
+   "boss": "rostam",
+   "boss_name": "Rostam the Pillar of Iran",
+   "name": "Pillar's Judgement",
+   "school": "earth",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "The greatest hero of Iran; the player stands against an honourable champion, and a defeat is no shame.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sampo",
+   "boss": "sampo",
+   "boss_name": "The Sampo",
+   "name": "Mill of Plenty",
+   "school": "earth",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The magic mill forged by Ilmarinen, which grinds out grain, salt and gold without end.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:svyatogor",
+   "boss": "svyatogor",
+   "boss_name": "Svyatogor the Mountain-Giant",
+   "name": "Mountain Giant's Step",
+   "school": "earth",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Russian byliny",
+   "story": "A giant so great the earth could not bear him, he sits on the mountain top.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ukko",
+   "boss": "ukko",
+   "boss_name": "Ukko the Thunder-Father",
+   "name": "Thunder-Father's Hammer",
+   "school": "wind",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The old thunder-god of the Finns, the father of the sky, swings his hammer.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:vainamoinen",
+   "boss": "vainamoinen",
+   "boss_name": "Väinämöinen the Eternal Singer",
+   "name": "Singer's Charm",
+   "school": "holy",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The old singer whose songs shaped the world; the player stands against a sage.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zal",
+   "boss": "zal",
+   "boss_name": "Zal the White-Haired",
+   "name": "Snow-White Wisdom",
+   "school": "holy",
+   "level": 9,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "Rostam's father, raised by the Simurgh in the nest, whose hair was white from birth.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:belobog",
+   "boss": "belobog",
+   "boss_name": "Belobog the White God",
+   "name": "White God's Light",
+   "school": "holy",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Helmold, Chronica Slavorum",
+   "story": "The white god of good luck, noted in Helmold's chronicle, shines over the field.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ilmatar",
+   "boss": "ilmatar",
+   "boss_name": "Ilmatar Daughter of the Air",
+   "name": "Air's Daughter",
+   "school": "wind",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The maiden of the air who descended to the sea and carried the world's egg in her womb.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:keyumars",
+   "boss": "keyumars",
+   "boss_name": "Keyumars the First King",
+   "name": "First King's Throne",
+   "school": "earth",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Shahnameh (Firdausi)",
+   "story": "The first king in the Shahnameh, who lived in the mountains in a leopard-skin.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kuutar",
+   "boss": "kuutar",
+   "boss_name": "Kuutar the Moon-Maiden",
+   "name": "Moon-Maiden's Loom",
+   "school": "frost",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The daughter of the moon, who wove with a silver shuttle, makes the night cold.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:luonnotar",
+   "boss": "luonnotar",
+   "boss_name": "Luonnotar the Spirit of Nature",
+   "name": "Nature's Maiden",
+   "school": "earth",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The spirit of nature in the Kalevala who shapes the earth where the world's egg broke.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mat-syra-zemlya",
+   "boss": "mat-syra-zemlya",
+   "boss_name": "Mat Syra Zemlya the Damp Mother Earth",
+   "name": "Mother Earth's Oath",
+   "school": "earth",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The Slavic Mother Earth on whom oaths were sworn, now stirs under the fighter.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:paivatar",
+   "boss": "paivatar",
+   "boss_name": "Päivätär the Sun-Maiden",
+   "name": "Sun-Maiden's Loom",
+   "school": "fire",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The daughter of the sun, who spun golden thread and silver, shines on the field.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rod",
+   "boss": "rod",
+   "boss_name": "Rod the First Begetter",
+   "name": "Rod's Begetting",
+   "school": "holy",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The old Slavic idea of the first begetter, from whom all born things come.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tuuletar",
+   "boss": "tuuletar",
+   "boss_name": "Tuuletar the Wind-Maiden",
+   "name": "Wind-Maiden's Breath",
+   "school": "wind",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Kalevala (Lonnrot)",
+   "story": "The maiden of the wind, whose breath once made the world's first fire dance.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zorya",
+   "boss": "zorya",
+   "boss_name": "Zorya the Dawn Maiden",
+   "name": "Dawn Gate",
+   "school": "holy",
+   "level": 10,
+   "region": "region:thorn-steppe",
+   "source": "Slavic folklore (Afanasyev)",
+   "story": "The maidens of the dawn open the gate of the sky each morning for the sun.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  }
+ ]
+}
