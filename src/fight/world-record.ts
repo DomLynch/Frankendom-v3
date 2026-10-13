@@ -11,7 +11,7 @@ import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type F
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
 // RECORD_VERSION; a change to any of them, or a Pit sim bump, fails that test until this is bumped and the digest re-pinned. The packed record stamps it, and a verifier replays only a record of ITS OWN version.
-export const WORLD_SIM_VERSION = 14;
+export const WORLD_SIM_VERSION = 20;
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
 const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'kick'];
