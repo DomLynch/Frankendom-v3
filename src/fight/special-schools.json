@@ -1,0 +1,22 @@
+{
+  "rows": [
+    {"id": "surtr", "school": "fire"},
+    {"id": "haze", "school": "fire"},
+    {"id": "wake", "school": "fire"},
+    {"id": "hades", "school": "shadow"},
+    {"id": "nyx", "school": "shadow"},
+    {"id": "thanatos", "school": "shadow"},
+    {"id": "echo", "school": "shadow"},
+    {"id": "price", "school": "shadow"},
+    {"id": "stirring", "school": "shadow"},
+    {"id": "flies", "school": "poison"},
+    {"id": "stain", "school": "poison"},
+    {"id": "breath", "school": "poison"},
+    {"id": "tempo", "school": "poison"},
+    {"id": "pulse", "school": "poison"},
+    {"id": "tithe", "school": "holy"},
+    {"id": "centurion", "school": "holy"},
+    {"id": "mist", "school": "frost"},
+    {"id": "storm", "school": "frost"}
+  ]
+}
