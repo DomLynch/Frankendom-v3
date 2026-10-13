@@ -34,11 +34,10 @@ export type CatalogueRow = {
   finisher: { cut: Cut | null; finishers: readonly FinisherId[]; allowed?: readonly FinisherId[]; timing: readonly FinisherTiming[] };   // where a finisher may cut (null = the rig has no named bones to cut at), and the picks from src/fight/finishers.ts (last = plainDeath, the safe fallback); `allowed` is the roster's gate (src/roster.ts supportsFinishers), absent = every finisher
   blood: { start: string; end: string; amount: number } | null;   // colour over a drop's life (as src/fight/blood-style.ts BLOOD) and the multiple of its particle counts (1 = a man); null = bloodless (the Skeleton, roster blood: false)
   render: { scale: number };                   // how big the duel draws it as a multiple of its rig (src/fight/beast-scale.ts; 1 = as built): render only, the sim's capsule is untouched
-  fields: Readonly<Record<string, string | number>>;   // the open attribute map: keys are catalogue-defs.ts `fields` rows ('weapon': the roster's weapon id, a creature's bite included); a new attribute is a defs row, never a type edit
+  fields: Readonly<Record<string, string | number | boolean>>;   // the open attribute map: keys are catalogue-defs.ts `fields` rows ('weapon': the roster's weapon id, a creature's bite included); a new attribute is a defs row, never a type edit
   home: PickedStance;                           // the stance its mood favours (src/fight/stance.ts HOME; 'neutral' when it has none)
   voice: string | null;                         // the key of its throat in src/fight/sound/creature.ts THROATS; null = silent
   look: { levels: readonly number[]; phone: boolean; tint: boolean };   // the Pit rungs that have a shipping look file (src/fight/rank-look.ts SHIPPING_LOOKS), whether it also ships a phone LOD (PHONE_LOOKS), and whether its kit takes the rung's finish (src/fight/rank-tint.ts: any armoured character with ranks)
-  firstSight?: boolean;                         // the zone preview stands the player 15-25 m from this creature's camp and faces it, so it is the first thing he sees (origins/preview/mobs.ts spawnAmong); absent = no
   ladder: { order: number | null; hold: boolean };   // its place on the Pit ladder, 1 = first (src/ladder.ts LADDER); null while held off it (roster `hold`)
   wounds: Wounds | null;                        // how it is hurt and how it bleeds (K5); null = the Pit's own gore as today (the men and the goblin)
   loot: { table: string | null };               // a loot-table id; null = the Pit's own loot (src/core/loot.ts pieces), no zone table
@@ -48,7 +47,7 @@ export type CatalogueRow = {
 };
 
 export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animations' | 'finisher' | 'blood' | 'loot' | 'legend' | 'render' | 'home' | 'voice' | 'look' | 'ladder' | 'timing' | 'wounds' | 'bodytype' | 'field' | 'rig' | 'sparring' | 'dup-id' | 'dup-sparring';
-export type FieldDef = { id: string; sim: boolean; required?: boolean } & ({ kind: 'ref'; of: string } | { kind: 'number'; min?: number; max?: number });
+export type FieldDef = { id: string; sim: boolean; required?: boolean } & ({ kind: 'ref'; of: string } | { kind: 'number'; min?: number; max?: number } | { kind: 'boolean' });
 export type CatalogueDefs = { fields: readonly FieldDef[]; rigs: readonly { id: string }[] };
 export type RowIssue = { code: RowCode; path: string; message: string };
 const HEX = /^#[0-9a-f]{6}$/i, WORLD_MAX_TRIS = 10000;   // the world ceiling a row may not raise (the world goblin is ~8k)
@@ -74,12 +73,11 @@ export function catalogueProblems(row: CatalogueRow, known: { pools?: readonly P
   if (row.blood && (!HEX.test(row.blood.start) || !HEX.test(row.blood.end) || !(row.blood.amount > 0 && row.blood.amount <= 2))) add('blood', 'blood', 'two #rrggbb colours and an amount in (0, 2], or null');
   if (row.loot.table !== null && !known.tables.has(row.loot.table)) add('loot', 'loot.table', `${row.loot.table} is not a loot table`);   // body and variant rows alike: the table must resolve (a typo would silently drop loot)
   if (!(row.render.scale > 0 && row.render.scale <= 4)) add('render', 'render.scale', 'a draw scale in (0, 4]');
-  if (row.firstSight !== undefined && typeof row.firstSight !== 'boolean') add('render', 'firstSight', 'firstSight is true or absent');
   if (!known.defs.rigs.some((r) => r.id === row.rig)) add('rig', 'rig', `${row.rig} is not a rig family (catalogue-defs.ts rigs)`);
   for (const [key, value] of Object.entries(row.fields)) {
     const def = known.defs.fields.find((f) => f.id === key);
     if (!def) add('field', `fields.${key}`, `${key} is not a defined field (catalogue-defs.ts fields)`);
-    else if (def.kind === 'ref' ? typeof value !== 'string' || !known.refs[def.of]?.has(value) : !(typeof value === 'number' && Number.isFinite(value) && value >= (def.min ?? -Infinity) && value <= (def.max ?? Infinity))) add('field', `fields.${key}`, `${String(value)} is not a valid ${def.kind === 'ref' ? def.of : 'number'}`);
+    else if (def.kind === 'boolean' ? typeof value !== 'boolean' : def.kind === 'ref' ? typeof value !== 'string' || !known.refs[def.of]?.has(value) : !(typeof value === 'number' && Number.isFinite(value) && value >= (def.min ?? -Infinity) && value <= (def.max ?? Infinity))) add('field', `fields.${key}`, `${String(value)} is not a valid ${def.kind === 'ref' ? def.of : def.kind}`);
   }
   for (const def of known.defs.fields) if (def.required && !(def.id in row.fields)) add('field', `fields.${def.id}`, `${def.id} is required`);
   if (!known.stances.has(row.home)) add('home', 'home', `${row.home} is not a stance pick`);
