@@ -15,10 +15,11 @@ export { validateBuild } from './sheet-rows.ts';   // the build field's one vali
 export type { Sheet } from './sheet-rows.ts';
 export { expectedSheet, NO_BUILD, type BuildLoader } from './build-check.ts';   // a record's build reference -> the sheet it must fight with (sweeps, encounter settle)
 export { setStab, STAB_ON } from './stab-rule.ts';
+export { setStanceRows, STANCE_ROWS_ON } from './stance-era.ts';
 export { AFTER_HIT_TICKS, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow, type KitRow } from './mobkit.ts';
 export { SPEEDS } from './speeds.ts';
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
 export { PORTRAIT_KEYS } from '../legends.ts';
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
+export { MAX_HERO_MPS, MAX_WORLD_TICKS, decodeWorldRecord, encodeWorldRecord, replayWorldRecord, unpackWorldRecord, packWorldRecord, type WorldRecord, type RecordHero, type Replayed } from './world-record.ts';
 export * from './weapon-skills.ts';
-export * from './boss-spells.ts';
