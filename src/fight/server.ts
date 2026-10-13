@@ -19,7 +19,7 @@ export { AFTER_HIT_TICKS, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow,
 export { SPEEDS } from './speeds.ts';
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
 export { PORTRAIT_KEYS, rungTopLevel } from '../legends.ts';
-export { LEGEND_FAMILIES, isSpellless } from './legend-families.ts';   // which family and rank a legend wears: the server prices a boss:<legend> fight from it (origins/boss/legend-boss.ts)
+export { LEGEND_FAMILIES, isSpellless, legendText } from './legend-families.ts';   // which family and rank a legend wears: the server prices a boss:<legend> fight from it (origins/boss/legend-boss.ts)
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
 export * from './weapon-skills.ts';
 export * from './boss-spells.ts';
