@@ -5,14 +5,14 @@
 const CATALOGUE_DEFS = {
   fields: [
     { id: "weapon", kind: "ref", of: "weapons", required: true, sim: true },
-    { id: "chase", kind: "number", min: 0.1, max: 12, sim: false },
-    { id: "leash", kind: "number", min: 1, max: 200, sim: false },
-    { id: "giveUp", kind: "number", min: 1, max: 120, sim: false },
+    { id: "chase", kind: "number", min: 0.1, max: 12, sim: false, world: true },
+    { id: "leash", kind: "number", min: 1, max: 200, sim: false, world: true },
+    { id: "giveUp", kind: "number", min: 1, max: 120, sim: false, world: true },
     { id: "shieldFromLevel", kind: "number", min: 2, max: 10, sim: false },
     { id: "spectral", kind: "number", min: 1, max: 1, sim: false },
     { id: "nightBronze", kind: "number", min: 1, max: 10, sim: false },
     { id: "crowd", kind: "number", min: 1, max: 8, sim: false },
-    { id: "atOnce", kind: "number", min: 1, max: 3, sim: false },   // the most creatures of this row on one player at once, never above MAX_ATTACKERS (attackers.ts); absent = that cap (world.ts stepCombat; Lead 2026-10-13: the goblin camps, until Combat's retune)
+    { id: "atOnce", kind: "number", min: 1, max: 3, sim: false, world: true },   // the most creatures of this row on one player at once, never above MAX_ATTACKERS (attackers.ts); absent = that cap (world.ts stepCombat; Lead 2026-10-13: the goblin camps, until Combat's retune)
     { id: "immuneTier", kind: "ref", of: "ccTiers", sim: true },   // the CC families it never takes (cc-ladder.ts CC_LADDER.tiers; programme item 7)
     { id: "firstSight", kind: "boolean", sim: false },   // the zone preview stands the player 15-25 m from this creature's camp and faces it, so it is the first thing he sees (origins/preview/mobs.ts spawnAmong); absent = no
     { id: "resist", kind: "ref", of: "ccResists", sim: true },   // the percent of each CC it keeps (cc-ladder.ts CC_LADDER.resists)
