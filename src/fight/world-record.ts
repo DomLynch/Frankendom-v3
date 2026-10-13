@@ -5,7 +5,7 @@
 import { CAPS } from './gear-caps.ts';
 import { M } from './detmath.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
-import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId } from './moves.ts';
+import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type Direction, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
@@ -142,7 +142,7 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   if (r.wv !== WORLD_SIM_VERSION) return bad('sim version');   // the WORLD sim files moved (tests/world-sim-guard.test.ts): same reason as the Pit's, no verdict on the player
   if (r.rv !== RECORD_VERSION) return bad('sim version');   // the sim moved since the page wrote it: not a verdict on the player
   if (n === 0 || n > MAX_WORLD_TICKS) return bad('ticks');
-  if (!PLAYER_WEAPONS.includes(h.weapon)) return bad('weapon');   // the sim honours the hero's weapon (open-fight.ts heroSheeted): any weapon a player can wield; which ones the account HOLDS is the server's check (origins/server/world-verify.ts)
+  if (h.weapon !== DEFAULT_WEAPON) return bad('weapon');   // the sim honours any hero weapon (open-fight.ts heroSheeted), but nothing on the server binds the record's weapon to the character's held one (Auditor, #2569), so a forged record could claim the strongest: the replay takes DEFAULT_WEAPON only. LIFT: when the ledger's held weapon reaches HeroLimit (Backend #2557) PR 5 restores `PLAYER_WEAPONS.includes(h.weapon)` and checks it against HeroLimit.weapon.
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
   if (!(h.attack >= 1 && h.attack <= CAPS.attack) || !(h.res >= CAPS.res && h.res <= 1)) return bad('hero gear');
   if (!(h.health > 0 && h.health <= RULES.health) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
