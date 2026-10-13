@@ -1,0 +1,604 @@
+{
+ "legends": [
+  {
+   "id": "legend:veteran-1",
+   "name": "Crixus",
+   "source": "Appian, Civil Wars",
+   "backstory": "A Gaul sold to Capua's schools who broke out beside Spartacus and led his own army till Rome caught it. In Frankendom he fights with nothing to lose."
+  },
+  {
+   "id": "legend:veteran-2",
+   "name": "Ragnar Lothbrok",
+   "source": "Ragnar's saga",
+   "backstory": "The raider who sailed up the Seine, took Paris and died singing in a pit of snakes. In Frankendom he fights laughing, as if the snakes were waiting."
+  },
+  {
+   "id": "legend:veteran-3",
+   "name": "Beowulf",
+   "source": "Beowulf",
+   "backstory": "The Geat who crossed the sea to tear Grendel's arm off bare-handed, then went into the mere after the mother. In Frankendom he fights trusting his grip."
+  },
+  {
+   "id": "legend:veteran-4",
+   "name": "Spartacus",
+   "source": "Plutarch, Crassus",
+   "backstory": "The Thracian who broke out of Capua with seventy men and beat Rome's armies for two years. In Frankendom he fights as the man every slave watches."
+  },
+  {
+   "id": "legend:veteran-5",
+   "name": "Miyamoto Musashi",
+   "source": "Book of Five Rings",
+   "backstory": "The ronin who won sixty duels, one with an oar he carved on the boat to the island. In Frankendom he fights arriving late and calm."
+  },
+  {
+   "id": "legend:veteran-6",
+   "name": "Hannibal",
+   "source": "Livy; Polybius",
+   "backstory": "The Carthaginian who marched elephants over the Alps and destroyed eight legions at Cannae. In Frankendom he fights as a trap that closes unseen."
+  },
+  {
+   "id": "legend:veteran-7",
+   "name": "Leonidas",
+   "source": "Herodotus, Histories 7",
+   "backstory": "The Spartan king who held Thermopylae with a few hundred men till none were left. In Frankendom he fights as if the pass were at his back."
+  },
+  {
+   "id": "legend:veteran-8",
+   "name": "Ajax",
+   "source": "Homer, Iliad",
+   "backstory": "The Greek with the tower shield who stood alone over the ships when the line broke, and fought Hector to a draw. In Frankendom he fights as a walking wall."
+  },
+  {
+   "id": "legend:veteran-9",
+   "name": "Alexander",
+   "source": "Plutarch, Moralia 466D",
+   "backstory": "The Macedonian who never lost a battle, and wept that of endless worlds he ruled not one. In Frankendom he fights at the head of the charge."
+  },
+  {
+   "id": "legend:veteran-10",
+   "name": "Mars",
+   "source": "Roman myth",
+   "backstory": "Father of Romulus and lord of the legions, whose name Rome gave to its field of war. In Frankendom he fights as war itself, owed a tithe of every duel."
+  },
+  {
+   "id": "legend:pitborn-1",
+   "name": "Pit Thrall",
+   "source": "generic",
+   "backstory": "A nameless brute bought for the pits and kept on scraps between bouts. In Frankendom he fights because he knows nothing else, and hits like a thrown stone."
+  },
+  {
+   "id": "legend:pitborn-2",
+   "name": "Cacus",
+   "source": "Roman myth",
+   "backstory": "The fire-breathing giant who stole Heracles' cattle, dragging them into his cave by their tails so the tracks led away. In Frankendom he fights as a thief."
+  },
+  {
+   "id": "legend:pitborn-3",
+   "name": "Redcap",
+   "source": "Border folklore",
+   "backstory": "The fiend of the old border tales who dyed his cap red in the blood of travellers caught in his ruin. In Frankendom he fights to keep his cap wet."
+  },
+  {
+   "id": "legend:pitborn-4",
+   "name": "Gogmagog",
+   "source": "Geoffrey of Monmouth",
+   "backstory": "The last giant of Albion, who wrestled the Trojan Corineus on a sea cliff and was thrown down. In Frankendom he fights to win the throw he lost."
+  },
+  {
+   "id": "legend:pitborn-5",
+   "name": "Grendel",
+   "source": "Beowulf",
+   "backstory": "The fen-walker who raided a king's hall by night for twelve winters, hating its song. In Frankendom he fights as a creature of the marsh, furious and unrelenting."
+  },
+  {
+   "id": "legend:pitborn-6",
+   "name": "Polyphemus",
+   "source": "Greek myth",
+   "backstory": "The one-eyed shepherd giant who penned Odysseus in his cave and lost his eye to a sharpened stake. In Frankendom he fights with a giant's anger."
+  },
+  {
+   "id": "legend:pitborn-7",
+   "name": "Humbaba",
+   "source": "Epic of Gilgamesh",
+   "backstory": "Guardian of the Cedar Forest, whose roar was a flood and whose breath was death, set there by the gods. In Frankendom he fights as the forest's wrath."
+  },
+  {
+   "id": "legend:pitborn-8",
+   "name": "Antaeus",
+   "source": "Greek myth",
+   "backstory": "The wrestler-giant who grew stronger each time he touched the earth, till Heracles held him aloft. In Frankendom he fights low, rising from every fall."
+  },
+  {
+   "id": "legend:pitborn-9",
+   "name": "Surtr",
+   "source": "Norse myth",
+   "backstory": "The fire giant of Muspelheim, who waits at the edge of the world to set it alight at its end. In Frankendom he fights as the last blaze."
+  },
+  {
+   "id": "legend:pitborn-10",
+   "name": "Typhon",
+   "source": "Greek myth",
+   "backstory": "The storm-serpent giant with a hundred heads, the deadliest foe Zeus ever faced. In Frankendom he fights as the monster the gods themselves fled."
+  },
+  {
+   "id": "legend:goblin-1",
+   "name": "Sewer Imp",
+   "source": "generic",
+   "backstory": "A gutter-born scrap of malice that lives on what the drains carry. In Frankendom he fights dirty, fast and low, and runs before anyone can catch him."
+  },
+  {
+   "id": "legend:goblin-2",
+   "name": "Kobold",
+   "source": "German folklore",
+   "backstory": "A house and mine spirit who helps when fed and plays cruel tricks when slighted. In Frankendom he fights as a grudge with a knife."
+  },
+  {
+   "id": "legend:goblin-3",
+   "name": "Nain Rouge",
+   "source": "French-Canadian folklore",
+   "backstory": "The red dwarf of the Detroit river, whose sighting warned of disaster and who cursed the man who struck him. In Frankendom he fights as ill luck."
+  },
+  {
+   "id": "legend:goblin-4",
+   "name": "Andvari",
+   "source": "Norse myth",
+   "backstory": "A dwarf who lived as a pike in a waterfall and cursed the ring Loki stole from him. In Frankendom he fights to make every taker regret it."
+  },
+  {
+   "id": "legend:goblin-5",
+   "name": "Alberich",
+   "source": "Nibelungenlied",
+   "backstory": "The dwarf who guarded the Nibelung hoard and wore a cloak that made him unseen, till Siegfried took it. In Frankendom he fights as a keeper of stolen gold."
+  },
+  {
+   "id": "legend:goblin-6",
+   "name": "Rumpelstiltskin",
+   "source": "Grimm",
+   "backstory": "The little man who spun straw into gold for a price and lost all when his name was spoken. In Frankendom he fights as a bargain that always comes due."
+  },
+  {
+   "id": "legend:goblin-7",
+   "name": "Puck",
+   "source": "English folklore",
+   "backstory": "The hobgoblin who leads night travellers astray and laughs at their falls. In Frankendom he fights as a prank with sharp edges, never where you swing."
+  },
+  {
+   "id": "legend:goblin-8",
+   "name": "Reynard the Fox",
+   "source": "Medieval European fable",
+   "backstory": "The red fox of the beast fables, who talks his way out of every noose the king's court ties. In Frankendom he fights with a smile and a bite."
+  },
+  {
+   "id": "legend:goblin-9",
+   "name": "Hermes",
+   "source": "Greek myth",
+   "backstory": "Messenger of the gods, who stole Apollo's cattle on the day he was born and talked his way free. In Frankendom he fights with quick feet and a liar's smile."
+  },
+  {
+   "id": "legend:goblin-10",
+   "name": "Loki",
+   "source": "Norse myth",
+   "backstory": "The shape-changing trickster of Asgard, both help and ruin to the gods, bound at last until the world ends. In Frankendom he fights as mischief unchained."
+  },
+  {
+   "id": "legend:nightborn-1",
+   "name": "Night Page",
+   "source": "generic",
+   "backstory": "A pale servant of some darker house, sent out after dusk on errands no one names. In Frankendom he fights quietly, eager to earn his master's notice."
+  },
+  {
+   "id": "legend:nightborn-2",
+   "name": "Lord Ruthven",
+   "source": "The Vampyre, 1819",
+   "backstory": "A cold nobleman who moved through society charming the young and leaving them drained. In Frankendom he fights with courtly manners and patient thirst."
+  },
+  {
+   "id": "legend:nightborn-3",
+   "name": "Varney",
+   "source": "Varney the Vampire, 1847",
+   "backstory": "Sir Francis Varney, an undead gentleman who hated what he was and fed anyway. In Frankendom he fights long, grim bouts, as if he could not stop."
+  },
+  {
+   "id": "legend:nightborn-4",
+   "name": "Carmilla",
+   "source": "Le Fanu, 1872",
+   "backstory": "A countess dead for a century, who returned as a lonely girl to feed on the one she loved. In Frankendom she fights with sad eyes and no mercy at all."
+  },
+  {
+   "id": "legend:nightborn-5",
+   "name": "Erlking",
+   "source": "German folklore",
+   "backstory": "The king of the elves who rides the night woods and takes children from their fathers' arms. In Frankendom he fights as the cold wind in the trees."
+  },
+  {
+   "id": "legend:nightborn-6",
+   "name": "Mordred",
+   "source": "Arthurian legend",
+   "backstory": "The traitor knight who seized Arthur's throne and met him in the last battle at Camlann. In Frankendom he fights as betrayal with a sword."
+  },
+  {
+   "id": "legend:nightborn-7",
+   "name": "Vlad",
+   "source": "Chalkokondyles, Histories",
+   "backstory": "Wallachia's prince who held the Danube from the Sultan and met him with a forest of stakes. In Frankendom he fights as the terror at the gate."
+  },
+  {
+   "id": "legend:nightborn-8",
+   "name": "Set",
+   "source": "Egyptian myth",
+   "backstory": "Lord of desert and storm, who slew his brother Osiris and fought Horus for the throne. In Frankendom he fights as chaos in the red sand."
+  },
+  {
+   "id": "legend:nightborn-9",
+   "name": "Hades",
+   "source": "Greek myth",
+   "backstory": "King of the dead, who rules beneath the earth and lets no soul go home. In Frankendom he fights as the host of the last feast."
+  },
+  {
+   "id": "legend:nightborn-10",
+   "name": "Nyx",
+   "source": "Greek myth",
+   "backstory": "Night herself, older than the gods, whom even Zeus feared to anger. In Frankendom she fights as the dark that falls on every arena at last."
+  },
+  {
+   "id": "legend:executioner-1",
+   "name": "Headsman",
+   "source": "generic",
+   "backstory": "A hooded servant of the block who does the work the law will not do with its own hands. In Frankendom he fights as a job to be finished cleanly."
+  },
+  {
+   "id": "legend:executioner-2",
+   "name": "Ankou",
+   "source": "Breton folklore",
+   "backstory": "The last man to die each year, who drives a creaking cart to gather the souls of the next. In Frankendom he fights as the one you hear before you see."
+  },
+  {
+   "id": "legend:executioner-3",
+   "name": "Charon",
+   "source": "Greek myth",
+   "backstory": "The ferryman of the dead, who poles the river Styx and wants his coin before he takes you over. In Frankendom he fights as the price of crossing."
+  },
+  {
+   "id": "legend:executioner-4",
+   "name": "Hel",
+   "source": "Norse myth",
+   "backstory": "Loki's daughter, half living and half dead, who rules the dead who fall without glory. In Frankendom she fights as the cold hall no warrior wants."
+  },
+  {
+   "id": "legend:executioner-5",
+   "name": "Anubis",
+   "source": "Egyptian myth",
+   "backstory": "The jackal-headed guardian who weighs each heart against a feather. In Frankendom he fights as judgement, and he has already read the scales."
+  },
+  {
+   "id": "legend:executioner-6",
+   "name": "Ereshkigal",
+   "source": "Mesopotamian myth",
+   "backstory": "The queen of the land of no return, who stripped her own sister of every jewel at the seven gates. In Frankendom she fights as a gate that takes."
+  },
+  {
+   "id": "legend:executioner-7",
+   "name": "The Morrigan",
+   "source": "Irish myth",
+   "backstory": "The war goddess who washes the armour of doomed men at the ford and flies over battle as a crow. In Frankendom she fights as the omen that came true."
+  },
+  {
+   "id": "legend:executioner-8",
+   "name": "Arawn",
+   "source": "Welsh myth",
+   "backstory": "The grey-clad king of Annwn, the otherworld, who hunts with white hounds and traded places with a mortal prince for a year. In Frankendom he fights as a hunt."
+  },
+  {
+   "id": "legend:executioner-9",
+   "name": "Thanatos",
+   "source": "Greek myth",
+   "backstory": "Death himself, twin of Sleep, with a heart of iron: he lets go of no one he takes, not even kings. In Frankendom he fights without hurry, as he always arrives."
+  },
+  {
+   "id": "legend:executioner-10",
+   "name": "The Reaper",
+   "source": "European folklore",
+   "backstory": "The skeleton with the scythe who leads pope, king and beggar in the Dance of Death on old church walls. In Frankendom he fights as the harvest."
+  },
+  {
+   "id": "legend:dwarf-1",
+   "name": "Forge Hand",
+   "source": "generic",
+   "backstory": "A soot-black apprentice who carries coal and swings the striker's hammer for his master. In Frankendom he fights with the arms of a man who never rests."
+  },
+  {
+   "id": "legend:dwarf-2",
+   "name": "Alvis",
+   "source": "Norse myth",
+   "backstory": "The all-wise dwarf who came for Thor's daughter and was kept answering Thor's questions till sunrise turned him to stone. In Frankendom he fights the dawn."
+  },
+  {
+   "id": "legend:dwarf-3",
+   "name": "Regin",
+   "source": "Volsunga saga",
+   "backstory": "The smith who forged Sigurd's sword so the boy could slay his dragon brother. In Frankendom he fights as a craftsman with a grudge older than the blade."
+  },
+  {
+   "id": "legend:dwarf-4",
+   "name": "Brokkr",
+   "source": "Norse myth",
+   "backstory": "The dwarf who bet Loki's head his brother could outdo the sons of Ivaldi, and won the gods Thor's hammer. In Frankendom he fights to collect the wager."
+  },
+  {
+   "id": "legend:dwarf-5",
+   "name": "Eitri",
+   "source": "Norse myth",
+   "backstory": "The master smith who forged Mjolnir, a golden boar and a ring that drips eight more. In Frankendom he fights with a maker's eye for the weak seam."
+  },
+  {
+   "id": "legend:dwarf-6",
+   "name": "Wayland",
+   "source": "Germanic legend",
+   "backstory": "The smith lamed by a greedy king, who forged wings and took a terrible revenge. In Frankendom he fights as the craftsman no chain can hold."
+  },
+  {
+   "id": "legend:dwarf-7",
+   "name": "Kothar-wa-Khasis",
+   "source": "Canaanite myth",
+   "backstory": "The skilled and wise god of craft who built Baal's palace and forged the clubs that beat the sea. In Frankendom he fights with tools made for gods."
+  },
+  {
+   "id": "legend:dwarf-8",
+   "name": "Ptah",
+   "source": "Egyptian myth",
+   "backstory": "The creator god of Memphis, patron of builders, who shaped the world by thought and word. In Frankendom he fights as the first maker."
+  },
+  {
+   "id": "legend:dwarf-9",
+   "name": "Goibniu",
+   "source": "Cath Maige Tuired",
+   "backstory": "The smith of the Tuatha De Danann who forged spearheads in three blows for the war on the Fomorians. In Frankendom he fights as the forge at full heat."
+  },
+  {
+   "id": "legend:dwarf-10",
+   "name": "Hephaestus",
+   "source": "Greek myth",
+   "backstory": "The lame smith of Olympus, cast out by his own mother, who forged the armour of heroes. In Frankendom he fights as the god who armed them all."
+  },
+  {
+   "id": "legend:plaguedoctor-1",
+   "name": "Beak",
+   "source": "generic",
+   "backstory": "A masked town physician who walks the plague streets with herbs in his beak and a cane to keep the sick away. In Frankendom he fights at arm's length."
+  },
+  {
+   "id": "legend:plaguedoctor-2",
+   "name": "Paracelsus",
+   "source": "16th-century history",
+   "backstory": "The Swiss physician who burned the old medical books in Basel and healed with metals and poisons. In Frankendom he fights as a measure of harm."
+  },
+  {
+   "id": "legend:plaguedoctor-3",
+   "name": "Locusta",
+   "source": "Roman history",
+   "backstory": "The poisoner of Nero's Rome, hired by an empress and an emperor to clear the way to the throne. In Frankendom she fights with a patient, quiet malice."
+  },
+  {
+   "id": "legend:plaguedoctor-4",
+   "name": "Medea",
+   "source": "Greek myth",
+   "backstory": "The Colchian sorceress who brewed potions for Jason and poisoned a princess with a gown. In Frankendom she fights as betrayal brewed in a pot."
+  },
+  {
+   "id": "legend:plaguedoctor-5",
+   "name": "Circe",
+   "source": "The Odyssey",
+   "backstory": "The enchantress of Aeaea who turned Odysseus's crew into swine with a cup of wine. In Frankendom she fights to make a beast of her foe."
+  },
+  {
+   "id": "legend:plaguedoctor-6",
+   "name": "Sekhmet",
+   "source": "Egyptian myth",
+   "backstory": "The lioness goddess whose breath was the desert wind and who sent plague on the wicked. In Frankendom she fights as fever with teeth."
+  },
+  {
+   "id": "legend:plaguedoctor-7",
+   "name": "Nergal",
+   "source": "Babylonian myth",
+   "backstory": "The lord of the underworld who brought plague, war and scorching noon. In Frankendom he fights as the sickness that follows armies."
+  },
+  {
+   "id": "legend:plaguedoctor-8",
+   "name": "Apollo",
+   "source": "The Iliad",
+   "backstory": "The archer god whose arrows brought plague to the Greek camp at Troy for nine days. In Frankendom he fights as healing and sickness from one hand."
+  },
+  {
+   "id": "legend:plaguedoctor-9",
+   "name": "Hecate",
+   "source": "Greek myth",
+   "backstory": "The goddess of crossroads, herbs and witchcraft, who walks with torches and hounds. In Frankendom she fights as every poison's patron."
+  },
+  {
+   "id": "legend:plaguedoctor-10",
+   "name": "Resheph",
+   "source": "Canaanite myth",
+   "backstory": "The Canaanite lord of plague and war, whose arrows carried pestilence through the ranks of armies. In Frankendom he fights as sickness loosed from a bow."
+  },
+  {
+   "id": "legend:knight-1",
+   "name": "Squire",
+   "source": "generic",
+   "backstory": "A lord's boy who polishes the mail and holds the horse, hungry for his own spurs. In Frankendom he fights to prove he is ready for them."
+  },
+  {
+   "id": "legend:knight-2",
+   "name": "Bedivere",
+   "source": "Arthurian legend",
+   "backstory": "The knight who stayed with Arthur to the end and returned the sword to the lake. In Frankendom he fights with a loyal heart."
+  },
+  {
+   "id": "legend:knight-3",
+   "name": "Gawain",
+   "source": "Arthurian legend",
+   "backstory": "The courteous nephew of Arthur who grew stronger as the sun climbed toward noon. In Frankendom he fights best in the heat of the day."
+  },
+  {
+   "id": "legend:knight-4",
+   "name": "Roland",
+   "source": "Song of Roland",
+   "backstory": "The paladin who held the pass at Roncevaux and blew his horn only when all was lost. In Frankendom he fights too proud to call for help."
+  },
+  {
+   "id": "legend:knight-5",
+   "name": "El Cid",
+   "source": "Spanish epic and history",
+   "backstory": "The exiled Castilian lord who took Valencia against every king and, it is told, rode out after death. In Frankendom he fights for no king."
+  },
+  {
+   "id": "legend:knight-6",
+   "name": "Lancelot",
+   "source": "Arthurian legend",
+   "backstory": "The greatest knight of the Round Table, undone by a love his king could not forgive. In Frankendom he fights flawless, and knows it."
+  },
+  {
+   "id": "legend:knight-7",
+   "name": "Siegfried",
+   "source": "Nibelungenlied",
+   "backstory": "The dragon-slayer who bathed in the beast's blood and was left with one small bare spot. In Frankendom he fights as though he cannot be hurt, almost."
+  },
+  {
+   "id": "legend:knight-8",
+   "name": "Hector",
+   "source": "The Iliad",
+   "backstory": "The prince of Troy, its best defender, who faced Achilles alone outside the walls. In Frankendom he fights for everyone behind him."
+  },
+  {
+   "id": "legend:knight-9",
+   "name": "Achilles",
+   "source": "Greek myth",
+   "backstory": "The greatest of the Greeks, who chose a short life of glory and was undone only at the heel. In Frankendom he fights as wrath made perfect."
+  },
+  {
+   "id": "legend:knight-10",
+   "name": "Thor",
+   "source": "Norse myth",
+   "backstory": "The thunder god with the hammer Mjolnir, guardian of gods and men against the giants. In Frankendom he fights as the storm that hammers back."
+  },
+  {
+   "id": "legend:witch-1",
+   "name": "Hedge Witch",
+   "source": "generic",
+   "backstory": "A village wise woman who knows which root heals and which one kills. In Frankendom she fights with the same knowledge, and a sharp tongue."
+  },
+  {
+   "id": "legend:witch-2",
+   "name": "Mother Shipton",
+   "source": "English folklore",
+   "backstory": "The cave-born Yorkshire prophetess of the chapbooks, who foretold fires, wars and the fall of great men. In Frankendom she fights as one who saw the end."
+  },
+  {
+   "id": "legend:witch-3",
+   "name": "Grimhild",
+   "source": "Volsunga saga",
+   "backstory": "The queen who brewed a drink of forgetting and turned heroes against their oaths. In Frankendom she fights to make you lose your place."
+  },
+  {
+   "id": "legend:witch-4",
+   "name": "Ceridwen",
+   "source": "Welsh myth",
+   "backstory": "The enchantress whose cauldron brewed a year for three drops of wisdom, then chased the thief through every shape. In Frankendom she fights as a pursuit."
+  },
+  {
+   "id": "legend:witch-5",
+   "name": "Nimue",
+   "source": "Arthurian legend",
+   "backstory": "The Lady of the Lake who learned Merlin's secrets and sealed him away with them. In Frankendom she fights as the student who surpassed the master."
+  },
+  {
+   "id": "legend:witch-6",
+   "name": "Louhi",
+   "source": "Kalevala",
+   "backstory": "The mistress of the cold North who stole the sun and moon and fought for the magic mill. In Frankendom she fights as winter with a grudge."
+  },
+  {
+   "id": "legend:witch-7",
+   "name": "Baba Yaga",
+   "source": "Slavic folklore",
+   "backstory": "The witch of the deep forest who lives in a hut on hen's legs and flies in a mortar. In Frankendom she fights as the forest's oldest threat."
+  },
+  {
+   "id": "legend:witch-8",
+   "name": "Morgan le Fay",
+   "source": "Arthurian legend",
+   "backstory": "The enchantress, half-sister to Arthur, who schemed against his court and carried him to Avalon. In Frankendom she fights as both foe and kin."
+  },
+  {
+   "id": "legend:witch-9",
+   "name": "Merlin",
+   "source": "Arthurian legend",
+   "backstory": "The wizard born of a mortal and a spirit, who raised a king and foresaw his fall. In Frankendom he fights as foresight, a step ahead of every swing."
+  },
+  {
+   "id": "legend:witch-10",
+   "name": "Odin",
+   "source": "Norse myth",
+   "backstory": "The All-Father who gave an eye for wisdom and hung nine nights on the world tree to win the runes. In Frankendom he fights as the price of knowing."
+  },
+  {
+   "id": "legend:shieldmaiden-1",
+   "name": "Shield Girl",
+   "source": "generic",
+   "backstory": "A farmer's daughter who took up her dead brother's shield and never gave it back. In Frankendom she fights stubborn and square behind the boss."
+  },
+  {
+   "id": "legend:shieldmaiden-2",
+   "name": "Hervor",
+   "source": "Hervarar saga",
+   "backstory": "The shieldmaiden who woke her dead father in his barrow to claim the cursed sword Tyrfing. In Frankendom she fights with a blade the dead would not keep."
+  },
+  {
+   "id": "legend:shieldmaiden-3",
+   "name": "Camilla",
+   "source": "Aeneid",
+   "backstory": "The swift warrior queen of the Volsci, raised in the wild, who led cavalry against the Trojans. In Frankendom she fights at a run, too fast to pin."
+  },
+  {
+   "id": "legend:shieldmaiden-4",
+   "name": "Lagertha",
+   "source": "Saxo Grammaticus",
+   "backstory": "A warrior woman who fought beside Ragnar and turned a lost battle with her charge. In Frankendom she fights where the line is breaking."
+  },
+  {
+   "id": "legend:shieldmaiden-5",
+   "name": "Boudica",
+   "source": "British history",
+   "backstory": "The queen of the Iceni who rose against Rome and burned three of its cities. In Frankendom she fights for vengeance, and she does not bargain."
+  },
+  {
+   "id": "legend:shieldmaiden-6",
+   "name": "Tomyris",
+   "source": "Herodotus",
+   "backstory": "The Massagetae queen who defeated Cyrus the Great and, the story goes, plunged his head into a skin of blood. In Frankendom she fights as an empire's end."
+  },
+  {
+   "id": "legend:shieldmaiden-7",
+   "name": "Scathach",
+   "source": "Irish myth",
+   "backstory": "The warrior woman of the Isle of Skye who trained Cu Chulainn in every feat of arms. In Frankendom she fights as the teacher of champions."
+  },
+  {
+   "id": "legend:shieldmaiden-8",
+   "name": "Penthesilea",
+   "source": "Greek myth",
+   "backstory": "The Amazon queen who came to Troy's aid and fell to Achilles, who grieved to see her face. In Frankendom she fights as the equal of heroes."
+  },
+  {
+   "id": "legend:shieldmaiden-9",
+   "name": "Brynhildr",
+   "source": "Norse myth",
+   "backstory": "The valkyrie cast down for choosing her own victor, sleeping in a ring of fire until a hero rode through. In Frankendom she fights as the chooser of the slain."
+  },
+  {
+   "id": "legend:shieldmaiden-10",
+   "name": "Athena",
+   "source": "Greek myth",
+   "backstory": "Goddess of wisdom and war, born armoured from her father's head. In Frankendom she fights as strategy itself, and the aegis turns every blow."
+  }
+ ]
+}

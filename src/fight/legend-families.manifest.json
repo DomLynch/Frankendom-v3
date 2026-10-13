@@ -1,0 +1,20 @@
+{
+  "tables": [
+    {
+      "table": "legend",
+      "file": "legend-rows.json",
+      "at": "legends",
+      "key": "id",
+      "required": { "name": "string", "source": "string", "backstory": "string" },
+      "unique": ["name"]
+    },
+    {
+      "table": "legend-family",
+      "file": "legend-families.json",
+      "at": "families",
+      "key": "id",
+      "required": { "opponent": "string", "region": "string", "legends": "array", "legends[].legendId": "string", "legends[].rank": "integer" },
+      "refs": { "legends[].legendId": "legend" }
+    }
+  ]
+}
