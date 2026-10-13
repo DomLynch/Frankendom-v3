@@ -4,6 +4,7 @@
 // Poses and presses are quantized BEFORE the live loop uses them (cm, milliradian), so the replay sees exactly the numbers the page's sim saw. This is a Zone 1 module, not the Pit's FightRecord. The header stamps the sim's RECORD_VERSION: the replay runs only a record of its own version (a stale one is the no-record tier, not fraud).
 import { CAPS } from './gear-stats.ts';
 import { M } from './detmath.ts';
+import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
 import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, MAX_RECORD_TICKS, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
@@ -41,10 +42,14 @@ export const joinFighter = (j: JoinEvent): Fighter => creature(j.id, j.kind, fro
 export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null): WorldStep => ({
   pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null,
 });
-/** The hero is at rest and carries nothing the header lacks: ready, full bar, no wound, no cooldown, no stance, an empty CC ladder. Only then does a window open (a record cannot carry the rest of his Pit fighter). */
+/** The ladder holds no mark that still counts at `tick` (the world clock in Pit ticks): every mark is older than its kind's window (cc-ladder.ts markOf, same test, same `end ?? last` reference), so the next landing finds
+ *  it exactly as it would find an empty ladder, now and at every later tick. The ladder is never pruned, so 'empty' would stay false for the rest of the session after one stun; 'quiet' is the same fact. */
+export const ccQuiet = (ladder: CcLadder | undefined, tick: number, rows = CC_LADDER): boolean =>
+  !ladder || ladder.every((m) => { const k = rows.kinds[m.family]; return !k || tick - (k.windowFrom === 'end' ? m.end ?? m.last : m.last) > k.window; });
+/** The hero is at rest and carries nothing the header lacks: ready, full bar, no wound, no cooldown, no stance, a quiet CC ladder. Only then does a window open (a record cannot carry the rest of his Pit fighter). */
 export function heroClean(world: World): boolean {
   const m = world.fighters[0], d = world.streams[ME]?.duel.fighters[0];
-  return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && !(m.cc && m.cc.length) && !(m.threat && Object.keys(m.threat).length)
+  return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
     && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && d.move === null && d.phase !== 'dead'));
 }
 export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, { attack: h.attack, res: h.res }, h.level); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
