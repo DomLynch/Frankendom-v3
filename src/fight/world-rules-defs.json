@@ -19,6 +19,10 @@
     { "id": "playerRun", "value": 5.2, "unit": "m/s" },
     { "id": "creatureAmble", "value": 0.9, "unit": "m/s" },
     { "id": "creatureChase", "value": 4.5, "unit": "m/s" },
-    { "id": "leash", "value": 30, "unit": "m" }
+    { "id": "leash", "value": 30, "unit": "m" },
+    { "id": "rareDefault", "value": 0.05, "unit": "ratio" },
+    { "id": "campMax", "value": 4, "unit": "creatures" },
+    { "id": "bossCampMax", "value": 6, "unit": "creatures" },
+    { "id": "campGap", "value": 6, "unit": "m" }
   ]
 }
