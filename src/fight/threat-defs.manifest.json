@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "threat-source", "file": "threat-defs.json", "at": "sources", "key": "id", "required": { "weight": "number" } },
+    { "table": "threat-awareness", "file": "threat-defs.json", "at": "awareness", "key": "id", "required": { "value": "number", "unit": "string" } }
+  ]
+}

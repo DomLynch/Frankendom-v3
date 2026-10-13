@@ -1,0 +1,5 @@
+{
+  "cones": [
+    { "id": "ashfall", "angle": 60, "range": 3, "every": 12, "ramp": [1, 2, 3], "damageKind": "fire", "creatures": ["pitborn"] }
+  ]
+}
