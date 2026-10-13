@@ -4,7 +4,7 @@
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
 import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type SkillId, type SpecialName } from './moves.ts';
-import { CAPS, NAKED, type Loadout } from './gear-stats.ts';
+import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
 import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
@@ -13,7 +13,7 @@ import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
 import { guardOfLevel, type CcGuard, type CcLadder } from './cc-ladder.ts';
-import { fieldOf } from './catalogue-rows.ts';
+import { fieldOf } from './catalogue-fields.ts';
 import type { CombatEvent, Duel } from './duel.ts';
 
 const TICK = 1 / 60;

@@ -2,7 +2,7 @@
 // and see the kill before anything spendable or permanent pays. It owns no rule: `stepHero` below is the ONE place a frame step is made, called by the live loop and by the replay alike, and the sim is stepCombat.
 // A record is a window: it opens when a creature joins an empty loop and carries the hero's body at that moment (claims, bounded by the replay), every join and release, and per step the page's pose and presses.
 // Poses and presses are quantized BEFORE the live loop uses them (cm, milliradian), so the replay sees exactly the numbers the page's sim saw. This is a Zone 1 module, not the Pit's FightRecord. The header stamps the sim's RECORD_VERSION: the replay runs only a record of its own version (a stale one is the no-record tier, not fraud).
-import { CAPS } from './gear-stats.ts';
+import { CAPS } from './gear-caps.ts';
 import { M } from './detmath.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
 import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type WeaponId } from './moves.ts';
