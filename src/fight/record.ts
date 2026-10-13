@@ -17,7 +17,8 @@ import { STAB_ON } from './stab-rule.ts';
 import { FIRST_STANCE_ROWS_VERSION } from './stance-era.ts';
 import { PICKS, type PickedStance } from './stance.ts';
 
-export const RECORD_VERSION = 52;   // 52: bump 52 (2026-10-13; Combat, Wave A1 stance rows, provisional on 51) — TIMING IS SACRED (Strategy, external audit): the Defensive stance's parry window and guard-counter window (a quarter longer) are gone; stance rows (stance-defs.json through the registry) carry numbers only (the loader refuses a window), and Defensive gains damageTaken -100 and poise -100. A record BELOW 52 keeps the old windows through stance-era.ts (an era flag, as the play circle and the stab are), so REACH[52] is empty and every older link replays byte for byte. Before: 51: bump 51 (2026-10-13; Combat, Wave A1 live numbers, provisional on 50) — Lead's accepted CC numbers go live in the cc-defs.json / swarm-defs.json rows (windowFrom end; post-CC immunity stun 120 / knockdown 180; tiers and resists as RANK BANDS: unstoppable + iron rank 10, steadfast + stubborn ranks 8-9; swarm +3 a foe, cap 6 ranks 1-5 / 9 ranks 6-10). Only a fight that carries a ladder (the open world) or a roll moves; a recorded Pit fight carries neither, so no record is reached. Before: 50: bump 50 (2026-10-13; Combat B, Wave A1 steps 6+7, Lead's provisional number) — CC timing + immunity rows and the swarm band (cc-ladder.ts windowFrom / immunity / tiers / resists, catalogue fields immuneTier + resist; roll.ts SWARM_ROWS + Duel.roll.swarm/rank), all opt-in: no shipped fight names one, so every fight is byte for byte as v49.
+export const RECORD_VERSION = 53;   // 53: bump 53 (2026-10-13; Combat, spells in fights v1, PROVISIONAL on 52, Lead's rulings) — a SPELL is cast through the SKILL slot's special (spell-cast.ts): the same windup, interrupt, cooldown and reach, plus a stamina cost at the commit and an outcome by skill at the release (fizzle, partial, success, crit) from rows (brick-defs.json, cast-rules.json). ONLY a spell fight moves: it carries a second flag byte and a spell block (id + the caster's skill) and is stamped 53; every other fight is written and replays byte for byte as before. The cast draws come from the fight's seed.
+// 52: bump 52 (2026-10-13; Combat, Wave A1 stance rows, provisional on 51) — TIMING IS SACRED (Strategy, external audit): the Defensive stance's parry window and guard-counter window (a quarter longer) are gone; stance rows (stance-defs.json through the registry) carry numbers only (the loader refuses a window), and Defensive gains damageTaken -100 and poise -100. A record BELOW 52 keeps the old windows through stance-era.ts (an era flag, as the play circle and the stab are), so REACH[52] is empty and every older link replays byte for byte. Before: 51: bump 51 (2026-10-13; Combat, Wave A1 live numbers, provisional on 50) — Lead's accepted CC numbers go live in the cc-defs.json / swarm-defs.json rows (windowFrom end; post-CC immunity stun 120 / knockdown 180; tiers and resists as RANK BANDS: unstoppable + iron rank 10, steadfast + stubborn ranks 8-9; swarm +3 a foe, cap 6 ranks 1-5 / 9 ranks 6-10). Only a fight that carries a ladder (the open world) or a roll moves; a recorded Pit fight carries neither, so no record is reached. Before: 50: bump 50 (2026-10-13; Combat B, Wave A1 steps 6+7, Lead's provisional number) — CC timing + immunity rows and the swarm band (cc-ladder.ts windowFrom / immunity / tiers / resists, catalogue fields immuneTier + resist; roll.ts SWARM_ROWS + Duel.roll.swarm/rank), all opt-in: no shipped fight names one, so every fight is byte for byte as v49.
 // 49: bump 49 (2026-10-13; Combat, Wave A1 PR2) — damage kinds as data.
 // 21: bump 21 (2026-09-29, Dom's GO via Lead; Combat) — Special Moves on the SKILL slot (duel.ts withSpecials, RULES.special), behind a per-fight flag the header now carries (one byte after the skill). With the flag off a v21 fight steps bit for bit as v20 (every new branch reads a field only withSpecials sets), so v20 stays readable (REACH[21] is empty).
 // 20: bump 20 (2026-09-28, Dom via Strategy / Lead) — the Plague Doctor fights with the estoc, not the longsword (roster.ts; his archetype row is the Nightborn's, who fights with it). REACH[20]: the Plague Doctor at every level. Inside the same unreleased bump (2026-09-29): his easy tellReaction 15 (moves.ts), closing the estoc's L6 thrust-from-range hole. And the sim's math (2026-09-29, Strategy ruling (b)): v20 on steps on src/fight/detmath.ts (sin/cos/atan2/hypot on + − * / sqrt, the same bits in every engine; Node's V8 and Chromium's had split a Dwarf link on a 1-ulp atan2); v18/v19 records replay on the engine's own Math, frozen, picked by this version field through detmath.underRecord, so no shared link becomes a fresh fight.
@@ -77,18 +78,19 @@ export const RECORD_VERSION = 52;   // 52: bump 52 (2026-10-13; Combat, Wave A1 
 // [.., 29] -> [.., 29, 30] with the writer bump to 30: widened, REACH[30] lists the Shieldmaiden, the Knight and the Plague Doctor from level 1 (their own profile rows), so a v29 record of any other opponent still replays.
 // [.., 27] -> [.., 27, 28] with the writer bump to 28: widened, REACH[28] is empty (only a specials-flag fight steps differently; flag-off records of any readable version replay exactly as before).
 // [.., 31] -> [.., 31, 32] with the writer bump to 32: widened, REACH[32] is empty (a patron-less fight writes 31 and steps as before; only a patron record is v32).
-export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52] as const;
+export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53] as const;
 // What a fight with no patron writes: the writer ceiling is RECORD_VERSION (32), but a record names the LOWEST version that can express its fight.
 // A literal 31 only while the ceiling is 32 (the v31 bytes a patron-less fight has always written); from the next bump on a no-patron fight is simply the current version, whose
 // header carries a patron byte of 0 (only v32 refuses a zero patron, because a v32 patron-less fight was always written as 31). Pinned by tests/record-version-guard.test.ts, which simulates RV33.
-export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 52 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
+export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 53 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
+export const FIRST_SPELL_VERSION = 53;   // RV53 (spells in fights): the fight carries a spell (second flag byte, bit 0, then the spell block: id len u8 + ascii, skill u8); ONLY a spell fight is written as v53
 export const FIRST_GAMBIT_VERSION = 33;
 export const FIRST_STANCE_VERSION = 34;
 export const FIRST_POSE_VERSION = 38;
 export const FIRST_GROUP_VERSION = 39;
 export const FIRST_SHEET_VERSION = 48;   // RV48 (Wave A1 PR1): the fight carries the player's sheet (flag bit 7): a count byte, then (dial code u8, the dial's effective value u8) pairs, in code order, dials off base only; ONLY a sheet fight is written as v48
-export const PATRON_VERSION = (RECORD_VERSION as number) <= 52 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
+export const PATRON_VERSION = (RECORD_VERSION as number) <= 53 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
 // Each bump's REACH (the standing rule, Strategy 2026-09-28): the fights bump N can change, as (opponent, from level). A record of version
 // k is refused when any bump after k reaches its opponent at its level; everything else is read. Literals on purpose, not the data they
 // describe (LOADOUT_FROM, ROSTER): a reach records what that bump changed and must not move when the data moves later (that change bumps
@@ -123,6 +125,7 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   34: [],   // stances: only a fight with the stances flag (bit 2, v34) moves, no flag-off fight is reached
   33: [],   // the Gambit: only a fight with the gambit flag moves (flag bit 1, v33), no flag-off fight is reached
   49: [],   // damage kinds as data (damage-kind-defs.json): no shipped move names a kind, so every fight is byte for byte as v48; no fight is reached
+  53: [],   // spells in fights: only a fight with the spell flag (second flag byte, v53) moves, no spell-less fight is reached
   52: [],   // stance rows: the Defensive window / counter window are era-keyed (stance-era.ts), so a record below 52 replays the old stance byte for byte; no record is reached
   51: [],   // the live CC / tier / resist / swarm numbers: only fights that carry a ladder (the open world) or a roll move, and no recorded Pit fight does; no record is reached
   50: [],   // CC timing / immunity tier / partial resist rows and the swarm band (Combat B): opt-in, no shipped creature or fight names one, so no fight is reached
@@ -164,7 +167,7 @@ const groupBad = (g: RecordGroup, ticks: number): boolean => {
   return false;
 };
 const groupLen = (g: RecordGroup | undefined): number => (g ? 1 + 2 + 6 * g.incoming.length + 2 + 8 * g.held.length : 0);
-export type RecordMeta = { sheet?: Sheet; characterId?: string; buildVersion?: number; arena?: RecordArena; build: string; opponent: OpponentId; weapon: WeaponId; skill?: SkillId; level: number; seed: number; specials?: boolean; patron?: number; gambit?: boolean; stances?: PickedStance; pose?: DuelPose; group?: RecordGroup };   // stances: the fight had stances (version 34), the player's pick; absent = none   // gambit: the fight had the Gambit (version 33; absent = off)   // patron: the player's patron id 1..255 (version 32; absent = none)   // specials: the fight had Special Moves (version 21; absent = off)   // skill: the player's equipped skill; absent = none. level: the opponent's ladder level, 1–46 (moves.ts profileAt; version 16)
+export type RecordMeta = { sheet?: Sheet; characterId?: string; buildVersion?: number; arena?: RecordArena; build: string; opponent: OpponentId; weapon: WeaponId; skill?: SkillId; level: number; seed: number; specials?: boolean; patron?: number; gambit?: boolean; stances?: PickedStance; pose?: DuelPose; group?: RecordGroup; spell?: { id: string; skill: number } };   // stances: the fight had stances (version 34), the player's pick; absent = none   // gambit: the fight had the Gambit (version 33; absent = off)   // patron: the player's patron id 1..255 (version 32; absent = none)   // specials: the fight had Special Moves (version 21; absent = off)   // skill: the player's equipped skill; absent = none. level: the opponent's ladder level, 1–46 (moves.ts profileAt; version 16)
 export type FightRecord = RecordMeta & { v: RecordVersion; ticks: number; outcome: Outcome; intents: Intent[] };
 
 // Quantization: the stick to 1/127 per axis, the camera yaw to 1/128 of a half-turn (about 1.4°). The live game steps the
@@ -178,6 +181,8 @@ const ACTIONS: (Action | null)[] = [null, 'light', 'light_left', 'light_right', 
 const SKILLS: readonly (SkillId | null)[] = SKILL_BY_CODE;   // the skill rows' `code`, append only, as ACTIONS (skill-defs.json)
 const DIRECTIONS: (Direction | undefined)[] = [undefined, 'right', 'left', 'overhead', 'thrust', 'low'];
 const OUTCOMES: Outcome[] = ['killed', 'died', 'draw', 'abandoned'];
+const SPELL_ID = /^[a-z][a-z0-9_.:-]{0,63}$/;   // the legend id (a spell row id without `spell:`), Backend's grimoire key
+const spellBad = (r: { spell?: { id: string; skill: number }; specials?: boolean }): boolean => !!r.spell && (!SPELL_ID.test(r.spell.id) || !Number.isInteger(r.spell.skill) || r.spell.skill < 0 || r.spell.skill > 100 || !r.specials);   // a spell is cast through the special: the specials flag comes with it
 const F_RUN = 1, F_GUARD = 2, F_HELD = 4, F_LOCK = 8, F_CANCEL = 16;
 
 export function quantizeIntent(intent: Intent): Intent {
@@ -194,9 +199,10 @@ export function quantizeIntent(intent: Intent): Intent {
 // Records one fight from its first tick. push() returns the quantized intent the caller must step with.
 export function createRecorder(meta: RecordMeta) {
   const era = stampedVersion(meta.opponent);
-  if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
+  if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet || meta.spell) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
   const flagged = meta.sheet ? FIRST_SHEET_VERSION : meta.group ? FIRST_GROUP_VERSION : meta.pose ? FIRST_POSE_VERSION : meta.stances ? FIRST_STANCE_VERSION : meta.gambit ? FIRST_GAMBIT_VERSION : meta.patron ? PATRON_VERSION : era;
-  const version = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged;   // a stances fight is fought on the v52 stance rows (stance-era.ts: a Defensive stance has no longer window), so it is stamped no lower than v52   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
+  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, version = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
+  if (spellBad(meta)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');   // a stances fight is fought on the v52 stance rows (stance-era.ts: a Defensive stance has no longer window), so it is stamped no lower than v52   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
   if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };
   if (buildRefBad(meta)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
   if (meta.pose) meta = { ...meta, pose: roundPose(meta.pose) };   // the fight started from the rounded pose (duel.ts poseBodies), so the record names those same bits
@@ -229,7 +235,11 @@ export function packRecord(rec: FightRecord): Uint8Array {
   // The lowest version that can express the fight: a record with no patron is written as v31 (today's links stay byte-identical), a patron needs 32.
   // A gambit fight is v33; otherwise a patron fight is v32 and a patron-less one v31.
   const flaggedV = rec.sheet ? FIRST_SHEET_VERSION : rec.group ? FIRST_GROUP_VERSION : rec.pose ? FIRST_POSE_VERSION : rec.stances ? FIRST_STANCE_VERSION : rec.gambit ? FIRST_GAMBIT_VERSION : rec.patron ? PATRON_VERSION : NO_PATRON_VERSION;
-  const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: (rec.stances ? Math.max(flaggedV, FIRST_STANCE_ROWS_VERSION) : flaggedV) as RecordVersion } : rec;
+  const stancedV = rec.stances ? Math.max(flaggedV, FIRST_STANCE_ROWS_VERSION) : flaggedV;
+  const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: (rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV) as RecordVersion } : rec;
+  if (r.spell && r.v < FIRST_SPELL_VERSION) throw Error('Fight record: a spell on a version that has no flag for it');
+  if ((r.v as number) === FIRST_SPELL_VERSION && !r.spell) throw Error('Fight record: a version 53 record names its spell');
+  if (spellBad(r)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');
   if (r.sheet && r.v < FIRST_SHEET_VERSION) throw Error('Fight record: a sheet on a version that has no flag for it');
   if ((r.v as number) === FIRST_SHEET_VERSION && !r.sheet) throw Error('Fight record: a version 48 record names its sheet');
   const sheetMods = r.sheet ? checkSheet(r.sheet) : undefined;
@@ -246,9 +256,9 @@ export function packRecord(rec: FightRecord): Uint8Array {
   if (r.stances && !PICKS.includes(r.stances)) throw Error('Fight record: unknown stance');
   if (r.gambit && r.v < FIRST_GAMBIT_VERSION) throw Error('Fight record: a gambit on a version that has no flag for it');
   if (r.v === FIRST_GAMBIT_VERSION && !r.gambit) throw Error('Fight record: a version 33 record names the gambit');
-  if (r.v !== RECORD_VERSION && (r.v as number) !== FIRST_SHEET_VERSION && r.v !== FIRST_GROUP_VERSION && r.v !== FIRST_POSE_VERSION && r.v !== FIRST_STANCE_VERSION && r.v !== FIRST_GAMBIT_VERSION && r.v !== FIRST_PATRON_VERSION && r.v !== NO_PATRON_VERSION && r.v !== STAB_VERSION && r.v !== FIRST_LATE_NOTICE_VERSION && r.v !== FIRST_SCALED_VERSION && r.v !== OLD_CIRCLE_VERSION) throw Error(`Fight record: cannot pack version ${String(r.v)}`);
+  if (r.v !== RECORD_VERSION && (r.v as number) !== FIRST_SHEET_VERSION && r.v !== FIRST_GROUP_VERSION && r.v !== FIRST_POSE_VERSION && r.v !== FIRST_STANCE_VERSION && (r.v as number) !== FIRST_STANCE_ROWS_VERSION && r.v !== FIRST_GAMBIT_VERSION && r.v !== FIRST_PATRON_VERSION && r.v !== NO_PATRON_VERSION && r.v !== STAB_VERSION && r.v !== FIRST_LATE_NOTICE_VERSION && r.v !== FIRST_SCALED_VERSION && r.v !== OLD_CIRCLE_VERSION) throw Error(`Fight record: cannot pack version ${String(r.v)}`);
   if (r.intents.length !== r.ticks) throw Error('Fight record: ticks does not match the intent count');
-  const build = ascii(r.build), opp = ascii(r.opponent), wpn = ascii(r.weapon);
+  const build = ascii(r.build), opp = ascii(r.opponent), wpn = ascii(r.weapon), spellId = r.spell ? ascii(r.spell.id) : new Uint8Array(0);
   if (build.length > 255 || opp.length > 255 || wpn.length > 255) throw Error('Fight record: build, opponent or weapon id too long');
   const level = r.level, outcome = OUTCOMES.indexOf(r.outcome), skill = SKILLS.indexOf(r.skill ?? null);
   if (!Number.isInteger(level) || level < 1 || level > LEVELS || outcome < 0) throw Error('Fight record: unknown level or outcome');
@@ -257,12 +267,13 @@ export function packRecord(rec: FightRecord): Uint8Array {
   if (arenaCode < 0 || (arenaCode > 0 && r.v < FIRST_ARENA_VERSION)) throw Error('Fight record: unknown arena, or an arena on a version that has no byte for it');
   const withArena = r.v >= FIRST_ARENA_VERSION ? 1 : 0, withPatron = r.v >= FIRST_PATRON_VERSION ? 1 : 0;
   if (r.patron !== undefined && (!Number.isInteger(r.patron) || r.patron < 1 || r.patron > 255 || !withPatron)) throw Error('Fight record: unknown patron, or a patron on a version that has no byte for it');
-  const n = r.ticks, head = 3 + 1 + build.length + 1 + opp.length + 1 + wpn.length + 1 + 1 + withArena + withPatron + (r.pose ? 20 : 0) + groupLen(r.group) + (sheetMods ? 1 + 2 * Object.keys(sheetMods).length + 1 + (r.characterId?.length ?? 0) + 4 : 0) + 1 + 4 + 4 + 1, out = new Uint8Array(head + 6 * n), dv = new DataView(out.buffer);
+  const n = r.ticks, head = 3 + 1 + build.length + 1 + opp.length + 1 + wpn.length + 1 + 1 + withArena + withPatron + (r.pose ? 20 : 0) + groupLen(r.group) + (sheetMods ? 1 + 2 * Object.keys(sheetMods).length + 1 + (r.characterId?.length ?? 0) + 4 : 0) + (r.v >= FIRST_SPELL_VERSION ? 1 : 0) + (r.spell ? 1 + spellId.length + 1 : 0) + 1 + 4 + 4 + 1, out = new Uint8Array(head + 6 * n), dv = new DataView(out.buffer);
   let o = 0;
   out[o++] = 0x46; out[o++] = 0x4b; out[o++] = r.v;
   out[o++] = build.length; out.set(build, o); o += build.length;
   out[o++] = opp.length; out.set(opp, o); o += opp.length; out[o++] = wpn.length; out.set(wpn, o); o += wpn.length;
   out[o++] = skill; out[o++] = (r.specials ? 1 : 0) | (r.gambit ? 2 : 0) | (r.stances ? 4 | (PICKS.indexOf(r.stances) << 3) : 0) | (r.pose ? 32 : 0) | (r.group ? 64 : 0) | (sheetMods ? 128 : 0); if (withArena) out[o++] = arenaCode; if (withPatron) out[o++] = r.patron ?? 0;
+  if (r.v >= FIRST_SPELL_VERSION) out[o++] = r.spell ? 1 : 0;   // the second flag byte (v53): bit 0 = a spell block follows the sheet block
   if (r.pose) for (const n of [r.pose.hero.x, r.pose.hero.z, r.pose.foe.x, r.pose.foe.z, r.pose.heroFacing]) { dv.setFloat32(o, n, true); o += 4; }
   if (r.group) {
     out[o++] = (r.group.index << 4) | r.group.n;
@@ -272,6 +283,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
     for (const [from, to] of r.group.held) { dv.setUint32(o, from, true); o += 4; dv.setUint32(o, to, true); o += 4; }
   }
   if (sheetMods) { const stats = DIALS.filter((st) => sheetMods[st.id]); out[o++] = stats.length; for (const st of stats) { out[o++] = st.code; out[o++] = sheetMods[st.id]!; } const cid = ascii(r.characterId ?? ''); out[o++] = cid.length; out.set(cid, o); o += cid.length; dv.setUint32(o, r.buildVersion ?? 0, true); o += 4; }
+  if (r.spell) { out[o++] = spellId.length; out.set(spellId, o); o += spellId.length; out[o++] = r.spell.skill; }
   out[o++] = level; dv.setUint32(o, r.seed >>> 0, true); o += 4; dv.setUint32(o, n, true); o += 4; out[o] = outcome;
   const col = (k: number) => head + k * n;
   let prevYaw = 0;
@@ -296,7 +308,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   const str = () => { const len = bytes[o++]; if (o + len > bytes.length) throw Error('Fight record: truncated'); let s = ''; for (let i = 0; i < len; i++) s += String.fromCharCode(bytes[o + i]); o += len; return s; };
   const build = str(), opponent = str() as OpponentId, weapon = str() as WeaponId;
   if (!PLAYER_WEAPONS.includes(weapon)) throw Error('Fight record: unknown weapon');   // the hero rig bakes blade tables for these only; an opponent-only weapon (maul, reaper) would throw inside the frame loop
-  if (o + 1 + (v >= FIRST_POSE_VERSION ? 20 : 0) + (v >= FIRST_GROUP_VERSION ? 1 : 0) + (v >= 21 ? 1 : 0) + (v >= FIRST_ARENA_VERSION ? 1 : 0) + (v >= FIRST_PATRON_VERSION ? 1 : 0) + 1 + 4 + 4 + 1 > bytes.length) throw Error('Fight record: truncated');
+  if (o + 1 + (v >= FIRST_POSE_VERSION ? 20 : 0) + (v >= FIRST_GROUP_VERSION ? 1 : 0) + (v >= 21 ? 1 : 0) + (v >= FIRST_ARENA_VERSION ? 1 : 0) + (v >= FIRST_PATRON_VERSION ? 1 : 0) + (v >= FIRST_SPELL_VERSION ? 1 : 0) + 1 + 4 + 4 + 1 > bytes.length) throw Error('Fight record: truncated');
   const skill = SKILLS[bytes[o++]];   // undefined past the table: an unknown skill is refused, never read as none
   if (skill === undefined) throw Error('Fight record: unknown skill');
   const flag = v >= 21 ? bytes[o++] : 0;   // before version 21 there is no byte: no specials
@@ -312,6 +324,10 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   if (v >= FIRST_ARENA_VERSION && bytes[o - 1] >= ARENAS.length) throw Error('Fight record: unknown arena');
   const patron = v >= FIRST_PATRON_VERSION ? bytes[o++] : 0;   // before version 32 there is no byte: no patron; a v32 record always names one (the writer never emits 32 without)
   if (v === FIRST_PATRON_VERSION && !patron) throw Error('Fight record: a version 32 record names a patron');
+  const flag2 = v >= FIRST_SPELL_VERSION ? bytes[o++]! : 0;   // the second flag byte (v53); before it there is none
+  if (flag2 > 1) throw Error('Fight record: unknown spell flag');
+  if (v === FIRST_SPELL_VERSION && !(flag2 & 1)) throw Error('Fight record: a version 53 record names its spell');
+  if (flag2 & 1 && !(flag & 1)) throw Error('Fight record: a spell without Special Moves');
   let pose: DuelPose | undefined;
   if (flag & 32) { const f = (): number => { const n = dv.getFloat32(o, true); o += 4; return n; }; pose = { hero: { x: f(), z: f() }, foe: { x: f(), z: f() }, heroFacing: f() }; try { validatePose(pose, false); } catch { throw Error('Fight record: unusable pose'); } }
   let group: RecordGroup | undefined;
@@ -347,6 +363,16 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
     if (len) { characterId = id; buildVersion = version; }
     if (buildRefBad({ sheet, ...(characterId !== undefined ? { characterId, buildVersion } : {}) }) || (!len && version)) throw Error('Fight record: unknown sheet');
   }
+  let spell: { id: string; skill: number } | undefined;
+  if (flag2 & 1) {
+    if (o + 1 > bytes.length) throw Error('Fight record: truncated');
+    const len = bytes[o++]!;
+    if (!len || len > 64 || o + len + 1 > bytes.length) throw Error('Fight record: unknown spell');
+    let id = ''; for (let k = 0; k < len; k++) id += String.fromCharCode(bytes[o + k]!); o += len;
+    const sk = bytes[o++]!;
+    if (!SPELL_ID.test(id) || sk > 100) throw Error('Fight record: unknown spell');
+    spell = { id, skill: sk };
+  }
   if (o + 1 + 4 + 4 + 1 > bytes.length) throw Error('Fight record: truncated');
   const level = bytes[o++], seed = dv.getUint32(o, true); o += 4; const n = dv.getUint32(o, true); o += 4; const outcome = OUTCOMES[bytes[o++]];
   if (level < 1 || level > LEVELS || !outcome) throw Error('Fight record: unknown level or outcome');
@@ -370,7 +396,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   }
   // The version PARSED, not the constant: returning `RECORD_VERSION` here would let a decode-then-repack silently relabel an older
   // record as this build's, and packRecord's guard above would then throw on a record this function had just called well-formed.
-  return { v: v as RecordVersion, build, opponent, weapon, ...(skill ? { skill } : {}), ...(arena ? { arena } : {}), level, seed, ...(flag & 1 ? { specials: true } : {}), ...(flag & 2 ? { gambit: true } : {}), ...(flag & 4 ? { stances: PICKS[(flag >> 3) & 3] } : {}), ...(patron ? { patron } : {}), ...(sheet ? { sheet } : {}), ...(characterId !== undefined ? { characterId, buildVersion } : {}), ...(pose ? { pose } : {}), ...(group ? { group } : {}), ticks: n, outcome, intents };
+  return { v: v as RecordVersion, build, opponent, weapon, ...(skill ? { skill } : {}), ...(arena ? { arena } : {}), level, seed, ...(flag & 1 ? { specials: true } : {}), ...(flag & 2 ? { gambit: true } : {}), ...(flag & 4 ? { stances: PICKS[(flag >> 3) & 3] } : {}), ...(patron ? { patron } : {}), ...(sheet ? { sheet } : {}), ...(characterId !== undefined ? { characterId, buildVersion } : {}), ...(pose ? { pose } : {}), ...(spell ? { spell } : {}), ...(group ? { group } : {}), ticks: n, outcome, intents };
 }
 
 // ---- transport: gzip + base64url (no padding). CompressionStream is in every browser the game targets and in Node ≥ 18. --------
