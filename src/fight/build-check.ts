@@ -8,7 +8,7 @@ export type Expected = { ok: true; sheet: Sheet | undefined } | { ok: false; rea
 
 // The loader is handed the stored character id (`pc:<record id>`).
 export const NO_BUILD = 'the record names a build version this server does not hold';
-const DEFAULT_BUILD: Build = { level: 1, placed: {} };
+const DEFAULT_BUILD: Build = { level: 0, placed: {} };
 
 // A record without a sheet needs nothing (sheet undefined, replayed as before). A sheet with no build reference claims the default build; one with a reference must find that exact
 // (character, version) or it is refused. `gear`: the dial deltas of what the server knows the character wore (none held yet, so callers pass {}: a geared record is refused).
