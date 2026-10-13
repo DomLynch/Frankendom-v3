@@ -1,0 +1,389 @@
+{
+ "titles": [
+  {
+   "id": "f0-k0",
+   "fameFloor": 0,
+   "karmaFloor": -15000,
+   "text": "the Outlaw",
+   "source": "Gragas, Icelandic law code (utlagr)"
+  },
+  {
+   "id": "f1-k0",
+   "fameFloor": 1250,
+   "karmaFloor": -15000,
+   "text": "the Oathbreaker",
+   "source": "Voluspa st. 39, oath-breakers in the river Slid"
+  },
+  {
+   "id": "f2-k0",
+   "fameFloor": 2500,
+   "karmaFloor": -15000,
+   "text": "the Kinslayer",
+   "source": "Apollodorus, Epitome: Atreus and Thyestes"
+  },
+  {
+   "id": "f3-k0",
+   "fameFloor": 5000,
+   "karmaFloor": -15000,
+   "text": "the Terrible",
+   "source": "Ivan IV 'Grozny', Russian chronicles"
+  },
+  {
+   "id": "f4-k0",
+   "fameFloor": 10000,
+   "karmaFloor": -15000,
+   "text": "the Impaler",
+   "source": "Vlad III, Chalkokondyles (Dom's exception, legends-rule)"
+  },
+  {
+   "id": "f0-k1",
+   "fameFloor": 0,
+   "karmaFloor": -10000,
+   "text": "the Cattle-Thief",
+   "source": "Homeric Hymn to Hermes (4)"
+  },
+  {
+   "id": "f1-k1",
+   "fameFloor": 1250,
+   "karmaFloor": -10000,
+   "text": "the Proud",
+   "source": "Tarquinius Superbus, Livy 1.49"
+  },
+  {
+   "id": "f2-k1",
+   "fameFloor": 2500,
+   "karmaFloor": -10000,
+   "text": "the Cruel",
+   "source": "Peter I of Castile, Ayala's chronicle"
+  },
+  {
+   "id": "f3-k1",
+   "fameFloor": 5000,
+   "karmaFloor": -10000,
+   "text": "the Proscriber",
+   "source": "Sulla, Plutarch, Life of Sulla"
+  },
+  {
+   "id": "f4-k1",
+   "fameFloor": 10000,
+   "karmaFloor": -10000,
+   "text": "the Tyrant",
+   "source": "Phalaris, Pindar, Pythian 1"
+  },
+  {
+   "id": "f0-k2",
+   "fameFloor": 0,
+   "karmaFloor": -5000,
+   "text": "the Railer",
+   "source": "Thersites, Iliad 2.212"
+  },
+  {
+   "id": "f1-k2",
+   "fameFloor": 1250,
+   "karmaFloor": -5000,
+   "text": "the Forsworn",
+   "source": "Laomedon, Ovid, Metamorphoses 11"
+  },
+  {
+   "id": "f2-k2",
+   "fameFloor": 2500,
+   "karmaFloor": -5000,
+   "text": "the Traitor",
+   "source": "Ganelon, Chanson de Roland"
+  },
+  {
+   "id": "f3-k2",
+   "fameFloor": 5000,
+   "karmaFloor": -5000,
+   "text": "the Betrayer",
+   "source": "Mordred, Geoffrey of Monmouth, Historia 11"
+  },
+  {
+   "id": "f4-k2",
+   "fameFloor": 10000,
+   "karmaFloor": -5000,
+   "text": "the Usurper",
+   "source": "Macbeth, Holinshed's Chronicles (1577)"
+  },
+  {
+   "id": "f0-k3",
+   "fameFloor": 0,
+   "karmaFloor": -2500,
+   "text": "the Sly",
+   "source": "Reynard the Fox, medieval beast epic"
+  },
+  {
+   "id": "f1-k3",
+   "fameFloor": 1250,
+   "karmaFloor": -2500,
+   "text": "the Unready",
+   "source": "Aethelred, Anglo-Saxon Chronicle (unraed, ill-advised)"
+  },
+  {
+   "id": "f2-k3",
+   "fameFloor": 2500,
+   "karmaFloor": -2500,
+   "text": "the Treacherous",
+   "source": "Sinon, Virgil, Aeneid 2"
+  },
+  {
+   "id": "f3-k3",
+   "fameFloor": 5000,
+   "karmaFloor": -2500,
+   "text": "the Bloodaxe",
+   "source": "Eric Bloodaxe, Heimskringla"
+  },
+  {
+   "id": "f4-k3",
+   "fameFloor": 10000,
+   "karmaFloor": -2500,
+   "text": "the Hard-Ruler",
+   "source": "Harald Hardrada, Heimskringla"
+  },
+  {
+   "id": "f0-k4",
+   "fameFloor": 0,
+   "karmaFloor": -1250,
+   "text": "the Churl",
+   "source": "Chaucer, Canterbury Tales (the Reeve's churl)"
+  },
+  {
+   "id": "f1-k4",
+   "fameFloor": 1250,
+   "karmaFloor": -1250,
+   "text": "the Crafty",
+   "source": "Sisyphus, Iliad 6.153"
+  },
+  {
+   "id": "f2-k4",
+   "fameFloor": 2500,
+   "karmaFloor": -1250,
+   "text": "the Bad",
+   "source": "Charles II of Navarre, Froissart's chronicles"
+  },
+  {
+   "id": "f3-k4",
+   "fameFloor": 5000,
+   "karmaFloor": -1250,
+   "text": "the Ill-Starred",
+   "source": "Oedipus, Sophocles, Oedipus Tyrannus"
+  },
+  {
+   "id": "f4-k4",
+   "fameFloor": 10000,
+   "karmaFloor": -1250,
+   "text": "the Harrier",
+   "source": "William I, Anglo-Saxon Chronicle 1069 (harrying of the North)"
+  },
+  {
+   "id": "f0-k5",
+   "fameFloor": 0,
+   "karmaFloor": -625,
+   "text": "",
+   "source": "no title (the neutral cell at the lowest fame)"
+  },
+  {
+   "id": "f1-k5",
+   "fameFloor": 1250,
+   "karmaFloor": -625,
+   "text": "the Wayfarer",
+   "source": "The Wanderer, Old English elegy"
+  },
+  {
+   "id": "f2-k5",
+   "fameFloor": 2500,
+   "karmaFloor": -625,
+   "text": "the Far-Famed",
+   "source": "Beowulf, 'widely famed'"
+  },
+  {
+   "id": "f3-k5",
+   "fameFloor": 5000,
+   "karmaFloor": -625,
+   "text": "the Renowned",
+   "source": "Beowulf (hildeprowess, 'renowned')"
+  },
+  {
+   "id": "f4-k5",
+   "fameFloor": 10000,
+   "karmaFloor": -625,
+   "text": "the Unforgotten",
+   "source": "Iliad 9.413, kleos aphthiton (fame unfading)"
+  },
+  {
+   "id": "f0-k6",
+   "fameFloor": 0,
+   "karmaFloor": 625,
+   "text": "the Hospitable",
+   "source": "Odyssey 14, Eumaeus"
+  },
+  {
+   "id": "f1-k6",
+   "fameFloor": 1250,
+   "karmaFloor": 625,
+   "text": "the Fair-Spoken",
+   "source": "Nestor, Iliad 1.248"
+  },
+  {
+   "id": "f2-k6",
+   "fameFloor": 2500,
+   "karmaFloor": 625,
+   "text": "the Peaceable",
+   "source": "Numa Pompilius, Livy 1"
+  },
+  {
+   "id": "f3-k6",
+   "fameFloor": 5000,
+   "karmaFloor": 625,
+   "text": "the Fair-Haired",
+   "source": "Harald Fairhair, Heimskringla"
+  },
+  {
+   "id": "f4-k6",
+   "fameFloor": 10000,
+   "karmaFloor": 625,
+   "text": "the Fair",
+   "source": "Philip IV 'le Bel', French chronicles"
+  },
+  {
+   "id": "f0-k7",
+   "fameFloor": 0,
+   "karmaFloor": 1250,
+   "text": "the Open-Handed",
+   "source": "Beowulf, the ring-giver king"
+  },
+  {
+   "id": "f1-k7",
+   "fameFloor": 1250,
+   "karmaFloor": 1250,
+   "text": "the Gentle",
+   "source": "Chaucer, Canterbury Tales ('verray, parfit gentil knyght')"
+  },
+  {
+   "id": "f2-k7",
+   "fameFloor": 2500,
+   "karmaFloor": 1250,
+   "text": "the Merciful",
+   "source": "Titus, Suetonius, Life of Titus"
+  },
+  {
+   "id": "f3-k7",
+   "fameFloor": 5000,
+   "karmaFloor": 1250,
+   "text": "the Munificent",
+   "source": "Cimon, Plutarch, Life of Cimon"
+  },
+  {
+   "id": "f4-k7",
+   "fameFloor": 10000,
+   "karmaFloor": 1250,
+   "text": "the Magnificent",
+   "source": "Lorenzo de' Medici, Machiavelli, Istorie fiorentine"
+  },
+  {
+   "id": "f0-k8",
+   "fameFloor": 0,
+   "karmaFloor": 2500,
+   "text": "the Steadfast",
+   "source": "Odysseus, Odyssey"
+  },
+  {
+   "id": "f1-k8",
+   "fameFloor": 1250,
+   "karmaFloor": 2500,
+   "text": "the Loyal",
+   "source": "Argos, Odyssey 17"
+  },
+  {
+   "id": "f2-k8",
+   "fameFloor": 2500,
+   "karmaFloor": 2500,
+   "text": "the Faithful",
+   "source": "Penelope, Odyssey"
+  },
+  {
+   "id": "f3-k8",
+   "fameFloor": 5000,
+   "karmaFloor": 2500,
+   "text": "the True",
+   "source": "Thomas the Rhymer, Scottish ballad"
+  },
+  {
+   "id": "f4-k8",
+   "fameFloor": 10000,
+   "karmaFloor": 2500,
+   "text": "the Just",
+   "source": "Aristides, Plutarch, Life of Aristides"
+  },
+  {
+   "id": "f0-k9",
+   "fameFloor": 0,
+   "karmaFloor": 5000,
+   "text": "the Brave",
+   "source": "Hector, Iliad"
+  },
+  {
+   "id": "f1-k9",
+   "fameFloor": 1250,
+   "karmaFloor": 5000,
+   "text": "the Bold",
+   "source": "Charles the Bold, Commynes, Memoires"
+  },
+  {
+   "id": "f2-k9",
+   "fameFloor": 2500,
+   "karmaFloor": 5000,
+   "text": "the Stout-Hearted",
+   "source": "Beowulf, the hero's heart-bold fight with Grendel"
+  },
+  {
+   "id": "f3-k9",
+   "fameFloor": 5000,
+   "karmaFloor": 5000,
+   "text": "the Lionhearted",
+   "source": "Richard I, Gesta Regis Henrici Secundi"
+  },
+  {
+   "id": "f4-k9",
+   "fameFloor": 10000,
+   "karmaFloor": 5000,
+   "text": "the Unvanquished",
+   "source": "Leonidas, Herodotus 7"
+  },
+  {
+   "id": "f0-k10",
+   "fameFloor": 0,
+   "karmaFloor": 10000,
+   "text": "the Good",
+   "source": "Philip the Good of Burgundy, Chastellain's chronicle"
+  },
+  {
+   "id": "f1-k10",
+   "fameFloor": 1250,
+   "karmaFloor": 10000,
+   "text": "the Wise",
+   "source": "Alfonso X, Castilian chronicles"
+  },
+  {
+   "id": "f2-k10",
+   "fameFloor": 2500,
+   "karmaFloor": 10000,
+   "text": "the Magnanimous",
+   "source": "Alfonso V of Aragon, Facio, De rebus gestis"
+  },
+  {
+   "id": "f3-k10",
+   "fameFloor": 5000,
+   "karmaFloor": 10000,
+   "text": "the Olympian",
+   "source": "Pericles, Plutarch, Life of Pericles 8"
+  },
+  {
+   "id": "f4-k10",
+   "fameFloor": 10000,
+   "karmaFloor": 10000,
+   "text": "the Great",
+   "source": "Alfred, Asser, Life of King Alfred"
+  }
+ ]
+}
