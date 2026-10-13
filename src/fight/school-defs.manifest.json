@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "school",
+      "file": "school-defs.json",
+      "at": "schools",
+      "key": "id",
+      "required": {
+        "color": "string"
+      }
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import WEAPON_DEFS from './weapon-defs.json' with { type: 'json' };
 import SKILL_DEFS from './skill-defs.json' with { type: 'json' };
 import { loadSkillDefs } from './skills.ts';
 import { loadWeaponDefs, type WeaponLook } from './weapons.ts';
+import { DAMAGE_KIND_IDS } from './damage-kinds.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 export type { OpponentId, RigId } from '../roster.ts';
@@ -59,6 +60,7 @@ export type MoveDef = Timing & {
   reach: number;                  // AI range estimate for swords; the actual cone for kicks
   minReach?: number;              // a blow started inside this gap meets nothing (a pole's point: the tines drive past the target); absent = 0
   vsGuard: { stagger: number; staminaDamage: number } | null;  // kick against a standing guard
+  damageKind?: string;            // a row id of damage-kind-defs.json (slash drains stamina, crush adds posture, pierce ignores armour; damage-kinds.ts); absent = the plain blow, byte for byte
 };
 
 const light = (id: 'light_right' | 'light_left', direction: Direction): MoveDef => ({
@@ -268,7 +270,7 @@ export type Weapon = { id: WeaponId; moves: Record<MoveId, MoveDef>; paths: Reco
 };
 // The weapons are DATA now (core slice 4): src/fight/weapon-defs.json, resolved over the engine's base MOVES / PATHS by the loader in weapons.ts. The named exports below are the same objects the
 // tests and scripts have always imported; each is a row of the loaded table.
-const LOADED = loadWeaponDefs(WEAPON_DEFS, { moves: MOVES, paths: PATHS }, { materials: MATERIALS, guards: GUARDS, grips: GRIPS });
+const LOADED = loadWeaponDefs(WEAPON_DEFS, { moves: MOVES, paths: PATHS }, { materials: MATERIALS, guards: GUARDS, grips: GRIPS, kinds: DAMAGE_KIND_IDS });
 // The skills are DATA too (core slice 5): src/fight/skill-defs.json, loaded by skills.ts. SKILL_MOVE is the one place a skill meets its MoveDef (duel.ts chooseMove, legal); SKILL_BY_CODE is the record codec's table.
 const SKILLS_LOADED = loadSkillDefs(SKILL_DEFS, MOVES);
 export const SKILL_ROWS = SKILLS_LOADED.rows;

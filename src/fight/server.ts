@@ -11,9 +11,14 @@ export * from './gambit.ts';
 export * from './gear-stats.ts';
 export * from './play-radius.ts';
 export { underRecord } from './detmath.ts';
+export { validateBuild } from './sheet-rows.ts';   // the build field's one validation seam (origins/server/build.ts)
+export type { Sheet } from './sheet-rows.ts';
+export { expectedSheet, NO_BUILD, type BuildLoader } from './build-check.ts';   // a record's build reference -> the sheet it must fight with (sweeps, encounter settle)
 export { setStab, STAB_ON } from './stab-rule.ts';
 export { AFTER_HIT_TICKS, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow, type KitRow } from './mobkit.ts';
 export { SPEEDS } from './speeds.ts';
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
 export { PORTRAIT_KEYS } from '../legends.ts';
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
+export * from './weapon-skills.ts';
+export * from './boss-spells.ts';

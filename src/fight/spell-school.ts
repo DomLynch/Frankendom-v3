@@ -1,10 +1,10 @@
 import * as THREE from 'three';
+import { SCHOOLS, type School } from './schools.ts';
 
 // One colour per spell school (Strategy brief #1507 item 4: WoW, EverQuest). A LOOK TEST behind `?look=schools`, presentation only: no sim, no new particles, no
 // new files in the default path. Every special's effect (trail, ground mark, status tint) is drawn in its own scene group (special-presentation.ts); with the flag on
 // each material in that group is pulled to its school's colour, so a busy fight reads on a phone by colour. Specials with no school here keep their own colours.
-export type School = 'fire' | 'shadow' | 'poison' | 'holy' | 'frost';
-export const SCHOOLS: Readonly<Record<School, string>> = { fire: '#ff7a1f', shadow: '#8a4fe0', poison: '#6fd13a', holy: '#f4cd4a', frost: '#9ad4ff' };
+export { SCHOOLS, type School };   // the schools are rows (school-defs.json, schools.ts), not a union
 // Keyed by the special's id (special-identity.ts / class-special-identity.ts). One line per special, so Strategy can re-map in review.
 export const SCHOOL_OF: Readonly<Record<string, School>> = {
   surtr: 'fire', haze: 'fire', wake: 'fire',                          // Ash Fall, Achilles' wrath, the Witch's wake

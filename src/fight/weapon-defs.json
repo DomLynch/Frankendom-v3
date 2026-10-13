@@ -2,7 +2,7 @@
   "about": "Weapon DEFINITIONS (data, Combat 2026-10-12; Dom: everything as data). One row per weapon keyed by id. A row may `extends` another weapon and then holds only the fields that differ (objects merge field by field, anything else replaces); a base row holds its whole table. moves: MoveId -> MoveDef numbers; paths: PathId -> clip and timings; player/offered are the 1-based order of PLAYER_WEAPONS / PLAYER_WEAPONS_OFFERED. The engine verbs (MoveId, PathId, Direction, Material, Grip, guard kinds) stay code; a new weapon is one row here. Loader: src/fight/weapons.ts. Row markers, never inherited and never on the resolved Weapon (so they cannot move a fight): `default` (exactly one row: the weapon a fighter gets when none is named), `natural` (a creature's own weapon, not a player item), `look` (presentation flags: baked, pommelBash, lowerArm, stabs).",
   "weapons": [
   {
-    "id": "longsword",
+    "id": "longsword", "skill": "sword",
     "default": true, "look": {"baked": true, "pommelBash": true},
     "player": 1,
     "offered": 1,
@@ -19,7 +19,7 @@
     }
   },
   {
-    "id": "trident",
+    "id": "trident", "skill": "spear",
     "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 7,
@@ -54,7 +54,7 @@
     "fight": {"thrustShare":0.6,"close":1.4}
   },
   {
-    "id": "cleaver",
+    "id": "cleaver", "skill": "axe",
     "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 2,
@@ -86,7 +86,7 @@
     "fight": {"thrustShare":0.1}
   },
   {
-    "id": "estoc",
+    "id": "estoc", "skill": "sword",
     "look": {"pommelBash": true, "stabs": true},
     "extends": "longsword",
     "player": 4,
@@ -109,7 +109,7 @@
     "fight": {"thrustShare":0.75}
   },
   {
-    "id": "knife",
+    "id": "knife", "skill": "sword",
     "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 3,
@@ -142,7 +142,7 @@
     "fight": {"thrustShare":0.4,"close":1}
   },
   {
-    "id": "gladius",
+    "id": "gladius", "skill": "sword",
     "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 5,
@@ -164,7 +164,7 @@
     "fight": {"thrustShare":0.5,"close":1}
   },
   {
-    "id": "scythe",
+    "id": "scythe", "skill": "axe",
     "extends": "longsword",
     "player": 8,
     "offered": 4,
@@ -194,7 +194,7 @@
     "fight": {"thrustShare":0.1,"close":2}
   },
   {
-    "id": "maul",
+    "id": "maul", "skill": "axe",
     "look": {"pommelBash": true},
     "extends": "cleaver",
     "player": 9,
@@ -219,7 +219,7 @@
     "grip": "two-hand"
   },
   {
-    "id": "reaper",
+    "id": "reaper", "skill": "axe",
     "look": {"lowerArm": false},
     "extends": "estoc",
     "moves": {
@@ -251,7 +251,7 @@
     "fight": {"thrustShare":0.15,"close":1.9}
   },
   {
-    "id": "warhammer",
+    "id": "warhammer", "skill": "axe",
     "look": {"pommelBash": true},
     "extends": "cleaver",
     "player": 6,

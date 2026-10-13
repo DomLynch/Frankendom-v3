@@ -1,0 +1,1604 @@
+{
+ "spells": [
+  {
+   "id": "spell:apis-bull",
+   "boss": "apis-bull",
+   "boss_name": "Apis the Sacred Bull",
+   "name": "Sacred Bull's Charge",
+   "school": "earth",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Herodotus, Histories III",
+   "story": "The black bull with the white blaze is carried in procession, and charges when crossed.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bashmu",
+   "boss": "bashmu",
+   "boss_name": "Bashmu the Horned Viper",
+   "name": "Horned Viper",
+   "school": "poison",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "Tiamat's horned viper rears up on its forelegs and strikes.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:girtablilu",
+   "boss": "girtablilu",
+   "boss_name": "Girtablilu Scorpion-Man",
+   "name": "Gate of the Sun",
+   "school": "earth",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Epic of Gilgamesh IX",
+   "story": "The scorpion-man guards the mountain gate of the sun and will not let a mortal pass.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kusarikku",
+   "boss": "kusarikku",
+   "boss_name": "Kusarikku the Bull-Man",
+   "name": "Bull-Man's Charge",
+   "school": "earth",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "A bull-man who holds up the gate of the sun lowers his head and charges.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:scarab-khepri",
+   "boss": "scarab-khepri",
+   "boss_name": "Scarab of Khepri",
+   "name": "Dung-Ball Dawn",
+   "school": "earth",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Book of the Dead)",
+   "story": "The beetle rolls the sun up each dawn, and the dust it raises blinds the fighter.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sepa",
+   "boss": "sepa",
+   "boss_name": "Sepa the Centipede",
+   "name": "Hundred Legs",
+   "school": "poison",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The centipede of the tombs bites, and the bite creeps on long after.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:serket-scorpion",
+   "boss": "serket-scorpion",
+   "boss_name": "Serket's Scorpion",
+   "name": "Sting of Serket",
+   "school": "poison",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The scorpion-goddess's servant lashes its tail at anyone who steps carelessly.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shedu",
+   "boss": "shedu",
+   "boss_name": "Shedu of the Gate",
+   "name": "Warden's Stare",
+   "school": "holy",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "The winged bull-guardian of the palace gate looks at every visitor and does not blink.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ugallu",
+   "boss": "ugallu",
+   "boss_name": "Ugallu the Storm-Demon",
+   "name": "Storm-Demon's Roar",
+   "school": "wind",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "The lion-headed storm-demon brings the gale down on the fighter.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:utukku",
+   "boss": "utukku",
+   "boss_name": "Utukku the Wandering Dead",
+   "name": "Wandering Dead",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "A restless ghost of the desert follows the fighter, and the air chills.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:athtar",
+   "boss": "athtar",
+   "boss_name": "Athtar the Pretender",
+   "name": "Empty Throne",
+   "school": "fire",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "He tried the throne of Baal, found his feet too short for it, and fights from the floor.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:girra",
+   "boss": "girra",
+   "boss_name": "Girra the Fire-Reed",
+   "name": "Fire in the Reeds",
+   "school": "fire",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "The fire of the reed-huts leaps from stalk to stalk and across the sand.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:khonsu",
+   "boss": "khonsu",
+   "boss_name": "Khonsu the Traveller",
+   "name": "Moon-Traveller's Blade",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts (Cannibal Hymn)",
+   "story": "The moon-traveller walks the night with a knife for those who cross him.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mafdet",
+   "boss": "mafdet",
+   "boss_name": "Mafdet the Panther",
+   "name": "Panther's Claw",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The swift killer of snakes leaps, and her claws come down before the shadow does.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mehen",
+   "boss": "mehen",
+   "boss_name": "Mehen the Coiled",
+   "name": "Coil of Mehen",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Amduat",
+   "story": "The serpent who coils round the sun's boat in the night tightens its body round the fighter.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mushussu",
+   "boss": "mushussu",
+   "boss_name": "Mushussu the Dragon",
+   "name": "Scaled Dragon's Bite",
+   "school": "poison",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "The serpent-dragon on the walls of Babylon steps out of the brick and bites.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shapash",
+   "boss": "shapash",
+   "boss_name": "Shapash the Torch",
+   "name": "Torch of the Gods",
+   "school": "fire",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "The sun-goddess lights the way to the underworld and burns whoever steps in front.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:taweret",
+   "boss": "taweret",
+   "boss_name": "Taweret the Hippo",
+   "name": "Birth-Guard Stomp",
+   "school": "earth",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The guardian of mothers rears on her hind legs and stamps at any threat.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:wadjet",
+   "boss": "wadjet",
+   "boss_name": "Wadjet the Spitting Cobra",
+   "name": "Cobra's Spit",
+   "school": "poison",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The cobra on the king's brow rears and spits, and the venom stings the eyes.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:wepwawet",
+   "boss": "wepwawet",
+   "boss_name": "Wepwawet the Opener",
+   "name": "Opener of Ways",
+   "school": "wind",
+   "level": 2,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The wolf who opens the roads runs ahead, and the wind runs with him.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:alu",
+   "boss": "alu",
+   "boss_name": "Alû the Night-Stalker",
+   "name": "Night-Stalker's Cling",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "A night demon that clings to the sleeper like a cloak, and to the fighter in the dark.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bastet",
+   "boss": "bastet",
+   "boss_name": "Bastet of the Hearth",
+   "name": "Hearth-Cat's Fury",
+   "school": "fire",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The cat of the household fire spits sparks when the home is threatened.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gula",
+   "boss": "gula",
+   "boss_name": "Gula the Healer",
+   "name": "Hound's Healing",
+   "school": "holy",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "The healer-goddess comes with her hound, and the same hand that mends can strike.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:namtar",
+   "boss": "namtar",
+   "boss_name": "Namtar the Fate-Bringer",
+   "name": "Plague of Fate",
+   "school": "poison",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "The vizier of the underworld sends sixty diseases against the living.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nehebkau",
+   "boss": "nehebkau",
+   "boss_name": "Nehebkau the Binder",
+   "name": "Binder's Serpent",
+   "school": "poison",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The serpent who ties the limbs together coils round the fighter's arm.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:neith",
+   "boss": "neith",
+   "boss_name": "Neith the Weaver",
+   "name": "Weaver's Arrows",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The old warrior-goddess weaves the world and shoots two arrows from the loom.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:neti",
+   "boss": "neti",
+   "boss_name": "Neti the Gatekeeper",
+   "name": "Seven Gates",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Descent of Inanna",
+   "story": "The gatekeeper strips one garment at each of the seven gates, and he is hard to pass.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shamash",
+   "boss": "shamash",
+   "boss_name": "Shamash the Judge-Sun",
+   "name": "Noon Judgement",
+   "school": "holy",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Code of Hammurabi",
+   "story": "The sun sees every deed from the top of the sky, and judges the fighter in its light.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sobek",
+   "boss": "sobek",
+   "boss_name": "Sobek the Crocodile Lord",
+   "name": "Jaws of the Nile",
+   "school": "earth",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The lord of the river lies still as a log and then seizes whatever stands in the shallows.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yarikh",
+   "boss": "yarikh",
+   "boss_name": "Yarikh the Moon",
+   "name": "Pale Crescent",
+   "school": "frost",
+   "level": 3,
+   "region": "region:black-sand",
+   "source": "Ugaritic myth",
+   "story": "The moon of the Canaanite sky sheds a pale light, and the cold edge of the crescent.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:adapa",
+   "boss": "adapa",
+   "boss_name": "Adapa the Wind-Breaker",
+   "name": "Broken Wing of the South",
+   "school": "wind",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Myth of Adapa",
+   "story": "The sage who broke the wing of the south wind lets its remains loose on the fighter.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:anat",
+   "boss": "anat",
+   "boss_name": "Anat the Warrior",
+   "name": "Wading in Blood",
+   "school": "fire",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "The warrior-goddess wades knee-deep in a battle, laughing, and the hall burns.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dumuzi",
+   "boss": "dumuzi",
+   "boss_name": "Dumuzi the Shepherd",
+   "name": "Shepherd's Return",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Descent of Inanna",
+   "story": "The shepherd is dragged to the underworld for half the year and returns bitter.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:etana",
+   "boss": "etana",
+   "boss_name": "Etana the Eagle-Rider",
+   "name": "Eagle's Flight",
+   "school": "wind",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth",
+   "story": "The shepherd-king rides an eagle up to the heavens, and the eagle's wings beat down.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hathor",
+   "boss": "hathor",
+   "boss_name": "Hathor of the Turquoise",
+   "name": "Turquoise Gaze",
+   "school": "holy",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The lady of the turquoise looks upon the fighter, and the look is heavy as stone.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:khnum",
+   "boss": "khnum",
+   "boss_name": "Khnum the Potter",
+   "name": "Clay on the Wheel",
+   "school": "earth",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The ram-headed potter shapes gods and mortals on his wheel, and the clay is heavy.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lugalbanda",
+   "boss": "lugalbanda",
+   "boss_name": "Lugalbanda in the Cave",
+   "name": "Mountain Cave",
+   "school": "earth",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Sumerian epic",
+   "story": "A lonely soldier left sick in a mountain cave rises, and the mountain rises with him.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:montu",
+   "boss": "montu",
+   "boss_name": "Montu the Falcon-War",
+   "name": "War-Falcon's Dive",
+   "school": "fire",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The falcon-headed god of war dives with a spear at any who march against the king.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shalim",
+   "boss": "shalim",
+   "boss_name": "Shalim of Dusk",
+   "name": "Dusk's Fall",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Ugaritic myth",
+   "story": "The god of evening brings down the dusk, and the light goes first.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:utnapishtim",
+   "boss": "utnapishtim",
+   "boss_name": "Utnapishtim the Far-Away",
+   "name": "Flood Survivor",
+   "school": "frost",
+   "level": 4,
+   "region": "region:black-sand",
+   "source": "Epic of Gilgamesh XI",
+   "story": "The man who survived the flood at the end of the world greets the fighter with cold water.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ammit",
+   "boss": "ammit",
+   "boss_name": "Ammit the Devourer",
+   "name": "Heart Devoured",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Egyptian Book of the Dead",
+   "story": "The devourer waits by the scales, and any heart heavier than a feather is hers.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:geb",
+   "boss": "geb",
+   "boss_name": "Geb the Earth-Father",
+   "name": "Earth Laughs",
+   "school": "earth",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The earth-father laughs and the ground shakes in time with it.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ishtar",
+   "boss": "ishtar",
+   "boss_name": "Ishtar of Arbela",
+   "name": "Star-Lion's Roar",
+   "school": "fire",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Assyrian myth",
+   "story": "The star-goddess rides a lion and battle follows her at the heels.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:isis",
+   "boss": "isis",
+   "boss_name": "Isis the Enchantress",
+   "name": "Secret Name",
+   "school": "holy",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Papyrus Turin)",
+   "story": "She learned Ra's secret name, and the name now rings through the fighter.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lamashtu",
+   "boss": "lamashtu",
+   "boss_name": "Lamashtu the Seizer",
+   "name": "Seizer's Touch",
+   "school": "poison",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Assyrian myth",
+   "story": "The lion-headed demoness seizes what she can and the touch burns like fever.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nanna",
+   "boss": "nanna",
+   "boss_name": "Nanna the Moon-Lord",
+   "name": "Moonlit Cold",
+   "school": "frost",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Sumerian myth",
+   "story": "The moon of Ur rises over the sand and the night turns cold.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nephthys",
+   "boss": "nephthys",
+   "boss_name": "Nephthys the Mourner",
+   "name": "Mourner's Veil",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The lady of the house mourns beside the dead, and her veil is a shade.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ninhursag",
+   "boss": "ninhursag",
+   "boss_name": "Ninhursag of the Mountain",
+   "name": "Mountain Mother",
+   "school": "earth",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Sumerian myth",
+   "story": "The mother of the mountains brings the foothills to the fight.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pazuzu",
+   "boss": "pazuzu",
+   "boss_name": "Pazuzu of the South Wind",
+   "name": "South Wind's Scour",
+   "school": "wind",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Assyrian myth",
+   "story": "The king of the wind-demons blows from the south with a hot, dry sandstorm.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:thoth",
+   "boss": "thoth",
+   "boss_name": "Thoth the Ibis",
+   "name": "Ibis's Reckoning",
+   "school": "wind",
+   "level": 5,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The scribe of the gods tallies the fighter's strokes in the air, and wind scatters them.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:anzu",
+   "boss": "anzu",
+   "boss_name": "Anzu the Storm-Bird",
+   "name": "Stolen Tablets",
+   "school": "wind",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Mesopotamian myth (Epic of Anzu)",
+   "story": "The great bird stole the Tablets of Destiny and beats the air with them in his claws.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:apsu",
+   "boss": "apsu",
+   "boss_name": "Apsu of the Sweet Water",
+   "name": "Sweet Waters Still",
+   "school": "frost",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "The father of the gods lies still beneath the earth, and still water is cold.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kingu",
+   "boss": "kingu",
+   "boss_name": "Kingu the Consort",
+   "name": "Tablet of Fate",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "Tiamat's consort wears the Tablet of Destiny on his chest, and the chest is a shield.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lotan",
+   "boss": "lotan",
+   "boss_name": "Lotan the Seven-Headed",
+   "name": "Seven Heads",
+   "school": "poison",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "The coiling seven-headed serpent of the sea strikes with every head.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mot",
+   "boss": "mot",
+   "boss_name": "Mot, Son of El",
+   "name": "Throat of Death",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "The god of death opens a throat wide as the earth and the sky, and the dead go in.",
+   "bricks": {
+    "root": "harvest",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mummu",
+   "boss": "mummu",
+   "boss_name": "Mummu the Counsellor",
+   "name": "Whisper of Mummu",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "He whispers evil counsel to Apsu, and the whisper runs on to the fighter.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nut",
+   "boss": "nut",
+   "boss_name": "Nut the Sky",
+   "name": "Star-Strewn Fall",
+   "school": "wind",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The sky arches over the earth and lowers herself, and the stars fall off her body.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shu",
+   "boss": "shu",
+   "boss_name": "Shu the Air",
+   "name": "Breath of Shu",
+   "school": "wind",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The air himself holds the sky from the earth, and the breath behind him is a gale.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tefnut",
+   "boss": "tefnut",
+   "boss_name": "Tefnut the Lioness",
+   "name": "Raging Lioness",
+   "school": "fire",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The lioness-goddess left Egypt in a rage and burns the desert on her way home.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:yam",
+   "boss": "yam",
+   "boss_name": "Yam, Prince Sea",
+   "name": "Sea's Fury",
+   "school": "frost",
+   "level": 6,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "The prince of the sea rises in a cold wave against the god of storm.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:aken",
+   "boss": "aken",
+   "boss_name": "Aken the Ferryman",
+   "name": "Ferryman's Pole",
+   "school": "holy",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The ferryman of the dead poles the boat of the sun across, and strikes with the pole.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:armaros",
+   "boss": "armaros",
+   "boss_name": "Armaros the Spell-Breaker",
+   "name": "Unbinding Word",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "1 Enoch",
+   "story": "A fallen watcher who taught the unbinding of spells, he unpicks the fighter's guard.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:azazel",
+   "boss": "azazel",
+   "boss_name": "Azazel the Fallen",
+   "name": "Bound in the Desert",
+   "school": "fire",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "1 Enoch",
+   "story": "A fallen watcher of the old tales, bound in a pit in the desert, he rises with a handful of ash.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gugalanna",
+   "boss": "gugalanna",
+   "boss_name": "Gugalanna Bull of Heaven",
+   "name": "Heaven's Bull",
+   "school": "fire",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "Epic of Gilgamesh VI",
+   "story": "Ishtar sent the Bull of Heaven against Uruk, and each snort opened a pit under the hero.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kokabiel",
+   "boss": "kokabiel",
+   "boss_name": "Kokabiel the Star-Reader",
+   "name": "Falling Star",
+   "school": "fire",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "1 Enoch",
+   "story": "A fallen watcher of the old tales, a reader of the stars, he calls one down.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ninurta",
+   "boss": "ninurta",
+   "boss_name": "Ninurta the Hunter",
+   "name": "Hunter's Mace",
+   "school": "earth",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "Epic of Anzu",
+   "story": "The hero-god of the plough hurls his mace Sharur at the fighter.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ramiel",
+   "boss": "ramiel",
+   "boss_name": "Ramiel the Thunderer",
+   "name": "Thunder-Thrown",
+   "school": "wind",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "1 Enoch",
+   "story": "A fallen watcher of the old tales, he brings the thunder to the fight.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:semjaza",
+   "boss": "semjaza",
+   "boss_name": "Semjaza the Leader",
+   "name": "Oath on Hermon",
+   "school": "fire",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "1 Enoch",
+   "story": "A fallen watcher from the old tales, he swore the oath on the mountain, and the oath burns him.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sokar",
+   "boss": "sokar",
+   "boss_name": "Sokar of the Rosetau",
+   "name": "Sand of Sokar",
+   "school": "earth",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "Amduat",
+   "story": "The falcon-lord of the sand-covered road in the Duat guards the road below.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tamiel",
+   "boss": "tamiel",
+   "boss_name": "Tamiel of the Deep",
+   "name": "Deep's Chill",
+   "school": "frost",
+   "level": 7,
+   "region": "region:black-sand",
+   "source": "1 Enoch",
+   "story": "A fallen watcher of the old tales, he comes up from the deep with the chill of the abyss.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:apep",
+   "boss": "apep",
+   "boss_name": "Apep the Serpent of Chaos",
+   "name": "Coil of Chaos",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Book of Gates)",
+   "story": "Each night the sun's boat meets the great serpent, who coils round the dark.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:asag-stone",
+   "boss": "asag-stone",
+   "boss_name": "Asag the Stone-Demon",
+   "name": "Stone Fever",
+   "school": "earth",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Sumerian myth (Lugale)",
+   "story": "The demon of the hills and the stone, killed by Ninurta, brings the mountain down with a fever of rock.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:baal-hadad",
+   "boss": "baal-hadad",
+   "boss_name": "Hadad, Rider of Clouds",
+   "name": "Storm-Rider",
+   "school": "wind",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "The storm-god rides the clouds with a mace in each hand, thunder at his heels.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dagan",
+   "boss": "dagan",
+   "boss_name": "Dagan the Grain-Lord",
+   "name": "Harvest-Lord's Flail",
+   "school": "earth",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Ugaritic myth",
+   "story": "The lord of grain brings the flail down on the threshing floor.",
+   "bricks": {
+    "root": "harvest",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:enki",
+   "boss": "enki",
+   "boss_name": "Enki of the Abzu",
+   "name": "Abzu's Cool Hand",
+   "school": "frost",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Sumerian myth",
+   "story": "The god of the deep sweet water brings the cold of the deep.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:enlil",
+   "boss": "enlil",
+   "boss_name": "Enlil of the Breath",
+   "name": "Winds of Enlil",
+   "school": "wind",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Sumerian myth",
+   "story": "The lord of the air, with the Tablet at his waist, sends the flood-wind.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:heka",
+   "boss": "heka",
+   "boss_name": "Heka the Magic",
+   "name": "Spoken Spell",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The god of magic, who is behind every word, speaks and the spell goes through the fighter.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kur",
+   "boss": "kur",
+   "boss_name": "Kur the Dragon",
+   "name": "Coil under the World",
+   "school": "earth",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Sumerian myth",
+   "story": "The dragon beneath the earth carried off the sky-queen, and the ground heaves.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mut",
+   "boss": "mut",
+   "boss_name": "Mut the Vulture Mother",
+   "name": "Vulture Wings",
+   "school": "wind",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The vulture-mother spreads her great wings and the wind beats down.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:seshemu",
+   "boss": "seshemu",
+   "boss_name": "Seshemu the Winepress",
+   "name": "Press of Seshemu",
+   "school": "fire",
+   "level": 8,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The pharaoh's winepress-god crushes the heads of the damned and the wine runs red.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:amun",
+   "boss": "amun",
+   "boss_name": "Amun the Hidden",
+   "name": "Hidden Wind",
+   "school": "wind",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The hidden god comes as an unseen wind that fills the sails and the sand.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:anu",
+   "boss": "anu",
+   "boss_name": "Anu the Sky-Father",
+   "name": "Sky-Father's Throne",
+   "school": "holy",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Sumerian myth",
+   "story": "The father of the gods sits on the highest heaven, and the heaven bears down.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ashur",
+   "boss": "ashur",
+   "boss_name": "Ashur of the Winged Disc",
+   "name": "Winged Disc",
+   "school": "holy",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Assyrian myth",
+   "story": "The god of Assyria flies in a winged disc above the army and looks down.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:el",
+   "boss": "el",
+   "boss_name": "Ilu the Bull Father",
+   "name": "Bull's Decree",
+   "school": "holy",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Ugaritic Baal Cycle",
+   "story": "The old god on the mountain at the sources of the rivers speaks, and it is done.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hapi",
+   "boss": "hapi",
+   "boss_name": "Hapi of the Flood",
+   "name": "Nile Flood",
+   "school": "earth",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The god of the flood rises from the caves of the Nile and covers the fields.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:horus",
+   "boss": "horus",
+   "boss_name": "Horus the Falcon",
+   "name": "Falcon's Eye",
+   "school": "holy",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Contendings of Horus and Set",
+   "story": "The falcon-god flies up with the sun in one eye and the moon in the other.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:marduk",
+   "boss": "marduk",
+   "boss_name": "Marduk of the Four Winds",
+   "name": "Storm Net",
+   "school": "wind",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "The champion of Babylon casts his net over Tiamat and sends the four winds against the fighter.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:osiris",
+   "boss": "osiris",
+   "boss_name": "Osiris the Drowned King",
+   "name": "Green King's Ruling",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Plutarch)",
+   "story": "The king who was cut apart and put together again sits on the throne of the dead.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ra",
+   "boss": "ra",
+   "boss_name": "Ra the Noon Sun",
+   "name": "Noon Blaze",
+   "school": "fire",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The sun-god at midday opens his eye and the desert flares.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tiamat",
+   "boss": "tiamat",
+   "boss_name": "Tiamat the Salt Sea",
+   "name": "Salt Mother",
+   "school": "poison",
+   "level": 9,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "The salt sea, mother of the gods, swells with serpents and storm.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:amunet",
+   "boss": "amunet",
+   "boss_name": "Amunet the Hidden Lady",
+   "name": "Hidden Veil",
+   "school": "wind",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Ogdoad)",
+   "story": "The hidden lady of the primeval Ogdoad is unseen, and the wind speaks for her.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:anshar",
+   "boss": "anshar",
+   "boss_name": "Anshar the Sky-Whole",
+   "name": "Whole Sky",
+   "school": "wind",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "The whole of the sky born of the first silt is a wind without edges.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:atum",
+   "boss": "atum",
+   "boss_name": "Atum the Complete",
+   "name": "Self-Made Flame",
+   "school": "fire",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The self-created god on the first mound spat out the air and the moisture.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:benben",
+   "boss": "benben",
+   "boss_name": "Benben the First Mound",
+   "name": "First Mound",
+   "school": "earth",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Pyramid Texts",
+   "story": "The first mound, which rose from the waters, rises once more under the fighter.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:heh",
+   "boss": "heh",
+   "boss_name": "Heh the Infinite",
+   "name": "Endless Breath",
+   "school": "wind",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Ogdoad)",
+   "story": "The infinite holds up the sky, and a wind blows for ever through him.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kek",
+   "boss": "kek",
+   "boss_name": "Kek the Darkness",
+   "name": "Primeval Dark",
+   "school": "shadow",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Ogdoad)",
+   "story": "The darkness before the sun comes down on the field.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kishar",
+   "boss": "kishar",
+   "boss_name": "Kishar the Earth-Whole",
+   "name": "Whole Earth",
+   "school": "earth",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Enuma Elish",
+   "story": "The whole of the earth born of the first silt is a ground without end.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mehetweret",
+   "boss": "mehetweret",
+   "boss_name": "Mehet-Weret the Great Flood",
+   "name": "Cow of the Flood",
+   "school": "holy",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Egyptian myth",
+   "story": "The great flood, a cow, bears the sun up between her horns.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nammu",
+   "boss": "nammu",
+   "boss_name": "Nammu the Primeval Sea",
+   "name": "Mother Sea",
+   "school": "frost",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Sumerian myth",
+   "story": "The sea that gave birth to heaven and earth heaves up, cold and green.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nun",
+   "boss": "nun",
+   "boss_name": "Nun the Primeval Waters",
+   "name": "Waters of Nun",
+   "school": "frost",
+   "level": 10,
+   "region": "region:black-sand",
+   "source": "Egyptian myth (Memphite theology)",
+   "story": "The dark, boundless water before creation stands behind the fighter.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  }
+ ]
+}

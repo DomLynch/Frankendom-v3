@@ -1,0 +1,1412 @@
+{
+ "spells": [
+  {
+   "id": "spell:eloko",
+   "boss": "eloko",
+   "boss_name": "Eloko the Forest Dwarf",
+   "name": "Dwarf's Bell",
+   "school": "earth",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Mwindo Epic (Nyanga tradition)",
+   "story": "A tiny forest dweller with grass on his body and a bell on his arm, who lures hunters off the path.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kalanoro",
+   "boss": "kalanoro",
+   "boss_name": "Kalanoro the Forest Dwarf",
+   "name": "Forest Dwarf's Hex",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Malagasy folklore (Ellis, History of Madagascar)",
+   "story": "A small hairy forest dweller with backward feet who steals the unwary's rice.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kehua",
+   "boss": "kehua",
+   "boss_name": "Kehua the Wandering Ghost",
+   "name": "Wandering Ghost",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A restless ghost that wanders the forest paths and chills those who meet it.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kinoly",
+   "boss": "kinoly",
+   "boss_name": "Kinoly the Wild Folk",
+   "name": "Wild Folk's Howl",
+   "school": "earth",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Malagasy folklore (Sibree, The Great African Island)",
+   "story": "The wild folk of the Malagasy forests, who live apart and are feared by travellers.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kuna",
+   "boss": "kuna",
+   "boss_name": "Kuna the Eel",
+   "name": "Eel's Bite",
+   "school": "frost",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Hawaiian legend (Westervelt)",
+   "story": "A giant eel of the Hawaiian pools, whose bite is quick and whose coils are strong.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:menehune",
+   "boss": "menehune",
+   "boss_name": "Menehune the Night Builders",
+   "name": "Night-Builders' Stones",
+   "school": "earth",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Hawaiian legend (Fornander)",
+   "story": "The small people of the old valleys, who build in a night and are shy of the day.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:patupaiarehe",
+   "boss": "patupaiarehe",
+   "boss_name": "Patupaiarehe of the Mist",
+   "name": "Mist-Folk's Song",
+   "school": "frost",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "Pale mist-folk of the mountains, who sing in the fog and lead travellers astray.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tutunui",
+   "boss": "tutunui",
+   "boss_name": "Tutunui the Whale",
+   "name": "Whale's Wake",
+   "school": "frost",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The great whale stolen by Kae in the Maori tale, who struck back from the deep.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:vui",
+   "boss": "vui",
+   "boss_name": "Vui of the Banks Islands",
+   "name": "Vui's Wile",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:red-hollow",
+   "source": "Melanesian tradition (Codrington, The Melanesians)",
+   "story": "A spirit of the Banks Islands tales, who lurks in the bush and tricks the careless.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:aigamuxa",
+   "boss": "aigamuxa",
+   "boss_name": "Aigamuxa the Eye-Footed",
+   "name": "Eye-Footed Ogre",
+   "school": "earth",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Khoikhoi folklore (Bleek)",
+   "story": "An ogre with eyes in the soles of his feet, who must lie down to see.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:amazimu",
+   "boss": "amazimu",
+   "boss_name": "The Amazimu Ogres",
+   "name": "Veld Ogre's Maw",
+   "school": "earth",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Zulu folklore (Callaway, Nursery Tales)",
+   "story": "Cannibal ogres of the Zulu tales, who hunt the unwary of the lonely veld.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dodo",
+   "boss": "dodo",
+   "boss_name": "Dodo the Bogey of the Bush",
+   "name": "Bush Bogey",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Hausa folklore (Tremearne)",
+   "story": "A bogey of the Hausa bush who frightens children and wanderers alike.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gizo",
+   "boss": "gizo",
+   "boss_name": "Gizo the Spider",
+   "name": "Gizo's Snare",
+   "school": "poison",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Hausa folklore (Rattray)",
+   "story": "The scheming spider of the Hausa tales, who talks his way into any trap he sets.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kae",
+   "boss": "kae",
+   "boss_name": "Kae the Thief-Priest",
+   "name": "Thief-Priest's Ruse",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The priest who stole Tinirau's whale and ate it, and was hunted for the theft.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:marakihau",
+   "boss": "marakihau",
+   "boss_name": "Marakihau the Sea Elder",
+   "name": "Sea Elder's Pull",
+   "school": "frost",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A sea-creature with a human head and a fish's body, who draws in swimmers with its tubular tongue.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ngarara",
+   "boss": "ngarara",
+   "boss_name": "Ngarara the Lizard Beast",
+   "name": "Lizard Beast's Bite",
+   "school": "poison",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A giant lizard of Maori legend, whose bite is venom and whose hide is armour.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:songomby",
+   "boss": "songomby",
+   "boss_name": "Songomby the Shape-Changer",
+   "name": "Songomby's Shape",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Malagasy folklore (Sibree, The Great African Island)",
+   "story": "A creature of the Malagasy tales that takes many shapes to lure travellers into the wild.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:teryel",
+   "boss": "teryel",
+   "boss_name": "Teryel the Ogress",
+   "name": "Ogress's Cage",
+   "school": "earth",
+   "level": 2,
+   "region": "region:red-hollow",
+   "source": "Berber folklore (Basset, Contes berbères)",
+   "story": "An ogress of the Berber tales, who lures children to her cave.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:darafify",
+   "boss": "darafify",
+   "boss_name": "Darafify the Giant Bird",
+   "name": "Giant Bird's Wing",
+   "school": "wind",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Malagasy folklore (Sibree, The Great African Island)",
+   "story": "A monstrous bird of the Malagasy tales, which makes nests of ships.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:impundulu",
+   "boss": "impundulu",
+   "boss_name": "Impundulu the Lightning Bird",
+   "name": "Lightning Bird",
+   "school": "wind",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Zulu folklore (Callaway, Nursery Tales)",
+   "story": "A great black-and-white bird said to call down the lightning and the storm.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kataore",
+   "boss": "kataore",
+   "boss_name": "Kataore the Winged Monster",
+   "name": "Kataore's Wing",
+   "school": "wind",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A winged flying monster of the Pacific tales, which carries off the unwary.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kishi",
+   "boss": "kishi",
+   "boss_name": "Kishi the Two-Faced",
+   "name": "Two-Faced Hunger",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Kimbundu folk tales (Chatelain)",
+   "story": "A monster with a handsome face in front and a hyena's jaws behind, who lures the traveller.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:maero",
+   "boss": "maero",
+   "boss_name": "Maero the Wild Men",
+   "name": "Wild Man's Club",
+   "school": "earth",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The wild men of the mountain forests, with long nails, who live in caves.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ninki-nanka",
+   "boss": "ninki-nanka",
+   "boss_name": "Ninki Nanka of the Gambia",
+   "name": "River Dragon",
+   "school": "poison",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Gambian river folklore",
+   "story": "A dragon of the Gambian river banks, said to be long, scaled and horse-headed.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pekehaua",
+   "boss": "pekehaua",
+   "boss_name": "Pekehaua the Taniwha",
+   "name": "Taniwha's Pool",
+   "school": "frost",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A water monster who lurked in a pool and was slain by a clever visitor.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:waghzen",
+   "boss": "waghzen",
+   "boss_name": "Waghzen the Ogre",
+   "name": "Ogre's Weight",
+   "school": "earth",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Berber folklore (Basset, Contes berbères)",
+   "story": "A great ogre of the Berber tales, who is outwitted by the quick.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zimwi",
+   "boss": "zimwi",
+   "boss_name": "Zimwi the Ogre",
+   "name": "Ogre's Hunger",
+   "school": "earth",
+   "level": 3,
+   "region": "region:red-hollow",
+   "source": "Swahili tales (Steere)",
+   "story": "An ogre of the Swahili tales, who tricks children into lifting up a basket.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hai-uri",
+   "boss": "hai-uri",
+   "boss_name": "Hai-uri the Half-Man",
+   "name": "Hopping Half",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Khoikhoi folklore (Bleek)",
+   "story": "A creature with half a body that hops on one leg and runs faster than a hunter.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hotu-puku",
+   "boss": "hotu-puku",
+   "boss_name": "Hotu-puku the Taniwha",
+   "name": "Taniwha's Hunger",
+   "school": "frost",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A taniwha of the Maori tales, an old lake monster who preyed on the people near the water.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:inkanyamba",
+   "boss": "inkanyamba",
+   "boss_name": "Inkanyamba the Storm Serpent",
+   "name": "Storm Serpent",
+   "school": "wind",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Xhosa folklore (Theal, Kaffir Folk-Lore)",
+   "story": "A great serpent said to live in the falls and to ride the storm when it rises.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kalamainuu",
+   "boss": "kalamainuu",
+   "boss_name": "Kalamainu'u the Lizard of the Pool",
+   "name": "Pool Lizard",
+   "school": "frost",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Hawaiian legend (Westervelt)",
+   "story": "The great mo'o of the Hawaiian tales, a lizard of the pools who snaps at bathers.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kaupe",
+   "boss": "kaupe",
+   "boss_name": "Kaupe the Dog-Man",
+   "name": "Dog-Man's Hunger",
+   "school": "earth",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Hawaiian legend (Fornander)",
+   "story": "An ogre of the old stories, half dog, who roams the dark and takes children.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mukiti",
+   "boss": "mukiti",
+   "boss_name": "Mukiti the Water Serpent",
+   "name": "Serpent's Deep",
+   "school": "frost",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Mwindo Epic (Nyanga tradition)",
+   "story": "The water serpent of the Mwindo epic, which draws the hero into the depths.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ponaturi",
+   "boss": "ponaturi",
+   "boss_name": "Ponaturi the Sea Fairies",
+   "name": "Dawn Dread",
+   "school": "frost",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A sea-people who live under the waves, who cannot bear the light of day.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pouakai",
+   "boss": "pouakai",
+   "boss_name": "Pouakai the Giant Eagle",
+   "name": "Giant Eagle's Strike",
+   "school": "wind",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The giant bird of the southern mountains, said to snatch children from the ground.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:trimobe",
+   "boss": "trimobe",
+   "boss_name": "Trimobe the Shaggy Giant",
+   "name": "Shaggy Giant's Fist",
+   "school": "earth",
+   "level": 4,
+   "region": "region:red-hollow",
+   "source": "Malagasy folklore (Ellis, History of Madagascar)",
+   "story": "A hairy giant of the old Malagasy stories, who crushes with both fists.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:grootslang",
+   "boss": "grootslang",
+   "boss_name": "The Grootslang",
+   "name": "Great Serpent's Coil",
+   "school": "poison",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Southern African folklore",
+   "story": "A giant serpent of the caves of the Richtersveld, said to have the strength of an elephant.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:isiququmadevu",
+   "boss": "isiququmadevu",
+   "boss_name": "Isiququmadevu the Bearded",
+   "name": "Bearded Ogre's Trap",
+   "school": "earth",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Zulu folklore (Callaway, Nursery Tales)",
+   "story": "A bearded cannibal ogre of Zulu tales, who lives in a hut in the veld and traps travellers.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kurangaituku",
+   "boss": "kurangaituku",
+   "boss_name": "Kurangaituku the Bird-Woman",
+   "name": "Bird-Woman's Call",
+   "school": "wind",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A bird-woman of the Maori tales, with a long beak, who chased the hero Hatupatu.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nanaue",
+   "boss": "nanaue",
+   "boss_name": "Nanaue the Shark-Man",
+   "name": "Shark-Man's Bite",
+   "school": "frost",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Hawaiian legend (Fornander)",
+   "story": "A man by day with a shark's mouth on his back, who at night preyed on the bathers.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:qasavara",
+   "boss": "qasavara",
+   "boss_name": "Qasavara the Giant",
+   "name": "Giant of the Reef",
+   "school": "earth",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Melanesian tradition (Codrington, The Melanesians)",
+   "story": "The giant of the Melanesian tales who lies in wait in the sea and the cave.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rapeto",
+   "boss": "rapeto",
+   "boss_name": "Rapeto the Giant",
+   "name": "Giant's Tread",
+   "school": "earth",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Malagasy folklore (Sibree, The Great African Island)",
+   "story": "The old giant of the Malagasy tales, who watches the paths from the hills.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sarki-serpent",
+   "boss": "sarki-serpent",
+   "boss_name": "Sarki the Serpent of Daura",
+   "name": "Well Serpent",
+   "school": "poison",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Daura legend (Bayajidda)",
+   "story": "The snake that kept the well of Daura, which a stranger from the east slew.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:te-wheke",
+   "boss": "te-wheke",
+   "boss_name": "Te Wheke-a-Muturangi",
+   "name": "Great Octopus",
+   "school": "frost",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The giant octopus of the Cook Strait, who defied the navigator Kupe.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:zanati",
+   "boss": "zanati",
+   "boss_name": "Zanati Khalifa of Tunis",
+   "name": "Tunis Rule",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:red-hollow",
+   "source": "Taghribat Bani Hilal epic",
+   "story": "The crafty ruler of the Taghribat epic, who plays tricks on the Hilali heroes.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hakau",
+   "boss": "hakau",
+   "boss_name": "Hakau the Tyrant",
+   "name": "Tyrant's Rule",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Hawaiian chronicle (Fornander)",
+   "story": "The cruel chief of old Hawaii, who ruled harshly after his father's death.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hatupatu",
+   "boss": "hatupatu",
+   "boss_name": "Hatupatu the Runner",
+   "name": "Runner's Chase",
+   "school": "wind",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The Maori hero who tricked the bird-woman and outran her pursuit; an honourable foe.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ikotofetsy",
+   "boss": "ikotofetsy",
+   "boss_name": "Ikotofetsy the Dwarf",
+   "name": "Little Giant's Trick",
+   "school": "earth",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Malagasy folklore (Ellis, History of Madagascar)",
+   "story": "A little dwarf of the Malagasy tales, who tricks the giant into the pit.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kholumolumo",
+   "boss": "kholumolumo",
+   "boss_name": "Kholumolumo the Swallower",
+   "name": "Swallower's Maw",
+   "school": "earth",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Sotho folklore (Casalis)",
+   "story": "A giant creature of the Sotho tales, said to have swallowed the whole people and their cattle.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:matuku-tangotango",
+   "boss": "matuku-tangotango",
+   "boss_name": "Matuku-tangotango the Giant",
+   "name": "Giant's Revenge",
+   "school": "earth",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The giant who killed Wahieroa, and whom the son Rata sought out.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sassouma",
+   "boss": "sassouma",
+   "boss_name": "Sassouma Berete",
+   "name": "Queen Mother's Scheme",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The first queen of Mali in the epic, who plots to keep the rightful heir from the throne.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:shemwindo",
+   "boss": "shemwindo",
+   "boss_name": "Shemwindo the Chief",
+   "name": "Chief's Wrath",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Mwindo Epic (Nyanga tradition)",
+   "story": "The father in the Mwindo epic who casts out his son and sets his people against him.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tiramakhan",
+   "boss": "tiramakhan",
+   "boss_name": "Tiramakhan the General",
+   "name": "General's March",
+   "school": "fire",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "A great general of the Mande tradition; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tunaroa",
+   "boss": "tunaroa",
+   "boss_name": "Tunaroa the Giant Eel",
+   "name": "Eel of Many Tides",
+   "school": "frost",
+   "level": 6,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The great eel of Maori legend, whose body fills a river.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:dankaran",
+   "boss": "dankaran",
+   "boss_name": "Dankaran Touman the Half-Brother",
+   "name": "Half-Brother's Exile",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The king of Mali who exiled his young half-brother and ruled in fear.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:diyab",
+   "boss": "diyab",
+   "boss_name": "Diyab ibn Ghanim",
+   "name": "Diyab's Charge",
+   "school": "fire",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Taghribat Bani Hilal epic",
+   "story": "A great warrior of the Hilali epic; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kirimu",
+   "boss": "kirimu",
+   "boss_name": "Kirimu the Many-Headed",
+   "name": "Many-Headed Terror",
+   "school": "fire",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Mwindo Epic (Nyanga)",
+   "story": "The many-headed monster of the Mwindo epic, which swallowed a whole village.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lwanda-magere",
+   "boss": "lwanda-magere",
+   "boss_name": "Lwanda Magere the Stone-Man",
+   "name": "Stone Body",
+   "school": "earth",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Luo oral tradition",
+   "story": "A warrior with a body of stone, who was only vulnerable in his shadow.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nare-maghan",
+   "boss": "nare-maghan",
+   "boss_name": "Nare Maghan the Father",
+   "name": "Father's Blessing",
+   "school": "holy",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The king of Mali before Sundiata, who dies leaving his son the throne; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nkongolo",
+   "boss": "nkongolo",
+   "boss_name": "Nkongolo the Rainbow King",
+   "name": "Rainbow Rule",
+   "school": "poison",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Luba tradition (Kalala Ilunga)",
+   "story": "The tyrant king of the Luba legend, whose name means rainbow and whose rule was cruel.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sogolon",
+   "boss": "sogolon",
+   "boss_name": "Sogolon Kedjou",
+   "name": "Buffalo-Woman's Might",
+   "school": "earth",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The mother of Sundiata in the epic, said to be the Buffalo-Woman of Do; an honourable foe.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:usikulumi",
+   "boss": "usikulumi",
+   "boss_name": "Usikulumi the Honoured",
+   "name": "Old Hunter's Gift",
+   "school": "earth",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Zulu folklore (Callaway, Nursery Tales)",
+   "story": "The old hunter of the Zulu tales; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:whakatau",
+   "boss": "whakatau",
+   "boss_name": "Whakatau the Avenger",
+   "name": "Avenger's Blow",
+   "school": "fire",
+   "level": 7,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The young hero of the Maori tales who avenged his brother; an honourable foe.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:bayajidda",
+   "boss": "bayajidda",
+   "boss_name": "Bayajidda the Stranger",
+   "name": "Stranger's Sword",
+   "school": "fire",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Daura legend (Hausa)",
+   "story": "The stranger who slew the serpent of the well and wed the queen of Daura; an honourable foe.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:buffalo-do",
+   "boss": "buffalo-do",
+   "boss_name": "The Buffalo of Do",
+   "name": "Buffalo Woman's Charge",
+   "school": "earth",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The great buffalo of Do that ravaged the land in the Sundiata epic, until hunters brought it down.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:fakoli",
+   "boss": "fakoli",
+   "boss_name": "Fakoli Koroma the Smith",
+   "name": "Smith-General's Hammer",
+   "school": "earth",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The smith and general of Sosso, who first stood against Sundiata and then joined him.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hotu-matua",
+   "boss": "hotu-matua",
+   "boss_name": "Hotu Matua the Founder",
+   "name": "Founder's Landing",
+   "school": "wind",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Rapa Nui tradition",
+   "story": "The legendary first chief who sailed to Rapa Nui; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kupe",
+   "boss": "kupe",
+   "boss_name": "Kupe the Navigator",
+   "name": "Navigator's Wake",
+   "school": "wind",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The Maori navigator who crossed the sea and drove off the octopus; an honourable foe.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:matope",
+   "boss": "matope",
+   "boss_name": "Matope of Mutapa",
+   "name": "Mutapa's Conquest",
+   "school": "earth",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Mwene Mutapa tradition",
+   "story": "The son of Mutota who spread the Mutapa kingdom to the sea in the fifteenth century; an honourable foe.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pania",
+   "boss": "pania",
+   "boss_name": "Pania of the Reef",
+   "name": "Reef Maiden's Song",
+   "school": "frost",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "A sea-maiden of the Napier reef, who left the reef to visit her land-lover and went back.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rata",
+   "boss": "rata",
+   "boss_name": "Rata the Canoe-Builder",
+   "name": "Canoe-Builder's Axe",
+   "school": "earth",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Maori legend (Grey, Polynesian Mythology)",
+   "story": "The Maori hero who felled a tree and built his canoe to avenge his father; an honourable foe.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sumanguru",
+   "boss": "sumanguru",
+   "boss_name": "Sumanguru Kante the Sorcerer-King",
+   "name": "Sorcerer-King's Rule",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The Susu king and sorcerer who ruled the old kingdom of Sosso; Sundiata's great opponent.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:abu-zayd",
+   "boss": "abu-zayd",
+   "boss_name": "Abu Zayd al-Hilali",
+   "name": "Hilali's Cunning",
+   "school": "fire",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Taghribat Bani Hilal epic",
+   "story": "The cunning hero of the Hilali epic; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:balla-fasseke",
+   "boss": "balla-fasseke",
+   "boss_name": "Balla Fasseke the Griot",
+   "name": "Griot's Praise",
+   "school": "holy",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The griot of Sundiata who sang the hero's praise; the player stands against a bard, and the win line is respectful.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gassire",
+   "boss": "gassire",
+   "boss_name": "Gassire of Wagadu",
+   "name": "Lute's Lament",
+   "school": "fire",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Dausi epic (Soninke, Frobenius)",
+   "story": "The hero of the Dausi who longed for a lute and lost his sons for it; a tragic hero whose win line is respectful.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:kalala-ilunga",
+   "boss": "kalala-ilunga",
+   "boss_name": "Kalala Ilunga the Founder",
+   "name": "Founder's Spear",
+   "school": "fire",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Luba tradition",
+   "story": "The hero who overthrew the rainbow king and founded the Luba kingdom; an honourable foe.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:liloa",
+   "boss": "liloa",
+   "boss_name": "Liloa of Hawaii",
+   "name": "Liloa's Rule",
+   "school": "holy",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Hawaiian chronicle (Fornander)",
+   "story": "A great chief of old Hawaii, remembered for his fair rule; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:liyongo",
+   "boss": "liyongo",
+   "boss_name": "Fumo Liyongo the Poet-Warrior",
+   "name": "Poet's Arrow",
+   "school": "wind",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Swahili epic (Steere)",
+   "story": "The poet-hero of the Swahili coast, known for his bow and his verse; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mansa-sakura",
+   "boss": "mansa-sakura",
+   "boss_name": "Mansa Sakura of Mali",
+   "name": "Sakura's Pilgrimage",
+   "school": "wind",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Mali chronicles",
+   "story": "The Mali emperor who conquered Gao and died on the way home from the pilgrimage.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mutota",
+   "boss": "mutota",
+   "boss_name": "Nyatsimba Mutota",
+   "name": "Mutapa's March",
+   "school": "earth",
+   "level": 9,
+   "region": "region:red-hollow",
+   "source": "Mwene Mutapa tradition",
+   "story": "The founder of the Mutapa kingdom who marched north from Great Zimbabwe in the fifteenth century.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:daurama",
+   "boss": "daurama",
+   "boss_name": "Daurama Queen of Daura",
+   "name": "Queen of the Well",
+   "school": "earth",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Daura legend",
+   "story": "The legendary queen of Daura who ruled the well; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ibonia",
+   "boss": "ibonia",
+   "boss_name": "Ibonia the Hero",
+   "name": "Ibonia's Quest",
+   "school": "holy",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Ibonia epic (Malagasy)",
+   "story": "The hero of the Malagasy epic who sought his bride against every foe; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lukeni",
+   "boss": "lukeni",
+   "boss_name": "Lukeni lua Nimi",
+   "name": "Founder of Kongo",
+   "school": "holy",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Kongo tradition",
+   "story": "The traditional founder of the Kongo kingdom, said to have crossed the river and ruled from Mbanza; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mansa-musa",
+   "boss": "mansa-musa",
+   "boss_name": "Mansa Musa of Mali",
+   "name": "Golden Pilgrimage",
+   "school": "holy",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Mali chronicles",
+   "story": "The Mali emperor of the fourteenth century whose gold astonished Cairo; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mwindo",
+   "boss": "mwindo",
+   "boss_name": "Mwindo the Little-One-Just-Born",
+   "name": "Little-One's Tread",
+   "school": "wind",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Mwindo Epic (Nyanga)",
+   "story": "The hero of the Nyanga epic, born walking and talking; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rumfa",
+   "boss": "rumfa",
+   "boss_name": "Sarki Muhammadu Rumfa of Kano",
+   "name": "Rumfa's Court",
+   "school": "holy",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Kano Chronicle",
+   "story": "The fifteenth-century king of Kano, remembered for his palace and his reforms; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sundiata",
+   "boss": "sundiata",
+   "boss_name": "Sundiata Keita the Lion King",
+   "name": "Lion of Mali",
+   "school": "holy",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Sundiata epic (Mande oral tradition)",
+   "story": "The founder of the Mali empire who stood up from his mother's hut and beat Sosso; an honourable foe with a respectful win line.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tin-hinan",
+   "boss": "tin-hinan",
+   "boss_name": "Tin Hinan of the Hoggar",
+   "name": "Tin Hinan's Tent",
+   "school": "holy",
+   "level": 10,
+   "region": "region:red-hollow",
+   "source": "Tuareg tradition",
+   "story": "The ancestral queen of the Tuareg, said to have come to the Hoggar with her maid; an honourable foe.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  }
+ ]
+}
