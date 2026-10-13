@@ -7,7 +7,8 @@ export const SPEEDS = {
   creature: { amble: 0.9, chase: 4.5 },   // m/s: slower than a running player (so running away works) except the wolf, who is faster and gives up sooner
 } as const;
 export const LEASH = { default: 30 } as const;   // m from where the chase STARTED: past it the creature walks home and heals to full, no event
-export { GIVE_UP_UNSEEN_S } from './threat.ts';   // (src/fight/threat-defs.json giveUp row)
+import { GIVE_UP_UNSEEN_S } from './threat.ts';
+export { GIVE_UP_UNSEEN_S };   // (src/fight/threat-defs.json giveUp row)
 // s out of sight before any creature gives up (leaving the zone always ends it too)
 export const OUT_OF_COMBAT_S = 6;     // s with no damage taken or dealt before a fighter counts as out of combat (regen starts)
 export const DISENGAGE_M = 12, DISENGAGE_S = 3;   // the hero-side disengage: a world fight ends silently when the hero has been farther than 12 m from the foe for 3 s
