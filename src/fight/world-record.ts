@@ -7,6 +7,7 @@ import { M } from './detmath.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
 import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type Direction, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
+import { DIALS, SHEET_SKILLS, checkSheet, statUp, type Sheet } from './sheet-rows.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
@@ -24,7 +25,7 @@ export const MAX_WORLD_TICKS = 18_000;
 export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */
-export type RecordHero = { level: number; attack: number; res: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean };
+export type RecordHero = { level: number; attack: number; res: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet };   // sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
 export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number; seed?: number };   // the creature at its pose (m) when it joined, before step s
 export type ReleaseEvent = { s: number; id: string };
 /** One step: the pose the page gave the loop (null = the loop's own body), the presses (attack and roll already nulled when the hero is dead), and the held guard. Integers: cm, milliradian, thousandths. */
@@ -55,7 +56,7 @@ export function heroClean(world: World): boolean {
   return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
     && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && d.move === null && d.phase !== 'dead'));
 }
-export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, { attack: h.attack, res: h.res }, h.level, null, { weapon: h.weapon }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
+export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, { attack: h.attack, res: h.res }, h.level, null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
 
 // ---- the recorder: the live loop feeds it, the page asks for the packed record at a kill -----------------------------------------------
 export function createWorldRecorder() {
@@ -75,13 +76,18 @@ export function createWorldRecorder() {
 }
 
 // ---- the pack: JSON header, then the steps as zigzag varints (pose as a delta on the last pose), gzip, base64url -----------------------------------
-const MAGIC = [0x57, 0x52, 1];   // 'W' 'R' version 1
+const MAGIC = [0x57, 0x52, 2];   // 'W' 'R' version 2: the sheet block follows the JSON header
+const SHEET_IDS: readonly string[] = [...DIALS.map((d) => d.id), ...SHEET_SKILLS.map((k) => k.id)];   // sheet-defs row order: a sheet's wire index
 const zig = (n: number): number => (n < 0 ? -n * 2 - 1 : n * 2);
 const unzig = (n: number): number => (n % 2 ? -(n + 1) / 2 : n / 2);
 function putVar(out: number[], n: number): void { while (n >= 128) { out.push((n % 128) | 128); n = Math.floor(n / 128); } out.push(n); }
 export function packWorldRecord(r: WorldRecord): Uint8Array {
-  const head = new TextEncoder().encode(JSON.stringify({ v: r.rv, w: r.wv, h: r.hero, j: r.joins.map((e) => (e.seed === undefined ? [e.s, e.id, e.kind, e.x, e.z, e.level] : [e.s, e.id, e.kind, e.x, e.z, e.level, e.seed])), r: r.releases.map((e) => [e.s, e.id]), n: r.steps.length }));
+  const { sheet, ...body0 } = r.hero;
+  const head = new TextEncoder().encode(JSON.stringify({ v: r.rv, w: r.wv, h: body0, j: r.joins.map((e) => (e.seed === undefined ? [e.s, e.id, e.kind, e.x, e.z, e.level] : [e.s, e.id, e.kind, e.x, e.z, e.level, e.seed])), r: r.releases.map((e) => [e.s, e.id]), n: r.steps.length }));
   const out: number[] = [...MAGIC]; putVar(out, head.length);
+  const pairs = Object.entries(sheet ?? {}).map(([id, v]) => [SHEET_IDS.indexOf(id), v] as const).sort((a, b) => a[0] - b[0]);
+  const sheetBytes: number[] = [pairs.length];
+  for (const [row, v] of pairs) { if (row < 0 || row > 255 || !Number.isInteger(v) || v < 0 || v > 255) throw Error('World record: a sheet row is a known row and a whole number 0 to 255'); sheetBytes.push(row, v); }
   let px = 0, pz = 0, pf = 0;
   const body: number[] = [];
   for (const s of r.steps) {
@@ -89,8 +95,8 @@ export function packWorldRecord(r: WorldRecord): Uint8Array {
     if (s.pose) { putVar(body, zig(s.pose.x - px)); putVar(body, zig(s.pose.z - pz)); putVar(body, zig(s.pose.f - pf)); px = s.pose.x; pz = s.pose.z; pf = s.pose.f; }
     if (s.roll) { putVar(body, zig(s.roll.x)); putVar(body, zig(s.roll.z)); }
   }
-  const all = new Uint8Array(out.length + head.length + body.length);
-  all.set(out); all.set(head, out.length); all.set(body, out.length + head.length);
+  const all = new Uint8Array(out.length + head.length + sheetBytes.length + body.length);
+  all.set(out); all.set(head, out.length); all.set(sheetBytes, out.length + head.length); all.set(body, out.length + head.length + sheetBytes.length);
   return all;
 }
 const isU32 = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 0xffffffff;
@@ -105,6 +111,9 @@ export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   i += hl;
   if (!h || typeof h !== 'object' || !isInt(h.v) || !isInt(h.w) || !isInt(h.n) || h.n < 0 || h.n > MAX_WORLD_TICKS || !Array.isArray(h.j) || !Array.isArray(h.r) || h.j.length > MAX_EVENTS || h.r.length > MAX_EVENTS) throw Error('World record: bad header');
   const hero = h.h; if (!hero || typeof hero !== 'object') throw Error('World record: bad hero');
+  delete hero.sheet;   // the sheet lives only in its own block
+  const nSheet = get(); if (nSheet > SHEET_IDS.length || i + 2 * nSheet > bytes.length) throw Error('World record: bad sheet');
+  if (nSheet) { const sheet: Record<string, number> = {}; let prev = -1; for (let k = 0; k < nSheet; k++) { const row = bytes[i++]!, v = bytes[i++]!; if (row <= prev || row >= SHEET_IDS.length) throw Error('World record: bad sheet'); prev = row; sheet[SHEET_IDS[row]!] = v; } hero.sheet = sheet; }
   const joins = h.j.map((e): JoinEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string' || typeof e[2] !== 'string' || !isInt(e[3]) || !isInt(e[4]) || !isInt(e[5])) throw Error('World record: bad join'); if (e.length > 7 || (e.length === 7 && !isU32(e[6]))) throw Error('World record: bad join seed'); return { s: e[0], id: e[1], kind: e[2], x: e[3], z: e[4], level: e[5], ...(e.length === 7 ? { seed: e[6] as number } : {}) }; });
   const releases = h.r.map((e): ReleaseEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string') throw Error('World record: bad release'); return { s: e[0], id: e[1] }; });
   const steps: WorldStep[] = []; let px = 0, pz = 0, pf = 0;
@@ -146,7 +155,8 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   if (h.weapon !== DEFAULT_WEAPON) return bad('weapon');   // the sim honours any hero weapon (open-fight.ts heroSheeted), but nothing on the server binds the record's weapon to the character's held one (Auditor, #2569), so a forged record could claim the strongest: the replay takes DEFAULT_WEAPON only. LIFT: when the ledger's held weapon reaches HeroLimit (Backend #2557) PR 5 restores `PLAYER_WEAPONS.includes(h.weapon)` and checks it against HeroLimit.weapon.
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
   if (!(h.attack >= 1 && h.attack <= CAPS.attack) || !(h.res >= CAPS.res && h.res <= 1)) return bad('hero gear');
-  if (!(h.health > 0 && h.health <= RULES.health) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
+  if (h.sheet) { try { checkSheet(h.sheet); } catch { return bad('hero sheet'); } }   // known dials, floor..cap, and a legal point budget
+  if (!(h.health > 0 && h.health <= (h.sheet ? Math.round(statUp(h.sheet, 'health', RULES.health)) : RULES.health)) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
   const ids = new Set<string>();
   for (const j of r.joins) {
     if (!INSTANCE.test(j.id) || j.id === ME || !Object.prototype.hasOwnProperty.call(OPPONENTS, j.kind) || j.level < 1 || j.level > LEVELS || j.s < 0 || j.s > n || Math.abs(j.x) > 1e7 || Math.abs(j.z) > 1e7) return bad('join');
@@ -155,7 +165,7 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   for (const e of r.releases) if (e.s < 0 || e.s > n || !ids.has(e.id)) return bad('release');
   const order = (a: { s: number }[]) => a.every((e, k) => k === 0 || a[k - 1]!.s <= e.s); if (!order(r.joins) || !order(r.releases)) return bad('order');
   if (!r.steps[0]!.pose) return bad('pose');
-  const gear = { attack: h.attack, res: h.res, level: h.level, shielded: false };
+  const gear = { attack: h.sheet ? 1 : h.attack, res: h.sheet ? 1 : h.res, level: h.level, shielded: false };   // with a sheet the dials carry Attack and armour (world.ts player)
   let world = newWorld([startBody(h)]), dead = false, last: { x: number; z: number; k: number } | null = null, ji = 0, ri = 0;
   const kills: string[] = [], killStep: Record<string, number> = {}, joined = new Set<string>();
   const events = (k: number): string | null => {
