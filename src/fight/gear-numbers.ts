@@ -4,7 +4,7 @@
 import { TIERS } from '../core/grades.ts';
 import type { Loot } from '../core/loot.ts';
 import { kitFrom, loadoutFor, wholePoints, wornGear, type TierOf } from './gear-stats.ts';
-import { sheetOf, type Build, type Sheet } from './sheet-rows.ts';
+import { sheetOf, validateBuild, type Build, type Sheet } from './sheet-rows.ts';
 import type { Profile } from '../core/profile.ts';
 import { RULES } from './moves.ts';
 import { STAMINA_MAX } from './world.ts';
@@ -18,9 +18,13 @@ export const gearNumbers = (loot: Loot | undefined): Record<string, number> => {
 
 // The player's build (Wave A1 PR1b): level and the points placed on the ten dials. Backend stores it (the account / character field, written through `validateBuild`, no second validator) and Web
 // builds the creation sliders on it; until the field exists every player is the default build, level 0 with every dial at its base of 0 (the re-locked sheet). The real build drops in HERE, with no sim change.
-// FLAGGED OFF (Lead + Auditor, 2026-10-13): a geared career fight becomes a sheet record, and until the server expects worn gear (Backend's wornGear-into-expectedSheet PR) it would refuse every
-// geared player's record and stop their loot. The page writes the sheet (and the build reference) only when this is true; flip it in the PR that lands with that server side. Off = today's record.
-export const GEAR_IN_FIGHTS: boolean = false;
+// ON (the flip, Lead + Auditor 2026-10-13, after Backend's wornGear-into-expectedSheet side is live): a geared career fight is a sheet record the sweeps verify against the stored build AND the server-held worn
+// set, so it verifies and pays. The page writes a sheet only once the build reference has resolved (`sheetFor`): a fight begun before that, a guest and a character with no stored build fight without one.
+export const GEAR_IN_FIGHTS: boolean = true;
+// The sheet a career fight is fought on: none until the player's own stored build is known (a guest, an offline writer or an unapplied migration never learns it), then that build with the worn set.
+// An illegal stored build gives none (the server would refuse it too). `own.ref` is the reference the record names; null = the default build, which a sheet with no reference claims.
+export const sheetFor = (loot: Loot | undefined, own: { level: number; placed: Record<string, number> } | undefined): Sheet | undefined =>
+  own && validateBuild({ level: own.level, placed: own.placed }).length === 0 ? sheetOf({ level: own.level, placed: own.placed }, wornGear(loot?.equipped ?? {}, tierLookup(loot))) : undefined;
 export function buildOf(profile?: Profile): Build { void profile; return { level: 0, placed: {} }; }
 // The sheet a live fight is fought with: the player's build with the worn set's deltas on top, `undefined` when nothing is off base (the naked, default-build fight, byte for byte).
 export const sheetOfLoot = (loot: Loot | undefined, build: Build = buildOf()): Sheet | undefined => sheetOf(build, wornGear(loot?.equipped ?? {}, tierLookup(loot)));
