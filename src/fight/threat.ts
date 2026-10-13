@@ -11,7 +11,7 @@ export type ThreatSource = { readonly id: string; readonly weight: number };
 export type Awareness = { readonly id: string; readonly value: number; readonly unit: string };
 /** The one loader: rows keyed by id, a duplicate id or a missing or mistyped field is refused (the shared registry loader), and the sim's named rows must exist with a positive value. Pure, so a test can load a table with a new row. */
 export function loadThreatDefs(raw: { sources?: readonly unknown[]; awareness?: readonly unknown[] }): { sources: readonly ThreatSource[]; awareness: readonly Awareness[] } {
-  loadRegistry([tableFromFile(MANIFEST.tables[0] as Manifest, raw, 'threat-defs.json'), tableFromFile(MANIFEST.tables[1] as Manifest, raw, 'threat-defs.json')]);
+  loadRegistry([tableFromFile(MANIFEST.tables[0] as unknown as Manifest, raw, 'threat-defs.json'), tableFromFile(MANIFEST.tables[1] as unknown as Manifest, raw, 'threat-defs.json')]);
   const sources = (raw.sources ?? []) as readonly ThreatSource[], awareness = (raw.awareness ?? []) as readonly Awareness[];
   for (const s of sources) if (!(Number.isFinite(s.weight) && s.weight >= 0)) throw Error(`threat-defs source "${s.id}": weight is a number >= 0`);
   for (const a of awareness) if (!(Number.isFinite(a.value) && a.value > 0)) throw Error(`threat-defs awareness "${a.id}": value is a number > 0`);
