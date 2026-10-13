@@ -1,0 +1,1604 @@
+{
+ "spells": [
+  {
+   "id": "spell:celaeno",
+   "boss": "celaeno",
+   "boss_name": "Celaeno the Dark One",
+   "name": "Harpy's Foul Wake",
+   "school": "poison",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica II",
+   "story": "Where the winged hag has passed over, the air curdles and every breath tastes of her.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chimaera-whelp",
+   "boss": "chimaera-whelp",
+   "boss_name": "The Chimaera Whelp",
+   "name": "Lykian Cinders",
+   "school": "fire",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Homer, Iliad VI",
+   "story": "The young fire-breather scorches the olive scrub, and the cinders keep burning after it has gone.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:empusa",
+   "boss": "empusa",
+   "boss_name": "Empusa the Night-Walker",
+   "name": "Brazen Foot",
+   "school": "frost",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Aristophanes, Frogs",
+   "story": "Her one bronze foot rings on the stones, and the cold walks in step with it.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gegenees",
+   "boss": "gegenees",
+   "boss_name": "The Gegenees",
+   "name": "Six Hands of Cyzicus",
+   "school": "earth",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica I",
+   "story": "The six-armed earthborn giants hurl boulders from the hillside, and each throw cracks the ground where it lands.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lamia",
+   "boss": "lamia",
+   "boss_name": "Lamia of Libya",
+   "name": "Mother's Grief",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Diodorus Siculus, Library XX",
+   "story": "Robbed of her children, she throws her grief ahead of her as a long shadow that chills what it crosses.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nemean-cub",
+   "boss": "nemean-cub",
+   "boss_name": "The Nemean Cub",
+   "name": "Unbitten Hide",
+   "school": "earth",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The lion's whelp rolls in the dust until it cakes into a plate that no edge will bite.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:parthenope",
+   "boss": "parthenope",
+   "boss_name": "Parthenope the Sweet",
+   "name": "Song on the Rocks",
+   "school": "wind",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XII",
+   "story": "Her song rides the wind off the reef and pulls the listener a step toward the water with each line.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:scylla-pup",
+   "boss": "scylla-pup",
+   "boss_name": "Scylla's Pup",
+   "name": "Snapping Dogs",
+   "school": "shadow",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses XIV",
+   "story": "The dog-heads ringing her waist bark at once, and you flinch from the wrong one.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:stymphalian-flock",
+   "boss": "stymphalian-flock",
+   "boss_name": "The Stymphalian Flock",
+   "name": "Brazen Feathers",
+   "school": "wind",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library II",
+   "story": "The iron birds loose a rain of pinions from the marsh sky, and the gale they raise drives it flat across the sand.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:telchines",
+   "boss": "telchines",
+   "boss_name": "The Telchines of Rhodes",
+   "name": "Quicksilver Curse",
+   "school": "poison",
+   "level": 1,
+   "region": "region:marble-shore",
+   "source": "Strabo, Geography XIV",
+   "story": "The envious smiths of Rhodes sprinkle the water of Styx on the field and everything green beneath it withers.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:calydonian-boar",
+   "boss": "calydonian-boar",
+   "boss_name": "The Calydonian Boar",
+   "name": "Tusk of Calydon",
+   "school": "earth",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses VIII",
+   "story": "The boar that Artemis sent tears the vineyard to ruts, and each rut opens under the hunter's heel.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:colchian-bull",
+   "boss": "colchian-bull",
+   "boss_name": "The Bronze Bulls of Aeetes",
+   "name": "Hooves of Bronze",
+   "school": "fire",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica III",
+   "story": "The fire-breathing bronze bulls plough a field of flame, and the furrows glow.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:colchian-dragon",
+   "boss": "colchian-dragon",
+   "boss_name": "The Sleepless Dragon",
+   "name": "Watch of the Fleece",
+   "school": "poison",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica IV",
+   "story": "The dragon that never sleeps coils round the oak, and its hiss leaves a sour mist.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cretan-bull",
+   "boss": "cretan-bull",
+   "boss_name": "The Cretan Bull",
+   "name": "Labyrinth Charge",
+   "school": "fire",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library II",
+   "story": "The bull that breathed flame over Crete lowers his head and the dust before him ignites.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:diomedes-mares",
+   "boss": "diomedes-mares",
+   "boss_name": "The Mares of Diomedes",
+   "name": "Man-Eating Stampede",
+   "school": "earth",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Euripides, Alcestis",
+   "story": "Fed on the flesh of guests, the four mares thunder across the stable yard in a shaking pack.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:erymanthian-boar",
+   "boss": "erymanthian-boar",
+   "boss_name": "The Erymanthian Boar",
+   "name": "Snowbound Charge",
+   "school": "frost",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library II",
+   "story": "He bursts from the deep snow in a white cloud of breath and drives the ice before him.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:keryneian-hind",
+   "boss": "keryneian-hind",
+   "boss_name": "The Keryneian Hind",
+   "name": "Golden Antlers",
+   "school": "wind",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Pindar, Olympian III",
+   "story": "The golden-horned hind outruns the arrow, and the wind of her passing is a whip.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lestrygon",
+   "boss": "lestrygon",
+   "boss_name": "The Lestrygonian King",
+   "name": "Harbour of Rocks",
+   "school": "earth",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey X",
+   "story": "The giants of the white harbour hurl crags from the cliffs and smash everything that floats below.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mormo",
+   "boss": "mormo",
+   "boss_name": "Mormo the Biter",
+   "name": "Nursery Terror",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Strabo, Geography I",
+   "story": "The bogey of the nursery slips in beside the sleeper and bites at the edge of the dark.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sphinx",
+   "boss": "sphinx",
+   "boss_name": "The Sphinx of Thebes",
+   "name": "Riddle at the Gate",
+   "school": "shadow",
+   "level": 2,
+   "region": "region:marble-shore",
+   "source": "Sophocles, Oedipus Rex",
+   "story": "She asks and you answer wrong, and the road narrows behind you.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:argus",
+   "boss": "argus",
+   "boss_name": "Argus Panoptes",
+   "name": "A Hundred Eyes",
+   "school": "holy",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses I",
+   "story": "Not one of his hundred eyes ever closes, and none of your steps goes unseen.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cercyon",
+   "boss": "cercyon",
+   "boss_name": "Cercyon the Wrestler",
+   "name": "Wrestler's Throw",
+   "school": "earth",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Plutarch, Life of Theseus",
+   "story": "He challenges every passer to a wrestling bout on the road, and no one has risen from it.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:geryon",
+   "boss": "geryon",
+   "boss_name": "Geryon of Erytheia",
+   "name": "Three Bodies",
+   "school": "earth",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Three bodies joined at the waist lean into three blows at once.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ladon",
+   "boss": "ladon",
+   "boss_name": "Ladon of the Garden",
+   "name": "Golden Apples",
+   "school": "poison",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica IV",
+   "story": "The hundred-headed dragon guards the golden apples with a hiss that never stops.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:orthrus",
+   "boss": "orthrus",
+   "boss_name": "Orthrus the Two-Headed",
+   "name": "Brother Hound",
+   "school": "shadow",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The two-headed hound of Geryon bays twice, once from each side.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:procrustes",
+   "boss": "procrustes",
+   "boss_name": "Procrustes the Stretcher",
+   "name": "The Iron Bed",
+   "school": "earth",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Plutarch, Life of Theseus",
+   "story": "He fits every guest to his bed, and the bed always wins.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:python",
+   "boss": "python",
+   "boss_name": "Python of Delphi",
+   "name": "Serpent's Cleft",
+   "school": "earth",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses I",
+   "story": "The earth-born serpent coils in the cleft of Parnassus, and the ground splits where it lies.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sciron",
+   "boss": "sciron",
+   "boss_name": "Sciron the Cliff-Robber",
+   "name": "Kick from the Cliff",
+   "school": "wind",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Plutarch, Life of Theseus",
+   "story": "He makes travellers wash his feet at the cliff edge, and then he kicks.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sinis",
+   "boss": "sinis",
+   "boss_name": "Sinis the Pine-Bender",
+   "name": "Springing Pine",
+   "school": "wind",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Plutarch, Life of Theseus",
+   "story": "He bends two pines to the ground, binds the traveller between, and lets go.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:talos",
+   "boss": "talos",
+   "boss_name": "Talos of Crete",
+   "name": "Bronze Heat",
+   "school": "fire",
+   "level": 3,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica IV",
+   "story": "The bronze giant heats himself red at the shore and embraces what he catches.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:amycus",
+   "boss": "amycus",
+   "boss_name": "Amycus of the Bebryces",
+   "name": "Boxer's Law",
+   "school": "earth",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica II",
+   "story": "The king who forces every stranger to box strikes with fists wound in rawhide.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:capaneus",
+   "boss": "capaneus",
+   "boss_name": "Capaneus at the Walls",
+   "name": "Ladder Defiance",
+   "school": "fire",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Statius, Thebaid X",
+   "story": "He climbs the wall of Thebes shouting that not even Zeus can stop him, and the fire answers.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ixion",
+   "boss": "ixion",
+   "boss_name": "Ixion on the Wheel",
+   "name": "Burning Wheel",
+   "school": "fire",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Pindar, Pythian II",
+   "story": "Bound to a wheel of fire that never stops, he spins sparks across the sand.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:lycaon",
+   "boss": "lycaon",
+   "boss_name": "Lycaon the Wolf-King",
+   "name": "Wolf-Fed Table",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses I",
+   "story": "The king who served the gods human flesh turns wolf, and the pack answers.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:minotaur",
+   "boss": "minotaur",
+   "boss_name": "The Minotaur",
+   "name": "Labyrinth Rush",
+   "school": "earth",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses VIII",
+   "story": "The bull-man runs the winding dark he was bred in, and the walls bend with him.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pelias",
+   "boss": "pelias",
+   "boss_name": "Pelias of Iolcus",
+   "name": "Usurper's Throne",
+   "school": "shadow",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Pindar, Pythian IV",
+   "story": "The usurper sends heroes after the fleece in hope they will not return, and sends the dark after them.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:salmoneus",
+   "boss": "salmoneus",
+   "boss_name": "Salmoneus the Thunder-Mimic",
+   "name": "Counterfeit Thunder",
+   "school": "wind",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Virgil, Aeneid VI",
+   "story": "The king who dragged bronze kettles over his bridge to mimic Zeus is struck, and the noise stays.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:sisyphus",
+   "boss": "sisyphus",
+   "boss_name": "Sisyphus the Stone-Roller",
+   "name": "Stone That Rolls Back",
+   "school": "earth",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XI",
+   "story": "The stone hauled up the slope always rolls back, and it rolls over whoever stands below.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tantalus",
+   "boss": "tantalus",
+   "boss_name": "Tantalus Unfed",
+   "name": "Receding Water",
+   "school": "frost",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XI",
+   "story": "The water drops as he stoops and the fruit lifts as he reaches, and you feel the same ache.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tityos",
+   "boss": "tityos",
+   "boss_name": "Tityos the Giant",
+   "name": "Nine Acres",
+   "school": "earth",
+   "level": 4,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XI",
+   "story": "He covers nine acres lying flat, and the earth shakes when he turns over.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:arges",
+   "boss": "arges",
+   "boss_name": "Arges the Bright",
+   "name": "Bright Anvil",
+   "school": "fire",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "He strikes bronze until it glows white, and the glare shows every shadow.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:briareos",
+   "boss": "briareos",
+   "boss_name": "Briareos of the Hundred Hands",
+   "name": "Hundred Hands",
+   "school": "earth",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "A hundred hands each hurl a rock, and the sky is full of them.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:brontes",
+   "boss": "brontes",
+   "boss_name": "Brontes the Thunderer",
+   "name": "Forge Thunder",
+   "school": "fire",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Cyclops who forged the thunderbolt hammers the anvil, and the sparks fly.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:charybdis",
+   "boss": "charybdis",
+   "boss_name": "Charybdis the Whirlpool",
+   "name": "Thrice-Daily Maw",
+   "school": "wind",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XII",
+   "story": "She drinks the sea and spits it out three times a day, and the pull never fades.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cottus",
+   "boss": "cottus",
+   "boss_name": "Cottus the Hundred-Handed",
+   "name": "Boulder Barrage",
+   "school": "earth",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Cottus lifts the mountain's skirt and throws it, boulder by boulder.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:euryale",
+   "boss": "euryale",
+   "boss_name": "Euryale of the Far Spring",
+   "name": "Far Wail",
+   "school": "wind",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Her wail carries over the sea, and the gale it raises tears at the cloak.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:medusa",
+   "boss": "medusa",
+   "boss_name": "Medusa the Gorgon",
+   "name": "Stone Gaze",
+   "school": "earth",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses IV",
+   "story": "She turns her head and the ground beneath her enemy hardens to stone.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:scylla",
+   "boss": "scylla",
+   "boss_name": "Scylla of the Strait",
+   "name": "Six Mouths",
+   "school": "shadow",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XII",
+   "story": "Six heads snatch six sailors from the deck, one bite each.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:steropes",
+   "boss": "steropes",
+   "boss_name": "Steropes the Lightning",
+   "name": "Chain Lightning",
+   "school": "wind",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "He forges the flash that chains from sword to sword.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:stheno",
+   "boss": "stheno",
+   "boss_name": "Stheno the Mighty",
+   "name": "Gorgon's Strike",
+   "school": "earth",
+   "level": 5,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The strong sister of the Gorgons lashes out with bronze claws, and stone cracks where she steps.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:atlas",
+   "boss": "atlas",
+   "boss_name": "Atlas the Sky-Bearer",
+   "name": "Weight of the Sky",
+   "school": "earth",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Titan who holds up the heavens shrugs, and the weight comes down on whoever is nearest.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:coeus",
+   "boss": "coeus",
+   "boss_name": "Coeus the Questioner",
+   "name": "Axis of the Sky",
+   "school": "frost",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Titan of the pole stands still, and the cold gathers round the point he guards.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:crius",
+   "boss": "crius",
+   "boss_name": "Crius the Ram",
+   "name": "Ram of the Heavens",
+   "school": "earth",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Titan of the constellation lowers his horns and charges.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hyperion",
+   "boss": "hyperion",
+   "boss_name": "Hyperion the High One",
+   "name": "Noon Glare",
+   "school": "holy",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Titan of watchfulness turns his gaze on you, and the glare strips the shadows away.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:iapetus",
+   "boss": "iapetus",
+   "boss_name": "Iapetus the Piercer",
+   "name": "Spear of the West",
+   "school": "wind",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Titan of the western edge drives his spear on a wind that never stops.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:menoetius",
+   "boss": "menoetius",
+   "boss_name": "Menoetius the Rash",
+   "name": "Thunderbolt Fall",
+   "school": "fire",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Struck down by a thunderbolt for his pride, he falls again every time he rises.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mnemosyne",
+   "boss": "mnemosyne",
+   "boss_name": "Mnemosyne the Rememberer",
+   "name": "Forgotten Names",
+   "school": "shadow",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Titaness of memory takes your own name out of your head for a heartbeat.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:oceanus",
+   "boss": "oceanus",
+   "boss_name": "Oceanus the Encircler",
+   "name": "River Round the World",
+   "school": "frost",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Homer, Iliad XIV",
+   "story": "The river that rings the world sends a flood over the shore, and the cold stays after.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:prometheus",
+   "boss": "prometheus",
+   "boss_name": "Prometheus Bound",
+   "name": "Stolen Fire",
+   "school": "fire",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Aeschylus, Prometheus Bound",
+   "story": "Chained to the Caucasus for his gift, the Titan stays defiant and unbowed; he hurls a burning stalk, and the sparks remember.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:themis",
+   "boss": "themis",
+   "boss_name": "Themis of the Scales",
+   "name": "Law's Weight",
+   "school": "holy",
+   "level": 6,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "She sets her scales and the player is the one being judged; the side found lighter falls.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:alcyoneus",
+   "boss": "alcyoneus",
+   "boss_name": "Alcyoneus the Undying",
+   "name": "Native Ground",
+   "school": "earth",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "He cannot die on his home ground, and he drags the fight back to it.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:clytius",
+   "boss": "clytius",
+   "boss_name": "Clytius of the Torch",
+   "name": "Hecate's Brand",
+   "school": "fire",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "He meets the torches of Hecate with torches of his own.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:enceladus",
+   "boss": "enceladus",
+   "boss_name": "Enceladus Beneath Etna",
+   "name": "Etna's Breath",
+   "school": "fire",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Virgil, Aeneid III",
+   "story": "Buried under Etna, he turns over and the mountain spews fire.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ephialtes",
+   "boss": "ephialtes",
+   "boss_name": "Ephialtes the Giant",
+   "name": "Heaped Mountains",
+   "school": "earth",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XI",
+   "story": "With his brother he piles Ossa on Olympus and Pelion on Ossa, and climbs.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:eurytus",
+   "boss": "eurytus",
+   "boss_name": "Eurytus of the Gigantomachy",
+   "name": "Thyrsus Blow",
+   "school": "wind",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "Struck by a thyrsus, he fights on, and the wind carries the leaves.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hippolytus-giant",
+   "boss": "hippolytus-giant",
+   "boss_name": "Hippolytus the Giant",
+   "name": "Cap of Hades",
+   "school": "shadow",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "Hermes in the cap of Hades slays him, and the cap leaves its dark behind.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:mimas",
+   "boss": "mimas",
+   "boss_name": "Mimas of the Giants",
+   "name": "Molten Slag",
+   "school": "fire",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "He wades in with a lump of molten slag held in tongs.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pallas-giant",
+   "boss": "pallas-giant",
+   "boss_name": "Pallas the Flayed",
+   "name": "Hide of the Giant",
+   "school": "earth",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "The giant's own hide turns the blade, and he hits back with the same weight.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:polybotes",
+   "boss": "polybotes",
+   "boss_name": "Polybotes of Nisyros",
+   "name": "The Island Thrown",
+   "school": "earth",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "Poseidon tears the island off Kos and throws it over him, and the whole island follows.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:porphyrion",
+   "boss": "porphyrion",
+   "boss_name": "Porphyrion the Purple",
+   "name": "Mountain Hurled",
+   "school": "earth",
+   "level": 7,
+   "region": "region:marble-shore",
+   "source": "Apollodorus, Library I",
+   "story": "The giant king tears a peak from the earth and hurls it at the sky.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cronus",
+   "boss": "cronus",
+   "boss_name": "Cronus the Sickle-Bearer",
+   "name": "Harvest of Sons",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The Titan who devoured his children swings the sickle that took his father's crown.",
+   "bricks": {
+    "root": "harvest",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:erebus",
+   "boss": "erebus",
+   "boss_name": "Erebus of the Dark",
+   "name": "Undersea Dark",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The dark beneath the earth rises like a tide and stands over the fighter.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:eris",
+   "boss": "eris",
+   "boss_name": "Eris of Strife",
+   "name": "Apple of Discord",
+   "school": "fire",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Works and Days",
+   "story": "She tosses a single golden apple and every fighter turns on the next.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:geras",
+   "boss": "geras",
+   "boss_name": "Geras Old Age",
+   "name": "Winter in the Bones",
+   "school": "frost",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Old age settles on the fighter's joints and the fight slows.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ker",
+   "boss": "ker",
+   "boss_name": "The Keres of the Field",
+   "name": "Carrion Wings",
+   "school": "poison",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Homer, Iliad XVIII",
+   "story": "The death-spirits drag the wounded from the field by their feet.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:momus",
+   "boss": "momus",
+   "boss_name": "Momus the Fault-Finder",
+   "name": "Mocking Tongue",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "He finds the flaw in every blow, and the flaw becomes the wound.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:moros",
+   "boss": "moros",
+   "boss_name": "Moros of Doom",
+   "name": "Fate's Hand",
+   "school": "shadow",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Doom itself comes slowly, and you feel it near before you see it.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:nemesis",
+   "boss": "nemesis",
+   "boss_name": "Nemesis the Retribution",
+   "name": "Hubris Answered",
+   "school": "holy",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "She waits for the player's boast, then answers it; the player is the one being judged, not the judge.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:oizys",
+   "boss": "oizys",
+   "boss_name": "Oizys of Misery",
+   "name": "Slow Misery",
+   "school": "poison",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The daughter of Night breathes misery, and your arm grows heavy.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:uranus",
+   "boss": "uranus",
+   "boss_name": "Uranus the Sky",
+   "name": "Falling Heavens",
+   "school": "wind",
+   "level": 8,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The sky-father lowers himself on the earth, and the gale comes before him.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:aeacus",
+   "boss": "aeacus",
+   "boss_name": "Aeacus the Doorkeeper",
+   "name": "Keys of the Underworld",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Ovid, Metamorphoses XIII",
+   "story": "He holds the keys, and the door he opens is the one you did not want.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:alecto",
+   "boss": "alecto",
+   "boss_name": "Alecto Never-Ceasing",
+   "name": "Never-Ceasing Wrath",
+   "school": "fire",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Virgil, Aeneid VII",
+   "story": "The Fury who never rests whips the field with a torch of her own anger.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:cerberus",
+   "boss": "cerberus",
+   "boss_name": "Cerberus the Gatekeeper",
+   "name": "Three Throats",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Three throats bay at once, and the sound shuts the way behind you.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:echidna",
+   "boss": "echidna",
+   "boss_name": "Echidna of the Cave",
+   "name": "Mother of Monsters",
+   "school": "poison",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The half-serpent mother of monsters lies in her cave and her brood answers when she calls.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:hydra",
+   "boss": "hydra",
+   "boss_name": "The Lernaean Hydra",
+   "name": "Nine Heads",
+   "school": "poison",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "For each head struck down, two return, and the bite of every one leaves poison.",
+   "bricks": {
+    "root": "baying",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:megaera",
+   "boss": "megaera",
+   "boss_name": "Megaera the Grudger",
+   "name": "Grudge's Lash",
+   "school": "shadow",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Virgil, Aeneid XII",
+   "story": "She keeps every grudge, and the lash falls on all of them at once.",
+   "bricks": {
+    "root": "threeBlows",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:minos",
+   "boss": "minos",
+   "boss_name": "Minos the Judge",
+   "name": "Judge's Verdict",
+   "school": "holy",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey XI",
+   "story": "He sits in the dark with his golden sceptre and gives the verdict, and the sentence falls.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:phlegethon",
+   "boss": "phlegethon",
+   "boss_name": "Phlegethon the Fire-River",
+   "name": "River of Fire",
+   "school": "fire",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Plato, Phaedo",
+   "story": "The river of fire flows round the underworld, and the ground it passes blisters.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rhadamanthus",
+   "boss": "rhadamanthus",
+   "boss_name": "Rhadamanthus the Just",
+   "name": "Just Sentence",
+   "school": "holy",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Homer, Odyssey IV",
+   "story": "His justice is quick, and the sentence is carried out by the next blow.",
+   "bricks": {
+    "root": "theRing",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tisiphone",
+   "boss": "tisiphone",
+   "boss_name": "Tisiphone the Avenger",
+   "name": "Blood-Avenging Whip",
+   "school": "fire",
+   "level": 9,
+   "region": "region:marble-shore",
+   "source": "Virgil, Aeneid VI",
+   "story": "The Fury at the gate of Tartarus lashes the guilty and the doubtful alike.",
+   "bricks": {
+    "root": "ashfall",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ananke",
+   "boss": "ananke",
+   "boss_name": "Ananke of Necessity",
+   "name": "Unyielding Necessity",
+   "school": "shadow",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Plato, Republic X",
+   "story": "Necessity holds the spindle of the world, and the thread tightens round the fighter.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:chronos-serpent",
+   "boss": "chronos-serpent",
+   "boss_name": "Chronos the Coiled Time",
+   "name": "Coil of Ages",
+   "school": "shadow",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Orphic Hymns (Athenagoras)",
+   "story": "The serpent of time coils round the world egg, and each coil is a moment lost.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:eurynome",
+   "boss": "eurynome",
+   "boss_name": "Eurynome the Far-Ruling",
+   "name": "Dance on the Waves",
+   "school": "wind",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica I",
+   "story": "She danced on the waves and made the wind, and the wind is hers to turn.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:gaia",
+   "boss": "gaia",
+   "boss_name": "Gaia the Broad-Breasted",
+   "name": "Mother Earth",
+   "school": "earth",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The earth herself shifts under the fighter, and the ground is the weapon.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:ophion",
+   "boss": "ophion",
+   "boss_name": "Ophion the Serpent Lord",
+   "name": "Rule of the Coil",
+   "school": "earth",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Apollonius, Argonautica I",
+   "story": "He ruled Olympus before Cronus, and he still coils round the mountain.",
+   "bricks": {
+    "root": "crack",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:phoebe",
+   "boss": "phoebe",
+   "boss_name": "Phoebe the Radiant",
+   "name": "Pale Radiance",
+   "school": "holy",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The bright Titaness throws a clean light across the sand, and the dark runs from it.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:pontus",
+   "boss": "pontus",
+   "boss_name": "Pontus the Sea",
+   "name": "Swallowing Sea",
+   "school": "frost",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The barren sea comes up the shore all at once and drags back what it takes.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:rhea",
+   "boss": "rhea",
+   "boss_name": "Rhea of the Mountain",
+   "name": "Stone for a Son",
+   "school": "earth",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "She gave her husband a swaddled stone, and the stone is heavy.",
+   "bricks": {
+    "root": "theWord",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:tethys",
+   "boss": "tethys",
+   "boss_name": "Tethys of the Waters",
+   "name": "Fountain Ebb",
+   "school": "frost",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "The mother of rivers draws the water back, and the ebb pulls at the feet.",
+   "bricks": {
+    "root": "gale",
+    "modifiers": [],
+    "suffix": null
+   }
+  },
+  {
+   "id": "spell:theia",
+   "boss": "theia",
+   "boss_name": "Theia of the Shining Eyes",
+   "name": "Many-Sighted Glare",
+   "school": "holy",
+   "level": 10,
+   "region": "region:marble-shore",
+   "source": "Hesiod, Theogony",
+   "story": "Her many-sighted gaze lights the field, and nothing hides.",
+   "bricks": {
+    "root": "longShadow",
+    "modifiers": [],
+    "suffix": null
+   }
+  }
+ ]
+}
