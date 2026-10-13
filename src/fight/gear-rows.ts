@@ -10,15 +10,19 @@ import { DIALS } from './sheet-rows.ts';
 import { SCHOOL_IDS } from './schools.ts';
 import GEAR_DEFS from './gear-defs.json' with { type: 'json' };
 import GEAR_MANIFEST from './gear-defs.manifest.json' with { type: 'json' };
+import WEIGHT_ROWS from './armour-weights.json' with { type: 'json' };
+import WEIGHT_MANIFEST from './armour-weights.manifest.json' with { type: 'json' };
 
-export type GearSet = { readonly id: string; readonly shape: Readonly<Record<string, number>>; readonly quality: Readonly<Record<string, number>> };
-export type GearRow = { readonly id: string; readonly slot: string | null; readonly preset: boolean; readonly set: string | null; readonly weight: number; readonly wearMax: number; readonly resist: Readonly<Record<string, number>> };
-export type GearTable = { readonly sets: Readonly<Record<string, GearSet>>; readonly owners: Readonly<Record<string, string>>; readonly rows: Readonly<Record<string, GearRow>>; readonly shapeMax: number; readonly qualityMax: number };   // owners: loot opponent id -> the set its armour belongs to
+export type ArmourWeight = { readonly id: string; readonly castPenalty: number; readonly note: string };
+export type GearSet = { readonly id: string; readonly weightClass: string; readonly shape: Readonly<Record<string, number>>; readonly quality: Readonly<Record<string, number>> };
+export type GearRow = { readonly id: string; readonly weightClass: string; readonly slot: string | null; readonly preset: boolean; readonly set: string | null; readonly weight: number; readonly wearMax: number; readonly resist: Readonly<Record<string, number>> };
+export type GearTable = { readonly sets: Readonly<Record<string, GearSet>>; readonly owners: Readonly<Record<string, string>>; readonly rows: Readonly<Record<string, GearRow>>; readonly shapeMax: number; readonly qualityMax: number; readonly weights: Readonly<Record<string, ArmourWeight>> };   // weights: weight class -> sheet points off spellPower; owners: loot opponent id -> the set its armour belongs to
 
-type RawRow = { id: string; slot?: string; preset?: boolean; extends?: string; set?: string; weight: number; wearMax: number; resist: Record<string, number> };
+type RawRow = { id: string; weightClass: string; slot?: string; preset?: boolean; extends?: string; set?: string; weight: number; wearMax: number; resist: Record<string, number> };
 
-export function loadGearDefs(raw: { sets?: readonly unknown[]; owners?: readonly unknown[]; gear?: readonly unknown[]; rules?: readonly unknown[] }, schools: readonly string[] = SCHOOL_IDS, slots: readonly string[] = ARMOUR_SLOTS, dials: readonly string[] = DIALS.map((d) => d.id)): GearTable {
-  loadRegistry(GEAR_MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, raw, 'gear-defs.json')));
+export function loadGearDefs(raw: { sets?: readonly unknown[]; owners?: readonly unknown[]; gear?: readonly unknown[]; rules?: readonly unknown[] }, schools: readonly string[] = SCHOOL_IDS, slots: readonly string[] = ARMOUR_SLOTS, dials: readonly string[] = DIALS.map((d) => d.id), weightRaw: { armourWeight?: readonly unknown[] } = WEIGHT_ROWS): GearTable {
+  loadRegistry([...WEIGHT_MANIFEST.tables, ...GEAR_MANIFEST.tables].map((t) => tableFromFile(t as unknown as Manifest, t.table === 'armourWeight' ? weightRaw : raw, t.table === 'armourWeight' ? 'armour-weights.json' : 'gear-defs.json')));
+  const weights = Object.fromEntries(((weightRaw.armourWeight ?? []) as readonly ArmourWeight[]).map((w) => [w.id, w]));
   const rules = (raw.rules ?? []) as readonly { id: string; shapeMax: number; qualityMax: number }[];
   if (rules.length !== 1 || rules[0]!.id !== 'gear' || rules[0]!.shapeMax < 1 || rules[0]!.qualityMax < 1) throw Error('gear-defs: exactly one rule row, "gear", with a shapeMax and a qualityMax from 1');
   const { shapeMax, qualityMax } = rules[0]!, sets: Record<string, GearSet> = {};
@@ -40,9 +44,9 @@ export function loadGearDefs(raw: { sets?: readonly unknown[]; owners?: readonly
     if (r.weight < 0 || r.wearMax < 1) throw Error(`gear-defs "${r.id}": weight is not negative and wearMax is at least 1`);
     const resist = { ...(base?.resist ?? {}), ...r.resist };
     for (const [school, n] of Object.entries(resist)) if (!schools.includes(school) || !Number.isInteger(n) || Math.abs(n) > 4) throw Error(`gear-defs "${r.id}": resist ${school} is a school row and a whole number within +-4`);
-    out[r.id] = { id: r.id, slot, preset, set: r.set ?? base?.set ?? null, weight: r.weight, wearMax: r.wearMax, resist };
+    out[r.id] = { id: r.id, weightClass: r.weightClass, slot, preset, set: r.set ?? base?.set ?? null, weight: r.weight, wearMax: r.wearMax, resist };
   }
-  return { sets, owners, rows: out, shapeMax, qualityMax };
+  return { sets, owners, rows: out, shapeMax, qualityMax, weights };
 }
 
 export const GEAR: GearTable = loadGearDefs(GEAR_DEFS);
