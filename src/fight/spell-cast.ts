@@ -32,7 +32,7 @@ loadRegistry(TABLES);
 export const BRICKS: Readonly<Record<string, Brick>> = Object.fromEntries((TABLES[1]!.rows as unknown as Brick[]).map((b) => [b.id, b]));
 export const CAST: CastRule = (TABLES[2]!.rows as unknown as CastRule[]).find((r) => r.id === 'cast')!;
 if (!CAST || !(CAST.relDivisor > 0) || CAST.spread < 0 || CAST.creditPerPoint < 0) throw Error('cast-rules: the cast row needs spread >= 0, relDivisor > 0, creditPerPoint >= 0');
-const INDEX = (SPELL_INDEX as { spells: Record<string, readonly [string, number]> }).spells;
+const INDEX = (SPELL_INDEX as unknown as { spells: Record<string, readonly [string, number]> }).spells;
 for (const [id, [root, level]] of Object.entries(INDEX)) if (!Object.hasOwn(BRICKS, root) || !Number.isInteger(level) || level < 1 || level > 10) throw Error(`spell-index "${id}": root "${root}" is a brick row and level is a rank 1-10`);
 export const SPELL_IDS: readonly string[] = Object.keys(INDEX);
 export const isSpellId = (id: string): boolean => Object.hasOwn(INDEX, id);
