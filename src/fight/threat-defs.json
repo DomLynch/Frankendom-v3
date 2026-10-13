@@ -1,0 +1,10 @@
+{
+  "sources": [
+    { "id": "damage", "weight": 1 }
+  ],
+  "awareness": [
+    { "id": "notice", "value": 9, "unit": "m" },
+    { "id": "sight", "value": 14, "unit": "m" },
+    { "id": "giveUp", "value": 10, "unit": "s" }
+  ]
+}

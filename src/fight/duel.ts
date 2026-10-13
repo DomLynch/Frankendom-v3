@@ -2,6 +2,10 @@ import { bladeImpact, type HitLocation } from './blade.ts';
 import { checkSheet, statDown, statUp, type Sheet } from './sheet-rows.ts';
 import { kindOf } from './damage-kinds.ts';
 import { STANCE_ROWS_ON } from './stance-era.ts';
+import { POISE_LADDER_ON } from './poise-era.ts';
+import { CONE_ON } from './cone-era.ts';
+import { breathTicks, coneOf, inCone, pulseDamage } from './cone-rules.ts';
+import { LADDER, flinchTicks, poiseTier } from './poise-ladder.ts';
 import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
@@ -44,6 +48,8 @@ export type Fighter = {
   regen: number;   // stamina regeneration multiplier (moves.ts `Opponent.regen`; 1 = a man)
   speed: number;   // pace multiplier: walking, sprinting, the wind-up lunge and the backstep (moves.ts `Opponent.speed`; 1 = a man)
   poise: number;   // a plain clean hit dealing less than this never staggers this fighter (moves.ts `Opponent`); 0 = human
+  poiseRest?: number;   // v54 (poise-ladder.ts): ticks left of the poise-rest a full stagger started; a flinch inside it is a shrug. Absent = none, so a fight without the ladder hashes as before
+  breath?: { k: number; wait: number; heading: number };   // v55 (cone-rules.ts): a cone special mid-breath: pulses done, ticks since the last pulse, the heading fixed at the release. Absent unless breathing, so a fight without a cone hashes as before
   loiter: number;   // ticks spent within the wall band without attacking (RULES.wall.loiter); the lorarii whip at `ticks`
   lashed: boolean;   // the lorarii have already lashed him in this spell at the wall: the next whip is a repeat, so its tell is shorter
   skill: SkillId | null; skillCooldown: number;   // the equipped skill (null = none: every opponent in V1) and the ticks until it may fire again (RULES.skillCooldown)
@@ -91,7 +97,7 @@ export type Finish = { victim: Side; location: HitLocation; move: MoveId; headin
 type EventType = 'SpecialStarted' | 'SpecialLanded' | 'SpecialFizzled' | 'SpecialInterrupted' | 'ActionStarted' | 'AttackStarted' | 'Charging' | 'Charged' | 'AttackActive' | 'AttackMissed' | 'Hit' | 'Blocked' | 'Parried' | 'GuardBroken' | 'PostureBroken' | 'Dodged' | 'Staggered' | 'StaminaExhausted' | 'Killed' | 'SharedHit' | 'Whipped' | 'WhipRaised' | 'GambitArmed' | 'GambitFailed';
 // Event sides: a blow that lands (Hit, GuardBroken, Killed) names the attacker as `actor` and the one struck as `target`; a defence that
 // succeeds (Blocked, Parried, Dodged) names the defender as `actor` and the attacker as `target`.
-export type CombatEvent = { tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
+export type CombatEvent = { pulse?: number; cone?: boolean; damageKind?: string; tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
 // WhipRaised: the lorarius lifts his whip, `lead` ticks before the lash that follows (RULES.wall.loiter.raise, or raiseAgain for a repeat) —
 // presentation scales its raise animation by `lead` rather than assuming one. Both whip events carry `guard`: which sixth of the wall the
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
@@ -252,6 +258,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // A committed special windup: the caster stands and tracks the target, whatever the thumb does (no guard, roll, parry or step).
   if (before[0].special || before[1].special) intents = [before[0].special ? idleIntent() : intents[0], before[1].special ? idleIntent() : intents[1]];
   const fighters = before.map(f => ({ ...f, age: f.stall > 0 ? f.age : f.age + 1, stall: Math.max(0, f.stall - 1), wound: Math.max(0, f.wound - 1), chain: Math.max(0, f.chain - 1), parryCooldown: Math.max(0, f.parryCooldown - 1), skillCooldown: Math.max(0, f.skillCooldown - 1), punish: Math.max(0, f.punish - 1), critical: Math.max(0, f.critical - 1), posture: f.phase === 'hurt' || f.phase === 'dead' || f.postureRest > 0 ? f.posture : Math.max(0, f.posture - stanced(f, 'recover', R.posture.decay) * guardOf(f, R).postureDecay * (f.health < R.posture.bloodied * f.maxHealth ? R.posture.bloodiedDecay : 1)), postureRest: Math.max(0, f.postureRest - 1), rest: Math.max(0, f.rest - 1), exposed: Math.max(0, f.exposed - 1), evaded: Math.max(0, f.evaded - 1), counterWindow: Math.max(0, f.counterWindow - 1), buffer: f.buffer && f.buffer.ttl > 1 ? { ...f.buffer, ttl: f.buffer.ttl - 1 } : null })) as [Fighter, Fighter];
+  for (const f of fighters) if (f.poiseRest) { if (f.poiseRest > 1) f.poiseRest--; else delete f.poiseRest; }
   for (const f of fighters) if (f.specialRecover) f.specialRecover--;
   for (const f of fighters) if (f.feintEdge) { f.feintEdge--; if (!f.feintEdge) delete f.feintEdge; }   // a trickster's feint beat runs down (RULES.feintBeat)
   if (!before[0].health || !before[1].health) return { tick, fighters, finish: duel.finish, events, ...(duel.roll ? { roll: duel.roll } : {}), ...(duel.gambit ? { gambit: duel.gambit } : {}), ...(duel.cast ? { cast: duel.cast } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
@@ -528,9 +535,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         }
         if (!def.path) spend(j, def.staminaDamage);
         // Poise: a brute shrugs a plain blow under his threshold — no stagger, no knockback; the wound and the posture still count.
-        const shrugged = !g && (poised || (dealt < d.poise && !counter && !stop && !rear && !charged));
+        // v54 (poise-ladder.ts): a creature with poise also has a FLINCH tier between the shrug and the full stagger, and a full stagger buys poise-rest. Below v54, or for a fighter without poise, the single threshold.
+        const tier = POISE_LADDER_ON && !g && !poised && d.poise > 0 && !counter && !stop && !rear && !charged ? poiseTier(dealt, d.poise, !!d.poiseRest) : null;
+        const shrugged = !g && (poised || (tier ? tier === 'shrug' : dealt < d.poise && !counter && !stop && !rear && !charged));
         const hit = rolled(dealt, i, j, pen); if (kind?.drain) spend(j, Math.round(hit * kind.drain)); wound(hit, shrugged ? 0 : def.knockback); events.push({ tick, type: 'Hit', actor: i, target: j, move: a.move, damage: hit, ...rollTag(), location, heading: a.body.heading, counter: counter || stop, rear, charged, ...(g ? { gambit: true } : {}), ...(beaten ? { beaten: true } : {}), ...(raised ? { guarded: true } : {}), weapon: weapon.id, material: weapon.material, ...(stop ? { stop: true } : {}), ...(trip ? { trip: true } : {}) });
-        if (!shrugged || !D.health) stagger(stun);
+        if (!shrugged || !D.health) stagger(tier === 'flinch' ? flinchTicks(stun) : stun);
+        if (tier === 'stagger' && D.health && LADDER.immunity) D.poiseRest = LADDER.immunity;
         shake(j, dealtPosture(def.posture * (counter ? R.counter.damage : 1) * (rear ? R.rear.posture : 1) * (g ? GAMBIT_ODDS.multiplier : 1)));
       }
     }
@@ -538,12 +548,16 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // 4. Special Moves, after the blows of this tick. Releases first, both sides at once: the release tick lands whatever happened to the caster
   // on it, and a lethal release on the tick he fell is a double kill through the draw. Unblockable and undodgeable. Then every windup still
   // running counts down, and one whose caster has fallen fizzles.
-  const releasing = [fighters[0].special === 1, fighters[1].special === 1], standing = [fighters[0].health > 0, fighters[1].health > 0];   // both judged before either lands
+  const releasing = [fighters[0].special === 1, fighters[1].special === 1], standing = [fighters[0].health > 0, fighters[1].health > 0];
+  const breathed = [false, false];   // a breath that began this tick pulses from the next one   // both judged before either lands
   for (const i of [0, 1] as const) {
     const j = (1 - i) as Side, A = fighters[i], D = fighters[j];
     if (!releasing[i]) continue;
     A.special = 0; delete A.castHurt; A.skillCooldown = R.special.cooldown; A.specialRecover = R.special.recovery;   // re-armed and held back from attacking, counted from the release
     if (!standing[j]) continue;
+    // v55 (cone-rules.ts): a special with a cone row breathes instead of striking once: the heading is fixed on the target now, the pulses follow, and the caster is held back until the last of them is done.
+    const cone = CONE_ON && !A.spell ? coneOf(A.specialName) : undefined;
+    if (cone) { A.breath = { k: 0, wait: 0, heading: aim(A.body, D.body) }; A.specialRecover = R.special.recovery + breathTicks(cone); breathed[i] = true; continue; }
     const move: MoveId = SKILL_MOVE[A.skill ?? DAY_ONE_SKILL]!;
     // A spell resolves its outcome from the seeded stream (one draw per cast that lands on a standing target); a fizzle spent its stamina and re-armed the full cooldown above, and deals nothing.
     const outcome = A.spell && duel.cast ? castOutcome(A.spell, rollUnit(duel.cast.seed, casts++)) : undefined, mult = A.spell && outcome ? outcomeMult(A.spell, outcome) : 1;
@@ -551,6 +565,23 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const damage = Math.round((A.spell && outcome ? A.spell.share * mult : A.specialShare!) * D.maxHealth);
     D.health = Math.max(0, D.health - damage);
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(A.spell && outcome ? { spell: A.spell.id, outcome } : {}) });
+    if (D.health) continue;
+    D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
+    finish = finish ? { ...finish, draw: true } : { victim: j, location: 'torso', move, heading: A.body.heading };
+    events.push({ tick, type: 'Killed', actor: i, target: j, move, location: 'torso', heading: A.body.heading });
+  }
+  // 4b. Breaths (v55): every `every` ticks a pulse tests the cone from the caster's position along the heading fixed at the release; inside it the pulse deals its ramp weight of the special's damage.
+  for (const i of [0, 1] as const) {
+    const j = (1 - i) as Side, A = fighters[i], D = fighters[j], b = A.breath;
+    if (!b || breathed[i]) continue;
+    const cone = coneOf(A.specialName);
+    if (!cone || !A.health) { delete A.breath; continue; }
+    if (b.wait + 1 < cone.every) { A.breath = { ...b, wait: b.wait + 1 }; continue; }
+    if (b.k + 1 >= cone.ramp.length) delete A.breath; else A.breath = { k: b.k + 1, wait: 0, heading: b.heading };
+    if (!D.health || !inCone(cone, distance(A.body, D.body), wrapAngle(aim(A.body, D.body) - b.heading))) continue;
+    const move: MoveId = SKILL_MOVE[A.skill ?? DAY_ONE_SKILL]!, damage = pulseDamage(cone, Math.round(A.specialShare! * D.maxHealth), b.k);
+    D.health = Math.max(0, D.health - damage);
+    events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, name: A.specialName!, pulse: b.k, cone: true, damageKind: cone.damageKind });
     if (D.health) continue;
     D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
     finish = finish ? { ...finish, draw: true } : { victim: j, location: 'torso', move, heading: A.body.heading };
