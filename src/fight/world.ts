@@ -11,7 +11,7 @@ import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
-import type { CcGuard, CcLadder } from './cc-ladder.ts';
+import { guardOfLevel, type CcGuard, type CcLadder } from './cc-ladder.ts';
 import { fieldOf } from './catalogue-rows.ts';
 import type { CombatEvent, Duel } from './duel.ts';
 
@@ -86,8 +86,9 @@ export function creature(id: string, kind: string, x: number, z: number, facing 
   const o = OPPONENT(kind);
   if (!o) throw new RangeError(`zone1: unknown creature kind ${kind}`);
   const lv = Math.min(MAX_LEVEL, Math.max(1, Math.round(level))), body = opponentAt(o, lv);
-  const tier = fieldOf(kind, 'immuneTier'), resist = fieldOf(kind, 'resist'), ccGuard: CcGuard | undefined = tier !== undefined || resist !== undefined
-    ? { ...(tier !== undefined ? { immuneTier: String(tier) } : {}), ...(resist !== undefined ? { resist: String(resist) } : {}) } : undefined;   // its catalogue row's CC rows (none named yet)
+  const tier = fieldOf(kind, 'immuneTier'), resist = fieldOf(kind, 'resist'), ranked = guardOfLevel(lv);   // a catalogue row's own CC rows win; else the rank band its level falls in (cc-defs.json)
+  const ccGuard: CcGuard | undefined = tier !== undefined || resist !== undefined || ranked
+    ? { ...ranked, ...(tier !== undefined ? { immuneTier: String(tier) } : {}), ...(resist !== undefined ? { resist: String(resist) } : {}) } : undefined;
   return { ...fighter(id, 'creature', kind, x, z, facing, PLAYER_RADIUS * o.scale, body.health, body.poise), level: lv, ...(ccGuard ? { ccGuard } : {}) };
 }
 /** A fighter with a picked stance ('neutral' = Balanced = none). The same four picks and the same signed per-mille table as the Pit (src/fight/stance.ts), one kit everywhere. */

@@ -1,15 +1,15 @@
 {
   "kinds": [
-    { "id": "stun", "sources": ["postureBreak", "parryStun", "gambitFail", "exhaustedHeavy"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "land", "immunity": 0 },
-    { "id": "knockdown", "sources": ["wallSlam"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "land", "immunity": 0 },
-    { "id": "root", "sources": ["legWound"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "land", "immunity": 0 }
+    {"id": "stun", "sources": ["postureBreak", "parryStun", "gambitFail", "exhaustedHeavy"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 120},
+    {"id": "knockdown", "sources": ["wallSlam"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 180},
+    {"id": "root", "sources": ["legWound"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 0}
   ],
   "tiers": [
-    { "id": "unstoppable", "immune": ["stun", "knockdown", "root"] },
-    { "id": "steadfast", "immune": ["knockdown"] }
+    {"id": "unstoppable", "immune": ["stun", "knockdown", "root"], "from": 10, "to": 10},
+    {"id": "steadfast", "immune": ["knockdown"], "from": 8, "to": 9}
   ],
   "resists": [
-    { "id": "stubborn", "keep": 75 },
-    { "id": "iron", "keep": 50 }
+    {"id": "stubborn", "keep": 75, "from": 8, "to": 9},
+    {"id": "iron", "keep": 50, "from": 10, "to": 10}
   ]
 }

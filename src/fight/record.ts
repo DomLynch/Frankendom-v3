@@ -16,7 +16,7 @@ import { FIRST_LATE_NOTICE_VERSION, FIRST_SCALED_VERSION, LATE_NOTICE, PLAY_SCAL
 import { STAB_ON } from './stab-rule.ts';
 import { PICKS, type PickedStance } from './stance.ts';
 
-export const RECORD_VERSION = 50;   // 50: bump 50 (2026-10-13; Combat B, Wave A1 steps 6+7, Lead's provisional number) — CC timing + immunity rows and the swarm band (cc-ladder.ts windowFrom / immunity / tiers / resists, catalogue fields immuneTier + resist; roll.ts SWARM_ROWS + Duel.roll.swarm/rank), all opt-in: no shipped fight names one, so every fight is byte for byte as v49.
+export const RECORD_VERSION = 51;   // 51: bump 51 (2026-10-13; Combat, Wave A1 live numbers, provisional on 50) — Lead's accepted CC numbers go live in the cc-defs.json / swarm-defs.json rows (windowFrom end; post-CC immunity stun 120 / knockdown 180; tiers and resists as RANK BANDS: unstoppable + iron rank 10, steadfast + stubborn ranks 8-9; swarm +3 a foe, cap 6 ranks 1-5 / 9 ranks 6-10). Only a fight that carries a ladder (the open world) or a roll moves; a recorded Pit fight carries neither, so no record is reached. Before: 50: bump 50 (2026-10-13; Combat B, Wave A1 steps 6+7, Lead's provisional number) — CC timing + immunity rows and the swarm band (cc-ladder.ts windowFrom / immunity / tiers / resists, catalogue fields immuneTier + resist; roll.ts SWARM_ROWS + Duel.roll.swarm/rank), all opt-in: no shipped fight names one, so every fight is byte for byte as v49.
 // 49: bump 49 (2026-10-13; Combat, Wave A1 PR2) — damage kinds as data.
 // 21: bump 21 (2026-09-29, Dom's GO via Lead; Combat) — Special Moves on the SKILL slot (duel.ts withSpecials, RULES.special), behind a per-fight flag the header now carries (one byte after the skill). With the flag off a v21 fight steps bit for bit as v20 (every new branch reads a field only withSpecials sets), so v20 stays readable (REACH[21] is empty).
 // 20: bump 20 (2026-09-28, Dom via Strategy / Lead) — the Plague Doctor fights with the estoc, not the longsword (roster.ts; his archetype row is the Nightborn's, who fights with it). REACH[20]: the Plague Doctor at every level. Inside the same unreleased bump (2026-09-29): his easy tellReaction 15 (moves.ts), closing the estoc's L6 thrust-from-range hole. And the sim's math (2026-09-29, Strategy ruling (b)): v20 on steps on src/fight/detmath.ts (sin/cos/atan2/hypot on + − * / sqrt, the same bits in every engine; Node's V8 and Chromium's had split a Dwarf link on a 1-ulp atan2); v18/v19 records replay on the engine's own Math, frozen, picked by this version field through detmath.underRecord, so no shared link becomes a fresh fight.
@@ -76,18 +76,18 @@ export const RECORD_VERSION = 50;   // 50: bump 50 (2026-10-13; Combat B, Wave A
 // [.., 29] -> [.., 29, 30] with the writer bump to 30: widened, REACH[30] lists the Shieldmaiden, the Knight and the Plague Doctor from level 1 (their own profile rows), so a v29 record of any other opponent still replays.
 // [.., 27] -> [.., 27, 28] with the writer bump to 28: widened, REACH[28] is empty (only a specials-flag fight steps differently; flag-off records of any readable version replay exactly as before).
 // [.., 31] -> [.., 31, 32] with the writer bump to 32: widened, REACH[32] is empty (a patron-less fight writes 31 and steps as before; only a patron record is v32).
-export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50] as const;
+export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51] as const;
 // What a fight with no patron writes: the writer ceiling is RECORD_VERSION (32), but a record names the LOWEST version that can express its fight.
 // A literal 31 only while the ceiling is 32 (the v31 bytes a patron-less fight has always written); from the next bump on a no-patron fight is simply the current version, whose
 // header carries a patron byte of 0 (only v32 refuses a zero patron, because a v32 patron-less fight was always written as 31). Pinned by tests/record-version-guard.test.ts, which simulates RV33.
-export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 50 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
+export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 51 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
 export const FIRST_GAMBIT_VERSION = 33;
 export const FIRST_STANCE_VERSION = 34;
 export const FIRST_POSE_VERSION = 38;
 export const FIRST_GROUP_VERSION = 39;
 export const FIRST_SHEET_VERSION = 48;   // RV48 (Wave A1 PR1): the fight carries the player's sheet (flag bit 7): a count byte, then (dial code u8, the dial's effective value u8) pairs, in code order, dials off base only; ONLY a sheet fight is written as v48
-export const PATRON_VERSION = (RECORD_VERSION as number) <= 50 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
+export const PATRON_VERSION = (RECORD_VERSION as number) <= 51 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
 // Each bump's REACH (the standing rule, Strategy 2026-09-28): the fights bump N can change, as (opponent, from level). A record of version
 // k is refused when any bump after k reaches its opponent at its level; everything else is read. Literals on purpose, not the data they
 // describe (LOADOUT_FROM, ROSTER): a reach records what that bump changed and must not move when the data moves later (that change bumps
@@ -122,6 +122,7 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   34: [],   // stances: only a fight with the stances flag (bit 2, v34) moves, no flag-off fight is reached
   33: [],   // the Gambit: only a fight with the gambit flag moves (flag bit 1, v33), no flag-off fight is reached
   49: [],   // damage kinds as data (damage-kind-defs.json): no shipped move names a kind, so every fight is byte for byte as v48; no fight is reached
+  51: [],   // the live CC / tier / resist / swarm numbers: only fights that carry a ladder (the open world) or a roll move, and no recorded Pit fight does; no record is reached
   50: [],   // CC timing / immunity tier / partial resist rows and the swarm band (Combat B): opt-in, no shipped creature or fight names one, so no fight is reached
   48: [],   // the sheet (Wave A1 PR1): only a fight with the sheet flag (bit 7, v48) moves, no sheet-less fight is reached
   32: [],   // patron perks: a no-patron fight writes 31 and steps as before; a patron record is v32 and no older fight is reached
