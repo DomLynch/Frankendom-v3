@@ -7,8 +7,9 @@ import { bloodiesMaterial, FLOOR_POOLS, FLOOR_SPLASHES, multiplyOnto } from './f
 export { multiplyOnto };
 import type { HitLocation } from './blade.ts';
 import type { Direction } from './moves.ts';
+import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 
-export type BloodMode = 'red' | 'dark' | 'off';
+export type { BloodMode };
 type Rigs = { player: { anchor: THREE.Object3D }; opponent: { anchor: THREE.Object3D } };
 
 // Twelve pooled ground splats; a kill takes one as the corpse's spreading pool.
@@ -35,7 +36,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
   // multiply onto it (scripts/blood/floor-textures.py) — a near-black core, thin translucent edges the grain shows through, a spatter
   // halo — drawn with multiplyOnto(), so blood darkens the sand instead of painting over it. The canvas star stands in until they
   // land (and under node), with the old tint.
-  const tone = (mode: BloodMode) => (mode === 'dark' ? '#352426' : '#681a19');
+  const tone = (mode: BloodMode) => (bloodDark(mode) ? '#352426' : '#681a19');
   if (typeof document !== 'undefined')
     Promise.all([...FLOOR_POOLS, ...FLOOR_SPLASHES].map((f) => new THREE.TextureLoader().loadAsync(BLOOD_ASSET(f)))).then((all) => {
       for (const t of all) t.colorSpace = THREE.SRGBColorSpace;
@@ -53,7 +54,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
       splat.mesh.position.set(target.x, 0.022 + (splatIndex % 12) * 0.0001, target.z);
       splat.mesh.scale.set(0.22 + (splatIndex % 3) * 0.05, 0.13 + (splatIndex % 4) * 0.035, 1);
       splat.mesh.rotation.z = splatIndex * 2.4;
-      splat.age = 0; splat.dark = bloodMode === 'dark'; splat.pool = false; if (maps) multiplyOnto(splat.mesh.material, shape(false, splatIndex >> 1));   // >> 1: off the scale terms' period, so a shape never keeps one aspect
+      splat.age = 0; splat.dark = bloodDark(bloodMode); splat.pool = false; if (maps) multiplyOnto(splat.mesh.material, shape(false, splatIndex >> 1));   // >> 1: off the scale terms' period, so a shape never keeps one aspect
       splat.mesh.material.color.set(photo ? FLOOR_FRESH : tone(bloodMode));
     },
     // A kill: the corpse keeps pooling after the splashes fade (cleared on rematch like everything else).
@@ -64,7 +65,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
       pool.mesh.position.set(target.x, 0.03, target.z);
       pool.mesh.rotation.z = splatIndex * 2.4;
       pool.mesh.scale.set(0.3, 0.2, 1);
-      pool.age = 0; pool.dark = bloodMode === 'dark'; pool.pool = true; if (maps) multiplyOnto(pool.mesh.material, shape(true, splatIndex));
+      pool.age = 0; pool.dark = bloodDark(bloodMode); pool.pool = true; if (maps) multiplyOnto(pool.mesh.material, shape(true, splatIndex));
       pool.mesh.material.color.set(photo ? FLOOR_FRESH : tone(bloodMode));
     },
     update(dt: number) {
@@ -397,7 +398,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
         const severity = Math.min(1, Math.max(0, (WOUND_THRESHOLD - health[side]) / WOUND_THRESHOLD)), root = roots[side];
         for (const mark of fighters[side]) {
           const bone = mark.used ? mark.bone : null;
-          const show = !!bone && !!root && health[side] <= WOUND_THRESHOLD && bloodMode !== 'off' && !hidden[side];
+          const show = !!bone && !!root && health[side] <= WOUND_THRESHOLD && !bloodHidden(bloodMode) && !hidden[side];
           mark.group.visible = show;
           if (!show || !bone) continue;
           mark.age += dt;
@@ -419,7 +420,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
           shed(mark, severity, dry);
           if (eye && scratchEye.copy(eye).sub(mark.group.position).normalize().dot(normal) < -0.15) { mark.group.visible = false; continue; }
           const roughness = DRY.roughness[0] + (DRY.roughness[1] - DRY.roughness[0]) * dry;
-          scratchColor.copy(photo ? FRESH : CANVAS_FRESH).lerp(photo ? DRIED : CANVAS_DRIED, dry); if (bloodMode === 'dark') scratchColor.multiply(DARK_MODE);
+          scratchColor.copy(photo ? FRESH : CANVAS_FRESH).lerp(photo ? DRIED : CANVAS_DRIED, dry); if (bloodDark(bloodMode)) scratchColor.multiply(DARK_MODE);
           const fade = Math.min(1, mark.age / .25);
           mark.mark.scale.set(mark.width * (.9 + .5 * severity) * mark.scale, (.9 + .5 * severity) * mark.scale, 1);
           mark.mark.material.opacity = fade * (.75 + .25 * severity); mark.mark.material.color.copy(scratchColor); mark.mark.material.roughness = roughness;
@@ -444,7 +445,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
       for (const drop of drops) {
         if (!drop.live) continue;
         drop.vy -= DROPS.gravity * dt; drop.mesh.position.y += drop.vy * dt;
-        drop.mesh.visible = bloodMode !== 'off';
+        drop.mesh.visible = !bloodHidden(bloodMode);
         if (drop.mesh.position.y > DROPS.floor) continue;
         drop.live = false; drop.mesh.visible = false;
         const spot = spots[nextSpot++ % spots.length], size = DROPS.spot[0] + unit(lcg(drop.seed)) * (DROPS.spot[1] - DROPS.spot[0]);
@@ -453,10 +454,10 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
       }
       for (const spot of spots) {
         spot.life = Math.max(0, spot.life - dt);
-        spot.mesh.visible = spot.life > 0 && bloodMode !== 'off';
+        spot.mesh.visible = spot.life > 0 && !bloodHidden(bloodMode);
         if (!spot.mesh.visible) continue;
         spot.mesh.material.opacity = Math.min(1, spot.life / 3) * 0.9;
-        spot.mesh.material.color.set(!photo ? '#681a19' : bloodMode === 'dark' ? '#a8a0a0' : '#ffffff');
+        spot.mesh.material.color.set(!photo ? '#681a19' : bloodDark(bloodMode) ? '#a8a0a0' : '#ffffff');
       }
     },
     clear() { for (const side of fighters) for (const mark of side) { mark.used = false; mark.bone = null; mark.anchor = null; mark.group.visible = false; mark.age = 0; mark.runs = 0; for (const s of mark.strands) { s.live = false; s.mesh.visible = false; s.drop = Infinity; } }
@@ -502,7 +503,7 @@ export function createBladeBlood() {
             const bloodied = object.material as THREE.MeshStandardMaterial;
             bloodied.color
               .copy(original.color)
-              .lerp(new THREE.Color(bloodMode === 'dark' || twoHanded ? '#2a1516' : '#7a1410'), 0.55);
+              .lerp(new THREE.Color(bloodDark(bloodMode) || twoHanded ? '#2a1516' : '#7a1410'), 0.55);
             if (twoHanded) {
               bloodied.metalness = Math.min(original.metalness, 0.3);
               bloodied.roughness = Math.max(original.roughness, 0.7);
