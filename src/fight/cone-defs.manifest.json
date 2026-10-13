@@ -1,0 +1,16 @@
+{
+  "tables": [
+    {
+      "table": "cone",
+      "file": "cone-defs.json",
+      "at": "cones",
+      "key": "id",
+      "required": {
+        "angle": "number",
+        "range": "number",
+        "every": "integer",
+        "damageKind": "string"
+      }
+    }
+  ]
+}
