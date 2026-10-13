@@ -6,13 +6,13 @@
 import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from '../../audio/sprite.ts';
 import { playGate } from '../../audio/gate.ts';
 import { BOSSES } from '../boss-rows.ts';
+import CUES from '../special-cues.json' with { type: 'json' };
 export const SPECIAL_CUES = ['charge', 'quake', 'tithe', 'redwind', 'hades', 'nyx', 'fistful', 'gone', 'liars', 'cracking', 'ashfall', 'windwall', 'baying', 'longshadow', 'harvest', 'theword', 'threeblows', 'rimshake', 'baredface', 'thering', 'aegis', 'avalon', 'foretold', 'theprice', 'plagueflies', 'poisonstain', 'lastbreath', 'thesling', 'wrath', 'storm', 'cuts', 'wake', 'stirring', 'tempo', 'pulse', 'drag', 'swing'] as const;
 export type SpecialCue = typeof SPECIAL_CUES[number];
 // The cue each `?special=<id>` preview plays (special-look.ts SPECIAL_TESTS / special-modes.ts SPECIAL_MODES): one line per move, so a lane's registry entry is not touched. A fight is never told.
 export const SPECIAL_CUE_OF: Readonly<Record<string, SpecialCue>> = {
   ...Object.fromEntries(BOSSES.map((r) => [r.id, r.cue as SpecialCue])),   // every boss with a bosses.json row: a cue on the bosses.json row
-  shield: 'quake', centurion: 'charge', tithe: 'tithe',
-  cuts: 'cuts', wake: 'wake', stirring: 'stirring', tempo: 'tempo', pulse: 'pulse', drag: 'drag', swing: 'swing',
+  ...Object.fromEntries((CUES.rows as readonly { id: string; cue: string }[]).map((r) => [r.id, r.cue as SpecialCue])),   // special-cues.json: the class specials (not boss rows)
 };
 // One file pair per cue, named for it (src/assets/special-audio/<cue>.ogg|.m4a): built from SPECIAL_CUES as duel.ts builds its map (Vite resolves the static-prefix template).
 const URLS = Object.fromEntries(SPECIAL_CUES.map((cue) => [cue, { opus: new URL(`../assets/special-audio/${cue}.ogg`, import.meta.url).href, aac: new URL(`../assets/special-audio/${cue}.m4a`, import.meta.url).href }])) as Record<SpecialCue, Record<Format, string>>;
