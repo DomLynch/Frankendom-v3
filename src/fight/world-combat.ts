@@ -54,7 +54,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const gearOf = () => { const { gear, level } = mine(), p = player(ME, 0, 0, 0, gear, level); return { attack: p.attack, res: p.res, level: p.level, shielded: p.shielded }; };
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
-  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, attack: g.attack, res: g.res, weapon: mine().weapon ?? DEFAULT_WEAPON, health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
+  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, attack: g.attack, res: g.res, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
   function release(id: string) { recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
