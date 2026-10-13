@@ -85,7 +85,7 @@ export function createHud(element: Lookup) {
         (a) => accepts(practice, a) || (a === 'backstep' && accepts(practice, 'dodge')),
       );
       // accepts() is true for every action in a committed action's buffer window, so SKILL refuses its own cooldown here (live c1bda34d).
-      const skillOk = practice.duel.fighters[0].skillCooldown === 0 && practice.duel.fighters[0].skill !== null && accepts(practice, 'skill');
+      const skillOk = practice.duel.fighters[0].skillCooldown === 0 && (practice.duel.fighters[0].skill !== null || practice.duel.fighters[0].spell !== undefined) && accepts(practice, 'skill');   // an equipped spell is cast through the same slot, with or without a skill (spell-pick.ts)
       const gap = Math.hypot(practice.enemy.x - practice.fighter.x, practice.enemy.z - practice.fighter.z);
       gaps.record(practice.duel.tick, gap, practice.duel.fighters[0].phase === 'hurt');   // every update, before the dedup below: the history must not skip a quiet frame
       const inKickReach = gap <= KICK_LANDS && !(view.kickClose && gaps.retreating(practice.duel.tick, gap));   // flag off: the plain 1.5 m light of today
