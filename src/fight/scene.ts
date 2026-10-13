@@ -163,7 +163,7 @@ export function createScene(
   // `?look=armfeel&feel=high|low|off` (armfeel.ts): the victim's flinch on a visual pivot between the fighter's root and its rig. Absent or `off`: no pivot, today's frame.
   const feel = typeof location === 'undefined' ? undefined : armfeelFrom(location.search, typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const flinches = feel && feel !== 'off' ? [new Flinch(feel), new Flinch(feel)] : null;
-  const upright = typeof location !== 'undefined' && uprightFrom(location.search);   // ?look=upright (upright-ready.ts): the counter-pitched ready pose, look test only; off without the flag
+  const upright = typeof location !== 'undefined' ? uprightFrom(location.search) : undefined;   // ?look=upright (upright-ready.ts): the counter-pitched ready pose, look test only; off without the flag
   const stance = typeof location !== 'undefined' ? stanceFrom(location.search) : 'neutral';   // ?look=stances&stance=<name>: neutral (today's frame) without the flag
   const fatigueRead = typeof location !== 'undefined' && fatigueReadFrom(location.search);   // fatigue-read.ts: the tired pose made legible from behind, ON; ?off=fatigue-read = the live layer alone
   const pivots: [THREE.Group, THREE.Group] = [new THREE.Group(), new THREE.Group()];
@@ -945,7 +945,7 @@ export function createScene(
       );
       warriors?.player.opening(practice.opening?.side === 0 ? practice.opening : null);   // opening-pose.ts
       warriors?.opponent.opening(practice.opening?.side === 1 ? practice.opening : null);
-      if (upright) { warriors?.player.setUpright(readyOffset('hero')); warriors?.opponent.setUpright(readyOffset(opponentId)); }   // ?look=upright
+      if (upright) { warriors?.player.setUpright(readyOffset('hero', upright)); warriors?.opponent.setUpright(readyOffset(opponentId, upright)); }   // ?look=upright, ?look=upright-full
       warriors?.player.setStance(stance);   // ?look=stances (stance-pose.ts): the hero's stance, look test only
       warriors?.player.fatigue(practice.fatigue[0], fatigueRead ? { read: true } : undefined);   // fatigue.ts, slice 1: the hero winded and tired (breathing, hunch, sagging blade arm); gassed, the second wind and the foes follow
       warriors?.player.slam(runtimeSpecial ? slams[0] : 0);
