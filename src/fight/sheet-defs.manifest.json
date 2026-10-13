@@ -18,6 +18,7 @@
       "at": "dials",
       "key": "id",
       "required": {
+        "name": "string",
         "code": "integer",
         "base": "integer",
         "cap": "integer",
@@ -37,6 +38,7 @@
       "at": "skills",
       "key": "id",
       "required": {
+        "name": "string",
         "base": "integer",
         "cap": "integer",
         "pool": "string"
