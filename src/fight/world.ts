@@ -7,7 +7,7 @@ import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_W
 import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
-import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
+import { SPEEDS, chaseSpeed, giveUpOf, leashOf } from './speeds.ts';
 import { AGGRO_M, SIGHT_M, threatOf } from './threat.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
@@ -215,7 +215,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     f.t += dt; f.phase = 'ready';
     for (const [id, t] of Object.entries(f.threat ?? {})) {   // forget: the player is dead or gone, or has been out of its sight for the give-up time (EQEmu RemoveStaleEntries, in seconds)
       const q = players.find((x) => x.id === id);
-      if (!q) delete f.threat![id]; else if (dist(f, q) > SIGHT_M) { t.out += dt; if (t.out >= GIVE_UP_UNSEEN_S) delete f.threat![id]; } else t.out = 0;
+      if (!q) delete f.threat![id]; else if (dist(f, q) > SIGHT_M) { t.out += dt; if (t.out >= giveUpOf(f.kind)) delete f.threat![id]; } else t.out = 0;
     }
     if (f.exhausted && f.stamina >= RULES.exhaustRecover) f.exhausted = false;
     f.stamina = Math.min(f.maxStamina, f.stamina + RULES.regen * 60 * dt);
@@ -224,10 +224,10 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
       const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
       if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
       else { f.facing = M.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
-    } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < GIVE_UP_UNSEEN_S : dist(f, prey) <= AGGRO_M)) {
+    } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < giveUpOf(f.kind) : dist(f, prey) <= AGGRO_M)) {
       if (!f.hunting) { f.hunting = true; f.chaseX = f.x; f.chaseZ = f.z; f.unseen = 0; }
       f.unseen = dist(f, prey) > SIGHT_M ? f.unseen + dt : 0;
-      if (f.unseen >= GIVE_UP_UNSEEN_S || M.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
+      if (f.unseen >= giveUpOf(f.kind) || M.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
       else {
         f.facing = aim(f, prey);
         if (dist(f, prey) > HOLD_M) { const step = Math.min(chaseSpeed(f.kind) * dt, dist(f, prey) - HOLD_M); f.x += M.sin(f.facing) * step; f.z += M.cos(f.facing) * step; }   // closes to just inside the engage ring and waits: the engaged foe fights, the rest hold off
