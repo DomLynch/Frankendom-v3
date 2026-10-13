@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "spell", "file": "spell-defs.json", "at": "spells", "key": "id", "required": { "legendId": "string", "school": "string", "special": "string", "params": "object" }, "refs": { "school": "school", "special": "special" } }
+  ]
+}

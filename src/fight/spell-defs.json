@@ -1,0 +1,6 @@
+{
+  "spells": [
+    { "id": "ashfall", "legendId": "pitborn-9", "school": "fire", "special": "surtr", "params": { "flakes": 90, "smoke": 5 } },
+    { "id": "gale", "legendId": "pitborn-10", "school": "wind", "special": "typhon", "params": { "streaks": 11 } }
+  ]
+}
