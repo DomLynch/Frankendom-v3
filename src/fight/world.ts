@@ -7,12 +7,8 @@ import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_W
 import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
-<<<<<<< HEAD
 import { SPEEDS, chaseSpeed, giveUpOf, leashOf } from './speeds.ts';
-=======
-import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
 import { AGGRO_M, SIGHT_M, threatOf } from './threat.ts';
->>>>>>> world/s77
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
