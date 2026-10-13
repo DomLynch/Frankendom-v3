@@ -55,6 +55,7 @@ export type Fighter = {
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
   cc?: CcLadder;   // the crowd-control ladder (cc-ladder.ts): ONE per fighter, carried through every bout he is in, so three creatures on one hero step the same stun / knockdown ladder
   ccGuard?: CcGuard;   // a creature's immuneTier / resist rows from its catalogue row (cc-ladder.ts); absent = none
+  seed?: number;                                        // creature only: this bout's damage-roll seed (bout-seed.ts hash32(engage token, join step)); absent = no roll, today's fight byte for byte (open-fight.ts openBout -> duel.ts withRoll)
   threat?: Record<string, Threat>;                      // creature only: its threat list (EQEmu hate list shape): who has hurt it. Threat picks the player it fights, damage is the credit (loot to the most). Dropped when he is dead, gone or out of sight for the give-up time; cleared on heal-home
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
 };

@@ -24,7 +24,7 @@ export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */
 export type RecordHero = { level: number; attack: number; res: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean };
-export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number };   // the creature at its pose (m) when it joined, before step s
+export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number; seed?: number };   // the creature at its pose (m) when it joined, before step s
 export type ReleaseEvent = { s: number; id: string };
 /** One step: the pose the page gave the loop (null = the loop's own body), the presses (attack and roll already nulled when the hero is dead), and the held guard. Integers: cm, milliradian, thousandths. */
 export type WorldStep = { pose: { x: number; z: number; f: number } | null; guard: boolean; attack: Press | null; roll: { x: number; z: number } | null };
@@ -39,7 +39,7 @@ export function stepHero(world: World, step: WorldStep, gear: { attack: number; 
   if (step.pose) { const m = w.fighters[0]!; w = { ...w, fighters: [{ ...m, ...gear, x: fromCm(step.pose.x), z: fromCm(step.pose.z), facing: m.phase === 'roll' ? m.facing : fromMrad(step.pose.f) }, ...w.fighters.slice(1)] }; }
   return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, guard: step.guard, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
 }
-export const joinFighter = (j: JoinEvent): Fighter => creature(j.id, j.kind, fromCm(j.x), fromCm(j.z), 0, j.level);
+export const joinFighter = (j: JoinEvent): Fighter => ({ ...creature(j.id, j.kind, fromCm(j.x), fromCm(j.z), 0, j.level), ...(j.seed === undefined ? {} : { seed: j.seed }) });   // seed: this bout's roll (bout-seed.ts)
 /** The page's numbers, quantized: what the live loop must step with so a replay matches. */
 export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null): WorldStep => ({
   pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null,
@@ -63,7 +63,7 @@ export function createWorldRecorder() {
     /** Open a window (discarding any before it) at the hero's body now. */
     open(hero: RecordHero): void { rec = { rv: RECORD_VERSION, wv: WORLD_SIM_VERSION, hero, joins: [], releases: [], steps: [] }; steps = 0; over = false; },
     active: (): boolean => rec !== null && !over,
-    join(id: string, kind: string, x: number, z: number, level: number): void { if (rec && !over) rec.joins.push({ s: steps, id, kind, x: cm(x), z: cm(z), level }); },
+    join(id: string, kind: string, x: number, z: number, level: number, seed?: number): void { if (rec && !over) rec.joins.push({ s: steps, id, kind, x: cm(x), z: cm(z), level, ...(seed === undefined ? {} : { seed }) }); },
     release(id: string): void { if (rec && !over) rec.releases.push({ s: steps, id }); },
     step(s: WorldStep): void { if (!rec || over) return; if (steps >= MAX_WORLD_TICKS || rec.joins.length + rec.releases.length > MAX_EVENTS) { over = true; return; } rec.steps.push(s); steps++; },
     steps: (): number => steps,
@@ -79,7 +79,7 @@ const zig = (n: number): number => (n < 0 ? -n * 2 - 1 : n * 2);
 const unzig = (n: number): number => (n % 2 ? -(n + 1) / 2 : n / 2);
 function putVar(out: number[], n: number): void { while (n >= 128) { out.push((n % 128) | 128); n = Math.floor(n / 128); } out.push(n); }
 export function packWorldRecord(r: WorldRecord): Uint8Array {
-  const head = new TextEncoder().encode(JSON.stringify({ v: r.rv, w: r.wv, h: r.hero, j: r.joins.map((e) => [e.s, e.id, e.kind, e.x, e.z, e.level]), r: r.releases.map((e) => [e.s, e.id]), n: r.steps.length }));
+  const head = new TextEncoder().encode(JSON.stringify({ v: r.rv, w: r.wv, h: r.hero, j: r.joins.map((e) => (e.seed === undefined ? [e.s, e.id, e.kind, e.x, e.z, e.level] : [e.s, e.id, e.kind, e.x, e.z, e.level, e.seed])), r: r.releases.map((e) => [e.s, e.id]), n: r.steps.length }));
   const out: number[] = [...MAGIC]; putVar(out, head.length);
   let px = 0, pz = 0, pf = 0;
   const body: number[] = [];
@@ -92,6 +92,7 @@ export function packWorldRecord(r: WorldRecord): Uint8Array {
   all.set(out); all.set(head, out.length); all.set(body, out.length + head.length);
   return all;
 }
+const isU32 = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 0xffffffff;
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && Math.abs(v) < 1e9;
 export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   let i = 0;
@@ -103,7 +104,7 @@ export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   i += hl;
   if (!h || typeof h !== 'object' || !isInt(h.v) || !isInt(h.w) || !isInt(h.n) || h.n < 0 || h.n > MAX_WORLD_TICKS || !Array.isArray(h.j) || !Array.isArray(h.r) || h.j.length > MAX_EVENTS || h.r.length > MAX_EVENTS) throw Error('World record: bad header');
   const hero = h.h; if (!hero || typeof hero !== 'object') throw Error('World record: bad hero');
-  const joins = h.j.map((e): JoinEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string' || typeof e[2] !== 'string' || !isInt(e[3]) || !isInt(e[4]) || !isInt(e[5])) throw Error('World record: bad join'); return { s: e[0], id: e[1], kind: e[2], x: e[3], z: e[4], level: e[5] }; });
+  const joins = h.j.map((e): JoinEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string' || typeof e[2] !== 'string' || !isInt(e[3]) || !isInt(e[4]) || !isInt(e[5])) throw Error('World record: bad join'); if (e.length > 7 || (e.length === 7 && !isU32(e[6]))) throw Error('World record: bad join seed'); return { s: e[0], id: e[1], kind: e[2], x: e[3], z: e[4], level: e[5], ...(e.length === 7 ? { seed: e[6] as number } : {}) }; });
   const releases = h.r.map((e): ReleaseEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string') throw Error('World record: bad release'); return { s: e[0], id: e[1] }; });
   const steps: WorldStep[] = []; let px = 0, pz = 0, pf = 0;
   for (let k = 0; k < h.n; k++) {
