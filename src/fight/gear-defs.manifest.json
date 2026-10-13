@@ -1,0 +1,56 @@
+{
+  "tables": [
+    {
+      "table": "gearset",
+      "file": "gear-defs.json",
+      "at": "sets",
+      "key": "id",
+      "required": {
+        "shape": "object",
+        "quality": "object"
+      }
+    },
+    {
+      "table": "gearowner",
+      "file": "gear-defs.json",
+      "at": "owners",
+      "key": "id",
+      "required": {
+        "set": "string"
+      },
+      "refs": {
+        "set": "gearset"
+      }
+    },
+    {
+      "table": "gear",
+      "file": "gear-defs.json",
+      "at": "gear",
+      "key": "id",
+      "required": {
+        "weight": "number",
+        "wearMax": "integer",
+        "resist": "object"
+      },
+      "optional": {
+        "slot": "string",
+        "preset": "boolean",
+        "extends": "string",
+        "set": "string"
+      },
+      "refs": {
+        "set": "gearset"
+      }
+    },
+    {
+      "table": "gearrule",
+      "file": "gear-defs.json",
+      "at": "rules",
+      "key": "id",
+      "required": {
+        "shapeMax": "integer",
+        "qualityMax": "integer"
+      }
+    }
+  ]
+}
