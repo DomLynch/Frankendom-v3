@@ -4,6 +4,7 @@ import type { OpponentId } from '../roster.ts';
 import { advanceCast, castPhase, LAND_AT, type Cast, type isHadesShadow } from './special-timing.ts';
 import { DRAG_FROM, STEP_BEATS, walkLateral, walkOffset, type ClassSpecial } from './special-class-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
+import { specialFxFieldNum } from './special-fx-field-rows.ts';
 
 // The class specials of the Witch, the Plague Doctor and the Knight, ranks 1-3 (slot A) and 4-7 (slot B), GREY-BOX PREVIEWS (Weapons lane; Dom picked the six ★ takes on
 // 2026-10-01: docs/briefs/specials/class-specials-witch-pd-knight-2026-10-01.md). Same seam as Red Wind and the Shield Quake (special-timing.ts): it reads the sim's special events,
@@ -41,7 +42,7 @@ export const classLook = (exposure: number) => exposure > 1.5
   ? { core: new THREE.Color(0.007, 0.005, 0.004), edge: new THREE.Color(0.02, 0.014, 0.01) }
   : { core: new THREE.Color(0.035, 0.019, 0.01), edge: new THREE.Color(0.1, 0.058, 0.03) };
 
-const DECALS = 48, GRIT = 72;
+const DECALS = specialFxFieldNum('class.decals'), GRIT = specialFxFieldNum('class.grit');
 // The camera sits behind the player, so a mark along the line between the fighters is foreshortened and half hidden by his body: the walking and in-line specials draw bigger (first clip, 2026-10-02: the drag's trench and the Doctor's prints were not seen).
 const BIG: Record<ClassSpecial, number> = { wake: 1.15, stirring: 1, tempo: 2, pulse: 1.3, drag: 0.9, swing: 1.7 };
 // `age`: ticks since the cast began (LAND_AT is the blow); `rel`: ticks since the landing, -1 before it; `life`: 1 until the landing then 0 over the recover.
