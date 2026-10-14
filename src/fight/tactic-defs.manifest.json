@@ -1,0 +1,16 @@
+{
+  "tables": [
+    {
+      "table": "tactic",
+      "file": "tactic-defs.json",
+      "at": "tactics",
+      "key": "id",
+      "required": {},
+      "optional": {
+        "heroWinding": "array",
+        "heroWinding[].choice": "string",
+        "heroWinding[].weight": "number"
+      }
+    }
+  ]
+}
