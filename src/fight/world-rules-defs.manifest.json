@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "world-rule", "file": "world-rules-defs.json", "at": "rules", "key": "id", "required": { "value": "number", "unit": "string" } }
+  ]
+}
