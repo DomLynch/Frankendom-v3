@@ -7,16 +7,17 @@
 //   gassed 0..1  smoothed `exhausted` (hands on thighs / tip down); second  1..0 for ~1.5 s after he recovers: the visible second-wind straighten.
 // Bodies tune their own look (Goblin quick and shallow, Executioner slow and deep) from these; the thresholds live here, once.
 import type { Fighter } from './duel.ts';
+import { FATIGUE_FULL, FATIGUE_RISE, FATIGUE_FALL, FATIGUE_GAS_RISE, FATIGUE_GAS_FALL, FATIGUE_SECOND, FATIGUE_WINDED, FATIGUE_TIRED, FATIGUE_HYST } from './fatigue-rows.ts';
 
 export type Fatigue = { level: number; band: 0 | 1 | 2 | 3; gassed: number; second: number };
 export const FRESH: Fatigue = { level: 0, band: 0, gassed: 0, second: 0 };
-const FULL = 100, RISE = 1 / 45, FALL = 1 / 120, GAS_RISE = 1 / 20, GAS_FALL = 1 / 90, SECOND = 1 / 90;   // per sim tick (60 Hz)
-export const WINDED = .5, TIRED = .75;
+const FULL = FATIGUE_FULL, RISE = FATIGUE_RISE, FALL = FATIGUE_FALL, GAS_RISE = FATIGUE_GAS_RISE, GAS_FALL = FATIGUE_GAS_FALL, SECOND = FATIGUE_SECOND;   // per sim tick (60 Hz); the rows are in fatigue-defs.json
+export const WINDED = FATIGUE_WINDED, TIRED = FATIGUE_TIRED;
 const toward = (v: number, to: number, up: number, down: number) => to > v ? Math.min(to, v + up) : Math.max(to, v - down);
 
 export const fatigueTarget = (f: Pick<Fighter, 'stamina' | 'maxStamina' | 'legWound'>): number =>
   Math.min(1, Math.max(0, 1 - f.stamina / FULL + (1 - f.maxStamina / FULL) * .5 + (f.legWound ? .1 : 0)));
-const HYST = .06;   // a band is left only HYST below the line that entered it, so regen at a threshold cannot flicker the pose or repeat the lesson
+const HYST = FATIGUE_HYST;   // a band is left only HYST below the line that entered it, so regen at a threshold cannot flicker the pose or repeat the lesson
 export const bandOf = (level: number, gassed: number, was: Fatigue['band'] = 0): Fatigue['band'] =>
   gassed > .5 || (was === 3 && gassed > .3) ? 3 : level >= TIRED - (was === 2 ? HYST : 0) ? 2 : level >= WINDED - (was === 1 ? HYST : 0) ? 1 : 0;
 
