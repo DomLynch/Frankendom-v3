@@ -9,6 +9,7 @@
 // mobile UA AND a coarse pointer, so touchscreen laptops and the desktop-UA browser gate keep full tier).
 // Testing overrides: ?gfx=phone forces the tier on, ?gfx=full forces it off.
 import { MeshStandardMaterial, type Mesh, type Object3D, type Texture } from 'three';
+import { fxNum } from './fx-rows.ts';
 
 type TierEnv = { userAgent?: string; maxTouchPoints?: number; locationSearch?: string; coarse?: boolean };
 
@@ -63,7 +64,7 @@ export function phoneTier(): boolean {
 // Test hook: the memo is module-global state, and a test that stubs globals mid-run needs it reset.
 export function resetPhoneTierForTests(): void { memo = undefined; }
 
-export const FIGHTER_TEXTURE_CAP = 1024;   // the Gambeson atlas is the only 2K runtime map — face and skin already ship 1K
+export const FIGHTER_TEXTURE_CAP = fxNum('quality.fighter-texture-cap');   // the Gambeson atlas is the only 2K runtime map — face and skin already ship 1K
 
 const SLOTS = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'alphaMap'] as const;
 
