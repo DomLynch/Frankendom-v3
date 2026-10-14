@@ -1,7 +1,7 @@
 {
   "armourWeight": [
-    { "id": "heavy", "castPenalty": 20, "note": "provisional, Lead 10-13, Dom to tune" },
-    { "id": "medium", "castPenalty": 10, "note": "provisional, Lead 10-13, Dom to tune" },
-    { "id": "light", "castPenalty": 0, "note": "provisional, Lead 10-13, Dom to tune" }
+    { "id": "heavy", "dial": "spellPower", "fromRecordVersion": 58, "castPenalty": 20, "note": "provisional, Lead 10-13, Dom to tune" },
+    { "id": "medium", "dial": "spellPower", "fromRecordVersion": 58, "castPenalty": 10, "note": "provisional, Lead 10-13, Dom to tune" },
+    { "id": "light", "dial": "spellPower", "fromRecordVersion": 58, "castPenalty": 0, "note": "provisional, Lead 10-13, Dom to tune" }
   ]
 }

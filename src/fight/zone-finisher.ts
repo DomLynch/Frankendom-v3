@@ -2,17 +2,17 @@
 // creature whose row has a head to cut (`finisher.cut.head` bone names): the death clip plays, and once it has begun the head is baked off the rig (Actor.sever with the ROW's bones), popped along
 // the killing blow with the Pit's own ballistics (severed-head.ts), and the species' blood bursts at the cut (src/fight/wounds-fx.ts). A creature whose row has no cut, or any other finisher id,
 // plays the plain death. Presentation only; no creature is named here: a new creature is a catalogue row. The head lies about HEAD_LIFE seconds, then is disposed; the rig grows it back when it respawns.
-import { cameraRule } from './camera-rules.ts';
 import * as THREE from 'three';
 import { catalogueRow } from './catalogue-rows.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { isTemplate } from './finisher-look.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 /** What the finisher needs of a creature's rig (the engine's Actor fits this structurally). */
 export type CutRig = { sever(bones?: readonly string[]): { group: THREE.Group; radius: number } | null; unsever(): void; boneWorld(name: string): THREE.Vector3 | null };
 
-const HEAD_LIFE = cameraRule('headLife'), SEVER_AT = cameraRule('severAt');   // s a severed head lies; the fall progress at which the head leaves (the Pit's 9 % of its clip, a hair earlier on a 1.4 s fall)
+const { headLife: HEAD_LIFE, severAt: SEVER_AT } = FEEL_RULES.zoneFinisherRule[0]!;   // s a severed head lies; the fall progress at which the head leaves (the Pit's 9 % of its clip, a hair earlier on a 1.4 s fall)
 
 /** The bones a row says can be cut (head, neck), or null when its rig has no named bones to cut at. */
 export function cutOf(character: string, body: string): { head: readonly string[]; neck: readonly string[] } | null {

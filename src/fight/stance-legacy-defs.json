@@ -1,0 +1,12 @@
+{
+ "legacy_defensive": [
+  {
+   "id": "defensive",
+   "damage": -50,
+   "block": -150,
+   "recover": 250,
+   "window": 250,
+   "counter": 250
+  }
+ ]
+}

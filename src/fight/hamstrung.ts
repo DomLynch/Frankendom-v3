@@ -3,6 +3,7 @@ import type { Finish } from './duel.ts';
 import type { WeaponId } from './moves.ts';
 import { isHeld, ROSTER, type OpponentId } from '../roster.ts';
 import { bodyPoseOf, isTemplate, PLAIN_DEATH } from './finisher-look.ts';
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 // Hamstrung: a paired finisher (Death_Hamstrung on the victim, Fin_Hamstrung on the killer): a low cut at the knee, then a thrust
 // into the back. Presentation only. It lives here, not in finishers.ts or roster.ts, because both are in the kill-link guard's
@@ -19,7 +20,7 @@ export const HAMSTRUNG_BEATS = { knee: .22, back: .64, duration: 3.8, hold: .07 
 // (fitted to the creatures' feet), reachable the day those bodies are no longer held and this filter admits them.
 export const HAMSTRUNG_VICTIMS: readonly OpponentId[] = (Object.keys(ROSTER) as OpponentId[]).filter(id => ROSTER[id].rig === 'hero' && !isHeld(id));
 // warrior.glb's pelvis rest length, the one the victim and killer clips were authored on: adoptClip scales the clip's pelvis path by a body's own over this.
-export const HAMSTRUNG_SOURCE_PELVIS = .95;
+export const HAMSTRUNG_SOURCE_PELVIS = FEEL_RULES.hamstrungRule[0]!.sourcePelvis;   // the hamstrungRule row (src/fight/feel-rules.json)
 
 // roster.ts resolveFinisher's rule, widened by one outcome. The picker never overrides kill eligibility (a draw, a kick, a skill kill
 // and the player's own death keep no ceremony), and a body without Death_Hamstrung plays no ceremony for it rather than a missing

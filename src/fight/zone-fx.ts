@@ -1,12 +1,12 @@
 // The zones' use of the engine's contact effects (K5/K6 P2): one createFightFx instance per active pair, fed that pair's Pit events (world-combat.ts takeContacts), with the camera-kick
 // hints going to the zone's walk camera. No zone id and no per-zone code: every zone page that mounts the open-world loop calls this the same way. Presentation only.
-import { cameraRule } from './camera-rules.ts';
 import * as THREE from 'three';
 import { OPPONENTS, type OpponentId } from './moves.ts';
 import type { Shove } from './camera-kick.ts';
 import type { CombatEvent } from './combat.ts';
 import { createFightFx, impactTexture, type CameraKick, type ContactCtx, type FxRig } from './fx.ts';
 import type { PairContacts } from './world-combat.ts';
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 /** The hint sink for a walk camera that is placed afresh every frame (camera.position set, then lookAt): draw() adds the settling shove and tumble on top, and the next placement drops them. */
 export function createWalkKick(camera: THREE.Camera): CameraKick & { draw(dt: number): void } {
@@ -31,7 +31,7 @@ export function createWalkKick(camera: THREE.Camera): CameraKick & { draw(dt: nu
   };
 }
 
-const IDLE_S = cameraRule('zoneFxIdle');   // a pair's effects stay (a corpse keeps its pool) this long after its last contact, then the instance is cleared and goes back to the pool
+const IDLE_S = FEEL_RULES.zoneFxRule[0]!.idleS;   // a pair's effects stay (a corpse keeps its pool) this long after its last contact, then the instance is cleared and goes back to the pool
 
 /** The host's rigs: the hero's actor and a creature's by id (null while there is none: the wound marks and blade blood then wait). */
 export type ZoneRigs = { hero(): FxRig | null; foe(id: string): FxRig | null };

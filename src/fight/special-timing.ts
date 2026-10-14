@@ -3,21 +3,23 @@ import { SKILLS } from '../core/loot.ts';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { SPECIAL_RECOVER } from './special-look.ts';   // Combat's: the caster's return to stance runs on the same 45 ticks
+import TIMING_RULES from './special-timing-rules.json' with { type: 'json' };
 
 // Hades' Shadow, the presentation timeline (Finishers with Combat, 2026-09-29; brief docs/briefs/special-moves-hades-pilot.md). Three-free,
 // like special-look.ts beside it. Ticks at the sim's 60 Hz from the SpecialStarted tick: the strike
 // lands on SpecialLanded at start + RULES.special.windup − 1 (the cast tick counts), so the windup stays the one source of the 120.
-export const DROP_TICKS = 24;   // the cloud's drop onto the head, ending on the landing tick
+const TIMING = TIMING_RULES.specialTimingRule[0]!;   // the specialTimingRule row (src/fight/special-timing-rules.json)
+export const DROP_TICKS = TIMING.dropTicks;   // the cloud's drop onto the head, ending on the landing tick
 export { SPECIAL_RECOVER };
 export const LAND_AT = RULES.special.windup - 1;
 export const FALL_AT = LAND_AT - DROP_TICKS;
-export const RIPPLE = 30;   // Shield Quake: the ticks the ground ripple runs, the slam to the landing (0.5 s; Dom: a 1-2 s build-up was too slow)
+export const RIPPLE = TIMING.ripple;   // Shield Quake: the ticks the ground ripple runs, the slam to the landing (0.5 s; Dom: a 1-2 s build-up was too slow)
 export const SLAM_AT = LAND_AT - RIPPLE;   // ...and the tick after the cast starts when the shield's rim meets the sand (the pose in scene.ts is timed to it)
 // A wind-up that releases on an already-dead target ends with no sim event (Auditer P3 on #1186): every cast has a hard timeout, wind-up + recover + this
 // margin, after which it force-ends and the effect restores, so a cast with no end never holds its effect into the next fight.
-export const CAST_MARGIN = 60;
+export const CAST_MARGIN = TIMING.castMargin;
 // Seven Cuts (the Nightborn's ranks 4-7, special-fx-nightborn.ts): the flurry is one stroke every CUT_GAP ticks, the seventh (the thrust) on the strike tick.
-export const CUTS = 7, CUT_GAP = 4;
+export const CUTS = TIMING.cuts, CUT_GAP = TIMING.cutGap;
 export const cutAt = (i: number) => LAND_AT - (CUTS - 1 - i) * CUT_GAP;   // the tick (from the cast's start) stroke i lands
 
 // Which cast gets the shadow: Hades is the Nightborn's rank-9 boss, the opponent's side, on his class skill. Every other special draws nothing
@@ -71,8 +73,8 @@ export const castPhase = shadowPhase;
 // The Dwarf's and the Shieldmaiden's boss moves' clock (special-fx-boss.ts), pure like shadowPhase: `rel` is ticks relative to the landing (negative before it), frozen
 // where a fizzle stops the cast; `fade` is 1 while the cast stands and runs to 0 over the dissolve after a fizzle; `done` once nothing is left to draw. The landing is the
 // SpecialLanded tick when it is known, else the tick the wind-up predicts; the timeout ends a cast that never gets an event.
-export const DISSOLVE_TICKS = 20;
-export const BOSS_TAIL = 84;   // the boss moves' payoff stays legible ~1.4 s after the landing: longer than SPECIAL_RECOVER (45), so the effect keeps its own cast past the shared timeline's end (special-fx-boss.ts), never the sim
+export const DISSOLVE_TICKS = TIMING.dissolveTicks;
+export const BOSS_TAIL = TIMING.bossTail;   // the boss moves' payoff stays legible ~1.4 s after the landing: longer than SPECIAL_RECOVER (45), so the effect keeps its own cast past the shared timeline's end (special-fx-boss.ts), never the sim
 export type BossClock = { rel: number; fade: number; struck: boolean; done: boolean };
 export function bossClock(cast: Cast, now: number): BossClock {
   const land = cast.landed ?? cast.start + LAND_AT;

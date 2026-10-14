@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "rollDial",
+      "file": "roll-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

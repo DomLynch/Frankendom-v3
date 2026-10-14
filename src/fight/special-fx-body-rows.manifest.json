@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "specialFxBodyRow",
+      "file": "special-fx-body-rows.json",
+      "at": "specialFxBodyRows",
+      "key": "id",
+      "required": {
+        "fields": "object"
+      }
+    }
+  ]
+}

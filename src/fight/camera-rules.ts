@@ -6,7 +6,7 @@ import DEFS from './camera-rules-defs.json' with { type: 'json' };
 import MANIFEST from './camera-rules-defs.manifest.json' with { type: 'json' };
 
 export type CameraRule = { readonly id: string; readonly value: number; readonly unit: string };
-const NAMED = ['aimPerShrink', 'lowSide', 'lowLift', 'tallBack', 'tallLift', 'shoulder', 'sideClear', 'shortFade', 'followAhead', 'followLookY', 'compileBoundMs', 'lookBakeMs', 'headLife', 'severAt', 'zoneFxIdle', 'tourDelay', 'tourAfterSettle', 'tourBlendIn', 'tourLap', 'tourBreathe', 'tourRise', 'tourRadius', 'tourBreath', 'tourLookY', 'tourLookYPortrait'] as const;
+const NAMED = ['aimPerShrink', 'lowSide', 'lowLift', 'tallBack', 'tallLift', 'shoulder', 'sideClear', 'shortFade', 'followAhead', 'followLookY', 'compileBoundMs', 'lookBakeMs', 'tourDelay', 'tourAfterSettle', 'tourBlendIn', 'tourLap', 'tourBreathe', 'tourRise', 'tourRadius', 'tourBreath', 'tourLookY', 'tourLookYPortrait'] as const;
 /** The one loader: rows keyed by id (a duplicate id or a missing or mistyped field is refused), every rule the stage reads by name must exist, with a positive value. */
 export function loadCameraRules(raw: { rules?: readonly unknown[] }): readonly CameraRule[] {
   loadRegistry([tableFromFile(MANIFEST.tables[0] as unknown as Manifest, raw, 'camera-rules-defs.json')]);
