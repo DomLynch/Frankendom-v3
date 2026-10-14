@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "fxRow",
+      "file": "fx-rows.json",
+      "at": "fxRows",
+      "key": "id",
+      "required": { "fields": "object" }
+    }
+  ]
+}
