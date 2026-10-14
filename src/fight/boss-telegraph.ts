@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { RULES } from './moves.ts';
 import type { Fighter } from './duel.ts';
+import { sceneNum } from './scene-rows.ts';
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
 // under the hero: where the blow will land, so a roll is the answer without any text. Read off the sim's own windup ticks (specialStage's source), never written back.
 export const telegraphFlag = (search: string): boolean => /[?&]telegraph=(1|on|ring)\b/i.test(search);
-const ROLL_TICKS = 24;   // the last stretch of the windup, when the ring flashes: the roll window
+const ROLL_TICKS = sceneNum('boss-telegraph.roll-ticks');   // the last stretch of the windup, when the ring flashes: the roll window
 export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'>): { fill: number; flash: boolean } | null => {
   if (caster.specialShare !== RULES.special.bossDamage || !caster.special || !caster.health) return null;
   return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS };

@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "sceneRow",
+      "file": "scene-rows.json",
+      "at": "sceneRows",
+      "key": "id",
+      "required": { "fields": "object" }
+    }
+  ]
+}
