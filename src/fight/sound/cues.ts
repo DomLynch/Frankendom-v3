@@ -1,3 +1,4 @@
+import { audioRule } from './audio-rules.ts';
 import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import type { Finish } from '../duel.ts';
 import { MOVES, RULES, WEAPON_LOOK, type MoveId, type WeaponId } from '../moves.ts';
@@ -17,7 +18,7 @@ const HEAVY = new Set(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'ripo
 const cue = (name: CueName, gain: number, room: number, delay?: number, rate?: number): Cue => ({ name, gain, room, ...(delay ? { delay } : {}), ...(rate ? { rate } : {}) });
 // The wall's six lorarii each keep one whip voice: guard 0 the deepest, guard 5 the thinnest, fixed so the same man always
 // sounds like himself over a long fight. An event with no `guard` (a replay written before the tell) plays at rate 1.
-const WHIP_RAISE = .4;   // seconds of the raise cue — the lash tick is what it has to land on, so `lead` becomes its delay
+const WHIP_RAISE = audioRule('whipRaise');   // seconds of the raise cue — the lash tick is what it has to land on, so `lead` becomes its delay
 const whipRate = (guard?: number) => guard === undefined ? 1 : .94 + Math.min(5, Math.max(0, guard)) * .024;
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
 // Dom has not signed off the interrupt voice (he rejected the first grunt, 2026-10-06): the slot is wired and tested but SILENT until he picks. His OK is this one constant.
@@ -119,4 +120,4 @@ export function nextVariant(random: () => number, count: number, last: number): 
   const pick = Math.floor(random() * (count - 1));
   return pick >= last ? pick + 1 : pick;
 }
-export const PITCH_SPREAD = .05;   // ±5 % playback rate per play
+export const PITCH_SPREAD = audioRule('pitchSpread');   // ±5 % playback rate per play
