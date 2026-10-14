@@ -18,6 +18,7 @@
     { "id": "beast-scale.boar", "fields": {"value": 1.8} },
     { "id": "beast-scale.bear", "fields": {"value": 2.2} },
     { "id": "quality.fighter-texture-cap", "fields": {"value": 1024} },
+    { "id": "hud.kick-light-m", "fields": {"value": 1.5} },
     { "id": "opened.chunk", "fields": {"value": 2048} },
     { "id": "opened.scan", "fields": {"value": 100000} },
     { "id": "opened.step-ms", "fields": {"value": 8} }
