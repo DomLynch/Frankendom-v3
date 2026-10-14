@@ -1,0 +1,22 @@
+{
+  "dials": [
+    {"id":"full","value":100},
+    {"id":"riseTicks","value":45},
+    {"id":"fallTicks","value":120},
+    {"id":"gasRiseTicks","value":20},
+    {"id":"gasFallTicks","value":90},
+    {"id":"secondTicks","value":90},
+    {"id":"winded","value":0.5},
+    {"id":"tired","value":0.75},
+    {"id":"hysteresis","value":0.06},
+    {"id":"guardDrop","value":0.3}
+  ],
+  "tunes": [
+    {"id":"goblin","rate":1.5,"depth":0.55,"sag":0.8},
+    {"id":"executioner","rate":0.65,"depth":1.4,"sag":1.2},
+    {"id":"minotaur","rate":0.7,"depth":1.4,"sag":1.2},
+    {"id":"dwarf","rate":1.2,"depth":0.8,"sag":1},
+    {"id":"veteran","rate":0.95,"depth":1.1,"sag":1},
+    {"id":"pitborn","rate":0.9,"depth":1.2,"sag":1.1}
+  ]
+}
