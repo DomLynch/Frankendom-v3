@@ -1,5 +1,5 @@
 {
   "tables": [
-    {"table": "contact", "file": "hit-stop-defs.json", "at": "contacts", "keyed": true, "key": "id", "required": {"order": "integer", "ms": "number", "frames": "integer", "knock": "number", "push": "number"}}
+    {"table": "contact", "file": "hit-stop-defs.json", "at": "contacts", "keyed": true, "key": "id", "required": {"order": "integer", "frames": "integer", "knock": "number", "push": "number"}}
   ]
 }
