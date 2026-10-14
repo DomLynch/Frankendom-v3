@@ -1,0 +1,29 @@
+{
+  "rules": [
+    { "id": "aimPerShrink", "value": 1.4, "unit": "m" },
+    { "id": "lowSide", "value": 0.5, "unit": "m" },
+    { "id": "lowLift", "value": 0.8, "unit": "m" },
+    { "id": "tallBack", "value": 2.4, "unit": "m" },
+    { "id": "tallLift", "value": 1.6, "unit": "m" },
+    { "id": "shoulder", "value": 1.5, "unit": "m" },
+    { "id": "sideClear", "value": 1.2, "unit": "m" },
+    { "id": "shortFade", "value": 1, "unit": "s" },
+    { "id": "followAhead", "value": 3, "unit": "m" },
+    { "id": "followLookY", "value": 1.5, "unit": "m" },
+    { "id": "compileBoundMs", "value": 6000, "unit": "ms" },
+    { "id": "lookBakeMs", "value": 6, "unit": "ms" },
+    { "id": "headLife", "value": 12, "unit": "s" },
+    { "id": "severAt", "value": 0.05, "unit": "ratio" },
+    { "id": "zoneFxIdle", "value": 12, "unit": "s" },
+    { "id": "tourDelay", "value": 5, "unit": "s" },
+    { "id": "tourAfterSettle", "value": 3, "unit": "s" },
+    { "id": "tourBlendIn", "value": 3, "unit": "s" },
+    { "id": "tourLap", "value": 40, "unit": "s" },
+    { "id": "tourBreathe", "value": 25, "unit": "s" },
+    { "id": "tourRise", "value": 30, "unit": "s" },
+    { "id": "tourRadius", "value": 5.2, "unit": "m" },
+    { "id": "tourBreath", "value": 1.3, "unit": "m" },
+    { "id": "tourLookY", "value": 0.7, "unit": "m" },
+    { "id": "tourLookYPortrait", "value": 1.3, "unit": "m" }
+  ]
+}
