@@ -1,3 +1,4 @@
+import { audioRule } from '../fight/sound/audio-rules.ts';
 import { hasBlood, type OpponentId } from '../roster.ts';
 import type { CombatEvent } from '../fight/combat.ts';
 import { nextVariant, seeded } from '../fight/sound/cues.ts';
@@ -18,7 +19,7 @@ export async function loadArena(context: BaseAudioContext, formats: Format[] = s
 }
 
 // Independent voices/RNG: crowd cannot steal combat voices, change Foley variants or inherit the fatal gain boost.
-const ARENA_LEVEL = .4;   // owner 2026-09-20: the audience down with the rest of the mix (−30 % was inaudible on the phone: −3 dB, and the finish limiter ate it); the bell is exempt so it leads
+const ARENA_LEVEL = audioRule('arenaLevel');   // owner 2026-09-20: the audience down with the rest of the mix (−30 % was inaudible on the phone: −3 dB, and the finish limiter ate it); the bell is exempt so it leads
 export function createArenaAudio(context: BaseAudioContext, destination: AudioNode, now: () => number, bellSource: () => Float32Array | undefined = preparedBell) {
   type Voice = { source: AudioBufferSourceNode; until: number };
   const voices = new Set<Voice>(), last: Partial<Record<ArenaCue, number>> = {};
