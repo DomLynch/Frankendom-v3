@@ -2,19 +2,20 @@
 // and see the kill before anything spendable or permanent pays. It owns no rule: `stepHero` below is the ONE place a frame step is made, called by the live loop and by the replay alike, and the sim is stepCombat.
 // A record is a window: it opens when a creature joins an empty loop and carries the hero's body at that moment (claims, bounded by the replay), every join and release, and per step the page's pose and presses.
 // Poses and presses are quantized BEFORE the live loop uses them (cm, milliradian), so the replay sees exactly the numbers the page's sim saw. This is a Zone 1 module, not the Pit's FightRecord. The header stamps the sim's RECORD_VERSION: the replay runs only a record of its own version (a stale one is the no-record tier, not fraud).
-import { CAPS } from './gear-caps.ts';
 import { M } from './detmath.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
-import { DEFAULT_WEAPON, LEVELS, OPPONENTS, RULES, type WeaponId } from './moves.ts';
+import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
+import { DIALS, SHEET_SKILLS, checkSheet, statUp, type Sheet } from './sheet-rows.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
 // RECORD_VERSION; a change to any of them, or a Pit sim bump, fails that test until this is bumped and the digest re-pinned. The packed record stamps it, and a verifier replays only a record of ITS OWN version.
-export const WORLD_SIM_VERSION = 15;
+export const WORLD_SIM_VERSION = 27;
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
 const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'kick'];
+const SIDES: readonly (Direction | null)[] = [null, 'right', 'left', 'overhead', 'thrust', 'low'];   // the held guard side (the Pit's thumbs), packed in flag bits 6-8; absent = the straight guard
 /** The most a pose may move between two steps, m/s: a run, or a roll's own displacement (the hero's cut reaches no farther). Measured against a real roll in world-record.test.ts. */
 export const MAX_HERO_MPS = 12;
 export const MAX_CREATURES = 8, MAX_EVENTS = 256;
@@ -23,26 +24,26 @@ export const MAX_WORLD_TICKS = 18_000;
 export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */
-export type RecordHero = { level: number; attack: number; res: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean };
-export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number };   // the creature at its pose (m) when it joined, before step s
+export type RecordHero = { level: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet };   // sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
+export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number; seed?: number };   // the creature at its pose (m) when it joined, before step s
 export type ReleaseEvent = { s: number; id: string };
 /** One step: the pose the page gave the loop (null = the loop's own body), the presses (attack and roll already nulled when the hero is dead), and the held guard. Integers: cm, milliradian, thousandths. */
-export type WorldStep = { pose: { x: number; z: number; f: number } | null; guard: boolean; attack: Press | null; roll: { x: number; z: number } | null };
+export type WorldStep = { pose: { x: number; z: number; f: number } | null; guard: boolean; gd: Direction | null; attack: Press | null; roll: { x: number; z: number } | null };
 export type WorldRecord = { rv: number; wv: number; hero: RecordHero; joins: JoinEvent[]; releases: ReleaseEvent[]; steps: WorldStep[] };
 
 export const cm = (v: number): number => Math.round(v * 100) || 0, mrad = (v: number): number => Math.round(v * 1000) || 0;   // || 0: never -0
 const fromCm = (n: number): number => n / 100, fromMrad = (n: number): number => n / 1000;
 
 /** The ONE frame step: the first step of a page frame takes the page's pose (and re-applies his gear); the rest keep the loop's body. Used by the live loop and the replay, so they cannot differ. */
-export function stepHero(world: World, step: WorldStep, gear: { attack: number; res: number; level: number; shielded: boolean }): { world: World; events: Event[] } {
+export function stepHero(world: World, step: WorldStep, gear: { level: number; shielded: boolean }): { world: World; events: Event[] } {
   let w = world;
   if (step.pose) { const m = w.fighters[0]!; w = { ...w, fighters: [{ ...m, ...gear, x: fromCm(step.pose.x), z: fromCm(step.pose.z), facing: m.phase === 'roll' ? m.facing : fromMrad(step.pose.f) }, ...w.fighters.slice(1)] }; }
-  return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, guard: step.guard, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
+  return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, guard: step.guard, guardDirection: step.gd, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
 }
-export const joinFighter = (j: JoinEvent): Fighter => creature(j.id, j.kind, fromCm(j.x), fromCm(j.z), 0, j.level);
+export const joinFighter = (j: JoinEvent): Fighter => ({ ...creature(j.id, j.kind, fromCm(j.x), fromCm(j.z), 0, j.level), ...(j.seed === undefined ? {} : { seed: j.seed }) });   // seed: this bout's roll (bout-seed.ts)
 /** The page's numbers, quantized: what the live loop must step with so a replay matches. */
-export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null): WorldStep => ({
-  pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null,
+export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null, gd: Direction | null = null): WorldStep => ({
+  pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, gd: guard ? gd : null, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null,
 });
 /** The ladder holds no mark that still counts at `tick` (the world clock in Pit ticks): every mark is older than its kind's window (cc-ladder.ts markOf, same test, same `end ?? last` reference), so the next landing finds
  *  it exactly as it would find an empty ladder, now and at every later tick. The ladder is never pruned, so 'empty' would stay false for the rest of the session after one stun; 'quiet' is the same fact. */
@@ -54,7 +55,7 @@ export function heroClean(world: World): boolean {
   return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
     && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && d.move === null && d.phase !== 'dead'));
 }
-export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, { attack: h.attack, res: h.res }, h.level); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
+export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, h.level, null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
 
 // ---- the recorder: the live loop feeds it, the page asks for the packed record at a kill -----------------------------------------------
 export function createWorldRecorder() {
@@ -63,7 +64,7 @@ export function createWorldRecorder() {
     /** Open a window (discarding any before it) at the hero's body now. */
     open(hero: RecordHero): void { rec = { rv: RECORD_VERSION, wv: WORLD_SIM_VERSION, hero, joins: [], releases: [], steps: [] }; steps = 0; over = false; },
     active: (): boolean => rec !== null && !over,
-    join(id: string, kind: string, x: number, z: number, level: number): void { if (rec && !over) rec.joins.push({ s: steps, id, kind, x: cm(x), z: cm(z), level }); },
+    join(id: string, kind: string, x: number, z: number, level: number, seed?: number): void { if (rec && !over) rec.joins.push({ s: steps, id, kind, x: cm(x), z: cm(z), level, ...(seed === undefined ? {} : { seed }) }); },
     release(id: string): void { if (rec && !over) rec.releases.push({ s: steps, id }); },
     step(s: WorldStep): void { if (!rec || over) return; if (steps >= MAX_WORLD_TICKS || rec.joins.length + rec.releases.length > MAX_EVENTS) { over = true; return; } rec.steps.push(s); steps++; },
     steps: (): number => steps,
@@ -74,24 +75,30 @@ export function createWorldRecorder() {
 }
 
 // ---- the pack: JSON header, then the steps as zigzag varints (pose as a delta on the last pose), gzip, base64url -----------------------------------
-const MAGIC = [0x57, 0x52, 1];   // 'W' 'R' version 1
+const MAGIC = [0x57, 0x52, 2];   // 'W' 'R' version 2: the sheet block follows the JSON header
+const SHEET_IDS: readonly string[] = [...DIALS.map((d) => d.id), ...SHEET_SKILLS.map((k) => k.id)];   // sheet-defs row order: a sheet's wire index
 const zig = (n: number): number => (n < 0 ? -n * 2 - 1 : n * 2);
 const unzig = (n: number): number => (n % 2 ? -(n + 1) / 2 : n / 2);
 function putVar(out: number[], n: number): void { while (n >= 128) { out.push((n % 128) | 128); n = Math.floor(n / 128); } out.push(n); }
 export function packWorldRecord(r: WorldRecord): Uint8Array {
-  const head = new TextEncoder().encode(JSON.stringify({ v: r.rv, w: r.wv, h: r.hero, j: r.joins.map((e) => [e.s, e.id, e.kind, e.x, e.z, e.level]), r: r.releases.map((e) => [e.s, e.id]), n: r.steps.length }));
+  const { sheet, ...body0 } = r.hero;
+  const head = new TextEncoder().encode(JSON.stringify({ v: r.rv, w: r.wv, h: body0, j: r.joins.map((e) => (e.seed === undefined ? [e.s, e.id, e.kind, e.x, e.z, e.level] : [e.s, e.id, e.kind, e.x, e.z, e.level, e.seed])), r: r.releases.map((e) => [e.s, e.id]), n: r.steps.length }));
   const out: number[] = [...MAGIC]; putVar(out, head.length);
+  const pairs = Object.entries(sheet ?? {}).map(([id, v]) => [SHEET_IDS.indexOf(id), v] as const).sort((a, b) => a[0] - b[0]);
+  const sheetBytes: number[] = [pairs.length];
+  for (const [row, v] of pairs) { if (row < 0 || row > 255 || !Number.isInteger(v) || v < 0 || v > 255) throw Error('World record: a sheet row is a known row and a whole number 0 to 255'); sheetBytes.push(row, v); }
   let px = 0, pz = 0, pf = 0;
   const body: number[] = [];
   for (const s of r.steps) {
-    putVar(body, (s.pose ? 1 : 0) | (s.guard ? 2 : 0) | (PRESSES.indexOf(s.attack) << 2) | (s.roll ? 32 : 0));
+    putVar(body, (s.pose ? 1 : 0) | (s.guard ? 2 : 0) | (PRESSES.indexOf(s.attack) << 2) | (s.roll ? 32 : 0) | (SIDES.indexOf(s.guard ? s.gd : null) << 6));
     if (s.pose) { putVar(body, zig(s.pose.x - px)); putVar(body, zig(s.pose.z - pz)); putVar(body, zig(s.pose.f - pf)); px = s.pose.x; pz = s.pose.z; pf = s.pose.f; }
     if (s.roll) { putVar(body, zig(s.roll.x)); putVar(body, zig(s.roll.z)); }
   }
-  const all = new Uint8Array(out.length + head.length + body.length);
-  all.set(out); all.set(head, out.length); all.set(body, out.length + head.length);
+  const all = new Uint8Array(out.length + head.length + sheetBytes.length + body.length);
+  all.set(out); all.set(head, out.length); all.set(sheetBytes, out.length + head.length); all.set(body, out.length + head.length + sheetBytes.length);
   return all;
 }
+const isU32 = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 0xffffffff;
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && Math.abs(v) < 1e9;
 export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   let i = 0;
@@ -103,15 +110,18 @@ export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   i += hl;
   if (!h || typeof h !== 'object' || !isInt(h.v) || !isInt(h.w) || !isInt(h.n) || h.n < 0 || h.n > MAX_WORLD_TICKS || !Array.isArray(h.j) || !Array.isArray(h.r) || h.j.length > MAX_EVENTS || h.r.length > MAX_EVENTS) throw Error('World record: bad header');
   const hero = h.h; if (!hero || typeof hero !== 'object') throw Error('World record: bad hero');
-  const joins = h.j.map((e): JoinEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string' || typeof e[2] !== 'string' || !isInt(e[3]) || !isInt(e[4]) || !isInt(e[5])) throw Error('World record: bad join'); return { s: e[0], id: e[1], kind: e[2], x: e[3], z: e[4], level: e[5] }; });
+  delete hero.sheet;   // the sheet lives only in its own block
+  const nSheet = get(); if (nSheet > SHEET_IDS.length || i + 2 * nSheet > bytes.length) throw Error('World record: bad sheet');
+  if (nSheet) { const sheet: Record<string, number> = {}; let prev = -1; for (let k = 0; k < nSheet; k++) { const row = bytes[i++]!, v = bytes[i++]!; if (row <= prev || row >= SHEET_IDS.length) throw Error('World record: bad sheet'); prev = row; sheet[SHEET_IDS[row]!] = v; } hero.sheet = sheet; }
+  const joins = h.j.map((e): JoinEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string' || typeof e[2] !== 'string' || !isInt(e[3]) || !isInt(e[4]) || !isInt(e[5])) throw Error('World record: bad join'); if (e.length > 7 || (e.length === 7 && !isU32(e[6]))) throw Error('World record: bad join seed'); return { s: e[0], id: e[1], kind: e[2], x: e[3], z: e[4], level: e[5], ...(e.length === 7 ? { seed: e[6] as number } : {}) }; });
   const releases = h.r.map((e): ReleaseEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string') throw Error('World record: bad release'); return { s: e[0], id: e[1] }; });
   const steps: WorldStep[] = []; let px = 0, pz = 0, pf = 0;
   for (let k = 0; k < h.n; k++) {
-    const fl = get(), attack = PRESSES[(fl >> 2) & 7]; if (attack === undefined || fl >= 64) throw Error('World record: bad step');
+    const fl = get(), attack = PRESSES[(fl >> 2) & 7], gd = SIDES[(fl >> 6) & 7]; if (attack === undefined || gd === undefined || fl >= 512 || (gd !== null && !(fl & 2))) throw Error('World record: bad step');
     let pose: WorldStep['pose'] = null, roll: WorldStep['roll'] = null;
     if (fl & 1) { px += unzig(get()); pz += unzig(get()); pf += unzig(get()); pose = { x: px, z: pz, f: pf }; }
     if (fl & 32) roll = { x: unzig(get()), z: unzig(get()) };
-    steps.push({ pose, guard: !!(fl & 2), attack, roll });
+    steps.push({ pose, guard: !!(fl & 2), gd, attack, roll });
   }
   if (i !== bytes.length) throw Error('World record: trailing bytes');
   return { rv: h.v, wv: h.w, hero, joins, releases, steps };
@@ -141,10 +151,10 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   if (r.wv !== WORLD_SIM_VERSION) return bad('sim version');   // the WORLD sim files moved (tests/world-sim-guard.test.ts): same reason as the Pit's, no verdict on the player
   if (r.rv !== RECORD_VERSION) return bad('sim version');   // the sim moved since the page wrote it: not a verdict on the player
   if (n === 0 || n > MAX_WORLD_TICKS) return bad('ticks');
-  if (h.weapon !== DEFAULT_WEAPON) return bad('weapon');   // the world sim fights every hero with DEFAULT_WEAPON (open-fight.ts pitOf): a record that claims another is refused until the sim honours it
+  if (!PLAYER_WEAPONS.includes(h.weapon)) return bad('weapon');   // the sim honours the hero's weapon (open-fight.ts heroSheeted): any weapon a player can wield; which one the account HOLDS is the server's check (HeroLimit.weapon, origins/server/world-verify.ts: the ledger's main hand or DEFAULT_WEAPON)
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
-  if (!(h.attack >= 1 && h.attack <= CAPS.attack) || !(h.res >= CAPS.res && h.res <= 1)) return bad('hero gear');
-  if (!(h.health > 0 && h.health <= RULES.health) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
+  if (h.sheet) { try { checkSheet(h.sheet); } catch { return bad('hero sheet'); } }   // known dials, floor..cap, and a legal point budget
+  if (!(h.health > 0 && h.health <= (h.sheet ? Math.round(statUp(h.sheet, 'health', RULES.health)) : RULES.health)) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
   const ids = new Set<string>();
   for (const j of r.joins) {
     if (!INSTANCE.test(j.id) || j.id === ME || !Object.prototype.hasOwnProperty.call(OPPONENTS, j.kind) || j.level < 1 || j.level > LEVELS || j.s < 0 || j.s > n || Math.abs(j.x) > 1e7 || Math.abs(j.z) > 1e7) return bad('join');
@@ -153,7 +163,7 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   for (const e of r.releases) if (e.s < 0 || e.s > n || !ids.has(e.id)) return bad('release');
   const order = (a: { s: number }[]) => a.every((e, k) => k === 0 || a[k - 1]!.s <= e.s); if (!order(r.joins) || !order(r.releases)) return bad('order');
   if (!r.steps[0]!.pose) return bad('pose');
-  const gear = { attack: h.attack, res: h.res, level: h.level, shielded: false };
+  const gear = { level: h.level, shielded: false };   // the sheet carries Attack and armour (world.ts player)
   let world = newWorld([startBody(h)]), dead = false, last: { x: number; z: number; k: number } | null = null, ji = 0, ri = 0;
   const kills: string[] = [], killStep: Record<string, number> = {}, joined = new Set<string>();
   const events = (k: number): string | null => {
