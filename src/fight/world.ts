@@ -5,6 +5,7 @@
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
 import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type Direction, type SkillId, type SpecialName, type WeaponId } from './moves.ts';
 import { worldRule } from './world-rules.ts';
+import { POOLS } from './pools.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { CAPS } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
@@ -21,7 +22,7 @@ import type { CombatEvent, Duel } from './duel.ts';
 
 const TICK = 1 / 60;
 const secs = (ticks: number): number => ticks * TICK;
-export const STAMINA_MAX = 100;                       // duel.ts createFighter: the bar every fighter starts with
+export const STAMINA_MAX: number = POOLS.find((d) => d.id === 'stamina')!.default;                       // the bar every fighter starts with: pool-defs.json's stamina default, the one createFighter reads (duel.ts)
 export const PLAYER_RADIUS = worldRule('playerRadius');                    // half the sim's 0.85 m fighter spacing (sim.ts)
 export { AGGRO_M, SIGHT_M };   // (src/fight/threat-defs.json awareness rows)
 // AGGRO_M: a creature that is hunting a player notices him inside this ring (World's mob layer decides who is in the world at all)
