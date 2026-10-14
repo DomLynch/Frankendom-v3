@@ -1,0 +1,19 @@
+{
+  "specialLookRule": [
+    {
+      "id": "special",
+      "recover": 45,
+      "struck": 45,
+      "bossBaseRank": 8,
+      "bossBaseLevel": 36,
+      "bossLevelPerRank": 5,
+      "bossFirst": 180
+    }
+  ],
+  "catalogueRule": [
+    {
+      "id": "catalogue",
+      "worldMaxTris": 10000
+    }
+  ]
+}
