@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "packDial",
+      "file": "pack-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}
