@@ -1,0 +1,6 @@
+{
+  "dials": [
+    {"id": "LEVELS","value": 50},
+    {"id": "LATE_NOTICE_FROM","value": 12}
+  ]
+}

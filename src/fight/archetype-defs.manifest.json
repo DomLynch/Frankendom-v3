@@ -1,0 +1,30 @@
+{
+  "tables": [
+    {
+      "table": "archetypeIdentity",
+      "file": "archetype-defs.json",
+      "at": "identities",
+      "key": "id",
+      "required": {
+        "values": "object"
+      }
+    },
+    {
+      "table": "archetype",
+      "file": "archetype-defs.json",
+      "at": "archetypes",
+      "key": "id",
+      "required": {
+        "scale": "number",
+        "health": "any",
+        "poise": "number",
+        "profiles": "object"
+      },
+      "optional": {
+        "guard": "object",
+        "regen": "number",
+        "speed": "number"
+      }
+    }
+  ]
+}
