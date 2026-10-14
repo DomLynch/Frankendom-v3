@@ -1,0 +1,16 @@
+{
+  "specialFxBodyRows": [
+    { "id": "goblin.puffs", "fields": {"value": 28} },
+    { "id": "goblin.specks", "fields": {"value": 44} },
+    { "id": "goblin.prints", "fields": {"value": 8} },
+    { "id": "goblin.ghost-since", "fields": {"value": 0.1} },
+    { "id": "goblin.scoop-ticks", "fields": {"value": 48} },
+    { "id": "goblin.dip", "fields": {"value": 0.22} },
+    { "id": "dwarf-shield.dust", "fields": {"value": 72} },
+    { "id": "dwarf-shield.grit", "fields": {"value": 48} },
+    { "id": "dwarf-shield.stride", "fields": {"value": 8} },
+    { "id": "dwarf-shield.night-cap", "fields": {"value": 0.4} },
+    { "id": "executioner.build", "fields": {"value": 30} },
+    { "id": "executioner.grit", "fields": {"value": 160} }
+  ]
+}
