@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "signatureRow",
+      "file": "signature-rows.json",
+      "at": "signatureRows",
+      "key": "id",
+      "required": { "fields": "object" }
+    }
+  ]
+}

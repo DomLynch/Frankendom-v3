@@ -9,14 +9,15 @@
 // smear...); the count restarts when the tick goes backwards (a new fight or a replay), so a replay shows the same strips.
 import type { CombatEvent, Duel } from './duel.ts';
 import { weaponOf, type Direction } from './moves.ts';
+import { bloodNum } from './blood-rows.ts';
 
 export type Edge = 'left' | 'right';
 export const EDGE: Record<Direction, Edge | 'both'> = { right: 'left', left: 'right', overhead: 'both', thrust: 'both', low: 'both' };
 export const STRIPS = ['wet-smear', 'soft-bleed', 'dragged-streak'] as const;
-export const EDGE_MS = 480;
+export const EDGE_MS = bloodNum('blood-edge.edge-ms');
 export const PEAK = [0.12, 0.43];   // opacity holds from 58 ms to 206 ms (~150 ms); the effect easing is linear (an effect-level ease-out warps the whole timeline), ease-out is on the fade keyframe only
-export const HEAD_ON = 0.6;         // peak opacity of each edge for a head-on blow (Strategy's default until Dom rules)
-export const WIDTH_VW = 6, SPAN = 68;   // each strip is 6 % of the screen width, the middle 68 % of its height
+export const HEAD_ON = bloodNum('blood-edge.head-on');         // peak opacity of each edge for a head-on blow (Strategy's default until Dom rules)
+export const WIDTH_VW = bloodNum('blood-edge.width-vw'), SPAN = bloodNum('blood-edge.span');   // each strip is 6 % of the screen width, the middle 68 % of its height
 const SIDES: readonly Edge[] = ['left', 'right'];
 
 export const edgesOf = (e: CombatEvent, duel: Duel): Edge[] | null => {

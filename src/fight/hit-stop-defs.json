@@ -1,15 +1,15 @@
 {
   "contacts": {
-    "hitLight":     {"order": 1, "ms": 50,  "frames": 3,  "knock": 0.02, "push": 0},
-    "hitHeavy":     {"order": 2, "ms": 90,  "frames": 5,  "knock": 0.04, "push": 0},
-    "blockLight":   {"order": 3, "ms": 30,  "frames": 2,  "knock": 0.02, "push": 0},
-    "blockHeavy":   {"order": 4, "ms": 50,  "frames": 2,  "knock": 0.02, "push": 0},
-    "parry":        {"order": 5, "ms": 70,  "frames": 11, "knock": 0,    "push": 0.07},
-    "guardBreak":   {"order": 6, "ms": 90,  "frames": 5,  "knock": 0.04, "push": 0},
-    "special":      {"order": 7, "ms": 50,  "frames": 0,  "knock": 0,    "push": 0},
-    "postureBreak": {"order": 8, "ms": 150, "frames": 0,  "knock": 0,    "push": 0},
-    "kill":         {"order": 9, "ms": 220, "frames": 0,  "knock": 0,    "push": 0},
-    "kick":         {"order": 10, "ms": 0,  "frames": 2,  "knock": 0,    "push": 0, "drop": 0.1}
+    "hitLight":     {"order": 1,  "frames": 3,  "knock": 0.02, "push": 0},
+    "hitHeavy":     {"order": 2,  "frames": 5,  "knock": 0.04, "push": 0},
+    "blockLight":   {"order": 3,  "frames": 2,  "knock": 0.02, "push": 0},
+    "blockHeavy":   {"order": 4,  "frames": 2,  "knock": 0.02, "push": 0},
+    "parry":        {"order": 5,  "frames": 11, "knock": 0,    "push": 0.07},
+    "guardBreak":   {"order": 6,  "frames": 5,  "knock": 0.04, "push": 0},
+    "special":      {"order": 7,  "frames": 0,  "knock": 0,    "push": 0},
+    "postureBreak": {"order": 8, "frames": 0,  "knock": 0,    "push": 0},
+    "kill":         {"order": 9, "frames": 0,  "knock": 0,    "push": 0},
+    "kick":         {"order": 10,  "frames": 2,  "knock": 0,    "push": 0, "drop": 0.1}
   },
   "feel": {
     "knockSettle": {"value": 0.12}

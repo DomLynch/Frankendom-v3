@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "movesDialsDial",
+      "file": "moves-dials-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "tables": [
+    {
+      "table": "specialTimingRule",
+      "file": "special-timing-rules.json",
+      "at": "specialTimingRule",
+      "key": "id",
+      "required": {
+        "dropTicks": "integer",
+        "ripple": "integer",
+        "castMargin": "integer",
+        "cuts": "integer",
+        "cutGap": "integer",
+        "dissolveTicks": "integer",
+        "bossTail": "integer"
+      }
+    },
+    {
+      "table": "classTimingRule",
+      "file": "special-timing-rules.json",
+      "at": "classTimingRule",
+      "key": "id",
+      "required": {
+        "backTicks": "integer",
+        "dragFrom": "integer",
+        "lateral": "number",
+        "stepWindow": "integer"
+      }
+    },
+    {
+      "table": "titheRule",
+      "file": "special-timing-rules.json",
+      "at": "titheRule",
+      "key": "id",
+      "required": {
+        "chamber": "number",
+        "chamberFrom": "number",
+        "strikeFrom": "number"
+      }
+    },
+    {
+      "table": "shieldSlamRule",
+      "file": "special-timing-rules.json",
+      "at": "shieldSlamRule",
+      "key": "id",
+      "required": {
+        "lead": "integer",
+        "hold": "integer",
+        "release": "integer"
+      }
+    },
+    {
+      "table": "bossTimingRule",
+      "file": "special-timing-rules.json",
+      "at": "bossTimingRule",
+      "key": "id",
+      "required": {
+        "build": "integer"
+      }
+    }
+  ]
+}
