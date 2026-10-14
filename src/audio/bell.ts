@@ -4,14 +4,15 @@
 // found by search for the lowest first-cycle crest) and gently saturated. Measured: +6.3 dB in the phone band (> 300 Hz) over
 // the .66 / 3.9 s bell at the same −8 dBFS peak with the .80 play gain in arena.ts, which keeps the returning-player fallback
 // stacked with the draw swing under scripts/bell-start-check.mjs's −6 dBFS headroom.
-export const BELL_SECONDS = 2.5;   // owner 2026-09-21 13:15: 2.5 s (was 3); the taper keeps its endpoint, 75 % quieter at the end
+import { audioRule, bloomRules } from '../fight/sound/audio-rules.ts';
+export const BELL_SECONDS = audioRule('bellSeconds');   // owner 2026-09-21 13:15: 2.5 s (was 3); the taper keeps its endpoint, 75 % quieter at the end
 // Owner 2026-09-20, 23:15: "use this sound" — a Tibetan gong (a shop's demo clip, not licensed for reuse, so it is the target and
 // not the asset). Measured from the clip 0.3–1.3 s after the strike: prime pair 251 / 267 Hz (their 16 Hz beat is the shimmer),
 // undertone 165 Hz, upper partials 362 / 526 / 613 / 777 Hz at −4…−6 dB; the level swells for ~1.5 s after the strike and then
 // holds within 3 dB for six seconds. Voiced here as: long decays (the ring barely falls inside 4 s), a 1.2 s bloom on
 // everything above the prime, a mild pitch vibrato for the wobble, gentle drive (the heavier drive read as "worse").
 const PARTIALS: [hz: number, gain: number, decay: number, phase: number][] = [[165, .45, 9, 0], [251, 1, 10, 1.26], [267, .7, 10, 2.6], [362, .5, 8, 4.77], [526, .55, 7, 3.38], [613, .35, 6, 0.9], [777, .3, 5, 4.91]];
-const DRIVE = 2;
+const DRIVE = audioRule('bellDrive');
 // Owner 2026-09-21 12:40: "louder at the start, more of an impact for the first second, then taper off" — from three candidates he
 // chose the padded-mallet strike, "toned down: keep the original and 50 % of the new sound". So, at half of candidate A: the
 // partials open 2.1× louder and settle over the first second, a felt thud (low broadband burst) and a sagging low thump mark the
@@ -21,7 +22,7 @@ const TAPER = .75 / BELL_SECONDS;   // amplitude lost per second, on top of the 
 const mulberry = (seed: number) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 // One-pole pair for the felt thud's band (80–900 Hz): a low-pass then a high-pass, both first order — enough for a thud.
 const band = (x: Float32Array, rate: number, lo: number, hi: number) => { const a = Math.exp(-2 * Math.PI * hi / rate), b = Math.exp(-2 * Math.PI * lo / rate); let l = 0, h = 0, p = 0; return x.map(v => { l = a * l + (1 - a) * v; const y = b * (h + l - p); p = l; h = y; return y; }); };
-const VIBRATO = { rate: 4.2, depth: .015, from: .3, until: BELL_SECONDS + 1, fade: 1 }, BLOOM = { above: 300, seconds: .4 };   // the swell: partials above the prime open over ~1.2 s (3 τ)
+const VIBRATO = { rate: 4.2, depth: .015, from: .3, until: BELL_SECONDS + 1, fade: 1 }, BLOOM = bloomRules();   // the swell: partials above the prime open over ~1.2 s (3 τ)
 const wobbleAt = (t: number, w: { from: number; until: number; fade: number }) => Math.min(1, t / w.from) * Math.max(0, Math.min(1, (w.until - t) / w.fade));
 export function bellSamples(rate: number): Float32Array {
   const data = new Float32Array(Math.round(BELL_SECONDS * rate));
@@ -59,7 +60,7 @@ export function bellSamples(rate: number): Float32Array {
 // Built once per page while the main thread is idle, never on the Draw tap: synthesising it inline cost ~90 ms of a frame on a
 // ×4-throttled phone (Hero Look's trace, 2026-09-29). Fixed 48 kHz so it needs no AudioContext; a buffer at 48 kHz plays on any.
 // Until it is built, preparedBell() is undefined and the opening bell is skipped for that match (Strategy 2026-09-29).
-export const BELL_RATE = 48000;
+export const BELL_RATE = audioRule('bellRate');
 let prepared: Float32Array | undefined, preparing: Promise<void> | undefined;
 export function prepareBell(): Promise<void> {
   return preparing ??= new Promise<void>(resolve => {
