@@ -1,6 +1,15 @@
 {
   "tables": [
     {
+      "table": "tactic_limits",
+      "file": "tactic-defs.json",
+      "at": "limits",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    },
+    {
       "table": "tactic",
       "file": "tactic-defs.json",
       "at": "tactics",

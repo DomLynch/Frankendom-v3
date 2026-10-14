@@ -11,10 +11,11 @@ export type Reaction = 'parry' | 'brace' | 'backstep';
 export type Weighted<C extends string> = { readonly choice: C; readonly weight: number };
 export type TacticBlock = { readonly heroWinding?: readonly Weighted<Reaction>[] };
 const REACTIONS: readonly string[] = ['parry', 'brace', 'backstep'];
-const MAX_ENTRIES = 6;
 
-const TACTIC_T = tableFromFile(TACTIC_MANIFEST.tables[0] as unknown as Manifest, TACTIC_DEFS, 'tactic-defs.json');
-loadRegistry([TACTIC_T]);
+const LIMITS_T = tableFromFile(TACTIC_MANIFEST.tables[0] as unknown as Manifest, TACTIC_DEFS, 'tactic-defs.json');
+const TACTIC_T = tableFromFile(TACTIC_MANIFEST.tables[1] as unknown as Manifest, TACTIC_DEFS, 'tactic-defs.json');
+loadRegistry([LIMITS_T, TACTIC_T]);
+const MAX_ENTRIES = (LIMITS_T.rows as unknown as { id: string; value: number }[]).find((r) => r.id === 'maxEntries')!.value;   // the spec's six entries per list, a row
 // One check shared by the load and the tests: at most six entries, a known choice each, positive weights that are not all zero.
 export function checkTactic(id: string, list: readonly Weighted<string>[] | undefined): void {
   if (list === undefined) return;
