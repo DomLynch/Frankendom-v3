@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "rule", "file": "rules-defs.json", "at": "rules", "key": "id", "required": {},
+      "optional": { "n": "number", "b": "boolean", "piDiv": "integer" } }
+  ]
+}

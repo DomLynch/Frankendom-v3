@@ -7,6 +7,7 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import { STANCE_ROWS_ON } from './stance-era.ts';
 import STANCE_DEFS from './stance-defs.json' with { type: 'json' };
 import STANCE_MANIFEST from './stance-defs.manifest.json' with { type: 'json' };
+import { LEGACY_DEFENSIVE_ROWS } from './stance-legacy-rows.ts';   // rows: stance-legacy-defs.json
 export type StanceId = 'aggressive' | 'defensive' | 'trickster';
 export type PickedStance = StanceId | 'neutral';   // what a player picks (and a record names): Neutral is a real pick, the safe middle
 export const PICKS: readonly PickedStance[] = ['neutral', 'aggressive', 'defensive', 'trickster'];   // append only: the index is the record's 2-bit code
@@ -30,7 +31,7 @@ export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<R
 }
 export const STANCES: Readonly<Record<StanceId, Deltas>> = stanceRows(TABLE.rows as unknown as Record<string, unknown>[]);
 // The Defensive stance BEFORE v52 (stance-era.ts): the same deltas plus a parry window and a guard-counter window a quarter longer. Read only while a record below 52 replays.
-const LEGACY_DEFENSIVE: Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>> = { defensive: { damage: -50, block: -150, recover: 250, window: 250, counter: 250 } };
+const LEGACY_DEFENSIVE: Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>> = LEGACY_DEFENSIVE_ROWS as unknown as Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>>;
 const rowOf = (f: { stance?: StanceId }): Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>> | undefined => (f.stance ? (STANCE_ROWS_ON ? undefined : LEGACY_DEFENSIVE[f.stance]) ?? STANCES[f.stance] : undefined);
 export const stanced = (f: { stance?: StanceId }, key: StanceKey | 'window' | 'counter', x: number): number => { const d = rowOf(f)?.[key]; return d ? (x * (1000 + d)) / 1000 : x; };
 // The AI's mood: drawn from the fight seed (a replay re-sims it exactly), 50% its home stance and 50% one of the other three picks. Home stances are the ruling's; every other opponent's home is Neutral.
