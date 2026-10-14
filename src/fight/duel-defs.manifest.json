@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "duelDial",
+      "file": "duel-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

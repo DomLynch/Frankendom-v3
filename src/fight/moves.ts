@@ -9,6 +9,8 @@ import { SPECIAL_SETS, SPECIAL_RANK_LEVELS } from './special-set-rows.ts';
 import { LEVEL_ANCHORS } from './level-anchor-rows.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
+import { LEVELS, LATE_NOTICE_FROM } from './moves-dials-rows.ts';   // the dials are rows (moves-dials-defs.json)
+export { LEVELS };
 export type { OpponentId, RigId } from '../roster.ts';
 // Combat data. Every timing is in fixed 60 Hz ticks; every number here is a tuning candidate, not a validated value.
 // Damage is tuned for a Souls-length duel: AI vs AI at normal runs ~9 clean hits / ~35 s (light 11, heavy 18, riposte 24, heavy riposte 30, kick 4).
@@ -305,7 +307,7 @@ export const OPPONENTS = Object.fromEntries(Object.entries(ROSTER).map(([id, rec
 // The novice lowers only the fighter's SKILL (how fast and how well he reads and answers); his IDENTITY knobs (pressure, feint, guard,
 // disengage, circle, step, interrupt, kick, dash) stay at easy's from 1 to 6, so the orc still chains, the goblin never guards.
 // At an anchor level the anchor itself is returned, so levels 6 / 18 / 46 fight exactly as easy / normal / hard did (same RNG draws).
-export const LEVELS = 50;   // 46 anchored the hard table; 47–50 are Origin II–V (the tail past hard, TAIL below)
+// 46 anchored the hard table; 47–50 are Origin II–V (the tail past hard, TAIL below)
 // The named special an opponent casts at a ladder level is a ROW (special-set-defs.json, built by special-set-rows.ts; notes in docs/specs/combat/special-set-notes.md): ranks 8 / 9 / 10, levels 36 / 41 / 46.
 export { SPECIAL_SETS };
 export type SpecialName = string;   // a special's id is a row id in special-set-defs.json (ids stay strings; tests/special-identity.test.ts checks every one has a boss id)
@@ -372,7 +374,6 @@ const tailApex = (h: AiProfile): AiProfile => ({
   ...(h.read === undefined ? {} : { read: Math.max(h.read, Math.min(.98, h.read + .03)) }),
 });
 /** The first ladder level whose in-between profile uses late notice (ai.ts): the L11→L12 step is the first cliff, and L1–11 stay byte for byte (Lead, 2026-10-06). */
-const LATE_NOTICE_FROM = 12;
 export function profileAt(o: Opponent, level: number): AiProfile {
   const l = Math.min(LEVELS, Math.max(1, Math.round(level)));
   if (l === LEVEL_ANCHORS.easy) return o.profiles.easy;
