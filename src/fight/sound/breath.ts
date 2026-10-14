@@ -1,3 +1,4 @@
+import { audioRule } from './audio-rules.ts';
 import type { Fatigue } from '../fatigue.ts';
 import type { OpponentId } from '../../roster.ts';
 
@@ -36,7 +37,7 @@ export function breathPlan(f: Fatigue, body: Body = MAN): Plan | null {
 }
 
 type Side = { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode; next: number; second: boolean };
-const AHEAD = .3, DUCK = .3, DUCK_BACK = .45, RELEASE = 1.4;
+const AHEAD = audioRule('breathAhead'), DUCK = audioRule('breathDuck'), DUCK_BACK = audioRule('breathDuckBack'), RELEASE = audioRule('breathRelease');
 // `out` is the combat bus; `room` (optional) is the arena send, which only the foe's breath uses so he sounds across the sand.
 export function createBreath(context: BaseAudioContext, out: AudioNode, noise: AudioBuffer, random: () => number, room?: AudioNode) {
   const master = context.createGain(), sides: (Side | null)[] = [null, null];

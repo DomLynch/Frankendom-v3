@@ -1,0 +1,8 @@
+{
+  "tables": [
+    { "table": "fatigueDial", "file": "fatigue-defs.json", "at": "dials", "key": "id",
+      "required": { "value": "number" } },
+    { "table": "fatigueTune", "file": "fatigue-defs.json", "at": "tunes", "key": "id",
+      "required": { "rate": "number", "depth": "number", "sag": "number" } }
+  ]
+}
