@@ -1,0 +1,16 @@
+{
+  "feel": [
+    {"id":"lean","value":0.45},
+    {"id":"leanKill","value":0.9},
+    {"id":"nudge","value":0.16},
+    {"id":"decay","value":12},
+    {"id":"decayKill","value":10},
+    {"id":"hold","value":0.045},
+    {"id":"holdKill","value":0.08},
+    {"id":"lowEnergy","value":0.4},
+    {"id":"weaponHoldHalf","value":40},
+    {"id":"weaponHoldFull","value":60},
+    {"id":"weaponHoldKill","value":80},
+    {"id":"gravity","value":8}
+  ]
+}
