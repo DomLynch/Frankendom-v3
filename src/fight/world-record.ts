@@ -3,6 +3,7 @@
 // A record is a window: it opens when a creature joins an empty loop and carries the hero's body at that moment (claims, bounded by the replay), every join and release, and per step the page's pose and presses.
 // Poses and presses are quantized BEFORE the live loop uses them (cm, milliradian), so the replay sees exactly the numbers the page's sim saw. This is a Zone 1 module, not the Pit's FightRecord. The header stamps the sim's RECORD_VERSION: the replay runs only a record of its own version (a stale one is the no-record tier, not fraud).
 import { M } from './detmath.ts';
+import { worldRule } from './world-rules.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
 import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
@@ -11,16 +12,16 @@ import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type F
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
 // RECORD_VERSION; a change to any of them, or a Pit sim bump, fails that test until this is bumped and the digest re-pinned. The packed record stamps it, and a verifier replays only a record of ITS OWN version.
-export const WORLD_SIM_VERSION = 30;
+export const WORLD_SIM_VERSION = 28;
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
 const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'kick'];
 const SIDES: readonly (Direction | null)[] = [null, 'right', 'left', 'overhead', 'thrust', 'low'];   // the held guard side (the Pit's thumbs), packed in flag bits 6-8; absent = the straight guard
 /** The most a pose may move between two steps, m/s: a run, or a roll's own displacement (the hero's cut reaches no farther). Measured against a real roll in world-record.test.ts. */
-export const MAX_HERO_MPS = 12;
-export const MAX_CREATURES = 8, MAX_EVENTS = 256;
+export const MAX_HERO_MPS = worldRule('maxHeroMps');
+export const MAX_CREATURES = worldRule('maxCreatures'), MAX_EVENTS = worldRule('maxEvents');
 /** Five minutes of world fight: a window past it is not recorded, not unpacked, not replayed (a replay of the decoder's old 108k ticks cost a second on the writer). */
-export const MAX_WORLD_TICKS = 18_000;
+export const MAX_WORLD_TICKS = worldRule('maxWorldTicks');
 export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */

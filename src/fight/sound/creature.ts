@@ -2,22 +2,11 @@
 // combat bus the way power-word.ts is, so there is no sample, no sprite byte and no new engine: each voice is a low sawtooth (the throat) through two formant band-passes plus
 // a band of noise (the rasp). One row per roster body kind says how big the throat is. Presentation only, never read by the sim. Default SILENT: Dom picks the voices by hand
 // (2026-10-06), so ?look=creatures is a look test for him to hear, never on by default.
+import { THROAT_ROWS } from './audio-rules.ts';
 export type CreatureCue = 'growl' | 'bite' | 'death';
 export type Throat = { f0: number; formants: [number, number]; rasp: number };   // f0 Hz at rest; two vowel formants; the noise share 0..1
 // The roster bodies a Frontier creature wears (mob-looks.ts `opponent`). A body with no row is silent.
-export const THROATS: Readonly<Record<string, Throat>> = {
-  goblin: { f0: 150, formants: [700, 1300], rasp: .55 },
-  pitborn: { f0: 85, formants: [600, 1000], rasp: .45 },
-  knight: { f0: 70, formants: [500, 900], rasp: .3 },
-  witch: { f0: 190, formants: [450, 1700], rasp: .5 },
-  minotaur: { f0: 55, formants: [450, 800], rasp: .5 },
-  // The Zone 1 beasts (Characters 2026-10-09, K8): starting points shaped from what the animals do, for Dom's ear to move. Wolf: a growl low in the 90-130 Hz band over an open, mid-high vowel,
-  // half breath. Boar: a short chesty grunt (~120-180 Hz) with a closed vowel and the most rasp of the three, the snort. Bear: the lowest throat in the pit, a roar fundamental near 60-70 Hz
-  // with a dark vowel, wide and rough.
-  wolf: { f0: 110, formants: [550, 1250], rasp: .45 },
-  boar: { f0: 150, formants: [420, 900], rasp: .6 },
-  bear: { f0: 62, formants: [350, 750], rasp: .55 },
-};
+export const THROATS: Readonly<Record<string, Throat>> = THROAT_ROWS;   // rows (audio-rules-defs.json `throats`): the Zone 1 beasts (Characters 2026-10-09, K8) are starting points for Dom's ear to move: wolf a growl low in the 90-130 Hz band over an open vowel, half breath; boar a short chesty grunt with the most rasp; bear the lowest throat, a dark wide rough roar
 // Length (s) and peak gain of each cue before the bus. bone_crack is .55 (audio/cues.ts), so every creature voice sits under an impact.
 export const CREATURE_CUES: Readonly<Record<CreatureCue, { length: number; gain: number }>> = { growl: { length: .9, gain: .2 }, bite: { length: .3, gain: .28 }, death: { length: 1.1, gain: .3 } };
 export const creaturesLook = (search: string): boolean => /[?&]look=creatures(?=&|$)/i.test(search);
