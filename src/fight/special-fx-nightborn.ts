@@ -4,6 +4,7 @@ import type { OpponentId } from '../roster.ts';
 import { advanceCast, castPhase, CUTS, cutAt, LAND_AT, type Cast } from './special-timing.ts';
 import { clamp01, hash, smooth } from './fx-math.ts';
 import { lerp, paintSheet, surface, type SandLook } from './special-fx-wind.ts';
+import { specialFxMinorNum } from './special-fx-minor-rows.ts';
 
 // Seven Cuts, the Nightborn's ranks 4-7 class special (Nightborn lane; Dom's pick via Lead 2026-10-01, with his rule for every special: nothing pale or glowing
 // washes over the fighters). Presentation only, on the same seam and the same 120-tick timeline as Hades' cloud and Red Wind (special-timing.ts), on the
@@ -13,7 +14,7 @@ import { lerp, paintSheet, surface, type SandLook } from './special-fx-wind.ts';
 // (depthTest off, as Hades' cloud does): the fight camera stands behind the player, so otherwise his own body would hide them.
 
 export const inkLook = (): SandLook => ({ core: new THREE.Color(0.008, 0.008, 0.009), edge: new THREE.Color(0.03, 0.028, 0.026), dim: false });   // linear working-space colours, tone-mapped by the arena's exposure
-const CAP = 0.88;
+const CAP = specialFxMinorNum('nightborn.cap');
 
 // Reviewed Pale Lunge ground line, isolated from Seven Cuts. Common special A,
 // stationary and tick-driven: no Estoc Lunge movement, held pose or new hit lane.

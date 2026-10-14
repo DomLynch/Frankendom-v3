@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OPPONENT_SIDE, defendedBy, isHeavy, registerSignature, type SignatureFrame } from './signature.ts';
+import { sigObj } from './signature-rows.ts';
 
 // The Shieldmaiden's signature A, Splintered Defiance (docs/briefs/signature-effects.md row 8): a heavy she blocks throws splinters and trim
 // off the top of her shield's rim, out past both sides of the player, and they land and lie on the sand. Cosmetic only: it reads the Blocked
@@ -7,11 +8,7 @@ import { OPPONENT_SIDE, defendedBy, isHeavy, registerSignature, type SignatureFr
 // Her shield is a Shield-slot loot mesh (loot.glb `~kit.Shield`, on her through the opponent carriers). With no shield on her it does NOTHING:
 // wood splintering off a block made with a gladius would break the brief's truth rule (Lead, 2026-09-24). The rim chip mark was dropped on
 // Lead's ruling (2026-09-27): it could not be made to read at the 375 fight camera, and floor wood alone is allowed.
-export const SPLINTER = {
-  pieces: 18, bursts: 2,          // splinters per blocked heavy; bursts alive at once
-  speed: [1.8, 3.4], up: 2.2,     // m/s outward toward the attacker, and upward kick
-  gravity: 9.8, seconds: 1.4,     // how long a splinter lives, landing flat on the sand before it goes
-} as const;
+export const SPLINTER = sigObj<{ readonly pieces: number; readonly bursts: number; readonly speed: readonly [number, number]; readonly up: number; readonly gravity: number; readonly seconds: number }>('shieldmaiden.splinter');   // splinters per blocked heavy; bursts alive at once; m/s outward toward the attacker; upward kick; how long a splinter lives, landing flat on the sand
 
 type Splinter = { position: THREE.Vector3; velocity: THREE.Vector3; spin: THREE.Vector3; rotation: THREE.Euler; size: THREE.Vector3; age: number; live: boolean; trim: boolean };
 

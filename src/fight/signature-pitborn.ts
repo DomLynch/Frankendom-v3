@@ -2,17 +2,12 @@ import * as THREE from 'three';
 import type { CombatEvent } from './duel.ts';
 import { surfaceHit, woundSite } from './gore.ts';
 import { heavyHitBy, registerSignature, type SignatureFrame } from './signature.ts';
+import { sigObj } from './signature-rows.ts';
 
 // The Pitborn's signature A, Butcher's Wake (docs/briefs/signature-effects.md row 2): his landed heavy drags a thick curved sheet of blood
 // out of the wound with the cleaver; it stretches, tears and falls as heavy drops that leave spots on the sand. Not a mist. Cosmetic only:
 // it reads the Hit event the duel already emits and nothing else. Everything is allocated once, when the first wake fires.
-export const WAKE = {
-  grow: 0.2, tear: 0.42,          // seconds: the sheet reaches out with the blade, then thins and tears
-  length: 0.7, width: 0.1,       // metres at full stretch
-  segments: 12, drops: 7,         // ribbon segments; heavy drops the torn sheet falls as
-  gravity: 9.8, spots: 2,         // m/s²; floor marks per wake (the floor pool holds 8 for the fight)
-  sheets: 2,                      // wakes alive at once (a heavy chain)
-} as const;
+export const WAKE = sigObj<{ readonly grow: number; readonly tear: number; readonly length: number; readonly width: number; readonly segments: number; readonly drops: number; readonly gravity: number; readonly spots: number; readonly sheets: number }>('pitborn.wake');   // grow/tear s (reach out, then thin and tear); length/width m at full stretch; ribbon segments; heavy drops; gravity m/s²; floor marks per wake (the floor pool holds 8); wakes alive at once
 
 type Sheet = { mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>; age: number; live: boolean; origin: THREE.Vector3; drag: THREE.Vector3; out: THREE.Vector3; heading: number };
 type Drop = { position: THREE.Vector3; velocity: THREE.Vector3; size: number; live: boolean; spot: boolean };

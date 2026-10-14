@@ -1,0 +1,45 @@
+{
+  "specialTimingRule": [
+    {
+      "id": "specialTiming",
+      "dropTicks": 24,
+      "ripple": 30,
+      "castMargin": 60,
+      "cuts": 7,
+      "cutGap": 4,
+      "dissolveTicks": 20,
+      "bossTail": 84
+    }
+  ],
+  "classTimingRule": [
+    {
+      "id": "classTiming",
+      "backTicks": 30,
+      "dragFrom": 36,
+      "lateral": 0.8,
+      "stepWindow": 26
+    }
+  ],
+  "titheRule": [
+    {
+      "id": "tithe",
+      "chamber": 0.55,
+      "chamberFrom": 0.84,
+      "strikeFrom": 0.92
+    }
+  ],
+  "shieldSlamRule": [
+    {
+      "id": "shieldSlam",
+      "lead": 14,
+      "hold": 18,
+      "release": 20
+    }
+  ],
+  "bossTimingRule": [
+    {
+      "id": "bossTiming",
+      "build": 30
+    }
+  ]
+}

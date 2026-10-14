@@ -4,6 +4,7 @@ import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { advanceCast, shadowPhase, FALL_AT, skillCast, type Cast, type isHadesShadow } from './special-timing.ts';
 import { clamp01, hash, smooth } from './fx-math.ts';
+import { specialFxBodyNum } from './special-fx-body-rows.ts';
 
 // The Goblin's boss specials at ranks 8, 9, 10, GREY-BOX (Goblin lane, 2026-10-01; proposal sent to Strategy, who put it to Dom; nothing here is
 // picked or shipped). Same seam as Hades' cloud and Red Wind: it reads the sim's special events and the two bodies' anchors, never the sim, the rig
@@ -16,11 +17,11 @@ import { clamp01, hash, smooth } from './fx-math.ts';
 //   loki    (rank 10) Three Liars: two darkened snapshots of him (his own colours) slide out beside him for under 0.4 s; the real one is the only solid one and it lands.
 // The caster's own motion (hide, lunge, reappear) is applied by the effect itself to his rig anchor (special-modes.ts hands it over); the sim's body never moves.
 
-const PUFFS = 28, SPECKS = 44, PRINTS = 8, GHOST_SINCE = 0.1;   // a ghost shows from k .1 to the end of the 0.4 s build-up: ~0.36 s
+const PUFFS = specialFxBodyNum('goblin.puffs'), SPECKS = specialFxBodyNum('goblin.specks'), PRINTS = specialFxBodyNum('goblin.prints'), GHOST_SINCE = specialFxBodyNum('goblin.ghost-since');   // a ghost shows from k .1 to the end of the 0.4 s build-up: ~0.36 s
 
 // Dirty Fistful's tell is the move itself (Strategy, 2026-10-01): he DROPS and scoops a fistful off the ground for SCOOP_TICKS before the fling, hand to the sand,
 // grit trickling from the fist (the rig sinks DIP metres: a presentation knee-dip, like the claw's), then the fling is the 0.4 s fan across the gap.
-export const SCOOP_TICKS = 48, DIP = 0.22;
+export const SCOOP_TICKS = specialFxBodyNum('goblin.scoop-ticks'), DIP = specialFxBodyNum('goblin.dip');
 
 // Unlit sprites in the working space, tone-mapped by the arena's exposure; the Night Pit (exposure above 1.5) is dark grey-brown ink, never lighter than the clay (Strategy 2026-10-02: the pale cast puffs failed).
 const dust = (exposure: number) => (exposure > 1.5 ? { core: new THREE.Color(0.03, 0.027, 0.024), edge: new THREE.Color(0.07, 0.064, 0.058) } : { core: new THREE.Color(0.14, 0.135, 0.125), edge: new THREE.Color(0.36, 0.34, 0.3) });
