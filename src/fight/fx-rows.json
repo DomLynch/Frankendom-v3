@@ -1,0 +1,25 @@
+{
+  "fxRows": [
+    { "id": "charge-fx.hoof", "fields": {"value": 18} },
+    { "id": "charge-fx.burst", "fields": {"value": 20} },
+    { "id": "charge-fx.grain", "fields": {"value": 20} },
+    { "id": "charge-fx.streak", "fields": {"value": 24} },
+    { "id": "charge-fx.lead", "fields": {"value": 2.0} },
+    { "id": "charge-fx.stride", "fields": {"value": 0.36} },
+    { "id": "charge-fx.life", "fields": {"value": 2.0} },
+    { "id": "charge-fx.burst-run", "fields": {"value": 1.6} },
+    { "id": "fatigue-preview.low-stamina", "fields": {"value": 10} },
+    { "id": "fatigue-preview.low-off", "fields": {"value": 12} },
+    { "id": "kick-close.ticks", "fields": {"value": 4} },
+    { "id": "kick-close.growth", "fields": {"value": 0.03} },
+    { "id": "opening-pose.in", "fields": {"value": 0.12} },
+    { "id": "opening-pose.out", "fields": {"value": 0.2} },
+    { "id": "beast-scale.wolf", "fields": {"value": 2} },
+    { "id": "beast-scale.boar", "fields": {"value": 1.8} },
+    { "id": "beast-scale.bear", "fields": {"value": 2.2} },
+    { "id": "quality.fighter-texture-cap", "fields": {"value": 1024} },
+    { "id": "opened.chunk", "fields": {"value": 2048} },
+    { "id": "opened.scan", "fields": {"value": 100000} },
+    { "id": "opened.step-ms", "fields": {"value": 8} }
+  ]
+}
