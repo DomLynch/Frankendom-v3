@@ -5,6 +5,8 @@
 // (a short extra freeze at contact, capped so a hit never freezes longer than the heaviest hit already does). World adds the
 // burst pool and the layered sounds on top of this branch.
 import type { CombatEvent } from './duel.ts';
+import { ARMFEEL, GRAVITY } from './armfeel-rows.ts';
+import { CONTACTS, holdMs } from './hit-stop-rows.ts';
 
 export type Feel = 'high' | 'low' | 'off';
 export const FEELS: readonly Feel[] = ['high', 'low', 'off'];
@@ -15,20 +17,12 @@ export function armfeelFrom(search: string, reducedMotion = false): Feel {
   return feel === 'high' || feel === 'low' || feel === 'off' ? feel : reducedMotion ? 'low' : 'high';
 }
 
-// The handoff's numbers. Low: energy 0.4, no holds. Off: nothing added.
-export const ARMFEEL = {
-  lean: 0.45, leanKill: 0.9,            // rad at energy 1
-  nudge: 0.16,                          // metres along the blow
-  decay: 12, decayKill: 10,             // per second
-  hold: 0.045, holdKill: 0.08,          // seconds the victim's reaction waits before it decays
-  lowEnergy: 0.4,
-  // The weapon's hit hold (40–80 ms, handoff: 40 light, 80 kill): by the blow's tier.
-  weaponHoldMs: { half: 40, full: 60, kill: 80 },
-} as const;
+// The handoff's numbers (armfeel-defs.json rows). Low: energy 0.4, no holds. Off: nothing added.
+export { ARMFEEL, GRAVITY };
 export const energyOf = (feel: Feel): number => (feel === 'high' ? 1 : feel === 'low' ? ARMFEEL.lowEnergy : 0);
 
 // The heaviest stop a hit gets today (main.ts HEAVY_HIT 90 ms + hit-impact.ts full tier 5 frames): no armfeel hold may take a frame past it.
-export const FULL_TIER_STOP_MS = 90 + (5 * 1000) / 60;
+export const FULL_TIER_STOP_MS = holdMs(CONTACTS.hitHeavy);   // the hitHeavy row's ms + its impact frames, the same expression it was written as
 // The blade's hit hold (40–80 ms) is a FLOOR on the freeze a contact has, not an addition to it: every contact in this game already stops the picture
 // at least 100 ms (main.ts HIT_STOP 50 ms + the half tier's 3 frames), so the extra milliseconds this returns are 0 on every real hit, and a light hit
 // is not made to stutter by a second freeze stacked on the first (Dom 2026-10-06: "a bit more nauseous"; measured, the old top-up made a light hit
@@ -45,7 +39,6 @@ export function weaponHoldMs(feel: Feel, stopMs: number, events: readonly Combat
 export const FLINCH_GAIN = { hero: 0.25, opponent: 1 } as const;
 
 // The blood burst's particles (blood-style.ts fills them): life, position, velocity, size (width) and stretch (length over width), in one fixed pool.
-export const GRAVITY = 8;   // m/s²
 export type Particle = { life: number; total: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; size: number; stretch: number };
 export const newParticle = (): Particle => ({ life: 0, total: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, size: 0, stretch: 1 });
 // Only a blow that lands on the body bleeds: a Hit. A block, a parry and a guard break keep today's clash sparks and get none of this (Dom 2026-10-06).

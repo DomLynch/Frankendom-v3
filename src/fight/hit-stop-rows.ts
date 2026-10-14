@@ -8,3 +8,5 @@ export type ContactRow = { order: number; ms: number; frames: number; knock: num
 export const CONTACTS = rows.contacts as Readonly<Record<ContactId, ContactRow>>;
 /** Wall-clock milliseconds a contact row holds the picture: its own pause plus its impact frames. */
 export const holdMs = (row: ContactRow): number => row.ms + (row.frames * 1000) / 60;
+/** Seconds the camera's knock takes to settle back (hit-impact.ts): the `feel` row. */
+export const KNOCK_SETTLE = (rows.feel.knockSettle as { value: number }).value;

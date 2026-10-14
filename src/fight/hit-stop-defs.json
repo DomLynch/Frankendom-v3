@@ -10,5 +10,8 @@
     "postureBreak": {"order": 8, "ms": 150, "frames": 0,  "knock": 0,    "push": 0},
     "kill":         {"order": 9, "ms": 220, "frames": 0,  "knock": 0,    "push": 0},
     "kick":         {"order": 10, "ms": 0,  "frames": 2,  "knock": 0,    "push": 0, "drop": 0.1}
+  },
+  "feel": {
+    "knockSettle": {"value": 0.12}
   }
 }
