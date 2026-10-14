@@ -1,0 +1,7 @@
+{
+  "dials": [
+    {"id": "CHAIN_CAP","value": 3},
+    {"id": "AFTER_HIT_TICKS","value": 90},
+    {"id": "EXHAUSTED_BELOW","value": 25}
+  ]
+}

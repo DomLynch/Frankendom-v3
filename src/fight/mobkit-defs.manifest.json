@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "mobkitDial",
+      "file": "mobkit-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

@@ -3,12 +3,13 @@ import { weaponOf } from './moves.ts';
 import { surfaceHit, woundSite } from './gore.ts';
 import { hitBy, OPPONENT_SIDE, registerSignature, type SignatureFrame } from './signature.ts';
 import type { CombatEvent } from './duel.ts';
+import { sigNum, sigObj } from './signature-rows.ts';
 
 // Goblin, variant A: Hooked Wound (docs/briefs/signature-effects.md row 3). His knife catches on the wound as it withdraws: a strand of
 // blood runs from the wound to his knuckles and blade, stretches thinner as the knife pulls away, snaps, and the two ends whip back while
 // a few drops fall. The stretch is the real withdrawal: both ends follow the rigs (the wound on the victim's bone, the other end on the
 // knife), so the strand only lengthens as far as his animation takes the blade. Visual only.
-export const HOOK = { points: 14, snapAt: 0.42, snapLength: 0.8, recoil: 0.16, width: [0.034, 0.012], sag: 0.1, drops: 5, gravity: 9.8 } as const;   // count, s, m, s, m (thick → stretched thin), m, count, m/s²
+export const HOOK = sigObj<{ readonly points: number; readonly snapAt: number; readonly snapLength: number; readonly recoil: number; readonly width: readonly [number, number]; readonly sag: number; readonly drops: number; readonly gravity: number }>('goblin.hook');   // count, s, m, s, m (thick → stretched thin), m, count, m/s²
 
 // The strand between the wound `a` and the knife `b` at stretch `share` of the way to snapping: a catenary-ish sag that tightens as it
 // stretches. After the snap, `recoil` (0 → 1) pulls the two halves back into their own ends. Writes `points` into `out`.
@@ -35,7 +36,7 @@ export const HOOK_B: HookStyle = { ...HOOK_A, overRigs: false };
 // along their motion, with a short tapering trail of shrinking copies TRAIL_STEP behind on the same fall.
 export const HOOK_C: HookStyle = { overRigs: false, color: '#4a0407', emissive: '#160002', width: [0.055, 0.026], sag: 0.2, taut: 0.25, fling: 1.6, drop: 0.009,
   drops: { color: '#3e0306', emissive: '#120001', trail: 3, stretch: 0.35 } };
-const TRAIL_STEP = 0.022;   // seconds between a drop and each copy behind it (Blood Recall B's)
+const TRAIL_STEP = sigNum('goblin.trail-step');   // seconds between a drop and each copy behind it (Blood Recall B's)
 
 export function createHookedWound(style: HookStyle = HOOK_A) {
   const overRigs = style.overRigs;
