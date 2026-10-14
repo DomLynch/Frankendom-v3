@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { isHeavy, OPPONENT_SIDE, registerSignature, type SignatureFrame } from './signature.ts';
+import { sigNum } from './signature-rows.ts';
 
 // The Executioner's signature (brief row 5, variant A): the Reaping Scar. When his heavy misses and the blade came down low, the part of
 // the arc that ran below knee height carves a curved scrape into the sand that shows the dark stone under it; a few fragments tumble out
 // of it and the scar stays for the fight (the floor pool's cap and fight-end clear). Truthful by construction: the scar is laid along the
 // tip positions the rig actually drew this swing, and a heavy that never came low leaves nothing.
-const HISTORY = 36, WINDOW = 0.7;   // tip samples kept, and how far back (s) a swing's low run is looked for
-const KNEE = 0.5;                   // knee height of the hero rig (m), times the opponent's body scale
-const FRAGMENTS = 10, GRAVITY = 9.8, SETTLE = 1.6;
+const HISTORY = sigNum('executioner.history'), WINDOW = sigNum('executioner.window');   // tip samples kept, and how far back (s) a swing's low run is looked for
+const KNEE = sigNum('executioner.knee');                   // knee height of the hero rig (m), times the opponent's body scale
+const FRAGMENTS = sigNum('executioner.fragments'), GRAVITY = sigNum('executioner.gravity'), SETTLE = sigNum('executioner.settle');
 
 let scarTexture: THREE.CanvasTexture | null = null;
 // A crescent groove, drawn once: a dark stone core with a pale lip of thrown sand on its outer side, the ends tapering to a scratch.

@@ -1,0 +1,26 @@
+{
+  "bloodRows": [
+    { "id": "blood-edge.edge-ms", "fields": {"value": 480} },
+    { "id": "blood-edge.head-on", "fields": {"value": 0.6} },
+    { "id": "blood-edge.width-vw", "fields": {"value": 6} },
+    { "id": "blood-edge.span", "fields": {"value": 68} },
+    { "id": "blood-style.blood", "fields": {"slots": 112, "hit": 15, "kill": 25, "drops": {"hit": 2, "kill": 3}, "start": "#690f0d", "end": "#200504"} },
+    { "id": "blood-style.front", "fields": {"value": 0.35} },
+    { "id": "blood-style.min-cam", "fields": {"value": 1.5} },
+    { "id": "gore.arm-share", "fields": {"value": 0.5} },
+    { "id": "gore.drops", "fields": {"every": [3, 6], "until": 0.5, "inFlight": 8, "spots": 24, "spot": [0.04, 0.08], "gravity": 9.8, "floor": 0.021, "seconds": 25} },
+    { "id": "gore.dry", "fields": {"seconds": 20, "roughness": [0.42, 0.75]} },
+    { "id": "gore.floor-dry", "fields": {"value": 8} },
+    { "id": "gore.wound-threshold", "fields": {"value": 0.6} },
+    { "id": "gore.wounds-per-fighter", "fields": {"value": 5} },
+    { "id": "nightfall-fx.floor", "fields": {"value": 0.07} },
+    { "id": "nightfall-fx.rim-net", "fields": {"value": 0.65} },
+    { "id": "nightfall-timing.veil-hold", "fields": {"value": 15} },
+    { "id": "nightfall-timing.return", "fields": {"value": 30} },
+    { "id": "nightfall-timing.veil", "fields": {"value": 24} },
+    { "id": "wounds-fx.spots", "fields": {"value": 40} },
+    { "id": "wounds-fx.spot-life", "fields": {"value": 25} },
+    { "id": "wounds-fx.drip-size", "fields": {"value": 0.12} },
+    { "id": "wounds-fx.mark-spread", "fields": {"value": 0.45} }
+  ]
+}

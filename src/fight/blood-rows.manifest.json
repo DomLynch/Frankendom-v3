@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "bloodRow",
+      "file": "blood-rows.json",
+      "at": "bloodRows",
+      "key": "id",
+      "required": { "fields": "object" }
+    }
+  ]
+}
