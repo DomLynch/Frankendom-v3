@@ -145,7 +145,8 @@ const ARCHETYPE_IDENTITIES = new Map((ARCHETYPE_IDENTITY_TABLE.rows as unknown a
 // A tier's keys keep the order the literal wrote them in (a record or digest that hashes the JSON must not see a different order).
 const ordered = (o: Record<string, number>, order?: string[]): Record<string, number> => (order ? Object.fromEntries(order.map((k) => [k, o[k]!])) : o);
 export function buildArchetypes(profiles: Record<string, object>, rulesHealth: number): Record<string, unknown> {
-  const tier = (spec: TierSpec): Record<string, number> => ordered({ ...(spec.from ? profiles[spec.from] : {}), ...spec.set, ...(spec.identity ? ARCHETYPE_IDENTITIES.get(spec.identity) : {}) }, spec.order);
+  // a tier that is exactly a shared PROFILES tier IS that object (the Executioner's `easy: PROFILES.easy`), not a copy
+  const tier = (spec: TierSpec): Record<string, number> => spec.from && !spec.identity && !spec.order && !Object.keys(spec.set).length ? (profiles[spec.from] as Record<string, number>) : ordered({ ...(spec.from ? profiles[spec.from] : {}), ...spec.set, ...(spec.identity ? ARCHETYPE_IDENTITIES.get(spec.identity) : {}) }, spec.order);
   return Object.fromEntries((ARCHETYPE_TABLE.rows as unknown as ArchetypeRow[]).map((row) => [row.id, Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'id').map(([k, v]) => [k,
     k === 'health' ? (v === 'rules' ? rulesHealth : v) : k === 'profiles' ? Object.fromEntries(Object.entries(row.profiles).map(([t, spec]) => [t, tier(spec)])) : v]))]));
 }
