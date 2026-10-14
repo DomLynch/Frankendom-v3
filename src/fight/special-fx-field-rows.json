@@ -1,0 +1,18 @@
+{
+  "specialFxFieldRows": [
+    { "id": "quake.rim", "fields": {"value": 0.6} },
+    { "id": "quake.strips", "fields": {"value": 11} },
+    { "id": "quake.sheets", "fields": {"value": 6} },
+    { "id": "quake.grit", "fields": {"value": 220} },
+    { "id": "quake.dust", "fields": {"value": 24} },
+    { "id": "quake.cap", "fields": {"value": 0.92} },
+    { "id": "quake.cap-pit", "fields": {"value": 0.4} },
+    { "id": "wind.cap", "fields": {"value": 0.8} },
+    { "id": "wind.streaks", "fields": {"value": 11} },
+    { "id": "wind.sheets", "fields": {"value": 4} },
+    { "id": "wind.grit", "fields": {"value": 80} },
+    { "id": "wind.gather-ticks", "fields": {"value": 30} },
+    { "id": "class.decals", "fields": {"value": 48} },
+    { "id": "class.grit", "fields": {"value": 72} }
+  ]
+}
