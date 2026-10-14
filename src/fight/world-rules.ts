@@ -7,7 +7,7 @@ import DEFS from './world-rules-defs.json' with { type: 'json' };
 import MANIFEST from './world-rules-defs.manifest.json' with { type: 'json' };
 
 export type WorldRule = { readonly id: string; readonly value: number; readonly unit: string };
-const NAMED = ['engage', 'engageOut', 'holdFactor', 'protectLevel', 'maxLevelGap', 'aggroWindow', 'playerRadius', 'joinPad', 'dropPad', 'fall', 'pulse', 'maxSteps', 'creatureNotice', 'namedNotice', 'noticeHold', 'playerWalk', 'playerRun', 'creatureAmble', 'creatureChase', 'leash', 'rareDefault', 'campMax', 'bossCampMax', 'campGap', 'respawnDefault', 'acrossSeconds', 'hopSeconds', 'firstFightSeconds', 'openerClear', 'openerFar'] as const;
+const NAMED = ['engage', 'engageOut', 'holdFactor', 'protectLevel', 'maxLevelGap', 'aggroWindow', 'playerRadius', 'joinPad', 'dropPad', 'fall', 'pulse', 'maxSteps', 'creatureNotice', 'namedNotice', 'noticeHold', 'playerWalk', 'playerRun', 'creatureAmble', 'creatureChase', 'leash', 'rareDefault', 'campMax', 'bossCampMax', 'campGap', 'respawnDefault', 'acrossSeconds', 'hopSeconds', 'firstFightSeconds', 'openerClear', 'openerFar', 'outOfCombat', 'disengage', 'disengageSeconds', 'engageGapMax', 'commitRange', 'maxHeroMps', 'maxCreatures', 'maxEvents', 'maxWorldTicks'] as const;
 /** The one loader: rows keyed by id (a duplicate id or a missing or mistyped field is refused), every rule the world reads by name must exist with a positive value, and an engaged creature keeps its fight at least out to the engage ring. Pure, so a test can load a table with a new row. */
 export function loadWorldRules(raw: { rules?: readonly unknown[] }): readonly WorldRule[] {
   loadRegistry([tableFromFile(MANIFEST.tables[0] as unknown as Manifest, raw, 'world-rules-defs.json')]);
