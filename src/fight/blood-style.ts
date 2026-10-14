@@ -3,9 +3,10 @@
 // Presentation only (nothing here is read by the simulation) and allocation-free per hit: it fills the pooled slots armfeel-fx.ts owns, with a seeded
 // generator, so the same fight draws the same blood on every run.
 import type { Feel, Particle } from './armfeel.ts';
+import { bloodNum, bloodObj } from './blood-rows.ts';
 
 // slots: the pool's size; hit/kill: particles a hit/kill takes (Low takes a third, at least 2); drops: how many of those are the heavy ones; start/end: the colour over a life.
-export const BLOOD = { slots: 112, hit: 15, kill: 25, drops: { hit: 2, kill: 3 }, start: '#690f0d', end: '#200504' } as const;
+export const BLOOD = bloodObj<{ readonly slots: number; readonly hit: number; readonly kill: number; readonly drops: { readonly hit: number; readonly kill: number }; readonly start: string; readonly end: string }>('blood-style.blood');
 const THIN = 0.7 * 0.65 * 0.9, LONG = 1.2 * 1.2 / (0.65 * 0.9);   // width x the first spray's; stretch x the first spray's (strand length = width x stretch), so the strands read as strands, not ovals
 export const bloodCount = (feel: Feel, kill: boolean): number =>
   feel === 'off' ? 0 : Math.max(feel === 'low' ? 2 : 0, Math.round(BLOOD[kill ? 'kill' : 'hit'] * (feel === 'low' ? 0.35 : 1)));
@@ -20,7 +21,7 @@ export const bloodGrow = (far: number, near: number): number => Math.min(3, Math
 // Where the foe's burst starts: the contact, pulled TOWARD THE CAMERA along the camera-to-contact ray, so it keeps the wound's screen position (it stays on his body) but sits
 // in front of the hero, whose torso otherwise covers a close foe's hit (Lead 10-07: a sideways offset left it floating in clear air). `far` / `near`: camera distance to the foe's
 // contact / to the hero's chest. The pull lands FRONT m in front of the hero's centre depth, and never brings the spawn within MIN_CAM m of the lens.
-const FRONT = 0.35, MIN_CAM = 1.5;
+const FRONT = bloodNum('blood-style.front'), MIN_CAM = bloodNum('blood-style.min-cam');
 export const foeBurstPull = (far: number, near: number): number => Math.max(0, Math.min(Math.max(0, far - near) + FRONT, far - MIN_CAM));
 export function spawnBlood(p: Particle, i: number, x: number, y: number, z: number, dx: number, dz: number, kill: boolean, feel: Feel, rnd: () => number, grow = 1): void {
   p.x = x; p.y = y; p.z = z;
