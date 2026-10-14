@@ -3,6 +3,7 @@ import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { advanceCast, castPhase, LAND_AT, RIPPLE, SLAM_AT, skillCast, type Cast } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
+import { specialFxFieldNum } from './special-fx-field-rows.ts';
 
 // Red Wind's painted-stroke helpers (Nightborn lane, special-fx-wind.ts on #1220), copied here so this preview stacks on #1120 alone, not on Red Wind.
 // SandLook: what the strokes are painted with, a dark core and a pale rim, both linear working-space colours.
@@ -61,9 +62,9 @@ export const quakeLook = (exposure: number): SandLook => exposure > 1.5
 //   landing tick (the visible build-up is ~0.5 s, Dom: a 1-2 s one was too slow on Red Wind);
 //   release: five broad sheets of sand stand up around the target's feet and a fountain of grit leaves the ground, then both fall back over ~0.75 s
 //   and a low haze of settling dust thins out where the ripple ran. No glow, no props, no cylinder: every stroke is painted and torn.
-const RIM = 0.6;   // metres in front of him: where the shield's rim meets the sand, and where the ripple starts
-const STRIPS = 11, SHEETS = 6, GRIT = 220, DUST = 24;
-const CAP = 0.92, CAP_PIT = 0.4;   // semi-transparent: both fighters stay readable through it; in the dim Pit no stroke or grit is over 0.4 (Strategy)
+const RIM = specialFxFieldNum('quake.rim');   // metres in front of him: where the shield's rim meets the sand, and where the ripple starts
+const STRIPS = specialFxFieldNum('quake.strips'), SHEETS = specialFxFieldNum('quake.sheets'), GRIT = specialFxFieldNum('quake.grit'), DUST = specialFxFieldNum('quake.dust');
+const CAP = specialFxFieldNum('quake.cap'), CAP_PIT = specialFxFieldNum('quake.cap-pit');   // semi-transparent: both fighters stay readable through it; in the dim Pit no stroke or grit is over 0.4 (Strategy)
 
 // A settling-dust patch: a soft, torn-edged blob, not a painted-sheet quad (those showed as a straight-edged box beside the player). Alpha falls off
 // from a wandering, noise-bitten rim and reaches nothing at the sprite's own edge; colour is the dark earth inside going to the pale dry rim.

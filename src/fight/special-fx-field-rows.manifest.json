@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "specialFxFieldRow",
+      "file": "special-fx-field-rows.json",
+      "at": "specialFxFieldRows",
+      "key": "id",
+      "required": {
+        "fields": "object"
+      }
+    }
+  ]
+}

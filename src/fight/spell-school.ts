@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SCHOOLS, type School } from './schools.ts';
 import SCHOOL_ROWS from './special-schools.json' with { type: 'json' };
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 // One colour per spell school (Strategy brief #1507 item 4: WoW, EverQuest). A LOOK TEST behind `?look=schools`, presentation only: no sim, no new particles, no
 // new files in the default path. Every special's effect (trail, ground mark, status tint) is drawn in its own scene group (special-presentation.ts); with the flag on
@@ -22,7 +23,7 @@ export const schoolsStrength = (search: string): Strength => { const l = looks(s
 // The effects paint dark ink into DataTexture maps, and a material colour only multiplies its map (black x any hue is black), so a mapped material's pixels are recoloured in
 // place: the school hue at the pixel's own shading (relative to the map's brightest), alpha untouched, so the shape, tear and fade stay the effect's own. An unmapped material
 // takes the hue as its colour. Each texture and material is done once.
-const SOFT_FLOOR = 12;   // soft: the luminance (0..255) a pixel may rise to when today's own pixel is darker than this
+const SOFT_FLOOR = FEEL_RULES.spellSchoolRule[0]!.softFloor;   // soft: the luminance (0..255) a pixel may rise to when today's own pixel is darker than this
 const SHADE = [0.55, 0.45] as const;   // darkest pixel at 55% of the hue, brightest at 100%
 type Tintable = THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null };
 function recolour(map: THREE.Texture, hue: THREE.Color, mix = 0) {
