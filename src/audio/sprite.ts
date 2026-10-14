@@ -40,3 +40,19 @@ export async function loadFirst(urls: Record<Format, string>, context: BaseAudio
   return null;
 }
 export const loadSprite = (context: BaseAudioContext, formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> => loadFirst(SPRITE_URLS, context, formats, fetchImpl, leaving);
+/** The sprite's bytes and the format they are in, fetched with no gesture and no AudioContext (decoding needs the context, fetching does not). */
+export type Prefetched = { format: Format; bytes: ArrayBuffer };
+export async function prefetchSprite(formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<Prefetched | null> {
+  for (const [attempt, format] of formats.entries()) {
+    if (attempt) await nextTask();
+    if (leaving()) break;
+    try { const response = await fetchImpl(SPRITE_URLS[format]); if (response.ok) return { format, bytes: await response.arrayBuffer() }; } catch { /* try the next format */ }
+  }
+  return null;
+}
+/** Decode prefetched bytes on the context (a copy: decodeAudioData detaches its input); no bytes, or bytes the browser cannot decode, fall back to the normal fetch of the other format(s). */
+export async function decodePrefetched(context: BaseAudioContext, prefetched: Promise<Prefetched | null>, formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
+  const got = await prefetched;
+  if (got) try { return await context.decodeAudioData(got.bytes.slice(0)); } catch { /* the codec failed to decode: try the other */ }
+  return loadSprite(context, got ? formats.filter((f) => f !== got.format) : formats, fetchImpl, leaving);
+}
