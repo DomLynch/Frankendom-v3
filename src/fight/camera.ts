@@ -5,11 +5,10 @@ import * as THREE from 'three';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import type { Shove } from './camera-kick.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
-import { sceneNum, sceneObj } from './scene-rows.ts';
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
-const AIM_PER_SHRINK = sceneNum('camera.aim-per-shrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
+const AIM_PER_SHRINK = 1.4;   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
 // How tall each foe LOOKS against a man's, for the camera only. The sim's `scale` (moves.ts OPPONENTS[id].scale) is a hitbox/rate number and stays put (it is in the record's
 // SIM_FILES); a foe whose body is not a man's by that number says so here. The Ash Wolf is ~.8 m at the back (the sim says .8 for its rates): behind the hero's head at bite range
 // without this. The Wraith is a tall rig whose head and scythe tip left the top of the lock frame. Every other foe is absent: the sim scale it always had.
@@ -17,13 +16,13 @@ export const FRAMING_LOW: Readonly<Record<string, number>> = { wolf: 1 };   // a
 export const FRAMING_TALL: Readonly<Record<string, number>> = { wraith: 0.35 };   // looks taller (a man's height 1 + this) and carries a long weapon: the lock backs off and up (the sim scale of foes above a man, 1.03-1.36, frames as a man and stays so)
 export const framingLow = (id: string): number => FRAMING_LOW[id] ?? 0;
 export const framingTall = (id: string): number => FRAMING_TALL[id] ?? 0;
-const LOW_SIDE = sceneNum('camera.low-side'),   // metres beside the hero's spine that the lock camera's line to a low foe passes, per unit of FRAMING_LOW (the hero's shoulders are ~.25 either side)
-  LOW_LIFT = sceneNum('camera.low-lift'),   // metres the lock camera rises for it
-  TALL_BACK = sceneNum('camera.tall-back'),   // metres the lock camera backs off, per unit of foe height above a man's, so his head and weapon tip stay in the frame
-  TALL_LIFT = sceneNum('camera.tall-lift');   // ...and rises
-const SHOULDER = sceneNum('camera.shoulder'),   // the player's shoulder height (m): what hides the opponent in the lock frame
-  SIDE_CLEAR = sceneNum('camera.side-clear'),   // metres beside the player's spine, per unit of opponent scale below 1, that the lock camera's line to him passes
-  SHORT_FADE = sceneNum('camera.short-fade');   // seconds for those short-opponent terms to ease out once a finish begins (inside SETTLE.min)
+const LOW_SIDE = 0.5,   // metres beside the hero's spine that the lock camera's line to a low foe passes, per unit of FRAMING_LOW (the hero's shoulders are ~.25 either side)
+  LOW_LIFT = 0.8,   // metres the lock camera rises for it
+  TALL_BACK = 2.4,   // metres the lock camera backs off, per unit of foe height above a man's, so his head and weapon tip stay in the frame
+  TALL_LIFT = 1.6;   // ...and rises
+const SHOULDER = 1.5,   // the player's shoulder height (m): what hides the opponent in the lock frame
+  SIDE_CLEAR = 1.2,   // metres beside the player's spine, per unit of opponent scale below 1, that the lock camera's line to him passes
+  SHORT_FADE = 1;   // seconds for those short-opponent terms to ease out once a finish begins (inside SETTLE.min)
 export function cameraPose(
   state: State,
   yaw: number,
@@ -165,7 +164,7 @@ const prefersStillCamera = (): boolean =>
 // starts from wherever the camera stands, so there is no jump. Any touch on the arena stops it for that finish (the player
 // wants to look for themselves). On the player's own death it runs lower. A draw has no fallen to circle; reduced motion keeps
 // the frame still. TOUR.delay is now only the fallback start time for the rare case `settled` never latches this finish.
-export const TOUR = sceneObj<Readonly<{ delay: number; afterSettle: number; blendIn: number; lap: number; breathe: number; rise: number; radius: number; breath: number; lookY: number; lookYPortrait: number }>>('camera.tour');   // seconds and metres
+export const TOUR = { delay: 5, afterSettle: 3, blendIn: 3, lap: 40, breathe: 25, rise: 30, radius: 5.2, breath: 1.3, lookY: 0.7, lookYPortrait: 1.3 } as const;   // seconds and metres
 // lookYPortrait (Lead ruling 2026-09-26, E2 kill-cam option 2): on a portrait screen the E2 loot card fills the top band down to
 // y 455 of 812, and a look at 0.7 m put the fallen at screen centre (~y 406), under the card: the Goblin decap stump from 6 s. Looking
 // at 1.3 m drops him ~90 px, below the card. Landscape keeps 0.7.

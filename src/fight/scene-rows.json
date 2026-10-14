@@ -1,19 +1,6 @@
 {
   "sceneRows": [
-    { "id": "camera.aim-per-shrink", "fields": {"value": 1.4} },
-    { "id": "camera.low-side", "fields": {"value": 0.5} },
-    { "id": "camera.low-lift", "fields": {"value": 0.8} },
-    { "id": "camera.tall-back", "fields": {"value": 2.4} },
-    { "id": "camera.tall-lift", "fields": {"value": 1.6} },
-    { "id": "camera.shoulder", "fields": {"value": 1.5} },
-    { "id": "camera.side-clear", "fields": {"value": 1.2} },
-    { "id": "camera.short-fade", "fields": {"value": 1} },
-    { "id": "follow-camera.ahead", "fields": {"value": 3} },
-    { "id": "follow-camera.look-y", "fields": {"value": 1.5} },
-    { "id": "scene.compile-bound-ms", "fields": {"value": 6000} },
-    { "id": "scene.look-bake-ms", "fields": {"value": 6} },
     { "id": "power-words.gain", "fields": {"value": 0} },
-    { "id": "boss-telegraph.roll-ticks", "fields": {"value": 24} },
-    { "id": "camera.tour", "fields": {"delay": 5, "afterSettle": 3, "blendIn": 3, "lap": 40, "breathe": 25, "rise": 30, "radius": 5.2, "breath": 1.3, "lookY": 0.7, "lookYPortrait": 1.3} }
+    { "id": "boss-telegraph.roll-ticks", "fields": {"value": 24} }
   ]
 }
