@@ -1,0 +1,7 @@
+{
+  "specialFxMinorRows": [
+    { "id": "legion.ring", "fields": {"value": 26} },
+    { "id": "nightborn.cap", "fields": {"value": 0.88} },
+    { "id": "pitborn.build", "fields": {"value": 30} }
+  ]
+}
