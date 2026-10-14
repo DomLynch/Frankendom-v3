@@ -10,4 +10,4 @@ export type ContactRow = { order: number; frames: number; knock: number; push: n
 const TABLE = tableFromFile(MANIFEST.tables[0] as unknown as Manifest, DEFS, 'hit-stop-defs.json');
 loadRegistry([TABLE]);
 export const CONTACTS = Object.fromEntries((TABLE.rows as unknown as ({ id: string } & ContactRow)[]).map(({ id, ...row }) => [id, row])) as Readonly<Record<ContactId, ContactRow>>;
-if (CONTACTS.kick?.drop === undefined) throw Error('hit-stop-defs: the kick row needs a drop (the camera jolt)');   // the one row that carries it, so the manifest cannot require it of all
+export const KICK_DROP: number = CONTACTS.kick?.drop ?? (() => { throw Error('hit-stop-defs: the kick row needs a drop (the camera jolt)'); })();   // the one row that carries it, so the manifest cannot require it of all
