@@ -56,3 +56,11 @@ export async function decodePrefetched(context: BaseAudioContext, prefetched: Pr
   if (got) try { return await context.decodeAudioData(got.bytes.slice(0)); } catch { /* the codec failed to decode: try the other */ }
   return loadSprite(context, got ? formats.filter((f) => f !== got.format) : formats, fetchImpl, leaving);
 }
+// ONE request per format list for the whole page: a zone page builds up to three feedbacks (zone-sound, pit-duel, creature-voice) and each used to prefetch the 563 kB sprite on its own.
+// A miss (null: offline, unloading) is forgotten so the next caller tries again.
+const shared = new Map<string, Promise<Prefetched | null>>();
+export function sharedPrefetch(formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<Prefetched | null> {
+  const key = formats.join(); let hit = shared.get(key);
+  if (!hit) { hit = prefetchSprite(formats, fetchImpl, leaving).then((p) => { if (!p && shared.get(key) === hit) shared.delete(key); return p; }); shared.set(key, hit); }
+  return hit;
+}
