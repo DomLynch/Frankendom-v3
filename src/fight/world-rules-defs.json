@@ -38,6 +38,8 @@
     { "id": "maxHeroMps", "value": 12, "unit": "m/s" },
     { "id": "maxCreatures", "value": 8, "unit": "creatures" },
     { "id": "maxEvents", "value": 256, "unit": "events" },
-    { "id": "maxWorldTicks", "value": 18000, "unit": "ticks" }
+    { "id": "maxWorldTicks", "value": 18000, "unit": "ticks" },
+    { "id": "maxAttackers", "value": 3, "unit": "creatures" },
+    { "id": "farM", "value": 1000, "unit": "m" }
   ]
 }

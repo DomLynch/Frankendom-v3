@@ -8,11 +8,12 @@ import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
 import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withRoll, withSheet, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
+import { worldRule } from './world-rules.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
 export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[] };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
 // open-world: the guard-side thumbs exist here as they always have in the Pit (Dom 2026-10-13): the world steps the Pit's RULES unchanged (directionalGuard on) and carries the held side in the Input (intentOf).
-const TICK = 1 / 60, FAR_M = 1000;
+const TICK = 1 / 60, FAR_M = worldRule('farM');   // FAR_M: the world-rules row `farM`
 export const IDLE_INPUT: Input = { x: 0, z: 0 };
 const seedOf = (id: string): number => { let h = 731; for (const c of id) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0; return h; };
 const body = (f: Fighter) => ({ x: f.x, z: f.z, heading: f.facing, distance: 0 });
