@@ -1,0 +1,36 @@
+{
+  "tables": [
+    {
+      "table": "moves_tables_profiles",
+      "file": "moves-tables-defs.json",
+      "at": "profiles",
+      "key": "id",
+      "required": {}
+    },
+    {
+      "table": "moves_tables_own_knobs",
+      "file": "moves-tables-defs.json",
+      "at": "own_knobs",
+      "key": "id",
+      "required": {}
+    },
+    {
+      "table": "moves_tables_absent",
+      "file": "moves-tables-defs.json",
+      "at": "absent",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    },
+    {
+      "table": "moves_tables_poise_full_at",
+      "file": "moves-tables-defs.json",
+      "at": "poise_full_at",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

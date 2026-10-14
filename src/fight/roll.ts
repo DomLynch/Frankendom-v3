@@ -4,7 +4,9 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import SWARM_DEFS from './swarm-defs.json' with { type: 'json' };
 import SWARM_MANIFEST from './swarm-defs.manifest.json' with { type: 'json' };
-export const ROLL_BAND = 10;   // percent: a blow is scaled by a uniform whole percent from -10 to +10
+import { ROLL_BAND } from './roll-rows.ts';   // the dials are rows (roll-defs.json)
+export { ROLL_BAND };
+// percent: a blow is scaled by a uniform whole percent from -10 to +10
 // The unit draw in [0, 1) for blow number `hit` of the fight seeded `seed`.
 export const rollUnit = (seed: number, hit: number): number => {
   let h = Math.imul((seed >>> 0) ^ Math.imul(hit + 1, 0x9e3779b1), 0x85ebca6b) >>> 0;
