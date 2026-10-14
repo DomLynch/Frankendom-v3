@@ -21,22 +21,24 @@ export type HudView = { legend?: string; controlsReady: boolean; debug: boolean;
 export function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
 export function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
 
-// The meters a zone shows over the walk (health, stamina, the foe in reach, the hit flash): the same bar drawing the Pit's createHud uses (fillMeter / paintMeter), from plain numbers and with
-// no Practice, because the open-world loop has none. The page builds nothing of its own (tests/fight-no-twins.test.ts); the look is src/fight/meters.css.
+// The bars a zone shows over the walk are the Pit's own (Dom 2026-10-14, "the original ones look better"): the same .combat-hud markup and src/style.css, painted from plain numbers because the open-world loop has no
+// Practice. The foe's name over its bar, then HEALTH and STAMINA, are the Pit's #opponent-name / #target-health / #player-health / #stamina, drawn through the same fillMeter / paintMeter createHud uses; the page builds
+// nothing of its own (tests/fight-no-twins.test.ts). `shown` toggles body.zone-bars (origins/preview/index.html shows the Pit's .combat-hud only then); the hit vignette is the one element this adds.
 export type MeterState = { hp: number; maxHp: number; stamina: number; maxStamina: number; foe: { name: string; hp: number; max: number } | null };
-export function createMeters(parent: HTMLElement) {
-  const doc = parent.ownerDocument, make = <T extends HTMLElement>(tag: string, cls: string, label?: string): T => { const e = doc.createElement(tag) as T; e.className = cls; if (label) e.setAttribute('aria-label', label); return e; };
-  const root = make('div', 'fm-meters'), name = make('div', 'fm-name'), flashEl = make('div', 'fm-flash');
-  const foe = make<HTMLMeterElement>('meter', 'fm-bar fm-foe', 'Foe health'), hp = make<HTMLMeterElement>('meter', 'fm-bar fm-hp', 'Your health'), stamina = make<HTMLMeterElement>('meter', 'fm-bar fm-st', 'Your stamina');
-  root.hidden = true; root.append(name, foe, hp, stamina); parent.append(root, flashEl);
+type Lookup = <T extends HTMLElement>(id: string) => T;
+export function createZoneBars(element: Lookup, parent: HTMLElement) {
+  const flashEl = parent.ownerDocument.createElement('div'); flashEl.className = 'fm-flash'; parent.append(flashEl);
+  const name = element('opponent-name'), foe = element<HTMLMeterElement>('target-health'), hp = element<HTMLMeterElement>('player-health'), stamina = element<HTMLMeterElement>('stamina');
   let flashTimer: ReturnType<typeof setTimeout> | undefined;
   return {
-    /** Paint the meters; `shown` false hides them (the zone hides them while the hero is whole and nothing is in reach). */
+    /** Paint the Pit's bars; `shown` false hides them (the zone hides them while the hero is whole and nothing is in reach). */
     update(state: MeterState, shown: boolean) {
-      root.hidden = !shown; if (!shown) return;
+      parent.classList.toggle('zone-bars', shown); if (!shown) return;
       paintMeter(hp, state.hp, state.maxHp); paintMeter(stamina, state.stamina, state.maxStamina);
-      name.textContent = state.foe ? state.foe.name : '';
+      element('player-health-value').textContent = `${Math.round(state.hp)} / ${state.maxHp}`; element('stamina-value').textContent = `${Math.round(state.stamina)} / ${state.maxStamina}`;
+      name.textContent = state.foe ? state.foe.name.toUpperCase() : ''; name.dataset.mobile = state.foe ? state.foe.name : '';   // the phone draws data-mobile (src/style.css .meter-label::after)
       if (state.foe) paintMeter(foe, state.foe.hp, state.foe.max); else paintMeter(foe, 0, 1);
+      element('health-value').textContent = state.foe ? `${Math.round(state.foe.hp)} / ${state.foe.max}` : '';
     },
     /** Paint from the open-world loop itself (hero, the foe in reach, whether a fight is on); hidden while the hero is whole and nothing is in reach. */
     feed(wc: { hero(): { health: number; max: number; stamina: number; maxStamina: number }; target(): { name: string; health: number; max: number } | null; inCombat(): boolean }) {
@@ -47,8 +49,6 @@ export function createMeters(parent: HTMLElement) {
     flash() { flashEl.dataset.on = 'true'; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashEl.dataset.on = 'false'; }, 120); },
   };
 }
-
-type Lookup = <T extends HTMLElement>(id: string) => T;
 
 export function createHud(element: Lookup) {
   const attackButton = element<HTMLButtonElement>('attack-button');

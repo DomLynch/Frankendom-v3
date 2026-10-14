@@ -26,7 +26,7 @@ export * from './twist.ts';
 export * from './replay.ts';
 export { createWorldCombat, finishOf, ME, JOIN_M, MAX_STEPS, kindOf, type PairContacts, type WorldCombatDeps, type FightMob, type MobsPort, type MobPose } from './world-combat.ts';   // Zone 1's mount of the open-world loop (any client supplies the mob layer as a port)
 export { encodeWorldRecord, type WorldRecord } from './world-record.ts';   // the world fight's record the page sends on kill_report (the server replays it: origins/server/world-verify.ts)
-export { createHud, createMeters, fillMeter, paintMeter, HEAVY_MOVES, KICK_LANDS, type HudView, type MeterState } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, whose re-export shim is gone)
+export { createHud, createZoneBars, fillMeter, paintMeter, HEAVY_MOVES, KICK_LANDS, type HudView, type MeterState } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, whose re-export shim is gone)
 export { woundSpec, type WoundSpec } from './wounds.ts';   // K5: a creature's wounds row (which part a hit lands on, how it bleeds)
 export { createWoundFx } from './wounds-fx.ts';
 export type { FinisherId } from './finishers.ts';
