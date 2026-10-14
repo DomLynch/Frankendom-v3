@@ -17,7 +17,7 @@ import WEIGHT_MANIFEST from './armour-weights.manifest.json' with { type: 'json'
 export type ArmourWeight = { readonly id: string; readonly dial: string; readonly fromRecordVersion: number; readonly castPenalty: number; readonly note: string };   // castPenalty: sheet points the class takes off its `dial` (spellPower) when the set is worn, scaled by coverage (gearDeltas)
 export type GearSet = { readonly id: string; readonly weightClass: string; readonly shape: Readonly<Record<string, number>>; readonly quality: Readonly<Record<string, number>> };
 export type GearRow = { readonly id: string; readonly weightClass: string; readonly slot: string | null; readonly preset: boolean; readonly set: string | null; readonly weight: number; readonly wearMax: number; readonly resist: Readonly<Record<string, number>> };
-export type GearTable = { readonly sets: Readonly<Record<string, GearSet>>; readonly owners: Readonly<Record<string, string>>; readonly rows: Readonly<Record<string, GearRow>>; readonly shapeMax: number; readonly qualityMax: number; readonly weights: Readonly<Record<string, ArmourWeight>> };   // weights: weight class -> sheet points off spellPower; owners: loot opponent id -> the set its armour belongs to
+export type GearTable = { readonly sets: Readonly<Record<string, GearSet>>; readonly owners: Readonly<Record<string, string>>; readonly wearTiers: Readonly<Record<string, string>>; readonly rows: Readonly<Record<string, GearRow>>; readonly shapeMax: number; readonly qualityMax: number; readonly weights: Readonly<Record<string, ArmourWeight>> };   // weights: weight class -> sheet points off spellPower; owners: loot opponent id -> the set its armour belongs to
 
 type RawRow = { id: string; weightClass: string; slot?: string; preset?: boolean; extends?: string; set?: string; weight: number; wearMax: number; resist: Record<string, number> };
 
@@ -48,7 +48,8 @@ export function loadGearDefs(raw: { sets?: readonly unknown[]; owners?: readonly
     for (const [school, n] of Object.entries(resist)) if (!schools.includes(school) || !Number.isInteger(n) || Math.abs(n) > 4) throw Error(`gear-defs "${r.id}": resist ${school} is a school row and a whole number within +-4`);
     out[r.id] = { id: r.id, weightClass: r.weightClass, slot, preset, set: r.set ?? base?.set ?? null, weight: r.weight, wearMax: r.wearMax, resist };
   }
-  return { sets, owners, rows: out, shapeMax, qualityMax, weights };
+  const wearTiers = Object.fromEntries(Object.entries(owners).map(([family, set]) => [family, sets[set]!.weightClass]));   // a loot family's wear tier = its set's weightClass (one fact, one row); origins/gear/wear-repair.test.ts checks every family resolves to a live wear tier
+  return { sets, owners, wearTiers, rows: out, shapeMax, qualityMax, weights };
 }
 
 export const GEAR: GearTable = loadGearDefs(GEAR_DEFS);
