@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { movesOf, type Fighter } from './duel.ts';
 import { MOVES, fxMove } from './moves.ts';
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 const WF = fxMove('witchfire');   // the move of the skill row whose fx is witchfire
 
 // Presentation only: the Witch-fire skill's fire (docs/briefs/skill-witch-arm.md (b); the green glow, the gout and the embers are Visuals &
@@ -13,7 +14,7 @@ const WF = fxMove('witchfire');   // the move of the skill row whose fx is witch
 // The reference row's timing and reach (the longsword); the effect itself reads the caster's own weapon table (movesOf), so a per-weapon
 // row that changes the reach or the windup moves the fire with it.
 export const WITCHFIRE = { windup: MOVES[WF].windup, active: MOVES[WF].active, reach: MOVES[WF].reach, cone: 0.3 } as const;   // cone: half-angle, radians
-const POOL = 200;   // a full gout (6 active ticks x 16 + the 8-tick tail) with the licks and embers, none recycled while still burning
+const POOL = FEEL_RULES.witchfireRule[0]!.pool;   // a full gout (6 active ticks x 16 + the 8-tick tail) with the licks and embers, none recycled while still burning
 export type WitchfireStage = 'windup' | 'active' | 'recovery' | null;
 export function witchfireStage(f: Pick<Fighter, 'phase' | 'move' | 'age' | 'weapon'>): WitchfireStage {
   if (f.phase !== 'attack' || f.move !== WF) return null;
