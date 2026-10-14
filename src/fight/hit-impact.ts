@@ -8,7 +8,7 @@ import { HEAVY_CLASS } from './clash-sparks.ts';
 import { shoveFor, type Shove } from './camera-kick.ts';
 import type { CombatEvent } from './duel.ts';
 import type { Direction } from './moves.ts';
-import { CONTACTS, KICK_DROP } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
+import { CONTACTS, KICK_DROP, KNOCK_SETTLE, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
 
 export type Tier = 'full' | 'half' | 'parry' | 'block';
 // Guard tiers (Dom 2026-09-29, "implement this also"): a PARRY is the longest beat in the game (70 ms + 11 frames = 253 ms, a heavy hit is
@@ -17,12 +17,12 @@ export const IMPACT = {
   full: { frames: CONTACTS.hitHeavy.frames, knock: CONTACTS.hitHeavy.knock, push: CONTACTS.hitHeavy.push }, half: { frames: CONTACTS.hitLight.frames, knock: CONTACTS.hitLight.knock, push: CONTACTS.hitLight.push },
   parry: { frames: CONTACTS.parry.frames, knock: CONTACTS.parry.knock, push: CONTACTS.parry.push }, block: { frames: CONTACTS.blockLight.frames, knock: CONTACTS.blockLight.knock, push: CONTACTS.blockLight.push },
 } as const;
-export const KNOCK_SETTLE = 0.12;   // seconds: the knock is back in 120 ms
+export { KNOCK_SETTLE };   // seconds: the knock is back in 120 ms (a `feel` row in hit-stop-defs.json)
 // Kick and roll (Dom 2026-09-30, pick C of the ?look=hitfx-kick / hitfx-roll clips: "implement and get live"). A LANDED kick, either side,
 // is its own beat: the whole stop is 2 frames (not a hit's 50 ms + 3) and the camera drops 10 cm straight down, back in 120 ms. The
 // player's roll tumbles the frame: 8° into the roll, an 8 cm dip and a 4.6 cm (~3 % of the frame) shift the way of the roll, up and back
 // over 0.6 s, no time change. Both presentation only, always on like the rest of this file.
-export const KICK = { stopMs: (CONTACTS.kick.frames * 1000) / 60, drop: KICK_DROP } as const;
+export const KICK = { stopMs: frameMs(CONTACTS.kick), drop: KICK_DROP } as const;
 export const landedKick = (e: CombatEvent) => e.type === 'Hit' && e.move === 'kick';
 export const ROLL_TUMBLE = { angle: (8 * Math.PI) / 180, seconds: 0.6, shift: 0.046, dip: 0.08 } as const;
 
