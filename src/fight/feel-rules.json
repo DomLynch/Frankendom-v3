@@ -1,20 +1,4 @@
 {
-  "beastScaleRule": [
-    {
-      "id": "beastScale",
-      "wolf": 2,
-      "boar": 1.8,
-      "bear": 2.2
-    }
-  ],
-  "openedRule": [
-    {
-      "id": "opened",
-      "chunk": 2048,
-      "stepMs": 8,
-      "scan": 100000
-    }
-  ],
   "hamstrungRule": [
     {
       "id": "hamstrung",
