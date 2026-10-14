@@ -8,6 +8,7 @@ export { multiplyOnto };
 import type { HitLocation } from './blade.ts';
 import type { Direction } from './moves.ts';
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
+import { bloodNum, bloodObj } from './blood-rows.ts';
 
 export type { BloodMode };
 type Rigs = { player: { anchor: THREE.Object3D }; opponent: { anchor: THREE.Object3D } };
@@ -107,7 +108,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
 // top, a thrust on the front). Marks are pooled per fighter, ride their bone every frame, and show only once that fighter
 // is at 60 % health or below; from there the marks darken and the drips lengthen down to the death. Presentation only:
 // the simulation decides the hit, the damage and the location. Hidden in blood 'off', cleared on rematch.
-export const WOUND_THRESHOLD = 0.6, WOUNDS_PER_FIGHTER = 5;
+export const WOUND_THRESHOLD = bloodNum('gore.wound-threshold'), WOUNDS_PER_FIGHTER = bloodNum('gore.wounds-per-fighter');
 const SIDES = [0, 1] as const;   // the two fighters: one shared tuple for the per-frame wound loop, not an array a frame
 export type WoundHit = { location: HitLocation; direction: Direction; heading: number };   // heading = the struck fighter's facing
 type WoundSite = { bone: string; dir: [number, number, number]; radius: number; width: number };
@@ -133,7 +134,7 @@ export function woundSite(hit: Pick<WoundHit, 'location' | 'direction'>, limb: 0
 // node tests build the pool without textures (the canvas splat stands in until the PNG lands, and forever under node).
 const BLOOD_ASSET = (file: string) => new URL(`../assets/blood/${file}`, import.meta.url).href;
 const FLOOR_FRESH = new THREE.Color('#ffffff'), FLOOR_DRIED = new THREE.Color('#b09a9a'), FLOOR_DARK_MODE = new THREE.Color('#a8a0a0');
-const FLOOR_DRY = 8;   // seconds for a stain to settle from wet to dried
+const FLOOR_DRY = bloodNum('gore.floor-dry');   // seconds for a stain to settle from wet to dried
 const BLOOD_TEXTURES = { floorPool: 'floor-pool.png', floorSplash: 'floor-splash.png', drip: 'blood-drip.png', dripNormal: 'blood-drip-normal.png' } as const;
 // The wound itself, authored for a vertical body, not a floor (owner 2026-09-23 on the phone: "paint-ball graffiti stickers… less
 // uniform… more dripping style not a star"; he picked B, C and D from four FLUX candidates): B a cut with uneven streaks, C a patch
@@ -145,12 +146,12 @@ export const WOUND_SIZE = { width: 0.1, height: 0.125, tilt: 0.2 } as const;   /
 // per strand), stops, and dries — roughness DRY.roughness[0] → [1] and the fresh tone → the dried tone over DRY.seconds.
 // New hits add fresh runs. Nothing here cycles: a run that has finished stays as it lies until the rematch clears it.
 export const DRIP = { start: [0, 0.3], duration: [1.5, 3], width: [0.75, 1.3], offset: 0.03, bead: 0.028, length: [0.11, 0.19] } as const;   // seconds, seconds, ×, metres, metres, metres at threshold → at death (a man's torso)
-export const DRY = { seconds: 20, roughness: [0.42, 0.75] } as const;   // a thin wet edge, not a gloss coat
+export const DRY = bloodObj<{ readonly seconds: number; readonly roughness: readonly [number, number] }>('gore.dry');   // a thin wet edge, not a gloss coat
 // Drops to the floor (owner 2026-09-23: "drop from body onto the floor, like droplets… not a river, rather slowly"): once a run has
 // stopped growing its first run sheds a drop from its tip every `every` seconds (seeded per strand) until the wound is half dry. A drop falls
 // under gravity and leaves a small spot on the sand. Hard caps: `inFlight` drops in the air, `spots` on the floor (oldest recycled).
-export const DROPS = { every: [3, 6], until: 0.5, inFlight: 8, spots: 24, spot: [0.04, 0.08], gravity: 9.8, floor: 0.021, seconds: 25 } as const;   // s, dry share, count, count, metres, m/s², metres, s
-const ARM_SHARE = 0.5;   // share of side cuts across the torso that land on the near arm instead (half upper arm, half wrist)
+export const DROPS = bloodObj<{ readonly every: readonly [number, number]; readonly until: number; readonly inFlight: number; readonly spots: number; readonly spot: readonly [number, number]; readonly gravity: number; readonly floor: number; readonly seconds: number }>('gore.drops');   // s, dry share, count, count, metres, m/s², metres, s
+const ARM_SHARE = bloodNum('gore.arm-share');   // share of side cuts across the torso that land on the near arm instead (half upper arm, half wrist)
 const FRESH = new THREE.Color('#e0a0a0'), DRIED = new THREE.Color('#7a5456');   // multiplied over the art's own dark reds: a light hand, or it reads as soot (owner 2026-09-23: near-black on the hero's back)
 const CANVAS_FRESH = new THREE.Color('#581017'), CANVAS_DRIED = new THREE.Color('#2a1516');   // the tint the white canvas splat needs until the photo lands (and under node)
 const DARK_MODE = new THREE.Color('#5a4d4c');

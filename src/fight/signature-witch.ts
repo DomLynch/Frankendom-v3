@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { CombatEvent } from './duel.ts';
 import { OPPONENT_SIDE, registerSignature, type SignatureFrame } from './signature.ts';
+import { sigNum } from './signature-rows.ts';
 
 // The Witch's signature, A: The Grasp, short range, no projectile (docs/briefs/signature-effects.md row 10). Two parts on events the sim
 // already emits, on her only; the shared charge tell (glow + drone) stays for everyone.
@@ -9,7 +10,7 @@ import { OPPONENT_SIDE, registerSignature, type SignatureFrame } from './signatu
 //    crumbles to ash from the fingertips down. The hit is her real melee hit; the hand only shows where it landed.
 // 0.5 m: at 0.26 m the hand was a ~20 px dark blob on a dark shirt from the fight camera (forced-red probe, 2026-09-24).
 export const GRASP = { size: 0.5, close: 0.18, hold: 0.22, crumble: 0.55 } as const;   // metres; seconds: closing, holding, crumbling
-const SPARKS = 24, ASH = 40;
+const SPARKS = sigNum('witch.sparks'), ASH = sigNum('witch.ash');
 // Strategy AGAIN on d67bca77 (2026-09-24): points read as white confetti squares and strays survived loose in the arena. A spark is now a
 // streak along its own velocity, 60–140 ms long, at 0.8–1.4 m/s, so none travels further than ~0.2 m from the staff head.
 export const SPARK = { lifeMin: 0.06, lifeMax: 0.14, speedMin: 0.8, speedMax: 1.4, length: 0.08, width: 0.014 } as const;
