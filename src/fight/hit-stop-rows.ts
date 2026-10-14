@@ -8,6 +8,11 @@ import MANIFEST from './hit-stop-defs.manifest.json' with { type: 'json' };
 export type ContactId = 'hitLight' | 'hitHeavy' | 'blockLight' | 'blockHeavy' | 'parry' | 'guardBreak' | 'special' | 'postureBreak' | 'kill' | 'kick';
 export type ContactRow = { order: number; frames: number; knock: number; push: number; drop?: number };
 const TABLE = tableFromFile(MANIFEST.tables[0] as unknown as Manifest, DEFS, 'hit-stop-defs.json');
-loadRegistry([TABLE]);
+const FEEL = tableFromFile(MANIFEST.tables[1] as unknown as Manifest, DEFS, 'hit-stop-defs.json');
+loadRegistry([TABLE, FEEL]);
 export const CONTACTS = Object.fromEntries((TABLE.rows as unknown as ({ id: string } & ContactRow)[]).map(({ id, ...row }) => [id, row])) as Readonly<Record<ContactId, ContactRow>>;
 export const KICK_DROP: number = CONTACTS.kick?.drop ?? (() => { throw Error('hit-stop-defs: the kick row needs a drop (the camera jolt)'); })();   // the one row that carries it, so the manifest cannot require it of all
+/** Seconds the camera's knock takes to settle back (hit-impact.ts): the `feel` row. */
+export const KNOCK_SETTLE: number = (FEEL.rows as unknown as { id: string; value: number }[]).find((r) => r.id === 'knockSettle')?.value ?? (() => { throw Error('hit-stop-defs: no knockSettle feel row'); })();
+/** Milliseconds a contact row's impact frames hold the picture at 60 Hz (the stop `ms` is Web's hit-stop-rules.json). */
+export const frameMs = (row: ContactRow): number => (row.frames * 1000) / 60;

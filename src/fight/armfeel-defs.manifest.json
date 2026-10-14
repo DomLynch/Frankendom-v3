@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "armfeelDial", "file": "armfeel-defs.json", "at": "feel", "key": "id",
+      "required": { "value": "number" } }
+  ]
+}
