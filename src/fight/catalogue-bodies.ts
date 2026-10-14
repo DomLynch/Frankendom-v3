@@ -15,3 +15,9 @@ export function heroBodyUrl(): string {
   const bodies = import.meta.glob<string>('../assets/warrior.glb', { eager: true, query: '?url', import: 'default' });   // the hero's own body (K2 row 6): not a catalogue row
   return bodies['../assets/warrior.glb'];
 }
+
+/** URL of row `id`'s generated world body (`row.world.asset`, served from `public/`), for a row flagged `worldBody` only; undefined for every other id (those draw their engine body). */
+export function worldBodyUrl(id: string): string | undefined {
+  const row = catalogueRow(id);
+  return row?.worldBody && row.world ? row.world.asset.replace(/^public\//, '/') : undefined;
+}
