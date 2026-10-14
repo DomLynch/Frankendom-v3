@@ -4,6 +4,7 @@ import type { CombatEvent, Fighter, Side } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { HEAVY_CLASS } from './clash-sparks.ts';
 import { surfaceHit, woundSite, type WoundHit } from './gore.ts';
+import { sigGroup } from './signature-rows.ts';
 
 // Signature effects (Brief: docs/briefs/signature-effects.md, Dom 2026-09-24): one cosmetic effect per opponent, keyed to an event the
 // duel already emits. Renderer-side only: nothing here reads input, writes the sim or changes a number the fight uses. An effect is
@@ -15,18 +16,7 @@ export type SignatureVariant = 'A' | 'B' | 'C';
 export const SIGNATURE_MODES: readonly SignatureMode[] = ['off', 'ship', 'on', 'A', 'B', 'C'];
 // The ruled variant per opponent (Strategy for Dom, 2026-09-24): on by default for every player. An opponent missing here (anyone not
 // yet ruled) shows nothing outside the admin preview. A letter whose effect is not registered yet also shows nothing.
-export const SHIPPED: Partial<Record<OpponentId, { variant: SignatureVariant; name: string }>> = {
-  nightborn: { variant: 'B', name: 'Blood Recall' },
-  executioner: { variant: 'A', name: 'The Reaping Scar' },
-  pitborn: { variant: 'A', name: "Butcher's Wake" },
-  plaguedoctor: { variant: 'B', name: 'Rot Bloom' },
-  goblin: { variant: 'C', name: 'Hooked Wound' },
-  knight: { variant: 'B', name: 'Rivet B' },   // flying rivets, no dent or socket (Rivet C closed, Strategy 2026-09-24)
-  veteran: { variant: 'C', name: 'Blade Bite' },   // shavings off the trident (Strategy YES 2026-09-24 15:40)
-  dwarf: { variant: 'C', name: 'Hammer Wound' },   // a hammer-blow wound on the shoulder (Strategy YES @ 31f835a2)
-  witch: { variant: 'A', name: 'The Grasp' },   // staff sparks + the crumbling claw, no blood (Strategy YES on #669 @ 72131bee)
-  shieldmaiden: { variant: 'A', name: 'Splintered Defiance' },   // splinters off the rim + floor wood; rim chip dropped (Strategy YES 2026-09-27, Lead)
-};
+export const SHIPPED = sigGroup<{ variant: SignatureVariant; name: string }>('shipped') as Partial<Record<OpponentId, { variant: SignatureVariant; name: string }>>;   // one row per opponent in signature-rows.json (`shipped.<opponent>`)
 // Hard caps per fight (brief rule 4, Lead's numbers): marks on one body, on one shield, on the floor.
 export const SIGNATURE_CAPS = { body: 6, shield: 4, floor: 8 } as const;
 export const OPPONENT_SIDE: Side = 1;   // the signature is the opponent's: the player's fighter is side 0 in every fight

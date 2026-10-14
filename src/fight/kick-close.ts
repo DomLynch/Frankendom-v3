@@ -2,10 +2,11 @@
 // gap. Presentation only: the HUD keeps a short rolling gap history; no sim input, no record change. The rule (Combat's probe table is in the PR body):
 // lit = gap <= KICK_LANDS (hud.ts) AND NOT (gap grew by more than 0.03 m over the last 4 ticks AND the player was not in the hurt phase in that window).
 // The hurt exception is Combat's refinement (a hit's knockback opens the gap without the foe retreating: 124 of the 199 landings the plain rule cost were those). With no sample 4 ticks old yet the foe is not called retreating.
+import { fxNum } from './fx-rows.ts';
 export const kickCloseFlag = (search: string) => (new URLSearchParams(search).get('look') ?? '').split(',').includes('kickclose');
 
-export const KICK_CLOSE_TICKS = 4;
-export const KICK_CLOSE_GROWTH = 0.03;   // metres the gap may grow over the window before the light goes out
+export const KICK_CLOSE_TICKS = fxNum('kick-close.ticks');
+export const KICK_CLOSE_GROWTH = fxNum('kick-close.growth');   // metres the gap may grow over the window before the light goes out
 
 export function createGapHistory() {
   let samples: { tick: number; gap: number; hurt: boolean }[] = [];
