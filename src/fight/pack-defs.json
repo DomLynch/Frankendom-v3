@@ -1,0 +1,7 @@
+{
+  "dials": [
+    {"id": "THREAT_MAX","value": 7},
+    {"id": "SWITCH_MELEE","value": 1.1},
+    {"id": "SWITCH_CASTER","value": 1.3}
+  ]
+}

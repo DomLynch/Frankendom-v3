@@ -3,11 +3,12 @@ import { weaponOf } from './moves.ts';
 import { surfaceHit, woundSite } from './gore.ts';
 import { hitBy, OPPONENT_SIDE, registerSignature, type SignatureFrame } from './signature.ts';
 import type { CombatEvent } from './duel.ts';
+import { sigNum, sigObj } from './signature-rows.ts';
 
 // Nightborn, variant A: Blood Recall (docs/briefs/signature-effects.md row 4). A wound he opens throws a few droplets that stop and hang
 // for a beat, then fly back up his blade and are gone into it. Feeding, visual only: nothing is healed, nothing is drawn from a bar.
 // One instanced mesh of RECALL.drops beads, reused per hit; a new hit restarts it from the new wound.
-export const RECALL = { drops: 14, burst: 0.12, hang: 0.38, fly: 0.3, spread: [0.22, 0.5], size: [0.018, 0.032] } as const;   // count, s, s, s, m, m
+export const RECALL = sigObj<{ readonly drops: number; readonly burst: number; readonly hang: number; readonly fly: number; readonly spread: readonly [number, number]; readonly size: readonly [number, number] }>('nightborn.recall');   // count, s, s, s, m, m
 export const recallTime = RECALL.burst + RECALL.hang + RECALL.fly;
 
 // Where a bead is at time t: thrown out from the wound to `offset` and braked to a stop (burst), a small lift while it hangs, then an
@@ -27,7 +28,7 @@ export function recallPosition(out: THREE.Vector3, from: THREE.Vector3, offset: 
 export type RecallLook = { color: string; emissive: string; size: readonly [number, number]; trail: number; stretch: number };
 export const RECALL_A: RecallLook = { color: '#8a0a0e', emissive: '#5a0006', size: RECALL.size, trail: 0, stretch: 0 };
 export const RECALL_B: RecallLook = { color: '#3e0306', emissive: '#120001', size: [0.009, 0.016], trail: 3, stretch: 0.35 };
-const TRAIL_STEP = 0.022;   // seconds between a drop and each copy behind it
+const TRAIL_STEP = sigNum('nightborn.trail-step');   // seconds between a drop and each copy behind it
 
 export function createBloodRecall(look: RecallLook = RECALL_A) {
   const geometry = new THREE.IcosahedronGeometry(1, 1);

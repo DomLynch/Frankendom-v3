@@ -4,6 +4,7 @@
 // query, viewport width — so the entry point's own globals (and the VM harness's fakes in tests/graphics.test.ts) are what it binds to.
 import { accepts, type Action, type CombatEvent, type Practice } from './combat.ts';
 import type { Direction } from './moves.ts';
+import { inputNum } from './input-rows.ts';
 
 type Lookup = <T extends HTMLElement>(id: string) => T;
 export type InputEnv = {
@@ -26,7 +27,7 @@ export type ControlIntent = { x: number; z: number; run: boolean; action: Action
 // Hysteresis (brief 7, 2026-09-21): the sectors meet on the diagonals, and a thumb wobbling near one flipped the side every frame. A side
 // already held keeps its axis until the thumb is GUARD_DEAD_BAND_DEG past the diagonal into the next sector; a fresh slide (no side
 // held) picks the dominant axis as before. Intent only — nothing about parry timing, block cost or the exposure changes.
-export const GUARD_SLIDE_PX = 18, GUARD_DEAD_BAND_DEG = 15;
+export const GUARD_SLIDE_PX = inputNum('input.guard-slide-px'), GUARD_DEAD_BAND_DEG = inputNum('input.guard-dead-band-deg');
 export const guardSide = (dx: number, dy: number, held: Direction | null = null): Direction | null => {
   if (!(Math.hypot(dx, dy) >= GUARD_SLIDE_PX)) return null;
   const fromHorizontal = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI;   // 0 = along the horizontal axis, 90 = along the vertical
@@ -35,19 +36,19 @@ export const guardSide = (dx: number, dy: number, held: Direction | null = null)
 };
 // Directional cuts (Dom GO 2026-10-07; the strike circle's flick did this until 226456f9 retired it, and the sim never stopped taking both): LIGHT pressed while the
 // move stick, A/D or the arrows are held to a side cuts to that side; held neutral keeps the alternating light. Intent only: the sim already accepts light_left and light_right.
-export const CUT_PUSH = 0.4;   // the stick's own dead zone is 0.12; a side cut wants a deliberate push, not a wobble
+export const CUT_PUSH = inputNum('input.cut-push');   // the stick's own dead zone is 0.12; a side cut wants a deliberate push, not a wobble
 export const cutAction = (lateral: number): Action => (lateral <= -CUT_PUSH ? 'light_left' : lateral >= CUT_PUSH ? 'light_right' : 'light');
 // Slash's cut side is the thumb's slide on the SLASH button (Dom 2026-10-07: "slide left, see the gold arc, and then I will slash left"). The swing waits for the thumb:
 // it fires on a slide of SLASH_SLIDE_PX (that side, at once), on release, or after SLASH_DECIDE_MS (the alternating light), whichever comes first. A plain tap
 // therefore gets up to SLASH_DECIDE_MS later; change the one constant to trade it. Intent only: the sim already takes light_left / light_right.
-export const SLASH_SLIDE_PX = 14, SLASH_DECIDE_MS = 50;
+export const SLASH_SLIDE_PX = inputNum('input.slash-slide-px'), SLASH_DECIDE_MS = inputNum('input.slash-decide-ms');
 export const slashSlide = (dx: number): 'left' | 'right' | null => (dx <= -SLASH_SLIDE_PX ? 'left' : dx >= SLASH_SLIDE_PX ? 'right' : null);
 export const cutSideOf = (action: Action): 'left' | 'right' | null => (action === 'light_left' ? 'left' : action === 'light_right' ? 'right' : null);   // the side a cut press goes to; neutral LIGHT is null (no flash)
 const ARROW_SIDE: Record<string, Direction> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'overhead', ArrowDown: 'low' };
 
 // Dodge control: the press is an instant backstep; holding it past HOLD_MS grows the step into a roll. Swipe-down rolls directly.
-export const HOLD_MS = 150,
-  SPRINT_PUSH = 1.4;
+export const HOLD_MS = inputNum('input.hold-ms'),
+  SPRINT_PUSH = inputNum('input.sprint-push');
 // Strike controls: the press swings at once; keeping it held charges (Heavy), loads (Stab) or chambers (Slash) the swing — the simulation owns
 // the timing. The held level belongs to the control that raised it: releasing one never drops another's. Dragging a held strike off its
 // circle turns the press into a guard press (a feint inside the wind-up's feint window, a parry or a raised guard after it) until it lifts.
