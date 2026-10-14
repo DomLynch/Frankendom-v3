@@ -2,13 +2,14 @@
 // relief) and tells this his position; the loop owns hits, creature chase/telegraph/bite/leash. This file: which creatures are in the loop (those that come within the aggro ring, until they are
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
 import { AGGRO_M, duelFor, duelOf, newWorld, pairs, player, type Event, type Fighter, type World } from './world.ts';
-import { NAKED, type Loadout } from './gear-stats.ts';
-import { OPPONENTS, DEFAULT_WEAPON, type WeaponId } from './moves.ts';
+import { OPPONENTS, DEFAULT_WEAPON, type Direction, type WeaponId } from './moves.ts';
+import type { Sheet } from './sheet-rows.ts';
 import type { CombatEvent, Duel, Finish } from './duel.ts';
 import { selectFinisher, finisherSeconds, type FinisherId } from './finishers.ts';
 import { catalogueRow } from './catalogue-rows.ts';
 import { PLAIN_DEATH } from './finisher-look.ts';
 
+import { hash32 } from './bout-seed.ts';
 import { ME, STEP, cm, createWorldRecorder, heroClean, joinFighter, quantStep, stepHero, type RecordHero, type WorldRecord, type JoinEvent } from './world-record.ts';
 export { ME, STEP };
 export const JOIN_M = AGGRO_M + 3, DROP_M = AGGRO_M + 8, FALL_S = 1.4, PULSE_S = 0.18, MAX_STEPS = 15;   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
@@ -29,9 +30,10 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   onCreatureHit?(spec: S, hit: { seed: number; kill: boolean; hpFrac: number; fromX: number; fromZ: number }): void;   // a creature was hit (its wounds row draws the blood; seed = the fight's tick and its id, so a replay bleeds the same)
   onCreatureTick?(spec: S, t: { hpFrac: number; dt: number; x: number; z: number; seed: number }): void;   // every frame a creature is up and fighting (the row's tiers: drips and marks)
   onCreatureGone?(id: string): void;   // it was released or has fallen
+  engageToken?: (id: string) => string | null;   // the creature's engage token (spawn-net.ts), null until the server answered: the bout's roll seed is hash32(token, join step); no token = no roll, today's fight
   onEvent?(ev: Event): void;       // every combat event, after the page has shown it (the spawn client, spawn-net.ts onCombatEvent)
   canPlay?: (finisher: FinisherId) => boolean;   // which finishers this client can show on a creature (default: plainDeath only); the pick is selectFinisher cut down to the creature's row (src/creature-gore.ts) and to these
-  hero?: () => { gear: Loadout; level: number; health?: number };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
+  hero?: () => { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
 };
 /** One pair's frame of contacts for the client's effects: the Pit events the loop made this frame (ev.pit), the pair's duel, and where the two stand (world metres). Drained by takeContacts(). */
 export type PairContacts = { foe: string; kind: string; finisher?: FinisherId; events: CombatEvent[]; duel: Duel; hero: { x: number; z: number; facing: number }; foeAt: { x: number; z: number; facing: number; health: number } };
@@ -44,22 +46,31 @@ export function finishOf(kind: string, finish: Finish, weapons: readonly [Weapon
 }
 
 export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
-  const mine = (): { gear: Loadout; level: number; health?: number } => d.hero?.() ?? { gear: NAKED, level: 1 };
-  const body = (x: number, z: number, facing: number): Fighter => { const { gear, level, health } = mine(), p = player(ME, x, z, facing, gear, level); return health ? { ...p, health, maxHealth: health } : p; };
-  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, guardHeld = false, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
+  const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet } => d.hero?.() ?? { level: 1 };
+  const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet } = mine(), p = player(ME, x, z, facing, level, null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
+  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
+  let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
   const seedOf = (id: string): number => { let h = steps; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761); return h >>> 0; };   // the fight's tick and a creature's id: a roll of presentation, the same on a replay
-  const gearOf = () => { const { gear, level } = mine(), p = player(ME, 0, 0, 0, gear, level); return { attack: p.attack, res: p.res, level: p.level, shielded: p.shielded }; };
+  const gearOf = () => { const p = player(ME, 0, 0, 0, mine().level); return { level: p.level, shielded: p.shielded }; };
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
-  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, attack: g.attack, res: g.res, weapon: DEFAULT_WEAPON, health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
+  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
   function release(id: string) { recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
+  /** The live hero is built from hero() ONCE, at load; the gear and the sheet arrive later. At a clean window open (no creature, no open bout) rebuild him from hero() as it stands now at his current place, so the live fighter and the record's heroBody() are the same hero (live == record, Auditor #2569). Health keeps its fraction; stamina, posture and exhaustion carry. Never mid-bout. */
+  function rebody() {
+    const key = JSON.stringify(mine()); if (key === builtKey) return;
+    const old = me(), next = body(old.x, old.z, old.facing);
+    next.health = Math.max(1, Math.round(next.maxHealth * old.health / old.maxHealth)); next.stamina = Math.min(next.maxStamina, old.stamina); next.posture = old.posture; next.exhausted = old.exhausted;
+    world = newWorld([next]); builtKey = key;
+  }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
-    if (specs.size === 0) { if (heroClean(world)) recorder.open(heroBody()); else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
-    const j: JoinEvent = { s: 0, id: p.spec.id, kind, x: cm(p.x), z: cm(p.z), level: p.spec.level };   // the pose is quantized before the sim sees it, so a replay joins the same creature
-    recorder.join(j.id, j.kind, p.x, p.z, j.level); specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, joinFighter(j)] };
+    if (specs.size === 0) { if (heroClean(world)) { rebody(); recorder.open(heroBody()); } else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
+    const token = d.engageToken?.(p.spec.id), seed = token ? hash32(token, recorder.steps()) : undefined;   // the record's own step index: the replay and the server know it (a world clock tick is not in the record)
+    const j: JoinEvent = { s: 0, id: p.spec.id, kind, x: cm(p.x), z: cm(p.z), level: p.spec.level, ...(seed === undefined ? {} : { seed }) };   // the pose is quantized before the sim sees it, so a replay joins the same creature
+    recorder.join(j.id, j.kind, p.x, p.z, j.level, seed); specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, joinFighter(j)] };
   }
   /** The creature a Pit event belongs to: the one named in the event, else (the hero's own roll, guard, draw) his primary foe. */
   function foeOfEvent(ev: Event): string | null {
@@ -85,7 +96,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     press(kind: 'light' | 'heavy' | 'thrust' | 'kick' = 'light') { pendingAttack = kind; },
     /** A roll / dodge pressed: the world-axis direction (zero = where he faces). */
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
-    guard(held: boolean) { guardHeld = held; },
+    guard(held: boolean, side: Direction | null = null) { guardHeld = held; guardSide = side; },
     update(dt: number, hero: { x: number; z: number; facing: number }): { dx: number; dz: number } {
       const mobs = d.mobs(); if (!mobs) return { dx: 0, dz: 0 };
       if (!heroDead) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
@@ -95,7 +106,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       while (acc >= STEP) {
         acc -= STEP; steps++; stepped = true;
         for (const p of pairs(world)) lastDuel.set(p.foe, p.duel);
-        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll); first = false;
+        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll, guardSide); first = false;
         recorder.step(step);
         const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }
@@ -126,7 +137,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       contacts.clear(); return out;
     },
     /** After he died and stood up in town: a fresh body, nothing hunting him. */
-    reset(hero: { x: number; z: number; facing: number }): void { for (const id of [...specs.keys()]) release(id); recorder.discard(); world = newWorld([body(hero.x, hero.z, hero.facing)]); heroDead = false; acc = 0; },
+    reset(hero: { x: number; z: number; facing: number }): void { for (const id of [...specs.keys()]) release(id); recorder.discard(); world = newWorld([body(hero.x, hero.z, hero.facing)]); builtKey = JSON.stringify(mine()); heroDead = false; acc = 0; },
     /** The record of the fight so far (open since a creature joined an empty loop), packed for kill_report, or null (none, or it outgrew its bounds). Call it from onKill: the window stays until the next one opens. */
     record: (): WorldRecord | null => recorder.take(),
     /** The hero's own duel, for the engine's actorPose (null before his first step). */

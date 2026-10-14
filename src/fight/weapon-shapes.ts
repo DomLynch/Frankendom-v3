@@ -9,6 +9,7 @@
 // Every file ships pinned by sha256 in tests/weapon-shapes.test.ts. The dev flag `?shapes=maul-crafted,estoc-cane-ornate` names band files
 // present under /weapons/shapes/ (a local drop), over the table.
 import type { WeaponId } from './moves.ts';
+import OVERRIDES from './shape-overrides.json' with { type: 'json' };
 
 export type Band = 'plain' | 'crafted' | 'ornate';
 export const BANDS: readonly Band[] = ['plain', 'crafted', 'ornate'];
@@ -41,12 +42,12 @@ export const SHIPPING_SHAPES: ShapeTable = {
 // An opponent's own shape for a weapon (Dom via Strategy 2026-09-28): the Plague Doctor's estoc is a cane sword (cane-sword-brief.md, the
 // estoc's envelope). He takes only his own files: an absent rank keeps today's part, never the generic painted weapon (Lead 2026-09-29:
 // the cane is Dom's own art call to GPT, and a generic painted blade on him would pre-empt it).
-export const SHAPE_OVERRIDES: Readonly<Record<string, Partial<Record<WeaponId, string>>>> = {
-  plaguedoctor: { estoc: 'estoc-cane' },
-  // The Witch's trident stands in for her bladed staff (roster.ts): she keeps her stock trident until the staff's files land, never the painted
-  // trident (Strategy 2026-09-29: the Witch staff is its own brief, not the trident trio).
-  witch: { trident: 'witch-staff' },
-};
+export const SHAPE_OVERRIDES: Readonly<Record<string, Partial<Record<WeaponId, string>>>> = shapeOverrides();
+function shapeOverrides(): Record<string, Partial<Record<WeaponId, string>>> {   // shape-overrides.json: one row per (opponent, weapon); the Witch's trident stands in for her bladed staff until the staff's files land
+  const out: Record<string, Partial<Record<WeaponId, string>>> = {};
+  for (const r of OVERRIDES.rows as readonly { opponent: string; weapon: WeaponId; shape: string }[]) (out[r.opponent] ??= {})[r.weapon] = r.shape;
+  return out;
+}
 
 const ENTRY = /^([a-z]+(?:-[a-z]+)?)-(plain|crafted|ornate)$/;
 export function shapesFlag(search: string): ShapeTable | undefined {

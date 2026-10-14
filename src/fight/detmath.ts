@@ -9,6 +9,8 @@
 import { underPlayScale } from './play-radius.ts';
 import { underStab } from './stab-rule.ts';
 import { underStanceRows } from './stance-era.ts';
+import { underPoiseLadder } from './poise-era.ts';
+import { underCone } from './cone-era.ts';
 
 const S1 = -1.66666666666666324348e-01, S2 = 8.33333333332248946124e-03, S3 = -1.98412698298579493134e-04,
   S4 = 2.75573137070700676789e-06, S5 = -2.50507602534068634195e-08, S6 = 1.58969099521155010221e-10;
@@ -107,7 +109,7 @@ let table = DETMATH;
 export const M: Table = { sin: (x) => table.sin(x), cos: (x) => table.cos(x), atan2: (y, x) => table.atan2(y, x), hypot: (...a) => table.hypot(...a) };
 export function underRecord<T>(record: { readonly v: number; readonly opponent?: string }, run: () => T): T {
   const outer = table; table = record.v < FIRST_DETMATH_VERSION ? LEGACY : DETMATH;
-  try { return underPlayScale(record.opponent ?? '', record.v, () => underStab(record.v, () => underStanceRows(record.v, run))); } finally { table = outer; }   // and the play circle (play-radius.ts) and the Goblin's stab (stab-rule.ts) the record was fought with
+  try { return underPlayScale(record.opponent ?? '', record.v, () => underStab(record.v, () => underStanceRows(record.v, () => underPoiseLadder(record.v, () => underCone(record.v, run))))); } finally { table = outer; }   // and the play circle (play-radius.ts) and the Goblin's stab (stab-rule.ts) the record was fought with
 }
 export const mathTableFor = (record: { readonly v: number }): 'legacy' | 'detmath' => underRecord(record, () => (table === LEGACY ? 'legacy' : 'detmath'));   // tests
 export const LEGACY_TABLE_IS_NATIVE = (): boolean => LEGACY.sin === Math.sin && LEGACY.cos === Math.cos && LEGACY.atan2 === Math.atan2 && LEGACY.hypot === Math.hypot;

@@ -11,15 +11,20 @@ export * from './gambit.ts';
 export * from './gear-stats.ts';
 export * from './play-radius.ts';
 export { underRecord } from './detmath.ts';
-export { validateBuild } from './sheet-rows.ts';   // the build field's one validation seam (origins/server/build.ts)
+export { validateBuild, sheetOf, SHEET_SKILLS } from './sheet-rows.ts';   // the build field's one validation seam (origins/server/build.ts); SHEET_SKILLS: a skill's base for the spell check
 export type { Sheet } from './sheet-rows.ts';
 export { expectedSheet, NO_BUILD, type BuildLoader } from './build-check.ts';   // a record's build reference -> the sheet it must fight with (sweeps, encounter settle)
 export { setStab, STAB_ON } from './stab-rule.ts';
 export { setStanceRows, STANCE_ROWS_ON } from './stance-era.ts';
+export { setPoiseLadder, POISE_LADDER_ON } from './poise-era.ts';
+export { setCone, CONE_ON } from './cone-era.ts';
 export { AFTER_HIT_TICKS, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow, type KitRow } from './mobkit.ts';
 export { SPEEDS } from './speeds.ts';
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); origins/luck reads them here
-export { PORTRAIT_KEYS } from '../legends.ts';
+export { PORTRAIT_KEYS, rungTopLevel } from '../legends.ts';
+export { LEGEND_FAMILIES, isSpellless, legendText } from './legend-families.ts';   // which family and rank a legend wears: the server prices a boss:<legend> fight from it (origins/boss/legend-boss.ts)
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
+export { hash32 } from './bout-seed.ts';
 export { MAX_HERO_MPS, MAX_WORLD_TICKS, decodeWorldRecord, encodeWorldRecord, replayWorldRecord, unpackWorldRecord, packWorldRecord, type WorldRecord, type RecordHero, type Replayed } from './world-record.ts';
 export * from './weapon-skills.ts';
+export * from './loot-deck.ts';   // loot decks with pity: the rows, the loader and the pure draw (Backend reads them here, no copy of the numbers)

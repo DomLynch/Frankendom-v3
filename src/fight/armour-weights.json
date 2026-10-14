@@ -1,0 +1,7 @@
+{
+  "armourWeight": [
+    { "id": "heavy", "castPenalty": 20, "note": "provisional, Lead 10-13, Dom to tune" },
+    { "id": "medium", "castPenalty": 10, "note": "provisional, Lead 10-13, Dom to tune" },
+    { "id": "light", "castPenalty": 0, "note": "provisional, Lead 10-13, Dom to tune" }
+  ]
+}

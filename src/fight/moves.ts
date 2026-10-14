@@ -474,7 +474,7 @@ export const LEVELS = 50;   // 46 anchored the hard table; 47–50 are Origin II
 // The named special an opponent casts at a ladder level (Strategy 2026-10-01, docs/briefs/specials/): ranks 8 / 9 / 10 (career.ts: five levels a rank, so 36 / 41 / 46).
 // Identity only: windup, share, cooldown and the unblockable release are RULES.special for every special. Null = the opponent's class skill names it (below rank 8, or no set).
 // The Centurion's id is 'veteran'. The picks are the briefs' starred ones.
-const SPECIAL_SETS = {
+export const SPECIAL_SETS = {
   veteran: ['quake', 'charge', 'tithe'],   // Shield Quake, The Charge, Blood Tithe
   nightborn: ['redwind', 'hadesshadow', 'nyxnightfall'],   // Red Wind, Hades' Shadow, Nyx Nightfall
   executioner: ['bayingcircle', 'longshadow', 'harvestsweep'],   // Arawn, Thanatos, The Reaper
