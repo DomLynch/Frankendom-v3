@@ -1,0 +1,19 @@
+{
+  "sets": [
+    {"id":"veteran","specials":["quake","charge","tithe"]},
+    {"id":"nightborn","specials":["redwind","hadesshadow","nyxnightfall"]},
+    {"id":"executioner","specials":["bayingcircle","longshadow","harvestsweep"]},
+    {"id":"goblin","specials":["dirtyfistful","gone","threeliars"]},
+    {"id":"pitborn","specials":["crackingground","ashfall","windwall"]},
+    {"id":"dwarf","specials":["theword","threeblows","rimshake"]},
+    {"id":"shieldmaiden","specials":["baredface","thering","aegissweep"]},
+    {"id":"witch","specials":["avalonmist","foretoldstep","theprice"]},
+    {"id":"plaguedoctor","specials":["plagueflies","poisonstain","lastbreath"]},
+    {"id":"knight","specials":["thesling","wrath","stormfollowshim"]}
+  ],
+  "ranks": [
+    {"id":"first","level":36},
+    {"id":"second","level":41},
+    {"id":"third","level":46}
+  ]
+}
