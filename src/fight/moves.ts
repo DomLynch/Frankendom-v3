@@ -10,6 +10,7 @@ import { LEVEL_ANCHORS } from './level-anchor-rows.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 import { LEVELS, LATE_NOTICE_FROM } from './moves-dials-rows.ts';   // the dials are rows (moves-dials-defs.json)
+import { PROFILES_ROWS, OWN_KNOBS_ROWS, ABSENT_ROWS, POISE_FULL_AT_ROWS } from './moves-tables-rows.ts';   // rows: moves-tables-defs.json
 export { LEVELS };
 export type { OpponentId, RigId } from '../roster.ts';
 // Combat data. Every timing is in fixed 60 Hz ticks; every number here is a tuning candidate, not a validated value.
@@ -142,12 +143,7 @@ export const PLAYER_WEAPONS: readonly WeaponId[] = LOADED.player;   // the weapo
 // and estoc still wait on the over-cap list (see KNOWN_UNFAIR there), and each of their remaining rows is Combat's, not weapon data.
 export const PLAYER_WEAPONS_OFFERED: readonly WeaponId[] = LOADED.offered;   // the weapon rows' `offered` order
 
-export const PROFILES: Record<'easy' | 'normal' | 'hard', AiProfile> = {
-  // discipline sits above a heavy's cost so the warden rests instead of swinging itself into exhaustion.
-  easy: { reaction: 24, accuracy: .5, parry: .1, dodge: .1, aggression: .45, pressure: 0, discipline: 60, lapse: .45, read: .5 },
-  normal: { reaction: 14, accuracy: .75, parry: .3, dodge: .2, aggression: .65, pressure: 0, discipline: 50, lapse: .3, read: .7 },   // read (directional guard, owner 2026-09-20): the side he guards on is right 7 times in 10; the lead's per-rung numbers, swept by the battery
-  hard: { reaction: 10, accuracy: .95, parry: .6, dodge: .35, aggression: .85, pressure: .5, discipline: 40, lapse: .1, read: .85 },   // 167 ms: hard is decisions and feints, not input-reading (was 7)
-};
+export const PROFILES: Record<'easy' | 'normal' | 'hard', AiProfile> = PROFILES_ROWS as unknown as Record<'easy' | 'normal' | 'hard', AiProfile>;
 export type Level = keyof typeof PROFILES;
 // An opponent is data a duel is set up from: the weapon he carries, his body scale (the blade sweep's hit capsule and regions
 // follow it; the renderer picks his GLB by id), his health, his poise and his own profile per level — the same easy/normal/hard toggle
@@ -294,7 +290,7 @@ const ARCHETYPES: Record<(typeof ROSTER)[OpponentId]['archetype'], Omit<Opponent
 // stays the warden's; with the scutum (RV18, L6+) he braces charged heavies and steps back out of a charging one. Battery (480 seeds, the
 // gladius tree): L6 thrust from range 87 -> 23 %, charged heavy only 89 -> 56 %; L10 pommel then light 86 -> 71 %, thrust 84 -> 12 %; live
 // (trident) L6 pommel then light 90 -> 79 %, thrust 73 -> 20 %; L1 tap 480 / 480; L6 light spam and heavy only unmoved (the easy rail).
-const OWN_KNOBS: Partial<Record<OpponentId, Partial<AiProfile>>> = { veteran: { tellReaction: 15, braceHeavy: 1, spamRun: 5 }, pitborn: { spamRun: 6 }, dwarf: { spamRun: 6 }, knight: { spamRun: 5 }, shieldmaiden: { spamRun: 5, spamBoth: 1 } };   // RV31 (docs/specs/combat/l6-anti-spam.md): the five opponents a mashing player beat at L6 (the Pitborn's gate is 6: at 5 her skilled bot lost 9 points at L6, at 7 light spam still won 47/48); every other opponent keeps today's read
+const OWN_KNOBS: Partial<Record<OpponentId, Partial<AiProfile>>> = OWN_KNOBS_ROWS as unknown as Partial<Record<OpponentId, Partial<AiProfile>>>;   // RV31 (docs/specs/combat/l6-anti-spam.md): the five opponents a mashing player beat at L6 (the Pitborn's gate is 6: at 5 her skilled bot lost 9 points at L6, at 7 light spam still won 47/48); every other opponent keeps today's read
 export const OPPONENTS = Object.fromEntries(Object.entries(ROSTER).map(([id, recipe]) => {
   const base = ARCHETYPES[recipe.archetype], own = OWN_KNOBS[id as OpponentId];
   const profiles = own ? { easy: { ...base.profiles.easy, ...own }, normal: { ...base.profiles.normal, ...own }, hard: { ...base.profiles.hard, ...own } } : base.profiles;
@@ -329,7 +325,7 @@ export const NOVICE_BODY = { poise: 0, health: .7 } as const;
 // From L6 he is today's man, except poise for those two, full at L18 (Strategy 10:1x, 2026-09-27): a player's light (14) never staggers
 // poise 16, so at L6 the tap-attacker went 45 -> 0 / 48 v the Pitborn and the Shieldmaiden. Their poise ramps 0 -> 16 over L1–18 instead
 // (L6 poise 5); health and AI as everyone's. Set a value to LEVEL_ANCHORS.easy to put the old wall back.
-export const POISE_FULL_AT: Partial<Record<OpponentId, number>> = { pitborn: 18, shieldmaiden: 18 };
+export const POISE_FULL_AT: Partial<Record<OpponentId, number>> = POISE_FULL_AT_ROWS as unknown as Partial<Record<OpponentId, number>>;
 // The scutum (SCOPE: guard profile only, 2026-09-27): two sides, stops heavies, a cheaper hold, posture drains faster. No damage
 // reduction, no attack penalty. Starting numbers (Combat); the Centurion battery (L1/6/10/18/30/46) tunes them.
 export const SCUTUM: Partial<GuardProfile> = { wide: true, stopsHeavy: true, heavyBreaks: false, costScale: .75, postureDecay: 1.5 };
@@ -350,7 +346,7 @@ export function opponentAt(o: Opponent, level: number): Opponent {
 }
 // An absent knob means "the warden as he always was" in ai.ts; a blend needs the number that absence stands for. A knob absent on BOTH
 // sides stays absent (ai.ts draws no roll for it, so nothing downstream moves).
-const ABSENT: Partial<AiProfile> = { read: 1, feint: 0, guard: 1, disengage: 0, circle: 0, regen: 1, step: 0, interrupt: 0, kick: 0, dash: 0, stab: 0, anticipate: 8, tellReaction: 99, braceHeavy: 0, spamRun: 0, spamBoth: 0 };   // anticipate: ai.ts READ.anticipate (tests pin it)
+const ABSENT: Partial<AiProfile> = ABSENT_ROWS as unknown as Partial<AiProfile>;   // anticipate: ai.ts READ.anticipate (tests pin it)
 const ROUNDED = new Set<keyof AiProfile>(['reaction', 'anticipate', 'discipline', 'tellReaction', 'spamRun']);
 const blend = (a: AiProfile, b: AiProfile, t: number): AiProfile => {
   const out: Record<string, number> = {};
