@@ -1,6 +1,7 @@
 // The one-shot buffer player the special and duel cues share (audio/special.ts, audio/duel.ts): starts a decoded buffer now or after a
 // delay; a skipped beat calls stop(), which goes out on a short fade. (Its first user, the Pit gate's winch, was removed with the Pit room.)
-export const GATE_CUT = .06;   // seconds: long enough that a skip never clicks, short enough to read as "cut"
+import { audioRule } from '../fight/sound/audio-rules.ts';
+export const GATE_CUT = audioRule('gateCut');   // seconds: long enough that a skip never clicks, short enough to read as "cut"
 // Start the buffer now (or after `delay` seconds) at `gain`; the buffer's own length is the beat. stop() is safe to call twice.
 export function playGate(context: BaseAudioContext, buffer: AudioBuffer, destination: AudioNode, gain = 1, delay = 0) {
   const time = context.currentTime + delay, source = context.createBufferSource(), envelope = context.createGain();
