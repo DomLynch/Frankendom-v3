@@ -14,6 +14,11 @@
     { "id": "maxSteps", "value": 15, "unit": "steps" },
     { "id": "creatureNotice", "value": 7, "unit": "m" },
     { "id": "namedNotice", "value": 9, "unit": "m" },
-    { "id": "noticeHold", "value": 1.5, "unit": "m" }
+    { "id": "noticeHold", "value": 1.5, "unit": "m" },
+    { "id": "playerWalk", "value": 2.3, "unit": "m/s" },
+    { "id": "playerRun", "value": 5.2, "unit": "m/s" },
+    { "id": "creatureAmble", "value": 0.9, "unit": "m/s" },
+    { "id": "creatureChase", "value": 4.5, "unit": "m/s" },
+    { "id": "leash", "value": 30, "unit": "m" }
   ]
 }

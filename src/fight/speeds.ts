@@ -2,11 +2,12 @@
 // and give-up numbers, the out-of-combat window and the hero-side disengage. Zone 1 WORLD LAYER only: nothing here is read by src/ (no sim change, no RECORD_VERSION). A fight that is
 // engaged runs on the sim's own pace (sim.ts: run 5.2 m/s x Opponent.speed), so the chase numbers below must never exceed what the sim would do for that creature (origins/preview/speeds.test.ts).
 import { fieldOf } from './catalogue-fields.ts';
+import { worldRule } from './world-rules.ts';   // the speed and leash numbers are rows (world-rules-defs.json)
 export const SPEEDS = {
-  player: { walk: 2.3, run: 5.2 },    // m/s: the gait table's walk and Run knot (main.ts took these from the Pit pad); the sim's own run is 5.2 (sim.ts advance)
-  creature: { amble: 0.9, chase: 4.5 },   // m/s: slower than a running player (so running away works) except the wolf, who is faster and gives up sooner
-} as const;
-export const LEASH = { default: 30 } as const;   // m from where the chase STARTED: past it the creature walks home and heals to full, no event
+  player: { walk: worldRule('playerWalk'), run: worldRule('playerRun') },    // m/s: the gait table's walk and Run knot (main.ts took these from the Pit pad); the sim's own run is 5.2 (sim.ts advance)
+  creature: { amble: worldRule('creatureAmble'), chase: worldRule('creatureChase') },   // m/s: slower than a running player (so running away works) except the wolf, who is faster and gives up sooner
+};
+export const LEASH = { default: worldRule('leash') };   // m from where the chase STARTED: past it the creature walks home and heals to full, no event
 import { GIVE_UP_UNSEEN_S } from './threat.ts';
 export { GIVE_UP_UNSEEN_S };   // (src/fight/threat-defs.json giveUp row)
 // s out of sight before any creature gives up (leaving the zone always ends it too)
