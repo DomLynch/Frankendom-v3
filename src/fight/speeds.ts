@@ -11,9 +11,9 @@ export const LEASH = { default: worldRule('leash') };   // m from where the chas
 import { GIVE_UP_UNSEEN_S } from './threat.ts';
 export { GIVE_UP_UNSEEN_S };   // (src/fight/threat-defs.json giveUp row)
 // s out of sight before any creature gives up (leaving the zone always ends it too)
-export const OUT_OF_COMBAT_S = 6;     // s with no damage taken or dealt before a fighter counts as out of combat (regen starts)
-export const DISENGAGE_M = 12, DISENGAGE_S = 3;   // the hero-side disengage: a world fight ends silently when the hero has been farther than 12 m from the foe for 3 s
-export const ENGAGE_GAP_MAX_M = 6.5, COMMIT_RANGE_M = 8;   // Strategy's spec numbers the disengage must stay beyond (the max start gap before spawnScale, the commit range)
+export const OUT_OF_COMBAT_S = worldRule('outOfCombat');     // s with no damage taken or dealt before a fighter counts as out of combat (regen starts)
+export const DISENGAGE_M = worldRule('disengage'), DISENGAGE_S = worldRule('disengageSeconds');   // the hero-side disengage: a world fight ends silently when the hero has been farther than 12 m from the foe for 3 s
+export const ENGAGE_GAP_MAX_M = worldRule('engageGapMax'), COMMIT_RANGE_M = worldRule('commitRange');   // Strategy's spec numbers the disengage must stay beyond (the max start gap before spawnScale, the commit range)
 export const chaseSpeed = (kind: string): number => (fieldOf(kind, 'chase') as number | undefined) ?? SPEEDS.creature.chase;   // a row's `chase` field (the wolf's 6.0), else the default
 export const leashOf = (kind: string): number => (fieldOf(kind, 'leash') as number | undefined) ?? LEASH.default;
 export const giveUpOf = (kind: string): number => (fieldOf(kind, 'giveUp') as number | undefined) ?? GIVE_UP_UNSEEN_S;   // a row's `giveUp` (s out of sight before it gives up), else the default

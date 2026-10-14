@@ -1,0 +1,42 @@
+{
+  "rules": [
+    { "id": "arenaLevel", "value": 0.4, "unit": "gain" },
+    { "id": "bellSeconds", "value": 2.5, "unit": "s" },
+    { "id": "bellRate", "value": 48000, "unit": "Hz" },
+    { "id": "bellDrive", "value": 2, "unit": "ratio" },
+    { "id": "bloomAbove", "value": 300, "unit": "Hz" },
+    { "id": "bloomSeconds", "value": 0.4, "unit": "s" },
+    { "id": "wardenHealth", "value": 80, "unit": "hp" },
+    { "id": "gateCut", "value": 0.06, "unit": "s" },
+    { "id": "spriteSeconds", "value": 46.108, "unit": "s" },
+    { "id": "maxLayers", "value": 8, "unit": "layers" },
+    { "id": "outputGain", "value": 0.65, "unit": "gain" },
+    { "id": "breathAhead", "value": 0.3, "unit": "s" },
+    { "id": "breathDuck", "value": 0.3, "unit": "gain" },
+    { "id": "breathDuckBack", "value": 0.45, "unit": "s" },
+    { "id": "breathRelease", "value": 1.4, "unit": "s" },
+    { "id": "pitchSpread", "value": 0.05, "unit": "ratio" },
+    { "id": "whipRaise", "value": 0.4, "unit": "s" },
+    { "id": "baseSeed", "value": 731, "unit": "seed" },
+    { "id": "mix", "value": 0.4, "unit": "gain" },
+    { "id": "rise", "value": 1.6, "unit": "ratio" },
+    { "id": "riseFloor", "value": 0.35, "unit": "gain" },
+    { "id": "cut", "value": 0.035, "unit": "s" },
+    { "id": "voices", "value": 8, "unit": "voices" },
+    { "id": "powerWordLookGain", "value": 0.3, "unit": "gain" }
+  ],
+  "throats": [
+    { "id": "goblin", "f0": 150, "f1": 700, "f2": 1300, "rasp": 0.55 },
+    { "id": "pitborn", "f0": 85, "f1": 600, "f2": 1000, "rasp": 0.45 },
+    { "id": "knight", "f0": 70, "f1": 500, "f2": 900, "rasp": 0.3 },
+    { "id": "witch", "f0": 190, "f1": 450, "f2": 1700, "rasp": 0.5 },
+    { "id": "minotaur", "f0": 55, "f1": 450, "f2": 800, "rasp": 0.5 },
+    { "id": "wolf", "f0": 110, "f1": 550, "f2": 1250, "rasp": 0.45 },
+    { "id": "boar", "f0": 150, "f1": 420, "f2": 900, "rasp": 0.6 },
+    { "id": "bear", "f0": 62, "f1": 350, "f2": 750, "rasp": 0.55 }
+  ],
+  "casters": [
+    { "id": "witch", "f0": 175, "breath": 0.55, "syllable": 0.24 },
+    { "id": "plaguedoctor", "f0": 88, "breath": 0.4, "syllable": 0.3 }
+  ]
+}
