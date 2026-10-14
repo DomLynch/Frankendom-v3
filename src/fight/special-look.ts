@@ -6,9 +6,11 @@ import { RULES } from './moves.ts';
 import type { Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import BOSS_ROWS from './bosses.json' with { type: 'json' };
+import LOOK_RULES from './look-rules.json' with { type: 'json' };
 
-export const SPECIAL_RECOVER = 45;   // the cloud tears away and the caster returns to stance (Finishers, 2026-09-29: 30 read as a pop at phone size)
-export const SPECIAL_STRUCK = 45;   // the target's head-hit stagger after the strike (presentation only: the sim does not stagger him)
+const SL = LOOK_RULES.specialLookRule[0]!;   // the specialLookRule row (src/fight/look-rules.json)
+export const SPECIAL_RECOVER = LOOK_RULES.specialLookRule[0]!.recover;   // the cloud tears away and the caster returns to stance (Finishers, 2026-09-29: 30 read as a pop at phone size)
+export const SPECIAL_STRUCK = LOOK_RULES.specialLookRule[0]!.struck;   // the target's head-hit stagger after the strike (presentation only: the sim does not stagger him)
 
 // `?special=set` is rank 8's Red Wind (level 36: (8 − 1) × 5 + 1); the same lunge special, its own art (special-fx-wind.ts).
 // `?special=hades`: a sparring fight (no record, rewards or writes) against the named warden at his rank's level, with Special Moves on for
@@ -38,7 +40,7 @@ const HAND_TESTS = {
 } as const satisfies Record<string, { opponent: OpponentId; level: number; first: number }>;
 // The boss previews (Arawn..Storm: the Executioner's, Witch's, Plague Doctor's and Knight's ranks 8-10) are rows of src/fight/bosses.json (SIM_DATA), at the legend's rank: level 36 + (rank − 8) × 5.
 type PreviewTest = { opponent: OpponentId; level: number; first: number };
-const BOSS_TESTS = Object.fromEntries((BOSS_ROWS as readonly { id: string; opponent: string; rank: number }[]).map((r) => [r.id, { opponent: r.opponent as OpponentId, level: 36 + (r.rank - 8) * 5, first: 180 }])) as Record<string, PreviewTest>;
+const BOSS_TESTS = Object.fromEntries((BOSS_ROWS as readonly { id: string; opponent: string; rank: number }[]).map((r) => [r.id, { opponent: r.opponent as OpponentId, level: SL.bossBaseLevel + (r.rank - SL.bossBaseRank) * SL.bossLevelPerRank, first: SL.bossFirst }])) as Record<string, PreviewTest>;
 export const SPECIAL_TESTS: Readonly<Record<string, PreviewTest>> = { ...HAND_TESTS, ...BOSS_TESTS };
 export type SpecialTest = string;   // an open set: a preview id is a bosses.json row id or a hand-written one above; tests/boss-rows.test.ts checks every id has its name and mode
 export const specialParam = (search: string): SpecialTest | null => {
