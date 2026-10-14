@@ -1,6 +1,7 @@
 import { fieldOf } from './catalogue-rows.ts';
 import { spectralMaterial } from './spectral.ts';
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Group, Matrix3, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, Euler, SkinnedMesh, Vector3 } from 'three';
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 // One pose bake per encounter, prepared before combat like a cached severed prop. Exterior maps are borrowed; only the new geometry and cut material
 // belong to this effect. Cut the torso at its waist, retaining both arms with the torso and releasing the victim weapon to the sand.
@@ -11,16 +12,17 @@ export function openWaist(root: Object3D, anchor: Group, cornerSupports = false)
 // The same bake in steps (a rank look's rebake, #918): at most CHUNK vertices or triangles of one draw per step, then the resting searches and
 // the floor table. The caller holds the bake pose around every step (characters.ts), so the rig may play between steps; each step reads the
 // rig afresh. One whole draw per step was 160 ms at CPU ×4 on the Goblin L3 body (18.7k tris, goblin-l3-packed4-d45f0f88, row C).
-const CHUNK = 2048;
+const OPENED = FEEL_RULES.openedRule[0]!;   // the openedRule row (src/fight/feel-rules.json)
+const CHUNK = OPENED.chunk;
 // And at most STEP_MS of it (checked every 256): a vertex count alone let one step of the Nightborn's L8 closed helm run 54.6 ms at CPU ×4
 // (nightborn-L8-f3c54a6f, row C), where the Goblin's draws took 2–15. Where a step yields never changes what the bake cuts.
-const STEP_MS = 8;
+const STEP_MS = OPENED.stepMs;
 // The resting searches and the floor table read every support point once per candidate: at most SCAN reads per step (pure maths on the
 // baked points, so no rig refresh after these yields). The weapon roll plus the floor table's first rows was the worst step (31 ms in Node,
 // 188 ms at CPU ×4 in the browser, goblin-l3-packed4-e9fca274), read over triangle-corner duplicates; supports now hold each vertex once.
 // Those scans run once per bake, so their first steps run unoptimised: at 300k reads the first rest-search steps were still 53–56 ms at
 // CPU ×4 while later ones were 17 (goblin-l3-packed4-C-aa71088f), hence 100k.
-const SCAN = 100_000;
+const SCAN = OPENED.scan;
 // `cornerSupports` keeps the old one-support-per-triangle-corner path, only so a test can prove the dedupe changes nothing.
 // `drawn` picks the draws the bake cuts (default: the visible ones): a rank look is baked before it is on (characters.ts prepareLook), with its
 // hidden draws in and the rig's draws it turns off out.

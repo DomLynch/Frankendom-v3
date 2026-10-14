@@ -1,0 +1,94 @@
+{
+  "tables": [
+    {
+      "table": "beastScaleRule",
+      "file": "feel-rules.json",
+      "at": "beastScaleRule",
+      "key": "id",
+      "required": {
+        "wolf": "number",
+        "boar": "number",
+        "bear": "number"
+      }
+    },
+    {
+      "table": "openedRule",
+      "file": "feel-rules.json",
+      "at": "openedRule",
+      "key": "id",
+      "required": {
+        "chunk": "integer",
+        "stepMs": "integer",
+        "scan": "integer"
+      }
+    },
+    {
+      "table": "hamstrungRule",
+      "file": "feel-rules.json",
+      "at": "hamstrungRule",
+      "key": "id",
+      "required": {
+        "sourcePelvis": "number"
+      }
+    },
+    {
+      "table": "skillImpactRule",
+      "file": "feel-rules.json",
+      "at": "skillImpactRule",
+      "key": "id",
+      "required": {
+        "flash": "number",
+        "flashSize": "number",
+        "sparks": "integer",
+        "life": "number",
+        "reach": "number"
+      }
+    },
+    {
+      "table": "spellSchoolRule",
+      "file": "feel-rules.json",
+      "at": "spellSchoolRule",
+      "key": "id",
+      "required": {
+        "softFloor": "number"
+      }
+    },
+    {
+      "table": "standoffRule",
+      "file": "feel-rules.json",
+      "at": "standoffRule",
+      "key": "id",
+      "required": {
+        "standoffMs": "number"
+      }
+    },
+    {
+      "table": "witchfireRule",
+      "file": "feel-rules.json",
+      "at": "witchfireRule",
+      "key": "id",
+      "required": {
+        "pool": "integer"
+      }
+    },
+    {
+      "table": "zoneFinisherRule",
+      "file": "feel-rules.json",
+      "at": "zoneFinisherRule",
+      "key": "id",
+      "required": {
+        "headLife": "number",
+        "severAt": "number"
+      }
+    },
+    {
+      "table": "zoneFxRule",
+      "file": "feel-rules.json",
+      "at": "zoneFxRule",
+      "key": "id",
+      "required": {
+        "idleS": "number"
+      }
+    }
+  ]
+}

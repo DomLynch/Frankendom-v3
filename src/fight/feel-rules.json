@@ -1,0 +1,65 @@
+{
+  "beastScaleRule": [
+    {
+      "id": "beastScale",
+      "wolf": 2,
+      "boar": 1.8,
+      "bear": 2.2
+    }
+  ],
+  "openedRule": [
+    {
+      "id": "opened",
+      "chunk": 2048,
+      "stepMs": 8,
+      "scan": 100000
+    }
+  ],
+  "hamstrungRule": [
+    {
+      "id": "hamstrung",
+      "sourcePelvis": 0.95
+    }
+  ],
+  "skillImpactRule": [
+    {
+      "id": "skillImpact",
+      "flash": 0.12,
+      "flashSize": 0.9,
+      "sparks": 10,
+      "life": 0.4,
+      "reach": 0.28
+    }
+  ],
+  "spellSchoolRule": [
+    {
+      "id": "spellSchool",
+      "softFloor": 12
+    }
+  ],
+  "standoffRule": [
+    {
+      "id": "standoff",
+      "standoffMs": 800
+    }
+  ],
+  "witchfireRule": [
+    {
+      "id": "witchfire",
+      "pool": 200
+    }
+  ],
+  "zoneFinisherRule": [
+    {
+      "id": "zoneFinisher",
+      "headLife": 12,
+      "severAt": 0.05
+    }
+  ],
+  "zoneFxRule": [
+    {
+      "id": "zoneFx",
+      "idleS": 12
+    }
+  ]
+}
