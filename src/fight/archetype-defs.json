@@ -1,0 +1,689 @@
+{
+ "identities": [
+  {
+   "id": "witch",
+   "values": {
+    "pressure": 0.75,
+    "disengage": 0.5,
+    "circle": 0.6,
+    "step": 0.7,
+    "guard": 0.4
+   }
+  }
+ ],
+ "archetypes": [
+  {
+   "id": "veteran",
+   "scale": 1,
+   "health": "rules",
+   "poise": 0,
+   "profiles": {
+    "easy": {
+     "from": "easy",
+     "set": {}
+    },
+    "normal": {
+     "from": "normal",
+     "set": {}
+    },
+    "hard": {
+     "from": "hard",
+     "set": {
+      "pressure": 0.7,
+      "discipline": 30
+     }
+    }
+   }
+  },
+  {
+   "id": "witch",
+   "scale": 1,
+   "health": "rules",
+   "poise": 0,
+   "profiles": {
+    "easy": {
+     "identity": "witch",
+     "set": {
+      "reaction": 15,
+      "accuracy": 0.5,
+      "parry": 0.2,
+      "dodge": 0.2,
+      "aggression": 0.45,
+      "discipline": 50,
+      "lapse": 0.35,
+      "read": 0.65
+     },
+     "order": [
+      "reaction",
+      "accuracy",
+      "parry",
+      "dodge",
+      "aggression",
+      "pressure",
+      "disengage",
+      "circle",
+      "step",
+      "guard",
+      "discipline",
+      "lapse",
+      "read"
+     ]
+    },
+    "normal": {
+     "from": "normal",
+     "identity": "witch",
+     "set": {
+      "reaction": 12,
+      "parry": 0.45,
+      "read": 0.8
+     }
+    },
+    "hard": {
+     "from": "hard",
+     "identity": "witch",
+     "set": {
+      "discipline": 30
+     }
+    }
+   }
+  },
+  {
+   "id": "dwarf",
+   "scale": 0.78,
+   "health": 170,
+   "poise": 12,
+   "profiles": {
+    "easy": {
+     "from": "easy",
+     "set": {
+      "parry": 0.05,
+      "aggression": 0.55,
+      "pressure": 0.4,
+      "discipline": 55,
+      "read": 0.55
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 14,
+      "accuracy": 0.8,
+      "parry": 0.15,
+      "dodge": 0.15,
+      "aggression": 0.85,
+      "pressure": 0.5,
+      "discipline": 45,
+      "lapse": 0.3,
+      "read": 0.8
+     }
+    },
+    "hard": {
+     "from": "hard",
+     "set": {
+      "reaction": 12,
+      "accuracy": 0.85,
+      "parry": 0.25,
+      "dodge": 0.25,
+      "pressure": 0.55,
+      "lapse": 0.15
+     }
+    }
+   }
+  },
+  {
+   "id": "pitborn",
+   "scale": 1.13,
+   "health": 190,
+   "poise": 16,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 28,
+      "accuracy": 0.5,
+      "parry": 0.05,
+      "dodge": 0.05,
+      "aggression": 0.6,
+      "pressure": 0.6,
+      "discipline": 30,
+      "lapse": 0.45,
+      "read": 0.45
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 14,
+      "accuracy": 0.85,
+      "parry": 0.15,
+      "dodge": 0.1,
+      "aggression": 0.8,
+      "pressure": 0.7,
+      "discipline": 25,
+      "lapse": 0.1,
+      "read": 0.6
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 12,
+      "accuracy": 0.9,
+      "parry": 0.4,
+      "dodge": 0.3,
+      "aggression": 0.95,
+      "pressure": 0.75,
+      "discipline": 24,
+      "lapse": 0.08,
+      "read": 0.75
+     }
+    }
+   }
+  },
+  {
+   "id": "shieldmaiden",
+   "scale": 1,
+   "health": 190,
+   "poise": 16,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 28,
+      "accuracy": 0.5,
+      "parry": 0.05,
+      "dodge": 0.05,
+      "aggression": 0.6,
+      "pressure": 0.6,
+      "discipline": 30,
+      "lapse": 0.45,
+      "read": 0.45
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 14,
+      "accuracy": 0.85,
+      "parry": 0.1,
+      "dodge": 0.1,
+      "aggression": 0.65,
+      "pressure": 0.7,
+      "discipline": 25,
+      "lapse": 0.1,
+      "read": 0.6,
+      "braceHeavy": 0.6
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 12,
+      "accuracy": 0.9,
+      "parry": 0.3,
+      "dodge": 0.3,
+      "aggression": 0.85,
+      "pressure": 0.75,
+      "discipline": 24,
+      "lapse": 0.08,
+      "read": 0.75,
+      "braceHeavy": 0.6
+     }
+    }
+   }
+  },
+  {
+   "id": "nightborn",
+   "scale": 1.03,
+   "health": "rules",
+   "poise": 0,
+   "guard": {
+    "window": 16,
+    "recovery": 40,
+    "commits": true
+   },
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 16,
+      "accuracy": 0.7,
+      "parry": 0.25,
+      "dodge": 0.1,
+      "aggression": 0.5,
+      "pressure": 0.4,
+      "discipline": 55,
+      "lapse": 0.4,
+      "read": 0.7
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 6,
+      "accuracy": 0.85,
+      "parry": 0.7,
+      "dodge": 0.1,
+      "aggression": 0.52,
+      "pressure": 0.45,
+      "discipline": 45,
+      "lapse": 0.25,
+      "read": 0.85
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 5,
+      "accuracy": 0.95,
+      "parry": 0.8,
+      "dodge": 0.15,
+      "aggression": 0.65,
+      "pressure": 0.6,
+      "discipline": 35,
+      "lapse": 0.05,
+      "read": 0.95
+     }
+    }
+   }
+  },
+  {
+   "id": "plagueDoctor",
+   "scale": 1,
+   "health": "rules",
+   "poise": 0,
+   "guard": {
+    "window": 16,
+    "recovery": 40,
+    "commits": true
+   },
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 16,
+      "accuracy": 0.7,
+      "parry": 0.25,
+      "dodge": 0.1,
+      "aggression": 0.5,
+      "pressure": 0.4,
+      "discipline": 55,
+      "lapse": 0.4,
+      "read": 0.7,
+      "tellReaction": 15
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 6,
+      "accuracy": 0.85,
+      "parry": 0.7,
+      "dodge": 0.1,
+      "aggression": 0.45,
+      "pressure": 0.45,
+      "discipline": 45,
+      "lapse": 0.2,
+      "read": 0.85
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 5,
+      "accuracy": 0.95,
+      "parry": 0.8,
+      "dodge": 0.15,
+      "aggression": 0.55,
+      "pressure": 0.6,
+      "discipline": 35,
+      "lapse": 0.05,
+      "read": 0.95
+     }
+    }
+   }
+  },
+  {
+   "id": "goblin",
+   "scale": 0.78,
+   "health": 120,
+   "poise": 0,
+   "regen": 1.5,
+   "speed": 1.2,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 18,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0.3,
+      "aggression": 0.7,
+      "pressure": 0.5,
+      "discipline": 30,
+      "lapse": 0.4,
+      "feint": 0.15,
+      "guard": 0,
+      "disengage": 0.4,
+      "circle": 0.5,
+      "step": 0.6,
+      "interrupt": 0.3,
+      "kick": 0.4,
+      "dash": 0.6,
+      "read": 0.35
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 11,
+      "accuracy": 0.7,
+      "parry": 0,
+      "dodge": 0.4,
+      "aggression": 0.85,
+      "pressure": 0.6,
+      "discipline": 20,
+      "lapse": 0.2,
+      "feint": 0.3,
+      "guard": 0,
+      "disengage": 0.6,
+      "circle": 0.8,
+      "step": 0.8,
+      "interrupt": 0.6,
+      "kick": 0.6,
+      "dash": 1,
+      "read": 0.5,
+      "stab": 0.6
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 8,
+      "accuracy": 0.92,
+      "parry": 0,
+      "dodge": 0.5,
+      "aggression": 0.95,
+      "pressure": 0.65,
+      "discipline": 15,
+      "lapse": 0.08,
+      "feint": 0.4,
+      "guard": 0,
+      "disengage": 0.7,
+      "circle": 1,
+      "step": 0.8,
+      "interrupt": 0.8,
+      "kick": 0.7,
+      "dash": 1,
+      "read": 0.65,
+      "stab": 1
+     }
+    }
+   }
+  },
+  {
+   "id": "wolf",
+   "scale": 0.8,
+   "health": 90,
+   "poise": 0,
+   "regen": 1.4,
+   "speed": 1.45,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 18,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0.3,
+      "aggression": 0.7,
+      "pressure": 0.6,
+      "discipline": 25,
+      "lapse": 0.4,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0.5,
+      "circle": 0.6,
+      "step": 0.7,
+      "interrupt": 0.3,
+      "kick": 0,
+      "dash": 0.6,
+      "read": 0.35
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 11,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0.4,
+      "aggression": 0.85,
+      "pressure": 0.65,
+      "discipline": 20,
+      "lapse": 0.3,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0.7,
+      "circle": 0.9,
+      "step": 0.8,
+      "interrupt": 0.6,
+      "kick": 0,
+      "dash": 1,
+      "read": 0.5,
+      "stab": 0.7
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 8,
+      "accuracy": 0.92,
+      "parry": 0,
+      "dodge": 0.5,
+      "aggression": 0.95,
+      "pressure": 0.7,
+      "discipline": 15,
+      "lapse": 0.08,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0.8,
+      "circle": 1,
+      "step": 0.8,
+      "interrupt": 0.8,
+      "kick": 0,
+      "dash": 1,
+      "read": 0.65,
+      "stab": 1
+     }
+    }
+   }
+  },
+  {
+   "id": "boar",
+   "scale": 0.8,
+   "health": 140,
+   "poise": 4,
+   "regen": 1,
+   "speed": 1.2,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 18,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0.1,
+      "aggression": 0.75,
+      "pressure": 0.65,
+      "discipline": 25,
+      "lapse": 0.4,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0,
+      "circle": 0.15,
+      "step": 0.3,
+      "interrupt": 0.2,
+      "kick": 0,
+      "dash": 0.8,
+      "read": 0.3
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 11,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0.15,
+      "aggression": 0.9,
+      "pressure": 0.7,
+      "discipline": 20,
+      "lapse": 0.3,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0,
+      "circle": 0.2,
+      "step": 0.4,
+      "interrupt": 0.4,
+      "kick": 0,
+      "dash": 1,
+      "read": 0.4,
+      "stab": 0.5
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 8,
+      "accuracy": 0.92,
+      "parry": 0,
+      "dodge": 0.2,
+      "aggression": 1,
+      "pressure": 0.75,
+      "discipline": 15,
+      "lapse": 0.08,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0,
+      "circle": 0.25,
+      "step": 0.4,
+      "interrupt": 0.6,
+      "kick": 0,
+      "dash": 1,
+      "read": 0.55,
+      "stab": 0.8
+     }
+    }
+   }
+  },
+  {
+   "id": "bear",
+   "scale": 0.8,
+   "health": 220,
+   "poise": 10,
+   "regen": 0.8,
+   "speed": 0.95,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 22,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0,
+      "aggression": 0.65,
+      "pressure": 0.6,
+      "discipline": 28,
+      "lapse": 0.4,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0,
+      "circle": 0.05,
+      "step": 0.1,
+      "interrupt": 0.1,
+      "kick": 0,
+      "dash": 0.6,
+      "read": 0.25
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 14,
+      "accuracy": 0.6,
+      "parry": 0,
+      "dodge": 0.05,
+      "aggression": 0.8,
+      "pressure": 0.7,
+      "discipline": 22,
+      "lapse": 0.3,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0,
+      "circle": 0.1,
+      "step": 0.15,
+      "interrupt": 0.25,
+      "kick": 0,
+      "dash": 0.9,
+      "read": 0.35,
+      "stab": 0.4
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 10,
+      "accuracy": 0.9,
+      "parry": 0,
+      "dodge": 0.1,
+      "aggression": 0.95,
+      "pressure": 0.75,
+      "discipline": 16,
+      "lapse": 0.08,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0,
+      "circle": 0.15,
+      "step": 0.2,
+      "interrupt": 0.45,
+      "kick": 0,
+      "dash": 1,
+      "read": 0.5,
+      "stab": 0.7
+     }
+    }
+   }
+  },
+  {
+   "id": "executioner",
+   "scale": 1.36,
+   "health": 160,
+   "poise": 12,
+   "profiles": {
+    "easy": {
+     "from": "easy",
+     "set": {}
+    },
+    "normal": {
+     "from": "normal",
+     "set": {
+      "lapse": 0.2,
+      "read": 0.75,
+      "anticipate": 3
+     }
+    },
+    "hard": {
+     "from": "hard",
+     "set": {}
+    }
+   }
+  },
+  {
+   "id": "knight",
+   "scale": 1.18,
+   "health": 160,
+   "poise": 12,
+   "profiles": {
+    "easy": {
+     "from": "easy",
+     "set": {}
+    },
+    "normal": {
+     "from": "normal",
+     "set": {
+      "reaction": 16,
+      "aggression": 0.7,
+      "lapse": 0.2,
+      "read": 0.75,
+      "tellReaction": 10,
+      "anticipate": 3
+     }
+    },
+    "hard": {
+     "from": "hard",
+     "set": {
+      "aggression": 0.8,
+      "pressure": 0.3,
+      "anticipate": 3
+     }
+    }
+   }
+  }
+ ]
+}

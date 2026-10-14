@@ -6,6 +6,8 @@
       "at": "armourWeight",
       "key": "id",
       "required": {
+        "dial": "string",
+        "fromRecordVersion": "integer",
         "castPenalty": "integer",
         "note": "string"
       }

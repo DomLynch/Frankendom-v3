@@ -5,6 +5,7 @@ import type { OpponentId } from '../roster.ts';
 import { advanceCast, LAND_AT, shadowPhase, type Cast } from './special-timing.ts';
 import { BUILD, BUILD_AT, isBossCast, slingAngle, wrathTremor, type BossKind } from './special-boss-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
+import { specialFxCoreNum } from './special-fx-core-rows.ts';
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const fbm = (x: number, y: number, seed: number) => noise(x, y, seed) * 0.55 + noise(x * 2.1, y * 2.1, seed + 7) * 0.3 + noise(x * 4.3, y * 4.3, seed + 13) * 0.15;
@@ -41,12 +42,12 @@ const sprite = (map: THREE.Texture, parent: THREE.Object3D, name: string) => {
 };
 // The Night Pit's tone map lifts an unlit colour hard (exposure 1.85: a linear 0.13 comes out ~sRGB 150 over sand at ~40), so every Pit effect colour is multiplied down so it lands
 // at ~sRGB 28 at most, under the shaded sand and never a pale wash. Each factor is 0.0145 (the linear colour that tone-maps to 28 at 1.85) over that texture's own base level.
-const PIT_MIST = 0.13, PIT_STAIN = 0.07, PIT_BREATH = 0.03;
+const PIT_MIST = specialFxCoreNum('boss.pit-mist'), PIT_STAIN = specialFxCoreNum('boss.pit-stain'), PIT_BREATH = specialFxCoreNum('boss.pit-breath');
 const show = (s: THREE.Sprite, opacity: number) => { (s.material as THREE.SpriteMaterial).opacity = clamp01(opacity); s.visible = opacity > 0.01; };
 
 // The Witch, rank 8, Morgan le Fay: Avalon mist. A low grey-brown mist creeps in along the ground from the arena's edge through the WHOLE wind-up, thickening as it comes,
 // hugs the target's legs (below the knee), and closes tight round them on the strike, then thins away. Small puffs, centres within half a metre of the sand: never a ball over the torso.
-const MIST = 64;
+const MIST = specialFxCoreNum('boss.mist');
 function avalonMist(root: THREE.Group, dim: boolean): Effect {
   const tints: [number, number, number][] = dim ? [[34, 30, 42], [28, 24, 36]] : [[30, 24, 38], [24, 20, 32]];   // dark violet-grey, well under the sand: the tone map lifts it and overlapping puffs stack, so the day peak read pale (Strategy FAIL 2026-10-01)
   const maps = [0, 1, 2, 3].map((k) => softBlob(k * 13 + 2, tints[k % 2]));
@@ -71,7 +72,7 @@ function avalonMist(root: THREE.Group, dim: boolean): Effect {
 // ~0.38 s (under 0.4 s) a pale, frozen copy of the TARGET's own rig, taken at that instant, slides on ahead of him toward her; the real fighter plays his gait through the same window
 // (the registry's `travel`), so he is plainly the one stepping, and as the blow lands the afterimage is gone. The copy is a SkeletonUtils clone of his anchor with its own tinted,
 // translucent materials (geometry shared), built once per cast and dropped on the landing, a fizzle or a clear.
-const GHOST = 23;   // ticks the ghost lives, ending on the landing
+const GHOST = specialFxCoreNum('boss.ghost');   // ticks the ghost lives, ending on the landing
 function foretoldStep(root: THREE.Group, dim: boolean): Effect {
   let ghost: THREE.Group | null = null, mats: THREE.Material[] = [];
   const dir = new THREE.Vector3(), base = new THREE.Vector3(), tint = new THREE.Color(dim ? '#8798b4' : '#6c7a90');
@@ -148,7 +149,7 @@ function thePrice(canvas: HTMLElement | undefined): Effect {
 
 // The Plague Doctor, rank 8, Apollo: plague flies. A swarm of small dark specks lifts off the sand round him, streams across the arena at the target in a loose,
 // uneven cloud, and settles on him as the blow lands, then thins and drops away. Specks, not an object: no two fly the same line.
-const FLIES = 280;
+const FLIES = specialFxCoreNum('boss.flies');
 function plagueFlies(root: THREE.Group): Effect {
   const pos = new Float32Array(FLIES * 3).fill(-9), geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
@@ -205,7 +206,7 @@ function stainTexture(seed: number, rgb: readonly [number, number, number]) {
 
 // The Plague Doctor, rank 10, Resheph: the last breath. A dark wisp is drawn out of the target's mouth and streams across the arena into the beak, thick at the
 // target and thinning toward him; the target sags as it goes (the scene's dip on the landing), one strike, and the wisp ends in the beak.
-const WISP = 30;
+const WISP = specialFxCoreNum('boss.wisp');
 function lastBreath(root: THREE.Group, dim: boolean): Effect {
   const maps = [0, 1, 2].map((k) => softBlob(k * 19 + 9, dim ? [92, 90, 100] : [8, 7, 10]));
   const puffs = Array.from({ length: WISP }, (_, i) => sprite(maps[i % maps.length], root, 'wisp'));
@@ -230,7 +231,7 @@ function lastBreath(root: THREE.Group, dim: boolean): Effect {
 
 // The Knight, rank 8, Hector: the sling. He whirls the maul in one flat circle; the sand and dust of the floor draw into a spinning ring of torn ribbons round him,
 // and he steps out of it into the blow. The turn itself is the scene's (special-timing.ts slingAngle on his heading); this is the ring, which keeps pace with it.
-const RING = 18;
+const RING = specialFxCoreNum('boss.ring');
 function theSling(root: THREE.Group, dim: boolean): Effect {
   const maps = [0, 1, 2].map((k) => softBlob(k * 29 + 3, dim ? [40, 28, 18] : [34, 25, 17])), ring = new THREE.Group(); root.add(ring);
   const puffs = Array.from({ length: RING }, (_, i) => sprite(maps[i % 3], ring, 'ring'));
@@ -250,7 +251,7 @@ function theSling(root: THREE.Group, dim: boolean): Effect {
 
 // The Knight, rank 9, Achilles: wrath. The air round him wavers and shakes, tightening onto him like a held breath, then one blow. Grey-box: near-black warm-grey wavering veils (no
 // light) and the scene's tremor on his body; a true screen-space distortion would need a copy of the frame, which is the cost to decide on once Dom has seen this.
-const VEILS = 6;   // three wisps a side
+const VEILS = specialFxCoreNum('boss.veils');   // three wisps a side
 // One drifting wisp of haze: a sinuous, ragged streak. The upper part thins to nothing, the foot fades out long and soft (never cut), the whole width is feathered and bitten by noise at
 // two scales, and the centre line wanders, so no edge anywhere is straight.
 function wispMap(seed: number, rgb: readonly [number, number, number]) {
@@ -283,7 +284,7 @@ function wrathHaze(root: THREE.Group): Effect {
 
 // The Knight, rank 10, Thor: the storm follows him. Wind-driven slanted rain sweeps in from the side across both fighters (not a column on the head: that is the
 // Nightborn's cloud), streaks of every length, falling at an angle; it thins out through the recover. The crack's sound is Audio's cue.
-const DROPS = 260;
+const DROPS = specialFxCoreNum('boss.drops');
 function stormFollows(root: THREE.Group, dim: boolean): Effect {
   const pos = new Float32Array(DROPS * 6), geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));

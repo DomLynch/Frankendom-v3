@@ -7,11 +7,12 @@ import { catalogueRow } from './catalogue-rows.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { isTemplate } from './finisher-look.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 /** What the finisher needs of a creature's rig (the engine's Actor fits this structurally). */
 export type CutRig = { sever(bones?: readonly string[]): { group: THREE.Group; radius: number } | null; unsever(): void; boneWorld(name: string): THREE.Vector3 | null };
 
-const HEAD_LIFE = 12, SEVER_AT = 0.05;   // s a severed head lies; the fall progress at which the head leaves (the Pit's 9 % of its clip, a hair earlier on a 1.4 s fall)
+const { headLife: HEAD_LIFE, severAt: SEVER_AT } = FEEL_RULES.zoneFinisherRule[0]!;   // s a severed head lies; the fall progress at which the head leaves (the Pit's 9 % of its clip, a hair earlier on a 1.4 s fall)
 
 /** The bones a row says can be cut (head, neck), or null when its rig has no named bones to cut at. */
 export function cutOf(character: string, body: string): { head: readonly string[]; neck: readonly string[] } | null {
