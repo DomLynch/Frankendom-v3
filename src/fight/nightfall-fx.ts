@@ -3,6 +3,7 @@ import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { advanceCast, type Cast } from './special-timing.ts';
 import { nightfall } from './nightfall-timing.ts';
+import { bloodNum } from './blood-rows.ts';
 
 // Nyx's Nightfall, the in-game effect (World, 2026-09-30; Lead's brief, Dom GO). Presentation only, like special-fx.ts beside it: it reads the
 // sim's special events and the fighters' Head bones, never the sim, a rig or Math.random. The wow is the whole arena going dark, so the drain
@@ -12,8 +13,8 @@ import { nightfall } from './nightfall-timing.ts';
 // floor on the exposure. At release a veil of darkness (a ragged cloak curtain plus its shadow on the sand, both unlit and not tone-mapped so
 // they read against the returning light) sweeps from the caster through the target. The target's stagger is scene.ts's specialStruck.
 // Loaded lazily by the scene only on `?special=nyx`; no GLB, no shadow casting.
-export const FLOOR = 0.07;   // exposure at full drain: near-black, never black
-const RIM_NET = 0.65;   // the rim's visible strength at full drain, in the theme's own exposure units (its light is scaled up to beat the dimmed exposure)
+export const FLOOR = bloodNum('nightfall-fx.floor');   // exposure at full drain: near-black, never black
+const RIM_NET = bloodNum('nightfall-fx.rim-net');   // the rim's visible strength at full drain, in the theme's own exposure units (its light is scaled up to beat the dimmed exposure)
 const smooth = (k: number) => k * k * (3 - 2 * k);   // UNCLAMPED on purpose: not fx-math's smooth (that one clamps to 0..1); kept so this effect renders exactly as before
 
 // The cloak: near-black cloth, ragged along its lower edge, with a cold glint on the edges so it shows in the dark.
