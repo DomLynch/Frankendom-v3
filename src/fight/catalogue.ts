@@ -27,6 +27,7 @@ export type CatalogueRow = {
   rig: string;                                  // a catalogue-defs.ts rigs row (roster.ts RigId is derived from them)
   shape: Shape;
   engine: { asset: string; tris: number };      // the full-detail GLB the duel draws, path from the repo root, and its triangle count (a measured fact)
+  worldBody?: true;   // the open world draws this kind's generated world body (`world.asset`) instead of the roster/engine body: goblin, wolf, bear, boar. Absent = the engine body, as today (a kind whose world file exists but is not drawn yet)
   world: { asset: string; tris: number; generator: string | null; maxTris: number } | null;   // the generated LOD a zone draws (phone budget): tris is measured, maxTris the ceiling a row is refused above; the engine asset itself when it is already that light (generator null); null = none yet, so no zone may draw this row
   armour: readonly LootId[];                    // the level-1 armour the character wears and drops from (src/core/loot.ts ids, no weapon); [] = a creature with no armour pieces
   stats: { archetype: string; levels: readonly [number, number]; pools?: PoolValues };   // moves.ts ARCHETYPES key and the level band it is met at; numbers come from opponentAt
