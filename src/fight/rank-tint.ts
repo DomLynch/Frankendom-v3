@@ -6,7 +6,8 @@
 // and takes the grade's hue at a mean brightness moved toward the grade's, rgb = chroma(grade) · L · gain, gain = luma(grade) / luma(source),
 // clamped so no rung blows a piece to white or crushes it to black. One program for every rung (the grade rides uniforms).
 import { Color, MeshStandardMaterial, type Texture } from 'three';
-import { GRADES, classOf, gradeFor, levelOf, type Tier } from '../core/grades.ts';
+import { GRADES, classOf, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from '../core/grades.ts';
+import { finishRow } from '../core/finish-rows.ts';
 
 // How far toward the grade; the gain's bounds. Tuned on the Centurion's ten-rank sheet (375, local preview).
 // leatherAsTrim: GRADES' leather ladder is ten near-identical dark browns, so on the first sheet only the helmet carried the rung. Leather
@@ -39,12 +40,20 @@ function mapMean(map: Texture | null): number {
   means.set(map, mean); return mean;
 }
 
-const cache = new WeakMap<MeshStandardMaterial, Map<Tier, MeshStandardMaterial>>();
+const cache = new WeakMap<MeshStandardMaterial, Map<string, MeshStandardMaterial>>();
 // The material a piece wears at `tier`: the source itself when the grade leaves it alone, else one shared clone per (source, tier).
 export function tinted(source: MeshStandardMaterial, tier: Tier): MeshStandardMaterial {
   const kind = classOf(source.name), stone = kind === 'stone';
   const finish = stone || (TINT.leatherAsTrim && kind === 'leather') ? GRADES[tier].trim : gradeFor(tier, source.name);
-  if (!finish) return source;
+  return finish ? finishWith(source, finish, kind, tier) : source;
+}
+// A named finish row (finish-rows.json, e.g. `rust`) on a piece's metal and trim; leather, cloth, bone and stone keep their own look. Same tint as a rung.
+export function finishedAs(source: MeshStandardMaterial, id: string): MeshStandardMaterial {
+  const kind = classOf(source.name);
+  return kind === 'metal' || kind === 'trim' ? finishWith(source, finishRow(id), kind, id) : source;
+}
+function finishWith(source: MeshStandardMaterial, finish: Finish, kind: DrawClass | null | undefined, tier: string): MeshStandardMaterial {
+  const stone = kind === 'stone';
   let byTier = cache.get(source); if (!byTier) cache.set(source, (byTier = new Map()));
   const known = byTier.get(tier); if (known) return known;
   const material = source.clone(), grade = new Color(finish.color), gradeLuma = Math.max(luma(grade), 1e-4);
