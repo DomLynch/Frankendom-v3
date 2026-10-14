@@ -1,8 +1,9 @@
+import { sceneNum } from './scene-rows.ts';
 // Power words (Strategy brief #1507 item 3; Dom "especially loved" it): a short invented word the Witch and the Plague Doctor speak as their special winds up, an audio
 // telegraph. The words are original (no scripture, no real-language prayer): 2-3 syllables each, made from sounds, picked per cast. MUTED like the other voices (Dom
 // 2026-10-06: he will choose the voices by hand near beta): POWER_WORD_GAIN is 0, no voice file exists, and main.ts only announces the word on a `frankendom:powerword`
 // event (detail: { word, actor, tick, gain }), so a later voice pick is a one-file swap. Presentation only: never read by the sim, never recorded.
-export const POWER_WORD_GAIN = 0;
+export const POWER_WORD_GAIN = sceneNum('power-words.gain');
 export const POWER_WORDS = {
   witch: ['Ashvael', 'Ixoreth', 'Melusaar'],
   plaguedoctor: ['Vuskarn', 'Orzhul', 'Thaniveck'],
