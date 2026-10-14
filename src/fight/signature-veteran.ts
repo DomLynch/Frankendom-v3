@@ -3,12 +3,13 @@ import { defendedBy, isHeavy, OPPONENT_SIDE, registerSignature, type SignatureEf
 import { type WoundHit } from './gore.ts';
 import { weaponOf } from './moves.ts';
 import type { CombatEvent } from './duel.ts';
+import { sigNum } from './signature-rows.ts';
 
 // The Veteran's signature (brief row 1, variant A): Battle Scars. A heavy (or any cut past the light cut's 14) landed ON him scores a fresh
 // gouge across his armour at the site the sim named: bright metal through the bronze patina, laid along the line the blade travelled
 // (an overhead runs down across him on the diagonal, a cut from either side flatter). It stays for the fight in the body pool (6, oldest reused,
 // cleared with the wounds). Cosmetic: no stat, no sim. Sized to read at 375x812 from the default camera.
-const SUBSTANTIAL = 16;
+const SUBSTANTIAL = sigNum('veteran.substantial');
 
 let gougeTexture: THREE.CanvasTexture | null = null;
 // A gouge, drawn once along the texture's long axis: a dark torn edge each side, a bright scored core, burr flecks, tapering at both ends.
@@ -61,7 +62,7 @@ export const battleScars: SignatureEffect = {
 // Variant B, the one registered: Blade Bite. When he PARRIES, metal curls tear from the point where the blades met on his trident and fly
 // off with a bright scrape along his shaft. The contact point is measured, not assumed: the closest points between the two weapons' striking
 // segments this frame. Transient only (curls settle and go within 1.4 s): it leaves no mark. The scrape's sound is the audio lane's.
-const SCRAPE_LIFE = 0.3, GRAVITY = 9.8;
+const SCRAPE_LIFE = sigNum('veteran.scrape-life'), GRAVITY = sigNum('veteran.gravity');
 type Curl = { mesh: THREE.Object3D; velocity: THREE.Vector3; spin: THREE.Vector3; age: number; stuck: boolean };
 const a0 = new THREE.Vector3(), a1 = new THREE.Vector3(), b0 = new THREE.Vector3(), b1 = new THREE.Vector3(), onA = new THREE.Vector3(), onB = new THREE.Vector3();
 const shaftDir = new THREE.Vector3(), across = new THREE.Vector3(), yAxis = new THREE.Vector3(0, 1, 0);
