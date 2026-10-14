@@ -1,0 +1,21 @@
+{
+  "dials": [
+    {"id":"DUST","value":12},
+    {"id":"MOTE_MAX","value":0.4},
+    {"id":"CHARGE","value":8},
+    {"id":"BURST","value":36},
+    {"id":"BURST_LIFE","value":0.5},
+    {"id":"BURST_ALPHA","value":0.3},
+    {"id":"BURST_SPREAD","value":0.1},
+    {"id":"CONE","value":0.4},
+    {"id":"SETTLE_FADE","value":24},
+    {"id":"LIGHT_PEAK","value":0.38},
+    {"id":"LIGHT_FADE","value":24},
+    {"id":"RADIUS","value":1.5},
+    {"id":"RISE","value":0.8},
+    {"id":"KEEP_OFF","value":0.6},
+    {"id":"ARM_OUT","value":0.5},
+    {"id":"ARM_EASE","value":16},
+    {"id":"AIM_HOLD","value":14}
+  ]
+}
