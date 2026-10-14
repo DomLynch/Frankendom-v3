@@ -6,6 +6,7 @@ import { loadWeaponDefs, type WeaponLook } from './weapons.ts';
 import { DAMAGE_KIND_IDS } from './damage-kinds.ts';
 import { RULES } from './rules.ts';
 import { SPECIAL_SETS, SPECIAL_RANK_LEVELS } from './special-set-rows.ts';
+import { LEVEL_ANCHORS } from './level-anchor-rows.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 export type { OpponentId, RigId } from '../roster.ts';
@@ -315,7 +316,7 @@ export const specialOf = (opponent: OpponentId, level: number): SpecialName | nu
   const set = Object.hasOwn(SPECIAL_SETS, opponent) ? SPECIAL_SETS[opponent] : undefined;
   return set && level >= SPECIAL_RANK_LEVELS[0]! ? set[SPECIAL_RANK_LEVELS.filter((from) => level >= from).length - 1]! : null;
 };
-export const LEVEL_ANCHORS = { novice: 1, easy: 6, normal: 18, hard: 46 } as const;
+export { LEVEL_ANCHORS };   // the profile tiers' anchor levels are rows (level-anchor-defs.json, built by level-anchor-rows.ts)
 // The novice (Combat's L1 screen, 2026-09-27: tap-attack wins /48 at 48 seeds): slow to notice, rarely answers, swings a quarter as often.
 const novice = (easy: AiProfile): AiProfile => ({ ...easy, reaction: easy.reaction + 30, ...(easy.tellReaction === undefined ? {} : { tellReaction: easy.tellReaction + 30 }), accuracy: .1, parry: 0, dodge: 0, aggression: easy.aggression * .25, lapse: .95, read: .1 });
 // The novice BODY (option C, Strategy yes 2026-09-27 09:5x): no skill rule alone clears the level-1 gate, because a player's light never
