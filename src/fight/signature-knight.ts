@@ -3,11 +3,12 @@ import { isHeavy, OPPONENT_SIDE, registerSignature, type SignatureEffect, type S
 import { surfaceHit, woundSite, type WoundHit } from './gore.ts';
 import { weaponOf } from './moves.ts';
 import type { CombatEvent } from './duel.ts';
+import { sigNum } from './signature-rows.ts';
 
 // The Knight's signature (brief row 7, variant A): the Rivet Burst. A substantial blow landed ON him (a heavy, or any cut past the light
 // cut's 14) pops one or two rivets off the plate where the sim says it struck; the plate shudders, the rivets drop and rattle on the sand,
 // and a dent stays there for the fight (the body pool's 6, oldest reused, cleared with the wounds). Cosmetic: no stat, no sim.
-const SUBSTANTIAL = 16, RIVETS = 4, GRAVITY = 9.8, SETTLE = 2.2, SHUDDER = 0.28;
+const SUBSTANTIAL = sigNum('knight.substantial'), RIVETS = sigNum('knight.rivets'), GRAVITY = sigNum('knight.gravity'), SETTLE = sigNum('knight.settle'), SHUDDER = sigNum('knight.shudder');
 
 let dentTexture: THREE.CanvasTexture | null = null;
 // A dent in dark iron, drawn once: a shadowed hollow, a bright crescent where the rim catches the light, a few scored lines from the blow.

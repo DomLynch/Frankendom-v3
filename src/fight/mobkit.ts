@@ -5,6 +5,8 @@
 import { legal, movesOf, type Action, type Duel, type Intent, type Side } from './duel.ts';
 import type { MoveId, WeaponId } from './moves.ts';
 import { rollUnit } from './roll.ts';
+import { CHAIN_CAP, AFTER_HIT_TICKS, EXHAUSTED_BELOW } from './mobkit-rows.ts';   // the dials are rows (mobkit-defs.json)
+export { CHAIN_CAP, AFTER_HIT_TICKS, EXHAUSTED_BELOW };
 
 export type KitTrigger = 'opener' | 'afterHit' | 'heroGuarding' | 'heroExhausted' | 'selfBelow';
 export type KitMove = 'light' | 'heavy' | 'thrust' | 'skill';
@@ -14,7 +16,7 @@ export type KitRow = { move: KitMove; trigger: KitTrigger; cooldown: number; bel
 // `chance`. The window is the ENGINE's (MoveDef.chain.window, 18 on the cuts): a validator refuses a row that reaches past it, so a chain never fights the engine; stepDuel still decides the chained timing and legality. A hit taken puts the
 // fighter in `hurt`, so the plan is wiped by construction (a link needs `ready`). The "chance" is a pure function of the window's opening tick (rollUnit), never a dice call, so a replay of the same duel chains the same way.
 export type ChainRow = { from: MoveId; to: KitMove; chance: number; startsAfter: number; endsBefore: number };
-export const CHAIN_CAP = 3;   // swings in one chain, the first included (v1). The engine opens a chain window after a plain swing only, so today a chain reaches 2 swings; the cap is the validator's promise, not a second rule
+// swings in one chain, the first included (v1). The engine opens a chain window after a plain swing only, so today a chain reaches 2 swings; the cap is the validator's promise, not a second rule
 export type KitState = { fired: number[]; attacks: number; lastHit: number; run: number; tried: number };
 export const initialKit = (rows: readonly KitRow[]): KitState => ({ fired: rows.map(() => -1e9), attacks: 0, lastHit: -1e9, run: 0, tried: -1 });
 // Every row's window must sit inside the engine's chain window for its `from` move on this weapon, and its chance must be a share.
@@ -26,8 +28,8 @@ export function validateChains(rows: readonly ChainRow[], weapon: WeaponId): voi
     if (!(r.chance >= 0 && r.chance <= 1)) throw new Error(`chain row ${r.from} -> ${r.to}: chance must be 0..1`);
   }
 }
-export const AFTER_HIT_TICKS = 90;   // 'afterHit' holds for a second and a half after the mob's own blow lands
-export const EXHAUSTED_BELOW = 25;   // 'heroExhausted': the hero's stamina at or under this (or the exhausted flag)
+// 'afterHit' holds for a second and a half after the mob's own blow lands
+// 'heroExhausted': the hero's stamina at or under this (or the exhausted flag)
 const isAttack = (a: Action | null): a is Action => a === 'light' || a === 'light_left' || a === 'light_right' || a === 'heavy' || a === 'thrust';
 
 const holds = (row: KitRow, duel: Duel, me: Side, state: KitState, index: number): boolean => {

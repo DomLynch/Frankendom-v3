@@ -11,9 +11,9 @@ import { M } from './detmath.ts';
 import type { Opponent } from './moves.ts';
 import type { RecordGroup } from './record.ts';
 import { RADIUS, type State } from './sim.ts';
+import { THREAT_MAX, SWITCH_MELEE, SWITCH_CASTER } from './pack-rows.ts';   // the dials are rows (pack-defs.json)
+export { THREAT_MAX, SWITCH_MELEE, SWITCH_CASTER };
 
-export const THREAT_MAX = 7;
-export const SWITCH_MELEE = 1.1, SWITCH_CASTER = 1.3;
 
 export type ThreatState = 'online' | 'suppressed' | 'offline';
 export type ThreatRef = { id: string; join: number; threat: number; state: ThreatState };
