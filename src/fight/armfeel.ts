@@ -6,7 +6,8 @@
 // burst pool and the layered sounds on top of this branch.
 import type { CombatEvent } from './duel.ts';
 import { ARMFEEL, GRAVITY } from './armfeel-rows.ts';
-import { CONTACTS, holdMs } from './hit-stop-rows.ts';
+import { CONTACTS } from './hit-stop-rows.ts';
+import { HEAVY_HIT } from '../hit-stop-rules.ts';   // the heavy-hit stop ms: one row, Web's hit-stop-rules.json
 
 export type Feel = 'high' | 'low' | 'off';
 export const FEELS: readonly Feel[] = ['high', 'low', 'off'];
@@ -22,7 +23,7 @@ export { ARMFEEL, GRAVITY };
 export const energyOf = (feel: Feel): number => (feel === 'high' ? 1 : feel === 'low' ? ARMFEEL.lowEnergy : 0);
 
 // The heaviest stop a hit gets today (main.ts HEAVY_HIT 90 ms + hit-impact.ts full tier 5 frames): no armfeel hold may take a frame past it.
-export const FULL_TIER_STOP_MS = holdMs(CONTACTS.hitHeavy);   // the hitHeavy row's ms + its impact frames, the same expression it was written as
+export const FULL_TIER_STOP_MS = HEAVY_HIT + (CONTACTS.hitHeavy.frames * 1000) / 60;   // the heavy hit's stop (hit-stop-rules.json) plus its impact frames, the same expression it was written as
 // The blade's hit hold (40–80 ms) is a FLOOR on the freeze a contact has, not an addition to it: every contact in this game already stops the picture
 // at least 100 ms (main.ts HIT_STOP 50 ms + the half tier's 3 frames), so the extra milliseconds this returns are 0 on every real hit, and a light hit
 // is not made to stutter by a second freeze stacked on the first (Dom 2026-10-06: "a bit more nauseous"; measured, the old top-up made a light hit
