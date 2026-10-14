@@ -111,7 +111,6 @@ export function gaitWeights(speed: number): number[] {
 
 // Every Deflected clip opens on the attack's contact pose — identical to a blocked blow — and is thrown widest by its .35 key (build-warrior.mjs,
 // build-weapon.mjs). Starting there puts the lost line on the impact frame; the clip's tail still recovers to the rest grip.
-const DEFLECT_FROM = .35;
 // Presentation follows confirmed contact; a new action or defeat immediately takes precedence.
 export function defenceReaction(s: Practice, opponent=false): {pose:'block'|'parry'|'deflected';progress:number} | undefined {
   if (!s.health || !s.playerHealth) return;
@@ -126,6 +125,7 @@ export function defenceReaction(s: Practice, opponent=false): {pose:'block'|'par
 type FighterAsset = { scene: Group; animations: AnimationClip[] };
 // One fighter GLB: the same rig, clip names and sword attachments as every other (blade paths are baked once).
 import { MissingTextures, retryTransient } from '../retry.ts';
+import { DEFLECT_FROM } from './characters-dials-rows.ts';   // the dials are rows (characters-dials-defs.json)
 export { MissingTextures, retryTransient, transientLoadError } from '../retry.ts';
 // The skin map a parsed fighter lacks ('' when it has them all): a creature's body needs map + roughnessMap, a warrior's Steel map + normalMap.
 function missingMap(scene: Group): string {
