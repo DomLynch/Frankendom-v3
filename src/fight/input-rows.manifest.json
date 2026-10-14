@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "inputRow",
+      "file": "input-rows.json",
+      "at": "inputRows",
+      "key": "id",
+      "required": { "fields": "object" }
+    }
+  ]
+}

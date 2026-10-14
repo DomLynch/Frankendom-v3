@@ -6,8 +6,9 @@ import { createBurstPool } from './armfeel-fx.ts';
 import type { Feel } from './armfeel.ts';
 import { BLOOD, bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBleeders, pickPart, sprayOf, unit, type WoundSpec } from './wounds.ts';
+import { bloodNum } from './blood-rows.ts';
 
-const SPOTS = 40, SPOT_LIFE = 25, DRIP_SIZE = 0.12, MARK_SPREAD = 0.45;   // marks in the ring; seconds a mark stays; m across a drip; m a body mark lands from the creature
+const SPOTS = bloodNum('wounds-fx.spots'), SPOT_LIFE = bloodNum('wounds-fx.spot-life'), DRIP_SIZE = bloodNum('wounds-fx.drip-size'), MARK_SPREAD = bloodNum('wounds-fx.mark-spread');   // marks in the ring; seconds a mark stays; m across a drip; m a body mark lands from the creature
 type Spot = { mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>; age: number; live: boolean };
 
 export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THREE.Object3D | null, opts: { feel?: Feel; groundAt?: (x: number, z: number) => number; camera?: () => THREE.Camera | null; hero?: () => { x: number; z: number } } = {}) {
