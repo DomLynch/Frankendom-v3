@@ -3,6 +3,7 @@ import { RULES, SKILL_ROWS, type AiProfile, type Direction, type MoveId, weaponO
 import { LATE_NOTICE } from './play-radius.ts';
 import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
+import { READ_ROWS } from './ai-read-rows.ts';   // rows: ai-read-defs.json
 
 // Local opponent controller. It reads only committed duel state (never the other side's pending intent), notices a fresh
 // action `reaction` ticks late, and emits an ordinary Intent that stepDuel judges by the same rules as the player's.
@@ -19,10 +20,7 @@ export type Habits = {
   run?: number;   // consecutive lights: reset by any other blow that starts and by a defence that meets a blow (RV31, profile.spamRun's early gate)
 };
 export type Reads = { parryHappy: boolean; turtle: boolean; roller: boolean; stepper: boolean; spammer: boolean; parker: boolean; poker: boolean; kicker: boolean };
-export const READ = {
-  feint: 1 / 6, after: 2, parry: .5, guardTicks: 180, guardShare: .45, roll: .4, swings: 11, lightShare: .7, baitHold: 12,
-  parryBoost: 2, parryCap: .85, chargeBoost: .4, kickBoost: .3, anticipate: 8, baitShare: .7, parkShare: .5, lateNotice: 6, holdTicks: 6, latch: 600, plus: 2, decay: 0,
-} as const;   // swings 11 / anticipate 8 (re-swept after the slice-P stamina economy): a cut-only player at normal still wins about a quarter of duels (owner: 5–8 of 24)
+export const READ = READ_ROWS;   // swings 11 / anticipate 8 (re-swept after the slice-P stamina economy): a cut-only player at normal still wins about a quarter of duels (owner: 5–8 of 24)
 // The tells a profile's tellReaction answers (RV19): the thrust and the pommel strike, the two blows a short weapon must meet early.
 const TELLS = new Set<string>(['thrust', ...Object.values(SKILL_ROWS).filter((r) => r.tell).map((r) => r.move)]);   // the skill rows flagged `tell` (the pommel strike)
 export const readOpponent = (h: Habits, profile?: AiProfile): Reads => {

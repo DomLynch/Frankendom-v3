@@ -1,6 +1,7 @@
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 // 1C standoff (Lead 2026-10-07, Dom GO; Dom picked KEEP 2026-10-07: on by default, ?standoff=0 turns it off; ships after RV29): after the versus card lifts both fighters draw in sync for
 // STANDOFF_MS, no input needed. Presentation only: the sim's phases (the player is still 'sheathed' until his first press) are never written, so recordings and RV are untouched.
-export const STANDOFF_MS = 800;   // about RULES.draw (42 ticks, 0.7 s) plus a breath
+export const STANDOFF_MS = FEEL_RULES.standoffRule[0]!.standoffMs;   // about RULES.draw (42 ticks, 0.7 s) plus a breath
 // The window's clock: -1 before the first start, then ms since it. start() is idempotent (the versus card's 'ready' can re-fire mid-fight after an art retry and must not
 // replay the draw); restart() is the rematch's: it resets to 0, so every fight plays the draw-in.
 export const standoffClock = () => {

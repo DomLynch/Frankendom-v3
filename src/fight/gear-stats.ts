@@ -20,6 +20,12 @@ import { ARMOUR_SLOTS, WEAPON_SLOTS, isWeaponSlot, slotOf, type Loot, type LootI
 import type { OpponentId } from '../roster.ts';
 import { GEAR, gearDeltas } from './gear-rows.ts';
 import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
+import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import RULES_RAW from './gear-stats-rules.json' with { type: 'json' };
+import RULES_MANIFEST from './gear-stats-rules.manifest.json' with { type: 'json' };
+
+loadRegistry(RULES_MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, RULES_RAW, 'gear-stats-rules.json')));
+const RULES = RULES_RAW;
 
 export { CAPS, NAKED, type Loadout };   // defined in gear-caps.ts (inside the sim boundary); re-exported so every existing import keeps working
 
@@ -44,16 +50,10 @@ export { CAPS, NAKED, type Loadout };   // defined in gear-caps.ts (inside the s
 // held — with "no flat incoming reduction", and his earlier "−20 % incoming" withdrawn because one shield at Recruit would equal the
 // whole Origin armour cap and stack to 36 %. A RES weight here would BE that withdrawn reduction, reinstated in a table. The shield
 // already pays out, in `stepDuel`'s guard, and paying it twice is the double-count the addendum exists to stop.
-export const SLOT_WEIGHT: Record<LootSlot, number> = {
-  Helmet: 20, Crest: 0, Body: 30, Arms: 12, Gloves: 8, Greaves: 18, Boots: 12, Shield: 0,
-  // A weapon carries the whole Attack pool by itself, at its own tier — there is one main hand, so a weapon's weight is not shared
-  // with anything and every weapon weighs the same. Which weapon you hold is `moves.ts`'s business (reach, speed, the fairness table);
-  // this number is only how much its TIER is worth.
-  Trident: 100, Cleaver: 100, Knife: 100, Estoc: 100, Gladius: 100, Scythe: 100, Warhammer: 100, Maul: 100, Longsword: 100,
-};
+export const SLOT_WEIGHT: Record<LootSlot, number> = Object.fromEntries(RULES.slotWeight.map((r) => [r.id, r.weight])) as Record<LootSlot, number>;   // the slotWeight rows (gear-stats-rules.json)
 // The full armour pool and the full weapon pool, in the points `SLOT_WEIGHT × (levelOf - 1)` yields. Both are 900 (100 weight × the 9
 // rungs above Recruit), which is what makes a full Origin set land exactly on a cap rather than near it.
-export const FULL_POINTS = 900;
+export const FULL_POINTS = RULES.gearPool[0]!.fullPoints;   // the gearPool row (gear-stats-rules.json): 900
 
 // What one piece is worth. Pure arithmetic on two integers, so the same on any platform — no transcendentals, nothing the arm64/x64
 // digest drift (docs/state/lead.md) can reach.
@@ -139,7 +139,7 @@ export const wholePoints = (l: Loadout): { atk: number; res: number } => ({
 // dropped from (gear-defs.json `owners` rows; an opponent no row names gives none) and counts for its slot weight (100 across the six wearing slots). ONE set is worn: the set with the most
 // worn weight wins (ties go to the lower id) and the rest are ignored. Coverage = its worn slot weight over 100 (scales the shape); quality = each piece's weight times the rung it was won at
 // (Recruit 0 up to Origin 1, a piece with no rung counts for coverage but adds no quality) over 100. No piece with a rung of a set, no deltas.
-export function wornGear(equipped: Loot['equipped'], tierOf: TierOf): Readonly<Record<string, number>> {
+export function wornGear(equipped: Loot['equipped'], tierOf: TierOf, version?: number): Readonly<Record<string, number>> {
   const weight: Record<string, number> = {}, quality: Record<string, number> = {};
   for (const id of Object.values(equipped) as LootId[]) {
     const tier = tierOf(id), set = GEAR.owners[opponentOf(id)];
@@ -148,5 +148,5 @@ export function wornGear(equipped: Loot['equipped'], tierOf: TierOf): Readonly<R
     weight[set] = (weight[set] ?? 0) + w; quality[set] = (quality[set] ?? 0) + w * ((levelOf(tier) - 1) / 9);
   }
   const best = Object.entries(weight).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
-  return best && best[1] > 0 ? gearDeltas(best[0], best[1] / 100, quality[best[0]]! / 100) : {};
+  return best && best[1] > 0 ? gearDeltas(best[0], best[1] / 100, quality[best[0]]! / 100, version) : {};
 }

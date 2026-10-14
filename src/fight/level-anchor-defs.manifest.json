@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "levelAnchor", "file": "level-anchor-defs.json", "at": "anchors", "key": "id",
+      "required": { "level": "integer" } }
+  ]
+}
