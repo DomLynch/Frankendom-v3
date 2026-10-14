@@ -1,0 +1,78 @@
+{
+  "slotWeight": [
+    {
+      "id": "Helmet",
+      "weight": 20
+    },
+    {
+      "id": "Crest",
+      "weight": 0
+    },
+    {
+      "id": "Body",
+      "weight": 30
+    },
+    {
+      "id": "Arms",
+      "weight": 12
+    },
+    {
+      "id": "Gloves",
+      "weight": 8
+    },
+    {
+      "id": "Greaves",
+      "weight": 18
+    },
+    {
+      "id": "Boots",
+      "weight": 12
+    },
+    {
+      "id": "Shield",
+      "weight": 0
+    },
+    {
+      "id": "Trident",
+      "weight": 100
+    },
+    {
+      "id": "Cleaver",
+      "weight": 100
+    },
+    {
+      "id": "Knife",
+      "weight": 100
+    },
+    {
+      "id": "Estoc",
+      "weight": 100
+    },
+    {
+      "id": "Gladius",
+      "weight": 100
+    },
+    {
+      "id": "Scythe",
+      "weight": 100
+    },
+    {
+      "id": "Warhammer",
+      "weight": 100
+    },
+    {
+      "id": "Maul",
+      "weight": 100
+    },
+    {
+      "id": "Longsword",
+      "weight": 100
+    }
+  ],
+  "gearPool": [
+    {
+      "id": "gear",
+      "fullPoints": 900
+    }
+  ]
+}
