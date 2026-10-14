@@ -11,8 +11,8 @@ import { clamp01, hash } from './fx-math.ts';
 // The arena light turns red (the scene's own lights, fog and sky, slow at first, fast over the last 0.6 s) and red dust lifts from the sand all over the arena and
 // pours into the caster's blade, arriving on the landing tick; one strike, a dark burst off the blade, and the dust that was left settles back while the light
 // returns. Dark blood-red, painted and irregular (churned puff sprites of different tints, sizes and turns): no glow, no fire, no hard shapes.
-const DUST = 12, MOTE_MAX = 0.4, CHARGE = 8, BURST = 36, BURST_LIFE = 0.5, BURST_ALPHA = 0.3, BURST_SPREAD = 0.1, CONE = 0.4, SETTLE_FADE = 24, LIGHT_PEAK = 0.38, LIGHT_FADE = 24, RADIUS = 1.5, RISE = 0.8, KEEP_OFF = 0.6;   // v2: fewer, bigger, softer clumps; a bigger, longer burst
-export const ARM_OUT = 0.5, ARM_EASE = 16, AIM_HOLD = 14;   // v2.2: the sword arm is swung ~29° out to the caster's right through the gather (the blade reads as a line pointing at the foe), straight again over the last ARM_EASE ticks so the thrust goes at him
+import { DUST, MOTE_MAX, CHARGE, BURST, BURST_LIFE, BURST_ALPHA, BURST_SPREAD, CONE, SETTLE_FADE, LIGHT_PEAK, LIGHT_FADE, RADIUS, RISE, KEEP_OFF, ARM_OUT, ARM_EASE, AIM_HOLD } from './tithe-rows.ts';   // the dials are rows (tithe-defs.json): v2: fewer, bigger, softer clumps; a bigger, longer burst | v2.2: the sword arm is swung ~29° out to the caster's right through the gather (the blade reads as a line pointing at the foe), straight again over the last ARM_EASE ticks so the thrust goes at him
+export { ARM_OUT, ARM_EASE, AIM_HOLD };
 const DUST_FROM = LAND_AT - 36;   // the visible build is the last 0.6 s: dust starts to lift here and has to be in the blade on the landing tick
 export const TINTS = ['#5a1410', '#6e1c16', '#7a2018', '#481010'] as const;
 const UP = new THREE.Vector3(0, 1, 0), qa = new THREE.Quaternion(), qb = new THREE.Quaternion();
