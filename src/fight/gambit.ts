@@ -3,9 +3,11 @@
 // (Dom-approved 2026-10-07); the mean equals a heavy, and the self-stagger's punish cost makes it slightly worse (condition C1). src/fight/duel.ts applies it and origins/luck/luck.ts shows the same numbers
 // on the HUD, both importing THESE, so they cannot drift. A sim file: no Math.random, no clock, no transcendental.
 import { rollUnit } from './roll.ts';
+import { GAMBIT_KILL_FLOOR } from './gambit-rows.ts';   // the dials are rows (gambit-defs.json)
+export { GAMBIT_KILL_FLOOR };
 export type GambitOdds = { chance: number; multiplier: number };
 export const GAMBIT_ODDS: GambitOdds = Object.freeze({ chance: 1 / 2, multiplier: 2 });
-export const GAMBIT_KILL_FLOOR = 0.4;   // C1: a landed Gambit never kills from above 40% of max health
+// C1: a landed Gambit never kills from above 40% of max health
 // C1: the mean landed damage must not beat the plain heavy (the self-stagger's punish cost then makes it slightly worse, as ruled).
 export const gambitMean = (heavy: number, odds: GambitOdds = GAMBIT_ODDS): number => heavy * odds.chance * odds.multiplier;
 export type GambitResult = { landed: boolean; damage: number };   // not landed = the thrower staggers (the duel's state), no damage

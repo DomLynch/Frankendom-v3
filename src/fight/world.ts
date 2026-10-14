@@ -3,14 +3,17 @@
 // run through the Pit's own src/fight/duel.ts / ai.ts / sim.ts (no copies; the duel carries its own wall, Duel.radius, out of reach here) by the adapter open-fight.ts; this file owns only what the Pit has no word for: who is in whose fight (aggro, the nearest foe, the hold-off ring
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
-import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type SkillId, type SpecialName } from './moves.ts';
-import { CAPS, NAKED, type Loadout } from './gear-caps.ts';
+import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type Direction, type SkillId, type SpecialName, type WeaponId } from './moves.ts';
+import { worldRule } from './world-rules.ts';
+import { POOLS } from './pools.ts';
+import type { Sheet } from './sheet-rows.ts';
+import { CAPS } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
-import { GIVE_UP_UNSEEN_S, SPEEDS, chaseSpeed, leashOf } from './speeds.ts';
+import { SPEEDS, chaseSpeed, giveUpOf, leashOf } from './speeds.ts';
 import { AGGRO_M, SIGHT_M, threatOf } from './threat.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
-import { IDLE_INPUT, openBout, stepBout, type Bout } from './open-fight.ts';
+import { IDLE_INPUT, heroSheeted, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
 import { guardOfLevel, type CcGuard, type CcLadder } from './cc-ladder.ts';
@@ -19,21 +22,21 @@ import type { CombatEvent, Duel } from './duel.ts';
 
 const TICK = 1 / 60;
 const secs = (ticks: number): number => ticks * TICK;
-export const STAMINA_MAX = 100;                       // duel.ts createFighter: the bar every fighter starts with
-export const PLAYER_RADIUS = 0.425;                    // half the sim's 0.85 m fighter spacing (sim.ts)
+export const STAMINA_MAX: number = POOLS.find((d) => d.id === 'stamina')!.default;                       // the bar every fighter starts with: pool-defs.json's stamina default, the one createFighter reads (duel.ts)
+export const PLAYER_RADIUS = worldRule('playerRadius');                    // half the sim's 0.85 m fighter spacing (sim.ts)
 export { AGGRO_M, SIGHT_M };   // (src/fight/threat-defs.json awareness rows)
 // AGGRO_M: a creature that is hunting a player notices him inside this ring (World's mob layer decides who is in the world at all)
 // SIGHT_M: a hunting creature keeps the player in sight inside this ring (hysteresis over AGGRO_M); past it the unseen clock runs
-export const ENGAGE_M = 4, ENGAGE_OUT_M = 6;           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
+export const ENGAGE_M = worldRule('engage'), ENGAGE_OUT_M = worldRule('engageOut');           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
 export { MAX_ATTACKERS };   // creatures on one player at once (Dom: three on one): the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring
-export const HOLD_M = ENGAGE_M * 0.95;                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
+export const HOLD_M = ENGAGE_M * worldRule('holdFactor');                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
 /** Creature levels (Dom: copy the Pit): a creature of level L has the Pit's own level body (moves.ts `opponentAt`: health and poise by level) and, in a fight, the Pit's level brain (`profileAt`). No Zone 1 scaling of our own. */
 export const MAX_LEVEL = LEVELS;
 export const levelHealth = (kind: string, level: number): number => opponentAt(OPPONENT(kind)!, level).health;
 /** PvP (Dom via Strategy): no toggle. The SERVER sets `Fighter.pvp` each step to "attackable here, now" (wild zone = true, safe-town volume = false); the rules below decide between two such players.
  *  Under PROTECT_LEVEL a player is shielded until his own first attack; nobody may fight a player more than MAX_LEVEL_GAP levels away. A player's blows always land on creatures, whatever the flags. */
-export const PROTECT_LEVEL = 3, MAX_LEVEL_GAP = 10;
-export const AGGRO_WINDOW_S = 60;                       // a player who hit you in the last minute is not "first" when you hit back
+export const PROTECT_LEVEL = worldRule('protectLevel'), MAX_LEVEL_GAP = worldRule('maxLevelGap');
+export const AGGRO_WINDOW_S = worldRule('aggroWindow');                       // a player who hit you in the last minute is not "first" when you hit back
 
 export type Phase = 'ready' | 'guard' | 'roll' | 'windup' | 'active' | 'recover' | 'stagger' | 'dead';
 export type Threat = { threat: number; damage: number; out: number };   // damage the player dealt it; seconds he has been out of its sight (EQEmu oor_count, in seconds)
@@ -48,18 +51,20 @@ export type Fighter = {
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight
   returning: boolean;                                   // creature only: it gave up and is walking home (it heals to full on arrival, no event)
-  attack: number; res: number;                          // damage multipliers (src/fight/gear-stats.ts Loadout): `attack` scales what it deals, `res` what it takes, chip included
   special: SpecialName | null; specialIn: number;       // the named special this fighter can cast (moves.ts specialOf), seconds until it is ready; with one, the SKILL button is the special (the Pit has one button)
   skill: SkillId | null;                                // the equipped skill (moves.ts SkillId, the Pit's `equippedSkill(profile.loot)`; null = none): the SKILL button fires its move when no special is set (duel.ts `Fighter.skill`)
   stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
+  weapon?: WeaponId;                                    // the hero's drawn weapon (absent = the Pit's DEFAULT_WEAPON): open-fight.ts builds his Pit fighter with it, as initialDuel does; a creature's is its row's
+  sheet?: Sheet;                                        // the hero's sheet (Wave A1, sheet-rows.ts): the Pit's own withSheet runs on his Pit fighter, so the dials (health, attack, armour, poise, recovery ...) mean here what they mean in the Pit; absent = no sheet, today's hero
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
   cc?: CcLadder;   // the crowd-control ladder (cc-ladder.ts): ONE per fighter, carried through every bout he is in, so three creatures on one hero step the same stun / knockdown ladder
   ccGuard?: CcGuard;   // a creature's immuneTier / resist rows from its catalogue row (cc-ladder.ts); absent = none
+  seed?: number;                                        // creature only: this bout's damage-roll seed (bout-seed.ts hash32(engage token, join step)); absent = no roll, today's fight byte for byte (open-fight.ts openBout -> duel.ts withRoll)
   threat?: Record<string, Threat>;                      // creature only: its threat list (EQEmu hate list shape): who has hurt it. Threat picks the player it fights, damage is the credit (loot to the most). Dropped when he is dead, gone or out of sight for the give-up time; cleared on heal-home
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
 };
 export type World = { time: number; fighters: Fighter[]; aggro: Record<string, Record<string, number>>; streams: Record<string, Bout> };   // streams: slot-0 player id -> his fight (a Pit duel); aggro[attacker][victim] = when the attacker last struck that player
-export type Input = { x: number; z: number; special?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; guard?: boolean; roll?: { x: number; z: number } | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
+export type Input = { x: number; z: number; special?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; guard?: boolean; roll?: { x: number; z: number } | null; guardDirection?: Direction | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
 /** The Pit's own CombatEvent behind a Zone 1 event (location, direction, material, weapon, counter, rear, charged ...): gore, wounds, finishers, hit-impact and the clip driver read the Pit's event, not our summary of it. */
 export type Event = EventBody & { pit?: CombatEvent };
 type EventBody =
@@ -80,10 +85,19 @@ const OPPONENT = (kind: string) => (OPPONENTS as Record<string, (typeof OPPONENT
 
 function fighter(id: string, side: Fighter['side'], kind: string, x: number, z: number, facing: number, radius: number, health: number, poise: number): Fighter {
   return { id, side, kind, x, z, facing, radius, health, maxHealth: health, stamina: STAMINA_MAX, maxStamina: STAMINA_MAX, poise, phase: 'ready', t: 0, posture: 0, exhausted: false,
-    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, attack: 1, res: 1, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
+    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
 }
-/** The player, with his gear's Loadout (NAKED = the identity: no gear changes nothing). */
-export const player = (id: string, x: number, z: number, facing = 0, gear: Loadout = NAKED, level = 1, skill: SkillId | null = null): Fighter => ({ ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), attack: gear.attack, res: gear.res, level, shielded: level < PROTECT_LEVEL, skill });
+/** The player: the Pit's own hero (createFighter + withSheet), his bar and poise from that builder; no gear multiplier lives in the world (the sheet carries Attack and armour). */
+export const player = (id: string, x: number, z: number, facing = 0, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet }): Fighter => {
+  const base: Fighter = { ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), level, shielded: level < PROTECT_LEVEL, skill };
+  if (build?.weapon !== undefined) base.weapon = build.weapon;
+  if (build?.sheet !== undefined) base.sheet = build.sheet;
+  const sized = heroSheeted(base);   // the Pit's builder sizes the bar and the poise (no sheet = createFighter's own hero)
+  base.maxHealth = sized.maxHealth; base.health = sized.maxHealth; base.poise = sized.poise;
+  return base;
+};
+/** How many creatures of this kind may be on one player at once: the catalogue row's `atOnce` field, never above MAX_ATTACKERS (the one attacker cap, attackers.ts); absent = the cap. A lower row value holds the rest at the ring (Lead, 2026-10-13: the goblin camps, until Combat's retune). */
+const atOnce = (c: Fighter): number => (fieldOf(c.kind, 'atOnce') as number | undefined) ?? MAX_ATTACKERS;
 /** A creature of `kind` (a moves.ts ROSTER id) at `level` (default: the easy anchor, the roster row): its health, poise and body scale are the Pit's own level rows (`opponentAt`). */
 export function creature(id: string, kind: string, x: number, z: number, facing = 0, level: number = LEVEL_ANCHORS.easy): Fighter {
   const o = OPPONENT(kind);
@@ -174,7 +188,13 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
   for (const p of players) {
     if (inFight.has(p.id)) continue;
     const foe = foes.get(p.id) ?? null;
-    if (foe) for (const c of (joiners.get(p.id) ?? []).sort((x, y) => (y.threat?.[p.id]?.threat ?? 0) - (x.threat?.[p.id]?.threat ?? 0) || dist(x, p) - dist(y, p)).slice(0, MAX_ATTACKERS - 1)) { joined.set(p.id, [...(joined.get(p.id) ?? []), c]); inFight.add(c.id); if (!c.hunting) { c.hunting = true; c.chaseX = c.x; c.chaseZ = c.z; c.unseen = 0; } }
+    if (foe) {
+      let on = 1;   // the foe is the first attacker; a joiner is taken only while the count is under the cap and under its own and the foe's row cap
+      for (const c of (joiners.get(p.id) ?? []).sort((x, y) => (y.threat?.[p.id]?.threat ?? 0) - (x.threat?.[p.id]?.threat ?? 0) || dist(x, p) - dist(y, p))) {
+        if (on >= Math.min(MAX_ATTACKERS, atOnce(foe), atOnce(c))) continue;
+        on++; joined.set(p.id, [...(joined.get(p.id) ?? []), c]); inFight.add(c.id); if (!c.hunting) { c.hunting = true; c.chaseX = c.x; c.chaseZ = c.z; c.unseen = 0; }
+      }
+    }
     if (foe) { inFight.add(foe.id); if (!foe.hunting) { foe.hunting = true; foe.chaseX = foe.x; foe.chaseZ = foe.z; foe.unseen = 0; } }   // inside the engage ring it is on the prey whether or not it saw him
     inFight.add(p.id); bouts.push({ a: p, b: foe });   // 3. no foe in reach: the player is alone in his bout (swings at air, guards, rolls, regains stamina on the Pit's rules)
   }
@@ -215,7 +235,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     f.t += dt; f.phase = 'ready';
     for (const [id, t] of Object.entries(f.threat ?? {})) {   // forget: the player is dead or gone, or has been out of its sight for the give-up time (EQEmu RemoveStaleEntries, in seconds)
       const q = players.find((x) => x.id === id);
-      if (!q) delete f.threat![id]; else if (dist(f, q) > SIGHT_M) { t.out += dt; if (t.out >= GIVE_UP_UNSEEN_S) delete f.threat![id]; } else t.out = 0;
+      if (!q) delete f.threat![id]; else if (dist(f, q) > SIGHT_M) { t.out += dt; if (t.out >= giveUpOf(f.kind)) delete f.threat![id]; } else t.out = 0;
     }
     if (f.exhausted && f.stamina >= RULES.exhaustRecover) f.exhausted = false;
     f.stamina = Math.min(f.maxStamina, f.stamina + RULES.regen * 60 * dt);
@@ -224,10 +244,10 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
       const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
       if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
       else { f.facing = M.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
-    } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < GIVE_UP_UNSEEN_S : dist(f, prey) <= AGGRO_M)) {
+    } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < giveUpOf(f.kind) : dist(f, prey) <= AGGRO_M)) {
       if (!f.hunting) { f.hunting = true; f.chaseX = f.x; f.chaseZ = f.z; f.unseen = 0; }
       f.unseen = dist(f, prey) > SIGHT_M ? f.unseen + dt : 0;
-      if (f.unseen >= GIVE_UP_UNSEEN_S || M.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
+      if (f.unseen >= giveUpOf(f.kind) || M.hypot(f.x - f.chaseX, f.z - f.chaseZ) > leashOf(f.kind)) { f.hunting = false; f.returning = true; f.unseen = 0; }
       else {
         f.facing = aim(f, prey);
         if (dist(f, prey) > HOLD_M) { const step = Math.min(chaseSpeed(f.kind) * dt, dist(f, prey) - HOLD_M); f.x += M.sin(f.facing) * step; f.z += M.cos(f.facing) * step; }   // closes to just inside the engage ring and waits: the engaged foe fights, the rest hold off

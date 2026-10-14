@@ -1,0 +1,9 @@
+{
+  "dials": [
+    {"id": "OPEN_RADIUS","value": 1000000000.0},
+    {"id": "WALL_INNER","value": 11.7},
+    {"id": "BODY_RADIUS","value": 0.425},
+    {"id": "BASE_RADIUS","value": 8.55},
+    {"id": "ARENA_ONE_SCALE","value": 0.36}
+  ]
+}

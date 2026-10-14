@@ -2,15 +2,21 @@
 // and give-up numbers, the out-of-combat window and the hero-side disengage. Zone 1 WORLD LAYER only: nothing here is read by src/ (no sim change, no RECORD_VERSION). A fight that is
 // engaged runs on the sim's own pace (sim.ts: run 5.2 m/s x Opponent.speed), so the chase numbers below must never exceed what the sim would do for that creature (origins/preview/speeds.test.ts).
 import { fieldOf } from './catalogue-fields.ts';
+import { worldRule } from './world-rules.ts';   // the speed and leash numbers are rows (world-rules-defs.json)
 export const SPEEDS = {
-  player: { walk: 2.3, run: 5.2 },    // m/s: the gait table's walk and Run knot (main.ts took these from the Pit pad); the sim's own run is 5.2 (sim.ts advance)
-  creature: { amble: 0.9, chase: 4.5 },   // m/s: slower than a running player (so running away works) except the wolf, who is faster and gives up sooner
-} as const;
-export const LEASH = { default: 30 } as const;   // m from where the chase STARTED: past it the creature walks home and heals to full, no event
-export { GIVE_UP_UNSEEN_S } from './threat.ts';   // (src/fight/threat-defs.json giveUp row)
+  player: { walk: worldRule('playerWalk'), run: worldRule('playerRun') },    // m/s: the gait table's walk and Run knot (main.ts took these from the Pit pad); the sim's own run is 5.2 (sim.ts advance)
+  creature: { amble: worldRule('creatureAmble'), chase: worldRule('creatureChase') },   // m/s: slower than a running player (so running away works) except the wolf, who is faster and gives up sooner
+};
+export const LEASH = { default: worldRule('leash') };   // m from where the chase STARTED: past it the creature walks home and heals to full, no event
+import { GIVE_UP_UNSEEN_S } from './threat.ts';
+export { GIVE_UP_UNSEEN_S };   // (src/fight/threat-defs.json giveUp row)
 // s out of sight before any creature gives up (leaving the zone always ends it too)
-export const OUT_OF_COMBAT_S = 6;     // s with no damage taken or dealt before a fighter counts as out of combat (regen starts)
-export const DISENGAGE_M = 12, DISENGAGE_S = 3;   // the hero-side disengage: a world fight ends silently when the hero has been farther than 12 m from the foe for 3 s
-export const ENGAGE_GAP_MAX_M = 6.5, COMMIT_RANGE_M = 8;   // Strategy's spec numbers the disengage must stay beyond (the max start gap before spawnScale, the commit range)
+export const OUT_OF_COMBAT_S = worldRule('outOfCombat');     // s with no damage taken or dealt before a fighter counts as out of combat (regen starts)
+export const DISENGAGE_M = worldRule('disengage'), DISENGAGE_S = worldRule('disengageSeconds');   // the hero-side disengage: a world fight ends silently when the hero has been farther than 12 m from the foe for 3 s
+export const ENGAGE_GAP_MAX_M = worldRule('engageGapMax'), COMMIT_RANGE_M = worldRule('commitRange');   // Strategy's spec numbers the disengage must stay beyond (the max start gap before spawnScale, the commit range)
 export const chaseSpeed = (kind: string): number => (fieldOf(kind, 'chase') as number | undefined) ?? SPEEDS.creature.chase;   // a row's `chase` field (the wolf's 6.0), else the default
 export const leashOf = (kind: string): number => (fieldOf(kind, 'leash') as number | undefined) ?? LEASH.default;
+export const giveUpOf = (kind: string): number => (fieldOf(kind, 'giveUp') as number | undefined) ?? GIVE_UP_UNSEEN_S;   // a row's `giveUp` (s out of sight before it gives up), else the default
+/** The chase trio (World, top-30 row 21): how fast a creature chases, how far from where the chase started it follows, and how long it keeps hunting a prey it cannot see. Each is a catalogue row field
+ *  (`chase`, `leash`, `giveUp`) with today's default, so a creature with none behaves exactly as before; a new creature's chase is one row, never a new branch. */
+export const chaseTrio = (kind: string): { readonly speed: number; readonly leash: number; readonly giveUp: number } => ({ speed: chaseSpeed(kind), leash: leashOf(kind), giveUp: giveUpOf(kind) });

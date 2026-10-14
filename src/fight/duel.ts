@@ -3,6 +3,8 @@ import { checkSheet, statDown, statUp, type Sheet } from './sheet-rows.ts';
 import { kindOf } from './damage-kinds.ts';
 import { STANCE_ROWS_ON } from './stance-era.ts';
 import { POISE_LADDER_ON } from './poise-era.ts';
+import { CONE_ON } from './cone-era.ts';
+import { breathTicks, coneOf, inCone, pulseDamage } from './cone-rules.ts';
 import { LADDER, flinchTicks, poiseTier } from './poise-ladder.ts';
 import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
@@ -13,6 +15,8 @@ import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { castOutcome, outcomeMult, type CastOutcome, type Spell } from './spell-cast.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
+import { PERK_MAX } from './duel-rows.ts';   // the dials are rows (duel-defs.json)
+export { PERK_MAX };
 
 // Symmetric 1v1 melee simulation. Both fighters obey the same rules through the same Intent; the AI is just another
 // intent source. Pure and fixed at 60 Hz: no renderer, clock, randomness or browser state. Presentation observes results.
@@ -47,6 +51,7 @@ export type Fighter = {
   speed: number;   // pace multiplier: walking, sprinting, the wind-up lunge and the backstep (moves.ts `Opponent.speed`; 1 = a man)
   poise: number;   // a plain clean hit dealing less than this never staggers this fighter (moves.ts `Opponent`); 0 = human
   poiseRest?: number;   // v54 (poise-ladder.ts): ticks left of the poise-rest a full stagger started; a flinch inside it is a shrug. Absent = none, so a fight without the ladder hashes as before
+  breath?: { k: number; wait: number; heading: number };   // v55 (cone-rules.ts): a cone special mid-breath: pulses done, ticks since the last pulse, the heading fixed at the release. Absent unless breathing, so a fight without a cone hashes as before
   loiter: number;   // ticks spent within the wall band without attacking (RULES.wall.loiter); the lorarii whip at `ticks`
   lashed: boolean;   // the lorarii have already lashed him in this spell at the wall: the next whip is a repeat, so its tell is shorter
   skill: SkillId | null; skillCooldown: number;   // the equipped skill (null = none: every opponent in V1) and the ticks until it may fire again (RULES.skillCooldown)
@@ -69,7 +74,6 @@ export type Fighter = {
 };
 // A patron perk: signed per-mille integers, each scaling ONE quantity by (1000 + d) / 1000, at most two templates and never past ±PERK_MAX (3%).
 // Never a tick count, reach, move timing or an AI input (spec rule 2). The caller pairs a gain with a matching loss; this type does not judge balance.
-export const PERK_MAX = 30;
 export type PerkKey = 'vitality' | 'wind' | 'thrift' | 'guard' | 'poise' | 'stride';
 export type Perk = Readonly<Partial<Record<PerkKey, number>>>;   // vitality: max health; wind: stamina regen; thrift: attack stamina cost; guard: block and guard-break stamina cost; poise: posture taken; stride: pace
 export const PERK_KEYS: readonly PerkKey[] = ['vitality', 'wind', 'thrift', 'guard', 'poise', 'stride'];
@@ -94,7 +98,7 @@ export type Finish = { victim: Side; location: HitLocation; move: MoveId; headin
 type EventType = 'SpecialStarted' | 'SpecialLanded' | 'SpecialFizzled' | 'SpecialInterrupted' | 'ActionStarted' | 'AttackStarted' | 'Charging' | 'Charged' | 'AttackActive' | 'AttackMissed' | 'Hit' | 'Blocked' | 'Parried' | 'GuardBroken' | 'PostureBroken' | 'Dodged' | 'Staggered' | 'StaminaExhausted' | 'Killed' | 'SharedHit' | 'Whipped' | 'WhipRaised' | 'GambitArmed' | 'GambitFailed';
 // Event sides: a blow that lands (Hit, GuardBroken, Killed) names the attacker as `actor` and the one struck as `target`; a defence that
 // succeeds (Blocked, Parried, Dodged) names the defender as `actor` and the attacker as `target`.
-export type CombatEvent = { tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
+export type CombatEvent = { pulse?: number; cone?: boolean; damageKind?: string; tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
 // WhipRaised: the lorarius lifts his whip, `lead` ticks before the lash that follows (RULES.wall.loiter.raise, or raiseAgain for a repeat) —
 // presentation scales its raise animation by `lead` rather than assuming one. Both whip events carry `guard`: which sixth of the wall the
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
@@ -545,12 +549,16 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // 4. Special Moves, after the blows of this tick. Releases first, both sides at once: the release tick lands whatever happened to the caster
   // on it, and a lethal release on the tick he fell is a double kill through the draw. Unblockable and undodgeable. Then every windup still
   // running counts down, and one whose caster has fallen fizzles.
-  const releasing = [fighters[0].special === 1, fighters[1].special === 1], standing = [fighters[0].health > 0, fighters[1].health > 0];   // both judged before either lands
+  const releasing = [fighters[0].special === 1, fighters[1].special === 1], standing = [fighters[0].health > 0, fighters[1].health > 0];
+  const breathed = [false, false];   // a breath that began this tick pulses from the next one   // both judged before either lands
   for (const i of [0, 1] as const) {
     const j = (1 - i) as Side, A = fighters[i], D = fighters[j];
     if (!releasing[i]) continue;
     A.special = 0; delete A.castHurt; A.skillCooldown = R.special.cooldown; A.specialRecover = R.special.recovery;   // re-armed and held back from attacking, counted from the release
     if (!standing[j]) continue;
+    // v55 (cone-rules.ts): a special with a cone row breathes instead of striking once: the heading is fixed on the target now, the pulses follow, and the caster is held back until the last of them is done.
+    const cone = CONE_ON && !A.spell ? coneOf(A.specialName) : undefined;
+    if (cone) { A.breath = { k: 0, wait: 0, heading: aim(A.body, D.body) }; A.specialRecover = R.special.recovery + breathTicks(cone); breathed[i] = true; continue; }
     const move: MoveId = SKILL_MOVE[A.skill ?? DAY_ONE_SKILL]!;
     // A spell resolves its outcome from the seeded stream (one draw per cast that lands on a standing target); a fizzle spent its stamina and re-armed the full cooldown above, and deals nothing.
     const outcome = A.spell && duel.cast ? castOutcome(A.spell, rollUnit(duel.cast.seed, casts++)) : undefined, mult = A.spell && outcome ? outcomeMult(A.spell, outcome) : 1;
@@ -558,6 +566,23 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const damage = Math.round((A.spell && outcome ? A.spell.share * mult : A.specialShare!) * D.maxHealth);
     D.health = Math.max(0, D.health - damage);
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(A.spell && outcome ? { spell: A.spell.id, outcome } : {}) });
+    if (D.health) continue;
+    D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
+    finish = finish ? { ...finish, draw: true } : { victim: j, location: 'torso', move, heading: A.body.heading };
+    events.push({ tick, type: 'Killed', actor: i, target: j, move, location: 'torso', heading: A.body.heading });
+  }
+  // 4b. Breaths (v55): every `every` ticks a pulse tests the cone from the caster's position along the heading fixed at the release; inside it the pulse deals its ramp weight of the special's damage.
+  for (const i of [0, 1] as const) {
+    const j = (1 - i) as Side, A = fighters[i], D = fighters[j], b = A.breath;
+    if (!b || breathed[i]) continue;
+    const cone = coneOf(A.specialName);
+    if (!cone || !A.health) { delete A.breath; continue; }
+    if (b.wait + 1 < cone.every) { A.breath = { ...b, wait: b.wait + 1 }; continue; }
+    if (b.k + 1 >= cone.ramp.length) delete A.breath; else A.breath = { k: b.k + 1, wait: 0, heading: b.heading };
+    if (!D.health || !inCone(cone, distance(A.body, D.body), wrapAngle(aim(A.body, D.body) - b.heading))) continue;
+    const move: MoveId = SKILL_MOVE[A.skill ?? DAY_ONE_SKILL]!, damage = pulseDamage(cone, Math.round(A.specialShare! * D.maxHealth), b.k);
+    D.health = Math.max(0, D.health - damage);
+    events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, name: A.specialName!, pulse: b.k, cone: true, damageKind: cone.damageKind });
     if (D.health) continue;
     D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
     finish = finish ? { ...finish, draw: true } : { victim: j, location: 'torso', move, heading: A.body.heading };

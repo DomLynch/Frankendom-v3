@@ -19,6 +19,7 @@ export * from './play-radius.ts';
 export * from './record.ts';
 export * from './gear-stats.ts';
 export * from './gear-numbers.ts';
+export * from './gear-weight.ts';
 export * from './gambit.ts';
 export * from './stance.ts';
 export * from './twist.ts';
@@ -31,7 +32,7 @@ export { createWoundFx } from './wounds-fx.ts';
 export type { FinisherId } from './finishers.ts';
 export { createZoneFinisher, canPlayFinisher, cutOf, type CutRig } from './zone-finisher.ts';   // K6: a zone creature's decapitation, keyed by its catalogue row   // K5: the blood and marks a wounds row draws in a zone fight
 export { CATALOGUE, catalogueRow } from './catalogue-rows.ts';   // the character catalogue rows (K7: clients read a row through the door, not by module path)
-export { catalogueBodyUrl, heroBodyUrl } from './catalogue-bodies.ts';   // a row's engine body as a URL (K11: the zone fetches a body by roster id, not src/assets/<id>.glb by name)
+export { catalogueBodyUrl, heroBodyUrl, worldBodyUrl } from './catalogue-bodies.ts';   // a row's engine body as a URL (K11: the zone fetches a body by roster id, not src/assets/<id>.glb by name)
 export { legendForLevel, LEGEND_OPPONENTS, type LegendOpponent } from '../legends.ts';   // the Pit's legend ladder (K12: the zone page and the Pit read it through the door)
 export { bareName } from '../roster.ts';   // a roster name without its article (K12)
 export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: one createFightFx per active pair
@@ -39,3 +40,4 @@ export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue 
 export { creaturesLook, type CreatureCue } from './sound/creature.ts';   // ?look=creatures and the creature cue names
 export const loadFeedback = () => import('./sound/feedback.ts').then((m) => m.createFeedback());   // K8 slice 2: the Pit's cue player as a lazy chunk (the zone builds it at its first gesture, not with the page)
 export { createFollowCamera, inPassage, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
+export { MAX_ATTACKERS } from './attackers.ts';

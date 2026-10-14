@@ -2,6 +2,7 @@
 // origins/preview/main.ts with Zone 1's passage hard-coded; now a zone only supplies PARAMETERS (a passage box where the camera tightens, or none).
 // Nothing zone-shaped lives here: the passage (bounds AND its tighter back/up) is data the zone passes, none for a zone without one (Zone 2). The open walk's 5.2 / 2.7 is the generic default
 // (Zone 1's numbers before the move, so no behaviour change). The right stick's pitch lowers the eye and raises the gaze.
+import { cameraRule } from './camera-rules.ts';
 import * as THREE from 'three';
 
 /** Where the camera tightens to stay under a vault: the hero inside z in (zMin, zMax) and, when `halfWidth` is set, |x| < halfWidth; there the camera sits `back` behind and `up` above. */
@@ -15,7 +16,7 @@ export type Presets = Readonly<Record<string, Framing>>;
 export const pickFraming = (presets: Presets | undefined, choice: string | null | undefined, zonePreset?: string): Framing | undefined => presets?.[(choice || zonePreset || '').toLowerCase()];
 export type FollowState = { x: number; z: number; heading: number; pitch: number; groundY: number };
 
-const OPEN: Framing = { back: 5.2, up: 2.7 }, AHEAD = 3, LOOK_Y = 1.5;
+const OPEN: Framing = { back: 5.2, up: 2.7 }, AHEAD = cameraRule('followAhead'), LOOK_Y = cameraRule('followLookY');
 
 export const inPassage = (p: Passage | undefined, x: number, z: number): boolean => !!p && z < p.zMax && z > p.zMin && (p.halfWidth === undefined || Math.abs(x) < p.halfWidth);
 

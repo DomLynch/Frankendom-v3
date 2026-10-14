@@ -1,18 +1,14 @@
 import * as THREE from 'three';
 import { SCHOOLS, type School } from './schools.ts';
+import SCHOOL_ROWS from './special-schools.json' with { type: 'json' };
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 // One colour per spell school (Strategy brief #1507 item 4: WoW, EverQuest). A LOOK TEST behind `?look=schools`, presentation only: no sim, no new particles, no
 // new files in the default path. Every special's effect (trail, ground mark, status tint) is drawn in its own scene group (special-presentation.ts); with the flag on
 // each material in that group is pulled to its school's colour, so a busy fight reads on a phone by colour. Specials with no school here keep their own colours.
 export { SCHOOLS, type School };   // the schools are rows (school-defs.json, schools.ts), not a union
 // Keyed by the special's id (special-identity.ts / class-special-identity.ts). One line per special, so Strategy can re-map in review.
-export const SCHOOL_OF: Readonly<Record<string, School>> = {
-  surtr: 'fire', haze: 'fire', wake: 'fire',                          // Ash Fall, Achilles' wrath, the Witch's wake
-  hades: 'shadow', nyx: 'shadow', thanatos: 'shadow', echo: 'shadow', price: 'shadow', stirring: 'shadow',
-  flies: 'poison', stain: 'poison', breath: 'poison', tempo: 'poison', pulse: 'poison',
-  tithe: 'holy', centurion: 'holy',
-  mist: 'frost', storm: 'frost',
-};
+export const SCHOOL_OF: Readonly<Record<string, School>> = Object.fromEntries((SCHOOL_ROWS.rows as readonly { id: string; school: School }[]).map((r) => [r.id, r.school]));   // special-schools.json: one row per special
 const looks = (search: string) => (new URLSearchParams(search).get('look') ?? '').split(',');
 // Dom's pick (Strategy, 2026-10-07): SOFT is the shipped default. `?look=schools-off` is today's own colours (the before frame); `?look=schools` plain and `schools3` dark stay for comparison.
 export const schoolsFlag = (search: string) => !looks(search).includes('schools-off');
@@ -27,7 +23,7 @@ export const schoolsStrength = (search: string): Strength => { const l = looks(s
 // The effects paint dark ink into DataTexture maps, and a material colour only multiplies its map (black x any hue is black), so a mapped material's pixels are recoloured in
 // place: the school hue at the pixel's own shading (relative to the map's brightest), alpha untouched, so the shape, tear and fade stay the effect's own. An unmapped material
 // takes the hue as its colour. Each texture and material is done once.
-const SOFT_FLOOR = 12;   // soft: the luminance (0..255) a pixel may rise to when today's own pixel is darker than this
+const SOFT_FLOOR = FEEL_RULES.spellSchoolRule[0]!.softFloor;   // soft: the luminance (0..255) a pixel may rise to when today's own pixel is darker than this
 const SHADE = [0.55, 0.45] as const;   // darkest pixel at 55% of the hue, brightest at 100%
 type Tintable = THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null };
 function recolour(map: THREE.Texture, hue: THREE.Color, mix = 0) {

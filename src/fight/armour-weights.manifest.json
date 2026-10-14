@@ -1,0 +1,16 @@
+{
+  "tables": [
+    {
+      "table": "armourWeight",
+      "file": "armour-weights.json",
+      "at": "armourWeight",
+      "key": "id",
+      "required": {
+        "dial": "string",
+        "fromRecordVersion": "integer",
+        "castPenalty": "integer",
+        "note": "string"
+      }
+    }
+  ]
+}

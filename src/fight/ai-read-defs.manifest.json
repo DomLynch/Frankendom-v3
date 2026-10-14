@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "ai_read_read",
+      "file": "ai-read-defs.json",
+      "at": "read",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}
