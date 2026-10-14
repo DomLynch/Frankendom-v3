@@ -6,7 +6,7 @@ import { OPPONENTS, RULES, opponentAt, profileAt, DEFAULT_WEAPON, type AiProfile
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
-import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withRoll, withSheet, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
+import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
 import { worldRule } from './world-rules.ts';
 
@@ -24,14 +24,16 @@ const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
   : heroSheeted(f));
 /** The hero's Pit fighter as the Pit builds it (initialDuel: createFighter with his weapon; withSheet: his sheet's bar and recovery, the sheet itself carried on the fighter so stepDuel reads its dials). No weapon = DEFAULT_WEAPON, no sheet = today's hero. */
 export function heroSheeted(f: Fighter): PitFighter {
-  const hero = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON);
-  return f.sheet ? withSheet({ tick: 0, fighters: [hero, hero], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : hero;
+  // open-world: a hero with a spell casts through the Pit's special slot (spell-cast.ts), ready at once (no opening delay: the world has no fight start), so a live hero and a replayed one are the same hero
+  const hero = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), cast = f.spell ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, spell: f.spell } : hero;
+  return f.sheet ? withSheet({ tick: 0, fighters: [cast, cast], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : cast;
 }
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
 export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter): Bout {
   const h = carry ?? pitOf(hero), c = foe ? pitOf(foe) : createFighter({ x: hero.x + FAR_M, z: hero.z, heading: 0, distance: 0 }, 'ready', DEFAULT_WEAPON, 1, 0, 1e9);
   const o = foe?.side === 'creature' ? OPPONENTS[foe.kind as keyof typeof OPPONENTS] : null;
-  const duel: Duel = { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS };
+  const base: Duel = { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS };
+  const duel = h.spell && h.specialShare !== undefined ? withSpell(base, 0, h.spell, foe?.seed ?? seedOf(foe?.id ?? hero.id)) : base;   // open-world: the cast draws are seeded by the bout (the creature's roll seed, else its id), so a replay reproduces every outcome
   return { foe: foe?.id ?? null, duel: foe?.seed === undefined ? duel : withRoll(duel, foe.seed), ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };
 }
 
