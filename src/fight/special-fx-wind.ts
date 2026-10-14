@@ -3,6 +3,7 @@ import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { advanceCast, castPhase, LAND_AT, type Cast } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
+import { specialFxFieldNum } from './special-fx-field-rows.ts';
 
 // Set's Red Wind, the in-game effect (Nightborn lane; Dom's GO via Lead 2026-09-30, his pick of "A, the ground burst" 2026-10-01; the seam is Hades'
 // special-fx.ts and special-timing.ts). One idea, the arena floor itself hitting the TARGET: a ring of sand erupts outward at his feet in radial
@@ -17,7 +18,7 @@ import { clamp01, hash, noise, smooth } from './fx-math.ts';
 
 export const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const fbm = (x: number, y: number, seed: number) => noise(x, y, seed) * 0.55 + noise(x * 2.1, y * 2.1, seed + 7) * 0.3 + noise(x * 4.3, y * 4.3, seed + 13) * 0.15;
-const CAP = 0.8;   // semi-transparent: the fighter stays readable through the wind
+const CAP = specialFxFieldNum('wind.cap');   // semi-transparent: the fighter stays readable through the wind
 
 // The wind's colours (Dom's verdict on v2, 2026-09-30: the fire-orange red "looks cheesy", make it grey / wind coloured and semi-transparent): a
 // dust-grey core, darker than the pale floor so the strokes read on motion and density, with a lighter warm-grey rim; no saturation, no glow. In a
@@ -72,7 +73,7 @@ export function surface(fn: (l: number, a: number) => P3, nl = 18, na = 4) {
 
 // One ground streak of the burst, different on every cast (`seed` is the cast's start tick, so it is a pure function of the sim: no Math.random). Uneven
 // angles, one of three lengths, a slight curve either way; a couple of streaks are dropped (the gaps) by `streakGap`.
-const STREAKS = 11, SHEETS = 4, GRIT = 80, GATHER_TICKS = 30;
+const STREAKS = specialFxFieldNum('wind.streaks'), SHEETS = specialFxFieldNum('wind.sheets'), GRIT = specialFxFieldNum('wind.grit'), GATHER_TICKS = specialFxFieldNum('wind.gather-ticks');
 const LENGTHS = [[0.8, 1.15], [1.6, 2.0], [2.6, 3.2]] as const;
 const streakGap = (i: number, seed: number) => i === Math.floor(hash(seed, 101) * STREAKS) || i === Math.floor(hash(seed, 102) * STREAKS) || (hash(seed, 103) < 0.5 && i === Math.floor(hash(seed, 104) * STREAKS));
 function streakGeometry(i: number, seed: number) {
