@@ -6,7 +6,7 @@ import TACTIC_DEFS from './tactic-defs.json' with { type: 'json' };
 import TACTIC_MANIFEST from './tactic-defs.manifest.json' with { type: 'json' };
 
 // The reaction slot's vocabulary: the plans the warden already has for a noticed swing (parry; brace = the guard that meets it; backstep = the step out).
-// `sidestep` is in the spec's list but the duel has no sidestep move to name (the roll is `dodge`): it is not accepted until Strategy rules which move it is.
+// No sidestep and no trade in v1 (Lead, 2026-10-14: the duel has no sidestep move; trade is deferred past v1).
 export type Reaction = 'parry' | 'brace' | 'backstep';
 export type Weighted<C extends string> = { readonly choice: C; readonly weight: number };
 export type TacticBlock = { readonly heroWinding?: readonly Weighted<Reaction>[] };
