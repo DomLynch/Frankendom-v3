@@ -1,0 +1,22 @@
+{
+  "tables": [
+    {
+      "table": "slotWeight",
+      "file": "gear-stats-rules.json",
+      "at": "slotWeight",
+      "key": "id",
+      "required": {
+        "weight": "integer"
+      }
+    },
+    {
+      "table": "gearPool",
+      "file": "gear-stats-rules.json",
+      "at": "gearPool",
+      "key": "id",
+      "required": {
+        "fullPoints": "integer"
+      }
+    }
+  ]
+}

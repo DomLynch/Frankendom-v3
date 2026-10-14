@@ -1,0 +1,27 @@
+{
+  "tables": [
+    {
+      "table": "specialLookRule",
+      "file": "look-rules.json",
+      "at": "specialLookRule",
+      "key": "id",
+      "required": {
+        "recover": "integer",
+        "struck": "integer",
+        "bossBaseRank": "integer",
+        "bossBaseLevel": "integer",
+        "bossLevelPerRank": "integer",
+        "bossFirst": "integer"
+      }
+    },
+    {
+      "table": "catalogueRule",
+      "file": "look-rules.json",
+      "at": "catalogueRule",
+      "key": "id",
+      "required": {
+        "worldMaxTris": "integer"
+      }
+    }
+  ]
+}
