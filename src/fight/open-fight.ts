@@ -6,13 +6,12 @@ import { OPPONENTS, RULES, opponentAt, profileAt, DEFAULT_WEAPON, type AiProfile
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
-import { createFighter, idleIntent, opponentFighter, stepDuel, timing, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
+import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withRoll, withSheet, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
 export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[] };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
-// open-world: the open world has no guard-side thumb: a held guard covers the blow from the front (RULES.directionalGuard off), the Pit's other rules stand.
-const OPEN_RULES = { ...RULES, directionalGuard: false } as unknown as typeof RULES;
+// open-world: the guard-side thumbs exist here as they always have in the Pit (Dom 2026-10-13): the world steps the Pit's RULES unchanged (directionalGuard on) and carries the held side in the Input (intentOf).
 const TICK = 1 / 60, FAR_M = 1000;
 export const IDLE_INPUT: Input = { x: 0, z: 0 };
 const seedOf = (id: string): number => { let h = 731; for (const c of id) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0; return h; };
@@ -21,12 +20,18 @@ const body = (f: Fighter) => ({ x: f.x, z: f.z, heading: f.facing, distance: 0 }
 /** The Pit fighter for a world Fighter. A creature's body and brain are the Pit's own level rows (moves.ts opponentAt / profileAt). */
 const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
   ? opponentFighter(opponentAt(OPPONENTS[f.kind as keyof typeof OPPONENTS], f.level), body(f), 'ready')
-  : createFighter(body(f), 'ready', DEFAULT_WEAPON));
+  : heroSheeted(f));
+/** The hero's Pit fighter as the Pit builds it (initialDuel: createFighter with his weapon; withSheet: his sheet's bar and recovery, the sheet itself carried on the fighter so stepDuel reads its dials). No weapon = DEFAULT_WEAPON, no sheet = today's hero. */
+export function heroSheeted(f: Fighter): PitFighter {
+  const hero = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON);
+  return f.sheet ? withSheet({ tick: 0, fighters: [hero, hero], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : hero;
+}
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
 export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter): Bout {
   const h = carry ?? pitOf(hero), c = foe ? pitOf(foe) : createFighter({ x: hero.x + FAR_M, z: hero.z, heading: 0, distance: 0 }, 'ready', DEFAULT_WEAPON, 1, 0, 1e9);
   const o = foe?.side === 'creature' ? OPPONENTS[foe.kind as keyof typeof OPPONENTS] : null;
-  return { foe: foe?.id ?? null, duel: { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS }, ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };
+  const duel: Duel = { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS };
+  return { foe: foe?.id ?? null, duel: foe?.seed === undefined ? duel : withRoll(duel, foe.seed), ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };
 }
 
 const phaseOf = (f: PitFighter): { phase: Phase; t: number } => {
@@ -35,18 +40,17 @@ const phaseOf = (f: PitFighter): { phase: Phase; t: number } => {
   return { phase, t: f.age * TICK };
 };
 
-function eventsOf(list: readonly CombatEvent[], ids: readonly [string, string], after: Duel, fs: readonly [Fighter, Fighter]): Event[] {
+function eventsOf(list: readonly CombatEvent[], ids: readonly [string, string], after: Duel): Event[] {
   const out: Event[] = [], id = (s: Side) => ids[s], tell = (s: Side) => Math.round(timing(after.fighters[s]).windup * TICK * 1000);
-  const scaled = (e: CombatEvent) => Math.round((e.damage ?? 0) * fs[e.actor].attack * (e.target === undefined ? 1 : fs[e.target].res));   // open-world: gear (Attack out, RES in) scales the number the Pit reports
   for (const e of list) {
     const from = out.length;
     if (e.type === 'AttackStarted' && e.move) out.push({ type: 'Telegraph', id: id(e.actor), move: e.move, ms: tell(e.actor) });
     else if (e.type === 'SpecialStarted') out.push({ type: 'Telegraph', id: id(e.actor), move: e.name ?? 'special', ms: Math.round(RULES.special.windup * TICK * 1000) });
     else if (e.type === 'AttackActive' && e.move) out.push({ type: 'Swing', id: id(e.actor), move: e.move });
     else if ((e.type === 'Hit' || e.type === 'GuardBroken' || e.type === 'SpecialLanded') && e.target !== undefined) {
-      out.push({ type: 'Hit', attacker: id(e.actor), victim: id(e.target), damage: scaled(e), move: e.move ?? e.name ?? 'special' });
+      out.push({ type: 'Hit', attacker: id(e.actor), victim: id(e.target), damage: Math.round(e.damage ?? 0), move: e.move ?? e.name ?? 'special' });
       if (e.type === 'GuardBroken') out.push({ type: 'Staggered', id: id(e.target), ms: Math.round(RULES.posture.stun * TICK * 1000), cause: 'guardBreak' });
-    } else if (e.type === 'Blocked' && e.target !== undefined) out.push({ type: 'Blocked', attacker: id(e.target), victim: id(e.actor), perfect: !!e.perfect, damage: Math.round((e.damage ?? 0) * fs[e.target].attack * fs[e.actor].res) });
+    } else if (e.type === 'Blocked' && e.target !== undefined) out.push({ type: 'Blocked', attacker: id(e.target), victim: id(e.actor), perfect: !!e.perfect, damage: Math.round(e.damage ?? 0) });
     else if (e.type === 'Parried' && e.target !== undefined) out.push({ type: 'Parried', attacker: id(e.target), victim: id(e.actor) });   // the Pit's own Staggered for the parried attacker follows in the same list
     else if (e.type === 'Dodged' && e.target !== undefined) out.push({ type: 'Dodged', attacker: id(e.target), victim: id(e.actor) });
     else if (e.type === 'PostureBroken' && e.target !== undefined) out.push({ type: 'Staggered', id: id(e.target), ms: Math.round((e.ticks ?? RULES.posture.stun) * TICK * 1000), cause: 'posture' });
@@ -63,21 +67,20 @@ function intentOf(input: Input, guarding: boolean, lock: boolean): Intent {
   const base = idleIntent();
   const action = input.special || input.skill ? 'skill' : input.roll ? 'dodge' : input.attack === 'heavy' ? 'heavy' : input.attack === 'thrust' ? 'thrust' : input.attack === 'kick' ? 'kick' : input.attack === 'light' ? 'light' : input.guard && !guarding ? 'parry' : null;   // open-world: a guard pressed fresh is the Pit's parry tap, held it is the standing guard
   const move = input.roll ? { x: input.roll.x, z: input.roll.z, yaw: 0, run: false } : { x: input.x, z: input.z, yaw: 0, run: !!input.run };
-  return { ...base, move, action, guard: !!input.guard, lock };   // open-world: lock-on is the Pit's (he turns toward the foe while ready and in a windup); alone there is nothing to lock
+  return { ...base, move, action, guard: !!input.guard, ...(input.guard && input.guardDirection ? { guardDirection: input.guardDirection } : {}), lock };   // open-world: lock-on is the Pit's (he turns toward the foe while ready and in a windup); alone there is nothing to lock
 }
 
 /** One world step of a bout: `ticks` Pit ticks (60 Hz). `a` is slot 0 (a player), `b` slot 1 (a creature or a player; undefined when alone). Writes the result into `a` and `b` (the caller's copies) and returns the events. */
 export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: Input, inputB: Input, dt: number, clock = 0): { bout: Bout; events: Event[] } {
   let duel = s.duel, ai = s.ai, guardA = a.phase === 'guard', guardB = b?.phase === 'guard';
   const out: Event[] = [], ticks = Math.max(1, Math.round(dt / TICK));
-  const aMul = b ? b.attack * a.res : a.res, bMul = b ? a.attack * b.res : 1;   // open-world: damage a takes = base x the attacker's Attack x its own RES; scaling its pool by the inverse leaves the Pit's duel untouched
   for (let k = 0; k < ticks; k++) {
     const [pa, pb] = duel.fighters;
     // open-world: the places, facings, stances and effective health come from the world each tick (the page walks the players).
-    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health / aMul, maxHealth: a.maxHealth / aMul, stamina: a.stamina, posture: a.posture, skill: a.skill, cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
+    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health, maxHealth: a.maxHealth, stamina: a.stamina, posture: a.posture, skill: a.skill, cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
     if (a.special && ha.specialShare === undefined) { ha.specialShare = a.level >= RULES.special.bossFrom ? RULES.special.bossDamage : RULES.special.damage; ha.specialName = a.special; ha.skillCooldown = Math.round(a.specialIn / TICK); }
     const hb: PitFighter = b
-      ? { ...pb, cc: b.cc ?? emptyLadder, ...(b.ccGuard ? { ccGuard: b.ccGuard } : {}), body: b.side === 'player' ? { ...pb.body, x: b.x, z: b.z, heading: pb.phase === 'roll' ? pb.body.heading : b.facing } : pb.body, health: b.health / bMul, maxHealth: b.maxHealth / bMul, ...(b.side === 'player' ? { stamina: b.stamina, posture: b.posture, skill: b.skill } : {}), ...(b.stance ? { stance: b.stance } : {}) }
+      ? { ...pb, cc: b.cc ?? emptyLadder, ...(b.ccGuard ? { ccGuard: b.ccGuard } : {}), body: b.side === 'player' ? { ...pb.body, x: b.x, z: b.z, heading: pb.phase === 'roll' ? pb.body.heading : b.facing } : pb.body, health: b.health, maxHealth: b.maxHealth, ...(b.side === 'player' ? { stamina: b.stamina, posture: b.posture, skill: b.skill } : {}), ...(b.stance ? { stance: b.stance } : {}) }
       : { ...pb, body: { ...pb.body, x: a.x + FAR_M, z: a.z } };
     const before: Duel = { ...duel, fighters: [ha, hb], ccBase: clock + k - duel.tick };   // the ladder's window is the world's clock, not this bout's own tick
     const press = (i: Input): Input => (k === 0 ? i : { x: i.x, z: i.z, run: i.run, guard: i.guard });   // open-world: a press (cut, roll, special) is one tick; the rest of a frame's ticks hold only the walk and the guard
@@ -85,18 +88,18 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
     let intentB: Intent = idleIntent();
     if (b && ai && s.profile) { const brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent; }
     else if (b) { intentB = intentOf(press(inputB), guardB, true); guardB = !!inputB.guard; }
-    const next = stepDuel(before, [intentA, intentB], OPEN_RULES);
-    out.push(...eventsOf(next.events, [a.id, b?.id ?? ''], next, [a, b ?? a]));
+    const next = stepDuel(before, [intentA, intentB]);
+    out.push(...eventsOf(next.events, [a.id, b?.id ?? ''], next));
     duel = { ...next, events: [] };
     a.cc = next.fighters[0].cc; if (b) b.cc = next.fighters[1].cc;   // the world keeps the ladders: the next bout (or joiner) steps the same one
   }
   const [pa, pb] = duel.fighters;
-  const write = (f: Fighter, p: PitFighter, mul: number): void => {
+  const write = (f: Fighter, p: PitFighter): void => {
     const { phase, t } = phaseOf(p);
-    f.x = p.body.x; f.z = p.body.z; f.facing = p.body.heading; f.health = Math.min(f.maxHealth, p.health * mul); f.stamina = p.stamina; f.posture = p.posture; f.exhausted = p.exhausted; f.phase = phase; f.t = t;
+    f.x = p.body.x; f.z = p.body.z; f.facing = p.body.heading; f.health = Math.min(f.maxHealth, p.health); f.stamina = p.stamina; f.posture = p.posture; f.exhausted = p.exhausted; f.phase = phase; f.t = t;
   };
-  write(a, pa, aMul);
-  if (b) write(b, pb, bMul);
+  write(a, pa);
+  if (b) write(b, pb);
   if (pa.skillCooldown !== undefined && a.special) a.specialIn = pa.skillCooldown * TICK;
   return { bout: { foe: s.foe, duel, ai, profile: s.profile }, events: out };
 }

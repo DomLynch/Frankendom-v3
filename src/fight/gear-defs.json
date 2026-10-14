@@ -2,6 +2,7 @@
   "sets": [
     {
       "id": "plate",
+      "weightClass": "heavy",
       "shape": {
         "armour": 25,
         "magicResist": -25
@@ -14,6 +15,7 @@
     },
     {
       "id": "robes",
+      "weightClass": "light",
       "shape": {
         "magicResist": 25,
         "armour": -25
@@ -26,6 +28,7 @@
     },
     {
       "id": "leathers",
+      "weightClass": "medium",
       "shape": {
         "stamina": 25,
         "armour": -25
@@ -94,6 +97,7 @@
   "gear": [
     {
       "id": "light",
+      "weightClass": "light",
       "preset": true,
       "set": "leathers",
       "weight": 4,
@@ -102,6 +106,7 @@
     },
     {
       "id": "medium",
+      "weightClass": "medium",
       "preset": true,
       "weight": 9,
       "wearMax": 90,
@@ -109,6 +114,7 @@
     },
     {
       "id": "heavy",
+      "weightClass": "heavy",
       "preset": true,
       "set": "plate",
       "weight": 16,

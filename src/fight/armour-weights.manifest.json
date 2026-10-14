@@ -1,0 +1,14 @@
+{
+  "tables": [
+    {
+      "table": "armourWeight",
+      "file": "armour-weights.json",
+      "at": "armourWeight",
+      "key": "id",
+      "required": {
+        "castPenalty": "integer",
+        "note": "string"
+      }
+    }
+  ]
+}
