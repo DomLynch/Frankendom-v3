@@ -1,0 +1,11 @@
+{
+  "dials": [
+    {"id": "RACE","value": 36},
+    {"id": "DISSOLVE","value": 20},
+    {"id": "CUE_LEAD","value": 57},
+    {"id": "GATHER","value": 18},
+    {"id": "RIDE","value": 24},
+    {"id": "BACK_PACE","value": -1.7},
+    {"id": "RUN_PACE","value": 4}
+  ]
+}
