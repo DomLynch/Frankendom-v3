@@ -62,7 +62,8 @@ import './signature-goblin.ts';   // Goblin A: Hooked Wound
 import './signature-plaguedoctor.ts';   // Plague Doctor A: Rot Bloom
 import './signature-shieldmaiden.ts';   // registers the Shieldmaiden's Splintered Defiance
 import { settleWithin } from './warm-gate.ts';
-const COMPILE_BOUND_MS = 6000;   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
+import { sceneNum } from './scene-rows.ts';
+const COMPILE_BOUND_MS = sceneNum('scene.compile-bound-ms');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
 
 // One GLB per opponent (moves.ts `OpponentId`); only the hero and the man he faces are ever loaded.
@@ -73,7 +74,7 @@ const globbed = <T extends Record<string, string>>(read: () => T): T => { try { 
 const EQUIP_URLS = globbed(() => import.meta.glob<string>('../assets/weapons/player/*.glb', { eager: true, query: '?url', import: 'default' }));
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // A rank look's pre-swap bake takes up to this many ms of each frame (it runs while the fight plays; one bounded step is ~8 ms at worst).
-const LOOK_BAKE_MS = 6;
+const LOOK_BAKE_MS = sceneNum('scene.look-bake-ms');
 export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapon) => WEAPON_LOOK[weapon]?.baked || equipUrl(weapon));
 // In-world fights (Origins ?worldfight, Dom 2026-10-07: "the Pit's own fight, where you stand, without the arena"). With a mount the duel scene is the same scene it always is, with
 // the Pit's rigs, effects and locked camera in the arena's own coordinates, except that no arena, crowd or arena light is built: `holder` (the page's world, moved in by the page) is
