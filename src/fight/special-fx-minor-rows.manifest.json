@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "specialFxMinorRow",
+      "file": "special-fx-minor-rows.json",
+      "at": "specialFxMinorRows",
+      "key": "id",
+      "required": {
+        "fields": "object"
+      }
+    }
+  ]
+}

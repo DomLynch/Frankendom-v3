@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import { SKILL_ROWS } from './moves.ts';
+import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 
 // Presentation only: the shared SKILL-IMPACT kit (Strategy via Lead, 2026-09-26, SCOPE 8). Every skill move ships on it: a landed `Hit`
 // whose move is `skill_<id>` throws a short tinted flash at the contact and a fan of dust and sparks, in that move's colour. Driven by the
@@ -12,7 +13,7 @@ import { SKILL_ROWS } from './moves.ts';
 // green: green is Witch-fire's, and the warden's cue. A skill move not in the table yet flashes the neutral default the day it lands.
 export const IMPACT_TINT: Readonly<Record<string, string>> = Object.fromEntries(Object.values(SKILL_ROWS).filter((r) => r.impactTint).map((r) => [r.id, r.impactTint!]));   // the skill rows' impactTint (skill-defs.json; Characters owns the colours)
 export const IMPACT_DEFAULT = '#e6e0d4';
-export const IMPACT = { flash: 0.12, flashSize: 0.9, sparks: 10, life: 0.4, reach: 0.28 } as const;   // seconds, metres
+export const IMPACT = FEEL_RULES.skillImpactRule[0]!;   // seconds, metres
 const HEIGHT = { head: 1.62, torso: 1.2, legs: 0.62 } as const;   // the contact's height on a scale-1 body, by the sim's hit location
 
 // What a landed skill blow throws, or null: a Hit on a `skill_*` move other than Witch-fire. A blow taken through a raised guard is half.

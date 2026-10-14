@@ -11,6 +11,7 @@ import { chargeGait } from './charge-timing.ts';
 import type { BossKind } from './special-boss-timing.ts';
 import { BOSSES, type BossRow } from './boss-rows.ts';
 import { classTravel, type ClassSpecial } from './special-class-timing.ts';
+import TIMING_RULES from './special-timing-rules.json' with { type: 'json' };
 
 // The special-effect registry (Strategy 2026-10-01: thirty specials are coming, so a lane adds ONE entry here, not an if-branch in scene.ts). A mode is picked by the
 // page's `?special=<id>` (special-look.ts SPECIAL_TESTS) and says everything the scene needs: how to load its effect (a lazy chunk), which bones it reads, how the
@@ -40,7 +41,8 @@ export function gait<P extends string>(mode: SpecialMode | undefined, side: 0 | 
 const loadExecutioner = (scene: THREE.Scene, opponent: OpponentId, kind: BossKind, exposure: number) => import('./special-fx-executioner.ts').then(({ createExecutionerSpecial, bossLook }) => createExecutionerSpecial(scene, opponent, kind, bossLook(kind, exposure)));
 // Blood Tithe's forward pose (Dom, 2026-10-01: the heavy's raise cocks the gladius back like a backhand, and the thrust held short of contact tucks the blade at his chest):
 // the thrust clip held AT its contact pose through the gather, drawn back to TITHE_CHAMBER of it by TITHE_STRIKE_FROM, then driven to full contact on the strike tick.
-export const TITHE_CHAMBER = 0.55, TITHE_CHAMBER_FROM = 0.84, TITHE_STRIKE_FROM = 0.92;
+const TITHE = TIMING_RULES.titheRule[0]!, SLAM = TIMING_RULES.shieldSlamRule[0]!;   // the titheRule and shieldSlamRule rows (src/fight/special-timing-rules.json)
+export const TITHE_CHAMBER = TITHE.chamber, TITHE_CHAMBER_FROM = TITHE.chamberFrom, TITHE_STRIKE_FROM = TITHE.strikeFrom;
 
 const ease = (k: number) => k * k * (3 - 2 * k), clamp = (k: number) => Math.min(1, Math.max(0, k));
 
@@ -132,7 +134,7 @@ export const SPECIAL_MODES: Partial<Record<SpecialTest, SpecialMode>> = {
       const stage = side === 1 ? specialStage(fighters[1]) : null;
       if (!stage) return { pose };
       const age = stage.stage === 'windup' ? stage.progress * RULES.special.windup : RULES.special.windup + stage.progress * SPECIAL_RECOVER;
-      return { pose, slam: age < SLAM_AT - 14 ? ease(clamp(age / (SLAM_AT - 14))) : age < SLAM_AT ? 1 + clamp((age - (SLAM_AT - 14)) / 14) : age < RULES.special.windup + 18 ? 2 : 2 * (1 - ease(clamp((age - RULES.special.windup - 18) / 20))) };
+      return { pose, slam: age < SLAM_AT - SLAM.lead ? ease(clamp(age / (SLAM_AT - SLAM.lead))) : age < SLAM_AT ? 1 + clamp((age - (SLAM_AT - SLAM.lead)) / SLAM.lead) : age < RULES.special.windup + SLAM.hold ? 2 : 2 * (1 - ease(clamp((age - RULES.special.windup - SLAM.hold) / SLAM.release))) };
     },
   },
   wake: classFx('wake'), stirring: classFx('stirring'), tempo: classFx('tempo'), pulse: classFx('pulse'), drag: classFx('drag'), swing: classFx('swing'),
