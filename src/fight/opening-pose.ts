@@ -1,9 +1,10 @@
 // The open stagger (Lead's brief item 2): a foe opened by a parry or a broken posture drops his guard and shield and leans off balance for
 // exactly as long as the sim's opening lasts (Practice.opening: `left` ticks of `of`). View only: radians added after the mixer, like the tired body.
 import type { Opening } from './combat.ts';
+import { fxNum } from './fx-rows.ts';
 
 const ramp = (v: number, a: number, b: number): number => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
-const IN = .12, OUT = .2;   // the share of the opening spent falling off balance, and recovering; the rest holds, so it ends with the opening, never after
+const IN = fxNum('opening-pose.in'), OUT = fxNum('opening-pose.out');   // the share of the opening spent falling off balance, and recovering; the rest holds, so it ends with the opening, never after
 // 0..1: 0 once no opening is left, up fast at the start, held through the middle, easing out over the last OUT of it.
 export const openWeight = (o: Pick<Opening, 'left' | 'of'> | null): number => {
   if (!o || o.of <= 0 || o.left <= 0) return 0;

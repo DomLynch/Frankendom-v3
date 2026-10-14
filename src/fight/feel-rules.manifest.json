@@ -1,28 +1,6 @@
 {
   "tables": [
     {
-      "table": "beastScaleRule",
-      "file": "feel-rules.json",
-      "at": "beastScaleRule",
-      "key": "id",
-      "required": {
-        "wolf": "number",
-        "boar": "number",
-        "bear": "number"
-      }
-    },
-    {
-      "table": "openedRule",
-      "file": "feel-rules.json",
-      "at": "openedRule",
-      "key": "id",
-      "required": {
-        "chunk": "integer",
-        "stepMs": "integer",
-        "scan": "integer"
-      }
-    },
-    {
       "table": "hamstrungRule",
       "file": "feel-rules.json",
       "at": "hamstrungRule",
