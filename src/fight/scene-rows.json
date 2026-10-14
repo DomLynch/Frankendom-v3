@@ -1,0 +1,6 @@
+{
+  "sceneRows": [
+    { "id": "power-words.gain", "fields": {"value": 0} },
+    { "id": "boss-telegraph.roll-ticks", "fields": {"value": 24} }
+  ]
+}
