@@ -1,0 +1,88 @@
+{
+ "read": [
+  {
+   "id": "feint",
+   "value": 0.16666666666666666
+  },
+  {
+   "id": "after",
+   "value": 2
+  },
+  {
+   "id": "parry",
+   "value": 0.5
+  },
+  {
+   "id": "guardTicks",
+   "value": 180
+  },
+  {
+   "id": "guardShare",
+   "value": 0.45
+  },
+  {
+   "id": "roll",
+   "value": 0.4
+  },
+  {
+   "id": "swings",
+   "value": 11
+  },
+  {
+   "id": "lightShare",
+   "value": 0.7
+  },
+  {
+   "id": "baitHold",
+   "value": 12
+  },
+  {
+   "id": "parryBoost",
+   "value": 2
+  },
+  {
+   "id": "parryCap",
+   "value": 0.85
+  },
+  {
+   "id": "chargeBoost",
+   "value": 0.4
+  },
+  {
+   "id": "kickBoost",
+   "value": 0.3
+  },
+  {
+   "id": "anticipate",
+   "value": 8
+  },
+  {
+   "id": "baitShare",
+   "value": 0.7
+  },
+  {
+   "id": "parkShare",
+   "value": 0.5
+  },
+  {
+   "id": "lateNotice",
+   "value": 6
+  },
+  {
+   "id": "holdTicks",
+   "value": 6
+  },
+  {
+   "id": "latch",
+   "value": 600
+  },
+  {
+   "id": "plus",
+   "value": 2
+  },
+  {
+   "id": "decay",
+   "value": 0
+  }
+ ]
+}

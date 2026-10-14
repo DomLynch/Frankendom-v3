@@ -1,0 +1,9 @@
+{
+  "tables": [
+    { "table": "move", "file": "move-defs.json", "at": "moves", "key": "id",
+      "required": { "direction": "string", "path": "any", "chainPath": "any", "chained": "any", "chain": "any", "windup": "number", "active": "number", "recovery": "number", "damage": "number", "stamina": "number", "staminaDamage": "number", "stagger": "number", "poise": "number", "poiseFrom": "number", "breaksGuard": "boolean", "chip": "number", "parryable": "boolean", "knockback": "number", "stepIn": "number", "feintUntil": "number", "posture": "number", "chamber": "any", "charges": "boolean", "reach": "number", "vsGuard": "any" },
+      "optional": { "minReach": "number", "damageKind": "string" } },
+    { "table": "movepath", "file": "move-defs.json", "at": "paths", "key": "id",
+      "required": { "clip": "string", "source": "number", "windup": "number", "active": "number", "recovery": "number" } }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "playRadiusDial",
+      "file": "play-radius-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}
