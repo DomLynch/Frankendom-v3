@@ -1,0 +1,20 @@
+{
+  "specialFxCoreRows": [
+    { "id": "special-fx.cloud", "fields": {"value": 14} },
+    { "id": "special-fx.halo", "fields": {"value": 8} },
+    { "id": "special-fx.burst", "fields": {"value": 20} },
+    { "id": "special-fx.burst-life", "fields": {"value": 0.55} },
+    { "id": "special-fx.cloud-high", "fields": {"value": 0.7} },
+    { "id": "special-fx.cloud-low", "fields": {"value": 0.12} },
+    { "id": "boss.pit-mist", "fields": {"value": 0.13} },
+    { "id": "boss.pit-stain", "fields": {"value": 0.07} },
+    { "id": "boss.pit-breath", "fields": {"value": 0.03} },
+    { "id": "boss.mist", "fields": {"value": 64} },
+    { "id": "boss.ghost", "fields": {"value": 23} },
+    { "id": "boss.flies", "fields": {"value": 280} },
+    { "id": "boss.wisp", "fields": {"value": 30} },
+    { "id": "boss.ring", "fields": {"value": 18} },
+    { "id": "boss.veils", "fields": {"value": 6} },
+    { "id": "boss.drops", "fields": {"value": 260} }
+  ]
+}

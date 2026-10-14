@@ -12,6 +12,7 @@ import { atan2 as detAtan2, cos as detCos, sin as detSin } from './detmath.ts';
 // detmath's exact range); the two ** (pow) stay native: detmath has no pow.
 const detHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
+import { specialFxMinorNum } from './special-fx-minor-rows.ts';
 
 // The Pitborn's rank 8-10 boss specials (Pitborn lane; Dom picked all three on 2026-10-01: Cracking Ground, Ash Fall, Wind Wall). One idea each, drawn
 // from the arena itself, no props, no glow, painted and irregular. Presentation only, on Red Wind's seam (special-timing.ts) and its painted strokes
@@ -60,7 +61,7 @@ export const PITBORN_KINDS: readonly PitbornKind[] = ROWS.map((r) => r.id);
 type DayNight = { day: number; night: number };
 type Params = { cracks: number; clods: number; grit: number; crackAlpha: number; clodAlpha: number; gritAlpha: number; gritTint: { day: string; night: string }; flakes: number; patches: number; smoke: number;
   patchAlpha: DayNight; smokeAlpha: DayNight; flakeAlpha: DayNight; streaks: number; sand: number; strokeAlpha: DayNight; sandAlpha: DayNight; over: boolean };
-const BUILD = 30;   // ticks of visible build-up before the landing
+const BUILD = specialFxMinorNum('pitborn.build');   // ticks of visible build-up before the landing
 // Opacity ceilings (Strategy's bar 10-01: haze <= 0.7 on the day sand, <= 0.4 on the Night Pit). HAZE = what hangs in the air and can wash the picture: Surtr's smoke
 // (0.55 / 0.3) and Typhon's gale strokes (0.7 / 0.4); pinned by tests/special-fx-pitborn.test.ts. Ground marks and specks are not haze: Antaeus's cracks (crackAlpha) and clods,
 // Surtr's soot and flakes, Typhon's sand specks (small, each a few pixels; on the Night Pit they too are capped at 0.4). Antaeus's crackAlpha (0.85) keeps the
