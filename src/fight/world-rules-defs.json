@@ -29,6 +29,15 @@
     { "id": "hopSeconds", "value": 15, "unit": "s" },
     { "id": "firstFightSeconds", "value": 10, "unit": "s" },
     { "id": "openerClear", "value": 15, "unit": "m" },
-    { "id": "openerFar", "value": 40, "unit": "m" }
+    { "id": "openerFar", "value": 40, "unit": "m" },
+    { "id": "outOfCombat", "value": 6, "unit": "s" },
+    { "id": "disengage", "value": 12, "unit": "m" },
+    { "id": "disengageSeconds", "value": 3, "unit": "s" },
+    { "id": "engageGapMax", "value": 6.5, "unit": "m" },
+    { "id": "commitRange", "value": 8, "unit": "m" },
+    { "id": "maxHeroMps", "value": 12, "unit": "m/s" },
+    { "id": "maxCreatures", "value": 8, "unit": "creatures" },
+    { "id": "maxEvents", "value": 256, "unit": "events" },
+    { "id": "maxWorldTicks", "value": 18000, "unit": "ticks" }
   ]
 }

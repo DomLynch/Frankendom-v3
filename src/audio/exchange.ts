@@ -1,3 +1,4 @@
+import { audioRule } from '../fight/sound/audio-rules.ts';
 import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../fight/duel.ts';
 import type { DeathPresentation } from '../fight/sound/cues.ts';
 import { RULES } from '../fight/moves.ts';
@@ -10,7 +11,7 @@ import { PLAIN_DEATH } from '../fight/finisher-look.ts';
 type Beat = { name: string; tick: number; events: string[] };
 export type Exchange = { ticks: { tick: number; events: CombatEvent[]; presentation?: DeathPresentation }[]; beats: Beat[]; length: number };
 export const EXCHANGE_BEATS = ['walk', 'draw', 'light', 'light', 'heavy', 'guard', 'block', 'parry', 'riposte', 'hit taken', 'kick', 'death'] as const;
-const WARDEN_HEALTH = 80;   // 11 + 11 + 18 + 24 + 4 = 68 dealt before the charged heavy (27) kills
+const WARDEN_HEALTH = audioRule('wardenHealth');   // 11 + 11 + 18 + 24 + 4 = 68 dealt before the charged heavy (27) kills
 export const forward = (): Intent['move'] => ({ x: 0, z: -1, yaw: 0, run: false });
 
 export function scriptExchange(): Exchange {
