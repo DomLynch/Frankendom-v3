@@ -35,7 +35,7 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   engageToken?: (id: string) => string | null;   // the creature's engage token (spawn-net.ts), null until the server answered: the bout's roll seed is hash32(token, join step); no token = no roll, today's fight
   onEvent?(ev: Event): void;       // every combat event, after the page has shown it (the spawn client, spawn-net.ts onCombatEvent)
   canPlay?: (finisher: FinisherId) => boolean;   // which finishers this client can show on a creature (default: plainDeath only); the pick is selectFinisher cut down to the creature's row (src/creature-gore.ts) and to these
-  hero?: () => { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number } };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
+  hero?: () => { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number } };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
 };
 /** One pair's frame of contacts for the client's effects: the Pit events the loop made this frame (ev.pit), the pair's duel, and where the two stand (world metres). Drained by takeContacts(). */
 export type PairContacts = { foe: string; kind: string; finisher?: FinisherId; events: CombatEvent[]; duel: Duel; hero: { x: number; z: number; facing: number }; foeAt: { x: number; z: number; facing: number; health: number } };
@@ -48,9 +48,9 @@ export function finishOf(kind: string, finish: Finish, weapons: readonly [Weapon
 }
 
 export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
-  const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number } } => d.hero?.() ?? { level: 1 };
-  const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet, spell: asked } = mine(), spell = asked ? resolveSpell(asked.id, asked.skill, sheet?.spellPower ?? 0) : undefined, p = player(ME, x, z, facing, level, null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}), ...(spell ? { spell } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
-  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
+  const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number } } => d.hero?.() ?? { level: 1 };
+  const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet, spell: asked, spell2: asked2 } = mine(), spell = asked ? resolveSpell(asked.id, asked.skill, sheet?.spellPower ?? 0) : undefined, spell2 = asked2 ? resolveSpell(asked2.id, asked2.skill, sheet?.spellPower ?? 0) : undefined, p = player(ME, x, z, facing, level, null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
+  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, pendingCast2 = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
   let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
@@ -58,7 +58,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const gearOf = () => { const p = player(ME, 0, 0, 0, mine().level); return { level: p.level, shielded: p.shielded }; };
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
-  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
+  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), ...(m.spell2 ? { spell2: mine().spell2 } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
   function release(id: string) { recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   /** The live hero is built from hero() ONCE, at load; the gear and the sheet arrive later. At a clean window open (no creature, no open bout) rebuild him from hero() as it stands now at his current place, so the live fighter and the record's heroBody() are the same hero (live == record, Auditor #2569). Health keeps its fraction; stamina, posture and exhaustion carry. Never mid-bout. */
   function rebody() {
@@ -100,6 +100,8 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
     /** The SKILL / cast press: the hero's equipped spell starts its cast on the next step if he is free and has the stamina (the Pit's special slot); with no spell it does nothing. */
     cast() { pendingCast = true; },
+    /** The second slot's press (spell-slot-defs.json slot b): its own spell and cooldown; with no second spell it does nothing. */
+    cast2() { pendingCast2 = true; },
     guard(held: boolean, side: Direction | null = null) { guardHeld = held; guardSide = side; },
     update(dt: number, hero: { x: number; z: number; facing: number }): { dx: number; dz: number } {
       const mobs = d.mobs(); if (!mobs) return { dx: 0, dz: 0 };
@@ -110,12 +112,12 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       while (acc >= STEP) {
         acc -= STEP; steps++; stepped = true;
         for (const p of pairs(world)) lastDuel.set(p.foe, p.duel);
-        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll, guardSide, !heroDead && pendingCast); first = false;
+        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll, guardSide, !heroDead && pendingCast, !heroDead && pendingCast2); first = false;
         recorder.step(step);
-        const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null; pendingCast = false;
+        const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null; pendingCast = false; pendingCast2 = false;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }
       }
-      pendingAttack = null; pendingRoll = null; pendingCast = false;
+      pendingAttack = null; pendingRoll = null; pendingCast = false; pendingCast2 = false;
       for (const f of world.fighters.slice(1)) {
         const s = specs.get(f.id); if (!s) continue; const x = fxOf(f.id);
         if (f.phase === 'dead') {

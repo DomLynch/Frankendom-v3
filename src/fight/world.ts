@@ -57,6 +57,7 @@ export type Fighter = {
   stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
   weapon?: WeaponId;                                    // the hero's drawn weapon (absent = the Pit's DEFAULT_WEAPON): open-fight.ts builds his Pit fighter with it, as initialDuel does; a creature's is its row's
   sheet?: Sheet;                                        // the hero's sheet (Wave A1, sheet-rows.ts): the Pit's own withSheet runs on his Pit fighter, so the dials (health, attack, armour, poise, recovery ...) mean here what they mean in the Pit; absent = no sheet, today's hero
+  spell2?: Spell;                                       // slot b (spell-slot-defs.json): the second equipped spell, cast by Input.special2; absent = one slot, today's hero byte for byte
   spell?: Spell;                                        // the hero's equipped spell, resolved (spell-cast.ts resolveSpell): the Pit's own cast runs on his Pit fighter, and Input.special is the cast press (the SKILL button); absent = no spell, today's hero byte for byte
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
   cc?: CcLadder;   // the crowd-control ladder (cc-ladder.ts): ONE per fighter, carried through every bout he is in, so three creatures on one hero step the same stun / knockdown ladder
@@ -66,7 +67,7 @@ export type Fighter = {
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
 };
 export type World = { time: number; fighters: Fighter[]; aggro: Record<string, Record<string, number>>; streams: Record<string, Bout> };   // streams: slot-0 player id -> his fight (a Pit duel); aggro[attacker][victim] = when the attacker last struck that player
-export type Input = { x: number; z: number; special?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; guard?: boolean; roll?: { x: number; z: number } | null; guardDirection?: Direction | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
+export type Input = { x: number; z: number; special?: boolean; special2?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; guard?: boolean; roll?: { x: number; z: number } | null; guardDirection?: Direction | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
 /** The Pit's own CombatEvent behind a Zone 1 event (location, direction, material, weapon, counter, rear, charged ...): gore, wounds, finishers, hit-impact and the clip driver read the Pit's event, not our summary of it. */
 export type Event = EventBody & { pit?: CombatEvent };
 type EventBody =
@@ -90,11 +91,12 @@ function fighter(id: string, side: Fighter['side'], kind: string, x: number, z: 
     homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
 }
 /** The player: the Pit's own hero (createFighter + withSheet), his bar and poise from that builder; no gear multiplier lives in the world (the sheet carries Attack and armour). */
-export const player = (id: string, x: number, z: number, facing = 0, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet; spell?: Spell }): Fighter => {
+export const player = (id: string, x: number, z: number, facing = 0, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet; spell?: Spell; spell2?: Spell }): Fighter => {
   const base: Fighter = { ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), level, shielded: level < PROTECT_LEVEL, skill };
   if (build?.weapon !== undefined) base.weapon = build.weapon;
   if (build?.sheet !== undefined) base.sheet = build.sheet;
   if (build?.spell !== undefined) base.spell = build.spell;
+  if (build?.spell2 !== undefined) base.spell2 = build.spell2;
   const sized = heroSheeted(base);   // the Pit's builder sizes the bar and the poise (no sheet = createFighter's own hero)
   base.maxHealth = sized.maxHealth; base.health = sized.maxHealth; base.poise = sized.poise;
   return base;
