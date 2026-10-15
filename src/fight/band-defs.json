@@ -3,11 +3,12 @@
     {"id":"contactGap","value":0.85,"unit":"m"},
     {"id":"innerFrac","value":0.34,"unit":"of the working span"},
     {"id":"midFrac","value":0.67,"unit":"of the working span"},
-    {"id":"offBandMult","value":0.6,"unit":"x damage"},
+    {"id":"offBandMult","value":0.8,"unit":"x damage"},
     {"id":"holdForward","value":0.6,"unit":"of walking speed"},
     {"id":"holdBack","value":0.4,"unit":"of walking speed"},
-    {"id":"holdMargin","value":0,"unit":"m beyond the band edge before the AI steps"},
-    {"id":"holdBackOn","value":1,"unit":"1 = the AI also steps back from inside its band, 0 = it only closes in"}
+    {"id":"holdMargin","value":0.15,"unit":"m beyond the band edge before the AI steps"},
+    {"id":"holdBackOn","value":0,"unit":"1 = the AI also steps back from inside its band, 0 = it only closes in"},
+    {"id":"holdOnlyInOpening","value":1,"unit":"1 = the AI closes only in the foe's recovery / committed-swing windows it already reads, 0 = at will"}
   ],
   "bands": [
     {"id":"inner"},
