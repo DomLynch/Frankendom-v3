@@ -9,7 +9,7 @@ import THORN_STEPPE from './spells-thorn-steppe.json' with { type: 'json' };
 
 // The ONE legend key (Lead 2026-10-13): a legend is its spell row's id without `spell:` ("alvis"), the key Backend's grimoire grants by. A kill's Provenance.legendId writes exactly that.
 // The spell catalogue (src/fight/spells-<region>.json, 700 rows) is the only spell table; a row names its boss (a catalogue row id) and, for a boss with ranks, the rank legend (`boss_legend`).
-export type CatalogueSpell = { id: string; boss: string; boss_legend?: string; school: string; bricks: { root: string; modifiers: readonly string[]; suffix: string | null } };
+export type CatalogueSpell = { id: string; name?: string; boss: string; boss_legend?: string; school: string; bricks: { root: string; modifiers: readonly string[]; suffix: string | null } };
 export const SPELL_ROWS: readonly CatalogueSpell[] = ([ASH_FRONTIER, BLACK_SAND, JADE_REACH, MARBLE_SHORE, RED_HOLLOW, SUN_COURT, THORN_STEPPE] as { spells: CatalogueSpell[] }[]).flatMap((t) => t.spells);
 export const legendOf = (row: CatalogueSpell): string => row.id.slice('spell:'.length);
 export const SPELL_OF_LEGEND: Readonly<Record<string, CatalogueSpell>> = Object.fromEntries(SPELL_ROWS.map((r) => [legendOf(r), r]));
