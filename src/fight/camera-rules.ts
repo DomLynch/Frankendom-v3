@@ -6,7 +6,7 @@ import DEFS from './camera-rules-defs.json' with { type: 'json' };
 import MANIFEST from './camera-rules-defs.manifest.json' with { type: 'json' };
 
 export type CameraRule = { readonly id: string; readonly value: number; readonly unit: string };
-const NAMED = ['aimPerShrink', 'lowSide', 'lowLift', 'tallBack', 'tallLift', 'shoulder', 'sideClear', 'shortFade', 'followAhead', 'followLookY', 'compileBoundMs', 'lookBakeMs', 'tourDelay', 'tourAfterSettle', 'tourBlendIn', 'tourLap', 'tourBreathe', 'tourRise', 'tourRadius', 'tourBreath', 'tourLookY', 'tourLookYPortrait'] as const;
+const NAMED = ['aimPerShrink', 'lowSide', 'lowLift', 'tallBack', 'tallLift', 'shoulder', 'sideClear', 'shortFade', 'followAhead', 'followLookY', 'compileBoundMs', 'lookBakeMs', 'tourDelay', 'tourAfterSettle', 'tourBlendIn', 'tourLap', 'tourBreathe', 'tourRise', 'tourRadius', 'tourBreath', 'tourLookY', 'tourLookYPortrait', 'introLap', 'introRadius', 'introBreath', 'introBreathe', 'introHeight', 'introRise', 'introRiseEvery', 'introLookY', 'introLookYPortrait', 'introBlendIn', 'introBlendOut'] as const;
 /** The one loader: rows keyed by id (a duplicate id or a missing or mistyped field is refused), every rule the stage reads by name must exist, with a positive value. */
 export function loadCameraRules(raw: { rules?: readonly unknown[] }): readonly CameraRule[] {
   loadRegistry([tableFromFile(MANIFEST.tables[0] as unknown as Manifest, raw, 'camera-rules-defs.json')]);
@@ -19,3 +19,5 @@ export const CAMERA_RULES: readonly CameraRule[] = loadCameraRules(DEFS);
 export const cameraRule = (id: (typeof NAMED)[number]): number => CAMERA_RULES.find((r) => r.id === id)!.value;
 /** The title tour's seconds and metres, one row each. */
 export const tourRules = () => ({ delay: cameraRule('tourDelay'), afterSettle: cameraRule('tourAfterSettle'), blendIn: cameraRule('tourBlendIn'), lap: cameraRule('tourLap'), breathe: cameraRule('tourBreathe'), rise: cameraRule('tourRise'), radius: cameraRule('tourRadius'), breath: cameraRule('tourBreath'), lookY: cameraRule('tourLookY'), lookYPortrait: cameraRule('tourLookYPortrait') });
+/** The first-visit intro orbit's seconds and metres, one row each (camera.ts introTour). */
+export const introRules = () => ({ lap: cameraRule('introLap'), radius: cameraRule('introRadius'), breath: cameraRule('introBreath'), breathe: cameraRule('introBreathe'), height: cameraRule('introHeight'), rise: cameraRule('introRise'), riseEvery: cameraRule('introRiseEvery'), lookY: cameraRule('introLookY'), lookYPortrait: cameraRule('introLookYPortrait'), blendIn: cameraRule('introBlendIn'), blendOut: cameraRule('introBlendOut') });
