@@ -13,6 +13,9 @@ import { atan2 as detAtan2, cos as detCos, sin as detSin } from './detmath.ts';
 const detHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 import { specialFxMinorNum } from './special-fx-minor-rows.ts';
+import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import TEMPLATE_DEFS from './pitborn-templates-defs.json' with { type: 'json' };
+import TEMPLATE_MANIFEST from './pitborn-templates-defs.manifest.json' with { type: 'json' };
 
 // The Pitborn's rank 8-10 boss specials (Pitborn lane; Dom picked all three on 2026-10-01: Cracking Ground, Ash Fall, Wind Wall). One idea each, drawn
 // from the arena itself, no props, no glow, painted and irregular. Presentation only, on Red Wind's seam (special-timing.ts) and its painted strokes
@@ -50,11 +53,10 @@ export const isPitbornSpecial: typeof isHadesShadow = skillCast('cleave');
 // The kinds are the family's rows of src/fight/special-defs.json (special-rows.ts). The templates are this module's verbs, each its own painting:
 // crack (seams split out from his feet, clods lift and drop), ashfall (soot, low smoke, ash drifting over the arena), gale (strokes and sand torn
 // toward the target, the crowd banners snapping). A row carries its counts, its opacity ceilings (day / Night Pit) and its grit tint.
-export const PITBORN_TEMPLATES = {
-  crack: ['cracks', 'clods', 'grit', 'crackAlpha', 'clodAlpha', 'gritAlpha', 'gritTint'],
-  ashfall: ['flakes', 'patches', 'smoke', 'patchAlpha', 'smokeAlpha', 'flakeAlpha'],
-  gale: ['streaks', 'sand', 'grit', 'strokeAlpha', 'sandAlpha', 'gritTint', 'over'],
-} as const;
+const TEMPLATE_TABLE = tableFromFile(TEMPLATE_MANIFEST.tables[0] as unknown as Manifest, TEMPLATE_DEFS, 'pitborn-templates-defs.json');
+loadRegistry([TEMPLATE_TABLE]);
+/** Verb id -> the params its row must carry (rows: pitborn-templates-defs.json; each verb's painting is this module's code). */
+export const PITBORN_TEMPLATES: Readonly<Record<string, readonly string[]>> = Object.fromEntries((TEMPLATE_TABLE.rows as unknown as { id: string; params: string[] }[]).map((r) => [r.id, r.params]));
 const ROWS = specialFamily(SPECIALS, 'pitborn', PITBORN_TEMPLATES);
 export type PitbornKind = string;
 export const PITBORN_KINDS: readonly PitbornKind[] = ROWS.map((r) => r.id);
@@ -81,7 +83,7 @@ const smokeLook = (exposure: number): SandLook => exposure > 1.5 ? { core: new T
 // The gale's grit: a near-black brown core with a pale torn edge on the day sand (pale grey, then sand-brown, vanished against it); near-black warm grey on the Night Pit (pale strokes FAILed 10-02).
 const galeLook = (exposure: number): SandLook => exposure > 1.5 ? { core: new THREE.Color(0.02, 0.018, 0.015), edge: new THREE.Color(0.035, 0.031, 0.026), dim: true }
   : { core: new THREE.Color(0.022, 0.014, 0.008), edge: new THREE.Color(0.46, 0.35, 0.2), dim: false };
-const LOOK_OF: Record<keyof typeof PITBORN_TEMPLATES, (exposure: number) => SandLook> = { crack: earthLook, ashfall: ashLook, gale: galeLook };   // the sand's colour per template verb
+const LOOK_OF: Record<string, (exposure: number) => SandLook> = { crack: earthLook, ashfall: ashLook, gale: galeLook };   // the sand's colour per template verb
 
 const texture = (n: number, fill: (x: number, y: number, put: (r: number, g: number, b: number, a: number) => void) => void) => {
   const px = new Uint8Array(n * n * 4);
@@ -164,7 +166,7 @@ export type PitbornSpecial = ReturnType<typeof createPitbornSpecial>;
 export function createPitbornSpecial(scene: THREE.Scene, opponent: OpponentId, kind: PitbornKind | SpecialRow, exposure: number) {
   const row = typeof kind === 'string' ? ROWS.find((r) => r.id === kind) : kind;
   if (!row) throw Error(`unknown pitborn special "${String(kind)}"`);
-  const template = row.template as keyof typeof PITBORN_TEMPLATES, P = row.params as Partial<Params>, night = exposure > 1.5;
+  const template = row.template, P = row.params as Partial<Params>, night = exposure > 1.5;
   const is: typeof isHadesShadow = (o, actor, move) => o === row.opponent && actor === row.cast.actor && (row.cast.move === undefined || move === row.cast.move);
   const root = new THREE.Group(); root.name = 'special fx'; root.visible = false; scene.add(root);
   const look = LOOK_OF[template](exposure);
