@@ -15,6 +15,11 @@
     {"id":"mid"},
     {"id":"outer"}
   ],
+  "spanBlows": [
+    {"id":"light_right"},
+    {"id":"heavy_overhead"},
+    {"id":"thrust"}
+  ],
   "weapons": [
     {"id":"knife","bestBand":"inner"},
     {"id":"gladius","bestBand":"inner"},
