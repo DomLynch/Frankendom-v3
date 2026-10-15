@@ -1,5 +1,15 @@
 {
   "dials": [
-    {"id": "PERK_MAX","value": 30}
+    {"id": "PERK_MAX","value": 30},
+    {"id": "PER_MILLE","value": 1000},
+    {"id": "MAX_PERK_TEMPLATES","value": 2},
+    {"id": "FULL_TURN","value": 2},
+    {"id": "LORARIUS_SECTORS","value": 3},
+    {"id": "BODY_SPACING","value": 0.85},
+    {"id": "MOVE_EPSILON","value": 0.1},
+    {"id": "GAP_EPSILON","value": 1e-8},
+    {"id": "PUSH_SPLIT","value": 2},
+    {"id": "ROLL_HALF","value": 2},
+    {"id": "ARC_HALF","value": 2}
   ]
 }

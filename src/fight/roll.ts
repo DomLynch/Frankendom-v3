@@ -1,5 +1,5 @@
 // The world-mob damage roll, defined ONCE (Dom's rule: one engine for the Pit and the world; the Origins luck ruling, +/-10% on every blow of a world-mob fight). Its only import is the shared row loader (the swarm rows):
-// src/fight/duel.ts applies it inside the duel step (Duel.roll) and origins/luck/luck.ts shows the same numbers on the HUD, both importing THESE functions, so they cannot drift.
+// src/fight/duel.ts applies it inside the duel step (Duel.roll) and src/core/luck.ts shows the same numbers on the HUD, both importing THESE functions, so they cannot drift.
 // A sim file: the draw is a pure function of (fight seed, blow index) with no Math.random and no transcendental, so a replay reproduces it on any engine.
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import SWARM_DEFS from './swarm-defs.json' with { type: 'json' };

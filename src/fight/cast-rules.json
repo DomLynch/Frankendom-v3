@@ -1,5 +1,5 @@
 {
   "rules": [
-    { "id": "cast", "spread": 15, "relDivisor": 1, "creditPerPoint": 0.2 }
+    { "id": "cast", "spread": 15, "relDivisor": 1, "creditPerPoint": 0.2, "tenths": 10, "costWeight": 2, "drawSpan": 2, "levels": 10, "costCapFrom": 64 }
   ]
 }

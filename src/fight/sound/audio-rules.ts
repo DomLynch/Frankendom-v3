@@ -9,7 +9,7 @@ export type AudioRule = { readonly id: string; readonly value: number; readonly 
 export type Throat = { f0: number; formants: [number, number]; rasp: number };   // f0 Hz at rest; two vowel formants; the noise share 0..1
 export type Caster = { f0: number; breath: number; syllable: number };
 type Raw = { rules?: readonly unknown[]; throats?: readonly unknown[]; casters?: readonly unknown[] };
-const NAMED = ['arenaLevel', 'bellSeconds', 'bellRate', 'bellDrive', 'bloomAbove', 'bloomSeconds', 'wardenHealth', 'gateCut', 'spriteSeconds', 'maxLayers', 'outputGain', 'breathAhead', 'breathDuck', 'breathDuckBack', 'breathRelease', 'pitchSpread', 'whipRaise', 'baseSeed', 'mix', 'rise', 'riseFloor', 'cut', 'voices', 'powerWordLookGain'] as const;
+const NAMED = ['arenaLevel', 'bellSeconds', 'bellRate', 'bellDrive', 'bloomAbove', 'bloomSeconds', 'wardenHealth', 'gateCut', 'spriteSeconds', 'maxLayers', 'outputGain', 'breathAhead', 'breathDuck', 'breathDuckBack', 'breathRelease', 'pitchSpread', 'whipRaise', 'whipRateBase', 'whipGuardCap', 'whipGuardStep', 'baseSeed', 'mix', 'rise', 'riseFloor', 'cut', 'voices', 'powerWordLookGain'] as const;
 /** The one loader: the three tables go through the registry (a duplicate id or a missing or mistyped field is refused), every rule the sound reads by name must exist, with a positive value. */
 export function loadAudioRules(raw: Raw): { rules: readonly AudioRule[]; throats: Readonly<Record<string, Throat>>; casters: Readonly<Record<string, Caster>> } {
   loadRegistry(MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, raw, 'audio-rules-defs.json')));
