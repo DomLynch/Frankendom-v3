@@ -1,6 +1,6 @@
 // The Gambit, defined ONCE (Dom's rule: one engine for the Pit and the world). A chosen version of the heavy: a second heavy press after the chamber arms it, the blow keeps the heavy's
 // tell and timing, and when it would connect a draw decides: it lands for `multiplier` times the heavy, or the thrower staggers and nobody is hurt. Odds are ONE constant, about 1 in 2 for about 2x
-// (Dom-approved 2026-10-07); the mean equals a heavy, and the self-stagger's punish cost makes it slightly worse (condition C1). src/fight/duel.ts applies it and origins/luck/luck.ts shows the same numbers
+// (Dom-approved 2026-10-07); the mean equals a heavy, and the self-stagger's punish cost makes it slightly worse (condition C1). src/fight/duel.ts applies it and src/core/luck.ts shows the same numbers
 // on the HUD, both importing THESE, so they cannot drift. A sim file: no Math.random, no clock, no transcendental.
 import { rollUnit } from './roll.ts';
 import { GAMBIT_KILL_FLOOR } from './gambit-rows.ts';   // the dials are rows (gambit-defs.json)
