@@ -43,7 +43,7 @@ function verifyUnder(record: FightRecord, onTick?: (practice: Practice) => void)
   const group = record.group;   // RV39: one stream of a shared-health group replays ALONE from the incoming damage and held spans its own record carries (src/fight/pack.ts)
   let practice: Practice;
   try {   // a record this build cannot step (a weapon the hero rig has no blade table for, a rule that throws) is a refusal, not a crash
-    const spell = record.spell ? resolveSpell(record.spell.id, record.spell.skill, record.sheet?.spellPower ?? 0) : undefined;   // RV53: the recorded spell id and skill, the credit from the recorded sheet (Backend verifies all three)
+    const spell = record.spell ? resolveSpell(record.spell.id, record.spell.skill, record.sheet?.spellPower ?? 0, record.v) : undefined;   // RV53: the recorded spell id and skill, the credit from the recorded sheet (Backend verifies all three)
     if (record.spell && (!spell || !record.specials)) return { ok: false, reason: 'unknown spell, or a spell without Special Moves', practice: null };
     practice = initialPractice(record.seed, opponentAt(opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose, record.sheet, spell);
     for (let i = 0; i < record.intents.length; i++) {
