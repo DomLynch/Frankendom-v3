@@ -1,5 +1,5 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
-import { isSpellId, resolveSpell } from './spell-cast.ts';
+import { isSpellId, spellUsesCap } from './spell-cast.ts';
 import { POOLS } from './pools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import LIST_DEFS from './spell-list-defs.json' with { type: 'json' };
@@ -18,13 +18,14 @@ const SPELL_ROWS_INDEX = (SPELL_INDEX as unknown as { spells: Record<string, rea
 
 export type SpellListEntry = { readonly id: string; readonly name: string; readonly level: number };
 /** The starter list, in row order. The loader refuses an id that is not a catalogue spell, a level that does not match the index, a cost above the stamina bar, a blank name and a repeated id. */
-export const SPELL_LIST: readonly SpellListEntry[] = (LIST_T.rows as unknown as SpellListEntry[]).map((r) => {
+export const checkSpellList = (rows: readonly SpellListEntry[]): SpellListEntry[] => rows.map((r) => {
   if (!isSpellId(r.id)) throw Error(`spell-list-defs "${r.id}": not a spell-index id`);
   if (SPELL_ROWS_INDEX[r.id]![1] !== r.level) throw Error(`spell-list-defs "${r.id}": level ${r.level} is not its catalogue level ${SPELL_ROWS_INDEX[r.id]![1]}`);
   if (!r.name.trim()) throw Error(`spell-list-defs "${r.id}": a display name`);
-  if (resolveSpell(r.id, 0)!.cost > STAMINA_BAR) throw Error(`spell-list-defs "${r.id}": costs more than the stamina bar`);
+  if (spellUsesCap(r.id)) throw Error(`spell-list-defs "${r.id}": costs more than the stamina bar (the cost cap would hide it)`);   // the raw cost, not resolveSpell's capped one: min(COST_CAP, raw) can never exceed the bar
   return { id: r.id, name: r.name, level: r.level };
 });
+export const SPELL_LIST: readonly SpellListEntry[] = checkSpellList(LIST_T.rows as unknown as SpellListEntry[]);
 
 export type SpellSlot = { readonly id: string; readonly action: string; readonly order: number };
 /** The slots in HUD order. An action is one verb per slot; at least one slot. */
