@@ -55,7 +55,7 @@ export function createHud(element: Lookup) {
   const attackButton = element<HTMLButtonElement>('attack-button');
   const kickButton = element<HTMLButtonElement>('kick-button');
   const heavyButton = element<HTMLButtonElement>('heavy-button');
-  const skillButton = element<HTMLButtonElement>('skill-button');
+  const skillButton = element<HTMLButtonElement>('skill-button'), skill2Button = element<HTMLButtonElement>('skill2-button');
   const dodgeButton = element<HTMLButtonElement>('dodge-button');
   const guardButton = element<HTMLButtonElement>('guard-button');
   const thrustButton = element<HTMLButtonElement>('thrust-button');
@@ -156,6 +156,8 @@ export function createHud(element: Lookup) {
       const ended = !practice.health || !practice.playerHealth;
       heavyButton.hidden = ended;
       skillButton.hidden = ended;   // the seventh button follows Heavy's visibility
+      skill2Button.hidden = ended || practice.duel.fighters[0].spell2 === undefined;   // an empty slot b shows no button (Strategy's ruling); the Pit ladder never fills it, the sparring wiring does
+      skill2Button.setAttribute('aria-disabled', String(!controlsReady || !accepts(practice, 'skill2')));
       // Lit off the simulation's own test (legal: a skill equipped, not cooling, 40 stamina), never while cooling. No ring, no countdown.
       skillButton.setAttribute('aria-disabled', String(!controlsReady || !skillOk));
       if (inSkillReach === null) delete skillButton.dataset.reach; else skillButton.dataset.reach = String(inSkillReach);   // out of its cone: the cluster's dim, still pressable
@@ -182,7 +184,7 @@ export function createHud(element: Lookup) {
     refused(clarity: readonly ClarityEvent[]) {
       for (const c of clarity) {
         if (c.type !== 'PressRefused' || c.actor !== 0) continue;
-        const button = c.action === 'heavy' ? heavyButton : c.action === 'thrust' ? thrustButton : c.action === 'kick' ? kickButton : c.action === 'skill' ? skillButton
+        const button = c.action === 'heavy' ? heavyButton : c.action === 'thrust' ? thrustButton : c.action === 'kick' ? kickButton : c.action === 'skill' ? skillButton : c.action === 'skill2' ? skill2Button
           : c.action === 'dodge' || c.action === 'backstep' ? dodgeButton : c.action === 'parry' ? guardButton : attackButton;
         button.classList.remove('refused'); void button.offsetWidth; button.classList.add('refused');
         setTimeout(() => button.classList.remove('refused'), 260);
