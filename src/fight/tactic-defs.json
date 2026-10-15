@@ -1,0 +1,9 @@
+{
+ "limits": [
+  {
+   "id": "maxEntries",
+   "value": 6
+  }
+ ],
+ "tactics": []
+}

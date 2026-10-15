@@ -75,6 +75,7 @@ export type AiProfile = {
   discipline: number;  // stamina floor below which it retreats and recovers
   lapse: number;       // 0..1 chance a noticed swing gets no answer at all (a human does not react to every cut they see; the AI would)
   // Fight-identity knobs (slice X, for the goblin; absent = the warden as it always was):
+  tactic?: string;     // a tactic-defs.json row id: weights the warden's answer to a noticed swing by situation (ai.ts, spec gothic-tactic-table); absent = the warden as it always was
   read?: number;       // 0..1 chance the warden reads an incoming attack's side and guards/parries on it; otherwise a random other side. Absent = reads perfectly (the pre-directional guard)
   feint?: number;      // 0..1 base share of cuts and heavies that are feints against anyone (the read-parrier's 1/6 still applies on top)
   guard?: number;      // 0..1 share of the guard in its game: the standing guard, the bait guard, the block plan and the guard-walk (0 = never guards: evades or steps back instead)
@@ -218,14 +219,15 @@ export function opponentAt(o: Opponent, level: number): Opponent {
 // An absent knob means "the warden as he always was" in ai.ts; a blend needs the number that absence stands for. A knob absent on BOTH
 // sides stays absent (ai.ts draws no roll for it, so nothing downstream moves).
 const ABSENT: Partial<AiProfile> = ABSENT_ROWS as unknown as Partial<AiProfile>;   // anticipate: ai.ts READ.anticipate (tests pin it)
-const ROUNDED = new Set<keyof AiProfile>(['reaction', 'anticipate', 'discipline', 'tellReaction', 'spamRun']);
+const ROUNDED = new Set<Exclude<keyof AiProfile, 'tactic'>>(['reaction', 'anticipate', 'discipline', 'tellReaction', 'spamRun']);
 const blend = (a: AiProfile, b: AiProfile, t: number): AiProfile => {
   const out: Record<string, number> = {};
-  for (const key of new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof AiProfile>) {
+  for (const key of new Set([...Object.keys(a), ...Object.keys(b)].filter((k) => k !== 'tactic')) as Set<Exclude<keyof AiProfile, 'tactic'>>) {
     const x = a[key] ?? ABSENT[key]!, y = b[key] ?? ABSENT[key]!, v = x + (y - x) * t;
     out[key] = ROUNDED.has(key) ? Math.round(v) : Math.round(v * 1000) / 1000;
   }
-  return out as AiProfile;
+  // a tactic row is a name, not a number: it carries across a blend only where both rungs name the same one (otherwise absent, the warden as he always was)
+  return (a.tactic !== undefined && a.tactic === b.tactic ? { ...out, tactic: a.tactic } : out) as unknown as AiProfile;
 };
 const levelCache = new Map<string, AiProfile>();
 // The tail past hard (Origin II–V, levels 47–50; Dom via Strategy 2026-10-05, Lead GO 2026-10-06 option B): L46 stays the hard table, byte for byte, and
