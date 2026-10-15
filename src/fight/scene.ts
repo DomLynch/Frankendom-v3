@@ -1146,7 +1146,7 @@ export function createScene(
       if (worldCam) {   // behind the hero, away from the foe, at the walk camera's distance and height; the aim is the foe (the lock)
         const dx = state.x - practice.enemy.x, dz = state.z - practice.enemy.z, n = Math.hypot(dx, dz) || 1;
         // The camera steps to the hero's right so he stands left of centre (x ~ 35-40 % of the screen, clear of the button column) and the foe, on the line ahead, shows beside and beyond him; a low foe (wolf, boar) steps further so it does not hide behind him.
-        const gap = Math.max(n, 0.8), side = Math.min(1.1, 0.7 + 0.4 * framingLow(opponentId) * (worldCam.back + gap) / (worldCam.back + 4));
+        const gap = Math.max(n, cameraRule('worldGapFloor')), side = Math.min(cameraRule('worldSideMax'), cameraRule('worldSideBase') + cameraRule('worldSideLow') * framingLow(opponentId) * (worldCam.back + gap) / (worldCam.back + cameraRule('worldSideRef')));   // the side step's numbers are camera-rules rows
         camera.position.set(state.x + dx / n * worldCam.back + dz / n * side, worldCam.up, state.z + dz / n * worldCam.back - dx / n * side);
         camera.lookAt(wcFoe.set(practice.enemy.x, 1.0, practice.enemy.z));
       }
