@@ -16,7 +16,7 @@ export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', '
 // Lit = a kick pressed from here lands on a guard-raised foe. Measured 2026-10-07 (tests/hud.test.ts): the true far edge is 1.585 m (the 1.2 m cone plus the kick's .55 stride), so 1.5 keeps a margin for the foe's step.
 export const KICK_LANDS = fxNum('hud.kick-light-m');   // a HUD margin under the true edge (tests/hud.test.ts ties it to the live sim: 0 <= edge - this <= 0.15)
 
-export type HudView = { legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
+export type HudView = { slotB?: boolean; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
 // The one bar drawing: a meter's max, its value and the --fill custom property the style sheets draw it from (a <meter>'s own pseudo bars differ per engine).
 export function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
 export function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
@@ -156,8 +156,9 @@ export function createHud(element: Lookup) {
       const ended = !practice.health || !practice.playerHealth;
       heavyButton.hidden = ended;
       skillButton.hidden = ended;   // the seventh button follows Heavy's visibility
-      skill2Button.hidden = ended || practice.duel.fighters[0].spell2 === undefined;   // an empty slot b shows no button (Strategy's ruling); the Pit ladder never fills it, the sparring wiring does
-      skill2Button.setAttribute('aria-disabled', String(!controlsReady || !accepts(practice, 'skill2')));
+      const slotB = practice.duel.fighters[0].spell2 !== undefined || view.slotB === true;   // slot b is the fight's own, or (the open world's idle practice carries no spells) the page's say-so: an empty slot b shows no button (Strategy's ruling); the Pit never fills it
+      skill2Button.hidden = ended || !slotB;
+      skill2Button.setAttribute('aria-disabled', String(!controlsReady || !(view.slotB === true || accepts(practice, 'skill2'))));
       // Lit off the simulation's own test (legal: a skill equipped, not cooling, 40 stamina), never while cooling. No ring, no countdown.
       skillButton.setAttribute('aria-disabled', String(!controlsReady || !skillOk));
       if (inSkillReach === null) delete skillButton.dataset.reach; else skillButton.dataset.reach = String(inSkillReach);   // out of its cone: the cluster's dim, still pressable
