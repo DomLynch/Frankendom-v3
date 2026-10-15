@@ -12,4 +12,4 @@ const playRadiusDial = (id: string): number => {
   if (v === undefined) throw Error(`play-radius-defs: no playRadiusDial ${id}`);
   return v;
 };
-export const OPEN_RADIUS = playRadiusDial('OPEN_RADIUS'), WALL_INNER = playRadiusDial('WALL_INNER'), BODY_RADIUS = playRadiusDial('BODY_RADIUS'), BASE_RADIUS = playRadiusDial('BASE_RADIUS'), ARENA_ONE_SCALE = playRadiusDial('ARENA_ONE_SCALE');
+export const OPEN_RADIUS = playRadiusDial('OPEN_RADIUS'), WALL_INNER = playRadiusDial('WALL_INNER'), BODY_RADIUS = playRadiusDial('BODY_RADIUS'), BASE_RADIUS = playRadiusDial('BASE_RADIUS'), ARENA_ONE_SCALE = playRadiusDial('ARENA_ONE_SCALE'), SPAWN_FLOOR = playRadiusDial('SPAWN_FLOOR');

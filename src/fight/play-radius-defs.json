@@ -4,6 +4,7 @@
     {"id": "WALL_INNER","value": 11.7},
     {"id": "BODY_RADIUS","value": 0.425},
     {"id": "BASE_RADIUS","value": 8.55},
-    {"id": "ARENA_ONE_SCALE","value": 0.36}
+    {"id": "ARENA_ONE_SCALE","value": 0.36},
+    {"id": "SPAWN_FLOOR","value": 0.5}
   ]
 }

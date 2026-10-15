@@ -12,7 +12,8 @@
         "tenths": "integer",
         "costWeight": "integer",
         "drawSpan": "integer",
-        "levels": "integer"
+        "levels": "integer",
+        "costCapFrom": "integer"
       }
     }
   ]
