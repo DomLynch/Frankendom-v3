@@ -23,7 +23,8 @@ const LOW_SIDE = cameraRule('lowSide'),   // metres beside the hero's spine that
   TALL_LIFT = cameraRule('tallLift');   // ...and rises
 const SHOULDER = cameraRule('shoulder'),   // the player's shoulder height (m): what hides the opponent in the lock frame
   SIDE_CLEAR = cameraRule('sideClear'),   // metres beside the player's spine, per unit of opponent scale below 1, that the lock camera's line to him passes
-  SHORT_FADE = cameraRule('shortFade');   // seconds for those short-opponent terms to ease out once a finish begins (inside SETTLE.min)
+  SHORT_FADE = cameraRule('shortFade'),   // seconds for those short-opponent terms to ease out once a finish begins (inside SETTLE.min)
+  ARENA_CLAMP = cameraRule('arenaClamp');   // the camera never leaves this radius (the colonnade / scenery ring): one row for every clamp below
 export function cameraPose(
   state: State,
   yaw: number,
@@ -58,9 +59,9 @@ export function cameraPose(
   }
   // Camera stays inside the colonnade even when the fighter reaches the arena edge.
   const radius = Math.hypot(x, z);
-  if (radius > 11.5) {
-    x *= 11.5 / radius;
-    z *= 11.5 / radius;
+  if (radius > ARENA_CLAMP) {
+    x *= ARENA_CLAMP / radius;
+    z *= ARENA_CLAMP / radius;
   }
   y += low * LOW_LIFT;
   // ...and lift it until the same share of him clears the shoulders as would of a man at this gap.
@@ -129,9 +130,9 @@ export function finisherSidePose(
       : [side(1), side(-1)];
   const pose = candidates.reduce((best, p) => (Math.hypot(p.x, p.z) < Math.hypot(best.x, best.z) ? p : best));
   const radius = Math.hypot(pose.x, pose.z);
-  if (radius > 11.5) {
-    pose.x *= 11.5 / radius;
-    pose.z *= 11.5 / radius;
+  if (radius > ARENA_CLAMP) {
+    pose.x *= ARENA_CLAMP / radius;
+    pose.z *= ARENA_CLAMP / radius;
   }
   return pose;
 }
@@ -324,9 +325,9 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         desired.lerp(eyeTarget.set(side.x, side.y, side.z), reveal);
         look.lerp(lookTarget.set(side.lookX, side.lookY, side.lookZ), reveal);
         const radius = Math.hypot(desired.x, desired.z);
-        if (radius > 11.5) {
-          desired.x *= 11.5 / radius;
-          desired.z *= 11.5 / radius;
+        if (radius > ARENA_CLAMP) {
+          desired.x *= ARENA_CLAMP / radius;
+          desired.z *= ARENA_CLAMP / radius;
         }
       }
       // The arena cam, on top of whatever the finisher's own moves settled on: TOUR.afterSettle seconds after the settle
@@ -344,7 +345,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         const angle = tourAngle + (t * 2 * Math.PI) / TOUR.lap, radius = TOUR.radius + TOUR.breath * Math.sin((t * 2 * Math.PI) / TOUR.breathe);
         const height = (low ? 1.2 : 1.6) + (low ? 1 : 1.6) * (1 - Math.cos((t * 2 * Math.PI) / TOUR.rise)) / 2;
         const tour = eyeTarget.set(focusX + Math.sin(angle) * radius, height, focusZ + Math.cos(angle) * radius), r = Math.hypot(tour.x, tour.z);
-        if (r > 11.5) { tour.x *= 11.5 / r; tour.z *= 11.5 / r; }
+        if (r > ARENA_CLAMP) { tour.x *= ARENA_CLAMP / r; tour.z *= ARENA_CLAMP / r; }
         const s = Math.min(1, t / TOUR.blendIn), blendIn = s * s * (3 - 2 * s);
         desired.lerp(tour, blendIn);
         look.lerp(lookTarget.set(focusX, camera.aspect < 1 ? TOUR.lookYPortrait : TOUR.lookY, focusZ), blendIn);
@@ -354,7 +355,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         introT += dt; introAngle ??= Math.atan2(camera.position.x - state.x, camera.position.z - state.z);
         const angle = introAngle + (introT * 2 * Math.PI) / INTRO.lap, radius = INTRO.radius + INTRO.breath * Math.sin((introT * 2 * Math.PI) / INTRO.breathe);
         const orbit = eyeTarget.set(state.x + Math.sin(angle) * radius, INTRO.height + (INTRO.rise * (1 - Math.cos((introT * 2 * Math.PI) / INTRO.riseEvery))) / 2, state.z + Math.cos(angle) * radius), r = Math.hypot(orbit.x, orbit.z);
-        if (r > 11.5) { orbit.x *= 11.5 / r; orbit.z *= 11.5 / r; }
+        if (r > ARENA_CLAMP) { orbit.x *= ARENA_CLAMP / r; orbit.z *= ARENA_CLAMP / r; }
         const k = introShare * introShare * (3 - 2 * introShare);
         desired.lerp(orbit, k);
         look.lerp(lookTarget.set(state.x, camera.aspect < 1 ? INTRO.lookYPortrait : INTRO.lookY, state.z), k);
