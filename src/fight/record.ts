@@ -22,7 +22,7 @@ import { CAST, spellUsesCap } from './spell-cast.ts';
 import { coneAt } from './cone-rules.ts';
 import { PICKS, type PickedStance } from './stance.ts';
 
-export const RECORD_VERSION = 68;   // 68: bump 68 (2026-10-16; Combat, spell slots: a second special slot on the Fighter (spell2, skillCooldown2, castSlot), the 'skill2' action, the open world's cast2 press and hero.spell2; ONLY a fight that equips a second spell moves, and the Pit ladder never does (its record format is unchanged and refuses skill2), so REACH[66] is empty; PROVISIONAL number, renumbers at merge-up)
+export const RECORD_VERSION = 68;   // 68: bump 68 (2026-10-16; Combat, spell slots: a second special slot on the Fighter (spell2, skillCooldown2, castSlot), the 'skill2' action, the open world's cast2 press and hero.spell2; ONLY a fight that equips a second spell moves, and the Pit ladder never does (its record format is unchanged and refuses skill2), so REACH[68] is empty; PROVISIONAL number, renumbers at merge-up)
 // 67: bump 67 (2026-10-16; Combat, the spawn floor 0.5 as a play-radius row (SPAWN_FLOOR); the same number, no fight moves: REACH[67] is empty; PROVISIONAL number, renumbers at merge-up)
 // 66: bump 66 (2026-10-15; Combat, sim batch C: duel.ts's 15 literals as duel-defs rows (per-mille scale, perk template cap, lorarii sectors, body spacing, move/gap epsilons, the three halves), identical values, no fight moves: REACH[65] is empty; PROVISIONAL number, renumbers at merge-up)
 // 65: bump 65 (2026-10-15; Combat, positioning bands behind duel.bands (bands.ts, band-defs.json) and the holdBand tactic row; default off, so a record below 64, and every fight without the flag, replays exactly as before: REACH[64] is empty; PROVISIONAL number, renumbers at merge-up)
@@ -148,7 +148,7 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   65: [],   // positioning bands: default off, the flag is not on the record; a fight without bands is the fight it always was
   66: [],   // sim batch C: duel.ts literals as rows, the same values; a record below 66 replays exactly as before
   67: [],   // the spawn floor as a play-radius row, the same number, no fight moves
-  68: [],   // spell slots: slot b exists only in the open world; no Pit record changes   // sim batch C: duel.ts literals as rows, the same values; a record below 65 replays exactly as before
+  68: [],   // spell slots: slot b exists only in the open world; no Pit record changes; a record below 68 replays exactly as before
   59: [],   // SPECIAL_SETS and the rank levels as rows: the same names, no fight moves
   58: [],   // the cast penalty: a sheet record below 58 recomputes without it, the duel is unchanged
   57: [],   // MOVES and PATHS as rows: the same resolved objects, no fight moves
