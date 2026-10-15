@@ -482,6 +482,7 @@ export function createScene(
   const standoff = standoffClock();   // ms of frame time since the versus card lifted (frame dt, so a stepped harness clock plays it too); -1 before
   const rig = createCameraRig(camera);
   // World fights (seamless combat step 4, Dom 2026-10-08): the duel's camera does not cut in, it eases from where the walk's camera stood. `easeCamera` is set by the page at the engage; every frame after rig.update blends the rig's pose with that start (smoothstep), and the rig itself is untouched.
+  const SIDE = { gapFloor: cameraRule('worldGapFloor'), max: cameraRule('worldSideMax'), base: cameraRule('worldSideBase'), low: cameraRule('worldSideLow'), ref: cameraRule('worldSideRef') };   // the world camera's side step, read once: the frame loop must not search the rule rows
   let worldCam: { back: number; up: number } | null = null;   // set by the page at a world engage: the camera stays at the walk's distance and height (seamless S2)
   const wcFoe = new THREE.Vector3();
   let ease: { pos: THREE.Vector3; quat: THREE.Quaternion; age: number; dur: number } | null = null;
@@ -1146,7 +1147,7 @@ export function createScene(
       if (worldCam) {   // behind the hero, away from the foe, at the walk camera's distance and height; the aim is the foe (the lock)
         const dx = state.x - practice.enemy.x, dz = state.z - practice.enemy.z, n = Math.hypot(dx, dz) || 1;
         // The camera steps to the hero's right so he stands left of centre (x ~ 35-40 % of the screen, clear of the button column) and the foe, on the line ahead, shows beside and beyond him; a low foe (wolf, boar) steps further so it does not hide behind him.
-        const gap = Math.max(n, cameraRule('worldGapFloor')), side = Math.min(cameraRule('worldSideMax'), cameraRule('worldSideBase') + cameraRule('worldSideLow') * framingLow(opponentId) * (worldCam.back + gap) / (worldCam.back + cameraRule('worldSideRef')));   // the side step's numbers are camera-rules rows
+        const gap = Math.max(n, SIDE.gapFloor), side = Math.min(SIDE.max, SIDE.base + SIDE.low * framingLow(opponentId) * (worldCam.back + gap) / (worldCam.back + SIDE.ref));   // the side step's numbers are camera-rules rows
         camera.position.set(state.x + dx / n * worldCam.back + dz / n * side, worldCam.up, state.z + dz / n * worldCam.back - dx / n * side);
         camera.lookAt(wcFoe.set(practice.enemy.x, 1.0, practice.enemy.z));
       }
