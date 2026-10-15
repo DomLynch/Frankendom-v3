@@ -1,0 +1,8 @@
+{
+  "tables": [
+    { "table": "bandRule", "file": "band-defs.json", "at": "rules", "key": "id", "required": { "value": "number", "unit": "string" } },
+    { "table": "band", "file": "band-defs.json", "at": "bands", "key": "id", "required": {} },
+    { "table": "bandBlow", "file": "band-defs.json", "at": "spanBlows", "key": "id", "required": {} },
+    { "table": "bandWeapon", "file": "band-defs.json", "at": "weapons", "key": "id", "required": { "bestBand": "string" } }
+  ]
+}

@@ -5,5 +5,10 @@
    "value": 6
   }
  ],
- "tactics": []
+ "tactics": [
+  {
+   "id": "bands",
+   "holdBand": true
+  }
+ ]
 }

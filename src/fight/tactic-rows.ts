@@ -9,7 +9,7 @@ import TACTIC_MANIFEST from './tactic-defs.manifest.json' with { type: 'json' };
 // No sidestep and no trade in v1 (Lead, 2026-10-14: the duel has no sidestep move; trade is deferred past v1).
 export type Reaction = 'parry' | 'brace' | 'backstep';
 export type Weighted<C extends string> = { readonly choice: C; readonly weight: number };
-export type TacticBlock = { readonly heroWinding?: readonly Weighted<Reaction>[] };
+export type TacticBlock = { readonly heroWinding?: readonly Weighted<Reaction>[]; readonly holdBand?: boolean };   // holdBand (positioning gates, bands.ts): stand in the weapon's best band; acts only in a duel with bands on
 const REACTIONS: readonly string[] = ['parry', 'brace', 'backstep'];
 
 const LIMITS_T = tableFromFile(TACTIC_MANIFEST.tables[0] as unknown as Manifest, TACTIC_DEFS, 'tactic-defs.json');
@@ -24,7 +24,7 @@ export function checkTactic(id: string, list: readonly Weighted<string>[] | unde
 }
 export const TACTIC_ROWS: Readonly<Record<string, TacticBlock>> = Object.fromEntries((TACTIC_T.rows as unknown as ({ id: string } & TacticBlock)[]).map((r) => {
   checkTactic(r.id, r.heroWinding);
-  return [r.id, { heroWinding: r.heroWinding }];
+  return [r.id, { heroWinding: r.heroWinding, ...(r.holdBand ? { holdBand: true } : {}) }];
 }));
 // One seeded draw over the weights, in row order: `u` is the warden's own roll() in [0, 1).
 export const pickWeighted = <C extends string>(list: readonly Weighted<C>[], u: number): C => {
