@@ -38,6 +38,9 @@
     { "id": "introLookYPortrait", "value": 1.3, "unit": "m" },
     { "id": "introBlendIn", "value": 2.5, "unit": "s" },
     { "id": "introBlendOut", "value": 1.5, "unit": "s" },
-    { "id": "arenaClamp", "value": 11.5, "unit": "m" }
+    { "id": "arenaClamp", "value": 11.5, "unit": "m" },
+    { "id": "lockBackFloor", "value": 4.2, "unit": "m" },
+    { "id": "lockLiftFloor", "value": 3.2, "unit": "m" },
+    { "id": "lockGapFloor", "value": 0.8, "unit": "m" }
   ]
 }
