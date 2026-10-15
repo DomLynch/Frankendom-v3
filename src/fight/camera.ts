@@ -9,6 +9,7 @@ import { finisherRow, type FinisherId } from './finishers.ts';
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
+const LOCK_BACK_FLOOR = cameraRule('lockBackFloor'), LOCK_LIFT_FLOOR = cameraRule('lockLiftFloor'), LOCK_GAP_FLOOR = cameraRule('lockGapFloor');   // the lock camera never backs closer than 4.2 m, never sits lower than 3.2 m, and treats a foe nearer than 0.8 m as 0.8 m away
 const AIM_PER_SHRINK = cameraRule('aimPerShrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
 // How tall each foe LOOKS against a man's, for the camera only. The sim's `scale` (moves.ts OPPONENTS[id].scale) is a hitbox/rate number and stays put (it is in the record's
 // SIM_FILES); a foe whose body is not a man's by that number says so here. The Ash Wolf is ~.8 m at the back (the sim says .8 for its rates): behind the hero's head at bite range
@@ -38,14 +39,14 @@ export function cameraPose(
   const distance = Math.hypot(state.x - target.x, state.z - target.z);
   // Duel lock sits ~30% closer and lower than the first pass; the distance terms still pull back to frame both fighters.
   const low = locked ? targetLow : 0, tall = locked ? targetTall : 0;   // a foe that looks tall (the Wraith): back off and up; nothing for any other foe
-  const back = (locked ? Math.max(4.2, distance * 0.62 + 2.8) : 7.5 * Math.cos(pitch)) + tall * TALL_BACK;   // the original lock (Dom 2026-10-05 chose it over the 10-03 flatter one: HUD over sand, not the painting)
+  const back = (locked ? Math.max(LOCK_BACK_FLOOR, distance * 0.62 + 2.8) : 7.5 * Math.cos(pitch)) + tall * TALL_BACK;   // the original lock (Dom 2026-10-05 chose it over the 10-03 flatter one: HUD over sand, not the painting)
   let x = state.x + Math.sin(yaw) * back,
     z = state.z + Math.cos(yaw) * back,
-    y = (locked ? Math.max(3.2, distance * 1.3) : 1 + 7.5 * Math.sin(pitch)) + tall * TALL_LIFT;
+    y = (locked ? Math.max(LOCK_LIFT_FLOOR, distance * 1.3) : 1 + 7.5 * Math.sin(pitch)) + tall * TALL_LIFT;
   // A shorter opponent (Goblin, Dwarf at .78) stands behind the player's back at close range. Where a man at this gap would be
   // hidden below the player's shoulders, step the lock camera over the player's left shoulder so the line to him passes
   // SIDE_CLEAR per unit of missing height beside the player's spine; nothing for a man or a bigger one, nothing once in the clear.
-  const gap = Math.max(distance, 0.8), short = locked ? Math.max(0, 1 - targetScale) : 0;
+  const gap = Math.max(distance, LOCK_GAP_FLOOR), short = locked ? Math.max(0, 1 - targetScale) : 0;
   const hiddenAt = (near: number) => Math.max(0, y - (y - SHOULDER) * (near + gap) / near);   // a man at this gap is hidden below this height
   if (short) {
     const side = SIDE_CLEAR * short * Math.min(1, hiddenAt(back)) * (back + gap) / gap;
