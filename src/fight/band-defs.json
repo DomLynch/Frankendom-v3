@@ -1,0 +1,23 @@
+{
+  "rules": [
+    {"id":"contactGap","value":0.85,"unit":"m"},
+    {"id":"innerFrac","value":0.34,"unit":"of the working span"},
+    {"id":"midFrac","value":0.67,"unit":"of the working span"},
+    {"id":"offBandMult","value":0.6,"unit":"x damage"}
+  ],
+  "bands": [
+    {"id":"inner"},
+    {"id":"mid"},
+    {"id":"outer"}
+  ],
+  "weapons": [
+    {"id":"knife","bestBand":"inner"},
+    {"id":"gladius","bestBand":"inner"},
+    {"id":"longsword","bestBand":"mid"},
+    {"id":"cleaver","bestBand":"mid"},
+    {"id":"maul","bestBand":"mid"},
+    {"id":"trident","bestBand":"outer"},
+    {"id":"scythe","bestBand":"outer"},
+    {"id":"estoc","bestBand":"outer"}
+  ]
+}

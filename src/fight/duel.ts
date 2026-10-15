@@ -13,6 +13,7 @@ import { poolsOf, type PoolValues } from './pools.ts';
 import { percentOf, rolledDamage, rollUnit, swarmBand } from './roll.ts';
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
+import { bandFactor } from './bands.ts';
 import { castOutcome, outcomeMult, type CastOutcome, type Spell } from './spell-cast.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { PERK_MAX } from './duel-rows.ts';   // the dials are rows (duel-defs.json)
@@ -104,7 +105,7 @@ export type CombatEvent = { pulse?: number; cone?: boolean; damageKind?: string;
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
 // `roll`: the world-mob damage roll (Origins luck ruling, Dom 2026-10-07: +/-10% on every blow in both directions, in a world-mob fight only). Absent = the Pit, PvP and the
 // ladder: today's fight byte for byte. `hits` numbers the fight's blows in the order they resolve, so the draw is a pure function of (seed, hit) and a replay reproduces it.
-export type Duel = { tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number; swarm?: number; rank?: number }; gambit?: { seed: number; draws: number }; cast?: { seed: number; n: number }; radius?: number; ccBase?: number };   // ccBase: ticks added to this duel's tick to give the world's clock, the ladder's window (open world only)   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
+export type Duel = { bands?: boolean; tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number; swarm?: number; rank?: number }; gambit?: { seed: number; draws: number }; cast?: { seed: number; n: number }; radius?: number; ccBase?: number };   // ccBase: ticks added to this duel's tick to give the world's clock, the ladder's window (open world only)   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
 export { ROLL_BAND, rollPercent, rolledDamage } from './roll.ts';   // the one definition (src/fight/roll.ts), shared with origins/luck/luck.ts
 export const withRoll = (duel: Duel, seed: number): Duel => ({ ...duel, roll: { seed, hits: 0 } });
 // A spell on one fighter (RV53): the one door, so a replay builds exactly what the live fight built. The fighter must already carry the special (withSpecials). `cast.seed` is the fight's seed, salted so the cast draws never repeat the gambit's or the roll's.
@@ -262,7 +263,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   for (const f of fighters) if (f.poiseRest) { if (f.poiseRest > 1) f.poiseRest--; else delete f.poiseRest; }
   for (const f of fighters) if (f.specialRecover) f.specialRecover--;
   for (const f of fighters) if (f.feintEdge) { f.feintEdge--; if (!f.feintEdge) delete f.feintEdge; }   // a trickster's feint beat runs down (RULES.feintBeat)
-  if (!before[0].health || !before[1].health) return { tick, fighters, finish: duel.finish, events, ...(duel.roll ? { roll: duel.roll } : {}), ...(duel.gambit ? { gambit: duel.gambit } : {}), ...(duel.cast ? { cast: duel.cast } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
+  if (!before[0].health || !before[1].health) return { tick, fighters, finish: duel.finish, events, ...(duel.bands ? { bands: true } : {}), ...(duel.roll ? { roll: duel.roll } : {}), ...(duel.gambit ? { gambit: duel.gambit } : {}), ...(duel.cast ? { cast: duel.cast } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
   let gdraws = duel.gambit?.draws ?? 0, casts = duel.cast?.n ?? 0;   // casts: the seeded draws spells have taken so far (RV53)
   let hits = duel.roll?.hits ?? 0, lastRoll: number | undefined;   // the world-mob roll: a blow's health loss goes through rolled(); absent roll = the plain number
   // The sheet (RV48): the attacker's attack dial scales a blow up and the target's armour dial scales it down (an armour of 100 takes half) before the world roll; a blow is never scaled to nothing. No sheet on either side = the plain number.
@@ -511,7 +512,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       if (chip) { wound(taken, 0, false); if (!D.health) stagger(0); }   // chip never marks a wound, but it can still kill
       shake(j, dealtPosture(def.posture * (perfect ? R.posture.perfect : 1)));
     } else {
-      const damage = Math.round(stanced(a, 'damage', def.charges ? stanced(a, 'heavyDamage', def.damage) : def.damage) * R.location[location] * (charged ? R.charge.damage : 1)), baseStun = Math.round(def.stagger * (charged ? R.charge.stagger : 1));
+      const damage = Math.round(stanced(a, 'damage', def.charges ? stanced(a, 'heavyDamage', def.damage) : def.damage) * R.location[location] * (charged ? R.charge.damage : 1) * (duel.bands && a.attackFrom ? bandFactor(a.weapon, a.attackFrom.gap) : 1)), baseStun = Math.round(def.stagger * (charged ? R.charge.stagger : 1));
       if (guarding && !beaten) { const hit = rolled(damage, i, j, pen); spend(j, perked(d, 'guard', R.breakCost)); wound(hit, def.knockback); events.push({ tick, type: 'GuardBroken', actor: i, target: j, move: a.move, damage: hit, ...rollTag(), location, heading: a.body.heading, charged, weapon: weapon.id, material: weapon.material }); stagger(baseStun); D.posture = 0; }
       else {
         // Hyper-armour: a heavy parked at its chamber, a charged heavy, or any move past its poise point. A short hold that was released
@@ -618,6 +619,6 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       events.push({ tick, type: 'Killed', actor: 0, target: 1, move, location: 'torso', heading: A.body.heading });
     }
   }
-  return { tick, fighters, finish, events, ...(duel.roll ? { roll: { ...duel.roll, hits } } : {}), ...(duel.gambit ? { gambit: { seed: duel.gambit.seed, draws: gdraws } } : {}), ...(duel.cast ? { cast: { seed: duel.cast.seed, n: casts } } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
+  return { tick, fighters, finish, events, ...(duel.bands ? { bands: true } : {}), ...(duel.roll ? { roll: { ...duel.roll, hits } } : {}), ...(duel.gambit ? { gambit: { seed: duel.gambit.seed, draws: gdraws } } : {}), ...(duel.cast ? { cast: { seed: duel.cast.seed, n: casts } } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
 }
 

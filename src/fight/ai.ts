@@ -4,7 +4,8 @@ import { LATE_NOTICE } from './play-radius.ts';
 import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { READ_ROWS } from './ai-read-rows.ts';   // rows: ai-read-defs.json
-import { TACTIC_ROWS, pickWeighted } from './tactic-rows.ts';   // rows: tactic-defs.json
+import { TACTIC_ROWS, pickWeighted } from './tactic-rows.ts';
+import { bestRange } from './bands.ts';   // rows: tactic-defs.json
 
 // Local opponent controller. It reads only committed duel state (never the other side's pending intent), notices a fresh
 // action `reaction` ticks late, and emits an ordinary Intent that stepDuel judges by the same rules as the player's.
@@ -417,6 +418,12 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
       else if (can('heavy_overhead', 'heavy')) next.next = 'heavy';
     }
     forward = gap < hold - release ? -.4 : 0;
+  }
+  // holdBand (positioning gates, a tactic row): in a duel with bands on, a warden that names a holdBand row stands in its weapon's best band: a step in from outside it, a step back from inside it, only while it has no
+  // action committed this tick. It adds no move and no timing; a profile without the row, or a duel without bands, never reaches it.
+  if (duel.bands && profile.tactic && TACTIC_ROWS[profile.tactic]?.holdBand && intent.action === null && next.mode !== 'guard') {
+    const range = bestRange(self.weapon);
+    if (range) forward = gap > range[1] ? .6 : gap < range[0] ? -.4 : 0;
   }
   // a circler drifts sideways while closing in
   const lateral = next.mode === 'circle' ? next.side * .25 : next.mode === 'approach' && forward ? next.side * .25 * (profile.circle ?? 0) : 0;

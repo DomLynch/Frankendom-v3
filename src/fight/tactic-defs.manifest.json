@@ -18,7 +18,8 @@
       "optional": {
         "heroWinding": "array",
         "heroWinding[].choice": "string",
-        "heroWinding[].weight": "number"
+        "heroWinding[].weight": "number",
+        "holdBand": "boolean"
       }
     }
   ]
