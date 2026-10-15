@@ -396,7 +396,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // Symmetric separation: both may have stepped into the other's old position; push them apart by equal halves.
   {
     const [p, q] = [fighters[0].body, fighters[1].body], dx = q.x - p.x, dz = q.z - p.z, gap = M.hypot(dx, dz);
-    if (gap < .85 - 1e-8) {
+    if (gap < BODY_SPACING - GAP_EPSILON) {
       const push = (BODY_SPACING - gap) / PUSH_SPLIT, ux = gap > GAP_EPSILON ? dx / gap : M.sin(p.heading), uz = gap > GAP_EPSILON ? dz / gap : M.cos(p.heading);
       const clamp = (x: number, z: number) => { const r = M.hypot(x, z); return r > wall ? { x: x * wall / r, z: z * wall / r } : { x, z }; };
       fighters[0].body = { ...p, ...clamp(p.x - ux * push, p.z - uz * push) }; fighters[1].body = { ...q, ...clamp(q.x + ux * push, q.z + uz * push) };
