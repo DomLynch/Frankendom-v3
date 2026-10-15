@@ -8,7 +8,11 @@
       "required": {
         "spread": "integer",
         "relDivisor": "number",
-        "creditPerPoint": "number"
+        "creditPerPoint": "number",
+        "tenths": "integer",
+        "costWeight": "integer",
+        "drawSpan": "integer",
+        "levels": "integer"
       }
     }
   ]
