@@ -1,0 +1,11 @@
+{
+  "about": "The special slots (spec docs/specs/combat/spell-slots.md; Lead's reading of Dom: two UNIVERSAL slots, any spell in either). `slots`: one row per slot, `action` is the input verb that casts it, `order` the HUD order. `rules`: numbers. Windup, recovery, cooldown and reach stay the special's own rows (RULES.special): timing is sacred. Costs are the spell's. Nothing reads these rows in a fight yet (the sim PR does).",
+  "slots": [
+    {"id":"a","action":"skill","order":1},
+    {"id":"b","action":"skill2","order":2}
+  ],
+  "rules": [
+    {"id":"sharedCooldown","value":0,"unit":"1 = a cast from either slot starts the one special cooldown, 0 = each slot its own"},
+    {"id":"allowDuplicate","value":0,"unit":"1 = the same spell may sit in both slots"}
+  ]
+}
