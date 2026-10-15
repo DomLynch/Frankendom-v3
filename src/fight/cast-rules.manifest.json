@@ -8,7 +8,8 @@
       "required": {
         "spread": "integer",
         "relDivisor": "number",
-        "creditPerPoint": "number"
+        "creditPerPoint": "number",
+        "costCapFrom": "integer"
       }
     }
   ]
