@@ -1,5 +1,6 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import { RULES } from './moves.ts';
+import { POOLS } from './pools.ts';
 import BRICK_DEFS from './brick-defs.json' with { type: 'json' };
 import BRICK_MANIFEST from './brick-defs.manifest.json' with { type: 'json' };
 import CAST_RULES from './cast-rules.json' with { type: 'json' };
@@ -37,11 +38,13 @@ for (const [id, [root, level]] of Object.entries(INDEX)) if (!Object.hasOwn(BRIC
 export const SPELL_IDS: readonly string[] = Object.keys(INDEX);
 export const isSpellId = (id: string): boolean => Object.hasOwn(INDEX, id);
 
+/** No spell costs more than the bar (Lead, 2026-10-15: harvest at level 8 was 103 against 100, so it could never commit): the cost is capped at the stamina pool's default, read from pool-defs.json. */
+export const COST_CAP: number = POOLS.find((d) => d.id === 'stamina')!.default;
 const clampTo = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 /** The spell `id` as `skill` (0-100, the caster's skill in its school) and `spellPower` (the sheet's dial, worn quality included) cast it; undefined for an id the catalogue does not hold. */
 export function resolveSpell(id: string, skill: number, spellPower = 0): Spell | undefined {
   if (!isSpellId(id)) return undefined;
-  const [root, level] = INDEX[id]!, b = BRICKS[root]!, cost = b.cost + b.costPerLevel * level, credit = Math.round(spellPower * CAST.creditPerPoint);
+  const [root, level] = INDEX[id]!, b = BRICKS[root]!, cost = Math.min(COST_CAP, b.cost + b.costPerLevel * level), credit = Math.round(spellPower * CAST.creditPerPoint);
   return {
     id, cost, share: RULES.special.damage * b.effect.magnitude * (1 + b.effect.perLevel * (level - 1)),
     rel10: clampTo(Math.round(10 * (skill + credit - 2 * cost) / CAST.relDivisor), -500, 500), spread10: CAST.spread * 10,
