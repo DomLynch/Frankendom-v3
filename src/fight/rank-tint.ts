@@ -75,7 +75,7 @@ function finishWith(source: MeshStandardMaterial, finish: Finish, kind: DrawClas
   // The finish: a map-less material takes the grade's factors; a mapped one keeps its map's pattern, scaled toward the grade.
   const toward = (from: number, to: number) => from + (to - from) * strength;
   if (stone) {
-    if (source.emissive.getHex()) { material.emissive = source.emissive.clone().lerp(grade, strength); material.emissiveIntensity = source.emissiveIntensity * (TINT.stone.glowMin + (TINT.stone.glowMax - TINT.stone.glowMin) * (levelOf(tier) - 1) / 9); }
+    if (source.emissive.getHex()) { material.emissive = source.emissive.clone().lerp(grade, strength); material.emissiveIntensity = source.emissiveIntensity * (TINT.stone.glowMin + (TINT.stone.glowMax - TINT.stone.glowMin) * (levelOf(tier as Tier) - 1) / 9); }
     material.userData = { ...source.userData, rankTier: tier, rankTint: [chroma.r, chroma.g, chroma.b, gain, strength] };
     byTier.set(tier, material); return material;
   }
