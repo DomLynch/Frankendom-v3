@@ -24,7 +24,7 @@ export function paintMeter(meter: HTMLMeterElement, value: number, max: number) 
 // The bars a zone shows over the walk are the Pit's own (Dom 2026-10-14, "the original ones look better"): the same .combat-hud markup and src/style.css, painted from plain numbers because the open-world loop has no
 // Practice. The foe's name over its bar, then HEALTH and STAMINA, are the Pit's #opponent-name / #target-health / #player-health / #stamina, drawn through the same fillMeter / paintMeter createHud uses; the page builds
 // nothing of its own (tests/fight-no-twins.test.ts). `shown` toggles body.zone-bars (origins/preview/index.html shows the Pit's .combat-hud only then); the hit vignette is the one element this adds.
-export type MeterState = { hp: number; maxHp: number; stamina: number; maxStamina: number; foe: { name: string; hp: number; max: number } | null };
+export type MeterState = { hp: number; maxHp: number; stamina: number; maxStamina: number; foe: { name: string; level?: number; hp: number; max: number } | null };
 type Lookup = <T extends HTMLElement>(id: string) => T;
 export function createZoneBars(element: Lookup, parent: HTMLElement) {
   const flashEl = parent.ownerDocument.createElement('div'); flashEl.className = 'fm-flash'; parent.append(flashEl);
@@ -36,14 +36,15 @@ export function createZoneBars(element: Lookup, parent: HTMLElement) {
       parent.classList.toggle('zone-bars', shown); if (!shown) return;
       paintMeter(hp, state.hp, state.maxHp); paintMeter(stamina, state.stamina, state.maxStamina);
       element('player-health-value').textContent = `${Math.round(state.hp)} / ${state.maxHp}`; element('stamina-value').textContent = `${Math.round(state.stamina)} / ${state.maxStamina}`;
-      name.textContent = state.foe ? state.foe.name.toUpperCase() : ''; name.dataset.mobile = state.foe ? state.foe.name : '';   // the phone draws data-mobile (src/style.css .meter-label::after)
+      name.replaceChildren(state.foe ? state.foe.name.toUpperCase() : ''); name.dataset.mobile = state.foe ? state.foe.name : '';
+      if (state.foe?.level !== undefined) { const small = name.ownerDocument.createElement('small'); small.className = 'opponent-class'; small.textContent = `Lv ${state.foe.level}`; name.append(' ', small); }   // the Pit's own level slot (origins/preview/pit-duel.ts nameOpponent): the name large, the level small beside it   // the phone draws data-mobile (src/style.css .meter-label::after)
       if (state.foe) paintMeter(foe, state.foe.hp, state.foe.max); else paintMeter(foe, 0, 1);
       element('health-value').textContent = state.foe ? `${Math.round(state.foe.hp)} / ${state.foe.max}` : '';
     },
     /** Paint from the open-world loop itself (hero, the foe in reach, whether a fight is on); hidden while the hero is whole and nothing is in reach. */
-    feed(wc: { hero(): { health: number; max: number; stamina: number; maxStamina: number }; target(): { name: string; health: number; max: number } | null; inCombat(): boolean }) {
+    feed(wc: { hero(): { health: number; max: number; stamina: number; maxStamina: number }; target(): { name: string; level?: number; health: number; max: number } | null; inCombat(): boolean }) {
       const h = wc.hero(), t = wc.target(), full = h.health >= h.max - 0.5 && h.stamina >= h.maxStamina - 0.5;
-      this.update({ hp: h.health, maxHp: h.max, stamina: h.stamina, maxStamina: h.maxStamina, foe: t ? { name: t.name, hp: t.health, max: t.max } : null }, !(full && !t && !wc.inCombat()));
+      this.update({ hp: h.health, maxHp: h.max, stamina: h.stamina, maxStamina: h.maxStamina, foe: t ? { name: t.name, level: t.level, hp: t.health, max: t.max } : null }, !(full && !t && !wc.inCombat()));
     },
     /** The hero was hit: a red vignette for a moment. */
     flash() { flashEl.dataset.on = 'true'; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashEl.dataset.on = 'false'; }, 120); },
