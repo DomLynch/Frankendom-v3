@@ -27,12 +27,12 @@ export type Spell = {
 };
 
 type Brick = { id: string; kind: string; school: string; cost: number; costPerLevel: number; effect: { magnitude: number; perLevel: number }; success: { critFailBelow: number; failBelow: number; partialBelow: number; critFrom: number; partialMult: number; critMult: number } };
-type CastRule = { id: string; spread: number; relDivisor: number; creditPerPoint: number };
+type CastRule = { id: string; spread: number; relDivisor: number; creditPerPoint: number; costCapFrom: number };
 const TABLES = [tableFromFile(SCHOOL_MANIFEST.tables[0] as Manifest, SCHOOL_DEFS, 'school-defs.json'), tableFromFile(BRICK_MANIFEST.tables[0] as Manifest, BRICK_DEFS, 'brick-defs.json'), tableFromFile(CAST_MANIFEST.tables[0] as Manifest, CAST_RULES, 'cast-rules.json')];
 loadRegistry(TABLES);
 export const BRICKS: Readonly<Record<string, Brick>> = Object.fromEntries((TABLES[1]!.rows as unknown as Brick[]).map((b) => [b.id, b]));
 export const CAST: CastRule = (TABLES[2]!.rows as unknown as CastRule[]).find((r) => r.id === 'cast')!;
-if (!CAST || !(CAST.relDivisor > 0) || CAST.spread < 0 || CAST.creditPerPoint < 0) throw Error('cast-rules: the cast row needs spread >= 0, relDivisor > 0, creditPerPoint >= 0');
+if (!CAST || !(CAST.relDivisor > 0) || CAST.spread < 0 || CAST.creditPerPoint < 0 || !Number.isInteger(CAST.costCapFrom) || CAST.costCapFrom < 1) throw Error('cast-rules: the cast row needs spread >= 0, relDivisor > 0, creditPerPoint >= 0, costCapFrom a record version >= 1');
 const INDEX = (SPELL_INDEX as unknown as { spells: Record<string, readonly [string, number]> }).spells;
 for (const [id, [root, level]] of Object.entries(INDEX)) if (!Object.hasOwn(BRICKS, root) || !Number.isInteger(level) || level < 1 || level > 10) throw Error(`spell-index "${id}": root "${root}" is a brick row and level is a rank 1-10`);
 export const SPELL_IDS: readonly string[] = Object.keys(INDEX);
@@ -40,11 +40,13 @@ export const isSpellId = (id: string): boolean => Object.hasOwn(INDEX, id);
 
 /** No spell costs more than the bar (Lead, 2026-10-15: harvest at level 8 was 103 against 100, so it could never commit): the cost is capped at the stamina pool's default, read from pool-defs.json. */
 export const COST_CAP: number = POOLS.find((d) => d.id === 'stamina')!.default;
+/** Whether the cost cap changes this spell's cost (its uncapped cost passes the bar): such a fight is stamped no lower than the cap's record version (record.ts), so a replay resolves it the same way. */
+export const spellUsesCap = (id: string): boolean => { if (!isSpellId(id)) return false; const [root, level] = INDEX[id]!, b = BRICKS[root]!; return b.cost + b.costPerLevel * level > COST_CAP; };
 const clampTo = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 /** The spell `id` as `skill` (0-100, the caster's skill in its school) and `spellPower` (the sheet's dial, worn quality included) cast it; undefined for an id the catalogue does not hold. */
-export function resolveSpell(id: string, skill: number, spellPower = 0): Spell | undefined {
+export function resolveSpell(id: string, skill: number, spellPower = 0, recordVersion?: number): Spell | undefined {
   if (!isSpellId(id)) return undefined;
-  const [root, level] = INDEX[id]!, b = BRICKS[root]!, cost = Math.min(COST_CAP, b.cost + b.costPerLevel * level), credit = Math.round(spellPower * CAST.creditPerPoint);
+  const [root, level] = INDEX[id]!, b = BRICKS[root]!, raw = b.cost + b.costPerLevel * level, cost = recordVersion === undefined || recordVersion >= CAST.costCapFrom ? Math.min(COST_CAP, raw) : raw, credit = Math.round(spellPower * CAST.creditPerPoint);
   return {
     id, cost, share: RULES.special.damage * b.effect.magnitude * (1 + b.effect.perLevel * (level - 1)),
     rel10: clampTo(Math.round(10 * (skill + credit - 2 * cost) / CAST.relDivisor), -500, 500), spread10: CAST.spread * 10,

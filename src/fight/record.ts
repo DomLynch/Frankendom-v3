@@ -18,6 +18,7 @@ import { FIRST_STANCE_ROWS_VERSION } from './stance-era.ts';
 import { FIRST_POISE_LADDER_VERSION } from './poise-era.ts';
 import { FIRST_CONE_VERSION } from './cone-era.ts';
 import { FIRST_CAST_PENALTY_VERSION } from './cast-penalty-era.ts';
+import { CAST, spellUsesCap } from './spell-cast.ts';
 import { coneAt } from './cone-rules.ts';
 import { PICKS, type PickedStance } from './stance.ts';
 
@@ -138,8 +139,8 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   60: [],   // LEVEL_ANCHORS as rows: the same numbers, no fight moves
   61: [],   // sim batch A as rows: the same numbers, no fight moves
   62: [],
-  63: [],
-  64: [],   // spell cost cap: the same numbers but harvest L8 now castable; no older record holds that cast   // Gothic tactic table PR 1: the rows loader and the reaction slot's branch, no profile uses a row, no fight moves   // sim batch B: world-rules rows and the stance home from the catalogue, the same numbers, no fight moves
+  63: [],   // Gothic tactic table PR 1: the rows loader and the reaction slot's branch, no profile uses a row, no fight moves   // sim batch B: world-rules rows and the stance home from the catalogue, the same numbers, no fight moves
+  64: [],   // the spell cost cap is ERA-GATED (cast-rules.json costCapFrom): a record below 64 resolves its spell uncapped, exactly as before, so dagan/cronus (harvest L8, 103) replay unchanged; no opponent's profile moves
   59: [],   // SPECIAL_SETS and the rank levels as rows: the same names, no fight moves
   58: [],   // the cast penalty: a sheet record below 58 recomputes without it, the duel is unchanged
   57: [],   // MOVES and PATHS as rows: the same resolved objects, no fight moves
@@ -227,7 +228,7 @@ export function createRecorder(meta: RecordMeta) {
   const era = stampedVersion(meta.opponent);
   if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet || meta.spell) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
   const flagged = meta.sheet ? FIRST_SHEET_VERSION : meta.group ? FIRST_GROUP_VERSION : meta.pose ? FIRST_POSE_VERSION : meta.stances ? FIRST_STANCE_VERSION : meta.gambit ? FIRST_GAMBIT_VERSION : meta.patron ? PATRON_VERSION : era;
-  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, version = Math.max(castedV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level));   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
+  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, cappedV = meta.spell && spellUsesCap(meta.spell.id) ? Math.max(castedV, CAST.costCapFrom) : castedV, version = Math.max(cappedV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level));   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
   if (spellBad(meta)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');   // a stances fight is fought on the v52 stance rows (stance-era.ts: a Defensive stance has no longer window), so it is stamped no lower than v52   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
   if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };
   if (buildRefBad(meta)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
@@ -262,7 +263,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   // A gambit fight is v33; otherwise a patron fight is v32 and a patron-less one v31.
   const flaggedV = rec.sheet ? FIRST_SHEET_VERSION : rec.group ? FIRST_GROUP_VERSION : rec.pose ? FIRST_POSE_VERSION : rec.stances ? FIRST_STANCE_VERSION : rec.gambit ? FIRST_GAMBIT_VERSION : rec.patron ? PATRON_VERSION : NO_PATRON_VERSION;
   const stancedV = rec.stances ? Math.max(flaggedV, FIRST_STANCE_ROWS_VERSION) : flaggedV;
-  const spelledV = rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = rec.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV;   // as createRecorder: a sheet fight carries the cast penalty from v58
+  const spelledV = rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV0 = rec.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, castedV = rec.spell && spellUsesCap(rec.spell.id) ? Math.max(castedV0, CAST.costCapFrom) : castedV0;   // as createRecorder: a sheet fight carries the cast penalty from v58
   const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: Math.max(castedV, ladderStamp(rec.opponent, rec.level), coneStamp(rec.specials, rec.opponent, rec.level)) as RecordVersion } : rec;
   if (r.spell && r.v < FIRST_SPELL_VERSION) throw Error('Fight record: a spell on a version that has no flag for it');
   if ((r.v as number) === FIRST_SPELL_VERSION && !r.spell) throw Error('Fight record: a version 53 record names its spell');
