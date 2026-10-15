@@ -4,6 +4,7 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
+export { pickSpell } from './spell-pick.ts';   // the equipped-spell pick (the Zone 1 page casts through the door)
 export type { Match } from './match.ts';   // type only (origins/preview/world-record.ts reads a Match without importing the Pit's flow module)
 export type { WorldMount } from './scene.ts';
 export const loadScene = () => import('./scene.ts');   // K7 row 10: the fight scene is a lazy chunk (a static export pulled it out of pit-duel's chunk and its warm-up); same pattern as loadFeedback

@@ -8,11 +8,12 @@ import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
 import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { DIALS, SHEET_SKILLS, checkSheet, statUp, type Sheet } from './sheet-rows.ts';
+import { isSpellId, resolveSpell } from './spell-cast.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
 // RECORD_VERSION; a change to any of them, or a Pit sim bump, fails that test until this is bumped and the digest re-pinned. The packed record stamps it, and a verifier replays only a record of ITS OWN version.
-export const WORLD_SIM_VERSION = 38;
+export const WORLD_SIM_VERSION = 39;
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
 const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'kick'];
@@ -25,11 +26,11 @@ export const MAX_WORLD_TICKS = worldRule('maxWorldTicks');
 export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */
-export type RecordHero = { level: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet };   // sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
+export type RecordHero = { level: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet; spell?: { id: string; skill: number } };   // spell: the equipped spell and the skill it is cast at (the Pit record's spell block; the server holds it to the grimoire and the stored skill, origins/server/spell-check.ts); absent = no spell. sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
 export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number; seed?: number };   // the creature at its pose (m) when it joined, before step s
 export type ReleaseEvent = { s: number; id: string };
 /** One step: the pose the page gave the loop (null = the loop's own body), the presses (attack and roll already nulled when the hero is dead), and the held guard. Integers: cm, milliradian, thousandths. */
-export type WorldStep = { pose: { x: number; z: number; f: number } | null; guard: boolean; gd: Direction | null; attack: Press | null; roll: { x: number; z: number } | null };
+export type WorldStep = { pose: { x: number; z: number; f: number } | null; guard: boolean; gd: Direction | null; attack: Press | null; roll: { x: number; z: number } | null; cast?: true };   // cast: the SKILL / cast press (the Pit's special slot, spell-cast.ts); the key is absent when not pressed, so a record without a cast is byte for byte what it was
 export type WorldRecord = { rv: number; wv: number; hero: RecordHero; joins: JoinEvent[]; releases: ReleaseEvent[]; steps: WorldStep[] };
 
 export const cm = (v: number): number => Math.round(v * 100) || 0, mrad = (v: number): number => Math.round(v * 1000) || 0;   // || 0: never -0
@@ -39,12 +40,12 @@ const fromCm = (n: number): number => n / 100, fromMrad = (n: number): number =>
 export function stepHero(world: World, step: WorldStep, gear: { level: number; shielded: boolean }): { world: World; events: Event[] } {
   let w = world;
   if (step.pose) { const m = w.fighters[0]!; w = { ...w, fighters: [{ ...m, ...gear, x: fromCm(step.pose.x), z: fromCm(step.pose.z), facing: m.phase === 'roll' ? m.facing : fromMrad(step.pose.f) }, ...w.fighters.slice(1)] }; }
-  return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, guard: step.guard, guardDirection: step.gd, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
+  return stepCombat(w, { [ME]: { x: 0, z: 0, attack: step.attack, ...(step.cast ? { special: true } : {}), guard: step.guard, guardDirection: step.gd, roll: step.roll ? { x: fromMrad(step.roll.x), z: fromMrad(step.roll.z) } : null } }, STEP);
 }
 export const joinFighter = (j: JoinEvent): Fighter => ({ ...creature(j.id, j.kind, fromCm(j.x), fromCm(j.z), 0, j.level), ...(j.seed === undefined ? {} : { seed: j.seed }) });   // seed: this bout's roll (bout-seed.ts)
 /** The page's numbers, quantized: what the live loop must step with so a replay matches. */
-export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null, gd: Direction | null = null): WorldStep => ({
-  pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, gd: guard ? gd : null, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null,
+export const quantStep = (hero: { x: number; z: number; facing: number } | null, guard: boolean, attack: Press | null, roll: { x: number; z: number } | null, gd: Direction | null = null, cast = false): WorldStep => ({
+  pose: hero ? { x: cm(hero.x), z: cm(hero.z), f: mrad(hero.facing) } : null, guard, gd: guard ? gd : null, attack, roll: roll ? { x: mrad(roll.x), z: mrad(roll.z) } : null, ...(cast ? { cast: true as const } : {}),
 });
 /** The ladder holds no mark that still counts at `tick` (the world clock in Pit ticks): every mark is older than its kind's window (cc-ladder.ts markOf, same test, same `end ?? last` reference), so the next landing finds
  *  it exactly as it would find an empty ladder, now and at every later tick. The ladder is never pruned, so 'empty' would stay false for the rest of the session after one stun; 'quiet' is the same fact. */
@@ -56,7 +57,7 @@ export function heroClean(world: World): boolean {
   return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
     && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && d.move === null && d.phase !== 'dead'));
 }
-export const startBody = (h: RecordHero): Fighter => { const p = player(ME, 0, 0, 0, h.level, null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
+export const startBody = (h: RecordHero): Fighter => { const spell = h.spell ? resolveSpell(h.spell.id, h.spell.skill, h.sheet?.spellPower ?? 0) : undefined, p = player(ME, 0, 0, 0, h.level, null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}), ...(spell ? { spell } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
 
 // ---- the recorder: the live loop feeds it, the page asks for the packed record at a kill -----------------------------------------------
 export function createWorldRecorder() {
@@ -91,7 +92,7 @@ export function packWorldRecord(r: WorldRecord): Uint8Array {
   let px = 0, pz = 0, pf = 0;
   const body: number[] = [];
   for (const s of r.steps) {
-    putVar(body, (s.pose ? 1 : 0) | (s.guard ? 2 : 0) | (PRESSES.indexOf(s.attack) << 2) | (s.roll ? 32 : 0) | (SIDES.indexOf(s.guard ? s.gd : null) << 6));
+    putVar(body, (s.pose ? 1 : 0) | (s.guard ? 2 : 0) | (PRESSES.indexOf(s.attack) << 2) | (s.roll ? 32 : 0) | (SIDES.indexOf(s.guard ? s.gd : null) << 6) | (s.cast ? 512 : 0));
     if (s.pose) { putVar(body, zig(s.pose.x - px)); putVar(body, zig(s.pose.z - pz)); putVar(body, zig(s.pose.f - pf)); px = s.pose.x; pz = s.pose.z; pf = s.pose.f; }
     if (s.roll) { putVar(body, zig(s.roll.x)); putVar(body, zig(s.roll.z)); }
   }
@@ -118,11 +119,11 @@ export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   const releases = h.r.map((e): ReleaseEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string') throw Error('World record: bad release'); return { s: e[0], id: e[1] }; });
   const steps: WorldStep[] = []; let px = 0, pz = 0, pf = 0;
   for (let k = 0; k < h.n; k++) {
-    const fl = get(), attack = PRESSES[(fl >> 2) & 7], gd = SIDES[(fl >> 6) & 7]; if (attack === undefined || gd === undefined || fl >= 512 || (gd !== null && !(fl & 2))) throw Error('World record: bad step');
+    const fl = get(), attack = PRESSES[(fl >> 2) & 7], gd = SIDES[(fl >> 6) & 7]; if (attack === undefined || gd === undefined || fl >= 1024 || (gd !== null && !(fl & 2))) throw Error('World record: bad step');
     let pose: WorldStep['pose'] = null, roll: WorldStep['roll'] = null;
     if (fl & 1) { px += unzig(get()); pz += unzig(get()); pf += unzig(get()); pose = { x: px, z: pz, f: pf }; }
     if (fl & 32) roll = { x: unzig(get()), z: unzig(get()) };
-    steps.push({ pose, guard: !!(fl & 2), gd, attack, roll });
+    steps.push({ pose, guard: !!(fl & 2), gd, attack, roll, ...(fl & 512 ? { cast: true as const } : {}) });
   }
   if (i !== bytes.length) throw Error('World record: trailing bytes');
   return { rv: h.v, wv: h.w, hero, joins, releases, steps };
@@ -154,6 +155,7 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   if (n === 0 || n > MAX_WORLD_TICKS) return bad('ticks');
   if (!PLAYER_WEAPONS.includes(h.weapon)) return bad('weapon');   // the sim honours the hero's weapon (open-fight.ts heroSheeted): any weapon a player can wield; which one the account HOLDS is the server's check (HeroLimit.weapon, origins/server/world-verify.ts: the ledger's main hand or DEFAULT_WEAPON)
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
+  if (h.spell && (typeof h.spell.id !== 'string' || !isSpellId(h.spell.id) || !Number.isInteger(h.spell.skill) || h.spell.skill < 0 || h.spell.skill > 100)) return bad('hero spell');   // a spell in the catalogue and a whole skill 0-100; whether the account holds it is the server's check (origins/server/spell-check.ts)
   if (h.sheet) { try { checkSheet(h.sheet); } catch { return bad('hero sheet'); } }   // known dials, floor..cap, and a legal point budget
   if (!(h.health > 0 && h.health <= (h.sheet ? Math.round(statUp(h.sheet, 'health', RULES.health)) : RULES.health)) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
   const ids = new Set<string>();
@@ -179,7 +181,8 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   for (let k = 0; k < n; k++) {
     const bound = events(k); if (bound) return bad(bound);
     const s = r.steps[k]!;
-    if (dead && (s.attack || s.roll)) return bad('acted dead');
+    if (dead && (s.attack || s.roll || s.cast)) return bad('acted dead');
+    if (s.cast && !h.spell) return bad('cast without a spell');
     if (s.pose) {
       const x = fromCm(s.pose.x), z = fromCm(s.pose.z);
       if (last && M.hypot(x - last.x, z - last.z) > MAX_HERO_MPS * STEP * (k - last.k) + 0.02) return bad('speed');
