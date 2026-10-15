@@ -18,10 +18,12 @@ import { FIRST_STANCE_ROWS_VERSION } from './stance-era.ts';
 import { FIRST_POISE_LADDER_VERSION } from './poise-era.ts';
 import { FIRST_CONE_VERSION } from './cone-era.ts';
 import { FIRST_CAST_PENALTY_VERSION } from './cast-penalty-era.ts';
+import { CAST, spellUsesCap } from './spell-cast.ts';
 import { coneAt } from './cone-rules.ts';
 import { PICKS, type PickedStance } from './stance.ts';
 
-export const RECORD_VERSION = 64;   // 64: bump 64 (2026-10-15; Combat, positioning bands behind duel.bands (bands.ts, band-defs.json) and the holdBand tactic row; default off, so a record below 64, and every fight without the flag, replays exactly as before: REACH[64] is empty; PROVISIONAL number, renumbers at merge-up)
+export const RECORD_VERSION = 65;   // 65: bump 65 (2026-10-15; Combat, positioning bands behind duel.bands (bands.ts, band-defs.json) and the holdBand tactic row; default off, so a record below 64, and every fight without the flag, replays exactly as before: REACH[64] is empty; PROVISIONAL number, renumbers at merge-up)
+// 64: bump 64 (2026-10-15; Combat, spell cost cap: no spell costs more than the stamina bar, so harvest level 8 (103 against 100) is castable; a record below 64 cannot hold that cast, so REACH[64] is empty and no older link is refused)
 // 63: bump 63 (2026-10-14; Combat, Gothic tactic table PR 1: the tactic rows loader and the warden's reaction slot reading a profile's `tactic` row; no profile names one, so no fight moves)
 // 62: bump 62 (2026-10-14; Combat, sim batch B: FAR_M and MAX_ATTACKERS as world-rules rows, stance HOME read from the catalogue rows' home field; the same numbers, no fight moves)
 // 61: bump 61 (2026-10-14; Combat, group B sim batch A: the plain sim numbers and AI/stance tables as rows - roll band, gambit floor, perk max, play radius, late-notice, levels, READ, PROFILES, OWN_KNOBS, ABSENT, POISE_FULL_AT, LEGACY_DEFENSIVE; the same numbers, no fight moves)
@@ -88,11 +90,11 @@ export const RECORD_VERSION = 64;   // 64: bump 64 (2026-10-15; Combat, position
 // [.., 29] -> [.., 29, 30] with the writer bump to 30: widened, REACH[30] lists the Shieldmaiden, the Knight and the Plague Doctor from level 1 (their own profile rows), so a v29 record of any other opponent still replays.
 // [.., 27] -> [.., 27, 28] with the writer bump to 28: widened, REACH[28] is empty (only a specials-flag fight steps differently; flag-off records of any readable version replay exactly as before).
 // [.., 31] -> [.., 31, 32] with the writer bump to 32: widened, REACH[32] is empty (a patron-less fight writes 31 and steps as before; only a patron record is v32).
-export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64] as const;
+export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65] as const;
 // What a fight with no patron writes: the writer ceiling is RECORD_VERSION (32), but a record names the LOWEST version that can express its fight.
 // A literal 31 only while the ceiling is 32 (the v31 bytes a patron-less fight has always written); from the next bump on a no-patron fight is simply the current version, whose
 // header carries a patron byte of 0 (only v32 refuses a zero patron, because a v32 patron-less fight was always written as 31). Pinned by tests/record-version-guard.test.ts, which simulates RV33.
-export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 64 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
+export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 65 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
 export const FIRST_SPELL_VERSION = 53;   // RV53 (spells in fights): the fight carries a spell (second flag byte, bit 0, then the spell block: id len u8 + ascii, skill u8); ONLY a spell fight is written as v53
 export const FIRST_GAMBIT_VERSION = 33;
@@ -100,7 +102,7 @@ export const FIRST_STANCE_VERSION = 34;
 export const FIRST_POSE_VERSION = 38;
 export const FIRST_GROUP_VERSION = 39;
 export const FIRST_SHEET_VERSION = 48;   // RV48 (Wave A1 PR1): the fight carries the player's sheet (flag bit 7): a count byte, then (dial code u8, the dial's effective value u8) pairs, in code order, dials off base only; ONLY a sheet fight is written as v48
-export const PATRON_VERSION = (RECORD_VERSION as number) <= 64 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
+export const PATRON_VERSION = (RECORD_VERSION as number) <= 65 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
 // Each bump's REACH (the standing rule, Strategy 2026-09-28): the fights bump N can change, as (opponent, from level). A record of version
 // k is refused when any bump after k reaches its opponent at its level; everything else is read. Literals on purpose, not the data they
 // describe (LOADOUT_FROM, ROSTER): a reach records what that bump changed and must not move when the data moves later (that change bumps
@@ -139,7 +141,8 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   61: [],   // sim batch A as rows: the same numbers, no fight moves
   62: [],
   63: [],   // Gothic tactic table PR 1: the rows loader and the reaction slot's branch, no profile uses a row, no fight moves   // sim batch B: world-rules rows and the stance home from the catalogue, the same numbers, no fight moves
-  64: [],   // positioning bands: default off, the flag is not on the record; a fight without bands is the fight it always was
+  64: [],   // the spell cost cap is ERA-GATED (cast-rules.json costCapFrom): a record below 64 resolves its spell uncapped, exactly as before, so dagan/cronus (harvest L8, 103) replay unchanged; no opponent's profile moves
+  65: [],   // positioning bands: default off, the flag is not on the record; a fight without bands is the fight it always was
   59: [],   // SPECIAL_SETS and the rank levels as rows: the same names, no fight moves
   58: [],   // the cast penalty: a sheet record below 58 recomputes without it, the duel is unchanged
   57: [],   // MOVES and PATHS as rows: the same resolved objects, no fight moves
@@ -227,7 +230,7 @@ export function createRecorder(meta: RecordMeta) {
   const era = stampedVersion(meta.opponent);
   if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet || meta.spell) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
   const flagged = meta.sheet ? FIRST_SHEET_VERSION : meta.group ? FIRST_GROUP_VERSION : meta.pose ? FIRST_POSE_VERSION : meta.stances ? FIRST_STANCE_VERSION : meta.gambit ? FIRST_GAMBIT_VERSION : meta.patron ? PATRON_VERSION : era;
-  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, version = Math.max(castedV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level));   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
+  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, cappedV = meta.spell && spellUsesCap(meta.spell.id) ? Math.max(castedV, CAST.costCapFrom) : castedV, version = Math.max(cappedV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level));   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
   if (spellBad(meta)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');   // a stances fight is fought on the v52 stance rows (stance-era.ts: a Defensive stance has no longer window), so it is stamped no lower than v52   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
   if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };
   if (buildRefBad(meta)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
@@ -262,7 +265,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   // A gambit fight is v33; otherwise a patron fight is v32 and a patron-less one v31.
   const flaggedV = rec.sheet ? FIRST_SHEET_VERSION : rec.group ? FIRST_GROUP_VERSION : rec.pose ? FIRST_POSE_VERSION : rec.stances ? FIRST_STANCE_VERSION : rec.gambit ? FIRST_GAMBIT_VERSION : rec.patron ? PATRON_VERSION : NO_PATRON_VERSION;
   const stancedV = rec.stances ? Math.max(flaggedV, FIRST_STANCE_ROWS_VERSION) : flaggedV;
-  const spelledV = rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = rec.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV;   // as createRecorder: a sheet fight carries the cast penalty from v58
+  const spelledV = rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV0 = rec.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, castedV = rec.spell && spellUsesCap(rec.spell.id) ? Math.max(castedV0, CAST.costCapFrom) : castedV0;   // as createRecorder: a sheet fight carries the cast penalty from v58
   const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: Math.max(castedV, ladderStamp(rec.opponent, rec.level), coneStamp(rec.specials, rec.opponent, rec.level)) as RecordVersion } : rec;
   if (r.spell && r.v < FIRST_SPELL_VERSION) throw Error('Fight record: a spell on a version that has no flag for it');
   if ((r.v as number) === FIRST_SPELL_VERSION && !r.spell) throw Error('Fight record: a version 53 record names its spell');
