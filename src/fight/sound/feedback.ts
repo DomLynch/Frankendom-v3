@@ -2,7 +2,7 @@ import { audioRule } from './audio-rules.ts';
 import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import { cuesFor, nextVariant, PITCH_SPREAD, seeded, type Cue, type DeathPresentation } from './cues.ts';
 import { MANIFEST, type CueName } from '../../audio/manifest.ts';
-import { loadSprite } from '../../audio/sprite.ts';
+import { decodePrefetched, sharedPrefetch, type Prefetched } from '../../audio/sprite.ts';
 import { createArenaAudio, type ArenaFrame } from '../../audio/arena.ts';
 import { createBreath, type Breath } from './breath.ts';
 import { sayPowerWord } from './power-word.ts';
@@ -43,7 +43,7 @@ export function createFeedback(host?: FeedbackHost) {
   let arenaAudio: ReturnType<typeof createArenaAudio> | undefined, arenaOutput: AudioNode;
   let context: BaseAudioContext | undefined, master: GainNode | undefined, balance: GainNode | undefined, bus: DynamicsCompressorNode | undefined, noise: AudioBuffer | undefined;
   const level = host?.balance ?? { combat: COMBAT_LEVEL, finish: FINISH_LEVEL };
-  let sprite: AudioBuffer | null | undefined, loading: Promise<boolean> | undefined, enabled = true, quieted = false, duel = 0, random = seeded(BASE_SEED);
+  let sprite: AudioBuffer | null | undefined, loading: Promise<boolean> | undefined, enabled = !(typeof location !== 'undefined' && /[?&]sound=0\b/.test(location.search)), quieted = false, duel = 0, random = seeded(BASE_SEED);
   const sources = new Set<AudioScheduledSourceNode>();
   const voices: Voice[] = [], last: Partial<Record<CueName, number>> = {};
   let tap: MediaStreamAudioDestinationNode | undefined;
@@ -61,6 +61,10 @@ export function createFeedback(host?: FeedbackHost) {
   let rising: { voice: Voice; source: AudioBufferSourceNode } | undefined;   // the opponent's charge while it climbs; cut when her hold ends
   const live = () => !!host || context?.state === 'running';
   const now = () => host ? host.now() : context!.currentTime;
+  // The sprite's 563 kB is fetched at idle, before any gesture (fetching needs none); unlock() then only decodes it, so the first blows on a phone network are not silent.
+  let prefetching: Promise<Prefetched | null> | undefined;
+  const prefetch = (): Promise<Prefetched | null> => (prefetching ??= sharedPrefetch());
+  if (!host && enabled && typeof window !== 'undefined') { const idle = () => { if (enabled) prefetch(); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(idle, { timeout: 4000 }); else setTimeout(idle, 1500); }   // ?sound=0 (enabled false from the start): nothing is fetched
   function unlock() {
     if (!enabled || (!host && typeof AudioContext === 'undefined')) return;
     if (!context) {
@@ -71,7 +75,7 @@ export function createFeedback(host?: FeedbackHost) {
       build(context);
       specialLoad(); duelLoad();
       if (host && host.sprite !== undefined) sprite = host.sprite;
-      else loading = loadSprite(context).then(buffer => { sprite = buffer; return !!buffer; }, () => { sprite = null; return false; });
+      else loading = decodePrefetched(context, prefetch()).then(buffer => { sprite = buffer; return !!buffer; }, () => { sprite = null; return false; });
     }
     quieted = false;
     // iOS also parks the context in 'interrupted' after calls, Siri or an app switch; resume from any non-running state.
