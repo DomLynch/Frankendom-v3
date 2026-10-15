@@ -9,7 +9,7 @@ import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { DIALS, SHEET_SKILLS, checkSheet, statUp, type Sheet } from './sheet-rows.ts';
 import { isSpellId, resolveSpell } from './spell-cast.ts';
-import { ALLOW_DUPLICATE } from './spell-slot-rows.ts';
+import { ALLOW_DUPLICATE } from './spell-rows.ts';
 import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type Fighter, type World } from './world.ts';
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
