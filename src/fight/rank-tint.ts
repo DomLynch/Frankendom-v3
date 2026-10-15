@@ -48,9 +48,11 @@ export function tinted(source: MeshStandardMaterial, tier: Tier): MeshStandardMa
   return finish ? finishWith(source, finish, kind, tier) : source;
 }
 // A named finish row (finish-rows.json, e.g. `rust`) on a piece's metal and trim; leather, cloth, bone and stone keep their own look. Same tint as a rung.
-export function finishedAs(source: MeshStandardMaterial, id: string): MeshStandardMaterial {
+// The cache key carries a `finish:` prefix, so a finish id equal to a rung title (Recruit, Master...) can never answer with the rung's material.
+export const finishedAs = (source: MeshStandardMaterial, id: string): MeshStandardMaterial => finishedBy(source, id, () => finishRow(id));
+export function finishedBy(source: MeshStandardMaterial, id: string, finish: () => Finish): MeshStandardMaterial {
   const kind = classOf(source.name);
-  return kind === 'metal' || kind === 'trim' ? finishWith(source, finishRow(id), kind, id) : source;
+  return kind === 'metal' || kind === 'trim' ? finishWith(source, finish(), kind, `finish:${id}`) : source;
 }
 function finishWith(source: MeshStandardMaterial, finish: Finish, kind: DrawClass | null | undefined, tier: string): MeshStandardMaterial {
   const stone = kind === 'stone';
