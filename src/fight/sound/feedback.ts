@@ -10,6 +10,7 @@ import { voiceCreature, type CreatureCue } from './creature.ts';
 import { prepareBell } from '../../audio/bell.ts';
 import { loadSpecial, playSpecial, type SpecialCue } from './special.ts';
 import { loadDuel, playDuel, type DuelCue } from './duel.ts';
+import { groundLootCue, type GroundLootKind } from './ground-loot.ts';
 import { armfeelLayers, MAX_LAYERS, OUTPUT_GAIN } from './armfeel-sound.ts';
 import type { Feel } from '../armfeel.ts';
 
@@ -168,6 +169,8 @@ export function createFeedback(host?: FeedbackHost) {
       wordBus ??= (() => { const g = context!.createGain(); g.gain.value = 1; g.connect(bus!); return g; })();
       sayPowerWord(context, wordBus, noise, word, caster, now(), gain);
     },
+    // A ground-loot cue (ground-loot.ts: a drop, a take, a lost race): the row's sprite cue at its own level and pitch, on the combat bus; silent until the sprite has decoded, never gating anything.
+    groundLoot(kind: GroundLootKind, itemClass?: string) { if (!enabled || quieted || !context || !live() || !sprite) return; play(groundLootCue(kind, itemClass), now()); },
     creature(body: string, cue: CreatureCue) {   // ?look=creatures (audio/creature.ts): a Frontier creature's growl, bite or death cry, synthesised on the combat bus; absent = silent as shipped
       if (!context || !bus || !noise || !live() || quieted || !enabled) return;
       voiceCreature(context, bus, noise, body, cue, now());
