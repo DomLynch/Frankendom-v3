@@ -2,7 +2,7 @@ import { decide } from './ai.ts';
 import type { AiState } from './ai.ts';
 import type { Duel, Intent, Side } from './duel.ts';
 import type { AiProfile } from './moves.ts';
-import { HOLD_BACK, HOLD_FORWARD, bestRange } from './bands.ts';
+import { HOLD_BACK, HOLD_BACK_ON, HOLD_FORWARD, HOLD_MARGIN, bestRange } from './bands.ts';
 import { TACTIC_ROWS } from './tactic-rows.ts';
 
 // The AI's holdBand (spec docs/specs/combat/positioning-gates.md, Strategy: the archetype tries to stand in its weapon's band, so the AI makes the same choice the player makes). A WRAPPER over ai.ts decide(), not an
@@ -16,6 +16,6 @@ export function decideBanded(duel: Duel, me: Side, ai: AiState, profile: AiProfi
   if (!range) return out;
   const dx = foe.body.x - self.body.x, dz = foe.body.z - self.body.z, gap = Math.hypot(dx, dz);
   if (!(gap > 0)) return out;
-  const forward = gap > range[1] ? HOLD_FORWARD : gap < range[0] ? -HOLD_BACK : 0, ux = dx / gap, uz = dz / gap;
+  const forward = gap > range[1] + HOLD_MARGIN ? HOLD_FORWARD : HOLD_BACK_ON && gap < range[0] - HOLD_MARGIN ? -HOLD_BACK : 0, ux = dx / gap, uz = dz / gap;
   return { ...out, intent: { ...out.intent, move: { ...out.intent.move, x: ux * forward, z: uz * forward } } };
 }

@@ -5,7 +5,9 @@
     {"id":"midFrac","value":0.67,"unit":"of the working span"},
     {"id":"offBandMult","value":0.6,"unit":"x damage"},
     {"id":"holdForward","value":0.6,"unit":"of walking speed"},
-    {"id":"holdBack","value":0.4,"unit":"of walking speed"}
+    {"id":"holdBack","value":0.4,"unit":"of walking speed"},
+    {"id":"holdMargin","value":0,"unit":"m beyond the band edge before the AI steps"},
+    {"id":"holdBackOn","value":1,"unit":"1 = the AI also steps back from inside its band, 0 = it only closes in"}
   ],
   "bands": [
     {"id":"inner"},

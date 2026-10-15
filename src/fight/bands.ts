@@ -12,10 +12,11 @@ const RULE_T = tableFromFile(BAND_MANIFEST.tables[0] as unknown as Manifest, BAN
 const BAND_T = tableFromFile(BAND_MANIFEST.tables[1] as unknown as Manifest, BAND_DEFS, 'band-defs.json');
 const WEAPON_T = tableFromFile(BAND_MANIFEST.tables[2] as unknown as Manifest, BAND_DEFS, 'band-defs.json');
 loadRegistry([RULE_T, BAND_T, WEAPON_T]);
-const rule = (id: string): number => { const r = (RULE_T.rows as unknown as { id: string; value: number }[]).find((x) => x.id === id); if (!r || !(r.value > 0)) throw Error(`band-defs: the rule "${id}" needs a row with a value > 0`); return r.value; };
+const rule = (id: string): number => { const r = (RULE_T.rows as unknown as { id: string; value: number }[]).find((x) => x.id === id); if (!r || !(r.value >= 0)) throw Error(`band-defs: the rule "${id}" needs a row with a value >= 0`); return r.value; };
 /** The ring ids from the innermost out (a row order). */
 export const BANDS: readonly string[] = (BAND_T.rows as unknown as { id: string }[]).map((r) => r.id);
 const CONTACT = rule('contactGap'), INNER_FRAC = rule('innerFrac'), MID_FRAC = rule('midFrac'), OFF_BAND_MULT = rule('offBandMult');
+for (const must of ['contactGap', 'offBandMult', 'holdForward', 'holdBack']) if (!(rule(must) > 0)) throw Error(`band-defs: "${must}" is above 0`);
 if (BANDS.length !== 3) throw Error('band-defs: exactly three bands (inner, mid, outer)');
 if (!(INNER_FRAC < MID_FRAC && MID_FRAC < 1)) throw Error('band-defs: 0 < innerFrac < midFrac < 1');
 if (OFF_BAND_MULT > 1) throw Error('band-defs: offBandMult is at most 1 (an off-band blow is never stronger)');
@@ -27,7 +28,7 @@ export const BEST_BAND: Readonly<Record<string, string>> = Object.fromEntries((W
 }));
 export const OFF_BAND = OFF_BAND_MULT;
 /** The walk speeds of the AI's holdBand step in and back (fractions of walking speed; rows: the same walk ai.ts already uses to close in and to give ground). */
-export const HOLD_FORWARD = rule('holdForward'), HOLD_BACK = rule('holdBack');
+export const HOLD_FORWARD = rule('holdForward'), HOLD_BACK = rule('holdBack'), HOLD_MARGIN = rule('holdMargin'), HOLD_BACK_ON = rule('holdBackOn') > 0;   // margin: metres past a band edge before the AI steps; backOn: whether it also steps back from inside the band
 
 const OWN_BLOWS = ['light_right', 'heavy_overhead', 'thrust'] as const;   // the weapon's own blows (the shared skill moves and the kick are not its reach)
 /** [lo, hi] of a weapon's working span in metres: from its minimum reach (or the contact gap) to its longest own blow. */
