@@ -41,5 +41,10 @@
   "casters": [
     { "id": "witch", "f0": 175, "breath": 0.55, "syllable": 0.24 },
     { "id": "plaguedoctor", "f0": 88, "breath": 0.4, "syllable": 0.3 }
+  ],
+  "groundLoot": [
+    { "id": "drop", "cue": "bone_crack", "gain": 0.3, "room": 0.12, "rate": 0.8 },
+    { "id": "pickup", "cue": "draw", "gain": 0.25, "room": 0.08, "rate": 1.6 },
+    { "id": "refuse", "cue": "backstep", "gain": 0.12, "room": 0.04, "rate": 0.85 }
   ]
 }
