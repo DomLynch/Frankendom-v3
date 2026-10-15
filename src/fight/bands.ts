@@ -26,6 +26,8 @@ export const BEST_BAND: Readonly<Record<string, string>> = Object.fromEntries((W
   return [r.id, r.bestBand];
 }));
 export const OFF_BAND = OFF_BAND_MULT;
+/** The walk speeds of the AI's holdBand step in and back (fractions of walking speed; rows: the same walk ai.ts already uses to close in and to give ground). */
+export const HOLD_FORWARD = rule('holdForward'), HOLD_BACK = rule('holdBack');
 
 const OWN_BLOWS = ['light_right', 'heavy_overhead', 'thrust'] as const;   // the weapon's own blows (the shared skill moves and the kick are not its reach)
 /** [lo, hi] of a weapon's working span in metres: from its minimum reach (or the contact gap) to its longest own blow. */

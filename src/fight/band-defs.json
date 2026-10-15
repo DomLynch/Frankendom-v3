@@ -3,7 +3,9 @@
     {"id":"contactGap","value":0.85,"unit":"m"},
     {"id":"innerFrac","value":0.34,"unit":"of the working span"},
     {"id":"midFrac","value":0.67,"unit":"of the working span"},
-    {"id":"offBandMult","value":0.6,"unit":"x damage"}
+    {"id":"offBandMult","value":0.6,"unit":"x damage"},
+    {"id":"holdForward","value":0.6,"unit":"of walking speed"},
+    {"id":"holdBack","value":0.4,"unit":"of walking speed"}
   ],
   "bands": [
     {"id":"inner"},
