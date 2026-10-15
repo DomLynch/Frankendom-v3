@@ -4,14 +4,10 @@ import { POOLS } from './pools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import LIST_DEFS from './spell-list-defs.json' with { type: 'json' };
 import LIST_MANIFEST from './spell-list-defs.manifest.json' with { type: 'json' };
-import SLOT_DEFS from './spell-slot-defs.json' with { type: 'json' };
-import SLOT_MANIFEST from './spell-slot-defs.manifest.json' with { type: 'json' };
 
 // The starter spell list and the special slots as rows (spec docs/specs/combat/spell-slots.md, rows PR: no behaviour, nothing in a fight reads these yet). A leaf: the registry loader, the spell resolver and the index.
 const LIST_T = tableFromFile(LIST_MANIFEST.tables[0] as unknown as Manifest, LIST_DEFS, 'spell-list-defs.json');
-const SLOT_T = tableFromFile(SLOT_MANIFEST.tables[0] as unknown as Manifest, SLOT_DEFS, 'spell-slot-defs.json');
-const SLOT_RULE_T = tableFromFile(SLOT_MANIFEST.tables[1] as unknown as Manifest, SLOT_DEFS, 'spell-slot-defs.json');
-loadRegistry([LIST_T, SLOT_T, SLOT_RULE_T]);
+loadRegistry([LIST_T]);
 /** The stamina bar a spell must fit under (pool-defs.json, the same row the cost cap reads). */
 export const STAMINA_BAR: number = POOLS.find((d) => d.id === 'stamina')!.default;
 const SPELL_ROWS_INDEX = (SPELL_INDEX as unknown as { spells: Record<string, readonly [string, number]> }).spells;
@@ -27,10 +23,4 @@ export const checkSpellList = (rows: readonly SpellListEntry[]): SpellListEntry[
 });
 export const SPELL_LIST: readonly SpellListEntry[] = checkSpellList(LIST_T.rows as unknown as SpellListEntry[]);
 
-export type SpellSlot = { readonly id: string; readonly action: string; readonly order: number };
-/** The slots in HUD order. An action is one verb per slot; at least one slot. */
-export const SPELL_SLOTS: readonly SpellSlot[] = (SLOT_T.rows as unknown as SpellSlot[]).map((r) => ({ id: r.id, action: r.action, order: r.order })).sort((a, b) => a.order - b.order);
-if (!SPELL_SLOTS.length) throw Error('spell-slot-defs: at least one slot');
-if (new Set(SPELL_SLOTS.map((s) => s.action)).size !== SPELL_SLOTS.length || new Set(SPELL_SLOTS.map((s) => s.order)).size !== SPELL_SLOTS.length) throw Error('spell-slot-defs: one action and one order per slot');
-const slotRule = (id: string): number => { const r = (SLOT_RULE_T.rows as unknown as { id: string; value: number }[]).find((x) => x.id === id); if (!r || !(r.value === 0 || r.value === 1)) throw Error(`spell-slot-defs: the rule "${id}" needs a row that is 0 or 1`); return r.value; };
-export const SHARED_COOLDOWN = slotRule('sharedCooldown') === 1, ALLOW_DUPLICATE = slotRule('allowDuplicate') === 1;
+export { SPELL_SLOTS, SHARED_COOLDOWN, ALLOW_DUPLICATE, type SpellSlot } from './spell-slot-rows.ts';   // the slot rows live in their own light module (the entry chunk reads them without the 700-row catalogue)
