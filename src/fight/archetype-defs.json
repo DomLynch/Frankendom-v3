@@ -177,6 +177,53 @@
    }
   },
   {
+   "id": "troll",
+   "scale": 1.5,
+   "health": 320,
+   "poise": 30,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 34,
+      "accuracy": 0.5,
+      "parry": 0,
+      "dodge": 0,
+      "aggression": 0.55,
+      "pressure": 0.6,
+      "discipline": 30,
+      "lapse": 0.45,
+      "read": 0.3
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 22,
+      "accuracy": 0.8,
+      "parry": 0,
+      "dodge": 0,
+      "aggression": 0.75,
+      "pressure": 0.7,
+      "discipline": 25,
+      "lapse": 0.12,
+      "read": 0.4
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 18,
+      "accuracy": 0.9,
+      "parry": 0.1,
+      "dodge": 0,
+      "aggression": 0.9,
+      "pressure": 0.75,
+      "discipline": 24,
+      "lapse": 0.08,
+      "read": 0.55
+     }
+    }
+   }
+  },
+  {
    "id": "shieldmaiden",
    "scale": 1,
    "health": 190,

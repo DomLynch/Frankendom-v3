@@ -9,11 +9,13 @@ export const WOLF_RENDER_SCALE = fxNum('beast-scale.wolf');
 // the same native height, so its mob look must use the same constant (a test pins it per body that has a look).
 export const BOAR_RENDER_SCALE = fxNum('beast-scale.boar');
 export const BEAR_RENDER_SCALE = fxNum('beast-scale.bear');
+// The Cave Troll is the hero rig at giant scale (a man's 1.84 m, drawn ~3.5 m); same on-demand body path as the beasts (public/beasts/cave-troll.glb, 6.85 MB).
+export const CAVE_TROLL_RENDER_SCALE = fxNum('beast-scale.cave-troll');
 // By roster id: what the duel draws a beast at. Absent = not a beast, drawn as built (1).
-export const BEAST_RENDER_SCALE: Readonly<Record<string, number>> = { wolf: WOLF_RENDER_SCALE, boar: BOAR_RENDER_SCALE, bear: BEAR_RENDER_SCALE };
+export const BEAST_RENDER_SCALE: Readonly<Record<string, number>> = { wolf: WOLF_RENDER_SCALE, boar: BOAR_RENDER_SCALE, bear: BEAR_RENDER_SCALE, 'cave-troll': CAVE_TROLL_RENDER_SCALE };
 export const beastRenderScale = (opponentId: string): number => BEAST_RENDER_SCALE[opponentId] ?? 1;
 // The beasts whose duel body is NOT in the src/assets glob (it would ride every player's download and TOTAL) but a file under public/beasts/, fetched on demand by URL (Lead's ruling 2026-10-08, the carrierUrls pattern):
 // when the creature is near (World's preload warms the browser cache with this same URL) or the duel starts. The wolf stays in src/assets: it shipped that way. scripts/check-budget.mjs gives the folder its own line.
-export const ON_DEMAND_BEASTS: ReadonlySet<string> = new Set(['boar', 'bear']);
+export const ON_DEMAND_BEASTS: ReadonlySet<string> = new Set(['boar', 'bear', 'cave-troll']);
 // Absolute from the site root (like '/world/<kind>.glb' and '/looks/...'): the main page and the Origins preview (/preview/origins/, publicDir off) both read the game's deployed public/beasts.
 export const beastBodyUrl = (opponentId: string): string => `/beasts/${opponentId}.glb`;
