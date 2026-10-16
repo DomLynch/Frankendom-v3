@@ -106,7 +106,9 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     guard(held: boolean, side: Direction | null = null) { guardHeld = held; guardSide = side; },
     update(dt: number, hero: { x: number; z: number; facing: number }): { dx: number; dz: number } {
       const mobs = d.mobs(); if (!mobs) return { dx: 0, dz: 0 };
-      if (!heroDead && (d.loadoutReady?.() ?? true)) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
+      const ready = d.loadoutReady?.() ?? true;
+      if (!heroDead && ready && specs.size === 0 && me().phase === 'ready') rebody();   // idle with the loadout gate open: his bar is the sheet's now (159 at ready idle, not 150 until the first engage); a no-op while hero() has not moved since the last build
+      if (!heroDead && ready) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
       const want = acc + dt, cap = STEP * MAX_STEPS; acc = Math.min(want, cap);
       if (want > cap) { lostMs += (want - cap) * 1000; hitches++; if (hitches === 1 || hitches % 10 === 0) console.warn(`world-combat: a ${Math.round(dt * 1000)} ms frame dropped ${Math.round((want - cap) * 1000)} ms of fight time (${hitches} such frame(s), ${Math.round(lostMs)} ms lost in all)`); }
       let first = true, stepped = false;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
