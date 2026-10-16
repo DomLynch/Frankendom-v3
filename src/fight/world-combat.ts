@@ -52,11 +52,14 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number } } => d.hero?.() ?? { level: 1 };
   const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet, spell: asked, spell2: asked2 } = mine(), spell = asked ? resolveSpell(asked.id, asked.skill, sheet?.spellPower ?? 0) : undefined, spell2 = asked2 ? resolveSpell(asked2.id, asked2.skill, sheet?.spellPower ?? 0) : undefined, p = player(ME, x, z, facing, level, null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
   let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, pendingCast2 = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
+  let wasReady = false, rebuild = false;   // rebuild: hero() may have moved (the loadout gate just opened, or the page said the build / worn-gear view answered): rebody once at the next idle frame
   let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
   const seedOf = (id: string): number => { let h = steps; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761); return h >>> 0; };   // the fight's tick and a creature's id: a roll of presentation, the same on a replay
-  const gearOf = () => { const p = player(ME, 0, 0, 0, mine().level); return { level: p.level, shielded: p.shielded }; };
+  const gearFrom = () => { const p = player(ME, 0, 0, 0, mine().level); return { level: p.level, shielded: p.shielded }; };
+  let gear = gearFrom();   // the level and shield the step and the record read: taken from hero() at load, at each window open and at each rebody, NOT per sim step (hero() builds the sheet; the record's window holds one level for its whole fight)
+  const gearOf = () => gear;
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
   const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), ...(m.spell2 ? { spell2: mine().spell2 } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
@@ -66,11 +69,11 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     const key = JSON.stringify(mine()); if (key === builtKey) return;
     const old = me(), next = body(old.x, old.z, old.facing);
     next.health = Math.max(1, Math.round(next.maxHealth * old.health / old.maxHealth)); next.stamina = Math.min(next.maxStamina, old.stamina); next.posture = old.posture; next.exhausted = old.exhausted;
-    world = newWorld([next]); builtKey = key;
+    world = newWorld([next]); builtKey = key; gear = gearFrom();
   }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
-    if (specs.size === 0) { if (heroClean(world)) { rebody(); recorder.open(heroBody()); } else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
+    if (specs.size === 0) { gear = gearFrom(); if (heroClean(world)) { rebody(); recorder.open(heroBody()); } else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
     const token = d.engageToken?.(p.spec.id), seed = token ? hash32(token, recorder.steps()) : undefined;   // the record's own step index: the replay and the server know it (a world clock tick is not in the record)
     const j: JoinEvent = { s: 0, id: p.spec.id, kind, x: cm(p.x), z: cm(p.z), level: p.spec.level, ...(seed === undefined ? {} : { seed }) };   // the pose is quantized before the sim sees it, so a replay joins the same creature
     recorder.join(j.id, j.kind, p.x, p.z, j.level, seed); specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, joinFighter(j)] };
@@ -99,6 +102,8 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     press(kind: 'light' | 'heavy' | 'thrust' | 'kick' = 'light') { pendingAttack = kind; },
     /** A roll / dodge pressed: the world-axis direction (zero = where he faces). */
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
+    /** The page's build_get or worn-gear view just answered (hero() may now give another sheet): the idle hero is rebuilt once at the next idle frame, not by polling hero() every frame. */
+    heroChanged() { rebuild = true; },
     /** The SKILL / cast press: the hero's equipped spell starts its cast on the next step if he is free and has the stamina (the Pit's special slot); with no spell it does nothing. */
     cast() { pendingCast = true; },
     /** The second slot's press (spell-slot-defs.json slot b): its own spell and cooldown; with no second spell it does nothing. */
@@ -106,7 +111,11 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     guard(held: boolean, side: Direction | null = null) { guardHeld = held; guardSide = side; },
     update(dt: number, hero: { x: number; z: number; facing: number }): { dx: number; dz: number } {
       const mobs = d.mobs(); if (!mobs) return { dx: 0, dz: 0 };
-      if (!heroDead && (d.loadoutReady?.() ?? true)) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
+      const ready = d.loadoutReady?.() ?? true;
+      if (ready && !wasReady) rebuild = true;   // the gate's ready EDGE
+      wasReady = ready;
+      if (rebuild && !heroDead && ready && specs.size === 0 && me().phase === 'ready') { rebuild = false; rebody(); }   // idle with the loadout gate open: his bar is the sheet's now (159 at ready idle, not 150 until the first engage). Once per edge or heroChanged(), never per frame (hero() builds the sheet)
+      if (!heroDead && ready) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
       const want = acc + dt, cap = STEP * MAX_STEPS; acc = Math.min(want, cap);
       if (want > cap) { lostMs += (want - cap) * 1000; hitches++; if (hitches === 1 || hitches % 10 === 0) console.warn(`world-combat: a ${Math.round(dt * 1000)} ms frame dropped ${Math.round((want - cap) * 1000)} ms of fight time (${hitches} such frame(s), ${Math.round(lostMs)} ms lost in all)`); }
       let first = true, stepped = false;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
