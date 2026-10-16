@@ -179,16 +179,16 @@
   {
    "id": "troll",
    "scale": 1.5,
-   "health": 320,
+   "health": 400,
    "poise": 16,
    "profiles": {
     "easy": {
      "set": {
-      "reaction": 34,
-      "accuracy": 0.5,
+      "reaction": 26,
+      "accuracy": 0.7,
       "parry": 0,
       "dodge": 0,
-      "aggression": 0.55,
+      "aggression": 0.75,
       "pressure": 0.6,
       "discipline": 30,
       "lapse": 0.45,
