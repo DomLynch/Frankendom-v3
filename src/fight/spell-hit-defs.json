@@ -1,0 +1,7 @@
+{
+  "hits": [
+    {"id": "threeBlows", "every": 15, "ramp": [1, 1, 1], "holds": 1},
+    {"id": "baying", "every": 40, "ramp": [1, 1, 1, 1, 1], "holds": 0},
+    {"id": "ashfall", "every": 30, "ramp": [2, 2, 1, 1, 1], "holds": 0}
+  ]
+}
