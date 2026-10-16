@@ -33,9 +33,10 @@ export function createZoneBars(element: Lookup, parent: HTMLElement) {
   return {
     /** Paint the Pit's bars; `shown` false hides them (the zone hides them while the hero is whole and nothing is in reach). */
     update(state: MeterState, shown: boolean) {
-      parent.classList.toggle('zone-bars', shown); if (!shown) return;
-      paintMeter(hp, state.hp, state.maxHp); paintMeter(stamina, state.stamina, state.maxStamina);
+      parent.classList.toggle('zone-bars', shown);
+      paintMeter(hp, state.hp, state.maxHp); paintMeter(stamina, state.stamina, state.maxStamina);   // the hero's own bars and numbers are painted even while hidden, so the DOM never says the static "150 / 150" once the sheet's max is known
       element('player-health-value').textContent = `${Math.round(state.hp)} / ${state.maxHp}`; element('stamina-value').textContent = `${Math.round(state.stamina)} / ${state.maxStamina}`;
+      if (!shown) return;
       name.replaceChildren(state.foe ? state.foe.name.toUpperCase() : ''); name.dataset.mobile = state.foe ? state.foe.name : '';
       if (state.foe?.level !== undefined) { const small = name.ownerDocument.createElement('small'); small.className = 'opponent-class'; small.textContent = `Lv ${state.foe.level}`; name.append(' ', small); }   // the Pit's own level slot (origins/preview/pit-duel.ts nameOpponent): the name large, the level small beside it   // the phone draws data-mobile (src/style.css .meter-label::after)
       if (state.foe) paintMeter(foe, state.foe.hp, state.foe.max); else paintMeter(foe, 0, 1);
