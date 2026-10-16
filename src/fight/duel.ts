@@ -15,7 +15,7 @@ import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
-import { castOutcome, outcomeMult, type CastOutcome, type Spell } from './spell-cast.ts';
+import { castOutcome, outcomeMult, splitDamage, type CastOutcome, type Spell } from './spell-cast.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { ARC_HALF, BODY_SPACING, FULL_TURN, GAP_EPSILON, LORARIUS_SECTORS, MAX_PERK_TEMPLATES, MOVE_EPSILON, PERK_MAX, PER_MILLE, PUSH_SPLIT, ROLL_HALF } from './duel-rows.ts';   // the dials are rows (duel-defs.json)
 export { PERK_MAX };
@@ -54,6 +54,7 @@ export type Fighter = {
   poise: number;   // a plain clean hit dealing less than this never staggers this fighter (moves.ts `Opponent`); 0 = human
   poiseRest?: number;   // v54 (poise-ladder.ts): ticks left of the poise-rest a full stagger started; a flinch inside it is a shrug. Absent = none, so a fight without the ladder hashes as before
   breath?: { k: number; wait: number; heading: number };   // v55 (cone-rules.ts): a cone special mid-breath: pulses done, ticks since the last pulse, the heading fixed at the release. Absent unless breathing, so a fight without a cone hashes as before
+  volley?: { k: number; wait: number; total: number; hits: readonly number[]; every: number };   // RV69 (spell-hit-defs.json): a spell landing as pulses: pulses done, ticks since the last, the landing's whole damage and its weights. Absent unless pulsing, so a fight without one hashes as before
   loiter: number;   // ticks spent within the wall band without attacking (RULES.wall.loiter); the lorarii whip at `ticks`
   lashed: boolean;   // the lorarii have already lashed him in this spell at the wall: the next whip is a repeat, so its tell is shorter
   skill: SkillId | null; skillCooldown: number;   // the equipped skill (null = none: every opponent in V1) and the ticks until it may fire again (RULES.skillCooldown)
@@ -564,7 +565,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   // on it, and a lethal release on the tick he fell is a double kill through the draw. Unblockable and undodgeable. Then every windup still
   // running counts down, and one whose caster has fallen fizzles.
   const releasing = [fighters[0].special === 1, fighters[1].special === 1], standing = [fighters[0].health > 0, fighters[1].health > 0];
-  const breathed = [false, false];   // a breath that began this tick pulses from the next one   // both judged before either lands
+  const breathed = [false, false], volleyed = [false, false];   // a breath that began this tick pulses from the next one   // both judged before either lands
   for (const i of [0, 1] as const) {
     const j = (1 - i) as Side, A = fighters[i], D = fighters[j];
     if (!releasing[i]) continue;
@@ -578,10 +579,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     // A spell resolves its outcome from the seeded stream (one draw per cast that lands on a standing target); a fizzle spent its stamina and re-armed the full cooldown above, and deals nothing.
     const outcome = spell && duel.cast ? castOutcome(spell, rollUnit(duel.cast.seed, casts++)) : undefined, mult = spell && outcome ? outcomeMult(spell, outcome) : 1;
     if (spell && outcome && !mult) { events.push({ tick, type: 'SpecialFizzled', actor: i, spell: spell.id, outcome }); continue; }
-    const damage = Math.round((spell && outcome ? spell.share * mult : A.specialShare!) * D.maxHealth);
+    const total = Math.round((spell && outcome ? spell.share * mult : A.specialShare!) * D.maxHealth), pulsed = !!spell && spell.hits.length > 1, damage = pulsed ? splitDamage(spell.hits, total, 0) : total;   // RV69: a root with a hit row lands pulse 0 now and the rest every `hitEvery` ticks, the same total
     D.health = Math.max(0, D.health - damage);
-    events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(spell && outcome ? { spell: spell.id, outcome } : {}) });
+    if (pulsed) { A.volley = { k: 0, wait: 0, total, hits: spell.hits, every: spell.hitEvery }; volleyed[i] = true; if (spell.hitHolds) A.specialRecover = R.special.recovery + spell.hitEvery * (spell.hits.length - 1); }
+    events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(spell && outcome ? { spell: spell.id, outcome } : {}), ...(pulsed ? { pulse: 0 } : {}) });
     if (D.health) continue;
+    delete A.volley;
     D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
     finish = finish ? { ...finish, draw: true } : { victim: j, location: 'torso', move, heading: A.body.heading };
     events.push({ tick, type: 'Killed', actor: i, target: j, move, location: 'torso', heading: A.body.heading });
@@ -598,6 +601,21 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const move: MoveId = SKILL_MOVE[A.skill ?? DAY_ONE_SKILL]!, damage = pulseDamage(cone, Math.round(A.specialShare! * D.maxHealth), b.k);
     D.health = Math.max(0, D.health - damage);
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, name: A.specialName!, pulse: b.k, cone: true, damageKind: cone.damageKind });
+    if (D.health) continue;
+    D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
+    finish = finish ? { ...finish, draw: true } : { victim: j, location: 'torso', move, heading: A.body.heading };
+    events.push({ tick, type: 'Killed', actor: i, target: j, move, location: 'torso', heading: A.body.heading });
+  }
+  // 4c. Volleys (RV69): every `every` ticks the next pulse of a spell landing as pulses deals its weight of the landing's total; the volley stops when the target falls or the caster does.
+  for (const i of [0, 1] as const) {
+    const j = (1 - i) as Side, A = fighters[i], D = fighters[j], v = A.volley;
+    if (!v || volleyed[i]) continue;
+    if (!A.health || !D.health) { delete A.volley; continue; }
+    if (v.wait + 1 < v.every) { A.volley = { ...v, wait: v.wait + 1 }; continue; }
+    const k = v.k + 1, move: MoveId = SKILL_MOVE[A.skill ?? DAY_ONE_SKILL]!, damage = splitDamage(v.hits, v.total, k);
+    if (k + 1 >= v.hits.length) delete A.volley; else A.volley = { ...v, k, wait: 0 };
+    D.health = Math.max(0, D.health - damage);
+    events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, pulse: k });
     if (D.health) continue;
     D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
     finish = finish ? { ...finish, draw: true } : { victim: j, location: 'torso', move, heading: A.body.heading };

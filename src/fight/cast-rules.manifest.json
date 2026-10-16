@@ -13,7 +13,8 @@
         "costWeight": "integer",
         "drawSpan": "integer",
         "levels": "integer",
-        "costCapFrom": "integer"
+        "costCapFrom": "integer",
+        "hitsFrom": "integer"
       }
     }
   ]
