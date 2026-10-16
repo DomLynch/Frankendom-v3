@@ -37,6 +37,7 @@ export const levelHealth = (kind: string, level: number): number => opponentAt(O
 /** PvP (Dom via Strategy): no toggle. The SERVER sets `Fighter.pvp` each step to "attackable here, now" (wild zone = true, safe-town volume = false); the rules below decide between two such players.
  *  Under PROTECT_LEVEL a player is shielded until his own first attack; nobody may fight a player more than MAX_LEVEL_GAP levels away. A player's blows always land on creatures, whatever the flags. */
 export const PROTECT_LEVEL = worldRule('protectLevel'), MAX_LEVEL_GAP = worldRule('maxLevelGap');
+const TAU = 6.283185307179586, RETARGET_CONE = worldRule('retargetCone') * (TAU / 360), RETARGET_GAP_S = worldRule('retargetGap');   // many-on-one (A): at ready, the creature in front of the hero (half-angle, deg) becomes his foe; at most one swap per gap (s)
 export const AGGRO_WINDOW_S = worldRule('aggroWindow');                       // a player who hit you in the last minute is not "first" when you hit back
 
 export type Phase = 'ready' | 'guard' | 'roll' | 'windup' | 'active' | 'recover' | 'stagger' | 'dead';
@@ -48,6 +49,7 @@ export type Fighter = {
   phase: Phase; t: number;                              // the Pit fighter's phase, mapped, and seconds spent in it (World animates from these)
   posture: number;                                      // posture (0..RULES.posture.max), the Pit's
   exhausted: boolean;                                   // stamina hit zero: no new action, slower, until it is back past RULES.exhaustRecover
+  retargetAt?: number;                                  // player only: the world time of his last foe swap (many-on-one retarget gap)
   homeX: number; homeZ: number;                         // creature only: where it spawned (it walks back here)
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight
@@ -180,7 +182,13 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
   }
   const take = (p: Fighter, only: (c: Fighter) => boolean): Fighter | null => {
     const near = creatures.filter((c) => alive(c) && !c.returning && !claimed.has(c.id) && only(c)).sort((x, y) => dist(x, p) - dist(y, p));
-    return near.find((c) => c.id === prevFoe(p) && dist(c, p) <= ENGAGE_OUT_M) ?? near.find((c) => reach(c, p)) ?? null;
+    const keep = near.find((c) => c.id === prevFoe(p) && dist(c, p) <= ENGAGE_OUT_M);
+    // Many-on-one (A): a joiner is hittable. At ready (not mid-swing), a foe he is not facing gives way to the creature in front of him (smallest turn inside the cone), at most one swap per gap.
+    if (keep && p.phase === 'ready' && world.time - (p.retargetAt ?? -Infinity) >= RETARGET_GAP_S) {
+      const turn = (c: Fighter): number => { const d = (aim(p, c) - p.facing) % TAU; return Math.abs(d > TAU / 2 ? d - TAU : d < -TAU / 2 ? d + TAU : d); };
+      if (turn(keep) > RETARGET_CONE) { const front = near.filter((c) => c !== keep && reach(c, p) && turn(c) <= RETARGET_CONE).sort((x, y) => turn(x) - turn(y) || dist(x, p) - dist(y, p))[0]; if (front) { p.retargetAt = world.time; return front; } }
+    }
+    return keep ?? near.find((c) => reach(c, p)) ?? null;
   };
   const foes = new Map<string, Fighter | null>();
   for (const p of free) { const foe = take(p, (c) => chose.get(c.id) === p.id); if (foe) claimed.add(foe.id); foes.set(p.id, foe); }

@@ -1,5 +1,7 @@
 {
   "rules": [
+    { "id": "retargetCone", "value": 35, "unit": "deg" },
+    { "id": "retargetGap", "value": 0.5, "unit": "s" },
     { "id": "engage", "value": 4, "unit": "m" },
     { "id": "engageOut", "value": 6, "unit": "m" },
     { "id": "holdFactor", "value": 0.95, "unit": "ratio" },
