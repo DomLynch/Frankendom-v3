@@ -37,6 +37,7 @@ export const levelHealth = (kind: string, level: number): number => opponentAt(O
 /** PvP (Dom via Strategy): no toggle. The SERVER sets `Fighter.pvp` each step to "attackable here, now" (wild zone = true, safe-town volume = false); the rules below decide between two such players.
  *  Under PROTECT_LEVEL a player is shielded until his own first attack; nobody may fight a player more than MAX_LEVEL_GAP levels away. A player's blows always land on creatures, whatever the flags. */
 export const PROTECT_LEVEL = worldRule('protectLevel'), MAX_LEVEL_GAP = worldRule('maxLevelGap');
+const TAU = Math.PI * 2, RETARGET_CONE = worldRule('retargetCone') * (TAU / 360), RETARGET_GAP_S = worldRule('retargetGap');   // many-on-one (A): at ready, the creature in front of the hero (half-angle, deg) becomes his foe; at most one swap per gap (s)
 export const AGGRO_WINDOW_S = worldRule('aggroWindow');                       // a player who hit you in the last minute is not "first" when you hit back
 
 export type Phase = 'ready' | 'guard' | 'roll' | 'windup' | 'active' | 'recover' | 'stagger' | 'dead';
@@ -48,6 +49,7 @@ export type Fighter = {
   phase: Phase; t: number;                              // the Pit fighter's phase, mapped, and seconds spent in it (World animates from these)
   posture: number;                                      // posture (0..RULES.posture.max), the Pit's
   exhausted: boolean;                                   // stamina hit zero: no new action, slower, until it is back past RULES.exhaustRecover
+  retargetAt?: number;                                  // player only: the world time of his last foe swap (many-on-one retarget gap)
   homeX: number; homeZ: number;                         // creature only: where it spawned (it walks back here)
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight
@@ -148,6 +150,12 @@ function separate(f: Fighter, all: Fighter[]): void {
 }
 
 /** The next world: who fights whom, then every fight stepped on the Pit's duel; creatures that are not in a fight chase, hold off at the ring, give up or walk home. Never mutates its input. The Pit's brain decides every creature blow, so there is no randomness here. */
+/** The many-on-one cut on a creature's duel against a player: the creature is the `slot`th attacker on him (Duel.crowd; slot 1 = no cut, the key is dropped so the Pit's own fights stay byte for byte). */
+const slotted = (duel: Bout['duel'], slot: number): Bout['duel'] => {
+  const rest = { ...duel }; delete rest.crowd;
+  return slot > 1 ? { ...rest, crowd: { from: 1, slot, kind: 'mob' } } : rest;
+};
+
 export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>, dt: number): { world: World; events: Event[] } {
   const clock = Math.round(world.time * 60);   // the world's clock in Pit ticks: the crowd-control ladder's window runs on it, across every bout
   const events: Event[] = [];
@@ -180,7 +188,13 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
   }
   const take = (p: Fighter, only: (c: Fighter) => boolean): Fighter | null => {
     const near = creatures.filter((c) => alive(c) && !c.returning && !claimed.has(c.id) && only(c)).sort((x, y) => dist(x, p) - dist(y, p));
-    return near.find((c) => c.id === prevFoe(p) && dist(c, p) <= ENGAGE_OUT_M) ?? near.find((c) => reach(c, p)) ?? null;
+    const keep = near.find((c) => c.id === prevFoe(p) && dist(c, p) <= ENGAGE_OUT_M);
+    // Many-on-one (A): a joiner is hittable. At ready (not mid-swing), a foe he is not facing gives way to the creature in front of him (smallest turn inside the cone), at most one swap per gap.
+    if (keep && p.phase === 'ready' && world.time - (p.retargetAt ?? -Infinity) >= RETARGET_GAP_S) {
+      const turn = (c: Fighter): number => { const d = (aim(p, c) - p.facing) % TAU; return Math.abs(d > TAU / 2 ? d - TAU : d < -TAU / 2 ? d + TAU : d); };
+      if (turn(keep) > RETARGET_CONE) { const front = near.filter((c) => c !== keep && reach(c, p) && turn(c) <= RETARGET_CONE).sort((x, y) => turn(x) - turn(y) || dist(x, p) - dist(y, p))[0]; if (front) { p.retargetAt = world.time; return front; } }
+    }
+    return keep ?? near.find((c) => reach(c, p)) ?? null;
   };
   const foes = new Map<string, Fighter | null>();
   for (const p of free) { const foe = take(p, (c) => chose.get(c.id) === p.id); if (foe) claimed.add(foe.id); foes.set(p.id, foe); }
@@ -206,7 +220,8 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
 
   for (const { a, b } of bouts) {
     const prev = world.streams[a.id], same = prev && prev.foe === (b?.id ?? null);
-    const bout: Bout = same ? prev : openBout(a, b, prev && !same && prev.duel.fighters[0] ? prev.duel.fighters[0] : undefined);
+    const opened: Bout = same ? prev : openBout(a, b, prev && !same && prev.duel.fighters[0] ? prev.duel.fighters[0] : undefined);
+    const bout: Bout = opened.duel.crowd ? { ...opened, duel: slotted(opened.duel, 1) } : opened;   // the primary foe is the 1st attacker on him: full blow (a joiner promoted to primary sheds its slot)
     const r = stepBout(bout, a, b ?? undefined, inputs[a.id] ?? IDLE_INPUT, b && b.side === 'player' ? inputs[b.id] ?? IDLE_INPUT : IDLE_INPUT, dt, clock);
     if (b && b.side === 'creature' && r.bout.ai) b.brain = carried(r.bout.ai, r.bout.duel.tick);   // the brain lives on the creature, not in the fight
     if (b && b.side === 'creature' && !engagedWith(a, b.id)) events.push({ type: 'FightStarted', creature: b.id, player: a.id });
@@ -218,7 +233,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     for (const c of joined.get(a.id) ?? []) {
       const had = prevJoined.get(c.id) ?? (prev?.foe === c.id ? prev : undefined), jb = had ?? openBout(a, c);
       if (!engagedWith(a, c.id)) events.push({ type: 'FightStarted', creature: c.id, player: a.id });
-      const jr = stepBout(jb, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);
+      const jr = stepBout({ ...jb, duel: slotted(jb.duel, 2 + r.bout.joined.length) }, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);   // the Nth attacker on him (primary 1st, joiners in join order): 1.0 / 0.5 / 0.3 (swarm-defs.json slots), re-read every tick so a death moves the rest up
       if (jr.bout.ai) c.brain = carried(jr.bout.ai, jr.bout.duel.tick);
       if (alive(a)) Object.assign(a, keep); else { Object.assign(a, { x: keep.x, z: keep.z, facing: keep.facing }); break; }   // killed by a joiner: he stays dead (Auditor, #1943); the other joiners stop
       if (alive(c) && M.hypot(c.x - c.chaseX, c.z - c.chaseZ) > leashOf(c.kind)) { c.hunting = false; c.returning = true; c.phase = 'ready'; }
