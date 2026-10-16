@@ -41,6 +41,7 @@ export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue 
 export { creaturesLook, type CreatureCue } from './sound/creature.ts';
 export { groundLootCue, GROUND_LOOT_KINDS, type GroundLootKind } from './sound/ground-loot.ts';   // the ground-loot cue rows (drop, pickup, refuse); a page plays one with feedback.groundLoot(kind)   // ?look=creatures and the creature cue names
 export const loadFeedback = () => import('./sound/feedback.ts').then((m) => m.createFeedback());   // K8 slice 2: the Pit's cue player as a lazy chunk (the zone builds it at its first gesture, not with the page)
+export const loadSpellInfo = () => import('./spell-catalogue.ts').then((m) => m.SPELL_INFO);   // the 700-row spell catalogue as a lazy chunk (the SPELL 2 button's name; never in the entry bundle)
 export { createFollowCamera, inPassage, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
 export { MAX_ATTACKERS } from './attackers.ts';
 export { finishedAs } from './rank-tint.ts';   // a finish row on a piece's metal (the ground-item view, origins/preview)
