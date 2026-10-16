@@ -52,6 +52,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number } } => d.hero?.() ?? { level: 1 };
   const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet, spell: asked, spell2: asked2 } = mine(), spell = asked ? resolveSpell(asked.id, asked.skill, sheet?.spellPower ?? 0) : undefined, spell2 = asked2 ? resolveSpell(asked2.id, asked2.skill, sheet?.spellPower ?? 0) : undefined, p = player(ME, x, z, facing, level, null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
   let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, pendingCast2 = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
+  let wasReady = false, rebuild = false;   // rebuild: hero() may have moved (the loadout gate just opened, or the page said the build / worn-gear view answered): rebody once at the next idle frame
   let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
@@ -99,6 +100,8 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     press(kind: 'light' | 'heavy' | 'thrust' | 'kick' = 'light') { pendingAttack = kind; },
     /** A roll / dodge pressed: the world-axis direction (zero = where he faces). */
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
+    /** The page's build_get or worn-gear view just answered (hero() may now give another sheet): the idle hero is rebuilt once at the next idle frame, not by polling hero() every frame. */
+    heroChanged() { rebuild = true; },
     /** The SKILL / cast press: the hero's equipped spell starts its cast on the next step if he is free and has the stamina (the Pit's special slot); with no spell it does nothing. */
     cast() { pendingCast = true; },
     /** The second slot's press (spell-slot-defs.json slot b): its own spell and cooldown; with no second spell it does nothing. */
@@ -107,7 +110,9 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     update(dt: number, hero: { x: number; z: number; facing: number }): { dx: number; dz: number } {
       const mobs = d.mobs(); if (!mobs) return { dx: 0, dz: 0 };
       const ready = d.loadoutReady?.() ?? true;
-      if (!heroDead && ready && specs.size === 0 && me().phase === 'ready') rebody();   // idle with the loadout gate open: his bar is the sheet's now (159 at ready idle, not 150 until the first engage); a no-op while hero() has not moved since the last build
+      if (ready && !wasReady) rebuild = true;   // the gate's ready EDGE
+      wasReady = ready;
+      if (rebuild && !heroDead && ready && specs.size === 0 && me().phase === 'ready') { rebuild = false; rebody(); }   // idle with the loadout gate open: his bar is the sheet's now (159 at ready idle, not 150 until the first engage). Once per edge or heroChanged(), never per frame (hero() builds the sheet)
       if (!heroDead && ready) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
       const want = acc + dt, cap = STEP * MAX_STEPS; acc = Math.min(want, cap);
       if (want > cap) { lostMs += (want - cap) * 1000; hitches++; if (hitches === 1 || hitches % 10 === 0) console.warn(`world-combat: a ${Math.round(dt * 1000)} ms frame dropped ${Math.round((want - cap) * 1000)} ms of fight time (${hitches} such frame(s), ${Math.round(lostMs)} ms lost in all)`); }
