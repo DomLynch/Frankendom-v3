@@ -1,7 +1,7 @@
 {
   "tables": [
     { "table": "specialSet", "file": "special-set-defs.json", "at": "sets", "key": "id",
-      "required": { "specials": "array" } },
+      "required": { "specials": "array" }, "optional": { "from": "integer" } },
     { "table": "specialRank", "file": "special-set-defs.json", "at": "ranks", "key": "id",
       "required": { "level": "integer" } }
   ]
