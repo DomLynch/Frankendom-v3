@@ -150,6 +150,12 @@ function separate(f: Fighter, all: Fighter[]): void {
 }
 
 /** The next world: who fights whom, then every fight stepped on the Pit's duel; creatures that are not in a fight chase, hold off at the ring, give up or walk home. Never mutates its input. The Pit's brain decides every creature blow, so there is no randomness here. */
+/** The many-on-one cut on a creature's duel against a player: the creature is the `slot`th attacker on him (Duel.crowd; slot 1 = no cut, the key is dropped so the Pit's own fights stay byte for byte). */
+const slotted = (duel: Bout['duel'], slot: number): Bout['duel'] => {
+  const { crowd: _gone, ...rest } = duel;
+  return slot > 1 ? { ...rest, crowd: { from: 1, slot, kind: 'mob' } } : rest;
+};
+
 export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>, dt: number): { world: World; events: Event[] } {
   const clock = Math.round(world.time * 60);   // the world's clock in Pit ticks: the crowd-control ladder's window runs on it, across every bout
   const events: Event[] = [];
@@ -214,7 +220,8 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
 
   for (const { a, b } of bouts) {
     const prev = world.streams[a.id], same = prev && prev.foe === (b?.id ?? null);
-    const bout: Bout = same ? prev : openBout(a, b, prev && !same && prev.duel.fighters[0] ? prev.duel.fighters[0] : undefined);
+    const opened: Bout = same ? prev : openBout(a, b, prev && !same && prev.duel.fighters[0] ? prev.duel.fighters[0] : undefined);
+    const bout: Bout = opened.duel.crowd ? { ...opened, duel: slotted(opened.duel, 1) } : opened;   // the primary foe is the 1st attacker on him: full blow (a joiner promoted to primary sheds its slot)
     const r = stepBout(bout, a, b ?? undefined, inputs[a.id] ?? IDLE_INPUT, b && b.side === 'player' ? inputs[b.id] ?? IDLE_INPUT : IDLE_INPUT, dt, clock);
     if (b && b.side === 'creature' && r.bout.ai) b.brain = carried(r.bout.ai, r.bout.duel.tick);   // the brain lives on the creature, not in the fight
     if (b && b.side === 'creature' && !engagedWith(a, b.id)) events.push({ type: 'FightStarted', creature: b.id, player: a.id });
@@ -226,7 +233,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     for (const c of joined.get(a.id) ?? []) {
       const had = prevJoined.get(c.id) ?? (prev?.foe === c.id ? prev : undefined), jb = had ?? openBout(a, c);
       if (!engagedWith(a, c.id)) events.push({ type: 'FightStarted', creature: c.id, player: a.id });
-      const jr = stepBout(jb, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);
+      const jr = stepBout({ ...jb, duel: slotted(jb.duel, 2 + r.bout.joined.length) }, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);   // the Nth attacker on him (primary 1st, joiners in join order): 1.0 / 0.5 / 0.3 (swarm-defs.json slots), re-read every tick so a death moves the rest up
       if (jr.bout.ai) c.brain = carried(jr.bout.ai, jr.bout.duel.tick);
       if (alive(a)) Object.assign(a, keep); else { Object.assign(a, { x: keep.x, z: keep.z, facing: keep.facing }); break; }   // killed by a joiner: he stays dead (Auditor, #1943); the other joiners stop
       if (alive(c) && M.hypot(c.x - c.chaseX, c.z - c.chaseZ) > leashOf(c.kind)) { c.hunting = false; c.returning = true; c.phase = 'ready'; }

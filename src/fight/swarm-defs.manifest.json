@@ -1,6 +1,8 @@
 {
   "tables": [
     { "table": "swarmrank", "file": "swarm-defs.json", "at": "ranks", "key": "id",
-      "required": { "rank": "integer", "perFoe": "integer", "cap": "integer" }, "unique": ["rank"] }
+      "required": { "rank": "integer", "perFoe": "integer", "cap": "integer" }, "unique": ["rank"] },
+    { "table": "swarmslot", "file": "swarm-defs.json", "at": "slots", "key": "id",
+      "required": { "kind": "string", "slot": "integer", "percent": "integer" }, "unique": ["id"] }
   ]
 }

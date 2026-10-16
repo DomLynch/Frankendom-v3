@@ -10,7 +10,7 @@ import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterr
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
 import { poolsOf, type PoolValues } from './pools.ts';
-import { percentOf, rolledDamage, rollUnit, swarmBand } from './roll.ts';
+import { crowdPercent, percentOf, rolledDamage, rollUnit, swarmBand, type CrowdKind } from './roll.ts';
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
@@ -108,7 +108,7 @@ export type CombatEvent = { pulse?: number; cone?: boolean; damageKind?: string;
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
 // `roll`: the world-mob damage roll (Origins luck ruling, Dom 2026-10-07: +/-10% on every blow in both directions, in a world-mob fight only). Absent = the Pit, PvP and the
 // ladder: today's fight byte for byte. `hits` numbers the fight's blows in the order they resolve, so the draw is a pure function of (seed, hit) and a replay reproduces it.
-export type Duel = { bands?: boolean; tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number; swarm?: number; rank?: number }; gambit?: { seed: number; draws: number }; cast?: { seed: number; n: number }; radius?: number; ccBase?: number };   // ccBase: ticks added to this duel's tick to give the world's clock, the ladder's window (open world only)   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
+export type Duel = { bands?: boolean; tick: number; fighters: [Fighter, Fighter]; finish: Finish | null; events: CombatEvent[]; incoming?: number; roll?: { seed: number; hits: number; swarm?: number; rank?: number }; gambit?: { seed: number; draws: number }; cast?: { seed: number; n: number }; radius?: number; ccBase?: number; crowd?: { from: Side; slot: number; kind?: CrowdKind } };   // crowd: the many-on-one cut (roll.ts crowdPercent): `from` is the crowding attacker's side, `slot` its place among the attackers on one target   // ccBase: ticks added to this duel's tick to give the world's clock, the ladder's window (open world only)   // radius: the wall this fight is fought inside (RV40); absent = the Pit's live circle (play-radius.ts RADIUS), so a Pit duel is byte for byte what it was
 export { ROLL_BAND, rollPercent, rolledDamage } from './roll.ts';   // the one definition (src/fight/roll.ts), shared with src/core/luck.ts
 export const withRoll = (duel: Duel, seed: number): Duel => ({ ...duel, roll: { seed, hits: 0 } });
 // A spell on one fighter (RV53): the one door, so a replay builds exactly what the live fight built. The fighter must already carry the special (withSpecials). `cast.seed` is the fight's seed, salted so the cast draws never repeat the gambit's or the roll's.
@@ -275,7 +275,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   for (const f of fighters) if (f.poiseRest) { if (f.poiseRest > 1) f.poiseRest--; else delete f.poiseRest; }
   for (const f of fighters) if (f.specialRecover) f.specialRecover--;
   for (const f of fighters) if (f.feintEdge) { f.feintEdge--; if (!f.feintEdge) delete f.feintEdge; }   // a trickster's feint beat runs down (RULES.feintBeat)
-  if (!before[0].health || !before[1].health) return { tick, fighters, finish: duel.finish, events, ...(duel.bands ? { bands: true } : {}), ...(duel.roll ? { roll: duel.roll } : {}), ...(duel.gambit ? { gambit: duel.gambit } : {}), ...(duel.cast ? { cast: duel.cast } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
+  if (!before[0].health || !before[1].health) return { tick, fighters, finish: duel.finish, events, ...(duel.bands ? { bands: true } : {}), ...(duel.roll ? { roll: duel.roll } : {}), ...(duel.gambit ? { gambit: duel.gambit } : {}), ...(duel.cast ? { cast: duel.cast } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}), ...(duel.crowd ? { crowd: duel.crowd } : {}) };
   let gdraws = duel.gambit?.draws ?? 0, casts = duel.cast?.n ?? 0;   // casts: the seeded draws spells have taken so far (RV53)
   let hits = duel.roll?.hits ?? 0, lastRoll: number | undefined;   // the world-mob roll: a blow's health loss goes through rolled(); absent roll = the plain number
   // The sheet (RV48): the attacker's attack dial scales a blow up and the target's armour dial scales it down (an armour of 100 takes half) before the world roll; a blow is never scaled to nothing. No sheet on either side = the plain number.
@@ -289,7 +289,8 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const x = Math.round(z);
     return base > 0 ? Math.max(1, x) : x;
   };
-  const rolled = (base: number, from: Side, to: Side, pen = 0): number => { const b = geared(base, from, to, pen); if (!duel.roll) return b; lastRoll = percentOf(rollUnit(duel.roll.seed, hits++), swarmBand(duel.roll.swarm, duel.roll.rank)); return rolledDamage(b, lastRoll); };   // the band widens with the swarm: the foes on the target (roll.ts SWARM_ROWS)
+  const crowded = (n: number, from: Side): number => { const c = duel.crowd; if (!c || c.from !== from) return n; const pct = crowdPercent(c.slot, c.kind); return pct >= 100 ? n : Math.max(1, Math.round(n * pct / 100)); };   // the Nth attacker on one target lands a percent of its blow (swarm-defs.json slots; slot 1 and a duel with no crowd are untouched)
+  const rolled = (base: number, from: Side, to: Side, pen = 0): number => { const b = crowded(geared(base, from, to, pen), from); if (!duel.roll) return b; lastRoll = percentOf(rollUnit(duel.roll.seed, hits++), swarmBand(duel.roll.swarm, duel.roll.rank)); return rolledDamage(b, lastRoll); };   // the band widens with the swarm: the foes on the target (roll.ts SWARM_ROWS)
   const rollTag = () => (duel.roll && lastRoll !== undefined ? { roll: lastRoll } : {});
   const spend = (i: Side, cost: number) => {
     const f = fighters[i]; f.stamina = Math.max(0, f.stamina - cost); f.rest = R.regenDelay;
@@ -579,7 +580,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     // A spell resolves its outcome from the seeded stream (one draw per cast that lands on a standing target); a fizzle spent its stamina and re-armed the full cooldown above, and deals nothing.
     const outcome = spell && duel.cast ? castOutcome(spell, rollUnit(duel.cast.seed, casts++)) : undefined, mult = spell && outcome ? outcomeMult(spell, outcome) : 1;
     if (spell && outcome && !mult) { events.push({ tick, type: 'SpecialFizzled', actor: i, spell: spell.id, outcome }); continue; }
-    const total = Math.round((spell && outcome ? spell.share * mult : A.specialShare!) * D.maxHealth), pulsed = !!spell && spell.hits.length > 1, damage = pulsed ? splitDamage(spell.hits, total, 0) : total;   // RV69: a root with a hit row lands pulse 0 now and the rest every `hitEvery` ticks, the same total
+    const total = crowded(Math.round((spell && outcome ? spell.share * mult : A.specialShare!) * D.maxHealth), i), pulsed = !!spell && spell.hits.length > 1, damage = pulsed ? splitDamage(spell.hits, total, 0) : total;   // RV69: a root with a hit row lands pulse 0 now and the rest every `hitEvery` ticks, the same total
     D.health = Math.max(0, D.health - damage);
     if (pulsed) { A.volley = { k: 0, wait: 0, total, hits: spell.hits, every: spell.hitEvery }; volleyed[i] = true; if (spell.hitHolds) A.specialRecover = R.special.recovery + spell.hitEvery * (spell.hits.length - 1); }
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(spell && outcome ? { spell: spell.id, outcome } : {}), ...(pulsed ? { pulse: 0 } : {}) });
@@ -651,6 +652,6 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       events.push({ tick, type: 'Killed', actor: 0, target: 1, move, location: 'torso', heading: A.body.heading });
     }
   }
-  return { tick, fighters, finish, events, ...(duel.bands ? { bands: true } : {}), ...(duel.roll ? { roll: { ...duel.roll, hits } } : {}), ...(duel.gambit ? { gambit: { seed: duel.gambit.seed, draws: gdraws } } : {}), ...(duel.cast ? { cast: { seed: duel.cast.seed, n: casts } } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}) };
+  return { tick, fighters, finish, events, ...(duel.bands ? { bands: true } : {}), ...(duel.roll ? { roll: { ...duel.roll, hits } } : {}), ...(duel.gambit ? { gambit: { seed: duel.gambit.seed, draws: gdraws } } : {}), ...(duel.cast ? { cast: { seed: duel.cast.seed, n: casts } } : {}), ...(duel.radius !== undefined ? { radius: duel.radius } : {}), ...(duel.ccBase !== undefined ? { ccBase: duel.ccBase } : {}), ...(duel.crowd ? { crowd: duel.crowd } : {}) };
 }
 
