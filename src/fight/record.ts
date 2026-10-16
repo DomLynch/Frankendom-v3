@@ -22,7 +22,8 @@ import { CAST, spellUsesCap, spellUsesHits } from './spell-cast.ts';
 import { coneAt } from './cone-rules.ts';
 import { PICKS, type PickedStance } from './stance.ts';
 
-export const RECORD_VERSION = 70;   // 70: bump 70 (2026-10-16; Combat, the Cave Troll: a new roster row (cave-troll, the troll archetype, the cleaver kit), so a record that names it needs v70; REACH[70] is empty; PROVISIONAL number, renumbers at merge-up)
+export const RECORD_VERSION = 71;   // 71: bump 71 (2026-10-16; Combat, the Giant Salamander: a new roster row (giant-salamander, the wolf's archetype, rig and bite), so a record that names it needs v71; REACH[71] is empty; PROVISIONAL number, renumbers at merge-up)
+// 70: bump 70 (2026-10-16; Combat, the Cave Troll: a new roster row (cave-troll, the troll archetype, the cleaver kit), so a record that names it needs v70; REACH[70] is empty; PROVISIONAL number, renumbers at merge-up)
 // 69: bump 69 (2026-10-16; Combat, spell combat slice 1: a spell whose root has a spell-hit-defs.json row (threeBlows, baying, ashfall) lands its SAME total damage as timed pulses, a burst that holds the caster or a damage over time; era-gated by cast-rules.json hitsFrom, so a record below 69 resolves one landing exactly as before and ONLY a spell fight with such a root moves, REACH[69] is empty; PROVISIONAL number, renumbers at merge-up)
 // 68: bump 68 (2026-10-16; Combat, spell slots: a second special slot on the Fighter (spell2, skillCooldown2, castSlot), the 'skill2' action, the open world's cast2 press and hero.spell2; ONLY a fight that equips a second spell moves, and the Pit ladder never does (its record format is unchanged and refuses skill2), so REACH[68] is empty; PROVISIONAL number, renumbers at merge-up)
 // 67: bump 67 (2026-10-16; Combat, the spawn floor 0.5 as a play-radius row (SPAWN_FLOOR); the same number, no fight moves: REACH[67] is empty; PROVISIONAL number, renumbers at merge-up)
@@ -95,11 +96,11 @@ export const RECORD_VERSION = 70;   // 70: bump 70 (2026-10-16; Combat, the Cave
 // [.., 29] -> [.., 29, 30] with the writer bump to 30: widened, REACH[30] lists the Shieldmaiden, the Knight and the Plague Doctor from level 1 (their own profile rows), so a v29 record of any other opponent still replays.
 // [.., 27] -> [.., 27, 28] with the writer bump to 28: widened, REACH[28] is empty (only a specials-flag fight steps differently; flag-off records of any readable version replay exactly as before).
 // [.., 31] -> [.., 31, 32] with the writer bump to 32: widened, REACH[32] is empty (a patron-less fight writes 31 and steps as before; only a patron record is v32).
-export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70] as const;
+export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71] as const;
 // What a fight with no patron writes: the writer ceiling is RECORD_VERSION (32), but a record names the LOWEST version that can express its fight.
 // A literal 31 only while the ceiling is 32 (the v31 bytes a patron-less fight has always written); from the next bump on a no-patron fight is simply the current version, whose
 // header carries a patron byte of 0 (only v32 refuses a zero patron, because a v32 patron-less fight was always written as 31). Pinned by tests/record-version-guard.test.ts, which simulates RV33.
-export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 70 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
+export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 71 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
 export const FIRST_SPELL_VERSION = 53;   // RV53 (spells in fights): the fight carries a spell (second flag byte, bit 0, then the spell block: id len u8 + ascii, skill u8); ONLY a spell fight is written as v53
 export const FIRST_GAMBIT_VERSION = 33;
@@ -107,7 +108,7 @@ export const FIRST_STANCE_VERSION = 34;
 export const FIRST_POSE_VERSION = 38;
 export const FIRST_GROUP_VERSION = 39;
 export const FIRST_SHEET_VERSION = 48;   // RV48 (Wave A1 PR1): the fight carries the player's sheet (flag bit 7): a count byte, then (dial code u8, the dial's effective value u8) pairs, in code order, dials off base only; ONLY a sheet fight is written as v48
-export const PATRON_VERSION = (RECORD_VERSION as number) <= 70 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
+export const PATRON_VERSION = (RECORD_VERSION as number) <= 71 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
 // Each bump's REACH (the standing rule, Strategy 2026-09-28): the fights bump N can change, as (opponent, from level). A record of version
 // k is refused when any bump after k reaches its opponent at its level; everything else is read. Literals on purpose, not the data they
 // describe (LOADOUT_FROM, ROSTER): a reach records what that bump changed and must not move when the data moves later (that change bumps
@@ -153,6 +154,7 @@ export const REACH: Readonly<Record<number, readonly { opponent: OpponentId; fro
   68: [],   // spell slots: slot b exists only in the open world; no Pit record changes; a record below 68 replays exactly as before
   69: [],   // spell pulses (spell-hit-defs.json): era-gated (cast-rules.json hitsFrom), so a record below 69 resolves one landing exactly as before; only a spell fight whose root has a row moves, no opponent's profile does
   70: [],   // the Cave Troll: a brand-new opponent; no existing opponent's profile or kit moves, so a record below 70 replays exactly as before
+  71: [],   // the Giant Salamander: a brand-new opponent on the wolf's archetype and bite; no existing opponent's profile or kit moves, so a record below 71 replays exactly as before
   59: [],   // SPECIAL_SETS and the rank levels as rows: the same names, no fight moves
   58: [],   // the cast penalty: a sheet record below 58 recomputes without it, the duel is unchanged
   57: [],   // MOVES and PATHS as rows: the same resolved objects, no fight moves
