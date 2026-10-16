@@ -180,7 +180,7 @@
    "id": "troll",
    "scale": 1.5,
    "health": 320,
-   "poise": 30,
+   "poise": 16,
    "profiles": {
     "easy": {
      "set": {
