@@ -28,6 +28,7 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   onHeroDied(): void;               // the 2 s dim and the walk back to town
   onHeroHit(amount: number): void;  // red flash + the Hit clip
   onSwing?(): void;                 // the hero's own cut began (the page poses the hero from heroDuel() with the Pit's actor now; kept for hosts that want the beat)
+  loadoutReady?(): boolean;         // false while a signed-in character's build / worn-gear view is still on its way: no creature joins until it is true, so a fight never starts on the bare body because the sheet was late (absent = ready; a 0-dial build is the only way to fight bare)
   onTelegraph?(id: string, ms: number): void;
   onCreatureHit?(spec: S, hit: { seed: number; kill: boolean; hpFrac: number; fromX: number; fromZ: number }): void;   // a creature was hit (its wounds row draws the blood; seed = the fight's tick and its id, so a replay bleeds the same)
   onCreatureTick?(spec: S, t: { hpFrac: number; dt: number; x: number; z: number; seed: number }): void;   // every frame a creature is up and fighting (the row's tiers: drips and marks)
@@ -105,7 +106,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     guard(held: boolean, side: Direction | null = null) { guardHeld = held; guardSide = side; },
     update(dt: number, hero: { x: number; z: number; facing: number }): { dx: number; dz: number } {
       const mobs = d.mobs(); if (!mobs) return { dx: 0, dz: 0 };
-      if (!heroDead) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
+      if (!heroDead && (d.loadoutReady?.() ?? true)) for (const p of mobs.within(hero.x, hero.z, JOIN_M)) join(p);
       const want = acc + dt, cap = STEP * MAX_STEPS; acc = Math.min(want, cap);
       if (want > cap) { lostMs += (want - cap) * 1000; hitches++; if (hitches === 1 || hitches % 10 === 0) console.warn(`world-combat: a ${Math.round(dt * 1000)} ms frame dropped ${Math.round((want - cap) * 1000)} ms of fight time (${hitches} such frame(s), ${Math.round(lostMs)} ms lost in all)`); }
       let first = true, stepped = false;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
@@ -154,6 +155,8 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     /** Frame health for the seamless receipt: sim steps run, fight time dropped by the 0.25 s catch-up cap, and how many frames dropped some. */
     stats: () => ({ steps, lostMs: Math.round(lostMs), hitches }),
     inCombat: () => world.fighters.slice(1).some((f) => f.phase !== 'dead' && f.hunting),
+    /** The hero as he fights, for a trace dump: the effective sheet (its dials, armour and attack among them), his bar sizes and whether the loadout gate is open. */
+    trace: () => { const m = me(); return { ready: d.loadoutReady?.() ?? true, sheet: m.sheet ?? null, maxHealth: m.maxHealth, maxStamina: m.maxStamina, level: m.level }; },
     debug: () => world.fighters.map((f) => ({ id: f.id, phase: f.phase, hp: Math.round(f.health), x: +f.x.toFixed(1), z: +f.z.toFixed(1), hunting: f.hunting, returning: f.returning, duel: pairs(world).some((p) => p.player === ME && p.foe === f.id) })),   // duel: in a duel with the player right now (the live pack check counts these against MAX_ATTACKERS)
   };
 }

@@ -180,7 +180,7 @@ export const withPerks = (duel: Duel, perks: readonly [Perk | undefined, Perk | 
 // replay builds exactly what the live fight built.
 export const withSpecials = (duel: Duel, level: number, aiSkill: SkillId | null, R: typeof RULES = RULES, name?: SpecialName | null): Duel => ({ ...duel, fighters: [
   { ...duel.fighters[0], specialShare: R.special.damage, skillCooldown: R.special.first },
-  { ...duel.fighters[1], specialShare: level >= R.special.bossFrom ? R.special.bossDamage : R.special.damage, skillCooldown: R.special.first, skill: duel.fighters[1].skill ?? aiSkill, ...(name ? { specialName: name } : {}) },
+  { ...duel.fighters[1], specialShare: level >= R.special.bossFrom || name ? R.special.bossDamage : R.special.damage, skillCooldown: R.special.first, skill: duel.fighters[1].skill ?? aiSkill, ...(name ? { specialName: name } : {}) },
 ] });
 export const aim = (from: State, to: State): number => M.atan2(to.x - from.x, to.z - from.z);
 export const distance = (a: State, b: State): number => M.hypot(a.x - b.x, a.z - b.z);

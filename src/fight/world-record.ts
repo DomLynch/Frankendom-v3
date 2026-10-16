@@ -14,7 +14,8 @@ import { STAMINA_MAX, creature, newWorld, player, stepCombat, type Event, type F
 
 // The world sim's version (Combat, 2026-10-13): what a replay of this record means. tests/world-sim-guard.test.ts hashes the world files (world.ts, open-fight.ts, this file, speeds.ts, attackers.ts) with the Pit's
 // RECORD_VERSION; a change to any of them, or a Pit sim bump, fails that test until this is bumped and the digest re-pinned. The packed record stamps it, and a verifier replays only a record of ITS OWN version.
-export const WORLD_SIM_VERSION = 47;   // 47: the Giant Salamander roster row (set here so world-sim-guard stays green on its own; World's #2878 re-pins over it); PROVISIONAL, renumbers at merge-up
+export const WORLD_SIM_VERSION = 48;   // 48: the Cave Troll's boss special (RV72 moves the world digest); PROVISIONAL, renumbers at merge-up
+// 47:   // 47: the Giant Salamander roster row (set here so world-sim-guard stays green on its own; World's #2878 re-pins over it); PROVISIONAL, renumbers at merge-up
 // 46:   // 46: the Cave Troll roster row in the open-world sim (Lead: the troll stack's one WSV bump, shared with World's #2877); PROVISIONAL number, renumbers at merge-up
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
