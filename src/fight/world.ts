@@ -37,7 +37,7 @@ export const levelHealth = (kind: string, level: number): number => opponentAt(O
 /** PvP (Dom via Strategy): no toggle. The SERVER sets `Fighter.pvp` each step to "attackable here, now" (wild zone = true, safe-town volume = false); the rules below decide between two such players.
  *  Under PROTECT_LEVEL a player is shielded until his own first attack; nobody may fight a player more than MAX_LEVEL_GAP levels away. A player's blows always land on creatures, whatever the flags. */
 export const PROTECT_LEVEL = worldRule('protectLevel'), MAX_LEVEL_GAP = worldRule('maxLevelGap');
-const TAU = 6.283185307179586, RETARGET_CONE = worldRule('retargetCone') * (TAU / 360), RETARGET_GAP_S = worldRule('retargetGap');   // many-on-one (A): at ready, the creature in front of the hero (half-angle, deg) becomes his foe; at most one swap per gap (s)
+const TAU = Math.PI * 2, RETARGET_CONE = worldRule('retargetCone') * (TAU / 360), RETARGET_GAP_S = worldRule('retargetGap');   // many-on-one (A): at ready, the creature in front of the hero (half-angle, deg) becomes his foe; at most one swap per gap (s)
 export const AGGRO_WINDOW_S = worldRule('aggroWindow');                       // a player who hit you in the last minute is not "first" when you hit back
 
 export type Phase = 'ready' | 'guard' | 'roll' | 'windup' | 'active' | 'recover' | 'stagger' | 'dead';
@@ -152,7 +152,7 @@ function separate(f: Fighter, all: Fighter[]): void {
 /** The next world: who fights whom, then every fight stepped on the Pit's duel; creatures that are not in a fight chase, hold off at the ring, give up or walk home. Never mutates its input. The Pit's brain decides every creature blow, so there is no randomness here. */
 /** The many-on-one cut on a creature's duel against a player: the creature is the `slot`th attacker on him (Duel.crowd; slot 1 = no cut, the key is dropped so the Pit's own fights stay byte for byte). */
 const slotted = (duel: Bout['duel'], slot: number): Bout['duel'] => {
-  const { crowd: _gone, ...rest } = duel;
+  const rest = { ...duel }; delete rest.crowd;
   return slot > 1 ? { ...rest, crowd: { from: 1, slot, kind: 'mob' } } : rest;
 };
 
