@@ -4,7 +4,6 @@
 import { accepts, counterLine, practiceHint, type ClarityEvent, type CombatEvent, type Practice } from './combat.ts';
 import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
 import { won } from '../ladder.ts';
-import { SPELL_OF_LEGEND } from './spell-legends.ts';
 import { bareName } from '../roster.ts';
 import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../lessons.ts';
 import { createGapHistory } from './kick-close.ts';
@@ -17,7 +16,7 @@ export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', '
 // Lit = a kick pressed from here lands on a guard-raised foe. Measured 2026-10-07 (tests/hud.test.ts): the true far edge is 1.585 m (the 1.2 m cone plus the kick's .55 stride), so 1.5 keeps a margin for the foe's step.
 export const KICK_LANDS = fxNum('hud.kick-light-m');   // a HUD margin under the true edge (tests/hud.test.ts ties it to the live sim: 0 <= edge - this <= 0.15)
 
-export type HudView = { slotB?: boolean; slotBSpell?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
+export type HudView = { slotB?: boolean; slotBName?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
 // The one bar drawing: a meter's max, its value and the --fill custom property the style sheets draw it from (a <meter>'s own pseudo bars differ per engine).
 export function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
 export function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
@@ -98,7 +97,7 @@ export function createHud(element: Lookup) {
       const inSkillReach = skillMove?.path === null ? gap <= skillMove.reach : null;
       const staminaNow = view.staminaShown ?? practice.stamina;   // ?stamina=N (fatigue-preview.ts): the BAR alone reads the forced number; accepts() and every button stay on the real stamina
       const lowNext = !!view.fatiguePreview && staminaLow(staminaNow, staminaLowOn);   // in the skip key below: the floor of stamina alone would hide a 10.0 / 10.7 crossing
-      const key = `${view.slotB ? `B${view.slotBSpell ?? ''}` : ''}${practice.phase}:${practice.duel.fighters[0].lastMove ?? ''}:${practice.health}:${practice.playerHealth}:${Math.floor(staminaNow)}${lowNext ? 'L' : ''}:${Math.floor(practice.posture)}:${Math.floor(practice.enemyPosture)}:${hint}:${controlsReady}:${ok.join('')}${skillOk ? 1 : 0}:${practice.wound > 0}:${practice.exhausted}:${practice.threat}:${practice.threatMove}:${inKickReach}:${inSkillReach}:${view.replay ? 'r' : ''}${view.practiceOnly ? 'p' : ''}${view.stalled ? 's' : ''}${view.debug ? 'd' : ''}`;   // d: ?debug shown follows the test tools (#1093), so an admin opening them rewrites #debug
+      const key = `${view.slotB ? `B${view.slotBName ?? ''}` : ''}${practice.phase}:${practice.duel.fighters[0].lastMove ?? ''}:${practice.health}:${practice.playerHealth}:${Math.floor(staminaNow)}${lowNext ? 'L' : ''}:${Math.floor(practice.posture)}:${Math.floor(practice.enemyPosture)}:${hint}:${controlsReady}:${ok.join('')}${skillOk ? 1 : 0}:${practice.wound > 0}:${practice.exhausted}:${practice.threat}:${practice.threatMove}:${inKickReach}:${inSkillReach}:${view.replay ? 'r' : ''}${view.practiceOnly ? 'p' : ''}${view.stalled ? 's' : ''}${view.debug ? 'd' : ''}`;   // d: ?debug shown follows the test tools (#1093), so an admin opening them rewrites #debug
       if (key === lastHud) return;
       lastHud = key; staminaLowOn = lowNext;
       paintMeter(health, practice.health, practice.enemyMaxHealth);
@@ -159,7 +158,7 @@ export function createHud(element: Lookup) {
       skillButton.hidden = ended;   // the seventh button follows Heavy's visibility
       const slotB = practice.duel.fighters[0].spell2 !== undefined || view.slotB === true;   // slot b is the fight's own, or (the open world's idle practice carries no spells) the page's say-so: an empty slot b shows no button (Strategy's ruling); the Pit never fills it
       skill2Button.hidden = ended || !slotB;
-      const spell2Name = SPELL_OF_LEGEND[practice.duel.fighters[0].spell2?.id ?? view.slotBSpell ?? '']?.name ?? SPELL2_LABEL;   // the button says the spell's own catalogue name; an empty or unknown slot keeps the generic words; CSS clamps a long name to the button
+      const spell2Name = view.slotBName || SPELL2_LABEL;   // the page hands the spell's own name over (it holds the lazy catalogue; the HUD stays out of the entry bundle's spell data); an empty or unnamed slot keeps the generic words; CSS clamps a long name to the button
       if (skill2Button.dataset.mobile !== spell2Name) {
         skill2Button.dataset.mobile = spell2Name; skill2Button.setAttribute('aria-label', spell2Name); skill2Button.title = spell2Name;
         const text = skill2Button.firstChild; if (text && text.nodeType === 3) text.textContent = spell2Name; else skill2Button.textContent = spell2Name;
