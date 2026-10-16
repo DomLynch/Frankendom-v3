@@ -57,7 +57,9 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
   const seedOf = (id: string): number => { let h = steps; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761); return h >>> 0; };   // the fight's tick and a creature's id: a roll of presentation, the same on a replay
-  const gearOf = () => { const p = player(ME, 0, 0, 0, mine().level); return { level: p.level, shielded: p.shielded }; };
+  const gearFrom = () => { const p = player(ME, 0, 0, 0, mine().level); return { level: p.level, shielded: p.shielded }; };
+  let gear = gearFrom();   // the level and shield the step and the record read: taken from hero() at load, at each window open and at each rebody, NOT per sim step (hero() builds the sheet; the record's window holds one level for its whole fight)
+  const gearOf = () => gear;
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
   const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), ...(m.spell2 ? { spell2: mine().spell2 } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
@@ -67,11 +69,11 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     const key = JSON.stringify(mine()); if (key === builtKey) return;
     const old = me(), next = body(old.x, old.z, old.facing);
     next.health = Math.max(1, Math.round(next.maxHealth * old.health / old.maxHealth)); next.stamina = Math.min(next.maxStamina, old.stamina); next.posture = old.posture; next.exhausted = old.exhausted;
-    world = newWorld([next]); builtKey = key;
+    world = newWorld([next]); builtKey = key; gear = gearFrom();
   }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
-    if (specs.size === 0) { if (heroClean(world)) { rebody(); recorder.open(heroBody()); } else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
+    if (specs.size === 0) { gear = gearFrom(); if (heroClean(world)) { rebody(); recorder.open(heroBody()); } else recorder.discard(); }   // a creature joins an empty loop: a record window opens at his body now
     const token = d.engageToken?.(p.spec.id), seed = token ? hash32(token, recorder.steps()) : undefined;   // the record's own step index: the replay and the server know it (a world clock tick is not in the record)
     const j: JoinEvent = { s: 0, id: p.spec.id, kind, x: cm(p.x), z: cm(p.z), level: p.spec.level, ...(seed === undefined ? {} : { seed }) };   // the pose is quantized before the sim sees it, so a replay joins the same creature
     recorder.join(j.id, j.kind, p.x, p.z, j.level, seed); specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, joinFighter(j)] };
