@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import { SKILL_ROWS } from './moves.ts';
 import FEEL_RULES from './feel-rules.json' with { type: 'json' };
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_1 = fxNum('clamp.skill-impact.0.1');   // the longest frame step the impact fx integrate (s)
 
 // Presentation only: the shared SKILL-IMPACT kit (Strategy via Lead, 2026-09-26, SCOPE 8). Every skill move ships on it: a landed `Hit`
 // whose move is `skill_<id>` throws a short tinted flash at the contact and a fan of dust and sparks, in that move's colour. Driven by the
@@ -73,7 +75,7 @@ export function createSkillImpact(scene: THREE.Scene) {
     },
     update(dt: number) {
       if (dt <= 0 && !points.visible) return;
-      const step = Math.min(Math.max(dt, 0), 0.1); let active = false;
+      const step = Math.min(Math.max(dt, 0), CLAMP_0_1); let active = false;
       for (let p = 0; p < pool; p++) {
         if (life[p] <= 0) { sizes[p] = 0; continue; }
         life[p] = Math.max(0, life[p] - step);

@@ -15,7 +15,7 @@ import WEIGHT_ROWS from './armour-weights.json' with { type: 'json' };
 import WEIGHT_MANIFEST from './armour-weights.manifest.json' with { type: 'json' };
 
 export type ArmourWeight = { readonly id: string; readonly dial: string; readonly fromRecordVersion: number; readonly castPenalty: number; readonly note: string };   // castPenalty: sheet points the class takes off its `dial` (spellPower) when the set is worn, scaled by coverage (gearDeltas)
-export type GearSet = { readonly id: string; readonly weightClass: string; readonly shape: Readonly<Record<string, number>>; readonly quality: Readonly<Record<string, number>> };
+export type GearSet = { readonly id: string; readonly weightClass: string; readonly shape: Readonly<Record<string, number>>; readonly quality: Readonly<Record<string, number>>; readonly eras?: readonly { readonly fromRecordVersion: number; readonly shape: Readonly<Record<string, number>> }[] };   // eras: from a record version the set's shape is the era's (rising order), so a record fought before it still verifies against the shape it was fought with
 export type GearRow = { readonly id: string; readonly weightClass: string; readonly slot: string | null; readonly preset: boolean; readonly set: string | null; readonly weight: number; readonly wearMax: number; readonly resist: Readonly<Record<string, number>> };
 export type GearTable = { readonly sets: Readonly<Record<string, GearSet>>; readonly owners: Readonly<Record<string, string>>; readonly wearTiers: Readonly<Record<string, string>>; readonly rows: Readonly<Record<string, GearRow>>; readonly shapeMax: number; readonly qualityMax: number; readonly weights: Readonly<Record<string, ArmourWeight>> };   // weights: weight class -> sheet points off spellPower; owners: loot opponent id -> the set its armour belongs to
 
@@ -29,9 +29,13 @@ export function loadGearDefs(raw: { sets?: readonly unknown[]; owners?: readonly
   if (rules.length !== 1 || rules[0]!.id !== 'gear' || rules[0]!.shapeMax < 1 || rules[0]!.qualityMax < 1) throw Error('gear-defs: exactly one rule row, "gear", with a shapeMax and a qualityMax from 1');
   const { shapeMax, qualityMax } = rules[0]!, sets: Record<string, GearSet> = {};
   for (const t of (raw.sets ?? []) as readonly GearSet[]) {
-    const ups = Object.values(t.shape).filter((n) => n > 0).reduce((a, b) => a + b, 0);
-    for (const [dial, n] of Object.entries(t.shape)) if (!dials.includes(dial) || !Number.isInteger(n) || n === 0 || Math.abs(n) > shapeMax) throw Error(`gear-defs set "${t.id}": shape ${dial} is a dial row and a whole number within +-${shapeMax}`);
-    if (!ups || ups > shapeMax || !Object.values(t.shape).some((n) => n < 0)) throw Error(`gear-defs set "${t.id}": shape moves some dials up (at most ${shapeMax} in all) against some down`);
+    const eras = t.eras ?? [];
+    for (const shape of [t.shape, ...eras.map((e) => e.shape)]) {   // the base shape and every era's shape obey the same rules
+      const ups = Object.values(shape).filter((n) => n > 0).reduce((a, b) => a + b, 0);
+      for (const [dial, n] of Object.entries(shape)) if (!dials.includes(dial) || !Number.isInteger(n) || n === 0 || Math.abs(n) > shapeMax) throw Error(`gear-defs set "${t.id}": shape ${dial} is a dial row and a whole number within +-${shapeMax}`);
+      if (!ups || ups > shapeMax || !Object.values(shape).some((n) => n < 0)) throw Error(`gear-defs set "${t.id}": shape moves some dials up (at most ${shapeMax} in all) against some down`);
+    }
+    if (eras.some((e, i) => !Number.isInteger(e.fromRecordVersion) || e.fromRecordVersion < 1 || (i > 0 && e.fromRecordVersion <= eras[i - 1]!.fromRecordVersion))) throw Error(`gear-defs set "${t.id}": eras name a whole record version from 1, in rising order`);
     if (!Object.keys(t.quality).length) throw Error(`gear-defs set "${t.id}": quality names the dials it spreads over`);
     for (const [dial, w] of Object.entries(t.quality)) if (!dials.includes(dial) || !Number.isInteger(w) || w < 1) throw Error(`gear-defs set "${t.id}": quality ${dial} is a dial row and a whole weight from 1`);
     sets[t.id] = t;
@@ -61,7 +65,8 @@ export function gearDeltas(setId: string, coverage = 1, quality = coverage, vers
   const set = GEAR.sets[setId];
   if (!set) throw Error(`gearDeltas: "${setId}" is not a set row (gear-defs.json sets)`);
   const c = Math.max(0, Math.min(1, coverage)), out: Record<string, number> = {};
-  for (const [dial, n] of Object.entries(set.shape)) { const d = Math.sign(n) * Math.round(Math.abs(n) * c); if (d) out[dial] = d; }   // rounded by magnitude, so what one dial gains the other loses
+  const shape = [...(set.eras ?? [])].reverse().find((e) => version >= e.fromRecordVersion)?.shape ?? set.shape;
+  for (const [dial, n] of Object.entries(shape)) { const d = Math.sign(n) * Math.round(Math.abs(n) * c); if (d) out[dial] = d; }   // rounded by magnitude, so what one dial gains the other loses
   const total = Math.round(GEAR.qualityMax * Math.max(0, Math.min(c, quality))), weights = Object.entries(set.quality), sum = weights.reduce((a, [, w]) => a + w, 0);
   const shares = weights.map(([dial, w]) => ({ dial, floor: Math.floor((total * w) / sum), rest: (total * w) % sum, code: DIALS.find((x) => x.id === dial)!.code }));
   let left = total - shares.reduce((a, s) => a + s.floor, 0);

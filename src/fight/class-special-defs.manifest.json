@@ -1,0 +1,8 @@
+{
+  "tables": [
+    { "table": "classSpecialBand", "file": "class-special-defs.json", "at": "bands", "key": "id",
+      "required": { "level": "integer" } },
+    { "table": "classSpecial", "file": "class-special-defs.json", "at": "classes", "key": "id",
+      "required": { "specials": "array" } }
+  ]
+}

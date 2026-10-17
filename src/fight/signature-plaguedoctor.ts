@@ -3,6 +3,8 @@ import { weaponOf, type Direction } from './moves.ts';
 import { surfaceHit } from './gore.ts';
 import { hitBy, registerSignature, type MarkLook, type MarkSite, type SignatureFrame } from './signature.ts';
 import type { CombatEvent, Side } from './duel.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_12 = fxNum('clamp.signature-plaguedoctor.0.12');
 
 // The Plague Doctor's signature, A: Rot Bloom (docs/briefs/signature-effects.md row 9). A wound he opens grows a dark branching stain a
 // hand's width round the impact, then stops: corruption under the skin. No cloud, no damage over time, nothing the sim sees. The growth is
@@ -101,7 +103,7 @@ export function createRotBloom(style: RotStyle = ROT_A) {
         root.updateWorldMatrix(true, true);
         const out = new THREE.Vector3(...site.dir).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), heading);
         const at = bone.getWorldPosition(new THREE.Vector3()), found = surfaceHit(root, bone, out);
-        const met = found && found.point.distanceTo(at) <= Math.max(0.12, site.radius * 2) * frame.scale[victim] ? found : null;
+        const met = found && found.point.distanceTo(at) <= Math.max(CLAMP_0_12, site.radius * 2) * frame.scale[victim] ? found : null;
         p.copy(met ? met.point.addScaledVector(met.normal, 0.004) : at.addScaledVector(out, site.radius * frame.scale[victim]));
         n.copy(met ? met.normal : out);
         local.copy(bone.worldToLocal(p.clone()));
