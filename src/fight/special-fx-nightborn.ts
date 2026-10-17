@@ -5,6 +5,8 @@ import { advanceCast, castPhase, CUTS, cutAt, LAND_AT, type Cast } from './speci
 import { clamp01, hash, smooth } from './fx-math.ts';
 import { lerp, paintSheet, surface, type SandLook } from './special-fx-wind.ts';
 import { specialFxMinorNum } from './special-fx-minor-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_001 = fxNum('clamp.special-fx-nightborn.0.001');
 
 // Seven Cuts, the Nightborn's ranks 4-7 class special (Nightborn lane; Dom's pick via Lead 2026-10-01, with his rule for every special: nothing pale or glowing
 // washes over the fighters). Presentation only, on the same seam and the same 120-tick timeline as Hades' cloud and Red Wind (special-timing.ts), on the
@@ -41,14 +43,14 @@ export function createPaleLunge(scene: THREE.Scene, opponent: OpponentId, exposu
       const len = Math.hypot(target.x - caster.x, target.z - caster.z), seed = cast.start;
       root.position.copy(caster); root.rotation.y = Math.atan2(target.x - caster.x, target.z - caster.z); root.visible = true;
       ribbons.forEach((r, i) => {
-        r.position.set(0, 0.07 + 0.004 * i, 0); r.scale.set(1 + 0.5 * (rel >= 0 ? smooth(rel / 10) : 0), 1, Math.max(0.001, len * (i ? 0.8 + 0.2 * hash(i + seed, 202) : 1) * run));
+        r.position.set(0, 0.07 + 0.004 * i, 0); r.scale.set(1 + 0.5 * (rel >= 0 ? smooth(rel / 10) : 0), 1, Math.max(CLAMP_0_001, len * (i ? 0.8 + 0.2 * hash(i + seed, 202) : 1) * run));
         show(r, (0.5 + 0.5 * run) * life);
       });
       stubs.forEach((stub, i) => {
         const k = rel >= 0 ? smooth(rel / 8) : 0, angle = Math.PI + (i - 2.5) * 0.42 + (hash(i + seed, 211) - 0.5) * 0.3;
         const length = (0.35 + 0.35 * hash(i + seed, 212)) * k * (pit ? 1.7 : 1);
         stub.position.set(Math.sin(angle) * length * 0.5, 0.075, len + Math.cos(angle) * length * 0.5); stub.rotation.y = angle;
-        stub.scale.set((0.12 + 0.06 * hash(i, 213)) * (pit ? 2.2 : 1), 1, Math.max(0.001, length)); show(stub, k * life);
+        stub.scale.set((0.12 + 0.06 * hash(i, 213)) * (pit ? 2.2 : 1), 1, Math.max(CLAMP_0_001, length)); show(stub, k * life);
       });
     },
     clear() { cast = null; hide(); },

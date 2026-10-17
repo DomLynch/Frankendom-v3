@@ -5,6 +5,10 @@ import { advanceCast, castPhase, LAND_AT, type Cast, type isHadesShadow } from '
 import { DRAG_FROM, STEP_BEATS, walkLateral, walkOffset, type ClassSpecial } from './special-class-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 import { specialFxFieldNum } from './special-fx-field-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_02 = fxNum('clamp.special-fx-class.0.02');
+const CLAMP_0_3 = fxNum('clamp.special-fx-class.0.3');
+const CLAMP_1_2 = fxNum('clamp.special-fx-class.1.2');
 
 // The class specials of the Witch, the Plague Doctor and the Knight, ranks 1-3 (slot A) and 4-7 (slot B), GREY-BOX PREVIEWS (Weapons lane; Dom picked the six ★ takes on
 // 2026-10-01: docs/briefs/specials/class-specials-witch-pd-knight-2026-10-01.md). Same seam as Red Wind and the Shield Quake (special-timing.ts): it reads the sim's special events,
@@ -79,7 +83,7 @@ export function createClassSpecial(scene: THREE.Scene, opponent: OpponentId, kin
   const burst = (i0: number, n: number, c: THREE.Vector3, s: number, spread: number, salt: number, up = 2.4) => {
     for (let i = 0; i < n; i++) {
       const th = hash(i, salt) * Math.PI * 2, r = (0.1 + 0.9 * hash(i, salt + 1)) * spread * Math.min(1, s * 2.5), v = up * (0.5 + 0.7 * hash(i, salt + 2));
-      speck(i0 + i, c.x + Math.cos(th) * r, s <= 0 ? -9 : Math.max(0.02, v * s - 4.5 * s * s), c.z + Math.sin(th) * r);
+      speck(i0 + i, c.x + Math.cos(th) * r, s <= 0 ? -9 : Math.max(CLAMP_0_02, v * s - 4.5 * s * s), c.z + Math.sin(th) * r);
     }
   };
   const hold = new THREE.Vector3(), lat = new THREE.Vector3(), tmp = new THREE.Vector3(), perp = new THREE.Vector3(), shift = new THREE.Vector3();
@@ -89,7 +93,7 @@ export function createClassSpecial(scene: THREE.Scene, opponent: OpponentId, kin
       const front = smooth((s.age - 56) / (LAND_AT - 56)) * p.dist, N = 14;
       perp.set(-p.dir.z, 0, p.dir.x);
       for (let i = 0; i < N; i++) {
-        const along = 0.5 + ((i + 0.5) / N) * Math.max(0.3, p.dist - 1.0), sway = Math.sin(along * 3.2) * 0.5 + (hash(i, 5) - 0.5) * 0.22;   // it snakes, so the camera behind the player sees it pass beside him, not behind his back
+        const along = 0.5 + ((i + 0.5) / N) * Math.max(CLAMP_0_3, p.dist - 1.0), sway = Math.sin(along * 3.2) * 0.5 + (hash(i, 5) - 0.5) * 0.22;   // it snakes, so the camera behind the player sees it pass beside him, not behind his back
         put(i, p.home.x + p.dir.x * along + perp.x * sway, p.home.z + p.dir.z * along + perp.z * sway, 0.34 + 0.16 * hash(i, 6), 0.7 + 0.3 * hash(i, 7), p.heading + Math.cos(along * 3.2) * 0.9 + (hash(i, 8) - 0.5) * 0.25, smooth((front - along) / 0.4) * 0.85 * s.life);
       }
       const head = tmp.copy(p.home).addScaledVector(p.dir, 0.5 + Math.min(front, p.dist - 0.5));
@@ -176,7 +180,7 @@ export function createClassSpecial(scene: THREE.Scene, opponent: OpponentId, kin
       if (cast && a && b) {
         if (!homed) { place.home.copy(a).setY(0); homed = true; }
         place.from.copy(a); place.to.copy(b).setY(0);
-        place.dir.copy(place.to).sub(place.home).setY(0); place.dist = Math.max(1.2, place.dir.length()); place.dir.normalize(); place.heading = Math.atan2(place.dir.x, place.dir.z); have = true;
+        place.dir.copy(place.to).sub(place.home).setY(0); place.dist = Math.max(CLAMP_1_2, place.dir.length()); place.dir.normalize(); place.heading = Math.atan2(place.dir.x, place.dir.z); have = true;
       }
       root.visible = !!cast && have;
       if (!cast || !have) { hide(); restore(); return; }

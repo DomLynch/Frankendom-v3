@@ -4,6 +4,9 @@ import type { OpponentId } from '../roster.ts';
 import { lightRig, type TitheLight } from './special-lighting.ts';
 import { advanceCast, isBloodTithe, shadowPhase, LAND_AT, type Cast } from './special-timing.ts';
 import { clamp01, hash } from './fx-math.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_M1_6 = fxNum('clamp.special-tithe.-1.6');
+const CLAMP_1_6 = fxNum('clamp.special-tithe.1.6');
 
 // Blood Tithe, the Centurion's rank-10 boss special (Mars; Finishers, 2026-10-01; brief docs/briefs/specials/centurion-l8-l10-2026-10-01.md). Presentation
 // only, preview-only behind ?special=tithe: it reads the sim's special events (special-timing.ts, the same seam as Hades' Shadow) and the casters' bones,
@@ -89,7 +92,7 @@ export function createBloodTithe(scene: THREE.Scene, opponent: OpponentId, light
         if (s > 0 && hands[caster] && sword) {
           anchor!.updateWorldMatrix(true, true); tipOf(blade); base.setFromMatrixPosition(sword.matrixWorld);
           const bx = blade.x - base.x, bz = blade.z - base.z, tx = head.x - base.x, tz = head.z - base.z;
-          aim = Math.max(-1.6, Math.min(1.6, Math.atan2(bx * tz - bz * tx, bx * tx + bz * tz))) * smooth(s) * -1;   // atan2(cross, dot) is the CCW angle blade -> target about +y; the yaw below is about +y with the sign flipped
+          aim = Math.max(CLAMP_M1_6, Math.min(CLAMP_1_6, Math.atan2(bx * tz - bz * tx, bx * tx + bz * tz))) * smooth(s) * -1;   // atan2(cross, dot) is the CCW angle blade -> target about +y; the yaw below is about +y with the sign flipped
         }
         arm.parent.getWorldQuaternion(qa); qb.setFromAxisAngle(UP, -ARM_OUT * smooth(g) + aim); arm.quaternion.premultiply(qa.clone().invert().multiply(qb).multiply(qa));
         armWritten.copy(arm.quaternion); armRef = arm;

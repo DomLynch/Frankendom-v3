@@ -4,6 +4,9 @@ import type { OpponentId } from '../roster.ts';
 import { advanceCast, castPhase, LAND_AT, type Cast } from './special-timing.ts';
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 import { specialFxFieldNum } from './special-fx-field-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_255 = fxNum('clamp.special-fx-wind.255');
+const CLAMP_2 = fxNum('clamp.special-fx-wind.2');
 
 // Set's Red Wind, the in-game effect (Nightborn lane; Dom's GO via Lead 2026-09-30, his pick of "A, the ground burst" 2026-10-01; the seam is Hades'
 // special-fx.ts and special-timing.ts). One idea, the arena floor itself hitting the TARGET: a ring of sand erupts outward at his feet in radial
@@ -48,7 +51,7 @@ export function paintSheet(seed: number, look: SandLook, wide = false) {
       const head = smooth(l / 0.1), tail = smooth((1 - l) * 2.4 - 0.55 * noise(a * 9, l * 9, seed + 11));   // soft head, ragged tail
       const alpha = Math.min(1, body * streak * head * tail * 1.15);
       const dark = Math.min(1, smooth(1 - d) * (0.55 + 0.45 * streak) * 1.3), r = lerp(edge.r, core.r, dark), g = lerp(edge.g, core.g, dark), b = lerp(edge.b, core.b, dark);
-      px.set([Math.min(255, r * 255), Math.min(255, g * 255), Math.min(255, b * 255), alpha * 255], (y * w + x) * 4);
+      px.set([Math.min(CLAMP_255, r * 255), Math.min(CLAMP_255, g * 255), Math.min(CLAMP_255, b * 255), alpha * 255], (y * w + x) * 4);
     }
   }
   const map = new THREE.DataTexture(px, w, h); map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true;
@@ -79,7 +82,7 @@ const streakGap = (i: number, seed: number) => i === Math.floor(hash(seed, 101) 
 function streakGeometry(i: number, seed: number) {
   const h = (salt: number) => hash(i + seed * 13, salt), spacing = (Math.PI * 2) / STREAKS;
   const th = i * spacing + (h(131) - 0.5) * spacing * 1.7 + hash(seed, 105) * Math.PI * 2;   // the whole star is turned by the cast, each streak off its slot
-  const [lo, hi] = LENGTHS[Math.min(2, Math.floor(h(132) * 3))], len = lerp(lo, hi, h(133)), wid = 0.4 + 0.6 * h(134), r0 = 0.22, bend = (h(135) - 0.5) * 1.1;
+  const [lo, hi] = LENGTHS[Math.min(CLAMP_2, Math.floor(h(132) * 3))], len = lerp(lo, hi, h(133)), wid = 0.4 + 0.6 * h(134), r0 = 0.22, bend = (h(135) - 0.5) * 1.1;
   return surface((l, a) => {
     const rad = r0 + l * len, ang = th + bend * l * l, across = (a - 0.5) * wid * (1 - 0.5 * l);
     return [Math.cos(ang) * rad - Math.sin(ang) * across, 0.03 + 0.07 * l * h(136), Math.sin(ang) * rad + Math.cos(ang) * across];
