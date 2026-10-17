@@ -30,6 +30,7 @@ export { AGGRO_M, SIGHT_M };   // (src/fight/threat-defs.json awareness rows)
 // SIGHT_M: a hunting creature keeps the player in sight inside this ring (hysteresis over AGGRO_M); past it the unseen clock runs
 export const ENGAGE_M = worldRule('engage'), ENGAGE_OUT_M = worldRule('engageOut');           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
 export { MAX_ATTACKERS };   // creatures on one player at once (Dom: three on one): the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring
+export const EVADE_WHIFFS = worldRule('evadeWhiffs'), EVADE_HEAL_TO_FULL = worldRule('evadeHealToFull') === 1;   // a creature whose last EVADE_WHIFFS attack cycles all ended without contact gives up like past the leash (AzerothCore EnterEvadeMode); it heals to full on arrival home
 export const HOLD_M = ENGAGE_M * worldRule('holdFactor');                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
 /** Creature levels (Dom: copy the Pit): a creature of level L has the Pit's own level body (moves.ts `opponentAt`: health and poise by level) and, in a fight, the Pit's level brain (`profileAt`). No Zone 1 scaling of our own. */
 export const MAX_LEVEL = LEVELS;
@@ -53,6 +54,7 @@ export type Fighter = {
   homeX: number; homeZ: number;                         // creature only: where it spawned (it walks back here)
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight
+  whiffs: number; cycle: boolean; reached: boolean;     // creature only: consecutive attack cycles that ended without contact (a swing on empty air, or an approach the prey left before the swing); `cycle` = a windup is open; `reached` = it has been inside the engage ring this approach. At EVADE_WHIFFS it evades.
   returning: boolean;                                   // creature only: it gave up and is walking home (it heals to full on arrival, no event)
   special: SpecialName | null; specialIn: number;       // the named special this fighter can cast (moves.ts specialOf), seconds until it is ready; with one, the SKILL button is the special (the Pit has one button)
   skill: SkillId | null;                                // the equipped skill (moves.ts SkillId, the Pit's `equippedSkill(profile.loot)`; null = none): the SKILL button fires its move when no special is set (duel.ts `Fighter.skill`)
@@ -90,7 +92,7 @@ const OPPONENT = (kind: string) => (OPPONENTS as Record<string, (typeof OPPONENT
 
 function fighter(id: string, side: Fighter['side'], kind: string, x: number, z: number, facing: number, radius: number, health: number, poise: number): Fighter {
   return { id, side, kind, x, z, facing, radius, health, maxHealth: health, stamina: STAMINA_MAX, maxStamina: STAMINA_MAX, poise, phase: 'ready', t: 0, posture: 0, exhausted: false,
-    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
+    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, whiffs: 0, cycle: false, reached: false, returning: false, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
 }
 /** The player: the Pit's own hero (createFighter + withSheet), his bar and poise from that builder; no gear multiplier lives in the world (the sheet carries Attack and armour). */
 export const player = (id: string, x: number, z: number, facing = 0, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet; spell?: Spell; spell2?: Spell }): Fighter => {
@@ -249,6 +251,28 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     if (b && b.side === 'creature' && alive(b) && M.hypot(b.x - b.chaseX, b.z - b.chaseZ) > leashOf(b.kind)) { b.hunting = false; b.returning = true; b.phase = 'ready'; }   // the leash is the world layer's, on the duel too
   }
 
+  // Evade (Lead + Strategy 2026-10-16; donor AzerothCore EnterEvadeMode): a creature whose last EVADE_WHIFFS attack cycles all ended without contact gives up by the same exit as the leash (it walks home untargetable and heals to full on arrival).
+  // A cycle with no contact is a swing that resolved on empty air, or an approach the prey left (out past the engage-out ring) before the swing started. A cycle cut short by a stagger does not count; only the creature's OWN landed, blocked,
+  // parried or dodged blow resets the count, never the hero hitting it. A farmed creature is free to act and whiffs; a stagger-locked one does not swing, so it never trips this.
+  const contact = new Set<string>(), telegraphed = new Set<string>(), staggered = new Set<string>();
+  for (const e of events) {
+    if (e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'Dodged') contact.add(e.attacker);
+    else if (e.type === 'Telegraph') telegraphed.add(e.id);
+    else if (e.type === 'Staggered') staggered.add(e.id);
+  }
+  for (const c of creatures) {
+    if (!alive(c) || c.returning || !c.hunting) { c.whiffs = 0; c.cycle = false; c.reached = false; continue; }
+    if (contact.has(c.id)) { c.whiffs = 0; c.cycle = false; }
+    else if (staggered.has(c.id)) { c.cycle = false; c.reached = false; }
+    else {
+      if (telegraphed.has(c.id)) { if (c.cycle) c.whiffs++; c.cycle = true; c.reached = false; }   // a new windup with the last one never touching
+      else if (c.cycle && c.phase === 'ready') { c.whiffs++; c.cycle = false; }                      // the swing resolved on air
+      const d = players.reduce((m, p) => Math.min(m, dist(c, p)), Infinity);
+      if (d <= ENGAGE_M) c.reached = true; else if (c.reached && !c.cycle && d > ENGAGE_OUT_M) { c.whiffs++; c.reached = false; }   // it closed to the ring and the prey left before the swing began
+    }
+    if (c.whiffs >= EVADE_WHIFFS) { c.hunting = false; c.returning = true; c.phase = 'ready'; c.whiffs = 0; c.cycle = false; c.reached = false; }
+  }
+
   // The world layer for every creature not in a fight: chase to the hold ring (and wait there), give up, walk home.
   for (const f of creatures) {
     if (!alive(f) || inFight.has(f.id)) continue;
@@ -262,7 +286,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     const prey = players.sort((a, b) => dist(f, a) - dist(f, b))[0];
     if (f.returning) {   // gave up: walks home at its amble, heals to full on arrival (no event)
       const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
-      if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
+      if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; if (EVADE_HEAL_TO_FULL) f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
       else { f.facing = M.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
     } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < giveUpOf(f.kind) : dist(f, prey) <= AGGRO_M)) {
       if (!f.hunting) { f.hunting = true; f.chaseX = f.x; f.chaseZ = f.z; f.unseen = 0; }
