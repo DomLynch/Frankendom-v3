@@ -17,7 +17,7 @@ import { STAB_ON } from './stab-rule.ts';
 import { FIRST_STANCE_ROWS_VERSION } from './stance-era.ts';
 import { FIRST_POISE_LADDER_VERSION } from './poise-era.ts';
 import { FIRST_CONE_VERSION } from './cone-era.ts';
-import { FIRST_CAST_PENALTY_VERSION } from './cast-penalty-era.ts';
+import { FIRST_CAST_PENALTY_VERSION, SHEET_ERA_VERSION } from './cast-penalty-era.ts';
 import { CAST, spellUsesCap, spellUsesHits } from './spell-cast.ts';
 import { coneAt } from './cone-rules.ts';
 import { PICKS, type PickedStance } from './stance.ts';
@@ -248,7 +248,7 @@ export function createRecorder(meta: RecordMeta) {
   const era = stampedVersion(meta.opponent);
   if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet || meta.spell) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
   const flagged = meta.sheet ? FIRST_SHEET_VERSION : meta.group ? FIRST_GROUP_VERSION : meta.pose ? FIRST_POSE_VERSION : meta.stances ? FIRST_STANCE_VERSION : meta.gambit ? FIRST_GAMBIT_VERSION : meta.patron ? PATRON_VERSION : era;
-  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, cappedV = meta.spell && spellUsesCap(meta.spell.id) ? Math.max(castedV, CAST.costCapFrom) : castedV, hitV = meta.spell && spellUsesHits(meta.spell.id) ? Math.max(cappedV, CAST.hitsFrom) : cappedV, version = Math.max(hitV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level));   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
+  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, SHEET_ERA_VERSION) : spelledV, cappedV = meta.spell && spellUsesCap(meta.spell.id) ? Math.max(castedV, CAST.costCapFrom) : castedV, hitV = meta.spell && spellUsesHits(meta.spell.id) ? Math.max(cappedV, CAST.hitsFrom) : cappedV, version = Math.max(hitV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level));   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
   if (spellBad(meta)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');   // a stances fight is fought on the v52 stance rows (stance-era.ts: a Defensive stance has no longer window), so it is stamped no lower than v52   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
   if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };
   if (buildRefBad(meta)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
@@ -283,7 +283,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   // A gambit fight is v33; otherwise a patron fight is v32 and a patron-less one v31.
   const flaggedV = rec.sheet ? FIRST_SHEET_VERSION : rec.group ? FIRST_GROUP_VERSION : rec.pose ? FIRST_POSE_VERSION : rec.stances ? FIRST_STANCE_VERSION : rec.gambit ? FIRST_GAMBIT_VERSION : rec.patron ? PATRON_VERSION : NO_PATRON_VERSION;
   const stancedV = rec.stances ? Math.max(flaggedV, FIRST_STANCE_ROWS_VERSION) : flaggedV;
-  const spelledV = rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV0 = rec.sheet ? Math.max(spelledV, FIRST_CAST_PENALTY_VERSION) : spelledV, castedV1 = rec.spell && spellUsesCap(rec.spell.id) ? Math.max(castedV0, CAST.costCapFrom) : castedV0, castedV = rec.spell && spellUsesHits(rec.spell.id) ? Math.max(castedV1, CAST.hitsFrom) : castedV1;   // as createRecorder: a sheet fight carries the cast penalty from v58
+  const spelledV = rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV0 = rec.sheet ? Math.max(spelledV, SHEET_ERA_VERSION) : spelledV, castedV1 = rec.spell && spellUsesCap(rec.spell.id) ? Math.max(castedV0, CAST.costCapFrom) : castedV0, castedV = rec.spell && spellUsesHits(rec.spell.id) ? Math.max(castedV1, CAST.hitsFrom) : castedV1;   // as createRecorder: a sheet fight carries the cast penalty from v58
   const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: Math.max(castedV, ladderStamp(rec.opponent, rec.level), coneStamp(rec.specials, rec.opponent, rec.level)) as RecordVersion } : rec;
   if (r.spell && r.v < FIRST_SPELL_VERSION) throw Error('Fight record: a spell on a version that has no flag for it');
   if ((r.v as number) === FIRST_SPELL_VERSION && !r.spell) throw Error('Fight record: a version 53 record names its spell');
