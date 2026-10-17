@@ -3,6 +3,7 @@
 // home again), the fixed 1/60 accumulator, and turning the events into what the page shows (a procedural lunge / hit pulse / fall on the creature, bars, the hero's clips, kill and death).
 import { AGGRO_M, duelFor, duelOf, newWorld, pairs, player, type Event, type Fighter, type World } from './world.ts';
 import { worldRule } from './world-rules.ts';
+import { fxNum } from './fx-rows.ts';
 import { OPPONENTS, DEFAULT_WEAPON, type Direction, type WeaponId } from './moves.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { resolveSpell } from './spell-cast.ts';
@@ -15,6 +16,12 @@ import { hash32 } from './bout-seed.ts';
 import { ME, STEP, cm, createWorldRecorder, heroClean, joinFighter, quantStep, stepHero, type RecordHero, type WorldRecord, type JoinEvent } from './world-record.ts';
 export { ME, STEP };
 export const JOIN_M = AGGRO_M + worldRule('joinPad'), DROP_M = AGGRO_M + worldRule('dropPad'), FALL_S = worldRule('fall'), PULSE_S = worldRule('pulse'), MAX_STEPS = worldRule('maxSteps');   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
+/** The pose a creature is DRAWN at between two fixed ticks: `from` (the pose before the last tick) toward `to` (after it) by `alpha` (the part of a tick the clock has run since: acc / STEP), the facing by the shortest arc. The sim runs on a fixed 60 Hz step and the view draws every frame, so without this a 120 Hz screen gets 0,1,0,1 ticks and the creature moves one frame and freezes the next. A jump over `snap` metres (an evade snap, a respawn) is not blended. Presentation only: the sim, the record and onCreatureTick read the tick's own pose. */
+export function blendPose(from: { x: number; z: number; facing: number } | undefined, to: { x: number; z: number; facing: number }, alpha: number, snap: number = fxNum('pose-blend.snap-m')): { x: number; z: number; facing: number } {
+  if (!from || Math.hypot(to.x - from.x, to.z - from.z) > snap) return { x: to.x, z: to.z, facing: to.facing };
+  const a = Math.min(1, Math.max(0, alpha)), turn = Math.atan2(Math.sin(to.facing - from.facing), Math.cos(to.facing - from.facing));
+  return { x: from.x + (to.x - from.x) * a, z: from.z + (to.z - from.z) * a, facing: from.facing + turn * a };
+}
 /** The roster kind a Zone 1 body fights as, or null (it cannot be fought yet: it only wanders). */
 export const kindOf = (body: string): string | null => (Object.prototype.hasOwnProperty.call(OPPONENTS, body) ? body : null);
 
@@ -54,6 +61,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, pendingCast2 = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
   let wasReady = false, rebuild = false;   // rebuild: hero() may have moved (the loadout gate just opened, or the page said the build / worn-gear view answered): rebody once at the next idle frame
   let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
+  const prevPose = new Map<string, { x: number; z: number; facing: number }>();   // each fighter's pose from before the last tick: the view blends from it toward the current tick by acc / STEP (blendPose), so a 120 Hz frame with no tick still moves
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
   const seedOf = (id: string): number => { let h = steps; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761); return h >>> 0; };   // the fight's tick and a creature's id: a roll of presentation, the same on a replay
@@ -63,7 +71,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
   const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), ...(m.spell2 ? { spell2: mine().spell2 } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
-  function release(id: string) { recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
+  function release(id: string) { prevPose.delete(id); recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   /** The live hero is built from hero() ONCE, at load; the gear and the sheet arrive later. At a clean window open (no creature, no open bout) rebuild him from hero() as it stands now at his current place, so the live fighter and the record's heroBody() are the same hero (live == record, Auditor #2569). Health keeps its fraction; stamina, posture and exhaustion carry. Never mid-bout. */
   function rebody() {
     const key = JSON.stringify(mine()); if (key === builtKey) return;
@@ -121,6 +129,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       let first = true, stepped = false;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
       while (acc >= STEP) {
         acc -= STEP; steps++; stepped = true;
+        for (const q of world.fighters) prevPose.set(q.id, { x: q.x, z: q.z, facing: q.facing });   // the pose before this tick; after the loop it is the one before the LAST tick
         for (const p of pairs(world)) lastDuel.set(p.foe, p.duel);
         const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll, guardSide, !heroDead && pendingCast, !heroDead && pendingCast2); first = false;
         recorder.step(step);
@@ -131,13 +140,15 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       for (const f of world.fighters.slice(1)) {
         const s = specs.get(f.id); if (!s) continue; const x = fxOf(f.id);
         if (f.phase === 'dead') {
-          x.fallT += dt; mobs.drive(f.id, { x: f.x, z: f.z, facing: f.facing, moving: false, fall: Math.min(1, x.fallT / x.fallS), finisher: x.finisher });   // the death clip's progress
+          const at = blendPose(prevPose.get(f.id), f, acc / STEP);
+          x.fallT += dt; mobs.drive(f.id, { x: at.x, z: at.z, facing: at.facing, moving: false, fall: Math.min(1, x.fallT / x.fallS), finisher: x.finisher });   // the death clip's progress
           if (x.fallT >= x.fallS) { const done = s; release(f.id); d.onKill(done); }
           continue;
         }
         x.hurtT = Math.max(0, x.hurtT - dt);
         d.onCreatureTick?.(s, { hpFrac: Math.max(0, f.health) / f.maxHealth, dt, x: f.x, z: f.z, seed: seedOf(f.id) });
-        mobs.drive(f.id, { x: f.x, z: f.z, facing: f.facing, moving: f.returning || (f.hunting && f.phase === 'ready' && Math.hypot(f.x - hero.x, f.z - hero.z) > 1.6), duel: duelFor(world, f.id) ?? undefined });   // the page poses its actor from the duel (the engine's actorPose)
+        const drawn = blendPose(prevPose.get(f.id), f, acc / STEP);
+        mobs.drive(f.id, { x: drawn.x, z: drawn.z, facing: drawn.facing, moving: f.returning || (f.hunting && f.phase === 'ready' && Math.hypot(f.x - hero.x, f.z - hero.z) > 1.6), duel: duelFor(world, f.id) ?? undefined });   // the page poses its actor from the duel (the engine's actorPose)
         if (!f.hunting && !f.returning && Math.hypot(f.x - hero.x, f.z - hero.z) > DROP_M) release(f.id);
       }
       if (!stepped) return { dx: 0, dz: 0 };   // no step ran (dt 0 on the clock's first frame): the loop's body has not met the page's position yet, so it is not a displacement

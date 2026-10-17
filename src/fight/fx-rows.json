@@ -90,6 +90,7 @@
     { "id": "clamp.signature.0.001", "fields": {"value": 0.001} },
     { "id": "clamp.spell-legends.10", "fields": {"value": 10} },
     { "id": "clamp.spell-school.255", "fields": {"value": 255} },
-    { "id": "clamp.witchfire.0.1", "fields": {"value": 0.1} }
+    { "id": "clamp.witchfire.0.1", "fields": {"value": 0.1} },
+    { "id": "pose-blend.snap-m", "fields": {"value": 3} }
   ]
 }
