@@ -10,6 +10,9 @@
         "quality": "object",
         "weightClass": "string"
       },
+      "optional": {
+        "eras": "array"
+      },
       "refs": {
         "weightClass": "armourWeight"
       }

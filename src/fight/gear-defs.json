@@ -37,7 +37,17 @@
         "stamina": 2,
         "recovery": 2,
         "luck": 1
-      }
+      },
+      "eras": [
+        {
+          "fromRecordVersion": 74,
+          "shape": {
+            "armour": 10,
+            "stamina": 15,
+            "magicResist": -25
+          }
+        }
+      ]
     }
   ],
   "owners": [

@@ -205,7 +205,7 @@ export function armWarriors(hero: FighterAsset, enemy: FighterAsset | undefined,
 }
 // A player weapon's equip file (scripts/build-player-weapon.mjs, the #309 contract): its WeaponDrawn part, placed under hand_r exactly as
 // the hero build places it, and the weapon's own clip family when it has one. Nothing of the body.
-async function loadEquip(url: string): Promise<FighterAsset> {
+export async function loadEquip(url: string): Promise<FighterAsset> {
   const asset = await retryTransient(() => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url));
   if (phoneTier()) budgetTextures(asset.scene, FIGHTER_TEXTURE_CAP);
   return asset;
