@@ -6,14 +6,15 @@ import { OPPONENTS, RULES, opponentAt, profileAt, DEFAULT_WEAPON, type AiProfile
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
-import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
+import { createFighter, idleIntent, movesOf, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
 import { M } from './detmath.ts';
 import { motionOf, type CreatureMotion } from './creature-motion-rows.ts';
 import { worldRule } from './world-rules.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
-export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[] };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
+export type Motion = { hold: boolean; circling: boolean; left: number; seed: number };   // a world creature's stand / circle state (creature-motion-defs.json): hold = inside its stop band, circling = this re-decide drew a circle, left = ticks to the next draw
+export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[]; motion?: Motion };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
 // open-world: the guard-side thumbs exist here as they always have in the Pit (Dom 2026-10-13): the world steps the Pit's RULES unchanged (directionalGuard on) and carries the held side in the Input (intentOf).
 const TICK = 1 / 60, FAR_M = worldRule('farM');   // FAR_M: the world-rules row `farM`
 export const IDLE_INPUT: Input = { x: 0, z: 0 };
@@ -43,14 +44,14 @@ export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter)
 /** open-world: a creature's step with its turn rate and sideways speed capped by its row (EQEmu RotateToCommand: the heading moves toward its target at the mob's rotate speed, never a snap; AzerothCore chase: the
  *  creature closes along the line to its foe and does not strafe fast). `from` is the creature before the step, `to` after, `foe` the player. Pure, no transcendental beyond detmath. */
 function paced(from: PitFighter, to: PitFighter, foe: PitFighter, m: CreatureMotion): PitFighter {
-  const TAU = Math.PI * 2, stepTurn = m.turnDegPerS * Math.PI / 180 * TICK;
+  const TAU = Math.PI * 2, stepTurn = m.turnRateCapDegPerS * Math.PI / 180 * TICK, striking = from.phase === 'attack' || to.phase === 'attack';   // a lunge or a hit frame turns as the move says
   const d = ((to.body.heading - from.body.heading + Math.PI) % TAU + TAU) % TAU - Math.PI;
-  const heading = Math.abs(d) > stepTurn ? from.body.heading + (d < 0 ? -stepTurn : stepTurn) : to.body.heading;
+  const heading = !striking && Math.abs(d) > stepTurn ? from.body.heading + (d < 0 ? -stepTurn : stepTurn) : to.body.heading;
   let { x, z } = to.body;
-  if (m.strafeMaxMps > 0) {
+  if (m.circleChancePct > 0 && m.strafeSpeedCapMps > 0) {
     const fx = foe.body.x - from.body.x, fz = foe.body.z - from.body.z, len = M.hypot(fx, fz);
     if (len > 1e-6) {
-      const ux = fx / len, uz = fz / len, dx = x - from.body.x, dz = z - from.body.z, along = dx * ux + dz * uz, side = dx * uz - dz * ux, cap = m.strafeMaxMps * TICK;   // ux,uz toward the foe; side positive to the creature's right of that line
+      const ux = fx / len, uz = fz / len, dx = x - from.body.x, dz = z - from.body.z, along = dx * ux + dz * uz, side = dx * uz - dz * ux, cap = m.strafeSpeedCapMps * TICK;   // ux,uz toward the foe; side positive to the creature's right of that line
       if (Math.abs(side) > cap) { const kept = side < 0 ? -cap : cap; x = from.body.x + ux * along + uz * kept; z = from.body.z + uz * along - ux * kept; }
     }
   }
@@ -95,6 +96,7 @@ function intentOf(input: Input, guarding: boolean, lock: boolean): Intent {
 
 /** One world step of a bout: `ticks` Pit ticks (60 Hz). `a` is slot 0 (a player), `b` slot 1 (a creature or a player; undefined when alone). Writes the result into `a` and `b` (the caller's copies) and returns the events. */
 export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: Input, inputB: Input, dt: number, clock = 0): { bout: Bout; events: Event[] } {
+  let mot: Motion | undefined = s.motion ? { ...s.motion } : undefined;
   let duel = s.duel, ai = s.ai, guardA = a.phase === 'guard', guardB = b?.phase === 'guard';
   const out: Event[] = [], ticks = Math.max(1, Math.round(dt / TICK));
   for (let k = 0; k < ticks; k++) {
@@ -113,8 +115,18 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
     if (b && ai && s.profile) {
       const was = ai.decision, brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent;
       if (motion) {
-        if (ai.decision > was) ai = { ...ai, decision: Math.round(ai.decision * motion.decisionScalePct / 100) };   // open-world: it re-decides less often (the Pit's 0.6-1.3 s flips mode about once a second)
-        if (motion.standAndFace && ai.mode === 'circle') intentB = { ...intentB, move: { x: 0, z: 0, yaw: 0, run: false } };   // open-world: inside reach it stands and faces (lock keeps the facing); it does not strafe
+        if (mot?.hold && ai.decision > was) ai = { ...ai, decision: Math.round(ai.decision * motion.holdRedecideScalePct / 100) };   // open-world: held inside its band it re-decides less often (the Pit's 0.6-1.3 s flips mode about once a second)
+        const mo = mot ?? (mot = { hold: false, circling: false, left: 0, seed: (ai.seed ^ 0x9e3779b9) >>> 0 });
+        const reach = movesOf(hb).light_right.reach, gap = M.hypot(hb.body.x - ha.body.x, hb.body.z - ha.body.z);   // its own cut's reach, the same yardstick the brain's hover reads
+        if (!mo.hold && gap <= reach * motion.stopAtReachPct / 100) mo.hold = true;   // open-world: it stops walking in at its stop share of reach and re-approaches only past the band (hysteresis)
+        else if (mo.hold && gap > reach * motion.reapproachPct / 100) mo.hold = false;
+        if (mo.left <= 0) {   // the circle draw: seeded, once per re-decide (2-4 s), only when the row circles at all
+          mo.seed = (Math.imul(mo.seed, 1664525) + 1013904223) >>> 0;
+          mo.circling = motion.circleChancePct > 0 && mo.seed / 4294967296 * 100 < motion.circleChancePct;
+          mo.seed = (Math.imul(mo.seed, 1664525) + 1013904223) >>> 0;
+          mo.left = Math.round((motion.circleRedecideMinS + mo.seed / 4294967296 * (motion.circleRedecideMaxS - motion.circleRedecideMinS)) / TICK);
+        } else mo.left--;
+        if (mo.hold && (ai.mode === 'approach' || (ai.mode === 'circle' && !mo.circling))) intentB = { ...intentB, move: { x: 0, z: 0, yaw: 0, run: false } };   // open-world: inside its band it stands and faces (lock keeps the facing); it strafes only on a circle draw
       }
     }
     else if (b) { intentB = intentOf(press(inputB), guardB, true); guardB = !!inputB.guard; }
@@ -132,5 +144,5 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
   write(a, pa);
   if (b) write(b, pb);
   if (pa.skillCooldown !== undefined && a.special) a.specialIn = pa.skillCooldown * TICK;
-  return { bout: { foe: s.foe, duel, ai, profile: s.profile }, events: out };
+  return { bout: { foe: s.foe, duel, ai, profile: s.profile, ...(mot ? { motion: mot } : {}) }, events: out };
 }
