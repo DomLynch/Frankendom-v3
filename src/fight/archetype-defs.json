@@ -179,7 +179,7 @@
   {
    "id": "troll",
    "scale": 1.5,
-   "health": 380,
+   "health": 570,
    "poise": 16,
    "sheet": {
     "attack": 20
