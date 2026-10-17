@@ -8,7 +8,7 @@ import MANIFEST from './character-looks-defs.manifest.json' with { type: 'json' 
 export type ChargeLean = { yaw: number; side: number; chest: number; arm: number; lift?: number };   // lift: upperarm_r pitch, negative raises the arm
 const TABLES = MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, DEFS, 'character-looks-defs.json'));
 loadRegistry(TABLES);
-const rows = <T>(table: string): T[] => TABLES.find((t) => t.name === table)!.rows as unknown as T[];
+const rows = <T>(table: string): T[] => TABLES.find((t) => t.manifest.table === table)!.rows as unknown as T[];
 
 /** Each rig's mapped loot-palette material names, by opponent id. */
 export const MAPPED_PALETTE: Readonly<Record<string, readonly string[]>> = Object.fromEntries(rows<{ id: string; names: string[] }>('mappedpalette').map((r) => [r.id, r.names]));
