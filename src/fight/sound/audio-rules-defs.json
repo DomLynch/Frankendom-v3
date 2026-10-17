@@ -46,5 +46,12 @@
     { "id": "drop", "cue": "bone_crack", "gain": 0.3, "room": 0.12, "rate": 0.8 },
     { "id": "pickup", "cue": "draw", "gain": 0.25, "room": 0.08, "rate": 1.6 },
     { "id": "refuse", "cue": "backstep", "gain": 0.12, "room": 0.04, "rate": 0.85 }
+  ],
+  "synthCues": [
+    { "id": "swing", "seconds": 0.16, "filterHz": 900, "airGain": 0.35 },
+    { "id": "hit", "seconds": 0.24, "filterHz": 1800, "airGain": 0.7, "tone1": 95, "tone2": 173 },
+    { "id": "steel", "seconds": 0.24, "filterHz": 1800, "airGain": 0.7, "tone1": 620, "tone2": 1037, "tone3": 1613 },
+    { "id": "parry", "seconds": 0.24, "filterHz": 1800, "airGain": 0.7, "tone1": 940, "tone2": 1491, "tone3": 2273 },
+    { "id": "charged", "seconds": 0.3, "filterHz": 1800, "airGain": 0.7, "tone1": 131, "tone2": 196 }
   ]
 }

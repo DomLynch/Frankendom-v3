@@ -3,6 +3,7 @@
     { "table": "audio-rule", "file": "audio-rules-defs.json", "at": "rules", "key": "id", "required": { "value": "number", "unit": "string" } },
     { "table": "creature-throat", "file": "audio-rules-defs.json", "at": "throats", "key": "id", "required": { "f0": "number", "f1": "number", "f2": "number", "rasp": "number" } },
     { "table": "power-word-caster", "file": "audio-rules-defs.json", "at": "casters", "key": "id", "required": { "f0": "number", "breath": "number", "syllable": "number" } },
-    { "table": "ground-loot-cue", "file": "audio-rules-defs.json", "at": "groundLoot", "key": "id", "required": { "cue": "string", "gain": "number", "room": "number", "rate": "number" } }
+    { "table": "ground-loot-cue", "file": "audio-rules-defs.json", "at": "groundLoot", "key": "id", "required": { "cue": "string", "gain": "number", "room": "number", "rate": "number" } },
+    { "table": "synth-cue", "file": "audio-rules-defs.json", "at": "synthCues", "key": "id", "required": { "seconds": "number", "filterHz": "number", "airGain": "number" }, "optional": { "tone1": "number", "tone2": "number", "tone3": "number" } }
   ]
 }

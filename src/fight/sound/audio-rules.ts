@@ -9,10 +9,11 @@ export type AudioRule = { readonly id: string; readonly value: number; readonly 
 export type Throat = { f0: number; formants: [number, number]; rasp: number };   // f0 Hz at rest; two vowel formants; the noise share 0..1
 export type Caster = { f0: number; breath: number; syllable: number };
 export type GroundLootRow = { readonly id: string; readonly cue: string; readonly gain: number; readonly room: number; readonly rate: number };   // a ground-loot cue: which sprite cue, at what level and pitch (ground-loot.ts reads it once)
-type Raw = { rules?: readonly unknown[]; throats?: readonly unknown[]; casters?: readonly unknown[]; groundLoot?: readonly unknown[] };
+export type SynthCue = { readonly seconds: number; readonly filterHz: number; readonly airGain: number; readonly tones: readonly number[] };   // the sprite-less fallback voice of one cue: the air burst's length, band and level, then the tone layers (none = air only)
+type Raw = { synthCues?: readonly unknown[]; rules?: readonly unknown[]; throats?: readonly unknown[]; casters?: readonly unknown[]; groundLoot?:readonly unknown[] };
 const NAMED = ['arenaLevel', 'bellSeconds', 'bellRate', 'bellDrive', 'bloomAbove', 'bloomSeconds', 'wardenHealth', 'gateCut', 'spriteSeconds', 'maxLayers', 'outputGain', 'breathAhead', 'breathDuck', 'breathDuckBack', 'breathRelease', 'pitchSpread', 'whipRaise', 'whipRateBase', 'whipGuardCap', 'whipGuardStep', 'baseSeed', 'mix', 'rise', 'riseFloor', 'cut', 'voices', 'powerWordLookGain'] as const;
 /** The one loader: the three tables go through the registry (a duplicate id or a missing or mistyped field is refused), every rule the sound reads by name must exist, with a positive value. */
-export function loadAudioRules(raw: Raw): { rules: readonly AudioRule[]; throats: Readonly<Record<string, Throat>>; casters: Readonly<Record<string, Caster>>; groundLoot: readonly GroundLootRow[] } {
+export function loadAudioRules(raw: Raw): { rules: readonly AudioRule[]; throats: Readonly<Record<string, Throat>>; casters: Readonly<Record<string, Caster>>; groundLoot: readonly GroundLootRow[]; synthCues: Readonly<Record<string, SynthCue>> } {
   loadRegistry(MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, raw, 'audio-rules-defs.json')));
   const rows = (raw.rules ?? []) as readonly AudioRule[];
   for (const r of rows) if (!(Number.isFinite(r.value) && r.value > 0)) throw Error(`audio-rules "${r.id}": value is a number > 0`);
@@ -20,12 +21,15 @@ export function loadAudioRules(raw: Raw): { rules: readonly AudioRule[]; throats
   const throats: Record<string, Throat> = {}, casters: Record<string, Caster> = {};
   for (const t of (raw.throats ?? []) as { id: string; f0: number; f1: number; f2: number; rasp: number }[]) throats[t.id] = { f0: t.f0, formants: [t.f1, t.f2], rasp: t.rasp };
   for (const c of (raw.casters ?? []) as { id: string; f0: number; breath: number; syllable: number }[]) casters[c.id] = { f0: c.f0, breath: c.breath, syllable: c.syllable };
-  return { rules: rows, throats, casters, groundLoot: (raw.groundLoot ?? []) as readonly GroundLootRow[] };
+  const synthCues: Record<string, SynthCue> = {};
+  for (const c of (raw.synthCues ?? []) as { id: string; seconds: number; filterHz: number; airGain: number; tone1?: number; tone2?: number; tone3?: number }[]) synthCues[c.id] = { seconds: c.seconds, filterHz: c.filterHz, airGain: c.airGain, tones: [c.tone1, c.tone2, c.tone3].filter((f): f is number => f !== undefined) };
+  return { rules: rows, throats, casters, groundLoot: (raw.groundLoot ?? []) as readonly GroundLootRow[], synthCues };
 }
 const LOADED = loadAudioRules(DEFS);
 export const AUDIO_RULES: readonly AudioRule[] = LOADED.rules;
 export const THROAT_ROWS: Readonly<Record<string, Throat>> = LOADED.throats;
 export const CASTER_ROWS: Readonly<Record<string, Caster>> = LOADED.casters;
 export const GROUND_LOOT_ROWS: readonly GroundLootRow[] = LOADED.groundLoot;
+export const SYNTH_CUES: Readonly<Record<string, SynthCue>> = LOADED.synthCues;
 export const audioRule = (id: (typeof NAMED)[number]): number => AUDIO_RULES.find((r) => r.id === id)!.value;
 export const bloomRules = () => ({ above: audioRule('bloomAbove'), seconds: audioRule('bloomSeconds') });

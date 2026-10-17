@@ -1,4 +1,4 @@
-import { audioRule } from './audio-rules.ts';
+import { audioRule, SYNTH_CUES } from './audio-rules.ts';
 import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import { cuesFor, nextVariant, PITCH_SPREAD, seeded, type Cue, type DeathPresentation } from './cues.ts';
 import { MANIFEST, type CueName } from '../../audio/manifest.ts';
@@ -117,14 +117,13 @@ export function createFeedback(host?: FeedbackHost) {
   }
   // Fallback while the sprite is still decoding: the original synthesised air, body and inharmonic steel layers.
   function synth(kind: 'swing' | 'hit' | 'steel' | 'parry' | 'charged', time: number) {
-    const duration = kind === 'swing' ? .16 : kind === 'charged' ? .3 : .24, level = .7;
+    const row = SYNTH_CUES[kind]!, duration = row.seconds, level = .7;   // the cue's own length, band, level and tone layers are its synth-cue row
     const air = context!.createBufferSource(), filter = context!.createBiquadFilter(), gain = context!.createGain();
-    air.buffer = noise!; filter.type = 'bandpass'; filter.frequency.value = kind === 'swing' ? 900 : 1800; filter.Q.value = .7;
-    gain.gain.setValueAtTime(.001, time); gain.gain.exponentialRampToValueAtTime((kind === 'swing' ? .35 : .7) * level, time + .008); gain.gain.exponentialRampToValueAtTime(.001, time + duration);
+    air.buffer = noise!; filter.type = 'bandpass'; filter.frequency.value = row.filterHz; filter.Q.value = .7;
+    gain.gain.setValueAtTime(.001, time); gain.gain.exponentialRampToValueAtTime(row.airGain * level, time + .008); gain.gain.exponentialRampToValueAtTime(.001, time + duration);
     air.connect(filter).connect(gain).connect(bus!); sources.add(air); air.start(time); air.stop(time + duration);
     air.onended = () => { sources.delete(air); air.disconnect(); filter.disconnect(); gain.disconnect(); };
-    if (kind === 'swing') return;
-    for (const frequency of kind === 'hit' ? [95, 173] : kind === 'parry' ? [940, 1491, 2273] : kind === 'charged' ? [131, 196] : [620, 1037, 1613]) {
+    for (const frequency of row.tones) {
       const tone = context!.createOscillator(), envelope = context!.createGain();
       tone.frequency.value = frequency; envelope.gain.setValueAtTime(.18 * level, time); envelope.gain.exponentialRampToValueAtTime(.001, time + duration);
       tone.connect(envelope).connect(bus!); sources.add(tone); tone.start(time); tone.stop(time + duration);
