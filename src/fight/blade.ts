@@ -1,10 +1,13 @@
 import { bladePathsByRig } from './blade-paths.ts';
 import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
+import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json (the swing keys and the hit regions)
+const WINDUP_KEY = simBound('swing.windupKey'), WINDUP_VALUE = simBound('swing.windupValue'), FOLLOW_KEY = simBound('swing.followKey'), FOLLOW_VALUE = simBound('swing.followValue'), SAMPLE_STEP_M = simBound('blade.sampleStepM');
+const BODY_LOW = simBound('hit.bodyLowM'), BODY_HIGH = simBound('hit.bodyHighM'), HIT_BODY_RADIUS = simBound('hit.bodyRadiusM'), TORSO_LOW = simBound('hit.torsoLowM'), TORSO_HIGH = simBound('hit.torsoHighM'), LEGS_HIGH = simBound('hit.legsHighM');
 
 // Preserve the authored contact pose while sharpening the release through contact.
-export function swingProgress(progress: number, contact = .35, sourceContact = .34): number {
-  const keys = [[0, 0], [contact * .7, sourceContact * .44], [contact, sourceContact], [contact + .16, sourceContact + (1 - sourceContact) * .56], [1, 1]];
+export function swingProgress(progress: number, contact = simBound('swing.contact'), sourceContact = simBound('swing.sourceContact')): number {
+  const keys = [[0, 0], [contact * WINDUP_KEY, sourceContact * WINDUP_VALUE], [contact, sourceContact], [contact + FOLLOW_KEY, sourceContact + (1 - sourceContact) * FOLLOW_VALUE], [1, 1]];
   const p = Math.max(0, Math.min(1, progress));
   for (let i = 1; i < keys.length; i++) if (p <= keys[i][0]) {
     const [x, y] = keys[i - 1], [end, value] = keys[i];
@@ -49,13 +52,13 @@ export function bladeImpact(rig: string, weapon: string, kind: string, fromAge: 
   });
   const a = world(bladePose(rig,weapon,kind,fromAge),before,targetBefore), b = world(bladePose(rig,weapon,kind,toAge),after,targetAfter);
   // Sample the swept segment at <=2cm intervals; conservative 1cm padding closes sampling gaps.
-  const steps = Math.max(1,Math.ceil(Math.max(M.hypot(...sub(a[0],b[0])),M.hypot(...sub(a[1],b[1])))/.02));
+  const steps = Math.max(1,Math.ceil(Math.max(M.hypot(...sub(a[0],b[0])),M.hypot(...sub(a[1],b[1])))/SAMPLE_STEP_M));
   for (let i=0;i<=steps;i++) {
     const start=mix(a[0],b[0],i/steps),end=mix(a[1],b[1],i/steps);
     const k = targetScale;
-    if (segmentDistance(start,end,[0,.55*k,0],[0,1.45*k,0]) > .31*k) continue;
+    if (segmentDistance(start,end,[0,BODY_LOW*k,0],[0,BODY_HIGH*k,0]) > HIT_BODY_RADIUS*k) continue;
     // Coarse upright hit regions; not animated per-limb anatomy or precision head aiming.
-    const regions: [HitLocation,number,number][] = [['head',1.45*k,1.45*k],['torso',.85*k,1.3*k],['legs',.55*k,.7*k]];
+    const regions: [HitLocation,number,number][] = [['head',BODY_HIGH*k,BODY_HIGH*k],['torso',TORSO_LOW*k,TORSO_HIGH*k],['legs',BODY_LOW*k,LEGS_HIGH*k]];
     return regions.sort((x,y)=>segmentDistance(start,end,[0,x[1],0],[0,x[2],0])-segmentDistance(start,end,[0,y[1],0],[0,y[2],0]))[0][0];
   }
   return null;
