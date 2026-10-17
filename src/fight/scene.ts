@@ -63,6 +63,8 @@ import './signature-goblin.ts';   // Goblin A: Hooked Wound
 import './signature-plaguedoctor.ts';   // Plague Doctor A: Rot Bloom
 import './signature-shieldmaiden.ts';   // registers the Shieldmaiden's Splintered Defiance
 import { settleWithin } from './warm-gate.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_9 = fxNum('clamp.scene.9');
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
 
@@ -744,7 +746,7 @@ export function createScene(
     }, // debug probe: what each rig plays
     probe(): { sparks: number; burst: [number, number, number]; witchfire: { flames: number; glow: [boolean, boolean] }; skillImpact: { alive: number; last: [number, number, number] }; bodyWounds: [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }]; droplets: { falling: number; spots: number } } {
       // Body wounds showing per side (player, opponent): how many marks, and the strongest mark's opacity and drip length.
-      const bodyWoundsVisible = bodyWounds.entries.map((marks) => ({ visible: marks.filter((m) => m.group.visible).length, used: marks.filter((m) => m.used).length, reach: marks.filter((m) => m.used).map((m) => +Math.min(9, m.reach).toFixed(3)), opacity: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => m.mark.material.opacity)).toFixed(2), drip: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => Math.max(0, ...m.strands.filter((s) => s.mesh.visible).map((s) => s.mesh.scale.y)))).toFixed(2) })) as [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }];
+      const bodyWoundsVisible = bodyWounds.entries.map((marks) => ({ visible: marks.filter((m) => m.group.visible).length, used: marks.filter((m) => m.used).length, reach: marks.filter((m) => m.used).map((m) => +Math.min(CLAMP_9, m.reach).toFixed(3)), opacity: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => m.mark.material.opacity)).toFixed(2), drip: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => Math.max(0, ...m.strands.filter((s) => s.mesh.visible).map((s) => s.mesh.scale.y)))).toFixed(2) })) as [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }];
       return { sparks: clash.alive(), burst: clash.last(), witchfire: { flames: witchfire.alive(), glow: witchfire.glowing() }, skillImpact: { alive: skillImpact.alive(), last: skillImpact.last() }, bodyWounds: bodyWoundsVisible, droplets: { falling: bodyWounds.droplets.falling, spots: bodyWounds.droplets.spots } };
     }, // debug probe for the presentation harness: live contact effects and the body wounds
     bladeTip(): [number, number, number] | null {

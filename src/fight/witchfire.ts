@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { movesOf, type Fighter } from './duel.ts';
 import { MOVES, fxMove } from './moves.ts';
 import FEEL_RULES from './feel-rules.json' with { type: 'json' };
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_1 = fxNum('clamp.witchfire.0.1');
 const WF = fxMove('witchfire');   // the move of the skill row whose fx is witchfire
 
 // Presentation only: the Witch-fire skill's fire (docs/briefs/skill-witch-arm.md (b); the green glow, the gout and the embers are Visuals &
@@ -111,7 +113,7 @@ export function createWitchfire(scene: THREE.Scene) {
       }
       // Every frame writes the buffers; a pause or hit-stop (dt 0) moves nothing but still draws what was born in it.
       {
-        dt = Math.max(0, Math.min(dt, 0.1));
+        dt = Math.max(0, Math.min(dt, CLAMP_0_1));
         for (let p = 0; p < POOL; p++) {
           life[p] = Math.max(0, life[p] - dt);
           if (life[p] <= 0) { for (let j = 0; j < TAIL; j++) sizes[p * TAIL + j] = 0; continue; }

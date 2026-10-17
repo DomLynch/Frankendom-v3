@@ -6,6 +6,8 @@ import MARBLE_SHORE from './spells-marble-shore.json' with { type: 'json' };
 import RED_HOLLOW from './spells-red-hollow.json' with { type: 'json' };
 import SUN_COURT from './spells-sun-court.json' with { type: 'json' };
 import THORN_STEPPE from './spells-thorn-steppe.json' with { type: 'json' };
+import { fxNum } from './fx-rows.ts';
+const CLAMP_10 = fxNum('clamp.spell-legends.10');
 
 // The ONE legend key (Lead 2026-10-13): a legend is its spell row's id without `spell:` ("alvis"), the key Backend's grimoire grants by. A kill's Provenance.legendId writes exactly that.
 // The spell catalogue (src/fight/spells-<region>.json, 700 rows) is the only spell table; a row names its boss (a catalogue row id) and, for a boss with ranks, the rank legend (`boss_legend`).
@@ -18,7 +20,7 @@ export const SPELL_OF_LEGEND: Readonly<Record<string, CatalogueSpell>> = Object.
 export function legendIdFor(opponent: string, rung: number): string | undefined {
   const row = catalogueRow(opponent);
   if (!row) return undefined;
-  const name = row.ranks.length ? row.ranks[Math.min(10, Math.max(1, Math.floor(rung))) - 1]?.name : undefined;
+  const name = row.ranks.length ? row.ranks[Math.min(CLAMP_10, Math.max(1, Math.floor(rung))) - 1]?.name : undefined;
   const hit = SPELL_ROWS.find((s) => s.boss === opponent && (row.ranks.length ? s.boss_legend === name : s.boss_legend === undefined));
   return hit && legendOf(hit);
 }
