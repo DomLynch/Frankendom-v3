@@ -17,6 +17,18 @@
       "required": {
         "fullPoints": "integer"
       }
+    },
+    {
+      "table": "multiplier",
+      "file": "gear-stats-rules.json",
+      "at": "multiplier",
+      "key": "id",
+      "required": {
+        "scale": "integer",
+        "attackPerPoint": "integer",
+        "resPerPoint": "integer",
+        "note": "string"
+      }
     }
   ]
 }

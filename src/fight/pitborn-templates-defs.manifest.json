@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "pitbornTemplate", "file": "pitborn-templates-defs.json", "at": "templates", "key": "id",
+      "required": { "params": "array" } }
+  ]
+}

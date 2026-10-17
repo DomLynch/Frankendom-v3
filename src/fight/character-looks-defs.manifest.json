@@ -1,0 +1,19 @@
+{
+  "tables": [
+    {
+      "table": "mappedpalette",
+      "file": "character-looks-defs.json",
+      "at": "mapped",
+      "key": "id",
+      "required": { "names": "array", "names[]": "string" }
+    },
+    {
+      "table": "chargelean",
+      "file": "character-looks-defs.json",
+      "at": "lean",
+      "key": "id",
+      "required": { "yaw": "number", "side": "number", "chest": "number", "arm": "number" },
+      "optional": { "lift": "number", "note": "string" }
+    }
+  ]
+}

@@ -88,6 +88,7 @@
     { "id": "fx.signature.fadeInMin", "fields": {"value": 0.001} },
     { "id": "fx.spellLegends.rungMax", "fields": {"value": 10} },
     { "id": "fx.spellSchool.byteMax", "fields": {"value": 255} },
-    { "id": "fx.witchfire.stepMax", "fields": {"value": 0.1} }
+    { "id": "fx.witchfire.stepMax", "fields": {"value": 0.1} },
+    { "id": "pose-blend.snap-m", "fields": {"value": 3} }
   ]
 }

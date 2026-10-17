@@ -1,0 +1,26 @@
+{
+  "mapped": [
+    {"id": "dwarf", "names": ["Steel", "Leather"]},
+    {"id": "executioner", "names": ["Leather"]},
+    {"id": "goblin", "names": ["Steel", "Leather", "Heraldry", "Wrap"]},
+    {"id": "knight", "names": ["Leather"]},
+    {"id": "nightborn", "names": ["Steel", "Leather", "Heraldry", "Wrap"]},
+    {"id": "pitborn", "names": ["Steel", "Leather", "Heraldry", "Wrap"]},
+    {"id": "plaguedoctor", "names": []},
+    {"id": "shieldmaiden", "names": ["Steel", "Leather", "Heraldry", "Wrap"]},
+    {"id": "veteran", "names": ["Bronze"]},
+    {"id": "witch", "names": []}
+  ],
+  "lean": [
+    {"id": "veteran", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "pitborn", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "nightborn", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "executioner", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "plaguedoctor", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "knight", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "witch", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "shieldmaiden", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
+    {"id": "dwarf", "yaw": -0.5, "side": 0.9, "chest": 0.35, "arm": 0.3, "note": "sits under the player's shoulder: bends further and twists the other way to bring the hammer head up clear"},
+    {"id": "goblin", "yaw": 0.4, "side": -0.7, "chest": -0.3, "arm": 1, "lift": -1.6, "note": "too short for any lean to clear the player: leans the other way and throws the knife arm straight up (Strategy 2026-09-24)"}
+  ]
+}
