@@ -4,6 +4,12 @@ import { templateOf } from './finisher-look.ts';
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { HAMSTRUNG_BEATS } from './hamstrung.ts';
 import { EXECUTION_BEATS, executionAt } from './execution.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_5 = fxNum('clamp.finisher-blood.0.5');
+const CLAMP_1_6 = fxNum('clamp.finisher-blood.1.6');
+const CLAMP_0_85 = fxNum('clamp.finisher-blood.0.85');
+const CLAMP_0_1 = fxNum('clamp.finisher-blood.0.1');
+const CLAMP_1_2 = fxNum('clamp.finisher-blood.1.2');
 
 // Blood on the floor multiplies onto the sand: dst × lerp(1, texture, alpha·opacity). Premultiplied output makes alpha and opacity
 // fade it toward "no change" — never toward white, which a plain MultiplyBlending ignores opacity for.
@@ -38,7 +44,7 @@ export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: O
   const at = (name: string) => victim.getObjectByName(name)?.getWorldPosition(new Vector3());
   const neck = at('neck_01'), crown = at('Head'), chest = at('spine_02');
   if (!neck || !crown || !chest) return [];
-  const up = crown.clone().sub(neck).normalize(), size = Math.max(.5, Math.min(1.6, crown.distanceTo(neck)/.075));
+  const up = crown.clone().sub(neck).normalize(), size = Math.max(CLAMP_0_5, Math.min(CLAMP_1_6, crown.distanceTo(neck)/.075));
   const forward = new Vector3(0,0,1).transformDirection(victim.matrixWorld);
   forward.addScaledVector(up,-forward.dot(up)).normalize();
   const source = (site: string, position: Vector3, direction: Vector3, strength = 1): BloodSource => ({site,position,direction:direction.normalize(),strength:strength*size});
@@ -122,7 +128,7 @@ export function createFinisherBlood(map: Texture) {
     // Merge nearby landings without pulling a previous pool along with a moving wound.
     let s=stains.find(p=>p.target>0 && (p.position.x-position.x)**2+(p.position.z-position.z)**2<.2*.2);
     if (!s) { s=stains[stainCursor++%stains.length]; s.position.set(position.x,.025,position.z);s.radius=.035;s.target=.055;s.angle=serial*2.4;s.site=site;s.shape=site==='spray' ? FLOOR_POOLS.length+stainCursor%FLOOR_SPLASHES.length : stainCursor%FLOOR_POOLS.length; }
-    s.target=Math.min(.85,Math.sqrt(s.target*s.target+amount));
+    s.target=Math.min(CLAMP_0_85,Math.sqrt(s.target*s.target+amount));
   }
   reset();
   return {
@@ -135,7 +141,7 @@ export function createFinisherBlood(map: Texture) {
       for(const m of poolMaterials)m.color.set(photo ? (bloodDark(mode) ? '#a8a0a0' : '#ffffff') : tint);   // multiplied: white = the texture's own crimson
       // Hold state at zero dt; off hides and clears airborne drops but never freezes the bleed clock.
       if(dt<=0)return;
-      dt=Math.min(dt,.1);elapsed+=dt;
+      dt=Math.min(dt,CLAMP_0_1);elapsed+=dt;
       if(bloodHidden(mode)) {for(const p of particles)p.life=0;drops.count=0;return;}
       if(elapsed>=7 && !lateSeeded && stainCursor===0) { for(const s of sources)stain(s.position,.3,s.site);lateSeeded=sources.length>0; }
       const start=finisherRow(kind)?.blood.start ?? .01;   // the row's blood.start; .01 for a kind no row names
@@ -147,7 +153,7 @@ export function createFinisherBlood(map: Texture) {
         while(pending[i]>=1) {
           pending[i]--; const p=particles[cursor++%particles.length], a=++serial*2.399963;
           const pressure=burst ? (1.5+.8*Math.sin(elapsed*17)**2) : .25;
-          p.position.copy(s.position);p.velocity.copy(s.direction).multiplyScalar(pressure*Math.min(1.2,s.strength));
+          p.position.copy(s.position);p.velocity.copy(s.direction).multiplyScalar(pressure*Math.min(CLAMP_1_2,s.strength));
           p.velocity.x+=Math.sin(a)*.45;p.velocity.z+=Math.cos(a)*.45;p.velocity.y+=burst ? .35+.35*Math.sin(a*1.7) : -.3;
           p.life=2;p.size=(serial%11===0 ? .022 : .004+(serial%4)*.002)*Math.sqrt(s.strength);emitted++;
         }
@@ -160,7 +166,7 @@ export function createFinisherBlood(map: Texture) {
         p.life-=dt;p.velocity.y-=9.8*dt;p.position.addScaledVector(p.velocity,dt);
         if(p.position.y<=.03) {stain(p.position,.006,'spray');p.life=0;landed++;continue;}
         dummy.position.copy(p.position);dummy.quaternion.setFromUnitVectors(yAxis,velocityDirection.copy(p.velocity).normalize());
-        dummy.scale.set(p.size,p.size*(1.4+Math.min(1.2,p.velocity.length()*.2)),p.size);dummy.updateMatrix();drops.setMatrixAt(count++,dummy.matrix);
+        dummy.scale.set(p.size,p.size*(1.4+Math.min(CLAMP_1_2,p.velocity.length()*.2)),p.size);dummy.updateMatrix();drops.setMatrixAt(count++,dummy.matrix);
       }
       drops.count=count;drops.instanceMatrix.needsUpdate=true;
       for(const m of pools)m.count=0;

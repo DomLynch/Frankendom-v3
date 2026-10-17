@@ -1,6 +1,8 @@
 {
   "sceneRows": [
     { "id": "power-words.gain", "fields": {"value": 0} },
+    { "id": "power-words.witch", "fields": {"words": ["Ashvael", "Ixoreth", "Melusaar"]} },
+    { "id": "power-words.plaguedoctor", "fields": {"words": ["Vuskarn", "Orzhul", "Thaniveck"]} },
     { "id": "boss-telegraph.roll-ticks", "fields": {"value": 24} }
   ]
 }

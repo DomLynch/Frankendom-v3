@@ -18,6 +18,9 @@ import type { FinisherId } from './finishers.ts';
 import { isTemplate } from './finisher-look.ts';
 import type { CombatEvent, Practice } from './combat.ts';
 import type { State } from './sim.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_25 = fxNum('clamp.fx.0.25');
+const CLAMP_0_4 = fxNum('clamp.fx.0.4');
 
 /** The camera-kick hints the effects emit: the host decides which camera takes them (the Pit's rig, a zone's walk camera). */
 export type CameraKick = { shove(heading: number, shove: Shove): void; tilt(angle: number, seconds: number, right?: number, drop?: number): void };
@@ -205,7 +208,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
           const hand = weapon.localToWorld(new THREE.Vector3(0, 0, 0)), tip = weapon.localToWorld(new THREE.Vector3(0, contactRange.to, 0)), length = hand.distanceTo(tip) || 1;   // the grip to the tip: the whole visible length
           let entry = 1;
           for (let t = 0; t <= 1; t += 0.05) { const q = hand.clone().lerp(tip, t); if (Math.hypot(q.x - guard.x, q.z - guard.z) < 0.3) { entry = t; break; } }
-          b = hand.clone().lerp(tip, Math.max(0.25, entry - 0.02)); a = b.clone().sub(tip.clone().sub(hand).multiplyScalar(Math.min(0.4, length * 0.35) / length));
+          b = hand.clone().lerp(tip, Math.max(CLAMP_0_25, entry - 0.02)); a = b.clone().sub(tip.clone().sub(hand).multiplyScalar(Math.min(CLAMP_0_4, length * 0.35) / length));
         } else { const towardAttacker = new THREE.Vector3(attacker ? practice.enemy.x : state.x, 0, attacker ? practice.enemy.z : state.z).sub(new THREE.Vector3(guard.x, 0, guard.z)).normalize(); a = guard.clone().addScaledVector(towardAttacker, 0.2); b = guard.clone().addScaledVector(towardAttacker, 0.6); }
         clash.burst(a, b, attacker ? practice.enemy.heading : state.heading, strength);
         impact = 0; // the dedicated sparks replace the generic dots for this contact

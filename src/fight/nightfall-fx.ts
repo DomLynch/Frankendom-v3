@@ -4,6 +4,8 @@ import type { OpponentId } from '../roster.ts';
 import { advanceCast, type Cast } from './special-timing.ts';
 import { nightfall } from './nightfall-timing.ts';
 import { bloodNum } from './blood-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_5 = fxNum('clamp.nightfall-fx.0.5');
 
 // Nyx's Nightfall, the in-game effect (World, 2026-09-30; Lead's brief, Dom GO). Presentation only, like special-fx.ts beside it: it reads the
 // sim's special events and the fighters' Head bones, never the sim, a rig or Math.random. The wow is the whole arena going dark, so the drain
@@ -73,7 +75,7 @@ export function createNightfallFx(scene: THREE.Scene, camera: THREE.Camera, oppo
       root.visible = k !== null && !!caster && !!target;
       if (!root.visible || k === null || !caster || !target) return;
       from.set(caster.x, 0, caster.z); to.set(target.x, 0, target.z); dir.subVectors(to, from).setY(0);
-      const distance = Math.max(dir.length(), 0.5); dir.normalize();
+      const distance = Math.max(dir.length(), CLAMP_0_5); dir.normalize();
       const travel = 1 - (1 - k) ** 2, at = travel * (distance + 3.5), fade = Math.min(1, k / 0.12, (1 - k) / 0.25);   // thrown: fast off the hand, easing out past him
       const width = 0.7 + 0.7 * k, height = 0.85 + 0.15 * k;
       veil.position.set(from.x + dir.x * at, 0.05 + 1.2 * height, from.z + dir.z * at); veil.rotation.y = Math.atan2(dir.x, dir.z); veil.scale.set(width, height, 1);

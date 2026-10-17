@@ -2,6 +2,7 @@ import { fieldOf } from './catalogue-rows.ts';
 import { spectralMaterial } from './spectral.ts';
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Group, Matrix3, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, Euler, SkinnedMesh, Vector3 } from 'three';
 import { fxNum } from './fx-rows.ts';
+const CLAMP_119 = fxNum('clamp.opened.119');
 
 // One pose bake per encounter, prepared before combat like a cached severed prop. Exterior maps are borrowed; only the new geometry and cut material
 // belong to this effect. Cut the torso at its waist, retaining both arms with the torso and releasing the victim weapon to the sand.
@@ -211,7 +212,7 @@ export function* openWaistSteps(root: Object3D, anchor: Group, cornerSupports = 
       // A rotated weapon can lie entirely above its baked origin. Let that origin descend below zero.
       weapon.position.y += Math.min(0,floors[2][120]) * smooth(p,.12,.62);
       for (const [h,half] of [lower,upper,weapon].entries()) {
-        const at = p*120, i = Math.min(119,Math.floor(at)), floor = floors[h][i]+(floors[h][i+1]-floors[h][i])*(at-i);
+        const at = p*120, i = Math.min(CLAMP_119,Math.floor(at)), floor = floors[h][i]+(floors[h][i+1]-floors[h][i])*(at-i);
         half.position.y = Math.max(half.position.y,floor);
       }
       cut.color.set(spectral ? '#788385' : dark ? '#302126' : '#501c20');
