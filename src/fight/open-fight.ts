@@ -28,7 +28,7 @@ const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
 /** The hero's Pit fighter as the Pit builds it (initialDuel: createFighter with his weapon; withSheet: his sheet's bar and recovery, the sheet itself carried on the fighter so stepDuel reads its dials). No weapon = DEFAULT_WEAPON, no sheet = today's hero. */
 export function heroSheeted(f: Fighter): PitFighter {
   // open-world: a hero with a spell casts through the Pit's special slot (spell-cast.ts), ready at once (no opening delay: the world has no fight start), so a live hero and a replayed one are the same hero
-  const hero = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
+  const plain = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), hero = f.skill2 ? { ...plain, skill2: f.skill2, skillCooldown2: 0 } : plain, cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
   return f.sheet ? withSheet({ tick: 0, fighters: [cast, cast], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : cast;
 }
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
@@ -102,7 +102,7 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
   for (let k = 0; k < ticks; k++) {
     const [pa, pb] = duel.fighters;
     // open-world: the places, facings, stances and effective health come from the world each tick (the page walks the players).
-    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health, maxHealth: a.maxHealth, stamina: a.stamina, posture: a.posture, skill: a.skill, cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
+    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health, maxHealth: a.maxHealth, stamina: a.stamina, posture: a.posture, skill: a.skill, ...(a.skill2 ? { skill2: a.skill2 } : {}), cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
     if (a.special && ha.specialShare === undefined) { ha.specialShare = a.level >= RULES.special.bossFrom ? RULES.special.bossDamage : RULES.special.damage; ha.specialName = a.special; ha.skillCooldown = Math.round(a.specialIn / TICK); }
     const hb: PitFighter = b
       ? { ...pb, cc: b.cc ?? emptyLadder, ...(b.ccGuard ? { ccGuard: b.ccGuard } : {}), body: b.side === 'player' ? { ...pb.body, x: b.x, z: b.z, heading: pb.phase === 'roll' ? pb.body.heading : b.facing } : pb.body, health: b.health, maxHealth: b.maxHealth, ...(b.side === 'player' ? { stamina: b.stamina, posture: b.posture, skill: b.skill } : {}), ...(b.stance ? { stance: b.stance } : {}) }

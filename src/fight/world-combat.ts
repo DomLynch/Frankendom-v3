@@ -4,7 +4,7 @@
 import { AGGRO_M, duelFor, duelOf, newWorld, pairs, player, type Event, type Fighter, type World } from './world.ts';
 import { worldRule } from './world-rules.ts';
 import { fxNum } from './fx-rows.ts';
-import { OPPONENTS, DEFAULT_WEAPON, type Direction, type WeaponId } from './moves.ts';
+import { OPPONENTS, DEFAULT_WEAPON, type Direction, type SkillId, type WeaponId } from './moves.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { resolveSpell } from './spell-cast.ts';
 import type { CombatEvent, Duel, Finish } from './duel.ts';
@@ -43,7 +43,7 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   engageToken?: (id: string) => string | null;   // the creature's engage token (spawn-net.ts), null until the server answered: the bout's roll seed is hash32(token, join step); no token = no roll, today's fight
   onEvent?(ev: Event): void;       // every combat event, after the page has shown it (the spawn client, spawn-net.ts onCombatEvent)
   canPlay?: (finisher: FinisherId) => boolean;   // which finishers this client can show on a creature (default: plainDeath only); the pick is selectFinisher cut down to the creature's row (src/creature-gore.ts) and to these
-  hero?: () => { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number } };   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
+  hero?: () => { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number }; special?: SkillId; special2?: SkillId };   // special / special2: SPECIAL 1 and SPECIAL 2, class skills fought through their own move rows (the specials PR)   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
 };
 /** One pair's frame of contacts for the client's effects: the Pit events the loop made this frame (ev.pit), the pair's duel, and where the two stand (world metres). Drained by takeContacts(). */
 export type PairContacts = { foe: string; kind: string; finisher?: FinisherId; events: CombatEvent[]; duel: Duel; hero: { x: number; z: number; facing: number }; foeAt: { x: number; z: number; facing: number; health: number } };
@@ -56,8 +56,8 @@ export function finishOf(kind: string, finish: Finish, weapons: readonly [Weapon
 }
 
 export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
-  const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number } } => d.hero?.() ?? { level: 1 };
-  const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet, spell: asked, spell2: asked2 } = mine(), spell = asked ? resolveSpell(asked.id, asked.skill, sheet?.spellPower ?? 0) : undefined, spell2 = asked2 ? resolveSpell(asked2.id, asked2.skill, sheet?.spellPower ?? 0) : undefined, p = player(ME, x, z, facing, level, null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
+  const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number }; special?: SkillId; special2?: SkillId } => d.hero?.() ?? { level: 1 };
+  const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet, spell: asked, spell2: asked2, special, special2 } = mine(), spell = asked ? resolveSpell(asked.id, asked.skill, sheet?.spellPower ?? 0) : undefined, spell2 = asked2 ? resolveSpell(asked2.id, asked2.skill, sheet?.spellPower ?? 0) : undefined, p = player(ME, x, z, facing, level, special ?? null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}), ...(special2 ? { skill2: special2 } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
   let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, pendingCast2 = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
   let wasReady = false, rebuild = false;   // rebuild: hero() may have moved (the loadout gate just opened, or the page said the build / worn-gear view answered): rebody once at the next idle frame
   let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
@@ -70,7 +70,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const gearOf = () => gear;
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
-  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), ...(m.spell2 ? { spell2: mine().spell2 } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
+  const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), ...(m.spell2 ? { spell2: mine().spell2 } : {}), ...(m.skill ? { skill: m.skill } : {}), ...(m.skill2 ? { skill2: m.skill2 } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted }; };
   function release(id: string) { prevPose.delete(id); recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   /** The live hero is built from hero() ONCE, at load; the gear and the sheet arrive later. At a clean window open (no creature, no open bout) rebuild him from hero() as it stands now at his current place, so the live fighter and the record's heroBody() are the same hero (live == record, Auditor #2569). Health keeps its fraction; stamina, posture and exhaustion carry. Never mid-bout. */
   function rebody() {

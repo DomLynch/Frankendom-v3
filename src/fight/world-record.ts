@@ -5,7 +5,7 @@
 import { M } from './detmath.ts';
 import { worldRule } from './world-rules.ts';
 import { CC_LADDER, type CcLadder } from './cc-ladder.ts';
-import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, type Direction, type WeaponId } from './moves.ts';
+import { LEVELS, OPPONENTS, PLAYER_WEAPONS, RULES, SKILL_ROWS, type Direction, type SkillId, type WeaponId } from './moves.ts';
 import { MAX_RECORD_BYTES, RECORD_VERSION, fromBase64Url, toBase64Url } from './record.ts';
 import { DIALS, SHEET_SKILLS, checkSheet, statUp, type Sheet } from './sheet-rows.ts';
 import { isSpellId, resolveSpell } from './spell-cast.ts';
@@ -30,7 +30,7 @@ export const MAX_WORLD_TICKS = worldRule('maxWorldTicks');
 export const INSTANCE = /^[a-z0-9._:-]{1,96}$/;
 
 /** The hero's body at the window's start. gear is the page's claim; the replay bounds it by the caps and the server may check it against its own ledger. */
-export type RecordHero = { level: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number } };   // spell2: slot b, the same claim shape (WSV 42); absent = one slot, the record byte for byte as before. spell: the equipped spell and the skill it is cast at (the Pit record's spell block; the server holds it to the grimoire and the stored skill, origins/server/spell-check.ts); absent = no spell. sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
+export type RecordHero = { level: number; weapon: WeaponId; health: number; stamina: number; posture: number; exhausted: boolean; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number }; skill?: SkillId; skill2?: SkillId };   // skill / skill2 (WSV52, the specials PR): SPECIAL 1 and SPECIAL 2, class skills fought through their own move rows; absent = none, the record byte for byte as before   // spell2: slot b, the same claim shape (WSV 42); absent = one slot, the record byte for byte as before. spell: the equipped spell and the skill it is cast at (the Pit record's spell block; the server holds it to the grimoire and the stored skill, origins/server/spell-check.ts); absent = no spell. sheet (series PR 4): the hero's dials, the claim the server holds to its expectation; with one, attack and res fight as 1 (the sheet carries them)
 export type JoinEvent = { s: number; id: string; kind: string; x: number; z: number; level: number; seed?: number };   // the creature at its pose (m) when it joined, before step s
 export type ReleaseEvent = { s: number; id: string };
 /** One step: the pose the page gave the loop (null = the loop's own body), the presses (attack and roll already nulled when the hero is dead), and the held guard. Integers: cm, milliradian, thousandths. */
@@ -58,10 +58,10 @@ export const ccQuiet = (ladder: CcLadder | undefined, tick: number, rows = CC_LA
 /** The hero is at rest and carries nothing the header lacks: ready, full bar, no wound, no cooldown, no stance, a quiet CC ladder. Only then does a window open (a record cannot carry the rest of his Pit fighter). */
 export function heroClean(world: World): boolean {
   const m = world.fighters[0], d = world.streams[ME]?.duel.fighters[0];
-  return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.skill && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
-    && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && d.move === null && d.phase !== 'dead'));
+  return !!m && m.phase === 'ready' && m.maxStamina === STAMINA_MAX && !m.special && !m.stance && ccQuiet(m.cc, Math.round(world.time * 60)) && !(m.threat && Object.keys(m.threat).length)
+    && (!d || (d.wound === 0 && !d.legWound && d.maxStamina === STAMINA_MAX && d.skillCooldown === 0 && !d.skillCooldown2 && d.move === null && d.phase !== 'dead'));
 }
-export const startBody = (h: RecordHero): Fighter => { const spell = h.spell ? resolveSpell(h.spell.id, h.spell.skill, h.sheet?.spellPower ?? 0) : undefined, spell2 = h.spell2 ? resolveSpell(h.spell2.id, h.spell2.skill, h.sheet?.spellPower ?? 0) : undefined, p = player(ME, 0, 0, 0, h.level, null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
+export const startBody = (h: RecordHero): Fighter => { const spell = h.spell ? resolveSpell(h.spell.id, h.spell.skill, h.sheet?.spellPower ?? 0) : undefined, spell2 = h.spell2 ? resolveSpell(h.spell2.id, h.spell2.skill, h.sheet?.spellPower ?? 0) : undefined, p = player(ME, 0, 0, 0, h.level, h.skill ?? null, { weapon: h.weapon, ...(h.sheet ? { sheet: h.sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}), ...(h.skill2 ? { skill2: h.skill2 } : {}) }); return { ...p, health: h.health, stamina: h.stamina, posture: h.posture, exhausted: h.exhausted }; };
 
 // ---- the recorder: the live loop feeds it, the page asks for the packed record at a kill -----------------------------------------------
 export function createWorldRecorder() {
@@ -161,6 +161,8 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
   if (!Number.isInteger(h.level) || h.level < 1 || h.level > LEVELS) return bad('hero level');
   if (h.spell && (typeof h.spell.id !== 'string' || !isSpellId(h.spell.id) || !Number.isInteger(h.spell.skill) || h.spell.skill < 0 || h.spell.skill > 100)) return bad('hero spell');   // a spell in the catalogue and a whole skill 0-100; whether the account holds it is the server's check (origins/server/spell-check.ts)
   if (h.spell2 && (!h.spell || typeof h.spell2.id !== 'string' || !isSpellId(h.spell2.id) || !Number.isInteger(h.spell2.skill) || h.spell2.skill < 0 || h.spell2.skill > 100 || (!ALLOW_DUPLICATE && h.spell2.id === h.spell.id))) return bad('hero spell');   // slot b: the same claim shape, and only beside a slot-a spell (an empty slot a keeps the class special); a duplicate only where the slot rows allow it
+  for (const pick of [h.skill, h.skill2]) if (pick !== undefined && (typeof pick !== 'string' || !Object.prototype.hasOwnProperty.call(SKILL_ROWS, pick))) return bad('hero skill');   // SPECIAL 1 and 2 are real class skills (skill-defs rows); which ones the account may take is the server's judging (the beta cut's specialPick)
+  if (h.skill !== undefined && h.skill === h.skill2) return bad('hero skill');   // two different specials: never the same skill in both slots
   if (h.sheet) { try { checkSheet(h.sheet); } catch { return bad('hero sheet'); } }   // known dials, floor..cap, and a legal point budget
   if (!(h.health > 0 && h.health <= (h.sheet ? Math.round(statUp(h.sheet, 'health', RULES.health)) : RULES.health)) || !(h.stamina >= 0 && h.stamina <= STAMINA_MAX) || !(h.posture >= 0 && h.posture <= RULES.posture.max) || typeof h.exhausted !== 'boolean') return bad('hero body');
   const ids = new Set<string>();
@@ -187,8 +189,8 @@ export function replayWorldRecord(r: WorldRecord): Replayed {
     const bound = events(k); if (bound) return bad(bound);
     const s = r.steps[k]!;
     if (dead && (s.attack || s.roll || s.cast || s.cast2)) return bad('acted dead');
-    if (s.cast && !h.spell) return bad('cast without a spell');
-    if (s.cast2 && !h.spell2) return bad('cast without a spell');
+    if (s.cast && !h.spell && !h.skill) return bad('cast without a spell');   // SPECIAL 1 is a melee skill when there is no spell
+    if (s.cast2 && !h.spell2 && !h.skill2) return bad('cast without a spell');   // SPECIAL 2 likewise
     if (s.pose) {
       const x = fromCm(s.pose.x), z = fromCm(s.pose.z);
       if (last && M.hypot(x - last.x, z - last.z) > MAX_HERO_MPS * STEP * (k - last.k) + 0.02) return bad('speed');
