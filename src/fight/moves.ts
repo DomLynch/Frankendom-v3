@@ -5,7 +5,8 @@ import { loadSkillDefs } from './skills.ts';
 import { loadWeaponDefs, type WeaponLook } from './weapons.ts';
 import { DAMAGE_KIND_IDS } from './damage-kinds.ts';
 import { RULES } from './rules.ts';
-import { SPECIAL_SETS, SPECIAL_RANK_LEVELS } from './special-set-rows.ts';
+import { SPECIAL_SETS, SPECIAL_RANK_LEVELS, specialStartOf } from './special-set-rows.ts';
+import type { Sheet } from './sheet-rows.ts';
 import { LEVEL_ANCHORS } from './level-anchor-rows.ts';
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
@@ -75,6 +76,7 @@ export type AiProfile = {
   discipline: number;  // stamina floor below which it retreats and recovers
   lapse: number;       // 0..1 chance a noticed swing gets no answer at all (a human does not react to every cut they see; the AI would)
   // Fight-identity knobs (slice X, for the goblin; absent = the warden as it always was):
+  tactic?: string;     // a tactic-defs.json row id: weights the warden's answer to a noticed swing by situation (ai.ts, spec gothic-tactic-table); absent = the warden as it always was
   read?: number;       // 0..1 chance the warden reads an incoming attack's side and guards/parries on it; otherwise a random other side. Absent = reads perfectly (the pre-directional guard)
   feint?: number;      // 0..1 base share of cuts and heavies that are feints against anyone (the read-parrier's 1/6 still applies on top)
   guard?: number;      // 0..1 share of the guard in its game: the standing guard, the bait guard, the block plan and the guard-walk (0 = never guards: evades or steps back instead)
@@ -153,7 +155,7 @@ export type Level = keyof typeof PROFILES;
 // counter-hits, stop-hits, rear hits and charged blows always do. 0 = staggered by everything, the human default.
 // guard: how this man's guard behaves on top of his weapon's (`Fighter.guardProfile`): the Nightborn's parry window is longer than a man's
 // and a parry of his that meets nothing leaves him open longer — the one mechanism behind "bait him" (see OPPONENTS.nightborn).
-export type Opponent = { id: OpponentId; weapon: WeaponId; rig: RigId; scale: number; health: number; poise: number; profiles: Record<Level, AiProfile>; guard?: Partial<GuardProfile>; regen?: number; speed?: number; pools?: PoolValues };   // regen: stamina regeneration multiplier; speed: pace multiplier for walking, lunging and stepping (a small fighter is quick on his feet)
+export type Opponent = { id: OpponentId; weapon: WeaponId; rig: RigId; scale: number; health: number; poise: number; profiles: Record<Level, AiProfile>; guard?: Partial<GuardProfile>; regen?: number; speed?: number; pools?: PoolValues; sheet?: Sheet };   // regen: stamina regeneration multiplier; speed: pace multiplier for walking, lunging and stepping (a small fighter is quick on his feet)
 export const ARCHETYPES: Record<(typeof ROSTER)[OpponentId]['archetype'], Omit<Opponent, 'id' | 'weapon' | 'rig'>> = buildArchetypes(PROFILES, RULES.health) as unknown as Record<(typeof ROSTER)[OpponentId]['archetype'], Omit<Opponent, 'id' | 'weapon' | 'rig'>>;
 
 // Knobs one opponent carries on top of an archetype he shares (the Skeleton is the Centurion's archetype and stays as he was).
@@ -183,7 +185,7 @@ export const SPECIAL_ROWS: Partial<Record<SpecialName, { interruptible?: boolean
 export const isInterruptible = (name: SpecialName | undefined): boolean => name === undefined || SPECIAL_ROWS[name]?.interruptible !== false;
 export const specialOf = (opponent: OpponentId, level: number): SpecialName | null => {
   const set = Object.hasOwn(SPECIAL_SETS, opponent) ? SPECIAL_SETS[opponent] : undefined;
-  return set && level >= SPECIAL_RANK_LEVELS[0]! ? set[SPECIAL_RANK_LEVELS.filter((from) => level >= from).length - 1]! : null;
+  return set && level >= specialStartOf(opponent) ? set[Math.max(0, SPECIAL_RANK_LEVELS.filter((from) => level >= from).length - 1)]! : null;
 };
 export { LEVEL_ANCHORS };   // the profile tiers' anchor levels are rows (level-anchor-defs.json, built by level-anchor-rows.ts)
 // The novice (Combat's L1 screen, 2026-09-27: tap-attack wins /48 at 48 seeds): slow to notice, rarely answers, swings a quarter as often.
@@ -218,14 +220,15 @@ export function opponentAt(o: Opponent, level: number): Opponent {
 // An absent knob means "the warden as he always was" in ai.ts; a blend needs the number that absence stands for. A knob absent on BOTH
 // sides stays absent (ai.ts draws no roll for it, so nothing downstream moves).
 const ABSENT: Partial<AiProfile> = ABSENT_ROWS as unknown as Partial<AiProfile>;   // anticipate: ai.ts READ.anticipate (tests pin it)
-const ROUNDED = new Set<keyof AiProfile>(['reaction', 'anticipate', 'discipline', 'tellReaction', 'spamRun']);
+const ROUNDED = new Set<Exclude<keyof AiProfile, 'tactic'>>(['reaction', 'anticipate', 'discipline', 'tellReaction', 'spamRun']);
 const blend = (a: AiProfile, b: AiProfile, t: number): AiProfile => {
   const out: Record<string, number> = {};
-  for (const key of new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof AiProfile>) {
+  for (const key of new Set([...Object.keys(a), ...Object.keys(b)].filter((k) => k !== 'tactic')) as Set<Exclude<keyof AiProfile, 'tactic'>>) {
     const x = a[key] ?? ABSENT[key]!, y = b[key] ?? ABSENT[key]!, v = x + (y - x) * t;
     out[key] = ROUNDED.has(key) ? Math.round(v) : Math.round(v * 1000) / 1000;
   }
-  return out as AiProfile;
+  // a tactic row is a name, not a number: it carries across a blend only where both rungs name the same one (otherwise absent, the warden as he always was)
+  return (a.tactic !== undefined && a.tactic === b.tactic ? { ...out, tactic: a.tactic } : out) as unknown as AiProfile;
 };
 const levelCache = new Map<string, AiProfile>();
 // The tail past hard (Origin II–V, levels 47–50; Dom via Strategy 2026-10-05, Lead GO 2026-10-06 option B): L46 stays the hard table, byte for byte, and

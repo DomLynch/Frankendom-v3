@@ -4,6 +4,7 @@ import { LATE_NOTICE } from './play-radius.ts';
 import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { READ_ROWS } from './ai-read-rows.ts';   // rows: ai-read-defs.json
+import { TACTIC_ROWS, pickWeighted } from './tactic-rows.ts';   // rows: tactic-defs.json
 
 // Local opponent controller. It reads only committed duel state (never the other side's pending intent), notices a fresh
 // action `reaction` ticks late, and emits an ordinary Intent that stepDuel judges by the same rules as the player's.
@@ -182,6 +183,15 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
         : r < parryChance + profile.dodge && self.stamina >= RULES.rollCost ? 'dodge'
         : unblockable ? (self.stamina >= RULES.rollCost && !(profile.step && clears && roll() < profile.step) ? 'dodge' : !self.parryCooldown && guardShare > 0 ? 'parry' : 'evade')
         : affordable && (guardShare >= 1 || roll() < guardShare) ? 'block' : 'evade';
+      // The tactic table's reaction slot (spec gothic-tactic-table): a profile that names a row draws its answer to this noticed swing from the row's weights, over the
+      // plans above (a swing already left unanswered stays unanswered, and an answer that is not available now keeps the plan chosen above). A profile without `tactic` draws nothing.
+      const reactions = profile.tactic ? TACTIC_ROWS[profile.tactic]?.heroWinding : undefined;
+      if (reactions && next.plan !== 'ignore') {
+        const pick = pickWeighted(reactions, roll());
+        if (pick === 'backstep') next.plan = 'evade';
+        else if (guardShare > 0 && pick === 'parry' && !self.parryCooldown) next.plan = 'parry';
+        else if (guardShare > 0 && pick === 'brace' && affordable) next.plan = 'block';
+      }
       // Late notice (COMBAT-001), every blow but a tell (the thrust and the pommel strike keep their honest answer: a ranged thrust is the opener a warden must meet): `spare` is the ticks between noticing the blow and its contact. A swing noticed on the contact tick or later is never answered
       // in time; one noticed with a tick to spare is answered only (spare - 1) / (lateNotice - 1) of the time, so the step from "never in time" to "always in
       // time" spreads over lateNotice - 1 levels of reaction instead of one. No draw is made at spare <= 0, so a warden slower than the cut keeps its stream.

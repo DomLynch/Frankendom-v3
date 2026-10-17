@@ -1,0 +1,14 @@
+{
+ "limits": [
+  {
+   "id": "maxEntries",
+   "value": 6
+  }
+ ],
+ "tactics": [
+  {
+   "id": "bands",
+   "holdBand": true
+  }
+ ]
+}
