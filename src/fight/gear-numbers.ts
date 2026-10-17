@@ -2,7 +2,7 @@
 // tilt in whole points from the Attack/RES table (gear-stats.ts, brief 19). A piece with no recorded rung counts as no gear (kitFrom: identity, never a guess).
 // Lives here, not in src/core, because the core imports nothing from src/fight; the Pit and the zone both hand it to the sheet.
 import { TIERS } from '../core/grades.ts';
-import type { Loot } from '../core/loot.ts';
+import { paperdollOf, slotOf, type Loot, type LootId } from '../core/loot.ts';
 import { kitFrom, loadoutFor, wholePoints, wornGear, type Loadout, type TierOf } from './gear-stats.ts';
 import { sheetOf, validateBuild, type Build, type Sheet } from './sheet-rows.ts';
 import type { Profile } from '../core/profile.ts';
@@ -16,6 +16,15 @@ export const loadoutOfLoot = (loot: Loot | undefined): Loadout => loadoutFor(kit
 export const gearNumbers = (loot: Loot | undefined): Record<string, number> => {
   const { atk, res } = wholePoints(loadoutFor(kitFrom(loot?.equipped ?? {}, tierLookup(loot))));
   return { health: RULES.health, stamina: STAMINA_MAX, attack: atk, res };
+};
+
+/** What ONE piece gives at the rung it was minted at (1..10): the same Attack/RES table the worn set uses (gear-stats.ts, a pure function of the piece's slot and rung, so a client and the server cannot drift), in whole points,
+ *  for the backpack row's own line. Recruit (rung 1) is the identity and gives 0; a rung outside the ladder gives nothing. Keyed like `gearNumbers`, so the strip's rows read it. */
+export const pieceNumbers = (id: LootId, rung: number): Record<string, number> => {
+  const tier = TIERS[rung - 1];
+  if (!tier) return {};
+  const { atk, res } = wholePoints(loadoutFor(kitFrom({ [paperdollOf(slotOf(id))]: id }, () => tier)));
+  return { attack: atk, res };
 };
 
 // The player's build (Wave A1 PR1b): level and the points placed on the ten dials. Backend stores it (the account / character field, written through `validateBuild`, no second validator) and Web
