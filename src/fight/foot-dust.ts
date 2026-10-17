@@ -1,7 +1,7 @@
 import { DUST_TONES, FLOOR_ROWS } from '../arena-rows.ts';
 import * as THREE from 'three';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_1 = fxNum('clamp.foot-dust.0.1');
+const STEP_MAX = fxNum('fx.footDust.stepMax');
 
 // Presentation only: a small, fixed pool at descending foot plants, and a puff when a heavy blow lands on a planted stance. No idle haze or motion trails.
 // The dust takes its floor's tone so it never reads as a pale ring: sand keeps the warm tan, a paved or wet floor (Rain Yard, Cistern) a thin grey-brown,
@@ -49,7 +49,7 @@ export function createFootDust(scene: THREE.Scene, tone: DustTone = 'sand') {
     puff(at: THREE.Vector3, strength: number) { spawn(at, Math.round(5 + strength * 4), 0.1, 0.42 + strength * 0.3, 0.2 + strength * 0.16, 0.75 + strength * 0.35); },
     update(dt: number, feet: readonly (THREE.Vector3 | null)[], moving: readonly boolean[]) {
       if (dt <= 0) return; // hit-stop and pause hold both contacts and particles
-      dt = Math.min(dt, CLAMP_0_1);
+      dt = Math.min(dt, STEP_MAX);
       for (let i = 0; i < feet.length; i++) {   // a loop, not a closure per frame
         const foot = feet[i];
         cooldown[i] = Math.max(0, (cooldown[i] || 0) - dt);

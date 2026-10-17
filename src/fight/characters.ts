@@ -126,13 +126,13 @@ type FighterAsset = { scene: Group; animations: AnimationClip[] };
 // One fighter GLB: the same rig, clip names and sword attachments as every other (blade paths are baked once).
 import { MissingTextures, retryTransient } from '../retry.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_1 = fxNum('clamp.characters.0.1');
-const CLAMP_0_25 = fxNum('clamp.characters.0.25');
-const CLAMP_0_5 = fxNum('clamp.characters.0.5');
-const CLAMP_0_999999 = fxNum('clamp.characters.0.999999');
-const CLAMP_0_07 = fxNum('clamp.characters.0.07');
-const CLAMP_0_24 = fxNum('clamp.characters.0.24');
-const CLAMP_0_03 = fxNum('clamp.characters.0.03');
+const STEP_MAX = fxNum('fx.characters.stepMax');
+const WALK_RATE_MIN = fxNum('fx.characters.walkRateMin');
+const RUN_RATE_MIN = fxNum('fx.characters.runRateMin');
+const CLIP_END_MAX = fxNum('fx.characters.clipEndMax');
+const PROP_RADIUS_MIN = fxNum('fx.characters.propRadiusMin');
+const PROP_RADIUS_MAX = fxNum('fx.characters.propRadiusMax');
+const JOINT_REACH_MIN = fxNum('fx.characters.jointReachMin');
 import { DEFLECT_FROM } from './characters-dials-rows.ts';   // the dials are rows (characters-dials-defs.json)
 export { MissingTextures, retryTransient, transientLoadError } from '../retry.ts';
 // The skin map a parsed fighter lacks ('' when it has them all): a creature's body needs map + roughnessMap, a warrior's Steel map + normalMap.
@@ -727,16 +727,16 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         const fin = finisherBodyPose(pose), tmpl = fin?.row.template, staged = tmpl === 'hamstring' || tmpl === 'execute', fell = fin?.side === 'victim';
         if (tmpl !== 'bisect' && opened) { opened.group.visible = false; root.visible = true; }
         if (fin && staged && !clips[fin.role as Role]) throw new Error(`${fin.row.id[0]!.toUpperCase()}${fin.row.id.slice(1)} clips are not installed on this rig`);
-        const step = Math.max(0, Math.min(dt, CLAMP_0_1));
+        const step = Math.max(0, Math.min(dt, STEP_MAX));
         speed += (Math.abs(travelSpeed) - speed) * (1 - Math.exp(-step * 14));
         if (speed < 0.015) speed = 0;
         for (const role of ['Walk', 'Jog', 'Run'] as const) actions[role].setEffectiveTimeScale(travelSpeed < 0 ? -1 : 1);
         const gait = gaitWeights(speed), weights: Partial<Record<Role, number>> = { Idle: gait[0], Walk: gait[1], Jog: gait[2], Run: gait[3] };
         // An armed rig with its own run (armedRun) blends ArmedWalk into it from 3.2 to 4 m/s and keeps it above; without one the armed walk holds to 4.2 and the plain Run takes over, as before.
         if (pose !== 'sheathed' && (speed < 4.2 || armedRun)) { const movement = 1-gait[0], side = Math.min(1,Math.abs(lateral)), run = armedRun ? MathUtils.smoothstep(speed, 3.2, 4) : 0; weights.Walk = weights.Jog = weights.Run = 0; weights.ArmedWalk = movement*(1-side)*(1-run); weights[lateral < 0 ? 'StrafeLeft' : 'StrafeRight'] = movement*side*(1-run); weights.ArmedRun = movement*run; }
-        actions.ArmedWalk.setEffectiveTimeScale((travelSpeed < 0 ? -1 : 1)*Math.max(CLAMP_0_25,speed/(1.7*stride)));
-        actions.ArmedRun.setEffectiveTimeScale((travelSpeed < 0 ? -1 : 1)*Math.max(CLAMP_0_5,speed/(5.2*stride)));   // the sprint's ground speed is the gait table's 5.2 m/s knot
-        for (const role of ['StrafeLeft', 'StrafeRight'] as const) actions[role].setEffectiveTimeScale(Math.max(CLAMP_0_25,speed/(.75*stride)));
+        actions.ArmedWalk.setEffectiveTimeScale((travelSpeed < 0 ? -1 : 1)*Math.max(WALK_RATE_MIN,speed/(1.7*stride)));
+        actions.ArmedRun.setEffectiveTimeScale((travelSpeed < 0 ? -1 : 1)*Math.max(RUN_RATE_MIN,speed/(5.2*stride)));   // the sprint's ground speed is the gait table's 5.2 m/s knot
+        for (const role of ['StrafeLeft', 'StrafeRight'] as const) actions[role].setEffectiveTimeScale(Math.max(WALK_RATE_MIN,speed/(.75*stride)));
         const combatRole: Role | null = pose === 'block' ? 'BlockImpact' : pose === 'parry' ? 'Parry' : pose === 'deflected' ? 'Deflected' : pose === 'kick' ? 'Kick' : pose === 'attack' ? attack === 'return' ? 'Return' : attack === 'heavy' ? 'Heavy' : attack === 'riposte' ? 'Riposte' : attack === 'thrust' ? 'Thrust' : attack === 'pommel' ? 'Pommel' : 'Attack' : pose === 'hit' ? 'Hit' : pose === 'death' ? 'Death' : fin ? fin.role as Role : pose === 'draw' ? drawRole(weapon) : pose === 'roll' ? 'Roll' : pose === 'guard' ? 'Guard' : null;
         const armed = pose !== 'sheathed';
         if (armed) { weights.Armed = weights.Idle; weights.Idle = 0; }
@@ -749,7 +749,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
           // the weight snaps like a live blade does — the parry's hit-stop runs at dt 0, where an eased weight would hold the attack pose.
           a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
-          if (role === combatRole) a.time = Math.min(CLAMP_0_999999, Math.max(0, pose === 'attack' ? swingProgress(progress, contact, specs[attack].source) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
+          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? swingProgress(progress, contact, specs[attack].source) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
         }
         if (!weaponNode) { drawn!.visible = armed && (pose !== 'draw' || progress >= .29); sheathed!.visible = !drawn!.visible; }
         anchor.position.set(0, 0, 0); // only the presentation anchor steps into a Run Through
@@ -910,7 +910,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         for (const prop of group.children) if (prop instanceof Mesh) prop.geometry.translate(-center.x, -center.y, -center.z);
         group.position.copy(center);
         bone.scale.setScalar(.0001);   // no clip tracks bone scale, so the collapse holds; the neck-blend smear hides under the sever burst
-        return { group, radius: Math.max(CLAMP_0_07, Math.min(CLAMP_0_24, Math.max(size.x, size.z) * .38)) };
+        return { group, radius: Math.max(PROP_RADIUS_MIN, Math.min(PROP_RADIUS_MAX, Math.max(size.x, size.z) * .38)) };
       },
       // A fresh match (rematch): the rig grows its head back; the caller has already disposed the world-parented prop.
       unsever() {
@@ -1081,7 +1081,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         const pommelward = blade.localToWorld(new Vector3(0, -1, 0)).sub(blade.localToWorld(new Vector3())).normalize();
         const goal = swordHand.getWorldPosition(new Vector3()).addScaledVector(pommelward, .07);
         const a2 = s.distanceTo(e), b2 = e.distanceTo(h), dir = goal.clone().sub(s);
-        const d = Math.max(CLAMP_0_03, Math.min(dir.length(), a2 + b2 - .001)); dir.normalize();
+        const d = Math.max(JOINT_REACH_MIN, Math.min(dir.length(), a2 + b2 - .001)); dir.normalize();
         const along = (a2*a2 - b2*b2 + d*d) / (2*d), bend = e.clone().sub(s);
         bend.addScaledVector(dir, -bend.dot(dir)); if (bend.lengthSq() < 1e-6) return; bend.normalize();
         const elbow = s.clone().addScaledVector(dir, along).addScaledVector(bend, Math.sqrt(Math.max(0, a2*a2 - along*along)));

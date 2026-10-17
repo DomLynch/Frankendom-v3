@@ -5,7 +5,7 @@ import { hitBy, OPPONENT_SIDE, registerSignature, type SignatureFrame } from './
 import type { CombatEvent } from './duel.ts';
 import { sigNum, sigObj } from './signature-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_4 = fxNum('clamp.signature-nightborn.4');
+const TRAIL_STRETCH_MAX = fxNum('fx.signatureNightborn.trailStretchMax');
 
 // Nightborn, variant A: Blood Recall (docs/briefs/signature-effects.md row 4). A wound he opens throws a few droplets that stop and hang
 // for a beat, then fly back up his blade and are gone into it. Feeding, visual only: nothing is healed, nothing is drawn from a bar.
@@ -99,7 +99,7 @@ export function createBloodRecall(look: RecallLook = RECALL_A) {
         if (look.stretch > 0) {
           recallPosition(before, from, velocities[i], tip, Math.max(0, t - TRAIL_STEP));
           at.subVectors(scratch.position, before);
-          length = 1 + Math.min(CLAMP_4, at.length() / TRAIL_STEP * look.stretch);
+          length = 1 + Math.min(TRAIL_STRETCH_MAX, at.length() / TRAIL_STEP * look.stretch);
         } else at.copy(tip).sub(scratch.position);
         if ((look.stretch > 0 || fly > 0) && at.lengthSq() > 1e-8) scratch.quaternion.setFromUnitVectors(THREE.Object3D.DEFAULT_UP, at.normalize()); else scratch.quaternion.identity();
         scratch.scale.set(s, s * length, s);

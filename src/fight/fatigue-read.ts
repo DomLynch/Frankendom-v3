@@ -8,8 +8,8 @@ import type { Fatigue } from './fatigue.ts';
 import type { FatigueTune } from './fatigue-layer.ts';
 import { offFlag } from '../off-flag.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_6 = fxNum('clamp.fatigue-read.0.6');
-const CLAMP_1_1 = fxNum('clamp.fatigue-read.1.1');
+const DEPTH_MIN = fxNum('fx.fatigueRead.depthMin');
+const DEPTH_MAX = fxNum('fx.fatigueRead.depthMax');
 
 export const fatigueReadFrom = (search: string): boolean => !offFlag(search, 'fatigue-read');
 
@@ -24,7 +24,7 @@ export type FatigueReadPose = { spine1: number; spine2: number; spine3: number; 
 // Radians, rig convention (+x on a spine bone leans forward). `shrug` and `heave` are the shoulder lift (both clavicles, about the fighter's forward axis)
 // and its breath term. `guard` is 0..1 of the off hand's extra sink. `arm` is the live layer's sword-arm sag, passed through unchanged.
 export function fatigueRead(f: In, phase: number, calm: number, live: { arm: number }, t?: FatigueTune): FatigueReadPose {
-  const w = readWeight(f) * calm, depth = Math.max(CLAMP_0_6, Math.min(CLAMP_1_1, t?.depth ?? 1)), b = Math.sin(phase) * (1 + Math.sin(phase * .37) * .25 * f.gassed);
+  const w = readWeight(f) * calm, depth = Math.max(DEPTH_MIN, Math.min(DEPTH_MAX, t?.depth ?? 1)), b = Math.sin(phase) * (1 + Math.sin(phase * .37) * .25 * f.gassed);
   const pitch = .6 * w * depth;   // 34 degrees over the three spine bones at full (15 when winded): from behind a smaller pitch is foreshortened to nothing
   return {
     spine1: pitch * .4, spine2: pitch * .35 - b * .035 * w, spine3: pitch * .25 - b * .05 * w,
