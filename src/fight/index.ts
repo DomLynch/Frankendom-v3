@@ -4,6 +4,7 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
+export { pickSpell } from './spell-pick.ts';   // the equipped-spell pick (the Zone 1 page casts through the door)
 export type { Match } from './match.ts';   // type only (origins/preview/world-record.ts reads a Match without importing the Pit's flow module)
 export type { WorldMount } from './scene.ts';
 export const loadScene = () => import('./scene.ts');   // K7 row 10: the fight scene is a lazy chunk (a static export pulled it out of pit-duel's chunk and its warm-up); same pattern as loadFeedback
@@ -26,7 +27,7 @@ export * from './twist.ts';
 export * from './replay.ts';
 export { createWorldCombat, finishOf, ME, JOIN_M, MAX_STEPS, kindOf, type PairContacts, type WorldCombatDeps, type FightMob, type MobsPort, type MobPose } from './world-combat.ts';   // Zone 1's mount of the open-world loop (any client supplies the mob layer as a port)
 export { encodeWorldRecord, type WorldRecord } from './world-record.ts';   // the world fight's record the page sends on kill_report (the server replays it: origins/server/world-verify.ts)
-export { createHud, createMeters, fillMeter, paintMeter, HEAVY_MOVES, KICK_LANDS, type HudView, type MeterState } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, whose re-export shim is gone)
+export { createHud, createZoneBars, fillMeter, paintMeter, HEAVY_MOVES, KICK_LANDS, type HudView, type MeterState } from './hud.ts';   // the combat HUD (K10: moved here from src/hud.ts, whose re-export shim is gone)
 export { woundSpec, type WoundSpec } from './wounds.ts';   // K5: a creature's wounds row (which part a hit lands on, how it bleeds)
 export { createWoundFx } from './wounds-fx.ts';
 export type { FinisherId } from './finishers.ts';
@@ -37,7 +38,13 @@ export { legendForLevel, LEGEND_OPPONENTS, type LegendOpponent } from '../legend
 export { bareName } from '../roster.ts';   // a roster name without its article (K12)
 export { createZoneFx } from './zone-fx.ts';   // the zones' contact effects: one createFightFx per active pair
 export { createFeedback } from './sound/feedback.ts';   // the Pit's combat cue player (K8 row 12: the zone page reaches it through here)
-export { creaturesLook, type CreatureCue } from './sound/creature.ts';   // ?look=creatures and the creature cue names
+export { creaturesLook, type CreatureCue } from './sound/creature.ts';
+export { groundLootCue, GROUND_LOOT_KINDS, type GroundLootKind } from './sound/ground-loot.ts';   // the ground-loot cue rows (drop, pickup, refuse); a page plays one with feedback.groundLoot(kind)   // ?look=creatures and the creature cue names
 export const loadFeedback = () => import('./sound/feedback.ts').then((m) => m.createFeedback());   // K8 slice 2: the Pit's cue player as a lazy chunk (the zone builds it at its first gesture, not with the page)
-export { createFollowCamera, inPassage, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
+// The 700-row spell catalogue as a lazy chunk (the SPELL 2 button's name; never in the entry bundle). The import( sits on its own line behind .then so tests/bundle-no-spells.test.ts's line-start
+// scan reads it as the dynamic edge it is, not a static re-export.
+export const loadSpellInfo = () => Promise.resolve()
+  .then(() => import('./spell-catalogue.ts')).then((m) => m.SPELL_INFO);
+export { createFollowCamera, inPassage, type CombatCam, type CombatFraming, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
 export { MAX_ATTACKERS } from './attackers.ts';
+export { finishedAs } from './rank-tint.ts';   // a finish row on a piece's metal (the ground-item view, origins/preview)

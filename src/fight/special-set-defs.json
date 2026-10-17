@@ -9,7 +9,8 @@
     {"id":"shieldmaiden","specials":["baredface","thering","aegissweep"]},
     {"id":"witch","specials":["avalonmist","foretoldstep","theprice"]},
     {"id":"plaguedoctor","specials":["plagueflies","poisonstain","lastbreath"]},
-    {"id":"knight","specials":["thesling","wrath","stormfollowshim"]}
+    {"id":"knight","specials":["thesling","wrath","stormfollowshim"]},
+    {"id":"cave-troll","specials":["crackingground","crackingground","crackingground"],"from":2}
   ],
   "ranks": [
     {"id":"first","level":36},

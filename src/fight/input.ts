@@ -68,7 +68,7 @@ export function createInput(env: InputEnv) {
   const attackButton = element<HTMLButtonElement>('attack-button');
   const kickButton = element<HTMLButtonElement>('kick-button');
   const heavyButton = element<HTMLButtonElement>('heavy-button');
-  const skillButton = element<HTMLButtonElement>('skill-button');
+  const skillButton = element<HTMLButtonElement>('skill-button'), skill2Button = element<HTMLButtonElement>('skill2-button');
   const dodgeButton = element<HTMLButtonElement>('dodge-button');
   const guardButton = element<HTMLButtonElement>('guard-button');
   const thrustButton = element<HTMLButtonElement>('thrust-button');
@@ -115,6 +115,9 @@ export function createInput(env: InputEnv) {
   // move equipped, while it cools or below its stamina, as it refuses any move the player cannot make.
   function requestSkill() {
     request('skill');
+  }
+  function requestSkill2() {   // slot b (spell-slot-defs.json): legal() refuses it with an empty slot, while it cools or below its stamina
+    request('skill2');
   }
   let run = false,
     stickRun = false,
@@ -298,6 +301,19 @@ export function createInput(env: InputEnv) {
     if (event.button === 0) {
       event.preventDefault();
       requestSkill();
+    }
+  });
+  skill2Button.addEventListener('pointerdown', (event) => {
+    if (event.button === 0) {
+      event.preventDefault();
+      requestSkill2();
+    }
+  });
+  skill2Button.addEventListener('pointercancel', () => withdraw('skill2'));
+  skill2Button.addEventListener('keydown', (event) => {
+    if (['Space', 'Enter'].includes(event.code) && !event.repeat) {
+      event.preventDefault();
+      requestSkill2();
     }
   });
   skillButton.addEventListener('pointercancel', () => withdraw('skill'));

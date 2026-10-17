@@ -7,6 +7,7 @@ import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_W
 import { worldRule } from './world-rules.ts';
 import { POOLS } from './pools.ts';
 import type { Sheet } from './sheet-rows.ts';
+import type { Spell } from './spell-cast.ts';
 import { CAPS } from './gear-caps.ts';
 import { GAMBIT_ODDS } from './gambit.ts';
 import { asStance, moodOf, type PickedStance, type StanceId } from './stance.ts';
@@ -29,6 +30,7 @@ export { AGGRO_M, SIGHT_M };   // (src/fight/threat-defs.json awareness rows)
 // SIGHT_M: a hunting creature keeps the player in sight inside this ring (hysteresis over AGGRO_M); past it the unseen clock runs
 export const ENGAGE_M = worldRule('engage'), ENGAGE_OUT_M = worldRule('engageOut');           // the nearest foe this close fights him on the Pit's duel; it stays there out to ENGAGE_OUT_M. Chase before that, leash and give-up after, are the world layer
 export { MAX_ATTACKERS };   // creatures on one player at once (Dom: three on one): the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring
+export const EVADE_WHIFFS = worldRule('evadeWhiffs'), EVADE_HEAL_TO_FULL = worldRule('evadeHealToFull') === 1;   // a creature whose last EVADE_WHIFFS attack cycles all ended without contact gives up like past the leash (AzerothCore EnterEvadeMode); it heals to full on arrival home
 export const HOLD_M = ENGAGE_M * worldRule('holdFactor');                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
 /** Creature levels (Dom: copy the Pit): a creature of level L has the Pit's own level body (moves.ts `opponentAt`: health and poise by level) and, in a fight, the Pit's level brain (`profileAt`). No Zone 1 scaling of our own. */
 export const MAX_LEVEL = LEVELS;
@@ -36,6 +38,7 @@ export const levelHealth = (kind: string, level: number): number => opponentAt(O
 /** PvP (Dom via Strategy): no toggle. The SERVER sets `Fighter.pvp` each step to "attackable here, now" (wild zone = true, safe-town volume = false); the rules below decide between two such players.
  *  Under PROTECT_LEVEL a player is shielded until his own first attack; nobody may fight a player more than MAX_LEVEL_GAP levels away. A player's blows always land on creatures, whatever the flags. */
 export const PROTECT_LEVEL = worldRule('protectLevel'), MAX_LEVEL_GAP = worldRule('maxLevelGap');
+const TAU = Math.PI * 2, RETARGET_CONE = worldRule('retargetCone') * (TAU / 360), RETARGET_GAP_S = worldRule('retargetGap');   // many-on-one (A): at ready, the creature in front of the hero (half-angle, deg) becomes his foe; at most one swap per gap (s)
 export const AGGRO_WINDOW_S = worldRule('aggroWindow');                       // a player who hit you in the last minute is not "first" when you hit back
 
 export type Phase = 'ready' | 'guard' | 'roll' | 'windup' | 'active' | 'recover' | 'stagger' | 'dead';
@@ -47,15 +50,19 @@ export type Fighter = {
   phase: Phase; t: number;                              // the Pit fighter's phase, mapped, and seconds spent in it (World animates from these)
   posture: number;                                      // posture (0..RULES.posture.max), the Pit's
   exhausted: boolean;                                   // stamina hit zero: no new action, slower, until it is back past RULES.exhaustRecover
+  retargetAt?: number;                                  // player only: the world time of his last foe swap (many-on-one retarget gap)
   homeX: number; homeZ: number;                         // creature only: where it spawned (it walks back here)
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight
+  whiffs: number; cycle: boolean; reached: boolean;     // creature only: consecutive attack cycles that ended without contact (a swing on empty air, or an approach the prey left before the swing); `cycle` = a windup is open; `reached` = it has been inside the engage ring this approach. At EVADE_WHIFFS it evades.
   returning: boolean;                                   // creature only: it gave up and is walking home (it heals to full on arrival, no event)
   special: SpecialName | null; specialIn: number;       // the named special this fighter can cast (moves.ts specialOf), seconds until it is ready; with one, the SKILL button is the special (the Pit has one button)
   skill: SkillId | null;                                // the equipped skill (moves.ts SkillId, the Pit's `equippedSkill(profile.loot)`; null = none): the SKILL button fires its move when no special is set (duel.ts `Fighter.skill`)
   stance?: StanceId;                                    // src/fight/stance.ts: the Pit's table (absent = Balanced)
   weapon?: WeaponId;                                    // the hero's drawn weapon (absent = the Pit's DEFAULT_WEAPON): open-fight.ts builds his Pit fighter with it, as initialDuel does; a creature's is its row's
   sheet?: Sheet;                                        // the hero's sheet (Wave A1, sheet-rows.ts): the Pit's own withSheet runs on his Pit fighter, so the dials (health, attack, armour, poise, recovery ...) mean here what they mean in the Pit; absent = no sheet, today's hero
+  spell2?: Spell;                                       // slot b (spell-slot-defs.json): the second equipped spell, cast by Input.special2; absent = one slot, today's hero byte for byte
+  spell?: Spell;                                        // the hero's equipped spell, resolved (spell-cast.ts resolveSpell): the Pit's own cast runs on his Pit fighter, and Input.special is the cast press (the SKILL button); absent = no spell, today's hero byte for byte
   brain?: AiState;                                      // creature only: its Pit brain (wait, decision, habits, rng) kept ON THE CREATURE, so a rebuilt fight (a pack's next bout, a re-engage) resumes its swing timing instead of restarting at the opening wait of 90 ticks (#1936 b)
   cc?: CcLadder;   // the crowd-control ladder (cc-ladder.ts): ONE per fighter, carried through every bout he is in, so three creatures on one hero step the same stun / knockdown ladder
   ccGuard?: CcGuard;   // a creature's immuneTier / resist rows from its catalogue row (cc-ladder.ts); absent = none
@@ -64,7 +71,7 @@ export type Fighter = {
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
 };
 export type World = { time: number; fighters: Fighter[]; aggro: Record<string, Record<string, number>>; streams: Record<string, Bout> };   // streams: slot-0 player id -> his fight (a Pit duel); aggro[attacker][victim] = when the attacker last struck that player
-export type Input = { x: number; z: number; special?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; guard?: boolean; roll?: { x: number; z: number } | null; guardDirection?: Direction | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
+export type Input = { x: number; z: number; special?: boolean; special2?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; guard?: boolean; roll?: { x: number; z: number } | null; guardDirection?: Direction | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
 /** The Pit's own CombatEvent behind a Zone 1 event (location, direction, material, weapon, counter, rear, charged ...): gore, wounds, finishers, hit-impact and the clip driver read the Pit's event, not our summary of it. */
 export type Event = EventBody & { pit?: CombatEvent };
 type EventBody =
@@ -85,13 +92,15 @@ const OPPONENT = (kind: string) => (OPPONENTS as Record<string, (typeof OPPONENT
 
 function fighter(id: string, side: Fighter['side'], kind: string, x: number, z: number, facing: number, radius: number, health: number, poise: number): Fighter {
   return { id, side, kind, x, z, facing, radius, health, maxHealth: health, stamina: STAMINA_MAX, maxStamina: STAMINA_MAX, poise, phase: 'ready', t: 0, posture: 0, exhausted: false,
-    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, returning: false, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
+    homeX: x, homeZ: z, hunting: false, chaseX: x, chaseZ: z, unseen: 0, whiffs: 0, cycle: false, reached: false, returning: false, special: null, specialIn: 0, skill: null, pvp: false, level: 1, shielded: false };
 }
 /** The player: the Pit's own hero (createFighter + withSheet), his bar and poise from that builder; no gear multiplier lives in the world (the sheet carries Attack and armour). */
-export const player = (id: string, x: number, z: number, facing = 0, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet }): Fighter => {
+export const player = (id: string, x: number, z: number, facing = 0, level = 1, skill: SkillId | null = null, build?: { weapon?: WeaponId; sheet?: Sheet; spell?: Spell; spell2?: Spell }): Fighter => {
   const base: Fighter = { ...fighter(id, 'player', 'player', x, z, facing, PLAYER_RADIUS, RULES.health, 0), level, shielded: level < PROTECT_LEVEL, skill };
   if (build?.weapon !== undefined) base.weapon = build.weapon;
   if (build?.sheet !== undefined) base.sheet = build.sheet;
+  if (build?.spell !== undefined) base.spell = build.spell;
+  if (build?.spell2 !== undefined) base.spell2 = build.spell2;
   const sized = heroSheeted(base);   // the Pit's builder sizes the bar and the poise (no sheet = createFighter's own hero)
   base.maxHealth = sized.maxHealth; base.health = sized.maxHealth; base.poise = sized.poise;
   return base;
@@ -143,6 +152,12 @@ function separate(f: Fighter, all: Fighter[]): void {
 }
 
 /** The next world: who fights whom, then every fight stepped on the Pit's duel; creatures that are not in a fight chase, hold off at the ring, give up or walk home. Never mutates its input. The Pit's brain decides every creature blow, so there is no randomness here. */
+/** The many-on-one cut on a creature's duel against a player: the creature is the `slot`th attacker on him (Duel.crowd; slot 1 = no cut, the key is dropped so the Pit's own fights stay byte for byte). */
+const slotted = (duel: Bout['duel'], slot: number): Bout['duel'] => {
+  const rest = { ...duel }; delete rest.crowd;
+  return slot > 1 ? { ...rest, crowd: { from: 1, slot, kind: 'mob' } } : rest;
+};
+
 export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>, dt: number): { world: World; events: Event[] } {
   const clock = Math.round(world.time * 60);   // the world's clock in Pit ticks: the crowd-control ladder's window runs on it, across every bout
   const events: Event[] = [];
@@ -175,7 +190,13 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
   }
   const take = (p: Fighter, only: (c: Fighter) => boolean): Fighter | null => {
     const near = creatures.filter((c) => alive(c) && !c.returning && !claimed.has(c.id) && only(c)).sort((x, y) => dist(x, p) - dist(y, p));
-    return near.find((c) => c.id === prevFoe(p) && dist(c, p) <= ENGAGE_OUT_M) ?? near.find((c) => reach(c, p)) ?? null;
+    const keep = near.find((c) => c.id === prevFoe(p) && dist(c, p) <= ENGAGE_OUT_M);
+    // Many-on-one (A): a joiner is hittable. At ready (not mid-swing), a foe he is not facing gives way to the creature in front of him (smallest turn inside the cone), at most one swap per gap.
+    if (keep && p.phase === 'ready' && world.time - (p.retargetAt ?? -Infinity) >= RETARGET_GAP_S) {
+      const turn = (c: Fighter): number => { const d = (aim(p, c) - p.facing) % TAU; return Math.abs(d > TAU / 2 ? d - TAU : d < -TAU / 2 ? d + TAU : d); };
+      if (turn(keep) > RETARGET_CONE) { const front = near.filter((c) => c !== keep && reach(c, p) && turn(c) <= RETARGET_CONE).sort((x, y) => turn(x) - turn(y) || dist(x, p) - dist(y, p))[0]; if (front) { p.retargetAt = world.time; return front; } }
+    }
+    return keep ?? near.find((c) => reach(c, p)) ?? null;
   };
   const foes = new Map<string, Fighter | null>();
   for (const p of free) { const foe = take(p, (c) => chose.get(c.id) === p.id); if (foe) claimed.add(foe.id); foes.set(p.id, foe); }
@@ -201,7 +222,8 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
 
   for (const { a, b } of bouts) {
     const prev = world.streams[a.id], same = prev && prev.foe === (b?.id ?? null);
-    const bout: Bout = same ? prev : openBout(a, b, prev && !same && prev.duel.fighters[0] ? prev.duel.fighters[0] : undefined);
+    const opened: Bout = same ? prev : openBout(a, b, prev && !same && prev.duel.fighters[0] ? prev.duel.fighters[0] : undefined);
+    const bout: Bout = opened.duel.crowd ? { ...opened, duel: slotted(opened.duel, 1) } : opened;   // the primary foe is the 1st attacker on him: full blow (a joiner promoted to primary sheds its slot)
     const r = stepBout(bout, a, b ?? undefined, inputs[a.id] ?? IDLE_INPUT, b && b.side === 'player' ? inputs[b.id] ?? IDLE_INPUT : IDLE_INPUT, dt, clock);
     if (b && b.side === 'creature' && r.bout.ai) b.brain = carried(r.bout.ai, r.bout.duel.tick);   // the brain lives on the creature, not in the fight
     if (b && b.side === 'creature' && !engagedWith(a, b.id)) events.push({ type: 'FightStarted', creature: b.id, player: a.id });
@@ -213,7 +235,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     for (const c of joined.get(a.id) ?? []) {
       const had = prevJoined.get(c.id) ?? (prev?.foe === c.id ? prev : undefined), jb = had ?? openBout(a, c);
       if (!engagedWith(a, c.id)) events.push({ type: 'FightStarted', creature: c.id, player: a.id });
-      const jr = stepBout(jb, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);
+      const jr = stepBout({ ...jb, duel: slotted(jb.duel, 2 + r.bout.joined.length) }, a, c, passive, IDLE_INPUT, dt, clock); r.bout.joined.push(jr.bout); events.push(...jr.events);   // the Nth attacker on him (primary 1st, joiners in join order): 1.0 / 0.5 / 0.3 (swarm-defs.json slots), re-read every tick so a death moves the rest up
       if (jr.bout.ai) c.brain = carried(jr.bout.ai, jr.bout.duel.tick);
       if (alive(a)) Object.assign(a, keep); else { Object.assign(a, { x: keep.x, z: keep.z, facing: keep.facing }); break; }   // killed by a joiner: he stays dead (Auditor, #1943); the other joiners stop
       if (alive(c) && M.hypot(c.x - c.chaseX, c.z - c.chaseZ) > leashOf(c.kind)) { c.hunting = false; c.returning = true; c.phase = 'ready'; }
@@ -229,6 +251,28 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     if (b && b.side === 'creature' && alive(b) && M.hypot(b.x - b.chaseX, b.z - b.chaseZ) > leashOf(b.kind)) { b.hunting = false; b.returning = true; b.phase = 'ready'; }   // the leash is the world layer's, on the duel too
   }
 
+  // Evade (Lead + Strategy 2026-10-16; donor AzerothCore EnterEvadeMode): a creature whose last EVADE_WHIFFS attack cycles all ended without contact gives up by the same exit as the leash (it walks home untargetable and heals to full on arrival).
+  // A cycle with no contact is a swing that resolved on empty air, or an approach the prey left (out past the engage-out ring) before the swing started. A cycle cut short by a stagger does not count; only the creature's OWN landed, blocked,
+  // parried or dodged blow resets the count, never the hero hitting it. A farmed creature is free to act and whiffs; a stagger-locked one does not swing, so it never trips this.
+  const contact = new Set<string>(), telegraphed = new Set<string>(), staggered = new Set<string>();
+  for (const e of events) {
+    if (e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'Dodged') contact.add(e.attacker);
+    else if (e.type === 'Telegraph') telegraphed.add(e.id);
+    else if (e.type === 'Staggered') staggered.add(e.id);
+  }
+  for (const c of creatures) {
+    if (!alive(c) || c.returning || !c.hunting) { c.whiffs = 0; c.cycle = false; c.reached = false; continue; }
+    if (contact.has(c.id)) { c.whiffs = 0; c.cycle = false; }
+    else if (staggered.has(c.id)) { c.cycle = false; c.reached = false; }
+    else {
+      if (telegraphed.has(c.id)) { if (c.cycle) c.whiffs++; c.cycle = true; c.reached = false; }   // a new windup with the last one never touching
+      else if (c.cycle && c.phase === 'ready') { c.whiffs++; c.cycle = false; }                      // the swing resolved on air
+      const d = players.reduce((m, p) => Math.min(m, dist(c, p)), Infinity);
+      if (d <= ENGAGE_M) c.reached = true; else if (c.reached && !c.cycle && d > ENGAGE_OUT_M) { c.whiffs++; c.reached = false; }   // it closed to the ring and the prey left before the swing began
+    }
+    if (c.whiffs >= EVADE_WHIFFS) { c.hunting = false; c.returning = true; c.phase = 'ready'; c.whiffs = 0; c.cycle = false; c.reached = false; }
+  }
+
   // The world layer for every creature not in a fight: chase to the hold ring (and wait there), give up, walk home.
   for (const f of creatures) {
     if (!alive(f) || inFight.has(f.id)) continue;
@@ -242,7 +286,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     const prey = players.sort((a, b) => dist(f, a) - dist(f, b))[0];
     if (f.returning) {   // gave up: walks home at its amble, heals to full on arrival (no event)
       const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
-      if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
+      if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; if (EVADE_HEAL_TO_FULL) f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
       else { f.facing = M.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
     } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < giveUpOf(f.kind) : dist(f, prey) <= AGGRO_M)) {
       if (!f.hunting) { f.hunting = true; f.chaseX = f.x; f.chaseZ = f.z; f.unseen = 0; }

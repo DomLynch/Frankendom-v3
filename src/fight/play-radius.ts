@@ -1,5 +1,5 @@
-import { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE } from './play-radius-rows.ts';   // the dials are rows (play-radius-defs.json)
-export { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE };
+import { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE, SPAWN_FLOOR } from './play-radius-rows.ts';   // the dials are rows (play-radius-defs.json)
+export { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE, SPAWN_FLOOR };
 // The play circle's size, keyed on the fight (Dom 2026-10-06: Arena 1 comes inward to 0.36 (first 0.6, then 0.6 of that), "more intimate and impactful"). Arena 1 is the
 // ladder's first band (arena-themes.ts ARENA_PICK; tests/play-radius.test.ts pins this list against LADDER). A record's version picks the
 // circle it was fought in: below FIRST_SCALED_VERSION every fight is the old 8.55 m, so no shared link replays a different fight (detmath.ts
@@ -11,7 +11,7 @@ export const FIRST_SCALED_VERSION = 23;
 export const ARENA_ONE: readonly string[] = ['veteran', 'pitborn'];   // the ladder's first band only; any other or unknown id keeps the old circle (fails closed)
 export const playScaleFor = (opponent: string, version: number): number => version >= FIRST_SCALED_VERSION && ARENA_ONE.includes(opponent) ? ARENA_ONE_SCALE : 1;
 // Where the fighters start, in the same fractions of the circle: the old 4 m / -2.5 m at full size, shrunk with the circle but never closer than half (a sword's reach and the draw beat need room).
-export const spawnScale = (): number => Math.max(PLAY_SCALE, 0.5);
+export const spawnScale = (): number => Math.max(PLAY_SCALE, SPAWN_FLOOR);
 export let PLAY_SCALE = 1;
 export let RADIUS = BASE_RADIUS;
 // `k` is the arena's drawn size. In the full arena the circle is the old 8.55 m; in a smaller one the wall is the boundary: fighters stop AT its inner face (Dom 2026-10-06), so the floor out to the wall is fought on.

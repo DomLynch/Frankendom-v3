@@ -1,6 +1,11 @@
 {
   "rules": [
     { "id": "aimPerShrink", "value": 1.4, "unit": "m" },
+    { "id": "worldGapFloor", "value": 0.8, "unit": "m" },
+    { "id": "worldSideMax", "value": 1.1, "unit": "m" },
+    { "id": "worldSideBase", "value": 0.7, "unit": "m" },
+    { "id": "worldSideLow", "value": 0.4, "unit": "ratio" },
+    { "id": "worldSideRef", "value": 4, "unit": "m" },
     { "id": "lowSide", "value": 0.5, "unit": "m" },
     { "id": "lowLift", "value": 0.8, "unit": "m" },
     { "id": "tallBack", "value": 2.4, "unit": "m" },
@@ -21,6 +26,21 @@
     { "id": "tourRadius", "value": 5.2, "unit": "m" },
     { "id": "tourBreath", "value": 1.3, "unit": "m" },
     { "id": "tourLookY", "value": 0.7, "unit": "m" },
-    { "id": "tourLookYPortrait", "value": 1.3, "unit": "m" }
+    { "id": "tourLookYPortrait", "value": 1.3, "unit": "m" },
+    { "id": "introLap", "value": 52, "unit": "s" },
+    { "id": "introRadius", "value": 5.6, "unit": "m" },
+    { "id": "introBreath", "value": 0.5, "unit": "m" },
+    { "id": "introBreathe", "value": 19, "unit": "s" },
+    { "id": "introHeight", "value": 1.9, "unit": "m" },
+    { "id": "introRise", "value": 0.7, "unit": "m" },
+    { "id": "introRiseEvery", "value": 26, "unit": "s" },
+    { "id": "introLookY", "value": 1.0, "unit": "m" },
+    { "id": "introLookYPortrait", "value": 1.3, "unit": "m" },
+    { "id": "introBlendIn", "value": 2.5, "unit": "s" },
+    { "id": "introBlendOut", "value": 1.5, "unit": "s" },
+    { "id": "arenaClamp", "value": 11.5, "unit": "m" },
+    { "id": "lockBackFloor", "value": 4.2, "unit": "m" },
+    { "id": "lockLiftFloor", "value": 3.2, "unit": "m" },
+    { "id": "lockGapFloor", "value": 0.8, "unit": "m" }
   ]
 }

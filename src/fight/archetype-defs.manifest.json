@@ -23,6 +23,7 @@
       "optional": {
         "guard": "object",
         "regen": "number",
+        "sheet": "object",
         "speed": "number"
       }
     }

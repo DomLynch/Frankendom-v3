@@ -10,5 +10,15 @@
     {"id": "rank8", "rank": 8, "perFoe": 3, "cap": 9},
     {"id": "rank9", "rank": 9, "perFoe": 3, "cap": 9},
     {"id": "rank10", "rank": 10, "perFoe": 3, "cap": 9}
+  ],
+  "slots": [
+    {"id": "mob1", "kind": "mob", "slot": 1, "percent": 100},
+    {"id": "mob2", "kind": "mob", "slot": 2, "percent": 50},
+    {"id": "mob3", "kind": "mob", "slot": 3, "percent": 30},
+    {"id": "mob4", "kind": "mob", "slot": 4, "percent": 30},
+    {"id": "pvp1", "kind": "pvp", "slot": 1, "percent": 100},
+    {"id": "pvp2", "kind": "pvp", "slot": 2, "percent": 50},
+    {"id": "pvp3", "kind": "pvp", "slot": 3, "percent": 30},
+    {"id": "pvp4", "kind": "pvp", "slot": 4, "percent": 30}
   ]
 }

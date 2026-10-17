@@ -2,6 +2,7 @@
   "tables": [
     { "table": "audio-rule", "file": "audio-rules-defs.json", "at": "rules", "key": "id", "required": { "value": "number", "unit": "string" } },
     { "table": "creature-throat", "file": "audio-rules-defs.json", "at": "throats", "key": "id", "required": { "f0": "number", "f1": "number", "f2": "number", "rasp": "number" } },
-    { "table": "power-word-caster", "file": "audio-rules-defs.json", "at": "casters", "key": "id", "required": { "f0": "number", "breath": "number", "syllable": "number" } }
+    { "table": "power-word-caster", "file": "audio-rules-defs.json", "at": "casters", "key": "id", "required": { "f0": "number", "breath": "number", "syllable": "number" } },
+    { "table": "ground-loot-cue", "file": "audio-rules-defs.json", "at": "groundLoot", "key": "id", "required": { "cue": "string", "gain": "number", "room": "number", "rate": "number" } }
   ]
 }

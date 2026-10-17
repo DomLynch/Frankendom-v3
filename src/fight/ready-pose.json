@@ -10,6 +10,7 @@
     { "id": "plaguedoctor", "spine2": -8, "spine3": -8, "neck": 10 },
     { "id": "knight", "spine2": -8, "spine3": -8, "neck": 10 },
     { "id": "witch", "spine2": -8, "spine3": -8, "neck": 10 },
-    { "id": "shieldmaiden", "spine2": -8, "spine3": -8, "neck": 10 }
+    { "id": "shieldmaiden", "spine2": -8, "spine3": -8, "neck": 10 },
+    { "id": "cave-troll", "spine2": -8, "spine3": -8, "neck": 10 }
   ]
 }

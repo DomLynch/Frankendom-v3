@@ -1,0 +1,14 @@
+{
+  "tables": [
+    {
+      "table": "spellhit",
+      "file": "spell-hit-defs.json",
+      "at": "hits",
+      "key": "id",
+      "required": {
+        "every": "integer",
+        "holds": "integer"
+      }
+    }
+  ]
+}
