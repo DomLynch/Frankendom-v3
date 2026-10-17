@@ -1,0 +1,18 @@
+{
+  "tables": [
+    {
+      "table": "bodytype",
+      "file": "body-tables-defs.json",
+      "at": "bodytypes",
+      "key": "id",
+      "required": { "parts": "array", "parts[].id": "string", "parts[].bones": "array", "parts[].bones[]": "string", "parts[].vital": "boolean", "parts[].weight": "number", "parts[].cuttable": "boolean" }
+    },
+    {
+      "table": "species",
+      "file": "body-tables-defs.json",
+      "at": "species",
+      "key": "id",
+      "required": { "blood": "object", "blood.start": "string", "blood.end": "string", "decal": "object", "decal.id": "string", "decal.sizeM": "number", "spray": "number" }
+    }
+  ]
+}

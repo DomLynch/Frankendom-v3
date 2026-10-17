@@ -1,0 +1,16 @@
+{
+  "bodytypes": [
+    {"id": "quadruped", "parts": [
+      {"id": "head", "bones": ["head", "jaw"], "vital": true, "weight": 2, "cuttable": true, "parent": "neck"},
+      {"id": "neck", "bones": ["neck"], "vital": true, "weight": 1, "cuttable": true, "parent": "torso"},
+      {"id": "torso", "bones": ["spine2"], "vital": true, "weight": 5, "cuttable": false},
+      {"id": "foreL", "bones": ["front_up_L"], "vital": false, "weight": 1, "cuttable": true, "parent": "torso"},
+      {"id": "foreR", "bones": ["front_up_R"], "vital": false, "weight": 1, "cuttable": true, "parent": "torso"},
+      {"id": "hindL", "bones": ["hind_up_L"], "vital": false, "weight": 1, "cuttable": true, "parent": "torso"},
+      {"id": "hindR", "bones": ["hind_up_R"], "vital": false, "weight": 1, "cuttable": true, "parent": "torso"}
+    ]}
+  ],
+  "species": [
+    {"id": "beast", "blood": {"start": "#5a0b0a", "end": "#1c0403"}, "decal": {"id": "blood-splat", "sizeM": 0.5}, "spray": 1}
+  ]
+}

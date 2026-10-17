@@ -1,15 +1,14 @@
-// The bodytype and species tables a catalogue row's `wounds` reads (World's #2000 schema, K5): what can be hurt on a body family, and how a species bleeds. GENERATED once by
-// the one-shot catalogue converter (since removed) (the bone names are the skin joints of the GLBs, read, not typed); this file is the source of truth from here on. A new body family is one entry, a new
-// creature is a `wounds` row. The trunk is the root part; a head hangs from the neck and the neck from the trunk, so severing the neck takes the head. Data only: no engine reads it yet.
+// The bodytype and species tables a catalogue row's `wounds` reads (World's #2000 schema, K5): what can be hurt on a body family, and how a species bleeds. The bone names are the skin joints of the GLBs (read, not typed).
+// A new body family is one `bodytypes` row, a new species one `species` row, in body-tables-defs.json (manifest-loaded through the shared registry, as ROWS: as-data check (i), id tables in code); this file only hands the
+// readers the same objects the literals held, bit for bit. A creature is a `wounds` row. The trunk is the root part; a head hangs from the neck and the neck from the trunk, so severing the neck takes the head.
 import type { Bodytype, Species } from './catalogue.ts';
+import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import DEFS from './body-tables-defs.json' with { type: 'json' };
+import MANIFEST from './body-tables-defs.manifest.json' with { type: 'json' };
 
-export const BODYTYPES: Readonly<Record<string, Bodytype>> = { quadruped: { parts: [
-    { id: "head", bones: ["head", "jaw"], vital: true, weight: 2, cuttable: true, parent: "neck" },
-    { id: "neck", bones: ["neck"], vital: true, weight: 1, cuttable: true, parent: "torso" },
-    { id: "torso", bones: ["spine2"], vital: true, weight: 5, cuttable: false },
-    { id: "foreL", bones: ["front_up_L"], vital: false, weight: 1, cuttable: true, parent: "torso" },
-    { id: "foreR", bones: ["front_up_R"], vital: false, weight: 1, cuttable: true, parent: "torso" },
-    { id: "hindL", bones: ["hind_up_L"], vital: false, weight: 1, cuttable: true, parent: "torso" },
-    { id: "hindR", bones: ["hind_up_R"], vital: false, weight: 1, cuttable: true, parent: "torso" },
-  ] } };
-export const SPECIES: Readonly<Record<string, Species>> = { beast: { blood: { start: "#5a0b0a", end: "#1c0403" }, decal: { id: "blood-splat", sizeM: 0.5 }, spray: 1 } };
+const TABLES = MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, DEFS, 'body-tables-defs.json'));
+loadRegistry(TABLES);
+const byId = <T>(table: string): Record<string, T> => Object.fromEntries(TABLES.find((t) => t.manifest.table === table)!.rows.map(({ id, ...rest }) => [id as string, rest as unknown as T]));
+
+export const BODYTYPES: Readonly<Record<string, Bodytype>> = byId<Bodytype>('bodytype');
+export const SPECIES: Readonly<Record<string, Species>> = byId<Species>('species');
