@@ -179,10 +179,10 @@
   {
    "id": "troll",
    "scale": 1.5,
-   "health": 570,
+   "health": 650,
    "poise": 16,
    "sheet": {
-    "attack": 20
+    "attack": 60
    },
    "profiles": {
     "easy": {
@@ -383,10 +383,13 @@
   {
    "id": "goblin",
    "scale": 0.78,
-   "health": 120,
+   "health": 140,
    "poise": 0,
    "regen": 1.5,
    "speed": 1.2,
+   "sheet": {
+    "attack": 40
+   },
    "profiles": {
     "easy": {
      "set": {
