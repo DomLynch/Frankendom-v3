@@ -107,7 +107,6 @@ export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
 export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 76 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
 export const FIRST_SKILL2_VERSION = 75;   // RV75 (the specials PR): the fight carries a SPECIAL 2 pick (a class skill fought through its own move row on slot b, duel.ts Fighter.skill2): the second flag byte's bit 1, then one skill-code byte after the spell block; the 'skill2' action code is appended to ACTIONS
-const POSE_BYTES = 20;   // the start pose: five float32s (hero x / z, foe x / z, hero facing); the reader bounds-checks it itself (RV76)
 const FLAG2_SPELL = 1, FLAG2_SKILL2 = 2;   // the second flag byte's bits: a spell block follows the sheet block (v53); a SPECIAL 2 skill-code byte follows the spell block (v75)
 export const FIRST_SPELL_VERSION = 53;   // RV53 (spells in fights): the fight carries a spell (second flag byte, bit 0, then the spell block: id len u8 + ascii, skill u8); ONLY a spell fight is written as v53
 export const FIRST_GAMBIT_VERSION = 33;
@@ -389,7 +388,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   if (v === FIRST_SPELL_VERSION && !(flag2 & 1)) throw Error('Fight record: a version 53 record names its spell');
   if (flag2 & 1 && !(flag & 1)) throw Error('Fight record: a spell without Special Moves');
   let pose: DuelPose | undefined;
-  if (flag & 32) { if (o + POSE_BYTES > bytes.length) throw Error('Fight record: truncated'); const f = (): number => { const n = dv.getFloat32(o, true); o += 4; return n; }; pose = { hero: { x: f(), z: f() }, foe: { x: f(), z: f() }, heroFacing: f() }; try { validatePose(pose, false); } catch { throw Error('Fight record: unusable pose'); } }
+  if (flag & 32) { const f = (): number => { const n = dv.getFloat32(o, true); o += 4; return n; }; try { pose = { hero: { x: f(), z: f() }, foe: { x: f(), z: f() }, heroFacing: f() }; } catch { throw Error('Fight record: truncated'); } try { validatePose(pose, false); } catch { throw Error('Fight record: unusable pose'); } }
   let group: RecordGroup | undefined;
   if (flag & 64) {
     const need = (k: number): void => { if (o + k > bytes.length) throw Error('Fight record: truncated'); };
