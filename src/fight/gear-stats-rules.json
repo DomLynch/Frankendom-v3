@@ -74,5 +74,14 @@
       "id": "gear",
       "fullPoints": 900
     }
+  ],
+  "multiplier": [
+    {
+      "id": "gear",
+      "scale": 90000,
+      "attackPerPoint": 15,
+      "resPerPoint": 20,
+      "note": "points become the two fight multipliers by exact integer division: attack = (scale + attackPerPoint x weapon points) / scale, res = (scale - resPerPoint x armour points) / scale. 15 and 20 are the +15 % attack and -20 % incoming caps times scale / fullPoints (900), so a full Origin set lands exactly on its cap"
+    }
   ]
 }
