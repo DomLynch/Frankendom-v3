@@ -122,11 +122,11 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
         else if (mo.hold && gap > reach * motion.reapproachPct / 100) mo.hold = false;
         if (mo.left <= 0) {   // the circle draw: seeded, once per re-decide (2-4 s), only when the row circles at all
           mo.seed = (Math.imul(mo.seed, 1664525) + 1013904223) >>> 0;
-          mo.circling = motion.circleChancePct > 0 && mo.seed / 4294967296 * 100 < motion.circleChancePct;
+          mo.circling = motion.circleChancePct > 0 && mo.seed / 4294967296 * 100 < motion.circleChancePct;   // the draw is the same stream whatever the range; the range gate below only mutes it
           mo.seed = (Math.imul(mo.seed, 1664525) + 1013904223) >>> 0;
           mo.left = Math.round((motion.circleRedecideMinS + mo.seed / 4294967296 * (motion.circleRedecideMaxS - motion.circleRedecideMinS)) / TICK);
         } else mo.left--;
-        if (mo.hold && (ai.mode === 'approach' || (ai.mode === 'circle' && !mo.circling))) intentB = { ...intentB, move: { x: 0, z: 0, yaw: 0, run: false } };   // open-world: inside its band it stands and faces (lock keeps the facing); it strafes only on a circle draw
+        if (mo.hold && (ai.mode === 'approach' || (ai.mode === 'circle' && !(mo.circling && gap <= motion.circleWithinM)))) intentB = { ...intentB, move: { x: 0, z: 0, yaw: 0, run: false } };   // open-world: inside its band it stands and faces (lock keeps the facing); it strafes only on a circle draw
       }
     }
     else if (b) { intentB = intentOf(press(inputB), guardB, true); guardB = !!inputB.guard; }

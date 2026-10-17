@@ -6,15 +6,16 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import MOTION_DEFS from './creature-motion-defs.json' with { type: 'json' };
 import MOTION_MANIFEST from './creature-motion-defs.manifest.json' with { type: 'json' };
 
-/** holdRedecideScalePct: while held inside its stop band the brain's re-decide interval (36-80 ticks) times this percent (300 = 3x; a Combat addition to Strategy's set, measured: without it flips stay 0.19-0.30/s);
+/** circleWithinM: it circles only inside this many metres of the hero (Veloren's shape; Strategy 2026-10-17: wolves 35 %, giant salamander 15 %, the rest 0);
+ *  holdRedecideScalePct: while held inside its stop band the brain's re-decide interval (36-80 ticks) times this percent (300 = 3x; a Combat addition to Strategy's set, measured: without it flips stay 0.19-0.30/s);
  *  circleChancePct: the chance, per re-decide, that it circles instead of standing (0 = never; then no strafe is read); stopAtReachPct: it stops walking in at this percent of its own cut's reach; reapproachPct: it walks
  *  in again only past this percent of reach (the hysteresis band); turnRateCapDegPerS: the most its facing turns per second outside an attack; circleRedecideMinS / MaxS: the seconds between circle draws;
  *  strafeSpeedCapMps: the most its sideways speed while circling, metres per second (0 = no cap). */
-export type CreatureMotion = { readonly id: string; readonly circleChancePct: number; readonly stopAtReachPct: number; readonly reapproachPct: number; readonly turnRateCapDegPerS: number; readonly holdRedecideScalePct: number; readonly circleRedecideMinS: number; readonly circleRedecideMaxS: number; readonly strafeSpeedCapMps: number };
+export type CreatureMotion = { readonly id: string; readonly circleChancePct: number; readonly circleWithinM: number; readonly stopAtReachPct: number; readonly reapproachPct: number; readonly turnRateCapDegPerS: number; readonly holdRedecideScalePct: number; readonly circleRedecideMinS: number; readonly circleRedecideMaxS: number; readonly strafeSpeedCapMps: number };
 const TABLE = tableFromFile(MOTION_MANIFEST.tables[0] as unknown as Manifest, MOTION_DEFS, 'creature-motion-defs.json');
 loadRegistry([TABLE]);
 export const CREATURE_MOTIONS: readonly CreatureMotion[] = (TABLE.rows as unknown as CreatureMotion[]).map((r) => {
-  if (r.circleChancePct < 0 || r.circleChancePct > 100 || r.stopAtReachPct <= 0 || r.reapproachPct < r.stopAtReachPct || r.holdRedecideScalePct < 100 || r.turnRateCapDegPerS <= 0 || r.circleRedecideMinS <= 0 || r.circleRedecideMaxS < r.circleRedecideMinS || r.strafeSpeedCapMps < 0) {
+  if (r.circleChancePct < 0 || r.circleChancePct > 100 || r.circleWithinM <= 0 || r.stopAtReachPct <= 0 || r.reapproachPct < r.stopAtReachPct || r.holdRedecideScalePct < 100 || r.turnRateCapDegPerS <= 0 || r.circleRedecideMinS <= 0 || r.circleRedecideMaxS < r.circleRedecideMinS || r.strafeSpeedCapMps < 0) {
     throw Error(`creature-motion-defs "${r.id}": circle chance 0-100, stop above 0, re-approach at or past the stop, a positive turn cap, re-decide seconds ordered, strafe cap from 0`);
   }
   return r;
