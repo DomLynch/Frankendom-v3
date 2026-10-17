@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "shippingShape", "file": "shipping-shapes-defs.json", "at": "shapes", "key": "id",
+      "required": { "ranks": "array" } }
+  ]
+}

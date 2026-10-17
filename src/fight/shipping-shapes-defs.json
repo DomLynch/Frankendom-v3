@@ -1,0 +1,16 @@
+{
+  "shapes": [
+    {"id":"maul","ranks":[null,null,null,"maul-crafted","maul-crafted","maul-crafted","maul-crafted",null,null,null]},
+    {"id":"longsword","ranks":["longsword-plain","longsword-plain","longsword-plain","longsword-crafted","longsword-crafted","longsword-crafted","longsword-crafted","longsword-ornate","longsword-ornate","longsword-ornate"]},
+    {"id":"gladius","ranks":["gladius-plain","gladius-plain","gladius-plain","gladius-crafted","gladius-crafted","gladius-crafted","gladius-crafted","gladius-ornate","gladius-ornate","gladius-ornate"]},
+    {"id":"knife","ranks":["knife-plain","knife-plain","knife-plain","knife-crafted","knife-crafted","knife-crafted","knife-crafted","knife-ornate","knife-ornate","knife-ornate"]},
+    {"id":"estoc","ranks":["estoc-plain","estoc-plain","estoc-plain","estoc-crafted","estoc-crafted","estoc-crafted","estoc-crafted","estoc-ornate","estoc-ornate","estoc-ornate"]},
+    {"id":"cleaver","ranks":["cleaver-plain","cleaver-plain","cleaver-plain","cleaver-crafted","cleaver-crafted","cleaver-crafted","cleaver-crafted","cleaver-ornate","cleaver-ornate","cleaver-ornate"]},
+    {"id":"scythe","ranks":["scythe-plain","scythe-plain","scythe-plain","scythe-crafted","scythe-crafted","scythe-crafted","scythe-crafted","scythe-ornate","scythe-ornate","scythe-ornate"]},
+    {"id":"trident","ranks":[null,null,null,"trident-crafted","trident-crafted","trident-crafted","trident-crafted","trident-ornate","trident-ornate","trident-ornate"]},
+    {"id":"warhammer","ranks":["warhammer-plain","warhammer-plain","warhammer-plain","warhammer-crafted","warhammer-crafted","warhammer-crafted","warhammer-crafted","warhammer-ornate","warhammer-ornate","warhammer-ornate"]},
+    {"id":"reaper","ranks":["reaper-plain","reaper-plain","reaper-plain","reaper-crafted","reaper-crafted","reaper-crafted","reaper-crafted","reaper-ornate","reaper-ornate","reaper-ornate"]},
+    {"id":"estoc-cane","ranks":["estoc-cane-plain","estoc-cane-plain","estoc-cane-plain","estoc-cane-crafted","estoc-cane-crafted","estoc-cane-crafted","estoc-cane-crafted","estoc-cane-ornate","estoc-cane-ornate","estoc-cane-ornate"]},
+    {"id":"witch-staff","ranks":["witch-staff-plain","witch-staff-plain","witch-staff-plain","witch-staff-crafted","witch-staff-crafted","witch-staff-crafted","witch-staff-crafted","witch-staff-ornate","witch-staff-ornate","witch-staff-ornate"]}
+  ]
+}
