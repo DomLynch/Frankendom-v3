@@ -5,6 +5,8 @@ import type { OpponentId } from '../roster.ts';
 import { advanceCast, shadowPhase, FALL_AT, skillCast, type Cast, type isHadesShadow } from './special-timing.ts';
 import { clamp01, hash, smooth } from './fx-math.ts';
 import { specialFxBodyNum } from './special-fx-body-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_95 = fxNum('clamp.special-fx-goblin.0.95');
 
 // The Goblin's boss specials at ranks 8, 9, 10, GREY-BOX (Goblin lane, 2026-10-01; proposal sent to Strategy, who put it to Dom; nothing here is
 // picked or shipped). Same seam as Hades' cloud and Red Wind: it reads the sim's special events and the two bodies' anchors, never the sim, the rig
@@ -201,7 +203,7 @@ export function createGoblinSpecial(scene: THREE.Scene, kind: GoblinSpecial, exp
       }
 
       if (kind === 'ratrun') {   // Selected class look: visible crouch-run to the flank; the sim's body and hit remain unchanged.
-        const r0 = Math.max(dist, 0.95), slideOut = 1 - smooth((k - 0.4) / 0.6), t = build ? smooth(k) : 1;
+        const r0 = Math.max(dist, CLAMP_0_95), slideOut = 1 - smooth((k - 0.4) / 0.6), t = build ? smooth(k) : 1;
         const at = (u: number, out: THREE.Vector3) => out.copy(a.feet!).addScaledVector(dir, -(r0 + (0.95 - r0) * u) * Math.cos(1.9 * u)).addScaledVector(side, 0.75 * (r0 + (0.95 - r0) * u) * Math.sin(1.9 * u)).setY(0);
         const here = at(t, new THREE.Vector3());
         offset.copy(here).sub(a.caster).setY(0).multiplyScalar(build ? 1 : slideOut);
