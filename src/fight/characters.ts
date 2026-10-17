@@ -197,10 +197,11 @@ export const SHIELD_CARRIERS: ReadonlySet<string> = new Set(['shieldmaiden', 've
 export const armOpponent = (opponent: FighterAsset, kit: FighterAsset): FighterAsset => withShieldCarry(equipWeapon(opponent, kit));
 export function armWarriors(hero: FighterAsset, enemy: FighterAsset | undefined, weapons: [WeaponId, WeaponId], part?: FighterAsset | Error, equipFailed: (error: unknown) => void = () => {}, carry = false) {
   if (carry && enemy) withShieldCarry(enemy);
-  if (part && !(part instanceof Error)) try { return { ...buildWarriors(equipWeapon(hero, part), enemy, weapons), playerWeapon: weapons[0] }; } catch (error) { part = error instanceof Error ? error : Error(String(error)); }
+  // `asset`: the hero's parsed file as the player was built from it, so a page that needs a second actor of the same rig (a remote player, a warm-up probe) builds it from this with buildWarriors (it clones) and fetches and parses nothing.
+  if (part && !(part instanceof Error)) try { const armed = equipWeapon(hero, part); return { ...buildWarriors(armed, enemy, weapons), playerWeapon: weapons[0], asset: armed }; } catch (error) { part = error instanceof Error ? error : Error(String(error)); }
   if (part) equipFailed(part);
   const playerWeapon: WeaponId = part ? DEFAULT_WEAPON : weapons[0];
-  return { ...buildWarriors(hero, enemy, [playerWeapon, weapons[1]]), playerWeapon };
+  return { ...buildWarriors(hero, enemy, [playerWeapon, weapons[1]]), playerWeapon, asset: hero };
 }
 // A player weapon's equip file (scripts/build-player-weapon.mjs, the #309 contract): its WeaponDrawn part, placed under hand_r exactly as
 // the hero build places it, and the weapon's own clip family when it has one. Nothing of the body.
