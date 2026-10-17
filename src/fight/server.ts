@@ -24,7 +24,7 @@ export { AFTER_HIT_TICKS, CHAIN_CAP, EXHAUSTED_BELOW, initialKit, kitIntent, typ
 export { SPEEDS } from './speeds.ts';
 export { worldRule } from './world-rules.ts';   // the open-world rules as rows (world-sim.ts reads its notice rings from them)
 export { percentOf, rollUnit } from './roll.ts';   // the roll's two draws (duel.ts already re-exports ROLL_BAND, rolledDamage); src/core/luck.ts reads them here
-export { PORTRAIT_KEYS, rungTopLevel } from '../legends.ts';
+export { PORTRAIT_KEYS, rungOf, rungTopLevel } from '../legends.ts';
 export { LEGEND_FAMILIES, isSpellless, legendText } from './legend-families.ts';   // which family and rank a legend wears: the server prices a boss:<legend> fight from it (origins/boss/legend-boss.ts)
 export { ROSTER, isOpponentId, type OpponentId } from '../roster.ts';
 export { hash32 } from './bout-seed.ts';
