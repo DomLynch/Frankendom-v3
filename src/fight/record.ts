@@ -107,6 +107,7 @@ export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
 export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 75 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
 export const FIRST_SKILL2_VERSION = 75;   // RV75 (the specials PR): the fight carries a SPECIAL 2 pick (a class skill fought through its own move row on slot b, duel.ts Fighter.skill2): the second flag byte's bit 1, then one skill-code byte after the spell block; the 'skill2' action code is appended to ACTIONS
+const FLAG2_SPELL = 1, FLAG2_SKILL2 = 2;   // the second flag byte's bits: a spell block follows the sheet block (v53); a SPECIAL 2 skill-code byte follows the spell block (v75)
 export const FIRST_SPELL_VERSION = 53;   // RV53 (spells in fights): the fight carries a spell (second flag byte, bit 0, then the spell block: id len u8 + ascii, skill u8); ONLY a spell fight is written as v53
 export const FIRST_GAMBIT_VERSION = 33;
 export const FIRST_STANCE_VERSION = 34;
@@ -327,7 +328,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   out[o++] = build.length; out.set(build, o); o += build.length;
   out[o++] = opp.length; out.set(opp, o); o += opp.length; out[o++] = wpn.length; out.set(wpn, o); o += wpn.length;
   out[o++] = skill; out[o++] = (r.specials ? 1 : 0) | (r.gambit ? 2 : 0) | (r.stances ? 4 | (PICKS.indexOf(r.stances) << 3) : 0) | (r.pose ? 32 : 0) | (r.group ? 64 : 0) | (sheetMods ? 128 : 0); if (withArena) out[o++] = arenaCode; if (withPatron) out[o++] = r.patron ?? 0;
-  if (r.v >= FIRST_SPELL_VERSION) out[o++] = (r.spell ? 1 : 0) | (r.skill2 ? 2 : 0);   // the second flag byte (v53): bit 0 = a spell block follows the sheet block; bit 1 (v75) = a SPECIAL 2 skill-code byte follows the spell block
+  if (r.v >= FIRST_SPELL_VERSION) out[o++] = (r.spell ? FLAG2_SPELL : 0) | (r.skill2 ? FLAG2_SKILL2 : 0);   // the second flag byte (v53): bit 0 = a spell block follows the sheet block; bit 1 (v75) = a SPECIAL 2 skill-code byte follows the spell block
   if (r.pose) for (const n of [r.pose.hero.x, r.pose.hero.z, r.pose.foe.x, r.pose.foe.z, r.pose.heroFacing]) { dv.setFloat32(o, n, true); o += 4; }
   if (r.group) {
     out[o++] = (r.group.index << 4) | r.group.n;
@@ -380,7 +381,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   const patron = v >= FIRST_PATRON_VERSION ? bytes[o++] : 0;   // before version 32 there is no byte: no patron; a v32 record always names one (the writer never emits 32 without)
   if (v === FIRST_PATRON_VERSION && !patron) throw Error('Fight record: a version 32 record names a patron');
   const flag2 = v >= FIRST_SPELL_VERSION ? bytes[o++]! : 0;   // the second flag byte (v53); before it there is none
-  if (flag2 > (v >= FIRST_SKILL2_VERSION ? 3 : 1)) throw Error('Fight record: unknown spell flag');
+  if (flag2 > (v >= FIRST_SKILL2_VERSION ? FLAG2_SPELL | FLAG2_SKILL2 : FLAG2_SPELL)) throw Error('Fight record: unknown spell flag');
   if (v === FIRST_SPELL_VERSION && !(flag2 & 1)) throw Error('Fight record: a version 53 record names its spell');
   if (flag2 & 1 && !(flag & 1)) throw Error('Fight record: a spell without Special Moves');
   let pose: DuelPose | undefined;
@@ -429,7 +430,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
     spell = { id, skill: sk };
   }
   let skill2: SkillId | undefined;
-  if (flag2 & 2) {
+  if (flag2 & FLAG2_SKILL2) {
     if (o + 1 > bytes.length) throw Error('Fight record: truncated');
     const code = SKILLS[bytes[o++]!];
     if (!code) throw Error('Fight record: unknown skill');   // a SPECIAL 2 names a real skill: none (null) and past the table are both refused

@@ -38,6 +38,7 @@
     {"id": "tail.parryStep", "value": 0.1},
     {"id": "tail.readStep", "value": 0.03},
     {"id": "tail.lapseMul", "value": 500},
-    {"id": "tail.lapseDiv", "value": 1000}
+    {"id": "tail.lapseDiv", "value": 1000},
+    {"id": "motion.seedSalt", "value": 2654435769}
   ]
 }
