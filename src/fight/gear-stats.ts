@@ -70,10 +70,11 @@ export type Kit = Partial<Record<LootSlot, Tier>>;
 // Every multiplier is one integer division of exact integers, so a full set is exactly its cap (72000/90000, not 0.7999999…) and a
 // partial kit is the correctly-rounded double of an exact ratio on every machine. The literals 15/20/25 below are the caps' distances
 // from 1 (0.15, 0.20) times 90000 / FULL_POINTS, and the test derives the caps from the table rather than repeating them.
+const MULT = RULES.multiplier[0]!;   // the multiplier row (gear-stats-rules.json): 90000 / 15 / 20
 function multipliers(armour: number, weapon: number): Loadout {
   return {
-    attack: (90000 + 15 * weapon) / 90000,
-    res: (90000 - 20 * armour) / 90000,
+    attack: (MULT.scale + MULT.attackPerPoint * weapon) / MULT.scale,
+    res: (MULT.scale - MULT.resPerPoint * armour) / MULT.scale,
   };
 }
 
