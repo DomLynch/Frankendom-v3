@@ -367,7 +367,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   const str = () => { const len = bytes[o++]; if (o + len > bytes.length) throw Error('Fight record: truncated'); let s = ''; for (let i = 0; i < len; i++) s += String.fromCharCode(bytes[o + i]); o += len; return s; };
   const build = str(), opponent = str() as OpponentId, weapon = str() as WeaponId;
   if (!PLAYER_WEAPONS.includes(weapon)) throw Error('Fight record: unknown weapon');   // the hero rig bakes blade tables for these only; an opponent-only weapon (maul, reaper) would throw inside the frame loop
-  if (o + 1 + (v >= FIRST_POSE_VERSION ? 20 : 0) + (v >= FIRST_GROUP_VERSION ? 1 : 0) + (v >= 21 ? 1 : 0) + (v >= FIRST_ARENA_VERSION ? 1 : 0) + (v >= FIRST_PATRON_VERSION ? 1 : 0) + (v >= FIRST_SPELL_VERSION ? 1 : 0) + 1 + 4 + 4 + 1 > bytes.length) throw Error('Fight record: truncated');
+  if (o + 1 + (v >= 21 ? 1 : 0) + (v >= FIRST_ARENA_VERSION ? 1 : 0) + (v >= FIRST_PATRON_VERSION ? 1 : 0) + (v >= FIRST_SPELL_VERSION ? 1 : 0) + 1 + 4 + 4 + 1 > bytes.length) throw Error('Fight record: truncated');
   const skill = SKILLS[bytes[o++]];   // undefined past the table: an unknown skill is refused, never read as none
   if (skill === undefined) throw Error('Fight record: unknown skill');
   const flag = v >= 21 ? bytes[o++] : 0;   // before version 21 there is no byte: no specials
@@ -388,7 +388,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   if (v === FIRST_SPELL_VERSION && !(flag2 & 1)) throw Error('Fight record: a version 53 record names its spell');
   if (flag2 & 1 && !(flag & 1)) throw Error('Fight record: a spell without Special Moves');
   let pose: DuelPose | undefined;
-  if (flag & 32) { const f = (): number => { const n = dv.getFloat32(o, true); o += 4; return n; }; pose = { hero: { x: f(), z: f() }, foe: { x: f(), z: f() }, heroFacing: f() }; try { validatePose(pose, false); } catch { throw Error('Fight record: unusable pose'); } }
+  if (flag & 32) { if (o + 20 > bytes.length) throw Error('Fight record: truncated'); const f = (): number => { const n = dv.getFloat32(o, true); o += 4; return n; }; pose = { hero: { x: f(), z: f() }, foe: { x: f(), z: f() }, heroFacing: f() }; try { validatePose(pose, false); } catch { throw Error('Fight record: unusable pose'); } }
   let group: RecordGroup | undefined;
   if (flag & 64) {
     const need = (k: number): void => { if (o + k > bytes.length) throw Error('Fight record: truncated'); };
