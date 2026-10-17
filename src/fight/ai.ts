@@ -63,13 +63,14 @@ export const initialAi = (seed = DIAL.startSeed): AiState => ({
   habits: { ticks: 0, guard: 0, parries: 0, rolls: 0, steps: 0, lights: 0, heavies: 0, thrusts: 0, kicks: 0, attacks: 0, parks: 0 },
   scores: {},
 });
-const lcg = (seed: number) => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+export const lcg = (seed: number) => (Math.imul(seed, 1664525) + 1013904223) >>> 0;   // exported: the world creature's seeded circle draw (open-fight.ts) steps the same generator
+export const seedUnit = (seed: number): number => seed / 4294967296;   // a seed as a draw in [0, 1)
 
 export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): { intent: Intent; ai: AiState } {
   const self = duel.fighters[me], opponent = duel.fighters[1 - me], tick = duel.tick;
   const next = { ...ai, scores: {} as Record<string, number> }, intent = idleIntent();
   if (!self.health || !opponent.health || opponent.phase === 'sheathed' || opponent.phase === 'draw') return { intent, ai: next };
-  const roll = () => { next.seed = lcg(next.seed); return next.seed / 4294967296; };
+  const roll = () => { next.seed = lcg(next.seed); return seedUnit(next.seed); };
   // Every exit: a raised guard or a parry press carries the side read for the current threat; with nothing coming the guard stands straight (null = thrust).
   const done = () => {
     if (intent.guard || intent.action === 'parry') intent.guardDirection = threat && noticed && next.readSide ? next.readSide : undefined;

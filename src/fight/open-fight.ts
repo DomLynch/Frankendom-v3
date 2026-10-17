@@ -5,7 +5,9 @@
 import { OPPONENTS, RULES, opponentAt, profileAt, DEFAULT_WEAPON, type AiProfile } from './moves.ts';
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
-import { initialAi, decide, type AiState } from './ai.ts';
+import { initialAi, decide, lcg, seedUnit, type AiState } from './ai.ts';
+import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json
+const MOTION_SEED_SALT = simBound('motion.seedSalt');   // salts the creature's circle-draw stream apart from the brain's own
 import { createFighter, idleIntent, movesOf, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
 import { M } from './detmath.ts';
@@ -28,7 +30,7 @@ const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
 /** The hero's Pit fighter as the Pit builds it (initialDuel: createFighter with his weapon; withSheet: his sheet's bar and recovery, the sheet itself carried on the fighter so stepDuel reads its dials). No weapon = DEFAULT_WEAPON, no sheet = today's hero. */
 export function heroSheeted(f: Fighter): PitFighter {
   // open-world: a hero with a spell casts through the Pit's special slot (spell-cast.ts), ready at once (no opening delay: the world has no fight start), so a live hero and a replayed one are the same hero
-  const hero = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
+  const plain = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), hero = f.skill2 ? { ...plain, skill2: f.skill2, skillCooldown2: 0 } : plain, cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
   return f.sheet ? withSheet({ tick: 0, fighters: [cast, cast], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : cast;
 }
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
@@ -44,13 +46,13 @@ export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter)
 /** open-world: a creature's step with its turn rate and sideways speed capped by its row (EQEmu RotateToCommand: the heading moves toward its target at the mob's rotate speed, never a snap; AzerothCore chase: the
  *  creature closes along the line to its foe and does not strafe fast). `from` is the creature before the step, `to` after, `foe` the player. Pure, no transcendental beyond detmath. */
 function paced(from: PitFighter, to: PitFighter, foe: PitFighter, m: CreatureMotion): PitFighter {
-  const TAU = Math.PI * 2, stepTurn = m.turnRateCapDegPerS * Math.PI / 180 * TICK, striking = from.phase === 'attack' || to.phase === 'attack';   // a lunge or a hit frame turns as the move says
+  const TAU = Math.PI + Math.PI, stepTurn = m.turnRateCapRadPerS * TICK, striking = from.phase === 'attack' || to.phase === 'attack';   // a lunge or a hit frame turns as the move says
   const d = ((to.body.heading - from.body.heading + Math.PI) % TAU + TAU) % TAU - Math.PI;
   const heading = !striking && Math.abs(d) > stepTurn ? from.body.heading + (d < 0 ? -stepTurn : stepTurn) : to.body.heading;
   let { x, z } = to.body;
-  if (m.circleChancePct > 0 && m.strafeSpeedCapMps > 0) {
+  if (m.circleChance > 0 && m.strafeSpeedCapMps > 0) {
     const fx = foe.body.x - from.body.x, fz = foe.body.z - from.body.z, len = M.hypot(fx, fz);
-    if (len > 1e-6) {
+    if (len > 0) {
       const ux = fx / len, uz = fz / len, dx = x - from.body.x, dz = z - from.body.z, along = dx * ux + dz * uz, side = dx * uz - dz * ux, cap = m.strafeSpeedCapMps * TICK;   // ux,uz toward the foe; side positive to the creature's right of that line
       if (Math.abs(side) > cap) { const kept = side < 0 ? -cap : cap; x = from.body.x + ux * along + uz * kept; z = from.body.z + uz * along - ux * kept; }
     }
@@ -102,7 +104,7 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
   for (let k = 0; k < ticks; k++) {
     const [pa, pb] = duel.fighters;
     // open-world: the places, facings, stances and effective health come from the world each tick (the page walks the players).
-    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health, maxHealth: a.maxHealth, stamina: a.stamina, posture: a.posture, skill: a.skill, cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
+    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health, maxHealth: a.maxHealth, stamina: a.stamina, posture: a.posture, skill: a.skill, ...(a.skill2 ? { skill2: a.skill2 } : {}), cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
     if (a.special && ha.specialShare === undefined) { ha.specialShare = a.level >= RULES.special.bossFrom ? RULES.special.bossDamage : RULES.special.damage; ha.specialName = a.special; ha.skillCooldown = Math.round(a.specialIn / TICK); }
     const hb: PitFighter = b
       ? { ...pb, cc: b.cc ?? emptyLadder, ...(b.ccGuard ? { ccGuard: b.ccGuard } : {}), body: b.side === 'player' ? { ...pb.body, x: b.x, z: b.z, heading: pb.phase === 'roll' ? pb.body.heading : b.facing } : pb.body, health: b.health, maxHealth: b.maxHealth, ...(b.side === 'player' ? { stamina: b.stamina, posture: b.posture, skill: b.skill } : {}), ...(b.stance ? { stance: b.stance } : {}) }
@@ -115,16 +117,16 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
     if (b && ai && s.profile) {
       const was = ai.decision, brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent;
       if (motion) {
-        if (mot?.hold && ai.decision > was) ai = { ...ai, decision: Math.round(ai.decision * motion.holdRedecideScalePct / 100) };   // open-world: held inside its band it re-decides less often (the Pit's 0.6-1.3 s flips mode about once a second)
-        const mo = mot ?? (mot = { hold: false, circling: false, left: 0, seed: (ai.seed ^ 0x9e3779b9) >>> 0 });
+        if (mot?.hold && ai.decision > was) ai = { ...ai, decision: Math.round(ai.decision * motion.holdRedecideScale) };   // open-world: held inside its band it re-decides less often (the Pit's 0.6-1.3 s flips mode about once a second)
+        const mo = mot ?? (mot = { hold: false, circling: false, left: 0, seed: (ai.seed ^ MOTION_SEED_SALT) >>> 0 });
         const reach = movesOf(hb).light_right.reach, gap = M.hypot(hb.body.x - ha.body.x, hb.body.z - ha.body.z);   // its own cut's reach, the same yardstick the brain's hover reads
-        if (!mo.hold && gap <= reach * motion.stopAtReachPct / 100) mo.hold = true;   // open-world: it stops walking in at its stop share of reach and re-approaches only past the band (hysteresis)
-        else if (mo.hold && gap > reach * motion.reapproachPct / 100) mo.hold = false;
+        if (!mo.hold && gap <= reach * motion.stopAtReach) mo.hold = true;   // open-world: it stops walking in at its stop share of reach and re-approaches only past the band (hysteresis)
+        else if (mo.hold && gap > reach * motion.reapproach) mo.hold = false;
         if (mo.left <= 0) {   // the circle draw: seeded, once per re-decide (2-4 s), only when the row circles at all
-          mo.seed = (Math.imul(mo.seed, 1664525) + 1013904223) >>> 0;
-          mo.circling = motion.circleChancePct > 0 && mo.seed / 4294967296 * 100 < motion.circleChancePct;   // the draw is the same stream whatever the range; the range gate below only mutes it
-          mo.seed = (Math.imul(mo.seed, 1664525) + 1013904223) >>> 0;
-          mo.left = Math.round((motion.circleRedecideMinS + mo.seed / 4294967296 * (motion.circleRedecideMaxS - motion.circleRedecideMinS)) / TICK);
+          mo.seed = lcg(mo.seed);
+          mo.circling = motion.circleChance > 0 && seedUnit(mo.seed) < motion.circleChance;   // the draw is the same stream whatever the range; the range gate below only mutes it
+          mo.seed = lcg(mo.seed);
+          mo.left = Math.round((motion.circleRedecideMinS + seedUnit(mo.seed) * (motion.circleRedecideMaxS - motion.circleRedecideMinS)) / TICK);
         } else mo.left--;
         if (mo.hold && (ai.mode === 'approach' || (ai.mode === 'circle' && !(mo.circling && gap <= motion.circleWithinM)))) intentB = { ...intentB, move: { x: 0, z: 0, yaw: 0, run: false } };   // open-world: inside its band it stands and faces (lock keeps the facing); it strafes only on a circle draw
       }

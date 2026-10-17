@@ -106,6 +106,8 @@ export const READABLE_VERSIONS = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
 // header carries a patron byte of 0 (only v32 refuses a zero patron, because a v32 patron-less fight was always written as 31). Pinned by tests/record-version-guard.test.ts, which simulates RV33.
 export const NO_PATRON_VERSION = (RECORD_VERSION as number) <= 75 ? 31 : RECORD_VERSION;   // RV33/RV34/RV35/RV36/RV37/RV38/RV39/RV40/RV41/RV42/RV43 only write a gambit fight as v33 (below), so through 33 a patron-less, gambit-less fight is still the v31 it always was
 export const FIRST_PATRON_VERSION = 32;
+export const FIRST_SKILL2_VERSION = 75;   // RV75 (the specials PR): the fight carries a SPECIAL 2 pick (a class skill fought through its own move row on slot b, duel.ts Fighter.skill2): the second flag byte's bit 1, then one skill-code byte after the spell block; the 'skill2' action code is appended to ACTIONS
+const FLAG2_SPELL = 1, FLAG2_SKILL2 = 2;   // the second flag byte's bits: a spell block follows the sheet block (v53); a SPECIAL 2 skill-code byte follows the spell block (v75)
 export const FIRST_SPELL_VERSION = 53;   // RV53 (spells in fights): the fight carries a spell (second flag byte, bit 0, then the spell block: id len u8 + ascii, skill u8); ONLY a spell fight is written as v53
 export const FIRST_GAMBIT_VERSION = 33;
 export const FIRST_STANCE_VERSION = 34;
@@ -216,7 +218,7 @@ const groupBad = (g: RecordGroup, ticks: number): boolean => {
   return false;
 };
 const groupLen = (g: RecordGroup | undefined): number => (g ? 1 + 2 + 6 * g.incoming.length + 2 + 8 * g.held.length : 0);
-export type RecordMeta = { sheet?: Sheet; characterId?: string; buildVersion?: number; arena?: RecordArena; build: string; opponent: OpponentId; weapon: WeaponId; skill?: SkillId; level: number; seed: number; specials?: boolean; patron?: number; gambit?: boolean; stances?: PickedStance; pose?: DuelPose; group?: RecordGroup; spell?: { id: string; skill: number } };   // stances: the fight had stances (version 34), the player's pick; absent = none   // gambit: the fight had the Gambit (version 33; absent = off)   // patron: the player's patron id 1..255 (version 32; absent = none)   // specials: the fight had Special Moves (version 21; absent = off)   // skill: the player's equipped skill; absent = none. level: the opponent's ladder level, 1–46 (moves.ts profileAt; version 16)
+export type RecordMeta = { sheet?: Sheet; characterId?: string; buildVersion?: number; arena?: RecordArena; build: string; opponent: OpponentId; weapon: WeaponId; skill?: SkillId; level: number; seed: number; specials?: boolean; patron?: number; gambit?: boolean; stances?: PickedStance; pose?: DuelPose; group?: RecordGroup; spell?: { id: string; skill: number }; skill2?: SkillId };   // skill2: the SPECIAL 2 pick, a class skill (version 75; absent = none)   // stances: the fight had stances (version 34), the player's pick; absent = none   // gambit: the fight had the Gambit (version 33; absent = off)   // patron: the player's patron id 1..255 (version 32; absent = none)   // specials: the fight had Special Moves (version 21; absent = off)   // skill: the player's equipped skill; absent = none. level: the opponent's ladder level, 1–46 (moves.ts profileAt; version 16)
 export type FightRecord = RecordMeta & { v: RecordVersion; ticks: number; outcome: Outcome; intents: Intent[] };
 
 // Quantization: the stick to 1/127 per axis, the camera yaw to 1/128 of a half-turn (about 1.4°). The live game steps the
@@ -227,7 +229,7 @@ const q8 = (v: number) => Math.max(-STICK_STEPS, Math.min(STICK_STEPS, Math.roun
 const yawToByte = (yaw: number) => (((Math.round(yaw / YAW_UNIT) % YAW_STEPS) + YAW_STEPS) % YAW_STEPS);
 const byteToYaw = (b: number) => { const s = b >= 128 ? b - 256 : b; return s * YAW_UNIT; };   // centred on 0: −π..π
 
-const ACTIONS: (Action | null)[] = [null, 'light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill'];   // append only: a code never changes meaning
+const ACTIONS: (Action | null)[] = [null, 'light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill', 'skill2'];   // append only: a code never changes meaning
 const SKILLS: readonly (SkillId | null)[] = SKILL_BY_CODE;   // the skill rows' `code`, append only, as ACTIONS (skill-defs.json)
 const DIRECTIONS: (Direction | undefined)[] = [undefined, 'right', 'left', 'overhead', 'thrust', 'low'];
 const OUTCOMES: Outcome[] = ['killed', 'died', 'draw', 'abandoned'];
@@ -251,7 +253,7 @@ export function createRecorder(meta: RecordMeta) {
   const era = stampedVersion(meta.opponent);
   if ((meta.patron || meta.gambit || meta.stances || meta.pose || meta.group || meta.sheet || meta.spell) && era !== NO_PATRON_VERSION) throw Error('Fight record: a patron or gambit fight must be fought in the live era');
   const flagged = meta.sheet ? FIRST_SHEET_VERSION : meta.group ? FIRST_GROUP_VERSION : meta.pose ? FIRST_POSE_VERSION : meta.stances ? FIRST_STANCE_VERSION : meta.gambit ? FIRST_GAMBIT_VERSION : meta.patron ? PATRON_VERSION : era;
-  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, SHEET_ERA_VERSION) : spelledV, cappedV = meta.spell && spellUsesCap(meta.spell.id) ? Math.max(castedV, CAST.costCapFrom) : castedV, hitV = meta.spell && spellUsesHits(meta.spell.id) ? Math.max(cappedV, CAST.hitsFrom) : cappedV, version = Math.max(hitV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level));   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
+  const stancedV = meta.stances ? Math.max(flagged, FIRST_STANCE_ROWS_VERSION) : flagged, spelledV = meta.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV = meta.sheet ? Math.max(spelledV, SHEET_ERA_VERSION) : spelledV, cappedV = meta.spell && spellUsesCap(meta.spell.id) ? Math.max(castedV, CAST.costCapFrom) : castedV, hitV = meta.spell && spellUsesHits(meta.spell.id) ? Math.max(cappedV, CAST.hitsFrom) : cappedV, version = Math.max(hitV, ladderStamp(meta.opponent, meta.level), coneStamp(meta.specials, meta.opponent, meta.level), meta.skill2 ? FIRST_SKILL2_VERSION : 0);   // a sheet fight carries the worn set's cast penalty from v58, so it is stamped no lower;   // a spell fight is fought on the v53 cast rules, so it is stamped no lower than v53
   if (spellBad(meta)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');   // a stances fight is fought on the v52 stance rows (stance-era.ts: a Defensive stance has no longer window), so it is stamped no lower than v52   // the circle in force when the fight BEGINS names the record, not whatever is set when it ends
   if (meta.sheet) meta = { ...meta, sheet: checkSheet(meta.sheet) };
   if (buildRefBad(meta)) throw Error('Fight record: a build reference is a character id and a build version together, on a sheet fight');   // the fight started from the validated, code-ordered sheet (duel.ts withSheet), so the record names those
@@ -287,7 +289,9 @@ export function packRecord(rec: FightRecord): Uint8Array {
   const flaggedV = rec.sheet ? FIRST_SHEET_VERSION : rec.group ? FIRST_GROUP_VERSION : rec.pose ? FIRST_POSE_VERSION : rec.stances ? FIRST_STANCE_VERSION : rec.gambit ? FIRST_GAMBIT_VERSION : rec.patron ? PATRON_VERSION : NO_PATRON_VERSION;
   const stancedV = rec.stances ? Math.max(flaggedV, FIRST_STANCE_ROWS_VERSION) : flaggedV;
   const spelledV = rec.spell ? Math.max(stancedV, FIRST_SPELL_VERSION) : stancedV, castedV0 = rec.sheet ? Math.max(spelledV, SHEET_ERA_VERSION) : spelledV, castedV1 = rec.spell && spellUsesCap(rec.spell.id) ? Math.max(castedV0, CAST.costCapFrom) : castedV0, castedV = rec.spell && spellUsesHits(rec.spell.id) ? Math.max(castedV1, CAST.hitsFrom) : castedV1;   // as createRecorder: a sheet fight carries the cast penalty from v58
-  const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: Math.max(castedV, ladderStamp(rec.opponent, rec.level), coneStamp(rec.specials, rec.opponent, rec.level)) as RecordVersion } : rec;
+  const r: FightRecord = rec.v === RECORD_VERSION ? { ...rec, v: Math.max(castedV, ladderStamp(rec.opponent, rec.level), coneStamp(rec.specials, rec.opponent, rec.level), rec.skill2 ? FIRST_SKILL2_VERSION : 0) as RecordVersion } : rec;
+  const skill2 = SKILLS.indexOf(r.skill2 ?? null);   // the SPECIAL 2 pick's code (0 = none): an unknown skill, or one on a version with no flag for it, is refused
+  if (skill2 < 0 || (r.skill2 && r.v < FIRST_SKILL2_VERSION)) throw Error('Fight record: unknown skill, or a SPECIAL 2 on a version that has no flag for it');
   if (r.spell && r.v < FIRST_SPELL_VERSION) throw Error('Fight record: a spell on a version that has no flag for it');
   if ((r.v as number) === FIRST_SPELL_VERSION && !r.spell) throw Error('Fight record: a version 53 record names its spell');
   if (spellBad(r)) throw Error('Fight record: a spell is an id and a skill 0-100, on a fight with Special Moves');
@@ -318,13 +322,13 @@ export function packRecord(rec: FightRecord): Uint8Array {
   if (arenaCode < 0 || (arenaCode > 0 && r.v < FIRST_ARENA_VERSION)) throw Error('Fight record: unknown arena, or an arena on a version that has no byte for it');
   const withArena = r.v >= FIRST_ARENA_VERSION ? 1 : 0, withPatron = r.v >= FIRST_PATRON_VERSION ? 1 : 0;
   if (r.patron !== undefined && (!Number.isInteger(r.patron) || r.patron < 1 || r.patron > 255 || !withPatron)) throw Error('Fight record: unknown patron, or a patron on a version that has no byte for it');
-  const n = r.ticks, head = 3 + 1 + build.length + 1 + opp.length + 1 + wpn.length + 1 + 1 + withArena + withPatron + (r.pose ? 20 : 0) + groupLen(r.group) + (sheetMods ? 1 + 2 * Object.keys(sheetMods).length + 1 + (r.characterId?.length ?? 0) + 4 : 0) + (r.v >= FIRST_SPELL_VERSION ? 1 : 0) + (r.spell ? 1 + spellId.length + 1 : 0) + 1 + 4 + 4 + 1, out = new Uint8Array(head + 6 * n), dv = new DataView(out.buffer);
+  const n = r.ticks, head = 3 + 1 + build.length + 1 + opp.length + 1 + wpn.length + 1 + 1 + withArena + withPatron + (r.pose ? 20 : 0) + groupLen(r.group) + (sheetMods ? 1 + 2 * Object.keys(sheetMods).length + 1 + (r.characterId?.length ?? 0) + 4 : 0) + (r.v >= FIRST_SPELL_VERSION ? 1 : 0) + (r.spell ? 1 + spellId.length + 1 : 0) + (r.skill2 ? 1 : 0) + 1 + 4 + 4 + 1, out = new Uint8Array(head + 6 * n), dv = new DataView(out.buffer);
   let o = 0;
   out[o++] = 0x46; out[o++] = 0x4b; out[o++] = r.v;
   out[o++] = build.length; out.set(build, o); o += build.length;
   out[o++] = opp.length; out.set(opp, o); o += opp.length; out[o++] = wpn.length; out.set(wpn, o); o += wpn.length;
   out[o++] = skill; out[o++] = (r.specials ? 1 : 0) | (r.gambit ? 2 : 0) | (r.stances ? 4 | (PICKS.indexOf(r.stances) << 3) : 0) | (r.pose ? 32 : 0) | (r.group ? 64 : 0) | (sheetMods ? 128 : 0); if (withArena) out[o++] = arenaCode; if (withPatron) out[o++] = r.patron ?? 0;
-  if (r.v >= FIRST_SPELL_VERSION) out[o++] = r.spell ? 1 : 0;   // the second flag byte (v53): bit 0 = a spell block follows the sheet block
+  if (r.v >= FIRST_SPELL_VERSION) out[o++] = (r.spell ? FLAG2_SPELL : 0) | (r.skill2 ? FLAG2_SKILL2 : 0);   // the second flag byte (v53): bit 0 = a spell block follows the sheet block; bit 1 (v75) = a SPECIAL 2 skill-code byte follows the spell block
   if (r.pose) for (const n of [r.pose.hero.x, r.pose.hero.z, r.pose.foe.x, r.pose.foe.z, r.pose.heroFacing]) { dv.setFloat32(o, n, true); o += 4; }
   if (r.group) {
     out[o++] = (r.group.index << 4) | r.group.n;
@@ -335,6 +339,7 @@ export function packRecord(rec: FightRecord): Uint8Array {
   }
   if (sheetMods) { const stats = DIALS.filter((st) => sheetMods[st.id]); out[o++] = stats.length; for (const st of stats) { out[o++] = st.code; out[o++] = sheetMods[st.id]!; } const cid = ascii(r.characterId ?? ''); out[o++] = cid.length; out.set(cid, o); o += cid.length; dv.setUint32(o, r.buildVersion ?? 0, true); o += 4; }
   if (r.spell) { out[o++] = spellId.length; out.set(spellId, o); o += spellId.length; out[o++] = r.spell.skill; }
+  if (r.skill2) out[o++] = skill2;
   out[o++] = level; dv.setUint32(o, r.seed >>> 0, true); o += 4; dv.setUint32(o, n, true); o += 4; out[o] = outcome;
   const col = (k: number) => head + k * n;
   let prevYaw = 0;
@@ -376,7 +381,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   const patron = v >= FIRST_PATRON_VERSION ? bytes[o++] : 0;   // before version 32 there is no byte: no patron; a v32 record always names one (the writer never emits 32 without)
   if (v === FIRST_PATRON_VERSION && !patron) throw Error('Fight record: a version 32 record names a patron');
   const flag2 = v >= FIRST_SPELL_VERSION ? bytes[o++]! : 0;   // the second flag byte (v53); before it there is none
-  if (flag2 > 1) throw Error('Fight record: unknown spell flag');
+  if (flag2 > (v >= FIRST_SKILL2_VERSION ? FLAG2_SPELL | FLAG2_SKILL2 : FLAG2_SPELL)) throw Error('Fight record: unknown spell flag');
   if (v === FIRST_SPELL_VERSION && !(flag2 & 1)) throw Error('Fight record: a version 53 record names its spell');
   if (flag2 & 1 && !(flag & 1)) throw Error('Fight record: a spell without Special Moves');
   let pose: DuelPose | undefined;
@@ -424,6 +429,13 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
     if (!SPELL_ID.test(id) || sk > 100) throw Error('Fight record: unknown spell');
     spell = { id, skill: sk };
   }
+  let skill2: SkillId | undefined;
+  if (flag2 & FLAG2_SKILL2) {
+    if (o + 1 > bytes.length) throw Error('Fight record: truncated');
+    const code = SKILLS[bytes[o++]!];
+    if (!code) throw Error('Fight record: unknown skill');   // a SPECIAL 2 names a real skill: none (null) and past the table are both refused
+    skill2 = code;
+  }
   if (o + 1 + 4 + 4 + 1 > bytes.length) throw Error('Fight record: truncated');
   const level = bytes[o++], seed = dv.getUint32(o, true); o += 4; const n = dv.getUint32(o, true); o += 4; const outcome = OUTCOMES[bytes[o++]];
   if (level < 1 || level > LEVELS || !outcome) throw Error('Fight record: unknown level or outcome');
@@ -447,7 +459,7 @@ export function unpackRecord(bytes: Uint8Array): FightRecord {
   }
   // The version PARSED, not the constant: returning `RECORD_VERSION` here would let a decode-then-repack silently relabel an older
   // record as this build's, and packRecord's guard above would then throw on a record this function had just called well-formed.
-  return { v: v as RecordVersion, build, opponent, weapon, ...(skill ? { skill } : {}), ...(arena ? { arena } : {}), level, seed, ...(flag & 1 ? { specials: true } : {}), ...(flag & 2 ? { gambit: true } : {}), ...(flag & 4 ? { stances: PICKS[(flag >> 3) & 3] } : {}), ...(patron ? { patron } : {}), ...(sheet ? { sheet } : {}), ...(characterId !== undefined ? { characterId, buildVersion } : {}), ...(pose ? { pose } : {}), ...(spell ? { spell } : {}), ...(group ? { group } : {}), ticks: n, outcome, intents };
+  return { v: v as RecordVersion, build, opponent, weapon, ...(skill ? { skill } : {}), ...(skill2 ? { skill2 } : {}), ...(arena ? { arena } : {}), level, seed, ...(flag & 1 ? { specials: true } : {}), ...(flag & 2 ? { gambit: true } : {}), ...(flag & 4 ? { stances: PICKS[(flag >> 3) & 3] } : {}), ...(patron ? { patron } : {}), ...(sheet ? { sheet } : {}), ...(characterId !== undefined ? { characterId, buildVersion } : {}), ...(pose ? { pose } : {}), ...(spell ? { spell } : {}), ...(group ? { group } : {}), ticks: n, outcome, intents };
 }
 
 // ---- transport: gzip + base64url (no padding). CompressionStream is in every browser the game targets and in Node ≥ 18. --------
