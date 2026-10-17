@@ -125,6 +125,7 @@ export function defenceReaction(s: Practice, opponent=false): {pose:'block'|'par
 type FighterAsset = { scene: Group; animations: AnimationClip[] };
 // One fighter GLB: the same rig, clip names and sword attachments as every other (blade paths are baked once).
 import { MissingTextures, retryTransient } from '../retry.ts';
+import { CHARGE_LEANS, MAPPED_PALETTE, type ChargeLean } from './character-looks-rows.ts';   // the per-opponent label maps are rows (character-looks-defs.json)
 import { DEFLECT_FROM } from './characters-dials-rows.ts';   // the dials are rows (characters-dials-defs.json)
 export { MissingTextures, retryTransient, transientLoadError } from '../retry.ts';
 // The skin map a parsed fighter lacks ('' when it has them all): a creature's body needs map + roughnessMap, a warrior's Steel map + normalMap.
@@ -310,11 +311,7 @@ export const lootId = (piece: SkinnedMesh): string => `${piece.userData.opponent
 // piece's mapless palette material for the wearer's same-named mapped one only where the SOURCE opponent's rig maps that name too, so the
 // hero resolves a Knight piece exactly as the Knight does (his rig has no mapped Steel: the carrier's own Steel, ungraded).
 // Nothing is graded: not the hero's pieces, not an opponent's kit. Each rig's mapped loot-palette names; tests/grade-materials.test.ts reads them from the GLBs.
-export const SOURCE_MAPPED: Partial<Record<OpponentId, readonly string[]>> = {
-  dwarf: ['Steel', 'Leather'], executioner: ['Leather'], goblin: ['Steel', 'Leather', 'Heraldry', 'Wrap'], knight: ['Leather'],
-  nightborn: ['Steel', 'Leather', 'Heraldry', 'Wrap'], pitborn: ['Steel', 'Leather', 'Heraldry', 'Wrap'], plaguedoctor: [],
-  shieldmaiden: ['Steel', 'Leather', 'Heraldry', 'Wrap'], veteran: ['Bronze'], witch: [],
-};
+export const SOURCE_MAPPED: Partial<Record<OpponentId, readonly string[]>> = MAPPED_PALETTE;   // rows: character-looks-defs.json (mapped)
 // A rig's mapped palette materials by name (skipping `skip`, e.g. the worn copies), and the material a loot piece shows on that rig: its mapless
 // palette material swapped for the rig's same-named mapped one where the piece's source rig maps that name too (ruling C). `wear` and the
 // Pit's rack both resolve a piece this way, so a piece on the rack reads as it will on him (goblin.Boots' Wrap is mapless white alone).
@@ -367,18 +364,11 @@ export const GUARD_TILT: Record<Direction, { yaw: number; arm: number; spine: nu
 // opponent, so a held heavy read as a plain one. While the swing is parked at its chamber the whole upper body leans out to the side, clear
 // of the player's silhouette, the weapon arm lifting the head of the weapon skyward. Added after the mixer like the guard tilt (radians:
 // spine_01 yaw and side-bend, spine_02 side-bend, upperarm_r lift), eased in over the hold and out through the swing. Presentation only.
-export type ChargeLean = { yaw: number; side: number; chest: number; arm: number; lift?: number };   // lift: upperarm_r pitch, negative raises the arm
+export type { ChargeLean };   // lift: upperarm_r pitch, negative raises the arm (character-looks-rows.ts)
 const NO_LEAN: ChargeLean = { yaw: 0, side: 0, chest: 0, arm: 0 };
-// One entry per active opponent, fitted on the roster sheet (held heavy at 375x812, the player guarding). Tall rigs share the Witch's lean;
-// the Dwarf sits under the player's shoulder, so he bends further and twists the other way to bring the hammer head up clear. The Goblin is
-// too short for any lean to clear the player (LEAN_LOW hid his knife behind the left shoulder, Strategy 2026-09-24): he leans the other way
-// and throws the knife arm straight up, so the hooked blade stands above the player's right shoulder.
-const LEAN_OUT: ChargeLean = { yaw: .25, side: .55, chest: .25, arm: .55 }, LEAN_LOW: ChargeLean = { yaw: -.5, side: .9, chest: .35, arm: .3 };
-const LEAN_HIGH: ChargeLean = { yaw: .4, side: -.7, chest: -.3, arm: 1, lift: -1.6 };
-export const CHARGE_LEAN: Partial<Record<OpponentId, ChargeLean>> = {
-  veteran: LEAN_OUT, pitborn: LEAN_OUT, nightborn: LEAN_OUT, executioner: LEAN_OUT, plaguedoctor: LEAN_OUT, knight: LEAN_OUT, witch: LEAN_OUT,
-  shieldmaiden: LEAN_OUT, dwarf: LEAN_LOW, goblin: LEAN_HIGH,
-};
+// One row per active opponent (character-looks-defs.json, `lean`), fitted on the roster sheet (held heavy at 375x812, the player guarding). Tall rigs share the Witch's lean;
+// the Dwarf and the Goblin carry their own (the rows' notes say why).
+export const CHARGE_LEAN: Partial<Record<OpponentId, ChargeLean>> = CHARGE_LEANS;
 // A charging swing parked at its chamber (duel.ts rewinds age to the chamber while held); false from the tick it is released.
 export function holdingCharge(f: Pick<Fighter, 'phase' | 'move' | 'charge' | 'age' | 'weapon'>): boolean {
   if (f.phase !== 'attack' || !f.move || f.charge <= 0) return false;
