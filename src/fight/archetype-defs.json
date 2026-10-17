@@ -383,13 +383,10 @@
   {
    "id": "goblin",
    "scale": 0.78,
-   "health": 140,
+   "health": 120,
    "poise": 0,
    "regen": 1.5,
    "speed": 1.2,
-   "sheet": {
-    "attack": 40
-   },
    "profiles": {
     "easy": {
      "set": {
