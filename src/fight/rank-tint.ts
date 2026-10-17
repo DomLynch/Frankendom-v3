@@ -9,9 +9,9 @@ import { Color, MeshStandardMaterial, type Texture } from 'three';
 import { GRADES, classOf, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from '../core/grades.ts';
 import { finishRow } from '../core/finish-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_0001 = fxNum('clamp.rank-tint.0.0001');
-const CLAMP_0_2 = fxNum('clamp.rank-tint.0.2');
-const CLAMP_1_5 = fxNum('clamp.rank-tint.1.5');
+const LUMA_MIN = fxNum('fx.rankTint.lumaMin');
+const METAL_RATIO_MIN = fxNum('fx.rankTint.metalRatioMin');
+const ROUGH_RATIO_MAX = fxNum('fx.rankTint.roughRatioMax');
 
 // How far toward the grade; the gain's bounds. Tuned on the Centurion's ten-rank sheet (375, local preview).
 // leatherAsTrim: GRADES' leather ladder is ten near-identical dark browns, so on the first sheet only the helmet carried the rung. Leather
@@ -62,8 +62,8 @@ function finishWith(source: MeshStandardMaterial, finish: Finish, kind: DrawClas
   const stone = kind === 'stone';
   let byTier = cache.get(source); if (!byTier) cache.set(source, (byTier = new Map()));
   const known = byTier.get(tier); if (known) return known;
-  const material = source.clone(), grade = new Color(finish.color), gradeLuma = Math.max(luma(grade), CLAMP_0_0001);
-  const sourceLuma = Math.max(luma(source.color) * mapMean(source.map), CLAMP_0_0001);
+  const material = source.clone(), grade = new Color(finish.color), gradeLuma = Math.max(luma(grade), LUMA_MIN);
+  const sourceLuma = Math.max(luma(source.color) * mapMean(source.map), LUMA_MIN);
   const metal = kind === 'metal', strength = metal ? TINT.metal.strength : stone ? TINT.stone.strength : TINT.strength;
   const chroma = grade.clone().multiplyScalar(1 / gradeLuma), gain = Math.min(metal ? TINT.metal.maxGain : TINT.maxGain, Math.max(TINT.minGain, gradeLuma / sourceLuma));
   material.onBeforeCompile = (shader) => {
@@ -85,9 +85,9 @@ function finishWith(source: MeshStandardMaterial, finish: Finish, kind: DrawClas
     material.userData = { ...source.userData, rankTier: tier, rankTint: [chroma.r, chroma.g, chroma.b, gain, strength] };
     byTier.set(tier, material); return material;
   }
-  if (source.metalnessMap) material.metalness = Math.min(1, source.metalness * Math.min(metal ? TINT.metal.metalCap : 1.7, Math.max(CLAMP_0_2, finish.metalness / TINT.mapMetal)));
+  if (source.metalnessMap) material.metalness = Math.min(1, source.metalness * Math.min(metal ? TINT.metal.metalCap : 1.7, Math.max(METAL_RATIO_MIN, finish.metalness / TINT.mapMetal)));
   else material.metalness = toward(source.metalness, finish.metalness);
-  if (source.roughnessMap) material.roughness = Math.min(1, source.roughness * Math.min(CLAMP_1_5, Math.max(metal ? TINT.metal.roughFloor : 0.3, finish.roughness / TINT.mapRough)));
+  if (source.roughnessMap) material.roughness = Math.min(1, source.roughness * Math.min(ROUGH_RATIO_MAX, Math.max(metal ? TINT.metal.roughFloor : 0.3, finish.roughness / TINT.mapRough)));
   else material.roughness = toward(source.roughness, finish.roughness);
   material.userData = { ...source.userData, rankTier: tier, rankTint: [chroma.r, chroma.g, chroma.b, gain, strength] };
   byTier.set(tier, material); return material;

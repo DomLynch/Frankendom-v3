@@ -5,8 +5,8 @@ import { advanceCast, shadowPhase, castPhase, isBloodTithe, LAND_AT, type Cast }
 import { clamp01, hash, smooth } from './fx-math.ts';
 import { specialFxMinorNum } from './special-fx-minor-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_255 = fxNum('clamp.special-fx-legion.255');
-const CLAMP_0_9 = fxNum('clamp.special-fx-legion.0.9');
+const BYTE_MAX = fxNum('fx.specialFxLegion.byteMax');
+const GAP_MIN = fxNum('fx.specialFxLegion.gapMin');
 
 // Accepted Centurion class B: Stand Fast, ranks 4-7 (levels 16-35), previewed at level 21.
 // Combat owns the shared class selector; this effect observes Scutum Shove events only.
@@ -33,7 +33,7 @@ export function createSetFoot(scene: THREE.Scene, opponent: OpponentId, exposure
   const geometry = new THREE.PlaneGeometry(1, 1); geometry.rotateX(-Math.PI / 2);
   const marks = [3, 11, 23].map(seed => {
     const map = blot(seed), pixels = map.image.data as Uint8Array;
-    for (let a = 3; a < pixels.length; a += 4) pixels[a] = Math.min(CLAMP_255, Math.max(0, (pixels[a] - 6) * 6));
+    for (let a = 3; a < pixels.length; a += 4) pixels[a] = Math.min(BYTE_MAX, Math.max(0, (pixels[a] - 6) * 6));
     const material = new THREE.MeshBasicMaterial({ map, color: exposure > 1.5 ? new THREE.Color(0.002, 0.001, 0.0004) : new THREE.Color(0.004, 0.002, 0.001), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: true });
     const mesh = new THREE.Mesh(geometry, material); mesh.visible = false; root.add(mesh); return mesh;
   });
@@ -90,7 +90,7 @@ export function createLegionSpecial(scene: THREE.Scene, opponent: OpponentId) {
       if (!cast || !have) { hide(); return; }
       const p = castPhase(cast, clock), frozen = p.phase === 'dissolve' ? castPhase({ ...cast, fizzled: null }, cast.fizzled!) : p, fade = 1 - (p.phase === 'dissolve' ? smooth(p.k) : 0);
       const rel = p.phase === 'recover' ? p.age : -1, age = rel >= 0 ? LAND_AT + rel : frozen.age, after = rel >= 0 ? 1 - smooth((rel - 10) / 40) : 1;   // after: the marks thin through the aftermath
-      dir.copy(to).sub(from).setY(0); const gap = Math.max(dir.length(), CLAMP_0_9); dir.normalize(); side.set(-dir.z, 0, dir.x);
+      dir.copy(to).sub(from).setY(0); const gap = Math.max(dir.length(), GAP_MIN); dir.normalize(); side.set(-dir.z, 0, dir.x);
       // Stand Fast: for ~1 s a ring of dark dust is drawn IN round his own feet (the braced weight) and held tight; on the strike it is flung out toward the foe in a short fan.
       hide();
       const gather = smooth((age - (LAND_AT - 60)) / 52), fling = rel >= 0 ? clamp01(rel / 24) : 0;

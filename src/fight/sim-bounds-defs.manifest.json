@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "simbound", "file": "sim-bounds-defs.json", "at": "bounds", "key": "id",
+      "required": { "value": "number" } }
+  ]
+}

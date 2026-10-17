@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "creaturemotion", "file": "creature-motion-defs.json", "at": "motions", "key": "id",
+      "required": { "circleChance": "number", "circleWithinM": "number", "stopAtReach": "number", "reapproach": "number", "holdRedecideScale": "number", "turnRateCapRadPerS": "number", "circleRedecideMinS": "number", "circleRedecideMaxS": "number", "strafeSpeedCapMps": "number" } }
+  ]
+}

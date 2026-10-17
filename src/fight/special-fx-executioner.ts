@@ -8,10 +8,10 @@ import { bossRow, kindsOf, type BossKind } from './boss-rows.ts';
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 import { specialFxBodyNum } from './special-fx-body-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_255 = fxNum('clamp.special-fx-executioner.255');
-const CLAMP_0_9 = fxNum('clamp.special-fx-executioner.0.9');
-const CLAMP_0_05 = fxNum('clamp.special-fx-executioner.0.05');
-const CLAMP_0_01 = fxNum('clamp.special-fx-executioner.0.01');
+const BYTE_MAX = fxNum('fx.specialFxExecutioner.byteMax');
+const GAP_MIN = fxNum('fx.specialFxExecutioner.gapMin');
+const RUN_SPAN_MIN = fxNum('fx.specialFxExecutioner.runSpanMin');
+const LENGTH_MIN = fxNum('fx.specialFxExecutioner.lengthMin');
 
 // The Executioner's boss specials, rank 8, 9 and 10 (Executioner lane; Dom's picks via Strategy 2026-10-01). PREVIEW ONLY, behind ?special=<kind>, on the
 // seam of Hades' Shadow (special-timing.ts: the one 120-tick wind-up, SpecialStarted / Landed / Fizzled). Presentation only: it reads the sim's special
@@ -67,7 +67,7 @@ function paintSheet(seed: number, look: Look, wide = false) {
       const a = x / (w - 1), d = Math.abs(a - c) / half, frayed = d + (noise(a * 18, l * 26, seed + 3) - 0.5) * 0.7;
       const streak = 0.3 + 0.7 * smooth(fbm(a * 22, l * 2.4, seed + 9) * 1.5 - 0.15), head = smooth(l / 0.1), tail = smooth((1 - l) * 2.4 - 0.55 * noise(a * 9, l * 9, seed + 11));
       const alpha = Math.min(1, smooth((1 - frayed) * 2.2) * streak * head * tail * 1.15), dark = Math.min(1, smooth(1 - d) * (0.55 + 0.45 * streak) * 1.3);
-      px.set([lerp(look.edge.r, look.core.r, dark) * 255, lerp(look.edge.g, look.core.g, dark) * 255, lerp(look.edge.b, look.core.b, dark) * 255, alpha * 255].map((v) => Math.min(CLAMP_255, v)), (y * w + x) * 4);
+      px.set([lerp(look.edge.r, look.core.r, dark) * 255, lerp(look.edge.g, look.core.g, dark) * 255, lerp(look.edge.b, look.core.b, dark) * 255, alpha * 255].map((v) => Math.min(BYTE_MAX, v)), (y * w + x) * 4);
     }
   }
   const map = new THREE.DataTexture(px, w, h); map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true; return map;
@@ -87,7 +87,7 @@ function shadowMap(seed: number, look: Look) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const l = y / (h - 1), u = (x / (w - 1) - 0.5) * 2, edge = Math.abs(u) + (fbm(l * 3 + 2, u * 2.5 + 7, seed) - 0.5) * 0.6;
     const alpha = smooth((1 - edge) * 2.4) * smooth(l / 0.3) * smooth((1 - l) * 3.5 - 0.4 * fbm(x * 0.15, y * 0.1, seed + 5)) * (0.82 + 0.18 * fbm(x * 0.3, y * 0.2, seed + 9));
-    px.set([look.core.r * 255, look.core.g * 255, look.core.b * 255, Math.min(1, alpha) * 255].map((v) => Math.min(CLAMP_255, v)), (y * w + x) * 4);
+    px.set([look.core.r * 255, look.core.g * 255, look.core.b * 255, Math.min(1, alpha) * 255].map((v) => Math.min(BYTE_MAX, v)), (y * w + x) * 4);
   }
   const map = new THREE.DataTexture(px, w, h); map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true; return map;
 }
@@ -132,7 +132,7 @@ export function createBlackFurrow(scene: THREE.Scene, opponent: OpponentId, expo
     const map = poolMap(seed), { width, height } = map.image, pixels = map.image.data as Uint8Array;
     for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
       const a = (y * width + x) * 4 + 3, edge = smooth(Math.min(x, y, width - 1 - x, height - 1 - y) / 4);
-      pixels[a] = Math.min(CLAMP_255, pixels[a] * 3) * edge;
+      pixels[a] = Math.min(BYTE_MAX, pixels[a] * 3) * edge;
     }
     return map;
   });
@@ -170,7 +170,7 @@ export function createHeelReap(scene: THREE.Scene, opponent: OpponentId, exposur
   const root = new THREE.Group(); root.name = 'heel reap'; root.visible = false; scene.add(root);
   const geometry = surface((l, a) => { const angle = -0.9 + l * 2.4, radius = 0.48 + (a - 0.5) * 0.31; return [Math.cos(angle) * radius - 0.4, 0.026, Math.sin(angle) * radius + 0.3]; }, 24, 3);
   const map = paintSheet(41, cutLook(exposure > 1.5), true), pixels = map.image.data as Uint8Array;
-  for (let a = 3; a < pixels.length; a += 4) pixels[a] = Math.min(CLAMP_255, pixels[a] * 3);
+  for (let a = 3; a < pixels.length; a += 4) pixels[a] = Math.min(BYTE_MAX, pixels[a] * 3);
   const material = new THREE.MeshBasicMaterial({ map, color: exposure > 1.5 ? new THREE.Color(0.12, 0.08, 0.05) : new THREE.Color(0.035, 0.024, 0.015), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: true });
   const hook = new THREE.Mesh(geometry, material); hook.visible = false; root.add(hook);
   const dustGeometry = new THREE.PlaneGeometry(1, 1); dustGeometry.rotateX(-Math.PI / 2);
@@ -283,16 +283,16 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
       const shown = p.phase === 'dissolve' ? shadowPhase({ ...cast, fizzled: null }, cast.fizzled!) : p, fade = 1 - (p.phase === 'dissolve' ? smooth(p.k) : 0);
       const rel = p.phase === 'recover' ? p.age : -1, age = rel >= 0 ? LAND_AT + rel : shown.age;   // ticks since the landing, and since the cast began
       const k = clamp01((age - (LAND_AT - BUILD)) / BUILD), life = (rel >= 0 ? 1 - smooth((rel - 12) / 32) : 1) * fade;   // build-up 0..1; the aftermath thins out
-      dir.set(target.x - caster.x, 0, target.z - caster.z); const gap = Math.max(CLAMP_0_9, dir.length()); dir.normalize(); side.set(dir.z, 0, -dir.x);
+      dir.set(target.x - caster.x, 0, target.z - caster.z); const gap = Math.max(GAP_MIN, dir.length()); dir.normalize(); side.set(dir.z, 0, -dir.x);
       const h = (i: number, salt: number) => hash(i + seed * 5, salt);
 
       if (template === 'baying') {
         const turn = h(0, 61), mx = (caster.x + target.x) / 2, mz = (caster.z + target.z) / 2;
         const rim = (i: number) => { const ang = turn + ((i + 0.5 * (h(i, 62) - 0.5)) / TRAILS) * Math.PI * 2, r = RIM_R + 1.3 * h(i, 63); return [mx + Math.cos(ang) * r, mz + Math.sin(ang) * r] as const; };
-        const headAt = (i: number, D: number) => { const { from, to } = schedule[i], run = clamp01((k - from) / Math.max(CLAMP_0_05, to - from)); return { run, head: (run * run * 0.5 + run * 0.5) * D, since: Math.max(0, (k - to) * BUILD) + Math.max(0, rel) }; };
+        const headAt = (i: number, D: number) => { const { from, to } = schedule[i], run = clamp01((k - from) / Math.max(RUN_SPAN_MIN, to - from)); return { run, head: (run * run * 0.5 + run * 0.5) * D, since: Math.max(0, (k - to) * BUILD) + Math.max(0, rel) }; };
         trails.forEach((t, i) => {   // from a point on the rim (uneven spacing, uneven distance) straight at the target's feet; the head runs ahead of a tail of dust, and a trail thins away once it has arrived
           const [sx, sz] = rim(i), ex = target.x + (h(i, 64) - 0.5) * 0.5, ez = target.z + (h(i, 65) - 0.5) * 0.5, D = Math.hypot(ex - sx, ez - sz), tail = 1.2 + 1.2 * h(i, 66);
-          const { run, head, since } = headAt(i, D), start = lerp(Math.max(0, head - tail), D, smooth(since / 8)), len = Math.max(CLAMP_0_01, (run >= 1 ? D : head) - start);
+          const { run, head, since } = headAt(i, D), start = lerp(Math.max(0, head - tail), D, smooth(since / 8)), len = Math.max(LENGTH_MIN, (run >= 1 ? D : head) - start);
           t.mesh.position.set(sx + ((ex - sx) / D) * start, 0, sz + ((ez - sz) / D) * start); t.mesh.rotation.y = Math.atan2(ex - sx, ez - sz); t.mesh.scale.set(1, 1, len);
           setPiece(t, run > 0 ? (0.75 + 0.25 * h(i, 67)) * (1 - smooth(since / 10)) * fade : 0, P.trailAlpha!);
         });
@@ -310,7 +310,7 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
         });
       } else if (template === 'longShadow') {
         const reach = smooth(k) * (rel >= 0 ? 1 - 0.5 * smooth((rel - 10) / 30) : 1), full = gap + 1.1;   // his shadow runs from his feet over the target's, then draws back
-        shadow!.mesh.position.set(caster.x, 0, caster.z); shadow!.mesh.rotation.y = Math.atan2(dir.x, dir.z); shadow!.mesh.scale.set(1, 1, Math.max(CLAMP_0_01, reach * full));
+        shadow!.mesh.position.set(caster.x, 0, caster.z); shadow!.mesh.rotation.y = Math.atan2(dir.x, dir.z); shadow!.mesh.scale.set(1, 1, Math.max(LENGTH_MIN, reach * full));
         setPiece(shadow!, smooth(k * 1.4) * life, dayNight(P.shadowAlpha!, look.dim));
         pool!.mesh.position.set(target.x, 0, target.z); pool!.mesh.scale.set(3.6, 1, 3.6); setPiece(pool!, smooth((k - 0.2) / 0.8) * (rel >= 0 ? 1 - smooth((rel - 8) / 34) : 1) * fade, dayNight(P.poolAlpha!, look.dim));
         dim.forEach((s, j) => {   // the light dims over the target: soft shade at body height over him only (never the caster), rising with the shadow
@@ -326,7 +326,7 @@ export function createExecutionerSpecial(scene: THREE.Scene, opponent: OpponentI
         setPiece(crescent!, live * fade, dayNight(P.crescentAlpha!, look.dim));
         cuts.forEach((c, i) => {   // the sand cut behind it: three uneven strokes of dark earth lying across the lane, their heads trailing the blade
           const lag = 0.25 + 0.5 * h(i, 81), head = Math.max(S0, front - lag), from = centre(S0, (h(i, 82) - 0.5) * 0.9, new THREE.Vector3());
-          c.mesh.position.set(from.x, 0, from.z); c.mesh.rotation.y = Math.atan2(side.x, side.z); c.mesh.scale.set(1, 1, Math.max(CLAMP_0_01, head - S0));
+          c.mesh.position.set(from.x, 0, from.z); c.mesh.rotation.y = Math.atan2(side.x, side.z); c.mesh.scale.set(1, 1, Math.max(LENGTH_MIN, head - S0));
           setPiece(c, (k > 0.05 || rel >= 0 ? 1 : 0) * (rel >= 0 ? 1 - smooth((rel - 10) / 34) : 0.95) * fade, P.cutAlpha!);
         });
         putGrit((i, o) => {   // grit lifted along the swath, thrown up behind the blade and falling back

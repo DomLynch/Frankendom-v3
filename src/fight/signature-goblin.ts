@@ -5,7 +5,7 @@ import { hitBy, OPPONENT_SIDE, registerSignature, type SignatureFrame } from './
 import type { CombatEvent } from './duel.ts';
 import { sigNum, sigObj } from './signature-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_4 = fxNum('clamp.signature-goblin.4');
+const DROP_STRETCH_MAX = fxNum('fx.signatureGoblin.dropStretchMax');
 
 // Goblin, variant A: Hooked Wound (docs/briefs/signature-effects.md row 3). His knife catches on the wound as it withdraws: a strand of
 // blood runs from the wound to his knuckles and blade, stretches thinner as the knife pulls away, snaps, and the two ends whip back while
@@ -153,7 +153,7 @@ export function createHookedWound(style: HookStyle = HOOK_A) {
             scratch.position.copy(dropAt[i]).addScaledVector(dropVelocity[i], -back); scratch.position.y -= 0.5 * HOOK.gravity * back * back;
             if (style.drops) {
               motion.copy(dropVelocity[i]); motion.y += HOOK.gravity * back;   // the velocity it had then
-              const length = 1 + Math.min(CLAMP_4, motion.length() * style.drops.stretch);
+              const length = 1 + Math.min(DROP_STRETCH_MAX, motion.length() * style.drops.stretch);
               past.copy(motion).normalize();
               scratch.quaternion.setFromUnitVectors(THREE.Object3D.DEFAULT_UP, past);
               scratch.scale.set(shown, shown * length, shown);

@@ -5,7 +5,7 @@ import { advanceCast, type Cast } from './special-timing.ts';
 import { charge, CUE_AT, isCharge, RACE, RACE_FROM, slideAt } from './charge-timing.ts';
 import { hash, smooth } from './fx-math.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_5 = fxNum('clamp.charge-fx.0.5');
+const GAP_MIN = fxNum('fx.chargeFx.gapMin');
 
 // The Centurion's Charge (Alexander, his rank-9 boss special), the in-game effect (World, 2026-10-01; Strategy's brief
 // docs/briefs/specials/centurion-l8-l10-2026-10-01.md, Dom's pick). Presentation only, like nightfall-fx.ts beside it: it reads the sim's special
@@ -70,7 +70,7 @@ export function createChargeFx(scene: THREE.Scene, opponent: OpponentId, cue?: (
       root.visible = !!state;
       if (!cast || !caster || !target) return;
       from.set(caster.x, 0, caster.z); to.set(target.x, 0, target.z); dir.subVectors(to, from).setY(0);
-      const gap = Math.max(dir.length(), CLAMP_0_5); dir.normalize(); side.set(-dir.z, 0, dir.x);
+      const gap = Math.max(dir.length(), GAP_MIN); dir.normalize(); side.set(-dir.z, 0, dir.x);
       const total = LEAD + gap, front = (state?.front ?? 0) * total;
       // The body: he is drawn at the head of the dust, not planted. Over the GATHER ticks before the race he eases back to the start of the line, then rides the
       // front forward to his own spot (the sim never moves him: the rig's anchor is a presentation offset that the rig resets every frame, so a frame without this

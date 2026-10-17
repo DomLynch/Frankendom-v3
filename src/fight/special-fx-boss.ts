@@ -7,7 +7,7 @@ import { BUILD, BUILD_AT, isBossCast, slingAngle, wrathTremor, type BossKind } f
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 import { specialFxCoreNum } from './special-fx-core-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_255 = fxNum('clamp.special-fx-boss.255');
+const BYTE_MAX = fxNum('fx.specialFxBoss.byteMax');
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const fbm = (x: number, y: number, seed: number) => noise(x, y, seed) * 0.55 + noise(x * 2.1, y * 2.1, seed + 7) * 0.3 + noise(x * 4.3, y * 4.3, seed + 13) * 0.15;
@@ -201,7 +201,7 @@ function stainTexture(seed: number, rgb: readonly [number, number, number]) {
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const u = (x - 63.5) / 63.5, v = (y - 63.5) / 63.5, r = Math.hypot(u, v) + (fbm(u * 2.2 + 3, v * 2.2 + 3, seed) - 0.5) * 0.85 + (fbm(u * 6, v * 6, seed + 4) - 0.5) * 0.25;
     const a = smooth((1 - r) * 2.6) * (0.8 + 0.2 * fbm(x * 0.1, y * 0.1, seed + 9)), wet = smooth(fbm(u * 7, v * 7, seed + 21) * 2 - 1.15) * 0.18 * smooth(0.8 - r), core = 0.55 + 0.45 * smooth(r * 1.2);
-    px.set([Math.min(CLAMP_255, rgb[0] * core + 200 * wet), Math.min(CLAMP_255, rgb[1] * core + 205 * wet), Math.min(CLAMP_255, rgb[2] * core + 190 * wet), Math.min(1, a) * 255], (y * n + x) * 4);
+    px.set([Math.min(BYTE_MAX, rgb[0] * core + 200 * wet), Math.min(BYTE_MAX, rgb[1] * core + 205 * wet), Math.min(BYTE_MAX, rgb[2] * core + 190 * wet), Math.min(1, a) * 255], (y * n + x) * 4);
   }
   const map = new THREE.DataTexture(px, n, n); map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true; return map;
 }

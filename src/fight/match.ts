@@ -18,13 +18,13 @@ import type { PickedStance } from './stance.ts';
 // Phase two: class B from Veteran and all boss tiers are enabled in valid PvE fights. A record carries its own flag
 // (version 21), so links made either way replay as they were fought.
 const LIVE_SPECIALS = true;
-import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, DEFAULT_WEAPON, type SkillId, type WeaponId } from './moves.ts';
+import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, DEFAULT_WEAPON, SKILL_ROWS, type SkillId, type WeaponId } from './moves.ts';
 import { loadTrial, recordPractice, recordRematch, saveTrial, type Trial } from '../trial.ts';
 import { loadScorecard, recordResult, saveScorecard, type Scorecard } from '../scorecard.ts';
 import { awardMark, levelOfMarks as levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../core/career-ladder.ts';
 import { autopsy } from '../autopsy.ts';
 import { readOpponent } from './ai.ts';
-import { idleIntent, roundPose, type Duel, type DuelPose } from './duel.ts';
+import { idleIntent, roundPose, withSkill2, type Duel, type DuelPose } from './duel.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { nextArena, nextOpponent, passKey, won } from '../ladder.ts';
 import type { ArenaKey } from '../arena-themes.ts';
@@ -58,7 +58,7 @@ export const DAILY_LEVEL = PRESET_LEVEL.normal;   // the server's daily verifier
 type Recorder = ReturnType<typeof createRecorder>;
 // What the page keeps and the match writes: the device's trial tally, scorecard and fighter profile, and the storage they save to.
 // `rank`: the career's rank level (main.ts: levelOf(careerMarks()), the server figure once there); absent, the device count's.
-export type MatchPorts = { storage: StoragePort; trial: Trial; scorecard: Scorecard; profile: Profile; rank?: () => number; arena?: () => RecordArena | undefined; sheet?: () => Sheet | undefined; spell?: () => { id: string; skill: number } | undefined; lookSpell?: () => { id: string; skill: number } | undefined; buildRef?: () => { characterId: string; buildVersion: number } | undefined };   // buildRef: the stored build a sheet fight names (RV48); read only when the fight carries a sheet   // arena: the arena this page built, named in a live fight's record (record.ts version 26)
+export type MatchPorts = { skill2?: () => SkillId | undefined; storage: StoragePort; trial: Trial; scorecard: Scorecard; profile: Profile; rank?: () => number; arena?: () => RecordArena | undefined; sheet?: () => Sheet | undefined; spell?: () => { id: string; skill: number } | undefined; lookSpell?: () => { id: string; skill: number } | undefined; buildRef?: () => { characterId: string; buildVersion: number } | undefined };   // buildRef: the stored build a sheet fight names (RV48); read only when the fight carries a sheet   // arena: the arena this page built, named in a live fight's record (record.ts version 26)
 // The end of a fight, for the page to show: the record (null in a replay, or when a mid-fight difficulty change dropped the
 // recorder), the autopsy lines, whether the player won and whether the fight counted (career only).
 export type Ended = { record: FightRecord | null; lines: string[]; won: boolean; rewarded: boolean };
@@ -73,6 +73,7 @@ export const nextSeed = (seed: number): number => (Math.imul(seed, 1664525) + 10
 export class Match {
   mode: Mode = 'career';
   seed: number;
+  skill2: SkillId | undefined = undefined;   // SPECIAL 2 (the specials PR, RV75): a class skill on slot b, fought through its own move row (duel.ts Fighter.skill2); a live career/practice fight takes it at begin() from the port, a replay takes the record's
   skill: SkillId | null = null;   // the player's equipped skill (moves.ts SkillId), set as `weapon` is; the profile's (loot.skill, main.ts) through the constructor; a replay takes the record's
   weapon: WeaponId;   // the player's weapon (moves.ts PLAYER_WEAPONS): the equipped one (loot.ts fightWeapon) the page booted with; a replay takes the record's
   private sparSpecials: { first: number; level?: number; enabled?: boolean } | null = null;   // preview level/off can differ from ordinary live specials; body/AI stay on difficulty
@@ -148,15 +149,17 @@ export class Match {
     const look = mode === 'sparring' ? this.ports.lookSpell?.() : undefined;   // the ?spell look test (boss-telegraph.ts spellLook): read in sparring ONLY, which sends no record and pays nothing; career, practice, pvp and the ladder never see it
     if (mode !== 'replay') this.specials = mode !== 'pvp' && (look && isSpellId(look.id) ? true : test ? test.enabled !== false : live);   // previews/off explicit; replay retains its recorded phase
     if (mode !== 'replay') { const asked = mode === 'career' || mode === 'practice' ? this.ports.spell?.() : look; this.spell = asked && this.specials && isSpellId(asked.id) ? asked : undefined; }   // a spell is cast through the special: no Special Moves, no spell; an unknown id is no spell
+    if (mode !== 'replay') { const second = mode === 'career' || mode === 'practice' ? this.ports.skill2?.() : undefined; this.skill2 = second && SKILL_ROWS[second] ? second : undefined; }   // SPECIAL 2: a real class skill, picked by the player in career or practice only; an unknown id is no pick
     this.fightIdentity = { opponent: this.opponent.id, level: this.level };
     this.practice = initialPractice(this.seed, opponentAt(this.opponent, this.level), this.weapon, this.skill, recordSpecials({ specials: this.specials, level: test?.level ?? this.level, opponent: this.opponent.id }), this.gambit ? this.seed : undefined, this.stances, pose, this.sheet, this.spell ? resolveSpell(this.spell.id, this.spell.skill, this.sheet?.spellPower ?? 0) : undefined);   // preview identity/share only; body/AI remain on the visible difficulty
+    if (this.skill2) this.practice = { ...this.practice, duel: withSkill2(this.practice.duel, 0, this.skill2) };   // SPECIAL 2 on the player's slot b (a live pick or the record's, replayed the same)
     if (test && this.specials) for (const f of this.practice.duel.fighters) f.skillCooldown = test.first;   // a test page's early first cast (special-look.ts); sparring keeps no record
     if (mode === 'sparring' && this.sparSelection) {
       this.practice = { ...this.practice, duel: sparringSpecialDuel(this.practice.duel, this.sparSelection) };
       this.skill = this.practice.duel.fighters[0].skill;
       this.specials = this.practice.duel.fighters.some(f => f.specialShare !== undefined);
     }
-    this.recorder = mode === 'replay' || mode === 'sparring' || mode === 'pvp' || mode === 'lesson' || mode === 'tutorial' ? null : createRecorder({ build: this.build, opponent: this.opponent.id, weapon: this.weapon, ...(this.ports.arena?.() ? { arena: this.ports.arena() } : {}), ...(this.skill ? { skill: this.skill } : {}), ...(this.specials ? { specials: true } : {}), ...(this.gambit ? { gambit: true } : {}), ...(this.stances ? { stances: this.stances } : {}), ...(this.sheet ? { sheet: this.sheet, ...(this.ports.buildRef?.() ?? {}) } : {}), ...(this.spell ? { spell: this.spell } : {}), ...(pose ? { pose } : {}), level: this.level, seed: this.seed });
+    this.recorder = mode === 'replay' || mode === 'sparring' || mode === 'pvp' || mode === 'lesson' || mode === 'tutorial' ? null : createRecorder({ build: this.build, opponent: this.opponent.id, weapon: this.weapon, ...(this.ports.arena?.() ? { arena: this.ports.arena() } : {}), ...(this.skill ? { skill: this.skill } : {}), ...(this.skill2 ? { skill2: this.skill2 } : {}), ...(this.specials ? { specials: true } : {}), ...(this.gambit ? { gambit: true } : {}), ...(this.stances ? { stances: this.stances } : {}), ...(this.sheet ? { sheet: this.sheet, ...(this.ports.buildRef?.() ?? {}) } : {}), ...(this.spell ? { spell: this.spell } : {}), ...(pose ? { pose } : {}), level: this.level, seed: this.seed });
     this.recorded = false; this.ended = null; this.activeMs = 0;
     this.frameEvents = []; this.fightLog = [];
     this.lastRecord = null; this.lastDrop = null; this.lastSkill = null;
@@ -189,7 +192,7 @@ export class Match {
   // Refused (false) when a start happened after the link was asked for: the fight now in play stays.
   startReplay(record: FightRecord, fromTick: number, epoch: number): boolean {
     if (epoch !== this.epoch || record.group) return false;   // a group stream replays only with its siblings (RV39)
-    this.seed = record.seed; this.weapon = record.weapon; this.skill = record.skill ?? null; this.level = record.level; this.specials = !!record.specials; this.gambit = !!record.gambit; this.stances = record.stances; this.sheet = record.sheet; this.spell = record.spell; this.startPose = record.pose;   // a posed (v38) record replays from its own start, never the pit marks
+    this.seed = record.seed; this.weapon = record.weapon; this.skill = record.skill ?? null; this.skill2 = record.skill2; this.level = record.level; this.specials = !!record.specials; this.gambit = !!record.gambit; this.stances = record.stances; this.sheet = record.sheet; this.spell = record.spell; this.startPose = record.pose;   // a posed (v38) record replays from its own start, never the pit marks
     underRecord(record, () => {   // built and stepped on the record's own version of the sim's math (detmath.ts)
       this.begin('replay');
       for (let tick = 0; tick < fromTick; tick++) this.practice = stepPractice(this.practice, record.intents[tick], profileAt(this.opponent, this.level));

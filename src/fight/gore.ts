@@ -10,8 +10,8 @@ import type { Direction } from './moves.ts';
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { bloodNum, bloodObj } from './blood-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_3 = fxNum('clamp.gore.0.3');
-const CLAMP_0_7 = fxNum('clamp.gore.0.7');
+const BLOODIED_METALNESS_MAX = fxNum('fx.gore.bloodiedMetalnessMax');
+const BLOODIED_ROUGHNESS_MIN = fxNum('fx.gore.bloodiedRoughnessMin');
 
 export type { BloodMode };
 type Rigs = { player: { anchor: THREE.Object3D }; opponent: { anchor: THREE.Object3D } };
@@ -523,8 +523,8 @@ export function createBladeBlood() {
               .copy(original.color)
               .lerp(new THREE.Color(bloodDark(bloodMode) || twoHanded ? '#2a1516' : '#7a1410'), 0.55);
             if (twoHanded) {
-              bloodied.metalness = Math.min(original.metalness, CLAMP_0_3);
-              bloodied.roughness = Math.max(original.roughness, CLAMP_0_7);
+              bloodied.metalness = Math.min(original.metalness, BLOODIED_METALNESS_MAX);
+              bloodied.roughness = Math.max(original.roughness, BLOODIED_ROUGHNESS_MIN);
             }
           } else if (bladeOriginals.has(object)) {
             object.material.dispose();

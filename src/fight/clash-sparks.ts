@@ -3,8 +3,8 @@ import type { CombatEvent } from './duel.ts';
 import type { Weapon } from './moves.ts';
 import { materialRow } from '../core/contracts/definitions.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_1 = fxNum('clamp.clash-sparks.0.1');
-const CLAMP_0_05 = fxNum('clamp.clash-sparks.0.05');
+const STEP_MAX = fxNum('fx.clashSparks.stepMax');
+const BOUNCE_LIFE_MAX = fxNum('fx.clashSparks.bounceLifeMax');
 
 // Presentation only: metal sparks for a blade meeting a blade. A few thin fragments struck off the attacking blade itself, each its own
 // speed, angle, life, thickness and streak length (owner 2026-09-20, three times: nothing uniform, nothing yellow, nothing bright or thick
@@ -75,7 +75,7 @@ export function createClashSparks(scene: THREE.Scene) {
     },
     update(dt: number) {
       if (dt <= 0) return;   // a pause (dt 0) holds the sparks; a hit-stop passes dt, and sparks fly while the fighters hold (the impact frame)
-      dt = Math.min(dt, CLAMP_0_1); let active = false;
+      dt = Math.min(dt, STEP_MAX); let active = false;
       for (const l of late.splice(0)) { const k = Math.max(1, Math.round(l.n * 0.6)); spawn(l.a, l.b, l.heading, l.strength, k); if (l.n > k) late.push({ ...l, n: l.n - k }); }
       for (let p = 0; p < pool; p++) {
         life[p] = Math.max(0, life[p] - dt);
@@ -87,7 +87,7 @@ export function createClashSparks(scene: THREE.Scene) {
           for (let axis = 0; axis < 3; axis++) history[p * trail * 3 + axis] += velocity[p * 3 + axis] * dt;
           if (history[p * trail * 3 + 1] < 0.01 && velocity[p * 3 + 1] < 0) {   // one bounce off the sand, then it dies there
             history[p * trail * 3 + 1] = 0.01; velocity[p * 3 + 1] *= bounced[p] ? 0 : -0.35; velocity[p * 3] *= 0.6; velocity[p * 3 + 2] *= 0.6;
-            if (bounced[p]) life[p] = Math.min(life[p], CLAMP_0_05); bounced[p] = 1;
+            if (bounced[p]) life[p] = Math.min(life[p], BOUNCE_LIFE_MAX); bounced[p] = 1;
           }
         }
         const heat = life[p] / span[p];   // 1 = just struck, 0 = out

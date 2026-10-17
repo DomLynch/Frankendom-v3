@@ -6,7 +6,7 @@ import { SCHOOLS } from './schools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import { sceneNum } from './scene-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_0_02 = fxNum('clamp.boss-telegraph.0.02');
+const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin');
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
 // under the hero: where the blow will land, so a roll is the answer without any text. Read off the sim's own windup ticks (specialStage's source), never written back.
@@ -47,7 +47,7 @@ export function createBossTelegraph(scene: THREE.Scene) {
       ring.material.color.setHex(tint ?? 0xff5a1f); fill.material.color.setHex(tint ?? 0xd83a10);
       const pulse = look.flash ? 0.65 + 0.35 * Math.sin(tick * 0.9) : 1;
       ring.material.opacity = (0.3 + 0.5 * look.fill) * pulse;
-      fill.scale.setScalar(Math.max(CLAMP_0_02, look.fill)); fill.material.opacity = (0.12 + 0.3 * look.fill * look.fill) * pulse;
+      fill.scale.setScalar(Math.max(FILL_SCALE_MIN, look.fill)); fill.material.opacity = (0.12 + 0.3 * look.fill * look.fill) * pulse;
     },
     dispose() { group.removeFromParent(); for (const m of group.children as THREE.Mesh[]) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); } },
   };

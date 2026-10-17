@@ -5,13 +5,18 @@
 import { OPPONENTS, RULES, opponentAt, profileAt, DEFAULT_WEAPON, type AiProfile } from './moves.ts';
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
-import { initialAi, decide, type AiState } from './ai.ts';
-import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
+import { initialAi, decide, lcg, seedUnit, type AiState } from './ai.ts';
+import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json
+const MOTION_SEED_SALT = simBound('motion.seedSalt');   // salts the creature's circle-draw stream apart from the brain's own
+import { createFighter, idleIntent, movesOf, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
+import { M } from './detmath.ts';
+import { motionOf, type CreatureMotion } from './creature-motion-rows.ts';
 import { worldRule } from './world-rules.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
-export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[] };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
+export type Motion = { hold: boolean; circling: boolean; left: number; seed: number };   // a world creature's stand / circle state (creature-motion-defs.json): hold = inside its stop band, circling = this re-decide drew a circle, left = ticks to the next draw
+export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[]; motion?: Motion };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
 // open-world: the guard-side thumbs exist here as they always have in the Pit (Dom 2026-10-13): the world steps the Pit's RULES unchanged (directionalGuard on) and carries the held side in the Input (intentOf).
 const TICK = 1 / 60, FAR_M = worldRule('farM');   // FAR_M: the world-rules row `farM`
 export const IDLE_INPUT: Input = { x: 0, z: 0 };
@@ -25,7 +30,7 @@ const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
 /** The hero's Pit fighter as the Pit builds it (initialDuel: createFighter with his weapon; withSheet: his sheet's bar and recovery, the sheet itself carried on the fighter so stepDuel reads its dials). No weapon = DEFAULT_WEAPON, no sheet = today's hero. */
 export function heroSheeted(f: Fighter): PitFighter {
   // open-world: a hero with a spell casts through the Pit's special slot (spell-cast.ts), ready at once (no opening delay: the world has no fight start), so a live hero and a replayed one are the same hero
-  const hero = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
+  const plain = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), hero = f.skill2 ? { ...plain, skill2: f.skill2, skillCooldown2: 0 } : plain, cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
   return f.sheet ? withSheet({ tick: 0, fighters: [cast, cast], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : cast;
 }
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
@@ -36,6 +41,23 @@ export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter)
   const seed = foe?.seed ?? seedOf(foe?.id ?? hero.id), withA = h.spell && h.specialShare !== undefined ? withSpell(base, 0, h.spell, seed) : base;
   const duel = h.spell2 && h.specialShare !== undefined ? withSpell(withA, 0, h.spell2, seed, 1) : withA;   // slot b rides the same seeded stream: the draw index is the cast count, not the slot   // open-world: the cast draws are seeded by the bout (the creature's roll seed, else its id), so a replay reproduces every outcome
   return { foe: foe?.id ?? null, duel: foe?.seed === undefined ? duel : withRoll(duel, foe.seed), ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };
+}
+
+/** open-world: a creature's step with its turn rate and sideways speed capped by its row (EQEmu RotateToCommand: the heading moves toward its target at the mob's rotate speed, never a snap; AzerothCore chase: the
+ *  creature closes along the line to its foe and does not strafe fast). `from` is the creature before the step, `to` after, `foe` the player. Pure, no transcendental beyond detmath. */
+function paced(from: PitFighter, to: PitFighter, foe: PitFighter, m: CreatureMotion): PitFighter {
+  const TAU = Math.PI + Math.PI, stepTurn = m.turnRateCapRadPerS * TICK, striking = from.phase === 'attack' || to.phase === 'attack';   // a lunge or a hit frame turns as the move says
+  const d = ((to.body.heading - from.body.heading + Math.PI) % TAU + TAU) % TAU - Math.PI;
+  const heading = !striking && Math.abs(d) > stepTurn ? from.body.heading + (d < 0 ? -stepTurn : stepTurn) : to.body.heading;
+  let { x, z } = to.body;
+  if (m.circleChance > 0 && m.strafeSpeedCapMps > 0) {
+    const fx = foe.body.x - from.body.x, fz = foe.body.z - from.body.z, len = M.hypot(fx, fz);
+    if (len > 0) {
+      const ux = fx / len, uz = fz / len, dx = x - from.body.x, dz = z - from.body.z, along = dx * ux + dz * uz, side = dx * uz - dz * ux, cap = m.strafeSpeedCapMps * TICK;   // ux,uz toward the foe; side positive to the creature's right of that line
+      if (Math.abs(side) > cap) { const kept = side < 0 ? -cap : cap; x = from.body.x + ux * along + uz * kept; z = from.body.z + uz * along - ux * kept; }
+    }
+  }
+  return { ...to, body: { ...to.body, x, z, heading } };
 }
 
 const phaseOf = (f: PitFighter): { phase: Phase; t: number } => {
@@ -76,12 +98,13 @@ function intentOf(input: Input, guarding: boolean, lock: boolean): Intent {
 
 /** One world step of a bout: `ticks` Pit ticks (60 Hz). `a` is slot 0 (a player), `b` slot 1 (a creature or a player; undefined when alone). Writes the result into `a` and `b` (the caller's copies) and returns the events. */
 export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: Input, inputB: Input, dt: number, clock = 0): { bout: Bout; events: Event[] } {
+  let mot: Motion | undefined = s.motion ? { ...s.motion } : undefined;
   let duel = s.duel, ai = s.ai, guardA = a.phase === 'guard', guardB = b?.phase === 'guard';
   const out: Event[] = [], ticks = Math.max(1, Math.round(dt / TICK));
   for (let k = 0; k < ticks; k++) {
     const [pa, pb] = duel.fighters;
     // open-world: the places, facings, stances and effective health come from the world each tick (the page walks the players).
-    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health, maxHealth: a.maxHealth, stamina: a.stamina, posture: a.posture, skill: a.skill, cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
+    const ha: PitFighter = { ...pa, body: { ...pa.body, x: a.x, z: a.z, heading: pa.phase === 'roll' ? pa.body.heading : a.facing }, health: a.health, maxHealth: a.maxHealth, stamina: a.stamina, posture: a.posture, skill: a.skill, ...(a.skill2 ? { skill2: a.skill2 } : {}), cc: a.cc ?? emptyLadder, ...(a.stance ? { stance: a.stance } : {}) };
     if (a.special && ha.specialShare === undefined) { ha.specialShare = a.level >= RULES.special.bossFrom ? RULES.special.bossDamage : RULES.special.damage; ha.specialName = a.special; ha.skillCooldown = Math.round(a.specialIn / TICK); }
     const hb: PitFighter = b
       ? { ...pb, cc: b.cc ?? emptyLadder, ...(b.ccGuard ? { ccGuard: b.ccGuard } : {}), body: b.side === 'player' ? { ...pb.body, x: b.x, z: b.z, heading: pb.phase === 'roll' ? pb.body.heading : b.facing } : pb.body, health: b.health, maxHealth: b.maxHealth, ...(b.side === 'player' ? { stamina: b.stamina, posture: b.posture, skill: b.skill } : {}), ...(b.stance ? { stance: b.stance } : {}) }
@@ -90,9 +113,27 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
     const press = (i: Input): Input => (k === 0 ? i : { x: i.x, z: i.z, run: i.run, guard: i.guard });   // open-world: a press (cut, roll, special) is one tick; the rest of a frame's ticks hold only the walk and the guard
     const intentA = intentOf(press(inputA), guardA, !!b); guardA = !!inputA.guard;
     let intentB: Intent = idleIntent();
-    if (b && ai && s.profile) { const brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent; }
+    const motion = b && ai && s.profile ? motionOf(b.kind) : undefined;   // open-world: a creature's row of creature-motion-defs.json (a Pit duel never reads it)
+    if (b && ai && s.profile) {
+      const was = ai.decision, brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent;
+      if (motion) {
+        if (mot?.hold && ai.decision > was) ai = { ...ai, decision: Math.round(ai.decision * motion.holdRedecideScale) };   // open-world: held inside its band it re-decides less often (the Pit's 0.6-1.3 s flips mode about once a second)
+        const mo = mot ?? (mot = { hold: false, circling: false, left: 0, seed: (ai.seed ^ MOTION_SEED_SALT) >>> 0 });
+        const reach = movesOf(hb).light_right.reach, gap = M.hypot(hb.body.x - ha.body.x, hb.body.z - ha.body.z);   // its own cut's reach, the same yardstick the brain's hover reads
+        if (!mo.hold && gap <= reach * motion.stopAtReach) mo.hold = true;   // open-world: it stops walking in at its stop share of reach and re-approaches only past the band (hysteresis)
+        else if (mo.hold && gap > reach * motion.reapproach) mo.hold = false;
+        if (mo.left <= 0) {   // the circle draw: seeded, once per re-decide (2-4 s), only when the row circles at all
+          mo.seed = lcg(mo.seed);
+          mo.circling = motion.circleChance > 0 && seedUnit(mo.seed) < motion.circleChance;   // the draw is the same stream whatever the range; the range gate below only mutes it
+          mo.seed = lcg(mo.seed);
+          mo.left = Math.round((motion.circleRedecideMinS + seedUnit(mo.seed) * (motion.circleRedecideMaxS - motion.circleRedecideMinS)) / TICK);
+        } else mo.left--;
+        if (mo.hold && (ai.mode === 'approach' || (ai.mode === 'circle' && !(mo.circling && gap <= motion.circleWithinM)))) intentB = { ...intentB, move: { x: 0, z: 0, yaw: 0, run: false } };   // open-world: inside its band it stands and faces (lock keeps the facing); it strafes only on a circle draw
+      }
+    }
     else if (b) { intentB = intentOf(press(inputB), guardB, true); guardB = !!inputB.guard; }
-    const next = stepDuel(before, [intentA, intentB]);
+    let next = stepDuel(before, [intentA, intentB]);
+    if (motion) next = { ...next, fighters: [next.fighters[0], paced(before.fighters[1], next.fighters[1], before.fighters[0], motion)] };   // open-world: a creature's turn rate and sideways speed are capped
     out.push(...eventsOf(next.events, [a.id, b?.id ?? ''], next));
     duel = { ...next, events: [] };
     a.cc = next.fighters[0].cc; if (b) b.cc = next.fighters[1].cc;   // the world keeps the ladders: the next bout (or joiner) steps the same one
@@ -105,5 +146,5 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
   write(a, pa);
   if (b) write(b, pb);
   if (pa.skillCooldown !== undefined && a.special) a.specialIn = pa.skillCooldown * TICK;
-  return { bout: { foe: s.foe, duel, ai, profile: s.profile }, events: out };
+  return { bout: { foe: s.foe, duel, ai, profile: s.profile, ...(mot ? { motion: mot } : {}) }, events: out };
 }

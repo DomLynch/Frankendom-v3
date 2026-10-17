@@ -6,9 +6,9 @@ import { hash } from './fx-math.ts';
 import { SPECIALS, specialFamily, type SpecialRow } from './special-rows.ts';
 import { specialFxBodyNum } from './special-fx-body-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_1_55 = fxNum('clamp.special-fx-dwarf-shield.1.55');
-const CLAMP_255 = fxNum('clamp.special-fx-dwarf-shield.255');
-const CLAMP_M0_5 = fxNum('clamp.special-fx-dwarf-shield.-0.5');
+const RADIUS_MIN = fxNum('fx.specialFxDwarfShield.radiusMin');
+const BYTE_MAX = fxNum('fx.specialFxDwarfShield.byteMax');
+const PAYOFF_HOLD_REL = fxNum('fx.specialFxDwarfShield.payoffHoldRel');
 
 // The Dwarf's and the Shieldmaiden's rank 8-10 special moves (Character lane, 2026-10-01; PREVIEW ONLY, `?special=dwarf8|dwarf9|dwarf10|shield8|shield9|shield10`).
 // Presentation only: it reads the cast's clock and the two fighters' Head bones, never the sim, a rig's root or Math.random (every "random" is an index
@@ -159,7 +159,7 @@ function baredFace(f: Field, rel: number, g: Geo) {
 // between him and the camera) with a low pale dust rising off it; on landing it tightens quickly inward and a strike puff lands on the target, then it falls apart. Low and thin,
 // so both fighters stay readable.
 function theRing(f: Field, rel: number, g: Geo) {
-  const mx = (g.cx + g.tx) / 2, mz = (g.cz + g.tz) / 2, R0 = Math.max(g.dist / 2 + 0.95, CLAMP_1_55), draw = out(ramp(rel, -32, -6)), tight = smooth(ramp(rel, 0, 7)), fall = ramp(rel, 8, 76);
+  const mx = (g.cx + g.tx) / 2, mz = (g.cz + g.tz) / 2, R0 = Math.max(g.dist / 2 + 0.95, RADIUS_MIN), draw = out(ramp(rel, -32, -6)), tight = smooth(ramp(rel, 0, 7)), fall = ramp(rel, 8, 76);
   const a0 = Math.atan2(g.dz, g.dx);   // the line starts behind the pair and runs round to the front
   for (let i = 0; i < 44; i++) {   // the dark line
     const u = i / 44, a = a0 + Math.PI + u * TAU, R = R0 * (1 - 0.28 * tight) * (1 + 0.03 * (hash(i, 1) - 0.5)) + fall * 0.35 * hash(i, 2), on = ramp(draw, u * 0.9, u * 0.9 + 0.1);
@@ -270,7 +270,7 @@ export function createIronSettle(scene: THREE.Scene, opponent: OpponentId, expos
 export function createGatheredEdge(scene: THREE.Scene, opponent: OpponentId, exposure: number) {
   const root = new THREE.Group(); root.name = 'gathered edge'; root.visible = false; scene.add(root);
   const maps = puffTextures();
-  for (const map of maps) { const pixels = map.image.data as Uint8Array; for (let a = 3; a < pixels.length; a += 4) pixels[a] = Math.min(CLAMP_255, pixels[a] * 3); }
+  for (const map of maps) { const pixels = map.image.data as Uint8Array; for (let a = 3; a < pixels.length; a += 4) pixels[a] = Math.min(BYTE_MAX, pixels[a] * 3); }
   const geometry = new THREE.PlaneGeometry(1, 1); geometry.rotateX(-Math.PI / 2);
   const seam = Array.from({ length: 5 }, (_, i) => {
     const color = new THREE.Color('#87755e'); if (exposure > 1.5) color.multiplyScalar(1.2);
@@ -342,7 +342,7 @@ export function createBossFx(scene: THREE.Scene, opponent: OpponentId, kind: Dwa
       const state = bossClock(cast, clock);
       if (state.done) { cast = null; hide(); return; }
       setGeo(geo, caster, target);
-      fillBoss(kind, field, state.struck || cast.fizzled !== null ? state.rel : Math.min(state.rel, CLAMP_M0_5), geo, state.fade, night);   // the payoff waits for the sim's own SpecialLanded
+      fillBoss(kind, field, state.struck || cast.fizzled !== null ? state.rel : Math.min(state.rel, PAYOFF_HOLD_REL), geo, state.fade, night);   // the payoff waits for the sim's own SpecialLanded
       const a = write(dust, field.dust, palette), b = write(grit, field.grit, iron); writeUnder(field.dust); root.visible = a || b;
     },
     clear() { cast = null; hide(); },

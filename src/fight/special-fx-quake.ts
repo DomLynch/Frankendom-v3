@@ -5,11 +5,11 @@ import { advanceCast, castPhase, LAND_AT, RIPPLE, SLAM_AT, skillCast, type Cast 
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 import { specialFxFieldNum } from './special-fx-field-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const CLAMP_255 = fxNum('clamp.special-fx-quake.255');
-const CLAMP_0_9 = fxNum('clamp.special-fx-quake.0.9');
-const CLAMP_0_01 = fxNum('clamp.special-fx-quake.0.01');
-const CLAMP_0_2 = fxNum('clamp.special-fx-quake.0.2');
-const CLAMP_0_02 = fxNum('clamp.special-fx-quake.0.02');
+const BYTE_MAX = fxNum('fx.specialFxQuake.byteMax');
+const LANE_MIN = fxNum('fx.specialFxQuake.laneMin');
+const LENGTH_MIN = fxNum('fx.specialFxQuake.lengthMin');
+const SHOWN_SPAN_MIN = fxNum('fx.specialFxQuake.shownSpanMin');
+const GRIT_HEIGHT_MIN = fxNum('fx.specialFxQuake.gritHeightMin');
 
 // Red Wind's painted-stroke helpers (Nightborn lane, special-fx-wind.ts on #1220), copied here so this preview stacks on #1120 alone, not on Red Wind.
 // SandLook: what the strokes are painted with, a dark core and a pale rim, both linear working-space colours.
@@ -30,7 +30,7 @@ function paintSheet(seed: number, look: SandLook, wide = false) {
       const head = smooth(l / 0.1), tail = smooth((1 - l) * 2.4 - 0.55 * noise(a * 9, l * 9, seed + 11));   // soft head, ragged tail
       const alpha = Math.min(1, body * streak * head * tail * 1.15);
       const dark = Math.min(1, smooth(1 - d) * (0.55 + 0.45 * streak) * 1.3), r = lerp(edge.r, core.r, dark), g = lerp(edge.g, core.g, dark), b = lerp(edge.b, core.b, dark);
-      px.set([Math.min(CLAMP_255, r * 255), Math.min(CLAMP_255, g * 255), Math.min(CLAMP_255, b * 255), alpha * 255], (y * w + x) * 4);
+      px.set([Math.min(BYTE_MAX, r * 255), Math.min(BYTE_MAX, g * 255), Math.min(BYTE_MAX, b * 255), alpha * 255], (y * w + x) * 4);
     }
   }
   const map = new THREE.DataTexture(px, w, h); map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true;
@@ -151,13 +151,13 @@ export function createShieldQuake(scene: THREE.Scene, opponent: OpponentId, look
       const frozen = p.phase === 'dissolve' ? castPhase({ ...cast, fizzled: null }, cast.fizzled!) : p, fade = 1 - (p.phase === 'dissolve' ? smooth(p.k) : 0);
       const rel = p.phase === 'recover' ? p.age : -1;   // ticks since the landing
       const age = rel >= 0 ? LAND_AT + rel : frozen.age, ran = clamp01((age - SLAM_AT) / RIPPLE);   // 0..1 along the lane, from the slam
-      dir.copy(to).sub(from).setY(0); const full = Math.max(CLAMP_0_9, dir.length()), dist = full - RIM; lane.position.copy(from).addScaledVector(dir.normalize(), RIM); lane.rotation.y = Math.atan2(dir.x, dir.z); pit.position.copy(to);
+      dir.copy(to).sub(from).setY(0); const full = Math.max(LANE_MIN, dir.length()), dist = full - RIM; lane.position.copy(from).addScaledVector(dir.normalize(), RIM); lane.rotation.y = Math.atan2(dir.x, dir.z); pit.position.copy(to);
       const life = rel >= 0 ? 1 - smooth((rel - 14) / 34) : 1, burst = rel >= 0 ? smooth(rel / 9) : 0;
       const front = smooth(ran) * dist;   // metres of lane the front has covered
-      setPiece(seam, ran > 0 ? 0.95 * (rel >= 0 ? life : 1) * fade : 0, 1, 1, Math.max(CLAMP_0_01, front * 0.97));
+      setPiece(seam, ran > 0 ? 0.95 * (rel >= 0 ? life : 1) * fade : 0, 1, 1, Math.max(LENGTH_MIN, front * 0.97));
       strips.forEach((s, i) => {
         const h = (salt: number) => hash(i + seed * 7, salt), reachTo = dist - 0.2, u = (0.1 + 0.55 * h(21)) * reachTo, w = Math.min(reachTo - u, (0.7 + 1.3 * h(22)) * reachTo * 0.5), side = (h(23) - 0.5) * (0.12 + 0.5 * (u / reachTo));
-        const shown = clamp01((front - u) / Math.max(CLAMP_0_2, w)), len = Math.max(CLAMP_0_01, w * shown);
+        const shown = clamp01((front - u) / Math.max(SHOWN_SPAN_MIN, w)), len = Math.max(LENGTH_MIN, w * shown);
         s.mesh.position.set(side, 0, u); s.mesh.rotation.y = (h(24) - 0.5) * 0.12;
         setPiece(s, (ran > 0 ? lerp(0.6, 1, h(25)) * smooth(shown * 3) * (rel >= 0 ? life : 1) : 0) * fade, 1, 1, len);
       });
@@ -175,14 +175,14 @@ export function createShieldQuake(scene: THREE.Scene, opponent: OpponentId, look
       const since = age - SLAM_AT;   // ticks since the rim bit the sand
       for (let i = 0; i < 40; i++) {
         const th = hash(i, 71) * Math.PI * 2, v = 0.6 + 1.6 * hash(i, 72), q = Math.max(0, since) / 60, r = (0.08 + 0.4 * hash(i, 73)) * (0.4 + 3 * q);
-        rimGrit[i * 3] = Math.cos(th) * r; rimGrit[i * 3 + 1] = since < 0 ? -9 : Math.max(CLAMP_0_02, v * q - 4.5 * q * q); rimGrit[i * 3 + 2] = Math.sin(th) * r;
+        rimGrit[i * 3] = Math.cos(th) * r; rimGrit[i * 3 + 1] = since < 0 ? -9 : Math.max(GRIT_HEIGHT_MIN, v * q - 4.5 * q * q); rimGrit[i * 3 + 2] = Math.sin(th) * r;
       }
       (rimGeo.attributes.position as THREE.BufferAttribute).needsUpdate = true; rimMat.opacity = since >= 0 ? clamp01(1 - since / 28) * fade * (look.dim ? CAP_PIT : 1) : 0;
       const o: P3 = [0, 0, 0];
       for (let i = 0; i < GRIT; i++) {   // a fountain from the target's feet; before the landing, a few kernels skip ahead of the front
         const th = hash(i, 91) * Math.PI * 2, r = (0.1 + 0.8 * hash(i, 92)) * (0.3 + burst), v = 2.2 + 4 * hash(i, 93), s = Math.max(0, rel - 1) / 60, grounded = rel < 0;
         o[0] = Math.cos(th) * r * (1 + 0.8 * s); o[2] = Math.sin(th) * r * (1 + 0.8 * s);
-        o[1] = grounded ? -9 : Math.max(CLAMP_0_02, v * s - 5 * s * s * (0.7 + 0.5 * hash(i, 94)));
+        o[1] = grounded ? -9 : Math.max(GRIT_HEIGHT_MIN, v * s - 5 * s * s * (0.7 + 0.5 * hash(i, 94)));
         grit[i * 3] = o[0]; grit[i * 3 + 1] = o[1]; grit[i * 3 + 2] = o[2];
       }
       (gritGeo.attributes.position as THREE.BufferAttribute).needsUpdate = true; gritMat.opacity = clamp01(rel >= 0 ? life * fade : 0) * (look.dim ? CAP_PIT : 1);
