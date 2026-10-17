@@ -14,7 +14,7 @@ import { LEVELS, LATE_NOTICE_FROM } from './moves-dials-rows.ts';   // the dials
 import { PROFILES_ROWS, OWN_KNOBS_ROWS, ABSENT_ROWS, POISE_FULL_AT_ROWS } from './moves-tables-rows.ts';   // rows: moves-tables-defs.json
 import { buildArchetypes } from './archetype-rows.ts';   // rows: archetype-defs.json
 import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json
-const TAIL_REACTION_FLOOR = simBound('tail.reactionFloor'), TAIL_ACCURACY_CAP = simBound('tail.accuracyCap'), TAIL_PARRY_CAP = simBound('tail.parryCap');
+const NOVICE_REACTION_ADD = simBound('novice.reactionAdd'), TAIL_REACTION_FLOOR = simBound('tail.reactionFloor'), TAIL_ACCURACY_CAP = simBound('tail.accuracyCap'), TAIL_PARRY_CAP = simBound('tail.parryCap');
 export { LEVELS };
 export type { OpponentId, RigId } from '../roster.ts';
 // Combat data. Every timing is in fixed 60 Hz ticks; every number here is a tuning candidate, not a validated value.
@@ -191,19 +191,19 @@ export const specialOf = (opponent: OpponentId, level: number): SpecialName | nu
 };
 export { LEVEL_ANCHORS };   // the profile tiers' anchor levels are rows (level-anchor-defs.json, built by level-anchor-rows.ts)
 // The novice (Combat's L1 screen, 2026-09-27: tap-attack wins /48 at 48 seeds): slow to notice, rarely answers, swings a quarter as often.
-const novice = (easy: AiProfile): AiProfile => ({ ...easy, reaction: easy.reaction + 30, ...(easy.tellReaction === undefined ? {} : { tellReaction: easy.tellReaction + 30 }), accuracy: .1, parry: 0, dodge: 0, aggression: easy.aggression * .25, lapse: .95, read: .1 });
+const novice = (easy: AiProfile): AiProfile => ({ ...easy, reaction: easy.reaction + NOVICE_REACTION_ADD, ...(easy.tellReaction === undefined ? {} : { tellReaction: easy.tellReaction + NOVICE_REACTION_ADD }), accuracy: simBound('novice.accuracy'), parry: 0, dodge: 0, aggression: easy.aggression * simBound('novice.aggressionShare'), lapse: simBound('novice.lapse'), read: simBound('novice.read') });
 // The novice BODY (option C, Strategy yes 2026-09-27 09:5x): no skill rule alone clears the level-1 gate, because a player's light never
 // staggers a poise-16 fighter (the Pitborn, the Shieldmaiden trade and win on 190 health) — a body stat, not an AI knob. At level 1 poise is 0
 // and health 70 %, blending linearly back to the opponent's own body at level 6 (easy), so from level 6 up he is exactly the man he was.
 // L1–5 body scaling protects the new player; it isn't a balance layer, and nothing on the PLAYER's numbers moves (Strategy).
-export const NOVICE_BODY = { poise: 0, health: .7 } as const;
+export const NOVICE_BODY = { poise: 0, health: simBound('novice.bodyHealth') } as const;
 // From L6 he is today's man, except poise for those two, full at L18 (Strategy 10:1x, 2026-09-27): a player's light (14) never staggers
 // poise 16, so at L6 the tap-attacker went 45 -> 0 / 48 v the Pitborn and the Shieldmaiden. Their poise ramps 0 -> 16 over L1–18 instead
 // (L6 poise 5); health and AI as everyone's. Set a value to LEVEL_ANCHORS.easy to put the old wall back.
 export const POISE_FULL_AT: Partial<Record<OpponentId, number>> = POISE_FULL_AT_ROWS as unknown as Partial<Record<OpponentId, number>>;
 // The scutum (SCOPE: guard profile only, 2026-09-27): two sides, stops heavies, a cheaper hold, posture drains faster. No damage
 // reduction, no attack penalty. Starting numbers (Combat); the Centurion battery (L1/6/10/18/30/46) tunes them.
-export const SCUTUM: Partial<GuardProfile> = { wide: true, stopsHeavy: true, heavyBreaks: false, costScale: .75, postureDecay: 1.5 };
+export const SCUTUM: Partial<GuardProfile> = { wide: true, stopsHeavy: true, heavyBreaks: false, costScale: simBound('scutum.costScale'), postureDecay: simBound('scutum.postureDecay') };
 // A loadout that changes with the ladder level (SCOPE: "Centurion carries gladius + scutum from Legionary"): below `from` he fights
 // with his roster weapon (the Recruit's trident), from `from` on with this one.
 export const LOADOUT_FROM: Partial<Record<OpponentId, { from: number; weapon: WeaponId; guard: Partial<GuardProfile> }>> = { veteran: { from: LEVEL_ANCHORS.easy, weapon: 'gladius', guard: SCUTUM } };
@@ -240,10 +240,10 @@ const levelCache = new Map<string, AiProfile>();
 const tailApex = (h: AiProfile): AiProfile => ({
   ...h,
   reaction: Math.min(h.reaction, Math.max(TAIL_REACTION_FLOOR, h.reaction - 2)),
-  lapse: Math.round(h.lapse * 500) / 1000,
-  accuracy: Math.max(h.accuracy, Math.min(TAIL_ACCURACY_CAP, h.accuracy + .03)),
-  ...(h.parry > 0 ? { parry: Math.max(h.parry, Math.min(TAIL_PARRY_CAP, h.parry + .1)) } : {}),
-  ...(h.read === undefined ? {} : { read: Math.max(h.read, Math.min(TAIL_ACCURACY_CAP, h.read + .03)) }),
+  lapse: Math.round(h.lapse * simBound('tail.lapseMul')) / simBound('tail.lapseDiv'),
+  accuracy: Math.max(h.accuracy, Math.min(TAIL_ACCURACY_CAP, h.accuracy + simBound('tail.accuracyStep'))),
+  ...(h.parry > 0 ? { parry: Math.max(h.parry, Math.min(TAIL_PARRY_CAP, h.parry + simBound('tail.parryStep'))) } : {}),
+  ...(h.read === undefined ? {} : { read: Math.max(h.read, Math.min(TAIL_ACCURACY_CAP, h.read + simBound('tail.readStep'))) }),
 });
 /** The first ladder level whose in-between profile uses late notice (ai.ts): the L11→L12 step is the first cliff, and L1–11 stay byte for byte (Lead, 2026-10-06). */
 export function profileAt(o: Opponent, level: number): AiProfile {

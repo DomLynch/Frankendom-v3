@@ -2,10 +2,12 @@ import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: e
 export const STEP = 1 / 60;
 import { PLAY_SCALE, RADIUS, spawnScale } from './play-radius.ts';
 export { PLAY_SCALE, RADIUS };   // the play circle (play-radius.ts): 8.55 m, 0.6 of it in Arena 1 from record version 23
-export const TARGET = { x: 0, z: -2.5 };
+import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json
+const CONTACT_STOP_M = simBound('contact.stopM');   // how close two fighters stand (a player against the dummy)
+export const TARGET = { x: 0, z: simBound('target.z') };
 export type State = { x: number; z: number; heading: number; distance: number };
 export type Input = { x: number; z: number; yaw: number; run: boolean };
-export const initialState = (): State => ({ x: 0, z: 4 * spawnScale(), heading: Math.PI, distance: 0 });
+export const initialState = (): State => ({ x: 0, z: simBound('spawn.z') * spawnScale(), heading: Math.PI, distance: 0 });
 export const initialTarget = (): { x: number; z: number } => ({ x: 0, z: TARGET.z * spawnScale() });   // the opponent's start (TARGET is the full-size one)
 
 // World coordinates only. No renderer, clock, animation, physics or browser state.
@@ -22,14 +24,14 @@ export function advance(state: State, input: Input, target: { x: number; z: numb
   // Resolve against the other fighter, including attack step-in and retreat.
   const tx = x - target.x, tz = z - target.z;
   const gap = M.hypot(tx, tz);
-  if (gap < 0.85) {
+  if (gap < CONTACT_STOP_M) {
     const angle = gap > 0.00001 ? M.atan2(tx, tz) : state.heading + Math.PI;
-    x = target.x + M.sin(angle) * 0.85;
-    z = target.z + M.cos(angle) * 0.85;
+    x = target.x + M.sin(angle) * CONTACT_STOP_M;
+    z = target.z + M.cos(angle) * CONTACT_STOP_M;
   }
   const radius = M.hypot(x, z);
   if (radius > wall) { x *= wall / radius; z *= wall / radius; }
-  if (M.hypot(x - target.x, z - target.z) < .85 - 1e-8) return { ...state };
+  if (M.hypot(x - target.x, z - target.z) < CONTACT_STOP_M - 1e-8) return { ...state };
   return { x, z, heading: M.atan2(dx, dz), distance: state.distance + M.hypot(x - state.x, z - state.z) };
 }
 

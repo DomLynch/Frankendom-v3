@@ -1,6 +1,8 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import { RULES } from './moves.ts';
 import { POOLS } from './pools.ts';
+import { simBound } from './sim-bounds-rows.ts';
+const REL_CLAMP = simBound('cast.relClamp');   // rows: sim-bounds-defs.json (the cast relativity window, tenths)
 import BRICK_DEFS from './brick-defs.json' with { type: 'json' };
 import BRICK_MANIFEST from './brick-defs.manifest.json' with { type: 'json' };
 import CAST_RULES from './cast-rules.json' with { type: 'json' };
@@ -66,7 +68,7 @@ export function resolveSpell(id: string, skill: number, spellPower = 0, recordVe
   const [root, level] = INDEX[id]!, b = BRICKS[root]!, raw = b.cost + b.costPerLevel * level, cost = recordVersion === undefined || recordVersion >= CAST.costCapFrom ? Math.min(COST_CAP, raw) : raw, credit = Math.round(spellPower * CAST.creditPerPoint), hit = (recordVersion === undefined || recordVersion >= CAST.hitsFrom) ? HITS[root] : undefined;   // a record below hitsFrom resolves one landing, exactly as before
   return {
     id, cost, share: RULES.special.damage * b.effect.magnitude * (1 + b.effect.perLevel * (level - 1)),
-    rel10: clampTo(Math.round(CAST.tenths * (skill + credit - CAST.costWeight * cost) / CAST.relDivisor), -500, 500), spread10: CAST.spread * CAST.tenths,
+    rel10: clampTo(Math.round(CAST.tenths * (skill + credit - CAST.costWeight * cost) / CAST.relDivisor), -REL_CLAMP, REL_CLAMP), spread10: CAST.spread * CAST.tenths,
     critFail10: b.success.critFailBelow * CAST.tenths, fail10: b.success.failBelow * CAST.tenths, partial10: b.success.partialBelow * CAST.tenths, crit10: b.success.critFrom * CAST.tenths,
     partialMult: b.success.partialMult, critMult: b.success.critMult,
     hits: hit ? hit.ramp : [1], hitEvery: hit ? hit.every : 0, hitHolds: !!hit && hit.holds === 1,
@@ -74,7 +76,7 @@ export function resolveSpell(id: string, skill: number, spellPower = 0, recordVe
 }
 /** The outcome of one cast: `u` is the seeded unit draw in [0, 1) (roll.ts rollUnit). */
 export function castOutcome(s: Spell, u: number): CastOutcome {
-  const e = clampTo(s.rel10 + Math.round((CAST.drawSpan * u - 1) * s.spread10), -500, 500);
+  const e = clampTo(s.rel10 + Math.round((CAST.drawSpan * u - 1) * s.spread10), -REL_CLAMP, REL_CLAMP);
   return e < s.critFail10 ? 'critfail' : e < s.fail10 ? 'fail' : e < s.partial10 ? 'partial' : e >= s.crit10 ? 'crit' : 'success';
 }
 /** What the outcome does to the landing: 0 is a fizzle (stamina spent, full cooldown, no damage). */

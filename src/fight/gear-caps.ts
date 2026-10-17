@@ -13,4 +13,5 @@ export const NAKED: Loadout = { attack: 1, res: 1 };
 
 // What a full Origin set is worth. Attack gets the smaller range on purpose (brief 19): raw damage is what kill timings, finisher
 // windows and the fight-length pins are measured against, so it moves least.
-export const CAPS = { attack: 1.15, res: 0.80 } as const;
+import { simBound } from './sim-bounds-rows.ts';
+export const CAPS ={ attack: simBound('gear.attackCap'), res: simBound('gear.resCap') } as const;   // rows: sim-bounds-defs.json
