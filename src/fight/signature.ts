@@ -5,6 +5,9 @@ import type { OpponentId } from '../roster.ts';
 import { HEAVY_CLASS } from './clash-sparks.ts';
 import { surfaceHit, woundSite, type WoundHit } from './gore.ts';
 import { sigGroup } from './signature-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_12 = fxNum('clamp.signature.0.12');
+const CLAMP_0_001 = fxNum('clamp.signature.0.001');
 
 // Signature effects (Brief: docs/briefs/signature-effects.md, Dom 2026-09-24): one cosmetic effect per opponent, keyed to an event the
 // duel already emits. Renderer-side only: nothing here reads input, writes the sim or changes a number the fight uses. An effect is
@@ -138,7 +141,7 @@ export function createSignatureMarks(scene: THREE.Scene) {
       // The surface ray can meet whatever else the rig carries first (the Dwarf capture put a stamp on the player's raised sword, 25 cm off
       // his shoulder): a point farther from the bone than the site's own neighbourhood is not the body, so the site's radius is used instead.
       const at = bone.getWorldPosition(new THREE.Vector3()), found = surfaceHit(root, bone, out);
-      const met = found && found.point.distanceTo(at) <= Math.max(0.12, site.radius * 2) * scale ? found : null;
+      const met = found && found.point.distanceTo(at) <= Math.max(CLAMP_0_12, site.radius * 2) * scale ? found : null;
       const point = met ? met.point.addScaledVector(met.normal, 0.004) : at.addScaledVector(out, site.radius * scale);
       const slot = take(bodies[side]); dress(slot, look); pin(slot, bone, point, met ? met.normal : out);
       return true;
@@ -165,7 +168,7 @@ export function createSignatureMarks(scene: THREE.Scene) {
         scratchUp.copy(normal).cross(scratchRight).normalize();
         slot.mesh.quaternion.setFromRotationMatrix(scratchMatrix.makeBasis(scratchRight, scratchUp, normal)).multiply(spin.setFromAxisAngle(zAxis, slot.mesh.userData.tilt as number));
         if (slot.parent && eye && scratchEye.copy(eye).sub(position).normalize().dot(normal) < -0.15) { slot.mesh.visible = false; continue; }
-        slot.mesh.material.opacity = slot.opacity * Math.min(1, slot.age / Math.max(1e-3, slot.fadeIn));
+        slot.mesh.material.opacity = slot.opacity * Math.min(1, slot.age / Math.max(CLAMP_0_001, slot.fadeIn));
         slot.mesh.visible = true;
       }
     },
