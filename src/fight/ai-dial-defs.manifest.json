@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "aidial", "file": "ai-dial-defs.json", "at": "dials", "key": "id",
+      "required": { "value": "number" } }
+  ]
+}
