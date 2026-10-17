@@ -13,6 +13,8 @@ import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 import { LEVELS, LATE_NOTICE_FROM } from './moves-dials-rows.ts';   // the dials are rows (moves-dials-defs.json)
 import { PROFILES_ROWS, OWN_KNOBS_ROWS, ABSENT_ROWS, POISE_FULL_AT_ROWS } from './moves-tables-rows.ts';   // rows: moves-tables-defs.json
 import { buildArchetypes } from './archetype-rows.ts';   // rows: archetype-defs.json
+import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json
+const TAIL_REACTION_FLOOR = simBound('tail.reactionFloor'), TAIL_ACCURACY_CAP = simBound('tail.accuracyCap'), TAIL_PARRY_CAP = simBound('tail.parryCap');
 export { LEVELS };
 export type { OpponentId, RigId } from '../roster.ts';
 // Combat data. Every timing is in fixed 60 Hz ticks; every number here is a tuning candidate, not a validated value.
@@ -237,11 +239,11 @@ const levelCache = new Map<string, AiProfile>();
 // against the fairness caps at L47–50 (tests/ladder-tail.test.ts); a rung that broke one would fall back to flat hard.
 const tailApex = (h: AiProfile): AiProfile => ({
   ...h,
-  reaction: Math.min(h.reaction, Math.max(5, h.reaction - 2)),
+  reaction: Math.min(h.reaction, Math.max(TAIL_REACTION_FLOOR, h.reaction - 2)),
   lapse: Math.round(h.lapse * 500) / 1000,
-  accuracy: Math.max(h.accuracy, Math.min(.98, h.accuracy + .03)),
-  ...(h.parry > 0 ? { parry: Math.max(h.parry, Math.min(.9, h.parry + .1)) } : {}),
-  ...(h.read === undefined ? {} : { read: Math.max(h.read, Math.min(.98, h.read + .03)) }),
+  accuracy: Math.max(h.accuracy, Math.min(TAIL_ACCURACY_CAP, h.accuracy + .03)),
+  ...(h.parry > 0 ? { parry: Math.max(h.parry, Math.min(TAIL_PARRY_CAP, h.parry + .1)) } : {}),
+  ...(h.read === undefined ? {} : { read: Math.max(h.read, Math.min(TAIL_ACCURACY_CAP, h.read + .03)) }),
 });
 /** The first ladder level whose in-between profile uses late notice (ai.ts): the L11→L12 step is the first cliff, and L1–11 stay byte for byte (Lead, 2026-10-06). */
 export function profileAt(o: Opponent, level: number): AiProfile {

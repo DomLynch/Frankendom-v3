@@ -19,6 +19,8 @@ import { MAX_ATTACKERS } from './attackers.ts';
 import type { AiState } from './ai.ts';
 import { guardOfLevel, type CcGuard, type CcLadder } from './cc-ladder.ts';
 import { fieldOf } from './catalogue-fields.ts';
+import { simBound } from './sim-bounds-rows.ts';
+const RETURN_MIN_STEP_M = simBound('world.returnMinStepM');   // rows: sim-bounds-defs.json
 import type { CombatEvent, Duel } from './duel.ts';
 
 const TICK = 1 / 60;
@@ -286,7 +288,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
     const prey = players.sort((a, b) => dist(f, a) - dist(f, b))[0];
     if (f.returning) {   // gave up: walks home at its amble, heals to full on arrival (no event)
       const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
-      if (d <= Math.max(step, 0.1)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; if (EVADE_HEAL_TO_FULL) f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
+      if (d <= Math.max(step, RETURN_MIN_STEP_M)) { f.x = f.homeX; f.z = f.homeZ; f.returning = false; if (EVADE_HEAL_TO_FULL) f.health = f.maxHealth; f.posture = 0; f.brain = undefined; f.threat = undefined; events.push({ type: 'Evaded', id: f.id }); }
       else { f.facing = M.atan2(dx, dz); f.x += (dx / d) * step; f.z += (dz / d) * step; }
     } else if (prey && (f.hunting ? dist(f, prey) <= SIGHT_M || f.unseen < giveUpOf(f.kind) : dist(f, prey) <= AGGRO_M)) {
       if (!f.hunting) { f.hunting = true; f.chaseX = f.x; f.chaseZ = f.z; f.unseen = 0; }
