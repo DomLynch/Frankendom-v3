@@ -42,8 +42,8 @@
         {
           "fromRecordVersion": 74,
           "shape": {
-            "armour": 10,
-            "stamina": 15,
+            "armour": 20,
+            "stamina": 5,
             "magicResist": -25
           }
         }

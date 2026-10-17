@@ -165,7 +165,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     stats: () => ({ steps, lostMs: Math.round(lostMs), hitches }),
     inCombat: () => world.fighters.slice(1).some((f) => f.phase !== 'dead' && f.hunting),
     /** The hero as he fights, for a trace dump: the effective sheet (its dials, armour and attack among them), his bar sizes and whether the loadout gate is open. */
-    trace: () => { const m = me(); return { ready: d.loadoutReady?.() ?? true, sheet: m.sheet ?? null, maxHealth: m.maxHealth, maxStamina: m.maxStamina, level: m.level }; },
+    trace: () => { const m = me(); return { ready: d.loadoutReady?.() ?? true, sheet: m.sheet ?? null, maxHealth: m.maxHealth, maxStamina: m.maxStamina, level: m.level, weapon: m.weapon ?? DEFAULT_WEAPON }; },
     debug: () => world.fighters.map((f) => ({ id: f.id, phase: f.phase, hp: Math.round(f.health), x: +f.x.toFixed(1), z: +f.z.toFixed(1), hunting: f.hunting, returning: f.returning, duel: pairs(world).some((p) => p.player === ME && p.foe === f.id) })),   // duel: in a duel with the player right now (the live pack check counts these against MAX_ATTACKERS)
   };
 }
