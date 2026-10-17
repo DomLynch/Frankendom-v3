@@ -1,0 +1,10 @@
+{
+  "motions": [
+    {"id": "wolf", "decisionScalePct": 300, "turnDegPerS": 120, "strafeMaxMps": 1.4, "standAndFace": 1},
+    {"id": "boar", "decisionScalePct": 300, "turnDegPerS": 100, "strafeMaxMps": 1.2, "standAndFace": 1},
+    {"id": "bear", "decisionScalePct": 300, "turnDegPerS": 90, "strafeMaxMps": 1.0, "standAndFace": 1},
+    {"id": "cave-troll", "decisionScalePct": 300, "turnDegPerS": 60, "strafeMaxMps": 0.8, "standAndFace": 1},
+    {"id": "giant-salamander", "decisionScalePct": 300, "turnDegPerS": 120, "strafeMaxMps": 1.4, "standAndFace": 1},
+    {"id": "goblin", "decisionScalePct": 300, "turnDegPerS": 120, "strafeMaxMps": 1.4, "standAndFace": 1}
+  ]
+}

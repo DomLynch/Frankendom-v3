@@ -8,6 +8,8 @@ import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, type AiState } from './ai.ts';
 import { createFighter, idleIntent, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
+import { M } from './detmath.ts';
+import { motionOf, type CreatureMotion } from './creature-motion-rows.ts';
 import { worldRule } from './world-rules.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
@@ -36,6 +38,23 @@ export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter)
   const seed = foe?.seed ?? seedOf(foe?.id ?? hero.id), withA = h.spell && h.specialShare !== undefined ? withSpell(base, 0, h.spell, seed) : base;
   const duel = h.spell2 && h.specialShare !== undefined ? withSpell(withA, 0, h.spell2, seed, 1) : withA;   // slot b rides the same seeded stream: the draw index is the cast count, not the slot   // open-world: the cast draws are seeded by the bout (the creature's roll seed, else its id), so a replay reproduces every outcome
   return { foe: foe?.id ?? null, duel: foe?.seed === undefined ? duel : withRoll(duel, foe.seed), ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };
+}
+
+/** open-world: a creature's step with its turn rate and sideways speed capped by its row (EQEmu RotateToCommand: the heading moves toward its target at the mob's rotate speed, never a snap; AzerothCore chase: the
+ *  creature closes along the line to its foe and does not strafe fast). `from` is the creature before the step, `to` after, `foe` the player. Pure, no transcendental beyond detmath. */
+function paced(from: PitFighter, to: PitFighter, foe: PitFighter, m: CreatureMotion): PitFighter {
+  const TAU = Math.PI * 2, stepTurn = m.turnDegPerS * Math.PI / 180 * TICK;
+  const d = ((to.body.heading - from.body.heading + Math.PI) % TAU + TAU) % TAU - Math.PI;
+  const heading = Math.abs(d) > stepTurn ? from.body.heading + (d < 0 ? -stepTurn : stepTurn) : to.body.heading;
+  let { x, z } = to.body;
+  if (m.strafeMaxMps > 0) {
+    const fx = foe.body.x - from.body.x, fz = foe.body.z - from.body.z, len = M.hypot(fx, fz);
+    if (len > 1e-6) {
+      const ux = fx / len, uz = fz / len, dx = x - from.body.x, dz = z - from.body.z, along = dx * ux + dz * uz, side = dx * uz - dz * ux, cap = m.strafeMaxMps * TICK;   // ux,uz toward the foe; side positive to the creature's right of that line
+      if (Math.abs(side) > cap) { const kept = side < 0 ? -cap : cap; x = from.body.x + ux * along + uz * kept; z = from.body.z + uz * along - ux * kept; }
+    }
+  }
+  return { ...to, body: { ...to.body, x, z, heading } };
 }
 
 const phaseOf = (f: PitFighter): { phase: Phase; t: number } => {
@@ -90,9 +109,17 @@ export function stepBout(s: Bout, a: Fighter, b: Fighter | undefined, inputA: In
     const press = (i: Input): Input => (k === 0 ? i : { x: i.x, z: i.z, run: i.run, guard: i.guard });   // open-world: a press (cut, roll, special) is one tick; the rest of a frame's ticks hold only the walk and the guard
     const intentA = intentOf(press(inputA), guardA, !!b); guardA = !!inputA.guard;
     let intentB: Intent = idleIntent();
-    if (b && ai && s.profile) { const brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent; }
+    const motion = b && ai && s.profile ? motionOf(b.kind) : undefined;   // open-world: a creature's row of creature-motion-defs.json (a Pit duel never reads it)
+    if (b && ai && s.profile) {
+      const was = ai.decision, brain = decide(before, 1, ai, s.profile); ai = brain.ai; intentB = brain.intent;
+      if (motion) {
+        if (ai.decision > was) ai = { ...ai, decision: Math.round(ai.decision * motion.decisionScalePct / 100) };   // open-world: it re-decides less often (the Pit's 0.6-1.3 s flips mode about once a second)
+        if (motion.standAndFace && ai.mode === 'circle') intentB = { ...intentB, move: { x: 0, z: 0, yaw: 0, run: false } };   // open-world: inside reach it stands and faces (lock keeps the facing); it does not strafe
+      }
+    }
     else if (b) { intentB = intentOf(press(inputB), guardB, true); guardB = !!inputB.guard; }
-    const next = stepDuel(before, [intentA, intentB]);
+    let next = stepDuel(before, [intentA, intentB]);
+    if (motion) next = { ...next, fighters: [next.fighters[0], paced(before.fighters[1], next.fighters[1], before.fighters[0], motion)] };   // open-world: a creature's turn rate and sideways speed are capped
     out.push(...eventsOf(next.events, [a.id, b?.id ?? ''], next));
     duel = { ...next, events: [] };
     a.cc = next.fighters[0].cc; if (b) b.cc = next.fighters[1].cc;   // the world keeps the ladders: the next bout (or joiner) steps the same one

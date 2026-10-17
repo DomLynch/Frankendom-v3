@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "creaturemotion", "file": "creature-motion-defs.json", "at": "motions", "key": "id",
+      "required": { "decisionScalePct": "integer", "turnDegPerS": "number", "strafeMaxMps": "number", "standAndFace": "integer" } }
+  ]
+}
