@@ -13,6 +13,8 @@ import { atan2 as detAtan2, cos as detCos, sin as detSin } from './detmath.ts';
 const detHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 import { specialFxMinorNum } from './special-fx-minor-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_255 = fxNum('clamp.special-fx-pitborn.255');
 
 // The Pitborn's rank 8-10 boss specials (Pitborn lane; Dom picked all three on 2026-10-01: Cracking Ground, Ash Fall, Wind Wall). One idea each, drawn
 // from the arena itself, no props, no glow, painted and irregular. Presentation only, on Red Wind's seam (special-timing.ts) and its painted strokes
@@ -39,7 +41,7 @@ function paintSheet(seed: number, look: SandLook) {
       const a = x / (w - 1), d = Math.abs(a - c) / half, frayed = d + (noise(a * 18, l * 26, seed + 3) - 0.5) * 0.7, body = smooth((1 - frayed) * 2.2);
       const streak = 0.3 + 0.7 * smooth(fbm(a * 22, l * 2.4, seed + 9) * 1.5 - 0.15), head = smooth(l / 0.1), tail = smooth((1 - l) * 2.4 - 0.55 * noise(a * 9, l * 9, seed + 11));
       const alpha = Math.min(1, body * streak * head * tail * 1.15), dark = Math.min(1, smooth(1 - d) * (0.55 + 0.45 * streak) * 1.3);
-      px.set([Math.min(255, lerp(edge.r, core.r, dark) * 255), Math.min(255, lerp(edge.g, core.g, dark) * 255), Math.min(255, lerp(edge.b, core.b, dark) * 255), alpha * 255], (y * w + x) * 4);
+      px.set([Math.min(CLAMP_255, lerp(edge.r, core.r, dark) * 255), Math.min(CLAMP_255, lerp(edge.g, core.g, dark) * 255), Math.min(CLAMP_255, lerp(edge.b, core.b, dark) * 255), alpha * 255], (y * w + x) * 4);
     }
   }
   const map = new THREE.DataTexture(px, w, h); map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true; return map;
@@ -85,7 +87,7 @@ const LOOK_OF: Record<keyof typeof PITBORN_TEMPLATES, (exposure: number) => Sand
 
 const texture = (n: number, fill: (x: number, y: number, put: (r: number, g: number, b: number, a: number) => void) => void) => {
   const px = new Uint8Array(n * n * 4);
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) fill(x, y, (r, g, b, a) => px.set([Math.min(255, r * 255), Math.min(255, g * 255), Math.min(255, b * 255), clamp01(a) * 255], (y * n + x) * 4));
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) fill(x, y, (r, g, b, a) => px.set([Math.min(CLAMP_255, r * 255), Math.min(CLAMP_255, g * 255), Math.min(CLAMP_255, b * 255), clamp01(a) * 255], (y * n + x) * 4));
   const map = new THREE.DataTexture(px, n, n); map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true; return map;
 };
 const mix = (look: SandLook, k: number): [number, number, number] => [lerp(look.edge.r, look.core.r, k), lerp(look.edge.g, look.core.g, k), lerp(look.edge.b, look.core.b, k)];

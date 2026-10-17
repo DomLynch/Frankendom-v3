@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { SCHOOLS, type School } from './schools.ts';
 import SCHOOL_ROWS from './special-schools.json' with { type: 'json' };
 import FEEL_RULES from './feel-rules.json' with { type: 'json' };
+import { fxNum } from './fx-rows.ts';
+const CLAMP_255 = fxNum('clamp.spell-school.255');
 
 // One colour per spell school (Strategy brief #1507 item 4: WoW, EverQuest). A LOOK TEST behind `?look=schools`, presentation only: no sim, no new particles, no
 // new files in the default path. Every special's effect (trail, ground mark, status tint) is drawn in its own scene group (special-presentation.ts); with the flag on
@@ -45,7 +47,7 @@ function recolour(map: THREE.Texture, hue: THREE.Color, mix = 0) {
   }
   for (let i = 0; i < data.length; i += 4) {
     const shade = SHADE[0] + SHADE[1] * (Math.max(data[i], data[i + 1], data[i + 2]) / top);
-    data[i] = Math.min(255, hue.r * 255 * shade); data[i + 1] = Math.min(255, hue.g * 255 * shade); data[i + 2] = Math.min(255, hue.b * 255 * shade);
+    data[i] = Math.min(CLAMP_255, hue.r * 255 * shade); data[i + 1] = Math.min(CLAMP_255, hue.g * 255 * shade); data[i + 2] = Math.min(CLAMP_255, hue.b * 255 * shade);
   }
   map.needsUpdate = true;
 }

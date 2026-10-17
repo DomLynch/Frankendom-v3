@@ -3,6 +3,9 @@ import type { CombatEvent } from './duel.ts';
 import { surfaceHit, woundSite } from './gore.ts';
 import { heavyHitBy, registerSignature, type SignatureFrame } from './signature.ts';
 import { sigObj } from './signature-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_0_12 = fxNum('clamp.signature-pitborn.0.12');
+const CLAMP_1_5 = fxNum('clamp.signature-pitborn.1.5');
 
 // The Pitborn's signature A, Butcher's Wake (docs/briefs/signature-effects.md row 2): his landed heavy drags a thick curved sheet of blood
 // out of the wound with the cleaver; it stretches, tears and falls as heavy drops that leave spots on the sand. Not a mist. Cosmetic only:
@@ -67,7 +70,7 @@ function fire(event: CombatEvent, frame: SignatureFrame) {
   const out = new THREE.Vector3(...site.dir).normalize().applyAxisAngle(yAxis, hit.heading);
   // A ray that met something far from the bone met the raised sword, not him (signature.ts marks.body's rule, same bound).
   const found = surfaceHit(root, bone, out), at = bone.getWorldPosition(new THREE.Vector3());
-  const met = found && found.point.distanceTo(at) <= Math.max(0.12, site.radius * 2) * frame.scale[victim] ? found : null;
+  const met = found && found.point.distanceTo(at) <= Math.max(CLAMP_0_12, site.radius * 2) * frame.scale[victim] ? found : null;
   const sheet = sheets.find((s) => !s.live) ?? sheets.reduce((a, b) => (a.age >= b.age ? a : b));
   sheet.origin.copy(met ? met.point : at.addScaledVector(out, site.radius * frame.scale[victim]));
   sheet.out.copy(met ? met.normal : out);
@@ -132,7 +135,7 @@ function update(dt: number, frame: SignatureFrame) {
     // Stretched along its fall: a heavy drop, not a bead of mist.
     const speed = drop.velocity.length();
     quat.setFromUnitVectors(yAxis, scratch.copy(drop.velocity).normalize());
-    scale.set(drop.size, drop.size * (1 + Math.min(1.5, speed * 0.25)), drop.size);
+    scale.set(drop.size, drop.size * (1 + Math.min(CLAMP_1_5, speed * 0.25)), drop.size);
     dropMesh.setMatrixAt(n++, matrix.compose(drop.position, quat, scale));
   }
   dropMesh.count = n;

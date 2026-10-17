@@ -4,6 +4,8 @@
 // generator, so the same fight draws the same blood on every run.
 import type { Feel, Particle } from './armfeel.ts';
 import { bloodNum, bloodObj } from './blood-rows.ts';
+import { fxNum } from './fx-rows.ts';
+const CLAMP_3 = fxNum('clamp.blood-style.3');
 
 // slots: the pool's size; hit/kill: particles a hit/kill takes (Low takes a third, at least 2); drops: how many of those are the heavy ones; start/end: the colour over a life.
 export const BLOOD = bloodObj<{ readonly slots: number; readonly hit: number; readonly kill: number; readonly drops: { readonly hit: number; readonly kill: number }; readonly start: string; readonly end: string }>('blood-style.blood');
@@ -17,7 +19,7 @@ const between = (rnd: () => number, lo: number, hi: number) => lo + (hi - lo) * 
 
 // Fills slot `p`; (x, y, z) the contact, (dx, dz) the blow's unit direction. Size is the DIAMETER of the unit sphere the pool scales: width = size, length = size x stretch.
 // `grow` scales the size (1 = as drawn): the burst on the far fighter is made as big on screen as the near one's (Dom: blood appeared when he was hit, rarely when he hit).
-export const bloodGrow = (far: number, near: number): number => Math.min(3, Math.max(1, far / (near || 1)));
+export const bloodGrow = (far: number, near: number): number => Math.min(CLAMP_3, Math.max(1, far / (near || 1)));
 // Where the foe's burst starts: the contact, pulled TOWARD THE CAMERA along the camera-to-contact ray, so it keeps the wound's screen position (it stays on his body) but sits
 // in front of the hero, whose torso otherwise covers a close foe's hit (Lead 10-07: a sideways offset left it floating in clear air). `far` / `near`: camera distance to the foe's
 // contact / to the hero's chest. The pull lands FRONT m in front of the hero's centre depth, and never brings the spawn within MIN_CAM m of the lens.
