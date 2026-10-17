@@ -117,7 +117,7 @@ export function createFeedback(host?: FeedbackHost) {
   }
   // Fallback while the sprite is still decoding: the original synthesised air, body and inharmonic steel layers.
   function synth(kind: 'swing' | 'hit' | 'steel' | 'parry' | 'charged', time: number) {
-    const row = SYNTH_CUES[kind]!, duration = row.seconds, level = .7;   // the cue's own length, band, level and tone layers are its synth-cue row
+    const row = SYNTH_CUES[`synth-${kind}`]!, duration = row.seconds, level = .7;   // the cue's own length, band, level and tone layers are its synth-cue row
     const air = context!.createBufferSource(), filter = context!.createBiquadFilter(), gain = context!.createGain();
     air.buffer = noise!; filter.type = 'bandpass'; filter.frequency.value = row.filterHz; filter.Q.value = .7;
     gain.gain.setValueAtTime(.001, time); gain.gain.exponentialRampToValueAtTime(row.airGain * level, time + .008); gain.gain.exponentialRampToValueAtTime(.001, time + duration);
