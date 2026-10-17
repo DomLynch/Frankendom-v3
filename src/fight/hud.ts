@@ -56,7 +56,7 @@ export function createHud(element: Lookup) {
   const attackButton = element<HTMLButtonElement>('attack-button');
   const kickButton = element<HTMLButtonElement>('kick-button');
   const heavyButton = element<HTMLButtonElement>('heavy-button');
-  const skillButton = element<HTMLButtonElement>('skill-button'), skill2Button = element<HTMLButtonElement>('skill2-button'), SPELL2_LABEL = skill2Button.dataset.mobile ?? '';   // the generic words are the page's own markup (index.html), read once
+  const skillButton = element<HTMLButtonElement>('skill-button'), skill2Button = element<HTMLButtonElement>('skill2-button'), SPELL2_LABEL = skill2Button.dataset.mobile ?? '', SKILL_LABEL = skillButton.dataset.mobile ?? '';   // the generic words are the page's own markup (index.html), read once
   const dodgeButton = element<HTMLButtonElement>('dodge-button');
   const guardButton = element<HTMLButtonElement>('guard-button');
   const thrustButton = element<HTMLButtonElement>('thrust-button');
@@ -163,6 +163,11 @@ export function createHud(element: Lookup) {
       if (skill2Button.dataset.mobile !== spell2Name) {
         skill2Button.dataset.mobile = spell2Name; skill2Button.setAttribute('aria-label', spell2Name); skill2Button.title = spell2Name;
         const text = skill2Button.firstChild; if (text && text.nodeType === 3) text.textContent = spell2Name; else skill2Button.textContent = spell2Name;
+      }
+      const melee1 = practice.duel.fighters[0].skill, skillName = (melee1 && practice.duel.fighters[0].spell === undefined ? SKILL_ROWS[melee1]?.name : undefined) || SKILL_LABEL;   // a picked melee skill (SPECIAL 1) shows its row's own name, as SPECIAL 2 does; a spell or no skill keeps the generic word
+      if (skillButton.dataset.mobile !== skillName) {
+        skillButton.dataset.mobile = skillName; skillButton.setAttribute('aria-label', skillName); skillButton.title = skillName;
+        const text1 = skillButton.firstChild; if (text1 && text1.nodeType === 3) text1.textContent = skillName; else skillButton.textContent = skillName;
       }
       skill2Button.setAttribute('aria-disabled', String(!controlsReady || !(view.slotB === true || accepts(practice, 'skill2'))));
       // Lit off the simulation's own test (legal: a skill equipped, not cooling, 40 stamina), never while cooling. No ring, no countdown.
