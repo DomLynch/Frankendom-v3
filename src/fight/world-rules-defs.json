@@ -59,6 +59,8 @@
     { "id": "maxAttackers", "value": 3, "unit": "creatures" },
     { "id": "farM", "value": 1000, "unit": "m" },
     { "id": "evadeWhiffs", "value": 4, "unit": "cycles" },
-    { "id": "evadeHealToFull", "value": 1, "unit": "flag" }
+    { "id": "evadeHealToFull", "value": 1, "unit": "flag" },
+    { "id": "leaveWait", "value": 1.2, "unit": "s" },
+    { "id": "turnGate", "value": 0.6, "unit": "rad" }
   ]
 }
