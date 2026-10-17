@@ -1,5 +1,7 @@
 {
   "rules": [
+    { "id": "retargetCone", "value": 35, "unit": "deg" },
+    { "id": "retargetGap", "value": 0.5, "unit": "s" },
     { "id": "engage", "value": 4, "unit": "m" },
     { "id": "engageOut", "value": 6, "unit": "m" },
     { "id": "holdFactor", "value": 0.95, "unit": "ratio" },
@@ -55,6 +57,8 @@
     { "id": "campSizeMax", "value": 3, "unit": "mobs" },
     { "id": "defaultWeight", "value": 10, "unit": "weight" },
     { "id": "maxAttackers", "value": 3, "unit": "creatures" },
-    { "id": "farM", "value": 1000, "unit": "m" }
+    { "id": "farM", "value": 1000, "unit": "m" },
+    { "id": "evadeWhiffs", "value": 4, "unit": "cycles" },
+    { "id": "evadeHealToFull", "value": 1, "unit": "flag" }
   ]
 }

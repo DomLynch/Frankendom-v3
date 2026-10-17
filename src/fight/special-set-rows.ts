@@ -15,8 +15,13 @@ export const SPECIAL_RANK_LEVELS: readonly number[] = (SPECIAL_RANK_TABLE.rows a
   if (r.level < 1 || (i > 0 && r.level <= all[i - 1]!.level)) throw Error(`special-set-defs rank "${r.id}": levels start at 1 and climb`);
   return r.level;
 });
+const SET_ROWS = SPECIAL_SET_TABLE.rows as unknown as { id: string; specials: string[]; from?: number }[];
 /** Opponent id -> its specials in rank order, one per rank. */
-export const SPECIAL_SETS: Readonly<Record<string, readonly string[]>> = Object.fromEntries((SPECIAL_SET_TABLE.rows as unknown as { id: string; specials: string[] }[]).map((r) => {
+export const SPECIAL_SETS: Readonly<Record<string, readonly string[]>> = Object.fromEntries(SET_ROWS.map((r) => {
   if (r.specials.length !== SPECIAL_RANK_LEVELS.length || r.specials.some((s) => typeof s !== 'string' || !s)) throw Error(`special-set-defs set "${r.id}": one special id per rank (${SPECIAL_RANK_LEVELS.length})`);
   return [r.id, r.specials];
 }));
+/** Opponent id -> the level its named specials begin at, only for a set whose row says `from` (a creature boss below the ladder's rank 8, e.g. the Cave Troll); absent = the first rank level, as every ladder opponent. */
+export const SPECIAL_FROM: Readonly<Record<string, number>> = Object.fromEntries(SET_ROWS.filter((r) => r.from !== undefined).map((r) => [r.id, r.from!]));
+/** The level an opponent's named specials begin at. */
+export const specialStartOf = (opponent: string): number => (Object.hasOwn(SPECIAL_FROM, opponent) ? SPECIAL_FROM[opponent]! : SPECIAL_RANK_LEVELS[0]!);

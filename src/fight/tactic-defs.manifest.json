@@ -1,0 +1,26 @@
+{
+  "tables": [
+    {
+      "table": "tactic_limits",
+      "file": "tactic-defs.json",
+      "at": "limits",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    },
+    {
+      "table": "tactic",
+      "file": "tactic-defs.json",
+      "at": "tactics",
+      "key": "id",
+      "required": {},
+      "optional": {
+        "heroWinding": "array",
+        "heroWinding[].choice": "string",
+        "heroWinding[].weight": "number",
+        "holdBand": "boolean"
+      }
+    }
+  ]
+}

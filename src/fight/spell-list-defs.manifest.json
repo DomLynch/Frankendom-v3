@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "spellListEntry", "file": "spell-list-defs.json", "at": "list", "key": "id", "required": { "name": "string", "level": "integer" } }
+  ]
+}
