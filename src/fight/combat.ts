@@ -9,6 +9,8 @@ import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { specialStage } from './special-look.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
+import { simBound } from './sim-bounds-rows.ts';
+const RESULT_AGE_CAP = simBound('practice.resultAgeCap');   // rows: sim-bounds-defs.json
 export { PROFILES, OPPONENTS, RULES, MOVES } from './moves.ts';
 export type { Opponent, OpponentId, Level } from './moves.ts';
 export type { Intent, Action, CombatEvent, Duel, Fighter } from './duel.ts';
@@ -112,7 +114,7 @@ const RESULTS: Partial<Record<CombatEvent['type'], [Result, Result]>> = {
 };
 export function project(duel: Duel, ai: AiState, previous?: Practice, intent?: Intent): Practice {
   const [p, w] = duel.fighters;
-  let result: Result = previous?.result ?? 'none', resultAge = previous ? Math.min(120, previous.resultAge + 1) : 0;
+  let result: Result = previous?.result ?? 'none', resultAge = previous ? Math.min(RESULT_AGE_CAP, previous.resultAge + 1) : 0;
   let resultDamage = previous?.resultDamage ?? 0, resultStamina = previous?.resultStamina ?? 0, resultPerfect = previous?.resultPerfect ?? false;
   let resultCounter = previous?.resultCounter ?? false, resultStop = previous?.resultStop ?? false, resultTrip = previous?.resultTrip ?? false;
   let resultWalled = previous?.resultWalled ?? false, resultBreak = previous?.resultBreak ?? null, resultDealt = previous?.resultDealt ?? 0;
@@ -216,7 +218,7 @@ export function practiceHint(s: Practice, foe = 'Opponent', legend?: string): st
   }
   if (me.exhausted) return 'Exhausted';
   if (s.phase === 'ready' && s.chain > 0) return 'Follow-through';
-  if (s.result !== 'none' && s.resultAge < 120) {
+  if (s.result !== 'none' && s.resultAge < RESULT_AGE_CAP) {
     const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
     const wall = (text: string) => s.resultWalled ? ` · ${text}` : '';
     return {

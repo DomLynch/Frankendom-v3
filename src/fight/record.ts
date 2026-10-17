@@ -21,6 +21,7 @@ import { FIRST_CAST_PENALTY_VERSION, SHEET_ERA_VERSION } from './cast-penalty-er
 import { CAST, spellUsesCap, spellUsesHits } from './spell-cast.ts';
 import { coneAt } from './cone-rules.ts';
 import { PICKS, type PickedStance } from './stance.ts';
+import { simBound } from './sim-bounds-rows.ts';
 
 export const RECORD_VERSION = 74;   // 74: bump 74 (2026-10-17; Combat, Dom's word: Zone 1 fight stats come from the gear picked up; the leathers set (goblin, werewolf) takes a new shape from this version, armour +20 / stamina +5 / magic resist -25 instead of stamina +25 / armour -25 (gear-defs.json sets eras, gear-rows.ts gearDeltas), so a worn goblin piece finally adds armour; a sheet fight is stamped no lower than the newest set era (cast-penalty-era.ts), a record below 74 recomputes its expected sheet with the old shape; REACH[74] is empty; PROVISIONAL number, renumbers at merge-up)
 // 73: bump 73 (2026-10-16; Combat, many-on-one: the open world's hero retargets at ready to the creature he faces (world rules retargetCone / retargetGap), and the Nth creature on one hero lands 100/50/30/30 percent of its blow (Duel.crowd, swarm-defs.json slots, ported from combat/many-on-one @70c3a2582), so a pack record fought before 73 replays differently; a duel with no crowd is byte for byte unchanged; REACH[73] is empty; PROVISIONAL number, renumbers at merge-up)
@@ -220,7 +221,8 @@ export type FightRecord = RecordMeta & { v: RecordVersion; ticks: number; outcom
 // Quantization: the stick to 1/127 per axis, the camera yaw to 1/128 of a half-turn (about 1.4°). The live game steps the
 // quantized intent (main.ts), so a replay reproduces the fight bit for bit.
 const YAW_STEPS = 256, YAW_UNIT = (2 * Math.PI) / YAW_STEPS;
-const q8 = (v: number) => Math.max(-127, Math.min(127, Math.round(v * 127)));
+const STICK_STEPS = simBound('record.stickSteps');   // rows: sim-bounds-defs.json
+const q8 = (v: number) => Math.max(-STICK_STEPS, Math.min(STICK_STEPS, Math.round(v * STICK_STEPS)));
 const yawToByte = (yaw: number) => (((Math.round(yaw / YAW_UNIT) % YAW_STEPS) + YAW_STEPS) % YAW_STEPS);
 const byteToYaw = (b: number) => { const s = b >= 128 ? b - 256 : b; return s * YAW_UNIT; };   // centred on 0: −π..π
 

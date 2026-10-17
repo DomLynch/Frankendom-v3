@@ -1,0 +1,11 @@
+{
+  "bounds": [
+    {"id": "career.maxRank", "value": 10},
+    {"id": "practice.resultAgeCap", "value": 120},
+    {"id": "tail.reactionFloor", "value": 5},
+    {"id": "tail.accuracyCap", "value": 0.98},
+    {"id": "tail.parryCap", "value": 0.9},
+    {"id": "world.returnMinStepM", "value": 0.1},
+    {"id": "record.stickSteps", "value": 127}
+  ]
+}

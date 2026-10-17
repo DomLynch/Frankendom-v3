@@ -8,6 +8,7 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import CC_DEFS from './cc-defs.json' with { type: 'json' };
 import CC_MANIFEST from './cc-defs.manifest.json' with { type: 'json' };
+import { simBound } from './sim-bounds-rows.ts';
 
 export type CcFamily = string;   // a cc-defs.json kind id (stun, knockdown, root as shipped); ids stay strings, checked against the loaded rows
 // Where each engine state lands (the duel's call sites; a kind row lists the sources it owns). Ordinary hit stagger (duel.ts stagger()) is a hit
@@ -50,7 +51,8 @@ export function ccRows(kinds: readonly CcKind[], tiers: readonly (Band & { id: s
 export const CC_LADDER: CcRows = ccRows(rowsOf<CcKind>('cckind'), rowsOf<Band & { immune: CcFamily[] }>('cctier'), rowsOf<Band & { keep: number }>('ccresist'));
 
 // The career rank of a ladder level (five levels a rank, career.ts: levels 36 / 41 / 46 are ranks 8 / 9 / 10), 1-10, and the guard its band gives a creature of that level; a rank no band covers has none.
-export const rankOfLevel = (level: number): number => Math.min(10, Math.max(1, Math.ceil(level / 5)));
+const MAX_RANK = simBound('career.maxRank');
+export const rankOfLevel = (level: number): number => Math.min(MAX_RANK,Math.max(1, Math.ceil(level / 5)));
 export const guardOfLevel = (level: number, rows = CC_LADDER): CcGuard | undefined => {
   const rank = rankOfLevel(level), inBand = (b: Band): boolean => rank >= b.from && rank <= b.to;
   const tier = Object.entries(rows.tiers).find(([, t]) => inBand(t))?.[0], resist = Object.entries(rows.resists).find(([, t]) => inBand(t))?.[0];
