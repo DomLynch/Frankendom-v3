@@ -35,7 +35,9 @@ import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
 import { createWitchfire } from './witchfire.ts';
 import { createMiasmaMark, marksFlag } from './miasma-mark.ts';
-import { createSkillImpact } from './skill-impact.ts';
+import { createSkillImpact, impactPoint } from './skill-impact.ts';
+import { shardRows, specialShardsOf } from './sandbox-rules.ts';
+import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
 import { phoneTier, pixelCap } from './quality.ts';
 import { lookFrom } from '../look-flag.ts';
@@ -207,6 +209,8 @@ export function createScene(
     footDust = createFootDust(scene, dustToneFor(theme)),
     witchfire = createWitchfire(scene),
     skillImpact = createSkillImpact(scene),
+    specialShards = shardRows() ? createSpecialShards(scene) : null,   // specialShards rows: lit 3D chips off a landed melee special (special-shards.ts); no rows (shipped) builds nothing
+    shardAt = new THREE.Vector3(),
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
   if (world) scene.add(world.holder);
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
@@ -1091,6 +1095,14 @@ export function createScene(
       }
       // A landed skill blow's flash and sparks in its move's colour (skill-impact.ts, the kit every skill ships on): after the poses settle.
       skillImpact.fire(events, practice.duel.fighters, [1, OPPONENTS[opponentId].scale]); skillImpact.update(dt);
+      if (specialShards) {   // a landed melee special throws its rows' chips off the contact, away from the attacker
+        for (const e of events) {
+          if (e.type !== 'SpecialLanded' || e.spell || e.target === undefined || e.target === e.actor || !e.move?.startsWith('skill_')) continue;
+          const rows = specialShardsOf(e.move.slice('skill_'.length)), by = practice.duel.fighters[e.actor]!.body, to = practice.duel.fighters[e.target]!.body;
+          if (rows.length) { impactPoint(e, practice.duel.fighters, [1, OPPONENTS[opponentId].scale], shardAt); for (const row of rows) specialShards.burst(row, shardAt.x, shardAt.y, shardAt.z, to.x - by.x, to.z - by.z); }
+        }
+        specialShards.update(dt);
+      }
       if (miasmaMark) { miasmaMark.fire(events); miasmaMark.update(dt, practice.duel.fighters, [1, OPPONENTS[opponentId].scale], [warriors?.player.boneWorld('Head') ?? null, warriors?.opponent.boneWorld('Head') ?? null]); }
 
       // The Witch-fire skill's glow, gout and embers (witchfire.ts), read off the sim's clock on the final poses.
