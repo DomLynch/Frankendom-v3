@@ -92,6 +92,20 @@
     { "id": "fit.min-len-m", "fields": {"value": 0.02} },
     { "id": "fit.ratio-min", "fields": {"value": 0.5} },
     { "id": "fit.ratio-max", "fields": {"value": 3} },
-    { "id": "pose-blend.snap-m", "fields": {"value": 3} }
+    { "id": "pose-blend.snap-m", "fields": {"value": 3} },
+    { "id": "gfx.bloom.strength", "fields": {"value": 0.5} },
+    { "id": "gfx.bloom.radius", "fields": {"value": 0.55} },
+    { "id": "gfx.bloom.threshold", "fields": {"value": 0.82} },
+    { "id": "gfx.grade.contrast", "fields": {"value": 1.1} },
+    { "id": "gfx.grade.saturation", "fields": {"value": 1.14} },
+    { "id": "gfx.grade.shadow-teal", "fields": {"value": 0.045} },
+    { "id": "gfx.grade.highlight-warm", "fields": {"value": 0.05} },
+    { "id": "gfx.grade.vignette", "fields": {"value": 0.42} },
+    { "id": "gfx.fog.ground-boost", "fields": {"value": 1.9} },
+    { "id": "gfx.fog.height-falloff", "fields": {"value": 0.11} },
+    { "id": "gfx.fog.sky-keep", "fields": {"value": 0.45} },
+    { "id": "gfx.fog.digits", "fields": {"value": 3} },
+    { "id": "gfx.fog.digits-fine", "fields": {"value": 4} },
+    { "id": "gfx.msaa-samples", "fields": {"value": 4} }
   ]
 }
