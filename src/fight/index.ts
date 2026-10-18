@@ -10,6 +10,7 @@ export type { Match } from './match.ts';   // type only (origins/preview/world-r
 export type { WorldMount } from './scene.ts';
 export const loadScene = () => import('./scene.ts');   // K7 row 10: the fight scene is a lazy chunk (a static export pulled it out of pit-duel's chunk and its warm-up); same pattern as loadFeedback
 export { fxNum } from './fx-rows.ts';
+export { regenOn, regenRules } from './hero-regen.ts';   // the unlisted-zone out-of-combat regeneration (the zone page hands it to the world combat)
 export { fxHas } from './fx-rows.ts';   // is there a presentation row by this name (mobs-view's per-creature reach rows)
 export { shapeFor } from './weapon-shapes.ts';   // the graded weapon shape file (mobs-view reshapes a creature's weapon by its rung)
 export { phoneTier, pixelCap, budgetTextures, FIGHTER_TEXTURE_CAP } from './quality.ts';   // the phone tier and texture budget (K7 row 16: moved from src/quality.ts)
