@@ -1,0 +1,11 @@
+{
+  "tables": [
+    { "table": "sandboxRule", "file": "sandbox-rules-defs.json", "at": "rules", "key": "id", "required": { "value": { "type": "integer", "min": 0 } } },
+    { "table": "specialPick", "file": "sandbox-rules-defs.json", "at": "specialPick", "key": "id", "required": { "role": "string" } },
+    { "table": "specialReactFloor", "file": "sandbox-rules-defs.json", "at": "specialReactFloor", "key": "id", "required": { "stagger": { "type": "integer", "min": 0 } } },
+    { "table": "specialLook", "file": "sandbox-rules-defs.json", "at": "specialLook", "key": "id", "required": { "flash": "number", "sparks": "number", "spread": "number", "lift": "number", "size": "number" } },
+    { "table": "specialTrail", "file": "sandbox-rules-defs.json", "at": "specialTrail", "key": "id", "required": { "samples": "integer", "opacity": "number", "color": "string", "lead": "integer", "tail": "integer" } },
+    { "table": "specialShard", "file": "sandbox-rules-defs.json", "at": "specialShards", "key": "id", "required": { "skill": "string", "kind": "string", "count": "integer", "tint": "string", "power": "number", "forward": "number", "lift": "number", "size": "number", "life": "number", "gravity": "number", "bounce": "number", "slide": "number", "shrink": "number" } },
+    { "table": "specialSound", "file": "sandbox-rules-defs.json", "at": "specialSound", "key": "id", "required": { "skill": "string", "cue": "string", "gain": "number", "room": "number", "delay": "number" } }
+  ]
+}
