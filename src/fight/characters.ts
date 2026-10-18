@@ -6,6 +6,7 @@ import { swingProgress } from './blade.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type Direction, type WeaponId } from './moves.ts';
+import { HURT_STYLES, READY_STYLES, PLAIN_POSTURE, pickStyle } from './character-style-rows.ts';
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { movesOf, type Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
@@ -522,7 +523,10 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // relative to the pelvis, the fighter's right = −x): left +.14 m across, right −.23 m, overhead +.35 m up, low −.37 m down. Code-
     // tilted for the beta; the weapons lane replaces it with authored guard clips family by family. Blended so a slide never snaps.
     const spine1 = root.getObjectByName('spine_01'), spine2 = root.getObjectByName('spine_02');
-    const tilt = { yaw: 0, arm: 0, spine: 0 }, tilted = [spine1, spine2, upperArm].filter((b): b is NonNullable<typeof b> => !!b), untilted = tilted.map(b => b.quaternion.clone());
+    const search = typeof location === 'undefined' ? '' : location.search, hurtStyle = pickStyle(HURT_STYLES, 'hurt', search), readyStyle = pickStyle(READY_STYLES, 'ready', search);   // ?hurt= / ?ready= (character-style-rows.ts): no query = today's pose
+    let hurtDrive = 0, readyDrive = 0;
+    const spine3 = root.getObjectByName('spine_03'), neckBone = root.getObjectByName('neck_01');
+    const tilt = { yaw: 0, arm: 0, spine: 0 }, tilted = [spine1, spine2, upperArm, spine3, neckBone].filter((b): b is NonNullable<typeof b> => !!b), untilted = tilted.map(b => b.quaternion.clone());
     let open: Opening | null = null, openW = 0;   // opening-pose.ts: the sim's open stagger on this body, and its eased weight
     let tired: Pick<Fatigue, 'level' | 'gassed' | 'second'> = { level: 0, gassed: 0, second: 0 }, tune: FatigueTune | undefined, breath = 0, calmWeight = 0;   // fatigue.ts: the tired-body layer (presentation only), its body's tuning, the breath clock and how calm the pose is
     // ?look=fatigue-read (fatigue-read.ts): the extra bones its pose moves, restored before every update like the guard tilt; empty and untouched without the flag.
@@ -741,7 +745,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         for (const role of roles) {
           const a = actions[role];
           const fade = tmpl === 'bisect' ? Math.min(1,progress/.04) : combatRole === null ? 0 : ['draw','guard','block','parry','deflected'].includes(pose) || fin?.side === 'killer' ? 1 : Math.min(1, progress * 12, dead ? 1 : (1 - progress) * 10);
-          const target = (weights[role] || 0) * (1 - fade) + Number(role === combatRole) * fade;
+          const hurtFade = hurtStyle && combatRole === 'Hit' ? fade * (hurtStyle.weight / 1000) : fade;   // ?hurt=: only part of the recorded Hit clip stays
+          const target = (weights[role] || 0) * (1 - hurtFade) + Number(role === combatRole) * hurtFade;
           const activeBlade = pose === 'attack' && progress >= contact-1/specs[attack].recovery && progress <= contact+4/specs[attack].recovery;
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
           // the weight snaps like a live blade does — the parry's hit-stop runs at dt 0, where an eased weight would hold the attack pose.
@@ -763,22 +768,28 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         for (const k of ['yaw', 'arm', 'spine'] as const) tilt[k] += (guarding[k] - tilt[k]) * ease;
         // Two cascaded eases: the lean starts and stops at zero speed, so neither the hold nor the release pops.
         const follow = 1 - Math.exp(-step * 18);
-        leanDrive += (Number(!!lean && holding) - leanDrive) * follow; leaning += (leanDrive - leaning) * follow;
+        leanDrive += (Number(!PLAIN_POSTURE && !!lean && holding) - leanDrive) * follow; leaning += (leanDrive - leaning) * follow;
         if (leaning < 1e-3 && leanDrive < 1e-3) leaning = leanDrive = 0;
         const l = lean ?? NO_LEAN;
         // The tired body (fatigue.ts): breathing in the chest, a hunch, the sword arm sagging; only while the pose is calm (a swing's contact pose is the sim's blade).
         calmWeight += (Number(!dead && (pose === 'ready' || pose === 'guard' || pose === 'sheathed')) - calmWeight) * ease;
         breath += step * breathe(tired, tune); readBreath += step * readRate(tired, tune);
-        const layer = tired.level > 0 || tired.gassed > 0 || calmWeight > .001 ? fatigueLayer(tired, breath, calmWeight, tune) : null;
+        const layer = !PLAIN_POSTURE && (tired.level > 0 || tired.gassed > 0 || calmWeight > .001) ? fatigueLayer(tired, breath, calmWeight, tune) : null;
         openW += (openWeight(open) - openW) * (1 - Math.exp(-step * 30));   // quick: it follows the sim's own ramp, which is already eased
         if (openW < 1e-3 && !open) openW = 0;
-        const gap = dead || pose === 'attack' ? NO_OPEN : openPose(openW, open?.kind);
-        if (tilt.yaw || tilt.spine || tilt.arm || leaning || layer || gap !== NO_OPEN) {
+        const gap = PLAIN_POSTURE || dead || pose === 'attack' ? NO_OPEN : openPose(openW, open?.kind);
+        hurtDrive += ((hurtStyle && pose === 'hit' ? Math.sin(Math.min(1, progress) * Math.PI) : 0) - hurtDrive) * ease;   // ?hurt=: up and back over the hurt, eased
+        if (hurtDrive < 1e-3) hurtDrive = 0;
+        readyDrive += ((readyStyle && (pose === 'ready' || pose === 'guard') ? 1 : 0) - readyDrive) * ease;   // ?ready=: while the fighter stands armed and calm
+        if (readyDrive < 1e-3) readyDrive = 0;
+        if (tilt.yaw || tilt.spine || tilt.arm || leaning || layer || gap !== NO_OPEN || hurtDrive || readyDrive) {
           tilted.forEach((b, i) => untilted[i].copy(b.quaternion)); tiltApplied = true;
           if (spine1) { spine1.rotation.y += tilt.yaw + leaning * l.yaw; spine1.rotation.z += leaning * l.side; }
           if (spine2) { spine2.rotation.x += tilt.spine; spine2.rotation.z += leaning * l.chest; }
           if (upperArm) { upperArm.rotation.x += tilt.arm + leaning * (l.lift ?? 0); upperArm.rotation.y += leaning * l.arm; }
           if (gap !== NO_OPEN) { if (spine1) { spine1.rotation.x += gap.lean; spine1.rotation.z += gap.tilt; } if (upperArm) upperArm.rotation.x += gap.arm; }
+          if (readyStyle && readyDrive) { if (spine1) spine1.rotation.x += (readyDrive * readyStyle.s1) / 1000; if (spine2) spine2.rotation.x += (readyDrive * readyStyle.s2) / 1000; if (spine3) spine3.rotation.x += (readyDrive * readyStyle.s3) / 1000; if (neckBone) neckBone.rotation.x += (readyDrive * readyStyle.neck) / 1000; }
+          if (hurtStyle && hurtDrive) { if (spine1) { spine1.rotation.x += (hurtDrive * hurtStyle.s1) / 1000; spine1.rotation.y += (hurtDrive * hurtStyle.twist) / 1000; } if (spine2) spine2.rotation.x += (hurtDrive * hurtStyle.s2) / 1000; }
           if (layer && tune?.read) {   // ?look=fatigue-read: the whole spine, head and shoulders carry the tell; the sword arm keeps the live sag
             const r = fatigueRead(tired, readBreath, calmWeight, layer, tune); readGuard = r.guard;
             if (spine1) spine1.rotation.x += r.spine1; if (spine2) spine2.rotation.x += r.spine2; if (upperArm) upperArm.rotation.x += r.arm;
@@ -793,12 +804,12 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
             if (layer) { if (spine1) spine1.rotation.x += layer.hunch; if (spine2) spine2.rotation.x += layer.chest; if (upperArm) upperArm.rotation.x += layer.arm; }
           }
         }
-        uprightW += (Number(!!upright && !dead && (pose === 'ready' || pose === 'guard')) - uprightW) * ease;
+        uprightW += (Number(!PLAIN_POSTURE && !!upright && !dead && (pose === 'ready' || pose === 'guard')) - uprightW) * ease;
         if (upright && uprightW > .001) {   // the counter-pitch on the calm pose (upright-ready.ts); restored at the top of the next update
           const b = uprightBones; b.forEach((bone, i) => bone && uprightSaved[i].copy(bone.quaternion)); uprightApplied = true;
           if (b[0]) b[0].rotation.x += upright.spine2 * uprightW; if (b[1]) b[1].rotation.x += upright.spine3 * uprightW; if (b[2]) b[2].rotation.x += upright.neck * uprightW;
         }
-        stanceW += (Number(stance !== 'neutral' && !dead && (pose === 'ready' || pose === 'guard')) - stanceW) * ease; stanceClock += step;
+        stanceW += (Number(!PLAIN_POSTURE && stance !== 'neutral' && !dead && (pose === 'ready' || pose === 'guard')) - stanceW) * ease; stanceClock += step;
         if (stanceW > .001) {   // ?look=stances: the stance's bones on top of the calm pose (stance-pose.ts); restored at the top of the next update
           const sp = stancePose(stance, stanceW, stanceClock), b = stanceBones;
           b.forEach((bone, i) => bone && stanceSaved[i].copy(bone.quaternion)); if (b[0]) stancePelvis.copy(b[0].position); stanceApplied = true;
