@@ -31,3 +31,4 @@ export { hash32 } from './bout-seed.ts';
 export { MAX_HERO_MPS, MAX_WORLD_TICKS, decodeWorldRecord, encodeWorldRecord, replayWorldRecord, unpackWorldRecord, packWorldRecord, type WorldRecord, type RecordHero, type Replayed } from './world-record.ts';
 export * from './weapon-skills.ts';
 export * from './loot-deck.ts';   // loot decks with pity: the rows, the loader and the pure draw (Backend reads them here, no copy of the numbers)
+export { DROP_REASONS } from './record-drop-rows.ts';   // the page's record-drop reasons as rows: the writer's kill_report tally keys only these (origins/server/world-spawns.ts)
