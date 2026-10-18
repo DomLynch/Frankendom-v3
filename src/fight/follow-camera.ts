@@ -45,6 +45,11 @@ export function createFollowCamera(camera: THREE.Camera, opts: { passage?: Passa
     fighting: (): number => fight,
     /** The next frame starts at the eye, not easing from the old position (a respawn, a server placement, the first frame). */
     snap(): void { snap = true; },
+    /** First person: a swing moves the view (a lean into a cut, a dip and lunge into a thrust). `k` is the arm's kick (lat: sideways lean, fwd: lunge), applied to the camera the frame was just placed on; the page passes the three row scales. */
+    kick(k: { lat: number; fwd: number }, heading: number, scale: { roll: number; yaw: number; lunge: number }): void {
+      camera.rotateZ(-k.lat * scale.roll); camera.rotateY(-k.lat * scale.yaw);
+      camera.position.addScaledVector(new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading)), k.fwd * scale.lunge);
+    },
     /** Another open-walk framing from now on (a preset), or the generic one. */
     setOpen(f: Framing | undefined): void { open = f ?? OPEN; },
     /** A zone's passage (or none) for the frames from now on. */
