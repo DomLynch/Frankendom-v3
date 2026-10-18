@@ -6,6 +6,7 @@ import { accepts, type Action, type CombatEvent, type Practice } from './combat.
 import type { Direction } from './moves.ts';
 import { inputNum } from './input-rows.ts';
 import { ONE_BUTTON, HEAVY_HOLD_MS, STAB_SLIDE_PX, STAB_HALF_ANGLE, SPELL_BUFFER_MS } from './sandbox-rules.ts';
+import { applyTouchLayout } from './touch-layout.ts';
 
 type Lookup = <T extends HTMLElement>(id: string) => T;
 export type InputEnv = {
@@ -43,6 +44,14 @@ export const cutAction = (lateral: number): Action => (lateral <= -CUT_PUSH ? 'l
 // it fires on a slide of SLASH_SLIDE_PX (that side, at once), on release, or after SLASH_DECIDE_MS (the alternating light), whichever comes first. A plain tap
 // therefore gets up to SLASH_DECIDE_MS later; change the one constant to trade it. Intent only: the sim already takes light_left / light_right.
 export const SLASH_SLIDE_PX = inputNum('input.slash-slide-px'), SLASH_DECIDE_MS = inputNum('input.slash-decide-ms');
+// oneButton (Combat sandbox CS31, touch layout A; off by default, `?onebutton=1` turns it on for a look): the STRIKE button decides its swing by the thumb. A release before HEAVY_HOLD_MS is the plain light, a slide of STAB_SLIDE_PX
+// straight up (within STAB_HALF_ANGLE degrees) is the thrust, a slide to a side is that cut, a hold past HEAVY_HOLD_MS is the heavy. Intent only: the fight already takes every one of those actions. Off = today's Light button.
+const ONE_BUTTON_QUERY = /[?&;]onebutton=1\b/.test(typeof location === 'undefined' ? '' : location.search);
+export const ONE_BUTTON = Boolean(inputNum('input.one-button')) || ONE_BUTTON_QUERY;
+const RAD = Math.PI / 180;   // degrees to radians
+export const HEAVY_HOLD_MS = inputNum('input.heavy-hold-ms'), STAB_SLIDE_PX = inputNum('input.stab-slide-px'), STAB_HALF_ANGLE = inputNum('input.stab-half-angle');
+// A slide within STAB_HALF_ANGLE degrees of straight up is the stab. Screen y grows down, so up is dy < 0.
+export const stabSector = (dx: number, dy: number): boolean => dy < 0 && Math.abs(dx) <= -dy * Math.tan(STAB_HALF_ANGLE * RAD);
 export const slashSlide = (dx: number): 'left' | 'right' | null => (dx <= -SLASH_SLIDE_PX ? 'left' : dx >= SLASH_SLIDE_PX ? 'right' : null);
 export const cutSideOf = (action: Action): 'left' | 'right' | null => (action === 'light_left' ? 'left' : action === 'light_right' ? 'right' : null);   // the side a cut press goes to; neutral LIGHT is null (no flash)
 // A slide within STAB_HALF_ANGLE degrees of straight up is the stab. Screen y grows down, so up is dy < 0.
@@ -166,8 +175,8 @@ export function createInput(env: InputEnv) {
     if (side) { attackButton.dataset.slide = side; take(side === 'left' ? 'light_left' : 'light_right'); }
     else requestStrike();
   }
-  function fireStab() { slashWait = null; hold('thrust'); request('thrust'); }   // sandbox-mech oneButton: a slide up from STRIKE
-  function fireHeavy() { slashWait = null; hold('heavy'); requestStrike(true); }   // sandbox-mech oneButton: a hold on STRIKE
+  function fireStab() { slashWait = null; hold('thrust'); request('thrust'); }   // oneButton: a slide up from STRIKE
+  function fireHeavy() { slashWait = null; hold('heavy'); requestStrike(true); }   // oneButton: a hold on STRIKE
   // Every strike press goes through here: when it is TAKEN, a brief edge flash on the cut side (a thumb slide fires through fireSlash, keys and sticks through requestStrike).
   function take(next: Action) {
     request(next);
@@ -268,7 +277,7 @@ export function createInput(env: InputEnv) {
     button.addEventListener('pointermove', (event) => {
       if (event.pointerId !== id || dragged) return;
       if (deferred && slashWait) { const side = slashSlide(event.clientX - slashWait.x); if (ONE_BUTTON) { const dx = event.clientX - slashWait.x, dy = event.clientY - slashWait.y; if (Math.hypot(dx, dy) >= STAB_SLIDE_PX) { if (stabSector(dx, dy)) fireStab(); else fireSlash(dx < 0 ? 'left' : 'right'); return; } } else if (side) { fireSlash(side); return; } }
-      if (ONE_BUTTON && deferred && !slashWait) return;   // sandbox-mech oneButton: the swipe has decided (stab, cut or heavy); sliding on out of the circle is not a guard press that overrides it
+      if (ONE_BUTTON && deferred && !slashWait) return;   // oneButton: the swipe has decided (stab, cut or heavy); sliding on out of the circle is not a guard press that overrides it
       const c = radius();
       if (Math.hypot(event.clientX - c.x, event.clientY - c.y) <= c.r) return;
       dragged = true;
@@ -283,7 +292,7 @@ export function createInput(env: InputEnv) {
         id = null;
         if (deferred && slashWait) { if (type === 'pointerup' && !dragged) fireSlash(null); else slashWait = null; }   // a release decides the plain light
         unhold(name);
-        if (ONE_BUTTON && deferred) { unhold('heavy'); unhold('thrust'); }
+        if (ONE_BUTTON && deferred) { unhold('heavy'); unhold('thrust'); }   // oneButton: the swing the swipe chose is released with the thumb
         delete button.dataset.held;
         if (deferred) delete button.dataset.slide;
         if (dragged) {
@@ -307,6 +316,7 @@ export function createInput(env: InputEnv) {
       });
   }
   strikeControl(attackButton, 'light', () => requestStrike(), true);
+  if (ONE_BUTTON && typeof document !== 'undefined') applyTouchLayout(document, location.search);   // touch layout A goes with the one-button strike (touch-layout.ts); off by default
   skillButton.addEventListener('pointerdown', (event) => {
     if (event.button === 0) {
       event.preventDefault();
@@ -472,7 +482,7 @@ export function createInput(env: InputEnv) {
     },
     // What the simulation sees this tick. Presses reach it only once the assets are ready (the buttons read disabled until then).
     intent(): ControlIntent {
-      if (slashWait && env.now() - slashWait.since >= (ONE_BUTTON ? HEAVY_HOLD_MS : SLASH_DECIDE_MS)) { if (ONE_BUTTON) fireHeavy(); else fireSlash(null); }
+      if (slashWait && env.now() - slashWait.since >= (ONE_BUTTON ? HEAVY_HOLD_MS : SLASH_DECIDE_MS)) { if (ONE_BUTTON) fireHeavy(); else fireSlash(null); }   // oneButton: a hold past HEAVY_HOLD_MS is the heavy
       if (pendingSpell) { if (env.now() > pendingSpell.until) pendingSpell = null; else if (!action && env.ready() && accepts(env.practice(), pendingSpell.action)) { action = pendingSpell.action; pendingSpell = null; } }
       const ready = env.ready(), q = keys.has('KeyQ'), arrow = (code: string) => !q && keys.has(code);
       // The side the simulation will see this tick: the thumb's slide, else Q + an arrow. The button's hint (data-side) follows it, so a
