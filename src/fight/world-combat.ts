@@ -150,7 +150,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
         const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null; pendingCast = false; pendingCast2 = false;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }
         if (rg && !heroDead) {   // out-of-combat regeneration: the sim's own health and stamina on his fighter, once per fixed step (hero-regen.ts); null (the Pit, every listed zone) = none
-          const m = world.fighters[0]!, fought = r.events.some((ev) => ev.type === 'Hit' && (ev.attacker === ME || ev.victim === ME)), noticed = world.fighters.slice(1).some((f) => f.phase !== 'dead' && (f.hunting || Math.hypot(f.x - m.x, f.z - m.z) <= AGGRO_M));
+          const m = world.fighters[0]!, fought = r.events.some((ev) => ev.type === 'Hit' && (ev.attacker === ME || ev.victim === ME)), noticed = specs.size > 0 || world.fighters.slice(1).some((f) => f.phase !== 'dead' && (f.hunting || Math.hypot(f.x - m.x, f.z - m.z) <= AGGRO_M));   // any creature still in the loop (even one walking home) keeps a record window open: no regen tick lands inside it
           const out = regenStep(quiet, STEP, rg, { fought, noticed, moving: walked > rg.moveEpsMps, dead: m.phase === 'dead' }, m); m.health = out.health; m.stamina = out.stamina;
         }
       }
