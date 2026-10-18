@@ -49,5 +49,5 @@ export const loadSpellInfo = () => Promise.resolve()
   .then(() => import('./spell-catalogue.ts')).then((m) => m.SPELL_INFO);
 export { createFollowCamera, inPassage, type CombatCam, type CombatFraming, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
 export { MAX_ATTACKERS } from './attackers.ts';
-export { fxNum } from './fx-rows.ts';   // the view-effect rows (fx-rows.json): origins pages read them through the fight's door (K7 engine parity)
+export { setFightBack } from './camera.ts';   // a zone's camera.fightBack scale for the duel's lock camera (the page sets it on resize)
 export { finishedAs } from './rank-tint.ts';   // a finish row on a piece's metal (the ground-item view, origins/preview)
