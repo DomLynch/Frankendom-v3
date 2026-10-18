@@ -29,6 +29,7 @@
    "name": "Estoc Lunge",
    "opponent": "nightborn",
    "clip": "thrust",
+   "specialClip": "Special_Lunge",
    "impactTint": "#9a86ff"
   },
   {
@@ -38,6 +39,7 @@
    "name": "Reaping Blow",
    "opponent": "executioner",
    "clip": "heavy",
+   "specialClip": "Special_Whirlwind",
    "impactTint": "#c0202a"
   },
   {
@@ -66,6 +68,7 @@
    "name": "Butcher's Cleave",
    "opponent": "pitborn",
    "clip": "heavy",
+   "specialClip": "Special_SkullCrack",
    "impactTint": "#e0561c"
   },
   {
@@ -75,6 +78,7 @@
    "name": "Anvil Stomp",
    "opponent": "dwarf",
    "clip": "heavy",
+   "specialClip": "Special_GroundSlam",
    "impactTint": "#b89468"
   },
   {

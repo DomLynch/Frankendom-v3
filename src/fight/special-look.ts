@@ -53,7 +53,7 @@ export const specialParam = (search: string): SpecialTest | null => {
 // tick after), so it needs no memory. Not off the cooldown: that re-arms at the release (Dom's final rule, 2026-10-01), not at the cast.
 export function specialStage(f: Pick<Fighter, 'specialShare' | 'special' | 'specialRecover' | 'health'>): { stage: 'windup' | 'recover'; progress: number } | null {
   if (f.specialShare === undefined || !f.health) return null;
-  if (f.special) return { stage: 'windup', progress: 1 - f.special / RULES.special.windup };
+  if (f.special) return { stage: 'windup', progress: Math.max(0, 1 - f.special / RULES.special.windup) };
   const since = f.specialRecover ? RULES.special.recovery - f.specialRecover : -1;   // 0 on the strike tick
   return since >= 0 && since < SPECIAL_RECOVER ? { stage: 'recover', progress: since / SPECIAL_RECOVER } : null;
 }

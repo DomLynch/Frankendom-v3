@@ -8,6 +8,7 @@ export type SkillClip = 'heavy' | 'thrust' | 'light';
 export type SkillRow = {
   readonly id: string; readonly code: number; readonly move: string; readonly name: string; readonly opponent: string | null; readonly clip: SkillClip;
   readonly dayOne?: boolean; readonly tell?: boolean; readonly bash?: boolean; readonly impactTint?: string; readonly fx?: string;
+  readonly specialClip?: string;   // the move's own clip role (characters.ts SPECIAL_ROLES): played in place of the weapon's strike clip on the weapons its src/assets/special-clips.json row lists
 };
 export type SkillTable = { readonly rows: Readonly<Record<string, SkillRow>>; readonly byCode: readonly (string | null)[]; readonly dayOne: string };
 

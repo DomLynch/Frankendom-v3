@@ -6,6 +6,14 @@ import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { BELL_RATE, preparedBell } from './bell.ts';
 import type { Fatigue } from '../fight/fatigue.ts';
+import CROWD from './crowd-defs.json' with { type: 'json' };
+
+// sandbox-mech: crowd. A roar row { id, on, cue, gain } plays that crowd cue at `gain` the frame its moment happens, with no cooldown, on top of
+// the reactions below; `on` is kill | parry | guardBreak | heavy. Presentation only. No rows (trunk) = no roar, the crowd exactly as before.
+type Roar = { id: string; on: 'kill' | 'parry' | 'guardBreak' | 'heavy'; cue: ArenaCue; gain: number };
+const ROARS = CROWD.roars as unknown as readonly Roar[];
+export const momentsOf = (events: readonly CombatEvent[]): Set<Roar['on']> => new Set(events.flatMap((e): Roar['on'][] =>
+  e.type === 'Killed' ? ['kill'] : e.type === 'Parried' ? ['parry'] : e.type === 'GuardBroken' ? ['guardBreak'] : e.type === 'Hit' && (e.charged || /heavy/.test(e.move ?? '')) ? ['heavy'] : []));
 
 // loiter: the wall-hug level, 0..1 — the larger fighter's `loiter / RULES.wall.loiter.ticks` (Brief 13): the crowd turns on
 // whoever hugs the wall, a bed that swells with it and drops the moment he leaves the band or swings (loiter resets to 0).
@@ -56,7 +64,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
     wall.envelope.gain.cancelScheduledValues(time); wall.envelope.gain.setValueAtTime(wall.envelope.gain.value, time);
     wall.envelope.gain.linearRampToValueAtTime(WALL_GAIN * ARENA_LEVEL * Math.min(1, level), time + .1);
   }
-  function play(name: ArenaCue, cueGain: number, delay = 0) {
+  function play(name: ArenaCue, cueGain: number, delay = 0, outlive = false) {   // outlive: not stopped by stop() (a kill roar rings over the end)
     const gain = name === 'bell' ? cueGain : cueGain * ARENA_LEVEL;
     // No arena bank yet: the idle-built bell (bell.ts), or none this match. Never synthesised here, on the Draw tap.
     const samples = name === 'bell' && !buffer && !bell ? bellSource() : undefined;
@@ -70,7 +78,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
     const fade = name === 'bed' ? .9 : .008;
     envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(gain, time + fade);
     envelope.gain.setValueAtTime(gain, time + duration - fade); envelope.gain.linearRampToValueAtTime(0, time + duration);
-    const voice = { source, until: time + duration }; voices.add(voice);
+    const voice = { source, until: time + duration }; if (!outlive) voices.add(voice);
     source.onended = () => { voices.delete(voice); source.disconnect(); envelope.disconnect(); };
     source.start(time, audio === bell ? 0 : offset, seconds);
     return duration;
@@ -87,7 +95,9 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
         for (const name of Object.keys(last) as ArenaCue[]) delete last[name];
         reactionAt = time + 2; gruntAt = time; contactAt = time;
       }
-      if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); return; }
+      const moments = ROARS.length ? momentsOf(events) : undefined;
+      if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); if (moments) for (const r of ROARS) if (r.on === 'kill' && moments.has('kill')) play(r.cue, r.gain, 0, true); return; }
+      if (moments) for (const r of ROARS) if (r.on !== 'kill' && moments.has(r.on)) play(r.cue, r.gain);
       wallJeer(frame.loiter ?? 0, time);
       if (!bellPlayed && draw) { bellPlayed = true; play('bell', .9); }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
