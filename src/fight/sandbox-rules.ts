@@ -2,38 +2,47 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import DEFS from './sandbox-rules-defs.json' with { type: 'json' };
 import MANIFEST from './sandbox-rules-defs.manifest.json' with { type: 'json' };
 
-// The combat sandbox's rule rows, ported to trunk in slices (Lead's plan, 2026-10-18; Donor: the combat sandbox, sandbox/page @678a31f0d, read-only). THIS slice declares the melee-special families with their empty defaults and the reader;
-// nothing on trunk imports it yet, so a trunk fight is byte for byte as before. Every rule is 0 / absent as shipped; the slice that turns one on bumps the record version and carries its battery.
-// A sim file: no clock, no Math.random. Each family is a table through the registry (sandbox-rules-defs.manifest.json), one number per row.
-const TABLES = MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, DEFS, 'sandbox-rules-defs.json'));
-loadRegistry(TABLES);
-const rows = (table: string): readonly Record<string, unknown>[] => TABLES.find((t) => t.manifest.table === table)?.rows ?? [];
-const rule = (id: string): number => (rows('sandboxRule').find((r) => r.id === id)?.value as number | undefined) ?? 0;
+// The combat sandbox's rule rows, ported to trunk in slices (Lead's plan, 2026-10-18; Donor: the combat sandbox, sandbox/page @678a31f0d, read-only). Slice (c) declared the melee-special families; slice (e) (RV77) turns the
+// windup / react rules on in duel.ts, so this is a sim file: no clock, no Math.random. Each family is a table through the registry (sandbox-rules-defs.manifest.json), one number per row.
+const SANDBOX_TABLES = MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, DEFS, 'sandbox-rules-defs.json'));
+loadRegistry(SANDBOX_TABLES);
+const sandboxRows = (table: string): readonly Record<string, unknown>[] => SANDBOX_TABLES.find((t) => t.manifest.table === table)?.rows ?? [];
+const sandboxRule = (id: string): number => (sandboxRows('sandboxRule').find((r) => r.id === id)?.value as number | undefined) ?? 0;
 
 //   specialMeleeWindup (Dom 2026-10-17: "it takes like two seconds, it is not a long-distance spell, same speed as the stab, slash or heavy"): ticks a MELEE special (no spell) is committed before it lands; 0 = the special's own windup rule.
-export const SPECIAL_MELEE_WINDUP = rule('specialMeleeWindup');
+export const SPECIAL_MELEE_WINDUP = sandboxRule('specialMeleeWindup');
+//   specialMeleeReach / specialMeleeSlack (Dom 2026-10-18: "short-mid distance, a tad more than a normal attack, nothing crazy"; a special landed from across the arena): cm. A MELEE special (no spell) is pressed only inside the reach (else a specialCue "far" cue,
+//   nothing spent) and still lands at release only inside reach + slack (the foe may step); 0 = the special's own reach (RULES.special.reach) and no release check.
+export const SPECIAL_MELEE_REACH = sandboxRule('specialMeleeReach'), SPECIAL_MELEE_SLACK = sandboxRule('specialMeleeSlack');
+//   percentScale / centimetresPerMetre: the unit rows (100 and 100) the percent rows and the cm rows divide by, so no unit literal sits in the sim.
+const PERCENT = sandboxRule('percentScale'), CENTIMETRES_PER_METRE = sandboxRule('centimetresPerMetre');
+export const percentScaled = (value: number, percent: number): number => value * percent / PERCENT;
+export const meleeSpecialReach = (trunk: number): number => (SPECIAL_MELEE_REACH ? SPECIAL_MELEE_REACH / CENTIMETRES_PER_METRE : trunk);   // metres
+export const meleeSpecialRelease = (): number => (SPECIAL_MELEE_REACH + SPECIAL_MELEE_SLACK) / CENTIMETRES_PER_METRE;   // metres: the farthest a released melee special still lands
+//   specialCue: rows { id, text }, the short text the HUD floats over the caster when the sim refused a special press (the "far" cue).
+export const specialCueText = (id: string): string => (sandboxRows('specialCue').find((r) => r.id === id)?.text as string | undefined) ?? id;
 //   specialReact (Strategy 2026-10-17: the victim's stagger is a sim reaction from the move's row, not a canned animation): 1 = a landed melee special applies its move row's stagger, knockback and posture to the victim like a landed blow; 0 = damage only.
-export const SPECIAL_REACT = rule('specialReact');
+export const SPECIAL_REACT = sandboxRule('specialReact');
 //   specialReactStagger / specialReactKnock / specialReactPosture (percent of the move row's own stagger, knockback and posture; 100 = as the row says): how hard a landed melee special hits the victim.
-export const SPECIAL_REACT_STAGGER = rule('specialReactStagger'), SPECIAL_REACT_KNOCK = rule('specialReactKnock'), SPECIAL_REACT_POSTURE = rule('specialReactPosture');
+export const SPECIAL_REACT_STAGGER = sandboxRule('specialReactStagger'), SPECIAL_REACT_KNOCK = sandboxRule('specialReactKnock'), SPECIAL_REACT_POSTURE = sandboxRule('specialReactPosture');
 //   specialReactFloor (Dom 2026-10-18: Lunge showed no reaction, its move row has stagger 0 so a percent of it is 0): rows { id (skill id), stagger (ticks) }, the least stagger a landed melee special of that skill gives, whatever its move row says. No row = the percent alone.
-export const specialReactFloorOf = (skill: string): number => (rows('specialReactFloor').find((r) => r.id === skill)?.stagger as number | undefined) ?? 0;
+export const specialReactFloorOf = (skill: string): number => (sandboxRows('specialReactFloor').find((r) => r.id === skill)?.stagger as number | undefined) ?? 0;
 
 //   specialPick (the SPECIAL 1/2 picker): rows { id (skill id), role, label?, slot2Default?, slot2Alt? }: which melee skills the picker offers and what SPECIAL 2 starts as. No rows = no picker.
 export type SpecialPickRow = { id: string; role: string; label?: string; slot2Default?: number; slot2Alt?: number };
-export const specialPickRows = (): readonly SpecialPickRow[] => rows('specialPick') as unknown as SpecialPickRow[];
+export const specialPickRows = (): readonly SpecialPickRow[] => sandboxRows('specialPick') as unknown as SpecialPickRow[];
 
 //   specialLook (the beta specials must read as different moves on a phone): one row { id (skill id), flash, sparks, spread, lift, size } per skill, percent of the shared skill-impact kit (100 = as it is). Presentation only, no sim. No row = the kit as it is.
 export type SpecialLookRow = { id: string; flash: number; sparks: number; spread: number; lift: number; size: number };
-export const specialLookOf = (skill: string): SpecialLookRow | undefined => rows('specialLook').find((r) => r.id === skill) as SpecialLookRow | undefined;
+export const specialLookOf = (skill: string): SpecialLookRow | undefined => sandboxRows('specialLook').find((r) => r.id === skill) as SpecialLookRow | undefined;
 //   specialTrail ("weapon trails"): one row { id (skill id), samples, opacity, color, lead, tail } per melee special: a longer, firmer trail from `lead` ticks before the release until `tail` ticks after. No row = the game's own trail.
 export type SpecialTrailRow = { id: string; samples: number; opacity: number; color: string; lead: number; tail: number };
-export const specialTrailOf = (skill: string): SpecialTrailRow | undefined => rows('specialTrail').find((r) => r.id === skill) as SpecialTrailRow | undefined;
+export const specialTrailOf = (skill: string): SpecialTrailRow | undefined => sandboxRows('specialTrail').find((r) => r.id === skill) as SpecialTrailRow | undefined;
 //   specialShards (solid impact fragments): rows { id (row id), skill, kind stone|metal, count (<= 8 a burst on a phone), tint, per-mille power, forward, lift, size, life, gravity, bounce, slide, shrink }. No rows = nothing is built or drawn.
 export type ShardRow = { id: string; skill: string; kind: string; count: number; tint: string; power: number; forward: number; lift: number; size: number; life: number; gravity: number; bounce: number; slide: number; shrink: number };
-export const specialShardsOf = (skill: string): ShardRow[] => (rows('specialShards') as unknown as ShardRow[]).filter((r) => r.skill === skill);
-export const shardRows = (): number => rows('specialShards').length;
-export const shardCapacity = (): number => (rows('specialShards') as unknown as ShardRow[]).reduce((sum, r) => sum + r.count, 0);   // the pool of each chip shape: every row's count, so every row can be mid-flight at once
+export const specialShardsOf = (skill: string): ShardRow[] => (sandboxRows('specialShards') as unknown as ShardRow[]).filter((r) => r.skill === skill);
+export const shardRows = (): number => sandboxRows('specialShards').length;
+export const shardCapacity = (): number => (sandboxRows('specialShards') as unknown as ShardRow[]).reduce((sum, r) => sum + r.count, 0);   // the pool of each chip shape: every row's count, so every row can be mid-flight at once
 //   specialSound (the hit must sound like bone and weight): rows { id (row id), skill, cue (a CueName), gain, room, delay, on? } played in order when that melee special lands; `on`: 'start' plays at the commit, 'land' (default) on the foe. No rows = no sound added.
 export type SpecialSoundRow = { id: string; skill: string; cue: string; gain: number; room: number; delay: number; on?: 'start' | 'land' };
-export const specialSoundOf = (skill: string): SpecialSoundRow[] => (rows('specialSound') as unknown as SpecialSoundRow[]).filter((r) => r.skill === skill);
+export const specialSoundOf = (skill: string): SpecialSoundRow[] => (sandboxRows('specialSound') as unknown as SpecialSoundRow[]).filter((r) => r.skill === skill);

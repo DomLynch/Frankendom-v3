@@ -1,6 +1,7 @@
 {
   "tables": [
     { "table": "sandboxRule", "file": "sandbox-rules-defs.json", "at": "rules", "key": "id", "required": { "value": { "type": "integer", "min": 0 } } },
+    { "table": "specialCue", "file": "sandbox-rules-defs.json", "at": "specialCue", "key": "id", "required": { "text": "string" } },
     { "table": "specialPick", "file": "sandbox-rules-defs.json", "at": "specialPick", "key": "id", "required": { "role": "string" } },
     { "table": "specialReactFloor", "file": "sandbox-rules-defs.json", "at": "specialReactFloor", "key": "id", "required": { "stagger": { "type": "integer", "min": 0 } } },
     { "table": "specialLook", "file": "sandbox-rules-defs.json", "at": "specialLook", "key": "id", "required": { "flash": "number", "sparks": "number", "spread": "number", "lift": "number", "size": "number" } },
