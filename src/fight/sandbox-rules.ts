@@ -11,6 +11,16 @@ const sandboxRule = (id: string): number => (sandboxRows('sandboxRule').find((r)
 
 //   specialMeleeWindup (Dom 2026-10-17: "it takes like two seconds, it is not a long-distance spell, same speed as the stab, slash or heavy"): ticks a MELEE special (no spell) is committed before it lands; 0 = the special's own windup rule.
 export const SPECIAL_MELEE_WINDUP = sandboxRule('specialMeleeWindup');
+//   specialMeleeReach / specialMeleeSlack (Dom 2026-10-18: "short-mid distance, a tad more than a normal attack, nothing crazy"; a special landed from across the arena): cm. A MELEE special (no spell) is pressed only inside the reach (else a specialCue "far" cue,
+//   nothing spent) and still lands at release only inside reach + slack (the foe may step); 0 = the special's own reach (RULES.special.reach) and no release check.
+export const SPECIAL_MELEE_REACH = sandboxRule('specialMeleeReach'), SPECIAL_MELEE_SLACK = sandboxRule('specialMeleeSlack');
+//   percentScale / centimetresPerMetre: the unit rows (100 and 100) the percent rows and the cm rows divide by, so no unit literal sits in the sim.
+const PERCENT = sandboxRule('percentScale'), CENTIMETRES_PER_METRE = sandboxRule('centimetresPerMetre');
+export const percentScaled = (value: number, percent: number): number => value * percent / PERCENT;
+export const meleeSpecialReach = (trunk: number): number => (SPECIAL_MELEE_REACH ? SPECIAL_MELEE_REACH / CENTIMETRES_PER_METRE : trunk);   // metres
+export const meleeSpecialRelease = (): number => (SPECIAL_MELEE_REACH + SPECIAL_MELEE_SLACK) / CENTIMETRES_PER_METRE;   // metres: the farthest a released melee special still lands
+//   specialCue: rows { id, text }, the short text the HUD floats over the caster when the sim refused a special press (the "far" cue).
+export const specialCueText = (id: string): string => (sandboxRows('specialCue').find((r) => r.id === id)?.text as string | undefined) ?? id;
 //   specialReact (Strategy 2026-10-17: the victim's stagger is a sim reaction from the move's row, not a canned animation): 1 = a landed melee special applies its move row's stagger, knockback and posture to the victim like a landed blow; 0 = damage only.
 export const SPECIAL_REACT = sandboxRule('specialReact');
 //   specialReactStagger / specialReactKnock / specialReactPosture (percent of the move row's own stagger, knockback and posture; 100 = as the row says): how hard a landed melee special hits the victim.

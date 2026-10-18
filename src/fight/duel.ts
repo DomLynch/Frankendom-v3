@@ -14,7 +14,7 @@ import { crowdPercent, percentOf, rolledDamage, rollUnit, swarmBand, type CrowdK
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
-import { SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
+import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, type CastOutcome, type Spell } from './spell-cast.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
@@ -101,10 +101,10 @@ export const withPerk = (f: Fighter, perk: Perk | undefined): Fighter => {
 
 export type Side = 0 | 1;
 export type Finish = { victim: Side; location: HitLocation; move: MoveId; heading: number; draw?: boolean };   // draw: both fell on the same tick (victim is then the first processed)
-type EventType = 'SpecialStarted' | 'SpecialLanded' | 'SpecialFizzled' | 'SpecialInterrupted' | 'ActionStarted' | 'AttackStarted' | 'Charging' | 'Charged' | 'AttackActive' | 'AttackMissed' | 'Hit' | 'Blocked' | 'Parried' | 'GuardBroken' | 'PostureBroken' | 'Dodged' | 'Staggered' | 'StaminaExhausted' | 'Killed' | 'SharedHit' | 'Whipped' | 'WhipRaised' | 'GambitArmed' | 'GambitFailed';
+type EventType = 'SpecialStarted' | 'SpecialRefused' | 'SpecialLanded' | 'SpecialFizzled' | 'SpecialInterrupted' | 'ActionStarted' | 'AttackStarted' | 'Charging' | 'Charged' | 'AttackActive' | 'AttackMissed' | 'Hit' | 'Blocked' | 'Parried' | 'GuardBroken' | 'PostureBroken' | 'Dodged' | 'Staggered' | 'StaminaExhausted' | 'Killed' | 'SharedHit' | 'Whipped' | 'WhipRaised' | 'GambitArmed' | 'GambitFailed';
 // Event sides: a blow that lands (Hit, GuardBroken, Killed) names the attacker as `actor` and the one struck as `target`; a defence that
 // succeeds (Blocked, Parried, Dodged) names the defender as `actor` and the attacker as `target`.
-export type CombatEvent = { pulse?: number; cone?: boolean; damageKind?: string; tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
+export type CombatEvent = { cue?: string; pulse?: number; cone?: boolean; damageKind?: string; tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
 // WhipRaised: the lorarius lifts his whip, `lead` ticks before the lash that follows (RULES.wall.loiter.raise, or raiseAgain for a repeat) —
 // presentation scales its raise animation by `lead` rather than assuming one. Both whip events carry `guard`: which sixth of the wall the
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
@@ -330,10 +330,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       next.phase = 'backstep'; next.age = 0; next.parrying = false; next.guardDirection = null; spend(i, R.backstep.cost); events.push({ tick, type: 'ActionStarted', actor: i, action: 'backstep' });
     } else if ((action === 'skill' || action === 'skill2') && me.specialShare !== undefined && !(action === 'skill2' && me.skill2 !== undefined)) {
       // Special: committed from this tick; the cooldown is spent at commitment. Out of reach the press is refused and nothing is spent.
-      if (distance(me.body, foe.body) <= R.special.reach) {
-        const cast = action === 'skill2' ? me.spell2 : me.spell;
+      const gap = distance(me.body, foe.body), cast = action === 'skill2' ? me.spell2 : me.spell, reach = cast ? R.special.reach : meleeSpecialReach(R.special.reach);   // sandbox specialMeleeReach: a melee special (no spell) is pressed only inside its own, shorter reach
+      if (SPECIAL_MELEE_REACH && !cast && gap > reach) events.push({ tick, type: 'SpecialRefused', actor: i, cue: 'far' });   // nothing is spent: the HUD floats the specialCue row's text over the caster
+      else if (gap <= reach) {
         if (action === 'skill2') next.castSlot = 1; else delete next.castSlot;
-        next.special = !cast && SPECIAL_MELEE_WINDUP ? SPECIAL_MELEE_WINDUP : R.special.windup; delete next.castHurt;   // sandbox specialMeleeWindup (Dom 2026-10-17: "same speed as the stab, slash or heavy"): a melee special (no spell) is committed for that many ticks, not the spell's delay next.phase = 'ready'; next.age = 0; next.parrying = false; next.guardDirection = null;
+        next.special = !cast && SPECIAL_MELEE_WINDUP ? SPECIAL_MELEE_WINDUP : R.special.windup; delete next.castHurt;   // sandbox specialMeleeWindup (Dom 2026-10-17: "same speed as the stab, slash or heavy"): a melee special (no spell) is committed for that many ticks, not the spell's delay
+        next.phase = 'ready'; next.age = 0; next.parrying = false; next.guardDirection = null;
         if (cast) spend(i, cast.cost);   // the stamina is gone at the commit, whatever the outcome
         events.push({ tick, type: 'SpecialStarted', actor: i, ...(me.skill ? { move: SKILL_MOVE[me.skill] } : {}), ...(me.specialName ? { name: me.specialName } : {}), ...(cast ? { spell: cast.id } : {}) });
       }
@@ -584,6 +586,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const spell = castOf(A);   // slot a or b: the cooldown below is that slot's own (spell-slot-defs sharedCooldown 1 = both)
     A.special = 0; delete A.castHurt; coolSlot(A, R.special.cooldown); A.specialRecover = R.special.recovery;   // re-armed and held back from attacking, counted from the release
     if (!standing[j]) continue;
+    if (SPECIAL_MELEE_REACH && !spell && distance(A.body, D.body) > meleeSpecialRelease()) { events.push({ tick, type: 'SpecialFizzled', actor: i }); continue; }   // sandbox specialMeleeReach: the foe stepped out of reach during the windup, the swing finds nothing
     // v55 (cone-rules.ts): a special with a cone row breathes instead of striking once: the heading is fixed on the target now, the pulses follow, and the caster is held back until the last of them is done.
     const cone = CONE_ON && !spell ? coneOf(A.specialName) : undefined;
     if (cone) { A.breath = { k: 0, wait: 0, heading: aim(A.body, D.body) }; A.specialRecover = R.special.recovery + breathTicks(cone); breathed[i] = true; continue; }
@@ -597,10 +600,10 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(spell && outcome ? { spell: spell.id, outcome } : {}), ...(pulsed ? { pulse: 0 } : {}) });
     if (SPECIAL_REACT && !spell && D.health) {   // sandbox specialReact: a landed melee special staggers, shoves and shakes the victim by its move row, like a landed blow (no canned animation: the sim decides)
       const def = movesOf(A)[move], away = aim(D.body, A.body) + Math.PI;
-      for (let k = 0; k < Math.round(def.knockback * SPECIAL_REACT_KNOCK / 100); k++) D.body = { ...advance(D.body, { x: M.sin(away), z: M.cos(away), yaw: 0, run: false }, A.body, 1, wall), heading: D.body.heading };
-      D.phase = 'hurt'; D.age = 0; D.stun = Math.max(D.stun, Math.round(def.stagger * SPECIAL_REACT_STAGGER / 100), specialReactFloorOf(String(move).replace(/^skill_/, ''))); D.buffer = null; D.counterWindow = 0; D.charge = 0; D.charged = false;
+      for (let k = 0; k < Math.round(percentScaled(def.knockback, SPECIAL_REACT_KNOCK)); k++) D.body = { ...advance(D.body, { x: M.sin(away), z: M.cos(away), yaw: 0, run: false }, A.body, 1, wall), heading: D.body.heading };
+      D.phase = 'hurt'; D.age = 0; D.stun = Math.max(D.stun, Math.round(percentScaled(def.stagger, SPECIAL_REACT_STAGGER)), specialReactFloorOf(String(move).replace(/^skill_/, ''))); D.buffer = null; D.counterWindow = 0; D.charge = 0; D.charged = false;
       events.push({ tick, type: 'Staggered', actor: j, ticks: D.stun });
-      shake(j, def.posture * SPECIAL_REACT_POSTURE / 100);
+      shake(j, percentScaled(def.posture, SPECIAL_REACT_POSTURE));
     }
     if (D.health) continue;
     delete A.volley;
