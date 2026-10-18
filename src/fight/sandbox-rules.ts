@@ -16,7 +16,7 @@ const num = (id: string, field: 'window' | 'value'): number => {
   if (!Number.isInteger(v) || v < 0) throw Error(`sandbox-rules-defs "${id}": ${field} is a whole number, 0 or more`);
   return v;
 };
-export let DODGE_COUNTER = num('dodgeCounter', 'window');
+export let DODGE_COUNTER = num('dodgeCounter', 'value');
 //   interruptEarly: extra lockout, in per-mille of the base interruptCooldown, when a cast is cut at its very start; it falls to 0 as the cast nears release (ModernUO: the earlier the cut, the longer the lockout). 0 = off.
 export let INTERRUPT_EARLY = num('interruptEarly', 'value');
 export const interruptLockout = (base: number, left: number, windup: number): number => (INTERRUPT_EARLY > 0 ? Math.round((base * (1000 + (INTERRUPT_EARLY * Math.min(left, windup)) / windup)) / 1000) : base);
@@ -265,13 +265,13 @@ export type SpecialTrailRow = { id: string; samples: number; opacity: number; co
 export const specialTrailOf = (skill: string): SpecialTrailRow | undefined => rowsOf<SpecialTrailRow>('specialTrail').find((r) => r.id === skill);
 // specialShards (Dom 2026-10-17, from World of Claudecraft's solid impact fragments): rows { id (skill id), kind stone|metal, count (<= 8 a burst on a phone), tint, and per-mille numbers: power, forward, lift, size, life, gravity, bounce, slide, shrink }.
 // A landed melee special throws these lit 3D chips off the contact (special-shards.ts). No rows (trunk) = nothing is built or drawn.
-export type ShardRow = { id: string; kind: 'stone' | 'metal'; count: number; tint: string; power: number; forward: number; lift: number; size: number; life: number; gravity: number; bounce: number; slide: number; shrink: number };
-export const specialShardsOf = (skill: string): ShardRow[] => rowsOf<ShardRow>('specialShards').filter((r) => r.id === skill);
+export type ShardRow = { id: string; skill: string; kind: 'stone' | 'metal'; count: number; tint: string; power: number; forward: number; lift: number; size: number; life: number; gravity: number; bounce: number; slide: number; shrink: number };
+export const specialShardsOf = (skill: string): ShardRow[] => rowsOf<ShardRow>('specialShards').filter((r) => r.skill === skill);
 export const shardRows = (): number => rowsOf<ShardRow>('specialShards').length;
 // specialSound (Dom 2026-10-17, gritty melee: the hit must sound like bone and weight): rows { id (skill id), cue (a CueName), gain, room, delay } played in order when that melee special lands on the foe. No rows (trunk) = no sound added.
 // `on`: 'start' plays when the special is committed (the swing's whoosh, `delay` seconds in), 'land' (default) when it lands on the foe.
-export type SpecialSoundRow = { id: string; cue: string; gain: number; room: number; delay: number; on?: 'start' | 'land' };
-export const specialSoundOf = (skill: string): SpecialSoundRow[] => rowsOf<SpecialSoundRow>('specialSound').filter((r) => r.id === skill);
+export type SpecialSoundRow = { id: string; skill: string; cue: string; gain: number; room: number; delay: number; on?: 'start' | 'land' };
+export const specialSoundOf = (skill: string): SpecialSoundRow[] => rowsOf<SpecialSoundRow>('specialSound').filter((r) => r.skill === skill);
 // missileAnswer (Strategy 2026-10-18, after the bow battery: the warden AI had no answer to an arrow and lost 16/16 to a plain archer): one row { dodge, guard, run } for the AI. When the foe has a bolt in flight at it, it decides ONCE per bolt
 // (seeded): roll in the arrival window with `dodge` percent, else raise its guard with `guard` percent, else take it; `run` = 1 sends it running at an archer who stands beyond the missile gap. No row (trunk) = no answer, as before.
 export type MissileAnswerRow = { dodge: number; guard: number; run?: number };
@@ -334,7 +334,7 @@ export const specialPickRows = (): readonly SpecialPickRow[] => rowsOf<SpecialPi
 
 // ERA (Combat, BULK-CS): every value-valued export above is a live `let`; with the era OFF `num` reads 0 and `rowsOf` reads [], so re-evaluating each initialiser in file order puts every rule back to trunk's 0 / empty, and back on for a v78+ record. Called by setSandbox (sandbox-era.ts).
 export function applySandboxEra(): void {
-  DODGE_COUNTER = num('dodgeCounter', 'window');
+  DODGE_COUNTER = num('dodgeCounter', 'value');
   INTERRUPT_EARLY = num('interruptEarly', 'value');
   CAST_PUSHBACK = num('castPushback', 'value');
   CAST_PUSHBACK_MAX = num('castPushbackMax', 'value');

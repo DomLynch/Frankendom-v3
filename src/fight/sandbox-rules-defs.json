@@ -2,7 +2,7 @@
  "rules": [
   {
    "id": "dodgeCounter",
-   "window": 20
+   "value": 20
   },
   {
    "id": "interruptEarly",
@@ -375,151 +375,171 @@
  "specialShards": [],
  "specialSound": [
   {
-   "id": "cleave",
+   "id": "cleave-1",
    "cue": "whoosh_heavy",
    "gain": 650,
    "room": 200,
    "delay": 280,
-   "on": "start"
+   "on": "start",
+   "skill": "cleave"
   },
   {
-   "id": "cleave",
+   "id": "cleave-2",
    "cue": "bone_crack",
    "gain": 850,
    "room": 150,
-   "delay": 0
+   "delay": 0,
+   "skill": "cleave"
   },
   {
-   "id": "cleave",
+   "id": "cleave-3",
    "cue": "hit_heavy",
    "gain": 600,
    "room": 300,
-   "delay": 0
+   "delay": 0,
+   "skill": "cleave"
   },
   {
-   "id": "reaping",
+   "id": "reaping-1",
    "cue": "whoosh_heavy",
    "gain": 600,
    "room": 200,
    "delay": 120,
-   "on": "start"
+   "on": "start",
+   "skill": "reaping"
   },
   {
-   "id": "reaping",
+   "id": "reaping-2",
    "cue": "whoosh_heavy",
    "gain": 750,
    "room": 200,
    "delay": 300,
-   "on": "start"
+   "on": "start",
+   "skill": "reaping"
   },
   {
-   "id": "reaping",
+   "id": "reaping-3",
    "cue": "hit_heavy",
    "gain": 750,
    "room": 300,
-   "delay": 0
+   "delay": 0,
+   "skill": "reaping"
   },
   {
-   "id": "reaping",
+   "id": "reaping-4",
    "cue": "flesh_cut",
    "gain": 550,
    "room": 200,
-   "delay": 0
+   "delay": 0,
+   "skill": "reaping"
   },
   {
-   "id": "stomp",
+   "id": "stomp-1",
    "cue": "whoosh_heavy",
    "gain": 600,
    "room": 200,
    "delay": 260,
-   "on": "start"
+   "on": "start",
+   "skill": "stomp"
   },
   {
-   "id": "stomp",
+   "id": "stomp-2",
    "cue": "hit_heavy",
    "gain": 900,
    "room": 350,
-   "delay": 0
+   "delay": 0,
+   "skill": "stomp"
   },
   {
-   "id": "stomp",
+   "id": "stomp-3",
    "cue": "guard_break",
    "gain": 450,
    "room": 300,
-   "delay": 0
+   "delay": 0,
+   "skill": "stomp"
   },
   {
-   "id": "lunge",
+   "id": "lunge-1",
    "cue": "whoosh_light",
    "gain": 600,
    "room": 150,
    "delay": 150,
-   "on": "start"
+   "on": "start",
+   "skill": "lunge"
   },
   {
-   "id": "lunge",
+   "id": "lunge-2",
    "cue": "flesh_stab",
    "gain": 750,
    "room": 150,
-   "delay": 0
+   "delay": 0,
+   "skill": "lunge"
   },
   {
-   "id": "lunge",
+   "id": "lunge-3",
    "cue": "hit_heavy",
    "gain": 300,
    "room": 250,
-   "delay": 0
+   "delay": 0,
+   "skill": "lunge"
   },
   {
-   "id": "ironrush",
+   "id": "ironrush-1",
    "cue": "whoosh_light",
    "gain": 600,
    "room": 150,
    "delay": 150,
-   "on": "start"
+   "on": "start",
+   "skill": "ironrush"
   },
   {
-   "id": "ironrush",
+   "id": "ironrush-2",
    "cue": "hit_heavy",
    "gain": 700,
    "room": 250,
-   "delay": 0
+   "delay": 0,
+   "skill": "ironrush"
   },
   {
-   "id": "ironrush",
+   "id": "ironrush-3",
    "cue": "flesh_stab",
    "gain": 400,
    "room": 150,
-   "delay": 0
+   "delay": 0,
+   "skill": "ironrush"
   },
   {
-   "id": "shove",
+   "id": "shove-1",
    "cue": "charge",
    "gain": 300,
    "room": 300,
    "delay": 0,
-   "on": "start"
+   "on": "start",
+   "skill": "shove"
   },
   {
-   "id": "shove",
+   "id": "shove-2",
    "cue": "hit_heavy",
    "gain": 800,
    "room": 300,
-   "delay": 0
+   "delay": 0,
+   "skill": "shove"
   },
   {
-   "id": "pommel",
+   "id": "pommel-1",
    "cue": "hit_heavy",
    "gain": 500,
    "room": 250,
-   "delay": 0
+   "delay": 0,
+   "skill": "pommel"
   },
   {
-   "id": "pommel",
+   "id": "pommel-2",
    "cue": "bone_crack",
    "gain": 300,
    "room": 150,
-   "delay": 0
+   "delay": 0,
+   "skill": "pommel"
   }
  ],
  "specialReactFloor": [

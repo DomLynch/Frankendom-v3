@@ -2,7 +2,7 @@ import { STAB_ON } from './stab-rule.ts';
 import { RULES, SKILL_ROWS, type AiProfile, type Direction, type MoveId, weaponOf } from './moves.ts';
 import { LATE_NOTICE } from './play-radius.ts';
 import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
-import { meleeSpecialReach, spellRangeCue, MISSILE_ANSWER, missileMinGap, missileOf } from './sandbox-rules.ts';
+import { meleeSpecialReach, spellRangeCue, spellRangeOf, MISSILE_ANSWER, missileMinGap, missileOf } from './sandbox-rules.ts';
 import { spellRoot } from './spell-cast.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { READ_ROWS } from './ai-read-rows.ts';   // rows: ai-read-defs.json
@@ -96,7 +96,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
   }
   // Special Moves (RULES.special, only when the fight has them: withSpecials): cast whenever it is ready and in reach. No roll is drawn, so a
   // fight without specials steps exactly as before.
-  if (self.specialShare !== undefined && (self.spell ? !spellRangeCue(spellRoot(self.spell.id) ?? '', gap) : gap <= meleeSpecialReach(RULES.special.reach)) && legal(self, 'skill')) return { intent: { ...intent, action: 'skill' }, ai: next };   // a caster holding a spell casts it only inside that spell's range rows (the same gate as the player's press), else the special's reach
+  if (self.specialShare !== undefined && (self.spell ? (spellRangeOf(spellRoot(self.spell.id) ?? '') ? !spellRangeCue(spellRoot(self.spell.id) ?? '', gap) : gap <= RULES.special.reach) : gap <= meleeSpecialReach(RULES.special.reach)) && legal(self, 'skill')) return { intent: { ...intent, action: 'skill' }, ai: next };   // a caster holding a spell casts it only inside that spell's range rows (the same gate as the player's press), else the special's reach
   if (self.bound && self.bound <= (self.boundReact ?? 0) && legal(self, 'kick')) return { intent: { ...intent, action: 'kick' }, ai: next };   // sandbox-mech bindAndDisarm: the bound AI answers with the kick when its reaction time is up
   const guardShare = profile.guard ?? 1;   // fight-identity knobs (moves.ts AiProfile): absent = the warden as it always was
   // Hit and run: a blow that landed this tick earns a hop back out of range (profile.disengage), taken as soon as the swing has recovered.
