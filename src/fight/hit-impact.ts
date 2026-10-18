@@ -10,10 +10,11 @@ import type { CombatEvent } from './duel.ts';
 import type { Direction } from './moves.ts';
 import { CONTACTS, KICK_DROP, KNOCK_SETTLE, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
 
-export type Tier = 'full' | 'half' | 'parry' | 'block';
+export type Tier = 'special' | 'full' | 'half' | 'parry' | 'block';
 // Guard tiers (Dom 2026-09-29, "implement this also"): a PARRY is the longest beat in the game (70 ms + 11 frames = 253 ms, a heavy hit is
 // 90 + 5 = 173) with a small jolt TOWARD the attacker; a BLOCK is a short freeze with a half-strength knock back from the blow.
 export const IMPACT = {
+  special: { frames: CONTACTS.special.frames, knock: CONTACTS.special.knock, push: CONTACTS.special.push },   // a skill's contact is its own beat, heavier than a heavy (the `special` row; was the heavy's 5 frames)
   full: { frames: CONTACTS.hitHeavy.frames, knock: CONTACTS.hitHeavy.knock, push: CONTACTS.hitHeavy.push }, half: { frames: CONTACTS.hitLight.frames, knock: CONTACTS.hitLight.knock, push: CONTACTS.hitLight.push },
   parry: { frames: CONTACTS.parry.frames, knock: CONTACTS.parry.knock, push: CONTACTS.parry.push }, block: { frames: CONTACTS.blockLight.frames, knock: CONTACTS.blockLight.knock, push: CONTACTS.blockLight.push },
 } as const;
@@ -31,7 +32,8 @@ export function impactTier(e: CombatEvent): Tier | null {
   if (e.type === 'Parried') return 'parry';
   if (e.type === 'Blocked') return 'block';
   if (e.type !== 'Hit') return null;
-  return e.charged || HEAVY_CLASS.has(e.move ?? '') || e.move?.startsWith('skill_') ? 'full' : 'half';
+  if (e.move?.startsWith('skill_')) return 'special';
+  return e.charged || HEAVY_CLASS.has(e.move ?? '') ? 'full' : 'half';
 }
 // Event sides (duel.ts): a landed blow names the attacker `actor`; a defence (Blocked, Parried) names the DEFENDER `actor`, the attacker `target`.
 export const attackerOf = (e: CombatEvent): number | undefined => (e.type === 'Blocked' || e.type === 'Parried' ? e.target : e.actor);
