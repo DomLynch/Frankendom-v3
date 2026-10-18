@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import { impactTier } from './hit-impact.ts';
-import { CONTACTS, type ContactId } from './hit-stop-rows.ts';
+import { CONTACTS, feelNum, type ContactId } from './hit-stop-rows.ts';
 
 // sandbox-mech: impact. Dom 2026-10-13: big contact moments with NO time change (a live zone cannot pause): a flash at the contact and a
 // shockwave ring on the sand, per contact row. The sizes are optional columns of hit-stop-defs.json (`flash`, `ring` in metres, `tint`);
 // a row without them throws nothing, so with no columns this file draws nothing. Presentation only: reads events, never the sim.
 // Pools, no light (no shader recompile), no per-frame allocation (the skill-impact.ts pattern).
 type FxCols = { flash?: number; ring?: number; tint?: string };
-const LIFE = { flash: 0.14, ring: 0.38 } as const;   // seconds
-const HEIGHT = { head: 1.62, torso: 1.2, legs: 0.62 } as const;
+const FLASH_LIFE = feelNum('impactFlashLife'), RING_LIFE = feelNum('impactRingLife'), GUARD_HEIGHT = feelNum('impactHeightGuard');   // seconds, seconds, metres (hit-stop-defs.json `feel` rows)
+const HEIGHT = { head: feelNum('impactHeightHead'), torso: feelNum('impactHeightTorso'), legs: feelNum('impactHeightLegs') } as const;   // a blow's height on the struck body, by hit location (metres)
 
 // The contact row a frame's event plays (hit-impact.ts tiers, refined by the rows' own names), or null.
 export function contactOf(e: CombatEvent): ContactId | null {
@@ -44,8 +44,8 @@ export function createImpactFx(scene: THREE.Scene) {
         const v = fighters[e.target]!.body, a = fighters[e.actor]!.body, k = e.type === 'Hit' ? 0.28 / (Math.hypot(a.x - v.x, a.z - v.z) || 1) : 0.5;
         at.set(v.x + (a.x - v.x) * k, 0, v.z + (a.z - v.z) * k); cursor++;
         const tint = row.tint ?? '#ffd9a0';
-        if (row.flash) spawn(flashes, row.flash, LIFE.flash, tint, e.type === 'Hit' ? HEIGHT[e.location ?? 'torso'] : 1.25);
-        if (row.ring) spawn(rings, row.ring, LIFE.ring, tint, 0.03);
+        if (row.flash) spawn(flashes, row.flash, FLASH_LIFE, tint, e.type === 'Hit' ? HEIGHT[e.location ?? 'torso'] : GUARD_HEIGHT);
+        if (row.ring) spawn(rings, row.ring, RING_LIFE, tint, 0.03);
       }
     },
     update(dt: number): void {

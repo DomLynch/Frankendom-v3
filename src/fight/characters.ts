@@ -1,6 +1,6 @@
 // THE ACTOR DRIVER, in the shared fight core (src/fight/, Dom via Strategy 2026-10-09: the Pit and every zone play one fight, one animation system). Moved from src/characters.ts, which now re-exports it
 // so the Pit's importers are untouched; Zone 1 imports it from src/fight/index.ts. Nothing in this file changed but the relative paths.
-import { HURT_STYLES, READY_STYLES, PLAIN_POSTURE, bowSpecialRows, missileOf } from './sandbox-rules.ts';
+import { bowSpecialRows, missileOf } from './sandbox-rules.ts';
 import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
@@ -8,6 +8,7 @@ export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, SKILL_ROWS, skillOfMove, type Direction, type WeaponId } from './moves.ts';
 import SPECIAL_CLIP_ROWS from '../assets/special-clips.json' with { type: 'json' };
+import { HURT_STYLES, READY_STYLES, PLAIN_POSTURE, pickStyle } from './character-style-rows.ts';
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { movesOf, type Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
@@ -570,9 +571,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // relative to the pelvis, the fighter's right = −x): left +.14 m across, right −.23 m, overhead +.35 m up, low −.37 m down. Code-
     // tilted for the beta; the weapons lane replaces it with authored guard clips family by family. Blended so a slide never snaps.
     const spine1 = root.getObjectByName('spine_01'), spine2 = root.getObjectByName('spine_02');
-    const hurtStyle = HURT_STYLES.find((h) => String(h.id) === new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get('hurt'));   // sandbox-mech hurtStyle
+    const search = typeof location === 'undefined' ? '' : location.search, hurtStyle = pickStyle(HURT_STYLES, 'hurt', search), readyStyle = pickStyle(READY_STYLES, 'ready', search);   // ?hurt= / ?ready= (character-style-rows.ts): no query = today's pose
     let hurtDrive = 0, readyDrive = 0;
-    const readyStyle = READY_STYLES.find((r) => String(r.id) === new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get('ready'));   // sandbox-mech readyStyle
     const spine3 = root.getObjectByName('spine_03'), neckBone = root.getObjectByName('neck_01');
     const tilt = { yaw: 0, arm: 0, spine: 0 }, tilted = [spine1, spine2, upperArm, spine3, neckBone].filter((b): b is NonNullable<typeof b> => !!b), untilted = tilted.map(b => b.quaternion.clone());
     let open: Opening | null = null, openW = 0;   // opening-pose.ts: the sim's open stagger on this body, and its eased weight
@@ -806,7 +806,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         for (const role of roles) {
           const a = actions[role];
           const fade = tmpl === 'bisect' ? Math.min(1,progress/.04) : combatRole === null ? 0 : ['draw','guard','block','parry','deflected'].includes(pose) || fin?.side === 'killer' ? 1 : Math.min(1, progress * 12, dead ? 1 : (1 - progress) * 10);
-          const hurtFade = hurtStyle && combatRole === 'Hit' ? fade * (hurtStyle.weight / 1000) : fade;
+          const hurtFade = hurtStyle && combatRole === 'Hit' ? fade * (hurtStyle.weight / 1000) : fade;   // ?hurt=: only part of the recorded Hit clip stays
           const target = (weights[role] || 0) * (1 - hurtFade) + Number(role === combatRole) * hurtFade;
           const activeBlade = pose === 'attack' && progress >= contact-1/specs[attack].recovery && progress <= contact+4/specs[attack].recovery;
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
@@ -839,18 +839,18 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         openW += (openWeight(open) - openW) * (1 - Math.exp(-step * 30));   // quick: it follows the sim's own ramp, which is already eased
         if (openW < 1e-3 && !open) openW = 0;
         const gap = PLAIN_POSTURE || dead || pose === 'attack' ? NO_OPEN : openPose(openW, open?.kind);
-        hurtDrive += ((hurtStyle && pose === 'hit' ? Math.sin(Math.min(1, progress) * Math.PI) : 0) - hurtDrive) * ease;   // up and back over the hurt, eased
+        hurtDrive += ((hurtStyle && pose === 'hit' ? Math.sin(Math.min(1, progress) * Math.PI) : 0) - hurtDrive) * ease;   // ?hurt=: up and back over the hurt, eased
         if (hurtDrive < 1e-3) hurtDrive = 0;
-        readyDrive += ((readyStyle && (pose === 'ready' || pose === 'guard') ? 1 : 0) - readyDrive) * ease;
+        readyDrive += ((readyStyle && (pose === 'ready' || pose === 'guard') ? 1 : 0) - readyDrive) * ease;   // ?ready=: while the fighter stands armed and calm
         if (readyDrive < 1e-3) readyDrive = 0;
         if (tilt.yaw || tilt.spine || tilt.arm || leaning || layer || gap !== NO_OPEN || hurtDrive || readyDrive) {
           tilted.forEach((b, i) => untilted[i].copy(b.quaternion)); tiltApplied = true;
           if (spine1) { spine1.rotation.y += tilt.yaw + leaning * l.yaw; spine1.rotation.z += leaning * l.side; }
-          if (readyStyle && readyDrive) { if (spine1) spine1.rotation.x += (readyDrive * readyStyle.s1) / 1000; if (spine2) spine2.rotation.x += (readyDrive * readyStyle.s2) / 1000; if (spine3) spine3.rotation.x += (readyDrive * readyStyle.s3) / 1000; if (neckBone) neckBone.rotation.x += (readyDrive * readyStyle.neck) / 1000; }
-          if (hurtStyle && hurtDrive) { if (spine1) { spine1.rotation.x += (hurtDrive * hurtStyle.s1) / 1000; spine1.rotation.y += (hurtDrive * hurtStyle.twist) / 1000; } if (spine2) spine2.rotation.x += (hurtDrive * hurtStyle.s2) / 1000; }
           if (spine2) { spine2.rotation.x += tilt.spine; spine2.rotation.z += leaning * l.chest; }
           if (upperArm) { upperArm.rotation.x += tilt.arm + leaning * (l.lift ?? 0); upperArm.rotation.y += leaning * l.arm; }
           if (gap !== NO_OPEN) { if (spine1) { spine1.rotation.x += gap.lean; spine1.rotation.z += gap.tilt; } if (upperArm) upperArm.rotation.x += gap.arm; }
+          if (readyStyle && readyDrive) { if (spine1) spine1.rotation.x += (readyDrive * readyStyle.s1) / 1000; if (spine2) spine2.rotation.x += (readyDrive * readyStyle.s2) / 1000; if (spine3) spine3.rotation.x += (readyDrive * readyStyle.s3) / 1000; if (neckBone) neckBone.rotation.x += (readyDrive * readyStyle.neck) / 1000; }
+          if (hurtStyle && hurtDrive) { if (spine1) { spine1.rotation.x += (hurtDrive * hurtStyle.s1) / 1000; spine1.rotation.y += (hurtDrive * hurtStyle.twist) / 1000; } if (spine2) spine2.rotation.x += (hurtDrive * hurtStyle.s2) / 1000; }
           if (layer && tune?.read) {   // ?look=fatigue-read: the whole spine, head and shoulders carry the tell; the sword arm keeps the live sag
             const r = fatigueRead(tired, readBreath, calmWeight, layer, tune); readGuard = r.guard;
             if (spine1) spine1.rotation.x += r.spine1; if (spine2) spine2.rotation.x += r.spine2; if (upperArm) upperArm.rotation.x += r.arm;

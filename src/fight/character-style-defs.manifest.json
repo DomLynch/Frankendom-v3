@@ -1,0 +1,7 @@
+{
+  "tables": [
+    { "table": "characterPosture", "file": "character-style-defs.json", "at": "posture", "key": "id", "required": { "plain": "boolean" } },
+    { "table": "characterReadyStyle", "file": "character-style-defs.json", "at": "readyStyles", "key": "id", "required": { "s1": "number", "s2": "number", "s3": "number", "neck": "number" } },
+    { "table": "characterHurtStyle", "file": "character-style-defs.json", "at": "hurtStyles", "key": "id", "required": { "weight": "number", "s1": "number", "s2": "number", "twist": "number" } }
+  ]
+}

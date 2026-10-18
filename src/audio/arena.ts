@@ -5,15 +5,10 @@ import { nextVariant, seeded } from '../fight/sound/cues.ts';
 import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { BELL_RATE, preparedBell } from './bell.ts';
+import { ROARS, momentsOf } from './crowd-rows.ts';
 import type { Fatigue } from '../fight/fatigue.ts';
-import CROWD from './crowd-defs.json' with { type: 'json' };
 
-// sandbox-mech: crowd. A roar row { id, on, cue, gain } plays that crowd cue at `gain` the frame its moment happens, with no cooldown, on top of
-// the reactions below; `on` is kill | parry | guardBreak | heavy. Presentation only. No rows (trunk) = no roar, the crowd exactly as before.
-type Roar = { id: string; on: 'kill' | 'parry' | 'guardBreak' | 'heavy'; cue: ArenaCue; gain: number };
-const ROARS = CROWD.roars as unknown as readonly Roar[];
-export const momentsOf = (events: readonly CombatEvent[]): Set<Roar['on']> => new Set(events.flatMap((e): Roar['on'][] =>
-  e.type === 'Killed' ? ['kill'] : e.type === 'Parried' ? ['parry'] : e.type === 'GuardBroken' ? ['guardBreak'] : e.type === 'Hit' && (e.charged || /heavy/.test(e.move ?? '')) ? ['heavy'] : []));
+// The crowd roar rows (crowd-rows.ts, crowd-defs.json): a roar plays its cue the frame its moment happens, on top of the reactions below.
 
 // loiter: the wall-hug level, 0..1 — the larger fighter's `loiter / RULES.wall.loiter.ticks` (Brief 13): the crowd turns on
 // whoever hugs the wall, a bed that swells with it and drops the moment he leaves the band or swings (loiter resets to 0).
@@ -95,9 +90,8 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
         for (const name of Object.keys(last) as ArenaCue[]) delete last[name];
         reactionAt = time + 2; gruntAt = time; contactAt = time;
       }
-      const moments = ROARS.length ? momentsOf(events) : undefined;
+      const moments = ROARS.length ? momentsOf(events) : undefined;   // the crowd roar rows (crowd-defs.json): none ship, so nothing here runs
       if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); if (moments) for (const r of ROARS) if (r.on === 'kill' && moments.has('kill')) play(r.cue, r.gain, 0, true); return; }
-      if (moments) for (const r of ROARS) if (r.on !== 'kill' && moments.has(r.on)) play(r.cue, r.gain);
       wallJeer(frame.loiter ?? 0, time);
       if (!bellPlayed && draw) { bellPlayed = true; play('bell', .9); }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
@@ -106,6 +100,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
       const hit = events.find(e => e.type === 'Hit' && (e.target !== 1 || frame.opponent === undefined || hasBlood(frame.opponent)));
       if (events.some(e => e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'GuardBroken')) contactAt = time;
       if (hit && time >= gruntAt) { play('grunt', .20, .04); gruntAt = time + .9; }
+      if (moments) for (const r of ROARS) if (r.on !== 'kill' && moments.has(r.on)) play(r.cue, r.gain);   // a roar row: that cue the frame its moment happens, no cooldown
       const exciting = events.some(e => e.type === 'Parried' || e.type === 'GuardBroken' || (e.type === 'Hit' && (e.charged || /heavy|riposte|counter/.test(e.move ?? ''))));
       if (exciting && time >= reactionAt) {
         play('reaction', .20, .18); reactionAt = time + 4 + random() * 2;
