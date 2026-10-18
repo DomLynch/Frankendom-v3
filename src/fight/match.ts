@@ -25,7 +25,7 @@ import { loadScorecard, recordResult, saveScorecard, type Scorecard } from '../s
 import { awardMark, levelOfMarks as levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../core/career-ladder.ts';
 import { autopsy } from '../autopsy.ts';
 import { readOpponent } from './ai.ts';
-import { idleIntent, roundPose, withSkill2, type Duel, type DuelPose } from './duel.ts';
+import { idleIntent, roundPose, type Duel, type DuelPose } from './duel.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { nextArena, nextOpponent, passKey, won } from '../ladder.ts';
 import type { ArenaKey } from '../arena-themes.ts';

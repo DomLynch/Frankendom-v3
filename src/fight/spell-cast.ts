@@ -69,7 +69,7 @@ const clampTo = (v: number, lo: number, hi: number): number => Math.max(lo, Math
 export function resolveSpell(id: string, skill: number, spellPower = 0, recordVersion?: number): Spell | undefined {
   if (!isSpellId(id)) return undefined;
   skill = Math.max(skill, SPELL_SKILL_FLOOR);   // sandbox row spellSkillFloor (0 on trunk)
-  const [root, level] = INDEX[id]!, b = BRICKS[root]!, cost = b.cost + b.costPerLevel * level, credit = Math.round(spellPower * CAST.creditPerPoint);
+  const [root, level] = INDEX[id]!, b = BRICKS[root]!, raw = b.cost + b.costPerLevel * level, cost = recordVersion === undefined || recordVersion >= CAST.costCapFrom ? Math.min(COST_CAP, raw) : raw, credit = Math.round(spellPower * CAST.creditPerPoint), hit = (recordVersion === undefined || recordVersion >= CAST.hitsFrom) ? HITS[root] : undefined;   // a record below hitsFrom resolves one landing
   return {
     id, cost, share: RULES.special.damage * b.effect.magnitude * (1 + b.effect.perLevel * (level - 1)),
     rel10: clampTo(Math.round(CAST.tenths * (skill + credit - CAST.costWeight * cost) / CAST.relDivisor), -REL_CLAMP, REL_CLAMP), spread10: CAST.spread * CAST.tenths,
