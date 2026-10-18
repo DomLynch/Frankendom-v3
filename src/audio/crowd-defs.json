@@ -1,3 +1,28 @@
 {
-  "roars": []
+  "roars": [
+    {
+      "id": "kill-roar",
+      "on": "kill",
+      "cue": "reaction",
+      "gain": 3.0
+    },
+    {
+      "id": "parry-roar",
+      "on": "parry",
+      "cue": "reaction",
+      "gain": 2.5
+    },
+    {
+      "id": "break-roar",
+      "on": "guardBreak",
+      "cue": "reaction",
+      "gain": 2.5
+    },
+    {
+      "id": "heavy-roar",
+      "on": "heavy",
+      "cue": "reaction",
+      "gain": 1.6
+    }
+  ]
 }
