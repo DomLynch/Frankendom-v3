@@ -7,6 +7,11 @@
     { "id": "2", "strike": 72, "ring": 146, "button": 50 },
     { "id": "3", "strike": 64, "ring": 154, "button": 52 }
   ],
+  "zones": [
+    { "id": "stab", "label": "stab", "place": "left:50%;top:5px;transform:translateX(-50%)" },
+    { "id": "sl", "label": "sl", "place": "left:6px;top:50%;transform:translateY(-50%)" },
+    { "id": "sh", "label": "sh", "place": "right:6px;top:50%;transform:translateY(-50%)" }
+  ],
   "buttons": [
     { "id": "attack-button", "label": "STRIKE", "deg": 0, "own": true },
     { "id": "skill-button", "label": "SPECIAL", "deg": 135, "own": false },

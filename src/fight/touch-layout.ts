@@ -36,6 +36,6 @@ export function applyTouchLayout(doc: Document, search: string): void {
   if (doc.getElementById('touch-layout-style')) return;
   const css = doc.createElement('style'); css.id = 'touch-layout-style'; css.textContent = touchLayoutCss(search); doc.head.append(css);
   const zones = doc.createElement('div'); zones.id = 'touch-zones';
-  zones.innerHTML = '<i style="left:50%;top:5px;transform:translateX(-50%)">stab</i><i style="left:6px;top:50%;transform:translateY(-50%)">sl</i><i style="right:6px;top:50%;transform:translateY(-50%)">sh</i>';
+  for (const z of DEFS.zones) { const i = doc.createElement('i'); i.setAttribute('style', z.place); i.textContent = z.label; zones.append(i); }
   doc.body.append(zones);
 }
