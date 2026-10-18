@@ -5,7 +5,7 @@
 import { accepts, type Action, type CombatEvent, type Practice } from './combat.ts';
 import type { Direction } from './moves.ts';
 import { inputNum } from './input-rows.ts';
-import { ONE_BUTTON, HEAVY_HOLD_MS, STAB_SLIDE_PX, STAB_HALF_ANGLE, SPELL_BUFFER_MS } from './sandbox-rules.ts';
+import { SPELL_BUFFER_MS } from './sandbox-rules.ts';
 import { applyTouchLayout } from './touch-layout.ts';
 
 type Lookup = <T extends HTMLElement>(id: string) => T;
@@ -54,8 +54,6 @@ export const HEAVY_HOLD_MS = inputNum('input.heavy-hold-ms'), STAB_SLIDE_PX = in
 export const stabSector = (dx: number, dy: number): boolean => dy < 0 && Math.abs(dx) <= -dy * Math.tan(STAB_HALF_ANGLE * RAD);
 export const slashSlide = (dx: number): 'left' | 'right' | null => (dx <= -SLASH_SLIDE_PX ? 'left' : dx >= SLASH_SLIDE_PX ? 'right' : null);
 export const cutSideOf = (action: Action): 'left' | 'right' | null => (action === 'light_left' ? 'left' : action === 'light_right' ? 'right' : null);   // the side a cut press goes to; neutral LIGHT is null (no flash)
-// A slide within STAB_HALF_ANGLE degrees of straight up is the stab. Screen y grows down, so up is dy < 0.
-const stabSector = (dx: number, dy: number): boolean => dy < 0 && Math.abs(dx) <= -dy * Math.tan((STAB_HALF_ANGLE * Math.PI) / 180);
 const ARROW_SIDE: Record<string, Direction> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'overhead', ArrowDown: 'low' };
 
 // Dodge control: the press is an instant backstep; holding it past HOLD_MS grows the step into a roll. Swipe-down rolls directly.

@@ -217,7 +217,7 @@ export function createScene(
     shardAt = new THREE.Vector3(),
     woundNotice = createWoundNotice(),   // sandbox-mech wounds: the temporary on-screen message
     missileFx = createMissileFx(scene),   // sandbox-mech missiles: the bolt in flight, nothing while none flies
-    impactFx = createImpactFx(scene),   // sandbox-mech impact: flash + ground ring per contact row (hit-stop-defs.json columns), nothing without them
+    impactFx = createImpactFx(scene),   // a flash + ground ring per contact row (hit-stop-defs.json flash/ring/tint columns; a row without them draws nothing)
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
   if (world) scene.add(world.holder);
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
