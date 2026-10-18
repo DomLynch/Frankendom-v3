@@ -16,13 +16,16 @@ const TIP = new THREE.Color(fxNum('breath.tip')), BODY = new THREE.Color(fxNum('
 const row = (name: string): number => fxNum(`breath.${name}`);
 const K = {
   tongueLife: row('tongue-life'), tongueStagger: row('tongue-stagger'), tongueStart: row('tongue-start'), tongueLenMin: row('tongue-len-min'), tongueLenSpread: row('tongue-len-spread'), tongueR0Min: row('tongue-r0-min'), tongueR0Spread: row('tongue-r0-spread'),
-  tongueYaw: row('tongue-yaw'), tonguePitch: row('tongue-pitch'), tongueWiden: row('tongue-widen'), tongueReach: row('tongue-reach'), tongueSide: row('tongue-side'), tongueLift: row('tongue-lift'), tongueRise: row('tongue-rise'), tongueWobble: row('tongue-wobble'),
+  tongueYawHalf: row('tongue-yaw-half'), tonguePitchHalf: row('tongue-pitch-half'), tongueWobblePhase: row('tongue-wobble-phase'), tongueWiden: row('tongue-widen'), tongueReach: row('tongue-reach'), tongueSide: row('tongue-side'), tongueLift: row('tongue-lift'), tongueRise: row('tongue-rise'), tongueWobble: row('tongue-wobble'),
   tongueWobbleHz: row('tongue-wobble-hz'), tongueGrowMin: row('tongue-grow-min'), tongueGrowSpread: row('tongue-grow-spread'),
   smokeLife: row('smoke-life'), smokeStart: row('smoke-start'), smokeStagger: row('smoke-stagger'), smokeReachMin: row('smoke-reach-min'), smokeReachSpread: row('smoke-reach-spread'), smokeSide: row('smoke-side'), smokeBaseRise: row('smoke-base-rise'),
   smokeLift: row('smoke-lift'), smokeRiseTime: row('smoke-rise-time'), smokeSizeMin: row('smoke-size-min'), smokeSizeSpread: row('smoke-size-spread'), smokeGrowMin: row('smoke-grow-min'), smokeGrowSpread: row('smoke-grow-spread'), smokeColor: row('smoke-color'),
-  emberStagger: row('ember-stagger'), emberSpread: row('ember-spread'), emberUpMin: row('ember-up-min'), emberUpSpread: row('ember-up-spread'), emberTtlMin: row('ember-ttl-min'), emberTtlSpread: row('ember-ttl-spread'), emberReach: row('ember-reach'),
-  emberDrift: row('ember-drift'), emberGravity: row('ember-gravity'), emberSize: row('ember-size'), emberOpacity: row('ember-opacity'), emberColor: row('ember-color'), coneNarrow: row('cone-narrow'), coneSides: row('cone-sides'),
+  emberStagger: row('ember-stagger'), emberSpreadHalf: row('ember-spread-half'), emberHideY: row('ember-hide-y'),emberUpMin: row('ember-up-min'), emberUpSpread: row('ember-up-spread'), emberTtlMin: row('ember-ttl-min'), emberTtlSpread: row('ember-ttl-spread'), emberReach: row('ember-reach'),
+  emberDrift: row('ember-drift'), emberGravity: row('ember-gravity'), emberSize: row('ember-size'), emberOpacity: row('ember-opacity'), emberColor: row('ember-color'), coneNarrow: row('cone-narrow'), coneSides: row('cone-sides'), coneLength: row('cone-length'), smokeArtMid: row('smoke-art-mid'),
 } as const;
+const QUARTER_TURN = Math.PI / 2;
+/** A unit draw spread over -1..1 (the rows above are the half-swings, so a row of 0.2 is the old +-0.2 of a 0.4 span). */
+const centered = (rng: () => number): number => rng() * 2 - 1;
 
 export const fireBreathes =(opponent: string): boolean => fxHas(`breath.${opponent}`);
 
@@ -54,7 +57,7 @@ function smokeArt(): THREE.Texture | null {
   const g = canvas.getContext('2d');
   if (!g) return (art = null);
   const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  grad.addColorStop(0, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.5, 'rgba(255,255,255,0.4)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+  grad.addColorStop(0, 'rgba(255,255,255,0.9)'); grad.addColorStop(K.smokeArtMid,'rgba(255,255,255,0.4)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = grad; g.fillRect(0, 0, size, size);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   return (art = texture);
@@ -72,7 +75,7 @@ type Jet = {
 
 export function createFireBreath(scene: THREE.Scene) {
   const live = new Map<string, Jet>(), uTime = { value: 0 };
-  const cone = new THREE.CylinderGeometry(1, K.coneNarrow, 1, K.coneSides, 1, true).rotateX(Math.PI / 2).translate(0, 0, 0.5);   // along +z: narrow at the mouth, wide at the far end, one unit long
+  const length = K.coneLength, cone = new THREE.CylinderGeometry(1, K.coneNarrow, length, K.coneSides, 1, true).rotateX(QUARTER_TURN).translate(0, 0, length / 2);   // along +z: narrow at the mouth, wide at the far end, one unit long
   const dummy = new THREE.Object3D(), qDir = new THREE.Quaternion(), qTongue = new THREE.Quaternion(), qJit = new THREE.Euler(), Z = new THREE.Vector3(0, 0, 1), side = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
   const drop = (id: string) => {
     const j = live.get(id); if (!j) return;
@@ -84,20 +87,20 @@ export function createFireBreath(scene: THREE.Scene) {
     /** The creature `id` breathes from `from` (its mouth) along the line toward `to` (the hero's chest), from now. A breath already going is restarted. */
     start(id: string, from: THREE.Vector3, to: THREE.Vector3, seed: number): void {
       drop(id);
-      const next = makeRng(seed), group = new THREE.Group(), dir = to.clone().sub(from).normalize();
+      const rng = makeRng(seed), group = new THREE.Group(), dir = to.clone().sub(from).normalize();
       const geometry = cone.clone(), life = new THREE.InstancedBufferAttribute(new Float32Array(TONGUES), 1), seeds = new Float32Array(TONGUES);
-      for (let k = 0; k < TONGUES; k++) seeds[k] = next();
+      for (let k = 0; k < TONGUES; k++) seeds[k] = rng();
       geometry.setAttribute('aLife', life); geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds, 1));
       const material = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.NormalBlending, fog: false,
         uniforms: { uTime, uTip: { value: TIP }, uBody: { value: BODY }, uCore: { value: CORE }, uOpacity: { value: TONGUE_OPACITY } } });
       const tongues = new THREE.InstancedMesh(geometry, material, TONGUES); tongues.frustumCulled = false; tongues.renderOrder = 6;
-      const t = Array.from({ length: TONGUES }, (_, k) => ({ s0: next() * K.tongueStart * RANGE, delay: (k / TONGUES) * K.tongueStagger * LIFE, len: K.tongueLenMin + next() * K.tongueLenSpread, r0: K.tongueR0Min + next() * K.tongueR0Spread, yaw: (next() - 0.5) * K.tongueYaw, pitch: (next() - 0.5) * K.tonguePitch, side: next() * 2 - 1, lift: next() * 2 - 1 }));
+      const t = Array.from({ length: TONGUES }, (_, k) => ({ s0: rng() * K.tongueStart * RANGE, delay: (k / TONGUES) * K.tongueStagger * LIFE, len: K.tongueLenMin + rng() * K.tongueLenSpread, r0: K.tongueR0Min + rng() * K.tongueR0Spread, yaw: centered(rng) * K.tongueYawHalf, pitch: centered(rng) * K.tonguePitchHalf, side: centered(rng), lift: centered(rng) }));
       const smoke = Array.from({ length: SMOKE }, () => { const m = new THREE.SpriteMaterial({ map: smokeArt(), color: K.smokeColor, transparent: true, depthWrite: false, fog: false, opacity: 0 }); const sp = new THREE.Sprite(m); sp.visible = false; group.add(sp); return sp; });
-      const s = Array.from({ length: SMOKE }, (_, k) => ({ delay: LIFE * (K.smokeStart + (k / SMOKE) * K.smokeStagger), side: next() * 2 - 1, lift: next(), size: K.smokeSizeMin + next() * K.smokeSizeSpread }));
-      const eGeometry = new THREE.BufferGeometry(); eGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(EMBERS * 3).fill(-1000), 3));
+      const s = Array.from({ length: SMOKE }, (_, k) => ({ delay: LIFE * (K.smokeStart + (k / SMOKE) * K.smokeStagger), side: centered(rng), lift: rng(), size: K.smokeSizeMin + rng() * K.smokeSizeSpread }));
+      const eGeometry = new THREE.BufferGeometry(); eGeometry.setAttribute('position', new THREE.Float32BufferAttribute(Array.from({ length: EMBERS }, () => [0, K.emberHideY, 0]).flat(), 3));
       const embers = new THREE.Points(eGeometry, new THREE.PointsMaterial({ color: K.emberColor, size: K.emberSize, transparent: true, opacity: K.emberOpacity, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, fog: false }));
       embers.frustumCulled = false;
-      const e = Array.from({ length: EMBERS }, (_, k) => ({ delay: (k / EMBERS) * K.emberStagger * LIFE, v: new THREE.Vector3((next() - 0.5) * K.emberSpread, K.emberUpMin + next() * K.emberUpSpread, (next() - 0.5) * K.emberSpread), ttl: K.emberTtlMin + next() * K.emberTtlSpread }));
+      const e = Array.from({ length: EMBERS }, (_, k) => ({ delay: (k / EMBERS) * K.emberStagger * LIFE, v: new THREE.Vector3(centered(rng) * K.emberSpreadHalf, K.emberUpMin + rng() * K.emberUpSpread, centered(rng) * K.emberSpreadHalf), ttl: K.emberTtlMin + rng() * K.emberTtlSpread }));
       group.add(tongues, embers); scene.add(group);
       live.set(id, { age: 0, from: from.clone(), dir, group, tongues, life, smoke, embers, t, s, e });
     },
@@ -112,7 +115,7 @@ export function createFireBreath(scene: THREE.Scene) {
           if (u < 0) { alive = true; dummy.scale.setScalar(0); dummy.position.copy(j.from); dummy.updateMatrix(); j.tongues.setMatrixAt(k, dummy.matrix); return; }
           if (u > 1) { dummy.scale.setScalar(0); dummy.updateMatrix(); j.tongues.setMatrixAt(k, dummy.matrix); return; }
           alive = true;
-          const r = p.r0 + RADIUS * K.tongueWiden * u, z = p.s0 + RANGE * K.tongueReach * u, wobble = Math.sin((j.age + p.delay) * K.tongueWobbleHz + p.side * 9) * K.tongueWobble * u;
+          const r = p.r0 + RADIUS * K.tongueWiden * u, z = p.s0 + RANGE * K.tongueReach * u, wobble = Math.sin((j.age + p.delay) * K.tongueWobbleHz + p.side * K.tongueWobblePhase) * K.tongueWobble * u;
           dummy.position.copy(j.from).addScaledVector(j.dir, z).addScaledVector(side, p.side * RADIUS * K.tongueSide * u + wobble).addScaledVector(up, p.lift * RADIUS * K.tongueLift * u + u * K.tongueRise);
           dummy.quaternion.copy(qDir).multiply(qTongue.setFromEuler(qJit.set(p.pitch, p.yaw, 0)));   // qTongue is kept: no allocation per tongue per frame
           dummy.scale.set(r, r, p.len * (K.tongueGrowMin + K.tongueGrowSpread * u)); dummy.updateMatrix(); j.tongues.setMatrixAt(k, dummy.matrix);
@@ -130,7 +133,7 @@ export function createFireBreath(scene: THREE.Scene) {
         j.e.forEach((q, k) => {
           const u = j.age - q.delay;
           if (u < 0) { alive = true; return; }
-          if (u > q.ttl) { pos.setXYZ(k, 0, -1000, 0); return; }
+          if (u > q.ttl) { pos.setXYZ(k, 0, K.emberHideY, 0); return; }
           alive = true;
           const reach = (RANGE * K.emberReach * u) / q.ttl;
           pos.setXYZ(k, j.from.x + j.dir.x * reach + q.v.x * u * K.emberDrift, j.from.y + j.dir.y * reach + q.v.y * u - K.emberGravity * u * u, j.from.z + j.dir.z * reach + q.v.z * u * K.emberDrift);

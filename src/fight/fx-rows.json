@@ -112,8 +112,9 @@
     { "id": "breath.tongue-len-spread", "fields": {"value": 1.4} },
     { "id": "breath.tongue-r0-min", "fields": {"value": 0.22} },
     { "id": "breath.tongue-r0-spread", "fields": {"value": 0.2} },
-    { "id": "breath.tongue-yaw", "fields": {"value": 0.4} },
-    { "id": "breath.tongue-pitch", "fields": {"value": 0.3} },
+    { "id": "breath.tongue-yaw-half", "fields": {"value": 0.2} },
+    { "id": "breath.tongue-pitch-half", "fields": {"value": 0.15} },
+    { "id": "breath.tongue-wobble-phase", "fields": {"value": 9} },
     { "id": "breath.tongue-widen", "fields": {"value": 0.45} },
     { "id": "breath.tongue-reach", "fields": {"value": 0.6} },
     { "id": "breath.tongue-side", "fields": {"value": 0.35} },
@@ -138,7 +139,8 @@
     { "id": "breath.smoke-grow-spread", "fields": {"value": 1.5} },
     { "id": "breath.smoke-color", "fields": {"value": 2769180} },
     { "id": "breath.ember-stagger", "fields": {"value": 0.5} },
-    { "id": "breath.ember-spread", "fields": {"value": 1.6} },
+    { "id": "breath.ember-spread-half", "fields": {"value": 0.8} },
+    { "id": "breath.ember-hide-y", "fields": {"value": -1000} },
     { "id": "breath.ember-up-min", "fields": {"value": 0.3} },
     { "id": "breath.ember-up-spread", "fields": {"value": 1.2} },
     { "id": "breath.ember-ttl-min", "fields": {"value": 0.7} },
@@ -150,6 +152,8 @@
     { "id": "breath.ember-opacity", "fields": {"value": 0.85} },
     { "id": "breath.ember-color", "fields": {"value": 16743966} },
     { "id": "breath.cone-narrow", "fields": {"value": 0.22} },
-    { "id": "breath.cone-sides", "fields": {"value": 7} }
+    { "id": "breath.cone-sides", "fields": {"value": 7} },
+    { "id": "breath.cone-length", "fields": {"value": 1} },
+    { "id": "breath.smoke-art-mid", "fields": {"value": 0.5} }
   ]
 }
