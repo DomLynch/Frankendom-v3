@@ -1,13 +1,15 @@
 {
   "rules": [
-    { "id": "specialMeleeWindup", "value": 0 },
-    { "id": "specialReact", "value": 0 },
-    { "id": "specialReactStagger", "value": 100 },
-    { "id": "specialReactKnock", "value": 100 },
-    { "id": "specialReactPosture", "value": 100 }
+    { "id": "specialMeleeWindup", "value": 32 },
+    { "id": "specialReact", "value": 1 },
+    { "id": "specialReactStagger", "value": 160 },
+    { "id": "specialReactKnock", "value": 450 },
+    { "id": "specialReactPosture", "value": 150 }
   ],
   "specialPick": [],
-  "specialReactFloor": [],
+  "specialReactFloor": [
+    { "id": "lunge", "stagger": 36 }
+  ],
   "specialLook": [],
   "specialTrail": [],
   "specialShards": [],

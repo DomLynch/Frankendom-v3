@@ -14,6 +14,7 @@ import { crowdPercent, percentOf, rolledDamage, rollUnit, swarmBand, type CrowdK
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
+import { SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, type CastOutcome, type Spell } from './spell-cast.ts';
 import { stanced, type StanceId } from './stance.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
@@ -332,7 +333,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       if (distance(me.body, foe.body) <= R.special.reach) {
         const cast = action === 'skill2' ? me.spell2 : me.spell;
         if (action === 'skill2') next.castSlot = 1; else delete next.castSlot;
-        next.special = R.special.windup; delete next.castHurt; next.phase = 'ready'; next.age = 0; next.parrying = false; next.guardDirection = null;
+        next.special = !cast && SPECIAL_MELEE_WINDUP ? SPECIAL_MELEE_WINDUP : R.special.windup; delete next.castHurt;   // sandbox specialMeleeWindup (Dom 2026-10-17: "same speed as the stab, slash or heavy"): a melee special (no spell) is committed for that many ticks, not the spell's delay next.phase = 'ready'; next.age = 0; next.parrying = false; next.guardDirection = null;
         if (cast) spend(i, cast.cost);   // the stamina is gone at the commit, whatever the outcome
         events.push({ tick, type: 'SpecialStarted', actor: i, ...(me.skill ? { move: SKILL_MOVE[me.skill] } : {}), ...(me.specialName ? { name: me.specialName } : {}), ...(cast ? { spell: cast.id } : {}) });
       }
@@ -594,6 +595,13 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     D.health = Math.max(0, D.health - damage);
     if (pulsed) { A.volley = { k: 0, wait: 0, total, hits: spell.hits, every: spell.hitEvery }; volleyed[i] = true; if (spell.hitHolds) A.specialRecover = R.special.recovery + spell.hitEvery * (spell.hits.length - 1); }
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(spell && outcome ? { spell: spell.id, outcome } : {}), ...(pulsed ? { pulse: 0 } : {}) });
+    if (SPECIAL_REACT && !spell && D.health) {   // sandbox specialReact: a landed melee special staggers, shoves and shakes the victim by its move row, like a landed blow (no canned animation: the sim decides)
+      const def = movesOf(A)[move], away = aim(D.body, A.body) + Math.PI;
+      for (let k = 0; k < Math.round(def.knockback * SPECIAL_REACT_KNOCK / 100); k++) D.body = { ...advance(D.body, { x: M.sin(away), z: M.cos(away), yaw: 0, run: false }, A.body, 1, wall), heading: D.body.heading };
+      D.phase = 'hurt'; D.age = 0; D.stun = Math.max(D.stun, Math.round(def.stagger * SPECIAL_REACT_STAGGER / 100), specialReactFloorOf(String(move).replace(/^skill_/, ''))); D.buffer = null; D.counterWindow = 0; D.charge = 0; D.charged = false;
+      events.push({ tick, type: 'Staggered', actor: j, ticks: D.stun });
+      shake(j, def.posture * SPECIAL_REACT_POSTURE / 100);
+    }
     if (D.health) continue;
     delete A.volley;
     D.phase = 'dead'; D.age = 0; D.stun = R.death; D.buffer = null;
