@@ -346,8 +346,15 @@ export function sourceMaterial(piece: Mesh, materials: ReadonlyMap<string, MeshS
 // Every id a piece answers to: one for an ordinary draw, several for a shared one.
 export const lootIds = (piece: SkinnedMesh): string[] => (piece.userData.ids as string[] | undefined) ?? [lootId(piece)];
 export const lootWorn = (piece: SkinnedMesh, worn: readonly string[]): boolean => lootIds(piece).some(id => worn.includes(id));
+// A rig that lacks (or carries an empty) clip for the weapon it was handed. Named so a caller can tell it from any other build failure and never settle for a stand-in: a creature body must carry the clip pack of the weapon it wields.
+export class MissingClip extends Error {
+  readonly clip: string;
+  readonly role: string;
+  readonly weapon: WeaponId;
+  constructor(clip: string, role: string, weapon: WeaponId) { super(`Warrior is missing ${clip} (role ${role}, weapon ${weapon})`); this.name = 'MissingClip'; this.clip = clip; this.role = role; this.weapon = weapon; }
+}
 // The clip each role plays for this weapon. Two roles on one clip (the trident's sweep) get their own copies: the mixer keys actions by clip.
-function fighterClips(asset: FighterAsset, weapon: WeaponId, player: boolean): Record<Role, AnimationClip> {
+export function fighterClips(asset: FighterAsset, weapon: WeaponId, player: boolean): Record<Role, AnimationClip> {
   const clips = {} as Record<Role, AnimationClip>, used = new Set<AnimationClip>(), quadruped = isQuadruped(asset);
   for (const role of [...ROLES, ...ADDITIVE_ROLES]) {
     // A player override needs the rig to carry it: the equip file does (tests/weapons.test.ts pins it); a shared opponent rig standing in
@@ -355,7 +362,7 @@ function fighterClips(asset: FighterAsset, weapon: WeaponId, player: boolean): R
     const own = player ? PLAYER_CLIPS[weapon]?.[role] : undefined;
     const name = own && asset.animations.some(a => a.name === own) ? own : (quadruped && QUADRUPED_CLIPS[role]) || clipFor(weapon, role), clip = asset.animations.find(a => a.name === name) ?? (role === 'ArmedRun' ? asset.animations.find(a => a.name === 'ArmedWalk') : undefined);
     if (!clip && (ADDITIVE_ROLES as readonly string[]).includes(role)) continue;   // an appended scene this rig does not carry
-    if (!clip?.tracks.length || !Number.isFinite(clip.duration) || clip.duration <= 0) throw new Error(`Warrior is missing ${name}`);
+    if (!clip?.tracks.length || !Number.isFinite(clip.duration) || clip.duration <= 0) throw new MissingClip(name, role, weapon);
     clips[role] = used.has(clip) ? clip.clone() : clip; used.add(clip);
   }
   return clips;
