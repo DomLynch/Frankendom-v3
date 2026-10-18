@@ -35,6 +35,22 @@ export class RegistryError extends Error {
 // A problem with the manifest itself rather than a row: it has no row number.
 const manifestProblem = (file: string, id: string, message: string): Problem => ({ file, row: -1, id, rule: 'bad-manifest', message });
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+// A field spec is checked as strictly as a row: an object spec carries exactly type, min and max (a misspelled key such as `mx` would otherwise leave the field silently unbounded), the type is a real
+// FieldType, min and max are finite numbers on a number or integer field, and min is not above max. The string form is as it always was. Returns every problem as a message.
+const SPEC_KEYS: readonly string[] = ['type', 'min', 'max'];
+const FIELD_TYPES: readonly string[] = ['string', 'number', 'integer', 'boolean', 'array', 'object', 'any'];
+function specIssues(field: string, spec: unknown): string[] {
+  if (typeof spec === 'string') return [];
+  if (!isObj(spec)) return [`${field}: a field spec is a type string or { type, min?, max? }`];
+  const out: string[] = [];
+  for (const k of Object.keys(spec)) if (!SPEC_KEYS.includes(k)) out.push(`${field}: unknown spec key "${k}" (a spec has type, min and max)`);
+  if (typeof spec.type !== 'string' || !FIELD_TYPES.includes(spec.type)) out.push(`${field}: type must be one of ${FIELD_TYPES.join(', ')}`);
+  for (const k of ['min', 'max']) if (Object.hasOwn(spec, k) && !(typeof spec[k] === 'number' && Number.isFinite(spec[k]))) out.push(`${field}: ${k} must be a finite number`);
+  const ranged = Object.hasOwn(spec, 'min') || Object.hasOwn(spec, 'max');
+  if (ranged && spec.type !== 'number' && spec.type !== 'integer') out.push(`${field}: min/max need a number or integer field, not ${String(spec.type)}`);
+  else if (typeof spec.min === 'number' && typeof spec.max === 'number' && spec.min > spec.max) out.push(`${field}: min ${spec.min} is above max ${spec.max}`);
+  return out;
+}
 // One value against a field spec: the type first, then the range (a wrong type is never also reported out of range). Returns the broken rule's message, or null.
 function specProblem(v: unknown, field: string, spec: FieldSpec): { rule: 'wrong-type' | 'out-of-range'; message: string } | null {
   const type = typeof spec === 'string' ? spec : spec.type;
@@ -98,12 +114,7 @@ export function checkTables(tables: readonly TableData[], external: Readonly<Rec
   for (const t of tables) {
     const { required, optional = {}, unique = [], refs = {}, table } = t.manifest, file = fileOf(t), claimed = new Map<string, Map<string, string>>(unique.map((f) => [f, new Map()]));
     for (const [field, to] of Object.entries(refs)) if (!ids.has(to)) problems.push(manifestProblem(file, table, `${field} refs table "${to}", which is not registered`));
-    for (const [field, spec] of [...Object.entries(required), ...Object.entries(optional)]) {
-      if (typeof spec === 'string') continue;
-      const ranged = spec.min !== undefined || spec.max !== undefined;
-      if (ranged && spec.type !== 'number' && spec.type !== 'integer') problems.push(manifestProblem(file, table, `${field}: min/max need a number or integer field, not ${spec.type}`));
-      else if (spec.min !== undefined && spec.max !== undefined && spec.min > spec.max) problems.push(manifestProblem(file, table, `${field}: min ${spec.min} is above max ${spec.max}`));
-    }
+    for (const [field, spec] of [...Object.entries(required), ...Object.entries(optional)]) for (const message of specIssues(field, spec)) problems.push(manifestProblem(file, table, message));
     t.rows.forEach((row, i) => {
       if (!isObj(row)) { problems.push({ file, row: i, id: '?', rule: 'wrong-type', message: 'a row must be an object' }); return; }
       const id = typeof row[t.manifest.key] === 'string' ? (row[t.manifest.key] as string) : '?';
