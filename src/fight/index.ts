@@ -13,6 +13,7 @@ export const loadScene = () => import('./scene.ts');   // K7 row 10: the fight s
 export { regenOn, regenRules } from './hero-regen.ts';   // the unlisted-zone out-of-combat regeneration (the zone page hands it to the world combat)
 export { fxHas } from './fx-rows.ts';   // is there a presentation row by this name (mobs-view's per-creature reach rows)
 export { shapeFor } from './weapon-shapes.ts';   // the graded weapon shape file (mobs-view reshapes a creature's weapon by its rung)
+export { fxNum } from './fx-rows.ts';   // a named fx row's number (the zone page reads `start.clear-m` through the door, World's B4)
 export { phoneTier, pixelCap, budgetTextures, FIGHTER_TEXTURE_CAP } from './quality.ts';   // the phone tier and texture budget (K7 row 16: moved from src/quality.ts)
 export { settleWithin, gateWithBound } from './warm-gate.ts';   // bounded warm-up waits (K7 row 16: moved from src/warm-gate.ts)
 export { createInput, SPRINT_PUSH, type ControlIntent } from './input.ts';   // the touch/keyboard control layer (K2 row 5: the zone's page and sticks read it through the door)
