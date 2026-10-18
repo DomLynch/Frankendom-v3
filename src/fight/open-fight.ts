@@ -31,7 +31,8 @@ const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
 export function heroSheeted(f: Fighter): PitFighter {
   // open-world: a hero with a spell casts through the Pit's special slot (spell-cast.ts), ready at once (no opening delay: the world has no fight start), so a live hero and a replayed one are the same hero
   const plain = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), hero = f.skill2 ? { ...plain, skill2: f.skill2, skillCooldown2: 0 } : plain, cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
-  return f.sheet ? withSheet({ tick: 0, fighters: [cast, cast], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : cast;
+  const made = f.sheet ? withSheet({ tick: 0, fighters: [cast, cast], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : cast;
+  return f.hurt ? { ...made, wound: f.hurt.wound, woundSite: f.hurt.site, legWound: f.hurt.leg, maxStamina: f.hurt.cap } : made;   // a record window opened on a hurt hero (world-record.ts RecordHero.hurt): his wound state is part of the start, live and replayed alike
 }
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
 export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter): Bout {

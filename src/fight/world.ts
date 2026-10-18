@@ -44,6 +44,8 @@ const TAU = Math.PI * 2, RETARGET_CONE = worldRule('retargetCone') * (TAU / 360)
 export const AGGRO_WINDOW_S = worldRule('aggroWindow');                       // a player who hit you in the last minute is not "first" when you hit back
 
 export type Phase = 'ready' | 'guard' | 'roll' | 'windup' | 'active' | 'recover' | 'stagger' | 'dead';
+/** What a Pit fighter carries out of a fight that a record window must start with: the wound counter (ticks) and where it landed, a slowing leg wound, and the stamina ceiling attrition lowered. */
+export type Hurt = { wound: number; site: 'head' | 'torso' | 'legs'; leg: boolean; cap: number };
 export type Threat = { threat: number; damage: number; out: number };   // damage the player dealt it; seconds he has been out of its sight (EQEmu oor_count, in seconds)
 export type Fighter = {
   id: string; side: 'player' | 'creature'; kind: string;   // kind: 'player' or a ROSTER id ('wolf', 'boar', 'bear', ...)
@@ -53,6 +55,7 @@ export type Fighter = {
   posture: number;                                      // posture (0..RULES.posture.max), the Pit's
   exhausted: boolean;                                   // stamina hit zero: no new action, slower, until it is back past RULES.exhaustRecover
   retargetAt?: number;                                  // player only: the world time of his last foe swap (many-on-one retarget gap)
+  hurt?: Hurt;                                          // player only: the wound state a record window starts with (P0-b): what his Pit fighter carried out of his last fight, so a record can open for a hurt hero (absent = unhurt)
   homeX: number; homeZ: number;                         // creature only: where it spawned (it walks back here)
   hunting: boolean; chaseX: number; chaseZ: number;     // creature only: it is on a chase that STARTED at (chaseX, chaseZ); the leash is measured from there
   unseen: number;                                       // creature only: seconds the prey has been out of sight

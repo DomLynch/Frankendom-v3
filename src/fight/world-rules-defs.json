@@ -10,6 +10,7 @@
     { "id": "aggroWindow", "value": 60, "unit": "s" },
     { "id": "playerRadius", "value": 0.425, "unit": "m" },
     { "id": "joinPad", "value": 3, "unit": "m" },
+    { "id": "joinWait", "value": 1.5, "unit": "s" },
     { "id": "dropPad", "value": 8, "unit": "m" },
     { "id": "fall", "value": 1.4, "unit": "s" },
     { "id": "pulse", "value": 0.18, "unit": "s" },
