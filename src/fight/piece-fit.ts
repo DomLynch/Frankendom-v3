@@ -62,7 +62,7 @@ export function fitPieces(pieces: readonly THREE.SkinnedMesh[], rig: THREE.Skele
     let skeleton = fitted.get(piece.skeleton);
     if (!skeleton) {
       const ratios = boneRatios(piece.skeleton, rig);
-      skeleton = new THREE.Skeleton(piece.skeleton.bones, piece.skeleton.boneInverses.map((m, i) => {
+      skeleton = new THREE.Skeleton(piece.skeleton.bones, piece.skeleton.boneInverses.map((_inverse, i) => {
         const name = piece.skeleton.bones[i]!.name, k = at.get(name)!, r = ratios.get(name)!;
         // At the body's bind pose a vertex lands where the hero's piece sits relative to its joint, scaled by the ratio about that joint, around the BODY's joint: bodyPos + r * (p - heroPos), in world axes, so the body's different
         // posture (a hunch, arms forward) does not turn the piece about the joint. After that it follows the body's bones from the bind pose. invBind' = bodyInverse * T(bodyPos) * S(r) * T(-heroPos).
