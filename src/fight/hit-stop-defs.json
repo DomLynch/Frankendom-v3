@@ -12,6 +12,12 @@
     "kick":         {"order": 10,  "frames": 2,  "knock": 0,    "push": 0, "drop": 0.1}
   },
   "feel": {
-    "knockSettle": {"value": 0.12}
+    "knockSettle": {"value": 0.12},
+    "impactFlashLife": {"value": 0.14},
+    "impactRingLife": {"value": 0.38},
+    "impactHeightHead": {"value": 1.62},
+    "impactHeightTorso": {"value": 1.2},
+    "impactHeightLegs": {"value": 0.62},
+    "impactHeightGuard": {"value": 1.25}
   }
 }
