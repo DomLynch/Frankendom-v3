@@ -10,3 +10,5 @@ loadRegistry([TABLE]);
 const ROWS = Object.fromEntries((TABLE.rows as unknown as { id: string; reason: string }[]).map((r) => [r.id, r.reason])) as Readonly<Record<DropId, string>>;
 /** The wire string for a drop id (the row's `reason`). */
 export const dropReason = (id: DropId): string => ROWS[id] ?? (() => { throw Error(`record-drop-defs: no ${id} row`); })();
+/** Every wire string the rows name: the server counts only these by name (anything else a page sends is 'other', so a forged label cannot grow the tally). */
+export const DROP_REASONS: ReadonlySet<string> = new Set(Object.values(ROWS));
