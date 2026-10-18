@@ -1,7 +1,7 @@
 {
   "rules": [
-    { "id": "specialMeleeWindup", "value": 32 },
-    { "id": "specialReact", "value": 1 },
+    { "id": "specialMeleeWindup", "value": 0 },
+    { "id": "specialReact", "value": 0 },
     { "id": "specialReactStagger", "value": 160 },
     { "id": "specialReactKnock", "value": 450 },
     { "id": "specialReactPosture", "value": 150 }
