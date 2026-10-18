@@ -96,7 +96,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
   }
   // Special Moves (RULES.special, only when the fight has them: withSpecials): cast whenever it is ready and in reach. No roll is drawn, so a
   // fight without specials steps exactly as before.
-  if (self.specialShare !== undefined && (self.spell ? (spellRangeOf(spellRoot(self.spell.id) ?? '') ? !spellRangeCue(spellRoot(self.spell.id) ?? '', gap) : gap <= RULES.special.reach) : gap <= meleeSpecialReach(RULES.special.reach)) && legal(self, 'skill')) return { intent: { ...intent, action: 'skill' }, ai: next };   // a caster holding a spell casts it only inside that spell's range rows (the same gate as the player's press), else the special's reach
+  if (self.specialShare !== undefined && (self.spell ? (spellRangeOf(spellRoot(self.spell.id) ?? '') ? !spellRangeCue(spellRoot(self.spell.id) ?? '', gap) : gap <= RULES.special.reach) : gap <= (self.picked ? meleeSpecialReach(RULES.special.reach) : RULES.special.reach)) && legal(self, 'skill')) return { intent: { ...intent, action: 'skill' }, ai: next };   // a caster holding a spell casts it only inside that spell's range rows (the same gate as the player's press), else the special's reach
   if (self.bound && self.bound <= (self.boundReact ?? 0) && legal(self, 'kick')) return { intent: { ...intent, action: 'kick' }, ai: next };   // sandbox-mech bindAndDisarm: the bound AI answers with the kick when its reaction time is up
   const guardShare = profile.guard ?? 1;   // fight-identity knobs (moves.ts AiProfile): absent = the warden as it always was
   // Hit and run: a blow that landed this tick earns a hop back out of range (profile.disengage), taken as soon as the swing has recovered.

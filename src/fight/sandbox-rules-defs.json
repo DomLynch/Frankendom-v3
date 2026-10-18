@@ -175,6 +175,14 @@
   {
    "id": "centimetresPerMetre",
    "value": 100
+  },
+  {
+   "id": "hitImpactSpecial",
+   "value": 1
+  },
+  {
+   "id": "hitImpactGlance",
+   "value": 1
   }
  ],
  "bands": [

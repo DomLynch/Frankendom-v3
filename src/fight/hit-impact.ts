@@ -7,6 +7,7 @@
 import { HEAVY_CLASS } from './clash-sparks.ts';
 import { shoveFor, type Shove } from './camera-kick.ts';
 import type { CombatEvent } from './duel.ts';
+import { HIT_IMPACT_GLANCE, HIT_IMPACT_SPECIAL } from './sandbox-rules.ts';   // the two row switches (1 = on): a landed melee special as its own contact, and the dull glance tier
 import type { Direction } from './moves.ts';
 import { CONTACTS, KICK_DROP, KNOCK_SETTLE, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
 
@@ -36,10 +37,10 @@ export function impactTier(e: CombatEvent): Tier | null {
   if (e.type === 'GuardBroken') return 'full';
   if (e.type === 'Parried') return 'parry';
   if (e.type === 'Blocked') return 'block';
-  if (e.type === 'SpecialLanded') return e.target !== undefined && e.target !== e.actor && !e.spell && CONTACTS.special.frames > 0 ? 'special' : null;   // not a spell, not the heal on yourself
+  if (e.type === 'SpecialLanded') return HIT_IMPACT_SPECIAL && e.target !== undefined && e.target !== e.actor && !e.spell && CONTACTS.special.frames > 0 ? 'special' : null;   // not a spell, not the heal on yourself
   if (e.type !== 'Hit') return null;
   if (e.move?.startsWith('skill_')) return 'special';
-  if (e.glance) return 'glance';
+  if (e.glance && HIT_IMPACT_GLANCE) return 'glance';
   return e.charged || HEAVY_CLASS.has(e.move ?? '') ? 'full' : 'half';
 }
 // Event sides (duel.ts): a landed blow names the attacker `actor`; a defence (Blocked, Parried) names the DEFENDER `actor`, the attacker `target`.
@@ -62,7 +63,7 @@ export function impactStopMs(events: readonly CombatEvent[]): number {
 // ATTACKER's move direction. `null`: no contact, today's kick stands.
 export function impactShove(e: CombatEvent, direction: Direction | undefined): Shove | null {
   if (landedKick(e)) return { along: 0, drop: KICK.drop, side: 0, hold: 0, settle: KNOCK_SETTLE };   // straight down, no push, no side
-  const tier = impactTier(e), base = tier === 'special' ? { along: 0.05, drop: 0.06, side: 0, hold: 2 / 60, settle: 0.22 } : shoveFor(e), attacker = attackerOf(e);   // a landed special kicks the camera like a heavy blow; only when its row has frames
+  const tier = impactTier(e), base = tier === 'special' && e.type === 'SpecialLanded' ? { along: 0.05, drop: 0.06, side: 0, hold: 2 / 60, settle: 0.22 } : shoveFor(e), attacker = attackerOf(e);   // a landed special kicks the camera like a heavy blow; only when its row has frames
   if (!tier || !base || e.target === undefined || attacker === undefined) return null;
   const { knock, push } = impactOf(tier);
   if (push) return { ...base, push: attacker === 1 ? push : -push, hold: 0, settle: KNOCK_SETTLE };

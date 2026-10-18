@@ -82,6 +82,8 @@ let BAND_BEST = rowsOf<BandBestRow>('bandBest');
 export let BAND_OFF = num('bandOff', 'value');
 //   castTellOff: 1 hides the ground ring + fill drawn under the target while a spell winds up (boss-telegraph.ts caster tell; Dom 2026-10-16: "large white rings look shit"). 0 = trunk, the ring is drawn.
 export let CAST_TELL_OFF = num('castTellOff', 'value');
+//   hitImpactSpecial / hitImpactGlance (BULK-CS, Combat RV78: "the special tier behind a row switch"): 1 = a landed melee special (SpecialLanded) is its own hit-stop contact (the `special` row of hit-stop-defs), and a blow off its weapon's band (event.glance) lands dull; 0 = neither (trunk). Presentation only, read by hit-impact.ts.
+export let HIT_IMPACT_SPECIAL = num('hitImpactSpecial', 'value'), HIT_IMPACT_GLANCE = num('hitImpactGlance', 'value');
 //   specialMeleeWindup (Dom 2026-10-17: "it takes like two seconds, it is not a long-distance spell, same speed as the stab, slash or heavy"): ticks a MELEE special (no spell) is committed before it lands; 0 = trunk, the special's own windup rule.
 export let SPECIAL_MELEE_WINDUP = num('specialMeleeWindup', 'value');
 //   specialMeleeReach / specialMeleeSlack (Dom 2026-10-18: "short-mid distance, a tad more than a normal attack, nothing crazy"): cm. A MELEE special (no spell, no bow) is pressed only inside the reach (else a "too far" cue, nothing spent) and still lands at release only inside reach + slack (the foe may step); 0 = trunk, the special's own reach and no release check.
@@ -335,6 +337,7 @@ export function applySandboxEra(): void {
   BAND_BEST = rowsOf<BandBestRow>('bandBest');
   BAND_OFF = num('bandOff', 'value');
   CAST_TELL_OFF = num('castTellOff', 'value');
+  HIT_IMPACT_SPECIAL = num('hitImpactSpecial', 'value'); HIT_IMPACT_GLANCE = num('hitImpactGlance', 'value');
   SPECIAL_MELEE_WINDUP = num('specialMeleeWindup', 'value');
   SPECIAL_MELEE_REACH = num('specialMeleeReach', 'value');
   SPECIAL_MELEE_SLACK = num('specialMeleeSlack', 'value');

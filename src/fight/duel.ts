@@ -14,6 +14,7 @@ import { crowdPercent, percentOf, rolledDamage, rollUnit, swarmBand, type CrowdK
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
+import { SANDBOX_ON } from './sandbox-era.ts';
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, spellRoot, type CastOutcome, type Spell } from './spell-cast.ts';
@@ -80,6 +81,7 @@ export type Fighter = {
   special?: number;   // ticks of a committed special windup left; it releases on the tick it would reach 0
   castPush?: number;   // sandbox-mech castPushback: times a hit has pushed this cast back; absent when 0
   castHurt?: number;   // damage taken since SpecialStarted while the windup counts down (RULES.special.interruptAt cuts the cast); absent when 0, so a cast nobody hits hashes as before
+  picked?: true;   // the player's own equipped SPECIAL (the picker's skill, sandbox era): only a picked melee special takes the specialMelee rows (windup, reach, react); a class preset or an opponent's class cast never carries it, so those stay byte for byte (Combat RV78, Lead)
   skill2?: SkillId;   // slot b as a MELEE special (the specials PR, RV75): an existing class skill, fought through its own move-defs row (reach, windup, stagger, knockback, stamina, posture) on skillCooldown2, never the flat special share; absent = slot b is a spell (or empty)
   spell2?: Spell; skillCooldown2?: number; castSlot?: 1;   // slot b (spell-slot-defs.json): its spell and its OWN cooldown (absent = 0); castSlot = the slot of the cast in its windup (absent = slot a). All absent = a one-spell fight byte for byte
   spell?: Spell;   // the spell this fighter's special casts (spell-cast.ts, RV53): a stamina cost at the commit and an outcome by skill at the release; the windup, interrupt, cooldown and reach are the special's own. Absent = the plain special, byte for byte
@@ -175,7 +177,7 @@ const poseBodies = (given: DuelPose): [State, State] => {
 };
 export const initialDuel = (opponent: Opponent = OPPONENTS.veteran, weapon: WeaponId = DEFAULT_WEAPON, skill: SkillId | null = null, pose?: DuelPose): Duel => {
   const [hero, foe] = pose ? poseBodies(pose) : [initialState(), { ...initialTarget(), heading: 0, distance: 0 }];
-  return { tick: 0, fighters: [{ ...createFighter(hero, 'sheathed', weapon), skill }, opponentFighter(opponent, foe)], finish: null, events: [] };
+  return { tick: 0, fighters: [{ ...createFighter(hero, 'sheathed', weapon), skill, ...(skill && SANDBOX_ON ? { picked: true as const } : {}) }, opponentFighter(opponent, foe)], finish: null, events: [] };
 };
 
 // The one door a patron fight is built through, after initialDuel (and withSpecials): the player's perk in slot 0, the foe's (PvP only; ladder foes carry none) in slot 1.
@@ -360,12 +362,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       const gap = distance(me.body, foe.body), cast = action === 'skill2' ? me.spell2 : me.spell, root = cast && spellRoot(cast.id);
       const bowRow = cast ? undefined : bowSpecialOf(me.weapon, action === 'skill2' ? me.skill2 : me.skill, gap, me.ammo);   // sandbox bowSpecial: beyond the missile gap a bow's special is arrows
       const heal = healOf(cast?.id);   // sandbox spellHeal: needs no range, windup from its row
-      const cue = root && !heal ? spellRangeCue(root, gap) : !cast && !bowRow && SPECIAL_MELEE_REACH && gap > meleeSpecialReach(R.special.reach) ? 'far' as const : undefined;   // sandbox spellRange: a spell with a range row is cast only in its band (it replaces the special's reach); a melee special is pressed only inside its own, shorter reach (specialMeleeReach); out of range nothing is spent and a cue is shown
+      const cue = root && !heal ? spellRangeCue(root, gap) : !cast && !bowRow && me.picked && SPECIAL_MELEE_REACH && gap > meleeSpecialReach(R.special.reach) ? 'far' as const : undefined;   // sandbox spellRange: a spell with a range row is cast only in its band (it replaces the special's reach); a melee special is pressed only inside its own, shorter reach (specialMeleeReach); out of range nothing is spent and a cue is shown
       if (cue) events.push({ tick, type: 'SpecialRefused', actor: i, cue, ...(cast ? { spell: cast.id } : {}) });   // the HUD floats the specialCue row's text over the caster
-      else if (gap <= meleeSpecialReach(R.special.reach) || heal || (root && spellRangeOf(root)) || bowRow) {
+      else if (gap <= (me.picked ? meleeSpecialReach(R.special.reach) : R.special.reach) || heal || (root && spellRangeOf(root)) || bowRow) {
         if (action === 'skill2') next.castSlot = 1; else delete next.castSlot;
         if (bowRow) { next.bowSpecial = bowRow.skill; if (next.ammo !== undefined) next.ammo -= bowRow.arrows; } else delete next.bowSpecial;   // the arrows are spent at the commit, like a spell's cost
-        next.special = castWindup(me.sheet, heal ? heal.windup : bowRow ? bowRow.windup : !cast && SPECIAL_MELEE_WINDUP ? SPECIAL_MELEE_WINDUP : spellWindupOf(root, R.special.windup)); delete next.castHurt; delete next.castPush;   // sandbox specialMeleeWindup: a melee special (no spell) is as quick as a heavy swing, not the spell's 2 s delay
+        next.special = castWindup(me.sheet, heal ? heal.windup : bowRow ? bowRow.windup : !cast && me.picked && SPECIAL_MELEE_WINDUP ? SPECIAL_MELEE_WINDUP : spellWindupOf(root, R.special.windup)); delete next.castHurt; delete next.castPush;   // sandbox specialMeleeWindup: a melee special (no spell) is as quick as a heavy swing, not the spell's 2 s delay
         next.phase = 'ready'; next.age = 0; next.parrying = false; next.guardDirection = null;
         if (cast && paysManaFor(cast.id)) { const f = fighters[i]!; f.mana = Math.max(0, (f.mana ?? 0) - manaCost(cast.cost)); f.manaRest = MANA_DELAY; }   // sandbox-mech mana: the cast is paid in mana, stamina untouched
         else if (cast) spend(i, cast.cost);   // the stamina is gone at the commit, whatever the outcome
@@ -651,7 +653,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       events.push({ tick, type: 'MissileLaunched', actor: i, target: j, move, lane: 0 });
       continue;
     }
-    if (SPECIAL_MELEE_REACH && !spell && distance(A.body, D.body) > meleeSpecialRelease()) { events.push({ tick, type: 'SpecialFizzled', actor: i }); continue; }   // sandbox specialMeleeReach: the foe stepped out of reach during the windup, the swing finds nothing
+    if (SPECIAL_MELEE_REACH && A.picked && !spell && distance(A.body, D.body) > meleeSpecialRelease()) { events.push({ tick, type: 'SpecialFizzled', actor: i }); continue; }   // sandbox specialMeleeReach: the foe stepped out of reach during the windup, the swing finds nothing
     // v55 (cone-rules.ts): a special with a cone row breathes instead of striking once: the heading is fixed on the target now, the pulses follow, and the caster is held back until the last of them is done.
     const cone = CONE_ON && !spell ? coneOf(A.specialName) : undefined;
     if (cone) { A.breath = { k: 0, wait: 0, heading: aim(A.body, D.body) }; A.specialRecover = R.special.recovery + breathTicks(cone); breathed[i] = true; continue; }
@@ -678,7 +680,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     if (pulsed) { A.volley = { k: 0, wait: 0, total, hits: spell.hits, every: spell.hitEvery }; volleyed[i] = true; if (spell.hitHolds) A.specialRecover = R.special.recovery + spell.hitEvery * (spell.hits.length - 1); }
     { const pr = poisonOf(A.oid); if (pr && D.health) { D.poisonUntil = tick + pr.duration; D.poisonEnemy = A.oid!; } }
     events.push({ tick, type: 'SpecialLanded', actor: i, target: j, move, damage, ...(A.specialName ? { name: A.specialName } : {}), ...(spell && outcome ? { spell: spell.id, outcome } : {}), ...(pulsed ? { pulse: 0 } : {}) });
-    if (SPECIAL_REACT && !spell && D.health) {   // sandbox specialReact: a landed melee special staggers, shoves and shakes the victim by its move row, like a landed blow (no canned animation: the sim decides)
+    if (SPECIAL_REACT && A.picked && !spell && D.health) {   // sandbox specialReact: a landed melee special staggers, shoves and shakes the victim by its move row, like a landed blow (no canned animation: the sim decides)
       const def = movesOf(A)[move], away = aim(D.body, A.body) + Math.PI;
       for (let k = 0; k < Math.round(percentScaled(def.knockback, SPECIAL_REACT_KNOCK)); k++) D.body = { ...advance(D.body, { x: M.sin(away), z: M.cos(away), yaw: 0, run: false }, A.body, 1, wall), heading: D.body.heading };
       D.phase = 'hurt'; D.age = 0; D.stun = Math.max(D.stun, Math.round(percentScaled(def.stagger, SPECIAL_REACT_STAGGER)), specialReactFloorOf(String(move).replace(/^skill_/, ''))); D.buffer = null; D.counterWindow = 0; D.charge = 0; D.charged = false;
@@ -744,12 +746,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     if (hurt && isInterruptible(A.specialName)) {
       const taken = (A.castHurt ?? 0) + hurt;
       if (taken >= R.special.interruptAt * A.maxHealth) {
-        coolSlot(A, interruptLockout(R.special.interruptCooldown, A.special, R.special.windup)); A.special = 0; delete A.castHurt; delete A.castPush;   // sandbox-mech: an earlier cut can lock the caster out longer
+        coolSlot(A, A.picked || castOf(A) ? interruptLockout(R.special.interruptCooldown, A.special, R.special.windup) : R.special.interruptCooldown); A.special = 0; delete A.castHurt; delete A.castPush;   // sandbox-mech: an earlier cut can lock the caster out longer
         events.push({ tick, type: 'SpecialInterrupted', actor: i, damage: taken });
         continue;
       }
       A.castHurt = taken;
-      if (CAST_PUSHBACK && (A.castPush ?? 0) < CAST_PUSHBACK_MAX) { A.special += CAST_PUSHBACK; A.castPush = (A.castPush ?? 0) + 1; }   // sandbox-mech: a hit that does not cut the cast delays its release (WoW pushback)
+      if (CAST_PUSHBACK && (A.picked || castOf(A)) && (A.castPush ?? 0) < CAST_PUSHBACK_MAX) { A.special += CAST_PUSHBACK; A.castPush = (A.castPush ?? 0) + 1; }   // sandbox-mech: a hit that does not cut the cast delays its release (WoW pushback)
     }
     A.special--;
   }
