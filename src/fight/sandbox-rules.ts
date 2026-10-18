@@ -41,8 +41,6 @@ export const specialTrailOf = (skill: string): SpecialTrailRow | undefined => sa
 //   specialShards (solid impact fragments): rows { id (row id), skill, kind stone|metal, count (<= 8 a burst on a phone), tint, per-mille power, forward, lift, size, life, gravity, bounce, slide, shrink }. No rows = nothing is built or drawn.
 export type ShardRow = { id: string; skill: string; kind: string; count: number; tint: string; power: number; forward: number; lift: number; size: number; life: number; gravity: number; bounce: number; slide: number; shrink: number };
 export const specialShardsOf = (skill: string): ShardRow[] => (sandboxRows('specialShards') as unknown as ShardRow[]).filter((r) => r.skill === skill);
-export const shardRows = (): number => sandboxRows('specialShards').length;
-export const shardCapacity = (): number => (sandboxRows('specialShards') as unknown as ShardRow[]).reduce((sum, r) => sum + r.count, 0);   // the pool of each chip shape: every row's count, so every row can be mid-flight at once
-//   specialSound (the hit must sound like bone and weight): rows { id (row id), skill, cue (a CueName), gain, room, delay, on? } played in order when that melee special lands; `on`: 'start' plays at the commit, 'land' (default) on the foe. No rows = no sound added.
+export const shardRows = (): number => sandboxRows('specialShards').length;//   specialSound (the hit must sound like bone and weight): rows { id (row id), skill, cue (a CueName), gain, room, delay, on? } played in order when that melee special lands; `on`: 'start' plays at the commit, 'land' (default) on the foe. No rows = no sound added.
 export type SpecialSoundRow = { id: string; skill: string; cue: string; gain: number; room: number; delay: number; on?: 'start' | 'land' };
 export const specialSoundOf = (skill: string): SpecialSoundRow[] => (sandboxRows('specialSound') as unknown as SpecialSoundRow[]).filter((r) => r.skill === skill);
