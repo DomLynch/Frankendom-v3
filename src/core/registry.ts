@@ -32,6 +32,8 @@ export class RegistryError extends Error {
   }
 }
 
+// A problem with the manifest itself rather than a row: it has no row number.
+const manifestProblem = (file: string, id: string, message: string): Problem => ({ file, row: -1, id, rule: 'bad-manifest', message });
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 // One value against a field spec: the type first, then the range (a wrong type is never also reported out of range). Returns the broken rule's message, or null.
 function specProblem(v: unknown, field: string, spec: FieldSpec): { rule: 'wrong-type' | 'out-of-range'; message: string } | null {
@@ -79,7 +81,7 @@ export function checkTables(tables: readonly TableData[], external: Readonly<Rec
   const fileOf = (t: TableData): string => t.file ?? t.manifest.file ?? t.manifest.table;
   for (const [name, set] of Object.entries(external)) ids.set(name, new Set(set));
   for (const t of tables) {
-    if (ids.has(t.manifest.table) && !rows.has(t.manifest.table)) problems.push({ file: fileOf(t), row: -1, id: t.manifest.table, rule: 'bad-manifest', message: `table "${t.manifest.table}" is also an external id set` });
+    if (ids.has(t.manifest.table) && !rows.has(t.manifest.table)) problems.push(manifestProblem(fileOf(t), t.manifest.table, `table "${t.manifest.table}" is also an external id set`));
     ids.set(t.manifest.table, new Set()); rows.set(t.manifest.table, new Map());
   }
   // Pass 1: keys and uniqueness. A table's ids exist before any ref is resolved, so tables may point at each other.
@@ -95,12 +97,12 @@ export function checkTables(tables: readonly TableData[], external: Readonly<Rec
   // Pass 2: required fields, types, refs.
   for (const t of tables) {
     const { required, optional = {}, unique = [], refs = {}, table } = t.manifest, file = fileOf(t), claimed = new Map<string, Map<string, string>>(unique.map((f) => [f, new Map()]));
-    for (const [field, to] of Object.entries(refs)) if (!ids.has(to)) problems.push({ file, row: -1, id: table, rule: 'bad-manifest', message: `${field} refs table "${to}", which is not registered` });
+    for (const [field, to] of Object.entries(refs)) if (!ids.has(to)) problems.push(manifestProblem(file, table, `${field} refs table "${to}", which is not registered`));
     for (const [field, spec] of [...Object.entries(required), ...Object.entries(optional)]) {
       if (typeof spec === 'string') continue;
       const ranged = spec.min !== undefined || spec.max !== undefined;
-      if (ranged && spec.type !== 'number' && spec.type !== 'integer') problems.push({ file, row: -1, id: table, rule: 'bad-manifest', message: `${field}: min/max need a number or integer field, not ${spec.type}` });
-      else if (spec.min !== undefined && spec.max !== undefined && spec.min > spec.max) problems.push({ file, row: -1, id: table, rule: 'bad-manifest', message: `${field}: min ${spec.min} is above max ${spec.max}` });
+      if (ranged && spec.type !== 'number' && spec.type !== 'integer') problems.push(manifestProblem(file, table, `${field}: min/max need a number or integer field, not ${spec.type}`));
+      else if (spec.min !== undefined && spec.max !== undefined && spec.min > spec.max) problems.push(manifestProblem(file, table, `${field}: min ${spec.min} is above max ${spec.max}`));
     }
     t.rows.forEach((row, i) => {
       if (!isObj(row)) { problems.push({ file, row: i, id: '?', rule: 'wrong-type', message: 'a row must be an object' }); return; }
