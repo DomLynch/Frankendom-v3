@@ -18,6 +18,8 @@ export const IMPACT = {
   full: { frames: CONTACTS.hitHeavy.frames, knock: CONTACTS.hitHeavy.knock, push: CONTACTS.hitHeavy.push }, half: { frames: CONTACTS.hitLight.frames, knock: CONTACTS.hitLight.knock, push: CONTACTS.hitLight.push },
   parry: { frames: CONTACTS.parry.frames, knock: CONTACTS.parry.knock, push: CONTACTS.parry.push }, block: { frames: CONTACTS.blockLight.frames, knock: CONTACTS.blockLight.knock, push: CONTACTS.blockLight.push },
 } as const;
+/** The tier the weapon's own hold (armfeel.weaponHoldMs) sees: a skill holds as the heavy it always was; parries and blocks hold nothing extra. */
+export const HOLD_TIER: Readonly<Record<Tier, 'full' | 'half' | null>> = { special: 'full', full: 'full', half: 'half', parry: null, block: null };
 export { KNOCK_SETTLE };   // seconds: the knock is back in 120 ms (a `feel` row in hit-stop-defs.json)
 // Kick and roll (Dom 2026-09-30, pick C of the ?look=hitfx-kick / hitfx-roll clips: "implement and get live"). A LANDED kick, either side,
 // is its own beat: the whole stop is 2 frames (not a hit's 50 ms + 3) and the camera drops 10 cm straight down, back in 120 ms. The
