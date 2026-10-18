@@ -36,7 +36,7 @@ import { createFootDust, dustToneFor } from './foot-dust.ts';
 import { createWitchfire } from './witchfire.ts';
 import { createMiasmaMark, marksFlag } from './miasma-mark.ts';
 import { createSkillImpact, impactPoint } from './skill-impact.ts';
-import { shardRows, specialShardsOf } from './sandbox-rules.ts';
+import { shardCapacity, shardRows, specialShardsOf } from './sandbox-rules.ts';
 import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
 import { phoneTier, pixelCap } from './quality.ts';
@@ -209,7 +209,7 @@ export function createScene(
     footDust = createFootDust(scene, dustToneFor(theme)),
     witchfire = createWitchfire(scene),
     skillImpact = createSkillImpact(scene),
-    specialShards = shardRows() ? createSpecialShards(scene) : null,   // specialShards rows: lit 3D chips off a landed melee special (special-shards.ts); no rows (shipped) builds nothing
+    specialShards = shardRows() ? createSpecialShards(scene, shardCapacity()) : null,   // specialShards rows: lit 3D chips off a landed melee special (special-shards.ts); no rows (shipped) builds nothing
     shardAt = new THREE.Vector3(),
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
   if (world) scene.add(world.holder);

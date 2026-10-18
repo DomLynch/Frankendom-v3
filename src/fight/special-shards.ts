@@ -7,7 +7,6 @@ import type { ShardRow } from './sandbox-rules.ts';
 
 export type ShardKind = 'stone' | 'metal';
 const KINDS: readonly ShardKind[] = ['stone', 'metal'];
-const PER_KIND = 32;   // the pool: a burst takes what is free, never more than its row's count
 
 type Batch = { mesh: THREE.Mesh<THREE.InstancedBufferGeometry, THREE.ShaderMaterial>; ends: Float64Array };
 
@@ -18,15 +17,16 @@ const shape = (kind: ShardKind): THREE.BufferGeometry => {
   return g;
 };
 
-export function createSpecialShards(scene: THREE.Scene) {
+/** `perKind`: the pool of each shape, from the rows themselves (shardCapacity(): every row's count, so every row can be mid-flight at once). A burst takes what is free, never more than its row's count. */
+export function createSpecialShards(scene: THREE.Scene, perKind: number) {
   const batches = new Map<ShardKind, Batch>(), sun = new THREE.Vector3(0.4, 0.8, 0.3).normalize(), colour = new THREE.Color();
   let time = 0, serial = 0;
   for (const kind of KINDS) {
     const source = shape(kind), geometry = new THREE.InstancedBufferGeometry();
     geometry.setAttribute('position', source.getAttribute('position')); geometry.setAttribute('normal', source.getAttribute('normal'));
-    for (const name of ['aOrigin', 'aVelocity', 'aTint']) geometry.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(PER_KIND * 3), 3).setUsage(THREE.DynamicDrawUsage));
-    for (const name of ['aLife', 'aShape', 'aWorld']) geometry.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(PER_KIND * 4), 4).setUsage(THREE.DynamicDrawUsage));
-    geometry.instanceCount = PER_KIND;
+    for (const name of ['aOrigin', 'aVelocity', 'aTint']) geometry.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(perKind * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    for (const name of ['aLife', 'aShape', 'aWorld']) geometry.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(perKind * 4), 4).setUsage(THREE.DynamicDrawUsage));
+    geometry.instanceCount = perKind;
     const material = new THREE.ShaderMaterial({
       uniforms: { uSun: { value: sun }, uTime: { value: 0 }, uMetal: { value: kind === 'metal' ? 1 : 0 } },
       vertexShader: `attribute vec3 aOrigin,aVelocity,aTint;attribute vec4 aLife,aShape,aWorld;uniform float uTime;uniform vec3 uSun;varying vec3 vNormal,vView,vTint,vLight;varying float vFade;
@@ -50,7 +50,7 @@ export function createSpecialShards(scene: THREE.Scene) {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = `specialShards:${kind}`; mesh.visible = false; mesh.frustumCulled = false; mesh.userData.warmHidden = true;   // warmOwn compiles it shown: the program links at zone warm-up, never at the first hit
     scene.add(mesh);
-    batches.set(kind, { mesh, ends: new Float64Array(PER_KIND) });
+    batches.set(kind, { mesh, ends: new Float64Array(perKind) });
   }
   scene.traverse((o) => { if (o instanceof THREE.DirectionalLight) { sun.copy(o.position).sub(o.target.position).normalize(); } });
 
@@ -63,8 +63,8 @@ export function createSpecialShards(scene: THREE.Scene) {
         shapeAttr = g.getAttribute('aShape') as THREE.InstancedBufferAttribute, tints = g.getAttribute('aTint') as THREE.InstancedBufferAttribute, world = g.getAttribute('aWorld') as THREE.InstancedBufferAttribute;
       const length = Math.hypot(dx, dz); dx = length > 0.01 ? dx / length : 0; dz = length > 0.01 ? dz / length : 0;
       colour.set(row.tint);
-      const amount = Math.min(row.count, PER_KIND), force = row.power / 1000, seed = ++serial; let n = 0;
-      for (let i = 0; i < PER_KIND && n < amount; i++) {
+      const amount = Math.min(row.count, perKind), force = row.power / 1000, seed = ++serial; let n = 0;
+      for (let i = 0; i < perKind && n < amount; i++) {
         if (batch.ends[i]! > time) continue;
         const phase = (seed * 1.618 + n) * 2.399963, radial = 1.2 + ((n * 7 + seed) % 9) * 0.17;   // the golden angle spreads the chips round the burst
         const vx = (Math.cos(phase) * radial + dx * row.forward / 1000) * force, vz = (Math.sin(phase) * radial + dz * row.forward / 1000) * force, vy = (row.lift / 1000 + (n % 4) * 0.65) * force;
