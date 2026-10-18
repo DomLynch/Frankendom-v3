@@ -10,6 +10,7 @@ import { createGapHistory } from './kick-close.ts';
 import { staminaLow } from './fatigue-preview.ts';
 import { SKILL_MOVE, SKILL_ROWS, weaponOf, type OpponentId } from './moves.ts';
 import { fxNum } from './fx-rows.ts';
+import { specialCueText } from './sandbox-rules.ts';
 
 // Heavy-class contacts: bigger damage numbers here, a longer hit-stop in the frame loop.
 export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical']);
@@ -215,16 +216,18 @@ export function createHud(element: Lookup) {
       events: CombatEvent[],
       fighters: readonly { body: { x: number; z: number }; scale: number }[],
       project: ((point: [number, number, number]) => [number, number] | null) | undefined,
+      numbers = true,   // false: the journal setting hides damage numbers, but a refused special press still floats its cue
     ): void {
       if (!dmgPool.length || typeof project !== 'function') return; // the VM harness ships an empty pool and a stub view: nothing to float there (the entry point gates on the journal setting)
       for (const e of events) {
-        if (e.type !== 'Hit' || e.target === undefined || !e.damage) continue;
-        const victim = fighters[e.target];
+        const refused = e.type === 'SpecialRefused' && e.actor === 0 ? specialCueText(e.cue ?? '') : '';   // sandbox specialMeleeReach: a tap on SPECIAL must never feel like nothing: the refused press floats its cue ("too far", a specialCue row) over the hero
+        if (!refused && (!numbers || e.type !== 'Hit' || e.target === undefined || !e.damage)) continue;
+        const victim = fighters[refused ? e.actor : e.target!];
         const at = project([victim.body.x, 1.62 * victim.scale, victim.body.z]);
         if (!at) continue;
         const span = dmgPool[dmgCursor++ % dmgPool.length];
-        span.textContent = String(Math.round(e.damage));
-        span.className = `dmg${e.target === 0 ? ' taken' : ''}${e.counter || e.charged || HEAVY_MOVES.has(e.move ?? '') ? ' heavy' : ''}`;
+        span.textContent = refused || String(Math.round(e.damage!));
+        span.className = refused ? 'dmg taken heavy' : `dmg${e.target === 0 ? ' taken' : ''}${e.counter || e.charged || HEAVY_MOVES.has(e.move ?? '') ? ' heavy' : ''}`;
         span.style.left = `${at[0]}px`;
         span.style.top = `${at[1]}px`;
         span.hidden = false;
