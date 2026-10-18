@@ -89,6 +89,16 @@
     { "id": "fx.spellLegends.rungMax", "fields": {"value": 10} },
     { "id": "fx.spellSchool.byteMax", "fields": {"value": 255} },
     { "id": "fx.witchfire.stepMax", "fields": {"value": 0.1} },
-    { "id": "pose-blend.snap-m", "fields": {"value": 3} }
+    { "id": "pose-blend.snap-m", "fields": {"value": 3} },
+    { "id": "warband.enabled", "fields": {"value": 1} },
+    { "id": "warband.horn-run-speed", "fields": {"value": 4.2} },
+    { "id": "warband.horn-reach", "fields": {"value": 1} },
+    { "id": "warband.rally-count", "fields": {"value": 4} },
+    { "id": "warband.rally-seconds", "fields": {"value": 45} },
+    { "id": "warband.rally-aggro", "fields": {"value": 45} },
+    { "id": "warband.rally-run-speed", "fields": {"value": 4.2} },
+    { "id": "warband.rally-engage", "fields": {"value": 6} },
+    { "id": "warband.horn-dx", "fields": {"value": 0} },
+    { "id": "warband.horn-dz", "fields": {"value": -8} }
   ]
 }
