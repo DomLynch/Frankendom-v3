@@ -125,7 +125,7 @@ export function defenceReaction(s: Practice, opponent=false): {pose:'block'|'par
 type FighterAsset = { scene: Group; animations: AnimationClip[] };
 // One fighter GLB: the same rig, clip names and sword attachments as every other (blade paths are baked once).
 import { MissingTextures, retryTransient } from '../retry.ts';
-import { CHARGE_LEANS, MAPPED_PALETTE, type ChargeLean } from './character-looks-rows.ts';   // the per-opponent label maps are rows (character-looks-defs.json)
+import { CHARGE_LEANS, MAPPED_PALETTE, SHARED_MAPPED, type ChargeLean } from './character-looks-rows.ts';   // the per-opponent label maps are rows (character-looks-defs.json)
 import { fxNum } from './fx-rows.ts';
 const STEP_MAX = fxNum('fx.characters.stepMax');
 const WALK_RATE_MIN = fxNum('fx.characters.walkRateMin');
@@ -326,8 +326,12 @@ export const SOURCE_MAPPED: Partial<Record<OpponentId, readonly string[]>> = MAP
 export function rigMaterials(root: Object3D, skip: ReadonlySet<Object3D> = new Set()): Map<string, MeshStandardMaterial> {
   const materials = new Map<string, MeshStandardMaterial>();
   root.traverse(object => { if (object instanceof Mesh && !skip.has(object) && object.material instanceof MeshStandardMaterial && object.material.name && object.material.map) materials.set(object.material.name, object.material); });
+  for (const name of SHARED_MAPPED) { const copy = materials.get(name); if (copy && !sharedCopies.has(name)) sharedCopies.set(name, copy); }
   return materials;
 }
+// A name whose map is one shared texture on every rig that maps it (SHARED_MAPPED rows) is remembered from the first rig that shows it, so a wearer that
+// maps nothing of the name (the cave troll: one `WorldBody` material) wears the shared copy, not loot.glb's mapless white (the troll's pitborn Wrap).
+const sharedCopies = new Map<string, MeshStandardMaterial>();
 // A palette name the source rig does not map keeps loot.glb's own entry, and loot.glb's palette is the HERO's (build-warrior.mjs): the
 // Executioner's hood came out in the hero's madder red on the player (Dom, 2026-10-07). Where the source opponent wears a different dye of
 // that name (scripts/warrior-appearance.mjs; tests/grade-materials.test.ts pins it), the piece wears that dye instead.
@@ -336,7 +340,7 @@ const dyed = new WeakMap<MeshStandardMaterial, MeshStandardMaterial>();
 export function sourceMaterial(piece: Mesh, materials: ReadonlyMap<string, MeshStandardMaterial>) {
   const own = piece.material, opponent = piece.userData.opponent as OpponentId;
   if (!(own instanceof MeshStandardMaterial)) return own;
-  if (SOURCE_MAPPED[opponent]?.includes(own.name)) return materials.get(own.name) ?? own;
+  if (SOURCE_MAPPED[opponent]?.includes(own.name)) return materials.get(own.name) ?? sharedCopies.get(own.name) ?? own;
   const dye = SOURCE_DYE[opponent]?.[own.name];
   if (!dye) return own;
   let copy = dyed.get(own);
