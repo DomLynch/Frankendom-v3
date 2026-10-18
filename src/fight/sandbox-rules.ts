@@ -5,7 +5,7 @@ import MANIFEST from './sandbox-rules-defs.manifest.json' with { type: 'json' };
 // The combat sandbox's rule rows, ported to trunk in slices (Lead's plan, 2026-10-18; Donor: the combat sandbox, sandbox/page @678a31f0d, read-only). THIS slice declares the melee-special families with their empty defaults and the reader;
 // nothing on trunk imports it yet, so a trunk fight is byte for byte as before. Every rule is 0 / absent as shipped; the slice that turns one on bumps the record version and carries its battery.
 // A sim file: no clock, no Math.random. Each family is a table through the registry (sandbox-rules-defs.manifest.json), one number per row.
-const TABLES = MANIFEST.tables.map((t) => tableFromFile(t as Manifest, DEFS, 'sandbox-rules-defs.json'));
+const TABLES = MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, DEFS, 'sandbox-rules-defs.json'));
 loadRegistry(TABLES);
 const rows = (table: string): readonly Record<string, unknown>[] => TABLES.find((t) => t.manifest.table === table)?.rows ?? [];
 const rule = (id: string): number => (rows('sandboxRule').find((r) => r.id === id)?.value as number | undefined) ?? 0;
