@@ -3,6 +3,9 @@
 // reports every problem as file:row:id + the rule broken) and the runtime load (loadRegistry throws, never last-wins). Duplicate id, unknown ref, missing required
 // field and wrong type all reject; nothing is a warning. No TypeScript id unions come out of a table: ids stay strings, checked against the loaded rows.
 export type FieldType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'any';
+// A field is its type ('integer') or the type with the range the game allows ({ type: 'integer', min: 1, max: 99 }). min and max are inclusive and only for number and integer fields;
+// the loader refuses an out-of-range row with file:row:id, so the manifest, not a hand-written check beside the loader, is where a limit lives.
+export type FieldSpec = FieldType | { type: FieldType; min?: number; max?: number };
 export type Manifest = {
   table: string;
   file?: string;                      // rows file, relative to the manifest (omitted on a derived table)
@@ -11,13 +14,13 @@ export type Manifest = {
   from?: string;                      // a derived table: one row per value at `fan` in each row of table `from`, {[key]: value, from: <source row id>}
   fan?: string;
   key: string;                        // the id field
-  required: Record<string, FieldType>;  // field path -> type; `a.b` descends, `a[]` checks every element
-  optional?: Record<string, FieldType>; // field path -> type, checked only when the field is present (absent = fine)
+  required: Record<string, FieldSpec>;  // field path -> type (or type + min/max); `a.b` descends, `a[]` checks every element
+  optional?: Record<string, FieldSpec>; // field path -> type (or type + min/max), checked only when the field is present (absent = fine)
   unique?: string[];                    // field paths whose present values must differ between rows of this table
   refs?: Record<string, string>;        // field path -> table whose ids the value (or each element) must be
 };
 export type TableData = { manifest: Manifest; rows: readonly Record<string, unknown>[]; file?: string };
-export type Problem = { file: string; row: number; id: string; rule: 'duplicate-id' | 'unknown-ref' | 'missing-field' | 'wrong-type' | 'duplicate-value' | 'bad-key' | 'bad-manifest'; message: string };
+export type Problem = { file: string; row: number; id: string; rule: 'duplicate-id' | 'unknown-ref' | 'missing-field' | 'wrong-type' | 'out-of-range' | 'duplicate-value' | 'bad-key' | 'bad-manifest'; message: string };
 export type Registry = { ids: ReadonlyMap<string, ReadonlySet<string>>; rows: ReadonlyMap<string, ReadonlyMap<string, Record<string, unknown>>> };
 
 export class RegistryError extends Error {
@@ -29,7 +32,36 @@ export class RegistryError extends Error {
   }
 }
 
+// A problem with the manifest itself rather than a row: it has no row number.
+const manifestProblem = (file: string, id: string, message: string): Problem => ({ file, row: -1, id, rule: 'bad-manifest', message });
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+// A field spec is checked as strictly as a row: an object spec carries exactly type, min and max (a misspelled key such as `mx` would otherwise leave the field silently unbounded), the type is a real
+// FieldType, min and max are finite numbers on a number or integer field, and min is not above max. The string form is as it always was. Returns every problem as a message.
+const SPEC_KEYS: readonly string[] = ['type', 'min', 'max'];
+const FIELD_TYPES: readonly string[] = ['string', 'number', 'integer', 'boolean', 'array', 'object', 'any'];
+function specIssues(field: string, spec: unknown): string[] {
+  if (typeof spec === 'string') return [];
+  if (!isObj(spec)) return [`${field}: a field spec is a type string or { type, min?, max? }`];
+  const out: string[] = [];
+  for (const k of Object.keys(spec)) if (!SPEC_KEYS.includes(k)) out.push(`${field}: unknown spec key "${k}" (a spec has type, min and max)`);
+  if (typeof spec.type !== 'string' || !FIELD_TYPES.includes(spec.type)) out.push(`${field}: type must be one of ${FIELD_TYPES.join(', ')}`);
+  for (const k of ['min', 'max']) if (Object.hasOwn(spec, k) && !(typeof spec[k] === 'number' && Number.isFinite(spec[k]))) out.push(`${field}: ${k} must be a finite number`);
+  const ranged = Object.hasOwn(spec, 'min') || Object.hasOwn(spec, 'max');
+  if (ranged && spec.type !== 'number' && spec.type !== 'integer') out.push(`${field}: min/max need a number or integer field, not ${String(spec.type)}`);
+  else if (typeof spec.min === 'number' && typeof spec.max === 'number' && spec.min > spec.max) out.push(`${field}: min ${spec.min} is above max ${spec.max}`);
+  return out;
+}
+// One value against a field spec: the type first, then the range (a wrong type is never also reported out of range). Returns the broken rule's message, or null.
+function specProblem(v: unknown, field: string, spec: FieldSpec): { rule: 'wrong-type' | 'out-of-range'; message: string } | null {
+  const type = typeof spec === 'string' ? spec : spec.type;
+  if (!typeOk(v, type)) return { rule: 'wrong-type', message: `${field} must be ${type}` };
+  if (typeof spec === 'string' || (spec.min === undefined && spec.max === undefined)) return null;
+  const n = v as number;
+  if ((spec.min !== undefined && n < spec.min) || (spec.max !== undefined && n > spec.max)) {
+    return { rule: 'out-of-range', message: `${field} = ${n} is outside ${spec.min ?? '-inf'}..${spec.max ?? 'inf'}` };
+  }
+  return null;
+}
 const typeOk = (v: unknown, t: FieldType): boolean =>
   t === 'any' ? true : t === 'integer' ? Number.isInteger(v) : t === 'number' ? typeof v === 'number' && Number.isFinite(v)
   : t === 'array' ? Array.isArray(v) : t === 'object' ? isObj(v) : typeof v === t;
@@ -65,7 +97,7 @@ export function checkTables(tables: readonly TableData[], external: Readonly<Rec
   const fileOf = (t: TableData): string => t.file ?? t.manifest.file ?? t.manifest.table;
   for (const [name, set] of Object.entries(external)) ids.set(name, new Set(set));
   for (const t of tables) {
-    if (ids.has(t.manifest.table) && !rows.has(t.manifest.table)) problems.push({ file: fileOf(t), row: -1, id: t.manifest.table, rule: 'bad-manifest', message: `table "${t.manifest.table}" is also an external id set` });
+    if (ids.has(t.manifest.table) && !rows.has(t.manifest.table)) problems.push(manifestProblem(fileOf(t), t.manifest.table, `table "${t.manifest.table}" is also an external id set`));
     ids.set(t.manifest.table, new Set()); rows.set(t.manifest.table, new Map());
   }
   // Pass 1: keys and uniqueness. A table's ids exist before any ref is resolved, so tables may point at each other.
@@ -81,18 +113,23 @@ export function checkTables(tables: readonly TableData[], external: Readonly<Rec
   // Pass 2: required fields, types, refs.
   for (const t of tables) {
     const { required, optional = {}, unique = [], refs = {}, table } = t.manifest, file = fileOf(t), claimed = new Map<string, Map<string, string>>(unique.map((f) => [f, new Map()]));
-    for (const [field, to] of Object.entries(refs)) if (!ids.has(to)) problems.push({ file, row: -1, id: table, rule: 'bad-manifest', message: `${field} refs table "${to}", which is not registered` });
+    for (const [field, to] of Object.entries(refs)) if (!ids.has(to)) problems.push(manifestProblem(file, table, `${field} refs table "${to}", which is not registered`));
+    for (const [field, spec] of [...Object.entries(required), ...Object.entries(optional)]) for (const message of specIssues(field, spec)) problems.push(manifestProblem(file, table, message));
     t.rows.forEach((row, i) => {
       if (!isObj(row)) { problems.push({ file, row: i, id: '?', rule: 'wrong-type', message: 'a row must be an object' }); return; }
       const id = typeof row[t.manifest.key] === 'string' ? (row[t.manifest.key] as string) : '?';
-      for (const [field, type] of Object.entries(required)) {
+      for (const [field, spec] of Object.entries(required)) {
         for (const v of valuesAt(row, field)) {
-          if (v === undefined) problems.push({ file, row: i, id, rule: 'missing-field', message: `${field} is required` });
-          else if (!typeOk(v, type)) problems.push({ file, row: i, id, rule: 'wrong-type', message: `${field} must be ${type}` });
+          if (v === undefined) { problems.push({ file, row: i, id, rule: 'missing-field', message: `${field} is required` }); continue; }
+          const bad = specProblem(v, field, spec);
+          if (bad) problems.push({ file, row: i, id, ...bad });
         }
       }
-      for (const [field, type] of Object.entries(optional)) {
-        for (const v of valuesAt(row, field)) if (v !== undefined && !typeOk(v, type)) problems.push({ file, row: i, id, rule: 'wrong-type', message: `${field} must be ${type}` });
+      for (const [field, spec] of Object.entries(optional)) {
+        for (const v of valuesAt(row, field)) {
+          const bad = v === undefined ? null : specProblem(v, field, spec);
+          if (bad) problems.push({ file, row: i, id, ...bad });
+        }
       }
       for (const [field, owners] of claimed) {
         for (const v of valuesAt(row, field)) {
