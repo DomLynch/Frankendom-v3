@@ -139,7 +139,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       }
       const want = acc + dt, cap = STEP * MAX_STEPS; acc = Math.min(want, cap);
       if (want > cap) { lostMs += (want - cap) * 1000; hitches++; if (hitches === 1 || hitches % 10 === 0) console.warn(`world-combat: a ${Math.round(dt * 1000)} ms frame dropped ${Math.round((want - cap) * 1000)} ms of fight time (${hitches} such frame(s), ${Math.round(lostMs)} ms lost in all)`); }
-      const rg = d.regen?.() ?? null, walked = lastHero ? Math.hypot(hero.x - lastHero.x, hero.z - lastHero.z) / Math.max(dt, 1e-6) : 0; lastHero = { x: hero.x, z: hero.z };   // his speed over this frame, for the regen's walk rate
+      const rg = d.regen?.() ?? null, walked = lastHero && dt > 0 ? Math.hypot(hero.x - lastHero.x, hero.z - lastHero.z) / dt : 0; lastHero = { x: hero.x, z: hero.z };   // his speed over this frame, for the regen's walk rate
       let first = true, stepped = false;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
       while (acc >= STEP) {
         acc -= STEP; steps++; stepped = true;
