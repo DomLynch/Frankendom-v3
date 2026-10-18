@@ -1,15 +1,17 @@
 // THE ACTOR DRIVER, in the shared fight core (src/fight/, Dom via Strategy 2026-10-09: the Pit and every zone play one fight, one animation system). Moved from src/characters.ts, which now re-exports it
 // so the Pit's importers are untouched; Zone 1 imports it from src/fight/index.ts. Nothing in this file changed but the relative paths.
+import { HURT_STYLES, READY_STYLES, PLAIN_POSTURE, bowSpecialRows, missileOf } from './sandbox-rules.ts';
 import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
-import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type Direction, type WeaponId } from './moves.ts';
+import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, SKILL_ROWS, skillOfMove, type Direction, type WeaponId } from './moves.ts';
+import SPECIAL_CLIP_ROWS from '../assets/special-clips.json' with { type: 'json' };
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { movesOf, type Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
-import { AnimationMixer, MathUtils, Group, Mesh, PropertyBinding, type Material, type Texture, MeshStandardMaterial, MeshBasicMaterial, Object3D, SkinnedMesh, Uint16BufferAttribute, Float32BufferAttribute, BufferGeometry, BufferAttribute, DoubleSide, Vector3, Quaternion, Matrix3, Matrix4, Box3, LoopOnce, type AnimationAction, type AnimationClip, type BufferAttribute as BufferAttributeType, Skeleton } from 'three';
+import { AnimationMixer, MathUtils, Group, Mesh, PropertyBinding, type Material, type Texture, MeshStandardMaterial, MeshBasicMaterial, Object3D, SkinnedMesh, Uint16BufferAttribute, Float32BufferAttribute, BufferGeometry, BufferAttribute, DoubleSide, Vector3, Quaternion, Matrix3, Matrix4, Box3, LoopOnce, type AnimationAction, AnimationClip, type BufferAttribute as BufferAttributeType, Skeleton } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
@@ -43,7 +45,27 @@ export const FINISHER_CLIPS = ['Death_SplitCrown', 'Death_RunThrough', 'Fin_RunT
 // Death_Hamstrung is appended to the GLBs of the creatures that fall to it; the killer's Fin_Hamstrung ships beside warrior.glb (src/assets/hamstrung-killer.json,
 // fitted to the hero) and is adopted by the player's actor only in a fight that can play the scene (adoptClip), so the hero's GLB and every other fight are untouched.
 // Execution (scripts/build-execution.mjs) ships the same way for every hero-rig body: src/assets/execution-killer.json and execution-victim-hero.json, adopted on demand.
-export const ADDITIVE_ROLES = ['Death_Hamstrung', 'Fin_Hamstrung', 'Death_Execution', 'Fin_Execution'] as const;
+// The beta specials' own motion (Dom 2026-10-17, scripts/build-special-clips.mjs; rows in src/assets/special-clips.json): one clip per move, adopted on demand by the actor the
+// first time a special that names it (skill row `specialClip`) is cast on a weapon the row lists, and played in place of the weapon's Heavy / Attack / Thrust, which a weapon
+// the row does not list keeps (the fallback).
+export const SPECIAL_ROLES = ['Special_SkullCrack', 'Special_Whirlwind', 'Special_GroundSlam', 'Special_Lunge', 'Special_BowPower', 'Special_BowFan', 'Special_BowPin', 'Special_BowQuick'] as const;   // the Bow* roles are a bow carrier's draw-and-loose (sandbox bowSpecial rows name them), played in place of the melee special's clip
+export type SpecialRole = (typeof SPECIAL_ROLES)[number];
+export const ADDITIVE_ROLES = ['Death_Hamstrung', 'Fin_Hamstrung', 'Death_Execution', 'Fin_Execution', ...SPECIAL_ROLES] as const;
+const SPECIAL_LOADERS: Record<SpecialRole, () => Promise<{ default: unknown }>> = {
+  Special_SkullCrack: () => import('../assets/special-skullcrack.json'), Special_Whirlwind: () => import('../assets/special-whirlwind.json'),
+  Special_GroundSlam: () => import('../assets/special-groundslam.json'), Special_Lunge: () => import('../assets/special-lunge.json'),
+  Special_BowPower: () => import('../assets/special-bowpower.json'), Special_BowFan: () => import('../assets/special-bowfan.json'),
+  Special_BowPin: () => import('../assets/special-bowpin.json'), Special_BowQuick: () => import('../assets/special-bowquick.json'),
+};
+const isBowRole = (r: SpecialRole): boolean => r.startsWith('Special_Bow');
+export const specialRow = (role: SpecialRole): { weapons: readonly string[]; strike: number } => SPECIAL_CLIP_ROWS.clips.find(c => c.role === role) as unknown as { weapons: readonly string[]; strike: number };
+// The special clip a fighter's move plays right now (null = none): the swing of a skill row that names one, or its cast (the pre-release raise) while the special is under way.
+export const specialRoleOf = (f: Pick<Fighter, 'phase' | 'lastMove' | 'skill' | 'specialShare' | 'bowSpecial' | 'special' | 'specialRecover' | 'weapon'>): SpecialRole | null => {
+  if (f.bowSpecial && ((f.special ?? 0) > 0 || (f.specialRecover ?? 0) > 0)) return (bowSpecialRows().find((r) => r.skill === f.bowSpecial)?.clip as SpecialRole | undefined) ?? null;   // a bow special's draw and loose, through the windup and the recovery
+  if (f.phase === 'ready' && f.specialShare !== undefined && f.skill && missileOf(f.weapon)?.kind === 'bow') return (bowSpecialRows().find((r) => r.skill === f.skill)?.clip as SpecialRole | undefined) ?? null;   // an armed archer asks for its bow clips while it stands ready, so they are fetched before the first press (a 14-tick Quick Shot windup finishes before a fetch on the press would land; the swing played the stand-in's Heavy)
+  const row = f.phase === 'attack' ? SKILL_ROWS[skillOfMove(f.lastMove) ?? ''] : f.phase === 'ready' && f.specialShare !== undefined && f.skill ? SKILL_ROWS[f.skill] : undefined;
+  return (row?.specialClip as SpecialRole | undefined) ?? null;
+};
 // Clips only the player's rig (warrior.glb) carries: the SKILL casts (docs/briefs/skill-witch-arm.md). Opponents never cast, so
 // their rigs are the hero's clip set without these.
 export const PLAYER_ONLY_CLIPS: readonly string[] = ['Skill_WitchArm', 'Skill_Pommel'];
@@ -97,7 +119,7 @@ export const isQuadruped = (asset: { animations: readonly { name: string }[] }):
 // and raises straight to ready. Empty since the warhammer and maul took their carries (2026-09-26).
 export const NO_HIP_DRAW: readonly WeaponId[] = [];
 export const drawRole = (weapon: WeaponId): Role | null => NO_HIP_DRAW.includes(weapon) ? null : 'Draw';
-const ONE_SHOT: readonly Role[] = ['Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Guard', 'Return', 'Heavy', 'Riposte', 'Thrust', 'Kick', 'BlockImpact', 'Parry', 'Deflected', 'Death_SplitCrown', 'Death_RunThrough', 'Fin_RunThrough', 'Pommel', 'Death_Hamstrung', 'Fin_Hamstrung', 'Death_Execution', 'Fin_Execution'];
+const ONE_SHOT: readonly Role[] = ['Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Guard', 'Return', 'Heavy', 'Riposte', 'Thrust', 'Kick', 'BlockImpact', 'Parry', 'Deflected', 'Death_SplitCrown', 'Death_RunThrough', 'Fin_RunThrough', 'Pommel', 'Death_Hamstrung', 'Fin_Hamstrung', 'Death_Execution', 'Fin_Execution', ...SPECIAL_ROLES];
 // Match the gait to actual travel, including analog movement and collision stops.
 export function gaitWeights(speed: number): number[] {
   speed = Number.isFinite(speed) ? Math.max(0, speed) : 0;
@@ -205,10 +227,11 @@ export const SHIELD_CARRIERS: ReadonlySet<string> = new Set(['shieldmaiden', 've
 // The opponent with his rung kit grafted on (loadWarriors): the equip file in his hand, and the carry his scutum arm needs.
 export const armOpponent = (opponent: FighterAsset, kit: FighterAsset): FighterAsset => withShieldCarry(equipWeapon(opponent, kit));
 export function armWarriors(hero: FighterAsset, enemy: FighterAsset | undefined, weapons: [WeaponId, WeaponId], part?: FighterAsset | Error, equipFailed: (error: unknown) => void = () => {}, carry = false) {
+  { const ranged = (globalThis as { __SANDBOX_RANGED__?: (weapon: WeaponId) => Object3D | undefined }).__SANDBOX_RANGED__?.(weapons[0]); if (ranged) part = { scene: new Group().add(ranged) as Group, animations: part && !(part instanceof Error) ? part.animations : [] }; }   // sandbox-mech: a stand-in weapon shown as the staff / bow / crossbow model, keeping the stand-in's own clip family (the trident's Trident_Idle...) (sandbox/entry.ts); absent everywhere else
   if (carry && enemy) withShieldCarry(enemy);
   // `asset`: the hero's parsed file as the player was built from it, so a page that needs a second actor of the same rig (a remote player, a warm-up probe) builds it from this with buildWarriors (it clones) and fetches and parses nothing.
   if (part && !(part instanceof Error)) try { const armed = equipWeapon(hero, part); return { ...buildWarriors(armed, enemy, weapons), playerWeapon: weapons[0], asset: armed }; } catch (error) { part = error instanceof Error ? error : Error(String(error)); }
-  if (part) equipFailed(part);
+  if (part) { if ((globalThis as { __SANDBOX_RANGED__?: unknown }).__SANDBOX_RANGED__) (globalThis as { __SANDBOX_ERR__?: string }).__SANDBOX_ERR__ = String((part as Error).stack ?? part); equipFailed(part); }   // sandbox: keep why a ranged model fell back to the longsword
   const playerWeapon: WeaponId = part ? DEFAULT_WEAPON : weapons[0];
   return { ...buildWarriors(hero, enemy, [playerWeapon, weapons[1]]), playerWeapon, asset: hero };
 }
@@ -236,7 +259,7 @@ export function shapeMeshOf(scene: Object3D): Mesh {
 // The hero rig with the equip file's weapon in place of the sword pair (a WeaponDrawn is always in hand: no sheath), and the file's clips
 // played over warrior.glb's same-named ones. A copy: the loaded rig stays whole for the longsword fallback.
 export function equipWeapon(hero: FighterAsset, part: FighterAsset): FighterAsset {
-  const scene = clone(hero.scene) as Group, hand = scene.getObjectByName('hand_r'), weapon = part.scene.getObjectByName('WeaponDrawn');
+  const scene = clone(hero.scene) as Group, weapon = part.scene.getObjectByName('WeaponDrawn'), hand = scene.getObjectByName((weapon?.userData.hand as string | undefined) ?? 'hand_r');   // a part may name its hand (the sandbox bow: hand_l)
   if (!hand || !weapon) throw new Error('Equip file has no WeaponDrawn, or the rig no hand_r');
   // Whatever the rig carries goes: warrior.glb's sword pair, or an opponent's baked weapon (the Centurion's trident is WeaponDrawn, _1, _2).
   const carriedNodes: Object3D[] = []; scene.traverse(o => { if (/^(SwordSheathed|SwordDrawn|WeaponDrawn|WeaponSheathed)(_\d+)?$/.test(o.name)) carriedNodes.push(o); });
@@ -468,7 +491,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     for (const role of ONE_SHOT) { const action = actions[role]; if (!action) continue; action.setLoop(LoopOnce, 1); action.clampWhenFinished = true; action.paused = true; }
     if (opponent) actions.Idle.time = clips.Idle.duration * 0.4;
     mixer.update(0);
-    const ribbon = new BufferGeometry(), ribbonVertices = new Float32Array(6 * 6 * 3);
+    const ribbon = new BufferGeometry(), ribbonVertices = new Float32Array(24 * 6 * 3);   // 24 samples: a special's trail row may be longer than a swing's 7
     ribbon.setAttribute('position', new BufferAttribute(ribbonVertices, 3));
     const trail = new Mesh(ribbon, new MeshBasicMaterial({ color: '#e8dfc8', transparent: true, opacity: .12, side: DoubleSide, depthWrite: false }));
     trail.name = 'WeaponTrail'; trail.frustumCulled = false; trail.visible = false; anchor.add(trail);   // named: the Witch-fire hides it (witchfire.ts)
@@ -478,6 +501,29 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     let aimedRotation: Quaternion | undefined;
     const offHand = ['upperarm_l', 'lowerarm_l', 'hand_l'].map(n => root.getObjectByName(n)), swordHand = root.getObjectByName('hand_r');
     let aimedOffHand: [Quaternion, Quaternion] | undefined;
+    // A two-handed weapon in a special's one-handed clip (special-clips.json `twoHanded`, the grip gap in metres per weapon): re-solve the left arm onto the haft `gap` behind the sword hand, keeping the clip's own elbow bend
+    // (two-bone reach, the finishers' grip below). The left-arm bones are put back by the restore at the start of the next update (aimedOffHand).
+    const holdHaft = (gap: number) => {
+      const [upperL, lowerL, handL] = offHand;
+      if (!upperL?.parent || !lowerL || !handL || !swordHand || shieldArm) return;
+      root.updateWorldMatrix(true, true);
+      const s = upperL.getWorldPosition(new Vector3()), e = lowerL.getWorldPosition(new Vector3()), h = handL.getWorldPosition(new Vector3());
+      const pommelward = blade.localToWorld(new Vector3(0, -1, 0)).sub(blade.localToWorld(new Vector3())).normalize();
+      const goal = swordHand.getWorldPosition(new Vector3()).addScaledVector(pommelward, gap);
+      const a2 = s.distanceTo(e), b2 = e.distanceTo(h), dir = goal.clone().sub(s);
+      const d = Math.max(.03, Math.min(dir.length(), a2 + b2 - .001)); dir.normalize();
+      const along = (a2*a2 - b2*b2 + d*d) / (2*d), bend = e.clone().sub(s);
+      bend.addScaledVector(dir, -bend.dot(dir)); if (bend.lengthSq() < 1e-6) return; bend.normalize();
+      const elbow = s.clone().addScaledVector(dir, along).addScaledVector(bend, Math.sqrt(Math.max(0, a2*a2 - along*along)));
+      aimedOffHand ??= [upperL.quaternion.clone(), lowerL.quaternion.clone()];
+      for (const [bone, child, dest] of [[upperL, lowerL, elbow], [lowerL, handL, goal]] as const) {
+        root.updateWorldMatrix(true, true);
+        const origin = bone.getWorldPosition(new Vector3());
+        const delta = new Quaternion().setFromUnitVectors(child.getWorldPosition(new Vector3()).sub(origin).normalize(), dest.clone().sub(origin).normalize());
+        bone.quaternion.copy(bone.parent!.getWorldQuaternion(new Quaternion()).invert().multiply(delta).multiply(bone.getWorldQuaternion(new Quaternion())));
+      }
+      root.updateWorldMatrix(true, true);
+    };
     // The shield carry's state: whether he holds a shield on the off hand, the carry's, the guard lift's and the strike's eased weights, and the three
     // left-arm bones as the mixer left them (restored before every update, as the guard tilt is: a held clip does not rewrite them).
     let shieldArm = false, carry = 0, raise = 0, strike = 0, carried = false, faceLocal: Vector3 | undefined;
@@ -487,6 +533,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       const origin = bone.getWorldPosition(new Vector3()), delta = new Quaternion().setFromUnitVectors(child.getWorldPosition(new Vector3()).sub(origin).normalize(), dir);
       bone.quaternion.copy(bone.parent!.getWorldQuaternion(new Quaternion()).invert().multiply(new Quaternion().slerp(delta, amount)).multiply(bone.getWorldQuaternion(new Quaternion())));
     };
+    let specialRole: SpecialRole | null = null; const specialLoading = new Set<SpecialRole>();
+    let special: { samples: number; opacity: number; color: string } | null = null, trailKey = '';   // a melee special's weapon trail (sandbox specialTrail rows; the scene sets it while the special is in its swing): longer, brighter, on without the swing pose
     let slam = 0;   // Shield Quake's weight, 0 none, 1 the shield held up, 2 driven down (the scene sets it from the cast)
     function carryShield(amount: number, lift: number, open: number) {
       const [upperL, lowerL, handL] = offHand;
@@ -522,7 +570,11 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // relative to the pelvis, the fighter's right = −x): left +.14 m across, right −.23 m, overhead +.35 m up, low −.37 m down. Code-
     // tilted for the beta; the weapons lane replaces it with authored guard clips family by family. Blended so a slide never snaps.
     const spine1 = root.getObjectByName('spine_01'), spine2 = root.getObjectByName('spine_02');
-    const tilt = { yaw: 0, arm: 0, spine: 0 }, tilted = [spine1, spine2, upperArm].filter((b): b is NonNullable<typeof b> => !!b), untilted = tilted.map(b => b.quaternion.clone());
+    const hurtStyle = HURT_STYLES.find((h) => String(h.id) === new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get('hurt'));   // sandbox-mech hurtStyle
+    let hurtDrive = 0, readyDrive = 0;
+    const readyStyle = READY_STYLES.find((r) => String(r.id) === new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get('ready'));   // sandbox-mech readyStyle
+    const spine3 = root.getObjectByName('spine_03'), neckBone = root.getObjectByName('neck_01');
+    const tilt = { yaw: 0, arm: 0, spine: 0 }, tilted = [spine1, spine2, upperArm, spine3, neckBone].filter((b): b is NonNullable<typeof b> => !!b), untilted = tilted.map(b => b.quaternion.clone());
     let open: Opening | null = null, openW = 0;   // opening-pose.ts: the sim's open stagger on this body, and its eased weight
     let tired: Pick<Fatigue, 'level' | 'gassed' | 'second'> = { level: 0, gassed: 0, second: 0 }, tune: FatigueTune | undefined, breath = 0, calmWeight = 0;   // fatigue.ts: the tired-body layer (presentation only), its body's tuning, the breath clock and how calm the pose is
     // ?look=fatigue-read (fatigue-read.ts): the extra bones its pose moves, restored before every update like the guard tilt; empty and untouched without the flag.
@@ -575,6 +627,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // contact extras and the sim's blade tables stay: reach and contact never move. Its finish is GPT's painted one, never the rung's tint
       // (Strategy 2026-09-28: painted per band, no runtime tint on shaped weapons), so `grade` leaves it be. None = his own.
       reshape(shape: Mesh | undefined) {
+        if (weaponNode?.userData.sandboxRanged) return;   // sandbox: a ranged model stands in for the weapon; the rank's painted shape must not hide it
         if (!shape && !shaped.length) return;   // never shaped: nothing to give back, and his own draws' visibility stays the rig's
         for (const draw of shaped) draw.removeFromParent();
         shaped = [];
@@ -707,6 +760,16 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         return { added: added.map(d => d.name), hidden: [...lookHidden].map(d => d.name), tris, vertices, bodyFreed, maps: maps.size, gpuMB: +(gpuBytes / 2 ** 20).toFixed(1) };
       },
       slam(weight: number) { slam = weight; },
+      specialTrail(t: { samples: number; opacity: number; color: string } | null) { special = t; },
+      // The special clip to play while a special's swing runs (specialRoleOf; null clears it). Fetched on the first ask, and only for a weapon the row lists: until it lands, or on any other weapon, the swing plays the weapon's own clip.
+      specialMove(role: SpecialRole | null) {
+        specialRole = role;
+        // Once any special is asked for, fetch every special clip this weapon plays (a second slot's clip is otherwise first asked for on its first press, and that cast shows the weapon's own swing until it lands).
+        if (role) for (const r of SPECIAL_ROLES) if (!clips[r] && !specialLoading.has(r) && specialRow(r).weapons.includes(weapon) && isBowRole(r) === isBowRole(role)) {   // a bow carrier fetches the bow clips, a melee caster the melee ones
+          specialLoading.add(r);
+          void SPECIAL_LOADERS[r]().then(m => this.adoptClip(r, AnimationClip.parse(m.default as Parameters<typeof AnimationClip.parse>[0]))).catch(() => { specialLoading.delete(r); /* the weapon's own clip keeps playing */ });
+        }
+      },
       // Fatigue (fatigue.ts, Lead's brief B): the driver's value for this body this frame, and the body's own tuning (Goblin quick and shallow, Executioner slow and deep).
       opening(o: Opening | null) { open = o; },   // opening-pose.ts: this body's open stagger (Practice.opening when its side is this body), or null
       fatigue(f: Pick<Fatigue, 'level' | 'gassed' | 'second'>, t?: FatigueTune) { tired = f; tune = t; },
@@ -734,19 +797,22 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         actions.ArmedWalk.setEffectiveTimeScale((travelSpeed < 0 ? -1 : 1)*Math.max(WALK_RATE_MIN,speed/(1.7*stride)));
         actions.ArmedRun.setEffectiveTimeScale((travelSpeed < 0 ? -1 : 1)*Math.max(RUN_RATE_MIN,speed/(5.2*stride)));   // the sprint's ground speed is the gait table's 5.2 m/s knot
         for (const role of ['StrafeLeft', 'StrafeRight'] as const) actions[role].setEffectiveTimeScale(Math.max(WALK_RATE_MIN,speed/(.75*stride)));
-        const combatRole: Role | null = pose === 'block' ? 'BlockImpact' : pose === 'parry' ? 'Parry' : pose === 'deflected' ? 'Deflected' : pose === 'kick' ? 'Kick' : pose === 'attack' ? attack === 'return' ? 'Return' : attack === 'heavy' ? 'Heavy' : attack === 'riposte' ? 'Riposte' : attack === 'thrust' ? 'Thrust' : attack === 'pommel' ? 'Pommel' : 'Attack' : pose === 'hit' ? 'Hit' : pose === 'death' ? 'Death' : fin ? fin.role as Role : pose === 'draw' ? drawRole(weapon) : pose === 'roll' ? 'Roll' : pose === 'guard' ? 'Guard' : null;
+        let combatRole: Role | null = pose === 'block' ? 'BlockImpact' : pose === 'parry' ? 'Parry' : pose === 'deflected' ? 'Deflected' : pose === 'kick' ? 'Kick' : pose === 'attack' ? attack === 'return' ? 'Return' : attack === 'heavy' ? 'Heavy' : attack === 'riposte' ? 'Riposte' : attack === 'thrust' ? 'Thrust' : attack === 'pommel' ? 'Pommel' : 'Attack' : pose === 'hit' ? 'Hit' : pose === 'death' ? 'Death' : fin ? fin.role as Role : pose === 'draw' ? drawRole(weapon) : pose === 'roll' ? 'Roll' : pose === 'guard' ? 'Guard' : null;
+        const specialPlay = pose === 'attack' && specialRole && clips[specialRole] && specialRow(specialRole).weapons.includes(weapon) ? specialRole : null;   // the move's own clip, once adopted, in place of the weapon's strike clip
+        if (specialPlay) combatRole = specialPlay;
         const armed = pose !== 'sheathed';
         if (armed) { weights.Armed = weights.Idle; weights.Idle = 0; }
         const dead = pose === 'death' || fell;
         for (const role of roles) {
           const a = actions[role];
           const fade = tmpl === 'bisect' ? Math.min(1,progress/.04) : combatRole === null ? 0 : ['draw','guard','block','parry','deflected'].includes(pose) || fin?.side === 'killer' ? 1 : Math.min(1, progress * 12, dead ? 1 : (1 - progress) * 10);
-          const target = (weights[role] || 0) * (1 - fade) + Number(role === combatRole) * fade;
+          const hurtFade = hurtStyle && combatRole === 'Hit' ? fade * (hurtStyle.weight / 1000) : fade;
+          const target = (weights[role] || 0) * (1 - hurtFade) + Number(role === combatRole) * hurtFade;
           const activeBlade = pose === 'attack' && progress >= contact-1/specs[attack].recovery && progress <= contact+4/specs[attack].recovery;
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
           // the weight snaps like a live blade does — the parry's hit-stop runs at dt 0, where an eased weight would hold the attack pose.
           a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
-          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? swingProgress(progress, contact, specs[attack].source) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
+          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : specs[attack].source) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
         }
         if (!weaponNode) { drawn!.visible = armed && (pose !== 'draw' || progress >= .29); sheathed!.visible = !drawn!.visible; }
         anchor.position.set(0, 0, 0); // only the presentation anchor steps into a Run Through
@@ -763,19 +829,25 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         for (const k of ['yaw', 'arm', 'spine'] as const) tilt[k] += (guarding[k] - tilt[k]) * ease;
         // Two cascaded eases: the lean starts and stops at zero speed, so neither the hold nor the release pops.
         const follow = 1 - Math.exp(-step * 18);
-        leanDrive += (Number(!!lean && holding) - leanDrive) * follow; leaning += (leanDrive - leaning) * follow;
+        leanDrive += (Number(!PLAIN_POSTURE && !!lean && holding) - leanDrive) * follow; leaning += (leanDrive - leaning) * follow;
         if (leaning < 1e-3 && leanDrive < 1e-3) leaning = leanDrive = 0;
         const l = lean ?? NO_LEAN;
         // The tired body (fatigue.ts): breathing in the chest, a hunch, the sword arm sagging; only while the pose is calm (a swing's contact pose is the sim's blade).
         calmWeight += (Number(!dead && (pose === 'ready' || pose === 'guard' || pose === 'sheathed')) - calmWeight) * ease;
         breath += step * breathe(tired, tune); readBreath += step * readRate(tired, tune);
-        const layer = tired.level > 0 || tired.gassed > 0 || calmWeight > .001 ? fatigueLayer(tired, breath, calmWeight, tune) : null;
+        const layer = !PLAIN_POSTURE && (tired.level > 0 || tired.gassed > 0 || calmWeight > .001) ? fatigueLayer(tired, breath, calmWeight, tune) : null;
         openW += (openWeight(open) - openW) * (1 - Math.exp(-step * 30));   // quick: it follows the sim's own ramp, which is already eased
         if (openW < 1e-3 && !open) openW = 0;
-        const gap = dead || pose === 'attack' ? NO_OPEN : openPose(openW, open?.kind);
-        if (tilt.yaw || tilt.spine || tilt.arm || leaning || layer || gap !== NO_OPEN) {
+        const gap = PLAIN_POSTURE || dead || pose === 'attack' ? NO_OPEN : openPose(openW, open?.kind);
+        hurtDrive += ((hurtStyle && pose === 'hit' ? Math.sin(Math.min(1, progress) * Math.PI) : 0) - hurtDrive) * ease;   // up and back over the hurt, eased
+        if (hurtDrive < 1e-3) hurtDrive = 0;
+        readyDrive += ((readyStyle && (pose === 'ready' || pose === 'guard') ? 1 : 0) - readyDrive) * ease;
+        if (readyDrive < 1e-3) readyDrive = 0;
+        if (tilt.yaw || tilt.spine || tilt.arm || leaning || layer || gap !== NO_OPEN || hurtDrive || readyDrive) {
           tilted.forEach((b, i) => untilted[i].copy(b.quaternion)); tiltApplied = true;
           if (spine1) { spine1.rotation.y += tilt.yaw + leaning * l.yaw; spine1.rotation.z += leaning * l.side; }
+          if (readyStyle && readyDrive) { if (spine1) spine1.rotation.x += (readyDrive * readyStyle.s1) / 1000; if (spine2) spine2.rotation.x += (readyDrive * readyStyle.s2) / 1000; if (spine3) spine3.rotation.x += (readyDrive * readyStyle.s3) / 1000; if (neckBone) neckBone.rotation.x += (readyDrive * readyStyle.neck) / 1000; }
+          if (hurtStyle && hurtDrive) { if (spine1) { spine1.rotation.x += (hurtDrive * hurtStyle.s1) / 1000; spine1.rotation.y += (hurtDrive * hurtStyle.twist) / 1000; } if (spine2) spine2.rotation.x += (hurtDrive * hurtStyle.s2) / 1000; }
           if (spine2) { spine2.rotation.x += tilt.spine; spine2.rotation.z += leaning * l.chest; }
           if (upperArm) { upperArm.rotation.x += tilt.arm + leaning * (l.lift ?? 0); upperArm.rotation.y += leaning * l.arm; }
           if (gap !== NO_OPEN) { if (spine1) { spine1.rotation.x += gap.lean; spine1.rotation.z += gap.tilt; } if (upperArm) upperArm.rotation.x += gap.arm; }
@@ -793,12 +865,12 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
             if (layer) { if (spine1) spine1.rotation.x += layer.hunch; if (spine2) spine2.rotation.x += layer.chest; if (upperArm) upperArm.rotation.x += layer.arm; }
           }
         }
-        uprightW += (Number(!!upright && !dead && (pose === 'ready' || pose === 'guard')) - uprightW) * ease;
+        uprightW += (Number(!PLAIN_POSTURE && !!upright && !dead && (pose === 'ready' || pose === 'guard')) - uprightW) * ease;
         if (upright && uprightW > .001) {   // the counter-pitch on the calm pose (upright-ready.ts); restored at the top of the next update
           const b = uprightBones; b.forEach((bone, i) => bone && uprightSaved[i].copy(bone.quaternion)); uprightApplied = true;
           if (b[0]) b[0].rotation.x += upright.spine2 * uprightW; if (b[1]) b[1].rotation.x += upright.spine3 * uprightW; if (b[2]) b[2].rotation.x += upright.neck * uprightW;
         }
-        stanceW += (Number(stance !== 'neutral' && !dead && (pose === 'ready' || pose === 'guard')) - stanceW) * ease; stanceClock += step;
+        stanceW += (Number(!PLAIN_POSTURE && stance !== 'neutral' && !dead && (pose === 'ready' || pose === 'guard')) - stanceW) * ease; stanceClock += step;
         if (stanceW > .001) {   // ?look=stances: the stance's bones on top of the calm pose (stance-pose.ts); restored at the top of the next update
           const sp = stancePose(stance, stanceW, stanceClock), b = stanceBones;
           b.forEach((bone, i) => bone && stanceSaved[i].copy(bone.quaternion)); if (b[0]) stancePelvis.copy(b[0].position); stanceApplied = true;
@@ -812,6 +884,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         carry += (Number(shieldHeld) - carry) * ease; raise += (Number(guardUp) * gap.guard * (1 - GUARD_DROP * Math.max(tired.level, tired.gassed) * calmWeight) - raise) * ease; strike += (Number(cutting) - strike) * ease;
         if (carry < .001) carry = 0;
         carryShield(carry, raise, strike);
+        const haftGap = specialPlay ? (SPECIAL_CLIP_ROWS as { twoHanded?: Record<string, number> }).twoHanded?.[weapon] : undefined;
+        if (haftGap) holdHaft(haftGap);   // a two-handed weapon's special plays a one-handed clip: the left hand stays on the haft
         spectralLife = spectral?.(step, dead, progress, fell && (tmpl === 'bisect' || staged), fell && tmpl === 'hamstring' ? HAMSTRUNG_BEATS.duration + .6 : fell && tmpl === 'execute' ? EXECUTION_BEATS.duration / EXECUTION_BEATS.speed + .6 : 3.6) ?? 1;   // the ghost outlasts the whole scene, as it outlasts Opened's separation
         droppedWeapon?.apply(fell && tmpl === 'hamstring' ? (progress - HAMSTRUNG_BEATS.knee) * HAMSTRUNG_BEATS.duration : fell && tmpl === 'execute' ? (progress - EXECUTION_BEATS.drop) * EXECUTION_BEATS.duration / EXECUTION_BEATS.speed : -1);   // seconds since the knee blow; negative keeps it in his hand
         root.rotation.z = pose === 'hit' ? Math.sin(Math.PI*Math.min(1,progress))*(attack === 'return' ? -.12 : .12) : recoil*.06;
@@ -831,12 +905,13 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           upperArm.quaternion.premultiply(new Quaternion().slerp(new Quaternion().setFromUnitVectors(from, to), amount));
           root.updateWorldMatrix(true, true);
         }
-        trail.visible = pose === 'attack' && progress > contact * .7 && progress < contact + .18;
+        trail.visible = (pose === 'attack' && progress > contact * .7 && progress < contact + .18) || (!!special && !dead);
+        { const key = special ? `${special.opacity}|${special.color}` : ''; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? .12; m.color.set(special?.color ?? '#e8dfc8'); } }
         if (trail.visible && step > 0) {
           anchor.updateWorldMatrix(true, true);
           const override = combatRole && contactByClip?.[clips[combatRole].name], strike = override ? [override.from, override.to] : segment;
           samples.unshift(strike.map(y => anchor.worldToLocal(blade.localToWorld(new Vector3(0, y, 0)))));
-          if (samples.length > 7) samples.pop();
+          while (samples.length > Math.min(24, special?.samples ?? 7)) samples.pop();
           let offset = 0;
           for (let i = 1; i < samples.length; i++) for (const point of [samples[i-1][0],samples[i-1][1],samples[i][0],samples[i][0],samples[i-1][1],samples[i][1]]) { point.toArray(ribbonVertices, offset); offset += 3; }
           ribbon.setDrawRange(0, offset / 3); ribbon.attributes.position.needsUpdate = true;

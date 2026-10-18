@@ -1,7 +1,7 @@
 import { decide, initialAi, readOpponent, type AiMode, type AiState } from './ai.ts';
 import type { HitLocation } from './blade.ts';
 import type { Sheet } from './sheet-rows.ts';
-import { inBufferWindow, initialDuel, legal, type DuelPose, withGambit, withSheet, withSpecials, withSpell, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
+import { inBufferWindow, initialDuel, legal, type DuelPose, withGambit, withSheet, withSpecials, withSpell, withSpell2, withSkill2, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
 import type { Spell } from './spell-cast.ts';
 import { asStance, moodOf, type PickedStance } from './stance.ts';
 import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, BASH_MOVE, SKILL_ROWS, skillOfMove, type AiProfile, type MoveId, type Opponent, type PathId, type SkillId, type SpecialName, type Weapon, type WeaponId } from './moves.ts';
@@ -153,13 +153,15 @@ export function project(duel: Duel, ai: AiState, previous?: Practice, intent?: I
   };
 }
 // `specials`: the fight has Special Moves (duel.ts withSpecials: the ladder level picks the opponent's share, `aiSkill` names his special).
-export const initialPractice = (seed = 731, opponent: Opponent = OPPONENTS.veteran, weapon: WeaponId = DEFAULT_WEAPON, skill: SkillId | null = null, specials?: { level: number; aiSkill: SkillId | null; name?: SpecialName | null }, gambit?: number, stance?: PickedStance, pose?: DuelPose, sheet?: Sheet, spell?: Spell): Practice => {   // spell: the player's spell (RV53, spell-cast.ts): needs the specials; the record's flag, the draw seeded by this fight's seed
+export const initialPractice = (seed = 731, opponent: Opponent = OPPONENTS.veteran, weapon: WeaponId = DEFAULT_WEAPON, skill: SkillId | null = null, specials?: { level: number; aiSkill: SkillId | null; name?: SpecialName | null }, gambit?: number, stance?: PickedStance, pose?: DuelPose, sheet?: Sheet, spell?: Spell, spell2?: Spell, foeSpell?: Spell, skill2?: SkillId): Practice => {   // foeSpell (sandbox opponent spells): the opponent's spell, slot 1   // spell: the player's spell (RV53, spell-cast.ts): needs the specials; the record's flag, the draw seeded by this fight's seed
    // stance: the fight has stances (RV34, the record's flag): the player's pick, and the opponent's mood drawn from the seed   // sheet: the player's sheet (RV48, sheet-rows.ts)   // gambit: the fight has the Gambit (RV33, the record's flag); its draws are seeded by this number, the fight's own seed
   const duel = specials ? withSpecials(initialDuel(opponent, weapon, skill, pose), specials.level, specials.aiSkill, undefined, specials.name) : initialDuel(opponent, weapon, skill, pose);
   const armed = gambit === undefined ? duel : withGambit(duel, gambit);
   const staged = stance === undefined ? armed : withStances(armed, asStance(stance), asStance(moodOf(seed, opponent.id)));
   const sheeted = sheet ? withSheet(staged, [sheet, undefined]) : staged;
-  return project(spell ? withSpell(sheeted, 0, spell, seed) : sheeted, initialAi(seed));   // sheet (RV48): the player's sheet, slot 0; the record's flag, never a number a client sent
+  const armedSpell = spell ? withSpell(sheeted, 0, spell, seed) : sheeted;
+  const armedTwo = spell2 ? withSpell2(armedSpell, 0, spell2) : skill2 ? withSkill2(armedSpell, 0, skill2) : armedSpell, armedFoe = foeSpell ? withSpell(armedTwo, 1, foeSpell, seed) : armedTwo;
+  return project(armedFoe, initialAi(seed));   // sheet (RV48): the player's sheet, slot 0; the record's flag, never a number a client sent
 };
 // `layer`: a world layer that rewrites the warden's intent AFTER decide() (src/fight/mobkit.ts: signature moves; sparring.ts does the same for the dummy). Absent = today's fight, the same intent object.
 export function stepPractice(current: Practice, intent: Intent, profile: AiProfile = PROFILES.normal, layer?: (duel: Duel, warden: Intent) => Intent): Practice {

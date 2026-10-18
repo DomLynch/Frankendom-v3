@@ -20,5 +20,6 @@
     {"id": "pvp2", "kind": "pvp", "slot": 2, "percent": 50},
     {"id": "pvp3", "kind": "pvp", "slot": 3, "percent": 30},
     {"id": "pvp4", "kind": "pvp", "slot": 4, "percent": 30}
-  ]
+  ],
+  "attackers": []
 }

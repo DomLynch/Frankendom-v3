@@ -9,6 +9,7 @@ import { hasBlood } from '../roster.ts';
 import { blockDust, HEAVY_CLASS, clashStrength, createClashSparks } from './clash-sparks.ts';
 import { shoveFor, type Shove } from './camera-kick.ts';
 import { ROLL_TUMBLE, attackerOf, impactShove } from './hit-impact.ts';
+import { CONTACTS } from './hit-stop-rows.ts';
 import { FLINCH_GAIN, isFleshHit, type Flinch, type armfeelFrom } from './armfeel.ts';
 import type { createBurstPool } from './armfeel-fx.ts';
 import type { createFootDust } from './foot-dust.ts';
@@ -191,8 +192,11 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
           enemyHurt ? OPPONENTS[opponentId].scale : 1);
       // Steel on steel: a block or parry of a metal blade by a blade guard throws metal sparks from the attacker's blade (clash-sparks.ts);
       // the generic contact dots stay for everything else (a shaft catching a blade, a kick, a fist).
-      const clashEvent = blow ? undefined : events.find((e) => e.type === 'Blocked' || e.type === 'Parried');
-      const strength = clashEvent ? clashStrength(clashEvent, weaponOf(practice.duel.fighters[clashEvent.actor].weapon)) : 0;
+      // sandbox-mech impact: a guard break may throw the same clash sparks when its hit-stop-defs row carries a `sparks` strength (no column: nothing, as on trunk).
+      // GuardBroken names the attacker `actor`; a clash names the DEFENDER `actor`, so the event is swapped to the clash's sides.
+      const breakSparks = (CONTACTS.guardBreak as { sparks?: number }).sparks ?? 0, broken = breakSparks > 0 ? events.find((e) => e.type === 'GuardBroken' && e.target !== undefined) : undefined;
+      const clashEvent = broken ? { ...broken, actor: broken.target!, target: broken.actor } : blow ? undefined : events.find((e) => e.type === 'Blocked' || e.type === 'Parried');
+      const strength = broken ? breakSparks : clashEvent ? clashStrength(clashEvent, weaponOf(practice.duel.fighters[clashEvent.actor].weapon)) : 0;
       if (clashEvent && strength > 0 && clashEvent.target !== undefined) {
         const attacker = clashEvent.target,
           rig = attacker ? warriors?.opponent : warriors?.player,
