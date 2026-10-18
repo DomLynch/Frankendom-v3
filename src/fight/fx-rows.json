@@ -127,6 +127,7 @@
     { "id": "fp.fov-landscape", "fields": {"value": 72} },
     { "id": "fp.fov-portrait", "fields": {"value": 80} },
     { "id": "warband.enabled", "fields": {"value": 1} },
+    { "id": "warband.min-band", "fields": {"value": 2} },
     { "id": "warband.horn-run-speed", "fields": {"value": 4.2} },
     { "id": "warband.horn-reach", "fields": {"value": 1} },
     { "id": "warband.rally-count", "fields": {"value": 4} },
