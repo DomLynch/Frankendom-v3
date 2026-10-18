@@ -13,6 +13,7 @@ import { catalogueRow } from './catalogue-rows.ts';
 import { PLAIN_DEATH } from './finisher-look.ts';
 
 import { hash32 } from './bout-seed.ts';
+import { dropReason } from './record-drop-rows.ts';   // the wire strings for "why this kill has no record" are rows (record-drop-defs.json)
 import { ME, STEP, cm, createWorldRecorder, heroClean, heroDirty, hurtOf, joinFighter, quantStep, stepHero, type RecordHero, type WorldRecord, type JoinEvent } from './world-record.ts';
 export { ME, STEP };
 export const JOIN_M = AGGRO_M + worldRule('joinPad'), JOIN_WAIT_S = worldRule('joinWait'), DROP_M = AGGRO_M + worldRule('dropPad'), FALL_S = worldRule('fall'), PULSE_S = worldRule('pulse'), MAX_STEPS = worldRule('maxSteps');   // 15 steps = 0.25 s of catch-up per frame (was 6: any frame over 100 ms silently dropped fight time). No higher: a creature acts inside the catch-up while the page was frozen, and the fastest creature cycle is longer than 15 ticks, so at most ONE swing can land in a frame (tested).
@@ -71,6 +72,9 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const gearOf = () => gear;
   const me = (): Fighter => world.fighters[0]!;
   const recorder = createWorldRecorder();
+  let dropped: string | null = null, windowOpen = false, windowKey = '';   // windowOpen: a record window is open (opened at a clean join, not yet dropped); windowKey: the hero() view (gear, level, weapon, sheet) the window opened on
+  /** The window is only good for the sheet it opened on: if hero() has moved since (a mid-window equip, the gear view landing after the loadout gate timed out), drop it with the gear-change reason, whether or not anyone called heroChanged() (the worn-gear path and the late gear view did not). */
+  const checkWindow = () => { if (windowOpen && JSON.stringify(mine()) !== windowKey) { recorder.discard(); windowOpen = false; dropped = dropReason('gearChange'); } };   // why the open window was dropped (a record-drop row's reason), sent on the kill report next to a missing record; cleared when a window opens
   const heroBody = (): RecordHero => { const m = me(), g = gearOf(); return { level: g.level, weapon: mine().weapon ?? DEFAULT_WEAPON, ...(mine().sheet ? { sheet: mine().sheet } : {}), ...(m.spell ? { spell: mine().spell } : {}), ...(m.spell2 ? { spell2: mine().spell2 } : {}), ...(m.skill ? { skill: m.skill } : {}), ...(m.skill2 ? { skill2: m.skill2 } : {}), health: m.health, stamina: m.stamina, posture: m.posture, exhausted: m.exhausted, ...(m.hurt ? { hurt: m.hurt } : {}) }; };
   function release(id: string) { prevPose.delete(id); recorder.release(id); d.onCreatureGone?.(id); d.mobs()?.drive(id, null); specs.delete(id); fx.delete(id); contacts.delete(id); lastDuel.delete(id); world = { ...world, fighters: world.fighters.filter((f) => f.id !== id) }; }
   /** The live hero is built from hero() ONCE, at load; the gear and the sheet arrive later. At a clean window open (no creature, no open bout) rebuild him from hero() as it stands now at his current place, so the live fighter and the record's heroBody() are the same hero (live == record, Auditor #2569). Health keeps its fraction; stamina, posture and exhaustion carry. Never mid-bout. */
@@ -82,7 +86,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   }
   function join(p: { spec: S; x: number; z: number; dist: number }) {
     const kind = kindOf(p.spec.body); if (!kind || specs.has(p.spec.id) || heroDead) return;
-    if (specs.size === 0) { gear = gearFrom(); if (heroClean(world)) { const hurt = hurtOf(world); rebody(); world = { ...world, fighters: world.fighters.map((f, i) => { if (i) return f; const next = { ...f }; delete next.hurt; return hurt ? { ...next, hurt, maxStamina: hurt.cap } : next; }), streams: {} }; recorder.open(heroBody()); } else recorder.discard(); }   // streams dropped: his last bout's lastMove / chain would otherwise carry into this fight, while the replay starts him fresh (P0-b)   // a creature joins an empty loop: a record window opens at his body now
+    if (specs.size === 0) { gear = gearFrom(); if (heroClean(world)) { const hurt = hurtOf(world); rebody(); world = { ...world, fighters: world.fighters.map((f, i) => { if (i) return f; const next = { ...f }; delete next.hurt; return hurt ? { ...next, hurt, maxStamina: hurt.cap } : next; }), streams: {} }; recorder.open(heroBody()); dropped = null; windowOpen = true; windowKey = JSON.stringify(mine()); } else { recorder.discard(); windowOpen = false; dropped = dropReason('heroUnclean'); } }   // streams dropped: his last bout's lastMove / chain would otherwise carry into this fight, while the replay starts him fresh (P0-b)   // a creature joins an empty loop: a record window opens at his body now
     const token = d.engageToken?.(p.spec.id), seed = token ? hash32(token, recorder.steps()) : undefined;   // the record's own step index: the replay and the server know it (a world clock tick is not in the record)
     const j: JoinEvent = { s: 0, id: p.spec.id, kind, x: cm(p.x), z: cm(p.z), level: p.spec.level, ...(seed === undefined ? {} : { seed }) };   // the pose is quantized before the sim sees it, so a replay joins the same creature
     recorder.join(j.id, j.kind, p.x, p.z, j.level, seed); specs.set(p.spec.id, p.spec); world = { ...world, fighters: [...world.fighters, joinFighter(j)] };
@@ -112,7 +116,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     /** A roll / dodge pressed: the world-axis direction (zero = where he faces). */
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
     /** The page's build_get or worn-gear view just answered (hero() may now give another sheet): the idle hero is rebuilt once at the next idle frame, not by polling hero() every frame. */
-    heroChanged() { rebuild = true; if (specs.size > 0 && JSON.stringify(mine()) !== builtKey) recorder.discard(); },   // P0-b (Lead): a gear change INSIDE an open window drops that window's record, so nothing is paid on a stale sheet; the fight goes on with the body it started with and the next window opens on the new one   // P0-b (Lead): a gear change INSIDE an open window drops that window's record, so nothing is paid on a stale sheet; the fight goes on with the body it started with and the next window opens on the new one
+    heroChanged() { rebuild = true; if (specs.size > 0) checkWindow(); },   // P0-b (Lead): a gear change INSIDE an open window drops that window's record, so nothing is paid on a stale sheet; the fight goes on with the body it started with and the next window opens on the new one   // P0-b (Lead): a gear change INSIDE an open window drops that window's record, so nothing is paid on a stale sheet; the fight goes on with the body it started with and the next window opens on the new one
     /** The SKILL / cast press: the hero's equipped spell starts its cast on the next step if he is free and has the stamina (the Pit's special slot); with no spell it does nothing. */
     cast() { pendingCast = true; },
     /** The second slot's press (spell-slot-defs.json slot b): its own spell and cooldown; with no second spell it does nothing. */
@@ -170,9 +174,11 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       contacts.clear(); return out;
     },
     /** After he died and stood up in town: a fresh body, nothing hunting him. */
-    reset(hero: { x: number; z: number; facing: number }): void { for (const id of [...specs.keys()]) release(id); recorder.discard(); world = newWorld([body(hero.x, hero.z, hero.facing)]); builtKey = JSON.stringify(mine()); heroDead = false; acc = 0; },
+    reset(hero: { x: number; z: number; facing: number }): void { for (const id of [...specs.keys()]) release(id); recorder.discard(); windowOpen = false; dropped = null; world = newWorld([body(hero.x, hero.z, hero.facing)]); builtKey = JSON.stringify(mine()); heroDead = false; acc = 0; },
     /** The record of the fight so far (open since a creature joined an empty loop), packed for kill_report, or null (none, or it outgrew its bounds). Call it from onKill: the window stays until the next one opens. */
-    record: (): WorldRecord | null => recorder.take(),
+    record: (): WorldRecord | null => { checkWindow(); return recorder.take(); },
+    /** Why the kill has no record (a record-drop row's reason: 'gear-change', 'hero-unclean'), or null when there is a record or no reason is known (plain "no record"). Call it from onKill next to record(). */
+    recordDrop: (): string | null => { checkWindow(); return recorder.take() ? null : dropped; },
     /** Why a record window cannot open right now (the first thing about the hero a record cannot carry), or null when it can: a diagnostic for the battery and the trace. */
     recordDirty: (): string | null => heroDirty(world),
     /** The hero's own duel, for the engine's actorPose (null before his first step). */

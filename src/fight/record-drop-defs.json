@@ -1,0 +1,7 @@
+{
+  "about": "Why the page sent a kill without a world record (P0-b, Lead/Strategy): a window dropped for a reason reaches the server as its own string on the kill report (`drop`), next to plain 'no record'. The ids are what the loop names (world-combat.ts); the reason is what goes on the wire and what the Auditor's /internal/world-records tally counts. Presentation of nothing: the sim never reads this file.",
+  "drops": [
+    { "id": "gearChange", "reason": "gear-change" },
+    { "id": "heroUnclean", "reason": "hero-unclean" }
+  ]
+}
