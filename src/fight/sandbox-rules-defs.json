@@ -25,26 +25,6 @@
    "value": 25
   },
   {
-   "id": "oneButton",
-   "value": 1
-  },
-  {
-   "id": "plainPosture",
-   "value": 1
-  },
-  {
-   "id": "heavyHold",
-   "value": 220
-  },
-  {
-   "id": "stabHalfAngle",
-   "value": 50
-  },
-  {
-   "id": "stabSlide",
-   "value": 18
-  },
-  {
    "id": "bandOff",
    "value": 400
   },
@@ -818,52 +798,6 @@
    "dial": "stamina",
    "atLeast": 20,
    "percent": 10
-  }
- ],
- "hurtStyles": [
-  {
-   "id": 1,
-   "weight": 350,
-   "s1": -160,
-   "s2": -140,
-   "twist": 0
-  },
-  {
-   "id": 2,
-   "weight": 450,
-   "s1": -50,
-   "s2": -60,
-   "twist": 350
-  },
-  {
-   "id": 3,
-   "weight": 250,
-   "s1": -220,
-   "s2": -200,
-   "twist": -120
-  }
- ],
- "readyStyles": [
-  {
-   "id": 1,
-   "s1": -120,
-   "s2": -120,
-   "s3": -80,
-   "neck": -100
-  },
-  {
-   "id": 2,
-   "s1": -220,
-   "s2": -200,
-   "s3": -140,
-   "neck": -160
-  },
-  {
-   "id": 3,
-   "s1": -320,
-   "s2": -280,
-   "s3": -200,
-   "neck": -220
   }
  ],
  "specialCue": [

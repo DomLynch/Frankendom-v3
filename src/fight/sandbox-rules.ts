@@ -68,28 +68,10 @@ export const executed = (damage: number, critical: boolean, targetHealth: number
   return EXECUTE_BELOW && (targetHealth * 100) / targetMax <= EXECUTE_BELOW ? Math.max(hit, targetHealth) : hit;
 };
 
-// oneButton (Dom 2026-10-13, touch layout A): the STRIKE button decides its swing by the thumb. A release before `heavyHold` ms is the plain light, a slide up of `stabSlide` px is the thrust, a slide to a side is that cut (the
-// existing slashSlide), a hold past `heavyHold` ms is the heavy (and keeps charging while held). Input intent only: the fight already takes every one of those actions. 0 = off (trunk): the button is today's Light.
-export let ONE_BUTTON = num('oneButton', 'value');
-export let HEAVY_HOLD_MS = num('heavyHold', 'value') || 180;
-export let STAB_SLIDE_PX = num('stabSlide', 'value') || 18;
 
-// stabHalfAngle (degrees): a slide within this of straight up is the stab (the wedge drawn on STRIKE); anything else is the cut to its side. The test itself is input.ts stabSector (trigonometry stays out of this sim-listed file).
-export let STAB_HALF_ANGLE = num('stabHalfAngle', 'value') || 50;
 
-// hurtStyle (Dom 2026-10-13: the bent-over hurt stagger "looks shit and we can do better"): `?hurt=1|2|3` picks a row of sandbox-rules-defs.json `hurtStyles` { id, weight, s1, s2, twist }: `weight` is how much of the recorded Hit clip stays (per-mille of the
-// normal blend, the rest is the standing pose), `s1` / `s2` (radians, per-mille) lean the lower and upper spine (negative = back), `twist` turns the lower spine. Presentation only (characters.ts, after the mixer); no row picked = today's hurt.
-export type HurtStyle = { id: number; weight: number; s1: number; s2: number; twist: number };
-export let HURT_STYLES: readonly HurtStyle[] = rowsOf<HurtStyle>('hurtStyles');
 
-// readyStyle (Dom 2026-10-14: "this dumb pose", the armed ready stance, bent forward over the sword): `?ready=1|2|3` picks a row of sandbox-rules-defs.json `readyStyles` { id, s1, s2, s3, neck } (radians, per-mille, added to the
-// lower, middle and upper spine and the neck while the fighter stands armed and calm; negative = back/up). Presentation only, characters.ts after the mixer; no row picked = today's stance.
-export type ReadyStyle = { id: number; s1: number; s2: number; s3: number; neck: number };
-export let READY_STYLES: readonly ReadyStyle[] = rowsOf<ReadyStyle>('readyStyles');
 
-// plainPosture (Dom 2026-10-14: "remove all of the posture effects ... just use the vanilla base model"): 1 = the character driver adds no procedural posture on top of the recorded clips: no tired-body hunch and sagging sword arm, no
-// open-stagger lift and lean, no charge lean, no stance silhouette. Guard-side tilt (the sides a guard covers) and every finisher stay as they are. 0 = off (trunk).
-export let PLAIN_POSTURE = num('plainPosture', 'value') > 0;
 
 // reachBands (Dom 2026-10-14, positioning gates; Strategy: soft x0.6, never soften a hard miss; NO on-screen marker, Dom: cheap): the distance between the fighters when the blow was THROWN (duel.ts attackFrom.gap, the same read as the pole's minReach; the lunge closes the gap before it lands) falls in a band (`bands` rows,
 // { id, upTo } in centimetres, ascending); each weapon has a best band (`bandBest` rows, { weapon, band }). A landed blow outside its weapon's band deals `bandOff` per-mille of its damage; inside it, all of it. A pole thrust inside
@@ -349,13 +331,6 @@ export function applySandboxEra(): void {
 });
   EXECUTE_MULT = num('executeMult', 'value');
   EXECUTE_BELOW = num('executeBelow', 'value');
-  ONE_BUTTON = num('oneButton', 'value');
-  HEAVY_HOLD_MS = num('heavyHold', 'value') || 180;
-  STAB_SLIDE_PX = num('stabSlide', 'value') || 18;
-  STAB_HALF_ANGLE = num('stabHalfAngle', 'value') || 50;
-  HURT_STYLES = rowsOf<HurtStyle>('hurtStyles');
-  READY_STYLES = rowsOf<ReadyStyle>('readyStyles');
-  PLAIN_POSTURE = num('plainPosture', 'value') > 0;
   BANDS = rowsOf<BandRow>('bands').slice().sort((a, b) => a.upTo - b.upTo);
   BAND_BEST = rowsOf<BandBestRow>('bandBest');
   BAND_OFF = num('bandOff', 'value');
