@@ -47,8 +47,9 @@ export function impactStopMs(events: readonly CombatEvent[]): number {
   return (frames * 1000) / 60;
 }
 
-// The knock, AWAY from the side the blow arrives from on screen. `screen` is metres along the camera's right (+ = right); 4 cm is ~2.5 %
-// of a 375-wide portrait frame at duel distance (~3.5 m, 25° across). The move's direction is the attacker's side; the camera sits behind
+// The knock, AWAY from the side the blow arrives from on screen. `screen` is metres along the camera's right (+ = right); 4 cm is
+// 4.0 to 4.2 px of a 375-wide portrait frame at the fight camera, about 1.1 px per cm (MEASURED on the Mac GPU, #3134: 2.5 cm 2.6 to 3.0 px, 4 cm 4.0 to 4.2 px, 5 cm 4.9 to 5.6 px;
+// this comment used to say "~2.5 % of the frame", about 9 px, which overstated it 2.3x: do not tune a jolt from that figure). The move's direction is the attacker's side; the camera sits behind
 // the player, so a blow on the player arrives mirrored (right -> from screen left: the camera goes right) and a blow on the opponent
 // arrives as named (right -> from screen right: the camera goes left). An overhead, a thrust, a low blow, a kick or a skill with no side
 // arrives from above or in front: the camera drops by the knock instead. A parry instead jolts the camera TOWARD the attacker (`push`,
