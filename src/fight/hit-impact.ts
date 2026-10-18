@@ -10,13 +10,16 @@ import type { CombatEvent } from './duel.ts';
 import type { Direction } from './moves.ts';
 import { CONTACTS, KICK_DROP, KNOCK_SETTLE, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
 
-export type Tier = 'full' | 'half' | 'parry' | 'block';
+export type Tier = 'special' | 'full' | 'half' | 'parry' | 'block';
 // Guard tiers (Dom 2026-09-29, "implement this also"): a PARRY is the longest beat in the game (70 ms + 11 frames = 253 ms, a heavy hit is
 // 90 + 5 = 173) with a small jolt TOWARD the attacker; a BLOCK is a short freeze with a half-strength knock back from the blow.
 export const IMPACT = {
+  special: { frames: CONTACTS.special.frames, knock: CONTACTS.special.knock, push: CONTACTS.special.push },   // a skill's contact is its own beat, heavier than a heavy (the `special` row; was the heavy's 5 frames)
   full: { frames: CONTACTS.hitHeavy.frames, knock: CONTACTS.hitHeavy.knock, push: CONTACTS.hitHeavy.push }, half: { frames: CONTACTS.hitLight.frames, knock: CONTACTS.hitLight.knock, push: CONTACTS.hitLight.push },
   parry: { frames: CONTACTS.parry.frames, knock: CONTACTS.parry.knock, push: CONTACTS.parry.push }, block: { frames: CONTACTS.blockLight.frames, knock: CONTACTS.blockLight.knock, push: CONTACTS.blockLight.push },
 } as const;
+/** The tier the weapon's own hold (armfeel.weaponHoldMs) sees: a skill holds as the heavy it always was; parries and blocks hold nothing extra. */
+export const HOLD_TIER: Readonly<Record<Tier, 'full' | 'half' | null>> = { special: 'full', full: 'full', half: 'half', parry: null, block: null };
 export { KNOCK_SETTLE };   // seconds: the knock is back in 120 ms (a `feel` row in hit-stop-defs.json)
 // Kick and roll (Dom 2026-09-30, pick C of the ?look=hitfx-kick / hitfx-roll clips: "implement and get live"). A LANDED kick, either side,
 // is its own beat: the whole stop is 2 frames (not a hit's 50 ms + 3) and the camera drops 10 cm straight down, back in 120 ms. The
@@ -31,7 +34,8 @@ export function impactTier(e: CombatEvent): Tier | null {
   if (e.type === 'Parried') return 'parry';
   if (e.type === 'Blocked') return 'block';
   if (e.type !== 'Hit') return null;
-  return e.charged || HEAVY_CLASS.has(e.move ?? '') || e.move?.startsWith('skill_') ? 'full' : 'half';
+  if (e.move?.startsWith('skill_')) return 'special';
+  return e.charged || HEAVY_CLASS.has(e.move ?? '') ? 'full' : 'half';
 }
 // Event sides (duel.ts): a landed blow names the attacker `actor`; a defence (Blocked, Parried) names the DEFENDER `actor`, the attacker `target`.
 export const attackerOf = (e: CombatEvent): number | undefined => (e.type === 'Blocked' || e.type === 'Parried' ? e.target : e.actor);
@@ -43,8 +47,9 @@ export function impactStopMs(events: readonly CombatEvent[]): number {
   return (frames * 1000) / 60;
 }
 
-// The knock, AWAY from the side the blow arrives from on screen. `screen` is metres along the camera's right (+ = right); 4 cm is ~2.5 %
-// of a 375-wide portrait frame at duel distance (~3.5 m, 25° across). The move's direction is the attacker's side; the camera sits behind
+// The knock, AWAY from the side the blow arrives from on screen. `screen` is metres along the camera's right (+ = right); 4 cm is
+// 4.0 to 4.2 px of a 375-wide portrait frame at the fight camera, about 1.1 px per cm (MEASURED on the Mac GPU, #3134: 2.5 cm 2.6 to 3.0 px, 4 cm 4.0 to 4.2 px, 5 cm 4.9 to 5.6 px;
+// this comment used to say "~2.5 % of the frame", about 9 px, which overstated it 2.3x: do not tune a jolt from that figure). The move's direction is the attacker's side; the camera sits behind
 // the player, so a blow on the player arrives mirrored (right -> from screen left: the camera goes right) and a blow on the opponent
 // arrives as named (right -> from screen right: the camera goes left). An overhead, a thrust, a low blow, a kick or a skill with no side
 // arrives from above or in front: the camera drops by the knock instead. A parry instead jolts the camera TOWARD the attacker (`push`,
