@@ -5,6 +5,7 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
+export { fxNum } from './fx-rows.ts';   // the presentation rows (fx-rows.json): the zone page and the war band read their tunings through the door
 export { pickSpell } from './spell-pick.ts';   // the equipped-spell pick (the Zone 1 page casts through the door)
 export type { Match } from './match.ts';   // type only (origins/preview/world-record.ts reads a Match without importing the Pit's flow module)
 export type { WorldMount } from './scene.ts';
@@ -53,3 +54,4 @@ export const loadSpellInfo = () => Promise.resolve()
 export { createFollowCamera, inPassage, type CombatCam, type CombatFraming, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
 export { MAX_ATTACKERS } from './attackers.ts';
 export { finishedAs, tinted } from './rank-tint.ts';   // a finish row on a piece's metal, and a piece at its rung's finish (the ground-item view, origins/preview)
+export { setFightBack } from './camera.ts';   // a zone's camera.fightBack scale for the duel's lock camera (the page sets it on resize)

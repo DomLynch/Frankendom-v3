@@ -10,9 +10,10 @@ import { finisherRow, type FinisherId } from './finishers.ts';
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
 const LOCK_BACK_FLOOR = cameraRule('lockBackFloor'), LOCK_LIFT_FLOOR = cameraRule('lockLiftFloor'), LOCK_GAP_FLOOR = cameraRule('lockGapFloor');   // the lock camera never backs closer than 4.2 m, never sits lower than 3.2 m, and treats a foe nearer than 0.8 m as 0.8 m away
-let FIGHT_BACK = cameraRule('fightBackDefault');   // how much further back and up the lock camera stands (a zone's `camera.fightBack`, set once by the page; the row's 1 = the duel as it always was)
+let FIGHT_BACK = cameraRule('fightBackDefault');   // how much further back and up the lock camera stands (a zone's `camera.fightBack`, set by the page; the row's 1 = the duel as it always was)
+/** The page sets the zone's fight-back scale (1 = the lock camera as it was). Only the duel's lock camera uses it; the walking camera never does. */
 export const setFightBack = (scale: number): void => { FIGHT_BACK = scale; };
-const AIM_PER_SHRINK =cameraRule('aimPerShrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
+const AIM_PER_SHRINK = cameraRule('aimPerShrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
 // How tall each foe LOOKS against a man's, for the camera only. The sim's `scale` (moves.ts OPPONENTS[id].scale) is a hitbox/rate number and stays put (it is in the record's
 // SIM_FILES); a foe whose body is not a man's by that number says so here. The Ash Wolf is ~.8 m at the back (the sim says .8 for its rates): behind the hero's head at bite range
 // without this. The Wraith is a tall rig whose head and scythe tip left the top of the lock frame. Every other foe is absent: the sim scale it always had.
@@ -41,7 +42,7 @@ export function cameraPose(
   const distance = Math.hypot(state.x - target.x, state.z - target.z);
   // Duel lock sits ~30% closer and lower than the first pass; the distance terms still pull back to frame both fighters.
   const low = locked ? targetLow : 0, tall = locked ? targetTall : 0;   // a foe that looks tall (the Wraith): back off and up; nothing for any other foe
-  const fightBack = locked ? FIGHT_BACK : 1;
+  const fightBack = locked ? FIGHT_BACK : 1;   // the walking camera is never scaled
   const back = ((locked ? Math.max(LOCK_BACK_FLOOR, distance * 0.62 + 2.8) : 7.5 * Math.cos(pitch)) + tall * TALL_BACK) * fightBack;   // the original lock (Dom 2026-10-05 chose it over the 10-03 flatter one: HUD over sand, not the painting)
   let x = state.x + Math.sin(yaw) * back,
     z = state.z + Math.cos(yaw) * back,
