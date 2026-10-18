@@ -1,0 +1,15 @@
+{
+  "rules": [
+    { "id": "specialMeleeWindup", "value": 0 },
+    { "id": "specialReact", "value": 0 },
+    { "id": "specialReactStagger", "value": 100 },
+    { "id": "specialReactKnock", "value": 100 },
+    { "id": "specialReactPosture", "value": 100 }
+  ],
+  "specialPick": [],
+  "specialReactFloor": [],
+  "specialLook": [],
+  "specialTrail": [],
+  "specialShards": [],
+  "specialSound": []
+}

@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "heroRig",
+      "file": "piece-fit-rig.json",
+      "at": "heroRig",
+      "key": "id",
+      "required": { "bones": "array" }
+    }
+  ]
+}
