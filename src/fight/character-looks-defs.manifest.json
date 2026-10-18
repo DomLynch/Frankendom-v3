@@ -12,7 +12,7 @@
       "file": "character-looks-defs.json",
       "at": "sharedmapped",
       "key": "id",
-      "optional": { "note": "string" }
+      "required": { "note": "string" }
     },
     {
       "table": "chargelean",
