@@ -64,6 +64,9 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // Perfect block .55 (SCOPE 7 change B, measured 2026-09-26): its brighter, longer ring at 1 read −26.7 phone LUFS, over the
     // parry; .55 sets it at −30.1, between a block (−30.5) and a parry (−29.7).
     else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', .55, .35) : cue('block', 1, .35));
+    // specialSound rows (the combat sandbox's gritty melee, Dom 2026-10-17: the hit must sound like bone and weight): a melee special's own sounds. `on: 'start'` rows play when it is committed (the swing's whoosh, `delay` ms in), the rest when it lands on the foe; no rows (as shipped) = no sound added. Not a spell, not a self-heal.
+    else if (e.type === 'SpecialLanded' && !e.spell && e.target !== undefined && e.target !== e.actor && e.move?.startsWith('skill_')) { for (const r of specialSoundOf(e.move.slice('skill_'.length)).filter((x) => x.on !== 'start')) impacts.push(cue(r.cue as CueName, r.gain / 1000, r.room / 1000, r.delay ? r.delay / 1000 : undefined)); }
+    else if (e.type === 'SpecialStarted' && !e.spell && e.move?.startsWith('skill_')) { for (const r of specialSoundOf(e.move.slice('skill_'.length)).filter((x) => x.on === 'start')) air.push(cue(r.cue as CueName, r.gain / 1000, r.room / 1000, r.delay ? r.delay / 1000 : undefined)); }
     else if (e.type === 'Killed') {
       if (isTemplate(finisher, 'hamstring')) {
         // Two blows, each held for the scene's hit-stop: the knee cut (the weapon falls and rolls), then the thrust into the back.
