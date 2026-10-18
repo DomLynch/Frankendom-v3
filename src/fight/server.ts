@@ -20,6 +20,7 @@ export { setStab, STAB_ON } from './stab-rule.ts';
 export { setStanceRows, STANCE_ROWS_ON } from './stance-era.ts';
 export { setPoiseLadder, POISE_LADDER_ON } from './poise-era.ts';
 export { setCone, CONE_ON } from './cone-era.ts';
+export { setSandbox, SANDBOX_ON } from './sandbox-era.ts';
 export { AFTER_HIT_TICKS, CHAIN_CAP, EXHAUSTED_BELOW, initialKit, kitIntent, type ChainRow, type KitRow } from './mobkit.ts';
 export { SPEEDS } from './speeds.ts';
 export { worldRule } from './world-rules.ts';   // the open-world rules as rows (world-sim.ts reads its notice rings from them)
