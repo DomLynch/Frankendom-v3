@@ -1,0 +1,17 @@
+{
+  "base": [
+    { "id": "a", "cx": 104, "cy": 128, "gap": 3, "variant": "2" }
+  ],
+  "variants": [
+    { "id": "1", "strike": 80, "ring": 138, "button": 47 },
+    { "id": "2", "strike": 72, "ring": 146, "button": 50 },
+    { "id": "3", "strike": 64, "ring": 154, "button": 52 }
+  ],
+  "buttons": [
+    { "id": "attack-button", "label": "STRIKE", "deg": 0, "own": true },
+    { "id": "skill-button", "label": "SPECIAL", "deg": 135, "own": false },
+    { "id": "guard-button", "label": "GUARD", "deg": 225, "own": false },
+    { "id": "dodge-button", "label": "ROLL", "deg": 315, "own": false },
+    { "id": "kick-button", "label": "KICK", "deg": 180, "own": false, "size": 42 }
+  ]
+}

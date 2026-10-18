@@ -1,0 +1,7 @@
+{
+  "tables": [
+    { "table": "touchLayoutBase", "file": "touch-layout-defs.json", "at": "base", "key": "id", "required": { "cx": "number", "cy": "number", "gap": "number", "variant": "string" } },
+    { "table": "touchLayoutVariant", "file": "touch-layout-defs.json", "at": "variants", "key": "id", "required": { "strike": "number", "ring": "number", "button": "number" } },
+    { "table": "touchLayoutButton", "file": "touch-layout-defs.json", "at": "buttons", "key": "id", "required": { "label": "string", "deg": "number", "own": "boolean" }, "optional": { "size": "number" } }
+  ]
+}
