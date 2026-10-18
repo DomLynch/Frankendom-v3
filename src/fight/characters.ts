@@ -351,7 +351,7 @@ export class MissingClip extends Error {
   constructor(readonly clip: string, readonly role: string, readonly weapon: WeaponId) { super(`Warrior is missing ${clip} (role ${role}, weapon ${weapon})`); this.name = 'MissingClip'; }
 }
 // The clip each role plays for this weapon. Two roles on one clip (the trident's sweep) get their own copies: the mixer keys actions by clip.
-function fighterClips(asset: FighterAsset, weapon: WeaponId, player: boolean): Record<Role, AnimationClip> {
+export function fighterClips(asset: FighterAsset, weapon: WeaponId, player: boolean): Record<Role, AnimationClip> {
   const clips = {} as Record<Role, AnimationClip>, used = new Set<AnimationClip>(), quadruped = isQuadruped(asset);
   for (const role of [...ROLES, ...ADDITIVE_ROLES]) {
     // A player override needs the rig to carry it: the equip file does (tests/weapons.test.ts pins it); a shared opponent rig standing in
