@@ -348,7 +348,10 @@ export const lootIds = (piece: SkinnedMesh): string[] => (piece.userData.ids as 
 export const lootWorn = (piece: SkinnedMesh, worn: readonly string[]): boolean => lootIds(piece).some(id => worn.includes(id));
 // A rig that lacks (or carries an empty) clip for the weapon it was handed. Named so a caller can tell it from any other build failure and never settle for a stand-in: a creature body must carry the clip pack of the weapon it wields.
 export class MissingClip extends Error {
-  constructor(readonly clip: string, readonly role: string, readonly weapon: WeaponId) { super(`Warrior is missing ${clip} (role ${role}, weapon ${weapon})`); this.name = 'MissingClip'; }
+  readonly clip: string;
+  readonly role: string;
+  readonly weapon: WeaponId;
+  constructor(clip: string, role: string, weapon: WeaponId) { super(`Warrior is missing ${clip} (role ${role}, weapon ${weapon})`); this.name = 'MissingClip'; this.clip = clip; this.role = role; this.weapon = weapon; }
 }
 // The clip each role plays for this weapon. Two roles on one clip (the trident's sweep) get their own copies: the mixer keys actions by clip.
 export function fighterClips(asset: FighterAsset, weapon: WeaponId, player: boolean): Record<Role, AnimationClip> {
