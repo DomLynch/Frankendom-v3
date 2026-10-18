@@ -8,6 +8,9 @@ const TABLE = tableFromFile(FX_MANIFEST.tables[0] as Manifest, FX_ROWS, 'fx-rows
 loadRegistry([TABLE]);
 const VALUES = new Map((TABLE.rows as unknown as { id: string; fields: { value: number } }[]).map((r) => [r.id, r.fields.value]));
 
+/** Whether an fx row exists (a row can be a switch: `breath.<opponent>` is what makes a creature breathe fire). */
+export const fxHas = (id: string): boolean => VALUES.has(id);
+
 /** The value of an fx row; a missing id throws at load rather than answering NaN. */
 export function fxNum(id: string): number {
   const v = VALUES.get(id);
