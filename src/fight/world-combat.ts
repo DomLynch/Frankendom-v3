@@ -4,6 +4,7 @@
 import { AGGRO_M, duelFor, duelOf, newWorld, pairs, player, type Event, type Fighter, type World } from './world.ts';
 import { worldRule } from './world-rules.ts';
 import { fxNum } from './fx-rows.ts';
+import { regenStep, type Quiet, type RegenRules } from './hero-regen.ts';
 import { OPPONENTS, DEFAULT_WEAPON, type Direction, type SkillId, type WeaponId } from './moves.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { resolveSpell } from './spell-cast.ts';
@@ -42,6 +43,7 @@ export type WorldCombatDeps<S extends FightMob = FightMob> = {
   onCreatureTick?(spec: S, t: { hpFrac: number; dt: number; x: number; z: number; seed: number }): void;   // every frame a creature is up and fighting (the row's tiers: drips and marks)
   onCreatureGone?(id: string): void;   // it was released or has fallen
   engageToken?: (id: string) => string | null;   // the creature's engage token (spawn-net.ts), null until the server answered: the bout's roll seed is hash32(token, join step); no token = no roll, today's fight
+  regen?: () => RegenRules | null;   // the hero's out-of-combat regeneration (hero-regen.ts): the rules, or null / absent = none (the Pit, every listed zone). Run once per fixed step on the hero's own fighter, so it is the sim's health and stamina
   onEvent?(ev: Event): void;       // every combat event, after the page has shown it (the spawn client, spawn-net.ts onCombatEvent)
   canPlay?: (finisher: FinisherId) => boolean;   // which finishers this client can show on a creature (default: plainDeath only); the pick is selectFinisher cut down to the creature's row (src/creature-gore.ts) and to these
   hero?: () => { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number }; special?: SkillId; special2?: SkillId };   // special / special2: SPECIAL 1 and SPECIAL 2, class skills fought through their own move rows (the specials PR)   // his resolved gear and career level (default: naked, level 1); health: a test seed for his starting and maximum health; a creature's level is its spec's
@@ -63,6 +65,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   let wasReady = false, rebuild = false;   // rebuild: hero() may have moved (the loadout gate just opened, or the page said the build / worn-gear view answered): rebody once at the next idle frame
   let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
   const prevPose = new Map<string, { x: number; z: number; facing: number }>();   // each fighter's pose from before the last tick: the view blends from it toward the current tick by acc / STEP (blendPose), so a 120 Hz frame with no tick still moves
+  const quiet: Quiet = { s: 0 }; let lastHero: { x: number; z: number } | null = null;   // the regen's quiet clock and where he stood last frame
   const waited = new Map<string, number>();   // seconds a hunting creature has waited outside the loop for the hero to be clean enough to open a record window (JOIN_WAIT_S)
   const specs = new Map<string, S>(), fx = new Map<string, Fx>(), contacts = new Map<string, CombatEvent[]>(), lastDuel = new Map<string, Duel>();   // lastDuel: the pair's bout from before the step, for the kill's own contact (the bout is gone once the creature is dead)
   const fxOf = (id: string): Fx => { let f = fx.get(id); if (!f) { f = { finisher: PLAIN_DEATH, fallS: FALL_S, hurtT: 0, fallT: 0, windupT: 0, windupMs: 400, swingT: 0 }; fx.set(id, f); } return f; };
@@ -136,6 +139,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
       }
       const want = acc + dt, cap = STEP * MAX_STEPS; acc = Math.min(want, cap);
       if (want > cap) { lostMs += (want - cap) * 1000; hitches++; if (hitches === 1 || hitches % 10 === 0) console.warn(`world-combat: a ${Math.round(dt * 1000)} ms frame dropped ${Math.round((want - cap) * 1000)} ms of fight time (${hitches} such frame(s), ${Math.round(lostMs)} ms lost in all)`); }
+      const rg = d.regen?.() ?? null, walked = lastHero ? Math.hypot(hero.x - lastHero.x, hero.z - lastHero.z) / Math.max(dt, 1e-6) : 0; lastHero = { x: hero.x, z: hero.z };   // his speed over this frame, for the regen's walk rate
       let first = true, stepped = false;   // the page owns the hero's walk; a ROLL is the loop's own displacement, so only the first step of a frame takes the page's position and the rest keep the loop's
       while (acc >= STEP) {
         acc -= STEP; steps++; stepped = true;
@@ -145,6 +149,10 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
         recorder.step(step);
         const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null; pendingCast = false; pendingCast2 = false;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }
+        if (rg && !heroDead) {   // out-of-combat regeneration: the sim's own health and stamina on his fighter, once per fixed step (hero-regen.ts); null (the Pit, every listed zone) = none
+          const m = world.fighters[0]!, fought = r.events.some((ev) => ev.type === 'Hit' && (ev.attacker === ME || ev.victim === ME)), noticed = world.fighters.slice(1).some((f) => f.phase !== 'dead' && (f.hunting || Math.hypot(f.x - m.x, f.z - m.z) <= AGGRO_M));
+          const out = regenStep(quiet, STEP, rg, { fought, noticed, moving: walked > rg.moveEpsMps, dead: m.phase === 'dead' }, m); m.health = out.health; m.stamina = out.stamina;
+        }
       }
       pendingAttack = null; pendingRoll = null; pendingCast = false; pendingCast2 = false;
       for (const f of world.fighters.slice(1)) {

@@ -89,6 +89,11 @@
     { "id": "fx.spellLegends.rungMax", "fields": {"value": 10} },
     { "id": "fx.spellSchool.byteMax", "fields": {"value": 255} },
     { "id": "fx.witchfire.stepMax", "fields": {"value": 0.1} },
-    { "id": "pose-blend.snap-m", "fields": {"value": 3} }
+    { "id": "pose-blend.snap-m", "fields": {"value": 3} },
+    { "id": "regen.out-of-combat", "fields": {"value": 1} },
+    { "id": "regen.health-full", "fields": {"value": 60} },
+    { "id": "regen.stamina-full", "fields": {"value": 12} },
+    { "id": "regen.move-mult", "fields": {"value": 0.5} },
+    { "id": "regen.move-eps", "fields": {"value": 0.3} }
   ]
 }
