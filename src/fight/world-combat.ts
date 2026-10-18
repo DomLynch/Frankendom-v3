@@ -112,7 +112,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
     /** A roll / dodge pressed: the world-axis direction (zero = where he faces). */
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
     /** The page's build_get or worn-gear view just answered (hero() may now give another sheet): the idle hero is rebuilt once at the next idle frame, not by polling hero() every frame. */
-    heroChanged() { rebuild = true; },
+    heroChanged() { rebuild = true; if (specs.size > 0 && JSON.stringify(mine()) !== builtKey) recorder.discard(); },   // P0-b (Lead): a gear change INSIDE an open window drops that window's record, so nothing is paid on a stale sheet; the fight goes on with the body it started with and the next window opens on the new one   // P0-b (Lead): a gear change INSIDE an open window drops that window's record, so nothing is paid on a stale sheet; the fight goes on with the body it started with and the next window opens on the new one
     /** The SKILL / cast press: the hero's equipped spell starts its cast on the next step if he is free and has the stamina (the Pit's special slot); with no spell it does nothing. */
     cast() { pendingCast = true; },
     /** The second slot's press (spell-slot-defs.json slot b): its own spell and cooldown; with no second spell it does nothing. */
