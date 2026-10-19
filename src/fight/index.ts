@@ -5,10 +5,14 @@ export { createFight, type Fight, type FightOptions, type FightSlot } from './fi
 
 export * as world from './world.ts';   // the open-world loop (Zone 1 and later zones): aggro, chase, leash, pairs, step
 export { SPEEDS } from './speeds.ts';
+export { fxNum } from './fx-rows.ts';   // the presentation rows (fx-rows.json): the zone page and the war band read their tunings through the door
 export { pickSpell } from './spell-pick.ts';   // the equipped-spell pick (the Zone 1 page casts through the door)
 export type { Match } from './match.ts';   // type only (origins/preview/world-record.ts reads a Match without importing the Pit's flow module)
 export type { WorldMount } from './scene.ts';
 export const loadScene = () => import('./scene.ts');   // K7 row 10: the fight scene is a lazy chunk (a static export pulled it out of pit-duel's chunk and its warm-up); same pattern as loadFeedback
+export { regenOn, regenRules } from './hero-regen.ts';   // the unlisted-zone out-of-combat regeneration (the zone page hands it to the world combat)
+export { fxHas } from './fx-rows.ts';   // is there a presentation row by this name (mobs-view's per-creature reach rows)
+export { shapeFor } from './weapon-shapes.ts';   // the graded weapon shape file (mobs-view reshapes a creature's weapon by its rung)
 export { phoneTier, pixelCap, budgetTextures, FIGHTER_TEXTURE_CAP } from './quality.ts';   // the phone tier and texture budget (K7 row 16: moved from src/quality.ts)
 export { settleWithin, gateWithBound } from './warm-gate.ts';   // bounded warm-up waits (K7 row 16: moved from src/warm-gate.ts)
 export { createInput, SPRINT_PUSH, type ControlIntent } from './input.ts';   // the touch/keyboard control layer (K2 row 5: the zone's page and sticks read it through the door)
@@ -48,4 +52,5 @@ export const loadSpellInfo = () => Promise.resolve()
   .then(() => import('./spell-catalogue.ts')).then((m) => m.SPELL_INFO);
 export { createFollowCamera, inPassage, type CombatCam, type CombatFraming, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
 export { MAX_ATTACKERS } from './attackers.ts';
-export { finishedAs } from './rank-tint.ts';   // a finish row on a piece's metal (the ground-item view, origins/preview)
+export { finishedAs, tinted } from './rank-tint.ts';   // a finish row on a piece's metal, and a piece at its rung's finish (the ground-item view, origins/preview)
+export { setFightBack } from './camera.ts';   // a zone's camera.fightBack scale for the duel's lock camera (the page sets it on resize)

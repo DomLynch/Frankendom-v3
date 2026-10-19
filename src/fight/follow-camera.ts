@@ -14,17 +14,22 @@ export type Presets = Readonly<Record<string, Framing>>;
 
 /** The framing a page asks for: `choice` (a ?camera= name) wins, else the zone's own `camera.preset`; unknown or empty = the generic open walk (undefined). */
 export const pickFraming = (presets: Presets | undefined, choice: string | null | undefined, zonePreset?: string): Framing | undefined => presets?.[(choice || zonePreset || '').toLowerCase()];
-export type FollowState = { x: number; z: number; heading: number; pitch: number; groundY: number };
+/** First person (the ☰ menu's View setting, Dom 2026-10-17): the eye stands `eye` m above the ground and `fwd` m ahead of the hero's centre, looking along his heading (the stick's pitch tilts the gaze by `tilt` m per unit at 10 m); `down`: metres the gaze
+ *  drops over 10 m (a slight look-down puts a foe at arm's length mid-screen and shows the ground); `fovAdd`: degrees added to the base lens. Head bob: `bobAmp` metres at a walk (0 = none), `bobStep` phase per metre walked, `bobSpeedCap` the speed (m/s)
+ *  past which a run bobs no faster, `bobJumpM` a step longer than this in one frame (a respawn) is not a step, `bobWalkMps` the speed that counts as walking, `bobFade` the rate the bob fades in and out. */
+export type FirstPerson = { eye: number; fwd: number; tilt: number; down: number; fovAdd: number; bobAmp: number; bobStep: number; bobSpeedCap: number; bobJumpM: number; bobWalkMps: number; bobFade: number };
+export type FollowState = { x: number; z: number; heading: number; pitch: number; groundY: number; fp?: FirstPerson };
 /** What a fight changes on top of a Framing (a zone's `camera.combat`, Dom 2026-10-17: the thumb buttons hide the hero and the foe is too close). mid: how far the gaze moves from the hero toward the foe (0 = as walking, 0.5 = between them);
  *  perSep / perSize: extra metres back per metre between them / per metre the foe's biggest dimension is above a man's; shiftY: the share of the screen height the picture is lifted, off the thumb buttons; fov: degrees added; zoom: a multiplier on the camera's own zoom. */
-export type CombatFraming = Framing & { mid?: number; perSep?: number; perSize?: number; sizeFrom?: number; fitRate?: number; minBack?: number; maxBack?: number; shiftY?: number; fov?: number; zoom?: number };   // sizeFrom: the foe size (m) above which perSize starts, a man's height in the rows; fitRate: the most the fit (perSep, perSize) may change per second (m/s), so a lunging foe does not pump the zoom; minBack / maxBack: the camera never stands closer / further than this behind the hero, and a capped distance raises the camera instead (pitch), never into the foe or past a wall
+export type CombatFraming = Framing & { mid?: number; perSep?: number; perSize?: number; sizeFrom?: number; fitRate?: number; minBack?: number; maxBack?: number; shiftY?: number; fov?: number; zoom?: number; pitch?: number; pitchPerSize?: number; maxPitch?: number };   // pitch (degrees, replaces `up` when set): the look-down angle at a man-sized foe, plus pitchPerSize degrees per metre of foe above sizeFrom, never past maxPitch (default: the pitchMax rule), so a 6 m foe's head stays in frame without a top-down look; absent = the framing as it was. sizeFrom: the foe size (m) above which perSize starts, a man's height in the rows; fitRate: the most the fit (perSep, perSize) may change per second (m/s), so a lunging foe does not pump the zoom; minBack / maxBack: the camera never stands closer / further than this behind the hero, and a capped distance raises the camera instead (pitch), never into the foe or past a wall
 /** One combat camera: its framing for a phone held upright and held wide, how fast it eases in and out (rates per second; the exit is slower so a kill does not snap the view), and (when `zoom` is set) the steps the player may pick between, a multiplier on back and up. */
 export type CombatCam = { label: string; portrait: CombatFraming; landscape: CombatFraming; ease: { in: number; out: number }; zoom?: { steps: readonly number[]; labels: readonly string[]; start: number } };
 /** The fight, per frame: the camera in use, the screen shape, the foe (where it is and its biggest dimension in metres; null = no fight), the player's zoom step and the shoulder side (1 = the framing's own, -1 = mirrored; a setting, never auto-switched). */
 export type CombatInput = { cam: CombatCam; portrait: boolean; foe: { x: number; z: number; size: number } | null; zoom?: number; flip?: number };
 const mix = (a: number, b: number, k: number) => a + (b - a) * k;
 
-const OPEN: Framing = { back: 5.2, up: 2.7 }, AHEAD = cameraRule('followAhead'), LOOK_Y = cameraRule('followLookY');
+const OPEN: Framing = { back: 5.2, up: 2.7 }, AHEAD = cameraRule('followAhead'), LOOK_Y = cameraRule('followLookY'), PITCH_MAX = cameraRule('combatPitchMax');
+const RAD = Math.PI / 180;   // degrees to radians
 
 export const inPassage = (p: Passage | undefined, x: number, z: number): boolean => !!p && z < p.zMax && z > p.zMin && (p.halfWidth === undefined || Math.abs(x) < p.halfWidth);
 
@@ -33,6 +38,7 @@ export function createFollowCamera(camera: THREE.Camera, opts: { passage?: Passa
   let snap = true, passage = opts.passage, fight = 0, fitNow = 0;   // fight: 0 walking .. 1 in a fight, eased; fitNow: the foe-size and gap fit in metres, rate-limited
   let open = opts.open ?? OPEN;
   const view = { shiftY: 0, fov: 0, zoom: 1 };   // what the page applies to its camera this frame (the follow camera only places it)
+  const bobAt = { x: 0, z: 0 }; let bobPhase = 0, bobGain = 0;   // first-person head bob: where the hero was last frame, the step phase, and the 0..1 fade in and out
   return {
     /** The fight's extras this frame: the page lifts the picture by shiftY of the screen height, adds fov degrees and multiplies its zoom. All 0 / 0 / 1 outside a fight. */
     view,
@@ -40,11 +46,25 @@ export function createFollowCamera(camera: THREE.Camera, opts: { passage?: Passa
     fighting: (): number => fight,
     /** The next frame starts at the eye, not easing from the old position (a respawn, a server placement, the first frame). */
     snap(): void { snap = true; },
+    /** First person: a swing moves the view (a lean into a cut, a dip and lunge into a thrust). `k` is the arm's kick (lat: sideways lean, fwd: lunge), applied to the camera the frame was just placed on; the page passes the three row scales. */
+    kick(k: { lat: number; fwd: number }, heading: number, scale: { roll: number; yaw: number; lunge: number }): void {
+      camera.rotateZ(-k.lat * scale.roll); camera.rotateY(-k.lat * scale.yaw);
+      camera.position.addScaledVector(new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading)), k.fwd * scale.lunge);
+    },
     /** Another open-walk framing from now on (a preset), or the generic one. */
     setOpen(f: Framing | undefined): void { open = f ?? OPEN; },
     /** A zone's passage (or none) for the frames from now on. */
     setPassage(p: Passage | undefined): void { passage = p; },
     update(dt: number, s: FollowState, combat?: CombatInput): void {
+      if (s.fp) {   // first person: the camera IS the head (no easing: a lagging eye makes a phone sick), looking along the heading
+        const sx = Math.sin(s.heading), cz = Math.cos(s.heading);
+        const moved = Math.hypot(s.x - bobAt.x, s.z - bobAt.z), speed = dt > 0 ? moved / dt : 0; bobAt.x = s.x; bobAt.z = s.z;   // head bob (Daggerfall / Luanti / OpenMW: a gentle rise and fall with the steps, none standing still, off by a setting)
+        if (s.fp.bobAmp > 0 && moved < s.fp.bobJumpM) { bobPhase += Math.min(speed, s.fp.bobSpeedCap) * dt * s.fp.bobStep; bobGain += ((speed > s.fp.bobWalkMps ? 1 : 0) - bobGain) * (1 - Math.exp(-dt * s.fp.bobFade)); } else bobGain = 0;
+        eye.set(s.x + sx * s.fp.fwd, s.groundY + s.fp.eye + Math.sin(bobPhase) * s.fp.bobAmp * bobGain, s.z + cz * s.fp.fwd); at.copy(eye); snap = false;
+        look.set(eye.x + sx * 10, eye.y - s.fp.down + s.pitch * s.fp.tilt, eye.z + cz * 10);
+        view.shiftY = 0; view.fov = s.fp.fovAdd; view.zoom = 1; fight = 0;
+        camera.position.copy(at); camera.lookAt(look); return;
+      }
       const t = passage && inPassage(passage, s.x, s.z) ? passage : open;
       const goal = combat?.foe ? 1 : 0;
       if (combat) fight += (goal - fight) * (1 - Math.exp(-dt * (goal > fight ? combat.cam.ease.in : combat.cam.ease.out)));   // eased in and out, never a cut; the exit is slower than the entry
@@ -54,7 +74,8 @@ export function createFollowCamera(camera: THREE.Camera, opts: { passage?: Passa
       const fitGoal = c ? (c.perSep ?? 0) * sep + (c.perSize ?? 0) * size : 0;   // what the gap and the foe's size ask for
       fitNow = c?.fitRate !== undefined ? fitNow + Math.max(-c.fitRate * dt, Math.min(c.fitRate * dt, fitGoal - fitNow)) : fitGoal;   // never faster than fitRate m/s
       const rawBack = c ? (c.back + fitNow) * zoomK : t.back, capped = c ? Math.min(c.maxBack ?? Infinity, Math.max(c.minBack ?? 0, rawBack)) : t.back;   // a floor: never into the foe; a cap: never past the wall
-      const cBack = capped, cUp = c ? (c.up + fitNow * 0.5) * zoomK + Math.max(0, rawBack - capped) * 0.5 : t.up;   // what the cap took off the distance goes into height instead (a steeper look), the camera stays in the room
+      const pitchDeg = c?.pitch === undefined ? undefined : Math.min(c.maxPitch ?? PITCH_MAX, c.pitch + (c.pitchPerSize ?? 0) * size), cBack = capped;
+      const cUp = c ? (pitchDeg === undefined ? (c.up + fitNow * 0.5) * zoomK : (c.lookY ?? LOOK_Y) + cBack * Math.tan(pitchDeg * RAD)) + Math.max(0, rawBack - capped) * 0.5 : t.up;   // what the cap took off the distance goes into height instead (a steeper look), the camera stays in the room
       const back = c ? mix(t.back, cBack, fight) : t.back, up = (c ? mix(t.up, cUp, fight) : t.up) - s.pitch * 0.9;   // the right stick's up lowers the camera and raises the gaze
       const side = c ? mix((t as Framing).side ?? 0, (c.side ?? 0) * (combat?.flip ?? 1), fight) : (t as Framing).side ?? 0, ahead = c ? mix((t as Framing).ahead ?? AHEAD, c.ahead ?? AHEAD, fight) : (t as Framing).ahead ?? AHEAD, lookY = c ? mix((t as Framing).lookY ?? LOOK_Y, c.lookY ?? LOOK_Y, fight) : (t as Framing).lookY ?? LOOK_Y;   // right of the hero's heading is (cos h, -sin h)
       eye.set(s.x - Math.sin(s.heading) * back + Math.cos(s.heading) * side, up + s.groundY, s.z - Math.cos(s.heading) * back - Math.sin(s.heading) * side);
