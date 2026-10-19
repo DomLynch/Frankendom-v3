@@ -1,9 +1,9 @@
 {
   "picks": [
-    { "id": "neutral", "order": 0, "label": "Balanced", "colour": "#d9b45a", "icon": "M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7zM19 7l-3 7a3 3 0 0 0 6 0l-3-7zM8 21h8" },
-    { "id": "aggressive", "order": 1, "label": "Aggressive", "colour": "#e0533a", "icon": "M12 2l3 9-3 3-3-3 3-9zM12 14v8M8 17h8" },
-    { "id": "defensive", "order": 2, "label": "Defensive", "colour": "#4a82d6", "icon": "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" },
-    { "id": "trickster", "order": 3, "label": "Trickster", "colour": "#9b6bd6", "icon": "M3 9c3-2 6-2 9 0 3-2 6-2 9 0 0 5-3 9-9 9S3 14 3 9zM8 11.5c1 .8 2 .8 3 0M13 11.5c1 .8 2 .8 3 0" }
+    { "id": "picker.balanced", "pick": "neutral", "order": 0, "label": "Balanced", "colour": "#d9b45a", "icon": "M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7zM19 7l-3 7a3 3 0 0 0 6 0l-3-7zM8 21h8" },
+    { "id": "picker.aggressive", "pick": "aggressive", "order": 1, "label": "Aggressive", "colour": "#e0533a", "icon": "M12 2l3 9-3 3-3-3 3-9zM12 14v8M8 17h8" },
+    { "id": "picker.defensive", "pick": "defensive", "order": 2, "label": "Defensive", "colour": "#4a82d6", "icon": "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" },
+    { "id": "picker.trickster", "pick": "trickster", "order": 3, "label": "Trickster", "colour": "#9b6bd6", "icon": "M3 9c3-2 6-2 9 0 3-2 6-2 9 0 0 5-3 9-9 9S3 14 3 9zM8 11.5c1 .8 2 .8 3 0M13 11.5c1 .8 2 .8 3 0" }
   ],
   "dials": [
     { "id": "leftPx", "value": 12 },
