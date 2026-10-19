@@ -5,6 +5,7 @@
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
 import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type Direction, type SkillId, type SpecialName, type WeaponId } from './moves.ts';
 import { worldRule } from './world-rules.ts';
+import { specialFirst } from './rows80.ts';
 import { POOLS } from './pools.ts';
 import type { Sheet } from './sheet-rows.ts';
 import type { Spell } from './spell-cast.ts';
@@ -127,7 +128,7 @@ export function creature(id: string, kind: string, x: number, z: number, facing 
 /** A fighter with a picked stance ('neutral' = Balanced = none). The same four picks and the same signed per-mille table as the Pit (src/fight/stance.ts), one kit everywhere. */
 export const withStance = (f: Fighter, pick: PickedStance): Fighter => ({ ...f, stance: asStance(pick) });
 /** Give a fighter a named special (SpecialName from src/fight/moves.ts; `specialOf(opponent, level)` names the class's). It is ready RULES.special.first ticks in. */
-export const withSpecial = (f: Fighter, name: SpecialName): Fighter => ({ ...f, special: name, specialIn: secs(RULES.special.first) });
+export const withSpecial = (f: Fighter, name: SpecialName): Fighter => ({ ...f, special: name, specialIn: secs(specialFirst(RULES.special.first)) });   // RV80 (Dom 2026-10-19, "everything from the sandbox, everywhere"): the sandbox's 2 s first special, the same era-keyed row as the duel's
 /** A creature's stance mood: the Pit's own draw (src/fight/stance.ts moodOf: half its home stance, half one of the other three), seeded from the injected `rand` instead of the fight seed. Call once at spawn. */
 export const withMood = (f: Fighter, rand: () => number): Fighter => withStance(f, moodOf(Math.floor(rand() * 4294967296) >>> 0, f.kind));
 /** The brain as the next bout will find it. retreatUntil / disengageUntil are absolute ticks of the bout that wrote them and a rebuilt bout restarts its clock at 0, so they are rebased onto the new clock (Auditor, #1939); lastTravel compared against the old bout's distance, so it restarts. The live bout keeps its own copy. */
