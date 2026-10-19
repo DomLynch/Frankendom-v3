@@ -6,7 +6,7 @@
     { "id": "bellDrive", "value": 2, "unit": "ratio" },
     { "id": "bloomAbove", "value": 300, "unit": "Hz" },
     { "id": "bloomSeconds", "value": 0.4, "unit": "s" },
-    { "id": "wardenHealth", "value": 65, "unit": "hp" },
+    { "id": "wardenHealth", "value": 32, "unit": "hp" },
     { "id": "wardenHealthEraOff", "value": 80, "unit": "hp" },
     { "id": "gateCut", "value": 0.06, "unit": "s" },
     { "id": "spriteSeconds", "value": 46.108, "unit": "s" },
