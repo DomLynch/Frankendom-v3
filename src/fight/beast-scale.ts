@@ -1,7 +1,7 @@
 // How big the Ash Wolf is DRAWN, as a multiple of its rig (src/assets/wolf.glb is 0.644 m at native scale; Dom 2026-10-07: "very small", then "same size walking and fighting").
 // ONE number for both paths: the world's mob look (origins/preview/mob-looks.ts) and the duel's opponent rig (src/characters.ts), so a wolf met walking is the wolf fought (tests/characters.test.ts, "the Ash Wolf is drawn the same size").
 // Render only, deliberately outside SIM_FILES: the sim's capsule (OPPONENTS.wolf.scale .8, ~1.4 m of hit body), the bite reach and the baked jaw path are unchanged, no record or fingerprint moves.
-// The rig at x2 stands ~1.29 m, which is what that capsule was sized for; at native size the bites reached over a 0.64 m body.
+// (Zone 1 = Test Zone look, Dom-approved 2026-10-18: the wolf is now drawn x2.8 = ~1.80 m and the boar x2.7 = ~1.71 m, rows in fx-rows.json; render only, the capsule stays.) The rig at x2 stood ~1.29 m, which is what that capsule was sized for; at native size the bites reached over a 0.64 m body.
 import { fxNum } from './fx-rows.ts';
 export const WOLF_RENDER_SCALE = fxNum('beast-scale.wolf');
 // The other beasts (Characters' proposal, 2026-10-08, from the native heights wolf 0.644 m / boar 0.634 m / bear 0.635 m; a starting point until Dom's eye has seen 375-wide stills at the lock camera, then
