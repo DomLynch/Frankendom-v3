@@ -1,0 +1,12 @@
+{
+  "labels": [
+    { "id": "title", "text": "STRIKE taps" },
+    { "id": "n", "text": "n" },
+    { "id": "median", "text": "median" },
+    { "id": "p90", "text": "p90" },
+    { "id": "unit", "text": "ms" },
+    { "id": "copy", "text": "copy" },
+    { "id": "copied", "text": "copied" },
+    { "id": "clear", "text": "clear" }
+  ]
+}
