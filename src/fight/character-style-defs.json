@@ -1,6 +1,6 @@
 {
   "posture": [
-    { "id": "default", "plain": false }
+    { "id": "default", "plain": true }
   ],
   "readyStyles": [
     { "id": "1", "s1": -120, "s2": -120, "s3": -80, "neck": -100 },
