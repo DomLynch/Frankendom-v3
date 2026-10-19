@@ -24,10 +24,10 @@ if (!(INNER_FRAC < MID_FRAC && MID_FRAC < 1)) throw Error('band-defs: 0 < innerF
 if (OFF_BAND_MULT > 1) throw Error('band-defs: offBandMult is at most 1 (an off-band blow is never stronger)');
 // BULK-CS (ruling B, Lead + Strategy 2026-10-18): TWO edge modes, one mechanism. edgesMode 0 = the span FRACTIONS above (Strategy's spec, byte for byte as before); edgesMode 1 = FIXED metre edges (Dom's hands-on sandbox bands: inner under innerEdgeCm,
 // mid up to midEdgeCm, outer beyond, an off-band blow x offBandMultCm). The mode is a row; the whole mechanism stays behind the `Duel.bands` flag (default off). docs/specs/combat/positioning-gates.md names both modes.
-const EDGES_FIXED_ROW = rule('edgesMode') > 0;
-const edgesFixed = (): boolean => EDGES_FIXED_ROW && SANDBOX_ON;   // era-keyed (sandbox-era.ts, RV79): the fixed-cm edges are the sandbox's, so a record below 78 that fought with bands on replays the span fractions
+const EDGES_FIXED = rule('edgesMode') > 0;
+const edgesFixed = (): boolean => EDGES_FIXED && SANDBOX_ON;   // era-keyed (sandbox-era.ts, RV79): the fixed-cm edges are the sandbox's, so a record below 78 that fought with bands on replays the span fractions
 const INNER_EDGE = rule('innerEdgeCm') / 100, MID_EDGE = rule('midEdgeCm') / 100, OFF_BAND_FIXED = rule('offBandMultCm');
-if (EDGES_FIXED_ROW && !(INNER_EDGE < MID_EDGE && OFF_BAND_FIXED <= 1)) throw Error('band-defs: fixed edges need innerEdgeCm < midEdgeCm and offBandMultCm at most 1');
+if (EDGES_FIXED && !(INNER_EDGE < MID_EDGE && OFF_BAND_FIXED <= 1)) throw Error('band-defs: fixed edges need innerEdgeCm < midEdgeCm and offBandMultCm at most 1');
 /** Weapon id -> its best band. A weapon with no row has no band: its blows are never scaled. */
 export const BEST_BAND: Readonly<Record<string, string>> = Object.fromEntries((WEAPON_T.rows as unknown as { id: string; bestBand: string }[]).map((r) => {
   if (!Object.hasOwn(WEAPONS, r.id)) throw Error(`band-defs: "${r.id}" is not a weapon row`);

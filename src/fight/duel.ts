@@ -14,7 +14,7 @@ import { crowdPercent, percentOf, rolledDamage, rollUnit, swarmBand, type CrowdK
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
-import { SANDBOX_ON } from './sandbox-era.ts';
+import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, spellRoot, type CastOutcome, type Spell } from './spell-cast.ts';
@@ -175,9 +175,11 @@ const poseBodies = (given: DuelPose): [State, State] => {
   const facing = heroFacing > Math.PI || heroFacing <= -Math.PI ? wrapAngle(heroFacing) : heroFacing;
   return [{ x: hero.x, z: hero.z, heading: facing, distance: 0 }, { x: foe.x, z: foe.z, heading: M.atan2(hero.x - foe.x, hero.z - foe.z), distance: 0 }];   // the foe always faces the hero's actual position (the pit marks' own 0 comes back exactly), whatever heroFacing says
 };
+/** RV79 (sandbox-era.ts rows79For): the positioning bands are ON for a live fight and a record at 79 or later (Dom's fixed cm edges, bands.ts); a record below 79 fights without them, as it always did. Spread into every Duel built from scratch. */
+export const bandsFlag = (): { bands?: true } => (ROWS79_ON ? { bands: true } : {});
 export const initialDuel = (opponent: Opponent = OPPONENTS.veteran, weapon: WeaponId = DEFAULT_WEAPON, skill: SkillId | null = null, pose?: DuelPose): Duel => {
   const [hero, foe] = pose ? poseBodies(pose) : [initialState(), { ...initialTarget(), heading: 0, distance: 0 }];
-  return { tick: 0, fighters: [{ ...createFighter(hero, 'sheathed', weapon), skill, ...(skill && SANDBOX_ON ? { picked: true as const } : {}) }, opponentFighter(opponent, foe)], finish: null, events: [] };
+  return { tick: 0, fighters: [{ ...createFighter(hero, 'sheathed', weapon), skill, ...(skill && SANDBOX_ON ? { picked: true as const } : {}) }, opponentFighter(opponent, foe)], finish: null, events: [], ...bandsFlag() };
 };
 
 // The one door a patron fight is built through, after initialDuel (and withSpecials): the player's perk in slot 0, the foe's (PvP only; ladder foes carry none) in slot 1.

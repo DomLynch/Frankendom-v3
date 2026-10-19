@@ -690,18 +690,6 @@
    "pierce": 350,
    "chipKills": 1,
    "tint": "#e8d9a8"
-  },
-  {
-   "kind": "crossbow",
-   "weapon": "none",
-   "speed": 1100,
-   "share": 1700,
-   "mana": 0,
-   "windup": 120,
-   "recovery": 60,
-   "ammo": 12,
-   "pierce": 500,
-   "tint": "#ffb066"
   }
  ],
  "missileLanes": [

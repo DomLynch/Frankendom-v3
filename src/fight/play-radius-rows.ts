@@ -11,10 +11,11 @@ const PLAY_RADIUS_TABLE = tableFromFile(PLAY_RADIUS_MANIFEST.tables[0] as unknow
 const PLAY_RADIUS_TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[1] as unknown as Manifest, ROWS79_DEFS, 'rows79-defs.json');   // RV79 (sandbox-era.ts): the dials a record at 79 or later is fought with
 loadRegistry([PLAY_RADIUS_TABLE, PLAY_RADIUS_TABLE_79]);
 const PLAY_RADIUS_ROW_MAP = new Map((PLAY_RADIUS_TABLE.rows as unknown as { id: string; value: number }[]).map((r) => [r.id, r.value]));
-const playRadiusDial = (id: string): number => {
-  const v = PLAY_RADIUS_ROW_MAP.get(id);
+const PLAY_RADIUS_ROW_MAP_79 = new Map((PLAY_RADIUS_TABLE_79.rows as unknown as { id: string; value: number }[]).map((r) => [r.id, r.value]));
+const playRadiusDial = (id: string, map = PLAY_RADIUS_ROW_MAP): number => {
+  const v = map.get(id);
   if (v === undefined) throw Error(`play-radius-defs: no playRadiusDial ${id}`);
   return v;
 };
-export const ARENA_ONE_SCALE_79 = (PLAY_RADIUS_TABLE_79.rows as unknown as { id: string; value: number }[]).find((r) => r.id === 'ARENA_ONE_SCALE')!.value;
+export const ARENA_ONE_SCALE_79 = playRadiusDial('ARENA_ONE_SCALE', PLAY_RADIUS_ROW_MAP_79);
 export const OPEN_RADIUS = playRadiusDial('OPEN_RADIUS'), WALL_INNER = playRadiusDial('WALL_INNER'), BODY_RADIUS = playRadiusDial('BODY_RADIUS'), BASE_RADIUS = playRadiusDial('BASE_RADIUS'), ARENA_ONE_SCALE = playRadiusDial('ARENA_ONE_SCALE'), SPAWN_FLOOR = playRadiusDial('SPAWN_FLOOR');

@@ -194,7 +194,7 @@ export const manaRegenPerTick = (sheet: Sheet | undefined): number => {
   return (MANA_REGEN / 10 / 60) * (100 / (100 + pct));   // a +20% casting penalty is a 17% slower regen
 };
 
-// missiles (Dom 2026-10-15: staffs fire a bolt instead of melee, stab = forward, left slash = left bolt, right slash = right bolt; bows and crossbows follow; Strategy: ONE shared missile model, the missile lives in the OUTER band and is a hard
+// missiles (Dom 2026-10-15: staffs fire a bolt instead of melee, stab = forward, left slash = left bolt, right slash = right bolt; bows follow; Strategy: ONE shared missile model, the missile lives in the OUTER band and is a hard
 // miss inside the inner band, resolved deterministically in the sim tick, answered by a dodge, a same-side guard or a sidestep; donors Magicka lane bolts, Mordhau and Chivalry 2 archery, Skyrim bow feel, ModernUO/2004Scape: damage is delivered
 // after a projectile delay): `missile` rows { weapon, speed (cm/s), share (per-mille of the move's damage), mana } name a weapon whose moves throw a bolt instead of striking; `missileLanes` rows { move, lane (-1 left, 0 forward, 1 right), mult }
 // say which move throws which lane; `missileRadius` (cm) is how near the line a body must be when the bolt arrives, `missileFan` (degrees) the angle of the side lanes, `missileStun` the ticks a hit staggers. No rows (trunk) = nothing.
@@ -205,7 +205,7 @@ let LANES = sandboxRowsOf<LaneRow>('missileLanes');
 export const missileOf = (weapon: string): MissileRow | undefined => (MISSILES.length ? MISSILES.find((r) => r.weapon === weapon) : undefined);
 export const laneOf = (move: string | null): LaneRow | undefined => (move ? LANES.find((r) => r.move === move) : undefined);
 export let MISSILE_HOMING = num('missileHoming', 'value');   // 1 = auto-aim (Dom 2026-10-15; donors decide the hit when the shot is fired): the shot flies at the foe and only a roll or a guard answers it
-// A staff shot is paid in mana alone (Dom 2026-10-15); the stand-in weapon's melee stamina is waived while mana is on. Bow and crossbow shots cost stamina like any attack.
+// A staff shot is paid in mana alone (Dom 2026-10-15); the stand-in weapon's melee stamina is waived while mana is on. Bow shots cost stamina like any attack.
 export const missilePaysNoStamina = (weapon: string): boolean => MANA_MAX > 0 && missileOf(weapon)?.kind === 'staff';
 export let MISSILE_GUARD_POSTURE = num('missileGuardPosture', 'value');   // posture a GUARDED arrow takes off the blocker (a wall of guard breaks inside the fight clock, Strategy 2026-10-18); a bow special's own `posture` replaces it. 0 = off
 export let MISSILE_RADIUS = num('missileRadius', 'value'), MISSILE_FAN = num('missileFan', 'value'), MISSILE_STUN = num('missileStun', 'value');
@@ -302,7 +302,7 @@ export const spellCueText =(id: string): string => CUES.find((c) => c.id === id)
 /** Travel time in whole ticks over `range` metres at the row's cm/s speed. */
 export const missileTicks = (row: { speed: number }, range: number): number => Math.max(1, Math.ceil((range * 100 * 60) / row.speed));
 
-// quiver + weapon timing for missile weapons (Strategy: bows and crossbows carry a finite quiver, a row flag `quiver` on/off for the A/B; the staff is infinite, mana is its cost).
+// quiver + weapon timing for missile weapons (Strategy: bows carry a finite quiver, a row flag `quiver` on/off for the A/B; the staff is infinite, mana is its cost).
 export let QUIVER = num('quiver', 'value');
 export const ammoOf = (weapon: string): number => { const r = missileOf(weapon); return QUIVER && r?.ammo ? r.ammo : 0; };
 export const missileTiming = (weapon: string): { windup: number; recovery: number } | undefined => { const r = missileOf(weapon); return r && (r.windup || r.recovery) ? { windup: r.windup ?? 0, recovery: r.recovery ?? 0 } : undefined; };

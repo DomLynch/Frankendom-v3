@@ -39,11 +39,11 @@ export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<R
 export const STANCES: Readonly<Record<StanceId, Deltas>> = stanceRows(TABLE.rows as unknown as Record<string, unknown>[]);
 const STANCE_FLOORS_79 = new Map((CAP_TABLE_79.rows as unknown as { id: string; floor: number }[]).map((r) => {
   if (!(STANCE_KEYS as readonly string[]).includes(r.id)) throw Error(`rows79-defs stanceCaps "${r.id}": not a stance quantity (${STANCE_KEYS.join(', ')})`);
-  if (!Number.isInteger(r.floor) || r.floor < -1000 || r.floor > 0) throw Error(`rows79-defs stanceCaps "${r.id}": floor is a whole per-mille delta from -1000 to 0`);
+  if (!Number.isInteger(r.floor) || r.floor > 0) throw Error(`rows79-defs stanceCaps "${r.id}": floor is a whole per-mille delta at or below 0 (the capped rows are range-checked by stanceRows)`);
   return [r.id, r.floor] as const;
 }));
-const capStances79 = (rows: Readonly<Record<StanceId, Deltas>>): Readonly<Record<StanceId, Deltas>> => Object.fromEntries(Object.entries(rows).map(([id, deltas]) => [id, Object.fromEntries(Object.entries(deltas).map(([k, v]) => [k, Math.max(v as number, STANCE_FLOORS_79.get(k) ?? -1000)]))])) as Readonly<Record<StanceId, Deltas>>;
-const STANCES_79: Readonly<Record<StanceId, Deltas>> = capStances79(stanceRows(TABLE_79.rows as unknown as Record<string, unknown>[]));   // stances 2x sandbox, feint cap Dom-held (the doubled rows, then each quantity floored by its stanceCaps row)
+const capStances79 = (rows: Readonly<Record<StanceId, Deltas>>): Readonly<Record<StanceId, Deltas>> => Object.fromEntries(Object.entries(rows).map(([id, deltas]) => [id, Object.fromEntries(Object.entries(deltas).map(([k, v]) => [k, Math.max(v as number, STANCE_FLOORS_79.get(k) ?? -Infinity)]))])) as Readonly<Record<StanceId, Deltas>>;
+const STANCES_79: Readonly<Record<StanceId, Deltas>> = stanceRows(Object.entries(capStances79(stanceRows(TABLE_79.rows as unknown as Record<string, unknown>[]))).map(([id, d]) => ({ id, ...d })));   // stances 2x sandbox, feint cap Dom-held (the doubled rows, then each quantity floored by its stanceCaps row)
 // The Defensive stance BEFORE v52 (stance-era.ts): the same deltas plus a parry window and a guard-counter window a quarter longer. Read only while a record below 52 replays.
 const LEGACY_DEFENSIVE: Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>> = LEGACY_DEFENSIVE_ROWS as unknown as Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>>;
 const rowOf = (f: { stance?: StanceId }): Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>> | undefined => (f.stance ? (STANCE_ROWS_ON ? undefined : LEGACY_DEFENSIVE[f.stance]) ?? (ROWS79_ON ? STANCES_79 : STANCES)[f.stance] : undefined);
