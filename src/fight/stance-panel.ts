@@ -13,7 +13,8 @@ export const stanceFlag = (search: string): PickedStance | undefined => {
   return (PICKS as readonly string[]).includes(v ?? '') ? (v as PickedStance) : 'neutral';
 };
 export const stanceLabel = (p: PickedStance): string => stancePickRow(p).label;   // Dom 2026-10-07: the fourth stance is SHOWN as Balanced; its id stays `neutral` (the record's 2-bit code, ?stances=neutral, every pin): the row carries the label
-export const stanceEffect = (p: PickedStance): string => stancePickRow(p).effect;
+export const stanceColour = (p: PickedStance): string => stancePickRow(p).colour;
+export const stanceEffect =(p: PickedStance): string => stancePickRow(p).effect;
 
 // The character's stored pick: one small value per character on this device (the way the equipped specials and spells are kept), validated against the record's own picks on every read; anything else reads as Balanced.
 export const STANCE_KEY = 'frankendom.stance.v1';
