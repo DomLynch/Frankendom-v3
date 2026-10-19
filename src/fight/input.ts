@@ -7,6 +7,7 @@ import type { Direction } from './moves.ts';
 import { inputNum } from './input-rows.ts';
 import { SPELL_BUFFER_MS } from './sandbox-rules.ts';
 import { applyTouchLayout } from './touch-layout.ts';
+import { attachTapLog, tapLogOn } from './tap-log.ts';
 
 type Lookup = <T extends HTMLElement>(id: string) => T;
 export type InputEnv = {
@@ -319,6 +320,7 @@ export function createInput(env: InputEnv) {
       });
   }
   strikeControl(attackButton, 'light', () => requestStrike(), true);
+  if (typeof document !== 'undefined' && tapLogOn(location.search)) attachTapLog(document, attackButton);   // `?taplog=1` only: a local STRIKE press-length meter (tap-log.ts); off by default, nothing leaves the page
   if (ONE_BUTTON && typeof document !== 'undefined') applyTouchLayout(document, location.search);   // touch layout A goes with the one-button strike (touch-layout.ts); off by default
   skillButton.addEventListener('pointerdown', (event) => {
     if (event.button === 0) {

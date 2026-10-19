@@ -1,0 +1,20 @@
+{
+  "labels": [
+    { "id": "title", "text": "STRIKE taps" },
+    { "id": "n", "text": "n" },
+    { "id": "median", "text": "median" },
+    { "id": "p90", "text": "p90" },
+    { "id": "unit", "text": "ms" },
+    { "id": "copy", "text": "copy" },
+    { "id": "copied", "text": "copied" },
+    { "id": "clear", "text": "clear" }
+  ],
+  "numbers": [
+    { "id": "meanWeight", "value": 0.5 },
+    { "id": "p90Rank", "value": 0.9 },
+    { "id": "copiedMs", "value": 1200 },
+    { "id": "panelLeftPx", "value": 8 },
+    { "id": "panelRightPx", "value": 8 },
+    { "id": "panelTopPx", "value": 280 }
+  ]
+}
