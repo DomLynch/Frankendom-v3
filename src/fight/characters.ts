@@ -85,6 +85,7 @@ export const WEAPON_CLIPS: Record<WeaponId, Partial<Record<Role, string>>> = {
   longsword: { Thrust: 'Riposte' },
   cleaver: { Thrust: 'Riposte' },   // the Pitborn's, on the sword clip family until the weapons lane lands its own
   knife: { Thrust: 'Riposte' },   // the goblin's, on the sword clip family until the weapons lane lands its own
+  bow: { Thrust: 'Riposte' },   // the bow (extends knife in weapon-defs.json): the knife's clip family, as the sandbox's stand-in played it
   estoc: { Thrust: 'Riposte' },   // the Nightborn's, likewise
   // The Ash Wolf's bite (Combat, 2026-10-07; the quadruped rig of #1662, src/assets/wolf.glb): the role map is this row, no second loader. One attack clip, 'Bite', serves every strike role
   // (the sim's path timings tell a bite, a lunge and a maul apart); Hit is 'Hurt', Flee is the backstep. No Guard, Parry, Roll, Kick or Draw: the wolf never guards, never kicks and evades by
@@ -100,9 +101,11 @@ export const WEAPON_CLIPS: Record<WeaponId, Partial<Record<Role, string>>> = {
   warhammer: { Idle: 'Warhammer_Idle', Walk: 'Warhammer_Walk', Jog: 'Warhammer_Walk', Run: 'Warhammer_Walk', Armed: 'Warhammer_Idle', ArmedWalk: 'Warhammer_Walk', StrafeLeft: 'Warhammer_StrafeLeft', StrafeRight: 'Warhammer_StrafeRight', Attack: 'Warhammer_Slash', Return: 'Warhammer_Slash', Heavy: 'Warhammer_Heavy', Thrust: 'Warhammer_Thrust', Riposte: 'Warhammer_Thrust', Guard: 'Warhammer_Guard', BlockImpact: 'Warhammer_BlockImpact', Parry: 'Warhammer_Guard', Deflected: 'Warhammer_Deflected', Hit: 'Warhammer_Hit', Death: 'Warhammer_Death' },
   trident: { Idle: 'Trident_Idle', Walk: 'Trident_Walk', Jog: 'Trident_Walk', Run: 'Trident_Walk', Armed: 'Trident_Idle', ArmedWalk: 'Trident_Walk', StrafeLeft: 'Trident_StrafeLeft', StrafeRight: 'Trident_StrafeRight', Attack: 'Trident_Sweep', Return: 'Trident_Sweep', Heavy: 'Trident_High', Thrust: 'Trident_Thrust', Riposte: 'Trident_ThrustChain', Guard: 'Trident_Guard', BlockImpact: 'Trident_BlockImpact', Parry: 'Trident_BlockImpact', Deflected: 'Trident_Deflected', Hit: 'Trident_Hit', Death: 'Trident_Death' },   // the gait roles as on the scythe: unlisted falls back to the sword family, wrong for a two-handed pole
 };
+WEAPON_CLIPS.staff = WEAPON_CLIPS.trident!;   // the staff (extends trident in weapon-defs.json): the trident's clip family, as the sandbox's stand-in played it
 // The player's own overrides: only the player starts a fight sheathed (duel.ts initialDuel; opponents start ready, Strategy 2026-09-26), so a
 // pole's sheathed carry and its draw live on the player's equip file alone and opponent rigs keep the shared row.
 export const PLAYER_CLIPS: Partial<Record<WeaponId, Partial<Record<Role, string>>>> = { ...Object.fromEntries([...POMMEL_BASH].map(w => [w, { Pommel: 'Skill_Pommel' }])), trident: { Idle: 'Trident_Carry', Draw: 'Trident_Draw', Pommel: 'Trident_Pommel' }, scythe: { Idle: 'Scythe_Carry', Draw: 'Scythe_Draw' }, warhammer: { Idle: 'Warhammer_Carry', Draw: 'Warhammer_Draw', Pommel: 'Warhammer_Pommel' }, maul: { Idle: 'Maul_Carry', Draw: 'Maul_Draw', Pommel: 'Maul_Pommel' } };
+PLAYER_CLIPS.staff = PLAYER_CLIPS.trident;   // the staff carries and draws as the trident does (its equip file is the trident's)
 // Pommel is the Pommel Strike's role: the hero's Skill_Pommel where the player's row names it, else the weapon's thrust clip.
 export const clipFor = (weapon: WeaponId, role: Role, player = false): string => (player ? PLAYER_CLIPS[weapon]?.[role] : undefined) ?? WEAPON_CLIPS[weapon][role] ?? (role === 'Pommel' ? clipFor(weapon, 'Thrust') : role);
 // A quadruped (scripts/character/quadruped_rig.py) carries seven clips, not the humanoid set. It is recognised by its Bite clip, not by a weapon id, so

@@ -67,6 +67,14 @@
     {
       "id": "Longsword",
       "weight": 100
+    },
+    {
+      "id": "Bow",
+      "weight": 100
+    },
+    {
+      "id": "Staff",
+      "weight": 100
     }
   ],
   "gearPool": [
