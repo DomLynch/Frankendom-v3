@@ -1,0 +1,15 @@
+{
+  "models": [
+    {
+      "id": "bow",
+      "file": "weapons/ranged/bow-v1.glb",
+      "node": "WeaponDrawn",
+      "hand": "hand_l",
+      "holdRxDeg": -1.9,
+      "holdRyDeg": 34.6,
+      "holdRzDeg": 114.3,
+      "metalness": 0.08,
+      "roughness": 0.85
+    }
+  ]
+}
