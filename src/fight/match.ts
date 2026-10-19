@@ -40,7 +40,7 @@ import { FIRST_STAB_VERSION, STAB_ON, setStab } from './stab-rule.ts';
 import { FIRST_STANCE_ROWS_VERSION, STANCE_ROWS_ON, setStanceRows } from './stance-era.ts';
 import { FIRST_POISE_LADDER_VERSION, POISE_LADDER_ON, setPoiseLadder } from './poise-era.ts';
 import { CONE_ON, FIRST_CONE_VERSION, setCone } from './cone-era.ts';
-import { SANDBOX_ON, FIRST_SANDBOX_VERSION, setSandbox } from './sandbox-era.ts';
+import { SANDBOX_ON, sandboxFor, setSandbox } from './sandbox-era.ts';
 import { FIRST_LATE_NOTICE_VERSION, LATE_NOTICE, PLAY_SCALE, playScaleFor, setLateNotice, setPlayScale } from './play-radius.ts';
 import { sparringSpecialDuel, validateSparringSpecialSelection, type SparringSpecialSelection } from './sparring-special-runtime.ts';
 import { bossSpecialFor } from './special-identity.ts';
@@ -219,7 +219,7 @@ export class Match {
       return p;
     });
     this.practice = practice; this.specials = !!record.specials; this.gambit = !!record.gambit; this.stances = record.stances; this.replay = { record, cursor: fromTick }; this.fightLog = []; this.frameEvents = [];
-    setPlayScale(playScaleFor(record.opponent, record.v)); setLateNotice(record.v >= FIRST_LATE_NOTICE_VERSION); setStab(record.v >= FIRST_STAB_VERSION); setStanceRows(record.v >= FIRST_STANCE_ROWS_VERSION); setPoiseLadder(record.v >= FIRST_POISE_LADDER_VERSION); setCone(record.v >= FIRST_CONE_VERSION); setSandbox(record.v >= FIRST_SANDBOX_VERSION);
+    setPlayScale(playScaleFor(record.opponent, record.v)); setLateNotice(record.v >= FIRST_LATE_NOTICE_VERSION); setStab(record.v >= FIRST_STAB_VERSION); setStanceRows(record.v >= FIRST_STANCE_ROWS_VERSION); setPoiseLadder(record.v >= FIRST_POISE_LADDER_VERSION); setCone(record.v >= FIRST_CONE_VERSION); setSandbox(sandboxFor(record.v));
     return saved;
   }
   endClip(saved: ReturnType<Match['startClip']>) {
