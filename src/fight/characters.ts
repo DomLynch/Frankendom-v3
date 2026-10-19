@@ -148,7 +148,7 @@ export function defenceReaction(s: Practice, opponent=false): {pose:'block'|'par
 type FighterAsset = { scene: Group; animations: AnimationClip[] };
 // One fighter GLB: the same rig, clip names and sword attachments as every other (blade paths are baked once).
 import { MissingTextures, retryTransient } from '../retry.ts';
-import { CHARGE_LEANS, MAPPED_PALETTE, type ChargeLean } from './character-looks-rows.ts';   // the per-opponent label maps are rows (character-looks-defs.json)
+import { CHARGE_LEANS, MAPPED_PALETTE, SHARED_MAPPED, type ChargeLean } from './character-looks-rows.ts';   // the per-opponent label maps are rows (character-looks-defs.json)
 import { fxNum } from './fx-rows.ts';
 const STEP_MAX = fxNum('fx.characters.stepMax');
 const WALK_RATE_MIN = fxNum('fx.characters.walkRateMin');
@@ -350,7 +350,27 @@ export const SOURCE_MAPPED: Partial<Record<OpponentId, readonly string[]>> = MAP
 export function rigMaterials(root: Object3D, skip: ReadonlySet<Object3D> = new Set()): Map<string, MeshStandardMaterial> {
   const materials = new Map<string, MeshStandardMaterial>();
   root.traverse(object => { if (object instanceof Mesh && !skip.has(object) && object.material instanceof MeshStandardMaterial && object.material.name && object.material.map) materials.set(object.material.name, object.material); });
+  for (const name of SHARED_MAPPED) { const copy = materials.get(name); if (copy && !sharedCopies.has(name)) { sharedCopies.set(name, copy); settleShared(name, copy); } }
   return materials;
+}
+// A name whose map is one shared texture on every rig that maps it (SHARED_MAPPED rows) is remembered from the first rig that shows it, so a wearer that
+// maps nothing of the name (the cave troll: one `WorldBody` material) wears the shared copy, not loot.glb's mapless white (the troll's pitborn Wrap).
+const sharedCopies = new Map<string, MeshStandardMaterial>();
+// A cold load: a piece worn before any rig has shown the shared copy keeps the mapless white for now, and is swapped (at its rank tint) when the first rig shows it.
+const awaitingShared: { mesh: Mesh; name: string; tier: Tier | undefined }[] = [];
+export function awaitShared(mesh: Mesh, piece: Mesh, mapped: unknown, tier: Tier | undefined) {
+  const own = piece.material;
+  if (mapped !== own || !(own instanceof MeshStandardMaterial) || !SHARED_MAPPED.includes(own.name) || !SOURCE_MAPPED[piece.userData.opponent as OpponentId]?.includes(own.name)) return;
+  for (let i = awaitingShared.length - 1; i >= 0; i--) if (!awaitingShared[i]!.mesh.parent) awaitingShared.splice(i, 1);   // a piece taken off is forgotten
+  awaitingShared.push({ mesh, name: own.name, tier });
+}
+function settleShared(name: string, copy: MeshStandardMaterial) {
+  for (let i = awaitingShared.length - 1; i >= 0; i--) {
+    const waiting = awaitingShared[i]!;
+    if (waiting.name !== name) continue;
+    if (waiting.mesh.parent) waiting.mesh.material = waiting.tier ? tinted(copy, waiting.tier) : copy;
+    awaitingShared.splice(i, 1);
+  }
 }
 // A palette name the source rig does not map keeps loot.glb's own entry, and loot.glb's palette is the HERO's (build-warrior.mjs): the
 // Executioner's hood came out in the hero's madder red on the player (Dom, 2026-10-07). Where the source opponent wears a different dye of
@@ -360,7 +380,7 @@ const dyed = new WeakMap<MeshStandardMaterial, MeshStandardMaterial>();
 export function sourceMaterial(piece: Mesh, materials: ReadonlyMap<string, MeshStandardMaterial>) {
   const own = piece.material, opponent = piece.userData.opponent as OpponentId;
   if (!(own instanceof MeshStandardMaterial)) return own;
-  if (SOURCE_MAPPED[opponent]?.includes(own.name)) return materials.get(own.name) ?? own;
+  if (SOURCE_MAPPED[opponent]?.includes(own.name)) return materials.get(own.name) ?? sharedCopies.get(own.name) ?? own;
   const dye = SOURCE_DYE[opponent]?.[own.name];
   if (!dye) return own;
   let copy = dyed.get(own);
@@ -456,6 +476,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     const { asset, clips, weapon } = opponent && enemy ? enemy : hero, specs = attackSpecs(weapon);
     const roles = [...ROLES, ...ADDITIVE_ROLES].filter(role => clips[role]);   // the roles this rig carries clips for (the appended scenes are optional)
     const root = clone(asset.scene), anchor = new Group(); anchor.add(root);
+    rigMaterials(root);   // a rig is built before it wears anything: let it register a shared mapped copy (Wrap) now, so a creature wearing pieces before the hero ever does is not left white
     // A re-proportioned fighter's walk cycle covers less ground than a man's (build-warrior.mjs writes `stride`, root scale × leg scale, on
     // the rig node): his locomotion clips play faster by that so the feet keep planting at the simulation's travel speed. A man's is 1.
     let stride = 1; asset.scene.traverse(o => { if (typeof o.userData.stride === 'number' && o.userData.stride > 0) stride = o.userData.stride; });
@@ -671,7 +692,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
             const copy = new SkinnedMesh(typeof piece.userData.gripBone === 'string' ? gripFit(piece.geometry, rig, piece.userData.gripBone) : piece.geometry, material);
             copy.name = piece.name; copy.userData = { ...piece.userData }; copy.castShadow = copy.receiveShadow = true; copy.frustumCulled = false;
             copy.bind(piece.skeleton ? skeletonFor(piece.skeleton) : body.skeleton, body.bindMatrix);
-            body.parent!.add(copy); worn.push(copy);
+            body.parent!.add(copy); worn.push(copy); if (!painted) awaitShared(copy, piece, mapped, tier);
           } catch (error) {
             const id = lootId(piece); console.warn(`loot: ${id} (${piece.name}) could not be worn and was skipped`, error); failed(id, error);
           }

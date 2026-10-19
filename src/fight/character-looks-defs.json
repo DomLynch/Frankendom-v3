@@ -11,6 +11,9 @@
     {"id": "veteran", "names": ["Bronze"]},
     {"id": "witch", "names": []}
   ],
+  "sharedmapped": [
+    {"id": "Wrap", "note": "one texture on every rig that maps it (tests/shared-mapped.test.ts compares the image bytes), so a wearer with no mapped Wrap of its own (the cave troll) shows the first copy any rig showed, not loot.glb's mapless white"}
+  ],
   "lean": [
     {"id": "veteran", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},
     {"id": "pitborn", "yaw": 0.25, "side": 0.55, "chest": 0.25, "arm": 0.55},

@@ -12,5 +12,7 @@ const rows = <T>(table: string): T[] => TABLES.find((t) => t.manifest.table === 
 
 /** Each rig's mapped loot-palette material names, by opponent id. */
 export const MAPPED_PALETTE: Readonly<Record<string, readonly string[]>> = Object.fromEntries(rows<{ id: string; names: string[] }>('mappedpalette').map((r) => [r.id, r.names]));
+/** The mapped palette names whose map is one shared texture on every rig that maps them (a wearer without its own copy takes any rig's). */
+export const SHARED_MAPPED: readonly string[] = rows<{ id: string }>('sharedmapped').map((r) => r.id);
 /** Each opponent's charged-swing lean, by opponent id. */
 export const CHARGE_LEANS: Readonly<Record<string, ChargeLean>> = Object.fromEntries(rows<{ id: string } & ChargeLean>('chargelean').map(({ id, yaw, side, chest, arm, lift }) => [id, { yaw, side, chest, arm, ...(lift !== undefined ? { lift } : {}) }]));

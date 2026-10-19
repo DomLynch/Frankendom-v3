@@ -8,6 +8,13 @@
       "required": { "names": "array", "names[]": "string" }
     },
     {
+      "table": "sharedmapped",
+      "file": "character-looks-defs.json",
+      "at": "sharedmapped",
+      "key": "id",
+      "required": { "note": "string" }
+    },
+    {
       "table": "chargelean",
       "file": "character-looks-defs.json",
       "at": "lean",
