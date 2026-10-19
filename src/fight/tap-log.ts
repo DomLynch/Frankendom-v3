@@ -7,7 +7,7 @@ import MANIFEST from './tap-log-defs.manifest.json' with { type: 'json' };
 
 loadRegistry((MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile(m, DEFS, 'tap-log-defs.json')));
 const LABEL = Object.fromEntries(DEFS.labels.map((l) => [l.id, l.text])) as Record<string, string>;
-const NUM = Object.fromEntries(DEFS.numbers.map((r) => [r.id, r.value])) as Record<string, number>;   // half (the mean of two), p90Rank (the nearest rank), copiedMs (how long the button says "copied")
+const NUM = Object.fromEntries(DEFS.numbers.map((r) => [r.id, r.value])) as Record<string, number>;   // meanWeight (the mean of two), p90Rank (the nearest rank), copiedMs (how long the button says "copied")
 
 export const TAP_LOG_QUERY = /[?&;]taplog=1\b/;
 export const tapLogOn = (search: string): boolean => TAP_LOG_QUERY.test(search);
@@ -17,7 +17,7 @@ export type TapStats = { n: number; median: number; p90: number };
 export function tapStats(durations: readonly number[]): TapStats {
   const n = durations.length; if (n === 0) return { n: 0, median: 0, p90: 0 };
   const s = [...durations].sort((a, b) => a - b);
-  return { n, median: (s[(n - 1) >> 1]! + s[n >> 1]!) * NUM.half!, p90: s[Math.ceil(NUM.p90Rank! * n) - 1]! };   // the two middle values coincide for an odd n
+  return { n, median: (s[(n - 1) >> 1]! + s[n >> 1]!) * NUM.meanWeight!, p90: s[Math.ceil(NUM.p90Rank! * n) - 1]! };   // the two middle values coincide for an odd n
 }
 /** The panel's text, from the label rows: "STRIKE taps  n 30  median 84 ms  p90 112 ms". */
 export const tapText = (st: TapStats): string => `${LABEL.title}  ${LABEL.n} ${st.n}  ${LABEL.median} ${Math.round(st.median)} ${LABEL.unit}  ${LABEL.p90} ${Math.round(st.p90)} ${LABEL.unit}`;
