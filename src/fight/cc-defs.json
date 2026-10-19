@@ -2,10 +2,11 @@
   "kinds": [
     {"id": "stun", "sources": ["postureBreak", "parryStun", "gambitFail", "exhaustedHeavy"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 120},
     {"id": "knockdown", "sources": ["wallSlam"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 180},
-    {"id": "root", "sources": ["legWound"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 0}
+    {"id": "root", "sources": ["legWound"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 0},
+    {"id": "pin", "sources": ["pinShot"], "steps": [100, 50, 25, 0], "window": 900, "windowFrom": "end", "immunity": 120}
   ],
   "tiers": [
-    {"id": "unstoppable", "immune": ["stun", "knockdown", "root"], "from": 10, "to": 10},
+    {"id": "unstoppable", "immune": ["stun", "knockdown", "root", "pin"], "from": 10, "to": 10},
     {"id": "steadfast", "immune": ["knockdown"], "from": 8, "to": 9}
   ],
   "resists": [

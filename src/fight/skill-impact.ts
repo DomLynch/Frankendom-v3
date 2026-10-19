@@ -4,6 +4,7 @@ import { SKILL_ROWS } from './moves.ts';
 import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 import { fxNum } from './fx-rows.ts';
 const STEP_MAX = fxNum('fx.skillImpact.stepMax');   // the longest frame step the impact fx integrate (s)
+import { specialLookOf, type SpecialLookRow } from './sandbox-rules.ts';
 
 // Presentation only: the shared SKILL-IMPACT kit (Strategy via Lead, 2026-09-26, SCOPE 8). Every skill move ships on it: a landed `Hit`
 // whose move is `skill_<id>` throws a short tinted flash at the contact and a fan of dust and sparks, in that move's colour. Driven by the
@@ -19,11 +20,13 @@ export const IMPACT = FEEL_RULES.skillImpactRule[0]!;   // seconds, metres
 const HEIGHT = { head: 1.62, torso: 1.2, legs: 0.62 } as const;   // the contact's height on a scale-1 body, by the sim's hit location
 
 // What a landed skill blow throws, or null: a Hit on a `skill_*` move other than Witch-fire. A blow taken through a raised guard is half.
-export function impactOf(event: CombatEvent): { id: string; tint: string; strength: number } | null {
-  if (event.type !== 'Hit' || event.target === undefined || !event.move?.startsWith('skill_')) return null;
+export function impactOf(event: CombatEvent): { id: string; tint: string; strength: number; look?: SpecialLookRow } | null {
+  const landed = event.type === 'SpecialLanded' && !event.spell && event.target !== event.actor && specialLookOf(event.move?.slice('skill_'.length) ?? '') !== undefined;   // sandbox specialLook rows: a melee special that lands throws the same kit, shaped by its row
+  if ((event.type !== 'Hit' && !landed) || event.target === undefined || !event.move?.startsWith('skill_')) return null;
   const id = event.move.slice('skill_'.length), row = SKILL_ROWS[id];
   if (row && !row.impactTint) return null;   // a skill with its own effect (Witch-fire) has no generic flash
-  return { id, tint: IMPACT_TINT[id] ?? IMPACT_DEFAULT, strength: event.guarded ? 0.5 : 1 };
+  const look = landed ? specialLookOf(id) : undefined;
+  return { id, tint: IMPACT_TINT[id] ?? IMPACT_DEFAULT, strength: event.guarded ? 0.5 : 1, ...(look ? { look } : {}) };
 }
 
 // Where it lands: on the struck body at the location's height (scaled with the man), IMPACT.reach toward the attacker, so it sits on the
@@ -36,6 +39,7 @@ export function impactPoint(event: CombatEvent, fighters: readonly Pick<Fighter,
 
 export function createSkillImpact(scene: THREE.Scene) {
   const pool = 48, positions = new Float32Array(pool * 3), colors = new Float32Array(pool * 3), sizes = new Float32Array(pool);
+  const bulk = new Float32Array(pool).fill(1);   // per-particle size multiplier (a special's specialLook size row; 1 = the kit as it was)
   const life = new Float32Array(pool), span = new Float32Array(pool), velocity = new Float32Array(pool * 3), flash = new Uint8Array(pool), power = new Float32Array(pool), tint = new Float32Array(pool * 3);
   const n = 32, pixels = new Uint8Array(n * n * 4);
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const u = (x - (n - 1) / 2) / ((n - 1) / 2), v = (y - (n - 1) / 2) / ((n - 1) / 2); pixels.set([255, 255, 255, 255 * Math.max(0, 1 - Math.hypot(u, v)) ** 1.5], (y * n + x) * 4); }
@@ -60,15 +64,15 @@ export function createSkillImpact(scene: THREE.Scene) {
         const hit = impactOf(event);
         if (!hit || !fighters[event.target!] || !fighters[event.actor]) continue;
         impactPoint(event, fighters, scale, at); last.copy(at); colour.set(hit.tint); fired++;
-        const f = cursor++ % pool; born(f, IMPACT.flash, true); velocity.fill(0, f * 3, f * 3 + 3); power[f] = hit.strength;
+        const f = cursor++ % pool, look = hit.look, k100 = (v: number | undefined) => (v ?? 100) / 100; born(f, IMPACT.flash, true); velocity.fill(0, f * 3, f * 3 + 3); power[f] = hit.strength * Math.min(1.6, k100(look?.flash));   // a special's flash size rides the power
         const attacker = fighters[event.actor]!.body, victim = fighters[event.target!]!.body, away = Math.atan2(victim.x - attacker.x, victim.z - attacker.z);
-        const count = Math.round(IMPACT.sparks * (0.5 + hit.strength * 0.5));
+        const count = Math.min(pool - 2, Math.round(IMPACT.sparks * (0.5 + hit.strength * 0.5) * k100(look?.sparks)));
         for (let k = 0; k < count; k++) {
           // A fan off the struck side, back toward the attacker and up (the chase camera sits behind him): a jet straight through the
           // victim would hide behind his own body, as the clash sparks found.
-          const p = cursor++ % pool, a = away + Math.PI + (random() - 0.5) * 2.2, speed = (1.2 + random() * 2.6) * (0.7 + hit.strength * 0.3);
-          born(p, IMPACT.life * (0.5 + random() * 0.5), false);
-          velocity.set([Math.sin(a) * speed, 0.6 + random() * 2.2, Math.cos(a) * speed], p * 3);
+          const p = cursor++ % pool, a = away + Math.PI + (random() - 0.5) * 2.2 * k100(look?.spread), speed = (1.2 + random() * 2.6) * (0.7 + hit.strength * 0.3);
+          born(p, IMPACT.life * (0.5 + random() * 0.5), false); bulk[p] = k100(look?.size);
+          velocity.set([Math.sin(a) * speed, (0.6 + random() * 2.2) * k100(look?.lift), Math.cos(a) * speed], p * 3);
         }
       }
       return fired;
@@ -92,7 +96,7 @@ export function createSkillImpact(scene: THREE.Scene) {
           if (positions[p * 3 + 1] < 0.01) { positions[p * 3 + 1] = 0.01; velocity[p * 3 + 1] = 0; velocity[p * 3] *= 0.5; velocity[p * 3 + 2] *= 0.5; }   // dust settles on the sand
           // A spark cools from the tint toward sand-grey dust as it falls.
           for (let c = 0; c < 3; c++) colors[p * 3 + c] = (tint[p * 3 + c] * heat + 0.45 * (1 - heat)) * heat;
-          sizes[p] = 0.6 + heat * 0.9;
+          sizes[p] = (0.6 + heat * 0.9) * bulk[p]!;
         }
       }
       if (active || points.visible) for (const attribute of Object.values(geometry.attributes)) attribute.needsUpdate = true;

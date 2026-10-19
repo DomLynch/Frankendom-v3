@@ -3,6 +3,7 @@ import { RULES } from './moves.ts';
 import { POOLS } from './pools.ts';
 import { simBound } from './sim-bounds-rows.ts';
 const REL_CLAMP = simBound('cast.relClamp');   // rows: sim-bounds-defs.json (the cast relativity window, tenths)
+import { SPELL_SKILL_FLOOR } from './sandbox-rules.ts';
 import BRICK_DEFS from './brick-defs.json' with { type: 'json' };
 import BRICK_MANIFEST from './brick-defs.manifest.json' with { type: 'json' };
 import CAST_RULES from './cast-rules.json' with { type: 'json' };
@@ -54,6 +55,8 @@ export const HITS: Readonly<Record<string, HitRow>> = Object.fromEntries((TABLES
 }));
 export const SPELL_IDS: readonly string[] = Object.keys(INDEX);
 export const isSpellId = (id: string): boolean => Object.hasOwn(INDEX, id);
+/** The root (brick) a catalogue spell belongs to: its range row in the sandbox is keyed by it. */
+export const spellRoot = (id: string): string | undefined => INDEX[id]?.[0];
 
 /** No spell costs more than the bar (Lead, 2026-10-15: harvest at level 8 was 103 against 100, so it could never commit): the cost is capped at the stamina pool's default, read from pool-defs.json. */
 export const COST_CAP: number = POOLS.find((d) => d.id === 'stamina')!.default;
@@ -65,7 +68,8 @@ const clampTo = (v: number, lo: number, hi: number): number => Math.max(lo, Math
 /** The spell `id` as `skill` (0-100, the caster's skill in its school) and `spellPower` (the sheet's dial, worn quality included) cast it; undefined for an id the catalogue does not hold. */
 export function resolveSpell(id: string, skill: number, spellPower = 0, recordVersion?: number): Spell | undefined {
   if (!isSpellId(id)) return undefined;
-  const [root, level] = INDEX[id]!, b = BRICKS[root]!, raw = b.cost + b.costPerLevel * level, cost = recordVersion === undefined || recordVersion >= CAST.costCapFrom ? Math.min(COST_CAP, raw) : raw, credit = Math.round(spellPower * CAST.creditPerPoint), hit = (recordVersion === undefined || recordVersion >= CAST.hitsFrom) ? HITS[root] : undefined;   // a record below hitsFrom resolves one landing, exactly as before
+  skill = Math.max(skill, SPELL_SKILL_FLOOR);   // sandbox row spellSkillFloor (0 on trunk)
+  const [root, level] = INDEX[id]!, b = BRICKS[root]!, raw = b.cost + b.costPerLevel * level, cost = recordVersion === undefined || recordVersion >= CAST.costCapFrom ? Math.min(COST_CAP, raw) : raw, credit = Math.round(spellPower * CAST.creditPerPoint), hit = (recordVersion === undefined || recordVersion >= CAST.hitsFrom) ? HITS[root] : undefined;   // a record below hitsFrom resolves one landing
   return {
     id, cost, share: RULES.special.damage * b.effect.magnitude * (1 + b.effect.perLevel * (level - 1)),
     rel10: clampTo(Math.round(CAST.tenths * (skill + credit - CAST.costWeight * cost) / CAST.relDivisor), -REL_CLAMP, REL_CLAMP), spread10: CAST.spread * CAST.tenths,

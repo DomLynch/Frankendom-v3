@@ -1,24 +1,148 @@
 {
   "ranks": [
-    {"id": "rank1", "rank": 1, "perFoe": 3, "cap": 6},
-    {"id": "rank2", "rank": 2, "perFoe": 3, "cap": 6},
-    {"id": "rank3", "rank": 3, "perFoe": 3, "cap": 6},
-    {"id": "rank4", "rank": 4, "perFoe": 3, "cap": 6},
-    {"id": "rank5", "rank": 5, "perFoe": 3, "cap": 6},
-    {"id": "rank6", "rank": 6, "perFoe": 3, "cap": 9},
-    {"id": "rank7", "rank": 7, "perFoe": 3, "cap": 9},
-    {"id": "rank8", "rank": 8, "perFoe": 3, "cap": 9},
-    {"id": "rank9", "rank": 9, "perFoe": 3, "cap": 9},
-    {"id": "rank10", "rank": 10, "perFoe": 3, "cap": 9}
+    {
+      "id": "rank1",
+      "rank": 1,
+      "perFoe": 3,
+      "cap": 6
+    },
+    {
+      "id": "rank2",
+      "rank": 2,
+      "perFoe": 3,
+      "cap": 6
+    },
+    {
+      "id": "rank3",
+      "rank": 3,
+      "perFoe": 3,
+      "cap": 6
+    },
+    {
+      "id": "rank4",
+      "rank": 4,
+      "perFoe": 3,
+      "cap": 6
+    },
+    {
+      "id": "rank5",
+      "rank": 5,
+      "perFoe": 3,
+      "cap": 6
+    },
+    {
+      "id": "rank6",
+      "rank": 6,
+      "perFoe": 3,
+      "cap": 9
+    },
+    {
+      "id": "rank7",
+      "rank": 7,
+      "perFoe": 3,
+      "cap": 9
+    },
+    {
+      "id": "rank8",
+      "rank": 8,
+      "perFoe": 3,
+      "cap": 9
+    },
+    {
+      "id": "rank9",
+      "rank": 9,
+      "perFoe": 3,
+      "cap": 9
+    },
+    {
+      "id": "rank10",
+      "rank": 10,
+      "perFoe": 3,
+      "cap": 9
+    }
   ],
   "slots": [
-    {"id": "mob1", "kind": "mob", "slot": 1, "percent": 100},
-    {"id": "mob2", "kind": "mob", "slot": 2, "percent": 50},
-    {"id": "mob3", "kind": "mob", "slot": 3, "percent": 30},
-    {"id": "mob4", "kind": "mob", "slot": 4, "percent": 30},
-    {"id": "pvp1", "kind": "pvp", "slot": 1, "percent": 100},
-    {"id": "pvp2", "kind": "pvp", "slot": 2, "percent": 50},
-    {"id": "pvp3", "kind": "pvp", "slot": 3, "percent": 30},
-    {"id": "pvp4", "kind": "pvp", "slot": 4, "percent": 30}
+    {
+      "id": "mob1",
+      "kind": "mob",
+      "slot": 1,
+      "percent": 100
+    },
+    {
+      "id": "mob2",
+      "kind": "mob",
+      "slot": 2,
+      "percent": 50
+    },
+    {
+      "id": "mob3",
+      "kind": "mob",
+      "slot": 3,
+      "percent": 30
+    },
+    {
+      "id": "mob4",
+      "kind": "mob",
+      "slot": 4,
+      "percent": 30
+    },
+    {
+      "id": "pvp1",
+      "kind": "pvp",
+      "slot": 1,
+      "percent": 100
+    },
+    {
+      "id": "pvp2",
+      "kind": "pvp",
+      "slot": 2,
+      "percent": 50
+    },
+    {
+      "id": "pvp3",
+      "kind": "pvp",
+      "slot": 3,
+      "percent": 30
+    },
+    {
+      "id": "pvp4",
+      "kind": "pvp",
+      "slot": 4,
+      "percent": 30
+    }
+  ],
+  "attackers": [
+    {
+      "id": "attacker1",
+      "index": 1,
+      "world-mob": 1000,
+      "pit": 1000,
+      "pvp": 1000,
+      "ladder": 1000
+    },
+    {
+      "id": "attacker2",
+      "index": 2,
+      "world-mob": 500,
+      "pit": 500,
+      "pvp": 500,
+      "ladder": 500
+    },
+    {
+      "id": "attacker3",
+      "index": 3,
+      "world-mob": 300,
+      "pit": 300,
+      "pvp": 300,
+      "ladder": 300
+    },
+    {
+      "id": "attacker4plus",
+      "index": 4,
+      "world-mob": 300,
+      "pit": 300,
+      "pvp": 300,
+      "ladder": 300
+    }
   ]
 }

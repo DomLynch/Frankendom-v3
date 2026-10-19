@@ -96,7 +96,11 @@ export function createHud(element: Lookup) {
       // A cone skill (path null: reach × the kick's arc) lands only inside its reach, so SKILL says so the way Kick does (Combat,
       // 2026-09-27: a lit Dirty Jab pressed at 1.0–1.4 m started and whiffed). The reach is the equipped move's own; null = not a cone.
       const me = practice.duel.fighters[0], skillMove = me.skill ? weaponOf(me.weapon).moves[SKILL_MOVE[me.skill]!] : null;
-      const inSkillReach = skillMove?.path === null ? gap <= skillMove.reach : null;
+      const inSkillReach = skillMove?.path === null && !me.spell ? gap <= skillMove.reach : null;   // an equipped spell casts through this slot and has its own range rows: the pommel's cone must not dim it (Dom 2026-10-16: SPELL 1 always dim)
+      const manaEl = typeof document === 'undefined' ? null : document.getElementById('mana') as HTMLMeterElement | null;   // sandbox-mech mana: entry.ts adds the bar while the mana rows are on
+      const ammoEl = typeof document === 'undefined' ? null : document.getElementById('ammo-value');   // sandbox-mech quiver counter (entry.ts adds it while a quiver row is on)
+      if (ammoEl) ammoEl.textContent = me.ammo === undefined ? 'unlimited' : String(me.ammo);
+      if (manaEl) { manaEl.max = me.maxMana ?? 100; manaEl.value = me.mana ?? 0; const mv = document.getElementById('mana-value'); if (mv) mv.textContent = `${Math.floor(me.mana ?? 0)} / ${me.maxMana ?? 100}`; }
       const staminaNow = view.staminaShown ?? practice.stamina;   // ?stamina=N (fatigue-preview.ts): the BAR alone reads the forced number; accepts() and every button stay on the real stamina
       const lowNext = !!view.fatiguePreview && staminaLow(staminaNow, staminaLowOn);   // in the skip key below: the floor of stamina alone would hide a 10.0 / 10.7 crossing
       const key = `${view.slotB ? `B${view.slotBName ?? ''}` : ''}${practice.phase}:${practice.duel.fighters[0].lastMove ?? ''}:${practice.health}:${practice.playerHealth}:${Math.floor(staminaNow)}${lowNext ? 'L' : ''}:${Math.floor(practice.posture)}:${Math.floor(practice.enemyPosture)}:${hint}:${controlsReady}:${ok.join('')}${skillOk ? 1 : 0}:${practice.wound > 0}:${practice.exhausted}:${practice.threat}:${practice.threatMove}:${inKickReach}:${inSkillReach}:${view.replay ? 'r' : ''}${view.practiceOnly ? 'p' : ''}${view.stalled ? 's' : ''}${view.debug ? 'd' : ''}`;   // d: ?debug shown follows the test tools (#1093), so an admin opening them rewrites #debug
@@ -174,6 +178,7 @@ export function createHud(element: Lookup) {
       // Lit off the simulation's own test (legal: a skill equipped, not cooling, 40 stamina), never while cooling. No ring, no countdown.
       skillButton.setAttribute('aria-disabled', String(!controlsReady || !skillOk));
       if (inSkillReach === null) delete skillButton.dataset.reach; else skillButton.dataset.reach = String(inSkillReach);   // out of its cone: the cluster's dim, still pressable
+      { const two = typeof document === 'undefined' ? null : document.getElementById('sbx-spell2'), f0 = practice.duel.fighters[0]; if (two) { two.hidden = ended; two.setAttribute('aria-disabled', String(!controlsReady || !(f0.spell2 || f0.skill2) || !!f0.skillCooldown2 || !accepts(practice, 'skill2'))); } }   // sandbox spell slot 2: lit off the same test as SPELL 1 (cooldown, mana, standing), dim when it would not cast
       heavyButton.setAttribute('aria-disabled', String(!controlsReady || !ok[1]));
       attackButton.hidden = ended;
       // A stalled viewer page (record ran out, or the link never decoded) shows the button over the frozen frame: it is the only way on.
@@ -192,6 +197,25 @@ export function createHud(element: Lookup) {
     // The journal's damage-numbers toggle turning off: whatever is floating disappears.
     hideDamage() {
       for (const span of dmgPool) span.hidden = true;
+    },
+    // sandbox spellRange (Dom 2026-10-16: a tap on SPELL must never feel like nothing): a refused cast floats its short cue ("too far" / "too close", a spellCue row) over the caster, a landed spell floats its damage over the foe.
+    floatSpell(
+      events: CombatEvent[],
+      fighters: readonly { body: { x: number; z: number }; scale: number }[],
+      project: ((point: [number, number, number]) => [number, number] | null) | undefined,
+    ): void {
+      if (!dmgPool.length || typeof project !== 'function') return;
+      for (const e of events) {
+        const cue = e.type === 'SpecialLanded' && e.spell && e.damage ? String(Math.round(e.damage)) : '';   // a refused press (SpecialRefused) floats through floatDamage's specialCue path
+        const who = e.target;
+        if (!cue || who === undefined) continue;
+        const body = fighters[who]!, at = project([body.body.x, 1.9 * body.scale, body.body.z]);
+        if (!at) continue;
+        const span = dmgPool[dmgCursor++ % dmgPool.length]!;
+        span.textContent = cue; span.className = `dmg heavy${who === 0 ? ' taken' : ''}`; span.style.left = `${at[0]}px`; span.style.top = `${at[1]}px`; span.hidden = false;
+        if (typeof span.animate === 'function') span.animate([{ transform: 'translate(-50%, 0)', opacity: 1 }, { transform: 'translate(-50%, -52px)', opacity: 0 }], { duration: 1100, easing: 'ease-out', fill: 'forwards' }).onfinish = () => { span.hidden = true; };
+        else setTimeout(() => { span.hidden = true; }, 1100);
+      }
     },
     // Clarity cue 3 (Lead's brief): a press the sim refused dims and shakes its button for a moment, no text. The CSS class restarts on each refusal.
     refused(clarity: readonly ClarityEvent[]) {

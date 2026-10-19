@@ -1,4 +1,6 @@
 import { cameraRule } from './camera-rules.ts';
+import { impactTier } from './hit-impact.ts';
+import { shardRows, specialShardsOf, specialTrailOf } from './sandbox-rules.ts';
 import { ROSTER, supportsFinishers, resolveFinisher } from '../roster.ts';
 import * as THREE from 'three';
 import { SPECIAL_STRUCK, specialStage } from './special-look.ts';
@@ -12,7 +14,7 @@ import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '@sentry/browser';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadPeerWarriors, loadWarriors, lootIds, lootWorn, SHIELD_CARRIERS } from './characters.ts';
+import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadPeerWarriors, loadWarriors, lootIds, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { heroPreview } from '../hero-preview.ts';
@@ -36,7 +38,9 @@ import { createFootDust, dustToneFor } from './foot-dust.ts';
 import { createWitchfire } from './witchfire.ts';
 import { createMiasmaMark, marksFlag } from './miasma-mark.ts';
 import { createSkillImpact, impactPoint } from './skill-impact.ts';
-import { shardRows, specialShardsOf } from './sandbox-rules.ts';
+import { createImpactFx } from './impact-fx.ts';
+import { createMissileFx } from './missile-fx.ts';
+import { createWoundNotice } from './wound-notice.ts';
 import { shardCapacity } from './special-shards-rows.ts';
 import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
@@ -210,10 +214,14 @@ export function createScene(
     footDust = createFootDust(scene, dustToneFor(theme)),
     witchfire = createWitchfire(scene),
     skillImpact = createSkillImpact(scene),
-    specialShards = shardRows() ? createSpecialShards(scene, shardCapacity()) : null,   // specialShards rows: lit 3D chips off a landed melee special (special-shards.ts); no rows (shipped) builds nothing
+    specialShards = shardRows() ? createSpecialShards(scene, shardCapacity()) : null,   // sandbox specialShards rows: lit 3D chips off a landed melee special (special-shards.ts); no rows (trunk) builds nothing
     shardAt = new THREE.Vector3(),
+    woundNotice = createWoundNotice(),   // sandbox-mech wounds: the temporary on-screen message
+    missileFx = createMissileFx(scene),   // sandbox-mech missiles: the bolt in flight, nothing while none flies
+    impactFx = createImpactFx(scene),   // a flash + ground ring per contact row (hit-stop-defs.json flash/ring/tint columns; a row without them draws nothing)
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
   if (world) scene.add(world.holder);
+  missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
   arena.ready.then(() => { if ((arena.sky.image as { width: number }).width > 2) { arenaSky = arena.sky; rebuildEnvironment(); } }).catch(() => {});
   function capsule(x: number, z: number, material: THREE.Material) {
@@ -749,10 +757,10 @@ export function createScene(
     playing(): string {
       return warriors ? `${warriors.player.playing()} ${warriors.opponent.playing()}` : '';
     }, // debug probe: what each rig plays
-    probe(): { sparks: number; burst: [number, number, number]; witchfire: { flames: number; glow: [boolean, boolean] }; skillImpact: { alive: number; last: [number, number, number] }; bodyWounds: [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }]; droplets: { falling: number; spots: number } } {
+    probe(): { sparks: number; burst: [number, number, number]; witchfire: { flames: number; glow: [boolean, boolean] }; skillImpact: { alive: number; last: [number, number, number] }; shards: number; bodyWounds: [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }]; droplets: { falling: number; spots: number } } {
       // Body wounds showing per side (player, opponent): how many marks, and the strongest mark's opacity and drip length.
       const bodyWoundsVisible = bodyWounds.entries.map((marks) => ({ visible: marks.filter((m) => m.group.visible).length, used: marks.filter((m) => m.used).length, reach: marks.filter((m) => m.used).map((m) => +Math.min(WOUND_REACH_PROBE_MAX, m.reach).toFixed(3)), opacity: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => m.mark.material.opacity)).toFixed(2), drip: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => Math.max(0, ...m.strands.filter((s) => s.mesh.visible).map((s) => s.mesh.scale.y)))).toFixed(2) })) as [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }];
-      return { sparks: clash.alive(), burst: clash.last(), witchfire: { flames: witchfire.alive(), glow: witchfire.glowing() }, skillImpact: { alive: skillImpact.alive(), last: skillImpact.last() }, bodyWounds: bodyWoundsVisible, droplets: { falling: bodyWounds.droplets.falling, spots: bodyWounds.droplets.spots } };
+      return { sparks: clash.alive(), burst: clash.last(), witchfire: { flames: witchfire.alive(), glow: witchfire.glowing() }, skillImpact: { alive: skillImpact.alive(), last: skillImpact.last() }, shards: specialShards?.alive() ?? 0,bodyWounds: bodyWoundsVisible, droplets: { falling: bodyWounds.droplets.falling, spots: bodyWounds.droplets.spots } };
     }, // debug probe for the presentation harness: live contact effects and the body wounds
     bladeTip(): [number, number, number] | null {
       const anchor = warriors?.player.anchor,
@@ -786,7 +794,7 @@ export function createScene(
         if (event.type === 'SpecialStarted' && event.actor === 1) previewBlocked = false;
         if ((event.type === 'SpecialFizzled' || event.type === 'SpecialInterrupted') && event.actor === 1) { previewGeneration++; previewBlocked = true; specialFxLoading = false; if (previewGroup) disposeSpecialGroup(previewGroup); }
       }
-      const blow = events.find((e) => e.type === 'Hit' || e.type === 'GuardBroken'),
+      const blow = events.find((e) => e.type === 'Hit' || e.type === 'GuardBroken' || impactTier(e) === 'special'),   // a landed melee special is a blow when its hit-stop row has frames (hit-impact.ts; the trunk row is 0)
         contact = blow || events.some((e) => e.type === 'Blocked' || e.type === 'Parried');
       const killed = events.find((e) => e.type === 'Killed');
       bloodEdge.render(events, practice.duel);
@@ -1083,6 +1091,12 @@ export function createScene(
         (specialFx as ModeFx).render(dt, events, practice.duel.fighters, practice.duel.tick, at, !!practice.finish, ...(mode?.extra?.(warriors) ?? []));
         if (mode?.hideTrail && specialStage(practice.duel.fighters[1])) { const trail = warriors?.opponent.anchor.getObjectByName('WeaponTrail'); if (trail) trail.visible = false; }   // the game's pale weapon trail streaks above a raised sword
       }
+      for (const side of SIDES) {   // a melee special's own weapon trail (sandbox specialTrail rows): longer and firmer than the swing's, from `lead` ticks before the release to `tail` after
+        const f = practice.duel.fighters[side], w = side === 0 ? warriors?.player : warriors?.opponent, row = f.skill && !f.spell ? specialTrailOf(f.skill) : undefined;
+        const live = !!row && ((f.special ?? 0) > 0 ? (f.special ?? 0) <= row.lead : (f.specialRecover ?? 0) > RULES.special.recovery - row.tail);
+        w?.specialTrail(live && row ? row : null);
+      }
+      for (const side of SIDES) (side === 0 ? warriors?.player : warriors?.opponent)?.specialMove(specialRoleOf(practice.duel.fighters[side]));   // the move's own clip (src/assets/special-clips.json)
       for (const side of SIDES) {
         const foe = (side === 0 ? warriors?.opponent : warriors?.player), l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r');
         castTells[side].update(practice.duel.fighters[side], l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null, practice.duel.tick, bossRing && side === 1);
@@ -1104,6 +1118,7 @@ export function createScene(
         }
         specialShards.update(dt);
       }
+      impactFx.fire(events, practice.duel.fighters); impactFx.update(dt); missileFx.burst(events, practice.duel.fighters); missileFx.update(practice.duel.tick, practice.duel.fighters); woundNotice.update(practice.duel.fighters, dt);
       if (miasmaMark) { miasmaMark.fire(events); miasmaMark.update(dt, practice.duel.fighters, [1, OPPONENTS[opponentId].scale], [warriors?.player.boneWorld('Head') ?? null, warriors?.opponent.boneWorld('Head') ?? null]); }
 
       // The Witch-fire skill's glow, gout and embers (witchfire.ts), read off the sim's clock on the final poses.

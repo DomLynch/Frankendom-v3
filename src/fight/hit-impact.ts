@@ -7,10 +7,11 @@
 import { HEAVY_CLASS } from './clash-sparks.ts';
 import { shoveFor, type Shove } from './camera-kick.ts';
 import type { CombatEvent } from './duel.ts';
+import { HIT_IMPACT_GLANCE, HIT_IMPACT_SPECIAL } from './sandbox-rules.ts';   // the two row switches (1 = on): a landed melee special as its own contact, and the dull glance tier
 import type { Direction } from './moves.ts';
 import { CONTACTS, KICK_DROP, KNOCK_SETTLE, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
 
-export type Tier = 'special' | 'full' | 'half' | 'parry' | 'block';
+export type Tier = 'special' | 'full' | 'half' | 'parry' | 'block' | 'glance';
 // Guard tiers (Dom 2026-09-29, "implement this also"): a PARRY is the longest beat in the game (70 ms + 11 frames = 253 ms, a heavy hit is
 // 90 + 5 = 173) with a small jolt TOWARD the attacker; a BLOCK is a short freeze with a half-strength knock back from the blow.
 export const IMPACT = {
@@ -19,7 +20,10 @@ export const IMPACT = {
   parry: { frames: CONTACTS.parry.frames, knock: CONTACTS.parry.knock, push: CONTACTS.parry.push }, block: { frames: CONTACTS.blockLight.frames, knock: CONTACTS.blockLight.knock, push: CONTACTS.blockLight.push },
 } as const;
 /** The tier the weapon's own hold (armfeel.weaponHoldMs) sees: a skill holds as the heavy it always was; parries and blocks hold nothing extra. */
-export const HOLD_TIER: Readonly<Record<Tier, 'full' | 'half' | null>> = { special: 'full', full: 'full', half: 'half', parry: null, block: null };
+export const HOLD_TIER: Readonly<Record<Tier, 'full' | 'half' | null>> = { special: 'full', full: 'full', half: 'half', parry: null, block: null, glance: null };
+// sandbox-mech reach bands: a blow outside its weapon's band (event.glance) lands dull: no impact frames, no camera knock; the foe's recoil is cut in the sim. Kept out of IMPACT so that table stays what the rows say.
+export const GLANCE = { frames: 0, knock: 0, push: 0 } as const;
+const impactOf = (tier: Tier) => (tier === 'glance' ? GLANCE : IMPACT[tier]);
 export { KNOCK_SETTLE };   // seconds: the knock is back in 120 ms (a `feel` row in hit-stop-defs.json)
 // Kick and roll (Dom 2026-09-30, pick C of the ?look=hitfx-kick / hitfx-roll clips: "implement and get live"). A LANDED kick, either side,
 // is its own beat: the whole stop is 2 frames (not a hit's 50 ms + 3) and the camera drops 10 cm straight down, back in 120 ms. The
@@ -33,8 +37,10 @@ export function impactTier(e: CombatEvent): Tier | null {
   if (e.type === 'GuardBroken') return 'full';
   if (e.type === 'Parried') return 'parry';
   if (e.type === 'Blocked') return 'block';
+  if (e.type === 'SpecialLanded') return HIT_IMPACT_SPECIAL && e.target !== undefined && e.target !== e.actor && !e.spell && CONTACTS.special.frames > 0 ? 'special' : null;   // not a spell, not the heal on yourself
   if (e.type !== 'Hit') return null;
   if (e.move?.startsWith('skill_')) return 'special';
+  if (e.glance && HIT_IMPACT_GLANCE) return 'glance';
   return e.charged || HEAVY_CLASS.has(e.move ?? '') ? 'full' : 'half';
 }
 // Event sides (duel.ts): a landed blow names the attacker `actor`; a defence (Blocked, Parried) names the DEFENDER `actor`, the attacker `target`.
@@ -43,7 +49,7 @@ export const attackerOf = (e: CombatEvent): number | undefined => (e.type === 'B
 // Milliseconds added to the frame's hit-stop: the strongest contact of the frame decides.
 export function impactStopMs(events: readonly CombatEvent[]): number {
   let frames = 0;
-  for (const e of events) { const tier = impactTier(e); if (tier) frames = Math.max(frames, IMPACT[tier].frames); }
+  for (const e of events) { const tier = impactTier(e); if (tier) frames = Math.max(frames, impactOf(tier).frames); }
   return (frames * 1000) / 60;
 }
 
@@ -57,9 +63,9 @@ export function impactStopMs(events: readonly CombatEvent[]): number {
 // ATTACKER's move direction. `null`: no contact, today's kick stands.
 export function impactShove(e: CombatEvent, direction: Direction | undefined): Shove | null {
   if (landedKick(e)) return { along: 0, drop: KICK.drop, side: 0, hold: 0, settle: KNOCK_SETTLE };   // straight down, no push, no side
-  const tier = impactTier(e), base = shoveFor(e), attacker = attackerOf(e);
+  const tier = impactTier(e), base = tier === 'special' && e.type === 'SpecialLanded' ? { along: 0.05, drop: 0.06, side: 0, hold: 2 / 60, settle: 0.22 } : shoveFor(e), attacker = attackerOf(e);   // a landed special kicks the camera like a heavy blow; only when its row has frames
   if (!tier || !base || e.target === undefined || attacker === undefined) return null;
-  const { knock, push } = IMPACT[tier];
+  const { knock, push } = impactOf(tier);
   if (push) return { ...base, push: attacker === 1 ? push : -push, hold: 0, settle: KNOCK_SETTLE };
   const lateral = direction === 'right' || direction === 'left', struck = 1 - attacker;
   const from = lateral ? ((direction === 'right') === (struck === 1) ? 1 : -1) : 0;   // +1: the blow arrives from screen right

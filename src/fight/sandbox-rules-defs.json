@@ -1,24 +1,817 @@
 {
-  "rules": [
-    { "id": "percentScale", "value": 100 },
-    { "id": "centimetresPerMetre", "value": 100 },
-    { "id": "specialMeleeWindup", "value": 0 },
-    { "id": "specialMeleeReach", "value": 0 },
-    { "id": "specialMeleeSlack", "value": 0 },
-    { "id": "specialReact", "value": 0 },
-    { "id": "specialReactStagger", "value": 160 },
-    { "id": "specialReactKnock", "value": 450 },
-    { "id": "specialReactPosture", "value": 150 }
-  ],
-  "specialCue": [
-    { "id": "far", "text": "too far" }
-  ],
-  "specialPick": [],
-  "specialReactFloor": [
-    { "id": "lunge", "stagger": 36 }
-  ],
-  "specialLook": [],
-  "specialTrail": [],
-  "specialShards": [],
-  "specialSound": []
+ "rules": [
+  {
+   "id": "dodgeCounter",
+   "value": 20
+  },
+  {
+   "id": "interruptEarly",
+   "value": 1000
+  },
+  {
+   "id": "castPushback",
+   "value": 30
+  },
+  {
+   "id": "castPushbackMax",
+   "value": 2
+  },
+  {
+   "id": "executeMult",
+   "value": 1500
+  },
+  {
+   "id": "executeBelow",
+   "value": 25
+  },
+  {
+   "id": "bandOff",
+   "value": 400
+  },
+  {
+   "id": "castTellOff",
+   "value": 1
+  },
+  {
+   "id": "spellsOff",
+   "value": 1
+  },
+  {
+   "id": "healOff",
+   "value": 1
+  },
+  {
+   "id": "specialMeleeWindup",
+   "value": 32
+  },
+  {
+   "id": "specialMeleeReach",
+   "value": 220
+  },
+  {
+   "id": "specialMeleeSlack",
+   "value": 40
+  },
+  {
+   "id": "specialReact",
+   "value": 1
+  },
+  {
+   "id": "specialReactStagger",
+   "value": 160
+  },
+  {
+   "id": "specialReactKnock",
+   "value": 450
+  },
+  {
+   "id": "specialReactPosture",
+   "value": 150
+  },
+  {
+   "id": "spellBuffer",
+   "value": 350
+  },
+  {
+   "id": "spellReach",
+   "value": 2500
+  },
+  {
+   "id": "spellSkillFloor",
+   "value": 100
+  },
+  {
+   "id": "spellFx",
+   "value": 1
+  },
+  {
+   "id": "vfxGroundCm",
+   "value": 5
+  },
+  {
+   "id": "vfxScaleNear",
+   "value": 100
+  },
+  {
+   "id": "vfxScaleFar",
+   "value": 1000
+  },
+  {
+   "id": "vfxScaleMax",
+   "value": 3000
+  },
+  {
+   "id": "glanceGain",
+   "value": 450
+  },
+  {
+   "id": "glanceRate",
+   "value": 820
+  },
+  {
+   "id": "flankDamage",
+   "value": 1200
+  },
+  {
+   "id": "flankPosture",
+   "value": 1400
+  },
+  {
+   "id": "armourYou",
+   "value": 0
+  },
+  {
+   "id": "armourFoe",
+   "value": 0
+  },
+  {
+   "id": "manaMax",
+   "value": 100
+  },
+  {
+   "id": "manaRegen",
+   "value": 60
+  },
+  {
+   "id": "manaDelay",
+   "value": 90
+  },
+  {
+   "id": "manaCostMult",
+   "value": 600
+  },
+  {
+   "id": "missileRadius",
+   "value": 70
+  },
+  {
+   "id": "missileHoming",
+   "value": 1
+  },
+  {
+   "id": "missileFan",
+   "value": 22
+  },
+  {
+   "id": "missileStun",
+   "value": 16
+  },
+  {
+   "id": "quiver",
+   "value": 0
+  },
+  {
+   "id": "hideStancePicker",
+   "value": 1
+  },
+  {
+   "id": "missileGuardPosture",
+   "value": 18
+  },
+  {
+   "id": "percentScale",
+   "value": 100
+  },
+  {
+   "id": "centimetresPerMetre",
+   "value": 100
+  },
+  {
+   "id": "hitImpactSpecial",
+   "value": 1
+  },
+  {
+   "id": "hitImpactGlance",
+   "value": 1
+  }
+ ],
+ "bands": [
+  {
+   "id": "inner",
+   "upTo": 135
+  },
+  {
+   "id": "mid",
+   "upTo": 180
+  },
+  {
+   "id": "outer",
+   "upTo": 100000
+  }
+ ],
+ "bandBest": [
+  {
+   "weapon": "knife",
+   "band": "inner"
+  },
+  {
+   "weapon": "bite",
+   "band": "inner"
+  },
+  {
+   "weapon": "gladius",
+   "band": "inner"
+  },
+  {
+   "weapon": "longsword",
+   "band": "mid"
+  },
+  {
+   "weapon": "cleaver",
+   "band": "mid"
+  },
+  {
+   "weapon": "maul",
+   "band": "mid"
+  },
+  {
+   "weapon": "warhammer",
+   "band": "mid"
+  },
+  {
+   "weapon": "trident",
+   "band": "outer"
+  },
+  {
+   "weapon": "scythe",
+   "band": "outer"
+  },
+  {
+   "weapon": "estoc",
+   "band": "outer"
+  },
+  {
+   "weapon": "reaper",
+   "band": "outer"
+  }
+ ],
+ "spellRange": [
+  {
+   "root": "theWord",
+   "band": "outer",
+   "kind": "magic"
+  },
+  {
+   "root": "threeBlows",
+   "band": "outer",
+   "kind": "magic"
+  },
+  {
+   "root": "theRing",
+   "band": "outer",
+   "kind": "magic"
+  },
+  {
+   "root": "harvest",
+   "band": "outer",
+   "kind": "magic"
+  },
+  {
+   "root": "crack",
+   "band": "outer",
+   "kind": "magic"
+  },
+  {
+   "root": "longShadow",
+   "band": "outer",
+   "kind": "magic"
+  },
+  {
+   "root": "baying",
+   "band": "outer",
+   "kind": "magic"
+  },
+  {
+   "root": "gale",
+   "band": "outer",
+   "kind": "magic",
+   "speed": 900,
+   "tint": "#9fd0ff"
+  },
+  {
+   "root": "ashfall",
+   "band": "outer",
+   "kind": "magic",
+   "speed": 700,
+   "tint": "#ff8a3a"
+  }
+ ],
+ "spellLook": [],
+ "spellEffect": [],
+ "spellPick": [
+  {
+   "id": "ugallu",
+   "level": 1,
+   "vfx": "shock",
+   "unlock": "start"
+  },
+  {
+   "id": "brokkr",
+   "level": 1,
+   "vfx": "ash",
+   "unlock": "pit"
+  },
+  {
+   "id": "kamaitachi",
+   "level": 1,
+   "vfx": "wind",
+   "unlock": "zone1"
+  },
+  {
+   "id": "banshee",
+   "level": 1,
+   "vfx": "nyx",
+   "unlock": "zone2"
+  },
+  {
+   "id": "gula",
+   "level": 3,
+   "vfx": "heal",
+   "unlock": "universal"
+  }
+ ],
+ "specialPick": [
+  {
+   "id": "cleave",
+   "role": "heavy",
+   "label": "Skull Crack",
+   "unlockAfterBossKills": 0,
+   "slot2Default": 1
+  },
+  {
+   "id": "reaping",
+   "role": "sweep",
+   "label": "Whirlwind",
+   "unlockAfterBossKills": 0,
+   "slot2Alt": 1
+  },
+  {
+   "id": "stomp",
+   "role": "posture break",
+   "label": "Ground Slam",
+   "unlockAfterBossKills": 1
+  },
+  {
+   "id": "lunge",
+   "role": "opener",
+   "label": "Lunge",
+   "unlockAfterBossKills": 2
+  }
+ ],
+ "specialLook": [],
+ "specialTrail": [],
+ "specialShards": [],
+ "specialSound": [
+  {
+   "id": "cleave-1",
+   "cue": "whoosh_heavy",
+   "gain": 650,
+   "room": 200,
+   "delay": 280,
+   "on": "start",
+   "skill": "cleave"
+  },
+  {
+   "id": "cleave-2",
+   "cue": "bone_crack",
+   "gain": 850,
+   "room": 150,
+   "delay": 0,
+   "skill": "cleave"
+  },
+  {
+   "id": "cleave-3",
+   "cue": "hit_heavy",
+   "gain": 600,
+   "room": 300,
+   "delay": 0,
+   "skill": "cleave"
+  },
+  {
+   "id": "reaping-1",
+   "cue": "whoosh_heavy",
+   "gain": 600,
+   "room": 200,
+   "delay": 120,
+   "on": "start",
+   "skill": "reaping"
+  },
+  {
+   "id": "reaping-2",
+   "cue": "whoosh_heavy",
+   "gain": 750,
+   "room": 200,
+   "delay": 300,
+   "on": "start",
+   "skill": "reaping"
+  },
+  {
+   "id": "reaping-3",
+   "cue": "hit_heavy",
+   "gain": 750,
+   "room": 300,
+   "delay": 0,
+   "skill": "reaping"
+  },
+  {
+   "id": "reaping-4",
+   "cue": "flesh_cut",
+   "gain": 550,
+   "room": 200,
+   "delay": 0,
+   "skill": "reaping"
+  },
+  {
+   "id": "stomp-1",
+   "cue": "whoosh_heavy",
+   "gain": 600,
+   "room": 200,
+   "delay": 260,
+   "on": "start",
+   "skill": "stomp"
+  },
+  {
+   "id": "stomp-2",
+   "cue": "hit_heavy",
+   "gain": 900,
+   "room": 350,
+   "delay": 0,
+   "skill": "stomp"
+  },
+  {
+   "id": "stomp-3",
+   "cue": "guard_break",
+   "gain": 450,
+   "room": 300,
+   "delay": 0,
+   "skill": "stomp"
+  },
+  {
+   "id": "lunge-1",
+   "cue": "whoosh_light",
+   "gain": 600,
+   "room": 150,
+   "delay": 150,
+   "on": "start",
+   "skill": "lunge"
+  },
+  {
+   "id": "lunge-2",
+   "cue": "flesh_stab",
+   "gain": 750,
+   "room": 150,
+   "delay": 0,
+   "skill": "lunge"
+  },
+  {
+   "id": "lunge-3",
+   "cue": "hit_heavy",
+   "gain": 300,
+   "room": 250,
+   "delay": 0,
+   "skill": "lunge"
+  },
+  {
+   "id": "ironrush-1",
+   "cue": "whoosh_light",
+   "gain": 600,
+   "room": 150,
+   "delay": 150,
+   "on": "start",
+   "skill": "ironrush"
+  },
+  {
+   "id": "ironrush-2",
+   "cue": "hit_heavy",
+   "gain": 700,
+   "room": 250,
+   "delay": 0,
+   "skill": "ironrush"
+  },
+  {
+   "id": "ironrush-3",
+   "cue": "flesh_stab",
+   "gain": 400,
+   "room": 150,
+   "delay": 0,
+   "skill": "ironrush"
+  },
+  {
+   "id": "shove-1",
+   "cue": "charge",
+   "gain": 300,
+   "room": 300,
+   "delay": 0,
+   "on": "start",
+   "skill": "shove"
+  },
+  {
+   "id": "shove-2",
+   "cue": "hit_heavy",
+   "gain": 800,
+   "room": 300,
+   "delay": 0,
+   "skill": "shove"
+  },
+  {
+   "id": "pommel-1",
+   "cue": "hit_heavy",
+   "gain": 500,
+   "room": 250,
+   "delay": 0,
+   "skill": "pommel"
+  },
+  {
+   "id": "pommel-2",
+   "cue": "bone_crack",
+   "gain": 300,
+   "room": 150,
+   "delay": 0,
+   "skill": "pommel"
+  }
+ ],
+ "specialReactFloor": [
+  {
+   "id": "lunge",
+   "stagger": 36
+  }
+ ],
+ "spellHeal": [
+  {
+   "id": "gula",
+   "share": 250,
+   "uses": 2,
+   "windup": 120
+  }
+ ],
+ "blowKinds": [
+  {
+   "weapon": "*",
+   "move": "*",
+   "kind": "slash"
+  },
+  {
+   "weapon": "*",
+   "move": "thrust",
+   "kind": "pierce"
+  },
+  {
+   "weapon": "*",
+   "move": "riposte",
+   "kind": "pierce"
+  },
+  {
+   "weapon": "estoc",
+   "move": "*",
+   "kind": "pierce"
+  },
+  {
+   "weapon": "maul",
+   "move": "*",
+   "kind": "crush"
+  },
+  {
+   "weapon": "warhammer",
+   "move": "*",
+   "kind": "crush"
+  }
+ ],
+ "armourVs": [
+  {
+   "kind": "slash",
+   "armour": "heavy",
+   "value": 600
+  },
+  {
+   "kind": "pierce",
+   "armour": "heavy",
+   "value": 900
+  },
+  {
+   "kind": "crush",
+   "armour": "heavy",
+   "value": 1400
+  },
+  {
+   "kind": "slash",
+   "armour": "medium",
+   "value": 850
+  },
+  {
+   "kind": "pierce",
+   "armour": "medium",
+   "value": 650
+  },
+  {
+   "kind": "crush",
+   "armour": "medium",
+   "value": 1000
+  },
+  {
+   "kind": "slash",
+   "armour": "light",
+   "value": 1300
+  },
+  {
+   "kind": "pierce",
+   "armour": "light",
+   "value": 1300
+  },
+  {
+   "kind": "crush",
+   "armour": "light",
+   "value": 1200
+  }
+ ],
+ "commit": [
+  {
+   "weapon": "maul",
+   "move": "heavy_overhead",
+   "windup": 30
+  },
+  {
+   "weapon": "warhammer",
+   "move": "heavy_overhead",
+   "windup": 30
+  }
+ ],
+ "ward": [
+  {
+   "opponent": "witch",
+   "down": 240,
+   "reflect": 800
+  }
+ ],
+ "brace": [
+  {
+   "opponent": "shieldmaiden"
+  }
+ ],
+ "poison": [
+  {
+   "opponent": "plaguedoctor",
+   "damage": 2,
+   "every": 60,
+   "duration": 600
+  }
+ ],
+ "bind": [
+  {
+   "weapon": "trident",
+   "window": 45,
+   "hold": 300,
+   "react": 28
+  },
+  {
+   "weapon": "estoc",
+   "window": 45,
+   "hold": 300,
+   "react": 28
+  }
+ ],
+ "missile": [
+  {
+   "kind": "staff",
+   "weapon": "none",
+   "speed": 700,
+   "share": 1000,
+   "mana": 12,
+   "tint": "#6aa8ff"
+  },
+  {
+   "kind": "bow",
+   "weapon": "none",
+   "speed": 900,
+   "share": 1000,
+   "mana": 0,
+   "windup": 20,
+   "recovery": 0,
+   "ammo": 20,
+   "pierce": 350,
+   "chipKills": 1,
+   "tint": "#e8d9a8"
+  },
+  {
+   "kind": "crossbow",
+   "weapon": "none",
+   "speed": 1100,
+   "share": 1700,
+   "mana": 0,
+   "windup": 120,
+   "recovery": 60,
+   "ammo": 12,
+   "pierce": 500,
+   "tint": "#ffb066"
+  }
+ ],
+ "missileLanes": [
+  {
+   "move": "thrust",
+   "lane": 0
+  },
+  {
+   "move": "light_left",
+   "lane": -1
+  },
+  {
+   "move": "light_right",
+   "lane": 1
+  },
+  {
+   "move": "heavy_overhead",
+   "lane": 0,
+   "mult": 1500
+  }
+ ],
+ "missileAnswer": [
+  {
+   "dodge": 15,
+   "guard": 15,
+   "run": 0
+  }
+ ],
+ "bowSpecial": [
+  {
+   "skill": "cleave",
+   "clip": "Special_BowPower",
+   "label": "Power Shot",
+   "unlockAfterBossKills": 0,
+   "arrows": 2,
+   "lanes": [
+    0
+   ],
+   "mult": 2000,
+   "windup": 40,
+   "speed": 700,
+   "react": 1,
+   "posture": 70,
+   "tint": "#fff2c0"
+  },
+  {
+   "skill": "reaping",
+   "clip": "Special_BowFan",
+   "label": "Fan Volley",
+   "unlockAfterBossKills": 1,
+   "arrows": 3,
+   "lanes": [
+    -1,
+    0,
+    1
+   ],
+   "mult": 600,
+   "windup": 36,
+   "speed": 900,
+   "tint": "#e8d9a8"
+  },
+  {
+   "skill": "stomp",
+   "clip": "Special_BowPin",
+   "label": "Pinning Shot",
+   "unlockAfterBossKills": 2,
+   "arrows": 1,
+   "lanes": [
+    0
+   ],
+   "mult": 1000,
+   "windup": 36,
+   "speed": 900,
+   "pin": 90,
+   "posture": 90,
+   "tint": "#d8c8ff"
+  },
+  {
+   "skill": "lunge",
+   "clip": "Special_BowQuick",
+   "label": "Quick Shot",
+   "unlockAfterBossKills": 0,
+   "arrows": 1,
+   "lanes": [
+    0
+   ],
+   "mult": 1500,
+   "windup": 7,
+   "speed": 2600,
+   "tint": "#ffffff"
+  }
+ ],
+ "castPenalty": [
+  {
+   "id": "heavy",
+   "dial": "armour",
+   "atLeast": 20,
+   "percent": 20
+  },
+  {
+   "id": "medium",
+   "dial": "stamina",
+   "atLeast": 20,
+   "percent": 10
+  }
+ ],
+ "specialCue": [
+  {
+   "id": "far",
+   "text": "too far"
+  }
+ ]
 }

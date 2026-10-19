@@ -7,6 +7,7 @@ import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import { sceneNum } from './scene-rows.ts';
 import { fxNum } from './fx-rows.ts';
 const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin');
+import { CAST_TELL_OFF } from './sandbox-rules.ts';
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
 // under the hero: where the blow will land, so a roll is the answer without any text. Read off the sim's own windup ticks (specialStage's source), never written back.
@@ -22,7 +23,7 @@ export const spellLook = (search: string): { id: string; skill: number } | undef
 };
 const ROLL_TICKS = sceneNum('boss-telegraph.roll-ticks');   // the last stretch of the windup, when the ring flashes: the roll window
 export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'> & { spell?: { id: string } }, bosses = true): { fill: number; flash: boolean; color?: number } | null => {
-  if (!caster.special || !caster.health) return null;
+  if (!caster.special || !caster.health || (caster.spell && CAST_TELL_OFF)) return null;
   const color = caster.spell ? spellColor(caster.spell.id) : undefined;
   if (!caster.spell && !(bosses && caster.specialShare === RULES.special.bossDamage)) return null;
   return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS, ...(color !== undefined ? { color } : {}) };

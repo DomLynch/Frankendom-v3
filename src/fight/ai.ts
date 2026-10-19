@@ -1,8 +1,9 @@
 import { STAB_ON } from './stab-rule.ts';
 import { RULES, SKILL_ROWS, type AiProfile, type Direction, type MoveId, weaponOf } from './moves.ts';
 import { LATE_NOTICE } from './play-radius.ts';
-import { meleeSpecialReach } from './sandbox-rules.ts';
 import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
+import { meleeSpecialReach, spellRangeCue, spellRangeOf, MISSILE_ANSWER, missileMinGap, missileOf } from './sandbox-rules.ts';
+import { spellRoot } from './spell-cast.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { READ_ROWS } from './ai-read-rows.ts';   // rows: ai-read-defs.json
 import { DIAL } from './ai-dial-rows.ts';   // rows: ai-dial-defs.json (the brain's distances, timings and reach margins)
@@ -56,6 +57,7 @@ export type AiState = {
   jitter: number; retreatUntil: number; hold: boolean; feint: boolean;
   disengageUntil: number;   // the tick until which a landed blow is followed by a hop back out (profile.disengage)
   brace?: boolean;   // this threat is met in a guard that stops heavies (profile.braceHeavy), rolled once per threat
+  missileSeen?: number; missilePlan?: 'dodge' | 'guard' | 'take';   // sandbox missileAnswer: the foe's bolt in flight (its launch tick) and what this fighter decided to do about it, rolled once per bolt
   habits: Habits; scores: Record<string, number>;
 };
 export const initialAi = (seed = DIAL.startSeed): AiState => ({
@@ -82,9 +84,20 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
   const inside = gap < (mine.thrust.minReach ?? 0);   // inside a pole's point: the thrust meets nothing here; the answer is the kick, then a step back out
   next.lastGap = gap; next.lastTravel = opponent.body.distance;   // for the next tick's read of an advancing opponent
   const canAct = self.phase === 'ready' || self.phase === 'guard';
+  if (MISSILE_ANSWER) {   // sandbox missileAnswer: a bolt in flight at me is rolled, guarded or taken (decided once per bolt, seeded); an archer standing beyond the missile gap is run down
+    const bolt = opponent.missile;
+    if (bolt) {
+      if (next.missileSeen !== bolt.launched) { const r = roll() * 100; next.missileSeen = bolt.launched; next.missilePlan = r < MISSILE_ANSWER.dodge ? 'dodge' : r < MISSILE_ANSWER.dodge + MISSILE_ANSWER.guard ? 'guard' : 'take'; }
+      const left = bolt.arrives - tick;
+      if (next.missilePlan === 'dodge' && canAct && self.stamina >= RULES.rollCost && left <= RULES.safeEnd - 2 && left >= RULES.safeStart) return { intent: { ...intent, action: 'dodge', move: { x: M.sin(facing), z: M.cos(facing), yaw: 0, run: false } }, ai: next };
+      if (next.missilePlan === 'guard' && canAct && left <= 24) return { intent: { ...intent, guard: true }, ai: next };
+    }
+    if (MISSILE_ANSWER.run && canAct && missileOf(opponent.weapon)?.kind === 'bow' && gap > missileMinGap()) return { intent: { ...intent, move: { x: M.sin(facing), z: M.cos(facing), yaw: 0, run: true } }, ai: next };
+  }
   // Special Moves (RULES.special, only when the fight has them: withSpecials): cast whenever it is ready and in reach. No roll is drawn, so a
   // fight without specials steps exactly as before.
-  if (self.specialShare !== undefined && gap <= (self.spell ? RULES.special.reach : meleeSpecialReach(RULES.special.reach)) && legal(self, 'skill')) return { intent: { ...intent, action: 'skill' }, ai: next };
+  if (self.specialShare !== undefined && (self.spell ? (spellRangeOf(spellRoot(self.spell.id) ?? '') ? !spellRangeCue(spellRoot(self.spell.id) ?? '', gap) : gap <= RULES.special.reach) : gap <= (self.picked ? meleeSpecialReach(RULES.special.reach) : RULES.special.reach)) && legal(self, 'skill')) return { intent: { ...intent, action: 'skill' }, ai: next };   // a caster holding a spell casts it only inside that spell's range rows (the same gate as the player's press), else the special's reach
+  if (self.bound && self.bound <= (self.boundReact ?? 0) && legal(self, 'kick')) return { intent: { ...intent, action: 'kick' }, ai: next };   // sandbox-mech bindAndDisarm: the bound AI answers with the kick when its reaction time is up
   const guardShare = profile.guard ?? 1;   // fight-identity knobs (moves.ts AiProfile): absent = the warden as it always was
   // Hit and run: a blow that landed this tick earns a hop back out of range (profile.disengage), taken as soon as the swing has recovered.
   if (profile.disengage && duel.events.some(e => e.type === 'Hit' && e.actor === me) && roll() < profile.disengage) next.disengageUntil = tick + DIAL.disengageTicks;
