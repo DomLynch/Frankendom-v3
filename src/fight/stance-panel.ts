@@ -17,7 +17,7 @@ export const stanceLabel = (p: PickedStance): string => stancePickRow(p).label; 
 // The reveal line: both stances at once ("Aggressive vs Defensive"), the foe's mood being the seed's draw (src/fight/stance.ts moodOf).
 export const stanceReveal = (mine: PickedStance, seed: number, opponent: string): string => `You: ${stanceLabel(mine)} · ${opponent}: ${stanceLabel(moodOf(seed, opponent))}`;
 
-export type StancePanel = { show(mine: PickedStance, seed: number, opponent: string): void };
+export type StancePanel = { show(mine: PickedStance | undefined, seed: number, opponent: string): void };   // mine undefined = no pick yet (a fight with no stances): Balanced is lit and there is no reveal line
 export function mountStancePanel(host: HTMLElement, pick: (p: PickedStance) => void, doc: Document = document): StancePanel {   // `doc`: the caller's document (the graphics harness runs main.ts with its own; a module-global `document` is undefined there)
   const dial = stancePickerDial, size = dial('buttonPx');
   const box = doc.createElement('div');
@@ -36,9 +36,9 @@ export function mountStancePanel(host: HTMLElement, pick: (p: PickedStance) => v
   box.append(row, line); host.append(box);
   return {
     show(mine, seed, opponent) {
-      line.textContent = stanceReveal(mine, seed, opponent);
+      line.textContent = mine ? stanceReveal(mine, seed, opponent) : '';
       for (const [p, b] of buttons) {
-        const lit = p === mine, colour = stancePickRow(p).colour;
+        const lit = p === (mine ?? 'neutral'), colour = stancePickRow(p).colour;
         b.setAttribute('aria-pressed', String(lit)); b.style.borderColor = lit ? colour : 'rgba(232,220,196,.28)'; b.style.background = lit ? 'rgba(15,12,10,.9)' : 'rgba(15,12,10,.6)'; b.style.boxShadow = lit ? `0 0 8px ${colour}` : 'none';
       }
     },
