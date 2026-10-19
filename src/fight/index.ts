@@ -28,6 +28,8 @@ export * from './gear-numbers.ts';
 export * from './gear-weight.ts';
 export * from './gambit.ts';
 export * from './stance.ts';
+export { stanceFlag } from './stance-panel.ts';   // RV81: the open world's duel host reads the Pit's stance preference through the barrel
+export { worldStancePick } from './world-stance.ts';   // the world duel's starting stance: the menu's stored pick, ?stances= over it
 export * from './twist.ts';
 export * from './replay.ts';
 export { createWorldCombat, finishOf, ME, JOIN_M, MAX_STEPS, kindOf, type PairContacts, type WorldCombatDeps, type FightMob, type MobsPort, type MobPose } from './world-combat.ts';   // Zone 1's mount of the open-world loop (any client supplies the mob layer as a port)
