@@ -1,7 +1,7 @@
 // Touch layout A (Dom's approved picture, 2026-10-13; the Combat sandbox's CS31, donor: combat sandbox @93b1138c7, layoutA in sandbox/entry.ts): a tight diamond around one big STRIKE button, its swipe zones drawn on it (a stab on
-// top, a slash each side). Special upper-left, Guard lower-left, Roll lower-right, Kick far left, each touching the zone ring with a gap. The game's own buttons keep their handlers and ids; only their place and size change. It
-// goes with the oneButton input (input.ts, off by default): the layout is applied only while that is on, so with it off nothing here runs. Every number is a row (touch-layout-defs.json): the base (STRIKE's centre from the right and
-// bottom edge, the gap), the three size variants (`?lay=1|2|3`; Dom picked 2) and where each button sits (an angle on the ring). Presentation only. The sandbox's second special button is not here: it comes with the second special slot.
+// top, a slash each side). SPECIAL 1 upper-left, SPECIAL 2 upper-right, Guard lower-left, Roll lower-right, Kick far left, each touching the zone ring with a gap. The game's own buttons keep their handlers and ids; only their place and size change. It
+// goes with the oneButton input (input.ts, ON by default since RV80, Dom 2026-10-19: "turn it on"): the layout is applied only while that row is on, so with it off nothing here runs. Every number is a row (touch-layout-defs.json): the base (STRIKE's centre from the right and
+// bottom edge, the gap), the three size variants (`?lay=1|2|3`; Dom picked 2) and where each button sits (an angle on the ring). Presentation only. SPECIAL 2 shows only while the second special slot holds a skill (the HUD hides the button otherwise).
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import DEFS from './touch-layout-defs.json' with { type: 'json' };
 import MANIFEST from './touch-layout-defs.manifest.json' with { type: 'json' };
