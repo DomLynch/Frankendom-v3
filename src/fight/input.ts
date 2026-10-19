@@ -55,7 +55,7 @@ export const HEAVY_HOLD_MS = inputNum('input.heavy-hold-ms'), HEAVY_HOLD_WINDOW_
 // A slide within STAB_HALF_ANGLE degrees of straight up is the stab. Screen y grows down, so up is dy < 0.
 /** How long a hold on STRIKE must last to be the heavy: the short window hold while the hero's counter / punish window is open, else the plain one. */
 export const heavyHoldMs = (counterOpen: boolean): number => (counterOpen ? HEAVY_HOLD_WINDOW_MS : HEAVY_HOLD_MS);
-export const stabSector =(dx: number, dy: number): boolean => dy < 0 && Math.abs(dx) <= -dy * Math.tan(STAB_HALF_ANGLE * RAD);
+export const stabSector = (dx: number, dy: number): boolean => dy < 0 && Math.abs(dx) <= -dy * Math.tan(STAB_HALF_ANGLE * RAD);
 export const slashSlide = (dx: number): 'left' | 'right' | null => (dx <= -SLASH_SLIDE_PX ? 'left' : dx >= SLASH_SLIDE_PX ? 'right' : null);
 export const cutSideOf = (action: Action): 'left' | 'right' | null => (action === 'light_left' ? 'left' : action === 'light_right' ? 'right' : null);   // the side a cut press goes to; neutral LIGHT is null (no flash)
 const ARROW_SIDE: Record<string, Direction> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'overhead', ArrowDown: 'low' };
@@ -487,7 +487,7 @@ export function createInput(env: InputEnv) {
     },
     // What the simulation sees this tick. Presses reach it only once the assets are ready (the buttons read disabled until then).
     intent(): ControlIntent {
-      if (slashWait && env.now() - slashWait.since >= (ONE_BUTTON ? heavyHoldMs(counterOpen()) : SLASH_DECIDE_MS)) { if (ONE_BUTTON) fireHeavy(); else fireSlash(null); }   // oneButton: a hold past HEAVY_HOLD_MS is the heavy
+      if (slashWait && env.now() - slashWait.since >= (ONE_BUTTON ? heavyHoldMs(counterOpen()) : SLASH_DECIDE_MS)) { if (ONE_BUTTON) fireHeavy(); else fireSlash(null); }   // oneButton: a hold past heavyHoldMs() (HEAVY_HOLD_MS, or HEAVY_HOLD_WINDOW_MS inside a counter window) is the heavy
       if (pendingSpell) { if (env.now() > pendingSpell.until) pendingSpell = null; else if (!action && env.ready() && accepts(env.practice(), pendingSpell.action)) { action = pendingSpell.action; pendingSpell = null; } }
       const ready = env.ready(), q = keys.has('KeyQ'), arrow = (code: string) => !q && keys.has(code);
       // The side the simulation will see this tick: the thumb's slide, else Q + an arrow. The button's hint (data-side) follows it, so a
