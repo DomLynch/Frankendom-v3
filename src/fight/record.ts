@@ -116,7 +116,7 @@ export const FIRST_STANCE_VERSION = 34;
 export const FIRST_POSE_VERSION = 38;
 export const FIRST_GROUP_VERSION = 39;
 export const FIRST_SHEET_VERSION = 48;   // RV48 (Wave A1 PR1): the fight carries the player's sheet (flag bit 7): a count byte, then (dial code u8, the dial's effective value u8) pairs, in code order, dials off base only; ONLY a sheet fight is written as v48
-export const PATRON_VERSION = (RECORD_VERSION as number) <= 77 ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
+export const PATRON_VERSION = (RECORD_VERSION as number) <= 77 || !SANDBOX_ON ? FIRST_PATRON_VERSION : RECORD_VERSION;   // what a patron fight writes: v32 until a bump after 33 stamps every live fight again
 // Each bump's REACH (the standing rule, Strategy 2026-09-28): the fights bump N can change, as (opponent, from level). A record of version
 // k is refused when any bump after k reaches its opponent at its level; everything else is read. Literals on purpose, not the data they
 // describe (LOADOUT_FROM, ROSTER): a reach records what that bump changed and must not move when the data moves later (that change bumps
