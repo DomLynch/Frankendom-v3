@@ -46,7 +46,10 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // (1 → .75) barely moved the output — these gains feed the bus compressor (−20 dB, 5:1) before the ceiling, which gives
     // most of a cue cut back: measured −2.5 dB nominal landed as −1 dB. At .3 the drop is real and targeted (rendered probes,
     // same graph): hit-light −30.1 → −34.2 LUFS-I while blocked stays −29.1, so hits sit 5 dB under the guards, not 1 dB over.
-    if (e.type === 'Hit' && !staged && e.target !== undefined && e.target !== e.actor && skillRows(e).length) { for (const r of skillRows(e).filter((x) => x.on !== 'start')) impacts.push(rowCue(r)); }   // the skill's own landing: its land rows instead of hit_flesh (the sandbox's SpecialLanded)
+    if (e.type === 'Hit' && !staged && e.target !== undefined && e.target !== e.actor && skillRows(e).length) {   // the skill's own landing: its land rows instead of hit_flesh (the sandbox's SpecialLanded)
+      for (const r of skillRows(e).filter((x) => x.on !== 'start')) { const c = rowCue(r); impacts.push(e.glance && GLANCE_GAIN ? { ...c, gain: c.gain * GLANCE_GAIN / 1000, rate: GLANCE_RATE / 1000 } : c); }   // an off-band skill blow lands quiet and low like any other glance
+      if (e.guarded) impacts.push(cue('block', .3, .2, undefined, .8));   // a skill blow through a guard held on the wrong side keeps the glancing scrape under it (Combat #750)
+    }
     else if (e.type === 'Hit' && !staged) {   // Hamstrung's and Execution's blows are timed on the scene (below), not on the killing tick
       { const c: Cue = bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .3, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .3, .3) : cue('hit_flesh', .3, .3); impacts.push(e.glance && GLANCE_GAIN ? { ...c, gain: c.gain * GLANCE_GAIN / 1000, rate: GLANCE_RATE / 1000 } : c); }   // sandbox-mech reach bands: an off-band blow lands quiet and low (glanceGain / glanceRate rows), no new sprite
       // SCOPE 7 change C (Lead 2026-09-25): a blow through a guard held on the wrong side (or a kick into a raised guard) is
