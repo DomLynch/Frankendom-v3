@@ -17,7 +17,6 @@ export function mountManaBar(doc: Document = document, manaMax: number = MANA_MA
   const label = doc.createElement('span'); label.append(caption, ' ', value);
   const bar = doc.createElement('meter'); bar.id = 'mana'; bar.min = 0; bar.max = manaMax; bar.value = manaMax; bar.setAttribute('aria-label', 'Your mana');
   stamina.insertAdjacentElement('afterend', bar); stamina.insertAdjacentElement('afterend', label);
-  const fill = (): void => { bar.style.setProperty('--fill', `${Math.round((bar.value / (bar.max || 1)) * 100)}%`); requestAnimationFrame(fill); };   // the phone bar paints from --fill like the health and stamina bars
-  requestAnimationFrame(fill);
+  bar.style.setProperty('--fill', '100%');   // the phone bar paints from --fill like the health and stamina bars; hud.ts fillMeter keeps it after this
   return bar;
 }
