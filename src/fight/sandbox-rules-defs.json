@@ -243,6 +243,14 @@
   {
    "weapon": "reaper",
    "band": "outer"
+  },
+  {
+   "weapon": "bow",
+   "band": "outer"
+  },
+  {
+   "weapon": "staff",
+   "band": "outer"
   }
  ],
  "spellRange": [
@@ -672,7 +680,7 @@
  "missile": [
   {
    "kind": "staff",
-   "weapon": "none",
+   "weapon": "staff",
    "speed": 700,
    "share": 1000,
    "mana": 12,
@@ -680,7 +688,7 @@
   },
   {
    "kind": "bow",
-   "weapon": "none",
+   "weapon": "bow",
    "speed": 900,
    "share": 1000,
    "mana": 0,
