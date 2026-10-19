@@ -7,7 +7,7 @@
     { "id": "input.slash-decide-ms", "fields": {"value": 50} },
     { "id": "input.hold-ms", "fields": {"value": 150} },
     { "id": "input.sprint-push", "fields": {"value": 1.4} },
-    { "id": "input.one-button", "fields": {"value": 1} },
+    { "id": "input.one-button", "fields": {"value": 0} },
     { "id": "input.heavy-hold-ms", "fields": {"value": 220} },
     { "id": "input.stab-slide-px", "fields": {"value": 18} },
     { "id": "input.stab-half-angle", "fields": {"value": 50} }
