@@ -56,6 +56,13 @@
             "stamina": 5,
             "magicResist": -25
           }
+        },
+        {
+          "fromRecordVersion": 80,
+          "shape": {
+            "stamina": 25,
+            "armour": -25
+          }
         }
       ]
     }

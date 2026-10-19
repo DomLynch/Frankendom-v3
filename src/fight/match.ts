@@ -23,6 +23,8 @@ import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, DEFAULT_WEAPON, SKILL_ROW
 import { loadTrial, recordPractice, recordRematch, saveTrial, type Trial } from '../trial.ts';
 import { loadScorecard, recordResult, saveScorecard, type Scorecard } from '../scorecard.ts';
 import { awardMark, levelOfMarks as levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../core/career-ladder.ts';
+import { specialsFromLevel } from './rows80.ts';
+import { slot2Default } from '../core/special-equip.ts';   // RV80: SPECIAL 2 is pre-filled; when SPECIAL 1 (the equipped pick or the loot's skill) is that same skill, the row's alternative fills it instead
 import { autopsy } from '../autopsy.ts';
 import { readOpponent } from './ai.ts';
 import { idleIntent, roundPose, type Duel, type DuelPose } from './duel.ts';
@@ -40,14 +42,14 @@ import { FIRST_STAB_VERSION, STAB_ON, setStab } from './stab-rule.ts';
 import { FIRST_STANCE_ROWS_VERSION, STANCE_ROWS_ON, setStanceRows } from './stance-era.ts';
 import { FIRST_POISE_LADDER_VERSION, POISE_LADDER_ON, setPoiseLadder } from './poise-era.ts';
 import { CONE_ON, FIRST_CONE_VERSION, setCone } from './cone-era.ts';
-import { ROWS79_ON, rows79For, sandboxFor, SANDBOX_ON, setRows79, setSandbox } from './sandbox-era.ts';
+import { ROWS79_ON, ROWS80_ON, rows79For, rows80For, sandboxFor, SANDBOX_ON, setRows79, setRows80, setSandbox } from './sandbox-era.ts';
 import { FIRST_LATE_NOTICE_VERSION, LATE_NOTICE, PLAY_SCALE, playScaleFor, setLateNotice, setPlayScale } from './play-radius.ts';
 import { sparringSpecialDuel, validateSparringSpecialSelection, type SparringSpecialSelection } from './sparring-special-runtime.ts';
 import { bossSpecialFor } from './special-identity.ts';
 import { classSpecialFor } from './class-special-identity.ts';
 import type { SpecialTest } from './special-look.ts';
 
-const CLASS_B_FROM = 1 + RANK_STEPS * TITLES.indexOf('Veteran');   // rank 4, level 16 in the canonical career ladder
+const CLASS_B_FROM = 1 + RANK_STEPS * TITLES.indexOf('Veteran');   // rank 4, level 16 in the canonical career ladder; RV80 (rows80-defs.json specialsFromLevel, Dom 2026-10-19: the sandbox's default) starts them at level 1 for a live fight (specialsFromLevel)
 
 export type Mode = 'career' | 'practice' | 'replay' | 'sparring' | 'pvp' | 'lesson' | 'tutorial';
 export type SpecialIdentity = Readonly<{ opponent: Opponent['id']; level: number; presets?: readonly [SpecialTest | null, SpecialTest | null] }>;
@@ -147,14 +149,14 @@ export class Match {
     this.epoch++;
     const pose = (mode === 'career' || mode === 'practice' || mode === 'sparring' || mode === 'replay') && this.startPose ? roundPose(this.startPose) : undefined; this.startPose = undefined; this.fightPose = pose;
     const test = mode === 'sparring' ? this.sparSpecials : null;
-    const live = LIVE_SPECIALS && !this.dummy && Number.isInteger(this.level) && this.level >= ((globalThis as { __SANDBOX_SPECIALS_FROM__?: number }).__SANDBOX_SPECIALS_FROM__ ?? CLASS_B_FROM) && this.level <= LEVELS;   // sandbox: ?specialsFrom= (entry.ts, default 1) switches specials and spells on at any level; absent = rank 4 as ever
+    const live = LIVE_SPECIALS && !this.dummy && Number.isInteger(this.level) && this.level >= ((globalThis as { __SANDBOX_SPECIALS_FROM__?: number }).__SANDBOX_SPECIALS_FROM__ ?? specialsFromLevel(CLASS_B_FROM)) && this.level <= LEVELS;   // sandbox: ?specialsFrom= (entry.ts, default 1) switches specials and spells on at any level; absent = rank 4 as ever
     if (mode !== 'replay') { this.gambit = false; this.stances = mode === 'career' || mode === 'practice' ? this.stancePref : undefined; this.sheet = mode === 'career' || mode === 'practice' ? (this.ports.sheet?.() ?? this.sheetPref) : undefined;   // read at each begin(): what is worn NOW, not what was worn when the page booted
     }   // only a replay carries the Gambit until a live flag exists
     const look = mode === 'sparring' ? this.ports.lookSpell?.() : undefined;   // the ?spell look test (boss-telegraph.ts spellLook): read in sparring ONLY, which sends no record and pays nothing; career, practice, pvp and the ladder never see it
     if (mode !== 'replay') this.specials = mode !== 'pvp' && (look && isSpellId(look.id) ? true : mode === 'sparring' && (skill2Pick() || slot2Pick()) ? true : test ? test.enabled !== false : live);   // previews/off explicit; replay retains its recorded phase
     if (mode !== 'replay') { const asked = mode === 'career' || mode === 'practice' ? this.ports.spell?.() : look; this.spell = asked && this.specials && isSpellId(asked.id) ? asked : undefined; }
     { const a2 = mode === 'career' || mode === 'practice' || mode === 'sparring' ? this.ports.spell2?.() : undefined; this.spell2 = a2 && this.specials && isSpellId(a2.id) ? a2 : undefined; }   // sandbox-mech spell slot 2   // a spell is cast through the special: no Special Moves, no spell; an unknown id is no spell
-    if (mode !== 'replay') { const live = mode === 'career' || mode === 'practice' ? this.ports.skill2?.() : undefined, s2 = live ?? (mode === 'career' || mode === 'practice' || mode === 'sparring' ? skill2Pick() : undefined); this.skill2 = s2 && !this.spell2 && Object.hasOwn(SKILL_ROWS, s2) ? (s2 as SkillId) : undefined; }   // SPECIAL 2: the player's pick (trunk's picker port, RV75) or the sandbox's slot-2 pick (spell-slot2.ts); slot 2 is a spell or a melee special, not both (sandbox-mech). A replay keeps the record's own
+    if (mode !== 'replay') { const picked = mode === 'career' || mode === 'practice' ? this.ports.skill2?.() : undefined, live = picked !== undefined && picked === this.skill ? slot2Default(picked) : picked, s2 = live ?? (mode === 'career' || mode === 'practice' || mode === 'sparring' ? skill2Pick() : undefined); this.skill2 = s2 && !this.spell2 && Object.hasOwn(SKILL_ROWS, s2) ? (s2 as SkillId) : undefined; }   // SPECIAL 2: the player's pick (trunk's picker port, RV75) or the sandbox's slot-2 pick (spell-slot2.ts); slot 2 is a spell or a melee special, not both (sandbox-mech). A replay keeps the record's own
     { const fs = mode === 'career' || mode === 'practice' || mode === 'sparring' ? foeSpellPick() : undefined; this.foeSpell = fs && this.specials && isSpellId(fs.id) ? fs : undefined; }   // sandbox-mech opponent spells
     this.fightIdentity = { opponent: this.opponent.id, level: this.level };
     this.practice = initialPractice(this.seed, opponentAt(this.opponent, this.level), this.weapon, this.skill, recordSpecials({ specials: this.specials, level: test?.level ?? this.level, opponent: this.opponent.id }), this.gambit ? this.seed : undefined, this.stances, pose, this.sheet, this.spell ? resolveSpell(this.spell.id, this.spell.skill, this.sheet?.spellPower ?? 0) : undefined, this.spell2 ? resolveSpell(this.spell2.id, this.spell2.skill, this.sheet?.spellPower ?? 0) : undefined, this.foeSpell ? resolveSpell(this.foeSpell.id, this.foeSpell.skill) : undefined, this.skill2);   // preview identity/share only; body/AI remain on the visible difficulty
@@ -211,7 +213,7 @@ export class Match {
   // end() was already called (`recorded`), so the re-play's killing tick is never 'ended' again; past it the clip plays on (step).
   // Returns what endClip() puts back.
   startClip(record: FightRecord, fromTick: number) {
-    const saved = { scale: PLAY_SCALE, notice: LATE_NOTICE, stab: STAB_ON, stanceRows: STANCE_ROWS_ON, poiseLadder: POISE_LADDER_ON, cone: CONE_ON, sandbox: SANDBOX_ON, rows79: ROWS79_ON, practice: this.practice, replay: this.replay, stalled: this.stalled, fightLog: this.fightLog, specials: this.specials, gambit: this.gambit, stances: this.stances };
+    const saved = { scale: PLAY_SCALE, notice: LATE_NOTICE, stab: STAB_ON, stanceRows: STANCE_ROWS_ON, poiseLadder: POISE_LADDER_ON, cone: CONE_ON, sandbox: SANDBOX_ON, rows79: ROWS79_ON, rows80: ROWS80_ON, practice: this.practice, replay: this.replay, stalled: this.stalled, fightLog: this.fightLog, specials: this.specials, gambit: this.gambit, stances: this.stances };
     this.clipLevel = record.level;   // the record's own warden; `level` is untouched, so any start mid-clip fights on the player's own (Auditer review)
     const practice = underRecord(record, () => {
       let p = initialPractice(record.seed, opponentAt(this.opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose, record.sheet, record.spell ? resolveSpell(record.spell.id, record.spell.skill, record.sheet?.spellPower ?? 0, record.v) : undefined);
@@ -219,11 +221,11 @@ export class Match {
       return p;
     });
     this.practice = practice; this.specials = !!record.specials; this.gambit = !!record.gambit; this.stances = record.stances; this.replay = { record, cursor: fromTick }; this.fightLog = []; this.frameEvents = [];
-    setPlayScale(playScaleFor(record.opponent, record.v)); setLateNotice(record.v >= FIRST_LATE_NOTICE_VERSION); setStab(record.v >= FIRST_STAB_VERSION); setStanceRows(record.v >= FIRST_STANCE_ROWS_VERSION); setPoiseLadder(record.v >= FIRST_POISE_LADDER_VERSION); setCone(record.v >= FIRST_CONE_VERSION); setSandbox(sandboxFor(record.v)); setRows79(rows79For(record.v));
+    setPlayScale(playScaleFor(record.opponent, record.v)); setLateNotice(record.v >= FIRST_LATE_NOTICE_VERSION); setStab(record.v >= FIRST_STAB_VERSION); setStanceRows(record.v >= FIRST_STANCE_ROWS_VERSION); setPoiseLadder(record.v >= FIRST_POISE_LADDER_VERSION); setCone(record.v >= FIRST_CONE_VERSION); setSandbox(sandboxFor(record.v)); setRows79(rows79For(record.v)); setRows80(rows80For(record.v));
     return saved;
   }
   endClip(saved: ReturnType<Match['startClip']>) {
-    setPlayScale(saved.scale); setLateNotice(saved.notice); setStab(saved.stab); setStanceRows(saved.stanceRows); setPoiseLadder(saved.poiseLadder); setCone(saved.cone); setSandbox(saved.sandbox); setRows79(saved.rows79); this.practice = saved.practice; this.replay = saved.replay; this.stalled = saved.stalled; this.clipLevel = null; this.fightLog = saved.fightLog; this.specials = saved.specials; this.gambit = saved.gambit; this.stances = saved.stances;
+    setPlayScale(saved.scale); setLateNotice(saved.notice); setStab(saved.stab); setStanceRows(saved.stanceRows); setPoiseLadder(saved.poiseLadder); setCone(saved.cone); setSandbox(saved.sandbox); setRows79(saved.rows79); setRows80(saved.rows80); this.practice = saved.practice; this.replay = saved.replay; this.stalled = saved.stalled; this.clipLevel = null; this.fightLog = saved.fightLog; this.specials = saved.specials; this.gambit = saved.gambit; this.stances = saved.stances;
     this.frameEvents = [];
   }
   // The rig could not carry the weapon (its equip file failed): the fight is fought with the one it does carry, so drawn = simulated.
