@@ -30,3 +30,16 @@ export function underRows79<T>(version: number, run: () => T): T {
   const outer = ROWS79_ON; ROWS79_ON = rows79For(version);
   try { return run(); } finally { ROWS79_ON = outer; }
 }
+// RV80 (Combat, "turn it on, migrate fully from the sandboxes", Dom 2026-10-19): the sandbox behaviours that were only a link flag or a sandbox-page default become the live game's: the leathers set's shape (gear-defs.json era 80) and the
+// SPECIAL timers (2 s before the first special, 6 s between casts: rows80-defs.json). A third boundary of this same leaf: ON for a live fight and for a record at 80 or later; a record below 80 replays the numbers it was fought with.
+export const FIRST_ROWS80_VERSION = 80;
+export let ROWS80_ON = true;
+export function setRows80(on: boolean): void { ROWS80_ON = on; }
+/** Whether a record of this version is fought with the RV80 rows. */
+export const rows80For = (version: number): boolean => eraForced ?? version >= FIRST_ROWS80_VERSION;
+/** The version a row keyed on a record version should be read at: the version itself, or the last one before RV80 while the RV80 rows are pinned off (tests). */
+export const rows80Version = (version: number): number => (rows80For(version) ? version : Math.min(version, FIRST_ROWS80_VERSION - 1));
+export function underRows80<T>(version: number, run: () => T): T {
+  const outer = ROWS80_ON; ROWS80_ON = rows80For(version);
+  try { return run(); } finally { ROWS80_ON = outer; }
+}

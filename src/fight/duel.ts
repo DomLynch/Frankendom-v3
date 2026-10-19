@@ -15,6 +15,7 @@ import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
 import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
+import { specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, spellRoot, type CastOutcome, type Spell } from './spell-cast.ts';
@@ -205,8 +206,8 @@ export const withSkill2 = (duel: Duel, side: Side, skill: SkillId): Duel => {
   return { ...duel, fighters };
 };
 export const withSpecials = (duel: Duel, level: number, aiSkill: SkillId | null, R: typeof RULES = RULES, name?: SpecialName | null): Duel => ({ ...duel, fighters: [
-  { ...duel.fighters[0], specialShare: R.special.damage, skillCooldown: R.special.first },
-  { ...duel.fighters[1], specialShare: level >= R.special.bossFrom || name ? R.special.bossDamage : R.special.damage, skillCooldown: R.special.first, skill: duel.fighters[1].skill ?? aiSkill, ...(name ? { specialName: name } : {}) },
+  { ...duel.fighters[0], specialShare: R.special.damage, skillCooldown: specialFirst(R.special.first) },
+  { ...duel.fighters[1], specialShare: level >= R.special.bossFrom || name ? R.special.bossDamage : R.special.damage, skillCooldown: specialFirst(R.special.first), skill: duel.fighters[1].skill ?? aiSkill, ...(name ? { specialName: name } : {}) },
 ] });
 export const aim = (from: State, to: State): number => M.atan2(to.x - from.x, to.z - from.z);
 export const distance = (a: State, b: State): number => M.hypot(a.x - b.x, a.z - b.z);
@@ -646,7 +647,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const j = (1 - i) as Side, A = fighters[i], D = fighters[j];
     if (!releasing[i]) continue;
     const spell = castOf(A);   // slot a or b: the cooldown below is that slot's own (spell-slot-defs sharedCooldown 1 = both)
-    A.special = 0; delete A.castHurt; delete A.castPush; coolSlot(A, R.special.cooldown); A.specialRecover = R.special.recovery;   // re-armed and held back from attacking, counted from the release
+    A.special = 0; delete A.castHurt; delete A.castPush; coolSlot(A, specialCooldown(R.special.cooldown)); A.specialRecover = R.special.recovery;   // re-armed and held back from attacking, counted from the release
     const bowRow = A.bowSpecial && !spell ? bowSpecialOf(A.weapon, A.bowSpecial, Infinity, undefined) : undefined;   // A.bowSpecial stays set through the recovery (the renderer plays the bow's loose clip off it); the next cast sets or clears it
     if (!standing[j]) continue;
     if (bowRow) {   // sandbox bowSpecial: the special's arrows fly through the one missile model (a roll dodges them all, a guard blocks the lanes it covers)
@@ -733,7 +734,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     if (PHASES.length && B.health && B.specialShare !== undefined) for (const row of PHASES) {
       if ((row.special === '*' || row.special === B.specialName) && !B.phases?.includes(row.id) && (B.health * 100) / B.maxHealth < row.below) {
         B.phases = [...(B.phases ?? []), row.id]; B.specialShare = (B.specialShare * row.share) / 1000;
-        B.skillCooldown = Math.min(B.skillCooldown, Math.round((R.special.cooldown * row.cooldown) / 100));
+        B.skillCooldown = Math.min(B.skillCooldown, Math.round((specialCooldown(R.special.cooldown) * row.cooldown) / 100));
         events.push({ tick, type: 'PhaseChanged', actor: i, name: row.id } as CombatEvent);
       }
     }

@@ -22,7 +22,8 @@ const LIVE_SPECIALS = true;
 import { LEVELS, LEVEL_ANCHORS, opponentAt, profileAt, DEFAULT_WEAPON, SKILL_ROWS, type SkillId, type WeaponId } from './moves.ts';
 import { loadTrial, recordPractice, recordRematch, saveTrial, type Trial } from '../trial.ts';
 import { loadScorecard, recordResult, saveScorecard, type Scorecard } from '../scorecard.ts';
-import { awardMark, levelOfMarks as levelOf, marksOf, turnDial, RANK_STEPS, TITLES } from '../core/career-ladder.ts';
+import { awardMark, levelOfMarks as levelOf, marksOf, turnDial } from '../core/career-ladder.ts';
+import { SPECIALS_FROM_LEVEL } from './rows80.ts';
 import { autopsy } from '../autopsy.ts';
 import { readOpponent } from './ai.ts';
 import { idleIntent, roundPose, type Duel, type DuelPose } from './duel.ts';
@@ -40,14 +41,14 @@ import { FIRST_STAB_VERSION, STAB_ON, setStab } from './stab-rule.ts';
 import { FIRST_STANCE_ROWS_VERSION, STANCE_ROWS_ON, setStanceRows } from './stance-era.ts';
 import { FIRST_POISE_LADDER_VERSION, POISE_LADDER_ON, setPoiseLadder } from './poise-era.ts';
 import { CONE_ON, FIRST_CONE_VERSION, setCone } from './cone-era.ts';
-import { ROWS79_ON, rows79For, sandboxFor, SANDBOX_ON, setRows79, setSandbox } from './sandbox-era.ts';
+import { ROWS79_ON, ROWS80_ON, rows79For, rows80For, sandboxFor, SANDBOX_ON, setRows79, setRows80, setSandbox } from './sandbox-era.ts';
 import { FIRST_LATE_NOTICE_VERSION, LATE_NOTICE, PLAY_SCALE, playScaleFor, setLateNotice, setPlayScale } from './play-radius.ts';
 import { sparringSpecialDuel, validateSparringSpecialSelection, type SparringSpecialSelection } from './sparring-special-runtime.ts';
 import { bossSpecialFor } from './special-identity.ts';
 import { classSpecialFor } from './class-special-identity.ts';
 import type { SpecialTest } from './special-look.ts';
 
-const CLASS_B_FROM = 1 + RANK_STEPS * TITLES.indexOf('Veteran');   // rank 4, level 16 in the canonical career ladder
+const CLASS_B_FROM = SPECIALS_FROM_LEVEL;   // RV80 (rows80-defs.json dial specialsFromLevel, Dom 2026-10-19: the sandbox's default): specials fire from level 1; it was rank 4, level 16 in the canonical career ladder
 
 export type Mode = 'career' | 'practice' | 'replay' | 'sparring' | 'pvp' | 'lesson' | 'tutorial';
 export type SpecialIdentity = Readonly<{ opponent: Opponent['id']; level: number; presets?: readonly [SpecialTest | null, SpecialTest | null] }>;
@@ -211,7 +212,7 @@ export class Match {
   // end() was already called (`recorded`), so the re-play's killing tick is never 'ended' again; past it the clip plays on (step).
   // Returns what endClip() puts back.
   startClip(record: FightRecord, fromTick: number) {
-    const saved = { scale: PLAY_SCALE, notice: LATE_NOTICE, stab: STAB_ON, stanceRows: STANCE_ROWS_ON, poiseLadder: POISE_LADDER_ON, cone: CONE_ON, sandbox: SANDBOX_ON, rows79: ROWS79_ON, practice: this.practice, replay: this.replay, stalled: this.stalled, fightLog: this.fightLog, specials: this.specials, gambit: this.gambit, stances: this.stances };
+    const saved = { scale: PLAY_SCALE, notice: LATE_NOTICE, stab: STAB_ON, stanceRows: STANCE_ROWS_ON, poiseLadder: POISE_LADDER_ON, cone: CONE_ON, sandbox: SANDBOX_ON, rows79: ROWS79_ON, rows80: ROWS80_ON, practice: this.practice, replay: this.replay, stalled: this.stalled, fightLog: this.fightLog, specials: this.specials, gambit: this.gambit, stances: this.stances };
     this.clipLevel = record.level;   // the record's own warden; `level` is untouched, so any start mid-clip fights on the player's own (Auditer review)
     const practice = underRecord(record, () => {
       let p = initialPractice(record.seed, opponentAt(this.opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose, record.sheet, record.spell ? resolveSpell(record.spell.id, record.spell.skill, record.sheet?.spellPower ?? 0, record.v) : undefined);
@@ -219,11 +220,11 @@ export class Match {
       return p;
     });
     this.practice = practice; this.specials = !!record.specials; this.gambit = !!record.gambit; this.stances = record.stances; this.replay = { record, cursor: fromTick }; this.fightLog = []; this.frameEvents = [];
-    setPlayScale(playScaleFor(record.opponent, record.v)); setLateNotice(record.v >= FIRST_LATE_NOTICE_VERSION); setStab(record.v >= FIRST_STAB_VERSION); setStanceRows(record.v >= FIRST_STANCE_ROWS_VERSION); setPoiseLadder(record.v >= FIRST_POISE_LADDER_VERSION); setCone(record.v >= FIRST_CONE_VERSION); setSandbox(sandboxFor(record.v)); setRows79(rows79For(record.v));
+    setPlayScale(playScaleFor(record.opponent, record.v)); setLateNotice(record.v >= FIRST_LATE_NOTICE_VERSION); setStab(record.v >= FIRST_STAB_VERSION); setStanceRows(record.v >= FIRST_STANCE_ROWS_VERSION); setPoiseLadder(record.v >= FIRST_POISE_LADDER_VERSION); setCone(record.v >= FIRST_CONE_VERSION); setSandbox(sandboxFor(record.v)); setRows79(rows79For(record.v)); setRows80(rows80For(record.v));
     return saved;
   }
   endClip(saved: ReturnType<Match['startClip']>) {
-    setPlayScale(saved.scale); setLateNotice(saved.notice); setStab(saved.stab); setStanceRows(saved.stanceRows); setPoiseLadder(saved.poiseLadder); setCone(saved.cone); setSandbox(saved.sandbox); setRows79(saved.rows79); this.practice = saved.practice; this.replay = saved.replay; this.stalled = saved.stalled; this.clipLevel = null; this.fightLog = saved.fightLog; this.specials = saved.specials; this.gambit = saved.gambit; this.stances = saved.stances;
+    setPlayScale(saved.scale); setLateNotice(saved.notice); setStab(saved.stab); setStanceRows(saved.stanceRows); setPoiseLadder(saved.poiseLadder); setCone(saved.cone); setSandbox(saved.sandbox); setRows79(saved.rows79); setRows80(saved.rows80); this.practice = saved.practice; this.replay = saved.replay; this.stalled = saved.stalled; this.clipLevel = null; this.fightLog = saved.fightLog; this.specials = saved.specials; this.gambit = saved.gambit; this.stances = saved.stances;
     this.frameEvents = [];
   }
   // The rig could not carry the weapon (its equip file failed): the fight is fought with the one it does carry, so drawn = simulated.
