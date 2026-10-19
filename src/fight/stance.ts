@@ -23,7 +23,8 @@ type Deltas = Readonly<Partial<Record<StanceKey, number>>>;
 const TABLE = tableFromFile(STANCE_MANIFEST.tables[0] as Manifest, STANCE_DEFS, 'stance-defs.json');
 const WOUND_TABLE = tableFromFile(STANCE_MANIFEST.tables[1] as Manifest, STANCE_DEFS, 'stance-defs.json');
 const TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[0] as Manifest, ROWS79_DEFS, 'rows79-defs.json');   // RV79 (sandbox-era.ts): the stance numbers 2x bigger (Dom 2026-10-13), for a live fight and a record at 79 or later
-loadRegistry([TABLE, WOUND_TABLE, TABLE_79]);
+const CAP_TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[2] as Manifest, ROWS79_DEFS, 'rows79-defs.json');   // a floor per stance quantity (rows79-defs.json stanceCaps): a specific Dom value beats the 2x multiplier
+loadRegistry([TABLE, WOUND_TABLE, TABLE_79, CAP_TABLE_79]);
 export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<Record<StanceId, Deltas>> {
   const out: Record<string, Record<string, number>> = {};
   for (const { id, ...deltas } of rows) {
@@ -36,7 +37,13 @@ export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<R
   return out as Readonly<Record<StanceId, Deltas>>;
 }
 export const STANCES: Readonly<Record<StanceId, Deltas>> = stanceRows(TABLE.rows as unknown as Record<string, unknown>[]);
-const STANCES_79: Readonly<Record<StanceId, Deltas>> = stanceRows(TABLE_79.rows as unknown as Record<string, unknown>[]);
+const STANCE_FLOORS_79 = new Map((CAP_TABLE_79.rows as unknown as { id: string; floor: number }[]).map((r) => {
+  if (!(STANCE_KEYS as readonly string[]).includes(r.id)) throw Error(`rows79-defs stanceCaps "${r.id}": not a stance quantity (${STANCE_KEYS.join(', ')})`);
+  if (!Number.isInteger(r.floor) || r.floor < -1000 || r.floor > 0) throw Error(`rows79-defs stanceCaps "${r.id}": floor is a whole per-mille delta from -1000 to 0`);
+  return [r.id, r.floor] as const;
+}));
+const capStances79 = (rows: Readonly<Record<StanceId, Deltas>>): Readonly<Record<StanceId, Deltas>> => Object.fromEntries(Object.entries(rows).map(([id, deltas]) => [id, Object.fromEntries(Object.entries(deltas).map(([k, v]) => [k, Math.max(v as number, STANCE_FLOORS_79.get(k) ?? -1000)]))])) as Readonly<Record<StanceId, Deltas>>;
+const STANCES_79: Readonly<Record<StanceId, Deltas>> = capStances79(stanceRows(TABLE_79.rows as unknown as Record<string, unknown>[]));   // stances 2x sandbox, feint cap Dom-held (the doubled rows, then each quantity floored by its stanceCaps row)
 // The Defensive stance BEFORE v52 (stance-era.ts): the same deltas plus a parry window and a guard-counter window a quarter longer. Read only while a record below 52 replays.
 const LEGACY_DEFENSIVE: Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>> = LEGACY_DEFENSIVE_ROWS as unknown as Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>>;
 const rowOf = (f: { stance?: StanceId }): Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>> | undefined => (f.stance ? (STANCE_ROWS_ON ? undefined : LEGACY_DEFENSIVE[f.stance]) ?? (ROWS79_ON ? STANCES_79 : STANCES)[f.stance] : undefined);

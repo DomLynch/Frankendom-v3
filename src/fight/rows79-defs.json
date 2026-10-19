@@ -2,7 +2,10 @@
   "stances": [
     {"id": "aggressive", "damage": 100, "posture": 200, "block": 200},
     {"id": "defensive", "damage": -100, "block": -300, "recover": 500, "damageTaken": -200, "poise": -200},
-    {"id": "trickster", "heavyDamage": -100, "feint": -750, "kickPosture": 1000}
+    {"id": "trickster", "heavyDamage": -100, "feint": -1000, "kickPosture": 1000}
+  ],
+  "stanceCaps": [
+    {"id": "feint", "floor": -750, "note": "stances 2x sandbox, feint cap Dom-held: 2x of the trickster's -50% feint would be -100% (a free feint), so Dom held it at -75%"}
   ],
   "dials": [
     {"id": "ARENA_ONE_SCALE", "value": 0.468}
