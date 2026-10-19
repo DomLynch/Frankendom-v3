@@ -15,7 +15,7 @@ import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
 import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from './cc-ladder.ts';
 import { bandFactor } from './bands.ts';
 import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
-import { specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
+import { foeSpecialFirst, specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, spellRoot, type CastOutcome, type Spell } from './spell-cast.ts';
@@ -207,7 +207,7 @@ export const withSkill2 = (duel: Duel, side: Side, skill: SkillId): Duel => {
 };
 export const withSpecials = (duel: Duel, level: number, aiSkill: SkillId | null, R: typeof RULES = RULES, name?: SpecialName | null): Duel => ({ ...duel, fighters: [
   { ...duel.fighters[0], specialShare: R.special.damage, skillCooldown: specialFirst(R.special.first) },
-  { ...duel.fighters[1], specialShare: level >= R.special.bossFrom || name ? R.special.bossDamage : R.special.damage, skillCooldown: specialFirst(R.special.first), skill: duel.fighters[1].skill ?? aiSkill, ...(name ? { specialName: name } : {}) },
+  { ...duel.fighters[1], specialShare: level >= R.special.bossFrom || name ? R.special.bossDamage : R.special.damage, skillCooldown: foeSpecialFirst(level, R.special.first), skill: duel.fighters[1].skill ?? aiSkill, ...(name ? { specialName: name } : {}) },
 ] });
 export const aim = (from: State, to: State): number => M.atan2(to.x - from.x, to.z - from.z);
 export const distance = (a: State, b: State): number => M.hypot(a.x - b.x, a.z - b.z);

@@ -11,6 +11,9 @@ const ROWS80_DIAL = Object.fromEntries(DEFS.dials.map((r) => [r.id, r.value])) a
 
 /** Ticks until a fighter's first special is ready: the RV80 row for a live fight / a record at 80 or later, else the rules' own number (`older`). */
 export const specialFirst = (older: number): number => (ROWS80_ON ? TIMER.first! : older);
+const OPENER = DEFS.foeOpeners[0]!;   // the opener row: the lowest fight levels' foe waits longer for its first special
+/** Ticks until the OPPONENT's first special is ready at this fight level: the opener row's for a level at or under its maxLevel (RV80 era only), else specialFirst. */
+export const foeSpecialFirst = (level: number, older: number): number => (ROWS80_ON && level <= OPENER.maxLevel ? OPENER.ticks : specialFirst(older));
 /** Ticks between casts (same keying as specialFirst). */
 export const specialCooldown = (older: number): number => (ROWS80_ON ? TIMER.cooldown! : older);
 /** The fight level specials start at: the RV80 row (level 1) for a live fight, else the rank-4 level the ladder always had (`older`, level 16). */

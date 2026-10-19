@@ -3,6 +3,9 @@
     {"id": "first", "ticks": 120, "note": "RV80 (Dom 2026-10-19, the combat sandbox's default: ?spellFirst=120): the first special is ready 2 s in, not 20 s"},
     {"id": "cooldown", "ticks": 360, "note": "RV80 (the sandbox's default, ?spellCooldown=360): 6 s between casts, not 20 s"}
   ],
+  "foeOpeners": [
+    {"id": "opener", "maxLevel": 1, "ticks": 600, "note": "DRAFT (Lead 2026-10-19, the combat gate): the level-1 warden's first special is ready 10 s in, so its first move is a telegraphed attack, not a shove (with specials from level 1 the first warden opened with skill_shove at about 1 s and a gate or player waiting for a blow to parry saw none). Players keep the 2 s row; a foe above maxLevel keeps it too"}
+  ],
   "dials": [
     {"id": "specialsFromLevel", "value": 1, "note": "the first fight level the player's and the opponent's specials fire (the sandbox's ?specialsFrom=1); it was rank 4, level 16 (era-keyed: a record below 80 keeps 16)"}
   ]
