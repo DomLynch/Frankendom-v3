@@ -13,7 +13,7 @@ type Beat = { name: string; tick: number; events: string[] };
 export type Exchange = { ticks: { tick: number; events: CombatEvent[]; presentation?: DeathPresentation }[]; beats: Beat[]; length: number };
 export const EXCHANGE_BEATS = ['walk', 'draw', 'light', 'light', 'heavy', 'guard', 'block', 'parry', 'riposte', 'hit taken', 'kick', 'death'] as const;
 // The rig's health is a row per era, read when the exchange is scripted (the era is a live switch, sandbox-era.ts): sandbox era (armour rows, and the reach bands of RV79: an off-band strike lands
-// at x0.4) MEASURED: the exchange completes (same 1114 ticks, every beat) for a warden health of 29..34 and stalls on either side, so 32 is mid-window; era off (trunk damage) 11 + 11 + 18 + 24 + 4 = 68 and a 27 heavy, so 80.
+// at x0.4) (row reason: "RV79 sandbox rows: bands live, exchange completes for 29-34, measured 2026-10-19") MEASURED: the exchange completes (same 1114 ticks, every beat) for a warden health of 29..34 and stalls on either side, so 32 is mid-window; era off (trunk damage) 11 + 11 + 18 + 24 + 4 = 68 and a 27 heavy, so 80.
 const wardenHealth = (): number => audioRule(SANDBOX_ON ? 'wardenHealth' : 'wardenHealthEraOff');
 export const forward = (): Intent['move'] => ({ x: 0, z: -1, yaw: 0, run: false });
 
