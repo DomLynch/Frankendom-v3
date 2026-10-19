@@ -42,6 +42,8 @@ import { createSkillImpact, impactPoint } from './skill-impact.ts';
 import { createImpactFx } from './impact-fx.ts';
 import { createMissileFx } from './missile-fx.ts';
 import { createWoundNotice } from './wound-notice.ts';
+import { shardCapacity } from './special-shards-rows.ts';
+import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
 import { phoneTier, pixelCap } from './quality.ts';
 import { lookFrom } from '../look-flag.ts';
@@ -213,7 +215,7 @@ export function createScene(
     footDust = createFootDust(scene, dustToneFor(theme)),
     witchfire = createWitchfire(scene),
     skillImpact = createSkillImpact(scene),
-    specialShards = shardRows() ? createSpecialShards(scene) : null,   // sandbox specialShards rows: lit 3D chips off a landed melee special (special-shards.ts); no rows (trunk) builds nothing
+    specialShards = shardRows() ? createSpecialShards(scene, shardCapacity()) : null,   // sandbox specialShards rows: lit 3D chips off a landed melee special (special-shards.ts); no rows (trunk) builds nothing
     shardAt = new THREE.Vector3(),
     woundNotice = createWoundNotice(),   // sandbox-mech wounds: the temporary on-screen message
     missileFx = createMissileFx(scene),   // sandbox-mech missiles: the bolt in flight, nothing while none flies
