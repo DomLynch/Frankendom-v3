@@ -8,11 +8,11 @@ const applies: (() => void)[] = [];
 /** sandbox-rules.ts registers the function that re-reads every rule for the current era (it imports this leaf, never the other way round). */
 export function onSandboxEra(fn: () => void): void { applies.push(fn); }
 export function setSandbox(on: boolean): void { if (on !== SANDBOX_ON) { SANDBOX_ON = on; for (const fn of applies) fn(); } }
-let forced: boolean | undefined;
+let eraForced: boolean | undefined;
 /** TEST SETUP ONLY (tests/lib/era-off.ts): pin the era for live play AND replay, so a fight the legacy suite records at the current version replays under the rules it was fought with. Never called by the game; undefined (the default) leaves the version to decide. */
-export function forceSandbox(on: boolean | undefined): void { forced = on; }
+export function forceSandbox(on: boolean | undefined): void { eraForced = on; }
 /** Whether a record of this version is fought under the sandbox rules. */
-export const sandboxFor = (version: number): boolean => forced ?? version >= FIRST_SANDBOX_VERSION;
+export const sandboxFor = (version: number): boolean => eraForced ?? version >= FIRST_SANDBOX_VERSION;
 export function underSandbox<T>(version: number, run: () => T): T {
   const outer = SANDBOX_ON; setSandbox(sandboxFor(version));
   try { return run(); } finally { setSandbox(outer); }
