@@ -34,6 +34,10 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
   const sound = finisher ? finisherRow(finisher)?.sound : undefined, staged = isTemplate(finisher, 'hamstring', 'execute');
   // A row cue: `at` seconds after the kill, or `atDeath` of the way through the slowed death clip (the 5 % a severed head waits for is the visible decapitation's).
   const play = (c: FinisherCue): Cue => cue(c.cue as CueName, c.gain, c.room, c.at ?? (RULES.death / 60) / .75 * c.atDeath!);
+  // A hero melee skill that the engine plays as an ORDINARY attack: Zone 1 gives a hero with no spell no `specialShare`, so duel.ts does not take its special branch and the press is AttackStarted / Hit
+  // carrying move 'skill_<id>' (measured in a real Zone 1 page, #3324), never SpecialStarted / SpecialLanded. The hero is slot 0; a foe's attack with a skill move keeps the generic cues. Rows or generic, never both.
+  const skillRows = (e: CombatEvent) => e.actor === 0 && !e.spell && e.move?.startsWith('skill_') ? specialSoundOf(e.move.slice('skill_'.length)) : [];
+  const rowCue = (r: ReturnType<typeof specialSoundOf>[number]) => cue(r.cue as CueName, r.gain / 1000, r.room / 1000, r.delay ? r.delay / 1000 : undefined);
 
   for (const e of events) {
     if (e.type === 'PostureBroken') impacts.push(cue('bone_crack', .55, .05));   // a dry thud on the break, whoever's posture it was (Strategy 2026-10-07)
@@ -42,7 +46,8 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // (1 → .75) barely moved the output — these gains feed the bus compressor (−20 dB, 5:1) before the ceiling, which gives
     // most of a cue cut back: measured −2.5 dB nominal landed as −1 dB. At .3 the drop is real and targeted (rendered probes,
     // same graph): hit-light −30.1 → −34.2 LUFS-I while blocked stays −29.1, so hits sit 5 dB under the guards, not 1 dB over.
-    if (e.type === 'Hit' && !staged) {   // Hamstrung's and Execution's blows are timed on the scene (below), not on the killing tick
+    if (e.type === 'Hit' && !staged && e.target !== undefined && e.target !== e.actor && skillRows(e).length) { for (const r of skillRows(e).filter((x) => x.on !== 'start')) impacts.push(rowCue(r)); }   // the skill's own landing: its land rows instead of hit_flesh (the sandbox's SpecialLanded)
+    else if (e.type === 'Hit' && !staged) {   // Hamstrung's and Execution's blows are timed on the scene (below), not on the killing tick
       { const c: Cue = bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .3, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .3, .3) : cue('hit_flesh', .3, .3); impacts.push(e.glance && GLANCE_GAIN ? { ...c, gain: c.gain * GLANCE_GAIN / 1000, rate: GLANCE_RATE / 1000 } : c); }   // sandbox-mech reach bands: an off-band blow lands quiet and low (glanceGain / glanceRate rows), no new sprite
       // SCOPE 7 change C (Lead 2026-09-25): a blow through a guard held on the wrong side (or a kick into a raised guard) is
       // `guarded` (Combat #750). It lands as a hit, with a quiet glancing scrape of steel under it: the block cue, low and slowed,
@@ -101,6 +106,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
     // Clarity (Lead's brief 2026-10-06), no new sprite bytes. A whiff is a lone swish on the window's close, a lower, slower breath of the swing's
     // own whoosh: air, never an impact, and no spark (nothing was struck). The opponent's whiff is the same cue: it is your opening.
     else if (e.type === 'AttackMissed') air.push(cue('whoosh_light', .1, .1, undefined, .8));
+    else if (e.type === 'AttackStarted' && skillRows(e).length) { for (const r of skillRows(e).filter((x) => x.on === 'start')) air.push(rowCue(r)); }   // the skill's own swing: its start rows (none = silent, as the sandbox's SpecialStarted was), not the generic whoosh
     else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .09, .12) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .18, .18) : cue('whoosh_light', .12, .12));
     else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .2, .3));
     else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('roll', .12, .12));
