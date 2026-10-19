@@ -7,7 +7,7 @@ import MANIFEST from './tap-log-defs.manifest.json' with { type: 'json' };
 
 loadRegistry((MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile(m, DEFS, 'tap-log-defs.json')));
 const LABEL = Object.fromEntries(DEFS.labels.map((l) => [l.id, l.text])) as Record<string, string>;
-const NUM = Object.fromEntries(DEFS.numbers.map((r) => [r.id, r.value])) as Record<string, number>;   // meanWeight (the mean of two), p90Rank (the nearest rank), copiedMs (how long the button says "copied")
+const NUM = Object.fromEntries(DEFS.numbers.map((r) => [r.id, r.value])) as Record<string, number>;   // meanWeight (the mean of two), p90Rank (the nearest rank), copiedMs (how long the button says "copied"), panelLeftPx/panelRightPx/panelTopPx (where the panel sits: the band under the stance column, clear of every control at 320 and 375)
 
 export const TAP_LOG_QUERY = /[?&;]taplog=1\b/;
 export const tapLogOn = (search: string): boolean => TAP_LOG_QUERY.test(search);
@@ -36,7 +36,7 @@ export function createTapTimer(onTap: (ms: number) => void) {
 export function attachTapLog(doc: Document, strike: HTMLElement): void {
   const durations: number[] = [];
   const panel = doc.createElement('div'); panel.id = 'tap-log';
-  panel.setAttribute('style', 'position:fixed;left:8px;top:132px;z-index:50;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.72);color:#f2e6d6;font:600 11px/1.3 sans-serif;display:flex;gap:6px;align-items:center;pointer-events:auto');
+  panel.setAttribute('style', `position:fixed;left:${NUM.panelLeftPx}px;right:${NUM.panelRightPx}px;top:${NUM.panelTopPx}px;z-index:50;flex-wrap:wrap;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.72);color:#f2e6d6;font:600 11px/1.3 sans-serif;display:flex;gap:6px;align-items:center;pointer-events:auto`);
   const text = doc.createElement('span'), button = (label: string) => { const b = doc.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('style', 'font:600 11px sans-serif;padding:3px 6px;border-radius:4px;min-height:28px'); return b; };
   const copy = button(LABEL.copy!), clear = button(LABEL.clear!);
   const show = () => { text.textContent = tapText(tapStats(durations)); };
