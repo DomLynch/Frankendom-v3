@@ -43,3 +43,15 @@ export function underRows80<T>(version: number, run: () => T): T {
   const outer = ROWS80_ON; ROWS80_ON = rows80For(version);
   try { return run(); } finally { ROWS80_ON = outer; }
 }
+// RV83 (Combat, 2026-10-19, Backend's finding on a disposable DB at RV82): an open-world hero holding a bow-family weapon (a `bow` missile row) carries the special share like the Pit's hero (duel.ts withSpecials),
+// so his picked special fires the bow special (Power Shot, Fan Volley, Pinning Shot, Quick Shot) beyond the missile gap instead of throwing the melee skill swing, which whiffed at range with no arrow
+// (open-fight.ts heroSheeted). A fourth boundary of this leaf: ON for a live fight and for a record at 83 or later; a record below 83 keeps the old hero (no share without a spell).
+export const FIRST_ROWS83_VERSION = 83;
+export let ROWS83_ON = true;
+export function setRows83(on: boolean): void { ROWS83_ON = on; }
+/** Whether a record of this version is fought with the RV83 world bow share. */
+export const rows83For = (version: number): boolean => eraForced ?? version >= FIRST_ROWS83_VERSION;
+export function underRows83<T>(version: number, run: () => T): T {
+  const outer = ROWS83_ON; ROWS83_ON = rows83For(version);
+  try { return run(); } finally { ROWS83_ON = outer; }
+}
