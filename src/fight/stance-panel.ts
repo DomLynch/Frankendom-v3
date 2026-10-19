@@ -33,10 +33,12 @@ export function mountStancePanel(host: HTMLElement, pick: (p: PickedStance) => v
     b.style.cssText = `position:relative;width:${size}px;height:${size}px;padding:0;display:flex;align-items:center;justify-content:center;color:${r.colour};background:rgba(15,12,10,.6);border:1.5px solid rgba(232,220,196,.28);border-radius:50%;cursor:pointer`;
     b.addEventListener('click', () => pick(p)); buttons.set(p, b); row.append(b);
   }
-  box.append(row, line); host.append(box);
+  const name = doc.createElement('div'); name.id = 'stance-name'; name.style.cssText = `font-size:${dial('namePx')}px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 2px #000`;   // option B: the lit stance's NAME under the row, in its colour
+  box.append(row, name, line); host.append(box);
   return {
     show(mine, seed, opponent) {
       line.textContent = mine ? stanceReveal(mine, seed, opponent) : '';
+      const litRow = stancePickRow(mine ?? 'neutral'); name.textContent = litRow.label; name.style.color = litRow.colour;
       for (const [p, b] of buttons) {
         const lit = p === (mine ?? 'neutral'), colour = stancePickRow(p).colour;
         b.setAttribute('aria-pressed', String(lit)); b.style.borderColor = lit ? colour : 'rgba(232,220,196,.28)'; b.style.background = lit ? 'rgba(15,12,10,.9)' : 'rgba(15,12,10,.6)'; b.style.boxShadow = lit ? `0 0 8px ${colour}` : 'none';
