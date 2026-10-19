@@ -1,7 +1,6 @@
 import { cameraRule } from './camera-rules.ts';
 import { impactTier } from './hit-impact.ts';
 import { shardRows, specialShardsOf, specialTrailOf } from './sandbox-rules.ts';
-import { createSpecialShards } from './special-shards.ts';
 import { ROSTER, supportsFinishers, resolveFinisher } from '../roster.ts';
 import * as THREE from 'three';
 import { SPECIAL_STRUCK, specialStage } from './special-look.ts';
