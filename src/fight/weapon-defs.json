@@ -286,6 +286,12 @@
     "guardProfile": {"costScale":1.15,"heavyBreaks":true}
   },
   {
+    "id": "bow", "skill": "sword", "extends": "knife", "player": 10, "offered": 10
+  },
+  {
+    "id": "staff", "skill": "spear", "extends": "trident", "player": 11, "offered": 11
+  },
+  {
     "id": "bite",
     "natural": true,
     "extends": "knife",
