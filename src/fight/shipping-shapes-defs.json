@@ -11,6 +11,7 @@
     {"id":"warhammer","ranks":["warhammer-plain","warhammer-plain","warhammer-plain","warhammer-crafted","warhammer-crafted","warhammer-crafted","warhammer-crafted","warhammer-ornate","warhammer-ornate","warhammer-ornate"]},
     {"id":"reaper","ranks":["reaper-plain","reaper-plain","reaper-plain","reaper-crafted","reaper-crafted","reaper-crafted","reaper-crafted","reaper-ornate","reaper-ornate","reaper-ornate"]},
     {"id":"estoc-cane","ranks":["estoc-cane-plain","estoc-cane-plain","estoc-cane-plain","estoc-cane-crafted","estoc-cane-crafted","estoc-cane-crafted","estoc-cane-crafted","estoc-cane-ornate","estoc-cane-ornate","estoc-cane-ornate"]},
+    {"id":"staff","ranks":["witch-staff-plain","witch-staff-plain","witch-staff-plain","witch-staff-crafted","witch-staff-crafted","witch-staff-crafted","witch-staff-crafted","witch-staff-ornate","witch-staff-ornate","witch-staff-ornate"]},
     {"id":"witch-staff","ranks":["witch-staff-plain","witch-staff-plain","witch-staff-plain","witch-staff-crafted","witch-staff-crafted","witch-staff-crafted","witch-staff-crafted","witch-staff-ornate","witch-staff-ornate","witch-staff-ornate"]}
   ]
 }
