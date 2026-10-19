@@ -9,6 +9,12 @@ import type { PairContacts } from './world-combat.ts';
 import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 import { fireBreathes, createFireBreath } from './fire-breath.ts';
 import { OPPONENT_SIDE } from './signature.ts';
+import { createSkillImpact, impactPoint } from './skill-impact.ts';
+import { createSpecialShards } from './special-shards.ts';
+import { shardCapacity } from './special-shards-rows.ts';
+import { shardRows, specialShardsOf } from './sandbox-rules.ts';
+import { specialRequestOf } from './special-request.ts';
+import { countSpecial } from './special-counter.ts';
 
 /** The hint sink for a walk camera that is placed afresh every frame (camera.position set, then lookAt): draw() adds the settling shove and tumble on top, and the next placement drops them. */
 export function createWalkKick(camera: THREE.Camera): CameraKick & { draw(dt: number): void } {
@@ -41,6 +47,9 @@ export type ZoneRigs = { hero(): FxRig | null; foe(id: string): FxRig | null };
 export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera; rigs?: ZoneRigs }) {
   const dropTexture = impactTexture(false), splatTexture = impactTexture(true), kick = createWalkKick(host.camera), right = new THREE.Vector3(), breath = createFireBreath(host.scene);
   type Slot = { fx: ReturnType<typeof createFightFx>; idle: number; struck?: [number, number]; victim?: number };
+  // The melee specials' look, the same two pieces the Pit's scene.ts draws (Dom 2026-10-19, "specials must look like specials in Zone 1"): the skill-impact flash and sparks in the move's colour, and the sandbox's shard chips
+  // when its rows exist (none on trunk = nothing built). One of each for the page, not per pair: a hit is a frame's event. Read from the same Pit events the pair's contacts carry.
+  const skillImpact = createSkillImpact(host.scene), shards = shardRows() ? createSpecialShards(host.scene, shardCapacity()) : null, shardAt = new THREE.Vector3();
   const live = new Map<string, Slot>(), free: Slot[] = [];
   const newSlot = (): Slot => ({ fx: createFightFx({ scene: host.scene, dropTexture, splatTexture }), idle: 0 });
   free.push(newSlot());   // the first pair's effects exist before any contact, so the zone's warm-up (planUpload) sees their materials and links their programs before [zone ready], not at the first hit
@@ -75,6 +84,17 @@ export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera; r
         s.fx.update(dt);
         if ((s.idle += dt) > IDLE_S) { s.fx.splats.clear(true); s.fx.bodyWounds.clear(); live.delete(foe); free.push(s); }
       }
+      for (const c of pairs) {   // a melee special's look: the hero's SPECIAL 1 (SpecialLanded) and the other slot (a Hit on a skill_ move) both land as one request (special-request.ts)
+        const bodies = [{ body: c.hero }, { body: c.foeAt }] as never, scale = [1, OPPONENTS[c.kind as OpponentId]?.scale ?? 1];
+        countSpecial('fx', skillImpact.fire(c.events, bodies, scale));
+        if (shards) for (const e of c.events) {
+          const request = specialRequestOf(e), rows = request?.phase === 'land' ? specialShardsOf(request.skill) : [];
+          if (!rows.length) continue;
+          impactPoint(e, bodies, scale, shardAt); const by = c.hero, to = c.foeAt;
+          for (const row of rows) countSpecial('fx', shards.burst(row, shardAt.x, shardAt.y, shardAt.z, to.x - by.x, to.z - by.z));
+        }
+      }
+      skillImpact.update(dt); shards?.update(dt);
       kick.draw(dt);
     },
     /** Instances in use, for the browser checks. */

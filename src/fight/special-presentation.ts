@@ -12,6 +12,7 @@ import { SKILL_MOVE, type SkillId } from './moves.ts';
 import { SKILLS } from '../core/loot.ts';
 import { BOSSES } from './boss-rows.ts';
 import { spellRoot } from './spell-cast.ts';
+import { countSpecial } from './special-counter.ts';
 import { SPELL_FX, healOf, spellEffectOf, vfxOf } from './sandbox-rules.ts';
 // sandbox spellFx: a catalogue spell's root IS a special template (spell-rows.ts), so a cast plays that special's designed effect (crack = Antaeus' earth, longShadow = Thanatos' fog ...). Off (trunk) = no effect id: a spell cast draws nothing here.
 const spellFxId = (spell: string | undefined): string | null => { if (!SPELL_FX || !spell || healOf(spell) || vfxOf(spell)) return null; const root = spellRoot(spell); return spellEffectOf(spell) || (root && SPECIALS.find((s) => s.template === root)?.id) || null; };   // the spell's own effect row, else its root template's special; a heal spell (healOf) has its own look in missile-fx.ts, no special effect
@@ -95,6 +96,7 @@ export function createSpecialPresentation(scene: THREE.Scene, exposure: number, 
           // special is a different effect and is built (select). Re-creating a landed effect cost 200-700 ms at 4x CPU throttle on the cast's first frame.
           if (slot.id !== id || (slot.ended && !slot.fx)) slot = select(side, id, previews[id]?.opponent ?? slot.opponent);   // (a load that failed or never landed is tried again)
           else if (slot.ended) slot.fx!.clear();
+          countSpecial('fx');   // ?debug=1 counter (special-counter.ts): a special effect's cast accepted
           slot.start = event.tick; slot.ended = false; slot.events = (event.spell ? [event, ...effectMoves(slot.opponent).map((move) => ({ ...event, move }) as CombatEvent)] : [event]).map((e) => casterEvent(e, side));
         } else if ((event.type === 'SpecialLanded' || event.type === 'SpecialFizzled' || event.type === 'SpecialInterrupted') && event.tick >= slot.start && !slot.ended && !(event.spell && !fight?.presets && !SPELL_FX)) {
           slot.ended = true;
