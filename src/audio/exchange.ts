@@ -1,5 +1,5 @@
 import { audioRule } from '../fight/sound/audio-rules.ts';
-import { SANDBOX_ON } from '../fight/sandbox-era.ts';
+import { ROWS79_ON } from '../fight/sandbox-era.ts';
 import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../fight/duel.ts';
 import type { DeathPresentation } from '../fight/sound/cues.ts';
 import { RULES } from '../fight/moves.ts';
@@ -14,7 +14,7 @@ export type Exchange = { ticks: { tick: number; events: CombatEvent[]; presentat
 export const EXCHANGE_BEATS = ['walk', 'draw', 'light', 'light', 'heavy', 'guard', 'block', 'parry', 'riposte', 'hit taken', 'kick', 'death'] as const;
 // The rig's health is a row per era, read when the exchange is scripted (the era is a live switch, sandbox-era.ts): sandbox era (armour rows, and the reach bands of RV79: an off-band strike lands
 // at x0.4) (row reason: "RV79 sandbox rows: bands live, exchange completes for 29-34, measured 2026-10-19") MEASURED: the exchange completes (same 1114 ticks, every beat) for a warden health of 29..34 and stalls on either side, so 32 is mid-window; era off (trunk damage) 11 + 11 + 18 + 24 + 4 = 68 and a 27 heavy, so 80.
-const wardenHealth = (): number => audioRule(SANDBOX_ON ? 'wardenHealth' : 'wardenHealthEraOff');
+const wardenHealth = (): number => audioRule(ROWS79_ON ? 'wardenHealth' : 'wardenHealthEraOff');   // keyed on the RV79 rows (the reach bands the 32 was measured under), not the RV78 sandbox switch alone
 export const forward = (): Intent['move'] => ({ x: 0, z: -1, yaw: 0, run: false });
 
 export function scriptExchange(): Exchange {
