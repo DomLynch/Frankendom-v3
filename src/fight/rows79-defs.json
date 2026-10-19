@@ -1,0 +1,10 @@
+{
+  "stances": [
+    {"id": "aggressive", "damage": 100, "posture": 200, "block": 200},
+    {"id": "defensive", "damage": -100, "block": -300, "recover": 500, "damageTaken": -200, "poise": -200},
+    {"id": "trickster", "heavyDamage": -100, "feint": -750, "kickPosture": 1000}
+  ],
+  "dials": [
+    {"id": "ARENA_ONE_SCALE", "value": 0.468}
+  ]
+}

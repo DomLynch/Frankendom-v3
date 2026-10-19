@@ -1,4 +1,5 @@
-import { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE, SPAWN_FLOOR } from './play-radius-rows.ts';   // the dials are rows (play-radius-defs.json)
+import { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE, ARENA_ONE_SCALE_79, SPAWN_FLOOR } from './play-radius-rows.ts';
+import { rows79For } from './sandbox-era.ts';   // the dials are rows (play-radius-defs.json)
 export { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE, SPAWN_FLOOR };
 // The play circle's size, keyed on the fight (Dom 2026-10-06: Arena 1 comes inward to 0.36 (first 0.6, then 0.6 of that), "more intimate and impactful"). Arena 1 is the
 // ladder's first band (arena-themes.ts ARENA_PICK; tests/play-radius.test.ts pins this list against LADDER). A record's version picks the
@@ -9,7 +10,7 @@ export { OPEN_RADIUS, WALL_INNER, BODY_RADIUS, BASE_RADIUS, ARENA_ONE_SCALE, SPA
 // the wall's inner face (arena.ts LAYOUT.wall.inner, pinned by tests/play-radius.test.ts) and half the fighters' 0.85 m spacing (sim.ts)
 export const FIRST_SCALED_VERSION = 23;
 export const ARENA_ONE: readonly string[] = ['veteran', 'pitborn'];   // the ladder's first band only; any other or unknown id keeps the old circle (fails closed)
-export const playScaleFor = (opponent: string, version: number): number => version >= FIRST_SCALED_VERSION && ARENA_ONE.includes(opponent) ? ARENA_ONE_SCALE : 1;
+export const playScaleFor = (opponent: string, version: number): number => version >= FIRST_SCALED_VERSION && ARENA_ONE.includes(opponent) ? (rows79For(version) ? ARENA_ONE_SCALE_79 : ARENA_ONE_SCALE) : 1;   // RV79 (sandbox-era.ts): Arena 1 comes out 30% wider (Dom 2026-10-16); a record below 79 keeps the 0.36 it was fought in
 // Where the fighters start, in the same fractions of the circle: the old 4 m / -2.5 m at full size, shrunk with the circle but never closer than half (a sword's reach and the draw beat need room).
 export const spawnScale = (): number => Math.max(PLAY_SCALE, SPAWN_FLOOR);
 export let PLAY_SCALE = 1;

@@ -17,3 +17,16 @@ export function underSandbox<T>(version: number, run: () => T): T {
   const outer = SANDBOX_ON; setSandbox(sandboxFor(version));
   try { return run(); } finally { setSandbox(outer); }
 }
+// RV79 (Combat, "port ALL of the sandbox", Dom 2026-10-18): the sandbox rows BULK-CS left out as tuning ride a second boundary of this same leaf: stances 2x (stance.ts), the Arena 1 play circle 0.36 -> 0.468
+// (play-radius.ts), the plate set's shape (gear-rows.ts). ON for a live fight and for a record at 79 or later; a record below 79 replays the numbers it was fought with. The test force (forceSandbox) pins this too.
+export const FIRST_ROWS79_VERSION = 79;
+export let ROWS79_ON = true;
+export function setRows79(on: boolean): void { ROWS79_ON = on; }
+/** Whether a record of this version is fought with the RV79 rows. */
+export const rows79For = (version: number): boolean => eraForced ?? version >= FIRST_ROWS79_VERSION;
+/** The version a row keyed on a record version should be read at: the version itself, or the last one before RV79 while the RV79 rows are pinned off (tests). */
+export const rows79Version = (version: number): number => (rows79For(version) ? version : Math.min(version, FIRST_ROWS79_VERSION - 1));
+export function underRows79<T>(version: number, run: () => T): T {
+  const outer = ROWS79_ON; ROWS79_ON = rows79For(version);
+  try { return run(); } finally { ROWS79_ON = outer; }
+}
