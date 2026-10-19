@@ -38,6 +38,7 @@ import { createFootDust, dustToneFor } from './foot-dust.ts';
 import { createWitchfire } from './witchfire.ts';
 import { createMiasmaMark, marksFlag } from './miasma-mark.ts';
 import { createSkillImpact, impactPoint } from './skill-impact.ts';
+import { countSpecial } from './special-counter.ts';
 import { createImpactFx } from './impact-fx.ts';
 import { createMissileFx } from './missile-fx.ts';
 import { createWoundNotice } from './wound-notice.ts';
@@ -1109,12 +1110,12 @@ export function createScene(
         }
       }
       // A landed skill blow's flash and sparks in its move's colour (skill-impact.ts, the kit every skill ships on): after the poses settle.
-      skillImpact.fire(events, practice.duel.fighters, [1, OPPONENTS[opponentId].scale]); skillImpact.update(dt);
+      countSpecial('fx', skillImpact.fire(events, practice.duel.fighters, [1, OPPONENTS[opponentId].scale])); skillImpact.update(dt);   // ?debug=1 counter (special-counter.ts): the real spawns only
       if (specialShards) {   // a landed melee special throws its rows' chips off the contact, away from the attacker
         for (const e of events) {
           if (e.type !== 'SpecialLanded' || e.spell || e.target === undefined || e.target === e.actor || !e.move?.startsWith('skill_')) continue;
           const rows = specialShardsOf(e.move.slice('skill_'.length)), by = practice.duel.fighters[e.actor]!.body, to = practice.duel.fighters[e.target]!.body;
-          if (rows.length) { impactPoint(e, practice.duel.fighters, [1, OPPONENTS[opponentId].scale], shardAt); for (const row of rows) specialShards.burst(row, shardAt.x, shardAt.y, shardAt.z, to.x - by.x, to.z - by.z); }
+          if (rows.length) { impactPoint(e, practice.duel.fighters, [1, OPPONENTS[opponentId].scale], shardAt); for (const row of rows) countSpecial('fx', specialShards.burst(row, shardAt.x, shardAt.y, shardAt.z, to.x - by.x, to.z - by.z)); }
         }
         specialShards.update(dt);
       }

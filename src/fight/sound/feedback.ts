@@ -1,6 +1,7 @@
 import { audioRule, SYNTH_CUES } from './audio-rules.ts';
 import type { ClarityEvent, CombatEvent } from '../combat.ts';
-import { cuesFor, nextVariant, PITCH_SPREAD, seeded, type Cue, type DeathPresentation } from './cues.ts';
+import { cuesFor, isSpecialRowCue, nextVariant, PITCH_SPREAD, seeded, type Cue, type DeathPresentation } from './cues.ts';
+import { countSpecial } from '../special-counter.ts';
 import { MANIFEST, type CueName } from '../../audio/manifest.ts';
 import { decodePrefetched, sharedPrefetch, type Prefetched } from '../../audio/sprite.ts';
 import { createArenaAudio, type ArenaFrame } from '../../audio/arena.ts';
@@ -179,7 +180,7 @@ export function createFeedback(host?: FeedbackHost) {
     // `cutSpecial` fades it out (a fizzle, a skipped beat). The swell peaks 2.0 s in, so it starts with the wind-up.
     // It plays into the arena output, past the combat balance, like the crowd bank: the cues are levelled for that path (build-special-audio.mjs).
     want(cue: SpecialCue) { specialWanted.add(cue); specialLoad(); },
-    special(cue: SpecialCue, gain = 1, actor: 0 | 1 = 1) { specialCut(actor); const buffer = specialBuffers.get(cue); if (!enabled || quieted || !context || !live() || !buffer) return null; specialHeard[actor] = playSpecial(context, buffer, arenaOutput, gain); return specialHeard[actor]; },
+    special(cue: SpecialCue, gain = 1, actor: 0 | 1 = 1) { specialCut(actor); const buffer = specialBuffers.get(cue); if (!enabled || quieted || !context || !live() || !buffer) return null; specialHeard[actor] = playSpecial(context, buffer, arenaOutput, gain); countSpecial('cues'); return specialHeard[actor]; },
     cutSpecial: specialCut,
     dispose() { quieted = true; stopSources(); specialCut(); },
     // A duel lobby cue: `wantDuel` asks for it to be fetched (once the first tap has made the context), `duel` plays it now at `gain`, silent if it has not loaded.
@@ -225,7 +226,7 @@ export function createFeedback(host?: FeedbackHost) {
       }
       if (wordBus && events.some(e => e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'GuardBroken')) { const g = wordBus.gain; g.cancelScheduledValues(time); g.setValueAtTime(.2, time); g.linearRampToValueAtTime(1, time + .5); }   // a landing blow or a parry/block owns the moment; the chant ducks to -14 dB and comes back
       armfeelPlay(events, time);
-      if (sprite) { for (const cue of cuesFor(events, presentation, frame?.opponent, clarity, undefined, defenceGrades)) play(cue, time); return; }
+      if (sprite) { for (const cue of cuesFor(events, presentation, frame?.opponent, clarity, undefined, defenceGrades)) { play(cue, time); if (isSpecialRowCue(cue)) countSpecial('cues'); } return; }
       if (events.some(e => e.type === 'Hit' || e.type === 'GuardBroken')) synth('hit', time);
       else if (events.some(e => e.type === 'Parried')) synth('parry', time);
       else if (events.some(e => e.type === 'Blocked')) synth('steel', time);
