@@ -8,6 +8,9 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import { STANCE_ROWS_ON } from './stance-era.ts';
 import STANCE_DEFS from './stance-defs.json' with { type: 'json' };
 import STANCE_MANIFEST from './stance-defs.manifest.json' with { type: 'json' };
+import ROWS79_DEFS from './rows79-defs.json' with { type: 'json' };
+import ROWS79_MANIFEST from './rows79-defs.manifest.json' with { type: 'json' };
+import { ROWS79_ON } from './sandbox-era.ts';
 import { LEGACY_DEFENSIVE_ROWS } from './stance-legacy-rows.ts';   // rows: stance-legacy-defs.json
 export type StanceId = 'aggressive' | 'defensive' | 'trickster';
 export type PickedStance = StanceId | 'neutral';   // what a player picks (and a record names): Neutral is a real pick, the safe middle
@@ -19,7 +22,9 @@ export type StanceKey = (typeof STANCE_KEYS)[number];
 type Deltas = Readonly<Partial<Record<StanceKey, number>>>;
 const TABLE = tableFromFile(STANCE_MANIFEST.tables[0] as Manifest, STANCE_DEFS, 'stance-defs.json');
 const WOUND_TABLE = tableFromFile(STANCE_MANIFEST.tables[1] as Manifest, STANCE_DEFS, 'stance-defs.json');
-loadRegistry([TABLE, WOUND_TABLE]);
+const TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[0] as Manifest, ROWS79_DEFS, 'rows79-defs.json');   // RV79 (sandbox-era.ts): the stance numbers 2x bigger (Dom 2026-10-13), for a live fight and a record at 79 or later
+const CAP_TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[2] as Manifest, ROWS79_DEFS, 'rows79-defs.json');   // a floor per stance quantity (rows79-defs.json stanceCaps): a specific Dom value beats the 2x multiplier
+loadRegistry([TABLE, WOUND_TABLE, TABLE_79, CAP_TABLE_79]);
 export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<Record<StanceId, Deltas>> {
   const out: Record<string, Record<string, number>> = {};
   for (const { id, ...deltas } of rows) {
@@ -32,9 +37,16 @@ export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<R
   return out as Readonly<Record<StanceId, Deltas>>;
 }
 export const STANCES: Readonly<Record<StanceId, Deltas>> = stanceRows(TABLE.rows as unknown as Record<string, unknown>[]);
+const STANCE_FLOORS_79 = new Map((CAP_TABLE_79.rows as unknown as { id: string; floor: number }[]).map((r) => {
+  if (!(STANCE_KEYS as readonly string[]).includes(r.id)) throw Error(`rows79-defs stanceCaps "${r.id}": not a stance quantity (${STANCE_KEYS.join(', ')})`);
+  if (!Number.isInteger(r.floor) || r.floor > 0) throw Error(`rows79-defs stanceCaps "${r.id}": floor is a whole per-mille delta at or below 0 (the capped rows are range-checked by stanceRows)`);
+  return [r.id, r.floor] as const;
+}));
+const capStances79 = (rows: Readonly<Record<StanceId, Deltas>>): Readonly<Record<StanceId, Deltas>> => Object.fromEntries(Object.entries(rows).map(([id, deltas]) => [id, Object.fromEntries(Object.entries(deltas).map(([k, v]) => [k, Math.max(v as number, STANCE_FLOORS_79.get(k) ?? -Infinity)]))])) as Readonly<Record<StanceId, Deltas>>;
+const STANCES_79: Readonly<Record<StanceId, Deltas>> = stanceRows(Object.entries(capStances79(stanceRows(TABLE_79.rows as unknown as Record<string, unknown>[]))).map(([id, d]) => ({ id, ...d })));   // stances 2x sandbox, feint cap Dom-held (the doubled rows, then each quantity floored by its stanceCaps row)
 // The Defensive stance BEFORE v52 (stance-era.ts): the same deltas plus a parry window and a guard-counter window a quarter longer. Read only while a record below 52 replays.
 const LEGACY_DEFENSIVE: Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>> = LEGACY_DEFENSIVE_ROWS as unknown as Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>>;
-const rowOf = (f: { stance?: StanceId }): Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>> | undefined => (f.stance ? (STANCE_ROWS_ON ? undefined : LEGACY_DEFENSIVE[f.stance]) ?? STANCES[f.stance] : undefined);
+const rowOf = (f: { stance?: StanceId }): Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>> | undefined => (f.stance ? (STANCE_ROWS_ON ? undefined : LEGACY_DEFENSIVE[f.stance]) ?? (ROWS79_ON ? STANCES_79 : STANCES)[f.stance] : undefined);
 // Wounds that matter (sandbox-mech: wounds): a wound row (stance-defs.json `wounds`) is { id, site, ...the same per-mille quantities as a stance }. The first blade wound
 // at `site` scars the defender with that id for the rest of the duel (duel.ts `wound`), and every stanced() read below carries the scar's delta on top of the stance.
 // No rows = no scar is ever set (the fighter has no `scars` field, so the duel hash is byte-identical) and stanced() is unchanged.

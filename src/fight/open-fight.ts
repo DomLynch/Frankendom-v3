@@ -8,7 +8,7 @@ import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, lcg, seedUnit, type AiState } from './ai.ts';
 import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json
 const MOTION_SEED_SALT = simBound('motion.seedSalt');   // salts the creature's circle-draw stream apart from the brain's own
-import { createFighter, idleIntent, movesOf, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
+import { bandsFlag, createFighter, idleIntent, movesOf, opponentFighter, stepDuel, timing, withRoll, withSheet, withSpell, type CombatEvent, type Duel, type Fighter as PitFighter, type Intent, type Side } from './duel.ts';
 import type { Event, Fighter, Input, Phase } from './world.ts';
 import { M } from './detmath.ts';
 import { motionOf, type CreatureMotion } from './creature-motion-rows.ts';
@@ -38,7 +38,7 @@ export function heroSheeted(f: Fighter): PitFighter {
 export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter): Bout {
   const h = carry ?? pitOf(hero), c = foe ? pitOf(foe) : createFighter({ x: hero.x + FAR_M, z: hero.z, heading: 0, distance: 0 }, 'ready', DEFAULT_WEAPON, 1, 0, 1e9);
   const o = foe?.side === 'creature' ? OPPONENTS[foe.kind as keyof typeof OPPONENTS] : null;
-  const base: Duel = { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS };
+  const base: Duel = { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS, ...bandsFlag() };
   const seed = foe?.seed ?? seedOf(foe?.id ?? hero.id), withA = h.spell && h.specialShare !== undefined ? withSpell(base, 0, h.spell, seed) : base;
   const duel = h.spell2 && h.specialShare !== undefined ? withSpell(withA, 0, h.spell2, seed, 1) : withA;   // slot b rides the same seeded stream: the draw index is the cast count, not the slot   // open-world: the cast draws are seeded by the bout (the creature's roll seed, else its id), so a replay reproduces every outcome
   return { foe: foe?.id ?? null, duel: foe?.seed === undefined ? duel : withRoll(duel, foe.seed), ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };

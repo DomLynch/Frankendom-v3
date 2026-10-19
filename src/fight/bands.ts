@@ -1,5 +1,6 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import { WEAPONS, type MoveId, type WeaponId } from './moves.ts';
+import { SANDBOX_ON } from './sandbox-era.ts';
 import BAND_DEFS from './band-defs.json' with { type: 'json' };
 import BAND_MANIFEST from './band-defs.manifest.json' with { type: 'json' };
 
@@ -23,7 +24,9 @@ if (!(INNER_FRAC < MID_FRAC && MID_FRAC < 1)) throw Error('band-defs: 0 < innerF
 if (OFF_BAND_MULT > 1) throw Error('band-defs: offBandMult is at most 1 (an off-band blow is never stronger)');
 // BULK-CS (ruling B, Lead + Strategy 2026-10-18): TWO edge modes, one mechanism. edgesMode 0 = the span FRACTIONS above (Strategy's spec, byte for byte as before); edgesMode 1 = FIXED metre edges (Dom's hands-on sandbox bands: inner under innerEdgeCm,
 // mid up to midEdgeCm, outer beyond, an off-band blow x offBandMultCm). The mode is a row; the whole mechanism stays behind the `Duel.bands` flag (default off). docs/specs/combat/positioning-gates.md names both modes.
-const EDGES_FIXED = rule('edgesMode') > 0, INNER_EDGE = rule('innerEdgeCm') / 100, MID_EDGE = rule('midEdgeCm') / 100, OFF_BAND_FIXED = rule('offBandMultCm');
+const EDGES_FIXED = rule('edgesMode') > 0;
+const edgesFixed = (): boolean => EDGES_FIXED && SANDBOX_ON;   // era-keyed (sandbox-era.ts, RV79): the fixed-cm edges are the sandbox's, so a record below 78 that fought with bands on replays the span fractions
+const INNER_EDGE = rule('innerEdgeCm') / 100, MID_EDGE = rule('midEdgeCm') / 100, OFF_BAND_FIXED = rule('offBandMultCm');
 if (EDGES_FIXED && !(INNER_EDGE < MID_EDGE && OFF_BAND_FIXED <= 1)) throw Error('band-defs: fixed edges need innerEdgeCm < midEdgeCm and offBandMultCm at most 1');
 /** Weapon id -> its best band. A weapon with no row has no band: its blows are never scaled. */
 export const BEST_BAND: Readonly<Record<string, string>> = Object.fromEntries((WEAPON_T.rows as unknown as { id: string; bestBand: string }[]).map((r) => {
@@ -48,19 +51,19 @@ export function spanOf(weapon: WeaponId): readonly [number, number] {
 }
 /** The ring a gap falls in for this weapon: inside the span's first fraction is inner, then mid, the rest (out to and past the reach) outer. */
 export function bandAt(weapon: WeaponId, gap: number): string {
-  if (EDGES_FIXED) return gap < INNER_EDGE ? BANDS[0]! : gap < MID_EDGE ? BANDS[1]! : BANDS[2]!;   // fixed edges: the same metres for every weapon
+  if (edgesFixed()) return gap < INNER_EDGE ? BANDS[0]! : gap < MID_EDGE ? BANDS[1]! : BANDS[2]!;   // fixed edges: the same metres for every weapon
   const [lo, hi] = spanOf(weapon), span = hi - lo;
   return gap < lo + INNER_FRAC * span ? BANDS[0]! : gap < lo + MID_FRAC * span ? BANDS[1]! : BANDS[2]!;
 }
 /** The factor on a clean blow started at this gap: 1 in the weapon's best band (or with no band row), offBandMult elsewhere. */
 export function bandFactor(weapon: WeaponId, gap: number): number {
   const best = BEST_BAND[weapon];
-  return best === undefined || bandAt(weapon, gap) === best ? 1 : EDGES_FIXED ? OFF_BAND_FIXED : OFF_BAND_MULT;
+  return best === undefined || bandAt(weapon, gap) === best ? 1 : edgesFixed() ? OFF_BAND_FIXED : OFF_BAND_MULT;
 }
 /** The gap range [from, to) of a weapon's best band, in metres (the last ring is open-ended up to the reach); undefined for a weapon with no band row. */
 export function bestRange(weapon: WeaponId): readonly [number, number] | undefined {
   const best = BEST_BAND[weapon]; if (best === undefined) return undefined;
   const [lo, hi] = spanOf(weapon), span = hi - lo, i = BANDS.indexOf(best);
-  if (EDGES_FIXED) return [i === 0 ? lo : i === 1 ? INNER_EDGE : MID_EDGE, i === 0 ? INNER_EDGE : i === 1 ? MID_EDGE : Math.max(hi, MID_EDGE)];
+  if (edgesFixed()) return [i === 0 ? lo : i === 1 ? INNER_EDGE : MID_EDGE, i === 0 ? INNER_EDGE : i === 1 ? MID_EDGE : Math.max(hi, MID_EDGE)];
   return [i === 0 ? lo : lo + (i === 1 ? INNER_FRAC : MID_FRAC) * span, i === 0 ? lo + INNER_FRAC * span : i === 1 ? lo + MID_FRAC * span : hi];
 }

@@ -1,0 +1,7 @@
+{
+  "tables": [
+    { "table": "stance79", "file": "rows79-defs.json", "at": "stances", "key": "id", "required": {} },
+    { "table": "playRadiusDial79", "file": "rows79-defs.json", "at": "dials", "key": "id", "required": { "value": "number" } },
+    { "table": "stanceCap79", "file": "rows79-defs.json", "at": "stanceCaps", "key": "id", "required": { "floor": "number" } }
+  ]
+}

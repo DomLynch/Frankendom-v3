@@ -13,8 +13,8 @@ export function createMissileFx(scene: THREE.Scene) {
   const glow = new THREE.DataTexture(pixels, n, n); glow.needsUpdate = true; glow.magFilter = glow.minFilter = THREE.LinearFilter;
   const sprite = (size: number, color: string, opacity: number) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color, opacity, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.setScalar(size); s.visible = false; s.frustumCulled = false; scene.add(s); return s; };
   const bolts = [0, 1].map(() => ({ core: sprite(0.2, '#e8f3ff', 1), halo: sprite(0.65, '#6aa8ff', 0.55), trail: Array.from({ length: TRAIL }, (_, k) => sprite(0.4 - k * 0.08, '#6aa8ff', 0.4 - k * 0.1)) }));
-  // Bow arrow / crossbow bolt: a simple shaft + head + fins mesh (staff keeps the white orb). One per fighter, pointing along the flight line; shapes are rows-free presentation only.
-  const SHAPE = { bow: { len: 0.95, r: 0.014, shaft: '#8a6a43', head: '#8d9399', fin: '#7a6a4c' }, crossbow: { len: 0.42, r: 0.014, shaft: '#4a3a2c', head: '#8d9399', fin: '#3a2e24' } } as const;
+  // Bow arrow: a simple shaft + head + fins mesh (staff keeps the white orb). One per fighter, pointing along the flight line; shapes are rows-free presentation only.
+  const SHAPE = { bow: { len: 0.95, r: 0.014, shaft: '#8a6a43', head: '#8d9399', fin: '#7a6a4c' } } as const;
   const makeShaft = () => {
     const g = new THREE.Group(), mat = (c: string) => new THREE.MeshBasicMaterial({ color: c });
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 6), mat('#fff')), head = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 6), mat('#fff')), fins = [0, 1].map(() => new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#fff', side: THREE.DoubleSide })));
@@ -22,7 +22,7 @@ export function createMissileFx(scene: THREE.Scene) {
     g.add(shaft, head, ...fins); g.visible = false; scene.add(g); return { g, shaft, head, fins };
   };
   const shafts = [0, 1].map(makeShaft), sides = [0, 1].map(() => [makeShaft(), makeShaft()]);   // sides: the two outer arrows of a bow volley (sandbox bowSpecial lanes), hidden unless one flies
-  const dress = (s: (typeof shafts)[number], kind: 'bow' | 'crossbow') => {
+  const dress = (s: (typeof shafts)[number], kind: 'bow') => {
     const k = SHAPE[kind], headLen = k.r * 6;
     s.shaft.scale.set(k.r, k.len, k.r); s.shaft.rotation.z = Math.PI / 2; (s.shaft.material as THREE.MeshBasicMaterial).color.set(k.shaft);   // lies along +x
     s.head.scale.set(k.r * 2, headLen, k.r * 2); s.head.rotation.z = -Math.PI / 2; s.head.position.x = k.len / 2 + headLen / 2; (s.head.material as THREE.MeshBasicMaterial).color.set(k.head);
@@ -61,13 +61,13 @@ export function createMissileFx(scene: THREE.Scene) {
     fly(tick: number, fighters: readonly Pick<Fighter, 'missile' | 'weapon'>[]): void {
       fighters.forEach((f, i) => {
         const b = bolts[i]!, m = f.missile, live = !!m && tick < m.arrives;
-        const kind = missileOf(f.weapon)?.kind, arrow = kind === 'bow' || kind === 'crossbow' ? kind : undefined, sh = shafts[i]!;
+        const kind = missileOf(f.weapon)?.kind, arrow = kind === 'bow' ? kind : undefined, sh = shafts[i]!;
         b.core.visible = live && !arrow; b.halo.visible = live && !arrow; for (const t of b.trail) t.visible = live && !arrow; sh.g.visible = live && !!arrow;   // an arrow or bolt is plain wood and iron: no glow, no trail (the staff keeps its white orb)
         const outer = (m?.lanes ?? []).filter((l) => l !== 0);
         sides[i]!.forEach((s, k) => { s.g.visible = live && !!arrow && k < outer.length; });
         if (!m || !live) return;
         if (arrow && dressed[i] !== arrow) { dress(sh, arrow); for (const s of sides[i]!) dress(s, arrow); dressed[i] = arrow; }
-        const tint = m.tint ?? missileOf(f.weapon)?.tint;   // a spell's own colour, else the row's colour for this weapon's bolt (staff blue, arrow tan, crossbow bolt amber)
+        const tint = m.tint ?? missileOf(f.weapon)?.tint;   // a spell's own colour, else the row's colour for this weapon's bolt (staff blue, arrow tan)
         if (tint) { (b.halo.material as THREE.SpriteMaterial).color.set(tint); for (const t of b.trail) (t.material as THREE.SpriteMaterial).color.set(tint); }
         const along = m.range * Math.min(1, Math.max(0, (tick - m.launched) / Math.max(1, m.arrives - m.launched)));
         b.core.position.set(m.x + m.dx * along, HEIGHT, m.z + m.dz * along); b.halo.position.copy(b.core.position);
