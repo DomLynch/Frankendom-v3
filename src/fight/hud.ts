@@ -11,6 +11,7 @@ import { staminaLow } from './fatigue-preview.ts';
 import { SKILL_MOVE, SKILL_ROWS, weaponOf, type OpponentId } from './moves.ts';
 import { fxNum } from './fx-rows.ts';
 import { specialCueText } from './sandbox-rules.ts';
+import { specialName } from './special-names.ts';
 
 // Heavy-class contacts: bigger damage numbers here, a longer hit-stop in the frame loop.
 export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical']);
@@ -164,12 +165,12 @@ export function createHud(element: Lookup) {
       skillButton.hidden = ended;   // the seventh button follows Heavy's visibility
       const slotB = practice.duel.fighters[0].spell2 !== undefined || practice.duel.fighters[0].skill2 !== undefined || view.slotB === true;   // slot b is a spell, or (the specials PR) a melee SPECIAL 2   // slot b is the fight's own, or (the open world's idle practice carries no spells) the page's say-so: an empty slot b shows no button (Strategy's ruling); the Pit never fills it
       skill2Button.hidden = ended || !slotB;
-      const melee2 = practice.duel.fighters[0].skill2, spell2Name = view.slotBName || (melee2 ? SKILL_ROWS[melee2]?.name : undefined) || SPELL2_LABEL;   // a melee SPECIAL 2 shows its skill row's own name   // the page hands the spell's own name over (it holds the lazy catalogue; the HUD stays out of the entry bundle's spell data); an empty or unnamed slot keeps the generic words; CSS clamps a long name to the button
+      const melee2 = practice.duel.fighters[0].skill2, spell2Name = view.slotBName || (melee2 ? specialName(practice.duel.fighters[0].weapon, melee2, SKILL_ROWS[melee2]?.name ?? '') || undefined : undefined) || SPELL2_LABEL;   // a melee SPECIAL 2 shows its skill row's own name   // the page hands the spell's own name over (it holds the lazy catalogue; the HUD stays out of the entry bundle's spell data); an empty or unnamed slot keeps the generic words; CSS clamps a long name to the button
       if (skill2Button.dataset.mobile !== spell2Name) {
         skill2Button.dataset.mobile = spell2Name; skill2Button.setAttribute('aria-label', spell2Name); skill2Button.title = spell2Name;
         const text = skill2Button.firstChild; if (text && text.nodeType === 3) text.textContent = spell2Name; else skill2Button.textContent = spell2Name;
       }
-      const melee1 = practice.duel.fighters[0].skill, skillName = (melee1 && practice.duel.fighters[0].spell === undefined ? SKILL_ROWS[melee1]?.name : undefined) || SKILL_LABEL;   // a picked melee skill (SPECIAL 1) shows its row's own name, as SPECIAL 2 does; a spell or no skill keeps the generic word
+      const melee1 = practice.duel.fighters[0].skill, skillName = (melee1 && practice.duel.fighters[0].spell === undefined ? specialName(practice.duel.fighters[0].weapon, melee1, SKILL_ROWS[melee1]?.name ?? '') || undefined : undefined) || SKILL_LABEL;   // a picked melee skill (SPECIAL 1) shows its row's own name, as SPECIAL 2 does; a spell or no skill keeps the generic word
       if (skillButton.dataset.mobile !== skillName) {
         skillButton.dataset.mobile = skillName; skillButton.setAttribute('aria-label', skillName); skillButton.title = skillName;
         const text1 = skillButton.firstChild; if (text1 && text1.nodeType === 3) text1.textContent = skillName; else skillButton.textContent = skillName;
