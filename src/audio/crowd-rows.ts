@@ -8,12 +8,14 @@ import MANIFEST from './crowd-defs.manifest.json' with { type: 'json' };
 
 export const ROAR_MOMENTS = ['kill', 'parry', 'guardBreak', 'heavy'] as const;
 export type RoarMoment = (typeof ROAR_MOMENTS)[number];
-export type Roar = { readonly id: string; readonly on: RoarMoment; readonly cue: ArenaCue; readonly gain: number };
+/** `outlive` (kill rows only): the roar starts AFTER the arena bank is stopped and rings over the end, so it is the one arena-bank sound allowed past a defeat (arena-audio-check.mjs reads this row to know which). */
+export type Roar = { readonly id: string; readonly on: RoarMoment; readonly cue: ArenaCue; readonly gain: number; readonly outlive?: boolean };
 
 const TABLE = tableFromFile(MANIFEST.tables[0] as unknown as Manifest, DEFS, 'crowd-defs.json');
 loadRegistry([TABLE]);
 for (const r of DEFS.roars as readonly { id: string; on: string }[]) if (!(ROAR_MOMENTS as readonly string[]).includes(r.on)) throw Error(`crowd-defs.json: roar "${r.id}" keys on "${r.on}", which is not a moment (${ROAR_MOMENTS.join(', ')})`);
 export const ROARS = DEFS.roars as unknown as readonly Roar[];
+for (const r of ROARS) if (r.outlive !== undefined && typeof r.outlive !== 'boolean') throw Error(`crowd-defs.json: roar "${r.id}": outlive is a boolean`);
 
 /** The moments this frame's events make: a kill, a parry, a guard break, a heavy (charged) hit. A light hit is none. */
 export const momentsOf = (events: readonly CombatEvent[]): Set<RoarMoment> => new Set(events.flatMap((e): RoarMoment[] =>
