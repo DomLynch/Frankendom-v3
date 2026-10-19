@@ -286,10 +286,10 @@
     "guardProfile": {"costScale":1.15,"heavyBreaks":true}
   },
   {
-    "id": "bow", "skill": "sword", "extends": "knife", "player": 10, "offered": 10
+    "id": "bow", "skill": "sword", "look": { "pommelBash": true }, "extends": "knife", "player": 10, "offered": 10
   },
   {
-    "id": "staff", "skill": "spear", "extends": "trident", "player": 11, "offered": 11
+    "id": "staff", "skill": "spear", "look": { "pommelBash": true }, "extends": "trident", "player": 11, "offered": 11
   },
   {
     "id": "bite",
