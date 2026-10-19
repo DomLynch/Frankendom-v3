@@ -8,9 +8,9 @@ const CSS = '#mana{--bar-color:#3f78d4}#mana::-webkit-meter-optimum-value{backgr
   '#mana{grid-column:2;grid-row:8}#mana::-webkit-meter-bar{background:transparent;border:0;height:4px}#mana::-webkit-meter-optimum-value{background:transparent}#mana::-moz-meter-bar{background:transparent}' +
   '#fight-rank{grid-row:9}#combat-status{grid-row:10}#loot-panel{grid-row:11}#mana-value{display:none}}';
 
-export function mountManaBar(doc: Document = document, manaMax: number = MANA_MAX): HTMLMeterElement | null {
-  const stamina = doc.getElementById('stamina');
-  if (!manaMax || !stamina || doc.getElementById('mana')) return null;
+export function mountManaBar(doc: Document | undefined = typeof document === 'undefined' ? undefined : document, manaMax: number = MANA_MAX): HTMLMeterElement | null {
+  const stamina = doc?.getElementById('stamina');
+  if (!doc || !manaMax || !stamina || doc.getElementById('mana')) return null;   // no page (a headless harness) or no stamina bar: nothing to anchor to
   const css = doc.createElement('style'); css.textContent = CSS; doc.head.append(css);
   const caption = doc.createElement('span'); caption.className = 'meter-label'; caption.id = 'mana-label'; caption.textContent = 'MANA'; caption.setAttribute('data-mobile', 'Mana');   // the phone HUD draws the caption from data-mobile
   const value = doc.createElement('span'); value.id = 'mana-value'; value.textContent = `${manaMax} / ${manaMax}`;
