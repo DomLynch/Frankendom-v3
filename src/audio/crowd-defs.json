@@ -4,7 +4,8 @@
       "id": "kill-roar",
       "on": "kill",
       "cue": "reaction",
-      "gain": 3.0
+      "gain": 3.0,
+      "outlive": true
     },
     {
       "id": "parry-roar",

@@ -91,7 +91,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
         reactionAt = time + 2; gruntAt = time; contactAt = time;
       }
       const moments = ROARS.length ? momentsOf(events) : undefined;   // the crowd roar rows (crowd-defs.json): none ship, so nothing here runs
-      if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); if (moments) for (const r of ROARS) if (r.on === 'kill' && moments.has('kill')) play(r.cue, r.gain, 0, true); return; }
+      if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); if (moments) for (const r of ROARS) if (r.on === 'kill' && moments.has('kill')) play(r.cue, r.gain, 0, r.outlive === true); return; }
       wallJeer(frame.loiter ?? 0, time);
       if (!bellPlayed && draw) { bellPlayed = true; play('bell', .9); }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
@@ -102,8 +102,10 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
       if (hit && time >= gruntAt) { play('grunt', .20, .04); gruntAt = time + .9; }
       if (moments) for (const r of ROARS) if (r.on !== 'kill' && moments.has(r.on)) play(r.cue, r.gain);   // a roar row: that cue the frame its moment happens, no cooldown
       const exciting = events.some(e => e.type === 'Parried' || e.type === 'GuardBroken' || (e.type === 'Hit' && (e.charged || /heavy|riposte|counter/.test(e.move ?? ''))));
+      const roared = moments !== undefined && ROARS.some(r => r.on !== 'kill' && moments.has(r.on));   // a roar row answers this moment itself: it REPLACES the organic reaction (two reaction cues stacked on one hit is a double sound)
       if (exciting && time >= reactionAt) {
-        play('reaction', .20, .18); reactionAt = time + 4 + random() * 2;
+        if (!roared) play('reaction', .20, .18);
+        reactionAt = time + 4 + random() * 2;
         accentAt = Math.max(accentAt, time + 6);
       } else if (time >= accentAt && time >= reactionAt) {
         if (time - contactAt > 3) play('jeer', .13);

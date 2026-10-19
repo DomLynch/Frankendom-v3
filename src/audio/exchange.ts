@@ -11,7 +11,7 @@ import { PLAIN_DEATH } from '../fight/finisher-look.ts';
 type Beat = { name: string; tick: number; events: string[] };
 export type Exchange = { ticks: { tick: number; events: CombatEvent[]; presentation?: DeathPresentation }[]; beats: Beat[]; length: number };
 export const EXCHANGE_BEATS = ['walk', 'draw', 'light', 'light', 'heavy', 'guard', 'block', 'parry', 'riposte', 'hit taken', 'kick', 'death'] as const;
-const WARDEN_HEALTH = audioRule('wardenHealth');   // 11 + 11 + 18 + 24 + 4 = 68 dealt before the charged heavy (27) kills
+const WARDEN_HEALTH = audioRule('wardenHealth');   // RV78 sandbox era (armour rows: the warden wears plate): 8 + 8 + 11 + 22 + 4 = 53 dealt before the charged heavy (16) kills; 65 leaves it 12 hp (was 80 for 11 + 11 + 18 + 24 + 4 = 68 and a 27 heavy)
 export const forward = (): Intent['move'] => ({ x: 0, z: -1, yaw: 0, run: false });
 
 export function scriptExchange(): Exchange {
