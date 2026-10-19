@@ -15,7 +15,7 @@ const TABLE = tableFromFile(MANIFEST.tables[0] as unknown as Manifest, DEFS, 'cr
 loadRegistry([TABLE]);
 for (const r of DEFS.roars as readonly { id: string; on: string }[]) if (!(ROAR_MOMENTS as readonly string[]).includes(r.on)) throw Error(`crowd-defs.json: roar "${r.id}" keys on "${r.on}", which is not a moment (${ROAR_MOMENTS.join(', ')})`);
 export const ROARS = DEFS.roars as unknown as readonly Roar[];
-for (const r of ROARS) if (r.outlive !== undefined && (typeof r.outlive !== 'boolean' || (r.outlive && r.on !== 'kill'))) throw Error(`crowd-defs.json: roar "${r.id}": outlive is a boolean and only a kill roar can outlive the arena bank`);
+for (const r of ROARS) if (r.outlive !== undefined && typeof r.outlive !== 'boolean') throw Error(`crowd-defs.json: roar "${r.id}": outlive is a boolean`);
 
 /** The moments this frame's events make: a kill, a parry, a guard break, a heavy (charged) hit. A light hit is none. */
 export const momentsOf = (events: readonly CombatEvent[]): Set<RoarMoment> => new Set(events.flatMap((e): RoarMoment[] =>
