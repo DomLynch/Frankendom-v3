@@ -8,7 +8,7 @@ import MANIFEST from './touch-layout-defs.manifest.json' with { type: 'json' };
 
 loadRegistry((MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile(m, DEFS, 'touch-layout-defs.json')));
 
-const BASE = DEFS.base[0]!;
+const BASE = DEFS.base[0]!, WIDE = DEFS.wide[0]!;
 const RAD = Math.PI / 180;   // degrees to radians
 
 /** The CSS of layout A for a page's query string (`?lay=1|3` picks another size variant; anything else is the base's own). */
@@ -27,6 +27,7 @@ export function touchLayoutCss(search: string): string {
     '.actions #attack-button::after{font-size:13px!important;letter-spacing:.05em}',
     ...spots.filter((s) => (s as { font?: number }).font).map((s) => `.actions #${s.id}::after{font-size:${(s as { font?: number }).font}px!important;letter-spacing:0!important}`),   // SPECIAL 1 / SPECIAL 2 are longer than the other labels: smaller, to stay inside the circle
     '#joystick{bottom:max(56px,env(safe-area-inset-bottom))!important}',
+    `@media (min-width:${WIDE.minWidth}px){.actions #camera-button{position:fixed!important;left:auto!important;top:auto!important;margin:0!important;right:${WIDE.right}px!important;bottom:${WIDE.bottom}px!important;z-index:5}}`,   // a tablet's wide screen shows the camera button, which would sit under the Guard / Roll pair: it goes to the cluster's left, clear of it (phones hide it)
     `#touch-zones{position:fixed;z-index:4;pointer-events:none;right:${BASE.cx - V.ring / 2}px;bottom:${BASE.cy - V.ring / 2}px;width:${V.ring}px;height:${V.ring}px;border-radius:50%;border:1px dashed rgba(190,120,80,.7);background:conic-gradient(from -50deg,rgba(150,70,40,.34) 0 100deg,rgba(150,70,40,.16) 100deg 360deg)}`,
     '#touch-zones i{position:absolute;font:600 10px sans-serif;color:rgba(255,235,215,.85);font-style:normal;letter-spacing:.04em}',
   ].join('\n');
