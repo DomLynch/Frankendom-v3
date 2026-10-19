@@ -36,7 +36,7 @@ export function createTapTimer(onTap: (ms: number) => void) {
 export function attachTapLog(doc: Document, strike: HTMLElement): void {
   const durations: number[] = [];
   const panel = doc.createElement('div'); panel.id = 'tap-log';
-  panel.setAttribute('style', 'position:fixed;left:8px;top:8px;z-index:50;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.72);color:#f2e6d6;font:600 11px/1.3 sans-serif;display:flex;gap:6px;align-items:center;pointer-events:auto');
+  panel.setAttribute('style', 'position:fixed;left:8px;top:132px;z-index:50;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.72);color:#f2e6d6;font:600 11px/1.3 sans-serif;display:flex;gap:6px;align-items:center;pointer-events:auto');
   const text = doc.createElement('span'), button = (label: string) => { const b = doc.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('style', 'font:600 11px sans-serif;padding:3px 6px;border-radius:4px;min-height:28px'); return b; };
   const copy = button(LABEL.copy!), clear = button(LABEL.clear!);
   const show = () => { text.textContent = tapText(tapStats(durations)); };
