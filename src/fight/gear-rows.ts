@@ -8,7 +8,7 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import { ARMOUR_SLOTS } from '../core/loot.ts';
 import { DIALS } from './sheet-rows.ts';
 import { RECORD_VERSION } from './record.ts';
-import { rows79Version } from './sandbox-era.ts';
+import { rows79Version, rows80Version } from './sandbox-era.ts';
 import { SCHOOL_IDS } from './schools.ts';
 import GEAR_DEFS from './gear-defs.json' with { type: 'json' };
 import GEAR_MANIFEST from './gear-defs.manifest.json' with { type: 'json' };
@@ -66,7 +66,7 @@ export function gearDeltas(setId: string, coverage = 1, quality = coverage, vers
   const set = GEAR.sets[setId];
   if (!set) throw Error(`gearDeltas: "${setId}" is not a set row (gear-defs.json sets)`);
   const c = Math.max(0, Math.min(1, coverage)), out: Record<string, number> = {};
-  const at = rows79Version(version);   // RV79 (sandbox-era.ts): the plate shape's era 79 is a sandbox row; pinned off in the legacy test run, a live fight and a record at 79 or later read it
+  const at = rows80Version(rows79Version(version));   // RV79 / RV80 (sandbox-era.ts): the plate shape's era 79 and the leathers' era 80 are sandbox rows; pinned off in the legacy test run, a live fight and a record at that version or later read them
   const shape = [...(set.eras ?? [])].reverse().find((e) => at >= e.fromRecordVersion)?.shape ?? set.shape;
   for (const [dial, n] of Object.entries(shape)) { const d = Math.sign(n) * Math.round(Math.abs(n) * c); if (d) out[dial] = d; }   // rounded by magnitude, so what one dial gains the other loses
   const total = Math.round(GEAR.qualityMax * Math.max(0, Math.min(c, quality))), weights = Object.entries(set.quality), sum = weights.reduce((a, [, w]) => a + w, 0);

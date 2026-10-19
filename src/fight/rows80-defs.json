@@ -1,0 +1,9 @@
+{
+  "specialTimers": [
+    {"id": "first", "ticks": 120, "note": "RV80 (Dom 2026-10-19, the combat sandbox's default: ?spellFirst=120): the first special is ready 2 s in, not 20 s"},
+    {"id": "cooldown", "ticks": 360, "note": "RV80 (the sandbox's default, ?spellCooldown=360): 6 s between casts, not 20 s"}
+  ],
+  "dials": [
+    {"id": "specialsFromLevel", "value": 1, "note": "the first fight level the player's and the opponent's specials fire (the sandbox's ?specialsFrom=1); it was rank 4, level 16 (era-keyed: a record below 80 keeps 16)"}
+  ]
+}
