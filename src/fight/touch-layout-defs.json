@@ -17,6 +17,6 @@
     { "id": "skill-button", "label": "SPECIAL", "deg": 135, "own": false },
     { "id": "guard-button", "label": "GUARD", "deg": 225, "own": false },
     { "id": "dodge-button", "label": "ROLL", "deg": 315, "own": false },
-    { "id": "kick-button", "label": "KICK", "deg": 180, "own": false, "size": 42 }
+    { "id": "kick-button", "label": "KICK", "deg": 180, "own": false, "size": 44 }
   ]
 }

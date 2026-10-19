@@ -49,9 +49,12 @@ export const SLASH_SLIDE_PX = inputNum('input.slash-slide-px'), SLASH_DECIDE_MS 
 const ONE_BUTTON_QUERY = /[?&;]onebutton=1\b/.test(typeof location === 'undefined' ? '' : location.search);
 export const ONE_BUTTON = Boolean(inputNum('input.one-button')) || ONE_BUTTON_QUERY;
 const RAD = Math.PI / 180;   // degrees to radians
-export const HEAVY_HOLD_MS = inputNum('input.heavy-hold-ms'), STAB_SLIDE_PX = inputNum('input.stab-slide-px'), STAB_HALF_ANGLE = inputNum('input.stab-half-angle');
+// CS36b: inside a guard-counter / punish window (20 ticks after a block, duel.ts) a hold decides the heavy after HEAVY_HOLD_WINDOW_MS instead: at HEAVY_HOLD_MS (220) the reaction to a block plus the hold ran past the window, so the heavy riposte was unreachable under layout A.
+export const HEAVY_HOLD_MS = inputNum('input.heavy-hold-ms'), HEAVY_HOLD_WINDOW_MS = inputNum('input.heavy-hold-window-ms'), STAB_SLIDE_PX = inputNum('input.stab-slide-px'), STAB_HALF_ANGLE = inputNum('input.stab-half-angle');
 // A slide within STAB_HALF_ANGLE degrees of straight up is the stab. Screen y grows down, so up is dy < 0.
-export const stabSector = (dx: number, dy: number): boolean => dy < 0 && Math.abs(dx) <= -dy * Math.tan(STAB_HALF_ANGLE * RAD);
+/** How long a hold on STRIKE must last to be the heavy: the short window hold while the hero's counter / punish window is open, else the plain one. */
+export const heavyHoldMs = (counterOpen: boolean): number => (counterOpen ? HEAVY_HOLD_WINDOW_MS : HEAVY_HOLD_MS);
+export const stabSector =(dx: number, dy: number): boolean => dy < 0 && Math.abs(dx) <= -dy * Math.tan(STAB_HALF_ANGLE * RAD);
 export const slashSlide = (dx: number): 'left' | 'right' | null => (dx <= -SLASH_SLIDE_PX ? 'left' : dx >= SLASH_SLIDE_PX ? 'right' : null);
 export const cutSideOf = (action: Action): 'left' | 'right' | null => (action === 'light_left' ? 'left' : action === 'light_right' ? 'right' : null);   // the side a cut press goes to; neutral LIGHT is null (no flash)
 const ARROW_SIDE: Record<string, Direction> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'overhead', ArrowDown: 'low' };
@@ -101,6 +104,8 @@ export function createInput(env: InputEnv) {
       owner = f.phase === 'attack' ? ownerOf(f.move) : null;
     return owner ? holders.has(owner) : holders.size > 0;
   };
+  // The hero's guard-counter (a block) or punish (a parry) window is open: the next heavy is the riposte / counter, so its hold is the short one (CS36b).
+  const counterOpen = (): boolean => { const f = env.practice().duel.fighters[0]; return f.counterWindow > 0 || f.punish > 0; };
   function hold(by: Strike) {
     holders.add(by);
   }
@@ -480,7 +485,7 @@ export function createInput(env: InputEnv) {
     },
     // What the simulation sees this tick. Presses reach it only once the assets are ready (the buttons read disabled until then).
     intent(): ControlIntent {
-      if (slashWait && env.now() - slashWait.since >= (ONE_BUTTON ? HEAVY_HOLD_MS : SLASH_DECIDE_MS)) { if (ONE_BUTTON) fireHeavy(); else fireSlash(null); }   // oneButton: a hold past HEAVY_HOLD_MS is the heavy
+      if (slashWait && env.now() - slashWait.since >= (ONE_BUTTON ? heavyHoldMs(counterOpen()) : SLASH_DECIDE_MS)) { if (ONE_BUTTON) fireHeavy(); else fireSlash(null); }   // oneButton: a hold past HEAVY_HOLD_MS is the heavy
       if (pendingSpell) { if (env.now() > pendingSpell.until) pendingSpell = null; else if (!action && env.ready() && accepts(env.practice(), pendingSpell.action)) { action = pendingSpell.action; pendingSpell = null; } }
       const ready = env.ready(), q = keys.has('KeyQ'), arrow = (code: string) => !q && keys.has(code);
       // The side the simulation will see this tick: the thumb's slide, else Q + an arrow. The button's hint (data-side) follows it, so a
