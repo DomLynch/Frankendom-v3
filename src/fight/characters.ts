@@ -1,6 +1,8 @@
 // THE ACTOR DRIVER, in the shared fight core (src/fight/, Dom via Strategy 2026-10-09: the Pit and every zone play one fight, one animation system). Moved from src/characters.ts, which now re-exports it
 // so the Pit's importers are untouched; Zone 1 imports it from src/fight/index.ts. Nothing in this file changed but the relative paths.
 import { bowSpecialRows, missileOf } from './sandbox-rules.ts';
+import { rangedModelOf, rangedModelUrl } from './ranged-model-rows.ts';
+import { rangedPartOf } from './ranged-model.ts';
 import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
@@ -198,7 +200,7 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
   const [hero, enemy, part, enemyPart] = await Promise.all([
     loadFighter(url),
     opponentUrl === url ? undefined : loadFighter(opponentUrl),
-    equip(equipUrl),
+    loadRangedPart(weapons[0]).then((ranged) => ranged ?? equip(equipUrl)),   // DORMANT: the bow model replaces the equip file of a weapon the missile rows bind to kind bow; none is bound today (rows say weapon "none"), so this is the equip file as before
     opponentUrl === url ? undefined : equip(opponentEquipUrl),
   ]);
   let opponent: FighterAsset | undefined = enemy;
@@ -242,6 +244,16 @@ export async function loadEquip(url: string): Promise<FighterAsset> {
   const asset = await retryTransient(() => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url));
   if (phoneTier()) budgetTextures(asset.scene, FIGHTER_TEXTURE_CAP);
   return asset;
+}
+// The painted ranged model for a weapon the missile rows bind to a kind that has a model row (ranged-model-defs.json: the bow only, CS23), as an equip part; undefined for every other weapon, so nothing
+// changes for them. A failed load is the Error armWarriors already reports and falls back from (the longsword), as for any equip file. No weapon is bound to the bow yet, so this answers undefined everywhere.
+export async function loadRangedPart(weapon: WeaponId): Promise<FighterAsset | Error | undefined> {
+  const model = rangedModelOf(missileOf(weapon)?.kind ?? '');
+  if (!model) return undefined;
+  try {
+    const asset = await loadEquip(rangedModelUrl(model));
+    return { scene: new Group().add(rangedPartOf(asset.scene, model)) as Group, animations: [] };
+  } catch (error) { return error instanceof Error ? error : Error(String(error)); }
 }
 // A weapon shape file (weapon-shapes.ts): its one mesh, in the file's own frame (hand at the origin, +Y), with GPT's painted material as it is.
 export async function loadShape(url: string): Promise<Mesh> {
@@ -627,7 +639,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // contact extras and the sim's blade tables stay: reach and contact never move. Its finish is GPT's painted one, never the rung's tint
       // (Strategy 2026-09-28: painted per band, no runtime tint on shaped weapons), so `grade` leaves it be. None = his own.
       reshape(shape: Mesh | undefined) {
-        if (weaponNode?.userData.sandboxRanged) return;   // sandbox: a ranged model stands in for the weapon; the rank's painted shape must not hide it
+        if (weaponNode?.userData.sandboxRanged || weaponNode?.userData.rangedModel) return;   // a ranged model (the sandbox's stand-in, or the painted bow's row) stands in for the weapon; the rank's painted shape must not hide it
         if (!shape && !shaped.length) return;   // never shaped: nothing to give back, and his own draws' visibility stays the rig's
         for (const draw of shaped) draw.removeFromParent();
         shaped = [];
