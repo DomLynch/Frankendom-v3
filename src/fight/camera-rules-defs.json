@@ -1,7 +1,7 @@
 {
   "rules": [
     { "id": "aimPerShrink", "value": 1.4, "unit": "m" },
-    { "id": "fightBackDefault", "value": 1, "unit": "ratio" },
+    { "id": "fightBackDefault", "value": 1.3, "unit": "ratio" },
     { "id": "combatPitchMax", "value": 90, "unit": "deg" },
     { "id": "worldGapFloor", "value": 0.8, "unit": "m" },
     { "id": "worldSideMax", "value": 1.1, "unit": "m" },

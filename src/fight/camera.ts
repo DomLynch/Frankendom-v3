@@ -38,11 +38,12 @@ export function cameraPose(
   targetScale = 1,   // the opponent's standing height against a man's (moves.ts OPPONENTS[id].scale)
   targetTall = 0,   // a foe that looks taller than a man (framingTall): units of extra height; 0 for every foe but the Wraith
   targetLow = 0,   // a low quadruped (framingLow): 0 for every foe but the Ash Wolf
+  backScale = FIGHT_BACK,   // the lock camera's fight-back scale; the follow rig eases it to 1 over a finish, which is tuned on the plain lock (the framing a kill settles on)
 ) {
   const distance = Math.hypot(state.x - target.x, state.z - target.z);
   // Duel lock sits ~30% closer and lower than the first pass; the distance terms still pull back to frame both fighters.
   const low = locked ? targetLow : 0, tall = locked ? targetTall : 0;   // a foe that looks tall (the Wraith): back off and up; nothing for any other foe
-  const fightBack = locked ? FIGHT_BACK : 1;   // the walking camera is never scaled
+  const fightBack = locked ? backScale : 1;   // the walking camera is never scaled
   const back = ((locked ? Math.max(LOCK_BACK_FLOOR, distance * 0.62 + 2.8) : 7.5 * Math.cos(pitch)) + tall * TALL_BACK) * fightBack;   // the original lock (Dom 2026-10-05 chose it over the 10-03 flatter one: HUD over sand, not the painting)
   let x = state.x + Math.sin(yaw) * back,
     z = state.z + Math.cos(yaw) * back,
@@ -275,7 +276,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       // ease out over SHORT_FADE once it begins, so the kill settles on the same frame as for a man (release row 25).
       shortFade = finish ? Math.max(0, shortFade - dt / SHORT_FADE) : 1;
       const shortShare = shortFade * shortFade * (3 - 2 * shortFade);   // smoothstep: no kink where the ease starts or ends
-      const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare);
+      const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare, 1 + (FIGHT_BACK - 1) * shortShare);   // a finish takes the fight-back scale out on the same ease as the short-foe lift, so it frames as it always did
       look.set(cameraTarget.lookX, locked ? 0.8 : 1, cameraTarget.lookZ);
       desired.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
       // The authorized slow push-in over the death window (finishers & gore 2026-09-17): a dolly toward the fallen, never a cut,
