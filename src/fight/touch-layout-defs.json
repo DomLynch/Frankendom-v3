@@ -7,6 +7,9 @@
     { "id": "2", "strike": 72, "ring": 146, "button": 50 },
     { "id": "3", "strike": 64, "ring": 154, "button": 52 }
   ],
+  "wide": [
+    { "id": "camera-button-wide", "minWidth": 900, "right": 208, "bottom": 30 }
+  ],
   "zones": [
     { "id": "stab", "label": "stab", "place": "left:50%;top:5px;transform:translateX(-50%)" },
     { "id": "sl", "label": "sl", "place": "left:6px;top:50%;transform:translateY(-50%)" },
@@ -14,7 +17,8 @@
   ],
   "buttons": [
     { "id": "attack-button", "label": "STRIKE", "deg": 0, "own": true },
-    { "id": "skill-button", "label": "SPECIAL", "deg": 135, "own": false },
+    { "id": "skill-button", "label": "SPECIAL 1", "deg": 135, "own": false, "font": 8 },
+    { "id": "skill2-button", "label": "SPECIAL 2", "deg": 45, "own": false, "font": 8 },
     { "id": "guard-button", "label": "GUARD", "deg": 225, "own": false },
     { "id": "dodge-button", "label": "ROLL", "deg": 315, "own": false },
     { "id": "kick-button", "label": "KICK", "deg": 180, "own": false, "size": 44 }

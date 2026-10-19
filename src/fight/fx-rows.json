@@ -93,6 +93,8 @@
     { "id": "fit.ratio-min", "fields": {"value": 0.5} },
     { "id": "fit.ratio-max", "fields": {"value": 3} },
     { "id": "start.clear-m", "fields": {"value": 16} },
+    { "id": "start.face-on", "fields": {"value": 1} },
+    { "id": "start.face-rad", "fields": {"value": -2.45} },
     { "id": "drop.reach", "fields": {"value": 1.4} },
     { "id": "zoneloot.take-limit", "fields": {"value": 0} },
     { "id": "zoneloot.ring-m", "fields": {"value": 1.1} },
