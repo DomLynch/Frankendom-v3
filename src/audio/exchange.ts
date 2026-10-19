@@ -1,4 +1,5 @@
 import { audioRule } from '../fight/sound/audio-rules.ts';
+import { SANDBOX_ON } from '../fight/sandbox-era.ts';
 import { idleIntent, initialDuel, distance, stepDuel, timing, type CombatEvent, type Duel, type Intent, type Side } from '../fight/duel.ts';
 import type { DeathPresentation } from '../fight/sound/cues.ts';
 import { RULES } from '../fight/moves.ts';
@@ -11,12 +12,14 @@ import { PLAIN_DEATH } from '../fight/finisher-look.ts';
 type Beat = { name: string; tick: number; events: string[] };
 export type Exchange = { ticks: { tick: number; events: CombatEvent[]; presentation?: DeathPresentation }[]; beats: Beat[]; length: number };
 export const EXCHANGE_BEATS = ['walk', 'draw', 'light', 'light', 'heavy', 'guard', 'block', 'parry', 'riposte', 'hit taken', 'kick', 'death'] as const;
-const WARDEN_HEALTH = audioRule('wardenHealth');   // RV78 sandbox era (armour rows: the warden wears plate): 8 + 8 + 11 + 22 + 4 = 53 dealt before the charged heavy (16) kills; 65 leaves it 12 hp (was 80 for 11 + 11 + 18 + 24 + 4 = 68 and a 27 heavy)
+// The rig's health is a row per era, read when the exchange is scripted (the era is a live switch, sandbox-era.ts): sandbox era (armour rows: the warden wears plate) 8 + 8 + 11 + 22 + 4 = 53 dealt
+// before the charged heavy (16) kills, so 65 leaves it 12 hp; era off (trunk damage) 11 + 11 + 18 + 24 + 4 = 68 and a 27 heavy, so 80.
+const wardenHealth = (): number => audioRule(SANDBOX_ON ? 'wardenHealth' : 'wardenHealthEraOff');
 export const forward = (): Intent['move'] => ({ x: 0, z: -1, yaw: 0, run: false });
 
 export function scriptExchange(): Exchange {
   let duel: Duel = initialDuel();
-  duel = { ...duel, fighters: [duel.fighters[0], { ...duel.fighters[1], health: WARDEN_HEALTH }] };
+  duel = { ...duel, fighters: [duel.fighters[0], { ...duel.fighters[1], health: wardenHealth() }] };
   const ticks: Exchange['ticks'] = [], beats: Beat[] = [];
   const intents: [Intent, Intent] = [idleIntent(), idleIntent()];
   const player = () => duel.fighters[0], warden = () => duel.fighters[1];
