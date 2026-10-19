@@ -12,6 +12,11 @@
     { "id": "iconPx", "value": 22 },
     { "id": "gapPx", "value": 8 },
     { "id": "revealPx", "value": 10 },
-    { "id": "namePx", "value": 11 }
+    { "id": "namePx", "value": 11 },
+    { "id": "belowHudPx", "value": 22 }
+  ],
+  "anchors": [
+    { "id": "anchor.combatHud", "selector": ".combat-hud" },
+    { "id": "anchor.identity", "selector": ".identity" }
   ]
 }

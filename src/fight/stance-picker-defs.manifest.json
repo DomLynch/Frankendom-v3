@@ -1,6 +1,7 @@
 {
   "tables": [
     {"table": "stancePick", "file": "stance-picker-defs.json", "at": "picks", "key": "id", "required": {"pick": "string", "order": "integer", "label": "string", "colour": "string", "icon": "string"}},
-    {"table": "stancePickerDial", "file": "stance-picker-defs.json", "at": "dials", "key": "id", "required": {"value": "number"}}
+    {"table": "stancePickerDial", "file": "stance-picker-defs.json", "at": "dials", "key": "id", "required": {"value": "number"}},
+    {"table": "stanceHudAnchor", "file": "stance-picker-defs.json", "at": "anchors", "key": "id", "required": {"selector": "string"}}
   ]
 }

@@ -4,7 +4,7 @@
 // fight is as it was. Labels, colours, icons and the layout numbers are rows (stance-picker-defs.json, stance-picker-rows.ts); the panel sits top-left under the bars, clear of the touch controls (the joystick and
 // action cluster own the bottom corners: a bottom-left panel took the joystick's presses, scripts/sparring-browser-check.mjs caught it).
 import { PICKS, moodOf, type PickedStance } from './stance.ts';
-import { stancePickRow, stancePickerDial } from './stance-picker-rows.ts';
+import { STANCE_HUD_ANCHORS, stancePickRow, stancePickerDial } from './stance-picker-rows.ts';
 
 // Stances are ON for everyone (Dom 2026-10-08: new features ship ON, a flag is only a kill switch): no flag, `?stances=1`, `?stances=on` and anything unrecognised pick Balanced (the id `neutral`);
 // `?stances=<aggressive|defensive|trickster|neutral>` starts on that pick; `?stances=off` is the kill switch and undefines it (no stances anywhere, every fight as it was before RV34).
@@ -35,8 +35,16 @@ export function mountStancePanel(host: HTMLElement, pick: (p: PickedStance) => v
   }
   const name = doc.createElement('div'); name.id = 'stance-name'; name.style.cssText = `font-size:${dial('namePx')}px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 2px #000`;   // option B: the lit stance's NAME under the row, in its colour
   box.append(row, name, line); host.append(box);
+  // The row sits just under the HUD block (bars, name, rank line), measured, never a fixed top: the HUD's height differs on a short landscape, a notch and an iPad (Mac row 54 caught a fixed top over the fighter-name label). topPx is only the fallback when no HUD block is measurable.
+  const place = (): void => {
+    let bottom = 0;
+    for (const sel of STANCE_HUD_ANCHORS) for (const e of Array.from(doc.querySelectorAll?.(sel) ?? [])) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.height > 0) bottom = Math.max(bottom, r.bottom); }
+    box.style.top = `${bottom > 0 ? Math.round(bottom + dial('belowHudPx')) : dial('topPx')}px`;
+  };
+  place(); doc.defaultView?.addEventListener('resize', place); doc.defaultView?.addEventListener('orientationchange', place);
   return {
     show(mine, seed, opponent) {
+      place();
       line.textContent = mine ? stanceReveal(mine, seed, opponent) : '';
       const litRow = stancePickRow(mine ?? 'neutral'); name.textContent = litRow.label; name.style.color = litRow.colour;
       for (const [p, b] of buttons) {

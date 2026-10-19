@@ -6,7 +6,10 @@ import MANIFEST from './stance-picker-defs.manifest.json' with { type: 'json' };
 
 const PICK_TABLE = tableFromFile(MANIFEST.tables[0] as unknown as Manifest, DEFS, 'stance-picker-defs.json');
 const DIAL_TABLE = tableFromFile(MANIFEST.tables[1] as unknown as Manifest, DEFS, 'stance-picker-defs.json');
-loadRegistry([PICK_TABLE, DIAL_TABLE]);
+const ANCHOR_TABLE = tableFromFile(MANIFEST.tables[2] as unknown as Manifest, DEFS, 'stance-picker-defs.json');
+loadRegistry([PICK_TABLE, DIAL_TABLE, ANCHOR_TABLE]);
+/** The HUD blocks the row sits below: its top is the lowest bottom edge of these (measured), plus belowHudPx. */
+export const STANCE_HUD_ANCHORS: readonly string[] = (ANCHOR_TABLE.rows as unknown as { selector: string }[]).map((r) => r.selector);
 
 export type StancePickRow = { id: string; pick: string; order: number; label: string; colour: string; icon: string };
 export const STANCE_PICK_ROWS: readonly StancePickRow[] = [...(PICK_TABLE.rows as unknown as StancePickRow[])].sort((a, b) => a.order - b.order);
