@@ -61,7 +61,7 @@ export function finishOf(kind: string, finish: Finish, weapons: readonly [Weapon
 export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   const mine = (): { level: number; health?: number; weapon?: WeaponId; sheet?: Sheet; spell?: { id: string; skill: number }; spell2?: { id: string; skill: number }; special?: SkillId; special2?: SkillId } => d.hero?.() ?? { level: 1 };
   const body = (x: number, z: number, facing: number): Fighter => { const { level, health, weapon, sheet, spell: asked, spell2: asked2, special, special2 } = mine(), spell = asked ? resolveSpell(asked.id, asked.skill, sheet?.spellPower ?? 0) : undefined, spell2 = asked2 ? resolveSpell(asked2.id, asked2.skill, sheet?.spellPower ?? 0) : undefined, p = player(ME, x, z, facing, level, special ?? null, { ...(weapon ? { weapon } : {}), ...(sheet ? { sheet } : {}), ...(spell ? { spell } : {}), ...(spell2 ? { spell2 } : {}), ...(special2 ? { skill2: special2 } : {}) }); return health ? { ...p, health, maxHealth: health } : p; };
-  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, pendingCast2 = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
+  let world: World = newWorld([body(0, 0, 0)]), acc = 0, pendingAttack: 'light' | 'heavy' | 'thrust' | 'kick' | null = null, pendingRoll: { x: number; z: number } | null = null, pendingCast = false, pendingCast2 = false, attackHeld = false, guardHeld = false, guardSide: Direction | null = null, heroDead = false, lostMs = 0, hitches = 0, steps = 0;
   let wasReady = false, rebuild = false;   // rebuild: hero() may have moved (the loadout gate just opened, or the page said the build / worn-gear view answered): rebody once at the next idle frame
   let builtKey = JSON.stringify(mine());   // what the hero fighter was built from (gear, level, weapon, sheet): the server's view and the build fetch answer AFTER load, so it is rebuilt at the next clean window open when this has moved
   const prevPose = new Map<string, { x: number; z: number; facing: number }>();   // each fighter's pose from before the last tick: the view blends from it toward the current tick by acc / STEP (blendPose), so a 120 Hz frame with no tick still moves
@@ -116,6 +116,8 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
   return {
     /** An attack press (STAB / SLASH / a tap on a creature): the cut starts on the next step if he is free. */
     press(kind: 'light' | 'heavy' | 'thrust' | 'kick' = 'light') { pendingAttack = kind; },
+    /** The STRIKE hold is down (the page's control, every frame): a heavy chambers and charges while it is, as in the Pit (WSV64). */
+    hold(down: boolean) { attackHeld = down; },
     /** A roll / dodge pressed: the world-axis direction (zero = where he faces). */
     roll(dir: { x: number; z: number }) { pendingRoll = dir; },
     /** The page's build_get or worn-gear view just answered (hero() may now give another sheet): the idle hero is rebuilt once at the next idle frame, not by polling hero() every frame. */
@@ -145,7 +147,7 @@ export function createWorldCombat<S extends FightMob>(d: WorldCombatDeps<S>) {
         acc -= STEP; steps++; stepped = true;
         for (const q of world.fighters) prevPose.set(q.id, { x: q.x, z: q.z, facing: q.facing });   // the pose before this tick; after the loop it is the one before the LAST tick
         for (const p of pairs(world)) lastDuel.set(p.foe, p.duel);
-        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll, guardSide, !heroDead && pendingCast, !heroDead && pendingCast2); first = false;
+        const step = quantStep(first ? hero : null, guardHeld && !heroDead, heroDead ? null : pendingAttack, heroDead ? null : pendingRoll, guardSide, !heroDead && pendingCast, !heroDead && pendingCast2, !heroDead && attackHeld); first = false;
         recorder.step(step);
         const r = stepHero(world, step, gearOf()); pendingAttack = null; pendingRoll = null; pendingCast = false; pendingCast2 = false;
         world = r.world; for (const ev of r.events) { handle(ev); d.onEvent?.(ev); }

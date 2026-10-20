@@ -67,3 +67,14 @@ export function underRows84<T>(version: number, run: () => T): T {
   const outer = ROWS84_ON; ROWS84_ON = rows84For(version);
   try { return run(); } finally { ROWS84_ON = outer; }
 }
+// RV85 (Combat, 2026-10-20, Dom: "hold heavy works in the Pit, just not in Zone 1"): the open world carries the held STRIKE into the sim (world.ts Input.held, the world record's step flag bit, open-fight.ts intentOf), so a held heavy
+// chambers and charges as the Pit's does (duel.ts chamber / RULES.charge). A sixth boundary of this leaf: ON for a live fight and for a record at 85 or later; a record below 85 never carries the bit and replays the uncharged heavy.
+export const FIRST_ROWS85_VERSION = 85;
+export let ROWS85_ON = true;
+export function setRows85(on: boolean): void { ROWS85_ON = on; }
+/** Whether a record of this version is fought with the world's held STRIKE (the charged heavy). */
+export const rows85For = (version: number): boolean => eraForced ?? version >= FIRST_ROWS85_VERSION;
+export function underRows85<T>(version: number, run: () => T): T {
+  const outer = ROWS85_ON; ROWS85_ON = rows85For(version);
+  try { return run(); } finally { ROWS85_ON = outer; }
+}
