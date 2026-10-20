@@ -68,9 +68,9 @@ export type MatchPorts = { skill2?: () => SkillId | undefined; spell2?: () => { 
 export type Ended = { record: FightRecord | null; lines: string[]; won: boolean; rewarded: boolean };
 // The rematch seed: a different warden every rematch, deterministic from the last (the browser gate times the fixed 731 opener).
 // A match whose ports live in memory (the open world's sparring duel): nothing it does reaches localStorage. Built here so origins/ need not import the trial and scorecard loaders.
-export const memoryMatch = (opponent: Opponent, build: string, seed: number, level: number): Match => {
+export const memoryMatch = (opponent: Opponent, build: string, seed: number, level: number, picks?: Pick<MatchPorts, 'skill2'>): Match => {   // picks: the page's SPECIAL 2 (the career/practice port), read by a sparring fight that asks for the picks (startSparring's `picked`)
   const memory = (): StoragePort => { const m = new Map<string, string>(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => { m.set(k, String(v)); } }; };
-  return new Match(opponent, build, { storage: memory(), trial: loadTrial(memory()), scorecard: loadScorecard(memory()), profile: loadProfile(memory(), () => build).profile }, seed, DEFAULT_WEAPON, null, level);
+  return new Match(opponent, build, { storage: memory(), trial: loadTrial(memory()), scorecard: loadScorecard(memory()), profile: loadProfile(memory(), () => build).profile, ...picks }, seed, DEFAULT_WEAPON, null, level);
 };
 export const nextSeed = (seed: number): number => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
 
@@ -82,6 +82,7 @@ export class Match {
   weapon: WeaponId;   // the player's weapon (moves.ts PLAYER_WEAPONS): the equipped one (loot.ts fightWeapon) the page booted with; a replay takes the record's
   private sparSpecials: { first: number; level?: number; enabled?: boolean } | null = null;   // preview level/off can differ from ordinary live specials; body/AI stay on difficulty
   private sparSelection?: SparringSpecialSelection;
+  private sparPicked = false;   // a sparring fight that carries the player's picks (SPECIAL 1 = kit.skill, SPECIAL 2 = ports.skill2) and fights with specials on, as a career / practice fight does (the Pit duel opened from Zone 1, Dom 2026-10-20)
   private sparLegacySkill: SkillId | null = null;
   startPose: DuelPose | undefined = undefined;   // seamless step 3 (RV38): the open world's hero/foe positions and hero facing, arena-local metres; the NEXT career/practice/sparring begin() takes it (one shot, so a rematch starts at the pit marks) and the record carries it as v38
   fightPose: DuelPose | undefined = undefined;   // the pose THIS fight began from (float32-rounded), or undefined: a sparring Match keeps no recorder, so the page that records it (origins/preview/world-record.ts) passes this to createRecorder as `pose`
@@ -154,10 +155,10 @@ export class Match {
     if (mode !== 'replay') { this.gambit = false; this.stances = mode === 'career' || mode === 'practice' || (mode === 'sparring' && this.worldStances) ? this.stancePref : undefined; this.sheet = mode === 'career' || mode === 'practice' ? (this.ports.sheet?.() ?? this.sheetPref) : undefined;   // read at each begin(): what is worn NOW, not what was worn when the page booted
     }   // only a replay carries the Gambit until a live flag exists
     const look = mode === 'sparring' ? this.ports.lookSpell?.() : undefined;   // the ?spell look test (boss-telegraph.ts spellLook): read in sparring ONLY, which sends no record and pays nothing; career, practice, pvp and the ladder never see it
-    if (mode !== 'replay') this.specials = mode !== 'pvp' && (look && isSpellId(look.id) ? true : mode === 'sparring' && (skill2Pick() || slot2Pick()) ? true : test ? test.enabled !== false : live);   // previews/off explicit; replay retains its recorded phase
+    if (mode !== 'replay') this.specials = mode !== 'pvp' && (look && isSpellId(look.id) ? true : mode === 'sparring' && (skill2Pick() || slot2Pick() || (this.sparPicked && (this.skill || this.ports.skill2?.()))) ? true : test ? test.enabled !== false : live);   // previews/off explicit; replay retains its recorded phase
     if (mode !== 'replay') { const asked = mode === 'career' || mode === 'practice' ? this.ports.spell?.() : look; this.spell = asked && this.specials && isSpellId(asked.id) ? asked : undefined; }
     { const a2 = mode === 'career' || mode === 'practice' || mode === 'sparring' ? this.ports.spell2?.() : undefined; this.spell2 = a2 && this.specials && isSpellId(a2.id) ? a2 : undefined; }   // sandbox-mech spell slot 2   // a spell is cast through the special: no Special Moves, no spell; an unknown id is no spell
-    if (mode !== 'replay') { const picked = mode === 'career' || mode === 'practice' ? this.ports.skill2?.() : undefined, live = picked !== undefined && picked === this.skill ? slot2Default(picked) : picked, s2 = live ?? (mode === 'career' || mode === 'practice' || mode === 'sparring' ? skill2Pick() : undefined); this.skill2 = s2 && !this.spell2 && Object.hasOwn(SKILL_ROWS, s2) ? (s2 as SkillId) : undefined; }   // SPECIAL 2: the player's pick (trunk's picker port, RV75) or the sandbox's slot-2 pick (spell-slot2.ts); slot 2 is a spell or a melee special, not both (sandbox-mech). A replay keeps the record's own
+    if (mode !== 'replay') { const picked = mode === 'career' || mode === 'practice' || (mode === 'sparring' && this.sparPicked) ? this.ports.skill2?.() : undefined, live = picked !== undefined && picked === this.skill ? slot2Default(picked) : picked, s2 = live ?? (mode === 'career' || mode === 'practice' || mode === 'sparring' ? skill2Pick() : undefined); this.skill2 = s2 && !this.spell2 && Object.hasOwn(SKILL_ROWS, s2) ? (s2 as SkillId) : undefined; }   // SPECIAL 2: the player's pick (trunk's picker port, RV75) or the sandbox's slot-2 pick (spell-slot2.ts); slot 2 is a spell or a melee special, not both (sandbox-mech). A replay keeps the record's own
     { const fs = mode === 'career' || mode === 'practice' || mode === 'sparring' ? foeSpellPick() : undefined; this.foeSpell = fs && this.specials && isSpellId(fs.id) ? fs : undefined; }   // sandbox-mech opponent spells
     this.fightIdentity = { opponent: this.opponent.id, level: this.level };
     this.practice = initialPractice(this.seed, opponentAt(this.opponent, this.level), this.weapon, this.skill, recordSpecials({ specials: this.specials, level: test?.level ?? this.level, opponent: this.opponent.id }), this.gambit ? this.seed : undefined, this.stances, pose, this.sheet, this.spell ? resolveSpell(this.spell.id, this.spell.skill, this.sheet?.spellPower ?? 0) : undefined, this.spell2 ? resolveSpell(this.spell2.id, this.spell2.skill, this.sheet?.spellPower ?? 0) : undefined, this.foeSpell ? resolveSpell(this.foeSpell.id, this.foeSpell.skill) : undefined, this.skill2);   // preview identity/share only; body/AI remain on the visible difficulty
@@ -242,7 +243,8 @@ export class Match {
   }
   // Sparring: the picked kit for this fight only. The profile (equipped weapon, skill, loot) is never touched; a rematch keeps the kit.
   // `specials`: Special Moves on for this sparring page only (?special=, special-look.ts); a rematch keeps them, any other start drops them.
-  startSparring(kit: SparringKit, specials: { first: number; level?: number; enabled?: boolean } | null = null, selection?: SparringSpecialSelection): void {
+  startSparring(kit: SparringKit, specials: { first: number; level?: number; enabled?: boolean } | null = null, selection?: SparringSpecialSelection, picked = false): void {
+    this.sparPicked = picked;
     if (selection) validateSparringSpecialSelection(kit, selection);
     this.sparSelection = selection ? { ...selection } : undefined;
     this.sparLegacySkill = kit.skill;
