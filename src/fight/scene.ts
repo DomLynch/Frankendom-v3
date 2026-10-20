@@ -92,6 +92,8 @@ export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapo
 // the world. Without a mount (every Pit and game page) none of this runs.
 export type WorldMount = { renderer: THREE.WebGLRenderer; holder: THREE.Object3D; background: THREE.Color | THREE.Texture | null; fog: THREE.Fog | THREE.FogExp2 | null; walkCam?: { back: number; up: number } };   // walkCam: the walk camera's distance behind the hero and height (metres): a world fight keeps them and only the aim locks on
 const worldArena = (): Arena => ({ group: new THREE.Group(), floor: new THREE.Mesh(), sky: Object.assign(new THREE.Texture(), { image: { width: 1 } }), materials: undefined, ready: Promise.resolve(), update() {}, raiseGate() {}, thinCrowd() {} }) as unknown as Arena;
+/** The better graphics (origins/preview/gfx-lift.ts, one module for every page): the Pit page hands the lazily imported module in (undefined = off, the chunk was never fetched). */
+export type GfxPost = { patchHeightFog(): void; createGfxLift(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera): { render(): void; setSize(w: number, h: number): void; compile(): void } };
 export function createScene(
   canvas: HTMLCanvasElement,
   // `kind` is the machine-readable outcome; `status` is only ever display text — main.ts must never infer readiness or
@@ -115,6 +117,7 @@ export function createScene(
   // nothing and every line below is the fight it always was.
   peerKit?: Promise<{ weapon: WeaponId; gear?: readonly string[] } | null>,
   world?: WorldMount,
+  post?: Promise<GfxPost>,   // the Pit page only (a world mount keeps the zone page's own frame)
 ) {
   const theme = arenaFor(opponentId, arenaOverride);
   // Phone tier (the owner's iPhone GPU-pressure defect, 2026-09-18): cap the backing store at 1.25× and the
@@ -183,6 +186,9 @@ export function createScene(
   const right = new THREE.Vector3();
   let look: ReturnType<typeof import('../souls-look.ts').createLook> | undefined;
   if (lookFlags) void import('../souls-look.ts').then(({ createLook }) => { look = createLook(lookFlags, { renderer, scene, camera, hemisphere, sun, canvas }); resize(); }).catch(captureException);
+  // The lift: the fog chunk is patched BEFORE any material compiles (the loading card waits on gfxReady below), the composer then draws every frame in place of the plain render. A failed chunk leaves the Pit exactly as it was.
+  let gfx: ReturnType<GfxPost['createGfxLift']> | undefined;
+  const gfxReady: Promise<unknown> = post && !world ? post.then((m) => { m.patchHeightFog(); gfx = m.createGfxLift(renderer, scene, camera); gfx.setSize(width, height); }).catch(captureException) : Promise.resolve();
   const bloodEdge = createBloodEdge(canvas);   // the player's hits: a crimson streak on the edge the blow came from (blood-edge.ts)
   function mesh(
     geometry: THREE.BufferGeometry,
@@ -398,12 +404,14 @@ export function createScene(
       // mid-fight (a landed blow's sparks and blood, a stain, the graded wall): compile() walks the whole scene, hidden pools included.
       // Not measurable on the Mac (2026-09-25, phone tier, ×4 CPU throttle, paired runs within noise): a one-off compile outside the sampled
       // window, and headless software GL cannot show a phone GPU's first-draw stall. The case is that stall, on the first blow of a fight.
+      await gfxReady;   // the lift's fog patch lands before the first compile; its programs (keyed on the composer's target) are compiled below too
       renderer.compile(scene, camera);
+      gfx?.compile();
       // Then the first frame itself, behind the card (first-frame.ts): maps a slice per frame, one draw, at most 4 s, on macrotask yields and the clock only (never rAF or a timer: a paused page clock must still boot); a hidden tab skips it.
       if (typeof document === 'undefined' || !document.hidden) {
         const maps = new Set<THREE.Texture>(); scene.traverse((o) => { if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) for (const material of [o.material].flat()) for (const v of Object.values(material as object)) if (v instanceof THREE.Texture) maps.add(v); });
         performance.mark('first-frame-begin');
-        const how = await warmFirstFrame({ textures: [...maps], upload: (t) => renderer.initTexture(t as THREE.Texture), draw: () => renderer.render(scene, camera), frame: () => new Promise<void>((done) => { const c = new MessageChannel(); c.port1.onmessage = () => { c.port1.close(); done(); }; c.port2.postMessage(0); }), budgetMs: 4000, sliceMs: 10, now: () => performance.now(), lost: () => renderer.getContext().isContextLost() });
+        const how = await warmFirstFrame({ textures: [...maps], upload: (t) => renderer.initTexture(t as THREE.Texture), draw: () => { if (gfx) gfx.render(); else renderer.render(scene, camera); }, frame: () => new Promise<void>((done) => { const c = new MessageChannel(); c.port1.onmessage = () => { c.port1.close(); done(); }; c.port2.postMessage(0); }), budgetMs: 4000, sliceMs: 10, now: () => performance.now(), lost: () => renderer.getContext().isContextLost() });
         performance.mark('first-frame-' + how);
       }
       assetStatus('', 'ready');
@@ -521,6 +529,7 @@ export function createScene(
     camera.updateProjectionMatrix();
     if (!world) renderer.setSize(width, height, false);   // the page sizes its own renderer
     look?.setSize(width, height, renderer.getPixelRatio());
+    gfx?.setSize(width, height);
   };
   resize();
   window.addEventListener('resize', resize);
@@ -1206,7 +1215,7 @@ export function createScene(
       const specialDim = runtimeSpecial?.exposure ?? (specialFx as ModeFx | undefined)?.exposure ?? 1;   // Nyx's Nightfall drain
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
-      if (!look?.render()) renderer.render(scene, camera);
+      if (!look?.render()) { if (gfx) gfx.render(); else renderer.render(scene, camera); }
       renderer.toneMappingExposure = exposure;
       if (dip > 0 && dt > 0) dip--;
       rig.settle(dt);
