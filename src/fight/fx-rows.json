@@ -212,6 +212,7 @@
     { "id": "mob-view.snap-m", "fields": {"value": 3} },
     { "id": "mob-view.max-orbit-dps", "fields": {"value": 18} },
     { "id": "mob-view.max-lag-m", "fields": {"value": 1.2} },
+    { "id": "gfx.default", "fields": {"value": 1} },
     { "id": "gfx.bloom.strength", "fields": {"value": 0.5} },
     { "id": "gfx.bloom.radius", "fields": {"value": 0.55} },
     { "id": "gfx.bloom.threshold", "fields": {"value": 0.82} },
