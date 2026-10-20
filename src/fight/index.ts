@@ -58,4 +58,5 @@ export const loadSpellInfo = () => Promise.resolve()
 export { createFollowCamera, inPassage, type CombatCam, type CombatFraming, type Framing, type FollowState, type Passage, type Presets, pickFraming } from './follow-camera.ts';   // the walk's follow camera (zone-supplied passage, none for Zone 2)
 export { MAX_ATTACKERS } from './attackers.ts';
 export { finishedAs, tinted } from './rank-tint.ts';   // a finish row on a piece's metal, and a piece at its rung's finish (the ground-item view, origins/preview)
+export { specialName } from './special-names.ts';   // the name a special shows for the wielded weapon (a zone's SPECIAL buttons and picker: a sword's sandbox name, a bow's own)
 export { setFightBack } from './camera.ts';   // a zone's camera.fightBack scale for the duel's lock camera (the page sets it on resize)
