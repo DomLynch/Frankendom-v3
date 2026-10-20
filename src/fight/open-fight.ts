@@ -13,6 +13,8 @@ import type { Event, Fighter, Input, Phase } from './world.ts';
 import { M } from './detmath.ts';
 import { motionOf, type CreatureMotion } from './creature-motion-rows.ts';
 import { worldRule } from './world-rules.ts';
+import { missileOf } from './sandbox-rules.ts';
+import { ROWS83_ON, SANDBOX_ON } from './sandbox-era.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
 export type Motion = { hold: boolean; circling: boolean; left: number; seed: number };   // a world creature's stand / circle state (creature-motion-defs.json): hold = inside its stop band, circling = this re-decide drew a circle, left = ticks to the next draw
@@ -31,7 +33,10 @@ const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
 export function heroSheeted(f: Fighter): PitFighter {
   // open-world: a hero with a spell casts through the Pit's special slot (spell-cast.ts), ready at once (no opening delay: the world has no fight start), so a live hero and a replayed one are the same hero
   const plain = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), hero = f.skill2 ? { ...plain, skill2: f.skill2, skillCooldown2: 0 } : plain, cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
-  const made = f.sheet ? withSheet({ tick: 0, fighters: [cast, cast], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : cast;
+  // RV83 (sandbox-era.ts rows83For): a hero with no spell whose weapon has a `bow` missile row carries the Pit hero's special share (duel.ts withSpecials; initialDuel's `picked` with a skill), ready at once like a caster,
+  // so his special fires the bow special beyond the missile gap (duel.ts bowSpecialOf) and the melee special inside it; without it the press threw the melee skill swing, which whiffed at range. Any other weapon: unchanged.
+  const archer = ROWS83_ON && cast === hero && missileOf(plain.weapon)?.kind === 'bow' ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.skill && SANDBOX_ON ? { picked: true as const } : {}) } : cast;
+  const made = f.sheet ? withSheet({ tick: 0, fighters: [archer, archer], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : archer;
   return f.hurt ? { ...made, wound: f.hurt.wound, woundSite: f.hurt.site, legWound: f.hurt.leg, maxStamina: f.hurt.cap } : made;   // a record window opened on a hurt hero (world-record.ts RecordHero.hurt): his wound state is part of the start, live and replayed alike
 }
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
