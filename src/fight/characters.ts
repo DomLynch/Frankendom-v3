@@ -216,7 +216,7 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
 const PEER_RIG_KEY = '#peer';
 export async function loadPeerWarriors(url: string, weapons: [WeaponId, WeaponId], equipUrl?: string, peerEquipUrl?: string, equipFailed: (error: unknown) => void = () => {}) {
   const equip = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
-  const [hero, foe, part, foePart] = await Promise.all([loadFighter(url), loadFighter(url + PEER_RIG_KEY), equip(equipUrl), equip(peerEquipUrl)]);
+  const [hero, foe, part, foePart] = await Promise.all([loadFighter(url), loadFighter(url + PEER_RIG_KEY), loadRangedPart(weapons[0]).then((ranged) => ranged ?? equip(equipUrl)), loadRangedPart(weapons[1]).then((ranged) => ranged ?? equip(peerEquipUrl))]);   // a bow is the painted bow model for either fighter, as loadWarriors draws it (equip bow.glb is a knife copy)
   let peer = foe;
   if (foePart) try { if (foePart instanceof Error) throw foePart; peer = equipWeapon(foe, foePart); } catch (error) { equipFailed(error); }
   return armWarriors(hero, peer, weapons, part, equipFailed);

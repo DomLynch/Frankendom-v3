@@ -1,5 +1,7 @@
 // The shared fight core's public API (grows with K2: createFight). Clients (the Pit's page, Zone 1, later zones) import the fight from here.
 export * from './characters.ts';
+export { RANGED_MODELS, rangedModelOf, rangedModelUrl } from './ranged-model-rows.ts';   // the painted ranged models' rows (the ground view draws the starter bow as one: origins/preview)
+export { rangedGroundPartOf } from './ranged-model.ts';
 export { HERO_BONES, NotHeroRig, assertHeroRig, boneRatios, fitPieces } from './piece-fit.ts';   // the per-bone refit of hero-rig loot pieces to a re-proportioned body (presentation only)
 export { createFight, type Fight, type FightOptions, type FightSlot } from './fight.ts';
 
