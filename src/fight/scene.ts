@@ -117,7 +117,7 @@ export function createScene(
   // nothing and every line below is the fight it always was.
   peerKit?: Promise<{ weapon: WeaponId; gear?: readonly string[] } | null>,
   world?: WorldMount,
-  post?: Promise<GfxPost>,   // the Pit page only (a world mount keeps the zone page's own frame)
+  post?: () => Promise<GfxPost>,   // the Pit page only (a world mount keeps the zone page's own frame); a LOADER, called once the renderer exists, so a page with no WebGL never starts the import (the chunk imports the entry, which has thrown: a second, identical pageerror)
 ) {
   const theme = arenaFor(opponentId, arenaOverride);
   // Phone tier (the owner's iPhone GPU-pressure defect, 2026-09-18): cap the backing store at 1.25× and the
@@ -188,7 +188,7 @@ export function createScene(
   if (lookFlags) void import('../souls-look.ts').then(({ createLook }) => { look = createLook(lookFlags, { renderer, scene, camera, hemisphere, sun, canvas }); resize(); }).catch(captureException);
   // The lift: the fog chunk is patched BEFORE any material compiles (the loading card waits on gfxReady below), the composer then draws every frame in place of the plain render. A failed chunk leaves the Pit exactly as it was.
   let gfx: ReturnType<GfxPost['createGfxLift']> | undefined;
-  const gfxReady: Promise<unknown> = post && !world ? post.then((m) => { m.patchHeightFog(); gfx = m.createGfxLift(renderer, scene, camera); gfx.setSize(width, height); }).catch(captureException) : Promise.resolve();
+  const gfxReady: Promise<unknown> = post && !world ? post().then((m) => { m.patchHeightFog(); gfx = m.createGfxLift(renderer, scene, camera); gfx.setSize(width, height); }).catch(captureException) : Promise.resolve();
   const bloodEdge = createBloodEdge(canvas);   // the player's hits: a crimson streak on the edge the blow came from (blood-edge.ts)
   function mesh(
     geometry: THREE.BufferGeometry,
