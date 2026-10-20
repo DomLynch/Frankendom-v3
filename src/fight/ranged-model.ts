@@ -12,11 +12,13 @@ export function rangedPartOf(scene: Object3D, model: RangedModel): Object3D {
   part.name = 'WeaponDrawn';
   part.userData = { ...part.userData, hand: model.hand, rangedModel: model.id };
   part.rotation.set(...(model.holdDeg.map((d) => MathUtils.degToRad(d)) as [number, number, number]));
-  part.position.set(0, 0, 0);
+  part.position.set(...model.holdPos);
   part.traverse((o) => {
     if (!(o instanceof Mesh)) return;
     const mats = (Array.isArray(o.material) ? o.material : [o.material]).map((m: Material) => {
-      const c = m.clone() as MeshStandardMaterial; c.metalness = model.metalness; c.roughness = model.roughness; return c;   // a copy: the loaded file stays whole
+      const c = m.clone() as MeshStandardMaterial;
+      if (c.metalness >= 1 && c.roughness >= 1) { c.metalness = model.metalness; c.roughness = model.roughness; }   // only the TRELLIS signature (1 / 1) is matted: a procedural model's own brass, wood and emissive orb (the staff) keep their materials. A copy: the loaded file stays whole
+      return c;
     });
     o.material = Array.isArray(o.material) ? mats : mats[0]!;
   });
@@ -26,6 +28,6 @@ export function rangedPartOf(scene: Object3D, model: RangedModel): Object3D {
 /** The same model lying on the ground (the Pit's ground-item view): the matte part with no hand hold, in a group so the view's own pose row (yaw / roll / tilt) is the only rotation on it. */
 export function rangedGroundPartOf(scene: Object3D, model: RangedModel): Object3D {
   const part = rangedPartOf(scene, model);
-  part.rotation.set(0, 0, 0);
+  part.rotation.set(0, 0, 0); part.position.set(0, 0, 0);
   return new Group().add(part);
 }

@@ -7,12 +7,12 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import DEFS from './ranged-model-defs.json' with { type: 'json' };
 import MANIFEST from './ranged-model-defs.manifest.json' with { type: 'json' };
 
-export type RangedModel = { readonly id: string; readonly file: string; readonly node: string; readonly hand: string; readonly holdDeg: readonly [number, number, number]; readonly metalness: number; readonly roughness: number };
+export type RangedModel = { readonly id: string; readonly file: string; readonly node: string; readonly hand: string; readonly holdDeg: readonly [number, number, number]; readonly holdPos: readonly [number, number, number]; readonly clips: 'warrior' | 'equip'; readonly metalness: number; readonly roughness: number };   // holdPos: metres under the hand bone (the staff points out from the fist like the maul and trident, SwordDrawn's offset)
 
 const TABLE = tableFromFile(MANIFEST.tables[0] as unknown as Manifest, DEFS, 'ranged-model-defs.json');
 loadRegistry([TABLE]);
-type Row = { id: string; file: string; node: string; hand: string; holdRxDeg: number; holdRyDeg: number; holdRzDeg: number; metalness: number; roughness: number };
-export const RANGED_MODELS: readonly RangedModel[] = (TABLE.rows as unknown as Row[]).map((r) => ({ id: r.id, file: r.file, node: r.node, hand: r.hand, holdDeg: [r.holdRxDeg, r.holdRyDeg, r.holdRzDeg] as const, metalness: r.metalness, roughness: r.roughness }));
+type Row = { id: string; file: string; node: string; hand: string; holdRxDeg: number; holdRyDeg: number; holdRzDeg: number; holdPx: number; holdPy: number; holdPz: number; clips: string; metalness: number; roughness: number };
+export const RANGED_MODELS: readonly RangedModel[] = (TABLE.rows as unknown as Row[]).map((r) => ({ id: r.id, file: r.file, node: r.node, hand: r.hand, holdDeg: [r.holdRxDeg, r.holdRyDeg, r.holdRzDeg] as const, holdPos: [r.holdPx, r.holdPy, r.holdPz] as const, clips: r.clips === 'equip' ? 'equip' : 'warrior', metalness: r.metalness, roughness: r.roughness }));
 
 /** The row for a missile kind (`bow`), or undefined: the kind keeps whatever the game draws for it today. */
 export const rangedModelOf = (kind: string): RangedModel | undefined => RANGED_MODELS.find((m) => m.id === kind);

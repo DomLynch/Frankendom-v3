@@ -203,7 +203,7 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
   const [hero, enemy, part, enemyPart] = await Promise.all([
     loadFighter(url),
     opponentUrl === url ? undefined : loadFighter(opponentUrl),
-    loadRangedPart(weapons[0]).then((ranged) => ranged ?? equip(equipUrl)),   // DORMANT: the bow model replaces the equip file of a weapon the missile rows bind to kind bow; none is bound today (rows say weapon "none"), so this is the equip file as before
+    loadRangedPart(weapons[0], equipUrl).then((ranged) => ranged ?? equip(equipUrl)),   // the ranged model (the bow, the orb staff) replaces the equip file of a weapon the missile rows bind to a kind with a model row; every other weapon is its equip file
     opponentUrl === url ? undefined : equip(opponentEquipUrl),
   ]);
   let opponent: FighterAsset | undefined = enemy;
@@ -216,7 +216,7 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
 const PEER_RIG_KEY = '#peer';
 export async function loadPeerWarriors(url: string, weapons: [WeaponId, WeaponId], equipUrl?: string, peerEquipUrl?: string, equipFailed: (error: unknown) => void = () => {}) {
   const equip = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
-  const [hero, foe, part, foePart] = await Promise.all([loadFighter(url), loadFighter(url + PEER_RIG_KEY), loadRangedPart(weapons[0]).then((ranged) => ranged ?? equip(equipUrl)), loadRangedPart(weapons[1]).then((ranged) => ranged ?? equip(peerEquipUrl))]);   // a bow is the painted bow model for either fighter, as loadWarriors draws it (equip bow.glb is a knife copy)
+  const [hero, foe, part, foePart] = await Promise.all([loadFighter(url), loadFighter(url + PEER_RIG_KEY), loadRangedPart(weapons[0], equipUrl).then((ranged) => ranged ?? equip(equipUrl)), loadRangedPart(weapons[1], peerEquipUrl).then((ranged) => ranged ?? equip(peerEquipUrl))]);   // a bow or a staff is its ranged model for either fighter, as loadWarriors draws it (equip bow.glb is a knife copy)
   let peer = foe;
   if (foePart) try { if (foePart instanceof Error) throw foePart; peer = equipWeapon(foe, foePart); } catch (error) { equipFailed(error); }
   return armWarriors(hero, peer, weapons, part, equipFailed);
@@ -250,12 +250,13 @@ export async function loadEquip(url: string): Promise<FighterAsset> {
 }
 // The painted ranged model for a weapon the missile rows bind to a kind that has a model row (ranged-model-defs.json: the bow only, CS23), as an equip part; undefined for every other weapon, so nothing
 // changes for them. A failed load is the Error armWarriors already reports and falls back from (the longsword), as for any equip file. No weapon is bound to the bow yet, so this answers undefined everywhere.
-export async function loadRangedPart(weapon: WeaponId): Promise<FighterAsset | Error | undefined> {
+// `equipUrl`: the weapon's own equip file, for a model whose row says `clips: "equip"` (the staff: its Trident_* clip family lives in that file, the bow's knife family is already on the hero); without it such a row fails like a missing clip would.
+export async function loadRangedPart(weapon: WeaponId, equipUrl?: string): Promise<FighterAsset | Error | undefined> {
   const model = rangedModelOf(missileOf(weapon)?.kind ?? '');
   if (!model) return undefined;
   try {
-    const asset = await loadEquip(rangedModelUrl(model));
-    return { scene: new Group().add(rangedPartOf(asset.scene, model)) as Group, animations: [] };
+    const [asset, clipsFile] = await Promise.all([loadEquip(rangedModelUrl(model)), model.clips === 'equip' && equipUrl ? loadEquip(equipUrl) : undefined]);
+    return { scene: new Group().add(rangedPartOf(asset.scene, model)) as Group, animations: clipsFile?.animations ?? [] };
   } catch (error) { return error instanceof Error ? error : Error(String(error)); }
 }
 // A weapon shape file (weapon-shapes.ts): its one mesh, in the file's own frame (hand at the origin, +Y), with GPT's painted material as it is.
