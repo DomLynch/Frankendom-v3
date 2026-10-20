@@ -6,7 +6,7 @@ import { SCHOOLS } from './schools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import { sceneNum } from './scene-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin');
+const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin'), WORLD_RING = fxNum('fx.bossTelegraph.worldWindup');   // worldWindup 1: the open-world view draws this ring under ANY special's windup (RV84 hero specials: a pose alone is no telegraph)
 import { CAST_TELL_OFF } from './sandbox-rules.ts';
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
@@ -22,10 +22,10 @@ export const spellLook = (search: string): { id: string; skill: number } | undef
   return isSpellId(id) ? { id, skill: Number.isFinite(skill) && skill > 0 ? skill : 0 } : undefined;
 };
 const ROLL_TICKS = sceneNum('boss-telegraph.roll-ticks');   // the last stretch of the windup, when the ring flashes: the roll window
-export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'> & { spell?: { id: string } }, bosses = true): { fill: number; flash: boolean; color?: number } | null => {
+export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'> & { spell?: { id: string } }, bosses = true, world = false): { fill: number; flash: boolean; color?: number } | null => {
   if (!caster.special || !caster.health || (caster.spell && CAST_TELL_OFF)) return null;
   const color = caster.spell ? spellColor(caster.spell.id) : undefined;
-  if (!caster.spell && !(bosses && caster.specialShare === RULES.special.bossDamage)) return null;
+  if (!caster.spell && !(bosses && caster.specialShare === RULES.special.bossDamage) && !(world && WORLD_RING)) return null;
   return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS, ...(color !== undefined ? { color } : {}) };
 };
 
@@ -38,8 +38,8 @@ export function createBossTelegraph(scene: THREE.Scene) {
   const ring = make(new THREE.RingGeometry(0.92, 1, 48), 0xff5a1f), fill = make(new THREE.CircleGeometry(1, 48), 0xd83a10);
   scene.add(group);
   return {
-    update(boss: Fighter, at: THREE.Vector3 | null, tick: number, bosses = true) {
-      const look = telegraphLook(boss, bosses);
+    update(boss: Fighter, at: THREE.Vector3 | null, tick: number, bosses = true, world = false) {
+      const look = telegraphLook(boss, bosses, world);
       group.visible = !!look && !!at;
       if (!look || !at) return;
       const radius = RULES.special.reach * 0.4;   // 1.2 m: about a body and a half, readable at 375 wide on the fight camera
