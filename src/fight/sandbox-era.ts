@@ -55,3 +55,15 @@ export function underRows83<T>(version: number, run: () => T): T {
   const outer = ROWS83_ON; ROWS83_ON = rows83For(version);
   try { return run(); } finally { ROWS83_ON = outer; }
 }
+// RV84 (Combat, 2026-10-20, Strategy's audit of the sandbox against trunk): (1) an open-world hero with a picked skill is a `picked` fighter like the Pit's slot-1 hero (open-fight.ts heroSheeted), so his melee
+// special takes the sandbox's reach limit and 'far' cue, the 32-tick windup, the release whiff and the stagger / knock (duel.ts specialMelee rows); (2) the reach-band rows the sandbox had for the bite, the
+// warhammer, the reaper, the bow and the staff (band-defs.json `weaponsRv84`) apply, so those weapons take the off-band penalty too (bands.ts). A fifth boundary of this leaf: ON for a live fight and for a record at 84 or later.
+export const FIRST_ROWS84_VERSION = 84;
+export let ROWS84_ON = true;
+export function setRows84(on: boolean): void { ROWS84_ON = on; }
+/** Whether a record of this version is fought with the RV84 world-picked specials and the added band rows. */
+export const rows84For = (version: number): boolean => eraForced ?? version >= FIRST_ROWS84_VERSION;
+export function underRows84<T>(version: number, run: () => T): T {
+  const outer = ROWS84_ON; ROWS84_ON = rows84For(version);
+  try { return run(); } finally { ROWS84_ON = outer; }
+}

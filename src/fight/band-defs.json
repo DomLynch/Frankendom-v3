@@ -33,5 +33,12 @@
     {"id":"trident","bestBand":"outer"},
     {"id":"scythe","bestBand":"outer"},
     {"id":"estoc","bestBand":"outer"}
+  ],
+  "weaponsRv84": [
+    {"id":"bite","bestBand":"inner"},
+    {"id":"warhammer","bestBand":"mid"},
+    {"id":"reaper","bestBand":"outer"},
+    {"id":"bow","bestBand":"outer"},
+    {"id":"staff","bestBand":"outer"}
   ]
 }
