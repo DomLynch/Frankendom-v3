@@ -4,6 +4,6 @@
     { "table": "touchLayoutVariant", "file": "touch-layout-defs.json", "at": "variants", "key": "id", "required": { "strike": "number", "ring": "number", "button": "number" } },
     { "table": "touchLayoutWide", "file": "touch-layout-defs.json", "at": "wide", "key": "id", "required": { "minWidth": "number", "right": "number", "bottom": "number" } },
     { "table": "touchLayoutZone", "file": "touch-layout-defs.json", "at": "zones", "key": "id", "required": { "label": "string", "place": "string" } },
-    { "table": "touchLayoutButton", "file": "touch-layout-defs.json", "at": "buttons", "key": "id", "required": { "label": "string", "deg": "number", "own": "boolean" }, "optional": { "size": "number", "font": "number" } }
+    { "table": "touchLayoutButton", "file": "touch-layout-defs.json", "at": "buttons", "key": "id", "required": { "label": "string", "deg": "number", "own": "boolean" }, "optional": { "size": "number", "font": "number", "nameFont": "number", "nameLine": "number", "nameWidth": "number" } }
   ]
 }
