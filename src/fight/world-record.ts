@@ -22,6 +22,7 @@ export const WORLD_SIM_VERSION = 64;   // 64: RV85 (2026-10-20, Combat; Dom: "ho
 export const ME = 'me', STEP = 1 / 60;
 export type Press = 'light' | 'heavy' | 'thrust' | 'kick';
 const PRESSES: readonly (Press | null)[] = [null, 'light', 'heavy', 'thrust', 'kick'];
+const STEP_FLAG_LIMIT = 4096;   // one past the highest step flag bit (held, 2048): a wider flag word is a bad step
 const SIDES: readonly (Direction | null)[] = [null, 'right', 'left', 'overhead', 'thrust', 'low'];   // the held guard side (the Pit's thumbs), packed in flag bits 6-8; absent = the straight guard
 /** The most a pose may move between two steps, m/s: a run, or a roll's own displacement (the hero's cut reaches no farther). Measured against a real roll in world-record.test.ts. */
 export const MAX_HERO_MPS = worldRule('maxHeroMps');
@@ -137,7 +138,7 @@ export function unpackWorldRecord(bytes: Uint8Array): WorldRecord {
   const releases = h.r.map((e): ReleaseEvent => { if (!Array.isArray(e) || !isInt(e[0]) || typeof e[1] !== 'string') throw Error('World record: bad release'); return { s: e[0], id: e[1] }; });
   const steps: WorldStep[] = []; let px = 0, pz = 0, pf = 0;
   for (let k = 0; k < h.n; k++) {
-    const fl = get(), attack = PRESSES[(fl >> 2) & 7], gd = SIDES[(fl >> 6) & 7]; if (attack === undefined || gd === undefined || fl >= 4096 || (gd !== null && !(fl & 2))) throw Error('World record: bad step');
+    const fl = get(), attack = PRESSES[(fl >> 2) & 7], gd = SIDES[(fl >> 6) & 7]; if (attack === undefined || gd === undefined || fl >= STEP_FLAG_LIMIT || (gd !== null && !(fl & 2))) throw Error('World record: bad step');
     let pose: WorldStep['pose'] = null, roll: WorldStep['roll'] = null;
     if (fl & 1) { px += unzig(get()); pz += unzig(get()); pf += unzig(get()); pose = { x: px, z: pz, f: pf }; }
     if (fl & 32) roll = { x: unzig(get()), z: unzig(get()) };
