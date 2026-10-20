@@ -76,10 +76,8 @@ export const executed = (damage: number, critical: boolean, targetHealth: number
 // reachBands (Dom 2026-10-14, positioning gates; Strategy: soft x0.6, never soften a hard miss; NO on-screen marker, Dom: cheap): the distance between the fighters when the blow was THROWN (duel.ts attackFrom.gap, the same read as the pole's minReach; the lunge closes the gap before it lands) falls in a band (`bands` rows,
 // { id, upTo } in centimetres, ascending); each weapon has a best band (`bandBest` rows, { weapon, band }). A landed blow outside its weapon's band deals `bandOff` per-mille of its damage; inside it, all of it. A pole thrust inside
 // minReach and an out-of-reach swing still miss (duel.ts): a band only scales blows that already land. No rows / bandOff 0 (trunk) = untouched. Donors: For Honor and Mordhau range play, Chivalry 2 reach as a rule.
-type BandRow = { id: string; upTo: number }; type BandBestRow = { weapon: string; band: string };
+type BandRow = { id: string; upTo: number };
 let SANDBOX_BANDS = sandboxRowsOf<BandRow>('bands').slice().sort((a, b) => a.upTo - b.upTo);
-let BAND_BEST = sandboxRowsOf<BandBestRow>('bandBest');
-export let BAND_OFF = num('bandOff', 'value');
 //   castTellOff: 1 hides the ground ring + fill drawn under the target while a spell winds up (boss-telegraph.ts caster tell; Dom 2026-10-16: "large white rings look shit"). 0 = trunk, the ring is drawn.
 export let CAST_TELL_OFF = num('castTellOff', 'value');
 //   hitImpactSpecial / hitImpactGlance (BULK-CS, Combat RV78: "the special tier behind a row switch"): 1 = a landed melee special (SpecialLanded) is its own hit-stop contact (the `special` row of hit-stop-defs), and a blow off its weapon's band (event.glance) lands dull; 0 = neither (trunk). Presentation only, read by hit-impact.ts.
@@ -96,20 +94,7 @@ export let SPECIAL_REACT_STAGGER = num('specialReactStagger', 'value'), SPECIAL_
 //   specialReactFloor (Dom 2026-10-18: Lunge showed no reaction, its move row has stagger 0 so a percent of it is 0): rows { id (skill id), stagger (ticks) }, the least stagger a landed melee special of that skill gives, whatever its move row says. No row = the percent alone.
 export const specialReactFloorOf = (skill: string): number => sandboxRowsOf<{ id: string; stagger: number }>('specialReactFloor').find((r) => r.id === skill)?.stagger ?? 0;
 export const bandOf = (distance: number): string | undefined => SANDBOX_BANDS.find((b) => distance * 100 < b.upTo)?.id ?? SANDBOX_BANDS[SANDBOX_BANDS.length - 1]?.id;
-export const bandPerMille = (weapon: string, distance: number): number => {
-  if (!BAND_OFF || !SANDBOX_BANDS.length) return 1000;
-  const best = BAND_BEST.find((r) => r.weapon === weapon);
-  return !best || bandOf(distance) === best.band ? 1000 : BAND_OFF;
-};
-// The AI holds its weapon's band (Strategy: without it the AI stands in the wrong band and the player wins for free): the approach stops where the weapon is IN its best band and can still start the planned move
-// (stop <= reach - .1, the same margin ai.ts inReach keeps). If the band cannot be reached with that move (a trident's light against the outer band), the stop is the weapon's own `fight.close`, as on trunk. Off = `close`.
-export const bandStop = (weapon: string, close: number, reach: number): number => {
-  if (!BAND_OFF || !SANDBOX_BANDS.length) return close;
-  const i = SANDBOX_BANDS.findIndex((b) => b.id === BAND_BEST.find((r) => r.weapon === weapon)?.band);
-  if (i < 0) return close;
-  const lo = i ? SANDBOX_BANDS[i - 1]!.upTo / 100 : 0, top = Math.min(SANDBOX_BANDS[i]!.upTo / 100 - .1, reach - .1);
-  return top < lo + .05 ? close : Math.round(Math.min(Math.max(close, lo + .05), top) * 100) / 100;   // whole centimetres, so the stop is the same on every engine
-};
+// (RV84: the sandbox's per-weapon band penalty and AI stop, bandPerMille / bandStop, were never called on trunk, which scales blows through bands.ts and band-defs.json; removed.)
 
 // armourVsBlow (Dom 2026-10-14, Strategy #1 "plate ignores cuts, mail ignores stabs, cloth fears everything, a maul breaks plate"): a blow has a KIND (`blowKinds` rows, { weapon, move, kind }, the most specific match wins:
 // weapon+move, weapon+'*', '*'+move, '*'+'*'); the defender has an armour CLASS (a creature by gear-defs owners: weightClassOf(opponent id); the player by the sheet's dials, armour >= 20 heavy, stamina >= 20 medium,
@@ -334,8 +319,6 @@ export function applySandboxEra(): void {
   EXECUTE_MULT = num('executeMult', 'value');
   EXECUTE_BELOW = num('executeBelow', 'value');
   SANDBOX_BANDS = sandboxRowsOf<BandRow>('bands').slice().sort((a, b) => a.upTo - b.upTo);
-  BAND_BEST = sandboxRowsOf<BandBestRow>('bandBest');
-  BAND_OFF = num('bandOff', 'value');
   CAST_TELL_OFF = num('castTellOff', 'value');
   HIT_IMPACT_SPECIAL = num('hitImpactSpecial', 'value'); HIT_IMPACT_GLANCE = num('hitImpactGlance', 'value');
   SPECIAL_MELEE_WINDUP = num('specialMeleeWindup', 'value');

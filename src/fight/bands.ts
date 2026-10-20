@@ -1,6 +1,6 @@
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import { WEAPONS, type MoveId, type WeaponId } from './moves.ts';
-import { SANDBOX_ON } from './sandbox-era.ts';
+import { ROWS84_ON, SANDBOX_ON } from './sandbox-era.ts';
 import BAND_DEFS from './band-defs.json' with { type: 'json' };
 import BAND_MANIFEST from './band-defs.manifest.json' with { type: 'json' };
 
@@ -13,7 +13,8 @@ const RULE_T = tableFromFile(BAND_MANIFEST.tables[0] as unknown as Manifest, BAN
 const BAND_T = tableFromFile(BAND_MANIFEST.tables[1] as unknown as Manifest, BAND_DEFS, 'band-defs.json');
 const BLOW_T = tableFromFile(BAND_MANIFEST.tables[2] as unknown as Manifest, BAND_DEFS, 'band-defs.json');
 const WEAPON_T = tableFromFile(BAND_MANIFEST.tables[3] as unknown as Manifest, BAND_DEFS, 'band-defs.json');
-loadRegistry([RULE_T, BAND_T, BLOW_T, WEAPON_T]);
+const WEAPON84_T = tableFromFile(BAND_MANIFEST.tables[4] as unknown as Manifest, BAND_DEFS, 'band-defs.json');
+loadRegistry([RULE_T, BAND_T, BLOW_T, WEAPON_T, WEAPON84_T]);
 const rule = (id: string): number => { const r = (RULE_T.rows as unknown as { id: string; value: number }[]).find((x) => x.id === id); if (!r || !(r.value >= 0)) throw Error(`band-defs: the rule "${id}" needs a row with a value >= 0`); return r.value; };
 /** The ring ids from the innermost out (a row order). */
 export const BANDS: readonly string[] = (BAND_T.rows as unknown as { id: string }[]).map((r) => r.id);
@@ -34,6 +35,14 @@ export const BEST_BAND: Readonly<Record<string, string>> = Object.fromEntries((W
   if (!BANDS.includes(r.bestBand)) throw Error(`band-defs: "${r.id}" bestBand "${r.bestBand}" is not one of ${BANDS.join(', ')}`);
   return [r.id, r.bestBand];
 }));
+/** RV84 (sandbox-era.ts rows84For): the sandbox's rows for the weapons band-defs.json did not carry (bite, warhammer, reaper, bow, staff); they apply for a live fight and a record at 84 or later, so a record below 84 replays the old, unscaled blows. */
+const BEST_BAND_RV84: Readonly<Record<string, string>> = Object.fromEntries((WEAPON84_T.rows as unknown as { id: string; bestBand: string }[]).map((r) => {
+  if (!Object.hasOwn(WEAPONS, r.id)) throw Error(`band-defs: "${r.id}" is not a weapon row`);
+  if (!BANDS.includes(r.bestBand)) throw Error(`band-defs: "${r.id}" bestBand "${r.bestBand}" is not one of ${BANDS.join(', ')}`);
+  if (Object.hasOwn(BEST_BAND, r.id)) throw Error(`band-defs: "${r.id}" is in both weapons and weaponsRv84`);
+  return [r.id, r.bestBand];
+}));
+const bestOf = (weapon: string): string | undefined => BEST_BAND[weapon] ?? (ROWS84_ON ? BEST_BAND_RV84[weapon] : undefined);
 export const OFF_BAND = OFF_BAND_MULT;
 /** The walk speeds of the AI's holdBand step in and back (fractions of walking speed; rows: the same walk ai.ts already uses to close in and to give ground). */
 export const HOLD_FORWARD = rule('holdForward'), HOLD_BACK = rule('holdBack'), HOLD_MARGIN = rule('holdMargin'), HOLD_BACK_ON = rule('holdBackOn') > 0, HOLD_ONLY_IN_OPENING = rule('holdOnlyInOpening') > 0;   // margin: metres past a band edge before the AI steps; backOn: whether it also steps back from inside the band
@@ -57,12 +66,12 @@ export function bandAt(weapon: WeaponId, gap: number): string {
 }
 /** The factor on a clean blow started at this gap: 1 in the weapon's best band (or with no band row), offBandMult elsewhere. */
 export function bandFactor(weapon: WeaponId, gap: number): number {
-  const best = BEST_BAND[weapon];
+  const best = bestOf(weapon);
   return best === undefined || bandAt(weapon, gap) === best ? 1 : edgesFixed() ? OFF_BAND_FIXED : OFF_BAND_MULT;
 }
 /** The gap range [from, to) of a weapon's best band, in metres (the last ring is open-ended up to the reach); undefined for a weapon with no band row. */
 export function bestRange(weapon: WeaponId): readonly [number, number] | undefined {
-  const best = BEST_BAND[weapon]; if (best === undefined) return undefined;
+  const best = bestOf(weapon); if (best === undefined) return undefined;
   const [lo, hi] = spanOf(weapon), span = hi - lo, i = BANDS.indexOf(best);
   if (edgesFixed()) return [i === 0 ? lo : i === 1 ? INNER_EDGE : MID_EDGE, i === 0 ? INNER_EDGE : i === 1 ? MID_EDGE : Math.max(hi, MID_EDGE)];
   return [i === 0 ? lo : lo + (i === 1 ? INNER_FRAC : MID_FRAC) * span, i === 0 ? lo + INNER_FRAC * span : i === 1 ? lo + MID_FRAC * span : hi];

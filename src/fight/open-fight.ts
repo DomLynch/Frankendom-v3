@@ -14,7 +14,7 @@ import { M } from './detmath.ts';
 import { motionOf, type CreatureMotion } from './creature-motion-rows.ts';
 import { worldRule } from './world-rules.ts';
 import { missileOf } from './sandbox-rules.ts';
-import { ROWS83_ON, SANDBOX_ON } from './sandbox-era.ts';
+import { ROWS83_ON, ROWS84_ON, SANDBOX_ON } from './sandbox-era.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
 export type Motion = { hold: boolean; circling: boolean; left: number; seed: number };   // a world creature's stand / circle state (creature-motion-defs.json): hold = inside its stop band, circling = this re-decide drew a circle, left = ticks to the next draw
@@ -36,7 +36,10 @@ export function heroSheeted(f: Fighter): PitFighter {
   // RV83 (sandbox-era.ts rows83For): a hero with no spell whose weapon has a `bow` missile row carries the Pit hero's special share (duel.ts withSpecials; initialDuel's `picked` with a skill), ready at once like a caster,
   // so his special fires the bow special beyond the missile gap (duel.ts bowSpecialOf) and the melee special inside it; without it the press threw the melee skill swing, which whiffed at range. Any other weapon: unchanged.
   const archer = ROWS83_ON && cast === hero && missileOf(plain.weapon)?.kind === 'bow' ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.skill && SANDBOX_ON ? { picked: true as const } : {}) } : cast;
-  const made = f.sheet ? withSheet({ tick: 0, fighters: [archer, archer], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : archer;
+  // RV84 (sandbox-era.ts rows84For): a hero with a picked skill and no spell is a `picked` fighter like the Pit's slot-1 hero (duel.ts initialDuel), so his melee special takes the sandbox rules (reach limit and 'far' cue,
+  // the 32-tick windup, the release whiff, the stagger and knock); without it only the Pit hero got them and a world hero's special was the old 120-tick, reach-free cast. Slot 2 is a move row, which `picked` does not touch.
+  const lead = ROWS84_ON && SANDBOX_ON && f.skill && !f.spell && !f.spell2 && !archer.picked ? { ...archer, picked: true as const } : archer;
+  const made = f.sheet ? withSheet({ tick: 0, fighters: [lead, lead], finish: null, events: [] }, [f.sheet, undefined]).fighters[0] : lead;
   return f.hurt ? { ...made, wound: f.hurt.wound, woundSite: f.hurt.site, legWound: f.hurt.leg, maxStamina: f.hurt.cap } : made;   // a record window opened on a hurt hero (world-record.ts RecordHero.hurt): his wound state is part of the start, live and replayed alike
 }
 /** A bout for `hero` against `foe` (a creature, a player, or null = alone). `carry`: the hero's Pit fighter from the last bout, so stamina, posture, phase and cooldowns survive a change of foe. */
