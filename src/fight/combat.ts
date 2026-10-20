@@ -8,7 +8,6 @@ import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, 
 import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { specialStage } from './special-look.ts';
-import { specialName } from './special-names.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
 import { simBound } from './sim-bounds-rows.ts';
 const RESULT_AGE_CAP = simBound('practice.resultAgeCap');   // rows: sim-bounds-defs.json
@@ -208,7 +207,7 @@ const NAMES: Partial<Record<MoveId, string>> = {   // a skill's name is its row'
 // The sheathed line's threat names the legend when the fight has one (Dom 2026-09-28: the legend on every surface), else the class.
 export const counterLine = (foe: string, legend?: string): string => `${legend ?? `The ${foe}`} will counterattack.`;
 export const beatLegend = (s: Practice, legend?: string): boolean => !!legend && !s.finish?.draw && !!s.playerHealth && !s.health;
-export function practiceHint(s: Practice, foe = 'Opponent', legend?: string): string {
+export function practiceHint(s: Practice, foe = 'Opponent', legend?: string, specialLabel?: (skill: string) => string | undefined): string {   // specialLabel: the HUD hands in the picker's name for a special (Whirlwind), so this SIM-boundary module never imports the presentation names
   const me = s.duel.fighters[0];
   if (s.finish?.draw) return 'You both fell. Rematch?';
   if (!s.playerHealth) return 'You fell. Rematch?';
@@ -222,8 +221,7 @@ export function practiceHint(s: Practice, foe = 'Opponent', legend?: string): st
   if (me.exhausted) return 'Exhausted';
   if (s.phase === 'ready' && s.chain > 0) return 'Follow-through';
   if (s.result !== 'none' && s.resultAge < RESULT_AGE_CAP) {
-    const skillHit = skillOfMove(me.lastMove);   // a special's hit line reads its picker name (Whirlwind), as its button does (special-names.ts), and the bow's own name while a bow is wielded
-    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? (skillHit ? specialName(me.weapon, skillHit, SKILL_ROWS[skillHit]?.name ?? '') : undefined));
+    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? specialLabel?.(skillOfMove(me.lastMove) ?? '') ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
     const wall = (text: string) => s.resultWalled ? ` · ${text}` : '';
     return {
       kicked: 'Kick connected',
