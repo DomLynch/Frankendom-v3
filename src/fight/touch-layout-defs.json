@@ -8,7 +8,7 @@
     { "id": "3", "strike": 64, "ring": 154, "button": 52 }
   ],
   "landscape": [
-    { "id": "short", "maxHeight": 440, "strike": 60, "ring": 116, "button": 44, "cx": 90, "cy": 98 }
+    { "id": "short", "maxHeight": 440, "strike": 56, "ring": 128, "button": 44, "cx": 96, "cy": 100 }
   ],
   "wide": [
     { "id": "camera-button-wide", "minWidth": 900, "right": 208, "bottom": 30 }
