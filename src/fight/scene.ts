@@ -92,7 +92,7 @@ export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapo
 // the world. Without a mount (every Pit and game page) none of this runs.
 export type WorldMount = { renderer: THREE.WebGLRenderer; holder: THREE.Object3D; background: THREE.Color | THREE.Texture | null; fog: THREE.Fog | THREE.FogExp2 | null; walkCam?: { back: number; up: number } };   // walkCam: the walk camera's distance behind the hero and height (metres): a world fight keeps them and only the aim locks on
 const worldArena = (): Arena => ({ group: new THREE.Group(), floor: new THREE.Mesh(), sky: Object.assign(new THREE.Texture(), { image: { width: 1 } }), materials: undefined, ready: Promise.resolve(), update() {}, raiseGate() {}, thinCrowd() {} }) as unknown as Arena;
-/** The better graphics (origins/preview/gfx-lift.ts, one module for every page): the Pit page hands the lazily imported module in (undefined = off, the chunk was never fetched). */
+/** The better graphics (gfx-lift.ts, one module for every page): the Pit page hands the lazily imported module in (undefined = off, the chunk was never fetched). */
 export type GfxPost = { patchHeightFog(): void; createGfxLift(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera): { render(): void; setSize(w: number, h: number): void; compile(): void } };
 export function createScene(
   canvas: HTMLCanvasElement,
