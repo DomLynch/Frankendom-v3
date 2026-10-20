@@ -83,7 +83,7 @@ export function createHud(element: Lookup) {
     },
     update(practice: Practice, view: HudView) {
       // The sparring dummy never attacks (src/sparring.ts), so the sheathed line's "will counterattack" is false there (Strategy 2026-09-26).
-      const foe = bareName(view.opponentId), nameOfSpecial = (skill: string) => specialName(practice.duel.fighters[0].weapon, skill, SKILL_ROWS[skill as keyof typeof SKILL_ROWS]?.name ?? '') || undefined, line = view.headline ? practiceHint(practice, foe, view.legend, nameOfSpecial).replace(' Ready for a rematch?', ` ${view.headline} Ready for a rematch?`) : practiceHint(practice, foe, view.legend, nameOfSpecial),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
+      const foe = bareName(view.opponentId), line = view.headline ? practiceHint(practice, foe, view.legend).replace(' Ready for a rematch?', ` ${view.headline} Ready for a rematch?`) : practiceHint(practice, foe, view.legend),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
         hint = view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.dummy ? line.replace(counterLine(foe, view.legend), 'The dummy never attacks.') : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
         controlsReady = view.controlsReady;
       const ok = (['light', 'heavy', 'kick', 'backstep', 'parry'] as const).map(
@@ -167,12 +167,12 @@ export function createHud(element: Lookup) {
       skill2Button.hidden = ended || !slotB;
       const melee2 = practice.duel.fighters[0].skill2, spell2Name = view.slotBName || (melee2 ? specialName(practice.duel.fighters[0].weapon, melee2, SKILL_ROWS[melee2]?.name ?? '') || undefined : undefined) || SPELL2_LABEL;   // a melee SPECIAL 2 shows its skill row's own name   // the page hands the spell's own name over (it holds the lazy catalogue; the HUD stays out of the entry bundle's spell data); an empty or unnamed slot keeps the generic words; CSS clamps a long name to the button
       if (skill2Button.dataset.mobile !== spell2Name) {
-        skill2Button.dataset.mobile = spell2Name; { if (spell2Name !== SPELL2_LABEL) skill2Button.dataset.named = '1'; else delete skill2Button.dataset.named; } skill2Button.setAttribute('aria-label', spell2Name); skill2Button.title = spell2Name;
+        skill2Button.dataset.mobile = spell2Name; skill2Button.setAttribute('aria-label', spell2Name); skill2Button.title = spell2Name;
         const text = skill2Button.firstChild; if (text && text.nodeType === 3) text.textContent = spell2Name; else skill2Button.textContent = spell2Name;
       }
       const melee1 = practice.duel.fighters[0].skill, skillName = view.slotAName || (melee1 && practice.duel.fighters[0].spell === undefined ? specialName(practice.duel.fighters[0].weapon, melee1, SKILL_ROWS[melee1]?.name ?? '') || undefined : undefined) || SKILL_LABEL;   // a picked melee skill (SPECIAL 1) shows its row's own name, as SPECIAL 2 does; a spell or no skill keeps the generic word
       if (skillButton.dataset.mobile !== skillName) {
-        skillButton.dataset.mobile = skillName; { if (skillName !== SKILL_LABEL) skillButton.dataset.named = '1'; else delete skillButton.dataset.named; } skillButton.setAttribute('aria-label', skillName); skillButton.title = skillName;
+        skillButton.dataset.mobile = skillName; skillButton.setAttribute('aria-label', skillName); skillButton.title = skillName;
         const text1 = skillButton.firstChild; if (text1 && text1.nodeType === 3) text1.textContent = skillName; else skillButton.textContent = skillName;
       }
       skill2Button.setAttribute('aria-disabled', String(!controlsReady || !(view.slotB === true || accepts(practice, 'skill2'))));

@@ -207,7 +207,7 @@ const NAMES: Partial<Record<MoveId, string>> = {   // a skill's name is its row'
 // The sheathed line's threat names the legend when the fight has one (Dom 2026-09-28: the legend on every surface), else the class.
 export const counterLine = (foe: string, legend?: string): string => `${legend ?? `The ${foe}`} will counterattack.`;
 export const beatLegend = (s: Practice, legend?: string): boolean => !!legend && !s.finish?.draw && !!s.playerHealth && !s.health;
-export function practiceHint(s: Practice, foe = 'Opponent', legend?: string, specialLabel?: (skill: string) => string | undefined): string {   // specialLabel: the HUD hands in the picker's name for a special (Whirlwind), so this SIM-boundary module never imports the presentation names
+export function practiceHint(s: Practice, foe = 'Opponent', legend?: string): string {
   const me = s.duel.fighters[0];
   if (s.finish?.draw) return 'You both fell. Rematch?';
   if (!s.playerHealth) return 'You fell. Rematch?';
@@ -221,7 +221,7 @@ export function practiceHint(s: Practice, foe = 'Opponent', legend?: string, spe
   if (me.exhausted) return 'Exhausted';
   if (s.phase === 'ready' && s.chain > 0) return 'Follow-through';
   if (s.result !== 'none' && s.resultAge < RESULT_AGE_CAP) {
-    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? specialLabel?.(skillOfMove(me.lastMove) ?? '') ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
+    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
     const wall = (text: string) => s.resultWalled ? ` · ${text}` : '';
     return {
       kicked: 'Kick connected',
