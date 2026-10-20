@@ -103,6 +103,8 @@
     { "id": "zoneloot.ring-m", "fields": {"value": 1.1} },
     { "id": "zoneloot.turn", "fields": {"value": 6.283185307179586} },
     { "id": "mob-view.wear-max-scale", "fields": {"value": 9} },
+    { "id": "mob-view.phone-cap", "fields": {"value": 3} },
+    { "id": "mob-view.player-reach", "fields": {"value": 8} },
     { "id": "pose-blend.snap-m", "fields": {"value": 3} },
     { "id": "regen.out-of-combat", "fields": {"value": 1} },
     { "id": "regen.health-full", "fields": {"value": 60} },
