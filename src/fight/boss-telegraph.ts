@@ -52,6 +52,7 @@ export function createBossTelegraph(scene: THREE.Scene) {
       ring.material.opacity = (0.3 + 0.5 * look.fill) * pulse;
       fill.scale.setScalar(Math.max(FILL_SCALE_MIN, look.fill)); fill.material.opacity = (0.12 + 0.3 * look.fill * look.fill) * pulse;
     },
+    hide() { group.visible = false; },
     dispose() { group.removeFromParent(); for (const m of group.children as THREE.Mesh[]) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); } },
   };
 }
