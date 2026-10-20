@@ -167,12 +167,12 @@ export function createHud(element: Lookup) {
       skill2Button.hidden = ended || !slotB;
       const melee2 = practice.duel.fighters[0].skill2, spell2Name = view.slotBName || (melee2 ? specialName(practice.duel.fighters[0].weapon, melee2, SKILL_ROWS[melee2]?.name ?? '') || undefined : undefined) || SPELL2_LABEL;   // a melee SPECIAL 2 shows its skill row's own name   // the page hands the spell's own name over (it holds the lazy catalogue; the HUD stays out of the entry bundle's spell data); an empty or unnamed slot keeps the generic words; CSS clamps a long name to the button
       if (skill2Button.dataset.mobile !== spell2Name) {
-        skill2Button.dataset.mobile = spell2Name; skill2Button.setAttribute('aria-label', spell2Name); skill2Button.title = spell2Name;
+        skill2Button.dataset.mobile = spell2Name; skill2Button.toggleAttribute('data-named', spell2Name !== SPELL2_LABEL); skill2Button.setAttribute('aria-label', spell2Name); skill2Button.title = spell2Name;
         const text = skill2Button.firstChild; if (text && text.nodeType === 3) text.textContent = spell2Name; else skill2Button.textContent = spell2Name;
       }
       const melee1 = practice.duel.fighters[0].skill, skillName = (melee1 && practice.duel.fighters[0].spell === undefined ? specialName(practice.duel.fighters[0].weapon, melee1, SKILL_ROWS[melee1]?.name ?? '') || undefined : undefined) || SKILL_LABEL;   // a picked melee skill (SPECIAL 1) shows its row's own name, as SPECIAL 2 does; a spell or no skill keeps the generic word
       if (skillButton.dataset.mobile !== skillName) {
-        skillButton.dataset.mobile = skillName; skillButton.setAttribute('aria-label', skillName); skillButton.title = skillName;
+        skillButton.dataset.mobile = skillName; skillButton.toggleAttribute('data-named', skillName !== SKILL_LABEL); skillButton.setAttribute('aria-label', skillName); skillButton.title = skillName;
         const text1 = skillButton.firstChild; if (text1 && text1.nodeType === 3) text1.textContent = skillName; else skillButton.textContent = skillName;
       }
       skill2Button.setAttribute('aria-disabled', String(!controlsReady || !(view.slotB === true || accepts(practice, 'skill2'))));

@@ -8,6 +8,7 @@ import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, 
 import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { specialStage } from './special-look.ts';
+import { specialName } from './special-names.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
 import { simBound } from './sim-bounds-rows.ts';
 const RESULT_AGE_CAP = simBound('practice.resultAgeCap');   // rows: sim-bounds-defs.json
@@ -221,7 +222,8 @@ export function practiceHint(s: Practice, foe = 'Opponent', legend?: string): st
   if (me.exhausted) return 'Exhausted';
   if (s.phase === 'ready' && s.chain > 0) return 'Follow-through';
   if (s.result !== 'none' && s.resultAge < RESULT_AGE_CAP) {
-    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
+    const skillHit = skillOfMove(me.lastMove);   // a special's hit line reads its picker name (Whirlwind), as its button does (special-names.ts), and the bow's own name while a bow is wielded
+    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? (skillHit ? specialName(me.weapon, skillHit, SKILL_ROWS[skillHit]?.name ?? '') : undefined));
     const wall = (text: string) => s.resultWalled ? ` · ${text}` : '';
     return {
       kicked: 'Kick connected',
