@@ -45,7 +45,7 @@ function verifyUnder(record: FightRecord, onTick?: (practice: Practice) => void)
   try {   // a record this build cannot step (a weapon the hero rig has no blade table for, a rule that throws) is a refusal, not a crash
     const spell = record.spell ? resolveSpell(record.spell.id, record.spell.skill, record.sheet?.spellPower ?? 0, record.v) : undefined;   // RV53: the recorded spell id and skill, the credit from the recorded sheet (Backend verifies all three)
     if (record.spell && (!spell || !record.specials)) return { ok: false, reason: 'unknown spell, or a spell without Special Moves', practice: null };
-    practice = initialPractice(record.seed, opponentAt(opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose, record.sheet, spell, undefined, undefined, record.skill2);   // skill2: the record's SPECIAL 2 (match.ts begin() passes it as the 13th), or the replay refuses its press and diverges
+    practice = initialPractice(record.seed, opponentAt(opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose, record.sheet, spell);
     for (let i = 0; i < record.intents.length; i++) {
       if (practice.finish) return { ok: false, reason: `the fight ended at tick ${practice.duel.tick}, before the record's last tick ${record.ticks}`, practice };
       practice = group ? stepPractice(withIncoming(practice, group, i + 1), record.intents[i], profile, groupLayer(group, i + 1)) : stepPractice(practice, record.intents[i], profile);
