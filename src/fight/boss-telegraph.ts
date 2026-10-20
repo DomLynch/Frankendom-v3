@@ -6,7 +6,7 @@ import { SCHOOLS } from './schools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import { sceneNum } from './scene-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin'), WORLD_RING = fxNum('fx.bossTelegraph.worldWindup'), WORLD_COLOR = fxNum('fx.bossTelegraph.worldColor');   // worldWindup 1: the open-world view draws this ring under ANY special's windup (RV84 hero specials: a pose alone is no telegraph)
+const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin'), WORLD_RING = sceneNum('boss-telegraph.world-windup'), WORLD_COLOR = sceneNum('boss-telegraph.world-color');   // worldWindup 1: the open-world view draws this ring under ANY special's windup (RV84 hero specials: a pose alone is no telegraph)
 import { CAST_TELL_OFF } from './sandbox-rules.ts';
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
