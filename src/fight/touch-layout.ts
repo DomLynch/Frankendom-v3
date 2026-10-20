@@ -15,13 +15,22 @@ const RAD = Math.PI / 180;   // degrees to radians
 export function touchLayoutCss(search: string): string {
   const lay = new URLSearchParams(search).get('lay'), V = DEFS.variants.find((v) => v.id === lay) ?? DEFS.variants.find((v) => v.id === BASE.variant)!;
   // The centre offset (down is +) of a button of diameter d touching the ring at this angle.
-  const near = (deg: number, size: number): [number, number] => { const r = (V.ring + size) / 2 + BASE.gap, a = deg * RAD; return [Math.round(r * Math.cos(a)), Math.round(-r * Math.sin(a))]; };
-  const spots = DEFS.buttons.map((b) => { const size = b.own ? V.strike : (b as { size?: number }).size ?? V.button, [dx, dy] = b.own ? [0, 0] : near(b.deg, size); return { ...b, size, dx, dy }; });
+  type Size = { ring: number; strike: number; button: number };
+  // Where each button sits for a size set and a cluster centre (cx right, cy up from the screen corner).
+  const place = (S: Size, cx: number, cy: number) => {
+    const near = (deg: number, size: number): [number, number] => { const r = (S.ring + size) / 2 + BASE.gap, a = deg * RAD; return [Math.round(r * Math.cos(a)), Math.round(-r * Math.sin(a))]; };
+    const at = DEFS.buttons.map((b) => { const size = b.own ? S.strike : (b as { size?: number }).size ?? S.button, [dx, dy] = b.own ? [0, 0] : near(b.deg, size); return { ...b, size, dx, dy }; });
+    return [
+      ...at.map((s) => `.actions #${s.id}{right:${cx - s.dx - s.size / 2}px!important;bottom:${cy - s.dy - s.size / 2}px!important;width:${s.size}px!important;height:${s.size}px!important}`),
+      `#touch-zones{right:${cx - S.ring / 2}px;bottom:${cy - S.ring / 2}px;width:${S.ring}px;height:${S.ring}px}`,
+    ];
+  };
+  const spots = DEFS.buttons.map((b) => ({ ...b, size: b.own ? V.strike : (b as { size?: number }).size ?? V.button }));
   const ids = spots.map((s) => `.actions #${s.id}`);
   return [
     '.actions #heavy-button,.actions #thrust-button,.actions #run-button,.actions #attack-button svg{display:none!important}',
     `${ids.join(',')}{position:fixed!important;left:auto!important;top:auto!important;margin:0!important;border-radius:50%!important;padding:0!important;display:flex!important;align-items:center;justify-content:center;font-size:0!important;line-height:1!important;min-width:0!important;z-index:5}`,
-    ...spots.map((s) => `.actions #${s.id}{right:${BASE.cx - s.dx - s.size / 2}px!important;bottom:${BASE.cy - s.dy - s.size / 2}px!important;width:${s.size}px!important;height:${s.size}px!important}`),
+    ...place(V, BASE.cx, BASE.cy).slice(0, -1),
     `${ids.map((i) => `${i}::after`).join(',')}{display:block!important;position:static!important;font-size:10px!important;font-weight:600;letter-spacing:.03em;color:inherit;text-align:center;white-space:nowrap}`,
     ...spots.map((s) => `.actions #${s.id}::after{content:"${s.label}"!important}`),
     '.actions #attack-button::after{font-size:13px!important;letter-spacing:.05em}',
@@ -31,6 +40,7 @@ export function touchLayoutCss(search: string): string {
     `@media (min-width:${WIDE.minWidth}px){.actions #camera-button{position:fixed!important;left:auto!important;top:auto!important;margin:0!important;right:${WIDE.right}px!important;bottom:${WIDE.bottom}px!important;z-index:5}}`,   // a tablet's wide screen shows the camera button, which would sit under the Guard / Roll pair: it goes to the cluster's left, clear of it (phones hide it)
     `#touch-zones{position:fixed;z-index:4;pointer-events:none;right:${BASE.cx - V.ring / 2}px;bottom:${BASE.cy - V.ring / 2}px;width:${V.ring}px;height:${V.ring}px;border-radius:50%;border:1px dashed rgba(190,120,80,.7);background:conic-gradient(from -50deg,rgba(150,70,40,.34) 0 100deg,rgba(150,70,40,.16) 100deg 360deg)}`,
     '#touch-zones i{position:absolute;font:600 10px sans-serif;color:rgba(255,235,215,.85);font-style:normal;letter-spacing:.04em}',
+    ...DEFS.landscape.map((L) => `@media (orientation:landscape) and (max-height:${L.maxHeight}px){\n${place(L, L.cx, L.cy).join('\n')}\n}`),   // a phone on its side (Dom 2026-10-20, iPhone Safari): the same diamond, smaller and lower, so it stops covering a third of the screen
   ].join('\n');
 }
 
