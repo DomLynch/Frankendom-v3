@@ -9,6 +9,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 import { fxNum } from './index.ts';
 
 // The GLSL literals are written from the rows once (a fixed-point string for each), so the shader text carries no tuning of its own.
@@ -50,6 +51,10 @@ export function createGfxLift(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
   composer.addPass(new RenderPass(scene, camera));
   composer.addPass(new UnrealBloomPass(new THREE.Vector2(size.x, size.y), fxNum('gfx.bloom.strength'), fxNum('gfx.bloom.radius'), fxNum('gfx.bloom.threshold')));
   composer.addPass(new OutputPass());   // the renderer's tone mapping and sRGB, once, here
+  // FXAA on the display-referred picture (after OutputPass): the composer's target has no MSAA (gfx.msaa-samples 0: 4 and 2 samples cost +2.2 s on the software-GL load-time gate), so edges are smoothed here, near-free on a GPU. gfx.fxaa 0 turns it off.
+  const fxaa = new ShaderPass(FXAAShader), fxaaOn = fxNum('gfx.fxaa') > 0;
+  (fxaa.uniforms as { resolution: { value: THREE.Vector2 } }).resolution.value.set(1 / size.x, 1 / size.y);
+  if (fxaaOn) composer.addPass(fxaa);
   const grade = new ShaderPass(gradeShader);
   const u = grade.uniforms as typeof gradeShader.uniforms;
   u.contrast.value = fxNum('gfx.grade.contrast'); u.saturation.value = fxNum('gfx.grade.saturation'); u.teal.value = fxNum('gfx.grade.shadow-teal'); u.warm.value = fxNum('gfx.grade.highlight-warm'); u.vignette.value = fxNum('gfx.grade.vignette');
@@ -63,6 +68,6 @@ export function createGfxLift(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
     render: (): void => composer.render(),
     /** Compile the scene's programs for the composer's render target (the Pit's loading card: a program is keyed on its target, so a compile for the screen leaves these to link at the first frame). */
     compile(): void { const before = renderer.getRenderTarget(); renderer.setRenderTarget(composer.readBuffer); try { renderer.compile(scene, camera); } finally { renderer.setRenderTarget(before); } },
-    setSize(w: number, h: number): void { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); },
+    setSize(w: number, h: number): void { const ratio = renderer.getPixelRatio(); composer.setPixelRatio(ratio); composer.setSize(w, h); (fxaa.uniforms as { resolution: { value: THREE.Vector2 } }).resolution.value.set(1 / (w * ratio), 1 / (h * ratio)); },
   };
 }

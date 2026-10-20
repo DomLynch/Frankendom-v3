@@ -227,6 +227,7 @@
     { "id": "gfx.fog.digits", "fields": {"value": 3} },
     { "id": "gfx.fog.digits-fine", "fields": {"value": 4} },
     { "id": "gfx.msaa-samples", "fields": {"value": 0} },
+    { "id": "gfx.fxaa", "fields": {"value": 1} },
     { "id": "warband.enabled", "fields": {"value": 1} },
     { "id": "warband.min-band", "fields": {"value": 2} },
     { "id": "warband.horn-run-speed", "fields": {"value": 4.2} },
