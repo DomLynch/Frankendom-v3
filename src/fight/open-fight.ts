@@ -14,7 +14,7 @@ import { M } from './detmath.ts';
 import { motionOf, type CreatureMotion } from './creature-motion-rows.ts';
 import { worldRule } from './world-rules.ts';
 import { missileOf } from './sandbox-rules.ts';
-import { ROWS83_ON, ROWS84_ON, SANDBOX_ON } from './sandbox-era.ts';
+import { ROWS83_ON, ROWS84_ON, ROWS85_ON, SANDBOX_ON } from './sandbox-era.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
 export type Motion = { hold: boolean; circling: boolean; left: number; seed: number };   // a world creature's stand / circle state (creature-motion-defs.json): hold = inside its stop band, circling = this re-decide drew a circle, left = ticks to the next draw
@@ -102,7 +102,7 @@ function intentOf(input: Input, guarding: boolean, lock: boolean): Intent {
   const base = idleIntent();
   const action = input.special2 ? 'skill2' : input.special || input.skill ? 'skill' : input.roll ? 'dodge' : input.attack === 'heavy' ? 'heavy' : input.attack === 'thrust' ? 'thrust' : input.attack === 'kick' ? 'kick' : input.attack === 'light' ? 'light' : input.guard && !guarding ? 'parry' : null;   // open-world: a guard pressed fresh is the Pit's parry tap, held it is the standing guard
   const move = input.roll ? { x: input.roll.x, z: input.roll.z, yaw: 0, run: false } : { x: input.x, z: input.z, yaw: 0, run: !!input.run };
-  return { ...base, move, action, guard: !!input.guard, ...(input.guard && input.guardDirection ? { guardDirection: input.guardDirection } : {}), lock };   // open-world: lock-on is the Pit's (he turns toward the foe while ready and in a windup); alone there is nothing to lock
+  return { ...base, move, action, guard: !!input.guard, ...(ROWS85_ON && input.held ? { held: true } : {}), ...(input.guard && input.guardDirection ? { guardDirection: input.guardDirection } : {}), lock };   // open-world: lock-on is the Pit's (he turns toward the foe while ready and in a windup); alone there is nothing to lock
 }
 
 /** One world step of a bout: `ticks` Pit ticks (60 Hz). `a` is slot 0 (a player), `b` slot 1 (a creature or a player; undefined when alone). Writes the result into `a` and `b` (the caller's copies) and returns the events. */

@@ -78,7 +78,7 @@ export type Fighter = {
   pvp: boolean; level: number; shielded: boolean;       // attackable by players here and now (server-set); his level; the low-level shield (dropped on his first attack)
 };
 export type World = { time: number; fighters: Fighter[]; aggro: Record<string, Record<string, number>>; streams: Record<string, Bout> };   // streams: slot-0 player id -> his fight (a Pit duel); aggro[attacker][victim] = when the attacker last struck that player
-export type Input = { x: number; z: number; special?: boolean; special2?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; guard?: boolean; roll?: { x: number; z: number } | null; guardDirection?: Direction | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
+export type Input = { x: number; z: number; special?: boolean; special2?: boolean; skill?: boolean; run?: boolean; attack?: 'light' | 'heavy' | 'thrust' | 'kick' | null; held?: boolean; guard?: boolean; roll?: { x: number; z: number } | null; guardDirection?: Direction | null };   // world-axis move, a held run, a cut / kick / roll / special pressed this step, a held guard
 /** The Pit's own CombatEvent behind a Zone 1 event (location, direction, material, weapon, counter, rear, charged ...): gore, wounds, finishers, hit-impact and the clip driver read the Pit's event, not our summary of it. */
 export type Event = EventBody & { pit?: CombatEvent };
 type EventBody =
