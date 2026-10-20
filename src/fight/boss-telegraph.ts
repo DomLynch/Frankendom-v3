@@ -6,7 +6,7 @@ import { SCHOOLS } from './schools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import { sceneNum } from './scene-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin'), WORLD_RING = fxNum('fx.bossTelegraph.worldWindup');   // worldWindup 1: the open-world view draws this ring under ANY special's windup (RV84 hero specials: a pose alone is no telegraph)
+const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin'), WORLD_RING = fxNum('fx.bossTelegraph.worldWindup'), WORLD_COLOR = fxNum('fx.bossTelegraph.worldColor');   // worldWindup 1: the open-world view draws this ring under ANY special's windup (RV84 hero specials: a pose alone is no telegraph)
 import { CAST_TELL_OFF } from './sandbox-rules.ts';
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
@@ -25,8 +25,10 @@ const ROLL_TICKS = sceneNum('boss-telegraph.roll-ticks');   // the last stretch 
 export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'> & { spell?: { id: string } }, bosses = true, world = false): { fill: number; flash: boolean; color?: number } | null => {
   if (!caster.special || !caster.health || (caster.spell && CAST_TELL_OFF)) return null;
   const color = caster.spell ? spellColor(caster.spell.id) : undefined;
-  if (!caster.spell && !(bosses && caster.specialShare === RULES.special.bossDamage) && !(world && WORLD_RING)) return null;
-  return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS, ...(color !== undefined ? { color } : {}) };
+  const boss = bosses && caster.specialShare === RULES.special.bossDamage;
+  if (!caster.spell && !boss && !(world && WORLD_RING)) return null;
+  const tint = color ?? (!caster.spell && !boss ? WORLD_COLOR : undefined);   // the world's own cool tint (never the boss orange: a hero's own windup must not read as an incoming boss hit)
+  return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS, ...(tint !== undefined ? { color: tint } : {}) };
 };
 
 export function createBossTelegraph(scene: THREE.Scene) {
