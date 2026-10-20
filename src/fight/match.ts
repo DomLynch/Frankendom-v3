@@ -218,7 +218,7 @@ export class Match {
     const saved = { scale: PLAY_SCALE, notice: LATE_NOTICE, stab: STAB_ON, stanceRows: STANCE_ROWS_ON, poiseLadder: POISE_LADDER_ON, cone: CONE_ON, sandbox: SANDBOX_ON, rows79: ROWS79_ON, rows80: ROWS80_ON, practice: this.practice, replay: this.replay, stalled: this.stalled, fightLog: this.fightLog, specials: this.specials, gambit: this.gambit, stances: this.stances };
     this.clipLevel = record.level;   // the record's own warden; `level` is untouched, so any start mid-clip fights on the player's own (Auditer review)
     const practice = underRecord(record, () => {
-      let p = initialPractice(record.seed, opponentAt(this.opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose, record.sheet, record.spell ? resolveSpell(record.spell.id, record.spell.skill, record.sheet?.spellPower ?? 0, record.v) : undefined);
+      let p = initialPractice(record.seed, opponentAt(this.opponent, record.level), record.weapon, record.skill ?? null, recordSpecials(record), record.gambit ? record.seed : undefined, record.stances, record.pose, record.sheet, record.spell ? resolveSpell(record.spell.id, record.spell.skill, record.sheet?.spellPower ?? 0, record.v) : undefined, undefined, undefined, record.skill2);
       for (let tick = 0; tick < fromTick; tick++) p = stepPractice(p, record.intents[tick], profileAt(this.opponent, record.level));
       return p;
     });
