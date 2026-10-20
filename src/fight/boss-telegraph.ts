@@ -6,7 +6,7 @@ import { SCHOOLS } from './schools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
 import { sceneNum } from './scene-rows.ts';
 import { fxNum } from './fx-rows.ts';
-const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin');
+const FILL_SCALE_MIN = fxNum('fx.bossTelegraph.fillScaleMin'), WORLD_RING = sceneNum('boss-telegraph.world-windup'), WORLD_COLOR = sceneNum('boss-telegraph.world-color');   // worldWindup 1: the open-world view draws this ring under ANY special's windup (RV84 hero specials: a pose alone is no telegraph)
 import { CAST_TELL_OFF } from './sandbox-rules.ts';
 
 // Ground telegraph for a rank 8-10 boss special (brief #1507 item 2; a ?telegraph=1 look-test, renderer only). While the boss winds up, a ring fills on the floor
@@ -22,11 +22,13 @@ export const spellLook = (search: string): { id: string; skill: number } | undef
   return isSpellId(id) ? { id, skill: Number.isFinite(skill) && skill > 0 ? skill : 0 } : undefined;
 };
 const ROLL_TICKS = sceneNum('boss-telegraph.roll-ticks');   // the last stretch of the windup, when the ring flashes: the roll window
-export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'> & { spell?: { id: string } }, bosses = true): { fill: number; flash: boolean; color?: number } | null => {
+export const telegraphLook = (caster: Pick<Fighter, 'specialShare' | 'special' | 'health'> & { spell?: { id: string } }, bosses = true, world = false): { fill: number; flash: boolean; color?: number } | null => {
   if (!caster.special || !caster.health || (caster.spell && CAST_TELL_OFF)) return null;
   const color = caster.spell ? spellColor(caster.spell.id) : undefined;
-  if (!caster.spell && !(bosses && caster.specialShare === RULES.special.bossDamage)) return null;
-  return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS, ...(color !== undefined ? { color } : {}) };
+  const boss = bosses && caster.specialShare === RULES.special.bossDamage;
+  if (!caster.spell && !boss && !(world && WORLD_RING)) return null;
+  const tint = color ?? (!caster.spell && !boss ? WORLD_COLOR : undefined);   // the world's own cool tint (never the boss orange: a hero's own windup must not read as an incoming boss hit)
+  return { fill: 1 - caster.special / RULES.special.windup, flash: caster.special <= ROLL_TICKS, ...(tint !== undefined ? { color: tint } : {}) };
 };
 
 export function createBossTelegraph(scene: THREE.Scene) {
@@ -38,8 +40,8 @@ export function createBossTelegraph(scene: THREE.Scene) {
   const ring = make(new THREE.RingGeometry(0.92, 1, 48), 0xff5a1f), fill = make(new THREE.CircleGeometry(1, 48), 0xd83a10);
   scene.add(group);
   return {
-    update(boss: Fighter, at: THREE.Vector3 | null, tick: number, bosses = true) {
-      const look = telegraphLook(boss, bosses);
+    update(boss: Fighter, at: THREE.Vector3 | null, tick: number, bosses = true, world = false) {
+      const look = telegraphLook(boss, bosses, world);
       group.visible = !!look && !!at;
       if (!look || !at) return;
       const radius = RULES.special.reach * 0.4;   // 1.2 m: about a body and a half, readable at 375 wide on the fight camera
@@ -50,6 +52,7 @@ export function createBossTelegraph(scene: THREE.Scene) {
       ring.material.opacity = (0.3 + 0.5 * look.fill) * pulse;
       fill.scale.setScalar(Math.max(FILL_SCALE_MIN, look.fill)); fill.material.opacity = (0.12 + 0.3 * look.fill * look.fill) * pulse;
     },
+    hide() { group.visible = false; },
     dispose() { group.removeFromParent(); for (const m of group.children as THREE.Mesh[]) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); } },
   };
 }
