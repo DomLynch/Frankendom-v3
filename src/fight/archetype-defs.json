@@ -179,10 +179,10 @@
   {
    "id": "troll",
    "scale": 1.5,
-   "health": 680,
+   "health": 850,
    "poise": 16,
    "sheet": {
-    "attack": 45
+    "attack": 60
    },
    "profiles": {
     "easy": {
@@ -462,6 +462,84 @@
    "poise": 0,
    "regen": 1.4,
    "speed": 1.45,
+   "profiles": {
+    "easy": {
+     "set": {
+      "reaction": 18,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0.3,
+      "aggression": 0.7,
+      "pressure": 0.6,
+      "discipline": 25,
+      "lapse": 0.4,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0.5,
+      "circle": 0.6,
+      "step": 0.7,
+      "interrupt": 0.3,
+      "kick": 0,
+      "dash": 0.6,
+      "read": 0.35
+     }
+    },
+    "normal": {
+     "set": {
+      "reaction": 11,
+      "accuracy": 0.55,
+      "parry": 0,
+      "dodge": 0.4,
+      "aggression": 0.85,
+      "pressure": 0.65,
+      "discipline": 20,
+      "lapse": 0.3,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0.7,
+      "circle": 0.9,
+      "step": 0.8,
+      "interrupt": 0.6,
+      "kick": 0,
+      "dash": 1,
+      "read": 0.5,
+      "stab": 0.7
+     }
+    },
+    "hard": {
+     "set": {
+      "reaction": 8,
+      "accuracy": 0.92,
+      "parry": 0,
+      "dodge": 0.5,
+      "aggression": 0.95,
+      "pressure": 0.7,
+      "discipline": 15,
+      "lapse": 0.08,
+      "feint": 0,
+      "guard": 0,
+      "disengage": 0.8,
+      "circle": 1,
+      "step": 0.8,
+      "interrupt": 0.8,
+      "kick": 0,
+      "dash": 1,
+      "read": 0.65,
+      "stab": 1
+     }
+    }
+   }
+  },
+  {
+   "id": "salamander",
+   "scale": 0.8,
+   "health": 150,
+   "poise": 0,
+   "regen": 1.4,
+   "speed": 1.45,
+   "sheet": {
+    "attack": 20
+   },
    "profiles": {
     "easy": {
      "set": {
