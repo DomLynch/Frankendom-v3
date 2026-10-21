@@ -9,7 +9,7 @@ import { RULES } from './rules.ts';
 import { SPECIAL_SETS, SPECIAL_RANK_LEVELS, specialStartOf } from './special-set-rows.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { LEVEL_ANCHORS } from './level-anchor-rows.ts';
-import { worldLevelHealth } from './world-level-rows.ts';   // rows: world-level-defs.json (RV89)
+import { worldLevelHealth, worldProfileLevel } from './world-level-rows.ts';   // rows: world-level-defs.json (RV89, Zone 2)
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 import { LEVELS, LATE_NOTICE_FROM } from './moves-dials-rows.ts';   // the dials are rows (moves-dials-defs.json)
@@ -227,6 +227,12 @@ export function opponentAt(o: Opponent, level: number): Opponent {
 export function worldOpponentAt(o: Opponent, level: number): Opponent {
   const body = opponentAt(o, level), l = Math.min(LEVELS, Math.max(1, Math.round(level))), row = worldLevelHealth(o.id, l);
   return row === undefined ? body : { ...body, health: Math.max(1, Math.round(body.health * row / o.health)) };
+}
+/** The AI profile an open-world creature fights with at `level` (Zone 2): profileAt at the level a world row names as its `profileLevel` (world-level-defs.json), else at `level` itself, i.e. the Pit's own profile (the same
+ *  object profileAt returns). Its displayed level, loot and XP stay the mob's own; the Pit never calls this. Only who reads and answers moves: the move rows (windups, windows, recoveries) are the opponent's, whatever the profile. */
+export function worldProfileAt(o: Opponent, level: number): AiProfile {
+  const l = Math.min(LEVELS, Math.max(1, Math.round(level))), at = worldProfileLevel(o.id, l);
+  return profileAt(o, at === undefined ? level : at);
 }
 // An absent knob means "the warden as he always was" in ai.ts; a blend needs the number that absence stands for. A knob absent on BOTH
 // sides stays absent (ai.ts draws no roll for it, so nothing downstream moves).

@@ -2,7 +2,7 @@
 // stepped by the Pit's own `src/fight/duel.ts stepDuel` (the duel carries radius OPEN_RADIUS: no ring wall, the one open-world departure), with the creature brain `src/fight/ai.ts decide` (profileAt rows) when the foe is a creature. This file is the adapter and nothing else: it builds the Pit fighters from the
 // world's Fighters, maps live Input to a Pit Intent, steps the duel at its fixed 60 Hz, and writes the result back into the world's Fighters and Events. The world layer (aggro, chase to the engage ring, leash,
 // give-up, heal-home, the page-driven hero position) stays in zone1.ts. Every departure from the Pit is marked `// open-world:`.
-import { OPPONENTS, RULES, worldOpponentAt, profileAt, DEFAULT_WEAPON, type AiProfile } from './moves.ts';
+import { OPPONENTS, RULES, worldOpponentAt, worldProfileAt, DEFAULT_WEAPON, type AiProfile } from './moves.ts';
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
 import { initialAi, decide, lcg, seedUnit, type AiState } from './ai.ts';
@@ -49,7 +49,7 @@ export function openBout(hero: Fighter, foe: Fighter | null, carry?: PitFighter)
   const base: Duel = { tick: 0, fighters: [h, c], finish: null, events: [], radius: OPEN_RADIUS, ...bandsFlag() };
   const seed = foe?.seed ?? seedOf(foe?.id ?? hero.id), withA = h.spell && h.specialShare !== undefined ? withSpell(base, 0, h.spell, seed) : base;
   const duel = h.spell2 && h.specialShare !== undefined ? withSpell(withA, 0, h.spell2, seed, 1) : withA;   // slot b rides the same seeded stream: the draw index is the cast count, not the slot   // open-world: the cast draws are seeded by the bout (the creature's roll seed, else its id), so a replay reproduces every outcome
-  return { foe: foe?.id ?? null, duel: foe?.seed === undefined ? duel : withRoll(duel, foe.seed), ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? profileAt(o, foe!.level) : null };
+  return { foe: foe?.id ?? null, duel: foe?.seed === undefined ? duel : withRoll(duel, foe.seed), ai: o ? (foe!.brain ?? initialAi(seedOf(foe!.id))) : null, profile: o ? worldProfileAt(o, foe!.level) : null };
 }
 
 /** open-world: a creature's step with its turn rate and sideways speed capped by its row (EQEmu RotateToCommand: the heading moves toward its target at the mob's rotate speed, never a snap; AzerothCore chase: the
