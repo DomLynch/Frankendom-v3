@@ -78,8 +78,8 @@ export function underRows85<T>(version: number, run: () => T): T {
   const outer = ROWS85_ON; ROWS85_ON = rows85For(version);
   try { return run(); } finally { ROWS85_ON = outer; }
 }
-// RV86 (Combat, 2026-10-21, Dom's study list: Elden Ring attack timings measured, docs/specs/combat/elden-ring-timings.md): the light and thrust timings of knife, longsword, gladius, cleaver, maul, warhammer, scythe and estoc
-// are the weapon rows' `rv86` overlays (weapon-defs.json, moves.ts weaponOf). A seventh boundary of this leaf: ON for a live fight and for a record at 86 or later; a record below 86 replays the old timings byte for byte.
+// RV86 (Combat, 2026-10-21, Dom's study list: Elden Ring attack timings measured, docs/specs/combat/elden-ring-timings.md): the longsword's light and thrust timings
+// are the weapon row's `rv86` overlay (weapon-defs.json, moves.ts weaponOf); the other weapons are untouched because the wardens fight with them (a changed row would retime the warden too). A seventh boundary of this leaf: ON for a live fight and for a record at 86 or later; a record below 86 replays the old timings byte for byte.
 export const FIRST_ROWS86_VERSION = 86;
 export let ROWS86_ON = true;
 export function setRows86(on: boolean): void { ROWS86_ON = on; }

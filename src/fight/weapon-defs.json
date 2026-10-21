@@ -56,7 +56,6 @@
   },
   {
     "id": "cleaver", "skill": "axe",
-    "rv86": { "moves": { "light_right": { "windup": 24, "active": 5, "recovery": 32, "chained": { "active": 5, "recovery": 27 } }, "light_left": { "windup": 24, "active": 5, "recovery": 32, "chained": { "active": 5, "recovery": 27 } } } },
     "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 2,
@@ -89,7 +88,6 @@
   },
   {
     "id": "estoc", "skill": "sword",
-    "rv86": { "moves": { "thrust": { "windup": 19, "active": 6, "recovery": 16, "chained": { "active": 6 } } } },
     "look": {"pommelBash": true, "stabs": true},
     "extends": "longsword",
     "player": 4,
@@ -113,7 +111,6 @@
   },
   {
     "id": "knife", "skill": "sword",
-    "rv86": { "moves": { "light_right": { "active": 3, "recovery": 20, "chained": { "active": 3, "recovery": 18 } }, "light_left": { "active": 3, "recovery": 20, "chained": { "active": 3, "recovery": 18 } } } },
     "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 3,
@@ -147,7 +144,6 @@
   },
   {
     "id": "gladius", "skill": "sword",
-    "rv86": { "moves": { "light_right": { "active": 5, "recovery": 25, "chained": { "active": 5, "recovery": 20 } }, "light_left": { "active": 5, "recovery": 25, "chained": { "active": 5, "recovery": 20 } }, "thrust": { "windup": 19, "active": 6, "recovery": 16 } } },
     "look": {"pommelBash": true},
     "extends": "longsword",
     "player": 5,
@@ -170,7 +166,6 @@
   },
   {
     "id": "scythe", "skill": "axe",
-    "rv86": { "moves": { "light_right": { "windup": 22, "active": 6, "recovery": 28, "chained": { "active": 6, "recovery": 22 } }, "light_left": { "windup": 22, "active": 6, "recovery": 28, "chained": { "active": 6, "recovery": 22 } } } },
     "extends": "longsword",
     "player": 8,
     "offered": 4,
@@ -201,7 +196,6 @@
   },
   {
     "id": "maul", "skill": "axe",
-    "rv86": { "moves": { "light_right": { "windup": 25, "active": 5, "recovery": 30, "chained": { "active": 5, "recovery": 25 } }, "light_left": { "windup": 25, "active": 5, "recovery": 30, "chained": { "active": 5, "recovery": 25 } } } },
     "look": {"pommelBash": true},
     "extends": "cleaver",
     "player": 9,
@@ -259,7 +253,6 @@
   },
   {
     "id": "warhammer", "skill": "axe",
-    "rv86": { "moves": { "light_right": { "windup": 25, "active": 5, "recovery": 30, "chained": { "active": 5, "recovery": 25 } }, "light_left": { "windup": 25, "active": 5, "recovery": 30, "chained": { "active": 5, "recovery": 25 } } } },
     "look": {"pommelBash": true},
     "extends": "cleaver",
     "player": 6,
