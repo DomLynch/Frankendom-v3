@@ -3,7 +3,7 @@
 // run through the Pit's own src/fight/duel.ts / ai.ts / sim.ts (no copies; the duel carries its own wall, Duel.radius, out of reach here) by the adapter open-fight.ts; this file owns only what the Pit has no word for: who is in whose fight (aggro, the nearest foe, the hold-off ring
 // for the rest of a pack), the chase to that ring, leash, give-up, heal-home, the creature rows (`creature`, levels from moves.ts opponentAt), player-vs-player rules (the server's pvp flag, the low-level shield, the
 // level band, the `Aggressed` first-strike event) and `minKillSeconds`. Conventions as the rest of the game: heading h means forward = (sin h, cos h), aim = atan2(dx, dz). World owns mounting, rendering, animation and input.
-import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, opponentAt, NATURAL_WEAPONS, type Direction, type SkillId, type SpecialName, type WeaponId } from './moves.ts';
+import { LEVELS, LEVEL_ANCHORS, OPPONENTS, RULES, WEAPONS, worldOpponentAt, NATURAL_WEAPONS, type Direction, type SkillId, type SpecialName, type WeaponId } from './moves.ts';
 import { worldRule } from './world-rules.ts';
 import { specialFirst } from './rows80.ts';
 import { POOLS } from './pools.ts';
@@ -37,7 +37,7 @@ export const EVADE_WHIFFS = worldRule('evadeWhiffs'), EVADE_HEAL_TO_FULL = world
 export const HOLD_M = ENGAGE_M * worldRule('holdFactor');                  // every creature closes to just inside the engage ring and waits there: the one that is engaged fights, the rest of a pack hold off until a slot frees
 /** Creature levels (Dom: copy the Pit): a creature of level L has the Pit's own level body (moves.ts `opponentAt`: health and poise by level) and, in a fight, the Pit's level brain (`profileAt`). No Zone 1 scaling of our own. */
 export const MAX_LEVEL = LEVELS;
-export const levelHealth = (kind: string, level: number): number => opponentAt(OPPONENT(kind)!, level).health;
+export const levelHealth = (kind: string, level: number): number => worldOpponentAt(OPPONENT(kind)!, level).health;
 /** PvP (Dom via Strategy): no toggle. The SERVER sets `Fighter.pvp` each step to "attackable here, now" (wild zone = true, safe-town volume = false); the rules below decide between two such players.
  *  Under PROTECT_LEVEL a player is shielded until his own first attack; nobody may fight a player more than MAX_LEVEL_GAP levels away. A player's blows always land on creatures, whatever the flags. */
 export const PROTECT_LEVEL = worldRule('protectLevel'), MAX_LEVEL_GAP = worldRule('maxLevelGap');
@@ -119,7 +119,7 @@ const atOnce = (c: Fighter): number => (fieldOf(c.kind, 'atOnce') as number | un
 export function creature(id: string, kind: string, x: number, z: number, facing = 0, level: number = LEVEL_ANCHORS.easy): Fighter {
   const o = OPPONENT(kind);
   if (!o) throw new RangeError(`zone1: unknown creature kind ${kind}`);
-  const lv = Math.min(MAX_LEVEL, Math.max(1, Math.round(level))), body = opponentAt(o, lv);
+  const lv = Math.min(MAX_LEVEL, Math.max(1, Math.round(level))), body = worldOpponentAt(o, lv);
   const tier = fieldOf(kind, 'immuneTier'), resist = fieldOf(kind, 'resist'), ranked = guardOfLevel(lv);   // a catalogue row's own CC rows win; else the rank band its level falls in (cc-defs.json)
   const ccGuard: CcGuard | undefined = tier !== undefined || resist !== undefined || ranked
     ? { ...ranked, ...(tier !== undefined ? { immuneTier: String(tier) } : {}), ...(resist !== undefined ? { resist: String(resist) } : {}) } : undefined;
@@ -326,6 +326,6 @@ export function minKillSeconds(kind: string, level = 1): number {
   const o = OPPONENT(kind);
   if (!o) throw new RangeError(`zone1: unknown creature kind ${kind}`);
   const situational = Math.max(RULES.stopHit.damage, RULES.counter.damage, RULES.rear.downed, RULES.rear.damage);
-  const best = Math.round(KIT.damage * CAPS.attack * RULES.charge.damage * situational * GAMBIT_ODDS.multiplier), hits = Math.ceil(opponentAt(o, level).health / best);
+  const best = Math.round(KIT.damage * CAPS.attack * RULES.charge.damage * situational * GAMBIT_ODDS.multiplier), hits = Math.ceil(worldOpponentAt(o, level).health / best);
   return secs(KIT.windup) + Math.max(0, hits - 1) * secs(KIT.cycle);   // the first blow lands after its windup; every later one a full cycle apart
 }

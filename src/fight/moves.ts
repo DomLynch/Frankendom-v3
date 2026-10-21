@@ -9,6 +9,7 @@ import { RULES } from './rules.ts';
 import { SPECIAL_SETS, SPECIAL_RANK_LEVELS, specialStartOf } from './special-set-rows.ts';
 import type { Sheet } from './sheet-rows.ts';
 import { LEVEL_ANCHORS } from './level-anchor-rows.ts';
+import { worldLevelHealth } from './world-level-rows.ts';   // rows: world-level-defs.json (RV89)
 import type { PoolValues } from './pools.ts';
 import { ROSTER, type OpponentId, type RigId } from '../roster.ts';
 import { LEVELS, LATE_NOTICE_FROM } from './moves-dials-rows.ts';   // the dials are rows (moves-dials-defs.json)
@@ -220,6 +221,12 @@ export function opponentAt(o: Opponent, level: number): Opponent {
   const body = { ...o, ...(armed ? { weapon: kit.weapon, guard: { ...o.guard, ...kit.guard } } : {}), poise: Math.round(NOVICE_BODY.poise + (o.poise - NOVICE_BODY.poise) * along(poiseAt)), health: Math.round(o.health * (NOVICE_BODY.health + (1 - NOVICE_BODY.health) * along(LEVEL_ANCHORS.easy))) };
   bodyCache.set(key, body);
   return body;
+}
+/** The body an open-world creature has at `level` (RV89): opponentAt, except where a world level row (world-level-defs.json) names its archetype health at that level. The Pit never calls this (it keeps opponentAt),
+ *  so a Pit fighter is byte for byte what it was; with no row the Pit's own body object comes back unchanged. A row scales the body's health by row / archetype health, so the novice blend (health at L1-5) applies to the row. */
+export function worldOpponentAt(o: Opponent, level: number): Opponent {
+  const body = opponentAt(o, level), l = Math.min(LEVELS, Math.max(1, Math.round(level))), row = worldLevelHealth(o.id, l);
+  return row === undefined ? body : { ...body, health: Math.max(1, Math.round(body.health * row / o.health)) };
 }
 // An absent knob means "the warden as he always was" in ai.ts; a blend needs the number that absence stands for. A knob absent on BOTH
 // sides stays absent (ai.ts draws no roll for it, so nothing downstream moves).
