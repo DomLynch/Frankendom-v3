@@ -104,6 +104,8 @@
     { "id": "zoneloot.turn", "fields": {"value": 6.283185307179586} },
     { "id": "mob-view.wear-max-scale", "fields": {"value": 9} },
     { "id": "mob-view.phone-cap", "fields": {"value": 3} },
+    { "id": "mob-view.preready-kinds", "fields": {"value": 1} },
+    { "id": "mob-view.preready-margin", "fields": {"value": 6} },
     { "id": "mob-view.piece-range", "fields": {"value": 14} },
     { "id": "mob-view.player-reach", "fields": {"value": 8} },
     { "id": "pose-blend.snap-m", "fields": {"value": 3} },
