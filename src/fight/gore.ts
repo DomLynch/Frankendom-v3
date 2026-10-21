@@ -11,10 +11,10 @@ import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { bloodNum, bloodObj } from './blood-rows.ts';
 import { fxNum } from './fx-rows.ts';
 import { phoneTier } from './quality.ts';
-// The phone skips the per-triangle surface rays (row fx.gore.phone-surface-ray = 0): on the contact frame they skin every vertex of the
+// The phone skips the per-triangle surface rays (row gore.phone-surface-ray = 0 in blood-rows.json): on the contact frame they skin every vertex of the
 // creature once (surfaceHit > skinPass > intersectObjects), 77 % of a 155 ms task at x4 on an M5 (CPU profile 2026-10-21). The wound then
 // takes the fallback it already has for "nothing met": the site table's direction at its own radius out from the bone.
-const surfaceRays = (): boolean => !phoneTier() || fxNum('fx.gore.phone-surface-ray') > 0;
+const surfaceRays = (): boolean => !phoneTier() || bloodNum('gore.phone-surface-ray') > 0;
 const BLOODIED_METALNESS_MAX = fxNum('fx.gore.bloodiedMetalnessMax');
 const BLOODIED_ROUGHNESS_MIN = fxNum('fx.gore.bloodiedRoughnessMin');
 
