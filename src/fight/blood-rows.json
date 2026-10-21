@@ -11,6 +11,7 @@
     { "id": "gore.drops", "fields": {"every": [3, 6], "until": 0.5, "inFlight": 8, "spots": 24, "spot": [0.04, 0.08], "gravity": 9.8, "floor": 0.021, "seconds": 25} },
     { "id": "gore.dry", "fields": {"seconds": 20, "roughness": [0.42, 0.75]} },
     { "id": "gore.floor-dry", "fields": {"value": 8} },
+    { "id": "gore.phone-surface-ray", "fields": {"value": 0} },
     { "id": "gore.wound-threshold", "fields": {"value": 0.6} },
     { "id": "gore.wounds-per-fighter", "fields": {"value": 5} },
     { "id": "nightfall-fx.floor", "fields": {"value": 0.07} },
