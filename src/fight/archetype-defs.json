@@ -533,13 +533,10 @@
   {
    "id": "salamander",
    "scale": 0.8,
-   "health": 150,
+   "health": 28,
    "poise": 0,
    "regen": 1.4,
    "speed": 1.45,
-   "sheet": {
-    "attack": 20
-   },
    "profiles": {
     "easy": {
      "set": {
