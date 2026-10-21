@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "worldLevel", "file": "world-level-defs.json", "at": "worldLevels", "key": "id",
+      "required": { "opponent": "string", "level": "integer", "health": "integer" } }
+  ]
+}
