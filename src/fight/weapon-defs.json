@@ -3,6 +3,7 @@
   "weapons": [
   {
     "id": "longsword", "skill": "sword",
+    "rv86": { "moves": { "light_right": { "active": 5, "recovery": 25, "chained": { "active": 5, "recovery": 20 } }, "light_left": { "active": 5, "recovery": 25, "chained": { "active": 5, "recovery": 20 } }, "thrust": { "windup": 19, "active": 6, "recovery": 16 } } },
     "default": true, "look": {"baked": true, "pommelBash": true},
     "player": 1,
     "offered": 1,

@@ -22,7 +22,7 @@ const merge = (base: unknown, over: unknown): unknown => {
   return changed ? out : base;
 };
 
-export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: WeaponBase, enums: WeaponEnums): { weapons: Record<string, Weapon>; player: string[]; offered: string[]; defaultId: string; natural: string[]; looks: Record<string, WeaponLook>; skills: Record<string, string> } {
+export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: WeaponBase, enums: WeaponEnums): { weapons: Record<string, Weapon>; weapons86: Record<string, Weapon>; player: string[]; offered: string[]; defaultId: string; natural: string[]; looks: Record<string, WeaponLook>; skills: Record<string, string> } {
   loadRegistry([tableFromFile(WEAPON_MANIFEST.tables[0] as Manifest, raw, 'weapon-defs.json')]);   // the shared loader (src/core/registry.ts): a missing or duplicate id and an `extends` that names no weapon are refused as file:row:id + the rule
   const rows = new Map<string, Obj>();
   for (const r of (raw.weapons ?? []) as Obj[]) rows.set(r.id as string, r);
@@ -31,7 +31,7 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
     const done = resolved.get(id); if (done) return done;
     if (chain.includes(id)) throw Error(`weapon-defs: "${id}" extends itself (${[...chain, id].join(' -> ')})`);
     const own: Obj = { ...rows.get(id)! }, parent = own.extends;
-    for (const k of ['id', 'extends', 'player', 'offered', 'default', 'natural', 'look', 'skill']) delete own[k];   // a row's own markers: never inherited, never on the Weapon
+    for (const k of ['id', 'extends', 'player', 'offered', 'default', 'natural', 'look', 'skill', 'rv86']) delete own[k];   // a row's own markers: never inherited, never on the Weapon
     const out = merge(parent === undefined ? { moves: base.moves, paths: base.paths } : resolve(parent as string, [...chain, id]), own) as Obj;
     resolved.set(id, out);
     return out;
@@ -48,6 +48,14 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
     for (const [table, must] of [['moves', base.moves], ['paths', base.paths]] as const) for (const key of Object.keys(must)) if (!isRecord((w[table] as Obj)?.[key])) throw Error(`weapon-defs "${id}": ${table} has no "${key}"`);
     weapons[id] = { id, ...w } as unknown as Weapon;
   }
+  // RV86 (Elden Ring timings): a row's own `rv86` overlay (moves only, never inherited) merged over its fully resolved weapon: the table a live fight and a record at 86 or later fight with (moves.ts weaponOf).
+  const weapons86: Record<string, Weapon> = { ...weapons };
+  for (const [id, r] of rows) {
+    if (r.rv86 === undefined) continue;
+    if (!isRecord(r.rv86) || Object.keys(r.rv86).some((k) => k !== 'moves') || !isRecord(r.rv86.moves)) throw Error(`weapon-defs "${id}": rv86 holds only a moves table`);
+    for (const mid of Object.keys(r.rv86.moves)) if (!isRecord((weapons[id]!.moves as unknown as Obj)[mid])) throw Error(`weapon-defs "${id}": rv86 names move "${mid}", which the weapon does not have`);
+    weapons86[id] = merge(weapons[id], r.rv86) as Weapon;
+  }
   const order = (field: 'player' | 'offered'): string[] => [...rows.values()].filter((r) => r[field] !== undefined).sort((a, b) => (a[field] as number) - (b[field] as number)).map((r) => r.id as string);
   const defaults = [...rows.values()].filter((r) => r.default === true);
   if (defaults.length !== 1) throw Error('weapon-defs: exactly one row is the `default` weapon');
@@ -59,5 +67,5 @@ export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: Weap
     if (r.skill !== undefined && (typeof r.skill !== 'string' || !/^[a-z][a-z0-9_]*$/.test(r.skill))) throw Error(`weapon-defs "${id}": skill is a sheet skill id`);
     if (typeof r.skill === 'string') skills[id] = r.skill;
   }
-  return { weapons, player: order('player'), offered: order('offered'), defaultId: defaults[0]!.id as string, natural: [...rows.values()].filter((r) => r.natural === true).map((r) => r.id as string), looks, skills };
+  return { weapons, weapons86, player: order('player'), offered: order('offered'), defaultId: defaults[0]!.id as string, natural: [...rows.values()].filter((r) => r.natural === true).map((r) => r.id as string), looks, skills };
 }
