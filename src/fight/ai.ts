@@ -7,6 +7,8 @@ import { spellRoot } from './spell-cast.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { READ_ROWS } from './ai-read-rows.ts';   // rows: ai-read-defs.json
 import { DIAL } from './ai-dial-rows.ts';   // rows: ai-dial-defs.json (the brain's distances, timings and reach margins)
+import { STEP } from './sim.ts';
+const TICKS_PER_S = Math.round(1 / STEP);   // the sim's fixed step (sim.ts STEP) as ticks per second, not a second 60 here
 import { TACTIC_ROWS, pickWeighted } from './tactic-rows.ts';   // rows: tactic-defs.json
 
 // Local opponent controller. It reads only committed duel state (never the other side's pending intent), notices a fresh
@@ -182,7 +184,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
     // escaped every kick would have no guard left to open (a backstep escapes it as surely as a roll).
     // A stepper takes the cheap step out when the step will clear the blow's reach before it lands (half the step is all the reaction leaves), else the roll.
     // A kick he READ is braced behind a low guard (directional guard: an ordinary block); misread or guardless, he takes it as before.
-    const clears = gap + RULES.backstep.ticks * RULES.backstep.speed * DIAL.backstepTravelMul / 60 * self.speed * DIAL.backstepSpeedShare > move.reach + DIAL.reachInset;
+    const clears = gap + RULES.backstep.ticks * RULES.backstep.speed * DIAL.backstepTravelMul / TICKS_PER_S * self.speed * DIAL.backstepSpeedShare > move.reach + DIAL.reachInset;
     const stepOrRoll = () => self.stamina >= RULES.rollCost && !(profile.step && clears && roll() < profile.step) ? 'dodge' : 'evade';
     if (inRange && !move.parryable) {
       next.plan = r < profile.dodge ? stepOrRoll() : next.readSide === 'low' && guardShare > 0 && affordable ? 'block' : 'ignore';

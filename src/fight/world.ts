@@ -17,6 +17,7 @@ import { AGGRO_M, SIGHT_M, threatOf } from './threat.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { IDLE_INPUT, heroSheeted, openBout, stepBout, type Bout } from './open-fight.ts';
 import { MAX_ATTACKERS } from './attackers.ts';
+import { STEP } from './sim.ts';
 import type { AiState } from './ai.ts';
 import { guardOfLevel, type CcGuard, type CcLadder } from './cc-ladder.ts';
 import { fieldOf } from './catalogue-fields.ts';
@@ -24,7 +25,7 @@ import { simBound } from './sim-bounds-rows.ts';
 const RETURN_MIN_STEP_M = simBound('world.returnMinStepM');   // rows: sim-bounds-defs.json
 import type { CombatEvent, Duel } from './duel.ts';
 
-const TICK = 1 / 60;
+const TICK = STEP, TICKS_PER_S = Math.round(1 / STEP);   // the sim's own fixed step (sim.ts STEP), not a second 1 / 60 here
 const secs = (ticks: number): number => ticks * TICK;
 export const STAMINA_MAX: number = POOLS.find((d) => d.id === 'stamina')!.default;                       // the bar every fighter starts with: pool-defs.json's stamina default, the one createFighter reads (duel.ts)
 export const PLAYER_RADIUS = worldRule('playerRadius');                    // half the sim's 0.85 m fighter spacing (sim.ts)
@@ -167,7 +168,7 @@ const slotted = (duel: Bout['duel'], slot: number): Bout['duel'] => {
 };
 
 export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>, dt: number): { world: World; events: Event[] } {
-  const clock = Math.round(world.time * 60);   // the world's clock in Pit ticks: the crowd-control ladder's window runs on it, across every bout
+  const clock = Math.round(world.time * TICKS_PER_S);   // the world's clock in Pit ticks: the crowd-control ladder's window runs on it, across every bout
   const events: Event[] = [];
   const fighters = world.fighters.map((f) => ({ ...f, ...(f.threat ? { threat: Object.fromEntries(Object.entries(f.threat).map(([k, v]) => [k, { ...v }])) } : {}) })), aggro: World['aggro'] = {}, streams: World['streams'] = {};
   for (const [a, m] of Object.entries(world.aggro)) aggro[a] = { ...m };
@@ -290,7 +291,7 @@ export function stepCombat(world: World, inputs: Readonly<Record<string, Input>>
       if (!q) delete f.threat![id]; else if (dist(f, q) > SIGHT_M) { t.out += dt; if (t.out >= giveUpOf(f.kind)) delete f.threat![id]; } else t.out = 0;
     }
     if (f.exhausted && f.stamina >= RULES.exhaustRecover) f.exhausted = false;
-    f.stamina = Math.min(f.maxStamina, f.stamina + RULES.regen * 60 * dt);
+    f.stamina = Math.min(f.maxStamina, f.stamina + RULES.regen * TICKS_PER_S * dt);
     const prey = players.sort((a, b) => dist(f, a) - dist(f, b))[0];
     if (f.returning) {   // gave up: walks home at its amble, heals to full on arrival (no event)
       const dx = f.homeX - f.x, dz = f.homeZ - f.z, d = M.hypot(dx, dz), step = SPEEDS.creature.amble * dt;
