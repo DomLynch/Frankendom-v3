@@ -46,9 +46,9 @@ export const readOpponent = (h: Habits, profile?: AiProfile): Reads => {
     // swings mostly held at their chamber (baits, charges): the park is a habit, not a read of the moment
     parker: swings >= READ.after && h.parks / swings >= READ.parkShare,
     // thrusts more than he cuts: a fighter with no guard respects his reach and goes in on the whiff
-    poker: swings >= READ.after && h.thrusts / swings >= .5,
+    poker: swings >= READ.after && h.thrusts / swings >= READ.pokerShare,
     // kicks more than he swings: the same respect for the kick's reach
-    kicker: h.kicks >= READ.after && h.kicks / (swings + h.kicks) >= .5,
+    kicker: h.kicks >= READ.after && h.kicks / (swings + h.kicks) >= READ.kickerShare,
   };
 };
 export type AiState = {
@@ -89,8 +89,8 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
     if (bolt) {
       if (next.missileSeen !== bolt.launched) { const r = roll() * 100; next.missileSeen = bolt.launched; next.missilePlan = r < MISSILE_ANSWER.dodge ? 'dodge' : r < MISSILE_ANSWER.dodge + MISSILE_ANSWER.guard ? 'guard' : 'take'; }
       const left = bolt.arrives - tick;
-      if (next.missilePlan === 'dodge' && canAct && self.stamina >= RULES.rollCost && left <= RULES.safeEnd - 2 && left >= RULES.safeStart) return { intent: { ...intent, action: 'dodge', move: { x: M.sin(facing), z: M.cos(facing), yaw: 0, run: false } }, ai: next };
-      if (next.missilePlan === 'guard' && canAct && left <= 24) return { intent: { ...intent, guard: true }, ai: next };
+      if (next.missilePlan === 'dodge' && canAct && self.stamina >= RULES.rollCost && left <= RULES.safeEnd - DIAL.dodgeSafeEndMargin && left >= RULES.safeStart) return { intent: { ...intent, action: 'dodge', move: { x: M.sin(facing), z: M.cos(facing), yaw: 0, run: false } }, ai: next };
+      if (next.missilePlan === 'guard' && canAct && left <= DIAL.missileGuardWindow) return { intent: { ...intent, guard: true }, ai: next };
     }
     if (MISSILE_ANSWER.run && canAct && missileOf(opponent.weapon)?.kind === 'bow' && gap > missileMinGap()) return { intent: { ...intent, move: { x: M.sin(facing), z: M.cos(facing), yaw: 0, run: true } }, ai: next };
   }
@@ -109,11 +109,11 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
   if (opponent.phase === 'backstep' && opponent.age === 0) h.steps++;
   h.hold = opponent.phase === 'guard' ? (h.hold ?? 0) + 1 : 0;
   // a guard held through my windup (up to the tick it ends) is a real commitment: it ends the run with no contact needed; a tap of a few ticks does not (RV31)
-  if (self.phase === 'attack' && self.move && self.age === mine[self.move].windup && h.hold >= READ.holdTicks) { h.run = READ.decay ? Math.max(0, (h.run ?? 0) - 2) : 0; h.latch = h.ticks + READ.latch; }
+  if (self.phase === 'attack' && self.move && self.age === mine[self.move].windup && h.hold >= READ.holdTicks) { h.run = READ.decay ? Math.max(0, (h.run ?? 0) - DIAL.readDecayStep) : 0; h.latch = h.ticks + READ.latch; }
   // a defence that actually meets a blow ends the masher's run (RV31): a block, parry or roll-dodge event by the player, or one of my swings
   // missing a backstepping player. A bare guard / roll / backstep tick does not (a tap between cuts would otherwise blind the gate).
   // A COUNTED defence (this, or the held guard above) also latches the early gate off for READ.latch ticks: an honest player who defends is not a masher.
-  if (duel.events.some(e => (e.actor === 1 - me && (e.type === 'Blocked' || e.type === 'Parried' || e.type === 'Dodged')) || (e.actor === me && e.type === 'AttackMissed' && opponent.phase === 'backstep'))) { h.run = READ.decay ? Math.max(0, (h.run ?? 0) - 2) : 0; h.latch = h.ticks + READ.latch; }
+  if (duel.events.some(e => (e.actor === 1 - me && (e.type === 'Blocked' || e.type === 'Parried' || e.type === 'Dodged')) || (e.actor === me && e.type === 'AttackMissed' && opponent.phase === 'backstep'))) { h.run = READ.decay ? Math.max(0, (h.run ?? 0) - DIAL.readDecayStep) : 0; h.latch = h.ticks + READ.latch; }
   // the first tick a swing sat at its chamber: age is rewound to the chamber only while parked, and charge stays 1 through the rest of
   // a swing released after a one-tick park, so charge === 1 alone counted every later tick of that swing as a park (bump 9)
   if (opponent.phase === 'attack' && opponent.charge === 1 && opponent.move && opponent.age === theirs[opponent.move].chamber) h.parks++;
@@ -186,11 +186,11 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
     const stepOrRoll = () => self.stamina >= RULES.rollCost && !(profile.step && clears && roll() < profile.step) ? 'dodge' : 'evade';
     if (inRange && !move.parryable) {
       next.plan = r < profile.dodge ? stepOrRoll() : next.readSide === 'low' && guardShare > 0 && affordable ? 'block' : 'ignore';
-      next.jitter = Math.round((1 - profile.accuracy) * 8 * (roll() * 2 - 1));
+      next.jitter = Math.round((1 - profile.accuracy) * DIAL.jitterAmp * (roll() * 2 - 1));
     } else {
       // A lapse: the swing was seen but gets no answer (a cut of 20 ticks is reactable; a human still eats a share of them). Reads sharpen attention:
       // against a read spammer the lapse halves.
-      const lapse = reads.spammer ? profile.lapse * .5 : profile.lapse;
+      const lapse = reads.spammer ? profile.lapse * READ.spammerLapseShare : profile.lapse;
       // a cut-only player is parried more (never by a profile that cannot parry; rolls keep their share)
       const parryChance = reads.spammer ? Math.min(READ.parryCap, 1 - profile.dodge, profile.parry * READ.parryBoost) : profile.parry;
       // A swing that cannot reach is ignored. A guard stops what it can afford; a charged heavy or a riposte calls for a timed parry, a roll or distance.
@@ -213,7 +213,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
       // time" spreads over lateNotice - 1 levels of reaction instead of one. No draw is made at spare <= 0, so a warden slower than the cut keeps its stream.
       const spare = timing(opponent).windup - reaction;
       if (next.plan !== 'ignore' && profile.softNotice && LATE_NOTICE && !TELLS.has(opponent.move ?? '') && !opponent.chained && spare > 0 && spare < READ.lateNotice && roll() >= (spare - 1) / (READ.lateNotice - 1)) next.plan = 'ignore';
-      next.jitter = Math.round((1 - profile.accuracy) * 8 * (roll() * 2 - 1));
+      next.jitter = Math.round((1 - profile.accuracy) * DIAL.jitterAmp * (roll() * 2 - 1));
     }
   } else if (noticed && next.plan === 'block' && charging(opponent) && !next.brace) {   // a heavy seen to be charging will break the guard: change the answer
     next.plan = self.stamina >= RULES.rollCost ? 'dodge' : !self.parryCooldown && guardShare > 0 ? 'parry' : 'evade';
@@ -294,9 +294,9 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
       // Press when the window will cover the estimated contact; hold an open window; release a stale standing guard so a fresh press can parry.
       // The press comes `window − 2` ticks before contact so the window's tail covers it: a man's 10-tick window presses at contact − 8; a longer
       // window (the Nightborn's 14) presses earlier — inside the player's feint window, which is exactly what makes him baitable.
-      if (self.phase === 'ready') { if (estimate <= window - 2 && moving) { intent.action = 'parry'; intent.guard = true; } }
+      if (self.phase === 'ready') { if (estimate <= window - DIAL.parryWindowMargin && moving) { intent.action = 'parry'; intent.guard = true; } }
       else intent.guard = self.age < window || estimate <= DIAL.estimateMax;
-    } else if (next.plan === 'dodge' && self.stamina >= RULES.rollCost && estimate <= RULES.safeEnd - 2 && estimate >= RULES.safeStart) intent.action = 'dodge';
+    } else if (next.plan === 'dodge' && self.stamina >= RULES.rollCost && estimate <= RULES.safeEnd - DIAL.dodgeSafeEndMargin && estimate >= RULES.safeStart) intent.action = 'dodge';
     else if (next.plan === 'evade') {   // step out of the blow's reach (one step while inside it), then keep walking back, still facing the blade
       if (legal(self, 'backstep') && gap <= theirs[opponent.move!].reach + DIAL.backstepSlack) intent.action = 'backstep';
       else intent.move = { x: -M.sin(facing), z: -M.cos(facing), yaw: 0, run: false };
@@ -315,7 +315,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
     // landed blow earned the player; a turtle is kicked more, and a kick goes through a parry window, so a parrier is kicked too;
     // profile.kick is a kicker's answer to a read roller or backstepper — the one blow their timing does not escape.
     const kickNow = (inside && !threat && tick >= next.retreatUntil)
-      || ((guarded || reads.parryHappy) && r < .5 + (reads.turtle || reads.parryHappy ? READ.kickBoost : 0))
+      || ((guarded || reads.parryHappy) && r < READ.guardedKickBase + (reads.turtle || reads.parryHappy ? READ.kickBoost : 0))
       || (!!profile.kick && !threat && (reads.roller || reads.stepper) && r < profile.kick);
     const scores: Record<string, number> = {
       critical: self.critical > 0 && inReach('heavy_overhead') ? 1.6 : 0,   // a broken posture is finished with the critical, not a riposte
@@ -330,7 +330,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
       heavy: guarded && inReach('heavy_overhead') ? 1 : next.next === 'heavy' && !threat && !pressured && inReach('heavy_overhead') ? .8 : 0,
       light: next.next === 'light' && !threat && !guarded && inReach('light_right') ? .8 : 0,
       // A fast fighter's counter-swing: a cut INTO a slower tell that will land first (their wind-up has more left than his whole cut) — the interrupt.
-      interrupt: profile.interrupt && threat && opponent.move !== null && !opponent.landed && timing(opponent).windup - opponent.age > mine.light_right.windup + 2
+      interrupt: profile.interrupt && threat && opponent.move !== null && !opponent.landed && timing(opponent).windup - opponent.age > mine.light_right.windup + DIAL.interruptWindupMargin
         && inReach('light_right') && r < profile.interrupt ? 1.3 : 0,
       // The thrust: a stop-hit into an opponent walking onto the point (it lands at 1.5× and staggers longer), or the scheduled opener from wherever it
       // stands; blockable, so never into a standing guard. On the cadence only: an attack that is due anyway becomes the stop-hit when the opponent is walking in.

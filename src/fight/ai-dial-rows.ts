@@ -8,5 +8,6 @@ const DIAL_T = tableFromFile(DIAL_MANIFEST.tables[0] as unknown as Manifest, DIA
 loadRegistry([DIAL_T]);
 type DialId = 'startSeed' | 'startLastGap' | 'startDecision' | 'startWait' | 'disengageTicks' | 'retreatTicks' | 'waitBase' | 'waitSpread' | 'waitAggrCeil' | 'rangeSlack' | 'reachInset' | 'backstepTravelMul' | 'backstepSpeedShare'
   | 'advanceEps' | 'loiterShare' | 'backstepSlack' | 'shakyShare' | 'lowRetreatGap' | 'farApproachGap' | 'guardRollShare' | 'hardApproachGap' | 'midApproachGap' | 'lowCloseRetreatGap' | 'circleReturnGap' | 'guardHoldBase'
-  | 'guardHoldSpread' | 'estimateMax' | 'kickWeight' | 'baitChance' | 'chargeOffset' | 'thrustCloseInset' | 'braceSlack' | 'kickHoverSlack' | 'lateralStep' | 'dashSlack' | 'wallSlack';
+  | 'guardHoldSpread' | 'estimateMax' | 'kickWeight' | 'baitChance' | 'chargeOffset' | 'thrustCloseInset' | 'braceSlack' | 'kickHoverSlack' | 'lateralStep' | 'dashSlack' | 'wallSlack'
+  | 'missileGuardWindow' | 'dodgeSafeEndMargin' | 'parryWindowMargin' | 'readDecayStep' | 'jitterAmp' | 'interruptWindupMargin';
 export const DIAL = Object.fromEntries((DIAL_T.rows as unknown as { id: string; value: number }[]).map((r) => [r.id, r.value])) as { readonly [K in DialId]: number };

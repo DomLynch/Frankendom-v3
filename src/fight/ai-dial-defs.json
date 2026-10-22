@@ -35,6 +35,12 @@
     {"id": "kickHoverSlack", "value": 0.3},
     {"id": "lateralStep", "value": 0.25},
     {"id": "dashSlack", "value": 0.3},
-    {"id": "wallSlack", "value": 0.3}
+    {"id": "wallSlack", "value": 0.3},
+    {"id": "missileGuardWindow", "value": 24},
+    {"id": "dodgeSafeEndMargin", "value": 2},
+    {"id": "parryWindowMargin", "value": 2},
+    {"id": "readDecayStep", "value": 2},
+    {"id": "jitterAmp", "value": 8},
+    {"id": "interruptWindupMargin", "value": 2}
   ]
 }

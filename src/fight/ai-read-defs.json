@@ -83,6 +83,22 @@
   {
    "id": "decay",
    "value": 0
+  },
+  {
+   "id": "pokerShare",
+   "value": 0.5
+  },
+  {
+   "id": "kickerShare",
+   "value": 0.5
+  },
+  {
+   "id": "spammerLapseShare",
+   "value": 0.5
+  },
+  {
+   "id": "guardedKickBase",
+   "value": 0.5
   }
  ]
 }
