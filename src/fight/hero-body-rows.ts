@@ -7,8 +7,8 @@ import HERO_BODY_ROWS from './hero-body-rows.json' with { type: 'json' };
 // Flip `body` to "classic" and the duel scene, the open world and the gear stage all draw the classic hero again. Nothing else changes: the clips and the joints are the same 65 names.
 const TABLE = tableFromFile(HERO_BODY_MANIFEST.tables[0] as Manifest, HERO_BODY_ROWS, 'hero-body-rows.json');
 loadRegistry([TABLE]);
-const ROW = (TABLE.rows as unknown as { id: string; fields: { body: string; files: Record<string, string> } }[]).find((r) => r.id === 'hero-body');
-if (!ROW) throw new Error('hero-body-rows.json has no hero-body row');
+const ROW = (TABLE.rows as unknown as { id: string; fields: { body: string; files: Record<string, string> } }[])[0];   // the table holds exactly one row
+if (TABLE.rows.length !== 1) throw new Error(`hero-body-rows.json must hold exactly one row, found ${TABLE.rows.length}`);
 const FILE = ROW.fields.files[ROW.fields.body];
 if (!FILE) throw new Error(`hero-body-rows.json: body "${ROW.fields.body}" has no file`);
 
