@@ -1,5 +1,6 @@
 {
   "heroBodyRows": [
-    { "id": "hero-body", "fields": { "body": "exo", "files": { "exo": "warrior", "classic": "hero-classic" } } }
+    { "id": "hero-body", "fields": { "body": "exo", "files": { "exo": "warrior", "classic": "hero-classic" },
+      "contact": { "exo": { "Attack": 0.865, "Heavy": 0.927 }, "classic": {} } } }
   ]
 }
