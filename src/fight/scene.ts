@@ -72,6 +72,7 @@ import './signature-plaguedoctor.ts';   // Plague Doctor A: Rot Bloom
 import './signature-shieldmaiden.ts';   // registers the Shieldmaiden's Splintered Defiance
 import { settleWithin } from './warm-gate.ts';
 import { fxNum } from './fx-rows.ts';
+import { heroBodyFile } from './hero-body-rows.ts';
 const WOUND_REACH_PROBE_MAX = fxNum('fx.scene.woundReachProbeMax');
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
@@ -377,7 +378,8 @@ export function createScene(
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
       const opponentEquip = pair[1] === (peer ? DEFAULT_WEAPON : ROSTER[opponentId].weapon) ? undefined : equipUrl(pair[1]);   // the hero's rig bakes the longsword
       const load = (hero: string) => peer ? loadPeerWarriors(hero, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), opponentEquip, (error) => captureException(error, { tags: { equip: pair[1] } })) : loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
-      return heroUrl ? load(heroUrl).catch(() => load(fighterUrls['../assets/warrior.glb']!)) : load(fighterUrls['../assets/warrior.glb']!);
+      const heroBody = fighterUrls[`../assets/${heroBodyFile()}.glb`]!;   // the hero-body row: Exo (warrior.glb) or the classic hero
+      return heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody);
     }),
     arena.ready,
     carrierUrl ? loadLoot(carrierUrl).then((pieces) => { carried = pieces; }).catch((error: unknown) => { captureException(error); }) : null,

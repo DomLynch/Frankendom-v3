@@ -1,0 +1,5 @@
+{
+  "heroBodyRows": [
+    { "id": "hero-body", "fields": { "body": "exo", "files": { "exo": "warrior", "classic": "hero-classic" } } }
+  ]
+}

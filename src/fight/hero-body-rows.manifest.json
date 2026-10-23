@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "heroBodyRow",
+      "file": "hero-body-rows.json",
+      "at": "heroBodyRows",
+      "key": "id",
+      "required": { "fields": "object" }
+    }
+  ]
+}

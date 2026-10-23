@@ -3,6 +3,7 @@
 // before, so no build ships a new file); every other fighter reaches a page through src/fight/scene.ts. The glob lives inside the call so node (tests) can load
 // this module: Vite expands it at build time.
 import { catalogueRow } from './catalogue-rows.ts';
+import { heroBodyFile } from './hero-body-rows.ts';
 
 /** URL of row `id`'s engine body (`row.engine.asset`), or undefined for an id with no row or a body this map does not ship. */
 export function catalogueBodyUrl(id: string): string | undefined {
@@ -12,8 +13,8 @@ export function catalogueBodyUrl(id: string): string | undefined {
 }
 
 export function heroBodyUrl(): string {
-  const bodies = import.meta.glob<string>('../assets/warrior.glb', { eager: true, query: '?url', import: 'default' });   // the hero's own body (K2 row 6): not a catalogue row
-  return bodies['../assets/warrior.glb'];
+  const bodies = import.meta.glob<string>(['../assets/warrior.glb', '../assets/hero-classic.glb'], { eager: true, query: '?url', import: 'default' });   // the hero's own body (K2 row 6): not a catalogue row; WHICH one is the hero-body row
+  return bodies[`../assets/${heroBodyFile()}.glb`];
 }
 
 /** URL of row `id`'s generated world body (`row.world.asset`, served from `public/`), for a row flagged `worldBody` only; undefined for every other id (those draw their engine body). */
