@@ -6,7 +6,7 @@ import { rangedPartOf } from './ranged-model.ts';
 import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
-import { heroContact } from './hero-body-rows.ts';
+import { heroContact, heroSwing } from './hero-body-rows.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, SKILL_ROWS, skillOfMove, type Direction, type WeaponId } from './moves.ts';
@@ -850,7 +850,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
           // the weight snaps like a live blade does — the parry's hit-stop runs at dt 0, where an eased weight would hold the attack pose.
           a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
-          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : (asset === hero.asset && clips[role].name === role ? heroContact(role) : undefined) ?? specs[attack].source) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
+          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? heroSwing(role, swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : (asset === hero.asset && clips[role].name === role ? heroContact(role) : undefined) ?? specs[attack].source), !specialPlay && asset === hero.asset && clips[role].name === role) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
         }
         if (!weaponNode) { drawn!.visible = armed && (pose !== 'draw' || progress >= .29); sheathed!.visible = !drawn!.visible; }
         anchor.position.set(0, 0, 0); // only the presentation anchor steps into a Run Through
