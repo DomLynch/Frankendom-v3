@@ -684,8 +684,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // His own draws are never touched.
       wear(pieces: readonly SkinnedMesh[], failed: (id: string, error: unknown) => void = () => {}, tierOf: (piece: SkinnedMesh) => Tier | undefined = () => undefined) {
         for (const piece of worn) piece.removeFromParent(); worn.length = 0;
-        for (const [draw, visible] of covered) draw.visible = visible; covered.clear();
-        if (root.userData.noLoot) return;   // a rig whose asset says so wears no loot: every loot.glb draw is authored on the classic hero's bind pose, and the Exo body (other proportions) would carry them off its joints. Follow-up: fit the pieces to Exo
+        for (const [draw, visible] of covered) draw.visible = visible; covered.clear(); if (root.userData.noLoot) return;   // a rig whose asset says so wears no loot: every loot.glb draw is authored on the classic hero's bind pose, and the Exo body (other proportions) would carry them off its joints. Follow-up: fit the pieces to Exo
         let body: SkinnedMesh | undefined; const materials = rigMaterials(root);
         root.traverse(object => {
           // A creature-pipeline body (Veteran, Dwarf, Executioner) is one untagged `CreatureBody` draw on the same skeleton; its Body slot names empty nodes.

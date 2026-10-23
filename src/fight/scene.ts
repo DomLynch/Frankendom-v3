@@ -378,8 +378,7 @@ export function createScene(
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
       const opponentEquip = pair[1] === (peer ? DEFAULT_WEAPON : ROSTER[opponentId].weapon) ? undefined : equipUrl(pair[1]);   // the hero's rig bakes the longsword
       const load = (hero: string) => peer ? loadPeerWarriors(hero, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), opponentEquip, (error) => captureException(error, { tags: { equip: pair[1] } })) : loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
-      const heroBody = fighterUrls[`../assets/${heroBodyFile()}.glb`]!;   // the hero-body row: Exo (warrior.glb) or the classic hero
-      return heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody);
+      return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody)))(fighterUrls[`../assets/${heroBodyFile()}.glb`]!);   // the hero-body row: Exo (warrior.glb) or the classic hero
     }),
     arena.ready,
     carrierUrl ? loadLoot(carrierUrl).then((pieces) => { carried = pieces; }).catch((error: unknown) => { captureException(error); }) : null,
