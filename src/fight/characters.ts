@@ -6,6 +6,7 @@ import { rangedPartOf } from './ranged-model.ts';
 import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
+import { heroContact, heroSwing } from './hero-body-rows.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, SKILL_ROWS, skillOfMove, type Direction, type WeaponId } from './moves.ts';
@@ -684,7 +685,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // His own draws are never touched.
       wear(pieces: readonly SkinnedMesh[], failed: (id: string, error: unknown) => void = () => {}, tierOf: (piece: SkinnedMesh) => Tier | undefined = () => undefined) {
         for (const piece of worn) piece.removeFromParent(); worn.length = 0;
-        for (const [draw, visible] of covered) draw.visible = visible; covered.clear();
+        for (const [draw, visible] of covered) draw.visible = visible; covered.clear(); if (root.userData.noLoot) return;   // a rig whose asset says so wears no loot: every loot.glb draw is authored on the classic hero's bind pose, and the Exo body (other proportions) would carry them off its joints. Follow-up: fit the pieces to Exo
         let body: SkinnedMesh | undefined; const materials = rigMaterials(root);
         root.traverse(object => {
           // A creature-pipeline body (Veteran, Dwarf, Executioner) is one untagged `CreatureBody` draw on the same skeleton; its Body slot names empty nodes.
@@ -849,7 +850,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
           // the weight snaps like a live blade does — the parry's hit-stop runs at dt 0, where an eased weight would hold the attack pose.
           a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
-          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : specs[attack].source) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
+          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? heroSwing(role, swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : (asset === hero.asset && clips[role].name === role ? heroContact(role) : undefined) ?? specs[attack].source), !specialPlay && asset === hero.asset && clips[role].name === role) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
         }
         if (!weaponNode) { drawn!.visible = armed && (pose !== 'draw' || progress >= .29); sheathed!.visible = !drawn!.visible; }
         anchor.position.set(0, 0, 0); // only the presentation anchor steps into a Run Through
