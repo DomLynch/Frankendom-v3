@@ -58,7 +58,21 @@ test("cleaver.glb is the gladius equip with V1's Cleaver in the same socket and 
   assert.ok(box(blade).max[1] > 0.8 && box(blade).max[1] < 0.9, "V1's 0.86 m cleaver");
 });
 
-test("V1's files: the plain shape byte for byte (V1's pin), the gladius's untouched", () => {
-  assert.equal(sha('../public/weapons/shapes/cleaver-plain.glb'), '83906bc8cd9a01fe8c8c6e90ba40bdb7a81bcf52a2badd37878e3fdc7319351a');
-  assert.equal(sha('../public/weapons/shapes/gladius-plain.glb'), '7e39180d7e15bf52ef62645fc346899a56c7e8d308728d53f7b34e742f19b437');
+// Re-pinned 2026-10-26 (perf/sword-textures, first-visit weight): scripts/shape-textures.py swapped each file's base-colour PNG for WebP
+// q90 (EXT_texture_webp) and changed nothing else. V1's own pins before that: cleaver-plain 83906bc8…351a, gladius-plain 7e39180d…b437.
+test("V1's files: the plain shapes pinned (V1's bytes with the base colour as WebP)", () => {
+  assert.equal(sha('../public/weapons/shapes/cleaver-plain.glb'), 'e75d12a8253a9418504f65051d694875665cc3e8cbca37a3eaf0720f864876f1');
+  assert.equal(sha('../public/weapons/shapes/gladius-plain.glb'), 'efb0157a1429a42fbf35592b1ade389f8d43719ff2ffcd1ff20347775d545335');
+});
+
+test('the sword shapes carry a WebP base colour (three reads EXT_texture_webp itself) and keep the PNG metal-roughness', () => {
+  for (const name of ['longsword-plain', 'cleaver-plain', 'gladius-plain']) {
+    const { j } = glb(`../public/weapons/shapes/${name}.glb`);
+    const pbr = j.materials[0].pbrMetallicRoughness, base = j.textures[pbr.baseColorTexture.index], mr = j.textures[pbr.metallicRoughnessTexture.index];
+    assert.deepEqual([j.extensionsUsed, j.extensionsRequired], [['EXT_texture_webp'], ['EXT_texture_webp']], name);
+    assert.equal(base.source, undefined, `${name}: no PNG fallback`);
+    assert.equal(j.images[base.extensions.EXT_texture_webp.source].mimeType, 'image/webp', name);
+    assert.equal(j.images[mr.source].mimeType, 'image/png', name);
+    assert.ok(bytes(`../public/weapons/shapes/${name}.glb`).length < 250_000, `${name}: under 250 KB (was ~1 MB)`);
+  }
 });
