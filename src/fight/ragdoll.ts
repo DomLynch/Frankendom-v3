@@ -20,12 +20,13 @@ export type PhysicsRows = typeof PHYSICS;
 type OpponentRow = PhysicsRows['opponents'][number];
 type Vec3 = [number, number, number];
 type Hit = { part: string; impulse: Vec3 };
+type Tuning = Record<string, { gain?: number; damping?: number }>;
 type Ragdoll = {
   state: string; partIds: string[];
-  applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; setMotorGain(gain: number, damping?: number): void;
+  applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void;
   snapToTarget(): boolean; reset(): boolean; destroy(): void;
 };
-type Physics = { step(dt: number): number; createRagdoll(row: unknown, opts?: { position?: Vec3; id?: string; motorGain?: number; motorDamping?: number }): Ragdoll; tickDt: number };
+type Physics = { step(dt: number): number; createRagdoll(row: unknown, opts?: { position?: Vec3; id?: string; motorTuning?: Tuning; solveHinges?: boolean }): Ragdoll; tickDt: number };
 type Rig = { drive(): void; applyPose(): void };
 type Bones = Record<string, THREE.Object3D>;
 type Chunk = {
@@ -103,15 +104,14 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     if (!physics || !group || !rigged) return;
     if (!rd?.reset()) {
       rd?.destroy();
-      rd = physics.createRagdoll(measure, { id: foe.id, motorGain: rows.motorGain, motorDamping: rows.motorDamping });
+      rd = physics.createRagdoll(measure, { id: foe.id, motorTuning: tune?.motorTuning ?? rows.motorTuning, solveHinges: tune?.solveHinges ?? rows.solveHinges });
       const bind = rigged.bindScene ? { bones: Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(rigged!.bindScene!, name)!])), root: rigged.bindScene } : undefined;
       rig = chunk!.createThreeRig(THREE, rd, partBones, group, bind ? { bind } : undefined);
     }
-    if (tune?.gain !== undefined) rd!.setMotorGain(tune.gain, tune.damping);
     mode = 'alive'; acc = 0; stagger = -1; dying = 0; snap = true; armed = false; cost.state = 'alive';
   }
-  // A tuning harness (scripts/ragdoll-stills.mjs TUNE=gain,damping,blend) may set globalThis.__ragdollTune before the page loads: the rows' values otherwise.
-  const tune = (globalThis as { __ragdollTune?: { gain?: number; damping?: number; blend?: Record<string, number>; settle?: number } }).__ragdollTune;
+  // A tuning harness may set globalThis.__ragdollTune before the page loads (motorTuning, solveHinges, blend; settle for the trace): the rows' values otherwise.
+  const tune = (globalThis as { __ragdollTune?: { motorTuning?: Tuning; solveHinges?: boolean; blend?: Record<string, number>; settle?: number } }).__ragdollTune;
   const blend: Record<string, number> = tune?.blend ?? rows.hit.blend, blendOn = Object.values(blend).some((w) => w > 0);
 
   return {

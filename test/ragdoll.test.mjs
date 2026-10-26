@@ -42,6 +42,11 @@ test('every ragdoll row names a body the opponent is drawn in, the package\'s 20
     for (const [part, bone] of Object.entries(map)) assert.ok(nodes106.has(RIG.bones[bone]), `${RIG.files[row.body]}.glb has ${RIG.bones[bone]} (${part} = ${bone})`);
     for (const rig of Object.keys(row.measure)) assert.ok(['65', '106'].includes(rig), `measure keyed by rig: ${rig}`);
     for (const which of ['hit', 'kill']) for (const [location, part] of Object.entries(ROWS[which].parts)) assert.ok(rd.partIds.includes(part), `${which}.parts.${location} = ${part} is a part`);
+    for (const [key, t] of Object.entries(ROWS.motorTuning)) {   // keys all < role < part id, as the package reads them
+      assert.ok(key === 'all' || rd.partIds.includes(key) || rd.row.roles.some((r) => r.role === key), `motorTuning.${key} is all, a role or a part id`);
+      assert.deepEqual(Object.keys(t).filter((k) => !['gain', 'damping'].includes(k)), [], `motorTuning.${key} names only gain and damping`);
+    }
+    assert.equal(typeof ROWS.solveHinges, 'boolean');
     for (const [part, w] of Object.entries(ROWS.hit.blend)) assert.ok(rd.partIds.includes(part) && w >= 0 && w <= 1, `hit.blend.${part} = ${w} is a part id with a share in 0..1`);
     for (const role of Object.keys(ROWS.states.stagger.targets)) assert.ok(rd.row.roles.some((r) => r.role === role), `stagger target ${role} is a role`);
     rd.destroy();
@@ -59,7 +64,7 @@ test('the stagger on screen: eased in, held, back up, then over (the package\'s 
 
 test('the rows drive the package: its stagger runs on states.stagger, the gain is accepted, a reset ragdoll stands again', async () => {
   const physics = await createPhysics({ seed: ROWS.seed, states: ROWS.states }), row = ROWS.opponents[0];
-  const rd = physics.createRagdoll(measure(row), { id: row.id, motorGain: ROWS.motorGain, motorDamping: ROWS.motorDamping });
+  const rd = physics.createRagdoll(measure(row), { id: row.id, motorTuning: ROWS.motorTuning, solveHinges: ROWS.solveHinges });
   for (let i = 0; i < 10; i++) physics.step(1 / ROWS.tickHz);
   rd.stagger(blowImpulse(ROWS.hit, 'torso', 0, 0));
   physics.step(1 / ROWS.tickHz);
@@ -86,7 +91,7 @@ test('a blow pushes along the attacker\'s facing, in the struck body\'s own fram
 
 test('killed by the row\'s blow, the package\'s ragdoll from the row falls and sleeps', async () => {
   const physics = await createPhysics({ seed: ROWS.seed, states: ROWS.states }), row = ROWS.opponents[0];
-  const rd = physics.createRagdoll(measure(row), { id: row.id, motorGain: ROWS.motorGain, motorDamping: ROWS.motorDamping }), head = rd.partIds.indexOf('head');
+  const rd = physics.createRagdoll(measure(row), { id: row.id, motorTuning: ROWS.motorTuning, solveHinges: ROWS.solveHinges }), head = rd.partIds.indexOf('head');
   for (let i = 0; i < ROWS.tickHz / 2; i++) physics.step(1 / ROWS.tickHz);
   const standing = rd.readPose()[head * 10 + 1];
   rd.kill(blowImpulse(ROWS.kill, 'torso', 0, 0));
