@@ -5,7 +5,8 @@
 // One side = one copy of src/fight imported by file URL. Each copy has its own module-level era flags (play-radius, stab-rule,
 // stance-era), so a run sets them on the side it steps. Nothing here imports match.ts: it pulls in modules the seed dropped.
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { extractV1, ROOT, V1_DIR } from './extract.mjs';
@@ -18,7 +19,11 @@ const BRAINS = readJson(join(HERE, '..', '..', 'data', 'brains.json'));
 // the picked clips' under ?reach=clip) on both sides; a config without one is V1's sweeps
 const { sweepTableFor } = await import('../../src/hero-reach.ts');
 export const CONFIGS = readJson(join(HERE, 'configs.json')).configs;
-export const SCRIPTS = readdirSync(join(HERE, 'scripts')).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(join(HERE, 'scripts', f)));
+const scriptsIn = (dir) => readdirSync(join(HERE, dir)).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(join(HERE, dir, f)));
+export const SCRIPTS = scriptsIn('scripts');
+// V3-only scripts (v3-scripts/): inputs V1 never had (the directional heavies' actions), so V1 has no reference for them. They run V3 against a second, independent
+// copy of V3 (determinism) and against the pinned hashes in v3-golden.json (v3-gate0.test.mjs), never against V1.
+export const V3_SCRIPTS = scriptsIn('v3-scripts');
 export const V3_DIR = ROOT;
 
 // ---- one side -------------------------------------------------------------------------------------------------------------------
@@ -190,6 +195,32 @@ export function compare(a, b, config, seed, script, intents) {
 export const describe = (r) => `${r.config}/seed ${r.seed}/${r.script}: ` + (r.same
   ? `same, ${r.ticks[0]} ticks, ${r.hash[0]}, ${r.outcome[0]}`
   : `DIFF at tick ${r.diff.tick}, ${r.diff.path}: ${r.diff.a} vs ${r.diff.b}`);
+
+// The player's swings by move over a whole script (AttackStarted, actor 0): what a V3-only script actually exercised.
+export function startedMoves(side, config, seed, script) {
+  let { practice, profile } = startFight(side, config, seed);
+  const counts = {};
+  for (const intent of intentsOf(script, side.record.quantizeIntent)) {
+    practice = side.combat.stepPractice(practice, intent, profile);
+    for (const e of practice.duel.events) if (e.type === 'AttackStarted' && e.actor === 0) counts[e.move] = (counts[e.move] ?? 0) + 1;
+    if (practice.duel.finish) break;
+  }
+  return counts;
+}
+// A second, independent copy of this tree's sim (its own module instances and era flags), for the V3-only determinism rows. The art is left out.
+export async function loadV3Copy() {
+  const dir = mkdtempSync(join(tmpdir(), 'gate0-v3-'));
+  cpSync(join(V3_DIR, 'src'), join(dir, 'src'), { recursive: true, filter: (p) => !p.includes(`${join('src', 'assets')}`) });
+  return { side: await loadSide(dir), dispose: () => rmSync(dir, { recursive: true, force: true }) };
+}
+// Every V3-only (config, seed, script) row, side a against side b.
+export function v3Rows(a, b) {
+  const rows = [];
+  for (const config of CONFIGS) for (const seed of config.seeds) for (const script of V3_SCRIPTS) rows.push(compare(a, b, config, seed, script));
+  return rows;
+}
+export const V3_GOLDEN = join(HERE, 'v3-golden.json');
+export const readV3Golden = () => readJson(V3_GOLDEN);
 
 // Every (config, seed, script) row, side a against side b.
 export function allRows(a, b) {

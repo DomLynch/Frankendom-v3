@@ -33,5 +33,11 @@
     {"id":"slash_riposte","clip":"Attack","source":0.34,"windup":12,"active":5,"recovery":19},
     {"id":"riposte","clip":"Riposte","source":0.34,"windup":12,"active":5,"recovery":19},
     {"id":"heavy_riposte","clip":"Heavy","source":0.48,"windup":20,"active":5,"recovery":25}
+  ],
+  "directionalAbout": "V3 directional heavies (V2 PR #60, Dom 2026-10-26: hold STRIKE + slide = a heavy cut to that side, or up = a heavy stab). Not in V1: no V1 record or script can name them. Each row is resolved per weapon by move-rows.ts withDirectionalHeavies: the move is that weapon's `from` move (every stat: damage, stamina, stagger, poise, chamber, charges...) with this row's direction (a raised guard on that side blocks it), no chain, and a wind-up of round(from.windup x windupFactor); its path plays the weapon's `blade` path's clip and source and reads that path's baked sweep, time-warped onto the heavy's timing (blade.ts bladeAge). Input: src/fight/input.ts (input.directional-heavy, input.heavy-grace-ms; ?heavy=v1 turns them off). VIEW ONLY (review of PR #10: the borrowed clips at the chamber tick are a crouch, blade tucked): `holdPoseAge` is the wind-up age the rig is DRAWN at while the heavy is held (the clip's late wind-up, blade cocked), eased in over `holdBlendTicks` of the hold; on release the drawn age runs from there back onto the sim's own clock by the tick the weapon trail turns on (combat.ts poseAge), so no snap, the same trail and the same contact frame. The sim never reads either field: chamber, charge and timing are the `from` move's.",
+  "directional": [
+    {"id":"heavy_right","from":"heavy_overhead","direction":"right","blade":"light_right","windupFactor":1,"holdPoseAge":20,"holdBlendTicks":6},
+    {"id":"heavy_left","from":"heavy_overhead","direction":"left","blade":"light_left","windupFactor":1,"holdPoseAge":20,"holdBlendTicks":6},
+    {"id":"heavy_thrust","from":"heavy_overhead","direction":"thrust","blade":"thrust","windupFactor":1,"holdPoseAge":20,"holdBlendTicks":6}
   ]
 }

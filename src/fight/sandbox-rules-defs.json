@@ -565,6 +565,11 @@
   },
   {
    "weapon": "*",
+   "move": "heavy_thrust",
+   "kind": "pierce"
+  },
+  {
+   "weapon": "*",
    "move": "riposte",
    "kind": "pierce"
   },
@@ -641,6 +646,36 @@
    "weapon": "warhammer",
    "move": "heavy_overhead",
    "windup": 30
+  },
+  {
+   "weapon": "maul",
+   "move": "heavy_right",
+   "windup": 30
+  },
+  {
+   "weapon": "maul",
+   "move": "heavy_left",
+   "windup": 30
+  },
+  {
+   "weapon": "maul",
+   "move": "heavy_thrust",
+   "windup": 30
+  },
+  {
+   "weapon": "warhammer",
+   "move": "heavy_right",
+   "windup": 30
+  },
+  {
+   "weapon": "warhammer",
+   "move": "heavy_left",
+   "windup": 30
+  },
+  {
+   "weapon": "warhammer",
+   "move": "heavy_thrust",
+   "windup": 30
   }
  ],
  "ward": [
@@ -716,6 +751,21 @@
   {
    "move": "heavy_overhead",
    "lane": 0,
+   "mult": 1500
+  },
+  {
+   "move": "heavy_thrust",
+   "lane": 0,
+   "mult": 1500
+  },
+  {
+   "move": "heavy_left",
+   "lane": -1,
+   "mult": 1500
+  },
+  {
+   "move": "heavy_right",
+   "lane": 1,
    "mult": 1500
   }
  ],

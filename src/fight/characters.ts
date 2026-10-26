@@ -8,7 +8,7 @@ import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
 export { swingProgress } from './blade.ts';
-import { attackSpecs, POMMEL_BASH, type Attack, type Practice } from './combat.ts';
+import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, SKILL_ROWS, skillOfMove, type Direction, type WeaponId } from './moves.ts';
 import SPECIAL_CLIP_ROWS from '../assets/special-clips.json' with { type: 'json' };
 import { HURT_STYLES, READY_STYLES, PLAIN_POSTURE, pickStyle } from './character-style-rows.ts';
@@ -984,7 +984,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           upperArm.quaternion.premultiply(new Quaternion().slerp(new Quaternion().setFromUnitVectors(from, to), amount));
           root.updateWorldMatrix(true, true);
         }
-        trail.visible = (pose === 'attack' && progress > contact * .7 && progress < contact + .18) || (!!special && !dead);
+        trail.visible = (pose === 'attack' && progress > contact * TRAIL_FROM && progress < contact + .18) || (!!special && !dead);
         { const key = special ? `${special.opacity}|${special.color}` : ''; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? .12; m.color.set(special?.color ?? '#e8dfc8'); } }
         if (trail.visible && step > 0) {
           anchor.updateWorldMatrix(true, true);

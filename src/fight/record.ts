@@ -251,7 +251,7 @@ const q8 = (v: number) => Math.max(-STICK_STEPS, Math.min(STICK_STEPS, Math.roun
 const yawToByte = (yaw: number) => (((Math.round(yaw / YAW_UNIT) % YAW_STEPS) + YAW_STEPS) % YAW_STEPS);
 const byteToYaw = (b: number) => { const s = b >= 128 ? b - 256 : b; return s * YAW_UNIT; };   // centred on 0: −π..π
 
-const ACTIONS: (Action | null)[] = [null, 'light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill', 'skill2'];   // append only: a code never changes meaning
+const ACTIONS: (Action | null)[] = [null, 'light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill', 'skill2', 'heavy_right', 'heavy_left', 'heavy_thrust'];   // V3 appended the directional heavies (codes 12-14; V1 has none). append only: a code never changes meaning
 const SKILLS: readonly (SkillId | null)[] = SKILL_BY_CODE;   // the skill rows' `code`, append only, as ACTIONS (skill-defs.json)
 const DIRECTIONS: (Direction | undefined)[] = [undefined, 'right', 'left', 'overhead', 'thrust', 'low'];
 const OUTCOMES: Outcome[] = ['killed', 'died', 'draw', 'abandoned'];

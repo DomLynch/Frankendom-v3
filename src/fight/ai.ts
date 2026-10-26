@@ -1,7 +1,7 @@
 import { STAB_ON } from './stab-rule.ts';
-import { RULES, SKILL_ROWS, type AiProfile, type Direction, type MoveId, weaponOf } from './moves.ts';
+import { RULES, SKILL_ROWS, type AiProfile, type Direction, type MoveId, weaponOf, isHeavyMove, isStabMove } from './moves.ts';
 import { LATE_NOTICE } from './play-radius.ts';
-import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf } from './duel.ts';
+import { aim, distance, elapsed, idleIntent, legal, mirror, movesOf, timing, walled, type Action, type Duel, type Intent, type Side, guardOf, guardBreaker, heavyBlow } from './duel.ts';
 import { meleeSpecialReach, spellRangeCue, spellRangeOf, MISSILE_ANSWER, missileMinGap, missileOf } from './sandbox-rules.ts';
 import { spellRoot } from './spell-cast.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
@@ -29,6 +29,7 @@ export type Reads = { parryHappy: boolean; turtle: boolean; roller: boolean; ste
 export const READ = READ_ROWS;   // swings 11 / anticipate 8 (re-swept after the slice-P stamina economy): a cut-only player at normal still wins about a quarter of duels (owner: 5–8 of 24)
 // The tells a profile's tellReaction answers (RV19): the thrust and the pommel strike, the two blows a short weapon must meet early.
 const TELLS = new Set<string>(['thrust', ...Object.values(SKILL_ROWS).filter((r) => r.tell).map((r) => r.move)]);   // the skill rows flagged `tell` (the pommel strike)
+const isTell = (move: string | null): boolean => TELLS.has(move ?? '') || isStabMove(move);   // + V3's heavy stab: a point is a tell whatever its weight
 export const readOpponent = (h: Habits, profile?: AiProfile): Reads => {
   const swings = h.lights + h.heavies + h.thrusts;
   const oldSpam = swings >= READ.swings && h.lights / swings >= READ.lightShare;
@@ -123,7 +124,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
     // a light that PUNISHES my whiff (starts while my swing is past its active frames, or I am hurt) is the honest answer, not a mash: it neither counts nor resets (RV31)
     const punishes = self.phase === 'hurt' || (self.phase === 'attack' && !!self.move && self.age >= mine[self.move].windup + mine[self.move].active);
     if (opponent.move === 'light_left' || opponent.move === 'light_right') { if (!punishes) h.run = (h.run ?? 0) + 1; } else h.run = 0;
-    if (opponent.move === 'heavy_overhead') h.heavies++;
+    if (isHeavyMove(opponent.move)) h.heavies++;   // the overhead or a V3 directional heavy (the heavy stab too: it is a heavy press)
     else if (opponent.move === 'thrust') h.thrusts++;
     else if (opponent.move === 'light_left' || opponent.move === 'light_right') h.lights++;
     else if (opponent.move === 'kick') h.kicks++;
@@ -161,7 +162,7 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
   // A tell (the thrust, the pommel strike) is noticed on its own clock where the profile has one (profile.tellReaction; RV19, the Centurion), so a
   // fighter can meet the point quickly while lights still get the slow reaction that keeps an easy fight easy.
   const reaction = reads.spammer && (opponent.move === 'light_left' || opponent.move === 'light_right') ? Math.min(profile.reaction, profile.anticipate ?? READ.anticipate)
-    : profile.tellReaction !== undefined && TELLS.has(opponent.move ?? '') ? Math.min(profile.reaction, profile.tellReaction) : profile.reaction;
+    : profile.tellReaction !== undefined && isTell(opponent.move) ?Math.min(profile.reaction, profile.tellReaction) : profile.reaction;
   const noticed = threat && elapsed(opponent) >= reaction;
   if (!threat) { next.plan = null; next.readSide = null; next.brace = false; }
   else if (elapsed(opponent) === reaction) {
@@ -176,8 +177,9 @@ export function decide(duel: Duel, me: Side, ai: AiState, profile: AiProfile): {
       : (['left', 'right', 'overhead', 'thrust', 'low'] as Direction[]).filter(d => d !== want)[Math.floor(roll() * 4)];
     const r = roll(), inRange = gap <= move.reach + DIAL.rangeSlack;
     // A guard that stops heavies (the scutum) meets a guard-breaking overhead in the guard with profile.braceHeavy; rolled only when both hold.
-    next.brace = !!profile.braceHeavy && guardOf(self).stopsHeavy && move.direction === 'overhead' && roll() < profile.braceHeavy;
-    const unblockable = !next.brace && (move.breaksGuard || charging(opponent) || (guardOf(self).heavyBreaks && move.direction === 'overhead'));
+    // The sim's own rule (duel.ts heavyBlow / guardBreaker), so a V3 directional heavy is braced for and read as unblockable exactly where it breaks.
+    next.brace = !!profile.braceHeavy && guardOf(self).stopsHeavy && heavyBlow(move) && roll() < profile.braceHeavy;
+    const unblockable = !next.brace && guardBreaker(guardOf(self), move, charging(opponent));
     const affordable = self.stamina >= move.staminaDamage;
     // A kick cannot be parried and punishes a raised guard, so a guard or a parry is never the answer. With its dodge share the warden rolls
     // (or steps out without the stamina); otherwise it takes the kick — a cheap poke whose point is to open a guard, and a warden that
