@@ -24,8 +24,9 @@ async function fight(tag) {
   await page.waitForTimeout(400);
   await page.waitForFunction(() => !/Drawing/.test(document.body.innerText), null, { timeout: 60000 });
   await page.waitForTimeout(1200);
-  const now = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(now + 1000);   // a margin: on a fast GPU the page's clock can pass +100 ms before the call lands
+  for (let tries = 0; ; tries++) {   // the page's clock can pass the mark before the call lands (a fast GPU, a loaded box): ask again
+    try { await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 1000); break; } catch (e) { if (tries > 4) throw e; }
+  }
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   const shot = async (name) => { await page.waitForTimeout(150); await page.screenshot({ timeout: 180000, path: `${out}/${tag.replace(/[^a-z0-9]+/gi, '-')}-${name}.png` }); };
   await page.keyboard.down('KeyW'); await run(CLOSE_IN); await page.keyboard.up('KeyW'); await run(12);   // close in, settle
