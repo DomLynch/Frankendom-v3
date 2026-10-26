@@ -721,6 +721,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     }
     return {
       anchor,
+      bindScene: asset.scene,   // the loaded scene, never animated: its bones are the bind pose (src/fight/ragdoll.ts makes its rig on it)
       // Rank finish on the weapon (Lead via Strategy, 2026-09-27: per-rank weapon looks): the armour's tint (rank-tint.ts) over the weapon's own
       // maps, so no GLB byte changes. What takes it is the drawMaterials rows read by grades.ts classOf (blade metal, fittings trim; wood, stone and bone stay). No tier = its own finish.
       grade(tier: Tier | undefined) { for (const [draw, own] of weaponDraws) draw.material = tier ? tinted(own, tier) : own; },

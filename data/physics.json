@@ -1,0 +1,37 @@
+{
+  "about": "Dom 2026-10-26 (after /physics1 on his iPhone: five ragdolls + a cut, 0.40 ms a frame): the opponent's body is a physics ragdoll (@frankendom/physics, Jolt WASM, package.json) for PRESENTATION only. The 60 Hz sim (src/fight/duel.ts) and Gate 0 never see it, and nothing it does goes back into the sim. src/fight/ragdoll.ts reads every number and name here. `on`: default on; `?<query>=<v1>` (?physics=v1) = today's death and hit behaviour exactly (the chunk is never fetched). `opponents`: the opponent ids that get a ragdoll, each with the body stem it is drawn in on the 65 rig (src/assets/<body>.glb) and its body measure row per rig (`measure`: rig -> a site path the build copies from the package's data/bodies/, fetched with the chunk; a rig with no row, today 106 (?foerig=106), gets no ragdoll and keeps today's death). `bones`: the package's 20 part ids -> the 65-rig bone names; on a 106 body each goes through data/rig.json `bones` (src/fight/rig-bones.ts bone()), the one 65 -> 106 map, never a second copy. `tickHz` / `maxTicksPerFrame`: the fixed physics step in the scene's own accumulator, beside the sim's. `seed`: the physics world's seed (the engine draws nothing; kept for the package's rand()). `loadAfterFirstFrameMs`: the chunk is imported this long after the first frame, so it never competes with the first visit. `hit`: a landed blow (sim event Hit, the opponent the target) -> the part its location strikes, the impulse (N s) along the attacker's facing plus `lift` up, and the stagger: motor strength per role (`targets`, the package's role keys; 1 = full) eased in over `easeInS`, held `holdS`, back over `upS` (Physics Dev's brief: arm 0.9 / torso 0.6 / hand 0.12, hold 0.5 s, back over 0.35 s; legs at the torso value, as the package's states.json reads it). `blend`: how much of the ragdoll's pose the bones show at the dip's deepest; 0 (2026-10-26): the stagger only primes the ragdoll and the animation alone is on screen, because the motors lag a fast clip (measured in the fight at 375, full motors, kinematic hips: median 0.3 rad off the clip on the upper arms and 0.8-1.2 on forearms and hands, p95 1.5-2.9; spine 0.1-0.25): any visible share showed an arm flung out mid-swing, which read as a glitch, not a stagger. `kill`: the killing blow (sim event Killed): part by location, impulse along the attacker's facing plus `lift`; the bones go from the death clip's pose to the ragdoll's over `blendInS` (so that lag never pops on the killing frame); then the package's death ramp (1 -> 0.01 over 1 s) and the bones follow the ragdoll until it sleeps; the corpse stays down until the rematch. `finisher`: what a ragdolled opponent's kill does with the finisher rotation, `default` unless `?<query>=<a key of values>`. `keep` (default): a cinematic finisher (Split Crown, Decapitation, Run Through, Opened) plays exactly as before and gets no ragdoll; only the plain death (the rotation's no-ceremony outcome, about 1 blade kill in 5, and every kick and skill kill) falls as a ragdoll. `skip` (?ragdoll=always, Dom's phone test 2026-10-26): every death of his is the plain death and falls as a ragdoll; the finisher (picture and its death cue) is skipped for that kill.",
+  "on": true,
+  "query": "physics",
+  "v1": "v1",
+  "seed": 731,
+  "tickHz": 60,
+  "maxTicksPerFrame": 4,
+  "loadAfterFirstFrameMs": 1500,
+  "opponents": [
+    { "id": "pitborn", "body": "minotaur", "measure": { "65": "physics/bodies/minotaur.measure.json" } }
+  ],
+  "bones": {
+    "hips": "pelvis", "spine": "spine_01", "spine1": "spine_02", "spine2": "spine_03", "neck": "neck_01", "head": "Head",
+    "armLeft": "upperarm_l", "forearmLeft": "lowerarm_l", "handLeft": "hand_l",
+    "armRight": "upperarm_r", "forearmRight": "lowerarm_r", "handRight": "hand_r",
+    "thighLeft": "thigh_l", "shinLeft": "calf_l", "footLeft": "foot_l", "toeLeft": "ball_l",
+    "thighRight": "thigh_r", "shinRight": "calf_r", "footRight": "foot_r", "toeRight": "ball_r"
+  },
+  "hit": {
+    "parts": { "head": "head", "torso": "spine2", "legs": "thighLeft" },
+    "impulse": 30,
+    "lift": 0,
+    "easeInS": 0.05,
+    "holdS": 0.5,
+    "upS": 0.35,
+    "targets": { "arm": 0.9, "forearm": 0.6, "hand": 0.12, "spine": 0.6, "spine1": 0.6, "spine2": 0.6, "neck": 0.6, "head": 0.6, "thigh": 0.6, "shin": 0.6, "foot": 0.6, "toe": 0.6 },
+    "blend": 0
+  },
+  "kill": {
+    "parts": { "head": "head", "torso": "spine2", "legs": "thighLeft" },
+    "impulse": 70,
+    "lift": 6,
+    "blendInS": 0.25
+  },
+  "finisher": { "default": "keep", "query": "ragdoll", "values": { "always": "skip" } }
+}
