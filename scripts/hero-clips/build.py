@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bakes Dom's picked strike clips (data/hero-clips.json) into the hero's GLB beside V1's own clips (numpy only; run on the VPS, where the
+"""Bakes Dom's picked strike and guard clips (data/hero-clips.json) into the hero's GLB beside V1's own clips (numpy only; run on the VPS, where the
 Mixamo library lives).
   python3 -I scripts/hero-clips/build.py <V1 warrior.glb> <models/mixamo dir> data/hero-clips.json <out warrior.glb> [report.json]
 The input must be V1's warrior.glb (it carries the Riposte and Return clips the retarget is calibrated on, retarget.py calibrate). Every row
@@ -76,9 +76,10 @@ def main():
         if r.get('aimFrom') is not None: local, _ = aim_hold(W, times, local, pel, r['aimFrom'] - r['from'], r['aim'])   # aim_hold.py
         add_clip(W, r['clip'], times, local, pel)
         base, tip, hand, _ = sword_path(W, times, local, pel)
-        c = int(np.argmin(np.abs(times - (r['contact'] - r['from']))))
+        at = r['contact'] - r['from'] if 'contact' in r else times[-1]   # a guard row has no contact key: its held block is the last key
+        c = int(np.argmin(np.abs(times - at)))
         report['clips'].append({'clip': r['clip'], 'role': r['role'], 'keys': len(times), 'duration': round(float(times[-1]), 3),
-                                'source': round((r['contact'] - r['from']) / (r['to'] - r['from']), 4), 'wristTurnDeg': None if turn is None else round(turn, 1),
+                                'source': round(at / (r['to'] - r['from']), 4), 'wristTurnDeg': None if turn is None else round(turn, 1),
                                 'twistDeg': {'source': round(before, 1), 'baked': round(after, 1)},
                                 'tipAtContact': [round(float(x), 3) for x in tip[c]], 'tipStart': [round(float(x), 3) for x in tip[0]], 'tipEnd': [round(float(x), 3) for x in tip[-1]]})
     save(W, out)
