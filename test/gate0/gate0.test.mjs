@@ -27,12 +27,13 @@ for (const config of CONFIGS) for (const seed of config.seeds) for (const script
   });
 }
 
-test('the picked-clip sweeps reach the sim: page-first-clips is a different fight from page-first-novice, and the switch goes back off', () => {
-  const novice = CONFIGS.find((c) => c.id === 'page-first-novice'), clips = CONFIGS.find((c) => c.id === 'page-first-clips');
+test("reach: the default page (page-first-clips) is V1's fight; ?reach=clip is a different fight, and the switch goes back off", () => {
+  const [novice, clips, reach] = ['page-first-novice', 'page-first-clips', 'page-reach-clip'].map((id) => CONFIGS.find((c) => c.id === id));
   const intents = intentsOf(lightMash, v3.record.quantizeIntent);
-  const off = runSide(v3, novice, 731, intents), on = runSide(v3, clips, 731, intents), again = runSide(v3, novice, 731, intents);
-  assert.notEqual(on.hash, off.hash, 'the picks must change where the blade meets the Centurion');
-  assert.equal(again.hash, off.hash, 'a config without picks is V1\'s sweeps again');
+  const off = runSide(v3, novice, 731, intents), page = runSide(v3, clips, 731, intents), on = runSide(v3, reach, 731, intents), again = runSide(v3, clips, 731, intents);
+  assert.equal(page.hash, off.hash, "the picked clips by default keep V1's sweeps, so V1's reach");
+  assert.notEqual(on.hash, off.hash, '?reach=clip must change where the blade meets the Centurion');
+  assert.equal(again.hash, off.hash, "the default after ?reach=clip is V1's sweeps again");
 });
 
 test('deliberate break: one changed data value in a copy of V1 is reported as a DIFF at its tick and field', async () => {
