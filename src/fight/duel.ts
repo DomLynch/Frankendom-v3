@@ -1,4 +1,4 @@
-import { bladeImpact, type HitLocation } from './blade.ts';
+import { bladeAge, bladeImpact, type HitLocation } from './blade.ts';
 import { checkSheet, statDown, statUp, type Sheet } from './sheet-rows.ts';
 import { kindOf } from './damage-kinds.ts';
 import { STANCE_ROWS_ON } from './stance-era.ts';
@@ -27,7 +27,8 @@ import { DODGE_COUNTER, PHASES, attackerPerMille, interruptLockout, CAST_PUSHBAC
 // Symmetric 1v1 melee simulation. Both fighters obey the same rules through the same Intent; the AI is just another
 // intent source. Pure and fixed at 60 Hz: no renderer, clock, randomness or browser state. Presentation observes results.
 export type Phase = 'sheathed' | 'draw' | 'ready' | 'attack' | 'roll' | 'backstep' | 'guard' | 'hurt' | 'dead';
-export type Action = 'light' | 'light_left' | 'light_right' | 'heavy' | 'thrust' | 'kick' | 'dodge' | 'backstep' | 'parry' | 'skill' | 'skill2';   // skill2 (sandbox-mech spell slot 2): the second spell, cast like skill with its own cooldown; skill: the equipped skill's move (Fighter.skill), the fourth button
+export type Action = 'light' | 'light_left' | 'light_right' | 'heavy' | 'thrust' | 'kick' | 'dodge' | 'backstep' | 'parry' | 'skill' | 'skill2'
+  | 'heavy_right' | 'heavy_left' | 'heavy_thrust';   // V3 directional heavies (hold STRIKE + slide; input.ts): a heavy press that names its move. Not in V1: only the V3 input sends them   // skill2 (sandbox-mech spell slot 2): the second spell, cast like skill with its own cooldown; skill: the equipped skill's move (Fighter.skill), the fourth button
 export type Intent = {
   move: Input;                  // camera-relative stick/keys
   action: Action | null;        // edge-triggered request for this tick; one is buffered late in a committed action
@@ -219,6 +220,8 @@ export const elapsed = (f: Fighter): number => f.age + f.charge;
 const baseTiming = (f: Fighter): Timing => f.chained && f.move ? movesOf(f)[f.move].chained! : movesOf(f)[f.move!];
 export const timing = (f: Fighter): Timing => { let t = baseTiming(f); const c = commitOf(f.weapon, f.move), mt = missileTiming(f.weapon); if (c) t = { ...t, windup: t.windup + Math.round((t.windup * c.windup) / 100) }; if (mt) t = { ...t, windup: t.windup + Math.round((t.windup * mt.windup) / 100), recovery: t.recovery + Math.round((t.recovery * mt.recovery) / 100) }; return t; };   // sandbox-mech commitVsBait: a committed swing's longer tell
 const isLight = (action: Action | null): boolean => action === 'light' || action === 'light_left' || action === 'light_right';
+/** A heavy press: V1's 'heavy', or a V3 directional heavy (the three move-defs.json `directional` ids), which every heavy rule treats alike. */
+export const isHeavy = (action: Action | null): boolean => action === 'heavy' || action === 'heavy_right' || action === 'heavy_left' || action === 'heavy_thrust';
 const baseGuard = (f: Fighter, R: typeof RULES): GuardProfile => ({ costScale: 1, arc: R.guardArc, window: R.parry, recovery: R.parryRecovery, commits: false, stopsHeavy: false, heavyBreaks: false, wide: false, postureDecay: 1, ...f.guardProfile });
 // A stance never moves the parry window (v52, stance-era.ts: timing is sacred). Only while a record BELOW v52 replays does the old Defensive window (a quarter longer, stance.ts LEGACY) apply.
 export const guardOf = (f: Fighter, R: typeof RULES = RULES): GuardProfile => { const g = baseGuard(f, R); return f.stance && !STANCE_ROWS_ON ? { ...g, window: Math.round(stanced(f, 'window', g.window)) } : g; };
@@ -252,7 +255,7 @@ export function inBufferWindow(f: Fighter): boolean {
 function chooseMove(f: Fighter, action: Action): MoveId {
   if (action === 'skill2') return SKILL_MOVE[f.skill2!]!;   // slot b as a melee special: the picked class skill's own move row (legal() refuses it with none)
   if (action === 'skill') return SKILL_MOVE[f.skill ?? DAY_ONE_SKILL]!;   // the equipped skill's move (legal() refuses SKILL with none); never a riposte or a counter, whatever window is open
-  if (action === 'heavy') return f.critical > 0 ? 'critical' : f.punish > 0 ? 'heavy_riposte' : f.counterWindow > 0 ? 'heavy_counter' : 'heavy_overhead';
+  if (isHeavy(action)) return f.critical > 0 ? 'critical' : f.punish > 0 ? 'heavy_riposte' : f.counterWindow > 0 ? 'heavy_counter' : action === 'heavy' ? 'heavy_overhead' : action as MoveId;   // a directional heavy is its own move outside the windows; inside one it is the window's heavy, as V1's
   if (action === 'kick') return 'kick';
   if (f.punish > 0) return action === 'thrust' ? 'riposte' : 'slash_riposte';
   if (action === 'thrust') return 'thrust';
@@ -273,16 +276,16 @@ const paysManaFor = (spell: string): boolean => (healOf(spell) ? MANA_MAX > 0 : 
 const healSpent = (f: Fighter, s: Spell | undefined): boolean => { const h = healOf(s?.id); return !!h && (f.healUses ?? 0) >= h.uses; };
 export function legal(f: Fighter, action: Action): boolean {
   if (!f.health || f.exhausted || f.special) return false;   // a committed special windup takes no other input
-  if (f.specialRecover && (isLight(action) || action === 'heavy' || action === 'thrust' || action === 'kick' || action === 'skill' || action === 'skill2')) return false;
-  { const mr = missileOf(f.weapon); if (mr && (isLight(action) || action === 'heavy' || action === 'thrust') && ((MANA_MAX && (f.mana ?? 0) < mr.mana) || (f.ammo !== undefined && f.ammo <= 0))) return false; }   // sandbox-mech missiles: a bolt is paid in mana, refused short of it
-  if ((f.bound || f.disarmed) && (isLight(action) || action === 'heavy' || action === 'thrust' || action === 'skill')) return false;   // sandbox-mech bindAndDisarm: a bound blade or an empty hand has no swing   // the special's recovery: no attack until it ends
+  if (f.specialRecover && (isLight(action) || isHeavy(action) || action === 'thrust' || action === 'kick' || action === 'skill' || action === 'skill2')) return false;
+  { const mr = missileOf(f.weapon); if (mr && (isLight(action) || isHeavy(action) || action === 'thrust') && ((MANA_MAX && (f.mana ?? 0) < mr.mana) || (f.ammo !== undefined && f.ammo <= 0))) return false; }   // sandbox-mech missiles: a bolt is paid in mana, refused short of it
+  if ((f.bound || f.disarmed) && (isLight(action) || isHeavy(action) || action === 'thrust' || action === 'skill')) return false;   // sandbox-mech bindAndDisarm: a bound blade or an empty hand has no swing   // the special's recovery: no attack until it ends
   // A committing parry (the Nightborn's, guard.commits) runs its window, and the exposure it ends in when it met nothing is a real recovery —
   // the blade is out of line — so no swing comes out of either. A man's parry yields to any action and his exposure only bares his guard.
   const g = guardOf(f), committed = g.commits && ((f.phase === 'guard' && f.parrying && !f.punish && f.age < g.window) || (f.phase === 'ready' && f.exposed > 0));
   const standing = (f.phase === 'ready' || f.phase === 'guard') && !committed;   // a guard yields to any action; it never eats an input
   const stepping = f.phase === 'backstep', stepTail = stepping && f.age >= RULES.backstep.cancelFrom;   // a backstep's tail cancels into a swing
   if (isLight(action)) return f.phase === 'sheathed' || ((standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina);
-  if (action === 'heavy' || action === 'thrust') return (standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina;
+  if (isHeavy(action) || action === 'thrust') return (standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina;
   if (action === 'kick') return standing && f.stamina >= movesOf(f).kick.stamina;
   if (action === 'skill' && f.specialShare !== undefined) return !f.skillCooldown && (standing || stepTail) && !healSpent(f, f.spell) && (!f.spell || (paysManaFor(f.spell.id) ? (f.mana ?? 0) >= manaCost(f.spell.cost) : f.stamina >= f.spell.cost));   // a special: no stamina, any class; a SPELL costs its stamina and is refused short of it
   if (action === 'skill2' && f.skill2 !== undefined) return !f.skillCooldown2 && (standing || stepTail) && f.stamina >= movesOf(f)[SKILL_MOVE[f.skill2]!].stamina;   // slot b as a melee special: its own cooldown, the move row's stamina (the shared bar), no Special Moves needed
@@ -344,7 +347,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     if (intent.cancel) next.buffer = null;
     let action = intent.action;
     // The Gambit: a second heavy press after the chamber and before the strike arms the swing in hand (the same tell and timing as the heavy); the press is spent on it, never buffered.
-    if (action === 'heavy' && me.gambitOn && !me.gambit && me.phase === 'attack' && me.move !== null && !me.chained && movesOf(me)[me.move].charges && movesOf(me)[me.move].chamber != null && me.age >= movesOf(me)[me.move].chamber! && me.age < timing(me).windup) {
+    if (isHeavy(action) && me.gambitOn && !me.gambit && me.phase === 'attack' && me.move !== null && !me.chained && movesOf(me)[me.move].charges && movesOf(me)[me.move].chamber != null && me.age >= movesOf(me)[me.move].chamber! && me.age < timing(me).windup) {
       next.gambit = true; events.push({ tick, type: 'GambitArmed', actor: i, move: me.move }); action = null;
     }
     if (action && !legal(me, action)) { if (inBufferWindow(me)) next.buffer = { action, ttl: R.bufferTtl }; action = null; }
@@ -380,7 +383,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       beginAttack(next, 'kick', false, foe.body); spend(i, perked(me, 'thrift', movesOf(next).kick.stamina));
       if (intent.lock) next.body = { ...me.body, heading: aim(me.body, foe.body) };
       events.push({ tick, type: 'AttackStarted', actor: i, move: 'kick' });
-    } else if (isLight(action) || action === 'heavy' || action === 'thrust' || action === 'skill' || (action === 'skill2' && me.skill2 !== undefined)) {
+    } else if (isLight(action) || isHeavy(action) || action === 'thrust' || action === 'skill' || (action === 'skill2' && me.skill2 !== undefined)) {
       if (me.phase === 'sheathed') { next.phase = 'draw'; next.age = 0; events.push({ tick, type: 'ActionStarted', actor: i, action: 'draw' }); }
       else {
         const id = chooseMove(me, action!), def = movesOf(me)[id];
@@ -537,7 +540,10 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       if (a.age < t.windup || a.age >= t.windup + t.active) continue;
       // A thrust started inside a pole's minimum reach drives the point past the target: it meets nothing (the sweep and the kick have no such hole).
       // Judged from where it started: the lunge closes any gap to touching, so the gap at contact says nothing about where the point went.
-      location = a.attackFrom !== null && a.attackFrom.gap < (def.minReach ?? 0) ? null : bladeImpact(a.rig, a.weapon, pathId, a.age - 1, a.age, before[i].body, a.body, before[j].body, d.body, d.scale);
+      const own = weapon.paths[pathId], baked = own.blade ? weapon.paths[own.blade] : undefined;   // V3 directional heavies: a path with `blade` reads that path's bake, its age warped onto it (blade.ts bladeAge); V1's paths have none
+      location = a.attackFrom !== null && a.attackFrom.gap < (def.minReach ?? 0) ? null : baked
+        ? bladeImpact(a.rig, a.weapon, own.blade!, bladeAge(a.age - 1, own, baked), bladeAge(a.age, own, baked), before[i].body, a.body, before[j].body, d.body, d.scale)
+        : bladeImpact(a.rig, a.weapon, pathId, a.age - 1, a.age, before[i].body, a.body, before[j].body, d.body, d.scale);
       // A miss is reported once, as the window closes. A thrust that meets nothing overextends: its clock hangs at full extension for `whiff` ticks
       // (the window-closing tick repeats while stalled, so the report is keyed on the stall not having started).
       if (!location && a.age === t.windup + t.active - 1 && before[i].stall === 0) { events.push({ tick, type: 'AttackMissed', actor: i, move: a.move }); if (a.move === 'thrust') A.stall = R.stopHit.whiff; }

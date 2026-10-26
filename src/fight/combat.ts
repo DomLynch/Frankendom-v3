@@ -1,7 +1,7 @@
 import { decide, initialAi, readOpponent, type AiMode, type AiState } from './ai.ts';
 import type { HitLocation } from './blade.ts';
 import type { Sheet } from './sheet-rows.ts';
-import { inBufferWindow, initialDuel, legal, type DuelPose, withGambit, withSheet, withSpecials, withSpell, withSkill2, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
+import { inBufferWindow, initialDuel, isHeavy, legal, type DuelPose, withGambit, withSheet, withSpecials, withSpell, withSkill2, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
 import type { Spell } from './spell-cast.ts';
 import { asStance, moodOf, type PickedStance } from './stance.ts';
 import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, BASH_MOVE, SKILL_ROWS, skillOfMove, type AiProfile, type MoveId, type Opponent, type PathId, type SkillId, type SpecialName, type Weapon, type WeaponId } from './moves.ts';
@@ -101,6 +101,7 @@ export const POMMEL_BASH: ReadonlySet<WeaponId> = new Set(Object.keys(WEAPON_LOO
 const clipOf = (f: Fighter): Attack => {
   const move = f.lastMove, skill = SKILL_ROWS[skillOfMove(move) ?? ''];
   return move === 'slash_riposte' ? 'slashRiposte'
+    : move === 'heavy_right' ? 'light' : move === 'heavy_left' ? 'return' : move === 'heavy_thrust' ? 'thrust'   // V3 directional heavies play their cut's or the stab's clip, warped to the heavy's longer wind-up by actorPose (contact = the heavy's windup / total)
     : move === 'light_left' ? 'return'
     : move === 'heavy_overhead' || move === 'heavy_riposte' || move === 'heavy_counter' || move === 'critical' || skill?.clip === 'heavy' ? 'heavy'   // the Witch-fire plays the heavy clip until its own (#732) lands
     : move === 'riposte' || (move === 'thrust' && f.chained) ? 'riposte'
@@ -172,7 +173,7 @@ export const canStrike = (s: Practice): boolean => legal(s.duel.fighters[0], 'li
 export const canDefend = (s: Practice): boolean => s.health > 0 && s.playerHealth > 0 && (s.phase === 'ready' || s.phase === 'guard');
 // Controls stay responsive while busy: an action is accepted now, or queued in the last ticks of a committed action.
 export const accepts = (s: Practice, action: Action): boolean => s.health > 0 && s.playerHealth > 0
-  && (legal(s.duel.fighters[0], action) || (inBufferWindow(s.duel.fighters[0]) && !(action === 'heavy' && s.phase === 'draw')));
+  && (legal(s.duel.fighters[0], action) || (inBufferWindow(s.duel.fighters[0]) && !(isHeavy(action) && s.phase === 'draw')));
 
 // Presentation helper: which clip, how far through it, and where its contact pose sits. Animation observes; it never decides.
 type Pose = Exclude<LegacyPhase, 'hurt' | 'dead' | 'backstep'> | 'hit' | 'death';
@@ -194,6 +195,7 @@ export function actorPose(s: Practice, side: Side): { pose: Pose; progress: numb
 const NAMES: Partial<Record<MoveId, string>> = {   // a skill's name is its row's (skill-defs.json)
   light_right: 'right cut', light_left: 'left cut', heavy_overhead: 'heavy', thrust: 'thrust', riposte: 'riposte',
   slash_riposte: 'counter slash', heavy_riposte: 'heavy riposte', critical: 'critical', heavy_counter: 'guard counter', kick: 'kick',
+  heavy_right: 'heavy right cut', heavy_left: 'heavy left cut', heavy_thrust: 'heavy stab',   // V3 directional heavies
 };
 // `foe`: the opponent's own name without its article ("Centurion", "Goblin"), so the coaching lines name whoever is in the arena
 // (Dom via Strategy, 2026-09-22: "warden" leaves every player-facing string; identifiers keep it). The default covers the callers

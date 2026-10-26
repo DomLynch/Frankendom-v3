@@ -11,12 +11,38 @@ import MOVE_MANIFEST from './move-defs.manifest.json' with { type: 'json' };
 
 const MOVE_TABLE = tableFromFile(MOVE_MANIFEST.tables[0] as unknown as Manifest, MOVE_DEFS, 'move-defs.json');
 const PATH_TABLE = tableFromFile(MOVE_MANIFEST.tables[1] as unknown as Manifest, MOVE_DEFS, 'move-defs.json');
-loadRegistry([MOVE_TABLE, PATH_TABLE]);
+const DIRECTIONAL_TABLE = tableFromFile(MOVE_MANIFEST.tables[2] as unknown as Manifest, MOVE_DEFS, 'move-defs.json');   // V3: the directional heavies (move-defs.json `directional`)
+loadRegistry([MOVE_TABLE, PATH_TABLE, DIRECTIONAL_TABLE]);
 const MOVE_DIRECTIONS: readonly string[] = ['right', 'left', 'overhead', 'thrust', 'low'];
 const checkMove = (m: MoveDef): MoveDef => {
   if (!MOVE_DIRECTIONS.includes(m.direction)) throw Error(`move-defs "${m.id}": direction ${m.direction} is not one of ${MOVE_DIRECTIONS.join(', ')}`);
   if (m.windup < 0 || m.active < 1 || m.recovery < 0) throw Error(`move-defs "${m.id}": windup and recovery from 0, active from 1`);
   return m;
 };
-export const MOVES: Record<MoveId, MoveDef> = Object.fromEntries((MOVE_TABLE.rows as unknown as MoveDef[]).map((m) => [m.id, checkMove(m)])) as Record<MoveId, MoveDef>;
-export const PATHS: Record<PathId, PathSpec> = Object.fromEntries((PATH_TABLE.rows as unknown as (PathSpec & { id: string })[]).map(({ id, ...spec }) => [id, spec])) as Record<PathId, PathSpec>;
+const BASE_MOVES = Object.fromEntries((MOVE_TABLE.rows as unknown as MoveDef[]).map((m) => [m.id, checkMove(m)])) as Record<MoveId, MoveDef>;
+const BASE_PATHS = Object.fromEntries((PATH_TABLE.rows as unknown as (PathSpec & { id: string })[]).map(({ id, ...spec }) => [id, spec])) as Record<PathId, PathSpec>;
+
+// V3 directional heavies (not in V1). A row names the move it copies (`from`, the overhead heavy), the side it comes from and the path whose clip and baked sweep
+// it borrows (`blade`); resolved against ONE weapon's tables, so a weapon that retunes its heavy retunes its directional heavies with it. Added keys only: every
+// V1 move and path keeps its object, so no V1 fight can reach them (only the new actions in duel.ts chooseMove do).
+export type DirectionalHeavy = { id: MoveId; from: MoveId; direction: MoveDef['direction']; blade: PathId; windupFactor: number };
+export const DIRECTIONAL_HEAVIES: readonly DirectionalHeavy[] = (DIRECTIONAL_TABLE.rows as unknown as DirectionalHeavy[]).map((d) => {
+  if (!MOVE_DIRECTIONS.includes(d.direction)) throw Error(`move-defs directional "${d.id}": direction ${d.direction} is not one of ${MOVE_DIRECTIONS.join(', ')}`);
+  if (Object.hasOwn(BASE_MOVES, d.id) || Object.hasOwn(BASE_PATHS, d.id)) throw Error(`move-defs directional "${d.id}": the id is already a move or a path`);
+  return d;
+});
+const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+/** One weapon's move and path tables with its directional heavies resolved; the SAME objects back when they already hold exactly these rows. */
+export function withDirectionalHeavies<M extends Record<string, MoveDef>, P extends Record<string, PathSpec>>(moves: M, paths: P): { moves: M; paths: P } {
+  const addMoves: Record<string, MoveDef> = {}, addPaths: Record<string, PathSpec> = {};
+  for (const d of DIRECTIONAL_HEAVIES) {
+    const from = moves[d.from]!, look = paths[d.blade]!, windup = Math.round(from.windup * d.windupFactor);
+    addMoves[d.id] = checkMove({ ...from, id: d.id, direction: d.direction, path: d.id, chainPath: null, chained: null, chain: null, windup });
+    addPaths[d.id] = { clip: look.clip, source: look.source, windup, active: from.active, recovery: from.recovery, blade: d.blade };
+  }
+  const movesSame = Object.keys(addMoves).every((k) => same(moves[k], addMoves[k])), pathsSame = Object.keys(addPaths).every((k) => same(paths[k], addPaths[k]));
+  return { moves: movesSame ? moves : { ...moves, ...addMoves }, paths: pathsSame ? paths : { ...paths, ...addPaths } };
+}
+const RESOLVED = withDirectionalHeavies(BASE_MOVES, BASE_PATHS);
+export const MOVES: Record<MoveId, MoveDef> = RESOLVED.moves;
+export const PATHS: Record<PathId, PathSpec> = RESOLVED.paths;

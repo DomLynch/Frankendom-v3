@@ -43,6 +43,15 @@ export function bladePose(rig: string, weapon: string, kind: string, age: number
   const frames = bladeFrames(rig, weapon, kind), frame = Math.max(0,Math.min(frames.length-1,age)), index = Math.floor(frame);
   return mix(frames[index],frames[Math.min(index+1,frames.length-1)],frame-index);
 }
+// V3 directional heavies (move-defs.json `directional`): a path that borrows another path's bake (PathSpec.blade) reads it with its own age warped onto that path's
+// timing, piece by piece (wind-up onto wind-up, active onto active, recovery onto recovery), so its contact frames are the bake's contact frames (V2 timing.js bladeAge).
+// A path with no `blade` never comes here: V1's sweeps are read by age exactly as before.
+type Span = { windup: number; active: number; recovery: number };
+export function bladeAge(age: number, own: Span, baked: Span): number {
+  if (age <= own.windup) return own.windup ? (age * baked.windup) / own.windup : 0;
+  if (age <= own.windup + own.active) return baked.windup + ((age - own.windup) * baked.active) / own.active;
+  return baked.windup + baked.active + (own.recovery ? ((age - own.windup - own.active) * baked.recovery) / own.recovery : 0);
+}
 export type HitLocation = 'head' | 'torso' | 'legs';
 // `targetScale` is the target's body scale (moves.ts `Opponent`): the upright capsule and its regions grow with the man.
 export function bladeImpact(rig: string, weapon: string, kind: string, fromAge: number, toAge: number, before: State, after: State, targetBefore: State, targetAfter: State, targetScale = 1): HitLocation | null {

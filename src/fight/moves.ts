@@ -1,4 +1,4 @@
-import { MOVES, PATHS } from './move-rows.ts';
+import { MOVES, PATHS, withDirectionalHeavies } from './move-rows.ts';
 import WEAPON_DEFS from './weapon-defs.json' with { type: 'json' };
 import SKILL_DEFS from './skill-defs.json' with { type: 'json' };
 import { loadSkillDefs } from './skills.ts';
@@ -23,7 +23,8 @@ export type { OpponentId, RigId } from '../roster.ts';
 // Damage is tuned for a Souls-length duel: AI vs AI at normal runs ~9 clean hits / ~35 s (light 11, heavy 18, riposte 24, heavy riposte 30, kick 4).
 // The engine (duel.ts) reads this table; nothing here may depend on rendering, clocks or browser state.
 export type MoveId = 'light_right' | 'light_left' | 'heavy_overhead' | 'thrust' | 'riposte' | 'slash_riposte' | 'heavy_riposte' | 'heavy_counter' | 'critical' | 'kick' | 'skill_witchfire' | 'skill_pommel'
-  | 'skill_lunge' | 'skill_reaping' | 'skill_shove' | 'skill_jab' | 'skill_cleave' | 'skill_stomp' | 'skill_miasma' | 'skill_ironrush' | 'skill_hewer';
+  | 'skill_lunge' | 'skill_reaping' | 'skill_shove' | 'skill_jab' | 'skill_cleave' | 'skill_stomp' | 'skill_miasma' | 'skill_ironrush' | 'skill_hewer'
+  | 'heavy_right' | 'heavy_left' | 'heavy_thrust';   // V3 directional heavies (move-defs.json `directional`, resolved per weapon by move-rows.ts)
 export type SkillId = string;   // a row id in skill-defs.json (skills are data: a new skill is one row plus its MoveDef verb); the equipped skill (docs/briefs/skill-witch-arm.md): one per duel, fired by the SKILL action; null on a fighter = none (every opponent in V1)
 export type Direction = 'right' | 'left' | 'overhead' | 'thrust' | 'low';
 export type Timing = { windup: number; active: number; recovery: number };
@@ -31,8 +32,9 @@ export const total = (t: Timing): number => t.windup + t.active + t.recovery;
 
 // Baked blade trajectories: one immutable table per (authored clip, timing). scripts/bake-blades.mjs samples the rig at these
 // timings; tests assert the shipped rig still agrees. `source` is the contact time inside the clip; `clip` is the rig animation.
-export type PathId = 'light_right' | 'light_left' | 'light_right_chain' | 'light_left_chain' | 'heavy_overhead' | 'heavy_overhead_chain' | 'thrust' | 'riposte' | 'slash_riposte' | 'heavy_riposte';
-export type PathSpec = Timing & { clip: 'Attack' | 'Return' | 'Heavy' | 'Riposte' | 'Trident_Thrust' | 'Trident_ThrustChain' | 'Trident_Sweep' | 'Trident_High' | 'Scythe_Reap' | 'Scythe_High' | 'Scythe_Thrust' | 'Scythe_Chain'; source: number };
+export type PathId = 'light_right' | 'light_left' | 'light_right_chain' | 'light_left_chain' | 'heavy_overhead' | 'heavy_overhead_chain' | 'thrust' | 'riposte' | 'slash_riposte' | 'heavy_riposte'
+  | 'heavy_right' | 'heavy_left' | 'heavy_thrust';   // V3 directional heavies: each reads its `blade` path's bake, time-warped (blade.ts bladeAge)
+export type PathSpec = Timing & { blade?: PathId; clip: 'Attack' | 'Return' | 'Heavy' | 'Riposte' | 'Trident_Thrust' | 'Trident_ThrustChain' | 'Trident_Sweep' | 'Trident_High' | 'Scythe_Reap' | 'Scythe_High' | 'Scythe_Thrust' | 'Scythe_Chain'; source: number };
 // PATHS and MOVES are rows (move-defs.json), built by move-rows.ts; the notes that sat beside the literals are in docs/specs/combat/move-notes.md.
 export type MoveDef = Timing & {
   id: MoveId;
@@ -116,6 +118,11 @@ export type Weapon = { id: WeaponId; moves: Record<MoveId, MoveDef>; paths: Reco
 // The weapons are DATA now (core slice 4): src/fight/weapon-defs.json, resolved over the engine's base MOVES / PATHS by the loader in weapons.ts. The named exports below are the same objects the
 // tests and scripts have always imported; each is a row of the loaded table.
 const LOADED = loadWeaponDefs(WEAPON_DEFS, { moves: MOVES, paths: PATHS }, { materials: MATERIALS, guards: GUARDS, grips: GRIPS, kinds: DAMAGE_KIND_IDS });
+// V3 directional heavies: each weapon's are its OWN heavy's (a weapon row that retunes heavy_overhead retunes them); a weapon whose tables already hold them keeps its objects.
+for (const table of [LOADED.weapons, LOADED.weapons86]) for (const [id, w] of Object.entries(table)) {
+  const d = withDirectionalHeavies(w.moves, w.paths);
+  if (d.moves !== w.moves || d.paths !== w.paths) table[id] = { ...w, moves: d.moves, paths: d.paths };
+}
 // The skills are DATA too (core slice 5): src/fight/skill-defs.json, loaded by skills.ts. SKILL_MOVE is the one place a skill meets its MoveDef (duel.ts chooseMove, legal); SKILL_BY_CODE is the record codec's table.
 const SKILLS_LOADED = loadSkillDefs(SKILL_DEFS, MOVES);
 export const SKILL_ROWS = SKILLS_LOADED.rows;

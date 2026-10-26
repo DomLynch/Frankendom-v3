@@ -13,7 +13,7 @@ const BOUNCE_LIFE_MAX = fxNum('fx.clashSparks.bounceLifeMax');
 // Readable brutality: ≤ 8 sparks, ≤ 0.4 s, nothing that covers a pose. Steel on steel only — the caller decides.
 // Steel on steel: the strength of the sparks a contact deserves, or 0 for none. Only a block or parry of a metal blade by a blade guard
 // (a shaft catching a blade, a wooden weapon, a kick, a landed blow: nothing). A parry strikes hardest, then a heavy, then a perfect block.
-export const HEAVY_CLASS = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical']);
+export const HEAVY_CLASS = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical', 'heavy_right', 'heavy_left', 'heavy_thrust']);   // + V3's directional heavies
 export function clashStrength(event: CombatEvent, defender: Weapon): number {
   if ((event.type !== 'Blocked' && event.type !== 'Parried') || event.target === undefined) return 0;
   if (!materialRow(event.material ?? '').sparks || defender.guard !== 'blade' || materialRow(defender.material).dull) return 0;

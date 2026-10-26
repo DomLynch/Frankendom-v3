@@ -10,7 +10,7 @@ import type { CombatEvent } from './duel.ts';
 export type Grade = 'plain' | 'heavy' | 'perfect' | 'parry';
 export const GRADES: readonly Grade[] = ['plain', 'heavy', 'perfect', 'parry'];
 // The same heavy class the clash sparks, camera kick and clang weight read (clash-sparks.ts HEAVY_CLASS).
-export const HEAVY_BLOCK = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical']);
+export const HEAVY_BLOCK = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical', 'heavy_right', 'heavy_left', 'heavy_thrust']);   // + V3's directional heavies
 export const GRADE_LABEL: Readonly<Record<Grade, string>> = { plain: 'BLOCK', heavy: 'HEAVY BLOCK', perfect: 'PERFECT', parry: 'PARRY' };   // the caption the GUARD button wears for half a second
 export const defenceFlag = (search: string) => (new URLSearchParams(search).get('look') ?? '').split(',').includes('defence');
 

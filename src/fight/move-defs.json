@@ -33,5 +33,11 @@
     {"id":"slash_riposte","clip":"Attack","source":0.34,"windup":12,"active":5,"recovery":19},
     {"id":"riposte","clip":"Riposte","source":0.34,"windup":12,"active":5,"recovery":19},
     {"id":"heavy_riposte","clip":"Heavy","source":0.48,"windup":20,"active":5,"recovery":25}
+  ],
+  "directionalAbout": "V3 directional heavies (V2 PR #60, Dom 2026-10-26: hold STRIKE + slide = a heavy cut to that side, or up = a heavy stab). Not in V1: no V1 record or script can name them. Each row is resolved per weapon by move-rows.ts withDirectionalHeavies: the move is that weapon's `from` move (every stat: damage, stamina, stagger, poise, chamber, charges...) with this row's direction (a raised guard on that side blocks it), no chain, and a wind-up of round(from.windup x windupFactor); its path plays the weapon's `blade` path's clip and source and reads that path's baked sweep, time-warped onto the heavy's timing (blade.ts bladeAge). Input: src/fight/input.ts (input.directional-heavy, input.heavy-grace-ms; ?heavy=v1 turns them off).",
+  "directional": [
+    {"id":"heavy_right","from":"heavy_overhead","direction":"right","blade":"light_right","windupFactor":1},
+    {"id":"heavy_left","from":"heavy_overhead","direction":"left","blade":"light_left","windupFactor":1},
+    {"id":"heavy_thrust","from":"heavy_overhead","direction":"thrust","blade":"thrust","windupFactor":1}
   ]
 }
