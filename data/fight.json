@@ -15,5 +15,6 @@
     "about": "V2's lower, over-the-shoulder fight camera on V1's lock (src/fight/camera.ts setLockFrame; ?cam=v1 = V1's lock exactly). V2 (Frankendom-v2 data/camera.json portrait: back 6.5, up 2.8, side 1.0, zoom 0.9) puts the eye ~2.8 m up and 1.0 m over the right shoulder; V1's lock at a 2.5 m gap is 4.2 m up (max(lockLiftFloor 3.2, gap x 1.3) x fightBack 1.3) and 5.7 m back. lift scales V1's lock height (2.8 / 4.2); side is V2's shoulder step in metres. A finish eases both back to V1's lock, as V1 does fightBack.",
     "lift": 0.67,
     "side": 1.0
-  }
+  },
+  "ai": "novice"
 }

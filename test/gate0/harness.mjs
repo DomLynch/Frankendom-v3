@@ -9,9 +9,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { extractV1, ROOT, V1_DIR } from './extract.mjs';
+import { brainFor, brainProfile } from '../../src/brain.ts';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
+const BRAINS = readJson(join(HERE, '..', '..', 'data', 'brains.json'));
 export const CONFIGS = readJson(join(HERE, 'configs.json')).configs;
 export const SCRIPTS = readdirSync(join(HERE, 'scripts')).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(join(HERE, 'scripts', f)));
 export const V3_DIR = ROOT;
@@ -48,7 +50,8 @@ export function startFight(side, config, seed) {
   playRadius.setPlayScale(f.playScaleFor ? playRadius.playScaleFor(f.playScaleFor, Infinity) : f.playScale);
   playRadius.setLateNotice(f.lateNotice); stabRule.setStab(f.stab); stanceEra.setStanceRows(f.stanceRows);
   const opponent = moves.OPPONENTS[config.opponent];
-  const body = moves.opponentAt(opponent, config.level), profile = moves.profileAt(opponent, config.level);
+  // a config naming a `brain` (data/brains.json) lays that row over this side's own V1 profile, as the driver does (src/brain.ts)
+  const body = moves.opponentAt(opponent, config.level), profile = brainProfile(moves.profileAt(opponent, config.level), config.brain ? brainFor(BRAINS.brains, config.brain) : undefined);
   const practice = config.plain
     ? combat.initialPractice(seed, body)
     : combat.initialPractice(seed, body, config.weapon ?? moves.DEFAULT_WEAPON, config.skill ?? null,
