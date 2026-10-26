@@ -64,6 +64,7 @@ import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, chooseRigs, heroRigFile } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
+import { foeRagdollFor } from './ragdoll.ts';
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
 
@@ -345,6 +346,7 @@ export function createScene(
     return look;
   }) : undefined; }, (look) => { const swapped = warriors?.opponent.wearLook(look); if (swapped) (globalThis as { __rankLookOn?: typeof swapped }).__rankLookOn = swapped; }, captureException) : undefined;
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
+  const ragdoll = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
     if (warriors) return Promise.resolve();
@@ -380,6 +382,7 @@ export function createScene(
       }
       if (flinches) { pivots[0].clear(); pivots[1].clear(); pivots[0].add(loaded.player.anchor); pivots[1].add(loaded.opponent.anchor); player.add(pivots[0]); opponent.add(pivots[1]); }
       else { player.add(loaded.player.anchor); opponent.add(loaded.opponent.anchor); }
+      ragdoll?.attach(opponent, loaded.opponent).catch(captureException);   // his presentation ragdoll (ragdoll.ts): the chunk loads after the first frame
       player.visible = opponent.visible = true;
       for (const rig of [loaded.player, loaded.opponent])
         for (const name of ['foot_l', 'foot_r']) dustFeet.push(boneOf(rig.anchor, name) ?? null);
@@ -785,6 +788,7 @@ export function createScene(
       }
       if (isTemplate(finisher, 'cleave') && practice.finish?.victim === 1)
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
+      ragdoll?.frame(animationDt, events, practice.finish, finisher);   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
       // (the clip's first 9 %) — baked from the rig at that pose, popped along the killing blow, ballistic to a stop. Blood
       // 'off' keeps the head on: gore is presentation, like the rest of the layer.

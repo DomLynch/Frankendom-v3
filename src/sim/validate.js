@@ -17,6 +17,9 @@ export const SCHEMA = {
   // `bones`, `files`, `weapons` and `gapFill` are keyed by names (bones, body stems, nodes, roles), so only their owners' keys are closed here.
   'rig': { keys: ['about', 'default', 'query', 'held', 'files', 'detect', 'bones', 'weapons', 'hide', 'gapFill', 'grip65'], maps: { default: ['hero', 'foe'], query: ['hero', 'foe'], held: ['weapon', 'sword', 'sheath'], detect: ['65', '106'], grip65: ['translation', 'rotation'] } },
   'sound': { keys: ['about', 'keep', 'statusMs'], maps: { keep: ['about', 'samples', 'rate', 'volume'] } },
+  // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
+  'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'rigs', 'hit', 'kill', 'plainDeathOnly'], rows: { opponents: ['id', 'body', 'rig', 'measure'] },
+    maps: { rigs: ['65', '106'], hit: ['parts', 'impulse', 'lift', 'easeInS', 'holdS', 'upS', 'targets', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'] } },
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;

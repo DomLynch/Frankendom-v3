@@ -58,12 +58,18 @@ const lazyModule = (file) => join(code, rel(file) + '.js');
 //   2. bundle a vendor entry that re-exports exactly those names (minified, as main.js is), hash it, write it;
 //   3. bundle main.ts for real, with every three specifier pointing at the vendor file.
 const THREE = /^three(\/|$)/;
+// The physics chunk (src/fight/physics-chunk.ts: @frankendom/physics with Jolt's WASM embedded, ~3 MB raw) is its own content-hashed module,
+// b/vendor/physics.<sha256 8 hex>.js, imported by src/fight/ragdoll.ts only after the first frame (data/physics.json), so a first visit never
+// waits on it and a code-only deploy costs a returning player nothing for it. Jolt's glue reaches node:module / fs / path only on its Node branch.
+const PHYSICS_CHUNK = join(root, 'src/fight/physics-chunk.ts');
+let physicsSpec = './physics-chunk.js';   // the probe bundle's stand-in; the real name is set once the chunk is written
 const bundleMain = (minify, threeTo) => build({
   entryPoints: [join(root, ENTRY)], outdir: ENTRY_DIR, entryNames: '[name]', write: minify,
   bundle: true, splitting: false, format: 'esm', target: 'es2022', minify, keepNames: true, legalComments: 'none', metafile: true,
   logLevel: 'warning', charset: 'utf8',
   plugins: [{ name: 'v3', setup(b) {
     b.onResolve({ filter: THREE }, (args) => ({ path: threeTo(args.path), external: true }));
+    b.onResolve({ filter: /physics-chunk\.ts$/ }, (args) => (args.kind === 'dynamic-import' && resolve(args.resolveDir, args.path) === PHYSICS_CHUNK ? { path: physicsSpec, external: true } : undefined));
     b.onResolve({ filter: /\.json$/ }, (args) => {
       if (args.kind !== 'dynamic-import') return undefined;
       const file = resolve(args.resolveDir, args.path); lazyJson.add(file);
@@ -98,7 +104,18 @@ const vendorFile = join(out, 'b/vendor', `three.${createHash('sha256').update(ve
 mkdirSync(dirname(vendorFile), { recursive: true });
 writeFileSync(vendorFile, vendor);
 const vendorSpec = relative(ENTRY_DIR, vendorFile).split('\\').join('/');
+const physicsChunk = (await build({ entryPoints: [PHYSICS_CHUNK], write: false, bundle: true, format: 'esm', platform: 'browser', target: 'es2022',
+  minify: true, legalComments: 'none', logLevel: 'warning', charset: 'utf8', external: ['node:module'],
+  plugins: [{ name: 'node-stubs', setup(b) {
+    b.onResolve({ filter: /^(node:)?(fs|path|url)$/ }, () => ({ path: 'stub', namespace: 'node-stub' }));
+    b.onLoad({ filter: /.*/, namespace: 'node-stub' }, () => ({ contents: 'export default {};', loader: 'js' }));
+  } }] })).outputFiles[0].contents;
+const physicsFile = join(out, 'b/vendor', `physics.${createHash('sha256').update(physicsChunk).digest('hex').slice(0, 8)}.js`);
+writeFileSync(physicsFile, physicsChunk);
+physicsSpec = relative(ENTRY_DIR, physicsFile).split('\\').join('/');
 const result = await bundleMain(true, () => vendorSpec);
+// The body measure rows the ragdoll fetches (data/physics.json `measure`: physics/bodies/<body>.measure.json), from the package as pinned.
+cpSync(join(root, 'node_modules/@frankendom/physics/data/bodies'), join(out, 'physics/bodies'), { recursive: true });
 for (const f of lazyJson) {
   mkdirSync(dirname(lazyModule(f)), { recursive: true });
   writeFileSync(lazyModule(f), `export default ${JSON.stringify(JSON.parse(readFileSync(f, 'utf8')))};\n`);
@@ -158,4 +175,4 @@ for (const f of files(out).filter((f) => GZ.test(f))) {
 }
 
 const main = join(ENTRY_DIR, 'main.js'), kb = (n) => (n / 1024).toFixed(0);
-console.log(`dist/ build ${id}: ${Object.keys(result.metafile.inputs).length} sources -> main.js ${kb(statSync(main).size)} KB (gzip ${kb(statSync(main + '.gz').size)} KB) + ${rel(vendorFile).replace('dist/', '')} ${kb(statSync(vendorFile).size)} KB (gzip ${kb(statSync(vendorFile + '.gz').size)} KB) + ${lazyJson.size} lazy JSON modules, assets ${assets.size}, art files hashed ${Object.keys(artMap).length}; .gz twins ${(raw / 1048576).toFixed(1)} MB -> ${(packed / 1048576).toFixed(1)} MB`);
+console.log(`dist/ build ${id}: ${Object.keys(result.metafile.inputs).length} sources -> main.js ${kb(statSync(main).size)} KB (gzip ${kb(statSync(main + '.gz').size)} KB) + ${rel(vendorFile).replace('dist/', '')} ${kb(statSync(vendorFile).size)} KB (gzip ${kb(statSync(vendorFile + '.gz').size)} KB) + lazy ${rel(physicsFile).replace('dist/', '')} ${kb(statSync(physicsFile).size)} KB (gzip ${kb(statSync(physicsFile + '.gz').size)} KB) + ${lazyJson.size} lazy JSON modules, assets ${assets.size}, art files hashed ${Object.keys(artMap).length}; .gz twins ${(raw / 1048576).toFixed(1)} MB -> ${(packed / 1048576).toFixed(1)} MB`);
