@@ -2,8 +2,9 @@
   "about": "The one fight V3 plays: the first career fight of a frankendom.com page load at 82a994d15 (V1 main.ts + match.ts begin('career')): the Centurion at the Match's default level (PRESET_LEVEL.normal = level-anchor-defs.json normal, 18: V1 only moves to the career level on a rematch, and a rematch that changes his loadout reloads the page, so a guest always meets him at 18 with the gladius and scutum), met at a guest's tier (Recruit), the Match's default seed, the longsword, SPECIAL 1/2 from career-rules.json betaCut slot defaults, specials on (rows80 specialsFromLevel 1), the default stance pick (stance.ts PICKS[0]). Rematch steps the seed as V1 nextSeed does. tempoHz: V1's default tempo (main.ts TEMPO_KEY). frameDtMaxS: the most one frame injects into the sim (V1 first-loss-rules.json frame-dt-max-s). gfx: V1's gfx lift (fx-rows gfx.default on). Dom 2026-10-26 (later): the opponent keeps the Minotaur's look but fights as V1's Pitborn (`opponent`): the Pitborn's moves, cleaver (at every level), stats, AI profile under the `ai` brain row and class special (Earth Fold at 18), no shield and no shield-bearer block; the same level, seed and picks. ?pitborn=v1 (and ?foe=v1) = the Centurion's fight above exactly (`opponentV1`, src/fight/foe-pick.ts).",
   "opponent": "pitborn",
   "opponentV1": {
-    "about": "?pitborn=v1 (and ?foe=v1, the Centurion exactly): the opponent before Dom's 2026-10-26 Pitborn call, the Centurion at `level` (gladius + scutum), drawn as the Minotaur with the Cleaver over his gladius (`foeWeapon`) and no shield (src/fight/foe-body.ts). Gate 0's V1-vs-V3 configs are pinned to him (test/gate0/configs.json).",
-    "opponent": "veteran"
+    "about": "?pitborn=v1 (and ?foe=v1, the Centurion exactly): the opponent before Dom's 2026-10-26 Pitborn call, the Centurion at `level` (gladius + scutum), drawn as the Minotaur with the Cleaver over his gladius (`foeWeapon`) and no shield (src/fight/foe-body.ts). Gate 0's V1-vs-V3 configs are pinned to him (test/gate0/configs.json). `?<query>=v1` picks it (src/fight/foe-pick.ts); ?<foeBody.query>=v1 (?foe=v1) does too.",
+    "opponent": "veteran",
+    "query": "pitborn"
   },
   "level": 18,
   "seed": 731,
@@ -62,7 +63,8 @@
     "about": "Dom 2026-10-26, his pick in OpenTrident's weapon picker (Frankendom → Cleaver): the Minotaur wields V1's plain Cleaver. Lead: a VISUAL weapon only. The sim, the AI and Gate 0 still fight with `weapon` (the gladius: its id, moves, reach, damage and timing) and his scutum stays; the scene draws `drawn` instead (src/fight/foe-weapon.ts): its equip file src/assets/weapons/foe/<drawn>.glb (the gladius's file, same hand socket and clips, V1's Cleaver part in the socket: scripts/foe-body/graft-weapon.mjs) and its rank shape at his rung (public/weapons/shapes/cleaver-plain.glb, V1's file). ?foeweapon=v1 = the gladius on him; ?foe=v1 = the Centurion exactly. Since Dom's later 10-26 call the opponent is the Pitborn, who really fights with the cleaver (the same equip file, grafted over the trident minotaur.glb bakes), so this row, keyed to the Centurion, draws only under ?pitborn=v1.",
     "opponent": "veteran",
     "weapon": "gladius",
-    "drawn": "cleaver"
+    "drawn": "cleaver",
+    "query": "foeweapon"
   },
   "foeName": {
     "about": "Dom 2026-10-26 (docs/V3-OWED-2026-10-26.md, HUD): the opponent's body is the Minotaur (src/fight/foe-body.ts), so the HUD names him the Minotaur: the name over his bar and the status line (src/fight/foe-name.ts). Display only: the sim, the AI, his stats, specials, level and Gate 0 still see the Centurion (id `opponent`). ?foe=v1 = the Centurion's body and name. Since Dom's later 10-26 call the Pitborn fights in the Minotaur's body (`opponent`), still named the Minotaur; under ?pitborn=v1 the name goes on the Centurion, as before (src/fight/foe-name.ts: whoever fights in the body).",
@@ -99,7 +101,17 @@
     "v1": "v1"
   },
   "specialSink": {
-    "about": "Dom 2026-10-26, on his Skull Crack landing: the struck body's feet sinking into the sand 'looks a bit cheesy'. V1's knee-dip (scene.ts) drops the body a landed special strikes ~0.28 m below the floor; with sink false it never goes below the floor (a mode that lifts still lifts; src/fight/special-sink.ts). Presentation only. ?dip=v1 = V1's drop.",
-    "sink": false
+    "about": "Dom 2026-10-26, on his Skull Crack landing: the struck body's feet sinking into the sand 'looks a bit cheesy'. V1's knee-dip (scene.ts) drops the body a landed special strikes ~0.28 m below the floor; with sink false it never goes below the floor (a mode that lifts still lifts; src/fight/special-sink.ts). Presentation only. ?<query>=v1 (?dip=v1) = V1's drop.",
+    "sink": false,
+    "query": "dip"
+  },
+  "foeBody": {
+    "about": "Dom 2026-10-26: the body drawn in an opponent's place, by opponent id (src/fight/foe-body.ts; moved here from foe-body.ts's BODIES map, 2026-10-26 data-layer audit, same values). `body`: the 65-rig file stem under src/assets (which rig it draws on is data/rig.json's: `files` maps this stem to its 106 file, ?foerig= / `default` picks; no body map is repeated there) (minotaur.glb: the Centurion's veteran.glb rig and clips with Mixamo's Minotaur mesh, scripts/foe-body/build-minotaur.sh). `kit`: the kit file stem under src/assets/loot, or null for no kit (Dom: 'remove the Minotaur's shield'; visual only, the sim still guards with the scutum, moves.ts LOADOUT_FROM). `shieldKit`: the kit under ?<shieldQuery>=v1 (?shield=v1, his scutum back). `bakes`: the weapon the body file carries in its hand (minotaur.glb is veteran.glb's rig, so the trident); any other weapon is grafted from its equip file (scene.ts). `pitborn`: V1's Pitborn (data/fight.json `opponent`) in the Minotaur's body, no shield, his cleaver grafted over the trident. `veteran`: ?pitborn=v1's fight, the Centurion drawn as the Minotaur. An opponent with no row keeps his V1 body and `carriers-<id>` kit. ?<query>=v1 (?foe=v1) = every opponent's V1 body and kit exactly; it also picks ?pitborn=v1's fight (src/fight/foe-pick.ts) and switches off foeName, foeWeapon and foeReach.",
+    "query": "foe",
+    "shieldQuery": "shield",
+    "bodies": {
+      "pitborn": { "body": "minotaur", "kit": null, "shieldKit": null, "bakes": "trident" },
+      "veteran": { "body": "minotaur", "kit": null, "shieldKit": "carriers-minotaur", "bakes": "trident" }
+    }
   }
 }

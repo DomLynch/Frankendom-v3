@@ -6,14 +6,14 @@
 // Since Dom's later 10-26 call the opponent fights as V1's Pitborn with his own cleaver (foe-pick.ts), so this row (keyed to `veteran`) is a no-op
 // by default and draws only under ?pitborn=v1, the fight before that call. Set by the page before the rigs load; null = the gladius as before. ?foeweapon=v1 = the gladius on the Minotaur; ?foe=v1 = the Centurion exactly
 // (his body, his kit and his gladius).
-export type FoeWeaponRow = { opponent: string; weapon: string; drawn: string };
+import { foeV1 } from './foe-body.ts';
+
+export type FoeWeaponRow = { opponent: string; weapon: string; drawn: string; query: string };
 
 let row: FoeWeaponRow | null = null;
-/** The row in force for this page: null under ?foeweapon=v1 or ?foe=v1. */
-export const foeWeaponFor = (data: FoeWeaponRow, search: string): FoeWeaponRow | null => {
-  const q = new URLSearchParams(search);
-  return q.get('foeweapon') === 'v1' || q.get('foe') === 'v1' ? null : data;
-};
+/** The row in force for this page: null under ?<query>=v1 (?foeweapon=v1) or ?foe=v1. */
+export const foeWeaponFor = (data: FoeWeaponRow, search: string): FoeWeaponRow | null =>
+  new URLSearchParams(search).get(data.query) === 'v1' || foeV1(search) ? null : data;
 export const setFoeWeapon = (next: FoeWeaponRow | null): void => { row = next ? { opponent: next.opponent, weapon: next.weapon, drawn: next.drawn } : null; };
 /** The weapon drawn in `opponentId`'s hand when he fights with `weapon` (the row's `drawn`, or `weapon` itself). Presentation only. */
 export const foeDrawnWeapon = (opponentId: string, weapon: string): string =>

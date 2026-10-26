@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
+import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, foeV1 } from '../src/fight/foe-body.ts';
 import { fightOpponent } from '../src/fight/foe-pick.ts';
 import { OPPONENTS, opponentAt } from '../src/fight/moves.ts';
 
@@ -76,6 +76,30 @@ test('the Pitborn draws the Minotaur with no kit; his cleaver is grafted over th
   assert.equal(foeKitFile('pitborn'), null, 'the Pitborn never had a shield');
   for (const q of ['?pitborn=v1', '?foe=v1', '?pitborn=v1&shield=v1']) assert.equal(fightOpponent(FIGHT, q), 'veteran', q);
   chooseFoeBody('');
+});
+
+// Data layer (Dom 2026-10-26: everything on the data layer): the body rows and the toggles' query names live in data/fight.json, pinned here to
+// the values foe-body.ts, foe-pick.ts and foe-weapon.ts had in code, so the move is a no-op.
+test('the body rows and the ?foe= / ?shield= / ?pitborn= / ?foeweapon= names are data/fight.json rows, as they were in code', () => {
+  const { about, ...row } = FIGHT.foeBody;
+  assert.ok(about.length > 0);
+  assert.deepEqual(row, {
+    query: 'foe', shieldQuery: 'shield',
+    bodies: {
+      pitborn: { body: 'minotaur', kit: null, shieldKit: null, bakes: 'trident' },
+      veteran: { body: 'minotaur', kit: null, shieldKit: 'carriers-minotaur', bakes: 'trident' },
+    },
+  });
+  assert.equal(FIGHT.opponentV1.query, 'pitborn');
+  assert.equal(FIGHT.foeWeapon.query, 'foeweapon');
+  assert.equal(FIGHT.specialSink.query, 'dip', "?dip=v1 (src/client/main.ts builds its regex from the row)");
+  assert.doesNotMatch(readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8'), /\/\[\?&\]dip=v1/, 'main.ts names no ?dip= of its own');
+  for (const f of ['foe-body', 'foe-pick', 'foe-name', 'foe-weapon', 'foe-reach']) {
+    const src = readFileSync(new URL(`../src/fight/${f}.ts`, import.meta.url), 'utf8');
+    assert.doesNotMatch(src, /\.get\('[a-z]+'\)/, `${f}.ts reads no query name of its own (the rows name them)`);
+  }
+  assert.equal(foeV1('?foe=v1'), true);
+  assert.equal(foeV1('?foe=v2&shield=v1'), false);
 });
 
 test("the cleaver plays the sword clip family, and minotaur.glb carries every clip of it (no fallback)", () => {

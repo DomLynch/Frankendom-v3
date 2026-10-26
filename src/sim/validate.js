@@ -5,10 +5,11 @@
 // V1's fight rows (src/fight/*-defs.json) keep V1's own loader checks (src/core/registry.ts); a schema here is
 // added per file as V2's rows come back on top (PLAN.md section 5, step 5).
 
-// file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
+// file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys },
+//           dicts: { 'objectKey.child': row keys } (an object keyed by id, e.g. opponent id -> row: every row but `about` has a closed key set) }
 export const SCHEMA = {
   'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
-  'fight': { keys: ['about', 'opponent', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'] } },
+  'fight': { keys: ['about', 'opponent', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeBody'], maps: { specialSink: ['about', 'sink', 'query'], opponentV1: ['about', 'opponent', 'query'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn', 'query'], foeName: ['about', 'opponent', 'name'], foeBody: ['about', 'query', 'shieldQuery', 'bodies'] }, dicts: { 'foeBody.bodies': ['body', 'kit', 'shieldKit', 'bakes'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)
@@ -44,6 +45,14 @@ export function validateFile(name, json) {
   }
   for (const [obj, keys] of Object.entries(s.maps || {})) {
     for (const k of Object.keys(json[obj] || {})) if (!keys.includes(k)) errors.push(`${name}.${obj}.${k}: unknown key`);
+  }
+  for (const [path, keys] of Object.entries(s.dicts || {})) {
+    const dict = path.split('.').reduce((o, k) => o?.[k], json) || {};
+    for (const [id, row] of Object.entries(dict)) {
+      if (id === 'about') continue;
+      if (!row || typeof row !== 'object' || Array.isArray(row)) { errors.push(`${name}.${path}.${id}: not a row`); continue; }
+      for (const k of Object.keys(row)) if (!keys.includes(k)) errors.push(`${name}.${path}.${id}.${k}: unknown key`);
+    }
   }
   banned(json, name, errors);
   return errors;

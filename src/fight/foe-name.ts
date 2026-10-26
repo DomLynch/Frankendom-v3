@@ -4,6 +4,7 @@
 // so his name too. Set by the page before the HUD paints; null = the roster's name as before.
 import { bareName } from '../roster.ts';
 import type { OpponentId } from '../roster.ts';
+import { foeV1 } from './foe-body.ts';
 
 export type FoeNameRow = { opponent: string; name: string };
 
@@ -11,7 +12,7 @@ let row: FoeNameRow | null = null;
 /** The row in force for this page: the name on the opponent this page fights (`opponent`, from foe-pick.ts: the Pitborn, or the Centurion under
  * ?pitborn=v1, both drawn as the Minotaur); null under ?foe=v1 (the Centurion's body keeps the Centurion's name). */
 export const foeNameFor = (data: FoeNameRow, search: string, opponent: string = data.opponent): FoeNameRow | null =>
-  (new URLSearchParams(search).get('foe') === 'v1' ? null : { opponent, name: data.name });
+  (foeV1(search) ? null : { opponent, name: data.name });
 export const setFoeName = (next: FoeNameRow | null): void => { row = next ? { opponent: next.opponent, name: next.name } : null; };
 /** The name the HUD shows for `id` (no leading "the"): the row's name for its opponent, the roster's otherwise. Presentation only. */
 export const foeDisplayName = (id: OpponentId): string => (row && row.opponent === id ? row.name : bareName(id));

@@ -5,25 +5,27 @@
 // (scripts/foe-body/build-minotaur.sh). His kit is cut to the scutum (src/assets/loot/carriers-minotaur.glb): the Centurion's armour is
 // shaped for the Centurion's body. ?foe=v1 draws the Centurion exactly (veteran.glb, his whole kit, his rank looks). The page picks once,
 // before the rigs load, and only the body picked is fetched.
-/** opponent id -> the body drawn by default in its place (rig file stem under src/assets, kit file stem under src/assets/loot). */
-// `kit: null`: no kit drawn at all (Dom 2026-10-26: "remove the Minotaur's shield"). Visual only: the sim still fights him with the scutum's
-// guard (moves.ts LOADOUT_FROM), so Gate 0 is untouched. ?shield=v1 = his scutum-only kit back.
-// `bakes`: the weapon the body file carries in its hand (minotaur.glb is veteran.glb's rig, so the trident); any other weapon is grafted from its
-// equip file (scene.ts). Dom 2026-10-26, later: the opponent fights as V1's Pitborn (foe-pick.ts) in the Minotaur's body: no shield, no kit, his
-// cleaver grafted over the trident (no shield arm). The `veteran` row is ?pitborn=v1's fight: the Centurion drawn as the Minotaur.
+// opponent id -> the body drawn by default in its place: data/fight.json `foeBody.bodies` (the 65-rig file stem under src/assets, kit file stem
+// under src/assets/loot or null for none, the shield kit under ?shield=v1, the weapon the 65 body file bakes). The row's `about` says why each
+// value is. Which RIG that body draws on is data/rig.json's (`files`: 65 stem -> 106 stem, `default`/`query`: ?foerig=), read by rig-bones.ts
+// foeRigFile: two layers, one map each (opponent -> body here; body -> rig file there). `foeBody.query` (?foe=v1) and `foeBody.shieldQuery` (?shield=v1) name the page's toggles.
+import FIGHT from '../../data/fight.json' with { type: 'json' };
 import { foeRigFile } from './rig-bones.ts';   // ?foerig=65|106 (data/rig.json default): which rig the drawn body is
-type BodyRow ={ body: string; kit: string | null; shieldKit: string | null; bakes: string };
-const BODIES: Readonly<Record<string, BodyRow>> = {
-  pitborn: { body: 'minotaur', kit: null, shieldKit: null, bakes: 'trident' },
-  veteran: { body: 'minotaur', kit: null, shieldKit: 'carriers-minotaur', bakes: 'trident' },
-};
+
+export type BodyRow = { body: string; kit: string | null; shieldKit: string | null; bakes: string };
+export type FoeBodyRow = { query: string; shieldQuery: string; bodies: Readonly<Record<string, BodyRow>> };
+const ROW: FoeBodyRow = FIGHT.foeBody;
+const BODIES = ROW.bodies;
+
+/** Whether the page asks for every opponent's V1 body (?foe=v1): it also picks ?pitborn=v1's fight and switches off foeName, foeWeapon and foeReach. */
+export const foeV1 = (search: string): boolean => new URLSearchParams(search).get(ROW.query) === 'v1';
 
 let v1 = false, shield = false;
 /** ?foe=v1 → every opponent draws his V1 body; anything else → the BODIES row. Returns whether the V1 bodies were picked. */
 export function chooseFoeBody(search: string): boolean {
   const q = new URLSearchParams(search);
-  v1 = q.get('foe') === 'v1';
-  shield = q.get('shield') === 'v1';
+  v1 = q.get(ROW.query) === 'v1';
+  shield = q.get(ROW.shieldQuery) === 'v1';
   return v1;
 }
 /** The rig file stem drawn for `id` whose roster body is `rosterBody` ('minotaur' for the Centurion by default, 'veteran' under ?foe=v1).

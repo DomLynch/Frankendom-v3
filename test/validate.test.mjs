@@ -28,6 +28,15 @@ test('an armour block or immune field is rejected anywhere', () => {
   assert.match(validateFile('stage', bad).join('\n'), /stage\.light\.block: armour may not block/);
 });
 
+test('a row in an id-keyed dict (fight.foeBody.bodies) has a closed key set', () => {
+  const bad = clone(files.fight);
+  bad.foeBody.bodies.pitborn.helmet = 'x';
+  bad.foeBody.bodies.goblin = 'minotaur';
+  const errs = validateFile('fight', bad).join('\n');
+  assert.match(errs, /fight\.foeBody\.bodies\.pitborn\.helmet: unknown key/);
+  assert.match(errs, /fight\.foeBody\.bodies\.goblin: not a row/);
+});
+
 test('a file with no schema is rejected', () => {
   assert.match(validateFile('nope', {}).join('\n'), /nope: no schema/);
 });
