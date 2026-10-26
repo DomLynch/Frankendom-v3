@@ -288,6 +288,10 @@ export function createScene(
   // dressed and his opened-waist bake is taken again, as a rematch at a new rung does (setTier). ?load=v1: V1's order, the kit beside his rig.
   const lateKit = !(typeof location !== 'undefined' && /[?&]load=v1\b/.test(location.search));
   const loadKit = () => loadLoot(carrierUrl!).then((pieces) => { carried = pieces; }).catch((error: unknown) => { captureException(error); });
+  // The late kit's download starts with the rigs (2026-10-26, after a ~3.4 s pop-in measured on #16): only the dressing waits for the first
+  // frame, so by then the file is usually in and the pop-in is the dress step. A failed fetch is forgotten, so a retry fetches again.
+  let kitFetch: Promise<THREE.SkinnedMesh[] | undefined> | undefined;
+  const fetchKit = () => (kitFetch ??= loadLoot(carrierUrl!).catch((error: unknown) => { captureException(error); kitFetch = undefined; return undefined; }));
   let worn: readonly string[] = [], wornTier: Readonly<Record<string, Tier>> = {}, lootPieces: THREE.SkinnedMesh[] | undefined, lootLoading: Promise<void> | null = null, carried: THREE.SkinnedMesh[] | undefined;
   // loot.glb, once per page (a failure is forgotten, so the next dress or Pit visit tries again): the worn set and the Pit's pieces share it.
   const loadLootPieces = () => (lootLoading ??= loadLoot(fighterUrls['../assets/loot.glb']!).then((pieces) => { lootPieces = pieces; dress(); }).catch((error: unknown) => { captureException(error); lootLoading = null; }));
@@ -296,6 +300,9 @@ export function createScene(
   // flag's table, else the shipping one.
   const shapeTable = (typeof location === 'undefined' ? undefined : shapesFlag(location.search)) ?? SHIPPING_SHAPES;
   const shapes = new Map<string, Promise<THREE.Mesh | undefined>>();
+  // The two sword files (~1 MB each, PNG) still start once the rigs are in, not beside them (tried 2026-10-26: on a 9 Mbps link they
+  // share the wire with the rigs and the fight became playable ~1.6 s later; they never gated playable). Until they land each fighter holds
+  // his weapon's own part.
   function reshape() {
     const loaded = warriors; if (!loaded || !shapesOn(shapeTable)) return;   // no shape file on: today's parts, no call at all
     const urls = () => shapesFor({ player: loaded.playerWeapon, opponent: builtFoeWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: levelOf(tier ?? 'Recruit') }, shapeTable);
@@ -379,6 +386,7 @@ export function createScene(
     }),
     arena.ready,
     carrierUrl && !lateKit ? loadKit() : null,
+    carrierUrl && lateKit && !carried ? void fetchKit() : null,   // started, never awaited here
   ])
     .then(async ([loaded]) => {
       warriors = loaded;
@@ -413,9 +421,12 @@ export function createScene(
         performance.mark('first-frame-' + how);
       }
       assetStatus('', 'ready');
-      if (carrierUrl && lateKit && !carried) void loadKit().then(() => {
-        if (!carried || !warriors) return;
-        dress(); if (!lookForced) warriors.opponent.rebakeOpened();
+      if (carrierUrl && lateKit && !carried) void fetchKit().then((pieces) => {
+        if (!pieces || carried || !warriors) return;
+        carried = pieces;
+        dress(); performance.mark('kit-dressed');
+        if (!lookForced) warriors.opponent.rebakeOpened();
+        performance.mark('kit-on');   // the load trace reads first-frame-* -> kit-on as the pop-in
         void renderer.compileAsync(scene, camera).catch(() => {});   // his kit's shaders, off the frame they first draw on
       });
       prefetchHamstrung();   // after ready, never before and never awaited: the loading card does not wait on a finisher that may not play
