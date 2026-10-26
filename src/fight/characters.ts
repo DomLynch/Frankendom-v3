@@ -127,6 +127,11 @@ export const isQuadruped = (asset: { animations: readonly { name: string }[] }):
 export const NO_HIP_DRAW: readonly WeaponId[] = [];
 export const drawRole = (weapon: WeaponId): Role | null => NO_HIP_DRAW.includes(weapon) ? null : 'Draw';
 const ONE_SHOT: readonly Role[] = ['Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Guard', 'Return', 'Heavy', 'Riposte', 'Thrust', 'Kick', 'BlockImpact', 'Parry', 'Deflected', 'Death_SplitCrown', 'Death_RunThrough', 'Fin_RunThrough', 'Pommel', 'Death_Hamstrung', 'Fin_Hamstrung', 'Death_Execution', 'Fin_Execution', ...SPECIAL_ROLES];
+// V3: legs walk under a held guard (buildWarriors' guardUpper). The page sets the lower-body bone pattern from data/fight.json before the
+// rigs are built; null (?guard=v1) keeps V1's whole-body Guard clip. The roles are the armed locomotion the update loop weights.
+let GUARD_WALK: RegExp | null = null;
+export const setGuardWalk = (lowerBones: string | null): void => { GUARD_WALK = lowerBones ? new RegExp(lowerBones) : null; };
+const GUARD_WALK_ROLES: readonly Role[] = ['ArmedWalk', 'StrafeLeft', 'StrafeRight', 'ArmedRun'];
 // Match the gait to actual travel, including analog movement and collision stops.
 export function gaitWeights(speed: number): number[] {
   speed = Number.isFinite(speed) ? Math.max(0, speed) : 0;
@@ -528,6 +533,15 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     for (const node of [weaponNode, sheathed, drawn]) node?.traverse(object => { if (object instanceof Mesh) ownMeshes.push(object); });
     const blade = (weaponNode?.userData.contactNode ? root.getObjectByName(weaponNode.userData.contactNode) : weaponNode) ?? drawn!, contactSegment = blade?.userData.contact as { from: number; to: number } | undefined, segment = contactSegment ? [contactSegment.from, contactSegment.to] : [.24, .85];
     for (const role of ONE_SHOT) { const action = actions[role]; if (!action) continue; action.setLoop(LoopOnce, 1); action.clampWhenFinished = true; action.paused = true; }
+    // V3 (V2 #48, Dom: "guarding then backing off floats"): a guard held while moving keeps the legs walking. Legs-only copies of the
+    // armed locomotion clips play under an upper-body copy of Guard, shared by how much he moves (update below); off = V1's whole-body Guard.
+    const guardLegs: Partial<Record<Role, AnimationAction>> = {}; let guardUpper: AnimationAction | undefined;
+    if (GUARD_WALK && clips.Guard) {
+      const lower = (t: { name: string }) => GUARD_WALK!.test(t.name);
+      for (const role of GUARD_WALK_ROLES) if (clips[role]) { const a = guardLegs[role] = mixer.clipAction(new AnimationClip(`${role}_Legs`, clips[role].duration, clips[role].tracks.filter(lower))).play(); a.setEffectiveWeight(0); }
+      guardUpper = mixer.clipAction(new AnimationClip('Guard_Upper', clips.Guard.duration, clips.Guard.tracks.filter((t) => !lower(t)))).play();
+      guardUpper.setEffectiveWeight(0); guardUpper.setLoop(LoopOnce, 1); guardUpper.clampWhenFinished = true; guardUpper.paused = true;
+    }
     if (opponent) actions.Idle.time = clips.Idle.duration * 0.4;
     mixer.update(0);
     const ribbon = new BufferGeometry(), ribbonVertices = new Float32Array(24 * 6 * 3);   // 24 samples: a special's trail row may be longer than a swing's 7
@@ -862,6 +876,13 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         if (readApplied) { readBones.forEach((b, i) => b?.quaternion.copy(readSaved[i])); readApplied = false; }
         if (tiltApplied) { tilted.forEach((b, i) => b.quaternion.copy(untilted[i])); tiltApplied = false; }
         if (carried) { offHand.forEach((b, i) => b!.quaternion.copy(uncarried[i])); carried = false; }
+        if (guardUpper) {   // V3: moving guarded, the guard's upper body over the walking legs; standing, V1's whole Guard clip
+          const guarded = pose === 'guard', moving = guarded ? Math.min(1, GUARD_WALK_ROLES.reduce((sum, role) => sum + (weights[role] ?? 0), 0)) : 0;
+          const toward = (a: AnimationAction, target: number) => a.setEffectiveWeight(a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
+          if (guarded) toward(actions.Guard, 1 - moving);
+          toward(guardUpper, moving); guardUpper.time = actions.Guard.time;
+          for (const role of GUARD_WALK_ROLES) { const legs = guardLegs[role]; if (!legs) continue; toward(legs, guarded ? weights[role] ?? 0 : 0); legs.time = actions[role].time; legs.setEffectiveTimeScale(actions[role].getEffectiveTimeScale()); }
+        }
         mixer.update(step);
         const guarding = guardSide && (pose === 'guard' || pose === 'block' || pose === 'parry') ? GUARD_TILT[guardSide] : GUARD_TILT.thrust, ease = 1 - Math.exp(-step * 16);
         for (const k of ['yaw', 'arm', 'spine'] as const) tilt[k] += (guarding[k] - tilt[k]) * ease;
