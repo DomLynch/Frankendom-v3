@@ -9,6 +9,7 @@ import { BLADE_PICKS } from '../src/fight/blade-picks.ts';
 import { bladePathsByRig } from '../src/fight/blade-paths.ts';
 import { WEAPONS, total } from '../src/fight/moves.ts';
 import { pullbackFor, reachFor, sweepTableFor } from '../src/hero-reach.ts';
+import { guardClipTime } from '../src/fight/guard-hold.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ROWS = JSON.parse(readFileSync(new URL('../data/hero-clips.json', import.meta.url), 'utf8'));
@@ -29,9 +30,33 @@ test('every picked clip is in warrior.glb: all 65 joints and the pelvis height, 
     assert.ok(an.channels.some((c) => c.target.path === 'translation' && now.j.nodes[c.target.node].name === 'pelvis'), `${r.clip}: pelvis height`);
     const end = Math.max(...an.samplers.map((s) => now.j.accessors[s.input].max[0]));
     assert.ok(Math.abs(end - (r.to - r.from)) < 1e-3, `${r.clip}: ${end} s, row ${r.to - r.from} s`);
+    if (r.role === 'Guard') continue;   // a guard has no contact key (its held block is the last key) and no sweep
     const source = (r.contact - r.from) / (r.to - r.from);
     assert.ok(source > 0 && source < 1, `${r.clip}: contact key inside the clip`);
   }
+});
+
+test("the picked guard (Dom 2026-10-26, Great Sword Blocking): one row, held by its `hold`, no contact key, no sweep", () => {
+  const guards = ROWS.clips.filter((r) => r.role === 'Guard');
+  assert.equal(guards.length, 1);
+  const [g] = guards;
+  assert.equal(g.mixamo, '122380901');
+  assert.deepEqual(g.paths, [], 'a guard never sweeps a blade (the sim hits with attack paths only)');
+  assert.equal(g.contact, undefined);
+  assert.deepEqual(Object.keys(g.hold).sort(), ['knock', 'period', 'raise', 'sway']);
+  for (const k of Object.keys(g.hold)) assert.ok(g.hold[k] > 0, `hold.${k}`);
+  assert.ok(g.hold.sway + g.hold.knock < g.to - g.from, 'the sway and the knock stay inside the clip');
+});
+
+test('the held guard: the clip into the block over `raise`, then held at the last key with a sway, a blocked hit knocks it back and re-sets it', () => {
+  const hold = { raise: 0.15, sway: 0.06, period: 3.2, knock: 0.12 }, d = 0.5, end = 0.499;
+  assert.equal(guardClipTime(hold, d, end, 0), 0, 'the first guard frame is the clip\'s first key');
+  assert.ok(Math.abs(guardClipTime(hold, d, end, 0.075) - 0.25) < 1e-9, 'half the raise = half the clip');
+  assert.equal(guardClipTime(hold, d, end, 0.15), end, 'raised: the block (the last key, clamped)');
+  assert.ok(Math.abs(guardClipTime(hold, d, end, 0.15 + 1.6) - (d - 0.06)) < 1e-9, 'half a sway period: `sway` back into the settle');
+  assert.equal(guardClipTime(hold, d, end, 0.15 + 3.2), end, 'a full period: back on the block');
+  assert.ok(Math.abs(guardClipTime(hold, d, end, 5, 0.5) - (guardClipTime(hold, d, end, 5) - 0.12)) < 1e-9, 'mid-impact: knocked back `knock`');
+  assert.equal(guardClipTime(hold, d, end, 0.15, 1), end, 'impact over: re-set');
 });
 
 test("V1's own clips are still in warrior.glb, byte for byte (?clips=v1 plays them)", () => {

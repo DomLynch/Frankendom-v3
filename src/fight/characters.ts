@@ -137,7 +137,9 @@ const GUARD_WALK_ROLES: readonly Role[] = ['ArmedWalk', 'StrafeLeft', 'StrafeRig
 // = V1's clips. A rig without the clip (an older GLB) keeps V1's.
 // `pullback` (metres, data/hero-clips.json): the drawn body eased back along his facing, all of it on the contact tick, so the drawn tip meets the
 // sweep the sim hits with (src/hero-reach.ts pullbackFor; 0 under ?reach=clip). Presentation only.
-export type HeroClipPick = { role: Role; clip: string; source: number; pullback?: number };
+// `hold` (the Guard row only): a one-shot guard clip made a held guard, presentation only (guard-hold.ts guardClipTime).
+export type { GuardHold };
+export type HeroClipPick = { role: Role; clip: string; source: number; pullback?: number; hold?: GuardHold };
 // 0 at the swing's start and end, 1 on the contact tick, smoothstepped each side (the eased-back drawn body of a picked clip)
 export const pullbackWeight = (progress: number, contact: number): number => {
   const t = Math.max(0, Math.min(1, progress <= contact ? progress / contact : (1 - progress) / (1 - contact)));
@@ -176,6 +178,7 @@ type FighterAsset = { scene: Group; animations: AnimationClip[] };
 import { MissingTextures, retryTransient } from '../retry.ts';
 import { CHARGE_LEANS, MAPPED_PALETTE, SHARED_MAPPED, type ChargeLean } from './character-looks-rows.ts';   // the per-opponent label maps are rows (character-looks-defs.json)
 import { fxNum } from './fx-rows.ts';
+import { guardClipTime, type GuardHold } from './guard-hold.ts';
 const STEP_MAX = fxNum('fx.characters.stepMax');
 const WALK_RATE_MIN = fxNum('fx.characters.walkRateMin');
 const RUN_RATE_MIN = fxNum('fx.characters.runRateMin');
@@ -515,6 +518,9 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // V3: a picked clip's own contact key, for the roles this actor plays a pick on (setHeroClips)
     const pickedSource: Partial<Record<Role, number>> = Object.fromEntries(roles.flatMap(role => { const p = heroPick(weapon, role); return p && clips[role].name === p.clip ? [[role, p.source]] : []; }));
     const pickedPullback: Partial<Record<Role, number>> = Object.fromEntries(roles.flatMap(role => { const p = heroPick(weapon, role); return p?.pullback && clips[role].name === p.clip ? [[role, p.pullback]] : []; }));
+    // V3: Dom's picked guard (a one-shot clip) held from its `hold` row; a blocked hit plays it too. undefined = V1's Guard and BlockImpact.
+    const guardPick = heroPick(weapon, 'Guard'), guardHold = guardPick?.hold && clips.Guard?.name === guardPick.clip ? guardPick.hold : undefined;
+    let guardClock = 0;   // seconds since the guard went up (guard, block or parry); 0 outside them
     const root = clone(asset.scene), anchor = new Group(); anchor.add(root);
     rigMaterials(root);   // a rig is built before it wears anything: let it register a shared mapped copy (Wrap) now, so a creature wearing pieces before the hero ever does is not left white
     // A re-proportioned fighter's walk cycle covers less ground than a man's (build-warrior.mjs writes `stride`, root scale × leg scale, on
@@ -870,6 +876,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         let combatRole: Role | null = pose === 'block' ? 'BlockImpact' : pose === 'parry' ? 'Parry' : pose === 'deflected' ? 'Deflected' : pose === 'kick' ? 'Kick' : pose === 'attack' ? attack === 'return' ? 'Return' : attack === 'heavy' ? 'Heavy' : attack === 'riposte' ? 'Riposte' : attack === 'thrust' ? 'Thrust' : attack === 'pommel' ? 'Pommel' : 'Attack' : pose === 'hit' ? 'Hit' : pose === 'death' ? 'Death' : fin ? fin.role as Role : pose === 'draw' ? drawRole(weapon) : pose === 'roll' ? 'Roll' : pose === 'guard' ? 'Guard' : null;
         const specialPlay = pose === 'attack' && specialRole && clips[specialRole] && specialRow(specialRole).weapons.includes(weapon) ? specialRole : null;   // the move's own clip, once adopted, in place of the weapon's strike clip
         if (specialPlay) combatRole = specialPlay;
+        if (guardHold && pose === 'block') combatRole = 'Guard';   // the picked guard takes the blocked hit itself (guardClipTime's knock)
+        guardClock = pose === 'guard' || pose === 'block' || pose === 'parry' ? guardClock + step : 0;
         const armed = pose !== 'sheathed';
         if (armed) { weights.Armed = weights.Idle; weights.Idle = 0; }
         const dead = pose === 'death' || fell;
@@ -884,6 +892,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
           if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? heroSwing(role, swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : pickedSource[role] ?? (asset === hero.asset && clips[role].name === role ? heroContact(role) : undefined) ?? specs[attack].source), !specialPlay && asset === hero.asset && clips[role].name === role) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
         }
+        if (guardHold && combatRole === 'Guard') actions.Guard.time = guardClipTime(guardHold, clips.Guard.duration, CLIP_END_MAX * clips.Guard.duration, guardClock, pose === 'block' ? progress : null);
         if (!weaponNode) { drawn!.visible = armed && (pose !== 'draw' || progress >= .29); sheathed!.visible = !drawn!.visible; }
         anchor.position.set(0, 0, 0); // only the presentation anchor steps into a Run Through
         if (aimedRotation && upperArm) upperArm.quaternion.copy(aimedRotation);
