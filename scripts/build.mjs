@@ -13,6 +13,7 @@ const out = join(root, 'dist');
 const id = process.env.BUILD || 'dev';
 const code = join(out, 'b', id);
 const ENTRIES = ['src/client/main.ts'];
+const ENTRY_CSS = ['src/style.css'];   // V1's stylesheet, linked from index.html
 const CODE = /\.(ts|js|mjs)$/;
 
 const rel = (p) => relative(root, p).split('\\').join('/');
@@ -25,7 +26,8 @@ function graph() {
   const visit = (file) => {
     if (seen.has(file)) return;
     seen.add(file);
-    const src = readFileSync(file, 'utf8');
+    // type-only imports and exports are erased by the compiler, so they are not edges of the served graph
+    const src = readFileSync(file, 'utf8').replace(/^\s*(?:import|export)\s+type\b[^;]*;/gm, '');
     for (const m of src.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"](\.{1,2}\/[^'"]+)['"]/g)) {
       const target = resolve(dirname(file), m[1]);
       if (target.endsWith('.json')) json.add(target);
@@ -68,7 +70,9 @@ for (const f of json) {
 }
 for (const a of assets) cpSync(a, join(out, rel(a)), { recursive: true });
 cpSync(join(root, 'data'), join(out, 'data'), { recursive: true });
-const html = readFileSync(join(root, 'index.html'), 'utf8').replace('./src/client/main.js', `./b/${id}/src/client/main.js`);
+if (existsSync(join(root, 'public'))) cpSync(join(root, 'public'), out, { recursive: true });   // root-absolute files V1 names by URL (/weapons/shapes/, /game/fonts/)
+for (const css of ENTRY_CSS) cpSync(join(root, css), join(code, css));   // stylesheets ride the build's folder, as the code does
+const html = readFileSync(join(root, 'index.html'), 'utf8').replaceAll('./src/', `./b/${id}/src/`);
 if (!html.includes(`./b/${id}/src/client/main.js`)) throw new Error('index.html: entry script not found');
 writeFileSync(join(out, 'index.html'), html);
 writeFileSync(join(out, 'build.txt'), id);

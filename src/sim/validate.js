@@ -7,7 +7,8 @@
 
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
-  'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'ruler', 'light', 'camera'], maps: { camera: ['fov', 'near', 'far', 'position', 'target'] } },
+  'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
+  'fight': { keys: ['about', 'opponent', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx'] },
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;

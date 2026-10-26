@@ -9,7 +9,7 @@ import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-s
 import { SPECIAL_MODES, type Pose, type SpecialFx, type SpecialMode } from './special-modes.ts';
 import { SPECIALS } from './special-rows.ts';
 import { SKILL_MOVE, type SkillId } from './moves.ts';
-import { SKILLS } from '../core/loot.ts';
+import { SKILLS } from '../stubs.ts';   // V3: core/loot.ts
 import { BOSSES } from './boss-rows.ts';
 import { spellRoot } from './spell-cast.ts';
 import { countSpecial } from './special-counter.ts';

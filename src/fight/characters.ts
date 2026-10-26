@@ -34,7 +34,7 @@ import { HAMSTRUNG_BEATS } from './hamstrung.ts';
 import { EXECUTION_BEATS } from './execution.ts';
 import { prepareWeaponDrop } from './dropped-weapon.ts';
 import { tinted } from './rank-tint.ts';
-import type { Tier } from '../core/grades.ts';
+import type { Tier } from '../stubs.ts';   // V3: core/grades.ts
 import { finisherBodyPose } from './finisher-look.ts';
 // What a rig is asked to do: a combat pose (code), or a finisher body's pose word (a row of src/fight/finisher-defs.json: finisher-look.ts finisherBodyPose).
 export type CombatPose = 'sheathed' | 'draw' | 'ready' | 'attack' | 'hit' | 'death' | 'roll' | 'guard' | 'kick' | 'block' | 'parry' | 'deflected';

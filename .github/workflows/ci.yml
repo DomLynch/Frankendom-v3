@@ -17,6 +17,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # the stub boundary: nothing outside src/stubs.ts imports core/* (but registry.ts), net, zones, legends or pit
+      - run: npm run check:stubs
       # Gate 0 (test/gate0) replays input scripts through V1's sim at the seed tag; the default checkout is shallow and tagless
       - name: Fetch the V1 seed tag for Gate 0
         run: git fetch --no-tags --depth=1 origin refs/tags/v1-seed-82a994d15:refs/tags/v1-seed-82a994d15

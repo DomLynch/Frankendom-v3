@@ -9,7 +9,7 @@ import { LEVELS, OPPONENTS, opponentAt, profileAt } from './moves.ts';
 import { encodeRecord, type FightRecord } from './record.ts';
 import { underRecord } from './detmath.ts';
 import { groupLayer, withIncoming } from './pack.ts';
-import { skillOf } from '../core/loot.ts';
+import { skillOf } from '../stubs.ts';   // V3: core/loot.ts
 import { specialOf, type SkillId, type SpecialName } from './moves.ts';
 import type { Sheet } from './sheet-rows.ts';
 

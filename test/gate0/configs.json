@@ -15,6 +15,19 @@
       "seeds": [731]
     },
     {
+      "id": "page-first",
+      "about": "The fight V3 plays (data/fight.json): the first career fight of a V1 page load, which V1 fights at the Match's default level (PRESET_LEVEL.normal, 18), so the Centurion has the gladius and scutum (moves.ts LOADOUT_FROM). Otherwise as 'career'.",
+      "flags": { "playScaleFor": "veteran", "lateNotice": true, "stab": true, "stanceRows": true },
+      "opponent": "veteran",
+      "level": 18,
+      "weapon": null,
+      "skill": "cleave",
+      "specials": true,
+      "stance": "neutral",
+      "skill2": "reaping",
+      "seeds": [731]
+    },
+    {
       "id": "base",
       "about": "The base rules: plain initialPractice(seed, opponentAt(OPPONENTS.veteran, 1)), no Special Moves, no stances, the era flags off (old full-size circle, no late notice, no stab rule, no stance rows).",
       "flags": { "playScale": 1, "lateNotice": false, "stab": false, "stanceRows": false },

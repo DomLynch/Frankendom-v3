@@ -1,9 +1,9 @@
 // Transient admin presets. No record, equipment, identity or global rule changes.
 import { RULES, specialOf } from './moves.ts';
-import { skillOf } from '../core/loot.ts';
+import { skillOf } from '../stubs.ts';   // V3: core/loot.ts
 import { SPECIAL_TESTS, type SpecialTest } from './special-look.ts';
 import { SPECIAL_CUE_OF, type SpecialCue } from './sound/special.ts';
-import type { SparringKit } from '../sparring.ts';
+import type { SparringKit } from '../stubs.ts';   // V3: sparring.ts
 import type { Duel, Fighter } from './duel.ts';
 
 export const SUPPORTED_PLAYER_SPECIALS: readonly SpecialTest[] = Object.freeze(Object.keys(SPECIAL_TESTS) as SpecialTest[]);

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { CombatEvent } from './duel.ts';
 import type { Weapon } from './moves.ts';
-import { materialRow } from '../core/contracts/definitions.ts';
+import { materialRow } from '../stubs.ts';   // V3: core/contracts/definitions.ts
 import { fxNum } from './fx-rows.ts';
 const STEP_MAX = fxNum('fx.clashSparks.stepMax');
 const BOUNCE_LIFE_MAX = fxNum('fx.clashSparks.bounceLifeMax');

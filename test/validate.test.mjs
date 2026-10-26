@@ -15,10 +15,10 @@ test('every data file has a schema and the whole set validates', () => {
 
 test('an unknown key is rejected', () => {
   const bad = clone(files.stage);
-  bad.camera.zoom = 2;
+  bad.duel.zoom = 2;
   bad.skye = '#fff';
   const errs = validateFile('stage', bad).join('\n');
-  assert.match(errs, /stage\.camera\.zoom: unknown key/);
+  assert.match(errs, /stage\.duel\.zoom: unknown key/);
   assert.match(errs, /stage\.skye: unknown key/);
 });
 

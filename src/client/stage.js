@@ -27,15 +27,7 @@ export function createStage(renderer, def) {
   Object.assign(sun.shadow.camera, { left: -h, right: h, top: h, bottom: -h, near: 0.5, far: 20 });
   scene.add(sun);
 
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(def.ground.size, def.ground.size),
-    new THREE.MeshStandardMaterial({ color: def.ground.color, roughness: 1 }),
-  );
-  ground.receiveShadow = true;
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
-  const g = def.grid;
-  scene.add(new THREE.GridHelper(g.size, g.divisions, g.center, g.lines));
+  scene.add(createGround(def));
 
   const r = def.ruler;
   const ruler = new THREE.Group();
@@ -55,4 +47,20 @@ export function createStage(renderer, def) {
   scene.add(ruler);
 
   return scene;
+}
+
+// The floor alone (ground plane + grid), as a group: V3's duel stands V1's lit scene on it (src/arena-stage.ts).
+export function createGround(def) {
+  const group = new THREE.Group();
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(def.ground.size, def.ground.size),
+    new THREE.MeshStandardMaterial({ color: def.ground.color, roughness: 1 }),
+  );
+  ground.name = 'floor';
+  ground.receiveShadow = true;
+  ground.rotation.x = -Math.PI / 2;
+  group.add(ground);
+  const g = def.grid;
+  group.add(new THREE.GridHelper(g.size, g.divisions, g.center, g.lines));
+  return group;
 }

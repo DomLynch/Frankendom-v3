@@ -10,7 +10,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
-import { fxNum } from './index.ts';
+import { fxNum } from './fx-rows.ts';   // V3: straight from the row module, not the src/fight barrel (index.ts pulls in gear and legends)
 
 // The GLSL literals are written from the rows once (a fixed-point string for each), so the shader text carries no tuning of its own.
 const fixed = (id: string, digits: number): string => fxNum(id).toFixed(digits);

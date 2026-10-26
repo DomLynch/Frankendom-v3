@@ -1,0 +1,14 @@
+{
+  "about": "The one fight V3 plays: the first career fight of a frankendom.com page load at 82a994d15 (V1 main.ts + match.ts begin('career')): the Centurion at the Match's default level (PRESET_LEVEL.normal = level-anchor-defs.json normal, 18: V1 only moves to the career level on a rematch, and a rematch that changes his loadout reloads the page, so a guest always meets him at 18 with the gladius and scutum), met at a guest's tier (Recruit), the Match's default seed, the longsword, SPECIAL 1/2 from career-rules.json betaCut slot defaults, specials on (rows80 specialsFromLevel 1), the default stance pick (stance.ts PICKS[0]). Rematch steps the seed as V1 nextSeed does. tempoHz: V1's default tempo (main.ts TEMPO_KEY). frameDtMaxS: the most one frame injects into the sim (V1 first-loss-rules.json frame-dt-max-s). gfx: V1's gfx lift (fx-rows gfx.default on).",
+  "opponent": "veteran",
+  "level": 18,
+  "seed": 731,
+  "weapon": "longsword",
+  "skill": "cleave",
+  "skill2": "reaping",
+  "stance": "neutral",
+  "specials": true,
+  "tempoHz": 60,
+  "frameDtMaxS": 0.1,
+  "gfx": true
+}
