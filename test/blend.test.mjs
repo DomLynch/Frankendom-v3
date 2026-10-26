@@ -14,7 +14,7 @@ test("V2's numbers, as they are in Frankendom-v2 data/anim.json (none above 150 
   assert.ok(about);
   assert.deepEqual(b, { locomotion: 120, attackIn: 75, attackOut: 80, specialIn: 75, specialOut: 80, hurtIn: 40, hurtOut: 80, rollIn: 60, rollOut: 120 });
   for (const [k, ms] of Object.entries(b)) assert.ok(ms > 0 && ms <= 150, `blendMs.${k} = ${ms}`);
-  assert.equal(FIGHT.settleMs.roll, 300);
+  assert.equal(FIGHT.settleMs.roll, 120);   // V2's rollOut: V2's 300 settle was for its 1.4 s roll; V3's roll is 600 ms
 });
 
 test('?blend=v1 (null) is V1: 1/12 in, 1/10 out, 24/s weights, whatever the span', () => {
@@ -27,16 +27,21 @@ test('?blend=v1 (null) is V1: 1/12 in, 1/10 out, 24/s weights, whatever the span
   close(weightEase(1 / 60), 1 - Math.exp(-24 / 60), 'ease');
 });
 
-test('rows on: fades in milliseconds from the move\'s ticks; the roll settles over 300 ms', () => {
+test('rows on: fades in milliseconds from the move\'s ticks; the roll settles over settleMs.roll', () => {
   setBlend(FIGHT.blendMs, FIGHT.settleMs);
   assert.equal(blendOn(), true);
   // a 50-tick swing (833 ms): 3 ticks in = 50 ms of a 75 ms fade-in; 3 ticks left = 50 of an 80 ms fade-out
   close(combatFade('attack', 3 / 50, false, span('attack', 'attack', 50, 3 / 50)), 50 / 75, 'attack in');
   close(combatFade('attack', 47 / 50, false, span('attack', 'attack', 50, 47 / 50)), 50 / 80, 'attack out');
   close(combatFade('attack', 0.5, false, span('attack', 'attack', 50, 0.5)), 1, 'attack mid');
-  // the 36-tick roll: 60 ms in, then out over settleMs.roll 300 ms (18 ticks), not rollOut 120
+  // the 36-tick roll: 60 ms in, then out over settleMs.roll 120 ms (the last 7.2 ticks)
   close(combatFade('roll', 2 / 36, false, span('roll', 'roll', 36, 2 / 36)), (2000 / 60) / 60, 'roll in');
-  close(combatFade('roll', 27 / 36, false, span('roll', 'roll', 36, 27 / 36)), 150 / 300, 'roll settle');
+  close(combatFade('roll', 27 / 36, false, span('roll', 'roll', 36, 27 / 36)), 1, 'roll still full at 27');
+  close(combatFade('roll', 33 / 36, false, span('roll', 'roll', 36, 33 / 36)), 50 / 120, 'roll settle');
+  // the settle row wins over rollOut when they differ
+  setBlend(FIGHT.blendMs, { roll: 300 });
+  close(combatFade('roll', 27 / 36, false, span('roll', 'roll', 36, 27 / 36)), 150 / 300, 'settle row used');
+  setBlend(FIGHT.blendMs, FIGHT.settleMs);
   // a hit: 40 ms in
   close(combatFade('hit', 1 / 30, false, span('hit', 'hurt', 30, 1 / 30)), (1000 / 60) / 40, 'hurt in');
   close(weightEase(1 / 60), 1 - Math.exp(-(1 / 60) * (3000 / 120)), 'ease');
