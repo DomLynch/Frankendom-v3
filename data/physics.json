@@ -8,7 +8,7 @@
   "maxTicksPerFrame": 4,
   "loadAfterFirstFrameMs": 1500,
   "opponents": [
-    { "id": "pitborn", "body": "minotaur", "measure": { "65": "physics/bodies/minotaur.measure.json", "106": "physics/bodies/minotaur-106.measure.json" } }
+    { "id": "pitborn", "body": "minotaur", "measure": { "65": "physics/bodies/minotaur.measure.json", "106": "physics/bodies/minotaur-106.measure.json" }, "helmet": false, "gear": {} }
   ],
   "bones": {
     "hips": "pelvis", "spine": "spine_01", "spine1": "spine_02", "spine2": "spine_03", "neck": "neck_01", "head": "Head",
@@ -44,6 +44,19 @@
     "impulse": 70,
     "lift": 6,
     "blendInS": 0
+  },
+  "cut": {
+    "about": "M5 cuts (physics f38dba0, docs/API.md 'Cuts (M5)'), PRESENTATION ONLY like the rest of this file (the sim and Gate 0 never see a cut; ?physics=v1 = no ragdoll, so no cut and no tap). `on`: false = no cut at all. `log`: the page's list of sim-side-presentation cut events ({ type: 'cut', unit, gear, source }), read by Strategy's loot screen later (globalThis[log]; one fight's cuts, emptied on the rematch). `onKill`: the sim's Killed.location -> the unit that leaves with that killing blow (a head-zone kill takes the head). `sever`: the unit V1's decapitation finisher takes (?ragdoll=finishers: V1's flying head stays the picture; the package's cut is made too, for its event and gear). `kill`: that cut's push, along the killing blow's facing (impulse N s, lift up). `tap`: the corpse tap (the butcher's table): a tap (no more than maxMovePx of drag and maxMs long, so the camera drag never cuts) on the corpse once the ragdoll is `needs` (frozen) raycasts the skinned body, takes the heaviest bone of the face it meets, and cuts the first unit of `order` whose bone it hangs under (the package's cut_role bones: head, an arm, a leg, then the torso at the waist, which carries everything above); `impulse` / `lift`: the piece's push along the tap's ray. `seam`: how the skinned body is split (src/fight/cut-pieces.ts): a triangle goes with the piece when the carried bones hold at least `piece` of its weight (the rule characters.ts sever() bakes the finisher's head with), and stays on the body only when no vertex of it has `bodyKeepBelow` of its weight carried (a triangle across the cut belongs to neither: the cap covers the seam). `cap`: the two stump caps (plain balls until Physics Dev's real cut-piece meshes land) (the body's, on the parent part, and the piece's, on the severed part): colour, and radiusMult times the cut part's capsule radius. `helmet`: the rigid helmet prop's placeholder mesh (only an opponent row with helmet: true gets one; the Minotaur wears none, no armour until beta). `settleS`: seconds the world keeps stepping after a cut on a frozen corpse (the package freezes the rest; the severed piece wakes).",
+    "on": true,
+    "log": "__v3Cuts",
+    "onKill": { "head": "head" },
+    "sever": "head",
+    "kill": { "impulse": 14, "lift": 5 },
+    "tap": { "on": true, "needs": "frozen", "order": ["head", "arm_left", "arm_right", "leg_left", "leg_right", "torso_waist"], "maxMovePx": 10, "maxMs": 500, "impulse": 6, "lift": 3 },
+    "seam": { "piece": 0.5, "bodyKeepBelow": 0.5 },
+    "cap": { "color": "#8e1b16", "pieceColor": "#6b1511", "radiusMult": 0.95, "pieceRadiusMult": 0.85, "segments": [16, 12] },
+    "helmet": { "color": "#5c5f66", "radiusM": 0.13 },
+    "settleS": 4
   },
   "finisher": { "default": "skip", "query": "ragdoll", "values": { "always": "skip", "finishers": "keep" } }
 }

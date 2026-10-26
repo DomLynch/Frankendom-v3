@@ -12,6 +12,7 @@ import PHYSICS from '../../data/physics.json' with { type: 'json' };
 import { isPlainDeath, PLAIN_DEATH } from './finisher-look.ts';
 import { afterFirstFrame } from '../late-art.ts';
 import { bone, rigOf } from './rig-bones.ts';
+import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
@@ -21,11 +22,18 @@ type OpponentRow = PhysicsRows['opponents'][number];
 type Vec3 = [number, number, number];
 type Hit = { part: string; impulse: Vec3 };
 type Tuning = Record<string, { gain?: number; damping?: number }>;
+/** What the package's rd.cut returns (physics f38dba0, docs/API.md 'Cuts (M5)'): the unit, the gear slots and roles that go with it, the stump's cap, the helmet prop. */
+type CutResult = { unit: string; gear_slots: string[]; carries_roles: string[]; cap: { part: string; position: Vec3 }; props: { readPose(): ArrayLike<number>; destroy(): void }[] };
 type Ragdoll = {
   state: string; partIds: string[];
+  row: { roles: { id: string; parent: string | null; radius_m: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[]; severable: { id: string; cut_role: string }[] };
   applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void;
+  cut(unit: string, opts?: { helmet?: boolean; impulse?: Vec3 }): CutResult | null; readPose(): ArrayLike<number>;
   snapToTarget(): boolean; reset(): boolean; destroy(): void;
 };
+/** A cut, as the page lists it (data/physics.json cut.log): the sim-side-presentation event Strategy's loot screen reads. `gear`: the ids on the slots that went with the piece. */
+export type CutEvent = { type: 'cut'; unit: string; gear: string[]; source: string };
+type CutRows = PhysicsRows['cut'];
 type Physics = { step(dt: number): number; createRagdoll(row: unknown, opts?: { position?: Vec3; id?: string; motorTuning?: Tuning; solveHinges?: boolean }): Ragdoll; tickDt: number };
 type Rig = { drive(): void; applyPose(): void };
 type Bones = Record<string, THREE.Object3D>;
@@ -72,6 +80,17 @@ export function staggerDepth(st: PhysicsRows['states']['stagger'], t: number): n
   return t < st.ease_in_s ? t / st.ease_in_s : t < st.ease_in_s + st.hold_s ? 1 : 1 - (t - st.ease_in_s - st.hold_s) / st.up_s;
 }
 
+/** The cut's event: the unit and the ids of the gear on the slots the package says go with it (the opponent row's `gear`: slot -> ids, empty for a foe in no armour). */
+export function cutEvent(foe: { gear: Record<string, readonly string[] | undefined> }, result: { unit: string; gear_slots: readonly string[] }, source: string): CutEvent {
+  return { type: 'cut', unit: result.unit, gear: result.gear_slots.flatMap((slot) => foe.gear[slot] ?? []), source };
+}
+
+/** The first unit of `order` (the corpse tap's priority) whose cut bone `bone` hangs under, or null (the pelvis, a bone no unit holds). `rootOf`: unit -> its cut bone. */
+export function unitOfBone(bone: THREE.Object3D, order: readonly string[], rootOf: (unit: string) => THREE.Object3D | undefined): string | null {
+  for (const unit of order) { const root = rootOf(unit); if (root && isUnder(bone, root)) return unit; }
+  return null;
+}
+
 type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
 export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
@@ -82,7 +101,13 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
-  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }> };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
+  // Cuts (data/physics.json `cut`): the pieces taken off the skinned body, the caps over the seams, the helmet props, and the ticks the world still steps for a piece to settle.
+  const cutRows: CutRows = rows.cut, gearRow = foe as { helmet?: boolean; gear?: Record<string, readonly string[]> };
+  let cutter: PieceCutter | undefined, gore = true, settle = 0, capGeometry: THREE.SphereGeometry | undefined;
+  const roots: { bone: THREE.Object3D; home: THREE.Vector3; at: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[] = [];   // the cut bones: the package's rig turns bones, it never moves one off its parent, so a cut piece's root bone is placed on its joint's capsule here
+  const done = new Set<string>(), follow: { mesh: THREE.Mesh; at: number; off: THREE.Vector3 }[] = [], props: { mesh: THREE.Mesh; prop: CutResult['props'][number] }[] = [], cutMaterials: THREE.Material[] = [];
+  const cutLog = (): CutEvent[] => ((globalThis as Record<string, unknown>)[cutRows.log] ??= []) as CutEvent[];
+  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }>, cuts: [] as CutEvent[], lastTap: '', pieces: [] as string[], screenOf: undefined as ((part: string) => [number, number] | null) | undefined, probe: undefined as ((x: number, y: number) => string | null) | undefined };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
   (globalThis as { __ragdoll?: typeof cost }).__ragdoll = cost;
 
   // The bones `w` of the way from the clip's pose (on them now) to the ragdoll's: 1 = the ragdoll's alone.
@@ -102,6 +127,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // untouched GLTF scene). Its first tick snaps the capsules onto the clip's pose (snapToTarget), so it never starts from the spawn pose.
   function build() {
     if (!physics || !group || !rigged) return;
+    clearCuts();   // the rematch: the body whole again, this fight's cut list empty
     if (!rd?.reset()) {
       rd?.destroy();
       rd = physics.createRagdoll(measure, { id: foe.id, motorTuning: tune?.motorTuning ?? rows.motorTuning, solveHinges: tune?.solveHinges ?? rows.solveHinges });
@@ -110,8 +136,80 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     }
     mode = 'alive'; acc = 0; stagger = -1; dying = 0; snap = true; armed = false; cost.state = 'alive';
   }
+  function clearCuts() {
+    cutter?.restore();
+    for (const f of follow) f.mesh.removeFromParent();
+    for (const p of props) { p.mesh.removeFromParent(); p.prop.destroy(); }
+    for (const r of roots) r.bone.position.copy(r.home);   // the cut bones go back to their joints
+    roots.length = 0; follow.length = 0; props.length = 0; done.clear(); settle = 0;
+    for (const m of cutMaterials) m.dispose();
+    cutMaterials.length = 0; capGeometry?.dispose(); capGeometry = undefined;
+    cutLog().length = 0; cost.cuts = cutLog(); cost.pieces = [];
+  }
+
+  // One unit leaves the body: the package detaches it (its capsules, joint and gear slots), the skinned body gives the triangles its bones hold to a piece that
+  // follows them, caps cover the two ends of the seam, and the event goes on the page's list. `impulse`: the piece's push in the ragdoll's frame.
+  // Only on a corpse (the ragdoll's bones follow its capsules) and with gore shown (blood 'off' keeps the body whole, as for the finisher's head).
+  function cutUnit(unit: string, source: string, impulse?: Vec3): CutEvent | null {
+    if (!rd || !group || !rigged || !cutRows.on || !gore || done.has(unit)) return null;
+    const result = rd.cut(unit, { helmet: !!gearRow.helmet, impulse });
+    if (!result) return null;
+    done.add(unit); settle = Math.ceil(cutRows.settleS * rows.tickHz);
+    const part = result.cap.part, role = rd.row.roles.find((r) => r.id === part), root = partBones[part];
+    if (role && root && mode === 'dead') {
+      cutter ??= createPieceCutter(rigged.anchor);
+      cost.pieces.push(...cutter.carve(root, cutRows.seam).map((m) => `${unit}:${m.name}:${m.geometry.index!.count / 3}`));   // what each cut took, per draw (the stills read it)
+      capGeometry ??= new THREE.SphereGeometry(1, cutRows.cap.segments[0], cutRows.cap.segments[1]);
+      const pose = rd.readPose(), at = new THREE.Vector3(...result.cap.position);
+      const cap = (index: number, color: string, mult: number) => {   // a ball over the cut face, kept in the frame of the part it sits on
+        const o = index * 10, material = new THREE.MeshStandardMaterial({ color, roughness: 0.4 }), mesh = new THREE.Mesh(capGeometry, material);
+        mesh.scale.setScalar(role.radius_m * mult); mesh.castShadow = true; mesh.frustumCulled = false;
+        const off = at.clone().sub(new THREE.Vector3(pose[o], pose[o + 1], pose[o + 2])).applyQuaternion(new THREE.Quaternion(pose[o + 3], pose[o + 4], pose[o + 5], pose[o + 6]).invert());
+        group!.add(mesh); cutMaterials.push(material); follow.push({ mesh, at: index, off });
+      };
+      cap(rd.partIds.indexOf(role.parent ?? 'hips'), cutRows.cap.color, cutRows.cap.radiusMult);   // the stump: on the part the cut joint hangs from
+      cap(rd.partIds.indexOf(part), cutRows.cap.pieceColor, cutRows.cap.pieceRadiusMult);            // the piece's own cut face
+      for (const prop of result.props) {   // the helmet (only an opponent row with helmet: true): a plain ball on the package's prop body until a helmet mesh exists
+        const material = new THREE.MeshStandardMaterial({ color: cutRows.helmet.color, metalness: 0.7, roughness: 0.35 }), mesh = new THREE.Mesh(new THREE.SphereGeometry(cutRows.helmet.radiusM, 20, 14), material);
+        mesh.castShadow = true; group.add(mesh); cutMaterials.push(material); props.push({ mesh, prop });
+      }
+      roots.push({ bone: root, home: root.position.clone(), at: rd.partIds.indexOf(part), rest: role.rest });
+      const depth = (b: THREE.Object3D) => { let d = 0; for (let p = b.parent; p; p = p.parent) d++; return d; };
+      roots.sort((a, b) => depth(a.bone) - depth(b.bone));   // a bone is placed after the ones above it
+      followCuts();
+    }
+    const event = cutEvent({ gear: gearRow.gear ?? {} }, result, source);
+    cutLog().push(event); cost.cuts = cutLog();
+    return event;
+  }
+  const tmpQ = new THREE.Quaternion(), tmpV = new THREE.Vector3();
+  const tmpR = new THREE.Quaternion(), tmpJ = new THREE.Vector3(), shift = new THREE.Vector3();
+  // Where role `i`'s cut joint is in the ragdoll's own frame (three-rig's applyPose does the same sum for the hips): the capsule's pose carried back to its joint.
+  function jointOf(pose: ArrayLike<number>, i: number, rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] }, out: THREE.Vector3) {
+    const o = i * 10;
+    tmpQ.set(pose[o + 3]!, pose[o + 4]!, pose[o + 5]!, pose[o + 6]!).multiply(tmpR.set(rest.quat[0], rest.quat[1], rest.quat[2], rest.quat[3]).invert());
+    return out.set(rest.pivot[0] - rest.centre[0], rest.pivot[1] - rest.centre[1], rest.pivot[2] - rest.centre[2]).applyQuaternion(tmpQ).add(tmpV.set(pose[o]!, pose[o + 1]!, pose[o + 2]!));
+  }
+  // After the bones follow the capsules (rig.applyPose turns them; it never moves one off its parent, bar the hips): each cut bone goes to its own capsule's joint, so
+  // the piece leaves the body, and the caps and the helmet ride their parts. The ragdoll's frame is the group's shifted by where the hips joint is in each.
+  function followCuts() {
+    if (!rd || !group || !partBones.hips) return;
+    const pose = rd.readPose();
+    group.updateWorldMatrix(true, true);
+    jointOf(pose, 0, rd.row.roles[0]!.rest, shift).sub(group.worldToLocal(partBones.hips.getWorldPosition(tmpJ)));
+    for (const r of roots) {
+      jointOf(pose, r.at, r.rest, tmpJ).sub(shift);
+      r.bone.parent!.updateWorldMatrix(true, false);
+      r.bone.position.copy(r.bone.parent!.worldToLocal(group.localToWorld(tmpJ)));
+      r.bone.updateMatrixWorld(true);
+    }
+    for (const f of follow) { const o = f.at * 10; tmpQ.set(pose[o + 3]!, pose[o + 4]!, pose[o + 5]!, pose[o + 6]!); f.mesh.position.copy(tmpV.copy(f.off).applyQuaternion(tmpQ)).add(tmpJ.set(pose[o]!, pose[o + 1]!, pose[o + 2]!)).sub(shift); }
+    for (const p of props) { const q = p.prop.readPose(); p.mesh.position.set(q[0]!, q[1]!, q[2]!).sub(shift); p.mesh.quaternion.set(q[3]!, q[4]!, q[5]!, q[6]!); }
+  }
+
   // A tuning harness may set globalThis.__ragdollTune before the page loads (motorTuning, solveHinges, blend; settle for the trace): the rows' values otherwise.
-  const tune = (globalThis as { __ragdollTune?: { motorTuning?: Tuning; solveHinges?: boolean; blend?: Record<string, number>; settle?: number } }).__ragdollTune;
+  // onKill: a harness's own Killed.location -> unit (the stills' kick kill is a torso blow; { torso: 'head' } makes it the head-zone kill the sim rarely lands on cue).
+  const tune = (globalThis as { __ragdollTune?: { motorTuning?: Tuning; solveHinges?: boolean; blend?: Record<string, number>; settle?: number; onKill?: Record<string, string> } }).__ragdollTune;
   const blend: Record<string, number> = tune?.blend ?? rows.hit.blend, blendOn = Object.values(blend).some((w) => w > 0);
 
   return {
@@ -132,6 +230,46 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
+    /** The sim's decapitation finisher (?ragdoll=finishers): V1's flying head is the picture; the package's cut of the head is made too, so its event and gear are listed. Once. */
+    finisherCut(): CutEvent | null { return mode === 'skip' && !disabled ? cutUnit(cutRows.sever, 'finisher') : null; },
+    /** The corpse tap (the butcher's table): the ray (a tap on the canvas) cuts the part of the frozen corpse it strikes; null when it strikes nothing cuttable or the corpse is not down. */
+    tap(ray: THREE.Raycaster): CutEvent | null {
+      const row = cutRows.tap;
+      if (disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs) return null;
+      try {
+        cutter ??= createPieceCutter(rigged.anchor);
+        const hit = cutter.pick(ray), severable = rd.row.severable;
+        cost.lastTap += ` | hit ${hit?.bone.name ?? 'nothing'}`;
+        const unit = hit && unitOfBone(hit.bone, row.order, (u) => partBones[severable.find((s) => s.id === u)?.cut_role ?? '']);
+        if (!unit || done.has(unit)) return null;
+        const direction = ray.ray.direction.clone().transformDirection(group.matrixWorld.clone().invert());   // the tap pushes the piece away from the camera
+        return cutUnit(unit, 'tap', [direction.x * row.impulse, direction.y * row.impulse + row.lift, direction.z * row.impulse]);
+      } catch (error) { cost.state = `tap failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
+    },
+    /** scene.ts: taps on the canvas are corpse taps. A press that stays within the row's px and ms (a drag is the camera's) casts a ray through the camera. */
+    listenTaps(canvas: HTMLElement, camera: THREE.Camera) {
+      const row = cutRows.tap, ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+      let down: { x: number; y: number; t: number; id: number } | null = null, probed = -1;
+      const aim = (x: number, y: number) => { const r = canvas.getBoundingClientRect(); ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1); camera.updateMatrixWorld(); ray.setFromCamera(ndc, camera); return ray; };
+      canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: e.timeStamp, id: e.pointerId }; });
+      canvas.addEventListener('pointerup', (e) => {
+        const d = down; down = null;
+        cost.lastTap = d ? `up ${Math.round(Math.hypot(e.clientX - d.x, e.clientY - d.y))}px ${Math.round(e.timeStamp - d.t)}ms mode ${mode} rd ${rd?.state}` : 'up without down';
+        if (d && d.id === e.pointerId && Math.hypot(e.clientX - d.x, e.clientY - d.y) <= row.maxMovePx && e.timeStamp - d.t <= row.maxMs) this.tap(aim(e.clientX, e.clientY));
+      });
+      cost.probe = (x: number, y: number) => {   // the stills: which unit a tap at this CSS px would cut (null: none), without cutting
+        if (!rd || !rigged) return null;
+        cutter ??= createPieceCutter(rigged.anchor);
+        const hit = cutter.pick(aim(x, y), probed !== cost.frames), severable = rd.row.severable;
+        probed = cost.frames;
+        return (hit && unitOfBone(hit.bone, cutRows.tap.order, (u) => partBones[severable.find((s) => s.id === u)?.cut_role ?? ''])) ?? null;
+      };
+      cost.screenOf = (part: string) => {   // the stills: where a part's bone is on screen (CSS px), to tap it
+        const b = partBones[part]; if (!b) return null;
+        const r = canvas.getBoundingClientRect(), p = b.getWorldPosition(new THREE.Vector3()).project(camera);
+        return [r.left + ((p.x + 1) / 2) * r.width, r.top + ((1 - p.y) / 2) * r.height];
+      };
+    },
     /** The finisher row says 'skip' (the default) and a ragdoll built (a rig with no measure row, or a chunk not in yet, keeps the rotation). Latched once a death has begun. */
     //  `armed`: only once a frame with no finish in progress has seen the ragdoll ready, so a chunk that lands mid-finish never flips the pick
     //  between the picture (scene.ts) and the death cue (main.ts) halfway through a kill.
@@ -140,8 +278,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     //   dt: the frame's presentation seconds (0 in a hit-stop); events: the sim's events this frame; finish: the sim's finish (null in play);
     //   finisher: the scene's pick for this kill (a cinematic finisher keeps its own clip: no ragdoll).
     // A physics error never breaks the frame: the ragdoll is off for the rest of the page (the clips alone, today's death) and it is reported once.
-    frame(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null) {
+    //   showGore: false in blood 'off' (a cut leaves the body whole, as the finisher's head stays on there).
+    frame(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null, showGore = true) {
       if (disabled) return;
+      gore = showGore;
       try { step(dt, events, finish, finisher); } catch (error) { disabled = true; armed = false; cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     },
   };
@@ -157,6 +297,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         else {
           rig.drive(); rd.snapToTarget();   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp
           rd.kill(blowImpulse(rows.kill, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
+          const unit = killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it
+          if (unit) cutUnit(unit, 'kill', blowImpulse({ ...cutRows.kill, parts: { [killed.location!]: unit } }, killed.location, killed.heading, group.rotation.y)?.impulse);   // the push is the row's, whatever the location
         }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== 1) continue;
@@ -172,7 +314,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           if (snap) snap = !rd.snapToTarget();   // a new or reset ragdoll starts on the clip's pose
           if (stagger >= 0) stagger = staggerDepth(rows.states.stagger, stagger + tick) < 0 ? -1 : stagger + tick;
         }
-        if (rd.state !== 'frozen') physics.step(tick);
+        if (rd.state !== 'frozen' || settle > 0) physics.step(tick);   // a frozen corpse's cut piece wakes: the world steps on until it settles
+        if (settle > 0) settle--;
         acc -= tick; ticks++;
       }
       if (ticks === rows.maxTicksPerFrame) acc = 0;
@@ -194,6 +337,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         dying += dt;
         poseToward(rows.kill.blendInS > 0 ? Math.min(1, dying / rows.kill.blendInS) : 1);
       } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger), blend);   // the stagger on screen, the most at the dip's deepest
+      if (mode === 'dead' && follow.length + props.length) followCuts();
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
       cost.frames++; cost.totalMs += ms; cost.maxMs = Math.max(cost.maxMs, ms); cost.lastMs = ms; cost.ticks += ticks; cost.state = rd.state;
       by.frames++; by.totalMs += ms; by.maxMs = Math.max(by.maxMs, ms);

@@ -357,6 +357,7 @@ export function createScene(
   }) : undefined; }, (look) => { const swapped = warriors?.opponent.wearLook(look); if (swapped) (globalThis as { __rankLookOn?: typeof swapped }).__rankLookOn = swapped; }, captureException) : undefined;
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
   const ragdoll = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one
+  ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
     if (warriors) return Promise.resolve();
@@ -810,7 +811,7 @@ export function createScene(
       }
       if (isTemplate(finisher, 'cleave') && practice.finish?.victim === 1)
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
-      ragdoll?.frame(animationDt, events, practice.finish, finisher);   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
+      ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
       // (the clip's first 9 %) — baked from the rig at that pose, popped along the killing blow, ballistic to a stop. Blood
       // 'off' keeps the head on: gore is presentation, like the rest of the layer.
@@ -838,6 +839,7 @@ export function createScene(
             practice.enemy.z - state.z,
           ).normalize();
           severHead = launchSeveredHead(built.group, built.radius, axis, fx.state.killHeading);
+          ragdoll?.finisherCut();   // the package's cut of the same head (data/physics.json cut.sever): its event and gear go on the page's list
         }
       }
       brass.color.set(practice.threat ? '#e7a35e' : '#ad9365');
