@@ -10,8 +10,9 @@
 // `bindScene`) for the moment the rig is made, then the animated pose is put back.
 import * as THREE from 'three';
 import PHYSICS from '../../data/physics.json' with { type: 'json' };
-import { isPlainDeath } from './finisher-look.ts';
+import { isPlainDeath, PLAIN_DEATH } from './finisher-look.ts';
 import { afterFirstFrame } from '../late-art.ts';
+import { bone, rigOf } from './rig-bones.ts';
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 
@@ -33,11 +34,22 @@ export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: str
   return rows.opponents.find((o) => o.id === opponentId) ?? null;
 }
 
+/** data/physics.json `finisher`: 'keep' (the rotation's finishers play; only the plain death ragdolls) or 'skip' (?ragdoll=always: every death of a ragdolled foe is the plain death). */
+export function finisherModeFor(rows: PhysicsRows, search: string): string {
+  const f = rows.finisher as { default: string; query: string; values: Record<string, string> }, v = new URLSearchParams(search).get(f.query);
+  return (v !== null && f.values[v]) || f.default;
+}
+
+let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page), for the finisher pick below
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
-  return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>) : null;
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip') : null;
+  return page;
 }
+/** The finisher pick's override for the scene's picture AND main.ts's death cue (one answer for both): the plain death while the finisher row
+ *  says 'skip' and the ragdoll is standing ready to take the kill; null (the rotation as it is) otherwise. */
+export function ragdollFinisher(): FinisherId | null { return page?.skipsFinishers() ? PLAIN_DEATH : null; }
 
 /** The part a blow at `location` lands on, and its impulse in the ragdoll's frame (the attacker's facing, `heading`, turned into `frame`). */
 export function blowImpulse(row: { parts: Record<string, string>; impulse: number; lift: number }, location: string | undefined, heading: number | undefined, frameYaw: number): { part: string; impulse: Vec3 } | null {
@@ -68,8 +80,8 @@ type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
 export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
 // rows: data/physics.json; foe: the opponent's row (ragdollRowFor); load: the chunk's import (scene.ts hands `() => import('./physics-chunk.ts')`)
-export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>) {
-  const tick = 1 / rows.tickHz, bones = rows.rigs[foe.rig as keyof PhysicsRows['rigs']] as Record<string, string>;
+export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false) {
+  const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0;
@@ -96,7 +108,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     rd?.destroy();
     rd = physics.createRagdoll(measure, { id: foe.id });
     const bind = new Map<string, THREE.Object3D>(); rigged.bindScene?.traverse((o) => { if (o.name && !bind.has(o.name)) bind.set(o.name, o); });
-    const hips = group.getObjectByName(bones.hips!)!;
+    const hips = partBones.hips!;
     saved.clear();
     const keep = (o: THREE.Object3D) => saved.set(o, [o.position.clone(), o.quaternion.clone(), o.scale.clone()]);
     for (let o = hips.parent; o && o !== group; o = o.parent) { keep(o); if (!bind.has(o.name)) { o.position.set(0, 0, 0); o.quaternion.identity(); } }   // the flinch pivot, the anchor: no presentation offset in the rest pose
@@ -112,16 +124,21 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     // scene.ts, once the rigs are in: the opponent's group (the sim frame) and his rig. The chunk and the body row load after the first frame.
     attach(opponentGroup: THREE.Object3D, opponentRig: Rigged) {
       group = opponentGroup; rigged = opponentRig;
-      partBones = Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, opponentRig.anchor.getObjectByName(name)!]));
+      // the 65-rig names through the one bone map (data/rig.json via rig-bones.ts): on a 65 body the name itself, on a 106 body its Mixamo joint
+      partBones = Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(opponentRig.anchor, name)!]));
+      const rigId = rigOf(opponentRig.anchor), measurePath = (foe.measure as Record<string, string | undefined>)[rigId];
+      if (!measurePath) { cost.state = `no measure row for rig ${rigId}`; return Promise.resolve(); }   // today's death on that rig
       const missing = Object.entries(partBones).filter(([, b]) => !b).map(([p]) => p);
       if (missing.length) { cost.state = `no bone for ${missing.join(', ')}`; return Promise.resolve(); }
       return afterFirstFrame()
         .then(() => new Promise((done) => setTimeout(done, rows.loadAfterFirstFrameMs)))
-        .then(() => Promise.all([load(), fetch(new URL(foe.measure, document.baseURI)).then((r) => { if (!r.ok) throw Error(`${foe.measure}: ${r.status}`); return r.json(); })]))
+        .then(() => Promise.all([load(), fetch(new URL(measurePath, document.baseURI)).then((r) => { if (!r.ok) throw Error(`${measurePath}: ${r.status}`); return r.json(); })]))
         .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed }); build(); })
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
+    /** ?ragdoll=always and a ragdoll built (a rig with no measure row, or a chunk not in yet, keeps the rotation). Latched once a death has begun. */
+    skipsFinishers() { return skipFinishers && !!rig && mode !== 'skip'; },
     // scene.ts, every frame, after the opponent's rig has been posed by its clips (and before anything reads his bones):
     //   dt: the frame's presentation seconds (0 in a hit-stop); events: the sim's events this frame; finish: the sim's finish (null in play);
     //   finisher: the scene's pick for this kill (a cinematic finisher keeps its own clip: no ragdoll).
@@ -131,7 +148,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       if (!finish && mode !== 'alive') build();   // the rematch: a fresh ragdoll, standing
       const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === 1) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
-        if (rows.plainDeathOnly && finisher !== null && !isPlainDeath(finisher)) { mode = 'skip'; cost.state = 'finisher'; }
+        if (finisher !== null && !isPlainDeath(finisher)) { mode = 'skip'; cost.state = 'finisher'; }   // a cinematic finisher keeps its clip (finisher row 'keep')
         else { rd.kill(blowImpulse(rows.kill, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0; }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== 1) continue;

@@ -64,7 +64,7 @@ import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, chooseRigs, heroRigFile } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
-import { foeRagdollFor } from './ragdoll.ts';
+import { foeRagdollFor, ragdollFinisher } from './ragdoll.ts';
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
 
@@ -594,6 +594,7 @@ export function createScene(
       if (warriors) rankLook?.tick(practice);   // a rank look swaps on only at an idle beat, never with a finish playing
       const fightWeapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       if (!practice.finish) { hamstrungLatch = null; executionLatch = null; } else { hamstrungLatch ??= hamstrungOk(); executionLatch ??= executionOk(); }
+      finisherOverride = ragdollFinisher();   // ?ragdoll=always (data/physics.json finisher): his death is the plain one, as a ragdoll; null otherwise (ragdoll.ts)
       const picked = executionPick(hamstrungPick(finisherOverride, hamstrungLatch === true), executionLatch === true);   // one id for the picture and (main.ts) the cues
       const resolved = practice.finish
         ? resolveExecution(opponentId, practice.finish, fightWeapons, picked, lastFinisher, resolveHamstrung(

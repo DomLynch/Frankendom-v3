@@ -5,13 +5,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createPhysics } from '@frankendom/physics';
-import { blowImpulse, ragdollRowFor, staggerDepth, staggerStrengths } from '../src/fight/ragdoll.ts';
+import { blowImpulse, finisherModeFor, ragdollRowFor, staggerDepth, staggerStrengths } from '../src/fight/ragdoll.ts';
+import { chooseRigs } from '../src/fight/rig-bones.ts';
 import { fightOpponent } from '../src/fight/foe-pick.ts';
 import { foeBodyFile, chooseFoeBody } from '../src/fight/foe-body.ts';
 
 const ROWS = JSON.parse(readFileSync(new URL('../data/physics.json', import.meta.url), 'utf8'));
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
-const measure = (row) => JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${row.measure.split('/').pop()}`, import.meta.url), 'utf8'));
+const measure = (row) => JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${row.measure['65'].split('/').pop()}`, import.meta.url), 'utf8'));
 const glbNodes = (file) => { const b = readFileSync(new URL(`../src/assets/${file}.glb`, import.meta.url)); return new Set(JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString()).nodes.map((n) => n.name)); };
 
 test('on by default for the fight the page plays, off under ?physics=v1 and for a foe without a row', () => {
@@ -22,15 +23,24 @@ test('on by default for the fight the page plays, off under ?physics=v1 and for 
   assert.equal(ragdollRowFor({ ...ROWS, on: false }, '', id), null);
 });
 
-test('every ragdoll row names a body the opponent is drawn in, a rig map with the package\'s 20 parts, and bones that exist in that body', async () => {
-  const physics = await createPhysics({ seed: ROWS.seed });
+test('?ragdoll=always skips the finisher (the finisher row); anything else keeps the rotation', () => {
+  assert.equal(finisherModeFor(ROWS, ''), 'keep');
+  assert.equal(finisherModeFor(ROWS, '?ragdoll=always'), 'skip');
+  assert.equal(finisherModeFor(ROWS, '?ragdoll=sometimes'), 'keep');
+});
+
+test('every ragdoll row names a body the opponent is drawn in, the package\'s 20 parts, and bones that exist in that body on each rig (through data/rig.json)', async () => {
+  const physics = await createPhysics({ seed: ROWS.seed }), RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
   for (const row of ROWS.opponents) {
-    chooseFoeBody('');
+    chooseRigs(''); chooseFoeBody('');
     assert.equal(foeBodyFile(row.id, row.id), row.body, `${row.id} is drawn as ${row.body}`);
-    const rd = physics.createRagdoll(measure(row), { id: row.id }), map = ROWS.rigs[row.rig];
-    assert.deepEqual(Object.keys(map).sort(), [...rd.partIds].sort(), `rig ${row.rig}: one bone per part`);
+    const rd = physics.createRagdoll(measure(row), { id: row.id }), map = ROWS.bones;
+    assert.deepEqual(Object.keys(map).sort(), [...rd.partIds].sort(), 'one bone per part');
     const nodes = glbNodes(row.body);
     for (const [part, bone] of Object.entries(map)) assert.ok(nodes.has(bone), `${row.body}.glb has ${bone} (${part})`);
+    const nodes106 = glbNodes(RIG.files[row.body]);   // the 106 body: the same 65 names through the one map (data/rig.json bones)
+    for (const [part, bone] of Object.entries(map)) assert.ok(nodes106.has(RIG.bones[bone]), `${RIG.files[row.body]}.glb has ${RIG.bones[bone]} (${part} = ${bone})`);
+    for (const rig of Object.keys(row.measure)) assert.ok(['65', '106'].includes(rig), `measure keyed by rig: ${rig}`);
     for (const which of ['hit', 'kill']) for (const [location, part] of Object.entries(ROWS[which].parts)) assert.ok(rd.partIds.includes(part), `${which}.parts.${location} = ${part} is a part`);
     for (const role of Object.keys(ROWS.hit.targets)) assert.ok(rd.row.roles.some((r) => r.role === role), `stagger target ${role} is a role`);
     rd.destroy();

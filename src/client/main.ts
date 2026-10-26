@@ -42,6 +42,7 @@ import { PLAIN_DEATH, isTemplate } from '../fight/finisher-look.ts';
 import { hamstrungPick, resolveHamstrung } from '../fight/hamstrung.ts';
 import { executionPick, resolveExecution } from '../fight/execution.ts';
 import { gfxOn } from '../fight/gfx-flag.ts';
+import { ragdollFinisher } from '../fight/ragdoll.ts';
 import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
@@ -201,7 +202,7 @@ function frame(now: number) {
       frameEvents.push(...practice.events);
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
-      const pick = executionPick(hamstrungPick(null, view.hamstrungInstalled()), view.executionInstalled());
+      const pick = executionPick(hamstrungPick(ragdollFinisher(), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)
       const deathAudio = practice.finish && practice.events.some((e) => e.type === 'Killed')
         ? { finish: practice.finish, weapons, gore: true, override: resolveExecution(opponentId, practice.finish, weapons, pick, view.previousFinisher(),
           resolveHamstrung(opponentId, practice.finish, weapons, pick, view.previousFinisher(), resolveFinisher(opponentId, practice.finish, weapons, isTemplate(pick, 'execute') ? null : pick, view.previousFinisher()))) ?? PLAIN_DEATH }
