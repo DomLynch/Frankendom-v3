@@ -2,7 +2,7 @@
 // 60 Hz tick, as in scripts/clip-stills.mjs). Shots are picked by the hero's own sim state (window.__v3Fight), so default and ?blend=v1 show
 // the same tick of the same fight (the sim is the same; only the clip weights differ):
 //   <tag>-roll-ready      ready idle, the fight drawn, before the roll
-//   <tag>-roll-<age>     the roll (A held + Space), `age` ticks into it (the roll is 36 ticks)
+//   <tag>-roll-<age>     the roll (A held + E, input.ts's dodge key), `age` ticks into it (the roll is 36 ticks)
 //   <tag>-roll-after-<n>  n ticks after the roll ends (the settle back into the stance)
 //   <tag>-cut-<age>       the right cut (D+F), `age` ticks into it
 //   <tag>-cut-after-<n>   n ticks after the cut ends
@@ -16,7 +16,7 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const TICK = 1000 / 60;
 const MOVES = [
-  ['roll', 'roll', ['KeyA', 'Space'], [3, 8, 27, 33], [2, 6]],
+  ['roll', 'roll', ['KeyA', 'KeyE'], [3, 8, 27, 33], [2, 6]],
   ['cut', 'attack', ['KeyD', 'KeyF'], [3, 6], [2, 6]],
 ];
 for (const query of queries.length ? queries : ['']) {
@@ -25,7 +25,7 @@ for (const query of queries.length ? queries : ['']) {
     const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
     page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
     await page.clock.install();
-    await page.goto(`${base}/${query ? `?${query}` : ''}`);
+    await page.goto(`${base}/${query ? `?${query}` : ''}`, { timeout: 120000 });
     await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
     await page.waitForTimeout(1500);
     await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
