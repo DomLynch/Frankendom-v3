@@ -14,7 +14,7 @@ import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadPeerWarriors, loadWarriors, lootIds, lootWorn, SHIELD_CARRIERS } from './characters.ts';
+import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { heroPreview } from '../hero-preview.ts';
@@ -27,10 +27,10 @@ import { OPPONENTS, PLAYER_WEAPONS, RULES, opponentAt, weaponOf, DEFAULT_WEAPON,
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { anyOfTemplate, isPlainDeath, isShelved, isTemplate } from './finisher-look.ts';
 import { HAMSTRUNG_BEATS, HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, hamstrungPick, resolveHamstrung } from './hamstrung.ts';
-import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, EXECUTION_VICTIMS, executionPick, poseOf, resolveExecution } from './execution.ts';
+import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, executionPick, poseOf, resolveExecution } from './execution.ts';
 import { createHamstrungAssets } from './hamstrung-assets.ts';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
-import { arenaFor, buildArena, type Arena } from '../stubs.ts';   // V3: arena.ts, arena-themes.ts (V2's flat stage)
+import { arenaFor, buildArena } from '../stubs.ts';   // V3: arena.ts, arena-themes.ts (V2's flat stage)
 import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
 import { createWitchfire } from './witchfire.ts';
@@ -51,11 +51,10 @@ import { readyOffset, slouchFrom } from './upright-ready.ts';
 import { armfeelFrom, Flinch } from './armfeel.ts';
 import { createBurstPool } from './armfeel-fx.ts';
 import { createBloodEdge } from './blood-edge.ts';
-import { hideChildren } from '../stage-hide.ts';
 import { createCameraRig, framingLow, framingTall } from './camera.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
 import { createFightFx, impactTexture } from './fx.ts';
-import { createSignatures, resolveSignature } from './signature.ts';
+import { createSignatures } from './signature.ts';
 import { scorch } from './scorch.ts';
 import './signature-dwarf.ts';   // registers the Dwarf's Hammer Stamp
 import './signature-knight.ts';   // the Knight's Rivet Burst registers itself
@@ -68,11 +67,9 @@ import './signature-goblin.ts';   // Goblin A: Hooked Wound
 import './signature-plaguedoctor.ts';   // Plague Doctor A: Rot Bloom
 import './signature-shieldmaiden.ts';   // registers the Shieldmaiden's Splintered Defiance
 import { settleWithin } from './warm-gate.ts';
-import { fxNum } from './fx-rows.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
-const WOUND_REACH_PROBE_MAX = fxNum('fx.scene.woundReachProbeMax');
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
 
@@ -92,12 +89,6 @@ const foeEquipUrl = (opponentId: string, weapon: WeaponId): string | undefined =
 // A rank look's pre-swap bake takes up to this many ms of each frame (it runs while the fight plays; one bounded step is ~8 ms at worst).
 const LOOK_BAKE_MS = cameraRule('lookBakeMs');
 export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapon) => WEAPON_LOOK[weapon]?.baked || equipUrl(weapon));
-// In-world fights (Origins ?worldfight, Dom 2026-10-07: "the Pit's own fight, where you stand, without the arena"). With a mount the duel scene is the same scene it always is, with
-// the Pit's rigs, effects and locked camera in the arena's own coordinates, except that no arena, crowd or arena light is built: `holder` (the page's world, moved in by the page) is
-// the ground, `background` and `fog` are the world's, and the page's renderer draws it (no second GL context). The page places `holder` with the inverse of where the duel stands in
-// the world. Without a mount (every Pit and game page) none of this runs.
-export type WorldMount = { renderer: THREE.WebGLRenderer; holder: THREE.Object3D; background: THREE.Color | THREE.Texture | null; fog: THREE.Fog | THREE.FogExp2 | null; walkCam?: { back: number; up: number } };   // walkCam: the walk camera's distance behind the hero and height (metres): a world fight keeps them and only the aim locks on
-const worldArena = (): Arena => ({ group: new THREE.Group(), floor: new THREE.Mesh(), sky: Object.assign(new THREE.Texture(), { image: { width: 1 } }), materials: undefined, ready: Promise.resolve(), update() {}, raiseGate() {}, thinCrowd() {} }) as unknown as Arena;
 /** The better graphics (gfx-lift.ts, one module for every page): the Pit page hands the lazily imported module in (undefined = off, the chunk was never fetched). */
 export type GfxPost = { patchHeightFog(): void; createGfxLift(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera): { render(): void; setSize(w: number, h: number): void; compile(): void } };
 export function createScene(
@@ -118,32 +109,28 @@ export function createScene(
   // gladius + scutum from Legionary), so his rig is armed for that level. A rematch that crosses the change reloads the page (main.ts).
   // Default 1 = the first rung's loadout (the Centurion's baked trident): a harness caller that omits it (versus-cards.mjs) renders rung 1.
   opponentLevel: number | Promise<number> = 1,
-  // A live duel only (main.ts `?duel=`): the peer's agreed weapon and worn gear, once the handshake has them (null: the duel ended before
-  // it did). The rigs load behind the loading card until then and the peer is drawn on the hero's own rig; a page with no `?duel=` passes
-  // nothing and every line below is the fight it always was.
-  peerKit?: Promise<{ weapon: WeaponId; gear?: readonly string[] } | null>,
-  world?: WorldMount,
-  post?: () => Promise<GfxPost>,   // the Pit page only (a world mount keeps the zone page's own frame); a LOADER, called once the renderer exists, so a page with no WebGL never starts the import (the chunk imports the entry, which has thrown: a second, identical pageerror)
+  // V3: two empty slots, where V1 took a live duel's peer kit and an open-world zone mount; V3 never passes either. Kept so main.ts's call is unchanged.
+  _peerKit?: undefined,
+  _world?: undefined,
+  post?: () => Promise<GfxPost>,   // a LOADER, called once the renderer exists, so a page with no WebGL never starts the import (the chunk imports the entry, which has thrown: a second, identical pageerror)
 ) {
   const theme = arenaFor(opponentId, arenaOverride);
   // Phone tier (the owner's iPhone GPU-pressure defect, 2026-09-18): cap the backing store at 1.25× and the
   // shadow map at 512² — the MSAA framebuffer at 1.5× on a ~1170×2532-class phone is ~200 MB of GPU memory.
   const PHONE = phoneTier(),
     PIXEL_CAP = pixelCap(PHONE);   // ?dpr= overrides the ceiling for this load (quality.ts)
-  const renderer = world?.renderer ?? new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  if (!world) {   // a world mount keeps the page's renderer as it is
-    renderer.setPixelRatio(Math.min(devicePixelRatio, PIXEL_CAP));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = theme.exposure;
-  }
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, PIXEL_CAP));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = theme.exposure;
   const scene = new THREE.Scene();
   // Special Moves (special-look.ts): the tick each side was last struck by a special (its head-hit stagger is presentation only). The cloud
   // is Finishers' special-fx.ts, loaded below only in a fight with Special Moves.
   const specialStruck = [-Infinity, -Infinity];
-  scene.background = world ? world.background : new THREE.Color(theme.fog);
-  scene.fog = world ? world.fog : new THREE.FogExp2(theme.fog, theme.fogDensity);
+  scene.background = new THREE.Color(theme.fog);
+  scene.fog = new THREE.FogExp2(theme.fog, theme.fogDensity);
   let environmentTarget: THREE.WebGLRenderTarget | undefined;
   // The environment map: the arena's own ash sky (an equirect the world lane paints, warm sand below the horizon) once it has landed,
   // so bronze and iron reflect this place; the studio RoomEnvironment only until then (audit 2026-09-20).
@@ -155,7 +142,7 @@ export function createScene(
       environmentTarget?.dispose();
       environmentTarget = target;
       scene.environment = target.texture;
-      scene.environmentIntensity = world ? 0.15 : environment ? 0.45 : 1.0;   // a world mount: the studio map must not wash the world's own ground and props
+      scene.environmentIntensity = environment ? 0.45 : 1.0;
     } finally {
       environment?.dispose();
       pmrem.dispose();
@@ -168,7 +155,7 @@ export function createScene(
   // The brass target ring under the opponent is gone (owner 2026-09-21: a UI shape on the sand, and the hero never had one).
   const brass = new THREE.MeshStandardMaterial({ color: '#ad9365', metalness: 0.65, roughness: 0.48 });
   const hemisphere = new THREE.HemisphereLight(...theme.hemisphere);
-  if (!world) scene.add(hemisphere);   // a world mount is lit by the world's own lights (inside `holder`)
+  scene.add(hemisphere);
   const sun = new THREE.DirectionalLight(...theme.sun);
   const sunHome = new THREE.Vector3(...(theme.light?.sun ?? [-15, 26, -18])), sunPower = theme.sun[1];   // a theme may move the key light (noon overhead, firelight low)
   sun.position.copy(sunHome);
@@ -176,7 +163,7 @@ export function createScene(
   sun.shadow.mapSize.set(PHONE ? 512 : 1024, PHONE ? 512 : 1024);
   Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 70 });   // the pit floor to the wall's foot (11.7 m), not the tiers: 1.25× sharper shadows on the sand for free (audit 2026-09-20)
   sun.shadow.normalBias = 0.04;
-  if (!world) scene.add(sun);
+  scene.add(sun);
   // V3: the `?look=souls|shade` test chunk (souls-look.ts) is not carried; `look` stays undefined, which is today's frame.
   // `?look=armfeel&feel=high|low|off` (armfeel.ts): the victim's flinch on a visual pivot between the fighter's root and its rig. Absent or `off`: no pivot, today's frame.
   const feel = typeof location === 'undefined' ? undefined : armfeelFrom(location.search, typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -191,7 +178,7 @@ export function createScene(
   const look = undefined as { key?: number; setSize(w: number, h: number, r: number): void; update(anchors: unknown[], feet: THREE.Vector3[]): void; render(): boolean } | undefined;
   // The lift: the fog chunk is patched BEFORE any material compiles (the loading card waits on gfxReady below), the composer then draws every frame in place of the plain render. A failed chunk leaves the Pit exactly as it was.
   let gfx: ReturnType<GfxPost['createGfxLift']> | undefined;
-  const gfxReady: Promise<unknown> = post && !world ? post().then((m) => { m.patchHeightFog(); gfx = m.createGfxLift(renderer, scene, camera); gfx.setSize(width, height); }).catch(captureException) : Promise.resolve();
+  const gfxReady: Promise<unknown> = post ? post().then((m) => { m.patchHeightFog(); gfx = m.createGfxLift(renderer, scene, camera); gfx.setSize(width, height); }).catch(captureException) : Promise.resolve();
   const bloodEdge = createBloodEdge(canvas);   // the player's hits: a crimson streak on the edge the blow came from (blood-edge.ts)
   function mesh(
     geometry: THREE.BufferGeometry,
@@ -220,7 +207,7 @@ export function createScene(
   ) {
     return mesh(new THREE.BoxGeometry(w, h, d), material, x, y, z, parent);
   }
-  const arena = world ? worldArena() : buildArena(scene, theme),
+  const arena = buildArena(scene, theme),
     footDust = createFootDust(scene, dustToneFor(theme)),
     witchfire = createWitchfire(scene),
     skillImpact = createSkillImpact(scene),
@@ -230,7 +217,6 @@ export function createScene(
     missileFx = createMissileFx(scene),   // sandbox-mech missiles: the bolt in flight, nothing while none flies
     impactFx = createImpactFx(scene),   // a flash + ground ring per contact row (hit-stop-defs.json flash/ring/tint columns; a row without them draws nothing)
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
-  if (world) scene.add(world.holder);
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
   arena.ready.then(() => { if ((arena.sky.image as { width: number }).width > 2) { arenaSky = arena.sky; rebuildEnvironment(); } }).catch(() => {});
@@ -254,17 +240,12 @@ export function createScene(
   // failed. Owner's phone 2026-09-21: they showed for the split second between the first frame and the versus still's own
   // load (main.ts shows the card only once its image arrives), so every opponent switch flashed two blocks in the arena.
   player.visible = opponent.visible = false;
-  let pitRestore: (() => void) | undefined;   // the gear seam (setArenaVisible): set while the arena is hidden, puts back what was shown
   let warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
   const dustFeet: (THREE.Object3D | null)[] = [],
     dustPositions = Array.from({ length: 4 }, () => new THREE.Vector3());
   // The player, and the chosen opponent; each rig plays the clips of the weapon the simulation gives that side (moves.ts OPPONENTS, duel.ts initialDuel).
-  let peer: { weapon: WeaponId; gear?: readonly string[] } | null = null;   // set once the duel's handshake has the peer's kit
-  const weapons = Promise.all([playerWeapon, opponentLevel, peerKit ?? null]).then(([weapon, level, kit]) => {
-    peer = kit;
-    const pair = initialPractice(731, opponentAt(OPPONENTS[opponentId], level), weapon).duel.fighters.map((f) => f.weapon) as [WeaponId, WeaponId];
-    return peer ? [pair[0], peer.weapon] as [WeaponId, WeaponId] : pair;
-  });
+  const weapons = Promise.all([playerWeapon, opponentLevel]).then(([weapon, level]) =>
+    initialPractice(731, opponentAt(OPPONENTS[opponentId], level), weapon).duel.fighters.map((f) => f.weapon) as [WeaponId, WeaponId]);
   let builtFoeWeapon: WeaponId | undefined;
   // Every roster body except the held ones (roster.ts `hold`): glob patterns must be literals, so the exclusions are spelled out here —
   // tests/roster.test.ts checks the two lists agree. Held GLBs stay in src/assets for their lanes; they are just not in the beta bundle.
@@ -281,20 +262,17 @@ export function createScene(
   // Combat waits for the arena's worker textures and props too (arena.ready never rejects): their GPU uploads then land during the
   // loading screen instead of stalling the first exchange (measured 69 ms p95 in the first window when they arrived late under load).
   // The load is retryable: a phone that sleeps mid-download aborts the fetch (2 MiB of the Nightborn's 5.1 MB, 2026-09-21 09:15) and
-  // the page is restored with the failure still showing. The capsules stay, the failure is reported, and `retryArt` runs the same
-  // load again — the entry point calls it when the page returns to the foreground, the network comes back, or the player taps the notice.
-  // Loot (brief 5): the worn ids the entry point last gave (`wear`), the pieces of loot.glb once fetched, and the fetch in flight. The fetch
-  // starts only once the rigs are in and the worn set is non-empty, so it never shares the wire with a fight's download and never gates
-  // readiness: the fight starts on the rigs alone and the pieces go on when they land.
+  // the page is restored with the failure still showing. The capsules stay and the failure is reported (V3 has no retry hook: V1's
+  // `retryArt` was never called here).
   // Tier dressing (Block A; Phase L #589/#606 re-applied): the opponent wears his own armour pieces from his cut, the kit for `tier` (loot.ts
   // kitWorn: no crest at Recruit), the rung he is met at, grades.ts tierAt(marks), set by the entry point at load and at each rematch. The cut
   // downloads beside his rig so he is dressed before the opened-waist bake and never pops armour on mid-fight; a failed cut leaves him
-  // undressed, not the fight. His kit shows the grade of that rung, the player's pieces the rung each was taken at (rank-tint.ts: a tint over the piece's own maps).
+  // undressed, not the fight. His kit shows the grade of that rung (rank-tint.ts: a tint over the piece's own maps).
   let tier: Tier | undefined;
   let playerTier: Tier | undefined;   // the player's own rung (the rank the HUD shows), for his weapon's shape; setPlayerTier
   // Two-handed or not is the weapon he FIGHTS with (the sim's, `weapons` below): the Centurion's gladius brings his scutum up (SCOPE:76).
   let twoHanded = weaponOf(OPPONENTS[opponentId].weapon).grip === 'two-hand';
-  const carrierUrl = !peerKit && kitWorn(opponentId, false).length ? carrierUrls[`../assets/loot/${foeKitFile(opponentId)}.glb`] : undefined;
+  const carrierUrl = kitWorn(opponentId, false).length ? carrierUrls[`../assets/loot/${foeKitFile(opponentId)}.glb`] : undefined;
   // V3 fast load (2026-10-26): his kit (armour, helmet, scutum; 3.0 MB) streams in after the first frame instead of gating it, then he is
   // dressed and his opened-waist bake is taken again, as a rematch at a new rung does (setTier). ?load=v1: V1's order, the kit beside his rig.
   const lateKit = !(typeof location !== 'undefined' && /[?&]load=v1\b/.test(location.search));
@@ -303,9 +281,7 @@ export function createScene(
   // frame, so by then the file is usually in and the pop-in is the dress step. A failed fetch is forgotten, so a retry fetches again.
   let kitFetch: Promise<THREE.SkinnedMesh[] | undefined> | undefined;
   const fetchKit = () => (kitFetch ??= loadLoot(carrierUrl!).catch((error: unknown) => { captureException(error); kitFetch = undefined; return undefined; }));
-  let worn: readonly string[] = [], wornTier: Readonly<Record<string, Tier>> = {}, lootPieces: THREE.SkinnedMesh[] | undefined, lootLoading: Promise<void> | null = null, carried: THREE.SkinnedMesh[] | undefined;
-  // loot.glb, once per page (a failure is forgotten, so the next dress or Pit visit tries again): the worn set and the Pit's pieces share it.
-  const loadLootPieces = () => (lootLoading ??= loadLoot(fighterUrls['../assets/loot.glb']!).then((pieces) => { lootPieces = pieces; dress(); }).catch((error: unknown) => { captureException(error); lootLoading = null; }));
+  let carried: THREE.SkinnedMesh[] | undefined;
   // Weapon shapes per rank (weapon-shapes.ts shapesFor): his weapon's file at the rung he is met at (`tier`, a ?tier= pin included), the
   // player's own at the player's own rung (`playerTier`, the career rank). A shape is GPT's painted finish: no rank tint over it. The dev
   // flag's table, else the shipping one.
@@ -316,7 +292,7 @@ export function createScene(
   // his weapon's own part.
   function reshape() {
     const loaded = warriors; if (!loaded || !shapesOn(shapeTable)) return;   // no shape file on: today's parts, no call at all
-    const urls = () => shapesFor({ player: loaded.playerWeapon, opponent: builtFoeWeapon && !peer ? foeDrawnWeapon(opponentId, builtFoeWeapon) : builtFoeWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: levelOf(tier ?? 'Recruit') }, shapeTable);
+    const urls = () => shapesFor({ player: loaded.playerWeapon, opponent: builtFoeWeapon ? foeDrawnWeapon(opponentId, builtFoeWeapon) : builtFoeWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: levelOf(tier ?? 'Recruit') }, shapeTable);
     for (const who of ['player', 'opponent'] as const) {
       const actor = loaded[who], url = urls()[who];
       if (!url) { actor.reshape(undefined); continue; }
@@ -329,21 +305,13 @@ export function createScene(
     if (!warriors) return;
     warriors.opponent.grade(tier);   // his weapon wears the rung he is met at, like his kit
     reshape();
-    if (peer) {   // the peer wears what his handshake kit names, from the same loot.glb the player's own set comes from
-      if (peer.gear?.length) { if (lootPieces) warriors.opponent.wear(lootPieces.filter((piece) => lootWorn(piece, peer!.gear!)), (id, error) => captureException(error, { tags: { loot: id } }), () => 'Recruit'); else void loadLootPieces(); }
-    } else if (carried) {
+    if (carried) {
       const kit = kitWorn(opponentId, twoHanded, tier), url = shieldFor(opponentId, levelOf(tier ?? 'Recruit'), shieldsOn), painted = url ? shields.get(url) : undefined;
       // The painted shield (shields.ts) in place of his own board once its file is in; until then, or if it never loads, he wears the board he has.
       const pieces = carried.filter((piece) => lootWorn(piece, kit)).filter((piece) => !painted || piece.userData.slot !== 'Shield');
       warriors.opponent.wear(painted ? [...pieces, painted] : pieces, (id, error) => captureException(error, { tags: { loot: id } }), () => tier);
       if (url && !painted && !shieldLoads.has(url)) { shieldLoads.add(url); loadShield(url).then((piece) => { shields.set(url, piece); dress(); }).catch((error: unknown) => captureException(error, { tags: { shield: url } })); }
     }
-    if (heroUrl) return;
-    if (!lootPieces) {
-      if (worn.length) void loadLootPieces();
-      return;
-    }
-    warriors.player.wear(lootPieces.filter((piece) => lootWorn(piece, worn)), (id, error) => captureException(error, { tags: { loot: id } }), (piece) => wornTier[lootIds(piece).find((id) => worn.includes(id)) ?? ''] ?? 'Recruit');
   }
   // Rank look (rank-look.ts): the dev flag's file, else his shipping look at the rung he is met at (`tier`, set before the fight is playable;
   // `?tier=` picks it for stills). It streams once the rung is set and the rigs are in (setTier, before the Fight tap; else at first playable)
@@ -356,7 +324,7 @@ export function createScene(
   const rankLookUrl = () => rankLookFlagged ?? rankLookFor(opponentId, levelOf(tier ?? 'Recruit'), PHONE);
   let lookStarted: string | undefined | null = null;   // the look file the stream started on (undefined: none at that rung), null before it starts
   // A swapped body (foe-body.ts: the Minotaur) wears no rank look: the look files are fitted to the V1 body.
-  const rankLook = !peerKit && (rankLookFlagged || (SHIPPING_LOOKS[opponentId] && !foeBodySwapped(opponentId))) ? rankLookStream(() => { const url = lookStarted = rankLookUrl(); lookForced = runThroughForced(url); (globalThis as { __rankLookForced?: boolean }).__rankLookForced = lookForced; return url ? loadRankLook(url).then(async (look) => {
+  const rankLook = (rankLookFlagged || (SHIPPING_LOOKS[opponentId] && !foeBodySwapped(opponentId))) ? rankLookStream(() => { const url = lookStarted = rankLookUrl(); lookForced = runThroughForced(url); (globalThis as { __rankLookForced?: boolean }).__rankLookForced = lookForced; return url ? loadRankLook(url).then(async (look) => {
     if (nightBronzeApplies(theme.id, opponentId, levelOf(tier ?? 'Recruit'))) toneNightBronze(look);
     // Warm-up before the swap frame: its shaders compile (with this scene's lights and shadows) and its maps upload now, off the beat.
     // Measured without it: a 150 ms swap frame at 375 (goblin-l3, dist).
@@ -392,8 +360,8 @@ export function createScene(
     weapons.then((pair) => {
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
-      const opponentEquip = pair[1] === (peer ? DEFAULT_WEAPON : ROSTER[opponentId].weapon) ? undefined : peer ? equipUrl(pair[1]) : foeEquipUrl(opponentId, pair[1]);   // the hero's rig bakes the longsword; a drawn weapon over his (foe-weapon.ts) is its own file
-      const load = (hero: string) => peer ? loadPeerWarriors(hero, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), opponentEquip, (error) => captureException(error, { tags: { equip: pair[1] } })) : loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
+      const opponentEquip = pair[1] === ROSTER[opponentId].weapon ? undefined : foeEquipUrl(opponentId, pair[1]);   // a drawn weapon over his (foe-weapon.ts) is its own file
+      const load = (hero: string) => loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
       return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody)))(fighterUrls[`../assets/${heroBodyFile()}.glb`]!);   // the hero-body row: Exo (warrior.glb) or the classic hero
     }),
     arena.ready,
@@ -402,7 +370,7 @@ export function createScene(
   ])
     .then(async ([loaded]) => {
       warriors = loaded;
-      if (!peer) sizeBeast(loaded, opponentId);   // a beast is drawn at the size it is met walking (src/fight/beast-scale.ts)
+      sizeBeast(loaded, opponentId);   // a beast is drawn at the size it is met walking (src/fight/beast-scale.ts)
       dress();   // his kit before the opened-waist bake, so the cut body wears what the whole one did
       playerDrawn(loaded.playerWeapon);
       if (anyOfTemplate('bisect', (f) => supportsFinishers(opponentId, f))) loaded.opponent.prepareOpened();
@@ -461,7 +429,7 @@ export function createScene(
   scene.add(finisherBlood.group);
   let bloodSources: ReturnType<typeof finisherBloodSources> = [];
   const fx = createFightFx({ scene, dropTexture, splatTexture });   // moving the Pit's contact effects into src/fight/fx.ts
-  const { clash, sparks, splats, bodyWounds, blade } = fx;
+  const { splats, bodyWounds, blade } = fx;
   let bloodMode: BloodMode = 'red';
   let finisherOverride: FinisherId | null = null; // dev/test pick (owner 2026-09-19): swap which finisher plays on a ceremonial kill; null = the spec's selection
   // Rotation memory (owner 2026-09-20: never the same ceremony twice in a row). `lastFinisher` is the ceremony the previous
@@ -469,7 +437,6 @@ export function createScene(
   // fight starts (practice.finish clears on rematch). Presentation state only — the simulation never sees it.
   let lastFinisher: FinisherId | null = null, fightFinisher: FinisherId | null = null;
   let bakeFallback: FinisherId | false | null = null;   // the finisher this finish plays instead (bakeSafeFinisher), false for none, null undecided
-  let fallen: { victim: 0 | 1; draw: boolean } | null = null;   // the finish drawn last frame, for fallenRect() between frames
   let openedReach = 0;   // Opened: farthest horizontal extent of what lies on the sand, from the fallen's origin (camera fit)
   // Decapitation (owner 2026-09-18): the severed head, its ballistic state, and the killing blow's heading (the pop direction).
   let severHead: SeveredHead | null = null;
@@ -502,7 +469,6 @@ export function createScene(
   );
   const executionOk = () => executionAssets.ready(warriors);
   let executionLatch: boolean | null = null;   // executionOk() as it stood on the first frame of this finish (one answer for picture and audio)
-  const wantExecution = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'execute')) && warriors && EXECUTION_VICTIMS.includes(opponentId)) void executionAssets.request(warriors); };
   let executionSteps: THREE.Vector3 | null = null; // where the killer's anchor stands for the cut, solved once per finish
   let finishHold = 0; // Hamstrung: seconds left of the hit-stop a blow holds the scene for (the clock and both rigs stand still, the camera and the blood run on)
   let hamstrungSteps: { knee: THREE.Vector3; back: THREE.Vector3 } | null = null; // where the killer's anchor stands for each blow, solved once per finish
@@ -531,18 +497,11 @@ export function createScene(
   const standoffOn = typeof location !== 'undefined' && standoffFlag(location.search);   // on by default, ?standoff=0 off (standoff.ts)
   const standoff = standoffClock();   // ms of frame time since the versus card lifted (frame dt, so a stepped harness clock plays it too); -1 before
   const rig = createCameraRig(camera);
-  // World fights (seamless combat step 4, Dom 2026-10-08): the duel's camera does not cut in, it eases from where the walk's camera stood. `easeCamera` is set by the page at the engage; every frame after rig.update blends the rig's pose with that start (smoothstep), and the rig itself is untouched.
-  const SIDE = { gapFloor: cameraRule('worldGapFloor'), max: cameraRule('worldSideMax'), base: cameraRule('worldSideBase'), low: cameraRule('worldSideLow'), ref: cameraRule('worldSideRef') };   // the world camera's side step, read once: the frame loop must not search the rule rows
-  let worldCam: { back: number; up: number } | null = null;   // set by the page at a world engage: the camera stays at the walk's distance and height (seamless S2)
-  const wcFoe = new THREE.Vector3();
-  let ease: { pos: THREE.Vector3; quat: THREE.Quaternion; age: number; dur: number } | null = null;
-  const easePos = new THREE.Vector3(), easeQuat = new THREE.Quaternion();
   // Kill dip: the killing blow darkens the frame 6 % for two frames and recovers over two more — the cinematic reserve (GAME_SPEC 80/15/5),
   // never on an ordinary hit. Applied around the draw on top of whatever exposure the renderer holds, so nothing else has to know.
   let dip = 0; // frames remaining, counted down per drawn frame while time passes
   const DIP_FRAMES = 4, DIP_DEPTH = 0.06;
   const blockHeavy = [false, false]; // which fighter's standing block just caught a heavy (his recoil is deeper while `blocked` lasts)
-  let ratio = Math.min(devicePixelRatio, PIXEL_CAP); // the context-loss recovery path lowers this to 1 from the tier's ceiling
   // The canvas box is the LAYOUT viewport, read from the root element, never innerWidth / innerHeight: iOS Safari reports the zoomed
   // VISUAL viewport there, so a pinch that slipped past main.ts's guard shrank the canvas to the zoomed area (the top half of the
   // phone, the page background below it, the HUD floating over the void, the camera framed for the wrong aspect) and it stayed that
@@ -553,63 +512,19 @@ export function createScene(
     width = document.documentElement.clientWidth || innerWidth; height = document.documentElement.clientHeight || innerHeight;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    if (!world) renderer.setSize(width, height, false);   // the page sizes its own renderer
+    renderer.setSize(width, height, false);
     look?.setSize(width, height, renderer.getPixelRatio());
     gfx?.setSize(width, height);
   };
   resize();
   window.addEventListener('resize', resize);
   return {
+    // V3: only the members src/client/main.ts calls. V1's journal, zone, gear-room, loot and test-probe hooks are gone (docs/V3-OWED-2026-10-26.md §3, PR 1).
     renderer,
-    ready,
-    // A world-mounted fight (pit-duel.ts stageFor) builds a scene per creature on the page's ONE renderer, which is never disposed: let go of this scene's GPU memory (every geometry,
-    // material, texture, skeleton and the environment map under it) and its resize listener. The caller has taken the world's holder out of the scene first, so the world is never
-    // touched; the renderer is not disposed here.
-    dispose() {
-      window.removeEventListener('resize', resize);
-      scene.traverse((o) => {
-        const m = o as THREE.Mesh & { skeleton?: THREE.Skeleton };
-        m.geometry?.dispose();
-        m.skeleton?.dispose();
-        for (const material of Array.isArray(m.material) ? m.material : m.material ? [m.material] : []) {
-          for (const value of Object.values(material)) if (value instanceof THREE.Texture) value.dispose();
-          material.dispose();
-        }
-      });
-      environmentTarget?.dispose();
-      scene.environment = null;
-    },
-    // Load the rigs again after a failed attempt; a no-op while a load is running or once the rigs are in.
-    retryArt: loadFighters,
     startStandoff() { standoff.start(); },   // main.ts, the moment the versus card lifts: idempotent (an art retry re-emits 'ready' mid-fight)
     restartStandoff() { standoff.restart(); },   // main.ts nextFight: the rematch plays the draw-in again (a no-op with ?standoff=0)
-    opponentRoot: () => warriors?.opponent.anchor ?? null,   // the foe rig's root (undefined-safe): the Origins preview dresses a creature's cloth on it; the sim never reads it
-    opponentWeapon: () => builtFoeWeapon,   // the weapon his rig was armed with (undefined until the rigs load)
-    // The player's worn loot by id (src/core/loot.ts equipped set): applied now when the rigs and pieces are in, else when they land.
-    // `tiers`: the rung each worn id was taken at (loot.ts Provenance.tier); an id without one shows Recruit's finish.
-    wear(ids: readonly string[], tiers: Readonly<Record<string, Tier>> = {}) { worn = ids; wornTier = tiers; dress(); },
     // The rung the opponent is met at (grades.ts tierAt): at load and at each rematch, never mid-fight. A change re-dresses him and bakes the
     // opened waist again (between fights).
-    // world fights: warm this scene's own rigs (hero, foe, weapons) once they have loaded, before the engage. A program's variant depends on the lights it is lit by, and the world's lights only join this scene at the
-    // attach, so they are borrowed here as clones. `compile` builds the lit programs, but the shadow pass's depth programs only exist once a shadow map is really rendered, so one frame is drawn into a 4x4 target (nothing shown), then the clones go.
-    async warmOwn(lights: THREE.Object3D[]) {
-      const borrowed = lights.map((light) => light.clone()); scene.add(...borrowed);
-      try {
-        // The hit effects (spark Points, blood splats) sit hidden until the first hit, and compile skips hidden objects: show the tagged ones for the synchronous collect, hide them again, then wait.
-        const hidden: THREE.Object3D[] = []; scene.traverse((o) => { if (o.userData.warmHidden && !o.visible) { o.visible = true; hidden.push(o); } });
-        let compiling: Promise<unknown>; try { compiling = renderer.compileAsync(scene, camera); } finally { for (const o of hidden) o.visible = false; }
-        await settleWithin('warm-own', compiling, COMPILE_BOUND_MS);
-        const target = new THREE.WebGLRenderTarget(4, 4), before = renderer.getRenderTarget();
-        try { renderer.setRenderTarget(target); renderer.render(scene, camera); } finally { renderer.setRenderTarget(before); target.dispose(); }
-      } catch { /* a failed warm only means the first frame compiles, as before */ } finally {
-        scene.remove(...borrowed); for (const light of borrowed) (light as THREE.Light).dispose?.();
-      }
-    },
-    warmWorld(root: THREE.Object3D) { return settleWithin('warm-root', renderer.compileAsync(root, camera, scene), COMPILE_BOUND_MS).then(() => {}); },   // world fights: compile the page's world materials as THEY will be drawn here (this scene's environment and fog), before the engage, so the first duel frame does not compile them
-    setWorldCamera(cam: { back: number; up: number } | null) { worldCam = cam; },   // world fights: keep the walk camera's distance and height (only the aim eases to the lock); null = the duel's own framing
-    easeCamera(from: { position: THREE.Vector3; quaternion: THREE.Quaternion }, seconds: number) {   // start the duel's camera at `from` and ease to its own framing over `seconds` (a reduced-motion viewer gets the cut)
-      ease = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? null : { pos: from.position.clone(), quat: from.quaternion.clone(), age: 0, dur: seconds };
-    },
     setTier(next: Tier) {
       if (next !== tier) {
         tier = next; dress(); if (carried && !lookForced) warriors?.opponent.rebakeOpened();
@@ -620,134 +535,18 @@ export function createScene(
     },
     // The player's own rung (grades.ts tierAt of his marks): his weapon's shape (weapon-shapes.ts). A ?tier= pin never moves it.
     setPlayerTier(next: Tier) { if (next === playerTier) return; playerTier = next; dress(); },
-    // The gear sheet's seam (gear-room.ts, the live mannequin; it began as the Pit's seam and outlived the Pit room). Hidden (stage-hide.ts):
-    // everything in the scene but the lights and the player, so the arena, the opponent and every fight effect go; all stay built for the
-    // fight's return on this page, and each comes back exactly as it was. Nothing here disposes.
-    gearStage() {
-      return {
-        scene, camera,
-        setArenaVisible(on: boolean) {
-          if (on === !pitRestore) return;
-          if (on) { pitRestore?.(); pitRestore = undefined; }
-          else pitRestore = hideChildren(scene, (child) => child === player || child instanceof THREE.Light);
-        },
-        hero: {
-          // Stand the player's rig at (x, z) facing `heading`, walking at `speed` m/s (0: idle), weapon sheathed. Presentation only: the
-          // simulation never sees it, and the next fight frame puts him back on the sim's state.
-          place(x: number, z: number, heading: number, speed: number, dt: number) {
-            player.position.set(x, 0, z); player.rotation.y = heading;
-            warriors?.player.update(speed, dt, 'sheathed', 0);   // m/s, as the fight passes it (travel = distance / dt): the gait blends on speed
-          },
-        },
-        draw() { renderer.render(scene, camera); },   // the sheet's frame: the fight's render() does not run while it shows
-      };
-    },
-    arena,
-    // The loot pieces drawn on the player right now as `name|slot|layer` (' (hidden)' if a worn copy is detached or invisible), and his own
-    // draws a `replace` piece covers as `name|slot` (' (shown)' if one still shows) — for the debug probe, scripts/worn-loot-check.mjs.
-    wornDraws: (): { worn: string[]; covered: string[] } => ({
-      worn: (warriors?.player.worn() ?? []).map((m) => `${m.name}|${String(m.userData.slot)}|${String(m.userData.layer)}${m.visible && m.parent ? '' : ' (hidden)'}`),
-      covered: (warriors?.player.covered() ?? []).map((m) => `${m.name}|${String(m.userData.slot)}${m.visible ? ' (shown)' : ''}`),
-    }),
-    bloodState() {
-      const opened = warriors?.opponent.anchor.getObjectByName('Opened');
-      return {
-        ...finisherBlood.inspect(),
-        head: severHead
-          ? {
-              position: severHead.group.position.toArray(),
-              screen: this.project(severHead.group.position.toArray()),
-              visible: severHead.group.visible,
-            }
-          : null,
-        opened: opened
-          ? {
-              visible: opened.visible,
-              pieces: opened.children
-                .filter((p) => p.name !== 'OpenedWeapon')
-                .map((p) => ({
-                  name: p.name,
-                  visible: p.visible,
-                  opacity:
-                    (
-                      (p.getObjectByName('CreatureBody') as THREE.Mesh | undefined)?.material as
-                        | THREE.MeshStandardMaterial
-                        | undefined
-                    )?.opacity ?? 1,
-                })),
-            }
-          : null,
-        sources: bloodSources.map((s) => ({
-          site: s.site,
-          position: s.position.toArray(),
-          direction: s.direction.toArray(),
-        })),
-      };
-    },
-    setBloodMode(mode: BloodMode) {
-      bloodMode = mode;
-      finisherBlood.group.visible = !bloodHidden(mode) && bloodSources.length > 0;
-      splats.clear(true);
-      if (fx.state.flesh) {
-        fx.state.impact = 0;
-        sparks.visible = false;
-      }
-      if (mode === 'off') blade.set(false, warriors, mode);
-      else if (blade.bloodied) blade.set(true, warriors, mode);
-    },
     // The ceremony the previous fight showed (main.ts hands it to the audio resolver so both sides pick alike).
     previousFinisher(): FinisherId | null {
       return lastFinisher;
     },
-    // Test/harness reset (the preview harness replays independent kills; each starts as a first fight).
-    setPreviousFinisher(id: FinisherId | null) {
-      lastFinisher = id;
-      fightFinisher = null;
-    },
     hamstrungInstalled() { return hamstrungLatch ?? hamstrungOk(); },   // main.ts feeds this to hamstrungPick for the audio
     executionInstalled() { return executionLatch ?? executionOk(); },   // and this to executionPick
-    setFinisherOverride(id: FinisherId | null) {
-      finisherOverride = id;
-      wantHamstrung();
-      wantExecution();
-    },
-    setSignature(search: string, selected: string | null, toolsOpen: boolean) {
-      signatures.setMode(resolveSignature(search, selected, toolsOpen));   // the ruled variant unless the test tools are open (signature.ts)
-    },
-    signatureProbe() {
-      return { ...signatures.probe(), marks: signatures.marks.where() };
-    }, // debug probe: which signature effect is chosen, how often it fired, and the marks it holds
     get yaw() {
       return rig.yaw;
-    },
-    orbit(dx: number, dy: number) {
-      rig.orbit(dx, dy);
     },
     stopTour() {
       rig.stopTour();
     },
-    recenter() {
-      rig.recenter();
-    },
-    lowerResolution() {
-      if (ratio > 1) {
-        ratio = 1;
-        if (!world) renderer.setPixelRatio(ratio);   // a world mount keeps the page's renderer as it is
-        resize();
-      }
-    },
-    // The client governor's levers (governor.ts), the ones that cut draws and triangles (quality.ts already lowers the pixel ratio on frame time): 'shadows' turns the sun's shadow pass off (it re-draws every caster),
-    // 'crowd' drops every second spectator.
-    degrade(lever: 'shadows' | 'crowd') {
-      if (lever === 'crowd') { arena.thinCrowd(); return; }
-      renderer.shadowMap.enabled = false; sun.castShadow = false;
-      scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined; if (m) for (const x of Array.isArray(m) ? m : [m]) x.needsUpdate = true; });   // the programs drop their shadow code
-    },
-    restoreGraphics() {
-      this.lowerResolution();
-      rebuildEnvironment();
-    },
-    // Debug probe: where the player's blade tip was drawn this frame (world metres), so a frame-by-frame check can see a held or moving pose.
     // World → CSS pixels for DOM overlays (damage numbers). Null when the point is behind the camera.
     project(point: [number, number, number]): [number, number] | null {
       const v = new THREE.Vector3(point[0], point[1], point[2]).project(camera);
@@ -763,50 +562,6 @@ export function createScene(
     // the frame loop). `completeAt` is the finish age in seconds when it first latched — 0 until then.
     finishPhase(): { settled: boolean; touring: boolean; age: number; complete: boolean; completeAt: number } {
       return { settled: rig.settled, touring: rig.touring, age: rig.finishAge, complete: finishComplete, completeAt: finishCompleteAt };
-    },
-    // The fallen fighter's body on screen, in CSS pixels (owner 2026-09-22 gate: no HUD element may intersect it at settle time):
-    // the bounding box of the victim rig's bones as drawn this frame (the Opened halves share the skeleton, so they are covered),
-    // unioned with the severed head's own box when Decapitation sent it away from the torso, padded by a hand's width. Null
-    // outside a finish, on a draw, before the rigs are in, or when the body is entirely behind the camera.
-    fallenRect(): { x: number; y: number; w: number; h: number } | null {
-      if (!fallen || fallen.draw || !warriors) return null;
-      const rig = fallen.victim === 1 ? warriors.opponent : warriors.player;
-      rig.anchor.updateWorldMatrix(true, true);
-      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      const v = new THREE.Vector3();
-      const take = (world: THREE.Vector3) => {
-        v.copy(world).project(camera);
-        if (v.z > 1) return;
-        const sx = (v.x * 0.5 + 0.5) * width, sy = (-v.y * 0.5 + 0.5) * height;
-        x0 = Math.min(x0, sx); y0 = Math.min(y0, sy); x1 = Math.max(x1, sx); y1 = Math.max(y1, sy);
-      };
-      const world = new THREE.Vector3();
-      rig.anchor.traverse((o) => { if (o instanceof THREE.Bone) take(o.getWorldPosition(world)); });
-      if (severHead) {
-        const box = new THREE.Box3().setFromObject(severHead.group, true);
-        if (!box.isEmpty()) for (let i = 0; i < 8; i++) take(world.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
-      }
-      if (x0 === Infinity) return null;
-      const pad = 24;
-      return { x: Math.round(x0 - pad), y: Math.round(y0 - pad), w: Math.round(x1 - x0 + 2 * pad), h: Math.round(y1 - y0 + 2 * pad) };
-    },
-    playing(): string {
-      return warriors ? `${warriors.player.playing()} ${warriors.opponent.playing()}` : '';
-    }, // debug probe: what each rig plays
-    probe(): { sparks: number; burst: [number, number, number]; witchfire: { flames: number; glow: [boolean, boolean] }; skillImpact: { alive: number; last: [number, number, number] }; shards: number; bodyWounds: [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }]; droplets: { falling: number; spots: number } } {
-      // Body wounds showing per side (player, opponent): how many marks, and the strongest mark's opacity and drip length.
-      const bodyWoundsVisible = bodyWounds.entries.map((marks) => ({ visible: marks.filter((m) => m.group.visible).length, used: marks.filter((m) => m.used).length, reach: marks.filter((m) => m.used).map((m) => +Math.min(WOUND_REACH_PROBE_MAX, m.reach).toFixed(3)), opacity: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => m.mark.material.opacity)).toFixed(2), drip: +Math.max(0, ...marks.filter((m) => m.group.visible).map((m) => Math.max(0, ...m.strands.filter((s) => s.mesh.visible).map((s) => s.mesh.scale.y)))).toFixed(2) })) as [{ visible: number; used: number; reach: number[]; opacity: number; drip: number }, { visible: number; used: number; reach: number[]; opacity: number; drip: number }];
-      return { sparks: clash.alive(), burst: clash.last(), witchfire: { flames: witchfire.alive(), glow: witchfire.glowing() }, skillImpact: { alive: skillImpact.alive(), last: skillImpact.last() }, shards: specialShards?.alive() ?? 0,bodyWounds: bodyWoundsVisible, droplets: { falling: bodyWounds.droplets.falling, spots: bodyWounds.droplets.spots } };
-    }, // debug probe for the presentation harness: live contact effects and the body wounds
-    bladeTip(): [number, number, number] | null {
-      const anchor = warriors?.player.anchor,
-        drawn = anchor?.getObjectByName('WeaponDrawn') ?? anchor?.getObjectByName('SwordDrawn');
-      if (!drawn) return null;
-      player.updateWorldMatrix(true, true);
-      const tip = drawn.localToWorld(
-        new THREE.Vector3(0, (drawn.userData.contact as { to: number } | undefined)?.to ?? 0.86, 0),
-      );
-      return [tip.x, tip.y, tip.z];
     },
     // Effects consume the simulation's events for the frame; they never infer contact from animation.
     // `frozen`: the frame loop is in a hit-stop. Effects (sparks, blood, camera kick) keep running on dt; the rigs evaluate their pose for the
@@ -835,7 +590,6 @@ export function createScene(
       const killed = events.find((e) => e.type === 'Killed');
       bloodEdge.render(events, practice.duel);
       if (warriors) rankLook?.tick(practice);   // a rank look swaps on only at an idle beat, never with a finish playing
-      fallen = practice.finish ? { victim: practice.finish.victim, draw: !!practice.finish.draw } : null;
       const fightWeapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       if (!practice.finish) { hamstrungLatch = null; executionLatch = null; } else { hamstrungLatch ??= hamstrungOk(); executionLatch ??= executionOk(); }
       const picked = executionPick(hamstrungPick(finisherOverride, hamstrungLatch === true), executionLatch === true);   // one id for the picture and (main.ts) the cues
@@ -1215,19 +969,6 @@ export function createScene(
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
       } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId));
-      if (worldCam) {   // behind the hero, away from the foe, at the walk camera's distance and height; the aim is the foe (the lock)
-        const dx = state.x - practice.enemy.x, dz = state.z - practice.enemy.z, n = Math.hypot(dx, dz) || 1;
-        // The camera steps to the hero's right so he stands left of centre (x ~ 35-40 % of the screen, clear of the button column) and the foe, on the line ahead, shows beside and beyond him; a low foe (wolf, boar) steps further so it does not hide behind him.
-        const gap = Math.max(n, SIDE.gapFloor), side = Math.min(SIDE.max, SIDE.base + SIDE.low * framingLow(opponentId) * (worldCam.back + gap) / (worldCam.back + SIDE.ref));   // the side step's numbers are camera-rules rows
-        camera.position.set(state.x + dx / n * worldCam.back + dz / n * side, worldCam.up, state.z + dz / n * worldCam.back - dx / n * side);
-        camera.lookAt(wcFoe.set(practice.enemy.x, 1.0, practice.enemy.z));
-      }
-      if (ease) {
-        ease.age += dt; const k = Math.min(1, ease.age / ease.dur), e = k * k * (3 - 2 * k);
-        easePos.copy(camera.position); easeQuat.copy(camera.quaternion);
-        camera.position.lerpVectors(ease.pos, easePos, e); camera.quaternion.slerpQuaternions(ease.quat, easeQuat, e);
-        if (k >= 1) ease = null;
-      }
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock
       // for a posed finisher, the plain fall's own progress for a plain death, so the plain death completes earlier and the
