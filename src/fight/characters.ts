@@ -135,7 +135,14 @@ const GUARD_WALK_ROLES: readonly Role[] = ['ArmedWalk', 'StrafeLeft', 'StrafeRig
 // V3: Dom's picked strike clips (data/hero-clips.json, baked into warrior.glb beside V1's). The player's actor with `weapon` plays `clip` for
 // `role` and eases it so the clip's contact key (`source`, 0-1) meets the sim's contact tick. Set before the rigs are built; null (?clips=v1)
 // = V1's clips. A rig without the clip (an older GLB) keeps V1's.
-export type HeroClipPick = { role: Role; clip: string; source: number };
+// `pullback` (metres, data/hero-clips.json): the drawn body eased back along his facing, all of it on the contact tick, so the drawn tip meets the
+// sweep the sim hits with (src/hero-reach.ts pullbackFor; 0 under ?reach=clip). Presentation only.
+export type HeroClipPick = { role: Role; clip: string; source: number; pullback?: number };
+// 0 at the swing's start and end, 1 on the contact tick, smoothstepped each side (the eased-back drawn body of a picked clip)
+export const pullbackWeight = (progress: number, contact: number): number => {
+  const t = Math.max(0, Math.min(1, progress <= contact ? progress / contact : (1 - progress) / (1 - contact)));
+  return t * t * (3 - 2 * t);
+};
 let HERO_CLIPS: { weapon: WeaponId; picks: readonly HeroClipPick[] } | null = null;
 export const setHeroClips = (rows: { weapon: WeaponId; picks: readonly HeroClipPick[] } | null): void => { HERO_CLIPS = rows; };
 export const heroClipsOn = (): boolean => HERO_CLIPS !== null;
@@ -507,6 +514,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     const roles = [...ROLES, ...ADDITIVE_ROLES].filter(role => clips[role]);   // the roles this rig carries clips for (the appended scenes are optional)
     // V3: a picked clip's own contact key, for the roles this actor plays a pick on (setHeroClips)
     const pickedSource: Partial<Record<Role, number>> = Object.fromEntries(roles.flatMap(role => { const p = heroPick(weapon, role); return p && clips[role].name === p.clip ? [[role, p.source]] : []; }));
+    const pickedPullback: Partial<Record<Role, number>> = Object.fromEntries(roles.flatMap(role => { const p = heroPick(weapon, role); return p?.pullback && clips[role].name === p.clip ? [[role, p.pullback]] : []; }));
     const root = clone(asset.scene), anchor = new Group(); anchor.add(root);
     rigMaterials(root);   // a rig is built before it wears anything: let it register a shared mapped copy (Wrap) now, so a creature wearing pieces before the hero ever does is not left white
     // A re-proportioned fighter's walk cycle covers less ground than a man's (build-warrior.mjs writes `stride`, root scale × leg scale, on
@@ -959,6 +967,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         droppedWeapon?.apply(fell && tmpl === 'hamstring' ? (progress - HAMSTRUNG_BEATS.knee) * HAMSTRUNG_BEATS.duration : fell && tmpl === 'execute' ? (progress - EXECUTION_BEATS.drop) * EXECUTION_BEATS.duration / EXECUTION_BEATS.speed : -1);   // seconds since the knee blow; negative keeps it in his hand
         root.rotation.z = pose === 'hit' ? Math.sin(Math.PI*Math.min(1,progress))*(attack === 'return' ? -.12 : .12) : recoil*.06;
         root.position.z = -Math.abs(recoil)*.045;
+        const pullback = pose === 'attack' && combatRole && !specialPlay ? pickedPullback[combatRole] ?? 0 : 0;   // V3: a picked clip on V1's sweeps
+        if (pullback) root.position.z -= pullback * pullbackWeight(progress, contact);
         // The enlarged Wraith lowers its attacking arm toward the original strike height.
         // Blend through wind-up/recovery; keep its body, grip and simulation untouched.
         if (spectral && WEAPON_LOOK[weapon]?.lowerArm !== false && upperArm?.parent && pose === 'attack') {

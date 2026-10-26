@@ -17,6 +17,9 @@ export function reachFor(search: string): Reach {
   const asked = new URLSearchParams(search).get(ROWS.sweeps.query) as Reach | null;
   return asked && REACHES.includes(asked) ? asked : ROWS.sweeps.default as Reach;
 }
+/** How far a picked clip's drawn body is eased back at contact (metres): the row's `pullback` on V1's sweeps, so the drawn tip meets V1's
+ *  reach; 0 under ?reach=clip, where the sweeps already follow the drawn blade. */
+export const pullbackFor = (search: string, row: { pullback: number }): number => reachFor(search) === 'v1' ? row.pullback : 0;
 /** The table blade.ts setSweepOverride lays over V1's for this query: null = V1's sweeps untouched. */
 export const sweepTableFor = (search: string): SweepTable | null =>
   reachFor(search) === 'clip' ? { [ROWS.rig]: { [ROWS.weapon]: BLADE_PICKS } } : null;

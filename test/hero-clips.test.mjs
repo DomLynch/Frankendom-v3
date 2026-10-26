@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { BLADE_PICKS } from '../src/fight/blade-picks.ts';
 import { bladePathsByRig } from '../src/fight/blade-paths.ts';
 import { WEAPONS, total } from '../src/fight/moves.ts';
-import { reachFor, sweepTableFor } from '../src/hero-reach.ts';
+import { pullbackFor, reachFor, sweepTableFor } from '../src/hero-reach.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ROWS = JSON.parse(readFileSync(new URL('../data/hero-clips.json', import.meta.url), 'utf8'));
@@ -63,5 +63,14 @@ test("reach (Strategy 2026-10-26): V1's sweeps under the picked clips by default
   for (const [search, reach, sweeps] of cases) {
     assert.equal(reachFor(search), reach, search);
     assert.equal(sweepTableFor(search)?.[ROWS.rig]?.[ROWS.weapon] ?? null, sweeps, search);
+    for (const r of ROWS.clips) assert.equal(pullbackFor(search, r), reach === 'v1' ? r.pullback : 0, `${search} ${r.clip} pullback`);
+  }
+});
+
+test("a row's pullback is its picked sweep's tip minus V1's, forward, at the contact tick of every path it draws (to the millimetre)", () => {
+  const w = WEAPONS[ROWS.weapon], v1 = bladePathsByRig[ROWS.rig][ROWS.weapon];
+  for (const r of ROWS.clips) for (const kind of r.paths) {
+    const c = w.paths[kind].windup, measured = BLADE_PICKS[kind][c][5] - v1[kind][c][5];
+    assert.ok(Math.abs(measured - r.pullback) <= 0.001, `${r.clip} ${kind}: measured ${measured.toFixed(4)} m, row ${r.pullback}`);
   }
 });
