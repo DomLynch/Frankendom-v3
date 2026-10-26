@@ -9,6 +9,8 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from glbkit import Glb, qinv, qmul, qnorm, qrot
 from retarget import LIB, build, calibrate, mirror, sword_path
+from mirror_full import mirror_full
+from aim_hold import aim_hold
 
 # The right-handed mirror keeps these joints' own motion: the trunk (so the sword shoulder leads into the cut and the mirrored blade
 # reaches as far forward as the original's), the neck and head (the eyes stay on the target). Everything else is mirrored.
@@ -64,9 +66,11 @@ def main():
     rows = json.load(open(rows_path)); W = Glb(src); Cs, k = calibrate(W); report = {'pelvisHeightFactor': round(k, 4), 'clips': []}
     for r in rows['clips']:
         times, local, pel = build(W, Cs, k, r['mixamo'], r['from'], r['to'])
-        if r['mirror']: local = mirror(W, local, pel, MIRROR_KEEP)
+        if r['mirror'] == 'full': local = mirror_full(W, local, pel)   # the whole body: a left-handed clip made right-handed (mirror_full.py)
+        elif r['mirror']: local = mirror(W, local, pel, MIRROR_KEEP)
         turn = None
         if r.get('aim'): local, turn = aim_blade(W, times, local, pel, r['contact'] - r['from'], r['aim'])
+        if r.get('aimFrom') is not None: local, _ = aim_hold(W, times, local, pel, r['aimFrom'] - r['from'], r['aim'])   # aim_hold.py
         add_clip(W, r['clip'], times, local, pel)
         base, tip, hand, _ = sword_path(W, times, local, pel)
         c = int(np.argmin(np.abs(times - (r['contact'] - r['from']))))
