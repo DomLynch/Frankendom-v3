@@ -1,9 +1,10 @@
-// THE ONE BONE MAP (Dom + Strategy 2026-10-26: both fighters move to the 106-joint Mixamo rig, staged behind toggles; docs/PLAN.md section 10).
+// THE ONE BONE MAP (Dom + Strategy 2026-10-26: both fighters are on the 106-joint Mixamo rig, 106 only; docs/PLAN.md section 10).
 // Every bone or weapon-node lookup the fight makes names a 65-joint bone (V1's warrior/veteran skeleton) or one of the 65 rig's weapon nodes
 // (data/rig.json `held`), and goes through `bone(root, name)` here. Each fighter's loaded body says which rig it is (`rigOf`, data/rig.json
 // `detect`). On a 65 body `bone` IS root.getObjectByName(name): today's behaviour, unchanged. On a 106 body the name goes through data/rig.json
 // (`bones`: 65 name -> Mixamo name; `weapons`: the names tried for a weapon node, OpenTrident's socket first). Which rig each side draws:
-// data/rig.json `default`, overridden by its `query` keys. Dom's rule: every name, map, file and default is a data row; this file only reads them.
+// data/rig.json `default` ('106' both; no query key). A 65 body (?hero=v1's warrior.glb, ?foe=v1's veteran.glb, a 106 load that failed) is still
+// looked up as before. Dom's rule: every name, map, file and default is a data row; this file only reads them.
 // No three.js import (types only), so node tests read it as the page does.
 import type { Object3D } from 'three';
 import RIG from '../../data/rig.json' with { type: 'json' };
@@ -19,7 +20,6 @@ export const HELD = RIG.held as { readonly weapon: string; readonly sword: strin
 const HIPS_106 = sanitizeNodeName(RIG.detect['106']), HIPS_65 = RIG.detect['65'];
 const FILES = RIG.files as Record<string, string>;
 const GAP_FILL = RIG.gapFill as Record<string, readonly string[]>;
-const QUERY = RIG.query as { hero: string; foe: string };
 const isRig = (v: unknown): v is Rig => v === '65' || v === '106';
 const DEFAULT = RIG.default as { hero: string; foe: string };
 if (!isRig(DEFAULT.hero) || !isRig(DEFAULT.foe)) throw new Error(`data/rig.json: default must be '65' or '106' per side, got ${JSON.stringify(DEFAULT)}`);
@@ -85,15 +85,11 @@ export const clip106Paths = (): readonly string[] => Object.keys(CLIPS_106.dir).
  *  its own): a 65 equip part grafted on a 106 body is re-seated from this. */
 export const GRIP_65 = RIG.grip65 as { hand: string; translation: [number, number, number]; rotation: [number, number, number, number] };
 
-// Which rig each side draws. The page picks once, before the rigs load, and only the file picked is fetched.
-let heroRig: Rig = DEFAULT.hero, foeRig: Rig = DEFAULT.foe;
-/** data/rig.json `query` keys (?rig=65|106 the hero, ?foerig=65|106 the opponent) → each side's rig; anything else → `default`. */
-export function chooseRigs(search: string): { hero: Rig; foe: Rig } {
-  const q = new URLSearchParams(search), hero = q.get(QUERY.hero), foe = q.get(QUERY.foe);
-  heroRig = isRig(hero) ? hero : DEFAULT.hero as Rig;
-  foeRig = isRig(foe) ? foe : DEFAULT.foe as Rig;
-  return { hero: heroRig, foe: foeRig };
-}
+// Which rig each side draws: data/rig.json `default`, and nothing else. 106 ONLY (Dom 2026-10-26, docs/PLAN.md section 10): no URL key picks a
+// rig, so no query puts a fighter back on 65 (test/rig-bones.test.mjs fails if a default is not '106' or a rig query key comes back).
+const heroRig: Rig = DEFAULT.hero, foeRig: Rig = DEFAULT.foe;
+/** Each side's rig: data/rig.json `default` (both '106'). */
+export const rigsDrawn = (): { hero: Rig; foe: Rig } => ({ hero: heroRig, foe: foeRig });
 /** The file stem under src/assets drawn for a 65 body stem on `rig` (data/rig.json files): its 106 file when it has one, else the stem itself. */
 export const rigFile = (stem: string, rig: Rig): string => (rig === '106' && FILES[stem]) || stem;
 /** The hero's / the opponent's file stem for the 65 body stem the body rows picked (hero-body-rows.ts, foe-body.ts). */

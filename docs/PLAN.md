@@ -129,6 +129,8 @@ The order of work in section 5 is unchanged: repo + shell, lift, Gate 0 then Gat
 
 ## 10. Rig-swap proposal (V3 dev, 2026-10-26, for Strategy to rule; measured unless marked est.)
 
+> **RULE: 106 ONLY (Dom, 2026-10-26).** "The opponent, which is the Minotaur, Pitborn, and also our own character ... will be moving forward, so there's no risk of going back to the old 65 rig ... hardcode that into the memory, the files and the notes." Every V3 fighter is drawn on the 106-joint Mixamo rig. `data/rig.json` `default` is `106` for both sides, and no URL key picks a rig: `?rig=` / `?foerig=` were removed. `test/rig-bones.test.mjs` fails if either default changes or a rig query key comes back. The 65 GLBs stay only as the loader's fallback if a 106 file fails to load, plus the `?hero=v1` (warrior.glb) and `?foe=v1` (veteran.glb) bodies, which have no 106 file.
+
 Three corrections to section 4: the 106-rig bodies are not in any repo (V2 streams them from opentrident.org; licence "unconfirmed" in V2 `assets/opentrident/SOURCES.json`); the swap is ~3-4 days, not half a day; warrior.glb is 4.84 MB, not 5.6.
 
 **What it is.** Girlscout and Kachujin replace warrior and veteran (Kachujin's own armour layers drop carriers-veteran.glb). 74 bone-name lookups in 20 files change (26 in `characters.ts`, 13 in `scene.ts`), mapping one-to-one to `mixamorig:*`; the 35 `WeaponDrawn`/`SwordDrawn` sword-node lookups have no match, and the new rig offers `fk_socket_hand_r`. `?rig=65` keeps today's fight; Gate 2 is both side by side on Dom's phone.

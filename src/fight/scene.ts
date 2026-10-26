@@ -62,7 +62,7 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
-import { bone as boneOf, chooseRigs, heroRigFile } from './rig-bones.ts';
+import { bone as boneOf, heroRigFile } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { foeRagdollFor, ragdollFinisher } from './ragdoll.ts';
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
@@ -246,8 +246,8 @@ export function createScene(
   chooseHeroBody(typeof location === 'undefined' ? '' : location.search);   // V3: Psyche, or ?hero=v1 warrior.glb (hero-body-rows.ts); only the one picked is fetched
   chooseFoeBody(typeof location === 'undefined' ? '' : location.search);   // V3: the Minotaur on the Centurion's rig, or ?foe=v1 the Centurion (foe-body.ts); only the one picked is fetched
   const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/minotaur.glb': new URL('../assets/minotaur.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href,
-    '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies); the 106-joint Psyche and Minotaur (rig-bones.ts, ?rig= / ?foerig=)
-  chooseRigs(typeof location === 'undefined' ? '' : location.search);   // V3 rig swap: which rig each side draws (data/rig.json default and query: ?rig=65|106, ?foerig=65|106); only the file picked is fetched
+    '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies); the 106-joint Psyche and Minotaur, drawn by default (rig-bones.ts, data/rig.json default: 106 only, no query key)
+  // psyche.glb / minotaur.glb (65) stay addressable only as the load's fallback when a 106 file fails (below); warrior.glb (?hero=v1) and veteran.glb (?foe=v1) have no 106 file.
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): a fight fetches his kit only, never the whole 9.4 MB file.
   const carrierUrls: Record<string, string> = { '../assets/loot/carriers-minotaur.glb': new URL('../assets/loot/carriers-minotaur.glb', import.meta.url).href, '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Minotaur's kit (the scutum alone), the Centurion's
   // The foe's rig file: a roster body from the glob, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts), like the world bodies' '/world/...': the Origins preview build has no publicDir, so a BASE_URL-relative path would 404 there.

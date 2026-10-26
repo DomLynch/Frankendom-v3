@@ -1,9 +1,9 @@
 // The rig swap's one bone map (src/fight/rig-bones.ts, Dom + Strategy 2026-10-26): every bone or weapon-node lookup goes through `bone(root, name)`.
-// A 65 body is looked up exactly as before (root.getObjectByName(name)); a 106 body through data/rig.json. Both sides default to 106 (Dom 2026-10-26); ?rig=65 / ?foerig=65 = the 65 bodies.
+// A 65 body is looked up exactly as before (root.getObjectByName(name)); a 106 body through data/rig.json. Both sides are 106 only (Dom 2026-10-26); no URL picks a rig.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { clip106Path, clip106Paths, bone, boneAs65, boneName, chooseRigs, drawnSword, foeRigFile, gapFillFor, heldWeapon, heroRigFile, isHeldWeaponName, rigFile, rigOf, sanitizeNodeName, trackAs65, trackOn } from '../src/fight/rig-bones.ts';
+import { clip106Path, clip106Paths, bone, boneAs65, boneName, rigsDrawn, drawnSword, foeRigFile, gapFillFor, heldWeapon, heroRigFile, isHeldWeaponName, rigFile, rigOf, sanitizeNodeName, trackAs65, trackOn } from '../src/fight/rig-bones.ts';
 
 const RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
@@ -13,13 +13,17 @@ const joints = (j) => j.skins[0].joints.map((i) => j.nodes[i].name);
 const scene = (names) => { const calls = []; return { calls, getObjectByName: (n) => { calls.push(n); return names.includes(n) ? { name: n } : undefined; } }; };
 const MIXAMO = Object.values(RIG.bones).map(sanitizeNodeName);
 
-test('both sides default to the 106 rig (Dom 2026-10-26); ?rig=65&foerig=65 = the 65 bodies', () => {
+// 106 ONLY (Dom 2026-10-26: "there's no risk of going back to the old 65 rig"; docs/PLAN.md section 10). This test is the lock: it fails if
+// either default is not '106', or if a URL key that picks a rig comes back (a `query` row in data/rig.json, or the page reading ?rig= / ?foerig=).
+test('106 only: both defaults are 106 and no URL key picks a rig', () => {
   assert.deepEqual(RIG.default, { hero: '106', foe: '106' });
-  assert.deepEqual(chooseRigs(''), { hero: '106', foe: '106' });
+  assert.deepEqual(rigsDrawn(), { hero: '106', foe: '106' });
   assert.equal(heroRigFile('psyche'), 'psyche-106'); assert.equal(foeRigFile('minotaur'), 'minotaur-106');
-  assert.deepEqual(chooseRigs('?rig=65&foerig=65'), { hero: '65', foe: '65' });
-  assert.equal(heroRigFile('psyche'), 'psyche'); assert.equal(foeRigFile('minotaur'), 'minotaur');
-  chooseRigs('');
+  assert.ok(!('query' in RIG), 'data/rig.json has no query row');
+  const src = ['src/fight/rig-bones.ts', 'src/fight/scene.ts', 'src/fight/foe-body.ts', 'src/fight/hero-body-rows.ts', 'src/client/main.ts']
+    .map((f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')).join('\n');
+  for (const key of ['rig', 'foerig', 'herorig']) assert.ok(!new RegExp(`get\\(\\s*['"\`]${key}['"\`]\\s*\\)|[?&]${key}=`).test(src), `no ?${key}= read by the page`);
+  assert.ok(!/chooseRigs|RIG\.query/.test(src), 'no rig chooser');
 });
 
 test('both 106 files are in src/assets with the bone map (OpenTrident v3 deliveries)', () => {
@@ -61,15 +65,11 @@ test("every 106 clip path the data names has a lazy loader (src/fight/clips-106.
   for (const p of clip106Paths()) assert.ok(src.includes(`'${p}': () => import('../assets/${p}')`), `${p}: its key imports its own file`);
 });
 
-test('?rig= picks the hero, ?foerig= the opponent; only a body with a 106 file changes', () => {
-  assert.deepEqual(chooseRigs('?rig=106&foerig=65'), { hero: '106', foe: '65' });
-  assert.equal(heroRigFile('psyche'), 'psyche-106'); assert.equal(foeRigFile('minotaur'), 'minotaur');
-  assert.deepEqual(chooseRigs('?foerig=106&rig=65'), { hero: '65', foe: '106' });
-  assert.equal(heroRigFile('psyche'), 'psyche'); assert.equal(foeRigFile('minotaur'), 'minotaur-106');
-  assert.equal(rigFile('warrior', '106'), 'warrior', '?hero=v1 (warrior.glb) has no 106 file: stays 65');
-  assert.equal(rigFile('veteran', '106'), 'veteran', '?foe=v1 (veteran.glb) has no 106 file: stays 65');
-  assert.deepEqual(chooseRigs('?rig=nonsense&foerig=1'), { hero: '106', foe: '106' }, 'anything else = the default');
-  chooseRigs('');
+test('only a body with a 106 file changes: Psyche and the Minotaur; ?hero=v1 / ?foe=v1 bodies have none', () => {
+  assert.equal(rigFile('psyche', '106'), 'psyche-106'); assert.equal(rigFile('minotaur', '106'), 'minotaur-106');
+  assert.equal(rigFile('psyche', '65'), 'psyche', 'the 65 file: the load fallback only');
+  assert.equal(rigFile('warrior', '106'), 'warrior', '?hero=v1 (warrior.glb) has no 106 file');
+  assert.equal(rigFile('veteran', '106'), 'veteran', '?foe=v1 (veteran.glb) has no 106 file');
 });
 
 test("the map covers psyche.glb's and minotaur.glb's 65 joints, one to one, onto mixamorig names", () => {
