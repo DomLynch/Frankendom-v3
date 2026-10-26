@@ -67,22 +67,30 @@ export function createFeedback(host?: FeedbackHost) {
   let prefetching: Promise<Prefetched | null> | undefined;
   const prefetch = (): Promise<Prefetched | null> => (prefetching ??= sharedPrefetch());
   if (!host && enabled && typeof window !== 'undefined') { const idle = () => { if (enabled) prefetch(); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(idle, { timeout: 4000 }); else setTimeout(idle, 1500); }   // ?sound=0 (enabled false from the start): nothing is fetched
+  // V3: open() is the first half of V1's unlock (make the context, build the graph, start the decode), callable with no gesture
+  // (prepare() below); unlock() is V1's, unchanged in effect.
   function unlock() {
-    if (!enabled || (!host && typeof AudioContext === 'undefined')) return;
+    if (!open()) return;
+    quieted = false;
+    // iOS also parks the context in 'interrupted' after calls, Siri or an app switch; resume from any non-running state.
+    if (!host && (context!.state !== 'running' || suspensions > 0)) void (context as AudioContext).resume().catch(() => {});
+  }
+  function open(): boolean {
+    if (!enabled || (!host && typeof AudioContext === 'undefined')) return false;
     if (!context) {
-      if (host) context = host.context; else try { context = new AudioContext(); } catch { enabled = false; return; }
+      if (host) context = host.context; else try { context = new AudioContext(); } catch { enabled = false; return false; }
       // iOS mutes "ambient" web audio under the ringer switch; a playback session plays like a game does (Safari 17+).
       const session = host || typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
       if (session) try { session.type = 'playback'; } catch { /* unsupported value on older WebKit */ }
       build(context);
       specialLoad(); duelLoad();
       if (host && host.sprite !== undefined) sprite = host.sprite;
-      else loading = decodePrefetched(context, prefetch()).then(buffer => { sprite = buffer; return !!buffer; }, () => { sprite = null; return false; });
+      else decode();
     }
-    quieted = false;
-    // iOS also parks the context in 'interrupted' after calls, Siri or an app switch; resume from any non-running state.
-    if (!host && (context.state !== 'running' || suspensions > 0)) void (context as AudioContext).resume().catch(() => {});
+    return true;
   }
+  function decode() { loading = decodePrefetched(context!, prefetch()).then(buffer => { sprite = buffer; return !!buffer; }, () => { sprite = null; return false; }); }
+  let heard = 0;   // sprite cues played, for main.ts's ?snd=1 readout
   // Graph: voice gain → compressor → ceiling → balance → safety → master → out; voice send → room → compressor. Built once, no per-play nodes but the source.
   function build(context: BaseAudioContext) {
     master = context.createGain(); master.gain.value = 1; master.connect(context.destination);
@@ -100,6 +108,7 @@ export function createFeedback(host?: FeedbackHost) {
   }
   function play(cue: Cue, at: number) {
     const variants = MANIFEST[cue.name], index = nextVariant(random, variants.length, last[cue.name] ?? -1); last[cue.name] = index;
+    heard++;
     const [start, duration] = variants[index], rate = (cue.rate ?? 1) * (1 + (random() * 2 - 1) * PITCH_SPREAD), t = at + (cue.delay ?? 0);   // cue.rate: the lorarius's own whip voice, the spread on top of it
     let voice = voices.find(v => !v.source || v.until <= t);
     if (!voice) { voice = voices.reduce((a, b) => a.until <= b.until ? a : b); try { voice.source!.stop(t); } catch { /* already ended */ } }
@@ -161,6 +170,18 @@ export function createFeedback(host?: FeedbackHost) {
   }
   return {
     unlock,
+    // V3 (V2 PR #65): the context is made at page load (it starts 'suspended') and the sprite decoded at once, so the first touch
+    // only resumes it. V1 decoded on the first touch, and a phone took seconds to decode while the fight went on with the synth stand-ins.
+    prepare() { if (!host) open(); },
+    // A gesture in V3: V1's unlock, a one-sample buffer played inside the gesture (older WebKit's unlock), and a decode that failed retried.
+    resume() {
+      unlock();
+      if (!context || host) return;
+      if (sprite === null) { sprite = undefined; prefetching = undefined; decode(); }
+      try { const s = (context as AudioContext).createBufferSource(); s.buffer = context.createBuffer(1, 1, 22050); s.connect(context.destination); s.start(0); } catch { /* not fatal */ }
+    },
+    // ?snd=1: context state, sprite decoded or not, sprite cues played
+    state() { return `${context ? context.state : 'none'}${sprite ? '+sprite' : sprite === null ? '-nosprite' : '-decoding'} ${heard}`; },
     breathing(on: boolean) { breathing = on; },   // ?look=fatigue-preview (audio/breath.ts breathLook); absent = silent as shipped
     armfeel(feel: Feel | undefined) { armfeel = feel; },
     defenceGrades(on: boolean) { defenceGrades = on; },   // ?look=defence (defence-grade.ts)
