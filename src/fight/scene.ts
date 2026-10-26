@@ -65,7 +65,7 @@ import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
-import { foeRagdollFor, ragdollFinisher } from './ragdoll.ts';
+import { foeRagdollFor, ragdollBody, ragdollFinisher } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
   readonly files: string[];
@@ -460,7 +460,8 @@ export function createScene(
   // fight showed and feeds this fight's pick; `fightFinisher` is this fight's, rolled into `lastFinisher` when the next
   // fight starts (practice.finish clears on rematch). Presentation state only — the simulation never sees it.
   let lastFinisher: FinisherId | null = null, fightFinisher: FinisherId | null = null;
-  let bakeFallback: FinisherId | false | null = null;   // the finisher this finish plays instead (bakeSafeFinisher), false for none, null undecided
+  let bodyLatch: boolean | null = null;   // ragdollBody() on the first frame of this finish (?ragdoll=finishers: V1's camera, blood and sound, the victim's body the ragdoll; one answer for the whole kill)
+  let bakeFallback: FinisherId | false | null = null;  // the finisher this finish plays instead (bakeSafeFinisher), false for none, null undecided
   let openedReach = 0;   // Opened: farthest horizontal extent of what lies on the sand, from the fallen's origin (camera fit)
   // Decapitation (owner 2026-09-18): the severed head, its ballistic state, and the killing blow's heading (the pop direction).
   let severHead: SeveredHead | null = null;
@@ -631,10 +632,11 @@ export function createScene(
           ))
         : null;
       // Decided once per finish, on its first frame: an opened kill with his waist-cut bake still pending plays bakeSafeFinisher's pick (rank-look.ts).
-      if (!practice.finish) bakeFallback = null;
+      if (!practice.finish) { bakeFallback = null; bodyLatch = null; }
       else if (bakeFallback === null) {
         const forced = lookForced && rankLook?.state() === 'on';
-        const safe = bakeSafeFinisher(resolved, practice.finish.victim, forced || !!warriors?.opponent.bakePending(), (f) => supportsFinishers(opponentId, f));
+        bodyLatch = practice.finish.victim === 1 && ragdollBody(resolved);   // the ragdoll is the body: no waist-cut bake is read, so none is pending
+        const safe = bodyLatch ? resolved : bakeSafeFinisher(resolved, practice.finish.victim, forced || !!warriors?.opponent.bakePending(), (f) => supportsFinishers(opponentId, f));
         bakeFallback = safe !== resolved ? safe : false;
         if (bakeFallback) { const log = `rank look: ${forced ? 'forced at this rank (RUN_THROUGH_LOOKS)' : 'opened kill with the waist-cut bake pending'}: ${resolved} -> ${safe}`; console.warn(log); ((globalThis as { __rankLookFallback?: string[] }).__rankLookFallback ??= []).push(log); }
       }
@@ -650,6 +652,7 @@ export function createScene(
       }
       // A shelved row (the Quiet One left the game, Dom 2026-09-27; nothing picks it) keeps its clip but plays the plain fall.
       const posed = finisher ? poseOf(finisher) : null, finisherPose = (isShelved(finisher) ? null : posed) as Parameters<NonNullable<typeof warriors>['opponent']['update']>[2] | null;   // a pose word characters.ts plays (a shelved clip's word is not one)
+      const ragBody = bodyLatch === true && finisher !== null;   // ?ragdoll=finishers: his body is the ragdoll (data/physics.json finisherCuts); the clock, camera, blood and sound stay the finisher's own
       const detailedBlood = finisher !== null && practice.finish?.victim === 1;
       if (
         practice.health === practice.enemyMaxHealth &&
@@ -790,7 +793,7 @@ export function createScene(
       warriors?.player.slam(runtimeSpecial ? slams[0] : 0);
       warriors?.opponent.slam(runtimeSpecial ? slams[1] : slam);
       warriors?.opponent.fatigue(practice.fatigue[1], fatigueRead ? { ...FOE_TUNE[opponentId], read: true } : FOE_TUNE[opponentId]);   // fatigue-tune.ts: this body's own breathing
-      const theirGait = runtimeSpecial ? runtimeSpecial.gait(1, practice.duel.fighters, ex * Math.sin(practice.enemy.heading) + ez * Math.cos(practice.enemy.heading) < -0.0001 ? -enemyTravel : enemyTravel, enemyDefence?.pose || (finisherPose ?? theirs.pose)) : gait(mode, 1, practice.duel.fighters, ex * Math.sin(practice.enemy.heading) + ez * Math.cos(practice.enemy.heading) < -0.0001 ? -enemyTravel : enemyTravel, enemyDefence?.pose || (finisherPose ?? theirs.pose));
+      const theirGait = runtimeSpecial ? runtimeSpecial.gait(1, practice.duel.fighters, ex * Math.sin(practice.enemy.heading) + ez * Math.cos(practice.enemy.heading) < -0.0001 ? -enemyTravel : enemyTravel, enemyDefence?.pose || (ragBody ? theirs.pose : finisherPose ?? theirs.pose)) : gait(mode, 1, practice.duel.fighters, ex * Math.sin(practice.enemy.heading) + ez * Math.cos(practice.enemy.heading) < -0.0001 ? -enemyTravel : enemyTravel, enemyDefence?.pose || (ragBody ? theirs.pose : finisherPose ?? theirs.pose));
       warriors?.opponent.update(
         theirGait.travel,
         animationDt,
@@ -808,10 +811,10 @@ export function createScene(
         holdingCharge(practice.duel.fighters[1]),
         theirs.span ?? null,
       );
-      if (isTemplate(finisher, 'bisect') && practice.finish?.victim === 1) {
+      if (isTemplate(finisher, 'bisect') && practice.finish?.victim === 1 && !ragBody) {
         warriors?.opponent.openWaist(victimProgress, bloodMode);
       }
-      if (isTemplate(finisher, 'cleave') && practice.finish?.victim === 1)
+      if (isTemplate(finisher, 'cleave') && practice.finish?.victim === 1 && !ragBody)
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
@@ -820,6 +823,7 @@ export function createScene(
       if (
         warriors &&
         isTemplate(finisher, 'sever') &&
+        !ragBody &&   // ?ragdoll=finishers: the head is the package's cut (finisherCuts), not V1's baked flying head
         !bloodHidden(bloodMode) &&
         !severHead &&
         practice.finish?.victim === 1 &&
@@ -973,7 +977,7 @@ export function createScene(
       // for the side-view fit.
       // Measured only while the victim clip still moves things, then frozen; monotonic, and its growth is rate-limited so
       // the camera's back-off never exceeds the reveal's per-frame step when a toppling piece's bounds jump (check 20).
-      if (isTemplate(finisher, 'bisect') && practice.finish?.victim === 1 && warriors && victimProgress < 1) {
+      if (isTemplate(finisher, 'bisect') && practice.finish?.victim === 1 && warriors && victimProgress < 1 && !ragBody) {
         const anchor = warriors.opponent.anchor, subject = anchor.getObjectByName('Opened');
         let measured = 0;
         if (subject?.visible) {
@@ -986,7 +990,7 @@ export function createScene(
           }
         }
         openedReach = Math.min(Math.max(openedReach, measured), openedReach + 0.015);   // ≤ 1.5 cm of reach per frame
-      } else if (isTemplate(finisher, 'execute') && practice.finish?.victim === 1 && warriors && victimProgress < 1) {
+      } else if ((isTemplate(finisher, 'execute') || (ragBody && isTemplate(finisher, 'bisect'))) && practice.finish?.victim === 1 && warriors && victimProgress < 1) {   // the ragdoll's Opened: the side view's reach is read off his extremities, as Execution's
         // He pitches forward a body's length away from the killer: the side view must have room for where he lands (the same measure, over his extremities).
         const anchor = warriors.opponent.anchor, origin = anchor.getWorldPosition(new THREE.Vector3());
         let measured = 0;
