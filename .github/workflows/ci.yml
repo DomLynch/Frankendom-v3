@@ -38,7 +38,8 @@ jobs:
     steps:
       - name: Deploy configured?
         id: cfg
-        run: if [ -n "$KEY" ]; then echo "on=1" >> "$GITHUB_OUTPUT"; else echo "no V3_DEPLOY_KEY yet: build only"; fi
+        run: |
+          if [ -n "$KEY" ]; then echo "on=1" >> "$GITHUB_OUTPUT"; else echo "no V3_DEPLOY_KEY yet, build only"; fi
       - uses: actions/checkout@v4
         if: steps.cfg.outputs.on
       - uses: actions/setup-node@v4
