@@ -10,6 +10,7 @@
 import type { CombatEvent, Duel } from './duel.ts';
 import { weaponOf, type Direction } from './moves.ts';
 import { bloodNum } from './blood-rows.ts';
+import { artUrl } from '../art-url.ts';
 
 export type Edge = 'left' | 'right';
 export const EDGE: Record<Direction, Edge | 'both'> = { right: 'left', left: 'right', overhead: 'both', thrust: 'both', low: 'both' };
@@ -32,7 +33,7 @@ export type Page = { document: Pick<Document, 'createElement'> };
 const browserPage = (): Page => ({ document });
 
 type Img = { style: CSSStyleDeclaration; animate: HTMLElement['animate'] };
-const src = (name: string) => `/game/img/blood/${name}.webp`;
+const src = (name: string) => artUrl(`/game/img/blood/${name}.webp`);
 
 export function createBloodEdge(canvas: HTMLElement, page: Page = browserPage()) {
   let strips: Record<Edge, Img[]> | undefined, hits = 0, last = -1;

@@ -9,6 +9,7 @@
 // Every file ships pinned by sha256 in tests/weapon-shapes.test.ts. The dev flag `?shapes=maul-crafted,estoc-cane-ornate` names band files
 // present under /weapons/shapes/ (a local drop), over the table.
 import type { WeaponId } from './moves.ts';
+import { artUrl } from '../art-url.ts';
 import OVERRIDES from './shape-overrides.json' with { type: 'json' };
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import SHAPE_DEFS from './shipping-shapes-defs.json' with { type: 'json' };
@@ -64,7 +65,7 @@ export const shapesOn = (table: ShapeTable): boolean => Object.values(table).som
 export const shapeFor = (weapon: WeaponId, level: number, shipping: ShapeTable = SHIPPING_SHAPES, opponent?: string): string | undefined => {
   const own = opponent ? SHAPE_OVERRIDES[opponent]?.[weapon] : undefined;
   const file = shipping[own ?? weapon]?.[level - 1];
-  return file ? `/weapons/shapes/${file}.glb` : undefined;
+  return file ? artUrl(`/weapons/shapes/${file}.glb`) : undefined;
 };
 
 // Both fighters' shape files for a fight (scene.ts reshape): the player's own weapon at the PLAYER's rung (his career rank), the opponent's at the
