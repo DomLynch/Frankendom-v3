@@ -1,7 +1,8 @@
 // Blend stills (data/fight.json blendMs/settleMs, ?blend=v1), 375 wide, tick-exact (Playwright's paused fake clock: one rAF frame = one
 // 60 Hz tick, as in scripts/clip-stills.mjs). Shots are picked by the hero's own sim state (window.__v3Fight), so default and ?blend=v1 show
 // the same tick of the same fight (the sim is the same; only the clip weights differ):
-//   <tag>-roll-<age>      the roll (A held + Space), `age` ticks into it (the roll is 36 ticks)
+//   <tag>-roll-ready      ready idle, the fight drawn, before the roll
+//   <tag>-roll-<age>     the roll (A held + Space), `age` ticks into it (the roll is 36 ticks)
 //   <tag>-roll-after-<n>  n ticks after the roll ends (the settle back into the stance)
 //   <tag>-cut-<age>       the right cut (D+F), `age` ticks into it
 //   <tag>-cut-after-<n>   n ticks after the cut ends
@@ -34,6 +35,7 @@ for (const query of queries.length ? queries : ['']) {
     const full = () => page.evaluate(() => { for (const f of globalThis.__v3Fight.duel.fighters) f.health = f.maxHealth; });
     for (let i = 0; i < 300 && /sheathed|draw/.test((await hero()).phase); i++) await run(1);
     await run(20);
+    if (name === 'roll') await shoot('ready');   // ready idle, the fight drawn, before any move
     for (const k of keys) await page.keyboard.down(k);
     let started = false, ended = -1, n = 0;
     const want = new Set([...ages.map((a) => `${a}`), ...afters.map((a) => `after-${a}`)]);
