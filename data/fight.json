@@ -107,5 +107,16 @@
   "specialSink": {
     "about": "Dom 2026-10-26, on his Skull Crack landing: the struck body's feet sinking into the sand 'looks a bit cheesy'. V1's knee-dip (scene.ts) drops the body a landed special strikes ~0.28 m below the floor; with sink false it never goes below the floor (a mode that lifts still lifts; src/fight/special-sink.ts). Presentation only. ?dip=v1 = V1's drop.",
     "sink": false
+  },
+  "specialFx": {
+    "about": "Dom 2026-10-26, twice: the Skull Crack and the Whirlwind 'still seem a bit too much special effected'. Strategy approved the audit (PR #67, docs/proposals/special-fx-reduction-2026-10-26.md) with one change: the hit-stop STAYS at 6 frames (it is the weight; hit-stop-defs.json contacts.special is untouched). The HERO's two specials (`skills`, slot 0 only; an opponent's special with the same skill never matches) throw a lighter contact kit. SHIPPED SET (Dom, later 2026-10-26: the camera kick and the hit pause are fine, the Whirlwind's white arc is the cheesy part): only the arc is cut (trailReaping 0.25); cameraKick, flash, sparks and soundGain are 1 (= today's). Strategy's approved set is cameraKick 0.5, flash 0.55, sparks 0.5, soundGain 0.75: edit the row to re-enable it. The knobs: the camera's push / knock / along / drop x cameraKick (src/fight/hit-impact.ts), the impact flash's size x flash and its spark count x sparks (src/fight/skill-impact.ts), the `trailSkill` swing's trail opacity x trailReaping (0.06 -> 0.015: Dom later the same day, the Whirlwind's white arc is the cheesy part, 'reduce it further'; it is one cream normal-blended ribbon, so opacity is all there is to cut; the Skull Crack's trail stays; characters.ts), and the gain of the sandbox specialSound rows in soundRows x soundGain (cleave-3 hit_heavy, reaping-2 second whoosh, reaping-3 hit_heavy, reaping-4 flesh_cut; the bone crack and the first whooshes stay; src/fight/sound/cues.ts). The shared rows are not edited (they also drive every opponent and boss special). Windup pose, ready ring, impact tints stay. Presentation only: no sim, digest or Gate 0 effect (src/fight/hero-special-fx.ts). ?fx=v1 = today's numbers exactly.",
+    "skills": ["cleave", "reaping"],
+    "cameraKick": 1,
+    "flash": 1,
+    "sparks": 1,
+    "trailSkill": "reaping",
+    "trailReaping": 0.25,
+    "soundGain": 1,
+    "soundRows": ["cleave-3", "reaping-2", "reaping-3", "reaping-4"]
   }
 }

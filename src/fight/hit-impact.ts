@@ -9,7 +9,8 @@ import { shoveFor, type Shove } from './camera-kick.ts';
 import type { CombatEvent } from './duel.ts';
 import { HIT_IMPACT_GLANCE, HIT_IMPACT_SPECIAL } from './sandbox-rules.ts';   // the two row switches (1 = on): a landed melee special as its own contact, and the dull glance tier
 import type { Direction } from './moves.ts';
-import { CONTACTS, KICK_DROP, KNOCK_SETTLE, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
+import { kickScale } from './hero-special-fx.ts';   // V3 (data/fight.json specialFx): the hero's own specials throw a lighter camera kick; ?fx=v1 = today's
+import { CONTACTS, KICK_DROP, KNOCK_SETTLE, feelNum, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
 
 export type Tier = 'special' | 'full' | 'half' | 'parry' | 'block' | 'glance';
 // Guard tiers (Dom 2026-09-29, "implement this also"): a PARRY is the longest beat in the game (70 ms + 11 frames = 253 ms, a heavy hit is
@@ -29,6 +30,8 @@ export { KNOCK_SETTLE };   // seconds: the knock is back in 120 ms (a `feel` row
 // is its own beat: the whole stop is 2 frames (not a hit's 50 ms + 3) and the camera drops 10 cm straight down, back in 120 ms. The
 // player's roll tumbles the frame: 8° into the roll, an 8 cm dip and a 4.6 cm (~3 % of the frame) shift the way of the roll, up and back
 // over 0.6 s, no time change. Both presentation only, always on like the rest of this file.
+/** A landed special's camera kick before any multiplier (was the literals along 0.05, drop 0.06, hold 2 frames, settle 0.22 s; now the `feel` rows specialKick*). */
+export const SPECIAL_KICK = { along: feelNum('specialKickAlong'), drop: feelNum('specialKickDrop'), hold: feelNum('specialKickHoldFrames') / 60, settle: feelNum('specialKickSettle') } as const;
 export const KICK = { stopMs: frameMs(CONTACTS.kick), drop: KICK_DROP } as const;
 export const landedKick = (e: CombatEvent) => e.type === 'Hit' && e.move === 'kick';
 export const ROLL_TUMBLE = { angle: (8 * Math.PI) / 180, seconds: 0.6, shift: 0.046, dip: 0.08 } as const;
@@ -63,9 +66,11 @@ export function impactStopMs(events: readonly CombatEvent[]): number {
 // ATTACKER's move direction. `null`: no contact, today's kick stands.
 export function impactShove(e: CombatEvent, direction: Direction | undefined): Shove | null {
   if (landedKick(e)) return { along: 0, drop: KICK.drop, side: 0, hold: 0, settle: KNOCK_SETTLE };   // straight down, no push, no side
-  const tier = impactTier(e), base = tier === 'special' && e.type === 'SpecialLanded' ? { along: 0.05, drop: 0.06, side: 0, hold: 2 / 60, settle: 0.22 } : shoveFor(e), attacker = attackerOf(e);   // a landed special kicks the camera like a heavy blow; only when its row has frames
+  const tier = impactTier(e), attacker = attackerOf(e), k = tier === 'special' ? kickScale(attacker, e.move) : 1;   // k: the hero's own special kicks the camera lighter (hero-special-fx.ts; 1 = today's)
+  const kicked = tier === 'special' && e.type === 'SpecialLanded' ? { along: SPECIAL_KICK.along, drop: SPECIAL_KICK.drop, side: 0, hold: SPECIAL_KICK.hold, settle: SPECIAL_KICK.settle } : shoveFor(e);   // a landed special kicks the camera like a heavy blow (the `feel` rows specialKick*); only when its row has frames
+  const base = kicked && k !== 1 ? { ...kicked, along: kicked.along * k, drop: kicked.drop * k } : kicked;
   if (!tier || !base || e.target === undefined || attacker === undefined) return null;
-  const { knock, push } = impactOf(tier);
+  const row = impactOf(tier), knock = row.knock * k, push = row.push * k;
   if (push) return { ...base, push: attacker === 1 ? push : -push, hold: 0, settle: KNOCK_SETTLE };
   const lateral = direction === 'right' || direction === 'left', struck = 1 - attacker;
   const from = lateral ? ((direction === 'right') === (struck === 1) ? 1 : -1) : 0;   // +1: the blow arrives from screen right

@@ -2,6 +2,7 @@ import { cameraRule } from './camera-rules.ts';
 import { specialLift } from './special-sink.ts';
 import { impactTier } from './hit-impact.ts';
 import { shardRows, specialShardsOf, specialTrailOf } from './sandbox-rules.ts';
+import { trailScale } from './hero-special-fx.ts';
 import { ROSTER, supportsFinishers, resolveFinisher } from '../roster.ts';
 import * as THREE from 'three';
 import { SPECIAL_STRUCK, specialStage } from './special-look.ts';
@@ -917,6 +918,7 @@ export function createScene(
         const f = practice.duel.fighters[side], w = side === 0 ? warriors?.player : warriors?.opponent, row = f.skill && !f.spell ? specialTrailOf(f.skill) : undefined;
         const live = !!row && ((f.special ?? 0) > 0 ? (f.special ?? 0) <= row.lead : (f.specialRecover ?? 0) > RULES.special.recovery - row.tail);
         w?.specialTrail(live && row ? row : null);
+        w?.trailScale(f.phase === 'attack' ? trailScale(side, f.lastMove ?? undefined) : 1);   // hero-special-fx.ts: the hero's Whirlwind swing's trail softer (data/fight.json specialFx)
       }
       for (const side of SIDES) (side === 0 ? warriors?.player : warriors?.opponent)?.specialMove(specialRoleOf(practice.duel.fighters[side]));   // the move's own clip (src/assets/special-clips.json)
       for (const side of SIDES) {
