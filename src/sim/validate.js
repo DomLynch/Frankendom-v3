@@ -24,7 +24,7 @@ export const SCHEMA = {
     maps: { bones: ['hips', 'spine', 'spine1', 'spine2', 'neck', 'head', 'armLeft', 'forearmLeft', 'handLeft', 'armRight', 'forearmRight', 'handRight', 'thighLeft', 'shinLeft', 'footLeft', 'toeLeft', 'thighRight', 'shinRight', 'footRight', 'toeRight'],
       states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'seam', 'cap', 'helmet', 'settleS'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows'] },
     // an object of rows keyed by id: path -> the keys each row may carry
-    rowMaps: { 'finisherCuts.rows': ['unit', 'atS', 'push', 'kill', 'timing', 'plane'] } },
+    rowMaps: { 'finisherCuts.rows': ['unit', 'atS', 'push', 'kill', 'plane'] } },
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;

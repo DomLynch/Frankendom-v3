@@ -35,7 +35,7 @@ test('every row names a finisher of finisher-defs.json, a unit the package suppo
   for (const [id, row] of Object.entries(ROWS.finisherCuts.rows)) {
     const def = byId(id);
     assert.ok(def, `${id} is a finisher id`);
-    assert.equal(row.timing, id, `${id} plays its own timing row`);
+    assert.equal(row.timing, undefined, `${id}: the camera, blood and sound are the finisher's own rows, not re-stated here`);
     assert.ok(def.camera && def.blood && def.sound, `${id}: finisher-defs.json carries camera, blood and sound`);
     assert.ok(row.unit === null || UNITS.includes(row.unit), `${id}: ${row.unit} is one of the six units`);
     assert.ok(row.atS >= 0 && row.push >= 0 && (row.kill === null || (row.kill.impulse >= 0 && typeof row.kill.lift === 'number')));

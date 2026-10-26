@@ -69,7 +69,9 @@ export function ragdollBody(finisher: FinisherId | null): boolean { return !!pag
 /** The finisher pick's override for the scene's picture AND main.ts's death cue (one answer for both): the plain death while the finisher row
  *  says 'skip' and the ragdoll is standing ready to take the kill; null (the rotation as it is) otherwise. */
 export function ragdollFinisher(): FinisherId | null {
-  const forced = (globalThis as { __finisherPick?: string }).__finisherPick;   // a stills / trace harness forces the rotation's pick (the dev picker's place; a blade kill only: resolveFinisher keeps eligibility)
+  // A stills / trace harness forces the rotation's pick (the dev picker's place; a blade kill only: resolveFinisher keeps eligibility). Local hosts only: never read on the live site.
+  const local = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  const forced = local ? (globalThis as { __finisherPick?: string }).__finisherPick : undefined;
   return forced ?? (page?.skipsFinishers() ? PLAIN_DEATH : null);
 }
 

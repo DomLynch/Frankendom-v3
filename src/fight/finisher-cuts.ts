@@ -8,7 +8,6 @@ export type FinisherCutRow = {
   atS: number;                                          // seconds after the killing blow the cut is made
   push: number;                                         // multiplier on the kill's impulse
   kill: { impulse: number; lift: number } | null;       // the cut piece's push; null = cut.kill
-  timing: string;                                       // the finisher-defs.json row whose camera, blood and sound play
   plane: string | null;                                 // what the unit only stands in for (a new cut plane for Strategy to rule on)
 };
 export type FinisherCutRows = { finisher: { default: string; query: string; values: Record<string, string> }; finisherCuts: { rows: Record<string, FinisherCutRow | undefined> } };
