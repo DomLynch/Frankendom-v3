@@ -10,6 +10,7 @@ import type { Direction } from './moves.ts';
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { bloodNum, bloodObj } from './blood-rows.ts';
 import { fxNum } from './fx-rows.ts';
+import { afterFirstFrame, lateArtLanded } from '../late-art.ts';
 import { phoneTier } from './quality.ts';
 // The phone skips the per-triangle surface rays (row gore.phone-surface-ray = 0 in blood-rows.json): on the contact frame they skin every vertex of the
 // creature once (surfaceHit > skinPass > intersectObjects), 77 % of a 155 ms task at x4 on an M5 (CPU profile 2026-10-21). The wound then
@@ -47,10 +48,10 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
   // land (and under node), with the old tint.
   const tone = (mode: BloodMode) => (bloodDark(mode) ? '#352426' : '#681a19');
   if (typeof document !== 'undefined')
-    Promise.all([...FLOOR_POOLS, ...FLOOR_SPLASHES].map((f) => new THREE.TextureLoader().loadAsync(BLOOD_ASSET(f)))).then((all) => {
+    void afterFirstFrame().then(() => Promise.all([...FLOOR_POOLS, ...FLOOR_SPLASHES].map((f) => new THREE.TextureLoader().loadAsync(BLOOD_ASSET(f))))).then((all) => {
       for (const t of all) t.colorSpace = THREE.SRGBColorSpace;
       photo = true; maps = { pool: all.slice(0, FLOOR_POOLS.length), splash: all.slice(FLOOR_POOLS.length) };
-      splats.forEach((splat, i) => multiplyOnto(splat.mesh.material, shape(splat.pool, i)));
+      splats.forEach((splat, i) => multiplyOnto(splat.mesh.material, shape(splat.pool, i))); lateArtLanded();
     }).catch(() => {});   // no textures: the canvas star stays
   // Each stain its own silhouette (owner 2026-09-23: "non symmetrical and differentiated per blob"): the shapes go round in turn.
   const shape = (pool: boolean, i: number) => (pool ? maps!.pool : maps!.splash)[i % (pool ? maps!.pool : maps!.splash).length];
@@ -323,7 +324,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
     const loader = new THREE.TextureLoader();
     const srgb = (t: THREE.Texture) => { t.colorSpace = THREE.SRGBColorSpace; return t; };
     const files = [BLOOD_TEXTURES.drip, BLOOD_TEXTURES.dripNormal, ...WOUND_ART.flatMap((a) => [a.map, a.normal]), ...FLOOR_SPLASHES];
-    Promise.all(files.map((f) => loader.loadAsync(BLOOD_ASSET(f)))).then(([drip, dripNormal, ...rest]) => {
+    void afterFirstFrame().then(() => Promise.all(files.map((f) => loader.loadAsync(BLOOD_ASSET(f))))).then(([drip, dripNormal, ...rest]) => {
       const wounds = rest.slice(0, WOUND_ART.length * 2), floors = rest.slice(WOUND_ART.length * 2);
       srgb(drip); floors.forEach(srgb); photo = true;
       spots.forEach((spot, i) => multiplyOnto(spot.mesh.material, floors[i % floors.length]));   // the drop spots stain the sand like the splashes, each its own shape
@@ -335,6 +336,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
           strand.mesh.material.map = strand.map; strand.mesh.material.normalMap = dripNormal; strand.mesh.material.needsUpdate = true;
         }
       }
+      lateArtLanded();
     }).catch(() => {});   // no textures: the canvas splat and untextured strands still draw; nothing throws mid-fight
   }
   // Scratch objects (Lead review, 2026-09-22): reused across marks and frames — the loop is synchronous and single-threaded,

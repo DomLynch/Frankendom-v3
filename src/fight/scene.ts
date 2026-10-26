@@ -10,6 +10,7 @@ import { gait, SPECIAL_MODES, type SpecialFx as ModeFx } from './special-modes.t
 import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-school.ts';
 import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
+import { firstFrameDrawn } from '../late-art.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
@@ -419,6 +420,7 @@ export function createScene(
     })
     .finally(() => {
       loading = null;
+      firstFrameDrawn(() => void renderer.compileAsync(scene, camera).catch(() => {}));   // the blood textures start now (late-art.ts; ?load=v1 / ?blood=v1: fetched before)
     });
     return loading;
   }

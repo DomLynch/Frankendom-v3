@@ -5,6 +5,7 @@ import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
 import { HAMSTRUNG_BEATS } from './hamstrung.ts';
 import { EXECUTION_BEATS, executionAt } from './execution.ts';
 import { fxNum } from './fx-rows.ts';
+import { afterFirstFrame, lateArtLanded } from '../late-art.ts';
 const SIZE_MIN = fxNum('fx.finisherBlood.sizeMin');
 const SIZE_MAX = fxNum('fx.finisherBlood.sizeMax');
 const TARGET_MAX = fxNum('fx.finisherBlood.targetMax');
@@ -111,8 +112,8 @@ export function createFinisherBlood(map: Texture) {
   group.add(drops,...pools);
   let photo = false, tint = '#68121a';
   if (typeof document !== 'undefined')
-    Promise.all([...FLOOR_POOLS,...FLOOR_SPLASHES].map(f=>new TextureLoader().loadAsync(new URL(`../assets/blood/${f}`, import.meta.url).href))).then(all=>{
-      all.forEach((t,i)=>{t.colorSpace=SRGBColorSpace;multiplyOnto(poolMaterials[i],t);poolMaterials[i].opacity=1;});photo=true;
+    void afterFirstFrame().then(()=>Promise.all([...FLOOR_POOLS,...FLOOR_SPLASHES].map(f=>new TextureLoader().loadAsync(new URL(`../assets/blood/${f}`, import.meta.url).href)))).then(all=>{
+      all.forEach((t,i)=>{t.colorSpace=SRGBColorSpace;multiplyOnto(poolMaterials[i],t);poolMaterials[i].opacity=1;});photo=true;lateArtLanded();
     }).catch(()=>{});   // no textures: the canvas splat stays
   const particles = Array.from({length:160},()=>({position:new Vector3(),velocity:new Vector3(),life:0,size:0}));
   const stains = Array.from({length:80},()=>({position:new Vector3(),radius:0,target:0,angle:0,site:'',shape:0}));
