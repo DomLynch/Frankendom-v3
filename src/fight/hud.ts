@@ -1,7 +1,7 @@
 // The combat HUD: meters, labels, the combat buttons' enabled/hidden/label state, and the floating damage numbers. Pure DOM
 // binding over the practice state — it never decides anything about the fight. `element` is injected so the entry point's
 // own lookup (and the VM test harness's fake document) is what it binds to.
-import { accepts, counterLine, practiceHint, refusedButton, type ClarityEvent, type CombatEvent, type Practice } from './combat.ts';
+import { accepts, counterLine, practiceHint, refusedButton, specialReach, specialReadiness, type ClarityEvent, type CombatEvent, type Practice, type SpecialReadiness } from './combat.ts';
 import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
 import { won } from '../stubs.ts';   // V3: ladder.ts
 import { bareName } from '../roster.ts';
@@ -54,7 +54,13 @@ export function createZoneBars(element: Lookup, parent: HTMLElement) {
   };
 }
 
-export function createHud(element: Lookup) {
+// The SPECIAL buttons' ready ring (data/fight.json readyRing; Dom 2026-10-26: "a thin yellow extra circle around it, not fat, that glows a little
+// when you can use it"). null = ?ring=v1: today's HUD exactly (accepts() and the skill's own cooldown test, no ring).
+export type ReadyRing = { colour: string; width: number; glow: number; gap: number; track: string; staminaTrack: string; pulseMs: number };
+const ringKey = (r: SpecialReadiness | null): string => (r ? `${r.ready ? 'R' : r.reason}${r.short ? 's' : ''}${Math.round(r.cooldownFrac * 60)}` : '');   // the fill moves in 60ths: a repaint every 9 ticks of a 9 s cooldown, not every tick
+const ringState = (r: SpecialReadiness, live: boolean): string => (!live ? 'off' : r.ready ? 'ready' : r.reason ?? 'busy');
+
+export function createHud(element: Lookup, ring: ReadyRing | null = null) {
   const attackButton = element<HTMLButtonElement>('attack-button');
   const kickButton = element<HTMLButtonElement>('kick-button');
   const heavyButton = element<HTMLButtonElement>('heavy-button');
@@ -76,6 +82,11 @@ export function createHud(element: Lookup) {
   let lastHud = '';
   let staminaLowOn = false;   // ?look=fatigue-preview's low-stamina state (hysteresis needs the previous one)
   const gaps = createGapHistory();   // ?look=kickclose (kick-close.ts): the last few ticks of the gap
+  if (ring) for (const b of [skillButton, skill2Button]) {   // the row's look, once: style.css draws the ring from these (.actions [data-ring])
+    b.style.setProperty('--ring-c', ring.colour); b.style.setProperty('--ring-w', `${ring.width}px`); b.style.setProperty('--ring-glow', `${ring.glow}px`);
+    b.style.setProperty('--ring-gap', `${ring.gap}px`); b.style.setProperty('--ring-track', ring.track); b.style.setProperty('--ring-short', ring.staminaTrack); b.style.setProperty('--ring-pulse', `${ring.pulseMs}ms`);
+    b.dataset.ring = 'off';
+  }
   return {
     // Force the next update to write everything (the debug toggle relabels the buttons).
     invalidate() {
@@ -90,21 +101,24 @@ export function createHud(element: Lookup) {
         (a) => accepts(practice, a) || (a === 'backstep' && accepts(practice, 'dodge')),
       );
       // accepts() is true for every action in a committed action's buffer window, so SKILL refuses its own cooldown here (live c1bda34d).
-      const skillOk = practice.duel.fighters[0].skillCooldown === 0 && (practice.duel.fighters[0].skill !== null || practice.duel.fighters[0].spell !== undefined) && accepts(practice, 'skill');   // an equipped spell is cast through the same slot, with or without a skill (spell-pick.ts)
+      // readyRing on: both SPECIAL buttons light off the sim's own gates (combat.ts specialReadiness: cooldown, stamina, reach, the post-strike recovery, the buffer rule), so the dim/lit state and the ring never disagree with what a press does.
+      const ready1 = ring ? specialReadiness(practice.duel, 'skill') : null, ready2 = ring ? specialReadiness(practice.duel, 'skill2') : null;
+      const skillOk = ready1 ? ready1.ready : practice.duel.fighters[0].skillCooldown === 0 && (practice.duel.fighters[0].skill !== null || practice.duel.fighters[0].spell !== undefined) && accepts(practice, 'skill');   // an equipped spell is cast through the same slot, with or without a skill (spell-pick.ts)
       const gap = Math.hypot(practice.enemy.x - practice.fighter.x, practice.enemy.z - practice.fighter.z);
       gaps.record(practice.duel.tick, gap, practice.duel.fighters[0].phase === 'hurt');   // every update, before the dedup below: the history must not skip a quiet frame
       const inKickReach = gap <= KICK_LANDS && !(view.kickClose && gaps.retreating(practice.duel.tick, gap));   // flag off: the plain 1.5 m light of today
       // A cone skill (path null: reach × the kick's arc) lands only inside its reach, so SKILL says so the way Kick does (Combat,
       // 2026-09-27: a lit Dirty Jab pressed at 1.0–1.4 m started and whiffed). The reach is the equipped move's own; null = not a cone.
       const me = practice.duel.fighters[0], skillMove = me.skill ? weaponOf(me.weapon).moves[SKILL_MOVE[me.skill]!] : null;
-      const inSkillReach = skillMove?.path === null && !me.spell ? gap <= skillMove.reach : null;   // an equipped spell casts through this slot and has its own range rows: the pommel's cone must not dim it (Dom 2026-10-16: SPELL 1 always dim)
+      const simReach = ring ? specialReach(me) : null;   // readyRing on: a special is refused past the sim's own reach (2.2 m for the Skull Crack), not the skill's 1.6 m cone row
+      const inSkillReach = simReach !== null ? gap <= simReach : skillMove?.path === null && !me.spell ? gap <= skillMove.reach : null;   // an equipped spell casts through this slot and has its own range rows: the pommel's cone must not dim it (Dom 2026-10-16: SPELL 1 always dim)
       const manaEl = typeof document === 'undefined' ? null : document.getElementById('mana') as HTMLMeterElement | null;   // sandbox-mech mana: entry.ts adds the bar while the mana rows are on
       const ammoEl = typeof document === 'undefined' ? null : document.getElementById('ammo-value');   // sandbox-mech quiver counter (entry.ts adds it while a quiver row is on)
       if (ammoEl) ammoEl.textContent = me.ammo === undefined ? 'unlimited' : String(me.ammo);
       if (manaEl) { manaEl.max = me.maxMana ?? 100; manaEl.value = me.mana ?? 0; fillMeter(manaEl, manaEl.value, manaEl.max); const mv = document.getElementById('mana-value'); if (mv) mv.textContent = `${Math.floor(me.mana ?? 0)} / ${me.maxMana ?? 100}`; }
       const staminaNow = view.staminaShown ?? practice.stamina;   // ?stamina=N (fatigue-preview.ts): the BAR alone reads the forced number; accepts() and every button stay on the real stamina
       const lowNext = !!view.fatiguePreview && staminaLow(staminaNow, staminaLowOn);   // in the skip key below: the floor of stamina alone would hide a 10.0 / 10.7 crossing
-      const key = `${view.slotAName ? `A${view.slotAName}` : ''}${view.slotB ? `B${view.slotBName ?? ''}` : ''}${practice.phase}:${practice.duel.fighters[0].lastMove ?? ''}:${practice.health}:${practice.playerHealth}:${Math.floor(staminaNow)}${lowNext ? 'L' : ''}:${Math.floor(practice.posture)}:${Math.floor(practice.enemyPosture)}:${hint}:${controlsReady}:${ok.join('')}${skillOk ? 1 : 0}:${practice.wound > 0}:${practice.exhausted}:${practice.threat}:${practice.threatMove}:${inKickReach}:${inSkillReach}:${view.replay ? 'r' : ''}${view.practiceOnly ? 'p' : ''}${view.stalled ? 's' : ''}${view.debug ? 'd' : ''}`;   // d: ?debug shown follows the test tools (#1093), so an admin opening them rewrites #debug
+      const key = `${view.slotAName ? `A${view.slotAName}` : ''}${view.slotB ? `B${view.slotBName ?? ''}` : ''}${practice.phase}:${practice.duel.fighters[0].lastMove ?? ''}:${practice.health}:${practice.playerHealth}:${Math.floor(staminaNow)}${lowNext ? 'L' : ''}:${Math.floor(practice.posture)}:${Math.floor(practice.enemyPosture)}:${hint}:${controlsReady}:${ok.join('')}${skillOk ? 1 : 0}:${practice.wound > 0}:${practice.exhausted}:${practice.threat}:${practice.threatMove}:${inKickReach}:${inSkillReach}:${ringKey(ready1)}${ringKey(ready2)}:${view.replay ? 'r' : ''}${view.practiceOnly ? 'p' : ''}${view.stalled ? 's' : ''}${view.debug ? 'd' : ''}`;   // d: ?debug shown follows the test tools (#1093), so an admin opening them rewrites #debug
       if (key === lastHud) return;
       lastHud = key; staminaLowOn = lowNext;
       paintMeter(health, practice.health, practice.enemyMaxHealth);
@@ -177,7 +191,12 @@ export function createHud(element: Lookup) {
         skillButton.dataset.mobile = skillName; { if (skillName !== SKILL_LABEL) skillButton.dataset.named = '1'; else delete skillButton.dataset.named; } skillButton.setAttribute('aria-label', skillName); skillButton.title = skillName;
         const text1 = skillButton.firstChild; if (text1 && text1.nodeType === 3) text1.textContent = skillName; else skillButton.textContent = skillName;
       }
-      skill2Button.setAttribute('aria-disabled', String(!controlsReady || !(view.slotB === true || accepts(practice, 'skill2'))));
+      skill2Button.setAttribute('aria-disabled', String(!controlsReady || !(view.slotB === true || (ready2 ? ready2.ready : accepts(practice, 'skill2')))));
+      for (const [b, r] of [[skillButton, ready1], [skill2Button, ready2]] as const) if (r) {
+        b.dataset.ring = ringState(r, controlsReady && !ended);
+        b.style.setProperty('--ring-fill', String(Math.round(r.cooldownFrac * 60) / 60));
+        b.dataset.short = String(r.short);
+      }
       // Lit off the simulation's own test (legal: a skill equipped, not cooling, 40 stamina), never while cooling. No ring, no countdown.
       skillButton.setAttribute('aria-disabled', String(!controlsReady || !skillOk));
       if (inSkillReach === null) delete skillButton.dataset.reach; else skillButton.dataset.reach = String(inSkillReach);   // out of its cone: the cluster's dim, still pressable

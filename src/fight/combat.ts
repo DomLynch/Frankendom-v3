@@ -1,7 +1,7 @@
 import { decide, initialAi, readOpponent, type AiMode, type AiState } from './ai.ts';
 import type { HitLocation } from './blade.ts';
 import type { Sheet } from './sheet-rows.ts';
-import { inBufferWindow, initialDuel, isHeavy, legal, type DuelPose, withGambit, withSheet, withSpecials, withSpell, withSkill2, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
+import { distance, inBufferWindow, initialDuel, isHeavy, legal, type DuelPose, withGambit, withSheet, withSpecials, withSpell, withSkill2, withStances, movesOf, stepDuel, timing, type Action, type CombatEvent, type Duel, type Fighter, type Finish, type Intent, type Side } from './duel.ts';
 import type { Spell } from './spell-cast.ts';
 import { asStance, moodOf, type PickedStance } from './stance.ts';
 import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, BASH_MOVE, SKILL_ROWS, skillOfMove, type AiProfile, type MoveId, type Opponent, type PathId, type SkillId, type SpecialName, type Weapon, type WeaponId } from './moves.ts';
@@ -11,6 +11,9 @@ import { specialStage } from './special-look.ts';
 import { holdPoseOf } from './move-rows.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
 import { simBound } from './sim-bounds-rows.ts';
+import { specialCooldown, specialFirst } from './rows80.ts';
+import { meleeSpecialReach } from './sandbox-rules.ts';
+import { termCooldown } from './special-terms.ts';
 const RESULT_AGE_CAP = simBound('practice.resultAgeCap');   // rows: sim-bounds-defs.json
 export { PROFILES, OPPONENTS, RULES, MOVES } from './moves.ts';
 export type { Opponent, OpponentId, Level } from './moves.ts';
@@ -77,6 +80,11 @@ export function clarityOf(duel: Duel, before: Duel, intent?: Intent, fatigue?: r
   const me = before.fighters[0];
   if (intent?.action && me.health && !legal(me, intent.action) && !inBufferWindow(me))
     out.push({ tick, type: 'PressRefused', actor: 0, action: intent.action, reason: me.phase === 'hurt' || me.phase === 'dead' ? 'hurt' : me.phase === 'ready' || me.phase === 'guard' ? 'exhausted' : 'recovering' });   // standing and still refused: no stamina (or a spent skill)
+  // A SPECIAL press queued in a swing's tail that the sim then drops (its last buffered tick passed with the skill still cooling or short of
+  // stamina: duel.ts drops a buffer at ttl 1 untried) shakes its button like an immediate refusal, instead of vanishing (Dom: "often doesn't work").
+  const queued = me.buffer;
+  if (queued && queued.ttl <= 1 && (queued.action === 'skill' || queued.action === 'skill2') && me.health && !intent?.action)
+    out.push({ tick, type: 'PressRefused', actor: 0, action: queued.action, reason: 'recovering' });
   return out;
 }
 export type Practice = {
@@ -179,6 +187,41 @@ export const refusedButton = (action: Action | undefined): 'heavy' | 'thrust' | 
     : action === 'dodge' || action === 'backstep' ? 'dodge' : action === 'parry' ? 'guard' : 'attack';
 export const accepts = (s: Practice, action: Action): boolean => s.health > 0 && s.playerHealth > 0
   && (legal(s.duel.fighters[0], action) || (inBufferWindow(s.duel.fighters[0]) && !(isHeavy(action) && s.phase === 'draw')));
+
+// The specials' honest state (Dom 2026-10-26: "WHIRLWIND often doesn't work when I click"): what the two SPECIAL buttons and their ready ring
+// show, built only on the sim's own gates — legal() for cooldown, stamina, phase and the post-strike recovery, the special's reach as stepDuel
+// refuses it, and the buffer rule (a press in a committed action's tail is queued bufferTtl ticks and fires only if legal() passes by then).
+// accepts() lights the whole tail whatever the cooldown, so a press there could be dropped silently; this never says ready unless the sim takes it.
+export type SpecialSlot = 'skill' | 'skill2';
+export type SpecialReason = 'cooldown' | 'stamina' | 'range' | 'busy';
+export type SpecialReadiness = { ready: boolean; reason: SpecialReason | null; cooldownFrac: number; cooldownLeft: number; short: boolean };   // short: the stamina (or mana) gate alone would refuse it now
+/** The farthest gap SPECIAL 1 is pressed at, as stepDuel refuses it (a picked melee special's specialMeleeReach row, else the rules' special reach); null = no range gate (a spell's own range rows, a plain skill's cone swing). */
+export function specialReach(f: Fighter): number | null {
+  if (f.specialShare === undefined || f.spell !== undefined) return null;
+  return f.picked ? meleeSpecialReach(RULES.special.reach) : RULES.special.reach;
+}
+// The span the cooldown counts down from: the first-cast delay while the fight's opening window runs (tick + left is constant there), else the slot's own.
+function cooldownSpan(duel: Duel, slot: SpecialSlot, left: number): number {
+  const f = duel.fighters[0], first = specialFirst(RULES.special.first);
+  const own = slot === 'skill' ? (f.specialShare !== undefined && f.spell === undefined ? termCooldown(f, specialCooldown(RULES.special.cooldown)) : f.specialShare !== undefined ? specialCooldown(RULES.special.cooldown) : termCooldown(f, RULES.skillCooldown))
+    : f.skill2 !== undefined ? termCooldown(f, RULES.skillCooldown) : specialCooldown(RULES.special.cooldown);   // the same numbers stepDuel spends (special-terms.ts: the hero's 9 s while on)
+  return Math.max(left, 1, duel.tick + left <= first ? first : own);
+}
+export function specialReadiness(duel: Duel, slot: SpecialSlot): SpecialReadiness {
+  const f = duel.fighters[0], foe = duel.fighters[1];
+  const left = slot === 'skill' ? f.skillCooldown : f.skillCooldown2 ?? 0;
+  const cooldownFrac = left > 0 ? 1 - left / cooldownSpan(duel, slot, left) : 1;
+  const reach = slot === 'skill' ? specialReach(f) : null, far = reach !== null && distance(f.body, foe.body) > reach;
+  // Every gate but the pools lifted: does legal() refuse it on stamina (or mana) alone?
+  const free: Fighter = { ...f, phase: 'ready', age: 0, exposed: 0, parrying: false, special: 0, specialRecover: 0, skillCooldown: 0, ...(f.skillCooldown2 !== undefined ? { skillCooldown2: 0 } : {}), exhausted: false };
+  const short = f.health > 0 && legal({ ...free, stamina: Infinity, ...(f.mana !== undefined ? { mana: Infinity } : {}) }, slot) && !legal({ ...free, exhausted: f.exhausted }, slot);
+  // The buffer rule: from the tail of a committed phase the press is queued and last tried bufferTtl - 1 ticks on, standing, its timers run down.
+  const k = RULES.bufferTtl - 1, tail = (): Fighter => ({ ...f, phase: 'ready', age: 0, skillCooldown: Math.max(0, f.skillCooldown - k), ...(f.skillCooldown2 !== undefined ? { skillCooldown2: Math.max(0, f.skillCooldown2 - k) } : {}), specialRecover: Math.max(0, (f.specialRecover ?? 0) - k) });
+  const takes = f.health > 0 && foe.health > 0 && (legal(f, slot) || (inBufferWindow(f) && f.phase !== 'hurt' && legal(tail(), slot)));
+  const ready = takes && !far;
+  const reason: SpecialReason | null = ready ? null : takes && far ? 'range' : left > 0 ? 'cooldown' : short ? 'stamina' : 'busy';
+  return { ready, reason, cooldownFrac, cooldownLeft: left, short };
+}
 
 // Presentation helper: which clip, how far through it, and where its contact pose sits. Animation observes; it never decides.
 type Pose = Exclude<LegacyPhase, 'hurt' | 'dead' | 'backstep'> | 'hit' | 'death';

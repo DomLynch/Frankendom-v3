@@ -17,6 +17,7 @@ import { playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.
 import { setStab } from '../fight/stab-rule.ts';
 import { setStanceRows } from '../fight/stance-era.ts';
 import { setSpecialPace, specialPaceFor } from '../fight/special-pace.ts';
+import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setLockFrame } from '../fight/camera.ts';
@@ -57,7 +58,7 @@ if (!v1Sound) feedback.prepare();
 // :101 WebKit grants audio on touchend/click/keydown, not touch-start: the whole family unlocks
 for (const type of v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
   window.addEventListener(type, v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, { passive: true });
-const hud = createHud(element);
+const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
@@ -66,6 +67,7 @@ const nextSeed = (s: number): number => (Math.imul(s, 1664525) + 1013904223) >>>
 function fresh(): Practice {
   setPlayScale(playScaleFor(opponentId, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
+  setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   epoch++;
   return initialPractice(seed, opponentAt(opponent, level), FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
     recordSpecials({ specials: FIGHT.specials, level, opponent: opponentId }), undefined, FIGHT.stance as PickedStance,

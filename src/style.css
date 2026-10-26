@@ -1490,6 +1490,30 @@ dialog>p {
   .actions[data-gestures=cluster] #skill-button[data-reach=false]{
     opacity: .5;   /* a cone skill out of its reach: the cluster's dim (hud.ts), still pressable (Combat 2026-09-27: the lit Jab whiffed) */
   }
+  /* The SPECIAL buttons' ready ring (Dom 2026-10-26: "a thin yellow extra circle around it, not fat, that glows a little when you can use it").
+     A ::before just outside the rim (the label is the ::after), its look from data/fight.json readyRing via hud.ts custom properties, its state
+     (data-ring) from the sim's own legality (combat.ts specialReadiness). ready: the thin ring with a soft pulsing glow. cooldown: a faint ring
+     filling clockwise as the timer runs (--ring-fill). stamina: the faint ring in the stamina bar's low red. range / busy: the faint track alone.
+     No data-ring (?ring=v1) = no ring at all. */
+  .actions[data-gestures=cluster] :is(#skill-button, #skill2-button)[data-ring]:not([data-ring=off])::before{
+    content: ''; position: absolute; inset: calc(-1 * (var(--ring-gap) + var(--ring-w))); border-radius: 50%; pointer-events: none;
+    background: conic-gradient(var(--ring-c) calc(var(--ring-fill, 1) * 360deg), var(--ring-track) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-w) - .5px), #000 calc(100% - var(--ring-w)));
+    mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-w) - .5px), #000 calc(100% - var(--ring-w)));
+    opacity: .7;
+  }
+  /* each state rule repeats the base's [data-ring]:not([data-ring=off]) so it outranks it (same specificity, later in the sheet) */
+  .actions[data-gestures=cluster] :is(#skill-button, #skill2-button)[data-ring=cooldown][data-short=true]::before{ background: conic-gradient(var(--ring-c) calc(var(--ring-fill, 1) * 360deg), var(--ring-short) 0); }
+  .actions[data-gestures=cluster] :is(#skill-button, #skill2-button):is([data-ring=range], [data-ring=busy]):not([data-ring=off])::before{ background: var(--ring-track); }
+  .actions[data-gestures=cluster] :is(#skill-button, #skill2-button)[data-ring=stamina]:not([data-ring=off])::before{ background: var(--ring-short); opacity: .9; }
+  .actions[data-gestures=cluster] :is(#skill-button, #skill2-button)[data-ring=ready]:not([data-ring=off])::before{
+    background: none; -webkit-mask: none; mask: none; opacity: 1;   /* a border, not the masked disc: a mask would clip the glow */
+    border: var(--ring-w) solid var(--ring-c);
+    box-shadow: 0 0 var(--ring-glow) color-mix(in srgb, var(--ring-c) 70%, transparent), inset 0 0 calc(var(--ring-glow) * .6) color-mix(in srgb, var(--ring-c) 35%, transparent);
+    animation: ring-glow var(--ring-pulse, 1600ms) ease-in-out infinite;
+  }
+  @keyframes ring-glow{ 0%, 100%{ filter: brightness(.9); box-shadow: 0 0 calc(var(--ring-glow) * .5) color-mix(in srgb, var(--ring-c) 45%, transparent); } 50%{ filter: brightness(1.1); } }
+  @media (prefers-reduced-motion: reduce){ .actions[data-gestures=cluster] :is(#skill-button, #skill2-button)[data-ring=ready]::before{ animation: none; } }
   :root.look-kick52 .actions[data-gestures=cluster] #kick-button {   /* ?look=kick52 (Strategy research #9): 52 px; flag off = the 44 px above. Centred on 99.5,124 (0.5 px left, 4 px up of the 44 px
      one) because 4 px each way put its box 6 x 2 px into GUARD's (the gate: no two action boxes overlap): its bottom stays at the old 150 (GUARD starts at 152), its sides sit 0.5 px clear of SLASH (73) and HEAVY (126) */
     width: 52px;

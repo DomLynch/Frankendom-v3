@@ -38,5 +38,20 @@
     "slashRiposte": 0.5,
     "thrust": 0.7,
     "riposte": 0.7
+  },
+  "specialTerms": {
+    "about": "Dom 2026-10-26 (via Lead): 'Specials, all of them, can be used every 9 seconds, no stamina cost.' The HERO's specials (SPECIAL 1 the Skull Crack, SPECIAL 2 the Whirlwind, and a plain skill if the hero carries one) cool for `cooldown` ticks (540 = 9 s at 60 Hz), counted as today (the Skull Crack from the strike's release, the Whirlwind from the press), and cost and need `stamina` (0) instead of their move row's (the Whirlwind's 40). Kept: the first special ready 2 s in (rows80 first), the Skull Crack's 2.2 m reach and its no-attack recovery after the strike, exhaustion (an empty bar still refuses every attack), a spell's own cost. Opponents' specials are unchanged. src/fight/special-terms.ts; off in headless runs (Gate 0). ?spec=v1 = V1's cooldowns (6 s Skull Crack, 15 s Whirlwind) and the Whirlwind's 40 stamina.",
+    "cooldown": 540,
+    "stamina": 0
+  },
+  "readyRing": {
+    "about": "Dom 2026-10-26: 'a thin yellow extra circle around it, not fat, that glows a little when you can use it.' A ring just outside each SPECIAL button (src/fight/hud.ts, src/style.css .ring), fed from the sim's own legality (combat.ts specialReadiness): `colour` and `width` px while ready, with a soft `glow` px halo pulsing over `pulseMs`; while cooling a faint `track` ring fills clockwise with the cooldown; while short of stamina the track is `staminaTrack` (the stamina bar's low red). `gap` px between the button's rim and the ring. ?ring=v1 = today's HUD exactly (no ring, today's dim rules).",
+    "colour": "#f2c14e",
+    "width": 2,
+    "glow": 5,
+    "gap": 3,
+    "track": "#f2c14e40",
+    "staminaTrack": "#e0463a99",
+    "pulseMs": 1600
   }
 }
