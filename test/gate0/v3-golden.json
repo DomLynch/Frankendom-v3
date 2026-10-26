@@ -83,6 +83,32 @@
    "config": "page-first-clips",
    "seed": 731,
    "script": "directional-heavies",
+   "ticks": 1709,
+   "hash": "8f56fe66a1b11635",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 3,
+    "heavy_left": 3,
+    "heavy_thrust": 1
+   }
+  },
+  {
+   "config": "page-first-clips",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 1904,
+   "hash": "2896d9f68c17b7c5",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 1,
+    "heavy_thrust": 0
+   }
+  },
+  {
+   "config": "page-reach-clip",
+   "seed": 731,
+   "script": "directional-heavies",
    "ticks": 1763,
    "hash": "4b58085a62178444",
    "outcome": "died",
@@ -93,7 +119,7 @@
    }
   },
   {
-   "config": "page-first-clips",
+   "config": "page-reach-clip",
    "seed": 731,
    "script": "directional-random",
    "ticks": 2209,
