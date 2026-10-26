@@ -1,8 +1,9 @@
 // Builds the site into dist/: all the code bundled by esbuild into ONE module (b/<build>/src/client/main.js), served under b/<build>/ so a
 // phone never runs a cached older module after a deploy. It replaced one module per source file (402 modules, 3.1 MB, which a phone
 // resolved import level by import level: 30-60 s to a playable fight on Dom's phone, 2026-10-26). three.js (package.json, pinned
-// to 0.186.0, the version V1 ships) and its addons are bundled in too, tree-shaken: they used to come from 18 jsdelivr files through an
-// import map in index.html (0.47 MB and a second origin to connect to on a phone's first visit). Data JSON a module imports statically is bundled into it. Code that loads on demand (specials, finishers,
+// to 0.186.0, the version V1 ships) and its addons are bundled by us too, tree-shaken, into one content-hashed vendor module beside it
+// (b/vendor/, see "as ONE vendor module" below): they used to come from 18 jsdelivr files through an import map in index.html
+// (0.47 MB and a second origin to connect to on a phone's first visit). Data JSON a module imports statically is bundled into it. Code that loads on demand (specials, finishers,
 // the gfx lift) rides the same file, still run only when first asked for (esbuild's lazy module wrappers); only the big clip JSON loaded
 // by a dynamic import (special-*.json, the finishers' killer/victim clips, ~1.5 MB) stays a separate .json.js module, fetched when used.
 // Binary assets (GLB, audio, textures, fonts) are served under content-hashed names outside b/ (see "Content-hashed art" below), so a
@@ -48,12 +49,19 @@ function rewrite(file, src) {
 // import('<relative>.json'): left as a dynamic import of a .json.js module written beside the code (b/<build>/<source path>.json.js)
 const lazyModule = (file) => join(code, rel(file) + '.js');
 
-rmSync(out, { recursive: true, force: true });
-const result = await build({
-  entryPoints: [join(root, ENTRY)], outdir: ENTRY_DIR, entryNames: '[name]',
-  bundle: true, splitting: false, format: 'esm', target: 'es2022', minify: true, keepNames: true, legalComments: 'none', metafile: true,
+// three.js (and the addons we import) as ONE vendor module named by its content, b/vendor/three.<sha256 8 hex>.js: nginx caches all
+// of b/ for good, and the name only changes when three's version or the set of three names our code uses changes, so a code-only deploy
+// costs a returning player nothing for it. It holds only what main.js uses (tree-shaken), found in three steps:
+//   1. bundle main.ts unminified with three left external, and read off every name it takes from each three specifier;
+//   2. bundle a vendor entry that re-exports exactly those names (minified, as main.js is), hash it, write it;
+//   3. bundle main.ts for real, with every three specifier pointing at the vendor file.
+const THREE = /^three(\/|$)/;
+const bundleMain = (minify, threeTo) => build({
+  entryPoints: [join(root, ENTRY)], outdir: ENTRY_DIR, entryNames: '[name]', write: minify,
+  bundle: true, splitting: false, format: 'esm', target: 'es2022', minify, keepNames: true, legalComments: 'none', metafile: true,
   logLevel: 'warning', charset: 'utf8',
   plugins: [{ name: 'v3', setup(b) {
+    b.onResolve({ filter: THREE }, (args) => ({ path: threeTo(args.path), external: true }));
     b.onResolve({ filter: /\.json$/ }, (args) => {
       if (args.kind !== 'dynamic-import') return undefined;
       const file = resolve(args.resolveDir, args.path); lazyJson.add(file);
@@ -63,6 +71,27 @@ const result = await build({
     b.onLoad({ filter: CODE }, (args) => ({ contents: rewrite(args.path, readFileSync(args.path, 'utf8')), loader: args.path.endsWith('.ts') ? 'ts' : 'js' }));
   } }],
 });
+
+rmSync(out, { recursive: true, force: true });
+const probe = (await bundleMain(false, (p) => p)).outputFiles.find((f) => f.path.endsWith('.js')).text;
+const used = new Map();   // three specifier -> names main.js takes from it
+const take = (spec, name) => { if (!used.has(spec)) used.set(spec, new Set()); used.get(spec).add(name); };
+let threeImports = 0;
+for (const m of probe.matchAll(/^import\s+(\*\s+as\s+[\w$]+|\{[^}]*\})\s+from\s+"(three(?:\/[^"]*)?)";$/gm)) {
+  threeImports++;
+  const [, what, spec] = m, ns = /^\*\s+as\s+([\w$]+)$/.exec(what);
+  if (ns) for (const [, name] of probe.matchAll(new RegExp(`(?<![\\w$.])${ns[1].replace(/\$/g, '\\$')}\\.([A-Za-z_$][\\w$]*)`, 'g'))) take(spec, name);
+  else for (const part of what.slice(1, -1).split(',').map((s) => s.trim()).filter(Boolean)) take(spec, part.split(/\s+as\s+/)[0]);
+}
+if (threeImports !== (probe.match(/from\s+"three(?:\/[^"]*)?"/g) || []).length) throw new Error('a three import was not read');
+const vendorSrc = [...used].map(([spec, names]) => `export { ${[...names].sort().join(', ')} } from ${JSON.stringify(spec)};`).join('\n');
+const vendor = (await build({ stdin: { contents: vendorSrc, resolveDir: root, loader: 'js' }, write: false, bundle: true, format: 'esm',
+  target: 'es2022', minify: true, keepNames: true, legalComments: 'none', logLevel: 'warning', charset: 'utf8' })).outputFiles[0].contents;
+const vendorFile = join(out, 'b/vendor', `three.${createHash('sha256').update(vendor).digest('hex').slice(0, 8)}.js`);
+mkdirSync(dirname(vendorFile), { recursive: true });
+writeFileSync(vendorFile, vendor);
+const vendorSpec = relative(ENTRY_DIR, vendorFile).split('\\').join('/');
+const result = await bundleMain(true, () => vendorSpec);
 for (const f of lazyJson) {
   mkdirSync(dirname(lazyModule(f)), { recursive: true });
   writeFileSync(lazyModule(f), `export default ${JSON.stringify(JSON.parse(readFileSync(f, 'utf8')))};\n`);
@@ -71,8 +100,10 @@ for (const a of assets) cpSync(a, join(out, rel(a)), { recursive: true });
 cpSync(join(root, 'data'), join(out, 'data'), { recursive: true });
 if (existsSync(join(root, 'public'))) cpSync(join(root, 'public'), out, { recursive: true });   // root-absolute files V1 names by URL (/weapons/shapes/, /game/fonts/)
 const html = readFileSync(join(root, 'index.html'), 'utf8').replaceAll('./src/', `./b/${id}/src/`);
-if (!html.includes(`./b/${id}/src/client/main.js`)) throw new Error('index.html: entry script not found');
-writeFileSync(join(out, 'index.html'), html);
+const entryTag = `<script type="module" src="./b/${id}/src/client/main.js"></script>`;
+if (!html.includes(entryTag)) throw new Error('index.html: entry script not found');
+// the vendor module is fetched beside main.js, not after it (the browser would only find it once main.js had arrived)
+writeFileSync(join(out, 'index.html'), html.replace(entryTag, `<link rel="modulepreload" href="./${rel(vendorFile).replace('dist/', '')}">\n  ${entryTag}`));
 writeFileSync(join(out, 'build.txt'), id);
 
 // V1's production GLB packing (scripts/optimize-glb.mjs, copied from V1 as it is): meshopt-coded buffers, int8 normals and uint8 skin
@@ -119,4 +150,4 @@ for (const f of files(out).filter((f) => GZ.test(f))) {
 }
 
 const main = join(ENTRY_DIR, 'main.js'), kb = (n) => (n / 1024).toFixed(0);
-console.log(`dist/ build ${id}: ${Object.keys(result.metafile.inputs).length} sources -> main.js ${kb(statSync(main).size)} KB (gzip ${kb(statSync(main + '.gz').size)} KB) + ${lazyJson.size} lazy JSON modules, assets ${assets.size}, art files hashed ${Object.keys(artMap).length}; .gz twins ${(raw / 1048576).toFixed(1)} MB -> ${(packed / 1048576).toFixed(1)} MB`);
+console.log(`dist/ build ${id}: ${Object.keys(result.metafile.inputs).length} sources -> main.js ${kb(statSync(main).size)} KB (gzip ${kb(statSync(main + '.gz').size)} KB) + ${rel(vendorFile).replace('dist/', '')} ${kb(statSync(vendorFile).size)} KB (gzip ${kb(statSync(vendorFile + '.gz').size)} KB) + ${lazyJson.size} lazy JSON modules, assets ${assets.size}, art files hashed ${Object.keys(artMap).length}; .gz twins ${(raw / 1048576).toFixed(1)} MB -> ${(packed / 1048576).toFixed(1)} MB`);
