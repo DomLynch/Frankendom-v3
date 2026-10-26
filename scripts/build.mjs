@@ -71,9 +71,11 @@ writeFileSync(join(out, 'build.txt'), id);
 // V1's production GLB packing (scripts/optimize-glb.mjs, copied from V1 as it is): meshopt-coded buffers, int8 normals and uint8 skin
 // weights, unused images dropped, JPEGs recoded losslessly by jpegtran. The Centurion's two files come out as V1's live site serves them
 // (carriers-veteran.glb byte for byte; veteran.glb the same but with every image kept inside, where V1 moves two shared ones to their own files).
-// Only the dist copy is packed: the sources stay plain for Blender. warrior.glb waits for its clip swap (anim/hero-clips-dom-picks).
+// The hero's warrior.glb (V1's 27 clips + Dom's picks, #19) is packed the same way, as V1's live hero is; its animation stays bit-exact, and
+// the sim's blade sweeps are baked data (blade-paths.ts, blade-picks.ts), never read from the GLB.
+// Only the dist copy is packed: the sources stay plain for Blender and the bakes (scripts/hero-clips/*).
 // ?load=v1 does not unpack them: the loaders have had the meshopt decoder since V1.
-const PACKED = ['src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb'];
+const PACKED = ['src/assets/warrior.glb', 'src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb'];
 for (const glb of PACKED) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target)));
