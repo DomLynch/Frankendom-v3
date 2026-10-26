@@ -70,6 +70,7 @@ import './signature-shieldmaiden.ts';   // registers the Shieldmaiden's Splinter
 import { settleWithin } from './warm-gate.ts';
 import { fxNum } from './fx-rows.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
+import { chooseFoeBody, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 const WOUND_REACH_PROBE_MAX = fxNum('fx.scene.woundReachProbeMax');
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
@@ -263,11 +264,12 @@ export function createScene(
   // the player's loot pieces are never layered over it (the opponent still wears his kit); a file that fails to load falls back to warrior.glb.
   const heroUrl = heroPreview(typeof location === 'undefined' ? '' : location.search);
   chooseHeroBody(typeof location === 'undefined' ? '' : location.search);   // V3: Psyche, or ?hero=v1 warrior.glb (hero-body-rows.ts); only the one picked is fetched
-  const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion
+  chooseFoeBody(typeof location === 'undefined' ? '' : location.search);   // V3: the Minotaur on the Centurion's rig, or ?foe=v1 the Centurion (foe-body.ts); only the one picked is fetched
+  const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/minotaur.glb': new URL('../assets/minotaur.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies)
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): a fight fetches his kit only, never the whole 9.4 MB file.
-  const carrierUrls: Record<string, string> = { '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Centurion's kit
+  const carrierUrls: Record<string, string> = { '../assets/loot/carriers-minotaur.glb': new URL('../assets/loot/carriers-minotaur.glb', import.meta.url).href, '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Minotaur's kit (the scutum alone), the Centurion's
   // The foe's rig file: a roster body from the glob, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts), like the world bodies' '/world/...': the Origins preview build has no publicDir, so a BASE_URL-relative path would 404 there.
-  const foeUrl = (id: string): string => ON_DEMAND_BEASTS.has(id) ? beastBodyUrl(id) : fighterUrls[`../assets/${ROSTER[id as OpponentId].body}.glb`]!;
+  const foeUrl = (id: string): string => ON_DEMAND_BEASTS.has(id) ? beastBodyUrl(id) : fighterUrls[`../assets/${foeBodyFile(id, ROSTER[id as OpponentId].body)}.glb`]!;
   // Combat waits for the arena's worker textures and props too (arena.ready never rejects): their GPU uploads then land during the
   // loading screen instead of stalling the first exchange (measured 69 ms p95 in the first window when they arrived late under load).
   // The load is retryable: a phone that sleeps mid-download aborts the fetch (2 MiB of the Nightborn's 5.1 MB, 2026-09-21 09:15) and
@@ -284,7 +286,7 @@ export function createScene(
   let playerTier: Tier | undefined;   // the player's own rung (the rank the HUD shows), for his weapon's shape; setPlayerTier
   // Two-handed or not is the weapon he FIGHTS with (the sim's, `weapons` below): the Centurion's gladius brings his scutum up (SCOPE:76).
   let twoHanded = weaponOf(OPPONENTS[opponentId].weapon).grip === 'two-hand';
-  const carrierUrl = !peerKit && kitWorn(opponentId, false).length ? carrierUrls[`../assets/loot/carriers-${opponentId}.glb`] : undefined;
+  const carrierUrl = !peerKit && kitWorn(opponentId, false).length ? carrierUrls[`../assets/loot/${foeKitFile(opponentId)}.glb`] : undefined;
   // V3 fast load (2026-10-26): his kit (armour, helmet, scutum; 3.0 MB) streams in after the first frame instead of gating it, then he is
   // dressed and his opened-waist bake is taken again, as a rematch at a new rung does (setTier). ?load=v1: V1's order, the kit beside his rig.
   const lateKit = !(typeof location !== 'undefined' && /[?&]load=v1\b/.test(location.search));
@@ -345,7 +347,8 @@ export function createScene(
   let lookForced = false;   // this fight's look plays runThrough for opened, with no waist-cut bake (RUN_THROUGH_LOOKS)
   const rankLookUrl = () => rankLookFlagged ?? rankLookFor(opponentId, levelOf(tier ?? 'Recruit'), PHONE);
   let lookStarted: string | undefined | null = null;   // the look file the stream started on (undefined: none at that rung), null before it starts
-  const rankLook = !peerKit && (rankLookFlagged || SHIPPING_LOOKS[opponentId]) ? rankLookStream(() => { const url = lookStarted = rankLookUrl(); lookForced = runThroughForced(url); (globalThis as { __rankLookForced?: boolean }).__rankLookForced = lookForced; return url ? loadRankLook(url).then(async (look) => {
+  // A swapped body (foe-body.ts: the Minotaur) wears no rank look: the look files are fitted to the V1 body.
+  const rankLook = !peerKit && (rankLookFlagged || (SHIPPING_LOOKS[opponentId] && !foeBodySwapped(opponentId))) ? rankLookStream(() => { const url = lookStarted = rankLookUrl(); lookForced = runThroughForced(url); (globalThis as { __rankLookForced?: boolean }).__rankLookForced = lookForced; return url ? loadRankLook(url).then(async (look) => {
     if (nightBronzeApplies(theme.id, opponentId, levelOf(tier ?? 'Recruit'))) toneNightBronze(look);
     // Warm-up before the swap frame: its shaders compile (with this scene's lights and shadows) and its maps upload now, off the beat.
     // Measured without it: a 150 ms swap frame at 375 (goblin-l3, dist).

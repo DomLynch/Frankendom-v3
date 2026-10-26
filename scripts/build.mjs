@@ -82,7 +82,8 @@ writeFileSync(join(out, 'build.txt'), id);
 // Only the dist copy is packed: the sources stay plain for Blender and the bakes (scripts/hero-clips/*).
 // ?load=v1 does not unpack them: the loaders have had the meshopt decoder since V1.
 // Psyche (the hero since 2026-10-26) is packed the same way as warrior.glb (?hero=v1).
-const PACKED = ['src/assets/psyche.glb', 'src/assets/warrior.glb', 'src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb'];
+// The Minotaur (the opponent's body since 2026-10-26, scripts/foe-body/) and his scutum-only kit too, as the Centurion's (?foe=v1).
+const PACKED = ['src/assets/psyche.glb', 'src/assets/warrior.glb', 'src/assets/minotaur.glb', 'src/assets/veteran.glb', 'src/assets/loot/carriers-minotaur.glb', 'src/assets/loot/carriers-veteran.glb'];
 for (const glb of PACKED) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target)));
