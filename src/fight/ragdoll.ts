@@ -182,8 +182,9 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         if (tune?.settle) { rig.drive(); for (let i = 0; i < tune.settle; i++) { physics.step(tick); rig.drive(); } }
         const anim = Object.entries(partBones).map(([p, b]) => [p, b.getWorldQuaternion(new THREE.Quaternion()), b.quaternion.clone(), b.position.clone()] as const);
         rig.applyPose();
-        // per part: the whole orientation's angle, and (`<part>~`) the angle between the bone's long axes (the rig's bones run along local X): what is left is twist
-        const axis = (q: THREE.Quaternion) => new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+        // per part: the whole orientation's angle, and (`<part>~`) the angle between the bone's long axes: what is left is twist. Both rigs' bones run
+        // along local Y (minotaur.glb's lowerarm_l -> hand_l and minotaur-106.glb's LeftForeArm -> LeftHand are +Y offsets).
+        const axis = (q: THREE.Quaternion) => new THREE.Vector3(0, 1, 0).applyQuaternion(q);
         trace.push({ ...Object.fromEntries(anim.flatMap(([p, q]) => { const r = partBones[p]!.getWorldQuaternion(new THREE.Quaternion()); return [[p, +q.angleTo(r).toFixed(3)], [`${p}~`, +axis(q).angleTo(axis(r)).toFixed(3)]]; })), _stagger: stagger >= 0 ? staggerDepth(rows.states.stagger, stagger) : -1 });
         for (const [p, , lq, lp] of anim) { partBones[p]!.quaternion.copy(lq); partBones[p]!.position.copy(lp); }
         group.updateWorldMatrix(true, true);
