@@ -59,5 +59,10 @@
     "opponent": "veteran",
     "weapon": "gladius",
     "drawn": "cleaver"
+  },
+  "foeName": {
+    "about": "Dom 2026-10-26 (docs/V3-OWED-2026-10-26.md, HUD): the opponent's body is the Minotaur (src/fight/foe-body.ts), so the HUD names him the Minotaur: the name over his bar and the status line (src/fight/foe-name.ts). Display only: the sim, the AI, his stats, specials, level and Gate 0 still see the Centurion (id `opponent`). ?foe=v1 = the Centurion's body and name.",
+    "opponent": "veteran",
+    "name": "Minotaur"
   }
 }
