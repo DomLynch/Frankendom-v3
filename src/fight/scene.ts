@@ -14,7 +14,7 @@ import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadPeerWarriors, loadWarriors, lootIds, lootWorn, SHIELD_CARRIERS } from './characters.ts';
+import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadPeerWarriors, loadWarriors, lootIds, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { heroPreview } from '../hero-preview.ts';
@@ -284,6 +284,10 @@ export function createScene(
   // Two-handed or not is the weapon he FIGHTS with (the sim's, `weapons` below): the Centurion's gladius brings his scutum up (SCOPE:76).
   let twoHanded = weaponOf(OPPONENTS[opponentId].weapon).grip === 'two-hand';
   const carrierUrl = !peerKit && kitWorn(opponentId, false).length ? carrierUrls[`../assets/loot/carriers-${opponentId}.glb`] : undefined;
+  // V3 fast load (2026-10-26): his kit (armour, helmet, scutum; 3.0 MB) streams in after the first frame instead of gating it, then he is
+  // dressed and his opened-waist bake is taken again, as a rematch at a new rung does (setTier). ?load=v1: V1's order, the kit beside his rig.
+  const lateKit = !(typeof location !== 'undefined' && /[?&]load=v1\b/.test(location.search));
+  const loadKit = () => loadLoot(carrierUrl!).then((pieces) => { carried = pieces; }).catch((error: unknown) => { captureException(error); });
   let worn: readonly string[] = [], wornTier: Readonly<Record<string, Tier>> = {}, lootPieces: THREE.SkinnedMesh[] | undefined, lootLoading: Promise<void> | null = null, carried: THREE.SkinnedMesh[] | undefined;
   // loot.glb, once per page (a failure is forgotten, so the next dress or Pit visit tries again): the worn set and the Pit's pieces share it.
   const loadLootPieces = () => (lootLoading ??= loadLoot(fighterUrls['../assets/loot.glb']!).then((pieces) => { lootPieces = pieces; dress(); }).catch((error: unknown) => { captureException(error); lootLoading = null; }));
@@ -374,7 +378,7 @@ export function createScene(
       return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody)))(fighterUrls[`../assets/${heroBodyFile()}.glb`]!);   // the hero-body row: Exo (warrior.glb) or the classic hero
     }),
     arena.ready,
-    carrierUrl ? loadLoot(carrierUrl).then((pieces) => { carried = pieces; }).catch((error: unknown) => { captureException(error); }) : null,
+    carrierUrl && !lateKit ? loadKit() : null,
   ])
     .then(async ([loaded]) => {
       warriors = loaded;
@@ -409,6 +413,11 @@ export function createScene(
         performance.mark('first-frame-' + how);
       }
       assetStatus('', 'ready');
+      if (carrierUrl && lateKit && !carried) void loadKit().then(() => {
+        if (!carried || !warriors) return;
+        dress(); if (!lookForced) warriors.opponent.rebakeOpened();
+        void renderer.compileAsync(scene, camera).catch(() => {});   // his kit's shaders, off the frame they first draw on
+      });
       prefetchHamstrung();   // after ready, never before and never awaited: the loading card does not wait on a finisher that may not play
     })
     .catch((error) => {
@@ -959,7 +968,8 @@ export function createScene(
         animationDt,
         mineGait.pose,
         runThroughHold || hamstrungFinish || executionFinish ? finishClock : (playerDefence?.progress ?? mine.progress),
-        mine.attack,
+        // V3 (data/hero-clips.json): a chained thrust is the stab too (V1 shows it with the riposte's clip); ?clips=v1 keeps V1's
+        heroClipsOn() && mine.attack === 'riposte' && practice.duel.fighters[0].lastMove === 'thrust' ? 'thrust' : mine.attack,
         mine.contact,
         travel && dt ? (dx * Math.cos(state.heading) - dz * Math.sin(state.heading)) / (travel * dt) : 0,
         practice.result === 'blocked' ? (blockHeavy[0] ? 1.5 : 1) * Math.max(0, 1 - practice.resultAge / 12) : 0,

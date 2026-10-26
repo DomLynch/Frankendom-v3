@@ -16,6 +16,7 @@ import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from '
 import { bandFactor } from './bands.ts';
 import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
 import { foeSpecialFirst, specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
+import { paceTicks } from './special-pace.ts';   // V3: the player's paced special (the Skull Crack ×0.75); off in a headless run, so Gate 0 steps V1's ticks
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, spellRoot, type CastOutcome, type Spell } from './spell-cast.ts';
@@ -379,7 +380,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       else if (gap <= (me.picked ? meleeSpecialReach(R.special.reach) : R.special.reach) || heal || (root && spellRangeOf(root)) || bowRow) {
         if (action === 'skill2') next.castSlot = 1; else delete next.castSlot;
         if (bowRow) { next.bowSpecial = bowRow.skill; if (next.ammo !== undefined) next.ammo -= bowRow.arrows; } else delete next.bowSpecial;   // the arrows are spent at the commit, like a spell's cost
-        next.special = castWindup(me.sheet, heal ? heal.windup : bowRow ? bowRow.windup : !cast && me.picked && SPECIAL_MELEE_WINDUP ? SPECIAL_MELEE_WINDUP : spellWindupOf(root, R.special.windup)); delete next.castHurt; delete next.castPush;   // sandbox specialMeleeWindup: a melee special (no spell) is as quick as a heavy swing, not the spell's 2 s delay
+        next.special = castWindup(me.sheet, heal ? heal.windup : bowRow ? bowRow.windup : !cast && me.picked && SPECIAL_MELEE_WINDUP ? paceTicks(next, SPECIAL_MELEE_WINDUP) : spellWindupOf(root, R.special.windup)); delete next.castHurt; delete next.castPush;   // sandbox specialMeleeWindup: a melee special (no spell) is as quick as a heavy swing, not the spell's 2 s delay
         next.phase = 'ready'; next.age = 0; next.parrying = false; next.guardDirection = null;
         if (cast && paysManaFor(cast.id)) { const f = fighters[i]!; f.mana = Math.max(0, (f.mana ?? 0) - manaCost(cast.cost)); f.manaRest = MANA_DELAY; }   // sandbox-mech mana: the cast is paid in mana, stamina untouched
         else if (cast) spend(i, cast.cost);   // the stamina is gone at the commit, whatever the outcome
@@ -659,7 +660,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const j = (1 - i) as Side, A = fighters[i], D = fighters[j];
     if (!releasing[i]) continue;
     const spell = castOf(A);   // slot a or b: the cooldown below is that slot's own (spell-slot-defs sharedCooldown 1 = both)
-    A.special = 0; delete A.castHurt; delete A.castPush; coolSlot(A, specialCooldown(R.special.cooldown)); A.specialRecover = R.special.recovery;   // re-armed and held back from attacking, counted from the release
+    A.special = 0; delete A.castHurt; delete A.castPush; coolSlot(A, specialCooldown(R.special.cooldown)); A.specialRecover = paceTicks(A, R.special.recovery);   // re-armed and held back from attacking, counted from the release
     const bowRow = A.bowSpecial && !spell ? bowSpecialOf(A.weapon, A.bowSpecial, Infinity, undefined) : undefined;   // A.bowSpecial stays set through the recovery (the renderer plays the bow's loose clip off it); the next cast sets or clears it
     if (!standing[j]) continue;
     if (bowRow) {   // sandbox bowSpecial: the special's arrows fly through the one missile model (a roll dodges them all, a guard blocks the lanes it covers)

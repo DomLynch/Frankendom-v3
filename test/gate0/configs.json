@@ -42,6 +42,21 @@
       "seeds": [731]
     },
     {
+      "id": "page-first-clips",
+      "about": "The fight V3 plays by default with Dom's picked hero clips (data/hero-clips.json): 'page-first-novice' with the sim sweeping the blade along the picked clips for their paths (src/fight/blade-picks.ts; ?clips=v1 = V1's sweeps). Both sides fight with the same sweeps (harness.mjs setSweeps), so V3 must still replay V1 tick for tick.",
+      "flags": { "playScaleFor": "veteran", "lateNotice": true, "stab": true, "stanceRows": true },
+      "opponent": "veteran",
+      "level": 18,
+      "brain": "novice",
+      "sweeps": "picks",
+      "weapon": null,
+      "skill": "cleave",
+      "specials": true,
+      "stance": "neutral",
+      "skill2": "reaping",
+      "seeds": [731]
+    },
+    {
       "id": "base",
       "about": "The base rules: plain initialPractice(seed, opponentAt(OPPONENTS.veteran, 1)), no Special Moves, no stances, the era flags off (old full-size circle, no late notice, no stab rule, no stance rows).",
       "flags": { "playScale": 1, "lateNotice": false, "stab": false, "stanceRows": false },

@@ -15,6 +15,9 @@ import { brainFor, brainProfile } from '../../src/brain.ts';
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const BRAINS = readJson(join(HERE, '..', '..', 'data', 'brains.json'));
+// a config with `"sweeps": "picks"` fights with the hero's picked-clip sweeps (data/hero-clips.json, src/fight/blade-picks.ts) on both sides
+const HERO_CLIPS = readJson(join(HERE, '..', '..', 'data', 'hero-clips.json'));
+const { BLADE_PICKS } = await import('../../src/fight/blade-picks.ts');
 export const CONFIGS = readJson(join(HERE, 'configs.json')).configs;
 const scriptsIn = (dir) => readdirSync(join(HERE, dir)).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(join(HERE, dir, f)));
 export const SCRIPTS = scriptsIn('scripts');
@@ -28,8 +31,8 @@ const sides = new Map();
 export async function loadSide(dir) {
   if (sides.has(dir)) return sides.get(dir);
   const mod = (name) => import(pathToFileURL(join(dir, 'src', 'fight', `${name}.ts`)).href);
-  const [combat, moves, playRadius, stabRule, stanceEra, record] = await Promise.all(['combat', 'moves', 'play-radius', 'stab-rule', 'stance-era', 'record'].map(mod));
-  const side = { dir, combat, moves, playRadius, stabRule, stanceEra, record };
+  const [combat, moves, playRadius, stabRule, stanceEra, record, blade, bladePaths] = await Promise.all(['combat', 'moves', 'play-radius', 'stab-rule', 'stance-era', 'record', 'blade', 'blade-paths'].map(mod));
+  const side = { dir, combat, moves, playRadius, stabRule, stanceEra, record, blade, bladePaths };
   sides.set(dir, side);
   return side;
 }
@@ -47,6 +50,17 @@ export function recordSpecials(side, record) {
   return { level: record.level, aiSkill, ...(name ? { name } : {}) };
 }
 
+// The hero's picked-clip sweeps on or off for one side. V3 sets them as the page does (src/fight/blade.ts setSweepOverride, src/hero-clips.ts);
+// V1 has no such switch, so its own table object gets the same rows written into it (and V1's back afterwards). Same sweeps on both
+// sides, so V3 must still replay V1 tick for tick: the switch changes the table and nothing else.
+function setSweeps(side, on) {
+  const { rig, weapon } = HERO_CLIPS, table = { [rig]: { [weapon]: BLADE_PICKS } };
+  if (side.blade.setSweepOverride) { side.blade.setSweepOverride(on ? table : null); return; }
+  const own = side.bladePaths.bladePathsByRig[rig][weapon];
+  side.v1Sweeps ??= { ...own };
+  Object.assign(own, side.v1Sweeps, on ? BLADE_PICKS : {});
+}
+
 // Sets this side's era flags and builds the fight, as V1's Match.begin('career') does (src/fight/match.ts:144-176 at 82a994d15)
 // for the career config, or a plain initialPractice(seed, opponentAt(o, level)) for a config marked plain.
 export function startFight(side, config, seed) {
@@ -54,6 +68,7 @@ export function startFight(side, config, seed) {
   const f = config.flags;
   playRadius.setPlayScale(f.playScaleFor ? playRadius.playScaleFor(f.playScaleFor, Infinity) : f.playScale);
   playRadius.setLateNotice(f.lateNotice); stabRule.setStab(f.stab); stanceEra.setStanceRows(f.stanceRows);
+  setSweeps(side, config.sweeps === 'picks');
   const opponent = moves.OPPONENTS[config.opponent];
   // a config naming a `brain` (data/brains.json) lays that row over this side's own V1 profile, as the driver does (src/brain.ts)
   const body = moves.opponentAt(opponent, config.level), profile = brainProfile(moves.profileAt(opponent, config.level), config.brain ? brainFor(BRAINS.brains, config.brain) : undefined);

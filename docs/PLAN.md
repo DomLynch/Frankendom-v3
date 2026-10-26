@@ -1,9 +1,14 @@
 ## HANDOFF (V3 dev; keep at the top, update every PR)
-- **Live:** https://v3.frankendom.com at f297c4e (push-to-deploy on green main; user frankendom-v3 rrsync-locked to /srv/frankendom-v3/live; nginx site with gzip; Let's Encrypt cert, auto-renewed by certbot.timer with a v3-only nginx reload hook). Merged: #1 seed (tag `v1-seed-82a994d15`), #2 V2 shell, #3 Gate 0, #4 the lift. First visit ~20 MB over the wire (GLBs 17.5 MB, code 0.8 MB gzipped).
-- **In flight:** Gate 1, Dom's phone, V3 vs frankendom.com/?fight=1. The one fight is `data/fight.json`.
-- **Opponent brain (branch `ai/novice-default`):** the Centurion stays level 18 (body, gladius, scutum, specials) but plays V2's novice brain by default (`data/brains.json`, `data/fight.json` `ai`, `src/brain.ts`); `?ai=v1` is today's fight. Gate 0 config `page-first-novice` covers it; `node scripts/ai-bouts.mjs [bouts] [cap]` prints the headless win rates.
-- **Next three:** whatever Gate 1 finds (copy-only fixes in the lift or the cut); the first post-Gate-1 PR cutting the inert spell/missile/mana rules out of duel.ts; the rig swap gate (`?rig=65`).
-- **Known differences from frankendom.com (by plan):** V2's flat stage and sky instead of the pit; no legend names (the HUD says "Centurion"); no rank row, menu, loot, share or versus card.
+### 2026-10-26 15:45 (+04) — READ FIRST, then the plan below, then memory (~/.claude/projects/-Users-domininclynch-Developer-frankendom-v3/memory/)
+1. **LIVE 704e9c7** (curl https://v3.frankendom.com/build.txt at 15:40). Push-to-deploy on green main: user `frankendom-v3` rrsync-locked to `/srv/frankendom-v3/live`; nginx site `v3.frankendom.com` (gzip; HTTPS by Let's Encrypt, valid to 2027-01-24, certbot.timer + v3-only reload hook `/etc/letsencrypt/renewal-hooks/deploy/frankendom-v3-nginx`); conf copies in `/srv/frankendom-v3/conf/`. Secrets V3_DEPLOY_KEY/KNOWN_HOSTS/USER/HOST set. DNS A `v3` → 49.12.7.18 at Namecheap (Dom added). No run in flight at 14:21.
+2. **Live today:** #1 seed (tag `v1-seed-82a994d15`), #2 V2 shell, #3 Gate 0, #4 the lift, #5 doc. **Gate 1 PASSED** on Dom's phone (14:00: "it worked… I really like it"). Then Dom: "ok yes do all these" → V2 improvements, each default-on with a `?…=v1` toggle back to V1: #6 camera like V2 (`?cam=v1`), #9 easier first opponent = V2 novice brain on the level-18 Centurion (`?ai=v1`), #8 sound built at page load (`?snd=v1`; `?snd=1` shows audio state; real iOS unverified), #7 legs walk under a held guard (`?guard=v1`). After Dom played (15:00): #12 PLAN step-5 list; #13 fast first load (one esbuild bundle, gzip GLBs, nginx cache headers, Centurion kit after the first frame, `?load=v1`; throttled 4G 35 s → 11.1 s to playable, measured live); #14 Skull Crack 25% faster (`specialPace` {cleave, 0.75}, windup 32→24, recovery 45→34; `?skull=v1`); #15 fight starts by itself, no Fight button (`start.auto`, `?start=v1`); #16 and #17 their stills + review (merged after the fact: see memory v3-stills-before-merge).
+3. **NOT LIVE:** #10 directional heavies — https://github.com/DomLynch/Frankendom-v3/pull/10, branch `combat/directional-heavies` @ e7e10df, CI green, **held** for the clip swap (it reuses the light_right/light_left/thrust paths). Since 9a7d8d9: chain like the overhead; slide measured from the armed place; keyboard G+W = overhead (heavy stab touch-only); heavy sounds, AI, shaft-guard break (any heavy), stab rules via shared helpers (`isHeavyMove`…); V3-only goldens re-pinned. Touch-gesture sheets in its worktree `docs/stills/heavies-*-sheet.jpg` (uncommitted, VPS software GL). After the clip swap: retake stills (`scripts/heavy-stills.mjs`), put pairs in the body, independent verdict, merge, tell Dom `?heavy=v1`, remove worktree `.claude/worktrees/agent-ab0b7b30a514fb0f6`.
+   - **In flight (agents):** (a) clip swap, branch `anim/hero-clips-dom-picks` (memory v3-hero-clip-picks): stab = Mixamo 100790901 Stabbing, side cuts = 104990902 Stable Sword Outward Slash + baked mirror, heavy = gl046 Gladius Right Overhead Slash on V1's heavy timer/charge, `?clips=v1`; (b) guard candidate sheet for Dom (`docs/stills/clip-candidates/`, untracked); (c) `perf/swords-parallel-veteran`: swords and the Centurion's kit fetched with the bodies, V1's compressed veteran.glb (kit pop-in was 3.4 s, PR #16); warrior.glb compression waits for (a).
+4. **Sessions:** none down. Strategy = "Project Strategy - Fable 5.1" (rules on scope; reply via SendMessage to its uds address or by title). "z- Agent Micro-Manager" (V3 PM) kept asking to revert defaults to V1 before Gate 1; answered twice that Gate 1 passed — do not revert unless Dom or Strategy says so.
+5. **Rulings today (memory files):** v3-first-fight-level-18; v3-gate1-passed-v2-items; v3-stage-untouched; v3-keep-opponent-spells; v3-stills-on-vps-not-wait; v3-hero-clip-picks; v3-stills-before-merge.
+6. **QUEUE:** (a) merge the clip swap with stills, then #10; (b) Dom picks a guard from the candidate sheet → swap it the same way; (c) swords/kit/veteran load PR; (d) Strategy rules on the rig-swap proposal (section 10 below) before any rig work. NOT to do: the stage (Dom: "ignore this"), cutting the opponent's spells (Dom keeps them).
+7. **No crons.** Main checkout `/Users/domininclynch/Developer/frankendom-v3` on main. Agent worktree `.claude/worktrees/agent-ab0b7b30a514fb0f6` (heavies; remove after #10 merges). VPS scratch dirs: `/root/f3v-dev`, `/root/f3v-guard`, `/root/f3v-stills`, `/root/f3v-chain` (has git + the seed tag for Gate 0), `/root/f3v-load`. Mac stills: Playwright in the session scratchpad with the cached chrome-headless-shell-1248 and `--use-angle=metal` when the Mac's load is under 12. Stills recipe: usage lines at the top of `scripts/vps-stills-job.sh`. Mac builds get blocked by V1's deploy hook while V1 deploys: build/test on the VPS.
+- **Known differences from frankendom.com (by plan):** V2's flat stage and sky instead of the pit; no legend names (the HUD says "Centurion"); no rank row, menu, loot, share or versus card. First visit was ~20 MB (GLBs 17.5 MB); after #13: one code bundle, gzipped GLBs, the Centurion's kit after the first frame (`?load=v1` = old order), ~9.3 MB before playable.
 
 # Frankendom V3: V1's fight core in V2's shell (Strategy, 2026-10-26, for Dom's sense-check)
 
@@ -71,7 +76,10 @@ V1's feel is in the code and the data, not the skeleton: timings, windows, hit-s
 2. **Lift (V2 dev, one to two days).** Copy the fight logic and feel layer as listed in section 3. Write the driver. Cut `scene.ts`. Apply the stubs. One player vs one AI on the flat floor, V1's rig, V1's HUD, V1's sounds. Every stub is one line with the V1 file it replaces.
 3. **Gate 1: Dom's phone, V3 vs frankendom.com side by side.** Pass = nothing different in controls, timing, feel, sound, camera, finishers. Nothing else merges before this.
 4. **Rig swap (OpenTrident, half a day, in parallel with 2).** warrior + 27 clips + one opponent on the 106 rig; delivered as a `rig: 106` clip set. **Gate 2:** same side-by-side with `?rig=65`.
-5. **V2's improvements back on top, one PR each, data where possible:** novice brain row, directional heavies, clip trims as timing-set rows, sound built at page load, the Mixamo/library bodies, the Girlscout vs Kachujin pair. Each with 375 stills, each gated on the phone.
+5. **V2's improvements back on top, one PR each, data where possible, each default-on with a `?…=v1` toggle back to V1 (Dom, 2026-10-26).** Each with 375 stills, each gated on the phone.
+   - **Done:** camera like V2, lower and over the right shoulder ([#6](https://github.com/DomLynch/Frankendom-v3/pull/6), `?cam=v1`); novice brain on the first opponent ([#9](https://github.com/DomLynch/Frankendom-v3/pull/9), `?ai=v1`); sound built at page load ([#8](https://github.com/DomLynch/Frankendom-v3/pull/8), `?snd=v1`); legs walk under a held guard ([#7](https://github.com/DomLynch/Frankendom-v3/pull/7), `?guard=v1`).
+   - **In review, not merged:** directional heavies ([#10](https://github.com/DomLynch/Frankendom-v3/pull/10), `?heavy=v1`); hero clips Dom picked: stab, outward slash and its mirror, gladius heavy (branch `anim/hero-clips-dom-picks`, `?clips=v1`; data/hero-clips.json, scripts/hero-clips/).
+   - **To do:** clip-length timing as a switch: a timing-set row turned on by a query flag, V1 timing still reachable (Dom rejected clip *trims*); roll blend; feet grounding; strafe clips; the Mixamo/library bodies; the Girlscout vs Kachujin pair, which rides on the rig swap (step 4, likely next) and also cuts the ~20 MB first visit.
 6. **Then the combat-101 roadmap continues on V3:** physics package (M3 to M6) installed into V3 instead of V2; step 3 live shared zone; finishers from the physics package. The core reference `COMBAT-101-TOP-25-2026-10-25.md` and its rulings are unchanged; only the host repo changes.
 
 ## 6. What happens to V2
@@ -113,3 +121,25 @@ The order of work in section 5 is unchanged: repo + shell, lift, Gate 0 then Gat
 2. Whether the ~900 lines of spell/missile/mana rules inside `duel.ts` should be cut in the first lift or left inert (Strategy: leave inert, cut after gate 1).
 3. Whether to keep V1's HUD exactly (Strategy: yes for gate 1; V2's HUD labels are a step-5 item).
 4. esbuild-to-ESM versus keeping V1's Vite build (Strategy: esbuild, to keep V2's hashed-path loading and no bundle).
+
+## 10. Rig-swap proposal (V3 dev, 2026-10-26, for Strategy to rule; measured unless marked est.)
+
+Three corrections to section 4: the 106-rig bodies are not in any repo (V2 streams them from opentrident.org; licence "unconfirmed" in V2 `assets/opentrident/SOURCES.json`); the swap is ~3-4 days, not half a day; warrior.glb is 4.84 MB, not 5.6.
+
+**What it is.** Girlscout and Kachujin replace warrior and veteran (Kachujin's own armour layers drop carriers-veteran.glb). 74 bone-name lookups in 20 files change (26 in `characters.ts`, 13 in `scene.ts`), mapping one-to-one to `mixamorig:*`; the 35 `WeaponDrawn`/`SwordDrawn` sword-node lookups have no match, and the new rig offers `fk_socket_hand_r`. `?rig=65` keeps today's fight; Gate 2 is both side by side on Dom's phone.
+
+**First-visit weight (MB, raw files, before #13's gzip).**
+
+| | Today | After the swap |
+|---|---|---|
+| Player | warrior 4.84 | Girlscout 3.13 |
+| Opponent | veteran 7.32 + carriers 3.04 | Kachujin 2.59 |
+| Clips | inside the bodies | 0.80 (V2's 19 files) or ~1.5 est. (V1's 27 retargeted) |
+| Weapons, code, audio, blood | 2.25 + 0.91 + 0.65 + 0.40 | same |
+| **Total** | **19.4** | **~10.7-11.4 est.** |
+
+**Risks.** V2's clip set has no Jog, Draw, Riposte, Skill_Pommel, Skill_WitchArm, Death_SplitCrown, Death_RunThrough or Fin_RunThrough. 13 baked specials/execution/hamstrung JSONs (1.37 MB) are keyed by the old bone names. Then the usual: foot slide, sword offset, parry pose.
+
+**Order (est.).** Bone table + `?rig=65` 0.5 d; bodies + sword socket 0.5 d; clips 0.5 d (V2's set) or 1 d (V1's 27); the 13 baked files and clip gaps 1 d; stills + Gate 2 0.5 d.
+
+**Strategy to rule.** (1) V1's 27 clips retargeted (keeps "nothing different"; recommended) or V2's set; (2) the player is Girlscout or Kachujin; (3) the missing finisher clips: retarget or drop; (4) bodies copied into V3 or streamed (licence first); (5) whether the Centurion keeps gladius + scutum on Kachujin. Note: Dom's 10-26 clip picks (memory v3-hero-clip-picks) are Mixamo clips, so they carry over to the 106 rig unchanged.

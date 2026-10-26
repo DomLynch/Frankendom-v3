@@ -1,6 +1,7 @@
 // Serves dist/ for a local look (and for stills): node scripts/serve.mjs [port]. A path with no extension falls back to index.html, as the
-// VPS does; a missing file is a 404, so a missing asset shows. Page weight: GET /__reset before a load, GET /__bytes after it (bytes and
-// files served since, per kind).
+// VPS does; a missing file is a 404, so a missing asset shows. A file's .gz twin (scripts/build.mjs) is sent gzip-encoded to a client that
+// accepts it, as nginx's gzip_static does on the VPS, so page weight here matches the live wire. Page weight: GET /__reset before a load,
+// GET /__bytes after it (bytes and files served since, per kind).
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
@@ -19,8 +20,10 @@ createServer(async (req, res) => {
   let body = await readFile(file).catch(() => null);
   if (!body && !extname(path)) { file = join(dist, 'index.html'); body = await readFile(file); }
   if (!body) { res.writeHead(404); res.end(); return; }
+  const gz = /\bgzip\b/.test(req.headers['accept-encoding'] || '') ? await readFile(file + '.gz').catch(() => null) : null;
+  if (gz) body = gz;
   const kind = extname(file) || 'other', row = (served[kind] ??= { files: 0, bytes: 0 });
   row.files++; row.bytes += body.length;
-  res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream', 'cache-control': 'no-cache' });
+  res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream', 'cache-control': 'no-cache', vary: 'Accept-Encoding', ...(gz ? { 'content-encoding': 'gzip' } : {}) });
   res.end(body);
 }).listen(port, () => console.log(`dist/ on http://localhost:${port}`));
