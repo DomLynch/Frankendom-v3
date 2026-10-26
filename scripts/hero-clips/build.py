@@ -4,15 +4,15 @@ Mixamo library lives).
   python3 -I scripts/hero-clips/build.py <V1 warrior.glb> <models/mixamo dir> data/hero-clips.json <out warrior.glb> [report.json]
 The input must be V1's warrior.glb (it carries the Riposte and Return clips the retarget is calibrated on, retarget.py calibrate). Every row
 becomes one more animation named `clip`; V1's 27 clips are kept byte for byte, so ?clips=v1 plays exactly today's clips."""
-import json, os, re, struct, sys
+import json, os, struct, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from glbkit import Glb, qinv, qmul, qnorm, qrot
-from retarget import LIB, build, calibrate, mirror, sword_path
+from retarget import LIB, backhand, build, calibrate, pose, sword_path, twist, untwist
 
-# The right-handed mirror keeps these joints' own motion: the trunk (so the sword shoulder leads into the cut and the mirrored blade
-# reaches as far forward as the original's), the neck and head (the eyes stay on the target). Everything else is mirrored.
-MIRROR_KEEP = re.compile(os.environ.get('MIRROR_KEEP', r'^(spine_0[123]|neck_01|Head|clavicle_[lr])$'))
+# How far the shoulders may turn from the hips (degrees). V1's own clips stay within 62. The first mirror (#19) kept the trunk's own motion
+# over mirrored hips and turned the shoulders up to 153 degrees from the hips; the right cut as Mixamo made it turns 94 just after contact.
+MAX_TWIST = float(os.environ.get('MAX_TWIST', 60))
 
 
 def aim_blade(W, times, local, pel, at, aim):
@@ -64,7 +64,10 @@ def main():
     rows = json.load(open(rows_path)); W = Glb(src); Cs, k = calibrate(W); report = {'pelvisHeightFactor': round(k, 4), 'clips': []}
     for r in rows['clips']:
         times, local, pel = build(W, Cs, k, r['mixamo'], r['from'], r['to'])
-        if r['mirror']: local = mirror(W, local, pel, MIRROR_KEEP)
+        WR, WP, _ = pose(W, local, pel); before = float(np.abs(twist(W, WR, WP)).max())
+        if r['mirror']: local, _ = backhand(W, local, pel, MAX_TWIST)   # the right-handed mirror, the whole body mirrored
+        else: local, _ = untwist(W, local, pel, MAX_TWIST)              # unchanged when within MAX_TWIST
+        WR, WP, _ = pose(W, local, pel); after = float(np.abs(twist(W, WR, WP)).max())
         turn = None
         if r.get('aim'): local, turn = aim_blade(W, times, local, pel, r['contact'] - r['from'], r['aim'])
         add_clip(W, r['clip'], times, local, pel)
@@ -72,6 +75,7 @@ def main():
         c = int(np.argmin(np.abs(times - (r['contact'] - r['from']))))
         report['clips'].append({'clip': r['clip'], 'role': r['role'], 'keys': len(times), 'duration': round(float(times[-1]), 3),
                                 'source': round((r['contact'] - r['from']) / (r['to'] - r['from']), 4), 'wristTurnDeg': None if turn is None else round(turn, 1),
+                                'twistDeg': {'source': round(before, 1), 'baked': round(after, 1)},
                                 'tipAtContact': [round(float(x), 3) for x in tip[c]], 'tipStart': [round(float(x), 3) for x in tip[0]], 'tipEnd': [round(float(x), 3) for x in tip[-1]]})
     save(W, out)
     report['bytes'] = {'in': os.path.getsize(src), 'out': os.path.getsize(out)}
