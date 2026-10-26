@@ -1,9 +1,9 @@
 // The rig swap's one bone map (src/fight/rig-bones.ts, Dom + Strategy 2026-10-26): every bone or weapon-node lookup goes through `bone(root, name)`.
-// A 65 body is looked up exactly as before (root.getObjectByName(name)); a 106 body through data/rig.json. Both toggles default to 65 (today).
+// A 65 body is looked up exactly as before (root.getObjectByName(name)); a 106 body through data/rig.json. Both sides are 106 only (Dom 2026-10-26); no URL picks a rig.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { bone, boneAs65, boneName, chooseRigs, drawnSword, foeRigFile, gapFillFor, heldWeapon, heroRigFile, isHeldWeaponName, rigFile, rigOf, sanitizeNodeName, trackAs65, trackOn } from '../src/fight/rig-bones.ts';
+import { clip106Path, clip106Paths, bone, boneAs65, boneName, rigsDrawn, drawnSword, foeRigFile, gapFillFor, heldWeapon, heroRigFile, isHeldWeaponName, rigFile, rigOf, sanitizeNodeName, trackAs65, trackOn } from '../src/fight/rig-bones.ts';
 
 const RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
@@ -13,21 +13,63 @@ const joints = (j) => j.skins[0].joints.map((i) => j.nodes[i].name);
 const scene = (names) => { const calls = []; return { calls, getObjectByName: (n) => { calls.push(n); return names.includes(n) ? { name: n } : undefined; } }; };
 const MIXAMO = Object.values(RIG.bones).map(sanitizeNodeName);
 
-test('both sides default to the 65 rig: no query = today', () => {
-  assert.deepEqual(RIG.default, { hero: '65', foe: '65' });
-  assert.deepEqual(chooseRigs(''), { hero: '65', foe: '65' });
-  assert.equal(heroRigFile('psyche'), 'psyche'); assert.equal(foeRigFile('minotaur'), 'minotaur');
+// 106 ONLY (Dom 2026-10-26: "there's no risk of going back to the old 65 rig"; docs/PLAN.md section 10). This test is the lock: it fails if
+// either default is not '106', or if a URL key that picks a rig comes back (a `query` row in data/rig.json, or the page reading ?rig= / ?foerig=).
+test('106 only: both defaults are 106 and no URL key picks a rig', () => {
+  assert.deepEqual(RIG.default, { hero: '106', foe: '106' });
+  assert.deepEqual(rigsDrawn(), { hero: '106', foe: '106' });
+  assert.equal(heroRigFile('psyche'), 'psyche-106'); assert.equal(foeRigFile('minotaur'), 'minotaur-106');
+  assert.ok(!('query' in RIG), 'data/rig.json has no query row');
+  const src = ['src/fight/rig-bones.ts', 'src/fight/scene.ts', 'src/fight/foe-body.ts', 'src/fight/hero-body-rows.ts', 'src/client/main.ts']
+    .map((f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')).join('\n');
+  for (const key of ['rig', 'foerig', 'herorig']) assert.ok(!new RegExp(`get\\(\\s*['"\`]${key}['"\`]\\s*\\)|[?&]${key}=`).test(src), `no ?${key}= read by the page`);
+  assert.ok(!/chooseRigs|RIG\.query/.test(src), 'no rig chooser');
 });
 
-test('?rig= picks the hero, ?foerig= the opponent; only a body with a 106 file changes', () => {
-  assert.deepEqual(chooseRigs('?rig=106'), { hero: '106', foe: '65' });
-  assert.equal(heroRigFile('psyche'), 'psyche-106'); assert.equal(foeRigFile('minotaur'), 'minotaur');
-  assert.deepEqual(chooseRigs('?foerig=106&rig=65'), { hero: '65', foe: '106' });
-  assert.equal(heroRigFile('psyche'), 'psyche'); assert.equal(foeRigFile('minotaur'), 'minotaur-106');
-  assert.equal(rigFile('warrior', '106'), 'warrior', '?hero=v1 (warrior.glb) has no 106 file: stays 65');
-  assert.equal(rigFile('veteran', '106'), 'veteran', '?foe=v1 (veteran.glb) has no 106 file: stays 65');
-  assert.deepEqual(chooseRigs('?rig=nonsense&foerig=1'), { hero: '65', foe: '65' });
-  chooseRigs('');
+test('both 106 files are in src/assets with the bone map (OpenTrident v3 deliveries)', () => {
+  for (const stem of Object.values(RIG.files)) {
+    const j = glb(`../src/assets/${stem}.glb`), names = j.nodes.map((n) => n.name);
+    assert.ok(names.includes(RIG.detect['106']), `${stem}: has ${RIG.detect['106']}`);
+    assert.ok(names.includes('fk_socket_hand_r'), `${stem}: has fk_socket_hand_r`);
+    assert.deepEqual(JSON.parse(readFileSync(new URL(`../src/assets/${stem}.bones.json`, import.meta.url), 'utf8')).map, RIG.bones, `${stem}.bones.json map = data/rig.json bones`);
+  }
+});
+
+test("each 106 body has its own retarget of every baked clip JSON (data/rig.json clips106): same name, duration, key times as the 65 file, keyed to the body's joints", () => {
+  const SIXTY_FIVE = { Special_SkullCrack: 'special-skullcrack.json', Special_Whirlwind: 'special-whirlwind.json', Special_GroundSlam: 'special-groundslam.json', Special_Lunge: 'special-lunge.json',
+    Fin_Execution: 'execution-killer.json', Death_Execution: 'execution-victim-hero.json', Fin_Hamstrung: 'hamstrung-killer.json', Death_Hamstrung: 'hamstrung-victim-hero.json' };
+  assert.deepEqual(Object.keys(RIG.clips106.files).sort(), Object.keys(SIXTY_FIVE).sort());
+  assert.deepEqual(Object.keys(RIG.clips106.dir).sort(), Object.values(RIG.files).sort(), 'a clips folder for every 106 body');
+  const read = (p) => JSON.parse(readFileSync(new URL(`../src/assets/${p}`, import.meta.url), 'utf8'));
+  for (const body of Object.values(RIG.files)) {
+    const joints = new Set(glb(`../src/assets/${body}.glb`).nodes.map((n) => sanitizeNodeName(n.name)));
+    for (const [role, file] of Object.entries(SIXTY_FIVE)) {
+      const path = clip106Path(body, role), mine = read(path), theirs = read(file);
+      assert.equal(path, `${RIG.clips106.dir[body]}/${RIG.clips106.files[role]}`);
+      assert.deepEqual([mine.name, mine.duration, mine.tracks.length], [theirs.name, theirs.duration, theirs.tracks.length], path);
+      mine.tracks.forEach((t, i) => {
+        assert.deepEqual(t.times, theirs.tracks[i].times, `${path} ${t.name}: same key times`);
+        assert.ok(joints.has(t.name.slice(0, t.name.lastIndexOf('.'))), `${path}: ${t.name} is a joint of ${body}`);
+        assert.equal(trackAs65('106', t.name), theirs.tracks[i].name, `${path}: track ${i} is the 65 file's ${theirs.tracks[i].name}`);
+      });
+    }
+  }
+  assert.equal(clip106Path('psyche-106', 'Special_BowFan'), undefined, 'a role with no 106 file: none');
+  assert.equal(clip106Path(undefined, 'Special_SkullCrack'), undefined, 'a body with no clips folder: none');
+});
+
+test("every 106 clip path the data names has a lazy loader (src/fight/clips-106.ts), and nothing more", async () => {
+  const { CLIP_106_LOADERS } = await import('../src/fight/clips-106.ts');
+  assert.deepEqual(Object.keys(CLIP_106_LOADERS).sort(), [...clip106Paths()].sort());
+  const src = readFileSync(new URL('../src/fight/clips-106.ts', import.meta.url), 'utf8');
+  for (const p of clip106Paths()) assert.ok(src.includes(`'${p}': () => import('../assets/${p}')`), `${p}: its key imports its own file`);
+});
+
+test('only a body with a 106 file changes: Psyche and the Minotaur; ?hero=v1 / ?foe=v1 bodies have none', () => {
+  assert.equal(rigFile('psyche', '106'), 'psyche-106'); assert.equal(rigFile('minotaur', '106'), 'minotaur-106');
+  assert.equal(rigFile('psyche', '65'), 'psyche', 'the 65 file: the load fallback only');
+  assert.equal(rigFile('warrior', '106'), 'warrior', '?hero=v1 (warrior.glb) has no 106 file');
+  assert.equal(rigFile('veteran', '106'), 'veteran', '?foe=v1 (veteran.glb) has no 106 file');
 });
 
 test("the map covers psyche.glb's and minotaur.glb's 65 joints, one to one, onto mixamorig names", () => {

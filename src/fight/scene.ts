@@ -62,7 +62,7 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
-import { bone as boneOf, chooseRigs, heroRigFile } from './rig-bones.ts';
+import { bone as boneOf, heroRigFile } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { foeRagdollFor, ragdollFinisher } from './ragdoll.ts';
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
@@ -246,8 +246,8 @@ export function createScene(
   chooseHeroBody(typeof location === 'undefined' ? '' : location.search);   // V3: Psyche, or ?hero=v1 warrior.glb (hero-body-rows.ts); only the one picked is fetched
   chooseFoeBody(typeof location === 'undefined' ? '' : location.search);   // V3: the Minotaur on the Centurion's rig, or ?foe=v1 the Centurion (foe-body.ts); only the one picked is fetched
   const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/minotaur.glb': new URL('../assets/minotaur.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href,
-    '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies); the 106-joint Psyche and Minotaur (rig-bones.ts, ?rig= / ?foerig=)
-  chooseRigs(typeof location === 'undefined' ? '' : location.search);   // V3 rig swap: which rig each side draws (data/rig.json default and query: ?rig=65|106, ?foerig=65|106); only the file picked is fetched
+    '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies); the 106-joint Psyche and Minotaur, drawn by default (rig-bones.ts, data/rig.json default: 106 only, no query key)
+  // psyche.glb / minotaur.glb (65) stay addressable only as the load's fallback when a 106 file fails (below); warrior.glb (?hero=v1) and veteran.glb (?foe=v1) have no 106 file.
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): a fight fetches his kit only, never the whole 9.4 MB file.
   const carrierUrls: Record<string, string> = { '../assets/loot/carriers-minotaur.glb': new URL('../assets/loot/carriers-minotaur.glb', import.meta.url).href, '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Minotaur's kit (the scutum alone), the Centurion's
   // The foe's rig file: a roster body from the glob, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts), like the world bodies' '/world/...': the Origins preview build has no publicDir, so a BASE_URL-relative path would 404 there.
@@ -370,6 +370,8 @@ export function createScene(
   ])
     .then(async ([loaded]) => {
       warriors = loaded;
+      // Which body file each side drew, so a 106 body takes its own baked clips (data/rig.json clips106); a 65 body (or a 106 load that fell back to 65) ignores it.
+      loaded.player.useClips106(heroRigFile(heroBodyFile())); loaded.opponent.useClips106(foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body));
       sizeBeast(loaded, opponentId);   // a beast is drawn at the size it is met walking (src/fight/beast-scale.ts)
       dress();   // his kit before the opened-waist bake, so the cut body wears what the whole one did
       playerDrawn(loaded.playerWeapon);
@@ -444,7 +446,8 @@ export function createScene(
   let severHead: SeveredHead | null = null;
   // Fetched on demand (src/fight/hamstrung-assets.ts), never in loadFighters: the killer's clip, the victim's clip and his weapon-drop bake.
   const hamstrungAssets = createHamstrungAssets(
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([import('../assets/hamstrung-killer.json'), import('../assets/hamstrung-victim-hero.json')]); return { killer, victim }; },
+    // Each body its own file: a 65 body the 65 clip, a 106 body its data/rig.json clips106 file (characters.ts clipLoader; the killer is the player, the victim the opponent).
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Hamstrung') ?? (() => import('../assets/hamstrung-killer.json')))(), (warriors?.opponent.clipLoader('Death_Hamstrung') ?? (() => import('../assets/hamstrung-victim-hero.json')))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Hamstrung', parse(killer));
@@ -457,10 +460,11 @@ export function createScene(
   let hamstrungLatch: boolean | null = null;   // hamstrungOk() as it stood on the first frame of this finish: the picture and the audio keep one answer for the whole kill
   // The kill picks its finisher (once Hamstrung is in the rotation), so the clips are fetched in the background once the fight is ready, on idle. Silent on failure: hamstrungPick keeps the plain death.
   const prefetchHamstrung = () => { const start = () => { wantHamstrung(true); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 4000 }); else setTimeout(start, 1500); };
-  const wantHamstrung = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId)) void hamstrungAssets.request(warriors); };
+  // A 106 body without a clips106 file for its side of the scene (data/rig.json) fetches nothing: the kill is the plain death.
+  const wantHamstrung = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId) && warriors.player.takesBaked('Fin_Hamstrung') && warriors.opponent.takesBaked('Death_Hamstrung')) void hamstrungAssets.request(warriors); };
   // Execution (src/fight/execution.ts) loads on the picker's choice only (no idle prefetch: it re-skins 12 poses), never as part of ready, and a failure is the plain death.
   const executionAssets = createHamstrungAssets(
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([import('../assets/execution-killer.json'), import('../assets/execution-victim-hero.json')]); return { killer, victim }; },
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Execution') ?? (() => import('../assets/execution-killer.json')))(), (warriors?.opponent.clipLoader('Death_Execution') ?? (() => import('../assets/execution-victim-hero.json')))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Execution', parse(killer));

@@ -4,9 +4,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
+import { chooseFoeBody, foeBakedWeapon as foeBaked, foeBodyFile as foeBody, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
 import { fightOpponent } from '../src/fight/foe-pick.ts';
 import { OPPONENTS, opponentAt } from '../src/fight/moves.ts';
+
+// The body rows below name the 65 stems (foeBodyFile's `rig65`: minotaur.glb, the load's fallback); the 106 body drawn by default (minotaur-106) is test/rig-bones.test.mjs's.
+const foeBodyFile = (id, body) => foeBody(id, body, true);
+const foeBakedWeapon = (id, weapon) => foeBaked(id, weapon, true);
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 

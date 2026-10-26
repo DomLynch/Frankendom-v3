@@ -6,7 +6,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createPhysics } from '@frankendom/physics';
 import { blowImpulse, finisherModeFor, ragdollRowFor, staggerDepth } from '../src/fight/ragdoll.ts';
-import { chooseRigs } from '../src/fight/rig-bones.ts';
 import { fightOpponent } from '../src/fight/foe-pick.ts';
 import { foeBodyFile, chooseFoeBody } from '../src/fight/foe-body.ts';
 
@@ -32,8 +31,8 @@ test('?ragdoll=always skips the finisher (the finisher row); anything else keeps
 test('every ragdoll row names a body the opponent is drawn in, the package\'s 20 parts, and bones that exist in that body on each rig (through data/rig.json)', async () => {
   const physics = await createPhysics({ seed: ROWS.seed }), RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
   for (const row of ROWS.opponents) {
-    chooseRigs(''); chooseFoeBody('');
-    assert.equal(foeBodyFile(row.id, row.id), row.body, `${row.id} is drawn as ${row.body}`);
+    chooseFoeBody('');
+    assert.equal(foeBodyFile(row.id, row.id, true), row.body, `${row.id} is drawn as ${row.body} (its 65 file: the row's body stem; its 106 file is data/rig.json files[${row.body}])`);
     const rd = physics.createRagdoll(measure(row), { id: row.id }), map = ROWS.bones;
     assert.deepEqual(Object.keys(map).sort(), [...rd.partIds].sort(), 'one bone per part');
     const nodes = glbNodes(row.body);

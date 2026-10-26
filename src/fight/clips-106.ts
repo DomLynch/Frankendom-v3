@@ -1,0 +1,30 @@
+// The lazy loaders of the baked clip JSONs' 106 versions (OpenTrident's retargets, one set per 106 body: src/assets/106/<body>/). Which
+// file a body plays is data/rig.json clips106 (rig-bones.ts clip106Path); this table only makes each path a literal dynamic import, so the
+// build writes it as its own .json.js module fetched when used (scripts/build.mjs), as the 65 files are. test/rig-bones.test.mjs keeps the
+// table and the data row equal.
+import { clip106Path } from './rig-bones.ts';
+
+type Loader = () => Promise<{ default: unknown }>;
+export const CLIP_106_LOADERS: Record<string, Loader> = {
+  '106/psyche/special-skullcrack.json': () => import('../assets/106/psyche/special-skullcrack.json'),
+  '106/psyche/special-whirlwind.json': () => import('../assets/106/psyche/special-whirlwind.json'),
+  '106/psyche/special-groundslam.json': () => import('../assets/106/psyche/special-groundslam.json'),
+  '106/psyche/special-lunge.json': () => import('../assets/106/psyche/special-lunge.json'),
+  '106/psyche/execution-killer.json': () => import('../assets/106/psyche/execution-killer.json'),
+  '106/psyche/execution-victim-hero.json': () => import('../assets/106/psyche/execution-victim-hero.json'),
+  '106/psyche/hamstrung-killer.json': () => import('../assets/106/psyche/hamstrung-killer.json'),
+  '106/psyche/hamstrung-victim-hero.json': () => import('../assets/106/psyche/hamstrung-victim-hero.json'),
+  '106/minotaur/special-skullcrack.json': () => import('../assets/106/minotaur/special-skullcrack.json'),
+  '106/minotaur/special-whirlwind.json': () => import('../assets/106/minotaur/special-whirlwind.json'),
+  '106/minotaur/special-groundslam.json': () => import('../assets/106/minotaur/special-groundslam.json'),
+  '106/minotaur/special-lunge.json': () => import('../assets/106/minotaur/special-lunge.json'),
+  '106/minotaur/execution-killer.json': () => import('../assets/106/minotaur/execution-killer.json'),
+  '106/minotaur/execution-victim-hero.json': () => import('../assets/106/minotaur/execution-victim-hero.json'),
+  '106/minotaur/hamstrung-killer.json': () => import('../assets/106/minotaur/hamstrung-killer.json'),
+  '106/minotaur/hamstrung-victim-hero.json': () => import('../assets/106/minotaur/hamstrung-victim-hero.json'),
+};
+/** The loader of `role`'s 106 clip for the 106 body file `body`, or undefined (no 106 version: the body plays what it would without it). */
+export const clip106Loader = (body: string | undefined, role: string): Loader | undefined => {
+  const path = clip106Path(body, role);
+  return path ? CLIP_106_LOADERS[path] : undefined;
+};
