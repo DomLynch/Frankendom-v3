@@ -20,7 +20,7 @@ import { setSpecialPace, specialPaceFor } from '../fight/special-pace.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setLockFrame } from '../fight/camera.ts';
-import { setGuardWalk } from '../fight/characters.ts';
+import { setGuardWalk, setTrailOpacity } from '../fight/characters.ts';
 import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -86,6 +86,8 @@ const paused = () => !assetsReady || graphicsLost || document.hidden;   // :823 
 if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
 // Legs keep walking under a held guard (data/fight.json guardWalk); ?guard=v1 keeps V1's whole-body Guard. Set before the rigs are built.
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
+// The swing trail softer (data/fight.json trail: cuts at half, the stab 30% less, both fighters); ?trail=v1 = today's trail.
+setTrailOpacity(/[?&]trail=v1\b/.test(search) ? null : FIGHT.trail.opacity);
 // Dom's picked strike clips on V1's blade sweeps (data/hero-clips.json); ?reach=clip = the sweeps re-baked from the clips; ?clips=v1 = V1's clips and sweeps exactly.
 applyHeroClips(search);
 // The fight starts by itself (data/fight.json start, src/auto-start.ts): no Fight press, the driver draws for him on the first running

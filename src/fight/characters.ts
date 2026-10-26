@@ -131,6 +131,11 @@ const ONE_SHOT: readonly Role[] = ['Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Gu
 // rigs are built; null (?guard=v1) keeps V1's whole-body Guard clip. The roles are the armed locomotion the update loop weights.
 let GUARD_WALK: RegExp | null = null;
 export const setGuardWalk = (lowerBones: string | null): void => { GUARD_WALK = lowerBones ? new RegExp(lowerBones) : null; };
+// V3: the swing trail's opacity per clip key (data/fight.json `trail`, Dom: cuts at half, the stab 30% less), times V1's .12; both fighters.
+// Set before the rigs are built; null (?trail=v1) = V1's .12 on every swing. A melee special's own trail row is not scaled.
+let TRAIL_OPACITY: Partial<Record<Attack, number>> | null = null;
+export const setTrailOpacity = (rows: Partial<Record<Attack, number>> | null): void => { TRAIL_OPACITY = rows; };
+export const swingTrailOpacity = (attack: Attack): number => .12 * (TRAIL_OPACITY?.[attack] ?? 1);
 const GUARD_WALK_ROLES: readonly Role[] = ['ArmedWalk', 'StrafeLeft', 'StrafeRight', 'ArmedRun'];
 // V3: Dom's picked strike clips (data/hero-clips.json, baked into warrior.glb beside V1's). The player's actor with `weapon` plays `clip` for
 // `role` and eases it so the clip's contact key (`source`, 0-1) meets the sim's contact tick. Set before the rigs are built; null (?clips=v1)
@@ -985,7 +990,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           root.updateWorldMatrix(true, true);
         }
         trail.visible = (pose === 'attack' && progress > contact * TRAIL_FROM && progress < contact + .18) || (!!special && !dead);
-        { const key = special ? `${special.opacity}|${special.color}` : ''; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? .12; m.color.set(special?.color ?? '#e8dfc8'); } }
+        { const swing = swingTrailOpacity(attack), key = special ? `${special.opacity}|${special.color}` : `${swing}`; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? swing; m.color.set(special?.color ?? '#e8dfc8'); } }
         if (trail.visible && step > 0) {
           anchor.updateWorldMatrix(true, true);
           const override = combatRole && contactByClip?.[clips[combatRole].name], strike = override ? [override.from, override.to] : segment;
