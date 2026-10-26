@@ -14,6 +14,7 @@ import { setStab } from '../fight/stab-rule.ts';
 import { setStanceRows } from '../fight/stance-era.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
+import { setLockFrame } from '../fight/camera.ts';
 import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -64,6 +65,9 @@ const locked = true;
 let assetsReady = false, graphicsLost = false;
 const step = () => 1 / FIGHT.tempoHz;
 const paused = () => !assetsReady || graphicsLost || document.hidden;   // :823 without the welcome card, journal and versus card
+
+// The lock camera: V2's lower, over-the-shoulder framing (data/fight.json camera); ?cam=v1 keeps V1's lock exactly.
+if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
 
 // :1278 the scene: V1's rigs, camera, effects and finishers; the arena slot holds V2's stage (src/arena-stage.ts via stubs.ts)
 const gfxPost = gfxOn(search, FIGHT.gfx) ? () => import('../fight/gfx-lift.ts') : undefined;

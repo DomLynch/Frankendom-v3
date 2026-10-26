@@ -13,6 +13,10 @@ const LOCK_BACK_FLOOR = cameraRule('lockBackFloor'), LOCK_LIFT_FLOOR = cameraRul
 let FIGHT_BACK = cameraRule('fightBackDefault');   // how much further back and up the lock camera stands (a zone's `camera.fightBack`, set by the page; the row's 1 = the duel as it always was)
 /** The page sets the zone's fight-back scale (1 = the lock camera as it was). Only the duel's lock camera uses it; the walking camera never does. */
 export const setFightBack = (scale: number): void => { FIGHT_BACK = scale; };
+// V3: the lock camera's height scale and its step over the player's right shoulder (m), set by the page from data/fight.json (V2's lower,
+// over-the-shoulder framing). 1 and 0 are V1's lock exactly; a finish eases both back to that, as it does the fight-back scale.
+let LOCK_LIFT = 1, LOCK_SIDE = 0;
+export const setLockFrame = (lift: number, side: number): void => { LOCK_LIFT = lift; LOCK_SIDE = side; };
 const AIM_PER_SHRINK = cameraRule('aimPerShrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
 // How tall each foe LOOKS against a man's, for the camera only. The sim's `scale` (moves.ts OPPONENTS[id].scale) is a hitbox/rate number and stays put (it is in the record's
 // SIM_FILES); a foe whose body is not a man's by that number says so here. The Ash Wolf is ~.8 m at the back (the sim says .8 for its rates): behind the hero's head at bite range
@@ -39,6 +43,8 @@ export function cameraPose(
   targetTall = 0,   // a foe that looks taller than a man (framingTall): units of extra height; 0 for every foe but the Wraith
   targetLow = 0,   // a low quadruped (framingLow): 0 for every foe but the Ash Wolf
   backScale = FIGHT_BACK,   // the lock camera's fight-back scale; the follow rig eases it to 1 over a finish, which is tuned on the plain lock (the framing a kill settles on)
+  liftScale = LOCK_LIFT,   // V3: the lock camera's height scale (setLockFrame)
+  shoulderSide = LOCK_SIDE,   // V3: metres over the player's right shoulder (setLockFrame)
 ) {
   const distance = Math.hypot(state.x - target.x, state.z - target.z);
   // Duel lock sits ~30% closer and lower than the first pass; the distance terms still pull back to frame both fighters.
@@ -47,7 +53,11 @@ export function cameraPose(
   const back = ((locked ? Math.max(LOCK_BACK_FLOOR, distance * 0.62 + 2.8) : 7.5 * Math.cos(pitch)) + tall * TALL_BACK) * fightBack;   // the original lock (Dom 2026-10-05 chose it over the 10-03 flatter one: HUD over sand, not the painting)
   let x = state.x + Math.sin(yaw) * back,
     z = state.z + Math.cos(yaw) * back,
-    y = ((locked ? Math.max(LOCK_LIFT_FLOOR, distance * 1.3) : 1 + 7.5 * Math.sin(pitch)) + tall * TALL_LIFT) * fightBack;
+    y = ((locked ? Math.max(LOCK_LIFT_FLOOR, distance * 1.3) * liftScale : 1 + 7.5 * Math.sin(pitch)) + tall * TALL_LIFT) * fightBack;
+  if (locked && shoulderSide) {   // V3: over the right shoulder (the short-foe step below goes over the left)
+    x += Math.cos(yaw) * shoulderSide;
+    z -= Math.sin(yaw) * shoulderSide;
+  }
   // A shorter opponent (Goblin, Dwarf at .78) stands behind the player's back at close range. Where a man at this gap would be
   // hidden below the player's shoulders, step the lock camera over the player's left shoulder so the line to him passes
   // SIDE_CLEAR per unit of missing height beside the player's spine; nothing for a man or a bigger one, nothing once in the clear.
@@ -276,7 +286,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       // ease out over SHORT_FADE once it begins, so the kill settles on the same frame as for a man (release row 25).
       shortFade = finish ? Math.max(0, shortFade - dt / SHORT_FADE) : 1;
       const shortShare = shortFade * shortFade * (3 - 2 * shortFade);   // smoothstep: no kink where the ease starts or ends
-      const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare, 1 + (FIGHT_BACK - 1) * shortShare);   // a finish takes the fight-back scale out on the same ease as the short-foe lift, so it frames as it always did
+      const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare, 1 + (FIGHT_BACK - 1) * shortShare, 1 + (LOCK_LIFT - 1) * shortShare, LOCK_SIDE * shortShare);   // a finish takes the fight-back scale out on the same ease as the short-foe lift, so it frames as it always did
       look.set(cameraTarget.lookX, locked ? 0.8 : 1, cameraTarget.lookZ);
       desired.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
       // The authorized slow push-in over the death window (finishers & gore 2026-09-17): a dolly toward the fallen, never a cut,
