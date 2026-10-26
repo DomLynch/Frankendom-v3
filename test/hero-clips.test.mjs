@@ -1,0 +1,56 @@
+// Dom's picked hero clips (data/hero-clips.json): baked into warrior.glb beside V1's own, V1's clips untouched (so ?clips=v1 is today's
+// clips exactly), and a sim sweep for every path a row names.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { BLADE_PICKS } from '../src/fight/blade-picks.ts';
+import { bladePathsByRig } from '../src/fight/blade-paths.ts';
+import { WEAPONS, total } from '../src/fight/moves.ts';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const ROWS = JSON.parse(readFileSync(new URL('../data/hero-clips.json', import.meta.url), 'utf8'));
+const glb = (bytes) => { const n = bytes.readUInt32LE(12); return { j: JSON.parse(bytes.subarray(20, 20 + n)), bin: bytes.subarray(28 + n) }; };
+const now = glb(readFileSync(new URL('../src/assets/warrior.glb', import.meta.url)));
+// One animation as data: per channel, its target joint name, path and the raw bytes of its keys and values.
+const clipData = ({ j, bin }, an) => an.channels.map((c) => {
+  const s = an.samplers[c.sampler], bytes = (ai) => { const a = j.accessors[ai], v = j.bufferViews[a.bufferView], o = (v.byteOffset ?? 0) + (a.byteOffset ?? 0); return bin.subarray(o, o + v.byteLength).toString('base64'); };
+  return `${j.nodes[c.target.node].name}.${c.target.path}:${bytes(s.input)}:${bytes(s.output)}`;
+});
+
+test('every picked clip is in warrior.glb: all 65 joints and the pelvis height, as long as its row cuts it', () => {
+  const joints = now.j.skins[0].joints.length;
+  for (const r of ROWS.clips) {
+    const an = now.j.animations.find((a) => a.name === r.clip);
+    assert.ok(an, `${r.clip} is baked (scripts/hero-clips/build.py)`);
+    assert.equal(an.channels.filter((c) => c.target.path === 'rotation').length, joints, `${r.clip}: a rotation track per joint`);
+    assert.ok(an.channels.some((c) => c.target.path === 'translation' && now.j.nodes[c.target.node].name === 'pelvis'), `${r.clip}: pelvis height`);
+    const end = Math.max(...an.samplers.map((s) => now.j.accessors[s.input].max[0]));
+    assert.ok(Math.abs(end - (r.to - r.from)) < 1e-3, `${r.clip}: ${end} s, row ${r.to - r.from} s`);
+    const source = (r.contact - r.from) / (r.to - r.from);
+    assert.ok(source > 0 && source < 1, `${r.clip}: contact key inside the clip`);
+  }
+});
+
+test("V1's own clips are still in warrior.glb, byte for byte (?clips=v1 plays them)", () => {
+  let v1;
+  try { v1 = glb(execFileSync('git', ['show', 'v1-seed-82a994d15:src/assets/warrior.glb'], { cwd: ROOT, maxBuffer: 1 << 26 })); }
+  catch { return assert.fail('the seed tag is not in this checkout: git fetch --no-tags --depth=1 origin refs/tags/v1-seed-82a994d15:refs/tags/v1-seed-82a994d15'); }
+  assert.equal(v1.j.animations.length + ROWS.clips.length, now.j.animations.length, 'only the picked clips were added');
+  for (const an of v1.j.animations) {
+    const mine = now.j.animations.find((a) => a.name === an.name);
+    assert.ok(mine, `${an.name} kept`);
+    assert.deepEqual(clipData(now, mine), clipData(v1, an), `${an.name} unchanged`);
+  }
+});
+
+test('a sim sweep for every path a row names, one pose per tick, and none for any other path or weapon', () => {
+  const paths = ROWS.clips.flatMap((r) => r.paths), w = WEAPONS[ROWS.weapon];
+  assert.deepEqual(Object.keys(BLADE_PICKS).sort(), [...paths].sort());
+  for (const kind of paths) {
+    assert.equal(BLADE_PICKS[kind].length, total(w.paths[kind]) + 1, `${kind}: ticks + 1 poses`);
+    assert.equal(BLADE_PICKS[kind].length, bladePathsByRig[ROWS.rig][ROWS.weapon][kind].length, `${kind}: as long as V1's`);
+    for (const pose of BLADE_PICKS[kind]) assert.ok(pose.length === 6 && pose.every(Number.isFinite), `${kind}: base and tip`);
+  }
+});

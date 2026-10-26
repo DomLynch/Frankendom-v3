@@ -1,0 +1,20 @@
+{
+  "about": "Dom's picks from the Mixamo library (2026-10-26) for the hero's strikes. Each row is one clip baked into src/assets/warrior.glb beside V1's own (scripts/hero-clips/build.py: the Mixamo clip `mixamo` cut from `from` to `to` seconds, retargeted onto the hero rig the way V1's clips were, `mirror` = the right-handed mirror). The hero's actor plays `clip` in place of V1's clip for `role` (src/fight/characters.ts setHeroClips), easing it so the clip's contact key (`contact`, seconds into the Mixamo clip: the blade at full forward extension, measured) meets V1's contact tick. V1's timing rows (move-defs.json windup/active/recovery/chamber/charges) are untouched. The sim's blade sweeps for `paths` are re-baked from these clips (scripts/hero-clips/bake-blades.mjs -> src/fight/blade-picks.ts). ?clips=v1 = V1's clips and sweeps exactly.",
+  "rig": "hero",
+  "weapon": "longsword",
+  "blade": { "about": "The striking segment the sweeps are baked along: metres along the node's local Y (V1 scripts/blade-manifest.json, longsword on warrior.glb).", "node": "SwordDrawn", "contact": [0.18, 0.86] },
+  "clips": [
+    { "role": "Attack", "clip": "Cut_Outward", "mixamo": "104990902", "name": "Stable Sword Outward Slash", "mirror": false, "from": 0.4, "to": 2.033, "contact": 0.9,
+      "paths": ["light_right", "light_right_chain", "slash_riposte"],
+      "about": "The right cut: the blade starts on the hero's right and crosses to his left (measured: tip x -0.93 m at 0.83 s to +1.11 m at 0.97 s), the side move-defs.json light_right comes from." },
+    { "role": "Return", "clip": "Cut_OutwardMirror", "mixamo": "104990902", "name": "Stable Sword Outward Slash, mirrored", "mirror": true, "from": 0.4, "to": 2.033, "contact": 0.9,
+      "paths": ["light_left", "light_left_chain"],
+      "about": "The left cut: the same slash mirrored so the blade starts on the hero's left and crosses to his right, still in the right hand." },
+    { "role": "Thrust", "clip": "Stab", "mixamo": "100790901", "name": "Stabbing", "mirror": false, "from": 0.2, "to": 1.4, "contact": 0.467, "aim": [0, -0.1, 1],
+      "paths": ["thrust"],
+      "about": "The stab (move thrust; V1 played the Riposte slash for it). A chained thrust plays it too (src/fight/scene.ts). Mixamo's is a knife stab: held as it comes, the sword stood straight up at the strike, so `aim` turns the wrist once (a constant offset, build.py aim_blade) so the blade points forward at the contact key." },
+    { "role": "Heavy", "clip": "Heavy_Gladius", "mixamo": "gl046", "name": "Gladius Right Overhead Slash", "mirror": false, "from": 0.27, "to": 1.0, "contact": 0.467,
+      "paths": ["heavy_overhead", "heavy_overhead_chain", "heavy_riposte"],
+      "about": "The heavy: a 1.0 s Gladio and Glory clip played on V1's heavy timing (32 + 5 + 31 ticks, chamber 10, charges). Cut from 0.27 s, where the sword is already raised high behind the head, so the chamber tick (and a held, charging heavy) parks on the raised sword; the wind-up then plays 0.2 s of clip over 22 ticks and the downstroke lands on tick 32." }
+  ]
+}

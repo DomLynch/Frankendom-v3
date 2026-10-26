@@ -132,6 +132,14 @@ const ONE_SHOT: readonly Role[] = ['Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Gu
 let GUARD_WALK: RegExp | null = null;
 export const setGuardWalk = (lowerBones: string | null): void => { GUARD_WALK = lowerBones ? new RegExp(lowerBones) : null; };
 const GUARD_WALK_ROLES: readonly Role[] = ['ArmedWalk', 'StrafeLeft', 'StrafeRight', 'ArmedRun'];
+// V3: Dom's picked strike clips (data/hero-clips.json, baked into warrior.glb beside V1's). The player's actor with `weapon` plays `clip` for
+// `role` and eases it so the clip's contact key (`source`, 0-1) meets the sim's contact tick. Set before the rigs are built; null (?clips=v1)
+// = V1's clips. A rig without the clip (an older GLB) keeps V1's.
+export type HeroClipPick = { role: Role; clip: string; source: number };
+let HERO_CLIPS: { weapon: WeaponId; picks: readonly HeroClipPick[] } | null = null;
+export const setHeroClips = (rows: { weapon: WeaponId; picks: readonly HeroClipPick[] } | null): void => { HERO_CLIPS = rows; };
+export const heroClipsOn = (): boolean => HERO_CLIPS !== null;
+const heroPick = (weapon: WeaponId, role: Role): HeroClipPick | undefined => HERO_CLIPS?.weapon === weapon ? HERO_CLIPS.picks.find(p => p.role === role) : undefined;
 // Match the gait to actual travel, including analog movement and collision stops.
 export function gaitWeights(speed: number): number[] {
   speed = Number.isFinite(speed) ? Math.max(0, speed) : 0;
@@ -425,7 +433,7 @@ export function fighterClips(asset: FighterAsset, weapon: WeaponId, player: bool
   for (const role of [...ROLES, ...ADDITIVE_ROLES]) {
     // A player override needs the rig to carry it: the equip file does (tests/weapons.test.ts pins it); a shared opponent rig standing in
     // for the player (buildWarriors without an opponent asset) keeps the shared row.
-    const own = player ? PLAYER_CLIPS[weapon]?.[role] : undefined;
+    const own = player ? heroPick(weapon, role)?.clip ?? PLAYER_CLIPS[weapon]?.[role] : undefined;
     const name = own && asset.animations.some(a => a.name === own) ? own : (quadruped && QUADRUPED_CLIPS[role]) || clipFor(weapon, role), clip = asset.animations.find(a => a.name === name) ?? (role === 'ArmedRun' ? asset.animations.find(a => a.name === 'ArmedWalk') : undefined);
     if (!clip && (ADDITIVE_ROLES as readonly string[]).includes(role)) continue;   // an appended scene this rig does not carry
     if (!clip?.tracks.length || !Number.isFinite(clip.duration) || clip.duration <= 0) throw new MissingClip(name, role, weapon);
@@ -497,6 +505,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
   function create(opponent: boolean) {
     const { asset, clips, weapon } = opponent && enemy ? enemy : hero, specs = attackSpecs(weapon);
     const roles = [...ROLES, ...ADDITIVE_ROLES].filter(role => clips[role]);   // the roles this rig carries clips for (the appended scenes are optional)
+    // V3: a picked clip's own contact key, for the roles this actor plays a pick on (setHeroClips)
+    const pickedSource: Partial<Record<Role, number>> = Object.fromEntries(roles.flatMap(role => { const p = heroPick(weapon, role); return p && clips[role].name === p.clip ? [[role, p.source]] : []; }));
     const root = clone(asset.scene), anchor = new Group(); anchor.add(root);
     rigMaterials(root);   // a rig is built before it wears anything: let it register a shared mapped copy (Wrap) now, so a creature wearing pieces before the hero ever does is not left white
     // A re-proportioned fighter's walk cycle covers less ground than a man's (build-warrior.mjs writes `stride`, root scale × leg scale, on
@@ -864,7 +874,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
           // the weight snaps like a live blade does — the parry's hit-stop runs at dt 0, where an eased weight would hold the attack pose.
           a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
-          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? heroSwing(role, swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : (asset === hero.asset && clips[role].name === role ? heroContact(role) : undefined) ?? specs[attack].source), !specialPlay && asset === hero.asset && clips[role].name === role) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
+          if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? heroSwing(role, swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : pickedSource[role] ?? (asset === hero.asset && clips[role].name === role ? heroContact(role) : undefined) ?? specs[attack].source), !specialPlay && asset === hero.asset && clips[role].name === role) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
         }
         if (!weaponNode) { drawn!.visible = armed && (pose !== 'draw' || progress >= .29); sheathed!.visible = !drawn!.visible; }
         anchor.position.set(0, 0, 0); // only the presentation anchor steps into a Run Through

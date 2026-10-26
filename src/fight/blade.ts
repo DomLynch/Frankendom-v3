@@ -34,8 +34,12 @@ export function segmentDistance(a: Point, b: Point, c: Point, d: Point): number 
 // Offline-sampled rig paths are immutable simulation data. Never query rendered bones for damage.
 // A table belongs to the rig it was baked on (blade-paths.ts `bladePathsByRig[rig][weapon]`): the lookup is strict, a weapon a rig has no
 // bake for is an error here, never another rig's sweep. tests/blade-rig.test.ts pins every shipped (rig, weapon) pair so this cannot throw in play.
+// V3: the sweeps of the hero's picked clips (data/hero-clips.json, src/hero-clips.ts) laid over V1's table for their (rig, weapon, kind);
+// null (?clips=v1, and every Gate 0 config that does not ask for it) = V1's table untouched.
+let SWEEP_OVERRIDE: Record<string, Record<string, Record<string, number[][]>>> | null = null;
+export const setSweepOverride = (table: Record<string, Record<string, Record<string, number[][]>>> | null): void => { SWEEP_OVERRIDE = table; };
 export function bladeFrames(rig: string, weapon: string, kind: string): number[][] {
-  const frames = bladePathsByRig[rig]?.[weapon]?.[kind];
+  const frames = SWEEP_OVERRIDE?.[rig]?.[weapon]?.[kind] ?? bladePathsByRig[rig]?.[weapon]?.[kind];
   if (!frames) throw new Error(`no blade table for ${weapon} ${kind} on the ${rig} rig`);
   return frames;
 }
