@@ -3,6 +3,7 @@
 //   default       Dom's picked clips, V1's sweeps (`sweeps.default`: "v1"): V1's reach and hits under the new look
 //   ?reach=clip   Dom's picked clips, the sweeps re-baked from them (src/fight/blade-picks.ts): the longer reach
 //   ?clips=v1     V1's clips and V1's sweeps exactly, whatever ?reach= says
+// ?reach=v1 is the hero's default already; it also puts the opponent's cleaver back on V1's sweeps (data/fight.json foeReach, src/fight/foe-reach.ts).
 import ROWS from '../data/hero-clips.json' with { type: 'json' };
 import { BLADE_PICKS } from './fight/blade-picks.ts';
 
