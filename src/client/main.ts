@@ -25,6 +25,7 @@ import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
 import { foeDisplayName, foeNameFor, setFoeName } from '../fight/foe-name.ts';
+import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -97,6 +98,8 @@ setTrailOpacity(/[?&]trail=v1\b/.test(search) ? null : FIGHT.trail);
 setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
 // The HUD names the Minotaur body the Minotaur (data/fight.json foeName, display only); ?foe=v1 = the Centurion.
 setFoeName(foeNameFor(FIGHT.foeName, search));
+// Clip-to-clip blends in milliseconds (data/fight.json blendMs/settleMs, V2's rows: swings, hits and rolls ease in and out, the roll settles); ?blend=v1 = V1's transitions exactly.
+if (/[?&]blend=v1\b/.test(search)) setBlend(null); else setBlend(FIGHT.blendMs, FIGHT.settleMs);
 // Dom's picked strike clips on V1's blade sweeps (data/hero-clips.json); ?reach=clip = the sweeps re-baked from the clips; ?clips=v1 = V1's clips and sweeps exactly.
 applyHeroClips(search);
 // The fight starts by itself (data/fight.json start, src/auto-start.ts): no Fight press, the driver draws for him on the first running
