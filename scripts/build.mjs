@@ -16,6 +16,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { optimizeGlb } from './optimize-glb.mjs';
+import { keepBladeTables } from './blade-tables.mjs';
 
 const root = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const out = join(root, 'dist');
@@ -26,6 +27,7 @@ const ENTRY_DIR = join(code, 'src/client');   // where main.js lands: lazy JSON 
 const ENTRY_CSS = ['src/style.css'];   // V1's stylesheet, linked from index.html
 const CODE = /\.(ts|js|mjs)$/;
 const GZ = /\.(js|css|json|glb|svg|txt|html)$/;   // precompressed for gzip_static; images and audio are compressed already
+const BLADE_PATHS = join(root, 'src/fight/blade-paths.ts');
 
 const rel = (p) => relative(root, p).split('\\').join('/');
 // new URL('<relative>', import.meta.url): made root-absolute so it resolves to the stable copy, not one under b/<build>/ (the bundle's
@@ -59,7 +61,12 @@ const result = await build({
       const spec = relative(ENTRY_DIR, lazyModule(file)).split('\\').join('/');
       return { path: spec.startsWith('.') ? spec : './' + spec, external: true };
     });
-    b.onLoad({ filter: CODE }, (args) => ({ contents: rewrite(args.path, readFileSync(args.path, 'utf8')), loader: args.path.endsWith('.ts') ? 'ts' : 'js' }));
+    b.onLoad({ filter: CODE }, (args) => {
+      let src = readFileSync(args.path, 'utf8');
+      // V1's blade table cut to the sweeps the duel reads (data/fight.json bladeTables, scripts/blade-tables.mjs)
+      if (args.path === BLADE_PATHS) src = keepBladeTables(src, JSON.parse(readFileSync(join(root, 'data/fight.json'), 'utf8')).bladeTables);
+      return { contents: rewrite(args.path, src), loader: args.path.endsWith('.ts') ? 'ts' : 'js' };
+    });
   } }],
 });
 for (const f of lazyJson) {

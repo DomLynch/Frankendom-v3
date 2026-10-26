@@ -80,5 +80,9 @@
   "settleMs": {
     "about": "V2's one named exception to the 150 ms cap (Frankendom-v2 data/anim.json settleMs, Dom 2026-10-26 on V2: the roll 'suddenly switches to the normal stance'): the roll's weight eases out over this many ms before it ends, in place of blendMs.rollOut, so the roll settles into the stance instead of snapping. V2 set 300 for its 84-tick (1.4 s) roll-to-run, where 300 ms is the last 21 %; V3's roll is V1's 36 ticks (600 ms), where 300 ms is the whole second half and she rose while the sim still had her rolling (Lead 2026-10-26, on PR #35's stills). So 120 here: V2's rollOut, the same ~20 % tail of a 36-tick roll, and recovery reads where the sim recovers. ?blend=v1 = V1's.",
     "roll": 120
+  },
+  "bladeTables": {
+    "about": "First-visit weight (docs/V3-OWED-2026-10-26.md: blade-paths.ts was 31 % of main.js). V1's src/fight/blade-paths.ts bakes every (rig, weapon) sweep V1 ships (8 rigs, 18 tables, 413 KB); V3's duel reads only these, measured by instrumenting bladeFrames over npm test + gate0:v3 (2026-10-26): the hero's longsword, the Centurion's gladius (level 18) and his Recruit trident (level < LOADOUT_FROM, Gate 0's level-1 rows). The build (scripts/blade-tables.mjs) bundles only these; the source file stays V1's as copied. test/blade-tables.test.mjs pins that every weapon the fight can reach is listed. Build only: the sim reads the same numbers.",
+    "hero": ["longsword", "gladius", "trident"]
   }
 }
