@@ -115,7 +115,7 @@ const view = createScene(
     assetsReady = kind === 'ready';
     if (kind === 'ready') view.startStandoff();
   },
-  opponentId, undefined, FIGHT.weapon as WeaponId, () => {}, level, undefined, undefined, gfxPost,
+  opponentId, undefined, FIGHT.weapon as WeaponId, () => {}, level, gfxPost,
 );
 view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 marks): a guest's rung, and the Centurion met at it
 
