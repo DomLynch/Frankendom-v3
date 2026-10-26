@@ -3,6 +3,7 @@ import type { CombatEvent, Fighter } from './duel.ts';
 import { SKILL_ROWS } from './moves.ts';
 import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 import { fxNum } from './fx-rows.ts';
+import { flashScale, sparkScale } from './hero-special-fx.ts';
 const STEP_MAX = fxNum('fx.skillImpact.stepMax');   // the longest frame step the impact fx integrate (s)
 import { specialLookOf, type SpecialLookRow } from './sandbox-rules.ts';
 
@@ -39,6 +40,7 @@ export function impactPoint(event: CombatEvent, fighters: readonly Pick<Fighter,
 
 export function createSkillImpact(scene: THREE.Scene) {
   const pool = 48, positions = new Float32Array(pool * 3), colors = new Float32Array(pool * 3), sizes = new Float32Array(pool);
+  const flashK = new Float32Array(pool).fill(1);   // per-flash size multiplier (the hero's special's data/fight.json specialFx flash; 1 = the kit as it was)
   const bulk = new Float32Array(pool).fill(1);   // per-particle size multiplier (a special's specialLook size row; 1 = the kit as it was)
   const life = new Float32Array(pool), span = new Float32Array(pool), velocity = new Float32Array(pool * 3), flash = new Uint8Array(pool), power = new Float32Array(pool), tint = new Float32Array(pool * 3);
   const n = 32, pixels = new Uint8Array(n * n * 4);
@@ -64,9 +66,9 @@ export function createSkillImpact(scene: THREE.Scene) {
         const hit = impactOf(event);
         if (!hit || !fighters[event.target!] || !fighters[event.actor]) continue;
         impactPoint(event, fighters, scale, at); last.copy(at); colour.set(hit.tint); fired++;
-        const f = cursor++ % pool, look = hit.look, k100 = (v: number | undefined) => (v ?? 100) / 100; born(f, IMPACT.flash, true); velocity.fill(0, f * 3, f * 3 + 3); power[f] = hit.strength * Math.min(1.6, k100(look?.flash));   // a special's flash size rides the power
+        const f = cursor++ % pool, look = hit.look, k100 = (v: number | undefined) => (v ?? 100) / 100; born(f, IMPACT.flash, true); velocity.fill(0, f * 3, f * 3 + 3); power[f] = hit.strength * Math.min(1.6, k100(look?.flash)); flashK[f] = flashScale(event.actor, event.move);   // a special's flash size rides the power; the hero's own special's flash is smaller (hero-special-fx.ts; 1 = today's)
         const attacker = fighters[event.actor]!.body, victim = fighters[event.target!]!.body, away = Math.atan2(victim.x - attacker.x, victim.z - attacker.z);
-        const count = Math.min(pool - 2, Math.round(IMPACT.sparks * (0.5 + hit.strength * 0.5) * k100(look?.sparks)));
+        const count = Math.min(pool - 2, Math.round(IMPACT.sparks * (0.5 + hit.strength * 0.5) * k100(look?.sparks) * sparkScale(event.actor, event.move)));
         for (let k = 0; k < count; k++) {
           // A fan off the struck side, back toward the attacker and up (the chase camera sits behind him): a jet straight through the
           // victim would hide behind his own body, as the clash sparks found.
@@ -89,7 +91,7 @@ export function createSkillImpact(scene: THREE.Scene) {
         if (flash[p]) {
           // The flash: a bright disc that swells a little and goes in IMPACT.flash seconds, white at the heart of the move's colour.
           const w = 0.35 * heat; colors.set([Math.min(1, tint[p * 3] + w), Math.min(1, tint[p * 3 + 1] + w), Math.min(1, tint[p * 3 + 2] + w)], p * 3);
-          sizes[p] = IMPACT.flashSize / 0.1 * (0.6 + 0.4 * power[p]) * (0.7 + 0.3 * (1 - heat)) * heat ** 0.5;   // the material's size is 0.1 m
+          sizes[p] = IMPACT.flashSize / 0.1 * (0.6 + 0.4 * power[p]) * (0.7 + 0.3 * (1 - heat)) * heat ** 0.5 * flashK[p]!;   // the material's size is 0.1 m
         } else {
           velocity[p * 3 + 1] -= 9.8 * step;
           for (let axis = 0; axis < 3; axis++) positions[p * 3 + axis] += velocity[p * 3 + axis] * step;

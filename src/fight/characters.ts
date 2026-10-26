@@ -637,6 +637,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     let specialRole: SpecialRole | null = null; const specialLoading = new Set<SpecialRole>();
     let clipBody: string | undefined;   // a 106 body's file stem (scene.ts useClips106): the folder of data/rig.json clips106 its baked clips come from
     let special: { samples: number; opacity: number; color: string } | null = null, trailKey = '';   // a melee special's weapon trail (sandbox specialTrail rows; the scene sets it while the special is in its swing): longer, brighter, on without the swing pose
+    let trailK = 1;
     let slam = 0;   // Shield Quake's weight, 0 none, 1 the shield held up, 2 driven down (the scene sets it from the cast)
     function carryShield(amount: number, lift: number, open: number) {
       const [upperL, lowerL, handL] = offHand;
@@ -863,6 +864,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       },
       slam(weight: number) { slam = weight; },
       specialTrail(t: { samples: number; opacity: number; color: string } | null) { special = t; },
+      trailScale(k: number) { trailK = k; },   // hero-special-fx.ts: the hero's Whirlwind swing's trail softer (the scene sets it each frame; 1 = the swing's own opacity)
       // The special clip to play while a special's swing runs (specialRoleOf; null clears it). Fetched on the first ask, and only for a weapon the row lists: until it lands, or on any other weapon, the swing plays the weapon's own clip.
       specialMove(role: SpecialRole | null) {
         specialRole = role;
@@ -1020,7 +1022,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           root.updateWorldMatrix(true, true);
         }
         trail.visible = (pose === 'attack' && progress > contact * TRAIL_FROM && progress < contact + .18) || (!!special && !dead);
-        { const swing = swingTrailOpacity(attack), key = special ? `${special.opacity}|${special.color}` : `${swing}`; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? swing; m.color.set(special?.color ?? '#e8dfc8'); } }
+        { const swing = swingTrailOpacity(attack) * trailK, key = special ? `${special.opacity}|${special.color}` : `${swing}`; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? swing; m.color.set(special?.color ?? '#e8dfc8'); } }
         if (trail.visible && step > 0) {
           anchor.updateWorldMatrix(true, true);
           const override = combatRole && contactByClip?.[clips[combatRole].name], strike = override ? [override.from, override.to] : segment;

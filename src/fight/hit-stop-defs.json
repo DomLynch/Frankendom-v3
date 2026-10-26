@@ -18,6 +18,10 @@
     "impactHeightHead": {"value": 1.62},
     "impactHeightTorso": {"value": 1.2},
     "impactHeightLegs": {"value": 0.62},
-    "impactHeightGuard": {"value": 1.25}
+    "impactHeightGuard": {"value": 1.25},
+    "specialKickAlong": {"value": 0.05},
+    "specialKickDrop": {"value": 0.06},
+    "specialKickHoldFrames": {"value": 2},
+    "specialKickSettle": {"value": 0.22}
   }
 }
