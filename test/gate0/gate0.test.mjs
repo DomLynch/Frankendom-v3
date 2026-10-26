@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CONFIGS, SCRIPTS, compare, describe, intentsOf, loadSide, loadV1, loadV3 } from './harness.mjs';
+import { CONFIGS, SCRIPTS, compare, describe, intentsOf, loadSide, loadV1, loadV3, runSide } from './harness.mjs';
 import { V1_DIR } from './extract.mjs';
 
 const v1 = await loadV1(), v3 = await loadV3();
@@ -26,6 +26,14 @@ for (const config of CONFIGS) for (const seed of config.seeds) for (const script
     assert.ok(r.ticks[0] > 1, 'the script steps the fight');
   });
 }
+
+test('the picked-clip sweeps reach the sim: page-first-clips is a different fight from page-first-novice, and the switch goes back off', () => {
+  const novice = CONFIGS.find((c) => c.id === 'page-first-novice'), clips = CONFIGS.find((c) => c.id === 'page-first-clips');
+  const intents = intentsOf(lightMash, v3.record.quantizeIntent);
+  const off = runSide(v3, novice, 731, intents), on = runSide(v3, clips, 731, intents), again = runSide(v3, novice, 731, intents);
+  assert.notEqual(on.hash, off.hash, 'the picks must change where the blade meets the Centurion');
+  assert.equal(again.hash, off.hash, 'a config without picks is V1\'s sweeps again');
+});
 
 test('deliberate break: one changed data value in a copy of V1 is reported as a DIFF at its tick and field', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'gate0-break-'));

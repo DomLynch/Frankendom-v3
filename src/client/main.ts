@@ -5,6 +5,7 @@
 import FIGHT from '../../data/fight.json' with { type: 'json' };
 import BRAINS from '../../data/brains.json' with { type: 'json' };
 import { brainFor, brainProfile } from '../brain.ts';
+import { applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
 import { initialPractice, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
 import { OPPONENTS, RULES, opponentAt, profileAt, weaponOf, type SkillId, type WeaponId } from '../fight/moves.ts';
@@ -85,6 +86,8 @@ const paused = () => !assetsReady || graphicsLost || document.hidden;   // :823 
 if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
 // Legs keep walking under a held guard (data/fight.json guardWalk); ?guard=v1 keeps V1's whole-body Guard. Set before the rigs are built.
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
+// Dom's picked strike clips and their blade sweeps (data/hero-clips.json); ?clips=v1 keeps V1's clips and sweeps exactly.
+applyHeroClips(search);
 // The fight starts by itself (data/fight.json start, src/auto-start.ts): no Fight press, the driver draws for him on the first running
 // tick, at load and after every Rematch. ?start=v1 keeps V1's Fight button (the first press draws).
 const autoStart = autoStartOn(search, FIGHT.start.auto);
