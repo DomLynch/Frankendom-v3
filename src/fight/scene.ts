@@ -69,7 +69,7 @@ import './signature-plaguedoctor.ts';   // Plague Doctor A: Rot Bloom
 import './signature-shieldmaiden.ts';   // registers the Shieldmaiden's Splintered Defiance
 import { settleWithin } from './warm-gate.ts';
 import { fxNum } from './fx-rows.ts';
-import { heroBodyFile } from './hero-body-rows.ts';
+import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 const WOUND_REACH_PROBE_MAX = fxNum('fx.scene.woundReachProbeMax');
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
@@ -262,7 +262,8 @@ export function createScene(
   // Hero preview (hero-preview.ts): a fitted set under /herolook/ stands in for the player's rig. It wears its armour on the rig itself, so
   // the player's loot pieces are never layered over it (the opponent still wears his kit); a file that fails to load falls back to warrior.glb.
   const heroUrl = heroPreview(typeof location === 'undefined' ? '' : location.search);
-  const fighterUrls: Record<string, string> = { '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href };   // V3: the hero and the Centurion
+  chooseHeroBody(typeof location === 'undefined' ? '' : location.search);   // V3: Psyche, or ?hero=v1 warrior.glb (hero-body-rows.ts); only the one picked is fetched
+  const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): a fight fetches his kit only, never the whole 9.4 MB file.
   const carrierUrls: Record<string, string> = { '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Centurion's kit
   // The foe's rig file: a roster body from the glob, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts), like the world bodies' '/world/...': the Origins preview build has no publicDir, so a BASE_URL-relative path would 404 there.
