@@ -23,6 +23,7 @@ import { createScene } from '../fight/scene.ts';
 import { setLockFrame } from '../fight/camera.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
+import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
 import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -91,6 +92,8 @@ if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.s
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
 // The swing trail softer (data/fight.json trail: cuts at half, the stab 30% less, both fighters); ?trail=v1 = today's trail.
 setTrailOpacity(/[?&]trail=v1\b/.test(search) ? null : FIGHT.trail);
+// The Minotaur draws V1's Cleaver over the gladius he fights with (data/fight.json foeWeapon, visual only); ?foeweapon=v1 = the gladius, ?foe=v1 = the Centurion.
+setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
 // Dom's picked strike clips on V1's blade sweeps (data/hero-clips.json); ?reach=clip = the sweeps re-baked from the clips; ?clips=v1 = V1's clips and sweeps exactly.
 applyHeroClips(search);
 // The fight starts by itself (data/fight.json start, src/auto-start.ts): no Fight press, the driver draws for him on the first running
