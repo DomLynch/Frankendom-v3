@@ -68,7 +68,10 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
 export function ragdollBody(finisher: FinisherId | null): boolean { return !!page && !!finisherCutRow(PHYSICS, finisher) && page.takesFinisher(); }
 /** The finisher pick's override for the scene's picture AND main.ts's death cue (one answer for both): the plain death while the finisher row
  *  says 'skip' and the ragdoll is standing ready to take the kill; null (the rotation as it is) otherwise. */
-export function ragdollFinisher(): FinisherId | null { return page?.skipsFinishers() ? PLAIN_DEATH : null; }
+export function ragdollFinisher(): FinisherId | null {
+  const forced = (globalThis as { __finisherPick?: string }).__finisherPick;   // a stills / trace harness forces the rotation's pick (the dev picker's place; a blade kill only: resolveFinisher keeps eligibility)
+  return forced ?? (page?.skipsFinishers() ? PLAIN_DEATH : null);
+}
 
 /** The part a blow at `location` lands on, and its impulse in the ragdoll's frame (the attacker's facing, `heading`, turned into `frame`). */
 export function blowImpulse(row: { parts: Record<string, string>; impulse: number; lift: number }, location: string | undefined, heading: number | undefined, frameYaw: number): { part: string; impulse: Vec3 } | null {
