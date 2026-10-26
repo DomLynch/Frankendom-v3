@@ -1,6 +1,7 @@
 ## HANDOFF (V3 dev; keep at the top, update every PR)
 - **Live:** https://v3.frankendom.com at f297c4e (push-to-deploy on green main; user frankendom-v3 rrsync-locked to /srv/frankendom-v3/live; nginx site with gzip; Let's Encrypt cert, auto-renewed by certbot.timer with a v3-only nginx reload hook). Merged: #1 seed (tag `v1-seed-82a994d15`), #2 V2 shell, #3 Gate 0, #4 the lift. First visit ~20 MB over the wire (GLBs 17.5 MB, code 0.8 MB gzipped).
 - **In flight:** Gate 1, Dom's phone, V3 vs frankendom.com/?fight=1. The one fight is `data/fight.json`.
+- **Opponent brain (branch `ai/novice-default`):** the Centurion stays level 18 (body, gladius, scutum, specials) but plays V2's novice brain by default (`data/brains.json`, `data/fight.json` `ai`, `src/brain.ts`); `?ai=v1` is today's fight. Gate 0 config `page-first-novice` covers it; `node scripts/ai-bouts.mjs [bouts] [cap]` prints the headless win rates.
 - **Next three:** whatever Gate 1 finds (copy-only fixes in the lift or the cut); the first post-Gate-1 PR cutting the inert spell/missile/mana rules out of duel.ts; the rig swap gate (`?rig=65`).
 - **Known differences from frankendom.com (by plan):** V2's flat stage and sky instead of the pit; no legend names (the HUD says "Centurion"); no rank row, menu, loot, share or versus card.
 

@@ -28,6 +28,20 @@
       "seeds": [731]
     },
     {
+      "id": "page-first-novice",
+      "about": "The fight V3 plays by default (data/fight.json `ai`: novice): 'page-first' with data/brains.json row novice laid over the level-18 Centurion's V1 profile (src/brain.ts). Both sides get the same profile object built from their own profileAt, so V3 must still replay V1 tick for tick.",
+      "flags": { "playScaleFor": "veteran", "lateNotice": true, "stab": true, "stanceRows": true },
+      "opponent": "veteran",
+      "level": 18,
+      "brain": "novice",
+      "weapon": null,
+      "skill": "cleave",
+      "specials": true,
+      "stance": "neutral",
+      "skill2": "reaping",
+      "seeds": [731]
+    },
+    {
       "id": "base",
       "about": "The base rules: plain initialPractice(seed, opponentAt(OPPONENTS.veteran, 1)), no Special Moves, no stances, the era flags off (old full-size circle, no late notice, no stab rule, no stance rows).",
       "flags": { "playScale": 1, "lateNotice": false, "stab": false, "stanceRows": false },

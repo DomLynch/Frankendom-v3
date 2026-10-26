@@ -3,6 +3,8 @@
 // quantized intent, the per-tick sound and HUD calls, the interpolated draw. No accounts, ladder, legends, loot, records, replays, PvP, coach
 // or menus. Every number is a V1 row or a data/fight.json row; line refs are V1 src/main.ts @ 82a994d15.
 import FIGHT from '../../data/fight.json' with { type: 'json' };
+import BRAINS from '../../data/brains.json' with { type: 'json' };
+import { brainFor, brainProfile } from '../brain.ts';
 import { initialPractice, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
 import { OPPONENTS, RULES, opponentAt, profileAt, weaponOf, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
@@ -57,6 +59,8 @@ function fresh(): Practice {
     undefined, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);
 }
 let practice = fresh(), frameEvents: CombatEvent[] = [];
+// the warden's brain: data/fight.json `ai` (a data/brains.json row) over his V1 profile at his level; ?ai=v1 = V1's profile untouched
+const aiProfile = brainProfile(profileAt(opponent, level), brainFor(BRAINS.brains, FIGHT.ai, search));
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
@@ -145,7 +149,7 @@ function frame(now: number) {
       const intent = controls.intent();
       // :1526 match.step: the live intent, quantized as the recorder stores it, stepped against the warden's profile at his level
       practice = stepPractice(practice, quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: intent.action, guard: intent.guard,
-        guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel }), profileAt(opponent, level));
+        guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel }), aiProfile);
       frameEvents.push(...practice.events);
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
