@@ -5,3 +5,5 @@ dist/
 # local tool state (Claude Code worktrees and settings, Serena index): never part of the game
 .claude/
 .serena/
+# Gate 0's extract of V1 at the seed tag (test/gate0/extract.mjs)
+.gate0/

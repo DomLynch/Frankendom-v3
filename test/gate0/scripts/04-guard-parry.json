@@ -1,0 +1,18 @@
+{
+  "id": "guard-parry",
+  "about": "Draw, then hold guard (plain and directional), parry on a beat and riposte with lights; the warden does the attacking.",
+  "segments": [
+    { "ticks": 1, "action": "light" },
+    { "ticks": 45 },
+    { "ticks": 40, "move": { "z": -1 } },
+    { "repeat": 30, "segments": [
+      { "ticks": 40, "guard": true },
+      { "ticks": 30, "guard": true, "guardDirection": "left" },
+      { "ticks": 30, "guard": true, "guardDirection": "overhead" },
+      { "ticks": 24, "action": "parry", "every": 12 },
+      { "ticks": 10, "action": "light" },
+      { "ticks": 20, "guard": true, "guardDirection": "right", "move": { "x": 0.4 } },
+      { "ticks": 12, "action": "parry", "offset": 5 }
+    ] }
+  ]
+}
