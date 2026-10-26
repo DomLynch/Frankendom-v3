@@ -1,0 +1,131 @@
+{
+ "about": "Psyche V1 65-joint rig (UE style) -> Mixamo 106-joint rig; source name -> target name. Unlisted target joints (twist, fk_*, ik_*) stay at rest.",
+ "method": "world-delta retarget, P = identity (same bind pose), hips world displacement k=1 (xz), height scaled by 1.03844",
+ "map": {
+  "root": "root",
+  "pelvis": "mixamorig:Hips",
+  "spine_01": "mixamorig:Spine",
+  "spine_02": "mixamorig:Spine1",
+  "spine_03": "mixamorig:Spine2",
+  "neck_01": "mixamorig:Neck",
+  "Head": "mixamorig:Head",
+  "clavicle_l": "mixamorig:LeftShoulder",
+  "upperarm_l": "mixamorig:LeftArm",
+  "lowerarm_l": "mixamorig:LeftForeArm",
+  "hand_l": "mixamorig:LeftHand",
+  "thigh_l": "mixamorig:LeftUpLeg",
+  "calf_l": "mixamorig:LeftLeg",
+  "foot_l": "mixamorig:LeftFoot",
+  "ball_l": "mixamorig:LeftToeBase",
+  "ball_leaf_l": "mixamorig:LeftToe_End",
+  "thumb_01_l": "mixamorig:LeftHandThumb1",
+  "thumb_02_l": "mixamorig:LeftHandThumb2",
+  "thumb_03_l": "mixamorig:LeftHandThumb3",
+  "thumb_04_leaf_l": "mixamorig:LeftHandThumb4",
+  "index_01_l": "mixamorig:LeftHandIndex1",
+  "index_02_l": "mixamorig:LeftHandIndex2",
+  "index_03_l": "mixamorig:LeftHandIndex3",
+  "index_04_leaf_l": "mixamorig:LeftHandIndex4",
+  "middle_01_l": "mixamorig:LeftHandMiddle1",
+  "middle_02_l": "mixamorig:LeftHandMiddle2",
+  "middle_03_l": "mixamorig:LeftHandMiddle3",
+  "middle_04_leaf_l": "mixamorig:LeftHandMiddle4",
+  "ring_01_l": "mixamorig:LeftHandRing1",
+  "ring_02_l": "mixamorig:LeftHandRing2",
+  "ring_03_l": "mixamorig:LeftHandRing3",
+  "ring_04_leaf_l": "mixamorig:LeftHandRing4",
+  "pinky_01_l": "mixamorig:LeftHandPinky1",
+  "pinky_02_l": "mixamorig:LeftHandPinky2",
+  "pinky_03_l": "mixamorig:LeftHandPinky3",
+  "pinky_04_leaf_l": "mixamorig:LeftHandPinky4",
+  "clavicle_r": "mixamorig:RightShoulder",
+  "upperarm_r": "mixamorig:RightArm",
+  "lowerarm_r": "mixamorig:RightForeArm",
+  "hand_r": "mixamorig:RightHand",
+  "thigh_r": "mixamorig:RightUpLeg",
+  "calf_r": "mixamorig:RightLeg",
+  "foot_r": "mixamorig:RightFoot",
+  "ball_r": "mixamorig:RightToeBase",
+  "ball_leaf_r": "mixamorig:RightToe_End",
+  "thumb_01_r": "mixamorig:RightHandThumb1",
+  "thumb_02_r": "mixamorig:RightHandThumb2",
+  "thumb_03_r": "mixamorig:RightHandThumb3",
+  "thumb_04_leaf_r": "mixamorig:RightHandThumb4",
+  "index_01_r": "mixamorig:RightHandIndex1",
+  "index_02_r": "mixamorig:RightHandIndex2",
+  "index_03_r": "mixamorig:RightHandIndex3",
+  "index_04_leaf_r": "mixamorig:RightHandIndex4",
+  "middle_01_r": "mixamorig:RightHandMiddle1",
+  "middle_02_r": "mixamorig:RightHandMiddle2",
+  "middle_03_r": "mixamorig:RightHandMiddle3",
+  "middle_04_leaf_r": "mixamorig:RightHandMiddle4",
+  "ring_01_r": "mixamorig:RightHandRing1",
+  "ring_02_r": "mixamorig:RightHandRing2",
+  "ring_03_r": "mixamorig:RightHandRing3",
+  "ring_04_leaf_r": "mixamorig:RightHandRing4",
+  "pinky_01_r": "mixamorig:RightHandPinky1",
+  "pinky_02_r": "mixamorig:RightHandPinky2",
+  "pinky_03_r": "mixamorig:RightHandPinky3",
+  "pinky_04_leaf_r": "mixamorig:RightHandPinky4"
+ },
+ "socket": {
+  "node": "fk_socket_hand_r",
+  "parent": "mixamorig:RightHand",
+  "from_source": "hand_r -> WeaponDrawn (SwordDrawn has identical local TRS)",
+  "before": {
+   "translation": [
+    0.010585232114108818,
+    0.09950594436109705,
+    0.00027597418132230267
+   ],
+   "rotation": [
+    -0.0,
+    -0.0,
+    -0.0,
+    1.0
+   ]
+  },
+  "after": {
+   "translation": [
+    0.010867355785252546,
+    0.07542053476346834,
+    -0.0034906133672624635
+   ],
+   "rotation": [
+    0.4816278428679306,
+    0.49083150160774647,
+    -0.4887477498908736,
+    0.5368842472828539
+   ]
+  },
+  "candidates": {
+   "SwordDrawn": {
+    "rot_xyzw": [
+     0.4816278428679306,
+     0.49083150160774647,
+     -0.4887477498908736,
+     0.5368842472828539
+    ],
+    "offset": [
+     0.010867355785252546,
+     0.07542053476346834,
+     -0.0034906133672624635
+    ]
+   }
+  },
+  "target_SwordDrawn_existing": {
+   "translation": [
+    0.011109281639518583,
+    0.06866498173998495,
+    0.004164964200518963
+   ],
+   "rotation": [
+    0.49183776094791065,
+    0.5078448551465168,
+    -0.4922824906150845,
+    0.5077865392473185
+   ]
+  },
+  "height_scale_kv": 1.0384444075461565
+ }
+}

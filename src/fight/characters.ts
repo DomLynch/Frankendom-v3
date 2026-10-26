@@ -7,7 +7,8 @@ import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
-import { bone as boneOf, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';   // V3 rig swap: every bone lookup goes through the one map (65 body = today's lookup)
+import { bone as boneOf, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';
+import { clip106Loader } from './clips-106.ts';   // a 106 body's baked clip JSONs (data/rig.json clips106)   // V3 rig swap: every bone lookup goes through the one map (65 body = today's lookup)
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
 import { swingTrailOpacity } from './trail-opacity.ts';   // V3: the swing trail softer per clip key (data/fight.json trail); ?trail=v1 = V1's
@@ -307,12 +308,13 @@ export function shapeMeshOf(scene: Object3D): Mesh {
 // The hero rig with the equip file's weapon in place of the sword pair (a WeaponDrawn is always in hand: no sheath), and the file's clips
 // played over warrior.glb's same-named ones. A copy: the loaded rig stays whole for the longsword fallback.
 export function equipWeapon(hero: FighterAsset, part: FighterAsset): FighterAsset {
-  const scene = clone(hero.scene) as Group, weapon = part.scene.getObjectByName('WeaponDrawn'), handName = (weapon?.userData.hand as string | undefined) ?? 'hand_r';   // a part may name its hand (the sandbox bow: hand_l)
+  // The part's weapon node and the sword hand are data/rig.json's (held.weapon, grip65.hand); a part may name its own hand (the sandbox bow: hand_l)
+  const scene = clone(hero.scene) as Group, weapon = part.scene.getObjectByName(HELD.weapon), handName = (weapon?.userData.hand as string | undefined) ?? GRIP_65.hand;
   let hand = boneOf(scene, handName);
-  if (!hand || !weapon) throw new Error('Equip file has no WeaponDrawn, or the rig no hand_r');
+  if (!hand || !weapon) throw new Error(`Equip file has no ${HELD.weapon}, or the rig no ${handName}`);
   // A 106 body: the part was placed for hand_r's frame (warrior.glb's sword frame GRIP_65 in it); it is re-seated so that frame lands on this
   // body's sword frame (OpenTrident's fk_socket_hand_r, which carries the 65 rig's frame; else its own SwordDrawn), under the hand those hang from. A 65 body: hand_r, as today.
-  if (handName === 'hand_r' && rigOf(scene) === '106') {
+  if (handName === GRIP_65.hand && rigOf(scene) === '106') {
     const own = boneOf(scene, HELD.sword);
     if (own?.parent) {
       const grip = new Matrix4().compose(new Vector3(...GRIP_65.translation), new Quaternion(...GRIP_65.rotation), new Vector3(1, 1, 1));
@@ -637,6 +639,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       bone.quaternion.copy(bone.parent!.getWorldQuaternion(new Quaternion()).invert().multiply(new Quaternion().slerp(delta, amount)).multiply(bone.getWorldQuaternion(new Quaternion())));
     };
     let specialRole: SpecialRole | null = null; const specialLoading = new Set<SpecialRole>();
+    let clipBody: string | undefined;   // a 106 body's file stem (scene.ts useClips106): the folder of data/rig.json clips106 its baked clips come from
     let special: { samples: number; opacity: number; color: string } | null = null, trailKey = '';   // a melee special's weapon trail (sandbox specialTrail rows; the scene sets it while the special is in its swing): longer, brighter, on without the swing pose
     let slam = 0;   // Shield Quake's weight, 0 none, 1 the shield held up, 2 driven down (the scene sets it from the cast)
     function carryShield(amount: number, lift: number, open: number) {
@@ -868,9 +871,9 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       specialMove(role: SpecialRole | null) {
         specialRole = role;
         // Once any special is asked for, fetch every special clip this weapon plays (a second slot's clip is otherwise first asked for on its first press, and that cast shows the weapon's own swing until it lands).
-        if (role) for (const r of SPECIAL_ROLES) if (!clips[r] && !specialLoading.has(r) && specialRow(r).weapons.includes(weapon) && isBowRole(r) === isBowRole(role)) {   // a bow carrier fetches the bow clips, a melee caster the melee ones
+        if (role) for (const r of SPECIAL_ROLES) if (!clips[r] && !specialLoading.has(r) && this.clipLoader(r) && specialRow(r).weapons.includes(weapon) && isBowRole(r) === isBowRole(role)) {   // a bow carrier fetches the bow clips, a melee caster the melee ones
           specialLoading.add(r);
-          void SPECIAL_LOADERS[r]().then(m => this.adoptClip(r, AnimationClip.parse(m.default as Parameters<typeof AnimationClip.parse>[0]))).catch(() => { specialLoading.delete(r); /* the weapon's own clip keeps playing */ });
+          void this.clipLoader(r)!().then(m => this.adoptClip(r, AnimationClip.parse(m.default as Parameters<typeof AnimationClip.parse>[0]))).catch(() => { specialLoading.delete(r); /* the weapon's own clip keeps playing */ });
         }
       },
       // Fatigue (fatigue.ts, Lead's brief B): the driver's value for this body this frame, and the body's own tuning (Goblin quick and shallow, Executioner slow and deep).
@@ -1145,11 +1148,22 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // longer pelvis (the Dwarf) gets the clip's pelvis path scaled by the ratio, so it sits on the floor instead of hovering or sinking. Omitted for the hero's own clip.
       // `fitFloor`: the clip's own beats (fractions) at which this body's real skin is measured against the floor, and the pelvis path lifted or lowered between them so
       // the kneel and the fall rest on the sand whatever the mesh (a body's feet, chest and face differ from the one the clip was authored on, which the pelvis ratio cannot see).
+      /** scene.ts: this body's file stem when it is a 106 body ('psyche-106'), so its baked clips come from its own data/rig.json clips106 folder. */
+      useClips106(body: string) { clipBody = body; },
+      /** The loader of a baked clip JSON this body plays for `role`: a 65 body the 65 file (specials: SPECIAL_LOADERS); a 106 body its clips106
+       *  file, or undefined when it has none (it plays what it would without the clip). */
+      clipLoader(role: (typeof ADDITIVE_ROLES)[number]): (() => Promise<{ default: unknown }>) | undefined {
+        return rigOf(root) === '106' ? clip106Loader(clipBody, role) : (SPECIAL_LOADERS as Record<string, () => Promise<{ default: unknown }>>)[role];
+      },
+      /** Whether this body can play `role`'s baked clip at all: a 65 body always (its 65 file), a 106 body only with a clips106 file. */
+      takesBaked(role: (typeof ADDITIVE_ROLES)[number]): boolean { return rigOf(root) === '65' || !!clip106Loader(clipBody, role); },
       adoptClip(role: (typeof ADDITIVE_ROLES)[number], clip: AnimationClip, sourcePelvis?: number, fitFloor?: readonly number[]) {
         if (clips[role]) return;
         const rig = rigOf(root), rest = boneOf(asset.scene, 'pelvis')?.position.length();
-        if (rig === '106') { clip = clip.clone(); for (const track of clip.tracks) track.name = trackOn(rig, track.name); }   // a 65-keyed clip (the baked JSONs) bound by NAME on a 106 body: not a retarget (the joints' rest frames differ)
-        if (sourcePelvis && rest && Math.abs(rest / sourcePelvis - 1) > 1e-4) {
+        // A 106 body takes only a clip keyed to its own joints (its clips106 file, clipLoader): a 65-keyed one bound by name poses wrong (the joints' rest
+        // frames differ), so it is refused and the body plays what it would without it. The 106 sets are fitted to each body's pelvis already: no ratio.
+        if (rig === '106' && clip.tracks.some(t => t.name.startsWith('pelvis.'))) return;
+        if (rig === '65' && sourcePelvis && rest && Math.abs(rest / sourcePelvis - 1) > 1e-4) {
           clip = clip.clone();
           for (const track of clip.tracks) if (track.name === trackOn(rig, 'pelvis.position')) track.values = track.values.map(v => v * rest / sourcePelvis);
         }

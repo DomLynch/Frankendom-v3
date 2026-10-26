@@ -7,6 +7,10 @@ import { readFileSync } from 'node:fs';
 import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
 import { fightOpponent } from '../src/fight/foe-pick.ts';
 import { OPPONENTS, opponentAt } from '../src/fight/moves.ts';
+import { chooseRigs } from '../src/fight/rig-bones.ts';
+
+// These rows pin the 65 Minotaur (minotaur.glb), which ?foerig=65 draws; the default 106 body (minotaur-106) is test/rig-bones.test.mjs's.
+chooseRigs('?foerig=65');
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 

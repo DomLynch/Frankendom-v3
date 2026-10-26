@@ -33,7 +33,7 @@ test('every ragdoll row names a body the opponent is drawn in, the package\'s 20
   const physics = await createPhysics({ seed: ROWS.seed }), RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
   for (const row of ROWS.opponents) {
     chooseRigs(''); chooseFoeBody('');
-    assert.equal(foeBodyFile(row.id, row.id), row.body, `${row.id} is drawn as ${row.body}`);
+    assert.equal(foeBodyFile(row.id, row.id, true), row.body, `${row.id} is drawn as ${row.body} (its 65 file: the row's body stem; its 106 file is data/rig.json files[${row.body}])`);
     const rd = physics.createRagdoll(measure(row), { id: row.id }), map = ROWS.bones;
     assert.deepEqual(Object.keys(map).sort(), [...rd.partIds].sort(), 'one bone per part');
     const nodes = glbNodes(row.body);

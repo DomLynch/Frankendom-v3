@@ -71,8 +71,19 @@ export const trackAs65 = (rig: Rig, track: string): string => {
 export const HIDDEN_ON_106: readonly string[] = RIG.hide;
 /** On a 106 body only: the clips a role with no clip of its own plays, first found (data/rig.json gapFill; '*' for any other role). */
 export const gapFillFor = (role: string): readonly string[] => GAP_FILL[role] ?? GAP_FILL['*'] ?? [];
-/** Where the 65 rig's weapon frame sits in hand_r (data/rig.json grip65): a 65 equip part grafted on a 106 body is re-seated from this. */
-export const GRIP_65 = RIG.grip65 as { translation: [number, number, number]; rotation: [number, number, number, number] };
+const CLIPS_106 = RIG.clips106 as { dir: Record<string, string>; files: Record<string, string> };
+/** The 106 version of a baked clip JSON (data/rig.json clips106) for the 106 body file `body` (a `files` value, 'psyche-106'): its path under
+ *  src/assets ('106/psyche/special-skullcrack.json'), or undefined when that body or role has none (the body then plays what it would
+ *  without the clip: a special the weapon's own strike clip, a finisher scene the plain death). A 65 body never asks: it plays the 65 file. */
+export const clip106Path = (body: string | undefined, role: string): string | undefined => {
+  const dir = body ? CLIPS_106.dir[body] : undefined, file = CLIPS_106.files[role];
+  return dir && file ? `${dir}/${file}` : undefined;
+};
+/** Every 106 clip path the data names (the loader table in clips-106.ts must hold each: test/rig-bones.test.mjs). */
+export const clip106Paths = (): readonly string[] => Object.keys(CLIPS_106.dir).flatMap(body => Object.keys(CLIPS_106.files).map(role => clip106Path(body, role)!));
+/** Where the 65 rig's weapon frame sits in its sword hand (data/rig.json grip65: `hand`, the 65 bone an equip part hangs from unless it names
+ *  its own): a 65 equip part grafted on a 106 body is re-seated from this. */
+export const GRIP_65 = RIG.grip65 as { hand: string; translation: [number, number, number]; rotation: [number, number, number, number] };
 
 // Which rig each side draws. The page picks once, before the rigs load, and only the file picked is fetched.
 let heroRig: Rig = DEFAULT.hero, foeRig: Rig = DEFAULT.foe;

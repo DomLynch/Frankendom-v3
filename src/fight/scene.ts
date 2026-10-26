@@ -370,6 +370,8 @@ export function createScene(
   ])
     .then(async ([loaded]) => {
       warriors = loaded;
+      // Which body file each side drew, so a 106 body takes its own baked clips (data/rig.json clips106); a 65 body (or a 106 load that fell back to 65) ignores it.
+      loaded.player.useClips106(heroRigFile(heroBodyFile())); loaded.opponent.useClips106(foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body));
       sizeBeast(loaded, opponentId);   // a beast is drawn at the size it is met walking (src/fight/beast-scale.ts)
       dress();   // his kit before the opened-waist bake, so the cut body wears what the whole one did
       playerDrawn(loaded.playerWeapon);
@@ -444,7 +446,8 @@ export function createScene(
   let severHead: SeveredHead | null = null;
   // Fetched on demand (src/fight/hamstrung-assets.ts), never in loadFighters: the killer's clip, the victim's clip and his weapon-drop bake.
   const hamstrungAssets = createHamstrungAssets(
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([import('../assets/hamstrung-killer.json'), import('../assets/hamstrung-victim-hero.json')]); return { killer, victim }; },
+    // Each body its own file: a 65 body the 65 clip, a 106 body its data/rig.json clips106 file (characters.ts clipLoader; the killer is the player, the victim the opponent).
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Hamstrung') ?? (() => import('../assets/hamstrung-killer.json')))(), (warriors?.opponent.clipLoader('Death_Hamstrung') ?? (() => import('../assets/hamstrung-victim-hero.json')))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Hamstrung', parse(killer));
@@ -457,10 +460,11 @@ export function createScene(
   let hamstrungLatch: boolean | null = null;   // hamstrungOk() as it stood on the first frame of this finish: the picture and the audio keep one answer for the whole kill
   // The kill picks its finisher (once Hamstrung is in the rotation), so the clips are fetched in the background once the fight is ready, on idle. Silent on failure: hamstrungPick keeps the plain death.
   const prefetchHamstrung = () => { const start = () => { wantHamstrung(true); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 4000 }); else setTimeout(start, 1500); };
-  const wantHamstrung = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId)) void hamstrungAssets.request(warriors); };
+  // A 106 body without a clips106 file for its side of the scene (data/rig.json) fetches nothing: the kill is the plain death.
+  const wantHamstrung = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId) && warriors.player.takesBaked('Fin_Hamstrung') && warriors.opponent.takesBaked('Death_Hamstrung')) void hamstrungAssets.request(warriors); };
   // Execution (src/fight/execution.ts) loads on the picker's choice only (no idle prefetch: it re-skins 12 poses), never as part of ready, and a failure is the plain death.
   const executionAssets = createHamstrungAssets(
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([import('../assets/execution-killer.json'), import('../assets/execution-victim-hero.json')]); return { killer, victim }; },
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Execution') ?? (() => import('../assets/execution-killer.json')))(), (warriors?.opponent.clipLoader('Death_Execution') ?? (() => import('../assets/execution-victim-hero.json')))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Execution', parse(killer));
