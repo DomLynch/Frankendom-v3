@@ -71,6 +71,7 @@ import { settleWithin } from './warm-gate.ts';
 import { fxNum } from './fx-rows.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
+import { foeDrawnWeapon } from './foe-weapon.ts';
 const WOUND_REACH_PROBE_MAX = fxNum('fx.scene.woundReachProbeMax');
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
@@ -81,6 +82,13 @@ const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: o
 // V3: no Vite, so the globs below are the files the one fight ships, by URL (the Centurion's gladius at his level-1 loadout).
 const EQUIP_URLS: Record<string, string> = { '../assets/weapons/player/gladius.glb': new URL('../assets/weapons/player/gladius.glb', import.meta.url).href };
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
+// V3: the opponent's DRAWN weapon over the one he fights with (foe-weapon.ts, data/fight.json foeWeapon: V1's Cleaver on the Minotaur, the
+// sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1 / ?foe=v1: the gladius's).
+const FOE_EQUIP_URLS: Record<string, string> = { '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href };
+const foeEquipUrl = (opponentId: string, weapon: WeaponId): string | undefined => {
+  const drawn = foeDrawnWeapon(opponentId, weapon);
+  return drawn === weapon ? equipUrl(weapon) : FOE_EQUIP_URLS[`../assets/weapons/foe/${drawn}.glb`] ?? equipUrl(weapon);
+};
 // A rank look's pre-swap bake takes up to this many ms of each frame (it runs while the fight plays; one bounded step is ~8 ms at worst).
 const LOOK_BAKE_MS = cameraRule('lookBakeMs');
 export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapon) => WEAPON_LOOK[weapon]?.baked || equipUrl(weapon));
@@ -308,7 +316,7 @@ export function createScene(
   // his weapon's own part.
   function reshape() {
     const loaded = warriors; if (!loaded || !shapesOn(shapeTable)) return;   // no shape file on: today's parts, no call at all
-    const urls = () => shapesFor({ player: loaded.playerWeapon, opponent: builtFoeWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: levelOf(tier ?? 'Recruit') }, shapeTable);
+    const urls = () => shapesFor({ player: loaded.playerWeapon, opponent: builtFoeWeapon && !peer ? foeDrawnWeapon(opponentId, builtFoeWeapon) : builtFoeWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: levelOf(tier ?? 'Recruit') }, shapeTable);
     for (const who of ['player', 'opponent'] as const) {
       const actor = loaded[who], url = urls()[who];
       if (!url) { actor.reshape(undefined); continue; }
@@ -384,7 +392,7 @@ export function createScene(
     weapons.then((pair) => {
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
-      const opponentEquip = pair[1] === (peer ? DEFAULT_WEAPON : ROSTER[opponentId].weapon) ? undefined : equipUrl(pair[1]);   // the hero's rig bakes the longsword
+      const opponentEquip = pair[1] === (peer ? DEFAULT_WEAPON : ROSTER[opponentId].weapon) ? undefined : peer ? equipUrl(pair[1]) : foeEquipUrl(opponentId, pair[1]);   // the hero's rig bakes the longsword; a drawn weapon over his (foe-weapon.ts) is its own file
       const load = (hero: string) => peer ? loadPeerWarriors(hero, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), opponentEquip, (error) => captureException(error, { tags: { equip: pair[1] } })) : loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
       return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody)))(fighterUrls[`../assets/${heroBodyFile()}.glb`]!);   // the hero-body row: Exo (warrior.glb) or the classic hero
     }),

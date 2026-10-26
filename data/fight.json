@@ -53,5 +53,11 @@
     "track": "#f2c14e40",
     "staminaTrack": "#e0463a99",
     "pulseMs": 1600
+  },
+  "foeWeapon": {
+    "about": "Dom 2026-10-26, his pick in OpenTrident's weapon picker (Frankendom → Cleaver): the Minotaur wields V1's plain Cleaver. Lead: a VISUAL weapon only. The sim, the AI and Gate 0 still fight with `weapon` (the gladius: its id, moves, reach, damage and timing) and his scutum stays; the scene draws `drawn` instead (src/fight/foe-weapon.ts): its equip file src/assets/weapons/foe/<drawn>.glb (the gladius's file, same hand socket and clips, V1's Cleaver part in the socket: scripts/foe-body/graft-weapon.mjs) and its rank shape at his rung (public/weapons/shapes/cleaver-plain.glb, V1's file). ?foeweapon=v1 = the gladius on him; ?foe=v1 = the Centurion exactly.",
+    "opponent": "veteran",
+    "weapon": "gladius",
+    "drawn": "cleaver"
   }
 }
