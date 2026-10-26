@@ -40,7 +40,7 @@ export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: str
   return rows.opponents.find((o) => o.id === opponentId) ?? null;
 }
 
-/** data/physics.json `finisher`: 'keep' (the rotation's finishers play; only the plain death ragdolls) or 'skip' (?ragdoll=always: every death of a ragdolled foe is the plain death). */
+/** data/physics.json `finisher`: 'skip' (the default: every death of a ragdolled foe is the plain death and ragdolls) or 'keep' (?ragdoll=finishers: the rotation's finishers play; only the plain death ragdolls). */
 export function finisherModeFor(rows: PhysicsRows, search: string): string {
   const f = rows.finisher as { default: string; query: string; values: Record<string, string> }, v = new URLSearchParams(search).get(f.query);
   return (v !== null && f.values[v]) || f.default;
@@ -132,7 +132,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
-    /** ?ragdoll=always and a ragdoll built (a rig with no measure row, or a chunk not in yet, keeps the rotation). Latched once a death has begun. */
+    /** The finisher row says 'skip' (the default) and a ragdoll built (a rig with no measure row, or a chunk not in yet, keeps the rotation). Latched once a death has begun. */
     //  `armed`: only once a frame with no finish in progress has seen the ragdoll ready, so a chunk that lands mid-finish never flips the pick
     //  between the picture (scene.ts) and the death cue (main.ts) halfway through a kill.
     skipsFinishers() { return skipFinishers && armed && !disabled && !!rig && mode !== 'skip'; },
