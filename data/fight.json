@@ -97,5 +97,9 @@
     "weapon": "cleaver",
     "query": "reach",
     "v1": "v1"
+  },
+  "specialSink": {
+    "about": "Dom 2026-10-26, on his Skull Crack landing: the struck body's feet sinking into the sand 'looks a bit cheesy'. V1's knee-dip (scene.ts) drops the body a landed special strikes ~0.28 m below the floor; with sink false it never goes below the floor (a mode that lifts still lifts; src/fight/special-sink.ts). Presentation only. ?dip=v1 = V1's drop.",
+    "sink": false
   }
 }
