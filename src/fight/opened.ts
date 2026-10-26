@@ -2,6 +2,7 @@ import { fieldOf } from './catalogue-rows.ts';
 import { spectralMaterial } from './spectral.ts';
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Group, Matrix3, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, Euler, SkinnedMesh, Vector3 } from 'three';
 import { fxNum } from './fx-rows.ts';
+import { bone as boneOf, boneAs65, heldWeapon, isHeldWeaponName, rigOf } from './rig-bones.ts';
 
 // One pose bake per encounter, prepared before combat like a cached severed prop. Exterior maps are borrowed; only the new geometry and cut material
 // belong to this effect. Cut the torso at its waist, retaining both arms with the torso and releasing the victim weapon to the sand.
@@ -30,7 +31,7 @@ export function* openWaistSteps(root: Object3D, anchor: Group, cornerSupports = 
   root.updateWorldMatrix(true, true); root.updateMatrixWorld(true);
   let inverse = anchor.matrixWorld.clone().invert();
   const fresh = () => { root.updateWorldMatrix(true, true); root.updateMatrixWorld(true); inverse = anchor.matrixWorld.clone().invert(); };
-  const pelvis = root.getObjectByName('pelvis')!, spine = root.getObjectByName('spine_01')!;
+  const rig = rigOf(root), pelvis = boneOf(root, 'pelvis')!, spine = boneOf(root, 'spine_01')!;   // 65 names through the rig map (rig-bones.ts)
   const hip = pelvis.getWorldPosition(new Vector3()).applyMatrix4(inverse);
   const waist = hip.y + (spine.getWorldPosition(new Vector3()).applyMatrix4(inverse).y - hip.y) * .6;
   const group = new Group(); group.name = 'Opened';
@@ -55,9 +56,9 @@ export function* openWaistSteps(root: Object3D, anchor: Group, cornerSupports = 
     skin?.skeleton.update();
     const pause = function* (i: number) { if (i % CHUNK === CHUNK - 1 || ((i & 255) === 255 && now() - since > STEP_MS)) { yield took(); since = now(); fresh(); skin?.skeleton.update(); at(`draw ${object.name}`); } };
     const indices = geometry.getAttribute('skinIndex'), weights = geometry.getAttribute('skinWeight');
-    const arm = skin?.skeleton.bones.map(b => armBone(b.name));
+    const arm = skin?.skeleton.bones.map(b => armBone(boneAs65(rig, b.name)));
     let attachment = false;
-    for (let p: Object3D | null = object; p && p !== root; p = p.parent) if (p.name === 'WeaponDrawn' || p.name === 'SwordDrawn') attachment = true;
+    for (let p: Object3D | null = object; p && p !== root; p = p.parent) if (isHeldWeaponName(rig, p.name)) attachment = true;
     type Vertex = { p: Vector3; n: Vector3; uv: number[]; color: number[]; arm: number };
     const vertices: Vertex[] = [];
     for (let i = 0; i < position.count; i++) {
@@ -171,7 +172,7 @@ export function* openWaistSteps(root: Object3D, anchor: Group, cornerSupports = 
     yield* scan(points.length/3, 'leg search');
   }
   yield took(); since = now(); fresh(); at('weapon roll');
-  const held = root.getObjectByName('WeaponDrawn') ?? root.getObjectByName('SwordDrawn')!;
+  const held = heldWeapon(root)!;
   const grip = held.localToWorld(new Vector3()).applyMatrix4(inverse);
   const direction = held.localToWorld(new Vector3(0,1,0)).applyMatrix4(inverse).sub(grip).normalize();
   const flat = new Vector3(0,0,1), aligned = new Quaternion().setFromUnitVectors(direction,flat);

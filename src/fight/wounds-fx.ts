@@ -7,6 +7,7 @@ import type { Feel } from './armfeel.ts';
 import { BLOOD, bloodGrow, foeBurstPull } from './blood-style.ts';
 import { createBleeders, pickPart, sprayOf, unit, type WoundSpec } from './wounds.ts';
 import { bloodNum } from './blood-rows.ts';
+import { bone as boneOf } from './rig-bones.ts';
 
 const SPOTS = bloodNum('wounds-fx.spots'), SPOT_LIFE = bloodNum('wounds-fx.spot-life'), DRIP_SIZE = bloodNum('wounds-fx.drip-size'), MARK_SPREAD = bloodNum('wounds-fx.mark-spread');   // marks in the ring; seconds a mark stays; m across a drip; m a body mark lands from the creature
 type Spot = { mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>; age: number; live: boolean };
@@ -31,7 +32,7 @@ export function createWoundFx(scene: THREE.Scene, anchorOf: (id: string) => THRE
     /** A creature was hit: the Pit's burst at the part its row says (weighted by the part's share), flung away from the attacker. `seed` is the fight's (tick and id), so a replay bleeds the same. */
     hit(id: string, spec: WoundSpec, hit: { seed: number; kill: boolean; fromX: number; fromZ: number }): void {
       const spray = sprayOf(spec), anchor = anchorOf(id); if (!spray || !anchor) return;
-      const part = pickPart(spec, unit(hit.seed)), bone = part.bones.map((b) => anchor.getObjectByName(b)).find(Boolean);
+      const part = pickPart(spec, unit(hit.seed)), bone = part.bones.map((b) => boneOf(anchor, b)).find(Boolean);
       (bone ?? anchor).getWorldPosition(v); if (!bone) v.y += 0.5;
       let dx = v.x - hit.fromX, dz = v.z - hit.fromZ; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
       // The hero often stands between the camera and the creature: pull the burst toward the lens the way the Pit does for its foe (blood-style.ts), so it is seen on the creature, not behind him.

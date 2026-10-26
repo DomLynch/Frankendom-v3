@@ -5,6 +5,7 @@ import { lightRig, type TitheLight } from './special-lighting.ts';
 import { advanceCast, isBloodTithe, shadowPhase, LAND_AT, type Cast } from './special-timing.ts';
 import { clamp01, hash } from './fx-math.ts';
 import { fxNum } from './fx-rows.ts';
+import { bone as boneOf, drawnSword } from './rig-bones.ts';
 const AIM_MIN = fxNum('fx.specialTithe.aimMin');
 const AIM_MAX = fxNum('fx.specialTithe.aimMax');
 
@@ -80,9 +81,9 @@ export function createBloodTithe(scene: THREE.Scene, opponent: OpponentId, light
       const caster = cast ? cast.actor : 1, target = 1 - caster;
       if (heads[target] && heads[caster]) { head.copy(heads[target]!); foe.copy(heads[caster]!); centre.copy(head).add(foe).multiplyScalar(0.5); }
       const cp = cast && heads[target] && heads[caster] ? shadowPhase(cast, clock) : null;
-      const anchor = anchors[caster], sword = anchor?.getObjectByName('SwordDrawn') ?? anchor?.getObjectByName('WeaponDrawn'), len = (sword?.userData.contact as { to?: number } | undefined)?.to ?? 0.65;
+      const anchor = anchors[caster], sword = anchor ? drawnSword(anchor) : undefined, len = (sword?.userData.contact as { to?: number } | undefined)?.to ?? 0.65;
       const tipOf = (out: THREE.Vector3) => { sword!.updateWorldMatrix(true, false); return out.copy(spot.set(0, len, 0)).applyMatrix4(sword!.matrixWorld); };
-      const arm = anchor?.getObjectByName('upperarm_r');
+      const arm = anchor ? boneOf(anchor, 'upperarm_r') : undefined;
       if (cp && arm?.parent) {   // after the poses are final, the sword arm, in its parent's frame, about world-up:
         armRestore(arm);
         const age0 = cp.age, landed0 = cast!.landed !== null, g = landed0 || cp.phase === 'recover' || cp.phase === 'dissolve' ? 0 : clamp01((LAND_AT - age0) / ARM_EASE);

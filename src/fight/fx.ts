@@ -20,6 +20,7 @@ import { isTemplate } from './finisher-look.ts';
 import type { CombatEvent, Practice } from './combat.ts';
 import type { State } from './sim.ts';
 import { fxNum } from './fx-rows.ts';
+import { heldWeapon } from './rig-bones.ts';
 const TRAIL_ENTRY_MIN = fxNum('fx.fx.trailEntryMin');
 const TRAIL_TAIL_MAX = fxNum('fx.fx.trailTailMax');
 
@@ -200,7 +201,7 @@ export function createFightFx(host: { scene: THREE.Scene; dropTexture: THREE.Tex
       if (clashEvent && strength > 0 && clashEvent.target !== undefined) {
         const attacker = clashEvent.target,
           rig = attacker ? warriors?.opponent : warriors?.player,
-          weapon = rig?.anchor.getObjectByName('WeaponDrawn') ?? rig?.anchor.getObjectByName('SwordDrawn'),
+          weapon = rig ? heldWeapon(rig.anchor) : undefined,
           contactRange = weapon?.userData.contact as { from: number; to: number } | undefined;
         // Struck off the attacking blade itself (owner 2026-09-20): the outer part of its contact zone as the rig draws it this frame,
         // with a fallback segment at the defender's guard when a rig is not loaded.

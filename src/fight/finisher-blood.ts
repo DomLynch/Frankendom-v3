@@ -6,6 +6,7 @@ import { HAMSTRUNG_BEATS } from './hamstrung.ts';
 import { EXECUTION_BEATS, executionAt } from './execution.ts';
 import { fxNum } from './fx-rows.ts';
 import { lateArtLanded } from '../late-art.ts';
+import { bone as boneOf } from './rig-bones.ts';
 const SIZE_MIN = fxNum('fx.finisherBlood.sizeMin');
 const SIZE_MAX = fxNum('fx.finisherBlood.sizeMax');
 const TARGET_MAX = fxNum('fx.finisherBlood.targetMax');
@@ -43,7 +44,7 @@ type Mode = BloodMode;
 export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: Object3D | null, location = 'torso'): BloodSource[] {
   const template = templateOf(kind);
   victim.updateWorldMatrix(true, true);
-  const at = (name: string) => victim.getObjectByName(name)?.getWorldPosition(new Vector3());
+  const at = (name: string) => boneOf(victim, name)?.getWorldPosition(new Vector3());   // 65 bone names, through the rig map (rig-bones.ts)
   const neck = at('neck_01'), crown = at('Head'), chest = at('spine_02');
   if (!neck || !crown || !chest) return [];
   const up = crown.clone().sub(neck).normalize(), size = Math.max(SIZE_MIN, Math.min(SIZE_MAX, crown.distanceTo(neck)/.075));

@@ -3,6 +3,7 @@ import { movesOf, type Fighter } from './duel.ts';
 import { MOVES, fxMove } from './moves.ts';
 import FEEL_RULES from './feel-rules.json' with { type: 'json' };
 import { fxNum } from './fx-rows.ts';
+import { bone as boneOf } from './rig-bones.ts';
 const STEP_MAX = fxNum('fx.witchfire.stepMax');
 const WF = fxMove('witchfire');   // the move of the skill row whose fx is witchfire
 
@@ -61,7 +62,7 @@ export function createWitchfire(scene: THREE.Scene) {
   const lastAge = [-1, -1], hands = new Map<THREE.Object3D, THREE.Object3D | null>(), trails = new Map<THREE.Object3D, THREE.Object3D | null>();
   let cursor = 0, seed = 7;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };   // seeded: a capture is a capture
-  const handOf = (root: THREE.Object3D) => { if (!hands.has(root)) hands.set(root, root.getObjectByName('hand_l') ?? null); return hands.get(root)!; };
+  const handOf = (root: THREE.Object3D) => { if (!hands.has(root)) hands.set(root, boneOf(root, 'hand_l') ?? null); return hands.get(root)!; };
   const trailOf = (root: THREE.Object3D) => { if (!trails.has(root)) trails.set(root, root.getObjectByName('WeaponTrail') ?? null); return trails.get(root)!; };
   let jet = 0.15;   // how far down the jet a gout flame may be born (m): the first 15 cm, or the whole reach on the impact tick
   const emit = (k: number, speed: number, spread: number, lifeMin: number, lifeMax: number, size: number, rise: number) => {

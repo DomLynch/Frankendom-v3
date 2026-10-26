@@ -1,4 +1,5 @@
 import { fieldOf } from './catalogue-rows.ts';
+import { bone as boneOf } from './rig-bones.ts';
 import { BufferGeometry, Color, Float32BufferAttribute, Object3D, MeshStandardMaterial, Points, ShaderMaterial, SkinnedMesh, Vector3 } from 'three';
 
 // Cut pieces have baked/rotated coordinates: keep the spectral surface without the live rig's height mask or wisps.
@@ -64,7 +65,7 @@ export function spectralAppearance(root: Object3D) {
       }`,
   }));
   smoke.frustumCulled = false; root.add(smoke);
-  const pelvis = root.getObjectByName('pelvis'), position = new Vector3();
+  const pelvis = boneOf(root, 'pelvis'), position = new Vector3();
   let openedTime = 0;
   return (dt: number, dead: boolean, progress: number, opened = false, hold = 3.6) => {   // hold: seconds the ghost stays whole after the death starts (a longer scene holds it longer)
     openedTime = dead && opened ? openedTime + dt : 0;

@@ -1,9 +1,10 @@
 import {Float32BufferAttribute,Group,Matrix4,Mesh,Object3D,Quaternion,SkinnedMesh,Vector3} from 'three';
+import { heldWeapon } from './rig-bones.ts';
 
 // Cache the actual held weapon at its release pose. Geometry belongs to this prop; materials remain borrowed.
 export function prepareWeaponDrop(root:Object3D,anchor:Group) {
  root.updateWorldMatrix(true,true);root.updateMatrixWorld(true);
- const held=root.getObjectByName('WeaponDrawn')??root.getObjectByName('SwordDrawn');
+ const held=heldWeapon(root);
  const inverse=anchor.matrixWorld.clone().invert(),pivot=held?held.getWorldPosition(new Vector3()).applyMatrix4(inverse):new Vector3();
  const group=new Group();group.name='DroppedWeapon';group.position.copy(pivot);group.visible=false;
  const points:number[]=[];
