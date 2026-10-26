@@ -17,7 +17,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Gate 0 (test/gate0) replays input scripts through V1's sim at the seed tag; the default checkout is shallow and tagless
+      - name: Fetch the V1 seed tag for Gate 0
+        run: git fetch --no-tags --depth=1 origin refs/tags/v1-seed-82a994d15:refs/tags/v1-seed-82a994d15
       - run: npm test
+      - name: Gate 0 table
+        run: npm run --silent gate0:table >> "$GITHUB_STEP_SUMMARY"
       - run: npm run build
 
   # Every green main goes live at https://v3.frankendom.com (site root, no prefix), once the deploy secrets exist.

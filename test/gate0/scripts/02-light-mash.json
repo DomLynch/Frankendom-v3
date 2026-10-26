@@ -1,0 +1,14 @@
+{
+  "id": "light-mash",
+  "about": "Draw, close in, then mash light (alternating with side cuts) while walking at the warden.",
+  "segments": [
+    { "ticks": 1, "action": "light" },
+    { "ticks": 45 },
+    { "ticks": 60, "move": { "z": -1 } },
+    { "repeat": 40, "segments": [
+      { "ticks": 18, "move": { "z": -0.6 }, "action": "light", "every": 6 },
+      { "ticks": 12, "move": { "x": 0.5, "z": -0.5 }, "action": "light_left", "every": 6 },
+      { "ticks": 12, "move": { "x": -0.5, "z": -0.5 }, "action": "light_right", "every": 6 }
+    ] }
+  ]
+}

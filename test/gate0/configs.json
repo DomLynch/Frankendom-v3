@@ -1,0 +1,27 @@
+{
+  "about": "Gate 0 fight configs (test/gate0/harness.mjs startFight). Every script runs under every config at every seed listed.",
+  "configs": [
+    {
+      "id": "career",
+      "about": "A fresh frankendom.com visitor's career fight at 82a994d15: Match.begin('career') (src/fight/match.ts:144-176). Era flags as begin() sets them; level 1 Veteran (the Centurion); the visitor's default skill, stance and SPECIAL 2; Special Moves on (recordSpecials({ specials: true, level: 1, opponent: 'veteran' })).",
+      "flags": { "playScaleFor": "veteran", "lateNotice": true, "stab": true, "stanceRows": true },
+      "opponent": "veteran",
+      "level": 1,
+      "weapon": null,
+      "skill": "cleave",
+      "specials": true,
+      "stance": "neutral",
+      "skill2": "reaping",
+      "seeds": [731]
+    },
+    {
+      "id": "base",
+      "about": "The base rules: plain initialPractice(seed, opponentAt(OPPONENTS.veteran, 1)), no Special Moves, no stances, the era flags off (old full-size circle, no late notice, no stab rule, no stance rows).",
+      "flags": { "playScale": 1, "lateNotice": false, "stab": false, "stanceRows": false },
+      "opponent": "veteran",
+      "level": 1,
+      "plain": true,
+      "seeds": [731, 828, 4242]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "kick-thrust",
+  "about": "Draw, close in, then kicks into thrusts (tapped and held/loaded), with the skill and SPECIAL 2 pressed between (inert in the base config).",
+  "segments": [
+    { "ticks": 1, "action": "light" },
+    { "ticks": 45 },
+    { "ticks": 60, "move": { "z": -1 } },
+    { "repeat": 30, "segments": [
+      { "ticks": 30, "action": "kick", "move": { "z": -0.5 } },
+      { "ticks": 30, "action": "thrust" },
+      { "ticks": 45, "action": "thrust", "held": true },
+      { "ticks": 20, "move": { "z": -1 } },
+      { "ticks": 40, "action": "skill" },
+      { "ticks": 40, "action": "skill2" },
+      { "ticks": 20, "action": "kick", "every": 10 }
+    ] }
+  ]
+}

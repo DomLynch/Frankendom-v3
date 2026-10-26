@@ -1,0 +1,19 @@
+{
+  "id": "roll-backstep",
+  "about": "Draw, then rolls in every direction, backsteps, running, a dodge-attack light out of each roll, and a cancelled press.",
+  "segments": [
+    { "ticks": 1, "action": "light" },
+    { "ticks": 45 },
+    { "repeat": 30, "segments": [
+      { "ticks": 30, "move": { "z": -1, "run": true } },
+      { "ticks": 14, "action": "dodge", "move": { "x": 1 } },
+      { "ticks": 10, "action": "light" },
+      { "ticks": 20, "action": "dodge", "move": { "x": -1, "z": 0.3 } },
+      { "ticks": 18, "action": "backstep" },
+      { "ticks": 12, "action": "light", "move": { "z": -1 } },
+      { "ticks": 20, "action": "dodge", "move": { "z": 1 } },
+      { "ticks": 8, "action": "backstep", "cancel": true },
+      { "ticks": 25, "move": { "x": 0.7, "z": -0.7 }, "lock": false }
+    ] }
+  ]
+}

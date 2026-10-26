@@ -1,0 +1,8 @@
+{
+  "id": "idle",
+  "about": "Draw (the first press leaves 'sheathed'), then stand idle until the warden kills the player, or 2 minutes.",
+  "segments": [
+    { "ticks": 1, "action": "light" },
+    { "ticks": 7199 }
+  ]
+}

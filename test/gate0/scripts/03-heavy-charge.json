@@ -1,0 +1,18 @@
+{
+  "id": "heavy-charge",
+  "about": "Draw, close in, then heavies: tapped, half-charged and fully held (held level on), with lights chained after some.",
+  "segments": [
+    { "ticks": 1, "action": "light" },
+    { "ticks": 45 },
+    { "ticks": 60, "move": { "z": -1 } },
+    { "repeat": 25, "segments": [
+      { "ticks": 1, "action": "heavy", "move": { "z": -0.5 } },
+      { "ticks": 50 },
+      { "ticks": 30, "action": "heavy", "held": true },
+      { "ticks": 40 },
+      { "ticks": 75, "action": "heavy", "held": true, "move": { "z": -0.3 } },
+      { "ticks": 20, "action": "light", "every": 8 },
+      { "ticks": 30, "move": { "z": -1 } }
+    ] }
+  ]
+}
