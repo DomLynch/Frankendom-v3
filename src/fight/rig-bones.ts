@@ -3,8 +3,8 @@
 // (data/rig.json `held`), and goes through `bone(root, name)` here. Each fighter's loaded body says which rig it is (`rigOf`, data/rig.json
 // `detect`). On a 65 body `bone` IS root.getObjectByName(name): today's behaviour, unchanged. On a 106 body the name goes through data/rig.json
 // (`bones`: 65 name -> Mixamo name; `weapons`: the names tried for a weapon node, OpenTrident's socket first). Which rig each side draws:
-// data/rig.json `default` ('106' both; no query key). A 65 body (?hero=v1's warrior.glb, ?foe=v1's veteran.glb, a 106 load that failed) is still
-// looked up as before. Dom's rule: every name, map, file and default is a data row; this file only reads them.
+// data/rig.json `default` ('106' both; no query key). No 65 body is loadable in production any more (?hero=v1, ?foe=v1 and the 65 load fallback
+// were removed; the 65 files are not shipped, data/build.json notShipped); the 65 branch stays for the tests and tools that read the 65 files. Dom's rule: every name, map, file and default is a data row; this file only reads them.
 // No three.js import (types only), so node tests read it as the page does.
 import type { Object3D } from 'three';
 import RIG from '../../data/rig.json' with { type: 'json' };

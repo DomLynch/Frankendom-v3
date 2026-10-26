@@ -29,11 +29,13 @@ test('?pitborn=v1: the Centurion in the Minotaur body, still named the Minotaur'
   setFoeName(null);
 });
 
-test('?foe=v1 keeps the Centurion (his fight, body and name)', () => {
-  for (const q of ['?foe=v1', '?hero=v1&foe=v1', '?pitborn=v1&foe=v1']) {
-    assert.equal(fightOpponent(FIGHT, q), 'veteran', q);
+// 106 only (Dom 2026-10-26): ?foe=v1 (the Centurion's 65 body and name) is gone; the old link reads as the default page.
+test('?foe=v1 no longer does anything: the Pitborn, named the Minotaur', () => {
+  for (const q of ['?foe=v1', '?hero=v1&foe=v1']) {
+    assert.equal(fightOpponent(FIGHT, q), 'pitborn', q);
     setFoeName(foeNameFor(FIGHT.foeName, q, fightOpponent(FIGHT, q)));
-    assert.equal(foeDisplayName('veteran'), 'Centurion', q);
+    assert.equal(foeDisplayName('pitborn'), 'Minotaur', q);
   }
+  assert.equal(fightOpponent(FIGHT, '?pitborn=v1&foe=v1'), 'veteran', '?pitborn=v1 is the Centurion\'s fight');
   setFoeName(null);
 });

@@ -19,7 +19,7 @@ test('fight.json validates with the bladeTables row', () => {
 
 test('every weapon the duel can reach has its table kept: the hero, and the opponent at every level (default and ?pitborn=v1)', () => {
   assert.ok(kept('hero', FIGHT.weapon), `hero/${FIGHT.weapon}`);
-  for (const search of ['', '?pitborn=v1', '?foe=v1']) {
+  for (const search of ['', '?pitborn=v1']) {
     const id = fightOpponent(FIGHT, search), o = OPPONENTS[id];
     for (let level = 1; level <= 100; level++) {
       const body = opponentAt(o, level);

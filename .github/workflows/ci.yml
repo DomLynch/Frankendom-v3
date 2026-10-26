@@ -32,6 +32,9 @@ jobs:
       - name: jpegtran
         run: command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)
       - run: npm run build
+      # 106 only: the built dist/ holds no 65 body, kit or 65-keyed clip JSON, and no bundle names one (data/build.json notShipped)
+      - name: No 65 file in dist/
+        run: DIST_REQUIRED=1 node --test test/rig-bones.test.mjs
 
   # Every green main goes live at https://v3.frankendom.com (site root, no prefix), once the deploy secrets exist.
   # The key is locked by rrsync to the site folder on the VPS, so the remote path is "./".

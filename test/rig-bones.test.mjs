@@ -2,7 +2,9 @@
 // A 65 body is looked up exactly as before (root.getObjectByName(name)); a 106 body through data/rig.json. Both sides are 106 only (Dom 2026-10-26); no URL picks a rig.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { clip106Path, clip106Paths, bone, boneAs65, boneName, rigsDrawn, drawnSword, foeRigFile, gapFillFor, heldWeapon, heroRigFile, isHeldWeaponName, rigFile, rigOf, sanitizeNodeName, trackAs65, trackOn } from '../src/fight/rig-bones.ts';
 
 const RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
@@ -24,6 +26,74 @@ test('106 only: both defaults are 106 and no URL key picks a rig', () => {
     .map((f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')).join('\n');
   for (const key of ['rig', 'foerig', 'herorig']) assert.ok(!new RegExp(`get\\(\\s*['"\`]${key}['"\`]\\s*\\)|[?&]${key}=`).test(src), `no ?${key}= read by the page`);
   assert.ok(!/chooseRigs|RIG\.query/.test(src), 'no rig chooser');
+});
+
+// 106 ONLY IN PRODUCTION (Dom 2026-10-26): no 65 body, kit or 65-keyed clip JSON is reachable from the page. data/build.json `notShipped` names
+// them (they stay in src/assets for these tests and the bakes); scripts/build.mjs refuses to build if the bundle references one or one lands in
+// dist/. These tests are the lock: the source (every way the build ships a src file), the loader table, the queries, and the built dist/.
+const ROOT = fileURLToPath(new URL('..', import.meta.url)), DIST = join(ROOT, 'dist');
+const NOT_SHIPPED = JSON.parse(readFileSync(new URL('../data/build.json', import.meta.url), 'utf8')).notShipped;
+const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
+const posix = (p) => p.split(sep).join('/');
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+
+test('data/build.json notShipped names every 65 body, its 65-rigged kits and every 65-keyed clip JSON; all stay in the repo', () => {
+  for (const stem of [...Object.keys(RIG.files), 'warrior', 'veteran']) assert.ok(NOT_SHIPPED.includes(`src/assets/${stem}.glb`), `${stem}.glb`);
+  for (const kit of ['carriers-minotaur', 'carriers-veteran']) assert.ok(NOT_SHIPPED.includes(`src/assets/loot/${kit}.glb`), kit);
+  for (const f of Object.values(RIG.clips106.files)) assert.ok(NOT_SHIPPED.includes(`src/assets/${f}`), `${f} (65-keyed)`);
+  for (const f of ['bowpower', 'bowfan', 'bowpin', 'bowquick']) assert.ok(NOT_SHIPPED.includes(`src/assets/special-${f}.json`), `special-${f}.json (65-keyed, no 106 file)`);
+  for (const p of NOT_SHIPPED) assert.ok(existsSync(join(ROOT, p)), `${p} stays in src/assets for the tests and the bakes`);
+  for (const stem of Object.values(RIG.files)) assert.ok(!NOT_SHIPPED.includes(`src/assets/${stem}.glb`), `${stem}.glb (106) ships`);
+});
+
+test('no production loader reaches a 65 file: the loader table is the 106 bodies only, no source names a notShipped file, no query picks a body', () => {
+  const sceneSrc = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
+  const table = /const fighterUrls: Record<string, string> = \{([^;]*)\};/.exec(sceneSrc)?.[1];
+  assert.ok(table, 'scene.ts fighterUrls found');
+  assert.deepEqual([...table.matchAll(/'\.\.\/assets\/([^']+)\.glb':/g)].map((m) => m[1]).sort(), Object.values(RIG.files).sort(), 'fighterUrls: the 106 files and nothing else');
+  assert.match(sceneSrc, /const carrierUrls: Record<string, string> = \{\};/, 'no kit loader (both cuts are 65-rigged)');
+  // Every way scripts/build.mjs ships a src file: new URL('<relative>', import.meta.url) (a template copies its folder whole) and import('<relative>.json').
+  const LOADS = /new URL\(\s*(['"`])(\.{1,2}\/[^'"`]*)\1\s*,\s*import\.meta\.url\s*\)|import\(\s*(['"`])(\.{1,2}\/[^'"`]*\.json)\3\s*\)/g;
+  let loads = 0;
+  for (const file of walk(join(ROOT, 'src')).filter((f) => /\.(ts|js|mjs)$/.test(f))) {
+    const src = readFileSync(file, 'utf8');
+    for (const m of src.matchAll(LOADS)) {
+      loads++;
+      const spec = m[2] ?? m[4], cut = spec.indexOf('${');
+      const target = posix(relative(ROOT, resolve(dirname(file), cut < 0 ? spec : spec.slice(0, spec.lastIndexOf('/', cut) + 1))));
+      assert.ok(!NOT_SHIPPED.some((p) => (cut < 0 ? p === target : p.startsWith(target + '/'))), `${posix(relative(ROOT, file))} loads ${spec} (a notShipped 65 file)`);
+    }
+    assert.ok(!/get\(\s*['"`]foe['"`]\s*\)/.test(src), `${posix(relative(ROOT, file))}: no ?foe= read (?foe=v1 is gone)`);
+    assert.ok(!/get\(\s*['"`]hero['"`]\s*\)\s*===\s*['"`]v1['"`]/.test(src), `${posix(relative(ROOT, file))}: no ?hero=v1 read`);
+  }
+  assert.ok(loads > 10, `the scan saw the page's loaders (${loads})`);
+});
+
+// After `npm run build` (CI runs this file again with DIST_REQUIRED=1 once the build is done): no 65 file, hashed copy, .gz twin or lazy
+// .json.js module in dist/, and no bundle names one (an artUrl path, the art manifest, a lazy import specifier).
+test('the built dist/ holds no 65 file and no bundle names one', (t) => {
+  if (!existsSync(join(DIST, 'build.txt'))) {
+    if (process.env.DIST_REQUIRED) assert.fail('no dist/: run npm run build first');
+    return t.skip('no dist/ (npm run build first; CI runs it with DIST_REQUIRED=1)');
+  }
+  const files = walk(DIST).map((f) => posix(relative(DIST, f)));
+  const shipped = files.filter((f) => NOT_SHIPPED.some((p) => {
+    const dot = p.lastIndexOf('.'), stem = p.slice(0, dot), ext = p.slice(dot);
+    return new RegExp(`(^|/)${esc(stem)}(\\.[0-9a-f]{8})?${esc(ext)}(\\.js)?(\\.gz)?$`).test(f);
+  }));
+  assert.deepEqual(shipped, [], 'no 65 file in dist/');
+  for (const stem of Object.values(RIG.files)) assert.ok(files.includes(`src/assets/${stem}.glb`), `${stem}.glb (106) is in dist/`);
+  const named = [];
+  for (const f of files.filter((f) => f.startsWith('b/') && f.endsWith('.js'))) {
+    const js = readFileSync(join(DIST, f), 'utf8');
+    for (const p of NOT_SHIPPED) {
+      const dot = p.lastIndexOf('.'), tail = p.slice(0, dot).replace(/^src\//, ''), ext = p.slice(dot);
+      // a URL the page can fetch: root-absolute ("/src/assets/x.glb", artUrl and the art manifest) or relative ("../assets/x.json.js", a lazy
+      // import). A plain "src/assets/x.glb" is a data string (catalogue-data.ts's V1 roster rows), not a loader.
+      if (new RegExp(`["'\`]\\\\?(/|(\\.\\.?/)+)(src/)?${esc(tail)}(\\.[0-9a-f]{8})?${esc(ext)}(\\.js)?\\\\?["'\`]`).test(js)) named.push(`${f}: ${p}`);
+    }
+  }
+  assert.deepEqual(named, [], 'no bundle names a 65 file');
 });
 
 test('both 106 files are in src/assets with the bone map (OpenTrident v3 deliveries)', () => {
@@ -65,11 +135,11 @@ test("every 106 clip path the data names has a lazy loader (src/fight/clips-106.
   for (const p of clip106Paths()) assert.ok(src.includes(`'${p}': () => import('../assets/${p}')`), `${p}: its key imports its own file`);
 });
 
-test('only a body with a 106 file changes: Psyche and the Minotaur; ?hero=v1 / ?foe=v1 bodies have none', () => {
+test('only a body with a 106 file changes: Psyche and the Minotaur (V1\'s warrior.glb / veteran.glb have none, and are not shipped)', () => {
   assert.equal(rigFile('psyche', '106'), 'psyche-106'); assert.equal(rigFile('minotaur', '106'), 'minotaur-106');
-  assert.equal(rigFile('psyche', '65'), 'psyche', 'the 65 file: the load fallback only');
-  assert.equal(rigFile('warrior', '106'), 'warrior', '?hero=v1 (warrior.glb) has no 106 file');
-  assert.equal(rigFile('veteran', '106'), 'veteran', '?foe=v1 (veteran.glb) has no 106 file');
+  assert.equal(rigFile('psyche', '65'), 'psyche', 'the 65 stem: a name only (tests, bakes); never in the loader table');
+  assert.equal(rigFile('warrior', '106'), 'warrior', 'warrior.glb has no 106 file');
+  assert.equal(rigFile('veteran', '106'), 'veteran', 'veteran.glb has no 106 file');
 });
 
 test("the map covers psyche.glb's and minotaur.glb's 65 joints, one to one, onto mixamorig names", () => {

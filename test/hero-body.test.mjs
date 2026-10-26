@@ -1,12 +1,14 @@
 // Psyche as the hero (Dom 2026-10-26): src/assets/psyche.glb is Mixamo's Psyche on V1's 65-joint hero skeleton (scripts/hero-body/build-psyche.sh).
 // What the game asks of a hero body is the same as warrior.glb's: the joints, the clips (V1's byte for byte, plus every picked row), the sword
-// nodes where warrior.glb has them, a `Steel` skin with its maps, the pelvis at the height the clips key. ?hero=v1 draws warrior.glb.
+// nodes where warrior.glb has them, a `Steel` skin with its maps, the pelvis at the height the clips key. These 65 files stay in src/assets for
+// the tests and bakes; the page draws psyche-106.glb only (106 only, Dom 2026-10-26; ?hero=v1 is gone; test/rig-bones.test.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { chooseHeroBody, heroBodyFile, heroContact, heroSwing } from '../src/fight/hero-body-rows.ts';
+import { heroBodyFile, heroContact, heroSwing } from '../src/fight/hero-body-rows.ts';
+import { heroRigFile } from '../src/fight/rig-bones.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ROWS = JSON.parse(readFileSync(new URL('../data/hero-clips.json', import.meta.url), 'utf8'));
@@ -50,11 +52,11 @@ test('the sword nodes are where warrior.glb has them, and the body is Steel with
   assert.ok(mat.pbrMetallicRoughness.baseColorTexture && mat.normalTexture, 'Steel has a base map and a normal map');
 });
 
-test('?hero=v1 draws warrior.glb, anything else Psyche, with the same swing timing', () => {
-  const timing = () => ['Attack', 'Heavy'].map((r) => [heroContact(r), heroSwing(r, 0.2, true)]);
-  assert.equal(chooseHeroBody(''), 'psyche'); assert.equal(heroBodyFile(), 'psyche'); const mine = timing();
-  assert.equal(chooseHeroBody('?hero=v1'), 'warrior'); assert.equal(heroBodyFile(), 'warrior');
-  assert.deepEqual(timing(), mine);
-  assert.equal(chooseHeroBody('?hero=/herolook/x.glb'), 'psyche', 'a /herolook/ preview keeps the default body as its fallback');
-  chooseHeroBody('');
+test('the hero is Psyche on her 106 file, with V1\'s swing timing; the row names no other body', () => {
+  assert.equal(heroBodyFile(), 'psyche'); assert.equal(heroRigFile(heroBodyFile()), 'psyche-106');
+  assert.deepEqual(['Attack', 'Heavy'].map((r) => heroContact(r)), [0.4615, 0.4727]);
+  assert.equal(heroSwing('Attack', 0, true), 0.1346);
+  const row = JSON.parse(readFileSync(new URL('../src/fight/hero-body-rows.json', import.meta.url), 'utf8')).heroBodyRows[0].fields;
+  assert.deepEqual(Object.values(row.files), ['psyche'], 'no Exo (warrior.glb) or classic row');
+  assert.ok(!('v1' in row), 'no ?hero=v1 row');
 });
