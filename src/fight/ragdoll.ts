@@ -13,6 +13,8 @@ import { isPlainDeath, PLAIN_DEATH } from './finisher-look.ts';
 import { afterFirstFrame } from '../late-art.ts';
 import { bone, rigOf } from './rig-bones.ts';
 import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
+import RULES from '../../data/rules.json' with { type: 'json' };
+import { createRulesEval, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
@@ -28,7 +30,7 @@ type CutResult = { unit: string; gear_slots: string[]; carries_roles: string[]; 
 type Ragdoll = {
   state: string; partIds: string[];
   row: { roles: { id: string; parent: string | null; radius_m: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[]; severable: { id: string; cut_role: string }[] };
-  applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void;
+  applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; knockdown(kind: 'damage' | 'push', hit?: Hit): void;
   cut(unit: string, opts?: { helmet?: boolean; impulse?: Vec3 }): CutResult | null; readPose(): ArrayLike<number>;
   snapToTarget(): boolean; reset(): boolean; destroy(): void;
 };
@@ -38,7 +40,7 @@ type CutRows = PhysicsRows['cut'];
 type Physics = { step(dt: number): number; createRagdoll(row: unknown, opts?: { position?: Vec3; id?: string; motorTuning?: Tuning; solveHinges?: boolean }): Ragdoll; tickDt: number };
 type Rig = { drive(): void; applyPose(): void };
 type Bones = Record<string, THREE.Object3D>;
-type Chunk = {
+type Chunk = RulesPackage & {
   createPhysics(opts: { seed: number; states?: unknown }): Promise<Physics>;
   createThreeRig(three: typeof THREE, rd: Ragdoll, bones: Bones, root: THREE.Object3D, opts?: { bind?: { bones: Bones; root: THREE.Object3D } }): Rig;
 };
@@ -60,7 +62,7 @@ let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
-  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE) : null;
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search)) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
@@ -105,12 +107,16 @@ type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
 export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
 // rows: data/physics.json; foe: the opponent's row (ragdollRowFor); load: the chunk's import (scene.ts hands `() => import('./physics-chunk.ts')`)
-export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false) {
+export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false) {
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const late = createLateCuts();   // a finisher row's cut made some seconds after the killing blow (finisherCuts atS)
+  // ?rules=m4 (rules-eval.ts): `rules` is the evaluator, `down` the seconds a knockdown has left (the bones follow the ragdoll), `getUp` the seconds left of the blend back to the clip
+  let rules: ReturnType<typeof createRulesEval> | undefined, down = -1, getUp = -1;
+  const ruleCuts: string[] = [];   // the units the evaluator cut during this fight: they come off the body when he dies (cutUnit needs the corpse)
+  const lying = new Map<THREE.Object3D, THREE.Quaternion>(), lyingHips = new THREE.Vector3();
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
   // Cuts (data/physics.json `cut`): the pieces taken off the skinned body, the caps over the seams, the helmet props, and the ticks the world still steps for a piece to settle.
   const cutRows: CutRows = rows.cut, gearRow = foe as { helmet?: boolean; gear?: Record<string, readonly string[]> };
@@ -218,6 +224,20 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     for (const p of props) { const q = p.prop.readPose(); p.mesh.position.set(q[0]!, q[1]!, q[2]!).sub(shift); p.mesh.quaternion.set(q[3]!, q[4]!, q[5]!, q[6]!); }
   }
 
+  // ?rules=m4: the knockdown is over: standing again from the clip's pose (a reset), the bones eased from where he lay over rules `getUpS`.
+  function standUp() { const was = armed; down = -1; build(); armed = was; getUp = RULES.getUpS; }
+  function fromLying(w: number) {   // the bones `w` of the way from where he lay to the clip's pose (now on them)
+    for (const b of Object.values(partBones)) b.quaternion.copy(lying.get(b)!.clone().slerp(b.quaternion, w));
+    partBones.hips!.position.lerpVectors(lyingHips, partBones.hips!.position, w); group!.updateWorldMatrix(true, true);
+  }
+  // ?rules=m4: one sim Hit on him through the evaluator: the stagger (impulse by strength), a knockdown (the bones follow the ragdoll while he is down), a cut (queued in ruleCuts, taken off the corpse at his death).
+  function react(e: CombatEvent, p: Presentation) {
+    if (p.cut && !ruleCuts.includes(p.cut)) ruleCuts.push(p.cut);
+    const blow = blowImpulse(rows.hit, e.location, e.heading, group!.rotation.y), scaled = blow ? { part: blow.part, impulse: blow.impulse.map((v) => v * p.scale) as Vec3 } : undefined;
+    if (down > 0 || p.action === 'none') return;   // already down: the package ignores a stagger or a second fall
+    if (p.action === 'knockdown') { rd!.knockdown(p.cause, scaled); down = p.downS; stagger = -1; }
+    else { rd!.stagger(scaled); stagger = 0; }
+  }
   // A tuning harness may set globalThis.__ragdollTune before the page loads (motorTuning, solveHinges, blend; settle for the trace): the rows' values otherwise.
   // onKill: a harness's own Killed.location -> unit (the stills' kick kill is a torso blow; { torso: 'head' } makes it the head-zone kill the sim rarely lands on cue).
   const tune = (globalThis as { __ragdollTune?: { motorTuning?: Tuning; solveHinges?: boolean; blend?: Record<string, number>; settle?: number; onKill?: Record<string, string> } }).__ragdollTune;
@@ -237,16 +257,16 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       return afterFirstFrame()
         .then(() => new Promise((done) => setTimeout(done, rows.loadAfterFirstFrameMs)))
         .then(() => Promise.all([load(), fetch(new URL(measurePath, document.baseURI)).then((r) => { if (!r.ok) throw Error(`${measurePath}: ${r.status}`); return r.json(); })]))
-        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed, states: rows.states }); build(); })
+        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed, states: rows.states }); if (rulesOn) rules = createRulesEval(RULES, c, row, foe.id); build(); })
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
     /** The sim's decapitation finisher (?ragdoll=finishers): V1's flying head is the picture; the package's cut of the head is made too, so its event and gear are listed. Once. */
-    finisherCut(): CutEvent | null { return mode === 'skip' && !disabled ? cutUnit(cutRows.sever, 'finisher') : null; },
+    finisherCut(): CutEvent | null { return !rulesOn && mode === 'skip' && !disabled ? cutUnit(cutRows.sever, 'finisher') : null; },
     /** The corpse tap (the butcher's table): the ray (a tap on the canvas) cuts the part of the frozen corpse it strikes; null when it strikes nothing cuttable or the corpse is not down. */
     tap(ray: THREE.Raycaster): CutEvent | null {
       const row = cutRows.tap;
-      if (disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs) return null;
+      if (rulesOn || disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs) return null;
       try {
         cutter ??= createPieceCutter(rigged.anchor);
         const hit = cutter.pick(ray), severable = rd.row.severable;
@@ -302,7 +322,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   function step(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null) {
       if (!rd || !rig || !physics || !group) return;
       const start = performance.now();
-      if (!finish && mode !== 'alive') build();   // the rematch: a fresh ragdoll, standing
+      if (!finish && mode !== 'alive') { build(); down = -1; getUp = -1; ruleCuts.length = 0; rules?.renew(); }   // the rematch: a fresh ragdoll, standing (and the evaluator's fighter whole again)
       if (!finish) armed = true;
       const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === 1) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
@@ -310,15 +330,21 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         const fc = bodyFinishers && finisher !== null && !isPlainDeath(finisher) ? finisherCutRow(rows, finisher) : undefined;
         if (finisher !== null && !isPlainDeath(finisher) && !fc) { mode = 'skip'; cost.state = 'finisher'; }
         else {
-          rig.drive(); rd.snapToTarget();   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp
+          if (rules) for (const e of events) if (e.type === 'Hit' && e.target === 1) { const p = rules.hit(e, false); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
+          if (down <= 0) { rig.drive(); rd.snapToTarget(); }   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp (from where he lies, if he is down)
+          down = -1; getUp = -1;
           rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
-          const unit = fc ? fc.unit ?? undefined : killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it; a finisher's row decides its own cut
+          // ?rules=m4: the evaluator's cuts (this fight's, and the killing blow's) are the ONLY cut trigger: the head-zone rule, a finisher row's cut, the tap and the finisher's cut are off
+          for (const u of rulesOn ? ruleCuts.splice(0) : []) cutUnit(u, 'rules', blowImpulse({ ...cutRows.kill, parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group.rotation.y)?.impulse);
+          const unit = rulesOn ? undefined : fc ? fc.unit ?? undefined : killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it; a finisher's row decides its own cut
           const push = (u: string) => blowImpulse({ ...(fc?.kill ?? cutRows.kill), parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group!.rotation.y)?.impulse;   // the push is the row's, whatever the location
           if (unit && (!fc || fc.atS <= 0)) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit));
           else if (unit) late.add(unit, fc!.atS, 'finisher');
         }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== 1) continue;
+        const p = rules?.hit(e, true);   // ?rules=m4: the evaluator's reaction; null (a missile, a weapon with no row) falls to V1's stagger below
+        if (p) { react(e, p); continue; }
         rd.stagger(blowImpulse(rows.hit, e.location, e.heading, group.rotation.y) ?? undefined);   // the package's dip (states.stagger) and the blow's impulse
         stagger = 0;
       }
@@ -327,7 +353,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       acc += dt;
       let ticks = 0;
       while (acc >= tick && ticks < rows.maxTicksPerFrame) {
-        if (mode === 'alive') {
+        if (mode === 'alive' && down > 0) {   // ?rules=m4: knocked down: the motors fall, the hips are free (no setRoot, no target pose)
+          down -= tick;
+          if (down <= 0 || rd.state !== 'knockdown') { const keep = acc; standUp(); acc = keep; }
+        } else if (mode === 'alive') {
           rig.drive();
           if (snap) snap = !rd.snapToTarget();   // a new or reset ragdoll starts on the clip's pose
           if (stagger >= 0) stagger = staggerDepth(rows.states.stagger, stagger + tick) < 0 ? -1 : stagger + tick;
@@ -354,6 +383,11 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         // From the clip's pose into the ragdoll's over kill.blendInS (the ragdoll lags a fast clip while he fights: no pop on the killing frame)
         dying += dt;
         poseToward(rows.kill.blendInS > 0 ? Math.min(1, dying / rows.kill.blendInS) : 1);
+      } else if (mode === 'alive' && down > 0) {   // ?rules=m4: the bones are the ragdoll's while he is down; where he lies is kept for the get-up blend
+        poseToward(1);
+        for (const b of Object.values(partBones)) (lying.get(b) ?? lying.set(b, new THREE.Quaternion()).get(b)!).copy(b.quaternion);
+        lyingHips.copy(partBones.hips!.position);
+      } else if (mode === 'alive' && getUp > 0) { getUp -= dt; fromLying(getUp > 0 ? 1 - getUp / RULES.getUpS : 1); if (getUp <= 0) getUp = -1;
       } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger), blend);   // the stagger on screen, the most at the dip's deepest
       if (mode === 'dead' && follow.length + props.length) followCuts();
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
