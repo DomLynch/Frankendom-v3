@@ -13,6 +13,7 @@ import { build } from 'esbuild';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { optimizeGlb } from './optimize-glb.mjs';
 
 const root = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const out = join(root, 'dist');
@@ -66,6 +67,17 @@ const html = readFileSync(join(root, 'index.html'), 'utf8').replaceAll('./src/',
 if (!html.includes(`./b/${id}/src/client/main.js`)) throw new Error('index.html: entry script not found');
 writeFileSync(join(out, 'index.html'), html);
 writeFileSync(join(out, 'build.txt'), id);
+
+// V1's production GLB packing (scripts/optimize-glb.mjs, copied from V1 as it is): meshopt-coded buffers, int8 normals and uint8 skin
+// weights, unused images dropped, JPEGs recoded losslessly by jpegtran. The Centurion's two files come out as V1's live site serves them
+// (carriers-veteran.glb byte for byte; veteran.glb the same but with every image kept inside, where V1 moves two shared ones to their own files).
+// Only the dist copy is packed: the sources stay plain for Blender. warrior.glb waits for its clip swap (anim/hero-clips-dom-picks).
+// ?load=v1 does not unpack them: the loaders have had the meshopt decoder since V1.
+const PACKED = ['src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb'];
+for (const glb of PACKED) {
+  const target = join(out, glb);
+  if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target)));
+}
 
 // .gz twins, only where they save something (gzip_static falls back to the plain file, gzipped on the fly or not at all)
 const files = (p) => statSync(p).isDirectory() ? readdirSync(p).flatMap((f) => files(join(p, f))) : [p];

@@ -13,6 +13,7 @@
     "gate0:table": "node scripts/gate0-table.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "meshoptimizer": "1.2.0"
   }
 }
