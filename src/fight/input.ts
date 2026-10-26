@@ -59,7 +59,8 @@ export const stabSector = (dx: number, dy: number): boolean => dy < 0 && Math.ab
 // V3 directional heavies (V2 PR #60, Dom 2026-10-26: "the heavy should follow the swipe like the other attacks"). oneButton: a hold on STRIKE arms the heavy at
 // heavyHoldMs() as before; outside a counter / punish window it then waits HEAVY_GRACE_MS for the thumb: a slide of STAB_SLIDE_PX up (the stab sector) is the heavy
 // stab, to a side that side's heavy cut; no slide (or a release) is V1's overhead heavy. Inside a window nothing changes (the heavy fires at the short hold, no wait).
-// Keyboard: G with A/D (or the arrows) held is that side's heavy cut, with W (or ArrowUp) the heavy stab, alone V1's heavy. `?heavy=v1` (or the row at 0) turns all of
+// The slide is measured from where the thumb is when the heavy arms, not from the press: drift during the hold does not pick a side.
+// Keyboard: G with A/D (or the arrows) held is that side's heavy cut (as F's cut), else V1's heavy; W is walking, so no key gives the heavy stab. `?heavy=v1` (or the row at 0) turns all of
 // it off: today's input exactly. Intent only: duel.ts chooseMove turns the press into the move (move-defs.json `directional`).
 const HEAVY_V1_QUERY = /[?&;]heavy=v1\b/.test(typeof location === 'undefined' ? '' : location.search);
 export const DIRECTIONAL_HEAVY = Boolean(inputNum('input.directional-heavy')) && !HEAVY_V1_QUERY, HEAVY_GRACE_MS = inputNum('input.heavy-grace-ms');
@@ -105,7 +106,7 @@ export function createInput(env: InputEnv) {
     guardDir: Direction | null = null,
     cancel = false;
   let dodgeHeld: { since: number; rolled: boolean } | null = null;
-  let slashWait: { since: number; x: number; y: number; armed?: number } | null = null;   // a SLASH press still deciding its side (see slashSlide); armed: when its hold armed the directional heavy (DIRECTIONAL_HEAVY), which now waits for a slide
+  let slashWait: { since: number; x: number; y: number; lx: number; ly: number; armed?: number } | null = null;   // a SLASH press still deciding its side (see slashSlide); x/y: where the slide is measured from; lx/ly: the thumb's last place; armed: when its hold armed the directional heavy (DIRECTIONAL_HEAVY), which now waits for a slide
   const holders = new Set<Strike>();
   let dragGuard = false;
   // The held level the simulation sees: during a swing, whether the control that threw it is still down; otherwise whether any strike control is.
@@ -159,8 +160,8 @@ export function createInput(env: InputEnv) {
   const lateral = () => moveX + Number(keys.has('KeyD') || arrowKey('ArrowRight')) - Number(keys.has('KeyA') || arrowKey('ArrowLeft'));
   // The side a cut takes from the KEYBOARD (A/D or the arrows): the on-screen stick is movement only (Dom 2026-10-07); the touch cut side is the thumb's slide on SLASH.
   const cutLateral = () => Number(keys.has('KeyD') || arrowKey('ArrowRight')) - Number(keys.has('KeyA') || arrowKey('ArrowLeft'));
-  // V3: the heavy the G key throws (DIRECTIONAL_HEAVY): A/D or the arrows held = that side's heavy cut (the light's own cutLateral), else W / ArrowUp held = the heavy stab, else V1's heavy.
-  const keyHeavy = (): Action => { const side = cutAction(cutLateral()); return side === 'light_left' ? 'heavy_left' : side === 'light_right' ? 'heavy_right' : keys.has('KeyW') || arrowKey('ArrowUp') ? 'heavy_thrust' : 'heavy'; };
+  // V3: the heavy the G key throws (DIRECTIONAL_HEAVY): A/D or the arrows held = that side's heavy cut (the light's own cutLateral), else V1's heavy (G while walking forward stays the overhead).
+  const keyHeavy = (): Action => { const side = cutAction(cutLateral()); return side === 'light_left' ? 'heavy_left' : side === 'light_right' ? 'heavy_right' : 'heavy'; };
   const moving = () => moveX !== 0 || moveZ !== 0 || MOVE_KEYS.some((k) => keys.has(k));
   function pressDodge(now: number) {
     if (dodgeHeld) return;
@@ -286,12 +287,12 @@ export function createInput(env: InputEnv) {
       }
       hold(name);
       button.dataset.held = ''; // the button's side mark lights while held (see .side-marks in style.css)
-      if (deferred) slashWait = { since: env.now(), x: event.clientX, y: event.clientY };
+      if (deferred) slashWait = { since: env.now(), x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY };
       else start();
     });
     button.addEventListener('pointermove', (event) => {
       if (event.pointerId !== id || dragged) return;
-      if (deferred && slashWait) { const side = slashSlide(event.clientX - slashWait.x); if (ONE_BUTTON) { const dx = event.clientX - slashWait.x, dy = event.clientY - slashWait.y; if (Math.hypot(dx, dy) >= STAB_SLIDE_PX) { if (slashWait.armed !== undefined) fireHeavy(heavySlide(dx, dy)); else if (stabSector(dx, dy)) fireStab(); else fireSlash(dx < 0 ? 'left' : 'right'); return; } } else if (side) { fireSlash(side); return; } }
+      if (deferred && slashWait) { slashWait.lx = event.clientX; slashWait.ly = event.clientY; const side = slashSlide(event.clientX - slashWait.x); if (ONE_BUTTON) { const dx = event.clientX - slashWait.x, dy = event.clientY - slashWait.y; if (Math.hypot(dx, dy) >= STAB_SLIDE_PX) { if (slashWait.armed !== undefined) fireHeavy(heavySlide(dx, dy)); else if (stabSector(dx, dy)) fireStab(); else fireSlash(dx < 0 ? 'left' : 'right'); return; } } else if (side) { fireSlash(side); return; } }
       if (ONE_BUTTON && deferred && !slashWait) return;   // oneButton: the swipe has decided (stab, cut or heavy); sliding on out of the circle is not a guard press that overrides it
       const c = radius();
       if (Math.hypot(event.clientX - c.x, event.clientY - c.y) <= c.r) return;
@@ -500,7 +501,7 @@ export function createInput(env: InputEnv) {
     intent(): ControlIntent {
       if (slashWait && slashWait.armed === undefined && env.now() - slashWait.since >= (ONE_BUTTON ? heavyHoldMs(counterOpen()) : SLASH_DECIDE_MS)) {   // oneButton: a hold past heavyHoldMs() (HEAVY_HOLD_MS, or HEAVY_HOLD_WINDOW_MS inside a counter window) is the heavy
         if (!ONE_BUTTON) fireSlash(null);
-        else if (DIRECTIONAL_HEAVY && !counterOpen()) slashWait.armed = env.now();   // V3: armed; the slide (pointermove) or the grace below decides which heavy
+        else if (DIRECTIONAL_HEAVY && !counterOpen()) { slashWait.armed = env.now(); slashWait.x = slashWait.lx; slashWait.y = slashWait.ly; }   // V3: armed; the slide (pointermove, from here) or the grace below decides which heavy
         else fireHeavy();
       }
       if (slashWait && slashWait.armed !== undefined && (counterOpen() || env.now() - slashWait.armed >= HEAVY_GRACE_MS)) fireHeavy();   // V3: no slide inside the grace (or a window opened): V1's overhead heavy

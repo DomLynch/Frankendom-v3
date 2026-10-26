@@ -28,17 +28,29 @@ const BASE_PATHS = Object.fromEntries((PATH_TABLE.rows as unknown as (PathSpec &
 export type DirectionalHeavy = { id: MoveId; from: MoveId; direction: MoveDef['direction']; blade: PathId; windupFactor: number };
 export const DIRECTIONAL_HEAVIES: readonly DirectionalHeavy[] = (DIRECTIONAL_TABLE.rows as unknown as DirectionalHeavy[]).map((d) => {
   if (!MOVE_DIRECTIONS.includes(d.direction)) throw Error(`move-defs directional "${d.id}": direction ${d.direction} is not one of ${MOVE_DIRECTIONS.join(', ')}`);
-  if (Object.hasOwn(BASE_MOVES, d.id) || Object.hasOwn(BASE_PATHS, d.id)) throw Error(`move-defs directional "${d.id}": the id is already a move or a path`);
+  if ([d.id, chainPathOf(d)].some((k) => Object.hasOwn(BASE_MOVES, k) || Object.hasOwn(BASE_PATHS, k))) throw Error(`move-defs directional "${d.id}": the id is already a move or a path`);
   return d;
 });
+function chainPathOf(d: DirectionalHeavy): PathId { return `${d.id}_chain` as PathId; }   // a directional heavy's chained path: `<id>_chain`, the base moves' own naming
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
-/** One weapon's move and path tables with its directional heavies resolved; the SAME objects back when they already hold exactly these rows. */
+/** One weapon's move and path tables with its directional heavies resolved; the SAME objects back when they already hold exactly these rows.
+ *  A directional heavy chains exactly as its `from` move: the same chain row, the from move's chained timing (wind-up scaled like the plain one) on its own
+ *  `<id>_chain` path, and every follow list that names `from` names it too (right after `from`), so duel.ts's follow test needs no rule of its own. */
 export function withDirectionalHeavies<M extends Record<string, MoveDef>, P extends Record<string, PathSpec>>(moves: M, paths: P): { moves: M; paths: P } {
   const addMoves: Record<string, MoveDef> = {}, addPaths: Record<string, PathSpec> = {};
   for (const d of DIRECTIONAL_HEAVIES) {
     const from = moves[d.from]!, look = paths[d.blade]!, windup = Math.round(from.windup * d.windupFactor);
-    addMoves[d.id] = checkMove({ ...from, id: d.id, direction: d.direction, path: d.id, chainPath: null, chained: null, chain: null, windup });
+    const chained = from.chained ? { ...from.chained, windup: Math.round(from.chained.windup * d.windupFactor) } : null;
+    const chainLook = from.chainPath ? paths[from.chainPath]! : null, chainPath = chained && chainLook ? chainPathOf(d) : null;
+    addMoves[d.id] = checkMove({ ...from, id: d.id, direction: d.direction, path: d.id, chainPath, chained, chain: from.chain, windup });
     addPaths[d.id] = { clip: look.clip, source: look.source, windup, active: from.active, recovery: from.recovery, blade: d.blade };
+    if (chainPath) addPaths[chainPath] = { clip: look.clip, source: look.source, windup: Math.round(chainLook!.windup * d.windupFactor), active: chainLook!.active, recovery: chainLook!.recovery, blade: d.blade };
+  }
+  // The follow lists: wherever a chain row lists a directional heavy's `from`, its directional heavies follow too (appended once, next to `from`).
+  for (const [id, m] of Object.entries(moves)) {
+    if (!m.chain || Object.hasOwn(addMoves, id)) continue;
+    const follow = m.chain.follow.flatMap((f) => [f, ...DIRECTIONAL_HEAVIES.filter((d) => d.from === f && !m.chain!.follow.includes(d.id)).map((d) => d.id)]);
+    if (follow.length !== m.chain.follow.length) addMoves[id] = { ...m, chain: { ...m.chain, follow } };
   }
   const movesSame = Object.keys(addMoves).every((k) => same(moves[k], addMoves[k])), pathsSame = Object.keys(addPaths).every((k) => same(paths[k], addPaths[k]));
   return { moves: movesSame ? moves : { ...moves, ...addMoves }, paths: pathsSame ? paths : { ...paths, ...addPaths } };

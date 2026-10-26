@@ -78,8 +78,25 @@ test('inside a counter window the heavy fires at the short hold, with no grace (
   assert.ok(hits[0][0] < HEAVY_HOLD_MS, 'the short window hold');
 });
 
-test('keyboard: G alone is V1\'s heavy; G with A, D or W is that heavy', () => {
-  for (const [held, want] of [[null, 'heavy'], ['KeyA', 'heavy_left'], ['KeyD', 'heavy_right'], ['KeyW', 'heavy_thrust'], ['ArrowLeft', 'heavy_left'], ['ArrowUp', 'heavy_thrust']]) {
+test('drift during the hold does not count: the slide is measured from where the heavy armed', () => {
+  const drift = STAB_SLIDE_PX - 4;
+  let r = rig();
+  r.at(0); r.strike.fire('pointerdown', { clientX: C, clientY: C });
+  r.at(100); r.strike.fire('pointermove', { clientX: C + drift, clientY: C });
+  assert.equal(r.frame(HEAVY_HOLD_MS), null, 'armed');
+  r.at(HEAVY_HOLD_MS + 20); r.strike.fire('pointermove', { clientX: C + drift + 6, clientY: C });
+  assert.equal(r.frame(HEAVY_HOLD_MS + 20), null, 'a 6 px wobble after arming is no slide');
+  assert.equal(r.frame(HEAVY_HOLD_MS + HEAVY_GRACE_MS), 'heavy');
+  r = rig();
+  r.at(0); r.strike.fire('pointerdown', { clientX: C, clientY: C });
+  r.at(100); r.strike.fire('pointermove', { clientX: C + drift, clientY: C });
+  assert.equal(r.frame(HEAVY_HOLD_MS), null);
+  r.at(HEAVY_HOLD_MS + 20); r.strike.fire('pointermove', { clientX: C + drift - STAB_SLIDE_PX, clientY: C });
+  assert.equal(r.frame(HEAVY_HOLD_MS + 20), 'heavy_left', 'a full slide from the armed place picks its side');
+});
+
+test('keyboard: G alone (or walking forward) is V1\'s heavy; G with A/D or the side arrows is that side\'s heavy', () => {
+  for (const [held, want] of [[null, 'heavy'], ['KeyA', 'heavy_left'], ['KeyD', 'heavy_right'], ['KeyW', 'heavy'], ['ArrowLeft', 'heavy_left'], ['ArrowUp', 'heavy']]) {
     const r = rig();
     if (held) r.win.fire('keydown', { code: held });
     r.win.fire('keydown', { code: 'KeyG' });

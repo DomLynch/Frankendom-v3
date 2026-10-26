@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DIRECTIONAL_HEAVIES } from '../src/fight/move-rows.ts';
-import { WEAPONS, WEAPONS86, OPPONENTS } from '../src/fight/moves.ts';
+import { WEAPONS, WEAPONS86, OPPONENTS, weaponOf } from '../src/fight/moves.ts';
 import { initialDuel, stepDuel, idleIntent, legal } from '../src/fight/duel.ts';
 import { bladeAge } from '../src/fight/blade.ts';
 import { heavySlide, DIRECTIONAL_HEAVY, HEAVY_GRACE_MS, HEAVY_HOLD_MS, STAB_SLIDE_PX } from '../src/fight/input.ts';
@@ -12,17 +12,48 @@ import { heavySlide, DIRECTIONAL_HEAVY, HEAVY_GRACE_MS, HEAVY_HOLD_MS, STAB_SLID
 const IDS = ['heavy_right', 'heavy_left', 'heavy_thrust'];
 const SIDE = { heavy_right: 'right', heavy_left: 'left', heavy_thrust: 'thrust' };
 
-test('the rows: three directional heavies, each the overhead heavy of the same weapon with its own side and no chain', () => {
+test('the rows: three directional heavies, each the overhead heavy of the same weapon with its own side, chaining as the overhead does', () => {
   assert.deepEqual(DIRECTIONAL_HEAVIES.map((d) => d.id), IDS);
   for (const table of [WEAPONS, WEAPONS86]) for (const [wid, w] of Object.entries(table)) for (const d of DIRECTIONAL_HEAVIES) {
     const m = w.moves[d.id], from = w.moves[d.from], path = w.paths[d.id], look = w.paths[d.blade];
     const { id, direction, path: p, chainPath, chained, chain, windup, ...stats } = m;
-    const { id: _i, direction: _d, path: _p, chainPath: _c, chained: _ch, chain: _chn, windup: fromWindup, ...fromStats } = from;
+    const { id: _i, direction: _d, path: _p, chainPath: fromChainPath, chained: fromChained, chain: fromChain, windup: fromWindup, ...fromStats } = from;
     assert.deepEqual(stats, fromStats, `${wid} ${d.id}: every stat is the overhead's`);
     assert.equal(windup, Math.round(fromWindup * d.windupFactor), `${wid} ${d.id}: wind-up`);
-    assert.deepEqual([id, direction, p, chainPath, chained, chain], [d.id, SIDE[d.id], d.id, null, null, null], `${wid} ${d.id}`);
+    assert.deepEqual([id, direction, p, chain], [d.id, SIDE[d.id], d.id, fromChain], `${wid} ${d.id}`);
+    assert.deepEqual(chained, fromChained && { ...fromChained, windup: Math.round(fromChained.windup * d.windupFactor) }, `${wid} ${d.id}: chained timing`);
+    assert.equal(chainPath, fromChained && fromChainPath ? `${d.id}_chain` : null, `${wid} ${d.id}: chain path`);
     assert.deepEqual(path, { clip: look.clip, source: look.source, windup, active: from.active, recovery: from.recovery, blade: d.blade }, `${wid} ${d.id} path`);
+    if (chainPath) {
+      const fc = w.paths[fromChainPath];
+      assert.deepEqual(w.paths[chainPath], { clip: look.clip, source: look.source, windup: Math.round(fc.windup * d.windupFactor), active: fc.active, recovery: fc.recovery, blade: d.blade }, `${wid} ${d.id} chain path`);
+    }
+    for (const [mid, mv] of Object.entries(w.moves)) if (mv.chain)
+      assert.equal(mv.chain.follow.includes(d.id), mv.chain.follow.includes(d.from), `${wid} ${mid}: follows ${d.id} exactly when it follows ${d.from}`);
   }
+});
+
+// A light, then a heavy press inside the light's chain window: the attack the press starts (chained or not, and its wind-up).
+function afterLight(wid, light, action) {
+  let d = initialDuel(OPPONENTS.veteran, wid);
+  const window = weaponOf(wid).moves[light].chain?.window ?? 1;
+  d = { ...d, fighters: [{ ...d.fighters[0], phase: 'ready', age: 0, move: null, stamina: 1000, lastMove: light, chain: window }, d.fighters[1]] };
+  const f = stepDuel(d, [it({ action }), it()]).fighters[0];
+  return { phase: f.phase, move: f.move, chained: f.chained, windup: f.chained ? weaponOf(wid).moves[f.move].chained.windup : weaponOf(wid).moves[f.move].windup };
+}
+test('a light then a directional heavy inside the chain window starts chained, with the wind-up light then overhead has', () => {
+  let chainedSeen = 0;
+  for (const wid of Object.keys(WEAPONS)) for (const light of ['light_right', 'light_left']) {
+    const overhead = afterLight(wid, light, 'heavy');
+    assert.deepEqual([overhead.phase, overhead.move], ['attack', 'heavy_overhead'], `${wid} ${light} then heavy`);
+    if (overhead.chained) chainedSeen++;
+    for (const id of ['heavy_right', 'heavy_thrust', 'heavy_left']) {
+      const dir = afterLight(wid, light, id);
+      assert.deepEqual([dir.phase, dir.move, dir.chained, dir.windup], ['attack', id, overhead.chained, overhead.windup], `${wid} ${light} then ${id}`);
+    }
+  }
+  assert.ok(chainedSeen > 0, 'some weapon chains a light into its overhead');
+  assert.equal(afterLight('longsword', 'light_right', 'heavy_right').chained, true, 'the longsword chains light_right into heavy_right');
 });
 
 test('bladeAge maps wind-up onto wind-up, active onto active, recovery onto recovery', () => {
