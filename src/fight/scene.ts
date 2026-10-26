@@ -57,16 +57,7 @@ import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-
 import { createFightFx, impactTexture } from './fx.ts';
 import { createSignatures } from './signature.ts';
 import { scorch } from './scorch.ts';
-import './signature-dwarf.ts';   // registers the Dwarf's Hammer Stamp
-import './signature-knight.ts';   // the Knight's Rivet Burst registers itself
-import './signature-witch.ts';   // registers the Witch's Grasp
-import './signature-pitborn.ts';   // registers the Pitborn's Butcher's Wake
-import './signature-executioner.ts';   // the Executioner's Reaping Scar registers itself
-import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself
-import './signature-nightborn.ts';   // Nightborn A: Blood Recall
-import './signature-goblin.ts';   // Goblin A: Hooked Wound
-import './signature-plaguedoctor.ts';   // Plague Doctor A: Rot Bloom
-import './signature-shieldmaiden.ts';   // registers the Shieldmaiden's Splintered Defiance
+import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself (V3 meets only the veteran: the other nine opponents' signatures are not shipped)
 import { settleWithin } from './warm-gate.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
@@ -110,9 +101,6 @@ export function createScene(
   // gladius + scutum from Legionary), so his rig is armed for that level. A rematch that crosses the change reloads the page (main.ts).
   // Default 1 = the first rung's loadout (the Centurion's baked trident): a harness caller that omits it (versus-cards.mjs) renders rung 1.
   opponentLevel: number | Promise<number> = 1,
-  // V3: two empty slots, where V1 took a live duel's peer kit and an open-world zone mount; V3 never passes either. Kept so main.ts's call is unchanged.
-  _peerKit?: undefined,
-  _world?: undefined,
   post?: () => Promise<GfxPost>,   // a LOADER, called once the renderer exists, so a page with no WebGL never starts the import (the chunk imports the entry, which has thrown: a second, identical pageerror)
 ) {
   const theme = arenaFor(opponentId, arenaOverride);
