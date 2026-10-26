@@ -1,20 +1,20 @@
 // The combat HUD: meters, labels, the combat buttons' enabled/hidden/label state, and the floating damage numbers. Pure DOM
 // binding over the practice state — it never decides anything about the fight. `element` is injected so the entry point's
 // own lookup (and the VM test harness's fake document) is what it binds to.
-import { accepts, counterLine, practiceHint, type ClarityEvent, type CombatEvent, type Practice } from './combat.ts';
+import { accepts, counterLine, practiceHint, refusedButton, type ClarityEvent, type CombatEvent, type Practice } from './combat.ts';
 import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
 import { won } from '../stubs.ts';   // V3: ladder.ts
 import { bareName } from '../roster.ts';
 import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../stubs.ts';   // V3: lessons.ts
 import { createGapHistory } from './kick-close.ts';
 import { staminaLow } from './fatigue-preview.ts';
-import { SKILL_MOVE, SKILL_ROWS, weaponOf, type OpponentId } from './moves.ts';
+import { DIRECTIONAL_HEAVY_IDS, SKILL_MOVE, SKILL_ROWS, weaponOf, type OpponentId } from './moves.ts';
 import { fxNum } from './fx-rows.ts';
 import { specialCueText } from './sandbox-rules.ts';
 import { specialName } from './special-names.ts';
 
 // Heavy-class contacts: bigger damage numbers here, a longer hit-stop in the frame loop.
-export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical']);
+export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical', ...DIRECTIONAL_HEAVY_IDS]);   // + V3's directional heavies (move-defs.json `directional`)
 // Lit = a kick pressed from here lands on a guard-raised foe. Measured 2026-10-07 (tests/hud.test.ts): the true far edge is 1.585 m (the 1.2 m cone plus the kick's .55 stride), so 1.5 keeps a margin for the foe's step.
 export const KICK_LANDS = fxNum('hud.kick-light-m');   // a HUD margin under the true edge (tests/hud.test.ts ties it to the live sim: 0 <= edge - this <= 0.15)
 
@@ -224,8 +224,9 @@ export function createHud(element: Lookup) {
     refused(clarity: readonly ClarityEvent[]) {
       for (const c of clarity) {
         if (c.type !== 'PressRefused' || c.actor !== 0) continue;
-        const button = c.action === 'heavy' ? heavyButton : c.action === 'thrust' ? thrustButton : c.action === 'kick' ? kickButton : c.action === 'skill' ? skillButton : c.action === 'skill2' ? skill2Button
-          : c.action === 'dodge' || c.action === 'backstep' ? dodgeButton : c.action === 'parry' ? guardButton : attackButton;
+        const key = refusedButton(c.action);
+        const button = key === 'heavy' ? heavyButton : key === 'thrust' ? thrustButton : key === 'kick' ? kickButton : key === 'skill' ? skillButton : key === 'skill2' ? skill2Button
+          : key === 'dodge' ? dodgeButton : key === 'guard' ? guardButton : attackButton;
         button.classList.remove('refused'); void button.offsetWidth; button.classList.add('refused');
         setTimeout(() => button.classList.remove('refused'), 260);
       }
