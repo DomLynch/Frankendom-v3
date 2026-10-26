@@ -27,6 +27,15 @@ const open = async (query, tune) => {
 };
 if (process.env.COST) {
   const page = await open(queries[0] ?? '', HEAD ? { onKill: { torso: 'head' } } : undefined);
+  // The whole frame, not the ragdoll's share: every rAF callback is timed (the render is inside it), a frame in which the cut list grew is a cut frame, and the gap to the
+  // next frame (a GPU stall or a shader compile shows there) is kept too. __frames: [callback ms, gap to the next callback ms, cuts listed after it].
+  await page.addInitScript(() => {
+    const raf = window.requestAnimationFrame.bind(window), frames = globalThis.__frames = []; let last = null;
+    window.requestAnimationFrame = (cb) => raf((t) => {
+      const s = performance.now(); if (last) last[1] = s - last[3];
+      cb(t); const e = performance.now(); last = [e - s, 0, (globalThis.__v3Cuts ?? []).length, s, globalThis.__v3Fight?.finish ? 1 : 0]; frames.push(last);
+    });
+  });
   await page.goto(`${base}/${queries[0] ? `?${queries[0]}` : ''}`);
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 120000 });
   await page.evaluate((s) => new Promise((done) => {
@@ -45,6 +54,15 @@ if (process.env.COST) {
   const c = await page.evaluate(() => ({ ...globalThis.__ragdoll, screenOf: undefined, finish: globalThis.__v3Fight.finish }));
   for (const [mode, m] of Object.entries(c.byMode)) console.log(`cost ${mode}: ${(m.totalMs / m.frames).toFixed(3)} ms a frame on average, max ${m.maxMs.toFixed(2)} ms, ${m.frames} frames`);
   console.log(`cost: state ${c.state}; cuts ${JSON.stringify(c.cuts)}`);
+  const frames = await page.evaluate(() => globalThis.__frames), cutFrames = [];
+  frames.forEach((f, i) => { if (i && f[2] > frames[i - 1][2]) cutFrames.push({ unit: c.cuts[f[2] - 1]?.unit, source: c.cuts[f[2] - 1]?.source, callbackMs: +f[0].toFixed(2), gapToNextMs: +f[1].toFixed(2), prevMs: +frames[i - 1][0].toFixed(2) }); });
+  const ordinary = frames.filter((f, i) => i && f[2] === frames[i - 1][2]).map((f) => f[0]).sort((a, b) => a - b);
+  console.log(`frames ${frames.length}: callback median ${ordinary[ordinary.length >> 1]?.toFixed(2)} ms, p99 ${ordinary[Math.floor(ordinary.length * 0.99)]?.toFixed(2)} ms, max ${ordinary.at(-1)?.toFixed(2)} ms (frames with no cut)`);
+  const killAt = frames.findIndex((f, i) => i && f[4] && !frames[i - 1][4]);   // the frame the kill lands in (the same with or without the head cut: the control)
+  if (killAt > 0) console.log(`kill frame: callback ${frames[killAt][0].toFixed(2)} ms, gap to next ${frames[killAt][1].toFixed(2)} ms, previous ${frames[killAt - 1][0].toFixed(2)} ms; next frames ${frames.slice(killAt + 1, killAt + 4).map((f) => f[0].toFixed(1)).join(', ')} ms`);
+  for (const f of cutFrames) console.log(`cut frame ${f.unit} (${f.source}): callback ${f.callbackMs} ms, gap to next ${f.gapToNextMs} ms, previous frame ${f.prevMs} ms`);
+  for (const s of c.cutSteps ?? []) console.log(`cut steps ${JSON.stringify(Object.fromEntries(Object.entries(s).map(([k, v]) => [k, typeof v === 'number' ? +v.toFixed(2) : v])))}`);
+  c.cutFrames = cutFrames; c.frameStats = { frames: frames.length, medianMs: ordinary[ordinary.length >> 1], maxMs: ordinary.at(-1) };
   writeFileSync(`${out}/cut-cost.json`, JSON.stringify(c, null, 2));
   await browser.close(); process.exit(0);
 }
@@ -82,6 +100,11 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
   else if (TAP) {
     // let him lie until the package freezes him (the same ticks for every query), then tap
     for (let k = 0; k < 900 && !v1 && (await cost())?.state !== 'frozen'; k += 10) await run(10);
+    // ASIDE=dx,dz: the test hook: the hero is moved off the corpse's line (his sim position shifted by dx, dz metres) so the camera sees the corpse unhidden
+    // ORBIT=dx: the camera is dragged dx CSS px sideways on the sand (a drag never cuts), so the corpse is seen from the side, not over the hero's shoulder
+    if (process.env.ORBIT) { const dx = Number(process.env.ORBIT); await page.mouse.move(187 - dx / 2, 560); await page.mouse.down(); for (let i = 1; i <= 10; i++) { await page.mouse.move(187 - dx / 2 + (dx * i) / 10, 560); await run(1); } await page.mouse.up(); await run(30); }
+    // ASIDE=m: the test hook: the hero and the corpse are moved apart sideways (the corpse's sim position shifted m metres across the line from the hero to him; the camera rides the hero), so the corpse is not behind the hero
+    if (process.env.ASIDE) { await page.evaluate((m) => { const [h, f] = globalThis.__v3Fight.duel.fighters, dx = f.body.x - h.body.x, dz = f.body.z - h.body.z, n = Math.hypot(dx, dz) || 1; f.body = { ...f.body, x: f.body.x - (dz / n) * m, z: f.body.z + (dx / n) * m }; }, Number(process.env.ASIDE)); await run(20); }
     await run(30);
     await shoot('tap--1');
     // TAP is a unit (arm_left ...: the first grid point of the screen a tap would cut that unit at) or a part (armLeft ...: that bone's own screen point)

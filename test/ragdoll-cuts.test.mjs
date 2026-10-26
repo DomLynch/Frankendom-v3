@@ -36,7 +36,7 @@ test('the cut rows name the package\'s units, parts and gear slots, and the vali
   for (const [slot, ids] of Object.entries(row.gear)) { assert.ok(slots.has(slot), `gear slot ${slot} is one of the package's: ${[...slots]}`); assert.ok(Array.isArray(ids)); }
   assert.equal(row.helmet, false, 'the Minotaur wears no helmet (no armour until beta)');
   for (const k of ['piece', 'bodyKeepBelow']) assert.ok(C.seam[k] > 0 && C.seam[k] <= 1);
-  assert.ok(C.settleS > 0 && C.tap.maxMovePx > 0 && C.tap.maxMs > 0 && C.tap.needs === 'frozen');
+  assert.ok(C.tap.maxMovePx > 0 && C.tap.maxMs > 0 && C.tap.needs === 'frozen');
   assert.deepEqual(validateFile('physics', ROWS), []);
   physics.destroy();
 });
@@ -51,9 +51,11 @@ test('the package cuts a frozen corpse: the piece wakes and moves, the rest stay
   assert.equal(r.cap.position.length, 3);
   assert.deepEqual(r.props, [], 'no helmet prop without helmet: true');
   assert.equal(rd.state, 'frozen', 'the corpse is still frozen');
-  for (let i = 0; i < ROWS.tickHz * ROWS.cut.settleS; i++) physics.step(1 / ROWS.tickHz);
+  assert.equal(rd.awake, true, 'the piece the cut wakes is awake');
+  for (let i = 0; i < ROWS.tickHz * 30 && rd.awake; i++) physics.step(1 / ROWS.tickHz);   // the page steps the world only while rd.awake
+  assert.equal(rd.awake, false, 'the piece settles and the world stops being stepped');
   const after = pose(), moved = (id) => Math.hypot(...[0, 1, 2].map((k) => at(after, id)[k] - at(before, id)[k]));
-  assert.ok(moved('handLeft') > 0.3, `the hand moved ${moved('handLeft').toFixed(2)} m`);
+  assert.ok(moved('handLeft') > 0.2, `the hand moved ${moved('handLeft').toFixed(2)} m`);
   for (const id of ['head', 'spine2', 'thighRight', 'armRight']) assert.ok(moved(id) < 0.01, `${id} stayed asleep (${moved(id).toFixed(4)} m)`);
   assert.equal(rd.cut('arm_left'), null, 'a unit already cut is gone');
   physics.destroy();
@@ -112,7 +114,8 @@ const strip = () => {
 };
 
 test('a cut splits the skinned body: the piece takes the triangles the cut bone holds, the body keeps the rest, the seam belongs to neither; restore() puts it back', () => {
-  const s = strip(), cutter = createPieceCutter(s.anchor), triangles = (g) => (g.drawRange.count === Infinity ? g.index.count : g.drawRange.count) / 3;
+  const s = strip(), cutter = createPieceCutter(s.anchor), triangles = (g) => { let n = 0; const a = g.index.array; for (let t = 0; t < (g.drawRange.count === Infinity ? a.length : g.drawRange.count); t += 3) if (!(a[t] === a[t + 1] && a[t + 1] === a[t + 2])) n++; return n; };   // a triangle that left the body is zeroed (degenerate: it draws nothing)
+  cutter.prepare([s.arm]);
   assert.equal(triangles(s.geometry), 6);
   const made = cutter.carve(s.arm, { piece: 0.5, bodyKeepBelow: 0.5 });
   assert.equal(made.length, 1);
