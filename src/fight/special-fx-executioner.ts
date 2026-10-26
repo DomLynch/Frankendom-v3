@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { advanceCast, shadowPhase, skillCast, LAND_AT, type Cast } from './special-timing.ts';
-import { crowdWave } from '../arena.ts';
+import { crowdWave } from '../stubs.ts';   // V3: arena.ts
 import { clamp01, hash, noise, smooth } from './fx-math.ts';
 import { bossRow, kindsOf, type BossKind } from './boss-rows.ts';
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';

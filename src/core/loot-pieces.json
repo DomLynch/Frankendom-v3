@@ -1,0 +1,24 @@
+{
+  "about": "Per-opponent loot (src/core/loot.ts reads this). NEW PIECES GO HERE: add the slot to the opponent's lootPiece row (drop order = this order, loot.glb's slot order; id = <opponent>.<slot>); a piece worn over the opponent's own scan goes in lootNotWorn. Do not add them in code.",
+  "lootPiece": [
+    {"id": "veteran", "slots": ["Helmet", "Crest", "Body", "Arms", "Greaves", "Boots", "Gloves", "Shield", "Trident"]},
+    {"id": "executioner", "slots": ["Helmet", "Crest", "Body", "Arms", "Greaves", "Boots", "Gloves", "Scythe"]},
+    {"id": "nightborn", "slots": ["Helmet", "Body", "Arms", "Greaves", "Boots", "Gloves", "Estoc"]},
+    {"id": "pitborn", "slots": ["Helmet", "Body", "Arms", "Greaves", "Boots", "Gloves", "Cleaver"], "note": "His Body is the rag sash and belt worn `over` the player's tunic: a sash covers 26 % of a tunic, so as a `replace` it would undress him (#434, tests/loot.test.ts)."},
+    {"id": "dwarf", "slots": ["Helmet", "Body", "Arms", "Greaves", "Boots", "Gloves", "Warhammer"], "note": "Phase R six: the iron helm, war-belt and apron, shoulder plates and greaves built in build-warrior.mjs (@build:dwarf-*), the boots (loot/dwarf_boots.glb, heel to toe) cut by loot_dwarf.py, and the shared gloves."},
+    {"id": "goblin", "slots": ["Helmet", "Body", "Arms", "Greaves", "Boots", "Gloves", "Knife"], "note": "Phase R: the scrap cap, iron shin plates and rag foot bindings"},
+    {"id": "knight", "slots": ["Helmet", "Body", "Arms", "Gloves", "Greaves", "Boots", "Maul"], "note": "Phase R: his six, cut from his own welded TRELLIS body, re-posed onto the hero rest, on his baked KnightIron maps (#603)"},
+    {"id": "shieldmaiden", "slots": ["Helmet", "Body", "Arms", "Greaves", "Boots", "Gloves", "Shield", "Gladius"], "note": "Phase R: her six (reference A) and her own board shield (@build:shieldmaiden-shield); the gladius is an equip file, not a draw"},
+    {"id": "plaguedoctor", "slots": ["Helmet", "Body", "Arms", "Gloves", "Greaves", "Boots", "Estoc"], "note": "The Plague Doctor's six (Phase R): cut from his TRELLIS surface on his own baked maps, welded, ratio .5 (PR #590's recipe): loot_dwarf.py --family plaguedoctor --all --boots --slots Helmet,Body,Arms,Gloves,Greaves,Boots --ratio .5 --slot-ratio Boots=1 --material PlaguedoctorCloth --color-size 512 --repose warrior; Helmet and Boots `conform` out over the player's crown and toes (loot.json). Greaves carries his coat skirt with the legs (bone-dominant) and stays at .5: .35 and .2 shatter it (docs/character-references/loot-weld/). Strategy 2026-09-23: every rung offers its weapon. His is the estoc since bump 20 (2026-09-28); his longsword piece is RETIRED_LOOT below"},
+    {"id": "witch", "slots": ["Helmet", "Body", "Arms", "Gloves", "Greaves", "Boots", "Trident"], "note": "all six built shells (build-warrior.mjs): hood, a laced bodice and cross-gartered wraps worn under the robe, bracers, boots; Gloves the shared pair"}
+  ],
+  "lootNotWorn": [
+    {"id": "dwarf", "slots": ["Greaves", "Boots"], "opponent": "dwarf"},
+    {"id": "knight", "slots": ["Helmet"], "opponent": "knight"},
+    {"id": "executioner", "slots": ["Greaves", "Boots"], "opponent": "executioner"},
+    {"id": "pitborn.Recruit", "opponent": "pitborn", "tier": "Recruit", "slots": ["Helmet"]}
+  ],
+  "lootStarter": [
+    {"id": "starter", "slots": ["Longsword", "Bow", "Staff"], "name": "The starter", "mintTier": "Recruit","note": "The rusty sword a new player finds on the ground (item:starter.rusty-sword). Not a roster opponent's piece, so it is never offered or dropped (LOOT does not list it); valid under isLootId like a retired piece. The slot decides the weapon, so it fights as the default longsword with identical numbers."}
+  ]
+}

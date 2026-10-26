@@ -3,7 +3,7 @@ import { BOSSES } from './boss-rows.ts';
 import LABELS from './special-labels.json' with { type: 'json' };
 import { LEVELS, LEVEL_ANCHORS, PLAYER_WEAPONS, type SkillId, type WeaponId } from './moves.ts';
 import { SPECIAL_TESTS, specialParam, type SpecialTest } from './special-look.ts';
-import { SPARRING_SKILLS, sparringAsked, sparringParam, type SparringKit, type SparringLevel } from '../sparring.ts';
+import { SPARRING_SKILLS, sparringAsked, sparringParam, type SparringKit, type SparringLevel } from '../stubs.ts';   // V3: sparring.ts
 import { isOpponentId } from '../roster.ts';
 import { SUPPORTED_PLAYER_SPECIALS, validateSparringSpecialSelection, type SparringSpecialSelection } from './sparring-special-runtime.ts';
 

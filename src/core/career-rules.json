@@ -1,0 +1,100 @@
+{
+  "careerRule": [
+    {
+      "id": "career",
+      "maxParty": 4,
+      "minContributionPermille": 100,
+      "heatUnitSeconds": 360,
+      "freeRepeats": 3,
+      "restedPerDayCp": 1500,
+      "restedCapCp": 3000,
+      "partyGapFloor": 5,
+      "topTier": 10,
+      "boardMax": 50,
+      "partyStep": 200,
+      "partyKeyMax": 64
+    }
+  ],
+  "typeWeight": [
+    {
+      "id": "legend",
+      "weight": 100,
+      "once": true,
+      "rested": false,
+      "party": "solo",
+      "earlyBelow": 11,
+      "earlyWeight": 200
+    },
+    {
+      "id": "world-boss",
+      "weight": 500,
+      "once": true,
+      "rested": false,
+      "party": "each"
+    },
+    {
+      "id": "rift-boss",
+      "weight": 150,
+      "once": false,
+      "rested": true,
+      "party": "each"
+    },
+    {
+      "id": "named",
+      "weight": 200,
+      "once": false,
+      "rested": true,
+      "party": "split"
+    },
+    {
+      "id": "elite",
+      "weight": 80,
+      "once": false,
+      "rested": true,
+      "party": "split"
+    },
+    {
+      "id": "mob",
+      "weight": 20,
+      "once": false,
+      "rested": true,
+      "party": "split"
+    },
+    {
+      "id": "story-step",
+      "weight": 100,
+      "once": true,
+      "rested": false,
+      "party": "solo",
+      "atOwn": true
+    },
+    {
+      "id": "story-chapter",
+      "weight": 500,
+      "once": true,
+      "rested": false,
+      "party": "solo",
+      "atOwn": true
+    }
+  ],
+  "levelCurve": [
+    { "id": "level", "maxLevel": 100, "boss": "world-boss", "killBase": 1000, "killStep": 100, "earlyLevels": 5, "earlyKills": 2500, "ramp": 200, "rank": 2000, "rankLevels": 10, "opening": [1, 1, 1, 1, 1, 6, 6, 6, 6, 6] }
+  ],
+  "ladderRule": [
+    { "id": "ladder", "maxLevel": 50, "oldMaxLevel": 46, "dialTrail": 5 }
+  ],
+  "betaCut": [
+    { "id": "beta", "titles": 2, "maxLootRung": 4, "spellsOff": 1, "specialsFromVersion": 75, "specialSlots": 2, "utilitySpells": [], "specialPick": ["cleave", "reaping", "stomp", "lunge"], "slot1Default": "cleave", "slot1Alt": "reaping", "slot2Default": "reaping", "slot2Alt": "cleave", "specialRoles": { "cleave": "heavy", "reaping": "sweep", "stomp": "posture break", "lunge": "opener" }, "spells": ["brokkr", "scylla-pup", "baobhan-sith", "rubezahl", "eitri", "goibniu", "andvari", "kobold", "calydonian-boar", "nemean-cub", "tatzelwurm", "barghest", "cu-sith", "banshee", "black-annis", "dullahan", "puck", "puca", "kelpie", "melusine"] }
+  ],
+  "falloff": [
+    { "id": "far-above", "minDiff": 3, "permille": 1250 },
+    { "id": "above", "minDiff": 1, "permille": 1100 },
+    { "id": "even", "minDiff": 0, "permille": 1000 },
+    { "id": "slightly-below", "minDiff": -2, "permille": 900 },
+    { "id": "below", "minDiff": -4, "permille": 500 },
+    { "id": "title-below", "minDiff": -5, "permille": 200 }
+  ],
+  "respecRule": [
+    { "id": "respec", "freeRespreadLevel": 10 }
+  ]
+}

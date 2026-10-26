@@ -3,9 +3,9 @@
 // own lookup (and the VM test harness's fake document) is what it binds to.
 import { accepts, counterLine, practiceHint, type ClarityEvent, type CombatEvent, type Practice } from './combat.ts';
 import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
-import { won } from '../ladder.ts';
+import { won } from '../stubs.ts';   // V3: ladder.ts
 import { bareName } from '../roster.ts';
-import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../lessons.ts';
+import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../stubs.ts';   // V3: lessons.ts
 import { createGapHistory } from './kick-close.ts';
 import { staminaLow } from './fatigue-preview.ts';
 import { SKILL_MOVE, SKILL_ROWS, weaponOf, type OpponentId } from './moves.ts';

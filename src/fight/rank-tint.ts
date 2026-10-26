@@ -6,8 +6,7 @@
 // and takes the grade's hue at a mean brightness moved toward the grade's, rgb = chroma(grade) · L · gain, gain = luma(grade) / luma(source),
 // clamped so no rung blows a piece to white or crushes it to black. One program for every rung (the grade rides uniforms).
 import { Color, MeshStandardMaterial, type Texture } from 'three';
-import { GRADES, classOf, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from '../core/grades.ts';
-import { finishRow } from '../core/finish-rows.ts';
+import { GRADES, classOf, finishRow, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/finish-rows.ts
 import { fxNum } from './fx-rows.ts';
 const LUMA_MIN = fxNum('fx.rankTint.lumaMin');
 const METAL_RATIO_MIN = fxNum('fx.rankTint.metalRatioMin');

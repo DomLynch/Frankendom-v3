@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "finishRow",
+      "file": "finish-rows.json",
+      "at": "finishRows",
+      "key": "id",
+      "required": {
+        "fields": "object"
+      }
+    }
+  ]
+}

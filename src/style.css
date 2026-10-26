@@ -1,0 +1,2722 @@
+:root {
+  /* The fight frame is a game surface, not a document (owner, 2026-09-24, third page-zoom mid-fight: `manipulation` here still let a
+     pinch through wherever the HUD or a gap was under a finger). Every browser gesture is refused on the whole page; the two panels
+     that scroll (the journal dialog, the debug pane) take back vertical pan only. tests/input.test.ts pins this policy structurally. */
+  touch-action: none;
+  font-family: Georgia,'Times New Roman',serif;
+  color: #eee9df;
+  background: #8e9b98;
+  font-synthesis: none;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  touch-action: none;
+  margin: 0;
+  overflow: hidden;
+}
+button,input,a {
+  -webkit-tap-highlight-color: transparent;
+}
+button,input {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  color: inherit;
+  border: 1px solid #b5b4a45e;
+  background: #1a2224b8;
+  padding: 12px 18px;
+  min-height: 44px;
+  border-radius: 2px;
+  backdrop-filter: blur(12px);
+}
+button:hover {
+  border-color: #d1ba8b;
+  background: #283132e8;
+}
+button:focus-visible,input:focus-visible,a:focus-visible {
+  outline: 2px solid #eed6a3;
+  outline-offset: 4px;
+}
+button[aria-pressed=true] {
+  border-color: #ddc28d;
+  color: #f0d8a9;
+  background: #3c443be8;
+}
+button:disabled,button[aria-disabled=true] {
+  opacity: .4;
+  cursor: default;
+}
+button span {
+  margin-left: 14px;
+  color: #d2be93;
+}
+button,small,label,output,.eyebrow,.place>span,.place p,.identity,.brand span,.instructions,.note,.references,.milestones p {
+  font-family: Arial,sans-serif;
+}
+a {
+  color: #d6c29b;
+}
+button {
+  font-size: 14px;
+}
+small {
+  display: block;
+  line-height: 1.5;
+  font-size: 12px;
+}
+#world {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  touch-action: none;
+  outline: none;
+}
+header {
+  position: fixed;
+  top: max(28px,env(safe-area-inset-top));
+  left: max(32px,env(safe-area-inset-left));
+  right: max(32px,env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+header>* {
+  pointer-events: auto;
+}
+.brand {
+  font-size: 24px;
+  letter-spacing: 5px;
+  text-shadow: 0 2px 15px #172225;
+}
+.brand span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 3px;
+  margin-top: 8px;
+  color: #e1dfd0;
+}
+.identity {
+  position: fixed;
+  left: 32px;
+  top: 115px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-shadow: 0 1px 5px #131b1d;
+}
+.sigil {
+  font: 26px Georgia;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 52px;
+  border: 1px solid #d2bd8c80;
+  background: #1c2925b5;
+  clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%);
+}
+.identity button {
+  padding: 0;
+  min-height: 30px;
+  border: 0;
+  background: none;
+  backdrop-filter: none;
+  font-size: 16px;
+}
+.identity div>span {
+  display: block;
+  font-size: 12px;
+  color: #eee7d9;
+}
+.place {
+  position: fixed;
+  right: 32px;
+  top: 125px;
+  text-align: right;
+  text-shadow: 0 2px 12px #152022;
+  pointer-events: none;
+}
+.place>span {
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+.place h1 {
+  font-size: 38px;
+  font-weight: 400;
+  margin: 8px 0;
+}
+.place p {
+  font-size: 12px;
+  margin: 0;
+  color: #eeeadf;
+}
+.welcome {
+  position: fixed;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-42%);
+  width: 310px;
+  padding: 26px;
+  background: linear-gradient(135deg,#1a2629f5,#1a2429e3);
+  border: 1px solid #d1bd8c55;
+  box-shadow: 0 20px 70px #10181844;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #d0b789;
+}
+.welcome h2 {
+  font-size: 30px;
+  line-height: 1.12;
+  font-weight: 400;
+  margin: 18px 0 10px;
+}
+.welcome p {
+  font-size: 15px;
+  color: #d2d5ce;
+  margin-bottom: 24px;
+}
+.welcome label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 9px;
+  color: #d2d5ce;
+}
+.welcome input {
+  width: 100%;
+  padding: 12px;
+  color: #f1eadd;
+  font-size: 16px;
+  background: #111b1e;
+  border: 1px solid #7b837669;
+  margin-bottom: 14px;
+}
+.primary {
+  width: 100%;
+  background: #b7a276;
+  color: #172122;
+  border-color: #d7c496;
+  font-size: 15px;
+  backdrop-filter: none;
+}
+.primary:hover {
+  background: #d4bf91;
+  color: #172122;
+}
+.primary span {
+  color: inherit;
+}
+.welcome small {
+  margin-top: 17px;
+  color: #aeb9b6;
+}
+/* The card (the kill-link "faded" screen, and Rename in the Profile) sits over the HUD's column and the fight is paused behind it: at EVERY
+   width the bars, the cluster and the stick wait until the card goes, so nothing of the fight is drawn or hit-testable over it. Desktop
+   had this from #853 (549ae159); the phone never did, and SKILL / FIGHT covered the name field (Dom, 2026-09-30). */
+.welcome:not([hidden]) ~ .combat-hud,
+.welcome:not([hidden]) ~ footer #actions,
+.welcome:not([hidden]) ~ #joystick {   /* a body child after </footer>, not inside it (Auditer, #1178) */
+  visibility: hidden;
+}
+footer {
+  position: fixed;
+  bottom: max(30px,env(safe-area-inset-bottom));
+  left: max(32px,env(safe-area-inset-left));
+  right: max(32px,env(safe-area-inset-right));
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+}
+.instructions {
+  font-size: 13px;
+  text-shadow: 0 1px 5px #000;
+}
+.instructions small {
+  color: #eeeadf;
+  margin-top: 12px;
+}
+kbd {
+  font: 11px Arial;
+  border: 1px solid #c5cfbe77;
+  padding: 5px 7px;
+  background: #15232699;
+  letter-spacing: 1px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.actions button {
+  white-space: nowrap;
+  touch-action: none;
+  user-select: none;
+}
+#performance {
+  position: fixed;
+  right: 32px;
+  bottom: 90px;
+  font-size: 12px;
+  color: #eeeadf;
+  text-shadow: 0 1px 4px #000;
+  pointer-events: none;
+}
+#joystick {
+  display: none;
+  position: fixed;
+  bottom: max(34px,env(safe-area-inset-bottom));
+  left: max(30px,env(safe-area-inset-left));
+  width: 128px;
+  height: 128px;
+  border: 1px solid #dfd7bd70;
+  border-radius: 50%;
+  background: #17272950;
+  touch-action: none;
+  user-select: none;
+}
+#stick {
+  position: absolute;
+  left: 43px;
+  top: 43px;
+  width: 40px;
+  height: 40px;
+  background: #e1d2b74d;   /* owner 2026-09-22: knob 20 % more transparent (was 80), ring 10 %, the knob's bright cream line softened (was solid #f4e7c9) */
+  border: 1px solid #f4e7c9a0;
+  border-radius: 50%;
+  pointer-events: none;
+  transition:
+    background .08s,box-shadow .08s;
+}
+#stick[data-run=true] {
+  background: #e9b45ccc;
+  border-color: #ffe2a8;
+  box-shadow: 0 0 12px #e9b45c99;
+}
+.touch-help {
+  display: none;
+}
+.message,.failure {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  padding: 24px;
+  background: #172329;
+  color: #f1e8d8;
+  max-width: 480px;
+  width: 85%;
+  border: 1px solid #b69b6a;
+  z-index: 5;
+  font: 16px/1.6 Arial;
+}
+dialog {
+  touch-action: pan-y;   /* the journal scrolls; no zoom */
+  color: #ede9df;
+  width: min(540px,92vw);
+  max-height: 85dvh;
+  overflow: auto;
+  background: #192529;
+  border: 1px solid #8e8b70;
+  padding: 30px;
+  box-shadow: 0 30px 100px #0008;
+}
+dialog::backdrop {
+  background: #09141699;
+  backdrop-filter: blur(6px);
+}
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dialog-heading button {
+  padding: 6px 12px;
+  min-height: 36px;
+}
+dialog h2 {
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+dialog>p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #c5ceca;
+}
+[hidden] {
+  display: none !important;
+}
+@media (pointer:coarse),(max-width:900px) {
+  #joystick {
+    display: block;
+  }
+  .desktop-help {
+    display: none;
+  }
+  .touch-help {
+    display: inline;
+  }
+  .instructions {
+    position: fixed;
+    bottom: 12px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 11px;
+  }
+  .instructions small {
+    display: none;
+  }
+  .actions {
+    margin-left: auto;
+    align-items: end;
+  }
+  #performance {
+    bottom: 100px;
+  }
+  .actions button {
+    min-height: 48px;
+  }
+  .identity {
+    top: 90px;
+  }
+  .place {
+    top: 98px;
+  }
+  .welcome {
+    left: 50%;
+    transform: translate(-50%,-40%);
+  }
+}
+@media (max-width:700px) {
+  header {
+    top: 20px;
+    left: 20px;
+    right: 20px;
+  }
+  .brand {
+    font-size: 18px;
+    letter-spacing: 3px;
+  }
+  .brand span {
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+  header button {
+    padding: 10px;
+    font-size: 12px;
+  }
+  .identity {
+    left: 20px;
+    top: 95px;
+  }
+  .identity div>span {
+    font-size: 10px;
+    max-width: 160px;
+  }
+  .place {
+    right: 20px;
+    top: 177px;
+  }
+  .place h1 {
+    font-size: 30px;
+  }
+  .place>span {
+    font-size: 10px;
+  }
+  .place p {
+    font-size: 11px;
+  }
+  footer {
+    left: 20px;
+    right: 20px;
+    bottom: 35px;
+  }
+  .actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .actions button {
+    padding: 10px 13px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+  .actions button span {
+    display: none;
+  }
+  #performance {
+    right: 20px;
+    bottom: 199px;
+    font-size: 11px;
+  }
+  .instructions {
+    max-width: 55%;
+    line-height: 1.9;
+  }
+  #joystick {
+    left: 20px;
+    width: 118px;
+    height: 118px;
+  }
+  #stick {
+    left: 38px;
+    top: 38px;
+  }
+  .touch-help {
+    font-size: 10px;
+  }
+  @media (pointer:coarse),(max-width:900px) {
+    .instructions {
+      max-width: 100%;
+      line-height: 1;
+    }
+  }
+  .welcome {
+    left: 50%;
+    width: min(310px,90vw);
+    transform: translate(-50%,-40%);
+  }
+  dialog {
+    padding: 22px;
+  }
+  .place {
+    pointer-events: none;
+  }
+}
+@media (max-height:500px) {
+  header {
+    top: 12px;
+    left: 20px;
+    right: 20px;
+  }
+  .brand {
+    font-size: 18px;
+  }
+  .brand span {
+    display: none;
+  }
+  .identity {
+    top: 65px;
+    left: 20px;
+  }
+  .place {
+    top: 67px;
+    right: 20px;
+  }
+  .place h1 {
+    font-size: 26px;
+    margin: 5px 0;
+  }
+  .place>span {
+    display: none;
+  }
+  .welcome {
+    top: 50%;
+    transform: translate(-50%,-50%);
+    left: 50%;
+    width: 320px;
+    padding: 18px;
+  }
+  .welcome h2 {
+    font-size: 23px;
+    margin: 8px 0;
+  }
+  .welcome p {
+    display: none;
+  }
+  .welcome label {
+    margin-top: 14px;
+  }
+  .welcome small {
+    font-size: 11px;
+    margin-top: 9px;
+  }
+  .welcome input {
+    padding: 9px;
+    margin-bottom: 10px;
+  }
+  .actions {
+    flex-direction: row;
+  }
+  footer {
+    bottom: 28px;
+    left: 20px;
+    right: 20px;
+  }
+  .instructions small {
+    display: none;
+  }
+  .instructions {
+    font-size: 11px;
+  }
+  #joystick {
+    width: 108px;
+    height: 108px;
+    bottom: 30px;
+    left: 20px;
+  }
+  #stick {
+    left: 33px;
+    top: 33px;
+  }
+  #performance {
+    bottom: 86px;
+    right: 20px;
+  }
+  .actions button {
+    padding: 11px;
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .actions button span {
+    display: none;
+  }
+}
+
+.art-status {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%,-50%);
+  max-width: 80%;
+  padding: 12px 18px;
+  background: #172023e8;
+  color: #e9ddc5;
+  text-align: center;
+  font-size: 13px;
+  pointer-events: none;
+}
+.art-status[data-retry="true"] {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.art-status:empty {
+  display: none;
+}
+
+.versus {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: #0e1214;
+  pointer-events: none;
+  transition: opacity 0.45s ease-out;
+}
+.versus[hidden] {
+  display: none;
+}
+/* The card's contents (still, caption, legend, loading) sit in one frame: the whole card on a phone. On desktop (Web owns desktop,
+   2026-09-26; Lead 2026-09-28) the frame is the phone card as a centred 9:16 column, the still's own shape (public/versus/*.webp,
+   1006x2180), instead of a cropped, upscaled band of it; .versus keeps covering the viewport with its background. Clicks still pass
+   through (.versus pointer-events: none since d35797c3), so the header stays usable while the rigs load. */
+.versus-frame {
+  position: relative;
+  height: 100%;
+}
+@media (min-width: 901px) and (not (pointer: coarse)) {
+  .versus-frame { width: min(100vw, 46.15vh); margin-inline: auto; }
+}
+.versus[data-out] {
+  opacity: 0;
+}
+#versus-still {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+}
+.versus-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14%;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 14px;
+  color: #e9ddc5;
+  font: 15px Arial;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 1px 6px #000c;
+}
+.versus-loading {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28%;
+  margin: 0;
+  text-align: center;
+  color: #e9ddc5;
+  font: 15px Arial;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 1px 6px #000c;
+}
+/* A short landscape phone (844x390): 28% of the height lands on the legend's tier line ("THE CENTURION · RECRUIT"), so the loading line drops to the middle (Lead 2026-10-19, audit pass 2). */
+@media (orientation: landscape) and (max-height: 430px) { .versus-loading { top: 50%; } }
+/* Owner 2026-09-22: the loading line is the caption's twin (same size, spacing, brightness), and its three dots breathe one after
+   another — a slow 1.6 s cycle, never fully off, so it reads as a pulse and not a blink. */
+.versus-dots i {
+  font-style: normal;
+  animation: versus-dot 1.6s ease-in-out infinite;
+}
+.versus-dots i:nth-child(2) { animation-delay: 0.2s; }
+.versus-dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes versus-dot {
+  0%, 60%, 100% { opacity: 0.25; }
+  30% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .versus-dots i { animation: none; } }
+.versus-caption b {
+  font-size: 12px;
+  color: #c1ad79;
+}
+/* Legends (Dom via Strategy, 2026-09-27): the opponent's legend name is the large word of the pair, in the house serif and its own
+   case; under the pair, small, "the Pitborn · Champion", then the one-line source and backstory. Phone first: the block sits in the
+   band below the caption (bottom 14%) and holds three lines of lore at 375 before it clips. */
+#versus-foe {
+  font: 26px Georgia,'Times New Roman',serif;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  color: #f3e7cf;
+}
+.versus-legend {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(86% + 8px);
+  text-align: center;
+  color: #e9ddc5;
+  text-shadow: 0 1px 6px #000c;
+}
+.versus-legend small {
+  display: block;
+  font: 11px Arial,sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #c1ad79;
+}
+.versus-legend p {
+  max-width: 420px;
+  margin: 6px auto 0;
+  font: 13px/1.35 Georgia,'Times New Roman',serif;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.versus-legend small:empty, .versus-legend p:empty { display: none; }
+/* Versus card B4-split (Dom via Strategy, 2026-09-28; evidence/versus-card-b4 @ d372e11b), only when the legend's painted face loaded
+   (main.ts sets data-portrait): the pair moves to the top over the crowd — You vs [face] Name —
+   with the title line under it on a soft dark fade; LOADING stays; the backstory stays at the bottom, raised ~49 px (60 at the
+   461-wide mock) to clear the phone's browser bar. Mock sizes x 0.81 for 375. No face: none of this applies, the card is as before.
+   The face is D4 (b) (Dom 2026-09-30 14:44 via Strategy; evidence/d1-d4-mocks @ 43fcebc4): borderless, no ring or shadow, a soft
+   radial fade into the card's own gradient, 68 px so the fade still leaves a 55 px face. */
+.versus-portrait {
+  width: 68px;
+  height: 68px;
+  margin: -6px -4px;   /* the fade's clear edge, as on the win line: the caption row is 56 px (the old ringed medallion was 59),
+                          so the title line under it (108 px) stays clear (release row 37, run BD) */
+  object-fit: cover;
+  -webkit-mask: radial-gradient(closest-side, #000 55%, #0000 100%);
+  mask: radial-gradient(closest-side, #000 55%, #0000 100%);
+  flex: none;
+}
+.versus-portrait[hidden] { display: none; }
+.versus[data-portrait]::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(env(safe-area-inset-top) + 170px);
+  background: linear-gradient(#000a, #0006 60%, #0000);
+}
+.versus[data-portrait] .versus-caption {
+  top: calc(env(safe-area-inset-top) + 44px);
+  bottom: auto;
+  align-items: center;
+}
+.versus[data-portrait] .versus-legend { position: static; }
+.versus[data-portrait] .versus-legend small {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(env(safe-area-inset-top) + 108px);
+  text-align: center;
+  text-shadow: 0 1px 6px #000c;
+}
+.versus[data-portrait] .versus-legend p {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(86% - 22px);
+  margin: 0 auto;
+  text-align: center;
+  text-shadow: 0 1px 6px #000c;
+}
+
+.combat-hud {
+  position: fixed;
+  top: 220px;
+  left: 32px;
+  width: 260px;
+  font:
+    11px Arial,sans-serif;
+  text-shadow: 0 1px 4px #000;
+  pointer-events: none;
+}
+.combat-hud>span {
+  letter-spacing: 1.4px;
+  display: flex;
+  justify-content: space-between;
+}
+#health-value {
+  letter-spacing: 0;
+}
+#target-health {
+  display: block;
+  width: 100%;
+  height: 12px;
+  margin-top: 8px;
+  accent-color: #a65342;
+}
+#target-health::-webkit-meter-bar {
+  background: #1d2829;
+  border: 1px solid #c1ad7966;
+  border-radius: 0;
+}
+#target-health::-webkit-meter-optimum-value {
+  background: #a65342;
+}
+/* The opponent's legend (Dom via Strategy 2026-09-28): the name as the bars' label, the class small beside it, as the versus card reads. */
+#opponent-name .opponent-class {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  opacity: 0.7;
+}
+#combat-status {
+  line-height: 1.5;
+  min-height: 34px;
+  color: #f0e3c9;
+}
+/* The fallen legend's face beside "You beat <legend>" (Dom via Strategy 2026-09-28): the versus card's face (.versus-portrait: D4 (b),
+   borderless, fading out) and its serif, only once the face has loaded (main.ts winFace sets data-face and --face). */
+#combat-status[data-face] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: Georgia,'Times New Roman',serif;
+}
+#combat-status[data-face]::before {
+  content: '';
+  flex: none;
+  width: 68px;
+  height: 68px;
+  margin: -6px -4px;   /* the fade's clear edge: the line keeps the height and the gap it had with the 55 px medallion */
+  background: var(--face) center / cover;
+  -webkit-mask: radial-gradient(closest-side, #000 55%, #0000 100%);
+  mask: radial-gradient(closest-side, #000 55%, #0000 100%);
+}
+.dmg {
+  position: fixed;
+  z-index: 5;
+  font:
+    700 15px/1 Arial,sans-serif;
+  color: #b8b4ad; /* owner 2026-09-20: greyed out, cosmetic only */
+  opacity: 0.7;
+  text-shadow: 0 1px 3px #000c;
+  pointer-events: none;
+}
+.dmg.taken {
+  color: #b39a92;
+}
+.dmg.heavy {
+  color: #c9c1a8;
+  font-size: 19px;
+}
+.actions .primary {
+  width: auto;
+  min-width: 110px;
+}
+.combat-hud p {
+  margin-top: 8px;
+}
+
+.combat-hud>span:not(:first-child) {
+  margin-top: 10px;
+}
+.combat-hud meter {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin-top: 5px;
+}
+.combat-hud meter::-webkit-meter-bar {
+  background: #1d2829;
+  border: 1px solid #c1ad7966;
+  border-radius: 0;
+}
+#player-health::-webkit-meter-optimum-value {
+  background: #739384;
+}
+#stamina::-webkit-meter-optimum-value {
+  background: #c5ad72;
+}
+#stamina {
+  background-image: linear-gradient(to right,transparent var(--max,100%),#5a2d2a99 var(--max,100%));
+}
+/* The lost ceiling, unmistakable (Lead 2026-10-07): once a wound has lowered it, everything past --max is a near-opaque dark cap with a bright notch on its edge. Presentation only: --max is the sim's maxStamina. */
+#stamina[data-capped=true] {
+  background-image: linear-gradient(to right,transparent calc(var(--max,100%) - 2px),#f0e6cc calc(var(--max,100%) - 2px),#f0e6cc var(--max,100%),#140b0af2 var(--max,100%));
+}
+/* ?look=fatigue-preview (Dom 2026-10-07, v2 after his phone: "I didn't see the red"): the last 10 % of stamina turns the WHOLE bar frame red and pulses it (a glowing red outline round the track and a red-tinted track, not just the thin fill), and the STAMINA word goes red. Body not involved. */
+#stamina[data-low=true] { --bar-color: #e0463a; background-color: #5a1612; outline: 2px solid #e0463a; outline-offset: 1px; border-radius: 3px; animation: stamina-low 1.2s ease-in-out infinite; }
+#stamina[data-low=true]::-webkit-meter-optimum-value { background: #e0463a; }
+#stamina-label[data-low=true] { color: #ff5a48; text-shadow: 0 0 6px #e0463a, 0 1px 2px #000a; animation: stamina-low-label 1.2s ease-in-out infinite; }
+@keyframes stamina-low { 0%, 100% { outline-color: #ff5a48; box-shadow: 0 0 10px 3px #e0463acc; } 50% { outline-color: #e0463a55; box-shadow: 0 0 3px 1px #e0463a33; } }
+@keyframes stamina-low-label { 50% { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { #stamina[data-low=true], #stamina-label[data-low=true] { animation: none; } }
+#stamina[data-leg=true] {
+  outline: 1px solid #b5533f88;
+}
+.combat-hud meter.posture {
+  height: 4px;
+  margin-top: 2px;
+}
+.posture::-webkit-meter-optimum-value {
+  background: #d98e4a;
+}
+.posture[data-critical=true]::-webkit-meter-optimum-value {
+  background: #f0553a;
+}
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3,auto);
+}
+#recenter-button {
+  display: none;
+}
+#attack-button,#reset-button {
+  grid-column: 2;
+  grid-row: 1;
+}
+#dodge-button {
+  grid-column: 2;
+  grid-row: 2;
+}
+#guard-button {
+  grid-column: 3;
+  grid-row: 2;
+}
+#run-button {
+  grid-column: 3;
+  grid-row: 1;
+}
+#performance {
+  bottom: 140px;
+}
+@media (max-width:700px) {
+  .place {
+    display: none;
+  }
+  .combat-hud {
+    top: 160px;
+    left: 20px;
+    width: 230px;
+  }
+  .actions {
+    grid-template-columns: repeat(2,94px);
+    gap: 6px;
+    max-width: none;
+  }
+  .actions button {
+    padding: 10px 5px;
+  }
+  .actions .primary {
+    min-width: 0;
+  }
+  .actions #attack-button,.actions #reset-button {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+  .actions #dodge-button {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .actions #guard-button {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .actions #camera-button {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .actions #run-button {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  #performance {
+    bottom: 194px;
+  }
+}
+@media (max-height:500px) {
+  .place,.identity {
+    display: none;
+  }
+  .combat-hud {
+    top: 68px;
+    left: 20px;
+    right: auto;
+    width: 210px;
+  }
+  .combat-hud>span:not(:first-child) {
+    margin-top: 5px;
+  }
+  .combat-hud p {
+    margin-top: 4px;
+  }
+  .actions {
+    grid-template-columns: repeat(3,auto);
+  }
+  #performance {
+    bottom: 142px;
+  }
+}
+
+/* Four stable combat targets; utility controls sit above the fighting thumb zone. */
+.actions {
+  grid-template-columns: repeat(3,auto);
+}
+#heavy-button {
+  grid-column: 3;
+  grid-row: 1;
+}
+#run-button {
+  grid-column: 1;
+  grid-row: 2;
+}
+@media (max-width:700px) {
+  header {
+    gap: 8px;
+  }
+  .brand {
+    font-size: 15px;
+    letter-spacing: 2px;
+  }
+  .brand span {
+    font-size: 8px;
+  }
+  header button {
+    font-size: 11px;
+    padding: 8px;
+  }
+  .actions {
+    grid-template-columns: repeat(2,94px);
+  }
+  .actions #attack-button {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .actions #heavy-button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .actions #run-button {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+@media (max-height:500px) {
+  .actions {
+    grid-template-columns: repeat(3,auto);
+  }
+}
+
+/* Compact touch HUD: leave the arena clear; secondary controls live in the journal. */
+.mobile-tools {
+  display: none;
+}
+@media (max-width:900px),(pointer:coarse) {
+  header {
+    top: max(12px,env(safe-area-inset-top));
+    right: max(14px,env(safe-area-inset-right));
+    left: auto;
+    gap: 0;
+    z-index: 2;
+  }
+  header .brand,header #sound-button,.identity,.place,.instructions,#performance,.actions #camera-button,.actions #run-button {
+    display: none;
+  }
+  #journal-button {
+    font-size: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    background: #172329b0;
+    backdrop-filter: none;
+  }
+  #journal-button span {
+    display: none;
+  }
+  #journal-button::after {
+    content: '☰';
+    font: 20px Arial;
+    color: #eee9df;
+  }
+  .combat-hud {
+    top: max(15px,env(safe-area-inset-top));
+    left: max(16px,env(safe-area-inset-left));
+    width: min(270px,calc(100vw - 90px));
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 14px;
+    row-gap: 5px;
+    font-size: 10px;
+  }
+  .combat-hud>span {
+    margin: 0 !important;
+    letter-spacing: 1px;
+    line-height: 12px;
+  }
+  .combat-hud>span:first-child {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+  .combat-hud>span:nth-of-type(2) {
+    grid-column: 1;
+    grid-row: 4;
+    margin-top: 5px !important;
+  }
+  .combat-hud>span:nth-of-type(3) {
+    grid-column: 2;
+    grid-row: 4;
+    margin-top: 5px !important;
+  }
+  .meter-label {
+    font-size: 0;
+  }
+  .meter-label::after {
+    content: attr(data-mobile);
+    font: 10px Arial;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  /* A legend's class sits after his name here too (the label's text is font-size 0 on phone; ::after draws the name, the small follows it). */
+  #opponent-name:has(.opponent-class) { display: inline-flex; align-items: baseline; gap: 5px; }
+  #opponent-name .opponent-class { order: 1; font-size: 9px; }
+  #health-value,#player-health-value,#stamina-value {
+    display: none;
+  }
+  .combat-hud meter {
+    appearance: none;
+    -webkit-appearance: none;
+    display: block;
+    width: 100%;
+    height: 4px;
+    margin: 0;
+    border: 0;
+    border-radius: 2px;
+    background: linear-gradient(to right,var(--bar-color) var(--fill,100%),#172329a0 var(--fill,100%));
+  }
+  #target-health::-webkit-meter-bar,#player-health::-webkit-meter-bar,#stamina::-webkit-meter-bar,#posture::-webkit-meter-bar,#target-posture::-webkit-meter-bar {
+    background: transparent;
+    border: 0;
+    height: 4px;
+  }
+  #target-health::-webkit-meter-optimum-value,#player-health::-webkit-meter-optimum-value,#stamina::-webkit-meter-optimum-value,#posture::-webkit-meter-optimum-value,#target-posture::-webkit-meter-optimum-value {
+    background: transparent;
+  }
+  #posture::-webkit-meter-bar,#target-posture::-webkit-meter-bar {
+    height: 2px;
+  }
+  .combat-hud meter::-moz-meter-bar {
+    background: transparent;
+  }
+  #target-health {
+    height: 5px;
+    margin: 0;
+    grid-column: 1/-1;
+    grid-row: 2;
+    --bar-color: #c27a69;
+  }
+  #player-health {
+    grid-column: 1;
+    grid-row: 5;
+    --bar-color: #91b4a0;
+  }
+  #stamina {
+    grid-column: 2;
+    grid-row: 5;
+    --bar-color: #dec58c;
+    /* The desktop #stamina rule (the lost-ceiling shading) outranks `.combat-hud meter`, so on phones it replaced the fill gradient and only
+       the shading showed (owner screenshot 2026-09-20). Layer both: shading on top, the fill underneath. */
+    background-image: linear-gradient(to right,transparent var(--max,100%),#5a2d2a99 var(--max,100%)),linear-gradient(to right,var(--bar-color) var(--fill,100%),#172329a0 var(--fill,100%));
+  }
+  #stamina[data-capped=true] {
+    background-image: linear-gradient(to right,transparent calc(var(--max,100%) - 2px),#f0e6cc calc(var(--max,100%) - 2px),#f0e6cc var(--max,100%),#140b0af2 var(--max,100%)),linear-gradient(to right,var(--bar-color) var(--fill,100%),#172329a0 var(--fill,100%));
+  }
+  .combat-hud meter.posture {
+    height: 2px;
+    margin: -3px 0 0;
+    --bar-color: #d98e4a;
+  }
+  .posture[data-critical=true] {
+    --bar-color: #f0553a;
+  }
+  #target-posture {
+    grid-column: 1/-1;
+    grid-row: 3;
+  }
+  #posture {
+    grid-column: 1;
+    grid-row: 6;
+  }
+  #combat-status {
+    grid-column: 1/-1;
+    grid-row: 8;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.4;
+    min-height: 1.4em;   /* a blank line keeps its row, so the HUD below never jumps when an event is written */
+    margin: 4px 0 0;
+    max-width: 240px;
+    color: #f1e8d8;
+  }
+  /* .combat-hud is a 2-column grid on phone; #fight-rank (row 7, with the meters) sits above #combat-status (row 8) and #loot-panel
+     (owner 2026-09-22 move; fight HUD, Dom 2026-09-24) and needs their own explicit full-width span and row, or the grid auto-places each into a single half-width column. */
+  /* The banner (sparring, replay) reads under the HUD's status line, measured in main.ts (--hud-bottom): at a fixed 56 px it sat
+     on the HEALTH / STAMINA labels (Lead 2026-09-28). The stale line keeps its own slot above PLAY NOW. */
+  #replay-banner:not([data-stale='1']) {
+    top: calc(var(--hud-bottom, 124px) + 6px);
+  }
+  #fight-rank {
+    grid-column: 1/-1;
+    grid-row: 7;
+    margin: 4px 0 0;
+    max-width: 240px;
+  }
+  #loot-panel {
+    grid-row: 10;   /* the Take-one panel sits under the rank row (explicit row like its siblings; `order` cannot beat their placed rows) */
+  }
+  footer {
+    right: max(16px,env(safe-area-inset-right));
+    bottom: max(22px,env(safe-area-inset-bottom));
+    left: auto;
+  }
+  .actions {
+    grid-template-columns: repeat(2,70px);
+    gap: 8px;
+  }
+  .actions button {
+    min-width: 0 !important;
+    width: 70px;
+    height: 56px;
+    min-height: 56px;
+    white-space: normal;
+    line-height: 1.2;
+    font-size: 11px;
+    padding: 7px !important;
+    border-radius: 16px;
+    backdrop-filter: none;
+    background: #172329c4;
+  }
+  .actions button[data-mobile] {
+    font-size: 0;
+  }
+  .actions button[data-mobile]::after {
+    content: attr(data-mobile);
+    font: 13px Arial;
+  }
+  .actions .primary {
+    background: #b7a276e8;
+  }
+  .actions #attack-button {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .actions #heavy-button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .actions #dodge-button {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .actions #guard-button {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .actions #reset-button {
+    grid-column: 1/-1;
+    grid-row: 1;
+    width: 100%;
+  }
+  #joystick {
+    display: block;
+    width: 108px;
+    height: 108px;
+    left: max(16px,env(safe-area-inset-left));
+    bottom: max(24px,env(safe-area-inset-bottom));
+    background: #1727291f;   /* owner 2026-09-22: 10 % more transparent (was 30) */
+  }
+  #stick {
+    left: 33px;
+    top: 33px;
+  }
+  .mobile-tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  .mobile-tools button {
+    backdrop-filter: none;
+  }
+  .mobile-tools p,.mobile-tools output {
+    grid-column: 1/-1;
+    font: 12px/1.7 Arial;
+    color: #c5ceca;
+    margin: 0;
+  }
+  .mobile-tools output {
+    font-size: 11px;
+    color: #aeb9b6;
+  }
+}
+
+#thrust-button,
+#skill-button,
+#skill2-button {
+  display: none;   /* cluster-only buttons: shown by the phone cluster's rules */
+}
+.actions {
+  touch-action: none;
+}
+.scorecard-table {
+  width: 100%;
+  margin: .6em 0;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #eee7d9;
+}
+.scorecard-table th,.scorecard-table td {
+  padding: 4px 6px;
+  text-align: right;
+  border-bottom: 1px solid #d2bd8c40;
+}
+.scorecard-table th:first-child,.scorecard-table td:first-child {
+  text-align: left;
+}
+.scorecard-table th {
+  font-weight: normal;
+  color: #d2bd8c;
+}
+.scorecard-table tr:last-child td {
+  border-bottom: 0;
+  color: #d2bd8c;
+}
+/* Legends (Dom 2026-09-28): the label is the legend waiting at that opponent's rung; the class sits small under it. */
+.scorecard-table td small[data-class] {
+  display: block;
+  font: italic 11px Georgia,'Times New Roman',serif;
+  color: #c1ad79;
+}
+.scorecard {
+  white-space: pre-wrap;
+  font:
+    12px/1.5 ui-monospace,Menlo,monospace;
+  margin: .6em 0;
+  color: #d9c9a6;
+}
+/* The side hints belong to the thumb cluster below. Anywhere else (a desktop with a mouse) the SVG had no style: default black fill,
+   no stroke, so the centre ring drew a black disc on every combat button (#867's 1280 still, 2026-09-27). */
+.actions button .side-marks { display: none; }
+@media (max-width:900px),(pointer:coarse) {
+  /* Thumb cluster (the mobile layout): round, mostly see-through targets sized by how often they are needed, curved around the right thumb's rest. */
+  .actions[data-gestures=cluster] {
+    display: block;
+    position: relative;
+    width: 184px;
+    height: 216px;
+  }
+  .actions[data-gestures=cluster] button{
+    position: absolute;
+    border-radius: 50%;
+    padding: 0 !important;
+    min-height: 0 !important;
+    /* Owner 2026-09-22 ("D3", picked from live renders): glass, not sand — a neutral grey fill at 13 %, a grey hairline, no inset
+       ring, the compass ticks brighter and the centre ring faint at rest (it still lights to .95 for Stab / straight Guard — the
+       lit rules below; Combat owns which mark lights, this block owns only the look). Was #b7a27680 sand / cream #e9d9b3a6 / a
+       3 px inset ring, 2026-09-21. */
+    background: #a39f9722;
+    border: 1px solid #c9c4b8a6;
+    box-shadow: 0 1px 3px #0003;
+    color: #f4ead8;
+    transition:
+      background .08s,transform .08s;
+  }
+  /* Side hints (owner 2026-09-21, v3 "apply everywhere consistently"): every combat button carries the SAME compass — four rim
+     ticks (overhead / low / left / right) and a centre ring (straight) — and lights the mark for the side it works on: Slash the
+     NEXT cut (they alternate; data-next from hud.ts), Stab the ring, Heavy the up tick, Kick the down tick, Guard the side under the
+     thumb / Q + arrow while held (data-side from input.ts), the ring for straight. v5 (owner): the ticks sit just OUTSIDE the rim
+     (viewBox coordinates past 0..64, overflow visible) so the label has the whole face. Strokes are non-scaling so the 44 px Kick
+     draws as fine as the 60 px Slash. */
+  .actions[data-gestures=cluster] button .side-marks{
+    display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;   /* the ticks sit just outside the rim */
+    fill: none; stroke: #d6d2c8; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+    transition: opacity .12s;
+  }
+  .actions[data-gestures=cluster] button .side{ vector-effect: non-scaling-stroke; opacity: .55; transition: opacity .12s, stroke-width .12s; }   /* the four ticks (owner 2026-09-22: brighter; was .3) */
+  .actions[data-gestures=cluster] button .side-straight{ opacity: 0; }   /* the centre ring is invisible at rest (owner 2026-09-22, second look: "remove the inner circle"); it stays in the DOM because the lit rules below raise it to .95 for Stab held / Guard straight */
+  /* Dom 2026-10-07 ("yes slash and guard"): the compass is on SLASH (left/right ticks only) and GUARD (all four + ring) and nowhere else; on the tap buttons the ticks read as swipe hints. Replaces the 2026-09-21 "marks on every button" rule. */
+  /* one lit mark per button, and only while that button is being pressed (data-held from input.ts; :active is unreliable on touch) — the same as Guard, so every button rests at the
+     same faint weight (owner 2026-09-21: "keep them all standard semi-transparent like the guard one") */
+  .actions[data-gestures=cluster] #attack-button[data-held][data-next=left] .side-left,
+  .actions[data-gestures=cluster] #attack-button[data-held][data-next=right] .side-right,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=left] .side-left,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=right] .side-right,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=overhead] .side-overhead,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=low] .side-low,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=straight] .side-straight,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true]:not([data-side]) .side-straight,
+  .actions[data-gestures=cluster] #attack-button[data-cut=left]:not([data-held]) .side-left,   /* directional cuts: the stick is held to a side, so LIGHT will cut that side */
+  .actions[data-gestures=cluster] #attack-button[data-cut=right]:not([data-held]) .side-right,
+  .actions[data-gestures=cluster] #attack-button[data-cut=left][data-held] .side-left,
+  .actions[data-gestures=cluster] #attack-button[data-cut=right][data-held] .side-right{ opacity: .95; stroke-width: 2; }
+  /* directional cuts: no arc (Dom 2026-10-07: "remove the arc, keep the cuts"). The v2 arc used #attack-button[data-cut]::after, which replaced the Slash label (the label IS that ::after, content: attr(data-mobile)) and hid it whenever the stick was held to a side. The button keeps only the lit tick above. */
+  /* The gold arc (Dom 2026-10-07): while the thumb is slid to a side on SLASH (left/right) or GUARD (left/up/right/down) a thin gold arc shows on that side, over its tick.
+     No slide, no arc. Thinner and fainter than the first arc; --arc-w / --arc-o are the two knobs. It lives in the compass SVG, never in a ::after (that is the SLASH label). */
+  .actions[data-gestures=cluster] button .arc{ fill: none; stroke: #d9b45a; stroke-width: var(--arc-w,2); stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: 0; transition: opacity .12s; }
+  .actions[data-gestures=cluster] #attack-button[data-held][data-slide=left] .arc-left,
+  .actions[data-gestures=cluster] #attack-button[data-held][data-slide=right] .arc-right,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=left] .arc-left,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=right] .arc-right,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=overhead] .arc-overhead,
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true][data-side=low] .arc-low{ opacity: var(--arc-o,.7); }
+  /* directional-cut flash (Dom 2026-10-07): a faint gold edge glow on the chosen side the instant the cut fires, gone in 230 ms. ::before only: the label is the ::after and is never touched. */
+  .actions[data-gestures=cluster] #attack-button::before{ content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; opacity: 0; }
+  .actions[data-gestures=cluster] #attack-button[data-flash=left]::before{ box-shadow: inset 7px 0 9px -5px #f2c14e; animation: cut-flash 230ms ease-out forwards; }
+  .actions[data-gestures=cluster] #attack-button[data-flash=right]::before{ box-shadow: inset -7px 0 9px -5px #f2c14e; animation: cut-flash 230ms ease-out forwards; }
+  @keyframes cut-flash{ from{ opacity: .6; } to{ opacity: 0; } }
+  @media (prefers-reduced-motion: reduce){ .actions[data-gestures=cluster] #attack-button[data-flash]::before{ animation: none; } }
+  .actions[data-gestures=cluster] #attack-button:not([data-next]) .side-marks{ opacity: 0; }   /* sheathed: the button says Fight, no cut is next */
+  @media (prefers-reduced-motion: reduce){
+    .actions[data-gestures=cluster] button .side-marks, .actions[data-gestures=cluster] button .side, .actions[data-gestures=cluster] button .arc{ transition: none; }
+  }
+  .actions[data-gestures=cluster] button[data-mobile]::after{
+    font: 600 11px/1 Arial;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px #000a;
+    opacity: .9;   /* owner 2026-09-22: the labels were overpowering the glass — 10 % off */
+  }
+  .actions[data-gestures=cluster] button:active{
+    background: #d9c69ac0;
+    transform: scale(.95);
+  }
+  .actions[data-gestures=cluster] button[aria-disabled=true]{
+    opacity: .5;
+  }
+  .actions[data-gestures=cluster] #guard-button[aria-pressed=true]{
+    background: #d9c69ac0;   /* held: the pressed tint, brighter than the cluster's sand */
+    border-color: #f0e3c9;
+  }
+  .actions[data-gestures=cluster] #thrust-button:not([hidden]) {
+    display: block;
+    width: 56px;
+    height: 56px;
+    left: 78px;
+    top: 0;
+  }
+  .actions[data-gestures=cluster] #attack-button {
+    width: 60px;
+    height: 60px;
+    left: 13px;
+    top: 41px;
+  }
+  .actions[data-gestures=cluster] #heavy-button {
+    width: 58px;
+    height: 58px;
+    left: 126px;
+    top: 58px;
+  }
+  /* SKILL (Dom 2026-09-24; Strategy's brief + ruling): the seventh button of the family, text only, HEAVY's 58 px, up and right of
+     STAB. Dom 2026-09-25: its centre sits STAB's own neighbour spacing from STAB (the mean of STAB→SLASH 76.3 and STAB→HEAVY
+     76.7 = 76.5 px) along the same top-right diagonal it had, so the gap reads like the six's (rim gap 19.6 px), not wider. Two states: ready, and cooling = the cluster's own dim (aria-disabled, kept by hud.ts while data-cooling is
+     set) — no ring, no countdown. */
+  .actions[data-gestures=cluster] #skill-button {
+    display: block;
+    width: 58px;
+    height: 58px;
+    left: 119px;
+    top: -65px;
+  }
+  /* SPELL 2 (spell slots, Strategy's ruling: a second button, no button for an empty slot): SKILL's 58 px, one SKILL-to-STAB spacing to the LEFT of SKILL on the same row above the cluster, centre 70,-36 (rim gaps 20.0 to SKILL and 16.4 to STAB, none of the six touched). Shown only while slot b holds a spell (the page toggles [hidden] on a pick, not per frame). */
+  .actions[data-gestures=cluster] #skill2-button:not([hidden]) {
+    display: block;
+    width: 58px;
+    height: 58px;
+    left: 41px;
+    top: -65px;
+  }
+  .actions[data-gestures=cluster] #skill2-button:not([hidden])::after {   /* the spell's name: two small lines inside the 58 px circle, the rest ellipsised (the full name stays in aria-label and the tooltip) */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    max-width: 46px;
+    margin: 0 auto;
+    font: 10px/11px Arial;
+    overflow-wrap: anywhere;
+  }
+  .actions[data-gestures=cluster] #kick-button {
+    width: 44px;
+    height: 44px;
+    min-height: 0;
+    left: 78px;
+    top: 106px;
+    border-radius: 50%;
+    font-size: 0;
+    background: #a39f9722;   /* restated here: the legacy #kick-button rule below (id specificity) would otherwise darken it */
+  } /* 44 px: the platform minimum for the innermost target */
+  .actions[data-gestures=cluster] #skill-button[data-reach=false]{
+    opacity: .5;   /* a cone skill out of its reach: the cluster's dim (hud.ts), still pressable (Combat 2026-09-27: the lit Jab whiffed) */
+  }
+  :root.look-kick52 .actions[data-gestures=cluster] #kick-button {   /* ?look=kick52 (Strategy research #9): 52 px; flag off = the 44 px above. Centred on 99.5,124 (0.5 px left, 4 px up of the 44 px
+     one) because 4 px each way put its box 6 x 2 px into GUARD's (the gate: no two action boxes overlap): its bottom stays at the old 150 (GUARD starts at 152), its sides sit 0.5 px clear of SLASH (73) and HEAVY (126) */
+    width: 52px;
+    height: 52px;
+    left: 73.5px;
+    top: 98px;
+  }
+  .actions[data-gestures=cluster] #kick-button[data-reach=true]{
+    background: #d9c69ab3;   /* in reach: brighter than the sand the whole cluster now wears */
+    border-color: #f0e3c9cc;
+  }
+  .actions[data-gestures=cluster] #dodge-button {
+    width: 56px;
+    height: 56px;
+    left: 5px;
+    top: 144px;
+  }
+  .actions[data-gestures=cluster] #guard-button {
+    width: 64px;
+    height: 64px;
+    left: 120px;
+    top: 152px;
+  }
+  .actions[data-gestures=cluster] #reset-button {
+    left: 0;
+    top: 75px;
+    width: 176px;
+    height: 56px;
+    border-radius: 16px;
+    background: #b7a276c8;
+  }
+  /* The viewer page's PLAY NOW: the cluster's full width and a taller box, so the one live control is unmistakably bigger than the
+     sleeping Step and Guard beside it. Its bottom edge (64 + 64 = 128) still clears the Take / Leave it row at top:137px. */
+  .actions[data-gestures=cluster] #reset-button[data-play='1'] {
+    left: 0;
+    top: 64px;
+    width: 184px;
+    height: 64px;
+    padding: 0 !important;
+    border-radius: 18px;
+    background: #b7a276;
+    border: 1px solid #e9d9b3;
+    box-shadow: inset 0 0 0 3px #f0e3c93d, 0 2px 10px #0007;
+    color: #1b1916;
+    font: 700 17px/1.1 "Instrument Sans", Arial, sans-serif;
+    letter-spacing: 0.06em;
+  }
+  .actions[data-gestures=cluster] #camera-button,.actions[data-gestures=cluster] #run-button,.actions[data-gestures=cluster] #recenter-button{
+    display: none;
+  }
+}
+
+@media (max-width:900px),(pointer:coarse) {
+  #kick-button {
+    grid-column: 1/-1;
+    grid-row: 3;
+    justify-self: end;
+    width: 70px;
+    height: 44px;
+    min-height: 44px;
+    border-radius: 22px;
+    font-size: 0;
+    background: #283233a6;
+  }
+}
+@media (min-width:901px) and (pointer:fine) {
+  /* Desktop layout rows (#853): at 190px up it sat inside the #actions grid over "Heavy · hold to charge"; it reads under the arena name. */
+  #performance {
+    top: 215px;
+    bottom: auto;
+  }
+  /* The footer spans the page here (its #actions grid is 348px tall) and comes later in the DOM, so it took the mouse off the card's
+     lower half: "Enter the arena" never got the click (#853). The card stacks above it. */
+  .welcome {
+    z-index: 1;
+  }
+  /* The kill screen's loot panel runs down the left column over the key legend at 1024/1280 (#853): the legend is for fighting,
+     so it steps aside while the take is offered (the same signal that clears the phone controls, below). */
+  :root:has(#loot-panel-actions:not([hidden])) .instructions {
+    visibility: hidden;
+  }
+  /* SPARRING / replay banner: at 56px it ran through the header band under Sound on (#853); it reads just under the header. The stale
+     line keeps its own slot above PLAY NOW. */
+  #replay-banner:not([data-stale='1']) {
+    top: 88px;
+  }
+}
+
+/* Combat debug overlay: developer readout of simulation state, presentation-only. */
+/* ?perf=1 (owner 2026-09-22: the game went jumpy on his iPhone and every number we had was measured on a Mac with no
+   throttling, so it could not see his GPU at all). A phone-readable readout of the last 5 s, so a device measures itself:
+   frame p50 / p95 / max, dropped frames (over 16.7 ms), the guards standing, triangles and draw calls. Off unless asked for. */
+.perf {
+  position: fixed;
+  right: max(8px, env(safe-area-inset-right));
+  top: max(210px, calc(env(safe-area-inset-top) + 210px));   /* below the health bars and the fight hint, above the arena's middle */
+  z-index: 6;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #0b0f11cc;
+  color: #dfe7ea;
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;   /* the device line is the longest; it wraps rather than pushing the panel off a 375 screen */
+  max-width: calc(100vw - 16px);
+  pointer-events: none;
+  text-align: right;
+}
+.perf[hidden] { display: none; }
+
+.debug {
+  touch-action: pan-y;
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  z-index: 6;
+  margin: 0;
+  padding: 6px 8px;
+  max-width: min(96vw,520px);
+  max-height: 60vh;
+  overflow: auto;
+  font:
+    11px/1.35 ui-monospace,Menlo,monospace;
+  color: #e6dcc4;
+  background: #0d1214d9;
+  border: 1px solid #c1ad7966;
+  white-space: pre;
+  pointer-events: none;
+}
+
+/* Field Journal — the /game brand brought into the arena: a light sheet, rounded; bold system sans (SF on the phone) for names
+   and headings, Georgia for reading text, gold tracked eyebrows, Instrument Sans (OFL, public/game/fonts/LICENSES.txt) for chips and
+   labels. The web font is only fetched once the dialog first renders, so guest start-up pays nothing. */
+@font-face {
+  font-family: "Instrument Sans";
+  src: url(/game/fonts/instrument.woff2) format("woff2");
+  font-weight: 400 600;
+  font-display: swap;
+}
+dialog {
+  --jb: #f6f2ea; --jp: #ebe5d9; --jf: #1b1916; --jm: #7a746a; --jl: #dcd4c6; --ja: #b3231c; --js: #b7a276; --jsh: #d9c69a; --jse: #e9d9b3;   /* --js/--jsh/--jse: the fight cluster's sand, pressed tint and rim (owner 2026-09-22: site buttons wear the game's gold, red stays for text) */
+  color: var(--jf);
+  background: var(--jb);
+  border: 0;
+  border-radius: 22px;
+  width: min(520px, 94vw);
+  max-height: 88dvh;
+  padding: 16px 18px 22px;
+  box-shadow: 0 40px 90px -30px #000c;
+  font: 15px/1.5 Georgia, "Iowan Old Style", "Times New Roman", serif;
+  color-scheme: light;
+}
+dialog::backdrop {
+  background: #0a1214a6;
+  backdrop-filter: blur(8px);
+}
+@media (max-width: 700px) {
+  dialog {
+    width: 100vw;
+    max-width: none;
+    margin: auto 0 0;
+    border-radius: 22px 22px 0 0;
+    max-height: 92dvh;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  }
+}
+dialog .eyebrow {
+  font: 600 11px/1 "Instrument Sans", Arial, sans-serif;
+  letter-spacing: .18em;
+  color: var(--jm);
+}
+dialog h4 {
+  margin: 18px 0 8px;
+  font: 600 11px/1 "Instrument Sans", Arial, sans-serif;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #9a7a3a;
+}
+dialog button {
+  width: auto;
+  max-width: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--jl);
+  background: #fff9;
+  color: var(--jf);
+  font: 600 14px/1 "Instrument Sans", Arial, sans-serif;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+dialog button:hover { border-color: var(--jf); background: #fff; }
+dialog button[aria-pressed=true] { border-color: var(--jf); background: var(--jf); color: #fff; }
+dialog #close-journal { position: absolute; top: 12px; right: 14px; width: 34px; height: 34px; min-height: 0; padding: 0; z-index: 1; }   /* no heading row (owner, 2026-09-20): the sheet opens on the fighter card */
+dialog #mobile-name { align-self: end; }   /* Rename sits at the foot of the card row, clear of the close button above it */
+dialog .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+dialog .chips.quiet button { color: var(--jm); border-style: dashed; }
+.fighter {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--jl);
+}
+.fighter-sigil {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ja);
+  display: grid; place-items: center;
+  font: 700 18px -apple-system, "SF Pro Display", system-ui, "Instrument Sans", Arial, sans-serif;
+  color: var(--ja);
+}
+.fighter strong { display: block; font: 700 22px/1 -apple-system, "SF Pro Display", system-ui, "Instrument Sans", Arial, sans-serif; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.fighter-rank { display: block; font-size: 13px; color: var(--ja); margin-top: 4px; }
+.fighter-save { display: block; font-size: 12px; color: var(--jm); }
+/* Rename stays on the card at 375 (Strategy's follow-up, 2026-09-29): the rank row is nowrap, so the 1fr column grew to its full width and
+   pushed Rename past the sheet's edge. The column may shrink and the journal's bar takes all of it: its segments narrow (to 4 px, then
+   clip); the two class names never shrink (an ellipsis fires on a sub-pixel share, so they take none). */
+.fighter > div { min-width: 0; }
+#journal-rank .rank-now, #journal-rank .rank-next { flex-shrink: 0; }
+#journal-rank .rank-bar { min-width: 0; overflow: hidden; }
+#journal-rank .rank-seg { flex: 0 1 14px; min-width: 4px; }
+.account { padding: 14px 0; border-bottom: 1px solid var(--jl); overflow-wrap: anywhere; }
+.account > strong { display: block; font: 600 11px "Instrument Sans", Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #9a7a3a; }
+.account p { margin: 4px 0 10px; font-size: 14px; }
+#account-status:empty { display: none; }   /* signed in and saved: the fighter card's save line already says so */
+.account small { display: block; margin-top: 8px; font-size: 12px; color: var(--jm); }
+.account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.account-actions button { flex: 1 1 140px; min-height: 44px; border-radius: 12px; }
+dialog #account-login { flex-basis: 100%; min-height: 48px; background: #fff; border-color: var(--jf); }
+.menu-select {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 600 11px "Instrument Sans", Arial, sans-serif;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--jm);
+}
+.menu-select select {
+  font: 600 16px "Instrument Sans", Arial, sans-serif;   /* 16px floor: iOS Safari zooms the page into a focused control under 16px and leaves it zoomed (owner's "zoom bug", 2026-09-21) */
+  color: var(--jf); background: #fff;
+  border: 1px solid var(--jl); border-radius: 999px;
+  padding: 0 12px; min-height: 40px;
+  letter-spacing: 0; text-transform: none;
+}
+.howto { border-top: 1px solid var(--jl); margin-top: 12px; }
+.howto summary { cursor: pointer; padding: 12px 0; font: 600 13px "Instrument Sans", Arial, sans-serif; color: var(--jf); }
+.credits ul { margin: 0 0 12px; padding-left: 18px; font: 13px/1.55 Georgia, "Iowan Old Style", "Times New Roman", serif; color: var(--jf); }
+.credits li { margin: 0 0 8px; }
+.credits a { color: inherit; text-decoration: underline; }
+.howto p { margin: 0 0 12px; font: 13px/1.55 Georgia, "Iowan Old Style", "Times New Roman", serif; color: var(--jf); }
+.scorecard {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--jp);
+  font: 12px/1.5 ui-monospace, Menlo, monospace;
+  color: var(--jf);
+}
+dialog output { display: block; margin-top: 8px; font: 12px "Instrument Sans", Arial, sans-serif; color: var(--jm); }
+.note { margin: 18px 0 10px; font-size: 12px; color: var(--jm); }
+.references { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; }
+.references a { color: var(--jf); text-decoration: underline dotted; }
+@media (max-width: 900px), (pointer: coarse) {
+  .mobile-tools { display: block; margin: 0; }
+}
+
+/* Field Journal tabs (owner, 2026-09-20): the fighter card and sign-in stay pinned; Fighter / Arena / Settings sit under a
+   browser-style strip. Pure CSS (radio inputs), so the game binds the same ids and no script changes. The journal opens on
+   Fighter; a browser check that reaches into Arena or Settings clicks that tab's label first. */
+.journal-tabs { position: relative; }
+.journal-tabs > input { position: absolute; opacity: 0; pointer-events: none; }
+.tab-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; margin: 12px 0 4px; background: var(--jp); border-radius: 12px; }
+.tab-strip label { text-align: center; padding: 9px 6px; border-radius: 9px; font: 600 12.5px "Instrument Sans", Arial, sans-serif; color: var(--jm); cursor: pointer; white-space: nowrap; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.tab-strip label[hidden] { display: none; }   /* a player's journal: Profile / Stats / Settings, three equal tabs */
+#journal-tab-fighter:checked ~ .tab-strip .tab-fighter, #journal-tab-career:checked ~ .tab-strip .tab-career, #journal-tab-profile:checked ~ .tab-strip .tab-profile, #journal-tab-arena:checked ~ .tab-strip .tab-arena, #journal-tab-settings:checked ~ .tab-strip .tab-settings { background: #fff; color: var(--jf); box-shadow: 0 1px 2px #0002; }
+.tab-pane { display: none; padding-top: 4px; }
+#journal-tab-fighter:checked ~ .pane-fighter, #journal-tab-career:checked ~ .pane-career, #journal-tab-profile:checked ~ .pane-profile, #journal-tab-arena:checked ~ .pane-arena, #journal-tab-settings:checked ~ .pane-settings { display: block; }
+.tab-pane .chips + .chips { margin-top: 8px; }
+.tab-pane .note { margin: 12px 0 0; }
+dialog .references { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--jl); }
+/* The record table in the light journal's ink (its first rules were written for the dark sheet). */
+dialog .scorecard-table { margin: 4px 0 0; font: 14px "Instrument Sans", Arial, sans-serif; color: var(--jf); font-variant-numeric: tabular-nums; }
+dialog .scorecard-table th, dialog .scorecard-table td { padding: 8px 4px; border-bottom: 1px solid var(--jl); }
+dialog .scorecard-table th { font: 600 11px "Instrument Sans", Arial, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--jm); }
+dialog .scorecard-table tr:last-child td { color: var(--jf); font-weight: 600; }
+
+/* Profile tab (owner, 2026-09-22): the paperdoll only — the stats grid and the inventory row are out until the one-piece-at-a-time
+   loot rule lands; #loot-rack stays in the DOM (hidden) because the loader still writes its rows and tests read them. */
+/* Paperdoll (brief 5, owner 2026-09-21: a figure with the slots around it, Ultima-style, minimal; 2026-09-22: the real fighter,
+   not a silhouette). The figure is a lit front-on render of the player model (public/game/img/fighter.webp, 21 KB, portrait rig
+   in the design scratchpad); three armour slots down each side, the two hands beneath. src/main.ts fills <i> from
+   profile.loot.equipped, adds .on to a worn slot and un-hides its Store button (data-unwear). */
+.doll { display: grid; grid-template-columns: minmax(0, 1fr) minmax(88px, 104px) minmax(0, 1fr); grid-template-rows: repeat(5, auto); gap: 6px; align-items: stretch; }
+/* The figure has a FIXED height, never the rows'. It was height: 100% of the four slot rows (align-items: stretch) capped at 380 px: a
+   Store button appearing (a take) or hiding (Store), or a long piece name wrapping, re-laid the rows, and on iPhone Safari the image
+   re-resolved that percentage and changed size with the slot beside it (Dom, 2026-09-26). 380 px is the size it settled at (the rows'
+   minimum is 4 × 91 px + gaps, past the cap), so nothing moves for anyone else. scripts/profile-figure-check.mjs pins the box. */
+.doll-figure { grid-column: 2; grid-row: 1 / 6; justify-self: center; align-self: end; position: relative; height: 380px; width: max-content; margin-bottom: 4px; filter: drop-shadow(0 6px 10px #0003); }
+.doll-figure img { display: block; height: 100%; width: auto; }
+/* Worn pieces over the figure (scripts/loot-layers.mjs): one layer per paperdoll key, cropped to the figure's frame, shown when the loader
+   has put a loot id on that slot (#slot-<key>[data-loot]); the generated block below maps each id to its image. Render order: body, legs,
+   feet, arms, hands, off (the shield), head. A live render of the rig (the lead's route B) replaces this element when it lands. */
+.doll-layer { position: absolute; inset: 0; background: center / 100% 100% no-repeat; pointer-events: none; }
+/* loot-layers:start (generated by scripts/loot-layers.mjs, do not edit) */
+/* loot-layers: rendered from loot.glb 2ac1175b0099 warrior.glb 6f40b825b420 */
+.doll:has(#slot-arms[data-loot='dwarf.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/dwarf.Arms.webp); }
+.doll:has(#slot-chest[data-loot='dwarf.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/dwarf.Body.webp); }
+.doll:has(#slot-feet[data-loot='dwarf.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/dwarf.Boots.webp); }
+.doll:has(#slot-hands[data-loot='dwarf.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/dwarf.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='dwarf.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/dwarf.Greaves.webp); }
+.doll:has(#slot-head[data-loot='dwarf.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/dwarf.Helmet.webp); }
+.doll:has(#slot-arms[data-loot='executioner.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/executioner.Arms.webp); }
+.doll:has(#slot-chest[data-loot='executioner.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/executioner.Body.webp); }
+.doll:has(#slot-feet[data-loot='executioner.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/executioner.Boots.webp); }
+.doll:has(#slot-crest[data-loot='executioner.Crest']) .doll-layer[data-layer='crest'] { background-image: url(/game/img/loot/executioner.Crest.webp); }
+.doll:has(#slot-hands[data-loot='executioner.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/executioner.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='executioner.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/executioner.Greaves.webp); }
+.doll:has(#slot-head[data-loot='executioner.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/executioner.Helmet.webp); }
+.doll:has(#slot-arms[data-loot='goblin.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/goblin.Arms.webp); }
+.doll:has(#slot-chest[data-loot='goblin.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/goblin.Body.webp); }
+.doll:has(#slot-feet[data-loot='goblin.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/goblin.Boots.webp); }
+.doll:has(#slot-hands[data-loot='goblin.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/goblin.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='goblin.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/goblin.Greaves.webp); }
+.doll:has(#slot-head[data-loot='goblin.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/goblin.Helmet.webp); }
+.doll:has(#slot-arms[data-loot='knight.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/knight.Arms.webp); }
+.doll:has(#slot-chest[data-loot='knight.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/knight.Body.webp); }
+.doll:has(#slot-feet[data-loot='knight.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/knight.Boots.webp); }
+.doll:has(#slot-hands[data-loot='knight.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/knight.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='knight.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/knight.Greaves.webp); }
+.doll:has(#slot-head[data-loot='knight.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/knight.Helmet.webp); }
+.doll:has(#slot-arms[data-loot='nightborn.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/nightborn.Arms.webp); }
+.doll:has(#slot-chest[data-loot='nightborn.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/nightborn.Body.webp); }
+.doll:has(#slot-feet[data-loot='nightborn.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/nightborn.Boots.webp); }
+.doll:has(#slot-hands[data-loot='nightborn.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/nightborn.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='nightborn.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/nightborn.Greaves.webp); }
+.doll:has(#slot-head[data-loot='nightborn.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/nightborn.Helmet.webp); }
+.doll:has(#slot-arms[data-loot='pitborn.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/pitborn.Arms.webp); }
+.doll:has(#slot-chest[data-loot='pitborn.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/pitborn.Body.webp); }
+.doll:has(#slot-feet[data-loot='pitborn.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/pitborn.Boots.webp); }
+.doll:has(#slot-hands[data-loot='pitborn.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/pitborn.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='pitborn.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/pitborn.Greaves.webp); }
+.doll:has(#slot-head[data-loot='pitborn.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/pitborn.Helmet.webp); }
+.doll:has(#slot-arms[data-loot='plaguedoctor.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/plaguedoctor.Arms.webp); }
+.doll:has(#slot-chest[data-loot='plaguedoctor.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/plaguedoctor.Body.webp); }
+.doll:has(#slot-feet[data-loot='plaguedoctor.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/plaguedoctor.Boots.webp); }
+.doll:has(#slot-hands[data-loot='plaguedoctor.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/plaguedoctor.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='plaguedoctor.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/plaguedoctor.Greaves.webp); }
+.doll:has(#slot-head[data-loot='plaguedoctor.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/plaguedoctor.Helmet.webp); }
+.doll:has(#slot-arms[data-loot='shieldmaiden.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/shieldmaiden.Arms.webp); }
+.doll:has(#slot-chest[data-loot='shieldmaiden.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/shieldmaiden.Body.webp); }
+.doll:has(#slot-feet[data-loot='shieldmaiden.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/shieldmaiden.Boots.webp); }
+.doll:has(#slot-hands[data-loot='shieldmaiden.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/shieldmaiden.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='shieldmaiden.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/shieldmaiden.Greaves.webp); }
+.doll:has(#slot-head[data-loot='shieldmaiden.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/shieldmaiden.Helmet.webp); }
+.doll:has(#slot-off[data-loot='shieldmaiden.Shield']) .doll-layer[data-layer='off'] { background-image: url(/game/img/loot/shieldmaiden.Shield.webp); }
+.doll:has(#slot-arms[data-loot='veteran.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/veteran.Arms.webp); }
+.doll:has(#slot-chest[data-loot='veteran.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/veteran.Body.webp); }
+.doll:has(#slot-feet[data-loot='veteran.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/veteran.Boots.webp); }
+.doll:has(#slot-crest[data-loot='veteran.Crest']) .doll-layer[data-layer='crest'] { background-image: url(/game/img/loot/veteran.Crest.webp); }
+.doll:has(#slot-hands[data-loot='veteran.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/veteran.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='veteran.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/veteran.Greaves.webp); }
+.doll:has(#slot-head[data-loot='veteran.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/veteran.Helmet.webp); }
+.doll:has(#slot-off[data-loot='veteran.Shield']) .doll-layer[data-layer='off'] { background-image: url(/game/img/loot/veteran.Shield.webp); }
+.doll:has(#slot-arms[data-loot='witch.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/witch.Arms.webp); }
+.doll:has(#slot-chest[data-loot='witch.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/witch.Body.webp); }
+.doll:has(#slot-feet[data-loot='witch.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/witch.Boots.webp); }
+.doll:has(#slot-hands[data-loot='witch.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/witch.Gloves.webp); }
+.doll:has(#slot-legs[data-loot='witch.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/witch.Greaves.webp); }
+.doll:has(#slot-head[data-loot='witch.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/witch.Helmet.webp); }
+/* loot-layers:end */
+.doll .slot { display: flex; flex-direction: column; justify-content: center; min-height: 72px; }   /* room for the 40 px Store button */
+.doll .slot { position: relative; z-index: 1; }   /* above .doll-figure: its frame is wider than its column, and a worn shield reaches the FEET card */
+.doll [data-slot='head'], .doll [data-slot='crest'], .doll [data-slot='chest'], .doll [data-slot='arms'], .doll [data-slot='main'] { grid-column: 1; }   /* crest: its own card since 2026-09-26 (Armour); Web owns the card's look */
+.doll [data-slot='hands'], .doll [data-slot='legs'], .doll [data-slot='feet'], .doll [data-slot='off'] { grid-column: 3; }
+.slot { padding: 9px 10px 8px; border: 1px dashed var(--jl); border-radius: 12px; color: var(--jm); background: #fff6; }
+.slot span { display: block; font: 600 10px "Instrument Sans", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.slot i { display: block; font: 600 13px "Instrument Sans", Arial, sans-serif; font-style: normal; margin-top: 3px; overflow-wrap: anywhere; }
+.slot.on { border-style: solid; border-color: var(--jf); color: var(--jf); background: #fff; }
+.slot[aria-disabled=true] { opacity: .6; }
+dialog .slot-off { display: block; margin: 8px 0 0; min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 11px; align-self: flex-start; }   /* owner touch-target follow-up: 40 px tap height, type unchanged */
+/* Inventory: five numbered tiles (owner: "1–5 inventory"); src/main.ts renders owned pieces as
+   <li data-loot data-worn><span>name</span><button data-wear>Wear</button></li> and pads to five with <li class="rack-empty">. */
+.rack { list-style: none; margin: 0; padding: 0 0 44px; position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; counter-reset: inv; }
+.rack li { display: flex; flex-direction: column; min-height: 104px; padding: 6px; border: 1px dashed var(--jl); border-radius: 12px; background: #fff6; counter-increment: inv; font: 600 10.5px/1.2 "Instrument Sans", Arial, sans-serif; color: var(--jf); overflow-wrap: anywhere; }   /* +20 px for the 40 px Wear/Worn button */
+.rack li::before { content: counter(inv); margin: 0 0 6px 2px; font: 600 10px/1 "Instrument Sans", Arial, sans-serif; color: var(--jm); }
+.rack li[data-loot] { border-style: solid; border-color: var(--jf); background: #fff; }
+.rack li span { flex: 1; }
+.rack li span::first-letter { text-transform: uppercase; }
+dialog .rack button { margin: 8px -2px -2px; min-height: 40px; padding: 0 8px; border-radius: 8px; font-size: 10px; }   /* owner touch-target follow-up: 40 px tap height, type unchanged */
+.rack li[data-worn='true'] { border-color: var(--ja); }
+.rack li[data-worn='true'] button { border-color: var(--jse); background: var(--js); color: var(--jf); }
+/* Provenance (brief 9): each owned tile carries <small data-taken> — the piece's name, then how it was taken — and, when the
+   fight was stored, an <a data-watch href="/?r=…">Watch</a>. Too long for a 63 px tile, so it reads beneath the grid: the worn
+   piece's by default, any tile's while it is hovered or focused (a tap focuses it: the li carries tabindex="0"). */
+.rack li { outline: none; }
+.rack li:focus-visible { border-color: var(--ja); }
+/* The pack under WORN (loot.ts PACK; Strategy from Dom's screenshot 2026-09-24): main.ts renderLoot writes five <li>: the open slots are
+   <li data-loot><span>name</span><button data-wear>Wear</button></li> or <li class="pack-empty">, the rest <li class="pack-locked">,
+   greyed with a padlock and no price. Same tile language as the slots and the rack; #pack-full is the one-line reason Store is disabled. */
+.pack { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pack li { display: flex; flex-direction: column; min-height: 88px; padding: 6px; border: 1px dashed var(--jl); border-radius: 12px; background: #fff6; font: 600 10.5px/1.2 "Instrument Sans", Arial, sans-serif; color: var(--jf); overflow-wrap: anywhere; }
+.pack li[data-loot] { border-style: solid; border-color: var(--jf); background: #fff; }
+.pack li span { flex: 1; }
+.pack li span::first-letter { text-transform: uppercase; }
+dialog .pack button { margin: 8px -2px -2px; min-height: 40px; padding: 0 8px; border-radius: 8px; font-size: 10px; }   /* the rack's 40 px tap height */
+.pack li.pack-locked { opacity: .45; background: var(--jl) center / 18px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E"); border-style: solid; }
+.pack-note { margin: 6px 0 0; font: 12.5px/1.4 Georgia, "Iowan Old Style", "Times New Roman", serif; color: var(--jm); }
+dialog .slot-off:disabled { opacity: .45; cursor: not-allowed; }
+.rack li small { display: none; position: absolute; left: 0; right: 0; bottom: 0; margin: 0; min-height: 36px; max-height: 36px; overflow: hidden; font: 12.5px/1.4 Georgia, "Iowan Old Style", "Times New Roman", serif; color: var(--jm); background: var(--jb); }
+.rack li[data-worn='true'] small { display: block; }
+.rack li[data-worn='true'] ~ li[data-worn='true'] small { display: none; }   /* two worn pieces: only the first's caption by default */
+.rack li:hover small, .rack li:focus-within small { display: block; z-index: 1; }
+.rack:has(li:hover, li:focus-within) li[data-worn='true']:not(:hover, :focus-within) small { display: none; }   /* one caption at a time */
+.rack li small b { font-weight: 400; color: var(--jf); }
+.rack li small a { display: inline-block; margin-left: 6px; padding: 1px 8px; border: 1px solid var(--ja); border-radius: 999px; font: 600 10.5px/1.5 "Instrument Sans", Arial, sans-serif; color: var(--ja); text-decoration: none; vertical-align: 1px; }
+.rack li small a:hover { background: var(--js); border-color: var(--jse); color: var(--jf); }
+
+/* Kill links (brief 3): the replay banner sits under the header; Share and its status sit beside Rematch on the death screen.
+   Web design owns the final look; these are plain, readable defaults. */
+/* "Watch the whole fight" (owner 2026-09-22): a replay opens on its last seconds; this one tap under the banner restarts it from
+   the first tick. Same face as the banner, a thin frame so a thumb finds it; hidden while the whole fight is already playing. */
+.replay-banner {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  text-align: center;
+  color: #e9ddc5;
+  font: 13px Arial;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 1px 6px #000c;
+  pointer-events: none;
+}
+/* The stale-link line (web lane, 2026-09-22, the #426 follow-up): "This fight cannot be played here" / "Recorded on an older build"
+   are not a status about a fight that is playing — they are the whole page's message, and the banner's slot in the header band ran
+   them straight through Sound on (desktop, 1280×800) and the warden's meters (phone, 390×844). main.ts's banner(text, true) marks
+   them, and they drop to the cue's slot directly above PLAY NOW ("one small line, PLAY NOW under it", src/main.ts) in the autopsy's
+   serif instead of the banner's tracked caps, so the sand button under them is the loudest thing on the screen. */
+/* The challenger's wait (?duel=new): a bare loading card for minutes reads as broken, so say what is happening and give the link again, a way
+   to copy it, and a way out (Strategy 2026-10-01). Above the versus card (z 5) and the banner (z 6); it takes taps. */
+.duel-wait {
+  position: fixed;
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 380px);
+  z-index: 7;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  text-align: center;
+  color: #e9ddc5;
+  background: #11161ae6;
+  border: 1px solid #e9ddc544;
+  border-radius: 6px;
+  font: 14px Arial;
+  text-shadow: 0 1px 6px #000c;
+}
+.duel-wait[hidden] { display: none; }
+.duel-wait p { margin: 0 0 10px; letter-spacing: 1px; }
+.duel-wait input { width: 100%; box-sizing: border-box; padding: 8px; color: #e9ddc5; background: #0a0d0f; border: 1px solid #e9ddc533; border-radius: 4px; font: 16px/1.3 monospace; text-overflow: ellipsis; }   /* 16px: iOS zooms a smaller focusable control (tests/input.test.ts) */
+.duel-wait-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+.duel-wait button { min-width: 112px; min-height: 40px; padding: 8px 14px; color: #e9ddc5; background: #2a2f33; border: 1px solid #e9ddc566; border-radius: 4px; font: 13px Arial; letter-spacing: 1px; cursor: pointer; }
+.duel-wait button:focus-visible { outline: 2px solid #e9ddc5; outline-offset: 2px; }
+.replay-banner[data-stale='1'] {
+  top: auto;
+  bottom: calc(max(30px, env(safe-area-inset-bottom)) + 84px + 60px);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(360px, calc(100vw - 32px));
+  color: #efe6d3;
+  font: 15px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif;
+  letter-spacing: normal;
+  text-transform: none;
+  text-shadow: 0 1px 2px #000c, 0 0 16px #000a;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  /* Just above the cluster's PLAY NOW (its top sits ~64 px into the 216 px box), not the cue's higher slot: the line and the button
+     read as one message. */
+  .replay-banner[data-stale='1'] { bottom: calc(max(30px, env(safe-area-inset-bottom)) + 168px); }
+}
+/* A retired kill link's warden still (Dom 2026-09-24, "dead links must convert"): the roster portrait stands over the stale line, the
+   line over PLAY NOW — one stack, read top to bottom. A framed dark card, so the cutout reads as a picture and not as a third fighter
+   standing in the arena behind it. It takes no pointer, so the first touch still reaches the page. */
+.replay-still {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(30px, env(safe-area-inset-bottom)) + 84px + 60px + 64px);
+  transform: translateX(-50%);
+  z-index: 5;
+  height: min(38vh, 320px);
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  padding: 10px 10px 0;
+  border: 1px solid #e9d9b366;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 35%, #3a322bee, #14120fee 75%);
+  box-shadow: inset 0 0 0 3px #f0e3c91a, 0 6px 22px #000b;
+  pointer-events: none;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  .replay-still { bottom: calc(max(30px, env(safe-area-inset-bottom)) + 168px + 64px); height: min(34vh, 280px); }
+}
+/* PLAY NOW on a viewer page (hud.ts sets data-play): the sand, rim and inset ring the kill screen's Take wears, because on a shared
+   link every other control is asleep and this is the only thing to press. Rematch and "Next: …" keep the dark glass. */
+#reset-button[data-play='1'] {
+  min-height: 52px;
+  padding: 0 26px;
+  border: 1px solid #e9d9b3;
+  background: #b7a276;
+  box-shadow: inset 0 0 0 3px #f0e3c93d, 0 2px 10px #0007;
+  color: #1b1916;
+  font: 700 15px/1.1 "Instrument Sans", Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-shadow: none;
+}
+.share-button {
+  white-space: nowrap;
+  touch-action: none;
+}
+/* SHARE (C1, Dom picked 2026-09-25 from evidence/share-mockups-c @ a7372252): icon + text, no circle, no plate, no ring — white at
+   .75 with a two-layer drop shadow so it reads on the dark Night Pit and the pale Blood Sand alike. A 60x60 invisible tap target
+   left of Next and above the joystick (375x812: left 20, top 590; CLIP takes left 94 in the next PR). The status ("Shared." /
+   "Link copied." / an error) shows above the control for ~2 s (main.ts say()) and grows upward, never over Next or the joystick. */
+#actions .share-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 60px;
+  height: 60px;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #fff;
+  opacity: .75;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.85)) drop-shadow(0 0 6px rgba(0,0,0,.45));
+  font: 700 11px system-ui, -apple-system, sans-serif;
+  letter-spacing: 1.2px;
+  text-shadow: none;
+  cursor: pointer;
+}
+#actions .share-button:active { background: none; transform: none; }
+#actions .share-button span { display: block; margin: 0; color: inherit; }
+#actions #clip-button small { display: block; font: 700 9px system-ui, -apple-system, sans-serif; letter-spacing: 1px; line-height: 1.15; text-align: center; white-space: normal; width: 64px; }
+#actions #clip-button[data-state='recording'] svg { display: none; }   /* recording: the seconds left and TAP TO STOP take the icon's place (mockup B, screen 3) */
+#actions #clip-button[data-state='recording'] span { font-size: 16px; letter-spacing: .5px; }   /* the phone rule `.actions button span { display: none }` and the global `button span` margin + gold would drop or shift the label */
+@media (max-width: 900px), (pointer: coarse) {
+  /* The cluster box's origin is Next's top-left minus (0, 75): at 375x812 that is (175, 562), so the mockup's (20, 590) is (-155, 28). */
+  /* Sparring's kill screen (Dom 2026-09-26): CHANGE and LEAVE take SHARE and CLIP's two slots (a sparring fight has no share), left of Rematch. */
+  .actions[data-gestures=cluster] .spar-end { position: absolute; top: 28px; width: 60px; height: 60px; }
+  .actions[data-gestures=cluster] #spar-change { left: -155px; }
+  .actions[data-gestures=cluster] #spar-leave { left: -81px; }
+  /* Export clip B (Dom 2026-09-26, evidence/export-clip-mockups @ 6663c070): SHARE and CLIP in two slots. One tap (Dom 2026-09-28):
+     they show at once on the end screen; the old SHARE step that led to them is gone. */
+  .actions[data-gestures=cluster] .clip-pick { position: absolute; top: 28px; width: 60px; height: 60px; }
+  /* DUEL, LINK, CLIP (Strategy 2026-10-02): one row of three, DUEL first and a little larger, off the bodies and the stick. Landscape: the
+     two old slots plus DUEL on their left. Portrait (below): the row sits in the clear sand above the fighters' heads. */
+  .actions[data-gestures=cluster] #duel-button { left: -229px; width: 68px; height: 68px; top: 24px; font-size: 12px; }
+  .actions[data-gestures=cluster] #share-link { left: -155px; }
+  .actions[data-gestures=cluster] #clip-button { left: -81px; }
+  .actions[data-gestures=cluster] #share-status {
+    position: absolute;
+    left: -155px;
+    bottom: 196px;
+    max-width: 150px;
+    margin: 0;
+    text-align: left;
+    font: 12px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif;
+    text-shadow: 0 1px 2px #000c, 0 0 14px #0009;
+    opacity: 1;
+  }
+}
+@media (orientation: portrait) and (max-width: 900px), (orientation: portrait) and (pointer: coarse) {
+  /* Portrait phone: the row is fixed to the screen, centred, about 190 px below the top: the far wall and the sand behind the fighters (the camera keeps
+     both bodies in the lower two thirds), clear of the thumb row. The corpse and the pool lie below it. */
+  .actions[data-gestures=cluster] .clip-pick { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 188px); }
+  .actions[data-gestures=cluster] #duel-button { left: calc(50% - 105px); top: calc(env(safe-area-inset-top, 0px) + 184px); }
+  .actions[data-gestures=cluster] #share-link { left: calc(50% - 25px); }
+  .actions[data-gestures=cluster] #clip-button { left: calc(50% + 45px); }
+  /* No DUEL (a player not on the admins roster): LINK and CLIP centre as a pair, no empty slot where DUEL would be (Strategy 2026-10-02). */
+  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #share-link { left: calc(50% - 65px); }
+  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #clip-button { left: calc(50% + 5px); }
+}
+/* Until Dom opens duels (Strategy 2026-10-02) only the admins roster (and ?debug on a local build) see DUEL: no player taps it into "admins only". LINK and CLIP stay for everyone. */
+:root:not([data-duel-tools='true']) #duel-button { display: none !important; }
+/* Desktop (one tap, Dom 2026-09-28): SHARE and CLIP sit side by side right of Rematch (CLIP in a fourth column on that row) instead
+   of CLIP wrapping onto a third grid row under the controls. The phone cluster places them absolutely (above), so this stays off phones. */
+@media (min-width: 901px) and (not (pointer: coarse)) {
+  #actions #duel-button { grid-row: 1; grid-column: 3; }
+  #actions #share-link { grid-row: 1; grid-column: 4; }
+  #actions #clip-button { grid-row: 1; grid-column: 5; }
+  :root:not([data-duel-tools='true']) #actions #share-link { grid-column: 3; }
+  :root:not([data-duel-tools='true']) #actions #clip-button { grid-column: 4; }
+}
+/* The rank row (Dom 2026-09-23), one component in three places: the account panel (#rank), the journal's fighter card
+   (#journal-rank) and the fight-end panel (#fight-rank, where the death-screen autopsy was, win and loss). Class + numeral left, a
+   segmented bar across the whole class (one segment per numeral, the current one part-filled via --fill from main.ts renderRank),
+   the next class right and dimmer. The account panel's type: 12 px, #eee7d9. Ids, not a class, so it outranks .identity div>span. */
+#rank, #journal-rank, #fight-rank {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+#rank, #fight-rank { font-size: 12px; color: #eee7d9; }   /* #journal-rank keeps .fighter-rank's size and ink on the journal's paper */
+#fight-rank {
+  pointer-events: none;
+  text-shadow: 0 1px 5px #131b1d;
+}
+.rank-bar { display: inline-flex; gap: 2px; }
+.rank-seg {
+  width: 14px;
+  height: 5px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--rank-fill, #d2bd8c) var(--fill, 0%), color-mix(in srgb, currentColor 22%, transparent) var(--fill, 0%));
+}
+dialog .rank-seg { --rank-fill: var(--js); }
+.rank-next { opacity: 0.85; }
+.share-status {
+  display: block;
+  color: #efe6d3;
+  font: 12px Arial;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+/* End-of-fight text/buttons (owner 2026-09-22 brief 3/4): the middle of the screen stays empty from the Killed event until the
+   finisher camera has settled (view.finishPhase().settled — no fixed delay here, the rig owns the clock: plain death ~1.5 s,
+   the longer finishers up to ~4.2 s) and fades again while the arena-cam tour orbits the fallen (.touring, from 5 s until a
+   touch or Rematch). main.ts's updateHud() toggles :root.endgame-fade from finishPhase() every frame. The buttons go inert
+   while faded (lead review, 2026-09-22): an invisible Rematch under the player's thumb during the tour must not fire — the
+   first tap during the tour reaches the arena instead, which is what stops it (scene.ts), and the HUD returns at 250 ms. */
+#fight-rank, #reset-button, #share-status, .spar-end, .clip-pick {
+  transition: opacity 250ms ease-out;
+}
+/* One exemption (Lead 2026-09-27, the live CLIP receipt): while a made clip waits for SEND (main.ts clipState 'ready' sets
+   :root.clip-ready, until it is sent, dismissed or a new fight starts), SHARE + SEND stay up and live through the TOUR, so one
+   tap sends it; on a phone the first tap otherwise fell through to the arena. The pre-settle hush (.endgame-hush) still fades
+   them, and Rematch, an idle SHARE + CLIP and the sparring pair stay faded and inert through the tour as above. The precedent is PLAY NOW on a
+   viewer page (main.ts `watching`). */
+:root.endgame-fade #reset-button,
+:root.endgame-fade .spar-end,
+:root.endgame-fade:not(.clip-ready) .clip-pick,
+:root.endgame-hush .clip-pick,
+:root.endgame-fade #share-status {
+  opacity: 0;
+}
+:root.endgame-fade #reset-button,
+:root.endgame-fade .spar-end,
+:root.endgame-fade:not(.clip-ready) .clip-pick,
+:root.endgame-hush .clip-pick {
+  pointer-events: none;
+}
+/* The same rule for the loot panel's arena-side targets. The panel stays VISIBLE through the tour (it is outside the fade group),
+   but its tiles sit in the top band, where the player's first touch lands to stop the tour — and a tile tap is the take. Measured
+   on #521: the Centurion's nine pieces wrap to a second row that covers (190, 300), so the touch meant to hand the camera back
+   took his shield. While the tour rolls a touch anywhere only stops it (main.ts: document pointerdown -> view.stopTour()); the
+   tiles and Undo come back with the HUD 250 ms later, and then a tap is the take. Leave it sits in the thumb row, outside the
+   arena's touch path, and stays live. */
+:root.endgame-fade .loot-pieces button,
+:root.endgame-fade #loot-undo {
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #fight-rank, #reset-button, #share-status, .clip-pick { transition: none; }
+}
+
+/* First-fight cues (brief 8, copy approved by the lead 2026-09-21: "Block it." / "Other side." / "Now."). One line in the
+   drop line's slot above the thumb cluster, shown once each on a new fighter's first fight; src/main.ts sets textContent and
+   keeps the seen list in localStorage "frankendom.cues". Show: hidden=false, then data-on="1" on the next frame (fades in
+   120 ms); hide: remove data-on (fades out 300 ms), then hidden=true after it — [hidden] is display:none !important, so the
+   fade needs the attribute, not hidden. Never two at once. */
+.cue { position: fixed; left: 50%; bottom: calc(max(30px, env(safe-area-inset-bottom)) + 84px + 60px); transform: translateX(-50%); width: min(360px, calc(100vw - 32px)); margin: 0; z-index: 4; pointer-events: none; color: #f3e9cf; font: 700 22px/1.2 -apple-system, "SF Pro Display", system-ui, "Instrument Sans", Arial, sans-serif; letter-spacing: -.01em; text-align: center; text-shadow: 0 1px 2px #000c, 0 0 16px #000a; opacity: 0; transition: opacity 300ms ease-in; }
+.cue[data-on='1'] { opacity: 1; transition: opacity 120ms ease-out; }
+@media (max-width: 900px), (pointer: coarse) { .cue { bottom: calc(max(30px, env(safe-area-inset-bottom)) + 226px + 56px); font-size: 20px; } }
+@media (prefers-reduced-motion: reduce) { .cue { transition: none; } }
+
+/* The kill screen's Take-one panel (src/fight/loot-panel.ts). Docked in the top band under the autopsy (never over the fallen body), NOT in
+   the :root.endgame-fade group, so the arena-cam tour does not fade it: it stays until a take, Leave, Rematch or Next.
+   E2 (Dom's pick, 2026-09-26, via Strategy): a bone card, semi-transparent so the arena reads through, with the default offer drawn big
+   (the rung it was won at, its name, its render) over THE ROW THAT IS THE PICK: every piece and his move, one big tile each, five to a
+   row. No stats. A tile you would swap (a piece you own, a move that replaces yours) carries a small ⇄; nothing is ever greyed. */
+.loot-panel { grid-column: 1 / -1; width: min(calc(100vw - 32px), 360px); margin: 8px 0 0; pointer-events: none; padding: 0 12px 12px; border-radius: 14px; background: #d9c9a473; border: 1px solid #f3e8cf99; box-shadow: 0 4px 14px #0004; color: #1b1916; text-shadow: none; opacity: 0; transition: opacity 250ms ease-out; -webkit-backdrop-filter: blur(3px) saturate(1.1); backdrop-filter: blur(3px) saturate(1.1); }
+.loot-panel[data-on='1'] { opacity: 1; }
+.loot-panel-head { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 10px 0; border-bottom: 1px solid #1b191630; }
+.loot-hero { flex: 0 0 auto; width: 104px; height: 104px; object-fit: contain; filter: drop-shadow(0 6px 8px #0004); }
+.loot-panel-text { min-width: 0; }
+.loot-panel-title { margin: 0; color: #7a5c18; font: 700 10px/1.2 "Instrument Sans", Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.loot-panel-name { margin: 5px 0 6px; color: #1b1916; font: 600 24px/1.05 "Iowan Old Style", Palatino, Georgia, serif; letter-spacing: 0; text-transform: none; }
+.loot-panel-pick { margin: 0; color: #1b1916c0; font: 600 13px/1.25 "Instrument Sans", Arial, sans-serif; }
+.loot-pieces { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px 6px; margin: 0; padding: 0; list-style: none; }
+.loot-pieces li { position: relative; }
+.loot-pieces button { pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 100%; min-height: 72px; padding: 4px 2px; border-radius: 10px; border: 1px solid transparent; background: #fdf6e333; color: #1b1916; font: 600 9px/1.1 "Instrument Sans", Arial, sans-serif; text-align: center; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.loot-pieces img { display: block; width: 54px; height: 54px; object-fit: contain; }
+.loot-pieces button span { display: block; margin: 0; max-width: 62px; overflow-wrap: anywhere; color: inherit; }   /* the global `button span` rule adds a 14px left margin + the pale gold */
+.loot-pieces li[data-offer='1'] button { background: #fff6; box-shadow: inset 0 0 0 2px #8a6a22; }
+.loot-pieces li[data-swap='1']::after { content: "⇄"; position: absolute; top: 2px; right: 5px; color: #7a5c18; font: 700 11px/1 sans-serif; pointer-events: none; }
+/* The tap IS the take, so there is no selected state to hold — only the flash the tile gives as the panel closes. */
+.loot-pieces li[data-took='1'] button { background: #fdf6e3; border-color: #fff8e8; box-shadow: 0 0 0 2px #fff8e8b3, 0 2px 10px #0005; }
+/* Take / Leave live in the BOTTOM row inside #actions, not in the top band with the tiles: Strategy's #380 layout rule (text up top,
+   buttons in the thumb row) and, concretely, the first touch after a kill is the player's way to stop the arena-cam tour — a decision
+   button sitting under that thumb would decline the loot by accident (deploy #102's quiet-one rows caught exactly this: a canvas tap at
+   190,300 was intercepted by "Leave it"). The row takes the space the sleeping combat buttons leave, where the old Wear/Store row sat. */
+.loot-panel-actions { display: flex; gap: 8px; margin: 10px 0 0; z-index: 4; }
+#actions .loot-panel-actions button { position: static; width: auto; height: auto; flex: 1 1 0; white-space: nowrap; min-height: 40px !important; padding: 0 12px !important; border-radius: 999px; border: 1px solid #e9d9b3; background: #b7a276; color: #1b1916; font: 600 14px "Instrument Sans", Arial, sans-serif; box-shadow: inset 0 0 0 3px #f0e3c93d, 0 1px 3px #0006; cursor: pointer; touch-action: none; }
+#actions .loot-panel-actions button:disabled { opacity: .4; cursor: default; }
+/* With Take gone, Leave it is alone in the row and nothing else covers the sleeping Step and Guard underneath it, so the ghost
+   gets the cluster's own dark glass rather than full transparency — the label was reading on top of the round buttons. */
+#actions .loot-panel-actions #loot-decline { background: #1a2224cc; border-color: #e9d9b380; color: #f3e9cf; box-shadow: 0 1px 3px #0006; }
+/* E2: Take (the offer on the card) above Leave, dark on the sand like the card's ink. */
+.loot-panel-actions { flex-direction: column; }
+#actions .loot-panel-actions #loot-take { min-height: 46px !important; background: #2d2c29; border-color: #2d2c29; color: #f3ead6; }
+/* While the take-one offer is up the fight is over, so its controls leave the screen outright (Lead 2026-09-25, from the #753
+   375 stills: Step and Guard read through Leave it at the cluster's half-fade and the pad stayed up). Keyed on the offer's own
+   row: loot-panel.ts unhides #loot-panel-actions on show and Undo and hides it on Take, Leave it and close, so the controls
+   come back the moment it goes. visibility, not display: the cluster keeps its layout, nothing jumps when they return. */
+:root:has(#loot-panel-actions:not([hidden])) #actions button[data-mobile],
+:root:has(#loot-panel-actions:not([hidden])) #run-button,
+:root:has(#loot-panel-actions:not([hidden])) #joystick { visibility: hidden; }
+/* The line that replaces the tiles after a take, with Undo beside it. Undo is the ONLY way back from a mis-tap, so it is a pill in
+   the card's own ink, not a quiet link; it takes pointers (the card does not) and is on screen for the caller's 4 s. */
+.loot-panel-note { display: flex; align-items: center; gap: 8px; margin: 0; color: #1b1916; font: 15px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif; }
+#loot-undo { pointer-events: auto; flex: 0 0 auto; margin-left: auto; min-height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid #1b191633; background: #1b1916; color: #f3e9cf; font: 700 13px/1 "Instrument Sans", Arial, sans-serif; letter-spacing: .04em; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+#loot-undo:active { background: #2b2822; }
+@media (prefers-reduced-motion: reduce) { .loot-panel { transition: none; } }
+@media (max-width: 900px), (pointer: coarse) {
+  .actions[data-gestures=cluster] .loot-panel-actions { position: absolute; left: 0; top: 137px; width: 176px; justify-content: center; }
+}
+
+/* The admin Sparring tab (Dom 2026-09-29, via Strategy): the one tab of test picks (Opponent, Difficulty level, Stage, Move, Weapon,
+   Finisher) wrapping as the journal's chips, then Start sparring. Players never see it (main.ts / account.ts hide #sparring-tab). */
+#spar-start { margin-left: auto; background: var(--js); border-color: var(--jse); color: var(--jf); }
+/* Every Sparring select shrinks to the line (the Difficulty labels "50 · Origin · …" ran past 375): a flex item's min-width:auto is its content. */
+.sparring-row .menu-select { max-width: 100%; min-width: 0; }
+.sparring-row .menu-select select { flex: 0 1 auto; min-width: 0; max-width: 100%; background: var(--jp); color: var(--jf); color-scheme: dark; }
+.sparring-row .menu-select select:disabled { opacity: 1; color: var(--jm); }
+.sparring-fighter { width: 100%; min-width: 0; }
+#spar-special-status, #spar-player-status { width: 100%; margin: 0; color: var(--jf); font: 13px/1.5 "Instrument Sans", Arial, sans-serif; }
+.dev-kit-line { margin: 8px 0 0; color: var(--jm); font: 600 12px "Instrument Sans", Arial, sans-serif; }   /* a Dev-kit fight moves nothing (main.ts sayTested) */
+.sparring-row strong { width: 100%; }
+/* The glint (Dom 2026-09-29, final: no star, no outline): the item itself (icon and label) turns gold (#f2d27a) and back; the glint takes
+   the first 30% of each cycle and the rest is still. SHARE and CLIP glint every 3 s while they show ([hidden] stops it). The menu (the
+   phone's ☰, the desktop's "Field journal" text) glints stronger on the same 3 s (Dom): a brighter gold held full from 60% to 82% (~0.7 s). Colour only: nothing moves and no tap target changes. Reduced motion: at rest. */
+#journal-button, #journal-button::after { animation: glint-menu 3s ease-in-out infinite; }   /* the text (desktop) and the ☰ (phone) */
+#actions .share-button { animation: glint-share 3s ease-in-out infinite; }
+@keyframes glint-menu { 0%, 50%, 92%, 100% { color: #eee9df; } 60%, 82% { color: #ffd24d; } }   /* at rest: the :root ink both already wear */
+@keyframes glint-share { 0%, 30%, 100% { color: #fff; } 15% { color: #f2d27a; } }
+@media (prefers-reduced-motion: reduce) {
+  #journal-button, #journal-button::after, #actions .share-button { animation: none; }
+}
+
+/* The kill screen's one action column (Web 2026-10-07, Dom's iPhone shots: the Pit pill sat on the move pad, LINK and CLIP collided with it
+   and with Next). Portrait phone: a right-hand column on the footer's 16 px gutter, left edge clear of the 128 px pad (x >= 174), bottom up:
+   Next fight as a 48 px button, then the LINK + CLIP icon row. One grid, nothing
+   placed off another button's corner, so nothing can overlap at 320, 375 or 430. The viewer page's PLAY NOW keeps its own box. */
+@media (orientation: portrait) and (max-width: 900px), (orientation: portrait) and (pointer: coarse) {
+  :root {
+    --end-gutter: max(16px, env(safe-area-inset-right));
+    --end-base: max(34px, env(safe-area-inset-bottom));
+    --end-width: min(220px, calc(100vw - 190px));
+  }
+  .actions[data-gestures=cluster] #reset-button:not([data-play='1']) {
+    position: fixed; left: auto; top: auto; right: var(--end-gutter); width: var(--end-width); height: 48px; min-height: 48px;
+    box-sizing: border-box; padding: 0 12px; border-radius: 14px; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .actions[data-gestures=cluster] #reset-button:not([data-play='1']) { bottom: var(--end-base); background: #b7a276; border: 1px solid #e9d9b3; color: #1b1916; font-weight: 700; box-shadow: inset 0 0 0 3px #f0e3c93d, 0 2px 10px #0007; }   /* Next is the primary: solid sand, dark ink */
+  .actions[data-gestures=cluster] .clip-pick { position: fixed; top: auto; left: auto; bottom: calc(var(--end-base) + 112px); }
+  .actions[data-gestures=cluster] #clip-button { left: auto; right: var(--end-gutter); }
+  .actions[data-gestures=cluster] #share-link { left: auto; right: calc(var(--end-gutter) + 66px); }
+  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #share-link { left: auto; right: calc(var(--end-gutter) + 66px); }
+  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #clip-button { left: auto; right: var(--end-gutter); }
+  .actions[data-gestures=cluster] #duel-button { top: auto; left: auto; bottom: calc(var(--end-base) + 180px); right: var(--end-gutter); }   /* admin-only: a third row of the column, so it never reaches the pad */
+  .actions[data-gestures=cluster] #share-status { position: fixed; left: auto; right: var(--end-gutter); bottom: calc(var(--end-base) + 256px); max-width: var(--end-width); text-align: right; }
+  /* While the take-one offer is up it takes the column's slot above Next (it sat at left 0 / top 137 of the old cluster and covered Next, so Next could not
+     be tapped: release rows 16, 21 and 25, Lead 2026-10-07). The rest of the column waits (visibility: nothing reflows) and returns with the offer's close. */
+  :root:has(#loot-panel-actions:not([hidden])) .actions[data-gestures=cluster] .loot-panel-actions { position: fixed; left: auto; top: auto; right: var(--end-gutter); bottom: calc(var(--end-base) + 56px); width: var(--end-width); }
+  :root:has(#loot-panel-actions:not([hidden])) .actions[data-gestures=cluster] :is(#share-link, #clip-button, .clip-pick, #share-status) { visibility: hidden; }
+  /* Once the fight is over and Next fight is up, the fight buttons have nothing to do: ROLL and GUARD sat under it and showed through at 375
+     (Lead 2026-10-15, scripts/end-overlap-check.mjs). Hidden and inert, nothing reflows; they return with the next fight (Next fight hides again). */
+  :root:has(#reset-button:not([hidden], [data-play='1'])) .actions[data-gestures=cluster] :is(#attack-button, #heavy-button, #skill-button, #thrust-button, #kick-button, #dodge-button, #guard-button, #run-button) { visibility: hidden; pointer-events: none; }
+}
+/* ===== The gear sheet: Fitting rail (Strategy 2026-10-01, concept 03). Grey box: the painted pieces (docs: gear-fitting-painted-pieces) replace these plain plates.
+   The sheet is the whole phone, dark in the /game Golden Order palette. While the live mannequin is up (#journal[data-gear=live]) the Gear tab leaves
+   the stage window clear so the canvas shows through it; every other region has its own ground. ===== */
+#journal { --jb: #12100d; --jp: #1d1913; --jf: #e9e3d6; --jm: #9a9382; --jl: #2f2a21; --ja: #d8b46a; --jg: #c8a45e; --jg2: #e7cf93; color-scheme: dark; }
+@media (max-width: 700px) {
+  dialog#journal { width: 100vw; height: 100dvh; max-height: none; margin: 0; border-radius: 0; padding: 0; display: none; flex-direction: column; overflow-y: auto; touch-action: pan-y; background: var(--jb); }
+  dialog#journal[open] { display: flex; }
+}
+#journal[data-gear='live']:has(#journal-tab-profile:checked) { background: transparent; }
+#journal[data-gear='live']:has(#journal-tab-profile:checked)::backdrop { background: none; backdrop-filter: none; }
+#journal .fighter { margin: 0; padding: 14px 64px 4px 16px; background: var(--jb); border: 0; display: grid; grid-template-columns: 1fr; gap: 2px; }
+#journal .fighter-sigil, #journal #mobile-name { display: none; }
+#journal #journal-name { cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; font: 600 28px/1 "Cormorant", Georgia, serif; letter-spacing: .02em; color: var(--jf); }
+#journal #journal-name::after { content: "✎"; font-size: .55em; margin-left: 10px; opacity: .55; }
+#journal .fighter-rank { color: var(--jg2); }
+#journal .fighter-save { font-size: 11px; }
+#journal .journal-close { top: 10px; right: 10px; width: 44px; height: 44px; background: var(--jp); border: 1px solid var(--jl); color: var(--jf); }
+#journal #account { margin: 0; padding: 0 16px 6px; background: var(--jb); border: 0; }
+#journal .journal-tabs { display: flex; flex-direction: column; flex: 1; }
+#journal .tab-strip { margin: 0; padding: 0 12px; gap: 0; background: var(--jb); border-radius: 0; border-bottom: 1px solid var(--jl); }
+#journal .tab-strip label { min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 0; font: 600 11px "Cinzel", Georgia, serif; letter-spacing: .16em; text-transform: uppercase; color: var(--jm); }
+/* Fitting rail (Dom via Strategy, 2026-10-01): Stats / Settings are header links (the Gear label is the bottom bar's job), and the APP NAV
+   Gear & pack | Arena is pinned to the foot of the sheet. */
+#journal .tab-strip { justify-content: flex-end; gap: 4px; padding: 0 12px; border-bottom: 0; }
+#journal .tab-strip .tab-profile { display: none; }
+#journal .tab-strip label { padding: 0 12px; letter-spacing: .1em; }
+#journal .app-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* minmax(0, ..): a long exit label ("Back to <zone name>") shrinks and ellipsizes inside its column; with plain 1fr it widened the column and pushed the Gear tab under the Settings cog */
+#journal .app-nav button { min-height: 48px; background: none; border: 0; border-radius: 0; color: var(--jm); font: 600 10px "Cinzel", Georgia, serif; letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+#journal #journal-tab-profile:checked ~ .app-nav #nav-gear { color: var(--jg2); box-shadow: inset 0 -2px 0 var(--jg); }
+#journal #journal-tab-fighter:checked ~ .tab-strip .tab-fighter, #journal #journal-tab-career:checked ~ .tab-strip .tab-career, #journal #journal-tab-profile:checked ~ .tab-strip .tab-profile, #journal #journal-tab-arena:checked ~ .tab-strip .tab-arena, #journal #journal-tab-settings:checked ~ .tab-strip .tab-settings { background: none; box-shadow: inset 0 -2px 0 var(--jg); color: var(--jg2); }
+#journal .tab-pane { background: var(--jb); padding: 12px 16px; }
+#journal .pane-profile { padding: 0; background: transparent; }
+#journal .references { background: var(--jb); margin: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); }
+/* the stage: the mannequin shows through it; the rail of slot tiles runs down its right edge */
+html:has(body[data-gear='live']), body[data-gear='live'] { background: #0d0b09; }   /* the gear room clips the page canvas to the dialog (gear-room.ts, #2439), so the ground around the dialog is the room's own backdrop colour, not the page's */
+body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journal):not(header):not(script) { visibility: hidden; }   /* the fight's HUD, stick and buttons sit behind the clear stage window: not while the mannequin is up. Keyed to the dialog being OPEN (the close event fires a task later, and a hidden element drops out of hit-testing: the intro button read as covered by the canvas), and the header stays (it is not under the stage window) */
+#journal .doll { position: relative; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 4px; height: 464px; padding: 0 8px; background: transparent; overflow: hidden; }
+#journal .doll-figure { position: absolute; left: 0; right: 88px; top: 4px; bottom: 4px; display: flex; justify-content: center; align-items: center; margin: 0; height: auto; filter: none; }
+#journal .doll-figure img { height: 100%; width: auto; }
+#journal[data-gear='live'] .doll-figure { visibility: hidden; }
+#journal:not([data-gear='live']) .doll { background: radial-gradient(60% 50% at 40% 55%, #2a2216, var(--jb)); }
+#journal .doll .slot { position: relative; z-index: 1; width: 88px; flex: none; height: 48px; min-height: 0; margin: 0; padding: 0 4px; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 4px; border: 1px solid var(--jl); border-radius: 8px; background: #1d1913d9; color: var(--jm); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#journal .doll .slot[hidden] { display: none; }
+#journal .doll [data-slot='head'] { order: 1; } #journal .doll [data-slot='crest'] { order: 2; } #journal .doll [data-slot='chest'] { order: 3; } #journal .doll [data-slot='arms'] { order: 4; }
+#journal .doll [data-slot='hands'] { order: 5; } #journal .doll [data-slot='legs'] { order: 6; } #journal .doll [data-slot='feet'] { order: 7; } #journal .doll [data-slot='main'] { order: 8; } #journal .doll [data-slot='off'] { order: 9; }
+#journal .doll .slot img.slot-thumb { order: -1; width: 30px; height: 30px; object-fit: contain; flex: none; pointer-events: none; }
+#journal .doll .slot span { font: 600 10px "Instrument Sans", Arial, sans-serif; min-width: 0; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; }
+#journal .doll .slot i { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#journal .doll .slot.noart.on span { display: none; }
+#journal .doll .slot.noart.on i { position: static; width: auto; height: auto; clip-path: none; font: 600 10px/1.15 "Instrument Sans", Arial, sans-serif; color: var(--jf); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+#journal .doll .slot:not(.on) { border-style: dashed; background: #12100d99; }
+#journal .doll .slot.sel { border-color: var(--jg); box-shadow: inset 3px 0 0 var(--jg); background: #2a2216e6; color: var(--jf); }
+#journal .doll .slot .slot-off { display: none; }
+/* the fitting panel and the stored list sit on solid ground under the stage */
+#journal .fitting { margin: 0; padding: 12px 16px; background: var(--jp); border-top: 1px solid var(--jg); }
+#journal .fitting[hidden] { display: none; }
+#journal .fitting { scroll-margin-top: 58px; }   /* the sticky tab strip is 52px + 2px borders: a try-on opens below it, not under it */
+#journal .fitting-head { display: flex; gap: 12px; align-items: center; }
+#journal .fitting-head img { width: 48px; height: 48px; object-fit: contain; flex: none; }
+#journal .fitting-head > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+#journal #fitting-name { font: 600 22px/1.1 "Cormorant", Georgia, serif; color: var(--jf); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#journal #fitting-rank, #journal #fitting-note { font: 500 12px/1.3 "Instrument Sans", Arial, sans-serif; color: var(--jm); }
+#journal .fitting-actions { display: flex; gap: 10px; margin-top: 12px; }
+#journal .fitting-actions { position: sticky; bottom: 0; z-index: 2; padding: 8px 0 max(4px, env(safe-area-inset-bottom)); background: var(--jp); }   /* Cancel / Wear this stay in view while a 375-high landscape screen scrolls the compare under them */
+#journal .fitting-actions button { min-height: 48px; border-radius: 6px; font: 600 14px "Instrument Sans", Arial, sans-serif; }
+#journal #fitting-cancel { flex: 0 0 104px; background: none; border: 1px solid var(--jl); color: var(--jf); }
+#journal #fitting-wear { flex: 1; background: var(--jg); border: 1px solid var(--jg2); color: #14110c; }
+#journal #fitting-store { flex: 0 0 auto; min-height: 44px; padding: 0 18px; background: none; border: 1px solid var(--jl); color: var(--jm); font-size: 12px; }
+#journal #fitting-store:disabled { opacity: .45; }
+#journal #stored-heading { margin: 0; padding: 14px 16px 6px; background: var(--jb); font: 600 10px "Cinzel", Georgia, serif; letter-spacing: .2em; text-transform: uppercase; color: var(--jm); }
+#journal .pack { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0 16px 8px; background: var(--jb); list-style: none; }
+#journal .pack li { position: relative; display: flex; flex-direction: row; align-items: center; gap: 12px; min-height: 64px; padding: 6px 4px; border: 0; border-bottom: 1px solid var(--jl); border-radius: 0; background: none; color: var(--jf); font: 500 13px "Instrument Sans", Arial, sans-serif; }
+#journal .pack li img.pack-thumb { width: 48px; height: 48px; object-fit: contain; flex: none; order: 0; }
+#journal .pack li > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; order: 1; }
+#journal .pack li strong { font: 600 18px/1.15 "Cormorant", Georgia, serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#journal .pack li small { font: 500 12px "Instrument Sans", Arial, sans-serif; color: var(--jm); }
+#journal .pack li button { order: 2; position: static; margin: 0; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; background: none; color: var(--jg2); font-size: 24px; opacity: 1; }
+#journal .pack li button::before { content: ""; position: absolute; inset: 0; }   /* the whole row is the tap target */
+#journal .pack li.sel { background: #2a221626; box-shadow: inset 3px 0 0 var(--jg); }
+#journal .pack li.pack-empty { color: var(--jm); font-style: italic; justify-content: flex-start; }
+#journal .pack li.pack-locked { opacity: .4; background-position: right 16px center; }
+#journal .pack li[data-loot]::after { content: none; }
+#journal .pack-note { background: var(--jb); margin: 0; padding: 0 16px 10px; }
+
+/* ---- Gear UI art (GPT Job 1, Strategy 2026-10-01): the painted pieces in public/gear-ui/ (A-J, @3x, 9-slice insets from its manifest) skin the
+   Fitting rail. Layout and the live 3D mannequin are unchanged; every piece is a CSS background, so none is fetched until the sheet is shown. ---- */
+#journal { --gu: url(/gear-ui/); }
+/* the dialog is clear (the stage window shows the canvas), so the painted ground goes on every block that is not the stage */
+#journal .fighter, #journal #account, #journal .tab-strip, #journal .tab-pane:not(.pane-profile), #journal #stored-heading, #journal .pack, #journal .references { background: var(--jb) url(/gear-ui/sheet-ground.png) 0 0 / 256px 256px repeat fixed; }
+#journal .pane-profile { background: transparent; }
+#journal .journal-close { background: transparent url(/gear-ui/close.png) center / 24px no-repeat; border: 0; outline: 0; box-shadow: none; font-size: 0; color: transparent; text-indent: -9999px; overflow: hidden; }
+#journal #journal-name::after { content: ""; width: 24px; height: 24px; margin-left: 6px; opacity: 1; background: url(/gear-ui/edit.png) center / 24px no-repeat; }
+#journal #stored-heading { background: url(/gear-ui/section-rule.png) left bottom / 100% 2px no-repeat, var(--jb) url(/gear-ui/sheet-ground.png) 0 0 / 256px 256px repeat fixed; margin: 0; padding: 14px 16px 12px; background-origin: padding-box, padding-box; }
+/* the stage: the vignette over the live mannequin */
+#journal[data-gear='live'] .doll { background: url(/gear-ui/stage-vignette.png) center / 100% 100% no-repeat; }
+/* the rail: painted tiles, glyph for an empty slot, the piece's picture for a worn one; the word is for screen readers */
+#journal .doll .slot { width: 68px; height: 48px; padding: 0; border: 6px solid transparent; border-image: url(/gear-ui/rail-rest.png) 18 fill / 6px / 0 stretch; background: none; flex-direction: column; justify-content: center; align-items: center; gap: 1px; }
+#journal .doll .slot:not(.on) { border-style: solid; border-image-source: url(/gear-ui/rail-empty.png); background: none center / 32px no-repeat; }
+#journal .doll .slot.sel { border-image-source: url(/gear-ui/rail-selected.png); box-shadow: none; background: none; }
+#journal .doll .slot.try { border-image-source: url(/gear-ui/rail-previewing.png); }
+#journal .doll .slot:active { border-image-source: url(/gear-ui/rail-pressed.png); }
+#journal .doll .slot span { position: static; width: auto; height: auto; clip-path: none; overflow: visible; white-space: nowrap; font: 700 8px/1 "Instrument Sans", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--jm); text-align: center; }
+#journal .doll .slot.sel span { color: var(--jg2); }
+#journal .doll .slot img.slot-thumb { width: 28px; height: 22px; }
+#journal .doll .slot:not(.on)::before { content: ""; width: 22px; height: 22px; background: center / 22px no-repeat; pointer-events: none; }
+#journal .doll [data-slot='head']:not(.on)::before { background-image: url(/gear-ui/empty-head-pale.png); }
+#journal .doll [data-slot='crest']:not(.on)::before { background-image: url(/gear-ui/empty-crest-pale.png); }
+#journal .doll [data-slot='chest']:not(.on)::before { background-image: url(/gear-ui/empty-chest-pale.png); }
+#journal .doll [data-slot='arms']:not(.on)::before { background-image: url(/gear-ui/empty-arms-pale.png); }
+#journal .doll [data-slot='hands']:not(.on)::before { background-image: url(/gear-ui/empty-hands-pale.png); }
+#journal .doll [data-slot='legs']:not(.on)::before { background-image: url(/gear-ui/empty-legs-pale.png); }
+#journal .doll [data-slot='feet']:not(.on)::before { background-image: url(/gear-ui/empty-feet-pale.png); }
+#journal .doll [data-slot='main']:not(.on)::before { background-image: url(/gear-ui/empty-main-pale.png); }
+#journal .doll [data-slot='off']:not(.on)::before { background-image: url(/gear-ui/empty-off-pale.png); }
+#journal .doll-figure { right: 76px; }
+/* the fitting panel and its buttons */
+#journal .fitting { border: 8px solid transparent; border-image: url(/gear-ui/fitting-panel-ground.png) 24 fill / 8px / 0 stretch; background: none; padding: 8px 8px 12px; }
+#journal .fitting-actions button { border: 6px solid transparent; border-radius: 0; background: none; color: var(--jf); }
+#journal #fitting-cancel { flex: 0 0 100px; border-image: url(/gear-ui/cancel-rest.png) 18 fill / 6px / 0 stretch; }
+#journal #fitting-wear { border-image: url(/gear-ui/wear-this-rest.png) 18 fill / 6px / 0 stretch; color: #14110c; }
+#journal #fitting-wear:active { border-image-source: url(/gear-ui/wear-this-pressed.png); }
+#journal #fitting-wear:disabled { border-image-source: url(/gear-ui/wear-this-disabled.png); }
+#journal #fitting-store { flex: 0 0 72px; min-height: 48px; padding: 0; border-image: url(/gear-ui/store-rest.png) 18 fill / 6px / 0 stretch; color: var(--jf); opacity: 1; }
+#journal #fitting-store:active { border-image-source: url(/gear-ui/store-pressed.png); }
+#journal #fitting-store:disabled { border-image-source: url(/gear-ui/store-disabled.png); opacity: 1; }
+/* stored rows: painted plates, the chevron, the rank chip */
+#journal .pack { gap: 6px; padding-bottom: 12px; }
+#journal .pack li { min-height: 64px; padding: 0 12px; border: 8px solid transparent; border-image: url(/gear-ui/stored-row-rest.png) 24 fill / 8px / 0 stretch; }
+#journal .pack li:active, #journal .pack li.sel { border-image-source: url(/gear-ui/stored-row-pressed.png); }
+#journal .pack li.pack-empty { border-image-source: url(/gear-ui/stored-row-empty.png); }
+#journal .pack li.pack-locked { border-image-source: url(/gear-ui/stored-row-locked.png); opacity: 1; background: none; }   /* the plate paints its own lock at the left */
+#journal .pack li button { font-size: 0; background: url(/gear-ui/chevron.png) center / 20px no-repeat; }
+#journal .pack li small[data-rank] { align-self: flex-start; padding: 0 4px; border: 4px solid transparent; font: 600 9px/8px "Cinzel", Georgia, serif; letter-spacing: .08em; text-transform: uppercase; color: var(--jg2); border-image: url(/gear-ui/rank-01.png) 12 fill / 4px / 0 stretch; }
+#journal .pack li small[data-rank='02'] { border-image-source: url(/gear-ui/rank-02.png); } #journal .pack li small[data-rank='03'] { border-image-source: url(/gear-ui/rank-03.png); } #journal .pack li small[data-rank='04'] { border-image-source: url(/gear-ui/rank-04.png); }
+#journal .pack li small[data-rank='05'] { border-image-source: url(/gear-ui/rank-05.png); } #journal .pack li small[data-rank='06'] { border-image-source: url(/gear-ui/rank-06.png); } #journal .pack li small[data-rank='07'] { border-image-source: url(/gear-ui/rank-07.png); }
+#journal .pack li small[data-rank='08'] { border-image-source: url(/gear-ui/rank-08.png); } #journal .pack li small[data-rank='09'] { border-image-source: url(/gear-ui/rank-09.png); } #journal .pack li small[data-rank='10'] { border-image-source: url(/gear-ui/rank-10.png); }
+/* the bottom bar: the painted plate (its 32 px safe-area strip stretches to the real inset) and the three tabs */
+#journal .app-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 6px solid transparent; border-image: url(/gear-ui/bottom-bar-safe32.png) 18 fill / 6px / 0 stretch; background: var(--jb); padding: 0 0 env(safe-area-inset-bottom, 0); }
+#journal .app-nav button { min-height: 48px; background: url(/gear-ui/bottom-tab-rest.png) center / 100% 100% no-repeat; }
+#journal #journal-tab-profile:checked ~ .app-nav #nav-gear { box-shadow: none; background-image: url(/gear-ui/bottom-tab-active.png); }
+
+/* the account block on the dark sheet (the base dialog button is a white plate with light text here: unreadable) */
+#journal .account-actions button { background: var(--jp); color: var(--jf); border: 1px solid var(--jg); border-radius: 6px; min-height: 48px; }
+#journal .account-actions button:disabled { opacity: .5; }
+
+/* ===== Top tabs (Dom via Strategy 2026-10-01, GPT concepts 01 Gear and 04 Stats; replaces the bottom bar of the 10-01 Fitting rail). Header: name, rank
+   bar and account on the left, the Stats and Settings icon buttons in the right corner; under it the sticky app tab bar The Pit | Gear & pack |
+   Arena. The close ✕ is gone: Arena is how you leave (Escape still closes). ===== */
+#journal .journal-close { display: none; }
+#journal .journal-tabs { position: static; }
+#journal .fighter { padding: 12px 136px 6px 16px; }
+#journal .tab-strip { position: absolute; top: 6px; right: 8px; z-index: 4; width: auto; margin: 0; padding: 0; display: flex; gap: 0; background: none; border: 0; }
+#journal .tab-strip label { flex-direction: column; justify-content: center; gap: 3px; min-width: 60px; min-height: 60px; padding: 0 4px; letter-spacing: .1em; font-size: 10px; color: var(--jm); background: none; box-shadow: none; }
+#journal .tab-strip label::before { content: ""; width: 26px; height: 26px; background: currentColor; -webkit-mask: var(--ti) center / contain no-repeat; mask: var(--ti) center / contain no-repeat; }
+#journal .tab-strip .tab-fighter, #journal .tab-strip .tab-career { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 21V11h4.5v10zM9.75 21V3h4.5v18zM16.5 21v-7H21v7z'/%3E%3C/svg%3E"); }
+#journal .tab-strip .tab-settings { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='3.3' stroke-width='2.2'/%3E%3Ccircle cx='12' cy='12' r='6.6' stroke-width='2.2'/%3E%3Cpath d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1' stroke-width='2.6'/%3E%3C/svg%3E"); }
+#journal .tab-strip .tab-arena { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-linecap='round' stroke-width='2.4'%3E%3Cpath d='M4 20L18 6M14 4h6v6M20 20L6 6M4 10V4h6'/%3E%3C/svg%3E"); }
+#journal #journal-tab-fighter:checked ~ .tab-strip .tab-fighter, #journal #journal-tab-career:checked ~ .tab-strip .tab-career, #journal #journal-tab-arena:checked ~ .tab-strip .tab-arena, #journal #journal-tab-settings:checked ~ .tab-strip .tab-settings { color: var(--jg2); box-shadow: inset 0 -2px 0 var(--jg); }
+/* the tab bar under the header: sticky, so Gear & pack | Arena stay in reach while a long screen scrolls */
+#journal .app-nav { order: -1; position: sticky; top: 0; bottom: auto; margin: 0; z-index: 3; padding: 0; border: 0; border-image: none; border-top: 1px solid #c8a45e66; border-bottom: 1px solid #c8a45e66; background: var(--jb); }
+#journal .app-nav button { min-height: 52px; font-size: 12px; letter-spacing: .14em; color: var(--jm); background: none; border-radius: 0; }
+#journal .app-nav button + button { border-left: 1px solid var(--jl); }
+#journal #journal-tab-profile:checked ~ .app-nav #nav-gear { background: none; color: var(--jg2); box-shadow: inset 0 -2px 0 var(--jg); }
+/* Gear: the stage window (#gear-window, where the live hero shows through) with the rail on its right, then Main hand and Off hand as two wide tiles */
+#journal .doll { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 54px; align-items: center; justify-items: end; gap: 0 6px; height: auto; padding: 0 8px 10px; overflow: hidden; }
+#journal .gear-window { grid-column: 1 / 3; grid-row: 1 / 8; width: 100%; height: 100%; pointer-events: none; }
+#journal .doll-figure { top: 0; bottom: 64px; right: 76px; }
+#journal .doll .slot { grid-column: 2; z-index: 1; }
+#journal .doll [data-slot='head'] { grid-row: 1; } #journal .doll [data-slot='chest'] { grid-row: 2; } #journal .doll [data-slot='arms'] { grid-row: 3; } #journal .doll [data-slot='hands'] { grid-row: 4; }
+#journal .doll [data-slot='legs'] { grid-row: 5; } #journal .doll [data-slot='feet'] { grid-row: 6; } #journal .doll [data-slot='crest'] { grid-row: 7; }
+#journal .doll [data-slot='main'], #journal .doll [data-slot='off'] { grid-row: 8; width: 100%; height: 54px; flex-direction: row; justify-content: flex-start; gap: 8px; padding: 0 8px; justify-self: stretch; text-align: left; }
+#journal .doll [data-slot='main'] { grid-column: 1; } #journal .doll [data-slot='off'] { grid-column: 2; }
+#journal .doll [data-slot='main'] img.slot-thumb, #journal .doll [data-slot='off'] img.slot-thumb { width: 38px; height: 34px; }
+#journal .doll [data-slot='main']::before, #journal .doll [data-slot='off']::before { flex: none; }
+#journal .doll [data-slot='main'] span, #journal .doll [data-slot='off'] span { font-size: 9px; color: var(--jm); }
+#journal .doll [data-slot='main'] i, #journal .doll [data-slot='off'] i { position: static; width: auto; height: auto; clip-path: none; display: block; font: 600 14px/1.2 "Cormorant", Georgia, serif; font-style: normal; color: var(--jf); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#journal .doll [data-slot='main'].on.noart span, #journal .doll [data-slot='off'].on.noart span { display: block; }
+/* Stats (concept 04): the portrait takes the header's sigil, then the career tiles, one card per opponent, the gear you wear, and the way back */
+#journal:has(#journal-tab-fighter:checked) .fighter { display: grid; grid-template-columns: 56px 1fr; column-gap: 12px; align-items: center; }
+#journal:has(#journal-tab-fighter:checked) .fighter-sigil { display: block; grid-row: 1 / span 3; width: 54px; height: 54px; border-radius: 50%; border: 2px solid var(--jg); font-size: 0; background: url(/game/img/fighter.webp) 45% 20% / 300% auto no-repeat, var(--jp); }
+#journal .pane-fighter { padding: 8px 16px 24px; }
+#journal .pane-fighter h4 { margin: 8px 0 12px; font: 600 34px/1.05 "Cormorant", Georgia, serif; letter-spacing: 0; text-transform: none; color: var(--jf); }
+#journal .record-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#journal .record-tiles div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 4px 10px; border: 1px solid #c8a45e66; border-radius: 4px; background: #1d1913d9; }
+#journal .record-tiles b { font: 600 38px/1 "Cormorant", Georgia, serif; color: var(--jf); font-variant-numeric: tabular-nums; }
+#journal .record-tiles span { font: 600 11px "Cinzel", Georgia, serif; letter-spacing: .16em; text-transform: uppercase; color: var(--jm); }
+#journal .stats-heading { margin: 22px 0 8px; padding: 0 0 8px; font: 600 11px "Cinzel", Georgia, serif; letter-spacing: .22em; text-transform: uppercase; color: var(--jm); background: url(/gear-ui/section-rule.png) left bottom / 100% 2px no-repeat; }
+#journal .opponent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+#journal .opponent-list li, #journal .stats-gear { display: flex; align-items: center; gap: 12px; min-height: 68px; padding: 6px 10px 6px 6px; border: 1px solid var(--jl); border-radius: 3px; background: #1d1913d9; }
+#journal .opponent-list img { width: 56px; height: 56px; object-fit: cover; object-position: top; flex: none; border-radius: 2px; background: var(--jb); }
+#journal .opponent-list li > div, #journal .stats-gear > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+#journal .opponent-list strong, #journal .stats-gear strong { font: 600 20px/1.15 "Cormorant", Georgia, serif; color: var(--jf); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#journal .opponent-list small, #journal .stats-gear small { font: italic 500 14px "Cormorant", Georgia, serif; color: var(--jg2); }
+#journal .opponent-list li > span { flex: none; font: 600 14px "Instrument Sans", Arial, sans-serif; color: var(--jf); white-space: nowrap; }
+#journal .opponent-list li > span[data-fought='false'] { color: var(--jm); font-weight: 500; }
+#journal .stats-gear-icon { flex: none; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--jb); }
+#journal .stats-gear-icon img { max-width: 100%; max-height: 100%; object-fit: contain; }
+#journal .stats-gear button { flex: none; min-height: 44px; padding: 0 6px; border: 0; background: none; color: var(--jg2); font: 600 14px "Instrument Sans", Arial, sans-serif; }
+#journal .stats-return { width: 100%; min-height: 56px; margin-top: 20px; border: 1px solid var(--jg); border-radius: 4px; background: linear-gradient(#4a1a18, #2f1110); color: var(--jf); font: 600 17px "Cormorant", Georgia, serif; letter-spacing: .04em; }
+
+#journal:has(#sparring-tab:not([hidden])) .fighter { padding-right: 212px; }   /* a third icon (admins, or a sparring link) widens the corner */
+#journal:has(#journal-tab-fighter:checked) #journal-name { font-size: 24px; white-space: nowrap; }
+#journal:has(#journal-tab-fighter:checked) #journal-name::after { margin-left: 2px; width: 20px; background-size: 18px; }
+#journal:has(#journal-tab-fighter:checked) .fighter { padding-right: 140px; }
+#journal:has(#journal-tab-fighter:checked):has(#sparring-tab:not([hidden])) .fighter { padding-right: 212px; }
+
+/* The tutorial start scene (?tutorial=1, src/tutorial-ui.ts): one big word and a short how-line under the HUD, above the fight. Reads in one glance at 375 wide. */
+#tutorial-prompt {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(var(--hud-bottom, 124px) + 10px);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  pointer-events: none;
+  text-shadow: 0 2px 8px #000, 0 0 2px #000;
+}
+#tutorial-prompt[hidden] { display: none; }
+#tutorial-word { font: 800 clamp(36px, 11vw, 64px)/1 Georgia, 'Times New Roman', serif; letter-spacing: .04em; color: #f6ead0; }
+#tutorial-how { font: 600 clamp(15px, 4.4vw, 22px)/1.2 Arial, sans-serif; color: #f1e8d8; }
+#tutorial-prompt[data-now='1'] #tutorial-word { color: #ffd45a; }
+#tutorial-go { pointer-events: auto; margin-top: 8px; padding: 12px 28px; font: 800 22px/1 Arial, sans-serif; color: #1a1208; background: #e8c46a; border: 0; border-radius: 10px; }
+html[data-tutorial] #combat-status { visibility: hidden; }   /* the prompt is the one message; the row keeps its height so the HUD below never jumps */
+
+/* Refused press (clarity cue 3): the button the sim dropped dims and shakes for a moment. No text, no layout change (transform only). */
+#actions button.refused { animation: refused .26s ease-out; }
+@keyframes refused { 0%, 100% { transform: translateX(0); opacity: 1; } 20% { transform: translateX(-4px); opacity: .45; } 40% { transform: translateX(4px); opacity: .45; } 60% { transform: translateX(-3px); opacity: .6; } 80% { transform: translateX(2px); opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { #actions button.refused { animation: none; opacity: .45; } }
+
+/* HUD readability over the bright cloud sky (Strategy via Lead 2026-10-06): the rank row and the hint line get a soft dark shadow; colour, size and layout are untouched. */
+#rank, #fight-rank, #combat-status { text-shadow: 0 0 2px #000, 0 1px 3px #000e, 0 0 10px #000b, 0 0 22px #0008; }
+
+/* ?look=defence (defence-grade.ts): the GUARD button rings once in the colour of the grade the player's own defence earned, and wears its name for half a second. Ring and caption only, drawn
+   on the button itself: nothing over the fighters. plain = a thin white ring; heavy = a thick amber ring with a push; perfect = a gold double ring; parry = a cold white-blue flash. */
+#guard-button.defended { animation: defended .46s ease-out; }
+#guard-button.defended::before {
+  content: attr(data-defence-label); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font: 800 11px/1 Arial, sans-serif; letter-spacing: .08em; color: var(--defence, #f2ecdc); text-shadow: 0 1px 2px #000c;
+}
+#guard-button[data-defence=plain] { --defence: #f2ecdc; }
+#guard-button[data-defence=heavy] { --defence: #ffb347; }
+#guard-button[data-defence=perfect] { --defence: #ffd95a; }
+#guard-button[data-defence=parry] { --defence: #bfe6ff; }
+@keyframes defended {
+  0% { box-shadow: 0 0 0 0 var(--defence), 0 0 0 0 var(--defence); transform: scale(1); }
+  25% { box-shadow: 0 0 0 3px var(--defence), 0 0 14px 4px var(--defence); transform: scale(1.06); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; transform: scale(1); }
+}
+#guard-button[data-defence=heavy].defended { animation-name: defended-heavy; }
+@keyframes defended-heavy {
+  0% { box-shadow: 0 0 0 0 var(--defence); transform: scale(1); }
+  20% { box-shadow: 0 0 0 7px var(--defence), 0 0 18px 6px var(--defence); transform: scale(1.12) translateY(3px); }
+  100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); }
+}
+#guard-button[data-defence=perfect].defended { animation-name: defended-perfect; }
+@keyframes defended-perfect {
+  0% { box-shadow: 0 0 0 0 var(--defence), 0 0 0 0 var(--defence); }
+  30% { box-shadow: 0 0 0 3px var(--defence), 0 0 0 9px #ffd95a66; }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 16px transparent; }
+}
+#guard-button[data-defence=parry].defended { animation-name: defended-parry; }
+@keyframes defended-parry {
+  0% { background-color: var(--defence); box-shadow: 0 0 0 0 var(--defence); transform: scale(1); }
+  20% { background-color: var(--defence); box-shadow: 0 0 22px 8px var(--defence); transform: scale(1.14); }
+  100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { #guard-button.defended { animation: none; box-shadow: 0 0 0 3px var(--defence); } }
+
+/* A refusal card is up (main.ts banner(), stale): an old or unplayable link stalls the page and PLAY NOW is the one thing to press. The stick, the fight buttons, the run toggle and the
+   "Tap Fight" hint behind it did nothing (the match is stalled) yet drew over the card (HEAVY showed through PLAY NOW, Lead 2026-10-07). Hidden and inert; PLAY NOW stays. */
+:root.card-up #joystick,
+:root.card-up #combat-status,
+:root.card-up #run-button,
+:root.card-up #actions button:not(#reset-button) {
+  visibility: hidden !important; pointer-events: none !important;
+}
+
+/* The Coached tag (TOP10 row 8): one component, the live "tap to play" button while the Coach fights and the plain "Coached win" mark on the end screen. A direct child of the page, NOT of the thumb cluster (the cluster's button rules would make it a round control over the fight buttons): fixed at the top right under the menu, clear of the HUD text and the thumb zone. Only the live state takes pointer events. */
+.coach-tag { position: fixed; right: max(16px, env(safe-area-inset-right)); top: calc(env(safe-area-inset-top, 0px) + 96px); z-index: 6; width: auto; height: auto; min-height: 32px; margin: 0; padding: 0 var(--s3, 12px); display: inline-flex; align-items: center; border-radius: var(--r-btn, 8px); font: 700 var(--t-12, 12px)/1 "Instrument Sans", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; color: var(--parchment, #f3e9cf); background: var(--panel, #172329e6); border: 1px solid var(--panel-edge, #e9d9b380); pointer-events: none; }
+.coach-tag[data-live='true'] { pointer-events: auto; cursor: pointer; min-height: var(--touch, 44px); }
+.coach-tag[hidden] { display: none; }
+@media (min-width: 901px) and (not (pointer: coarse)) { .coach-tag { right: auto; left: 50%; transform: translateX(-50%); top: 96px; } }   /* desktop: top centre under the sound chip, clear of the arena title at the right */
+
+/* Career tab (core slice 2, src/core/career-screen.ts): the 50-rung ladder as ten rows of five rungs, the player's rung lit, then the account's scorecard. */
+#journal .pane-career { padding: 8px 16px 24px; }
+.career-rank { margin: 8px 0 12px; font: 600 34px/1.05 "Cormorant", Georgia, serif; color: var(--jf); }
+.career-ladder { display: grid; grid-template-columns: 1fr; gap: 6px 16px; margin: 0 0 16px; padding: 0; list-style: none; }
+.career-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; font-size: 13px; }
+.career-rungs { display: flex; gap: 4px; }
+.career-rung { width: 14px; height: 14px; border: 1px solid var(--jg); border-radius: 50%; box-sizing: border-box; }
+.career-rung.done { background: var(--jg); opacity: 0.6; }
+.career-rung.now { background: var(--jg2); box-shadow: 0 0 0 2px var(--jg2); }
+.career-note { margin: 8px 0; opacity: 0.8; font-size: 14px; }
+.career-boards h6 { margin: 12px 0 4px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--jm); }
+.career-board { margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.career-board li { padding: 3px 0; }
+.career-profile { margin: 4px 0 12px; }
+.career-name { display: flex; align-items: center; gap: 8px; margin: 0; font: 600 22px/1.1 "Cormorant", Georgia, serif; color: var(--jf); }
+.career-pencil, .career-link { min-height: 44px; min-width: 44px; padding: 0 12px; border: 1px solid var(--jg); border-radius: 22px; background: transparent; color: var(--jf); font: inherit; font-size: 14px; }
+.career-pencil { padding: 0; font-size: 18px; }
+.career-name-input { min-height: 44px; max-width: 14em; padding: 0 12px; border: 1px solid var(--jg); border-radius: 8px; background: transparent; color: var(--jf); font: inherit; }
+.career-record { margin: 6px 0 0; font-size: 14px; }
+.career-links { display: flex; gap: 8px; margin: 8px 0 0; }
+
+/* Paper-doll reference (Web, 2026-10-12; Dom's inventory reference 2026-10-11): a worn slot is a framed card tinted by the rung the piece was taken at (--tier 1..10 from the ledger, one
+   hue per rung, so no name list), the selected slot gets the reference's red frame, and the numbers sit under the doll (gear-stats.ts: a row per stat, drawn only when it has a value). */
+#journal .doll .slot.on:not([data-loot=''])::after { content: ""; position: absolute; inset: 0; border-radius: 4px; background: hsl(calc(var(--tier, 1) * 33 + 195) 70% 50% / .38); pointer-events: none; }   /* the rail's frame is a border-image (fill), so the tint is an overlay */
+#journal .doll .slot.sel { border-color: #e0584f; box-shadow: 0 0 0 2px #e0584f99; }
+.gear-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 18px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--jl, #c8a45e66); background: var(--jb, #14110d); }
+.gear-stats[hidden] { display: none; }
+.gear-stats > div { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
+.gear-stats dt { margin: 0; color: var(--jm, #a89a7c); font: 600 13px/1.5 "Instrument Sans", Arial, sans-serif; }
+.gear-stats dd { margin: 0; color: var(--jf2, #f3ead6); font: 600 14px/1.5 "Instrument Sans", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+/* Landscape part B (Web, 2026-10-12; scripts/pit-landscape-check.mjs). The journal name no longer runs under the Stats / Career / Settings icons:
+   it ellipsizes before them (the pencil is the name's own background so a long name keeps it). */
+#journal #journal-name { display: block; width: fit-content; max-width: calc(100% - 180px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 44px; padding-right: 30px; background: url(/gear-ui/edit.png) right center / 24px no-repeat; }
+#journal #journal-name::after { content: none; }
+#journal:has(#sparring-tab:not([hidden])) #journal-name { max-width: calc(100% - 240px); }
+/* The stance setting (Dom 2026-10-19: a character setting in the menu, beside gear; src/fight/stance-panel.ts): four buttons in a row at the top of the Gear tab, above the paperdoll (#3379), the lit one ringed in its colour, the effect line and the lock hint under them. The fighter card names the stance in its colour. */
+#journal .stance-menu { margin: 0; padding: 10px 16px 12px; border-bottom: 1px solid var(--jl); background: var(--jb); }   /* Lead 2026-10-19: the stance block is the first thing on the Gear tab, above the paperdoll, so it shows without scrolling */
+#journal .stance-menu[hidden] { display: none; }
+#journal .stance-menu h4 { margin: 0 0 8px; }
+#journal .stance-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+#journal .stance-pick { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 44px; padding: 6px 2px; background: var(--jp); border: 1.5px solid var(--jl); border-radius: 10px; color: var(--jf); font: 600 11px/1.1 "Instrument Sans", Arial, sans-serif; cursor: pointer; }
+#journal .stance-icon { display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+#journal .stance-pick[aria-pressed='true'] { border-color: var(--jg); box-shadow: 0 0 0 1px var(--jg) inset; background: var(--jb); }
+#journal .stance-pick:disabled { opacity: .5; cursor: not-allowed; }
+#journal .stance-effect { margin: 8px 0 0; font: 600 13px/1.35 "Instrument Sans", Arial, sans-serif; }
+#journal .stance-hint { margin: 2px 0 0; color: var(--jm); font: 12px/1.3 "Instrument Sans", Arial, sans-serif; }
+#journal .stance-menu[data-locked='true'] .stance-hint { color: var(--ja); font-weight: 600; }
+#journal .fighter-stance { display: block; margin-top: 2px; font: 700 12px/1.3 "Instrument Sans", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+#journal .fighter-stance[hidden] { display: none; }
+/* part B, round 2: iPad: clear of the menu button; very short landscape: SKILL below the menu button;
+   the journal header's right padding goes (the name ellipsizes itself) and the rank row starts under the tab icons so the rank bar keeps its width */
+@media (orientation: landscape) and (max-height: 360px) { .actions[data-gestures=cluster] #skill-button, .actions[data-gestures=cluster] #skill2-button:not([hidden]) { top: -44px; } }
+#journal .fighter, #journal:has(#journal-tab-fighter:checked) .fighter { padding-right: 16px; }
+#journal #journal-rank { margin-top: 6px; }
+@media (max-width: 440px) { #journal #journal-name, #journal:has(#journal-tab-fighter:checked) #journal-name { display: block; font-size: 20px; max-width: calc(100vw - 204px); padding-right: 22px; background-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 44px; min-height: 44px; } }   /* vw, not %: the header cell is shrink-wrapped (a % of it cut "Wanderer" to "Wa…"); 262 = the avatar, the three tabs and a Safari margin (Safari's wider fallback face broke "Wander|er" at 254); a name that does not fit ends in an ellipsis, never mid-word */
+@media (max-width: 440px) { #journal .tab-strip label { min-width: 52px; letter-spacing: .04em; padding: 0 2px; } }   /* three icon tabs = ~170 px, not 220: the name keeps its room */
+
+/* The try-on compare (Dom's in-world pickup reference): NEW beside EQUIPPED in the fitting panel, the strip's rows under each card, the change in green / red. */
+#journal .fit-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+#journal .fit-compare[hidden] { display: none; }
+#journal .fit-compare > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 0 8px 8px; border: 1px solid var(--jl); border-radius: 6px; background: #1d1913d9; overflow: hidden; }
+#journal .cmp-tag { margin: 0 -8px 6px; padding: 3px 8px; color: #fff; font: 700 10px/1.2 "Instrument Sans", Arial, sans-serif; letter-spacing: .18em; text-align: right; text-transform: uppercase; }
+#journal .fit-compare [data-side='new'] .cmp-tag { background: #2f7a3a; }
+#journal .fit-compare [data-side='held'] .cmp-tag { background: #a63a28; }
+#journal .fit-compare img { width: 40px; height: 40px; object-fit: contain; }
+#journal .cmp-name { color: var(--jf); font: 600 17px/1.15 "Cormorant", Georgia, serif; overflow-wrap: break-word; }
+#journal .cmp-sub { color: var(--jm); font: 500 11px/1.3 "Instrument Sans", Arial, sans-serif; }
+#journal .cmp-rows { margin: 6px 0 0; padding: 0; }
+#journal .cmp-rows > div { display: flex; justify-content: space-between; gap: 6px; min-width: 0; }
+#journal .cmp-rows dt { margin: 0; color: var(--jm); font: 600 12px/1.5 "Instrument Sans", Arial, sans-serif; }
+#journal .cmp-rows dd { margin: 0; color: var(--jf); font: 600 13px/1.5 "Instrument Sans", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+#journal .cmp-delta { margin-left: 5px; font-size: 12px; }
+@media (orientation: landscape) and (max-height: 430px) {   /* a short landscape phone: the cards already name and rank both pieces, so the summary line and the thumbnails go; spacing and rows tighten so the whole compare fits above the action bar (844x340 too) */
+  #journal .fitting[data-mode='try'] .fitting-head, #journal .fit-compare img { display: none; }
+  #journal .fitting { padding: 4px 16px; }
+  #journal .fit-compare { margin-bottom: 4px; }
+  #journal .fit-compare > div { padding-bottom: 4px; }
+  #journal .cmp-tag { margin-bottom: 3px; }
+  #journal .fitting-actions { margin-top: 0; padding-top: 4px; }
+  #journal .fitting-actions button { min-height: 44px; }   /* the touch minimum the check also asserts */
+  #journal .cmp-rows { margin-top: 2px; }
+  #journal .cmp-rows dt, #journal .cmp-rows dd { line-height: 1.15; }   /* WebKit's text metrics ran 13 px taller than Chromium's at 844x340 (release CT row 54): about 26 px of room now */
+}
+@media (orientation: landscape) and (max-height: 360px) {   /* 844x340: the rank rides the card's banner (NEW / EQUIPPED sit right, the rank takes the empty left), so it costs no height even when WebKit wraps a long title */
+  #journal .fit-compare > div { position: relative; }
+  #journal .cmp-sub { position: absolute; top: 3px; left: 8px; color: #fff; font: 700 10px/1.2 "Instrument Sans", Arial, sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+}
+#journal .cmp-delta[data-sign='up'] { color: #6fcf6f; }
+#journal .cmp-delta[data-sign='down'] { color: #e0584f; }
+#journal .stats-gear strong { white-space: normal; overflow-wrap: break-word; }   /* a worn piece's long name wraps instead of ending in an ellipsis (Safari run: 270 px of name in 168) */
+@media (max-width: 440px) { #journal:has(#journal-tab-fighter:checked) .fighter { grid-template-columns: 46px 1fr; column-gap: 10px; } #journal:has(#journal-tab-fighter:checked) .fighter-sigil { width: 44px; height: 44px; } #journal:has(#journal-tab-fighter:checked) #journal-name { max-width: calc(100vw - 250px); padding-right: 16px; background-size: 16px; } }   /* Stats tab: a smaller avatar gives the name its room beside the tabs */
+/* The NEW-vs-EQUIPPED compare (Dom's pickup-compare reference, 2026-10-11): two cards in the take panel's head when the offer would replace a worn piece. */
+.loot-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; padding: 10px 0; border-bottom: 1px solid #1b191630; }
+.loot-compare[hidden] { display: none; }
+.loot-compare > div { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 6px 8px; border-radius: 8px; background: #fdf6e340; text-align: center; overflow: hidden; }
+.loot-compare p { margin: 0; }
+.loot-card-tag { align-self: stretch; padding: 3px 0; margin: 0 -6px 4px; color: #fff; font: 700 10px/1.2 "Instrument Sans", Arial, sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+.loot-compare [data-side='new'] .loot-card-tag { background: #2f7a3a; }
+.loot-compare [data-side='held'] .loot-card-tag { background: #a63a28; }
+.loot-compare img { display: block; width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 4px 6px #0004); }
+.loot-card-name { max-width: 100%; color: #1b1916; font: 600 15px/1.1 "Iowan Old Style", Palatino, Georgia, serif; overflow-wrap: anywhere; }
+.loot-card-slot { color: #7a5c18; font: 700 10px/1.2 "Instrument Sans", Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+/* "Place your point" (build-screen.ts): a dialog, phone first; every control is 44 px or more. */
+#build-dot { display: inline-block; width: 9px; height: 9px; margin-left: 6px; border-radius: 50%; background: var(--jg2, #e7cf93); box-shadow: 0 0 0 3px #e7cf9355; vertical-align: middle; }
+#build-dot[hidden] { display: none; }
+#journal .build-open { width: 100%; min-height: 44px; margin: 0 0 10px; border: 1px solid #c8a45e99; border-radius: 4px; background: transparent; color: var(--jf); font: 600 13px "Instrument Sans", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+#journal .build-open span:not(:empty) { margin-left: 8px; color: var(--jg2); }
+.build-dialog { touch-action: pan-y; box-sizing: border-box; width: min(440px, 100vw - 16px); max-height: calc(100dvh - 16px); margin: auto; padding: 14px 14px 12px; overflow-y: auto; border: 1px solid #c8a45e99; border-radius: 6px; background: #12100d; color: #e9e3d6; font: 500 13px "Instrument Sans", Arial, sans-serif; }
+.build-dialog::backdrop { background: #000000b0; }
+.build-dialog .build-close { position: absolute; top: 6px; right: 6px; width: 44px; height: 44px; border: 0; background: transparent; color: #9a9382; font-size: 18px; }
+.build-dialog .build-head { display: flex; align-items: baseline; gap: 10px; padding-right: 44px; }
+.build-dialog h3 { margin: 0; font: 600 20px "Cormorant", Georgia, serif; }
+.build-dialog .build-level { margin: 0; color: #9a9382; }
+.build-dialog .build-left { margin: 6px 0 2px; font: 700 15px "Instrument Sans", Arial, sans-serif; color: #e7cf93; }
+.build-dialog .build-note { min-height: 16px; margin: 0 0 6px; color: #9a9382; font-size: 11px; line-height: 1.35; }
+.build-dialog .build-group { margin: 12px 0 4px; font: 600 11px "Cinzel", Georgia, serif; letter-spacing: .22em; text-transform: uppercase; color: #9a9382; }
+.build-dialog .build-row { display: grid; grid-template-columns: 1fr 44px 84px 44px; align-items: center; column-gap: 4px; min-height: 48px; border-bottom: 1px solid #2f2a21; }
+.build-dialog .build-name { font-weight: 600; }
+.build-dialog .build-mid { position: relative; display: flex; align-items: center; justify-content: center; height: 22px; border-radius: 3px; background: #1d1913; overflow: hidden; }
+.build-dialog .build-bar { position: absolute; inset: 0 auto 0 0; width: var(--fill, 0%); background: #c8a45e55; }
+.build-dialog .build-val { position: relative; font-weight: 700; color: #e7cf93; }
+.build-dialog .build-plus, .build-dialog .build-minus { width: 44px; height: 44px; border: 1px solid #c8a45e66; border-radius: 4px; background: transparent; color: #e9e3d6; font: 700 20px "Instrument Sans", Arial, sans-serif; }
+.build-dialog button:disabled { opacity: .3; }
+.build-dialog .build-actions { position: sticky; bottom: -12px; display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin: 10px -14px -12px; padding: 10px 14px 12px; background: #12100d; border-top: 1px solid #2f2a21; }
+.build-dialog .build-undo, .build-dialog .build-confirm { min-height: 48px; border: 1px solid #c8a45e99; border-radius: 4px; background: transparent; color: #e9e3d6; font: 700 13px "Instrument Sans", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.build-dialog .build-confirm:not(:disabled) { background: #9a7b3c; color: #12100d; }
+
+/* The spell book (grimoire-screen.ts): a dialog, phone first; reuses the build dialog's frame. */
+.grimoire-dialog { touch-action: pan-y; box-sizing: border-box; width: min(440px, 100vw - 16px); max-height: calc(100dvh - 16px); margin: auto; padding: 14px 14px 12px; overflow-y: auto; border: 1px solid #c8a45e99; border-radius: 6px; background: #12100d; color: #e9e3d6; font: 500 13px "Instrument Sans", Arial, sans-serif; }
+.grimoire-dialog::backdrop { background: #000000b0; }
+.grimoire-dialog .grimoire-close { position: absolute; top: 6px; right: 6px; width: 44px; height: 44px; border: 0; background: transparent; color: #9a9382; font-size: 18px; }
+.grimoire-dialog .grimoire-head { display: flex; align-items: baseline; gap: 10px; padding-right: 44px; }
+.grimoire-dialog h3 { margin: 0; font: 600 20px "Cormorant", Georgia, serif; }
+.grimoire-dialog .grimoire-count { margin: 0; color: #9a9382; }
+.grimoire-dialog .grimoire-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.grimoire-dialog .grimoire-entry { display: grid; gap: 3px; padding: 10px 0; border-bottom: 1px solid #2f2a21; }
+.grimoire-dialog .grimoire-name { font: 600 16px "Cormorant", Georgia, serif; color: #e7cf93; }
+.grimoire-dialog .grimoire-sub { color: #9a9382; font-size: 12px; overflow-wrap: anywhere; }
+.grimoire-dialog .grimoire-bricks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.grimoire-dialog .grimoire-brick { padding: 2px 8px; border: 1px solid #c8a45e66; border-radius: 10px; font-style: normal; font-size: 11px; color: #e9e3d6; }
+.grimoire-dialog .grimoire-entry { border-left: 3px solid var(--school, transparent); padding-left: 8px; }
+.grimoire-dialog .grimoire-equip { justify-self: start; min-height: 44px; min-width: 96px; margin-top: 4px; border: 1px solid #c8a45e66; border-radius: 6px; background: transparent; color: #e9e3d6; font: 600 13px "Instrument Sans", Arial, sans-serif; }
+.grimoire-dialog .grimoire-equip[aria-pressed='true'] { background: #c8a45e33; border-color: var(--school, #c8a45e); color: #fff; }
+.grimoire-dialog .grimoire-empty { padding: 28px 8px; text-align: center; color: #9a9382; font: 600 15px "Cormorant", Georgia, serif; }
+
+/* The armour weight badge (gear-sheet.ts weightOf): the piece's class from the gear rows, read only, on the fitting card, the pack and the rack. */
+#journal [data-weight]::after { content: attr(data-weight); display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid currentColor; border-radius: 8px; font: 600 10px/16px "Instrument Sans", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .75; vertical-align: middle; }
+#journal #fitting-name[data-weight], #journal .pack li strong[data-weight] { white-space: normal; overflow: visible; text-overflow: clip; }   /* a badged name wraps instead of truncating: Safari's ellipsis swallowed the pill (the WebKit row, 2026-10-13) */
+#journal #fitting-name[data-weight]::after, #journal .pack li strong[data-weight]::after { white-space: nowrap; }
+/* Phone-layout audit, Pit side (Web, 2026-10-20, live at 375). The backing plate is the zone page's (#3423): the same tokens, so both HUDs match. */
+:root { --c-plate: rgba(18, 12, 8, 0.62); --plate-r: 6px; --plate-pad: 2px 8px; --tab-gap: 6px; }
+@media (max-width: 700px) { .combat-hud > span:first-child, #fight-rank { background: var(--c-plate); border-radius: var(--plate-r); padding: var(--plate-pad); } }   /* the foe's name and the rank row read on the busy sky, statue and torches */
+#journal .tab-strip .tab-career { margin-right: var(--tab-gap); }   /* CAREER and SETTINGS no longer touch at 375; the gap sits only there, and Stats gives back 4 px at phone width, so the strip stays <= the 166 px the name's room was sized for (a 6 px gap between all three put journal-name 7 px into Stats at 375: release row 54, pit-landscape-webkit) */
+@media (max-width: 440px) { #journal .tab-strip .tab-fighter { min-width: 48px; } }
+#journal .tab-strip .tab-career { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 3h10v5a5 5 0 0 1-10 0zM4 4h3v2a2 2 0 0 0 1 1.7A3 3 0 0 1 4 5zM20 4h-3v2a2 2 0 0 1-1 1.7A3 3 0 0 0 20 5zM11 13h2v4h3v2H8v-2h3z'/%3E%3C/svg%3E"); }   /* a trophy: Career is no longer the Stats bars */

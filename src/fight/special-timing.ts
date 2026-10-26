@@ -1,5 +1,5 @@
 import { RULES, SKILL_MOVE, type SkillId } from './moves.ts';
-import { SKILLS } from '../core/loot.ts';
+import { SKILLS } from '../stubs.ts';   // V3: core/loot.ts
 import type { CombatEvent, Fighter } from './duel.ts';
 import type { OpponentId } from '../roster.ts';
 import { SPECIAL_RECOVER } from './special-look.ts';   // Combat's: the caster's return to stance runs on the same 45 ticks

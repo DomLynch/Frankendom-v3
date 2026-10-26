@@ -12,15 +12,14 @@ import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
-import { captureException } from '@sentry/browser';
+import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadPeerWarriors, loadWarriors, lootIds, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { heroPreview } from '../hero-preview.ts';
 import { bakeSafeFinisher, lookBakeOffFrom, lookBakes, rankLookFlag, runThroughForced, rankLookFor, rankLookStream, SHIPPING_LOOKS } from './rank-look.ts';
-import { levelOf, type Tier } from '../core/grades.ts';
-import { kitWorn } from '../core/loot.ts';
+import { kitWorn, levelOf, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/loot.ts
 import { standoffClock, standoffFlag, standoffPose } from './standoff.ts';
 import { actorPose, initialPractice, type CombatEvent, type Practice } from './combat.ts';
 import { ON_DEMAND_BEASTS, beastBodyUrl } from './beast-scale.ts';
@@ -31,8 +30,7 @@ import { HAMSTRUNG_BEATS, HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, hamstrungP
 import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, EXECUTION_VICTIMS, executionPick, poseOf, resolveExecution } from './execution.ts';
 import { createHamstrungAssets } from './hamstrung-assets.ts';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
-import { buildArena, type Arena } from '../arena.ts';
-import { arenaFor } from '../arena-themes.ts';
+import { arenaFor, buildArena, type Arena } from '../stubs.ts';   // V3: arena.ts, arena-themes.ts (V2's flat stage)
 import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
 import { createWitchfire } from './witchfire.ts';
@@ -46,7 +44,6 @@ import { shardCapacity } from './special-shards-rows.ts';
 import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
 import { phoneTier, pixelCap } from './quality.ts';
-import { lookFrom } from '../look-flag.ts';
 import { FOE_TUNE } from './fatigue-tune.ts';
 import { fatigueReadFrom } from './fatigue-read.ts';
 import { stanceFrom } from './stance-pose.ts';
@@ -80,9 +77,8 @@ const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: o
 // One GLB per opponent (moves.ts `OpponentId`); only the hero and the man he faces are ever loaded.
 // The player weapons this build can draw: the longsword is warrior.glb's own, every other needs its equip file (scripts/build-player-weapon.mjs),
 // fetched only when that weapon is the one in hand. main.ts offers the fight only these (loot.ts fightWeapon), so no pick can lack its art.
-// Vite swaps each import.meta.glob for an object at build; under node (the unit tests load this module through the src/fight barrel) the call does not exist, so it reads as empty there.
-const globbed = <T extends Record<string, string>>(read: () => T): T => { try { return read(); } catch { return {} as T; } };
-const EQUIP_URLS = globbed(() => import.meta.glob<string>('../assets/weapons/player/*.glb', { eager: true, query: '?url', import: 'default' }));
+// V3: no Vite, so the globs below are the files the one fight ships, by URL (the Centurion's gladius at his level-1 loadout).
+const EQUIP_URLS: Record<string, string> = { '../assets/weapons/player/gladius.glb': new URL('../assets/weapons/player/gladius.glb', import.meta.url).href };
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // A rank look's pre-swap bake takes up to this many ms of each frame (it runs while the fight plays; one bounded step is ~8 ms at worst).
 const LOOK_BAKE_MS = cameraRule('lookBakeMs');
@@ -172,9 +168,7 @@ export function createScene(
   Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 70 });   // the pit floor to the wall's foot (11.7 m), not the tiers: 1.25× sharper shadows on the sand for free (audit 2026-09-20)
   sun.shadow.normalBias = 0.04;
   if (!world) scene.add(sun);
-  // Look test links (souls-look.ts): `?look=souls`, `?look=shade` or both. No flag fetches, builds and compiles nothing and draws
-  // today's frame; with one, the module (and its post chain) is its own chunk, fetched beside the fight's art.
-  const lookFlags = typeof location === 'undefined' ? undefined : lookFrom(location.search, PHONE);
+  // V3: the `?look=souls|shade` test chunk (souls-look.ts) is not carried; `look` stays undefined, which is today's frame.
   // `?look=armfeel&feel=high|low|off` (armfeel.ts): the victim's flinch on a visual pivot between the fighter's root and its rig. Absent or `off`: no pivot, today's frame.
   const feel = typeof location === 'undefined' ? undefined : armfeelFrom(location.search, typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const flinches = feel && feel !== 'off' ? [new Flinch(feel), new Flinch(feel)] : null;
@@ -185,8 +179,7 @@ export function createScene(
   const lean = new THREE.Quaternion(), hip = new THREE.Vector3(), swing = new THREE.Vector3(), axis = new THREE.Vector3();
   const burstPool = flinches ? createBurstPool(scene) : null;
   const right = new THREE.Vector3();
-  let look: ReturnType<typeof import('../souls-look.ts').createLook> | undefined;
-  if (lookFlags) void import('../souls-look.ts').then(({ createLook }) => { look = createLook(lookFlags, { renderer, scene, camera, hemisphere, sun, canvas }); resize(); }).catch(captureException);
+  const look = undefined as { key?: number; setSize(w: number, h: number, r: number): void; update(anchors: unknown[], feet: THREE.Vector3[]): void; render(): boolean } | undefined;
   // The lift: the fog chunk is patched BEFORE any material compiles (the loading card waits on gfxReady below), the composer then draws every frame in place of the plain render. A failed chunk leaves the Pit exactly as it was.
   let gfx: ReturnType<GfxPost['createGfxLift']> | undefined;
   const gfxReady: Promise<unknown> = post && !world ? post().then((m) => { m.patchHeightFog(); gfx = m.createGfxLift(renderer, scene, camera); gfx.setSize(width, height); }).catch(captureException) : Promise.resolve();
@@ -269,9 +262,9 @@ export function createScene(
   // Hero preview (hero-preview.ts): a fitted set under /herolook/ stands in for the player's rig. It wears its armour on the rig itself, so
   // the player's loot pieces are never layered over it (the opponent still wears his kit); a file that fails to load falls back to warrior.glb.
   const heroUrl = heroPreview(typeof location === 'undefined' ? '' : location.search);
-  const fighterUrls = globbed(() => import.meta.glob<string>(['../assets/*.glb', '!../assets/minotaur.glb', '!../assets/werewolf.glb', '!../assets/wraith.glb', '!../assets/skeleton.glb'], { eager: true, query: '?url', import: 'default' }));
+  const fighterUrls: Record<string, string> = { '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href };   // V3: the hero and the Centurion
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): a fight fetches his kit only, never the whole 9.4 MB file.
-  const carrierUrls = globbed(() => import.meta.glob<string>('../assets/loot/carriers-*.glb', { eager: true, query: '?url', import: 'default' }));
+  const carrierUrls: Record<string, string> = { '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Centurion's kit
   // The foe's rig file: a roster body from the glob, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts), like the world bodies' '/world/...': the Origins preview build has no publicDir, so a BASE_URL-relative path would 404 there.
   const foeUrl = (id: string): string => ON_DEMAND_BEASTS.has(id) ? beastBodyUrl(id) : fighterUrls[`../assets/${ROSTER[id as OpponentId].body}.glb`]!;
   // Combat waits for the arena's worker textures and props too (arena.ready never rejects): their GPU uploads then land during the

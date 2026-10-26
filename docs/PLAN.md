@@ -1,7 +1,8 @@
 ## HANDOFF (V3 dev; keep at the top, update every PR)
-- **Live:** nothing deployed yet. main = seed (V1 history at 82a994d15, tag `v1-seed-82a994d15`).
-- **In flight:** PR 1 seed (filter-repo of V1: src/fight, src/audio, core/registry.ts, roster.ts, hit-stop.ts, warrior.glb, veteran.glb = the Centurion, audio sprites, clip JSON).
-- **Next three:** PR 2 V2 shell (deploy, stage, validator, CI, esbuild to ESM); PR 3 the lift (driver, cut scene.ts, stubs.ts, import grep); PR 4 Gate 0 replay diff vs V1 at 82a994d15.
+- **Live:** nothing deployed yet (no v3.frankendom.com nginx block or V3_DEPLOY_* secrets). Merged: #1 seed (tag `v1-seed-82a994d15`), #2 V2 shell, #3 Gate 0 (28/28 replays identical to V1).
+- **In flight:** PR 4 the lift (driver `src/client/main.ts`, `src/stubs.ts`, V2 stage in the arena slot, stub-boundary check). The one fight is `data/fight.json`.
+- **Next three:** deploy (nginx block + secrets from Strategy), Gate 1 on Dom's phone vs frankendom.com, then the first post-Gate-1 PR cutting the inert spell/missile/mana rules out of duel.ts.
+- **Known differences from frankendom.com (by plan):** V2's flat stage and sky instead of the pit; no legend names (the HUD says "Centurion"); no rank row, menu, loot, share or versus card.
 
 # Frankendom V3: V1's fight core in V2's shell (Strategy, 2026-10-26, for Dom's sense-check)
 

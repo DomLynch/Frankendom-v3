@@ -6,7 +6,7 @@
 import { poolProblems, type PoolDef, type PoolValues } from './pools.ts';
 import type { FinisherId } from './finishers.ts';
 import { PLAIN_DEATH } from './finisher-look.ts';
-import type { LootId } from '../core/loot.ts';
+import type { LootId } from '../stubs.ts';   // V3: core/loot.ts
 import type { PickedStance } from './stance.ts';
 import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
 import LOOK_RULES from './look-rules.json' with { type: 'json' };
