@@ -1,0 +1,73 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  # Every green main goes live at https://v3.frankendom.com (site root, no prefix), once the deploy secrets exist.
+  # The key is locked by rrsync to the site folder on the VPS, so the remote path is "./".
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    env:
+      KEY: ${{ secrets.V3_DEPLOY_KEY }}
+      KH: ${{ secrets.V3_DEPLOY_KNOWN_HOSTS }}
+      U: ${{ secrets.V3_DEPLOY_USER }}
+      H: ${{ secrets.V3_DEPLOY_HOST }}
+    steps:
+      - name: Deploy configured?
+        id: cfg
+        run: |
+          if [ -n "$KEY" ]; then echo "on=1" >> "$GITHUB_OUTPUT"; else echo "no V3_DEPLOY_KEY yet, build only"; fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.on
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.on
+        with:
+          node-version: 22
+          cache: npm
+      # code lives under b/<sha>/ so a phone never runs a cached older module after a deploy; binary assets and
+      # data stay at stable root paths (scripts/build.mjs)
+      - name: Assemble site
+        if: steps.cfg.outputs.on
+        run: npm ci && BUILD="${GITHUB_SHA}" npm run build && grep -q "b/${GITHUB_SHA}/src/client/main.js" dist/index.html
+      - name: Publish
+        if: steps.cfg.outputs.on
+        run: |
+          install -m 600 /dev/null key && printf '%s\n' "$KEY" > key
+          printf '%s\n' "$KH" > kh
+          rsync -az --delete -e "ssh -i key -o IdentitiesOnly=yes -o UserKnownHostsFile=kh -o StrictHostKeyChecking=yes" dist/ "$U@$H":./
+          rm -f key kh
+      # The server falls back to index.html for unknown paths, so only an exact SHA match counts.
+      # --resolve pins the VPS address, so a stale public DNS cache can't fail the check.
+      - name: Check served build
+        if: steps.cfg.outputs.on
+        run: |
+          ip=$(getent ahostsv4 "$H" | awk 'NR==1{print $1}'); ip=${ip:-$H}
+          for i in $(seq 1 20); do
+            served=$(curl -fsS --resolve "v3.frankendom.com:443:$ip" https://v3.frankendom.com/build.txt || true)
+            if [ "$served" = "$GITHUB_SHA" ]; then echo "live: $served"; exit 0; fi
+            echo "try $i: got '${served:0:40}'"; sleep 15
+          done
+          exit 1
