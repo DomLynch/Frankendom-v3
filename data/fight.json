@@ -98,6 +98,12 @@
     "query": "reach",
     "v1": "v1"
   },
+  "foeSpecialReach": {
+    "about": "Dom 2026-10-26: the Minotaur's special landed (hit sound, the hero's reaction, 30 damage) from any distance, 3.5 m included: 'the distance isn't matching the reactions.' V1's rule gave an opponent's melee special the full rules reach (3.0 m) to start and no check at release; the player's picked special has had 2.2 m / 2.6 m. With `on` 1 an opponent's plain MELEE special (not a spell, a bow volley or a cone breath; his heavies are untouched) is pressed (src/fight/ai.ts and the sim's gate in duel.ts) only inside `start` metres, and when its release tick arrives with the hero farther than `release` metres it fizzles: SpecialFizzled, no damage, no hit pose, no hit sound. The values are the player's own (sandbox specialMeleeReach 2.2 m, + specialMeleeSlack 0.4 m). src/fight/foe-special-reach.ts; off in headless runs (Gate 0 and the V3-only golden rows). ?special=v1 = V1's reach (3.0 m, no release check). `on` 0 = off.",
+    "on": 1,
+    "start": 2.2,
+    "release": 2.6
+  },
   "specialSink": {
     "about": "Dom 2026-10-26, on his Skull Crack landing: the struck body's feet sinking into the sand 'looks a bit cheesy'. V1's knee-dip (scene.ts) drops the body a landed special strikes ~0.28 m below the floor; with sink false it never goes below the floor (a mode that lifts still lifts; src/fight/special-sink.ts). Presentation only. ?dip=v1 = V1's drop.",
     "sink": false

@@ -18,6 +18,7 @@ import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
 import { foeSpecialFirst, specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
 import { SPECIAL_TERMS, termCooldown, termed, termStamina } from './special-terms.ts';   // V3: the hero's specials every 9 s, no stamina; off in a headless run, so Gate 0 steps V1's numbers
 import { paceTicks } from './special-pace.ts';   // V3: the player's paced special (the Skull Crack ×0.75); off in a headless run, so Gate 0 steps V1's ticks
+import { foeSpecialFizzles, foeStartReach } from './foe-special-reach.ts';
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
 import { castOutcome, outcomeMult, splitDamage, spellRoot, type CastOutcome, type Spell } from './spell-cast.ts';
@@ -378,7 +379,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       const heal = healOf(cast?.id);   // sandbox spellHeal: needs no range, windup from its row
       const cue = root && !heal ? spellRangeCue(root, gap) : !cast && !bowRow && me.picked && SPECIAL_MELEE_REACH && gap > meleeSpecialReach(R.special.reach) ? 'far' as const : undefined;   // sandbox spellRange: a spell with a range row is cast only in its band (it replaces the special's reach); a melee special is pressed only inside its own, shorter reach (specialMeleeReach); out of range nothing is spent and a cue is shown
       if (cue) events.push({ tick, type: 'SpecialRefused', actor: i, cue, ...(cast ? { spell: cast.id } : {}) });   // the HUD floats the specialCue row's text over the caster
-      else if (gap <= (me.picked ? meleeSpecialReach(R.special.reach) : R.special.reach) || heal || (root && spellRangeOf(root)) || bowRow) {
+      else if (gap <= (me.picked ? meleeSpecialReach(R.special.reach) : foeStartReach({ ...me, spell: cast, ...(bowRow ? { bowSpecial: bowRow.skill } : {}) }, CONE_ON && !!coneOf(me.specialName), R.special.reach)) || heal || (root && spellRangeOf(root)) || bowRow) {
         if (action === 'skill2') next.castSlot = 1; else delete next.castSlot;
         if (bowRow) { next.bowSpecial = bowRow.skill; if (next.ammo !== undefined) next.ammo -= bowRow.arrows; } else delete next.bowSpecial;   // the arrows are spent at the commit, like a spell's cost
         next.special = castWindup(me.sheet, heal ? heal.windup : bowRow ? bowRow.windup : !cast && me.picked && SPECIAL_MELEE_WINDUP ? paceTicks(next, SPECIAL_MELEE_WINDUP) : spellWindupOf(root, R.special.windup)); delete next.castHurt; delete next.castPush;   // sandbox specialMeleeWindup: a melee special (no spell) is as quick as a heavy swing, not the spell's 2 s delay
@@ -673,6 +674,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       continue;
     }
     if (SPECIAL_MELEE_REACH && A.picked && !spell && distance(A.body, D.body) > meleeSpecialRelease()) { events.push({ tick, type: 'SpecialFizzled', actor: i }); continue; }   // sandbox specialMeleeReach: the foe stepped out of reach during the windup, the swing finds nothing
+    if (!spell && foeSpecialFizzles(A, CONE_ON && !!coneOf(A.specialName), distance(A.body, D.body))) { events.push({ tick, type: 'SpecialFizzled', actor: i }); continue; }   // V3 foeSpecialReach (foe-special-reach.ts): an opponent's melee special that finds the hero beyond the release reach swings at nothing, like the player's (no damage, no hit pose, no hit sound); spells, bows and cones keep their own range
     // v55 (cone-rules.ts): a special with a cone row breathes instead of striking once: the heading is fixed on the target now, the pulses follow, and the caster is held back until the last of them is done.
     const cone = CONE_ON && !spell ? coneOf(A.specialName) : undefined;
     if (cone) { A.breath = { k: 0, wait: 0, heading: aim(A.body, D.body) }; A.specialRecover = R.special.recovery + breathTicks(cone); breathed[i] = true; continue; }
