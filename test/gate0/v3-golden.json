@@ -80,6 +80,32 @@
    }
   },
   {
+   "config": "page-first-clips",
+   "seed": 731,
+   "script": "directional-heavies",
+   "ticks": 1763,
+   "hash": "4b58085a62178444",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 2,
+    "heavy_left": 4,
+    "heavy_thrust": 2
+   }
+  },
+  {
+   "config": "page-first-clips",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 2209,
+   "hash": "da162596213026d2",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 2,
+    "heavy_thrust": 0
+   }
+  },
+  {
    "config": "base",
    "seed": 731,
    "script": "directional-heavies",
