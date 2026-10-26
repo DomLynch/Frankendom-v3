@@ -103,6 +103,11 @@ export function unitOfBone(bone: THREE.Object3D, order: readonly string[], rootO
   return null;
 }
 
+/** The scale the pooled cap and helmet meshes wear for their warm-up draws (prepareCutArt): a speck. */
+export const WARM_SCALE = 1e-4;
+/** A pooled mesh taken for a cut: shown at its own `scale` (the warm-up speck never survives into a cut: caps and the helmet alike). */
+export function showPooled(mesh: THREE.Object3D, scale: number): void { mesh.scale.setScalar(scale); mesh.visible = true; }
+
 type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
 export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
@@ -181,7 +186,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     }
     compileLateArt();
     // The programs compile off the frame, but a GPU pipeline (Metal under ANGLE) is made at a mesh's first DRAW: draw each hidden mesh for two frames as a 0.1 mm speck at the opponent's feet.
-    for (const mesh of [...capPool, ...helmetPool]) { mesh.scale.setScalar(1e-4); mesh.visible = true; }
+    for (const mesh of [...capPool, ...helmetPool]) { mesh.scale.setScalar(WARM_SCALE); mesh.visible = true; }
     warm = 2;
   }
 
@@ -204,14 +209,14 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       const pose = rd.readPose(), at = new THREE.Vector3(...result.cap.position);
       const cap = (index: number, which: number, mult: number) => {   // a ball over the cut face, kept in the frame of the part it sits on: a pooled mesh, shown
         const o = index * 10, mesh = capPool.pop() ?? hiddenCap();
-        mesh.material = capMaterials[which]!; mesh.scale.setScalar(role.radius_m * mult); mesh.visible = true;
+        mesh.material = capMaterials[which]!; showPooled(mesh, role.radius_m * mult);
         const off = at.clone().sub(new THREE.Vector3(pose[o], pose[o + 1], pose[o + 2])).applyQuaternion(new THREE.Quaternion(pose[o + 3], pose[o + 4], pose[o + 5], pose[o + 6]).invert());
         follow.push({ mesh, at: index, off });
       };
       cap(rd.partIds.indexOf(role.parent ?? 'hips'), 0, cutRows.cap.radiusMult);   // the stump: on the part the cut joint hangs from
       cap(rd.partIds.indexOf(part), 1, cutRows.cap.pieceRadiusMult);                // the piece's own cut face
       steps.caps = performance.now() - t; t = performance.now();
-      for (const prop of result.props) { const mesh = helmetPool.pop(); if (mesh) { mesh.visible = true; props.push({ mesh, prop }); } else prop.destroy(); }   // the helmet (only an opponent row with helmet: true): a plain ball on the package's prop body until a helmet mesh exists
+      for (const prop of result.props) { const mesh = helmetPool.pop(); if (mesh) { showPooled(mesh, 1); props.push({ mesh, prop }); } else prop.destroy(); }   // the helmet (only an opponent row with helmet: true): a plain ball on the package's prop body until a helmet mesh exists
       steps.props = performance.now() - t;
       cutBones.push({ bone: root, home: root.position.clone() });   // applyPose (the package's three-rig) puts it on its capsule's joint from the next frame
     }
@@ -377,7 +382,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           if (snap) snap = !rd.snapToTarget();   // a new or reset ragdoll starts on the clip's pose
           if (stagger >= 0) stagger = staggerDepth(rows.states.stagger, stagger + tick) < 0 ? -1 : stagger + tick;
         }
-        if (rd.awake) physics.step(tick);   // any body of his awake (a frozen corpse is not; a cut piece it wakes is): the world steps only then
+        if (rd.state !== 'frozen' || rd.awake) physics.step(tick);   // the old rule for every state but a frozen corpse (alive, stagger and dying always step: never trusting Jolt's sleep for a ragdoll tracking a clip); the corpse steps only while a body of it is awake (a piece a cut wakes)
         acc -= tick; ticks++;
       }
       if (ticks === rows.maxTicksPerFrame) acc = 0;

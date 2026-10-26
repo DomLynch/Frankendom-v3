@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { createPhysics } from '@frankendom/physics';
-import { blowImpulse, cutEvent, unitOfBone } from '../src/fight/ragdoll.ts';
+import { blowImpulse, cutEvent, showPooled, unitOfBone, WARM_SCALE } from '../src/fight/ragdoll.ts';
 import { createPieceCutter, isUnder } from '../src/fight/cut-pieces.ts';
 import { validateFile } from '../src/sim/validate.js';
 
@@ -142,4 +142,9 @@ test('a ray through the piece strikes the piece\'s bone; one through the body st
   assert.equal(ray(2.6)?.bone, s.arm, 'the arm piece');
   assert.equal(ray(0.5)?.bone, s.spine, 'the body');
   assert.equal(ray(9), null, 'a miss');
+});
+
+test('a pooled cap or helmet mesh taken for a cut leaves the warm-up speck behind (the helmet is as big as its row says)', () => {
+  const warmed = () => { const m = new THREE.Mesh(); m.scale.setScalar(WARM_SCALE); m.visible = false; return m; };
+  for (const scale of [1, 0.123]) { const m = warmed(); showPooled(m, scale); assert.equal(m.visible, true); assert.deepEqual(m.scale.toArray(), [scale, scale, scale]); }
 });
