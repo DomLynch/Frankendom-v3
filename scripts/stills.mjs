@@ -1,6 +1,6 @@
 // 375-wide stills of the duel, headless (VPS Chromium; software GL is fine for a picture, not for timings).
 //   node scripts/stills.mjs <base url> <out dir> [query ...]
-// For each query ('' = the default page) it writes <tag>-ready.png (art in, before Fight), <tag>-heavy.png (a heavy mid-swing) and
+// For each query ('' = the default page) it writes <tag>-ready.png (art in; with start=v1, before Fight), <tag>-heavy.png (a heavy mid-swing) and
 // <tag>-guard-walk.png (guard held while backing off), tag = the query or 'default'. Keys are V1's (input.ts): F light, G heavy, Q guard, S back.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -18,7 +18,8 @@ for (const query of queries.length ? queries : ['']) {
   await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 120000 });
   await pause(page, 1500);
   await page.screenshot({ path: `${out}/${tag}-ready.png` });
-  await page.click('#attack-button');   // Fight: draw
+  // The fight starts by itself (src/auto-start.ts); only ?start=v1 still waits for the Fight press that draws.
+  if (/(^|&)start=v1\b/.test(query)) await page.click('#attack-button');
   await pause(page, 2500);
   await page.keyboard.down('KeyW'); await pause(page, 900); await page.keyboard.up('KeyW');
   await page.keyboard.press('KeyG'); await pause(page, 450);
