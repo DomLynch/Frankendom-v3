@@ -1,0 +1,20 @@
+{
+  "about": "The starter spell list (docs/briefs/spell-list.md #2781, spec docs/specs/combat/spell-slots.md): one row per spell a new mage meets, over levels 1-10. `id` is an existing spell-index.json id at the brief's (root, level); `name` is the display name; nothing else lives here (cost, school and share come from the index and brick rows). Ids picked by Combat from the existing catalogue (already-vetted legends) by theme fit at each (root, level); Strategy signs off before the rows PR merges (legends rule).",
+  "list": [
+    {"id":"brokkr","name":"Ember Prick","level":1},
+    {"id":"scylla-pup","name":"Hound's Bay","level":1},
+    {"id":"baobhan-sith","name":"Long Shade","level":2},
+    {"id":"rubezahl","name":"Gale Cut","level":2},
+    {"id":"python","name":"Cracked Ground","level":3},
+    {"id":"bolotnik","name":"Rot Breath","level":4},
+    {"id":"hervor","name":"Three Blows","level":4},
+    {"id":"bedivere","name":"Warding Ring","level":5},
+    {"id":"brontes","name":"Ashfall","level":5},
+    {"id":"stribog","name":"Rolling Gale","level":6},
+    {"id":"gudrun","name":"The Word","level":6},
+    {"id":"ninurta","name":"Quake","level":7},
+    {"id":"erebus","name":"Deep Shadow","level":8},
+    {"id":"hrolf-kraki","name":"Unbroken Ring","level":9},
+    {"id":"beowulf","name":"Threefold Reckoning","level":10}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "titheDial", "file": "tithe-defs.json", "at": "dials", "key": "id",
+      "required": { "value": "number" } }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "specials": [
+    { "id": "antaeus", "family": "pitborn", "template": "crack", "opponent": "pitborn", "cast": { "actor": 1, "move": "skill_cleave" },
+      "params": { "cracks": 7, "clods": 46, "grit": 90, "crackAlpha": 0.85, "clodAlpha": 0.95, "gritAlpha": 0.7, "gritTint": { "day": "#7a5a36", "night": "#14100c" } } },
+    { "id": "surtr", "family": "pitborn", "template": "ashfall", "opponent": "pitborn", "cast": { "actor": 1, "move": "skill_cleave" },
+      "params": { "flakes": 150, "patches": 7, "smoke": 9, "patchAlpha": { "day": 0.9, "night": 0.4 }, "smokeAlpha": { "day": 0.55, "night": 0.3 }, "flakeAlpha": { "day": 0.75, "night": 0.4 } } },
+    { "id": "typhon", "family": "pitborn", "template": "gale", "opponent": "pitborn", "cast": { "actor": 1, "move": "skill_cleave" },
+      "params": { "streaks": 17, "sand": 82, "grit": 90, "strokeAlpha": { "day": 0.7, "night": 0.4 }, "sandAlpha": { "day": 0.8, "night": 0.4 }, "gritTint": { "day": "#2a1a0c", "night": "#14110d" }, "over": true } },
+    { "id": "dwarf8", "family": "dwarf-shield", "template": "theWord", "opponent": "dwarf", "cast": { "actor": 1 }, "params": { "size": 2.1, "alpha": 1.7, "cap": 0.7 } },
+    { "id": "dwarf9", "family": "dwarf-shield", "template": "threeBlows", "opponent": "dwarf", "cast": { "actor": 1 }, "params": { "size": 2.2, "alpha": 1.8, "cap": 0.7, "tone": 0.3, "top": 0.6 } },
+    { "id": "dwarf10", "family": "dwarf-shield", "template": "rimShake", "opponent": "dwarf", "cast": { "actor": 1 }, "params": { "size": 2.0, "alpha": 1.8, "cap": 0.7, "nightCap": 0.7, "nightDustSize": 1.7, "nightRimRing": true } },
+    { "id": "shield8", "family": "dwarf-shield", "template": "baredFace", "opponent": "shieldmaiden", "cast": { "actor": 1 }, "params": { "size": 2.0, "alpha": 1.7, "cap": 0.4, "tone": 0.3, "top": 0.5 } },
+    { "id": "shield9", "family": "dwarf-shield", "template": "theRing", "opponent": "shieldmaiden", "cast": { "actor": 1 }, "params": { "size": 2.0, "alpha": 1.6, "cap": 0.4 } },
+    { "id": "shield10", "family": "dwarf-shield", "template": "aegisSweep", "opponent": "shieldmaiden", "cast": { "actor": 1 }, "params": { "size": 2.0, "alpha": 1.7, "cap": 0.7, "tone": 0.3, "top": 0.45 } },
+    { "id": "arawn", "family": "executioner", "template": "baying", "opponent": "executioner", "cast": { "actor": 1, "move": "skill_reaping" },
+      "params": { "trails": 11, "rimRadius": 4.4, "trailAlpha": 0.85, "puffs": 8, "puffColor": { "day": "#5a4a38", "night": "#2c2219" }, "puffAlpha": 0.5, "gritSize": 0.07, "gritShade": 0.8, "gritAlpha": 0.8 } },
+    { "id": "thanatos", "family": "executioner", "template": "longShadow", "opponent": "executioner", "cast": { "actor": 1, "move": "skill_reaping" },
+      "params": { "shadowAlpha": { "day": 0.8, "night": 0.85 }, "poolAlpha": { "day": 0.62, "night": 0.9 }, "dimAlpha": { "day": 0.26, "night": 0.2 }, "gritSize": 0.13, "gritShade": 0.9 } },
+    { "id": "reaper", "family": "executioner", "template": "harvest", "opponent": "executioner", "cast": { "actor": 1, "move": "skill_reaping" },
+      "params": { "crescentAlpha": { "day": 0.6, "night": 0.4 }, "cutAlpha": 0.9, "gritSize": 0.13, "gritShade": 0.9, "gritAlpha": 0.8 } }
+  ]
+}

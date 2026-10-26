@@ -1,0 +1,44 @@
+{
+  "murmur": {
+    "page": "https://freesound.org/people/SpliceSound/sounds/260122/",
+    "url": "https://cdn.freesound.org/previews/260/260122_1480854-hq.mp3",
+    "sha256": "4f4c9d381aa31ebaa4d354a74121f94653f831043b4c165ebe4d3d26bb55b94e",
+    "title": "Indoor adult murmur, medium group.wav",
+    "author": "SpliceSound",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "retrieved": "2026-09-19"
+  },
+  "jeer": {
+    "page": "https://freesound.org/people/deleted_user_2104797/sounds/324893/",
+    "url": "https://cdn.freesound.org/previews/324/324893_2104797-hq.mp3",
+    "sha256": "c41a48aeaefc4e8b06f472bf7b3b0e3e1dec8a048b4ef1a6180ae1baff10db8e",
+    "title": "Crowd Boo.wav",
+    "author": "deleted_user_2104797",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "retrieved": "2026-09-19"
+  },
+  "boohall": {
+    "page": "https://freesound.org/people/HowardV/sounds/264378/",
+    "url": "https://cdn.freesound.org/previews/264/264378_1654262-hq.mp3",
+    "sha256": "7c091f19f3a5c9774de3c18ac82e4de59d29ac451a34795e52f5d78f15d710af",
+    "title": "crowd booing",
+    "author": "HowardV",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Brief 13 wall-hugger jeer bed B (small-mob boos). Licence read on the sound page 2026-09-22.",
+    "retrieved": "2026-09-22"
+  },
+  "whistle": {
+    "page": "https://freesound.org/people/IAmAndyGoddard/sounds/393528/",
+    "url": "https://cdn.freesound.org/previews/393/393528_3758399-hq.mp3",
+    "sha256": "2b2581ca1fb13bf145fcff785772b6def8015c06cb8bee78eaba7f7a212ced85",
+    "title": "Cat Call Whistle.wav",
+    "author": "IAmAndyGoddard",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "note": "Brief 13 wall-hugger jeer bed B (wolf-whistles). Licence read on the sound page 2026-09-22.",
+    "retrieved": "2026-09-22"
+  }
+}

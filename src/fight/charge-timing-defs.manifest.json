@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "chargeTimingDial",
+      "file": "charge-timing-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

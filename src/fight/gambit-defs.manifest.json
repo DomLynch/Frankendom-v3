@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "gambitDial",
+      "file": "gambit-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

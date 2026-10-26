@@ -1,0 +1,160 @@
+{
+  "sets": [
+    {
+      "id": "plate",
+      "weightClass": "heavy",
+      "shape": {
+        "armour": 25,
+        "magicResist": -25
+      },
+      "quality": {
+        "armour": 2,
+        "health": 2,
+        "poise": 1
+      },
+      "eras": [
+        {
+          "fromRecordVersion": 79,
+          "shape": {
+            "armour": 25,
+            "magicResist": -15,
+            "stamina": -10
+          }
+        }
+      ]
+    },
+    {
+      "id": "robes",
+      "weightClass": "light",
+      "shape": {
+        "magicResist": 25,
+        "armour": -25
+      },
+      "quality": {
+        "magicResist": 2,
+        "spellPower": 2,
+        "focus": 1
+      }
+    },
+    {
+      "id": "leathers",
+      "weightClass": "medium",
+      "shape": {
+        "stamina": 25,
+        "armour": -25
+      },
+      "quality": {
+        "stamina": 2,
+        "recovery": 2,
+        "luck": 1
+      },
+      "eras": [
+        {
+          "fromRecordVersion": 74,
+          "shape": {
+            "armour": 20,
+            "stamina": 5,
+            "magicResist": -25
+          }
+        },
+        {
+          "fromRecordVersion": 80,
+          "shape": {
+            "stamina": 25,
+            "armour": -25
+          }
+        }
+      ]
+    }
+  ],
+  "owners": [
+    {
+      "id": "veteran",
+      "set": "plate"
+    },
+    {
+      "id": "pitborn",
+      "set": "plate"
+    },
+    {
+      "id": "minotaur",
+      "set": "plate"
+    },
+    {
+      "id": "executioner",
+      "set": "plate"
+    },
+    {
+      "id": "dwarf",
+      "set": "plate"
+    },
+    {
+      "id": "knight",
+      "set": "plate"
+    },
+    {
+      "id": "shieldmaiden",
+      "set": "plate"
+    },
+    {
+      "id": "witch",
+      "set": "robes"
+    },
+    {
+      "id": "plaguedoctor",
+      "set": "robes"
+    },
+    {
+      "id": "wraith",
+      "set": "robes"
+    },
+    {
+      "id": "nightborn",
+      "set": "robes"
+    },
+    {
+      "id": "goblin",
+      "set": "leathers"
+    },
+    {
+      "id": "werewolf",
+      "set": "leathers"
+    }
+  ],
+  "gear": [
+    {
+      "id": "light",
+      "weightClass": "light",
+      "preset": true,
+      "set": "robes",
+      "weight": 4,
+      "wearMax": 60,
+      "resist": {}
+    },
+    {
+      "id": "medium",
+      "weightClass": "medium",
+      "preset": true,
+      "set": "leathers",
+      "weight": 9,
+      "wearMax": 90,
+      "resist": {}
+    },
+    {
+      "id": "heavy",
+      "weightClass": "heavy",
+      "preset": true,
+      "set": "plate",
+      "weight": 16,
+      "wearMax": 140,
+      "resist": {}
+    }
+  ],
+  "rules": [
+    {
+      "id": "gear",
+      "shapeMax": 25,
+      "qualityMax": 25
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "tables": [
+    {
+      "table": "slotWeight",
+      "file": "gear-stats-rules.json",
+      "at": "slotWeight",
+      "key": "id",
+      "required": {
+        "weight": "integer"
+      }
+    },
+    {
+      "table": "gearPool",
+      "file": "gear-stats-rules.json",
+      "at": "gearPool",
+      "key": "id",
+      "required": {
+        "fullPoints": "integer"
+      }
+    },
+    {
+      "table": "multiplier",
+      "file": "gear-stats-rules.json",
+      "at": "multiplier",
+      "key": "id",
+      "required": {
+        "scale": "integer",
+        "attackPerPoint": "integer",
+        "resPerPoint": "integer",
+        "note": "string"
+      }
+    }
+  ]
+}

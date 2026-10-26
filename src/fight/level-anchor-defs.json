@@ -1,0 +1,8 @@
+{
+  "anchors": [
+    {"id":"novice","level":1},
+    {"id":"easy","level":6},
+    {"id":"normal","level":18},
+    {"id":"hard","level":46}
+  ]
+}

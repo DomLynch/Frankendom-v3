@@ -1,0 +1,49 @@
+{
+  "tables": [
+    {
+      "table": "sheetpoints",
+      "file": "sheet-defs.json",
+      "at": "points",
+      "key": "id",
+      "required": {
+        "perLevel": "integer",
+        "maxLevel": "integer",
+        "total": "integer",
+        "gear": "integer"
+      }
+    },
+    {
+      "table": "sheetdial",
+      "file": "sheet-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "code": "integer",
+        "base": "integer",
+        "cap": "integer",
+        "floor": "integer",
+        "pool": "string"
+      },
+      "unique": [
+        "code"
+      ],
+      "refs": {
+        "pool": "sheetpoints"
+      }
+    },
+    {
+      "table": "sheetskill",
+      "file": "sheet-defs.json",
+      "at": "skills",
+      "key": "id",
+      "required": {
+        "base": "integer",
+        "cap": "integer",
+        "pool": "string"
+      },
+      "refs": {
+        "pool": "sheetpoints"
+      }
+    }
+  ]
+}

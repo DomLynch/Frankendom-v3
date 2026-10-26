@@ -1,0 +1,27 @@
+{
+  "rows": [
+    {"id": "setfoot", "label": "Set Foot"},
+    {"id": "heelreap", "label": "Heel Reap"},
+    {"id": "lunge", "label": "Pale Lunge"},
+    {"id": "knuckledirt", "label": "Knuckle Dirt"},
+    {"id": "cleaverset", "label": "Cleaver Set"},
+    {"id": "groundset", "label": "Ground Set"},
+    {"id": "cutmark", "label": "Cut Mark"},
+    {"id": "wake", "label": "Stone Wake"},
+    {"id": "stirring", "label": "Stirring"},
+    {"id": "tempo", "label": "Doctor's Tempo"},
+    {"id": "pulse", "label": "Taking the Pulse"},
+    {"id": "drag", "label": "Ground Drag"},
+    {"id": "swing", "label": "Held Swing"},
+    {"id": "cuts", "label": "Seven Cuts"},
+    {"id": "standfast", "label": "Stand Fast"},
+    {"id": "ratrun", "label": "Rat Run"},
+    {"id": "blackfurrow", "label": "Black Furrow"},
+    {"id": "earthfold", "label": "Earth Fold"},
+    {"id": "ironsettle", "label": "Iron Settle"},
+    {"id": "gatherededge", "label": "Gathered Edge"},
+    {"id": "shield", "label": "Shield Quake"},
+    {"id": "centurion", "label": "The Charge"},
+    {"id": "tithe", "label": "Blood Tithe"}
+  ]
+}

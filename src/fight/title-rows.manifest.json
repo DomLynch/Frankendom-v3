@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "title",
+      "file": "title-rows.json",
+      "at": "titles",
+      "key": "id",
+      "required": { "fameFloor": "integer", "karmaFloor": "integer", "text": "string", "source": "string" }
+    }
+  ]
+}

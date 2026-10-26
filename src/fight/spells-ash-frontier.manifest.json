@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "table": "spell",
+      "file": "spells-ash-frontier.json",
+      "at": "spells",
+      "key": "id",
+      "required": {
+        "id": "string",
+        "boss": "string",
+        "boss_name": "string",
+        "name": "string",
+        "school": "string",
+        "level": "integer",
+        "region": "string",
+        "source": "string",
+        "story": "string",
+        "bricks.root": "string"
+      },
+      "optional": {
+        "boss_legend": "string"
+      },
+      "unique": [
+        "name"
+      ],
+      "refs": {
+        "school": "school",
+        "bricks.root": "brick",
+        "bricks.modifiers[]": "brick"
+      }
+    }
+  ]
+}

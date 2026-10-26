@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "crowdRoar", "file": "crowd-defs.json", "at": "roars", "key": "id", "required": { "on": "string", "cue": "string", "gain": "number" } }
+  ]
+}

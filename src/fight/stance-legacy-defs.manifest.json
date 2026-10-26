@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "table": "stance_legacy_legacy_defensive",
+      "file": "stance-legacy-defs.json",
+      "at": "legacy_defensive",
+      "key": "id",
+      "required": {}
+    }
+  ]
+}

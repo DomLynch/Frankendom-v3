@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "table": "brick",
+      "file": "brick-defs.json",
+      "at": "bricks",
+      "key": "id",
+      "required": {
+        "kind": "string",
+        "template": "string",
+        "school": "string",
+        "cost": "integer",
+        "costPerLevel": "integer",
+        "effect": "object",
+        "effect.magnitude": "number",
+        "effect.perLevel": "number",
+        "success": "object",
+        "success.critFailBelow": "integer",
+        "success.failBelow": "integer",
+        "success.partialBelow": "integer",
+        "success.critFrom": "integer",
+        "success.partialMult": "number",
+        "success.critMult": "number"
+      },
+      "unique": [
+        "template"
+      ],
+      "refs": {
+        "school": "school"
+      }
+    }
+  ]
+}

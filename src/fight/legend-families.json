@@ -1,0 +1,474 @@
+{
+ "families": [
+  {
+   "id": "family:veteran",
+   "opponent": "veteran",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "crixus",
+     "rank": 1
+    },
+    {
+     "legendId": "ragnar",
+     "rank": 2
+    },
+    {
+     "legendId": "beowulf",
+     "rank": 3
+    },
+    {
+     "legendId": "spartacus",
+     "rank": 4
+    },
+    {
+     "legendId": "miyamoto-musashi",
+     "rank": 5
+    },
+    {
+     "legendId": "hannibal",
+     "rank": 6
+    },
+    {
+     "legendId": "leonidas",
+     "rank": 7
+    },
+    {
+     "legendId": "ajax",
+     "rank": 8
+    },
+    {
+     "legendId": "alexander",
+     "rank": 9
+    },
+    {
+     "legendId": "mars",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:pitborn",
+   "opponent": "pitborn",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "pit-thrall",
+     "rank": 1
+    },
+    {
+     "legendId": "cacus",
+     "rank": 2
+    },
+    {
+     "legendId": "redcap",
+     "rank": 3
+    },
+    {
+     "legendId": "gogmagog",
+     "rank": 4
+    },
+    {
+     "legendId": "grendel",
+     "rank": 5
+    },
+    {
+     "legendId": "polyphemus",
+     "rank": 6
+    },
+    {
+     "legendId": "humbaba",
+     "rank": 7
+    },
+    {
+     "legendId": "antaeus",
+     "rank": 8
+    },
+    {
+     "legendId": "surtr",
+     "rank": 9
+    },
+    {
+     "legendId": "typhon",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:goblin",
+   "opponent": "goblin",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "sewer-imp",
+     "rank": 1
+    },
+    {
+     "legendId": "kobold",
+     "rank": 2
+    },
+    {
+     "legendId": "nain-rouge",
+     "rank": 3
+    },
+    {
+     "legendId": "andvari",
+     "rank": 4
+    },
+    {
+     "legendId": "alberich",
+     "rank": 5
+    },
+    {
+     "legendId": "rumpelstiltskin",
+     "rank": 6
+    },
+    {
+     "legendId": "puck",
+     "rank": 7
+    },
+    {
+     "legendId": "reynard",
+     "rank": 8
+    },
+    {
+     "legendId": "hermes",
+     "rank": 9
+    },
+    {
+     "legendId": "loki",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:nightborn",
+   "opponent": "nightborn",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "night-page",
+     "rank": 1
+    },
+    {
+     "legendId": "lord-ruthven",
+     "rank": 2
+    },
+    {
+     "legendId": "varney",
+     "rank": 3
+    },
+    {
+     "legendId": "carmilla",
+     "rank": 4
+    },
+    {
+     "legendId": "erlking",
+     "rank": 5
+    },
+    {
+     "legendId": "mordred",
+     "rank": 6
+    },
+    {
+     "legendId": "vlad",
+     "rank": 7
+    },
+    {
+     "legendId": "set",
+     "rank": 8
+    },
+    {
+     "legendId": "hades",
+     "rank": 9
+    },
+    {
+     "legendId": "nyx",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:executioner",
+   "opponent": "executioner",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "headsman",
+     "rank": 1
+    },
+    {
+     "legendId": "ankou",
+     "rank": 2
+    },
+    {
+     "legendId": "charon",
+     "rank": 3
+    },
+    {
+     "legendId": "hel",
+     "rank": 4
+    },
+    {
+     "legendId": "anubis",
+     "rank": 5
+    },
+    {
+     "legendId": "ereshkigal",
+     "rank": 6
+    },
+    {
+     "legendId": "morrigan",
+     "rank": 7
+    },
+    {
+     "legendId": "arawn",
+     "rank": 8
+    },
+    {
+     "legendId": "thanatos",
+     "rank": 9
+    },
+    {
+     "legendId": "the-reaper",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:dwarf",
+   "opponent": "dwarf",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "forge-hand",
+     "rank": 1
+    },
+    {
+     "legendId": "alvis",
+     "rank": 2
+    },
+    {
+     "legendId": "regin",
+     "rank": 3
+    },
+    {
+     "legendId": "brokkr",
+     "rank": 4
+    },
+    {
+     "legendId": "eitri",
+     "rank": 5
+    },
+    {
+     "legendId": "wayland",
+     "rank": 6
+    },
+    {
+     "legendId": "kothar-wa-khasis",
+     "rank": 7
+    },
+    {
+     "legendId": "ptah",
+     "rank": 8
+    },
+    {
+     "legendId": "goibniu",
+     "rank": 9
+    },
+    {
+     "legendId": "hephaestus",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:plaguedoctor",
+   "opponent": "plaguedoctor",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "beak",
+     "rank": 1
+    },
+    {
+     "legendId": "paracelsus",
+     "rank": 2
+    },
+    {
+     "legendId": "locusta",
+     "rank": 3
+    },
+    {
+     "legendId": "medea",
+     "rank": 4
+    },
+    {
+     "legendId": "circe",
+     "rank": 5
+    },
+    {
+     "legendId": "sekhmet",
+     "rank": 6
+    },
+    {
+     "legendId": "nergal",
+     "rank": 7
+    },
+    {
+     "legendId": "apollo",
+     "rank": 8
+    },
+    {
+     "legendId": "hecate",
+     "rank": 9
+    },
+    {
+     "legendId": "resheph",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:knight",
+   "opponent": "knight",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "squire",
+     "rank": 1
+    },
+    {
+     "legendId": "bedivere",
+     "rank": 2
+    },
+    {
+     "legendId": "gawain",
+     "rank": 3
+    },
+    {
+     "legendId": "roland",
+     "rank": 4
+    },
+    {
+     "legendId": "el-cid",
+     "rank": 5
+    },
+    {
+     "legendId": "lancelot",
+     "rank": 6
+    },
+    {
+     "legendId": "siegfried",
+     "rank": 7
+    },
+    {
+     "legendId": "hector",
+     "rank": 8
+    },
+    {
+     "legendId": "achilles",
+     "rank": 9
+    },
+    {
+     "legendId": "thor",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:witch",
+   "opponent": "witch",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "hedge-witch",
+     "rank": 1
+    },
+    {
+     "legendId": "mother-shipton",
+     "rank": 2
+    },
+    {
+     "legendId": "grimhild",
+     "rank": 3
+    },
+    {
+     "legendId": "ceridwen",
+     "rank": 4
+    },
+    {
+     "legendId": "nimue",
+     "rank": 5
+    },
+    {
+     "legendId": "louhi",
+     "rank": 6
+    },
+    {
+     "legendId": "baba-yaga",
+     "rank": 7
+    },
+    {
+     "legendId": "morgan-le-fay",
+     "rank": 8
+    },
+    {
+     "legendId": "merlin",
+     "rank": 9
+    },
+    {
+     "legendId": "odin",
+     "rank": 10
+    }
+   ]
+  },
+  {
+   "id": "family:shieldmaiden",
+   "opponent": "shieldmaiden",
+   "region": "region:ash-frontier",
+   "legends": [
+    {
+     "legendId": "shield-girl",
+     "rank": 1
+    },
+    {
+     "legendId": "hervor",
+     "rank": 2
+    },
+    {
+     "legendId": "camilla",
+     "rank": 3
+    },
+    {
+     "legendId": "lagertha",
+     "rank": 4
+    },
+    {
+     "legendId": "boudica",
+     "rank": 5
+    },
+    {
+     "legendId": "tomyris",
+     "rank": 6
+    },
+    {
+     "legendId": "scathach",
+     "rank": 7
+    },
+    {
+     "legendId": "penthesilea",
+     "rank": 8
+    },
+    {
+     "legendId": "brynhildr",
+     "rank": 9
+    },
+    {
+     "legendId": "athena",
+     "rank": 10
+    }
+   ]
+  }
+ ]
+}

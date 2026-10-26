@@ -1,3 +1,8 @@
+## HANDOFF (V3 dev; keep at the top, update every PR)
+- **Live:** nothing deployed yet. main = seed (V1 history at 82a994d15, tag `v1-seed-82a994d15`).
+- **In flight:** PR 1 seed (filter-repo of V1: src/fight, src/audio, core/registry.ts, roster.ts, hit-stop.ts, warrior.glb, veteran.glb = the Centurion, audio sprites, clip JSON).
+- **Next three:** PR 2 V2 shell (deploy, stage, validator, CI, esbuild to ESM); PR 3 the lift (driver, cut scene.ts, stubs.ts, import grep); PR 4 Gate 0 replay diff vs V1 at 82a994d15.
+
 # Frankendom V3: V1's fight core in V2's shell (Strategy, 2026-10-26, for Dom's sense-check)
 
 Status: proposal, not started. Dom's direction of 10-26 morning: V2's combat is additive but still below V1; rather than lift V2 to V1's level, build V3 = V1 stripped of everything that is not the duel, in V2's light shell, then add V2's improvements back one at a time.

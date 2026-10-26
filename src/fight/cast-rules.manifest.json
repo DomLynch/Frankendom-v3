@@ -1,0 +1,21 @@
+{
+  "tables": [
+    {
+      "table": "castrule",
+      "file": "cast-rules.json",
+      "at": "rules",
+      "key": "id",
+      "required": {
+        "spread": "integer",
+        "relDivisor": "number",
+        "creditPerPoint": "number",
+        "tenths": "integer",
+        "costWeight": "integer",
+        "drawSpan": "integer",
+        "levels": "integer",
+        "costCapFrom": "integer",
+        "hitsFrom": "integer"
+      }
+    }
+  ]
+}
