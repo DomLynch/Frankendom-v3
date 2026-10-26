@@ -1,6 +1,7 @@
 // Art that waits for the first frame (V3 fast load, 2026-10-26, after #13's late kit): the blood textures (14 PNGs, 0.41 MB) were
-// fetched at ~1.2 s, beside the bodies, and gated nothing they were needed for. Now their fetch starts once the scene has drawn its
-// first frame. Until they land every blood effect draws as it always has before its photo arrives (the canvas splat, untextured runs),
+// fetched at ~1.2 s, beside the bodies, and gated nothing they were needed for. Now the drip and wound textures (8, 0.21 MB) start
+// once the scene has drawn its first frame. The floor's six (gore.ts, finisher-blood.ts) went back to the early fetch: late, slow 4G
+// left the canvas star on the sand for seconds of the fight (PR #40's post-merge stills). Until they land every blood effect draws as it always has before its photo arrives (the canvas splat, untextured runs),
 // and when they land the scene compiles the new map variants off the frame they first draw on.
 // ?load=v1 (V1's order, as #13) or ?blood=v1: fetched while the scene is built, as before.
 const search = typeof location === 'undefined' ? '' : location.search;

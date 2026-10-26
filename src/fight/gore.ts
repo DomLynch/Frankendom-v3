@@ -47,8 +47,10 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
   // halo — drawn with multiplyOnto(), so blood darkens the sand instead of painting over it. The canvas star stands in until they
   // land (and under node), with the old tint.
   const tone = (mode: BloodMode) => (bloodDark(mode) ? '#352426' : '#681a19');
+  // Fetched while the scene is built, not after the first frame (src/late-art.ts): on slow 4G the late fetch left the canvas star on
+  // the sand for seconds of the fight (PR #40's post-merge stills), so the floor's six (0.19 MB) come early; the drips and wounds stay late.
   if (typeof document !== 'undefined')
-    void afterFirstFrame().then(() => Promise.all([...FLOOR_POOLS, ...FLOOR_SPLASHES].map((f) => new THREE.TextureLoader().loadAsync(BLOOD_ASSET(f))))).then((all) => {
+    void Promise.all([...FLOOR_POOLS, ...FLOOR_SPLASHES].map((f) => new THREE.TextureLoader().loadAsync(BLOOD_ASSET(f)))).then((all) => {
       for (const t of all) t.colorSpace = THREE.SRGBColorSpace;
       photo = true; maps = { pool: all.slice(0, FLOOR_POOLS.length), splash: all.slice(FLOOR_POOLS.length) };
       splats.forEach((splat, i) => multiplyOnto(splat.mesh.material, shape(splat.pool, i))); lateArtLanded();
