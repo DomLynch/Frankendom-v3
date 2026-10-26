@@ -82,7 +82,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
-  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }> };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
+  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }> };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
   (globalThis as { __ragdoll?: typeof cost }).__ragdoll = cost;
 
   // The bones `w` of the way from the clip's pose (on them now) to the ragdoll's: 1 = the ragdoll's alone.
@@ -121,6 +121,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       // the 65-rig names through the one bone map (data/rig.json via rig-bones.ts): on a 65 body the name itself, on a 106 body its Mixamo joint
       partBones = Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(opponentRig.anchor, name)!]));
       const rigId = rigOf(opponentRig.anchor), measurePath = (foe.measure as Record<string, string | undefined>)[rigId];
+      cost.rig = rigId; cost.measure = measurePath ?? null;   // which body row the page's ragdoll is built from (the stills and phone checks read it)
       if (!measurePath) { cost.state = `no measure row for rig ${rigId}`; return Promise.resolve(); }   // today's death on that rig
       const missing = Object.entries(partBones).filter(([, b]) => !b).map(([p]) => p);
       if (missing.length) { cost.state = `no bone for ${missing.join(', ')}`; return Promise.resolve(); }
