@@ -44,6 +44,7 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') console.error(`${tag}: console ${m.text()}`); });
   // The clock is paused the moment the fight is ready, so every query plays (nearly) the same ticks from there.
+  if (process.env.TUNE) await page.addInitScript((t) => { globalThis.__ragdollTune = t; }, JSON.parse(process.env.TUNE));   // TUNE='{"solveHinges":false}': ragdoll.ts's tuning hook
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
