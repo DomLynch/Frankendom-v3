@@ -18,7 +18,7 @@ export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', '
 // Lit = a kick pressed from here lands on a guard-raised foe. Measured 2026-10-07 (tests/hud.test.ts): the true far edge is 1.585 m (the 1.2 m cone plus the kick's .55 stride), so 1.5 keeps a margin for the foe's step.
 export const KICK_LANDS = fxNum('hud.kick-light-m');   // a HUD margin under the true edge (tests/hud.test.ts ties it to the live sim: 0 <= edge - this <= 0.15)
 
-export type HudView = { slotB?: boolean; slotBName?: string; slotAName?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
+export type HudView = { slotB?: boolean; slotBName?: string; slotAName?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; autoStart?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
 // The one bar drawing: a meter's max, its value and the --fill custom property the style sheets draw it from (a <meter>'s own pseudo bars differ per engine).
 export function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
 export function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
@@ -84,7 +84,7 @@ export function createHud(element: Lookup) {
     update(practice: Practice, view: HudView) {
       // The sparring dummy never attacks (src/sparring.ts), so the sheathed line's "will counterattack" is false there (Strategy 2026-09-26).
       const foe = bareName(view.opponentId), nameOfSpecial = (skill: string) => specialName(practice.duel.fighters[0].weapon, skill, SKILL_ROWS[skill as keyof typeof SKILL_ROWS]?.name ?? '') || undefined, line = view.headline ? practiceHint(practice, foe, view.legend, nameOfSpecial).replace(' Ready for a rematch?', ` ${view.headline} Ready for a rematch?`) : practiceHint(practice, foe, view.legend, nameOfSpecial),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
-        hint = view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.dummy ? line.replace(counterLine(foe, view.legend), 'The dummy never attacks.') : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
+        hint = view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.autoStart && practice.phase === 'sheathed' ? '' : view.dummy ? line.replace(counterLine(foe, view.legend), 'The dummy never attacks.') : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
         controlsReady = view.controlsReady;
       const ok = (['light', 'heavy', 'kick', 'backstep', 'parry'] as const).map(
         (a) => accepts(practice, a) || (a === 'backstep' && accepts(practice, 'dodge')),
@@ -148,13 +148,15 @@ export function createHud(element: Lookup) {
       kickButton.dataset.reach = String(inKickReach); // a kick has a short cone: the button brightens when it can land
       combatStatus.dataset.threat = String(practice.threat);
       combatStatus.dataset.move = practice.threatMove ?? '';
-      const attackLabel = practice.phase === 'sheathed' ? 'Fight' : 'Light attack';
+      // V3 autoStart (src/auto-start.ts): the fight starts by itself, so the button is the light attack from the first frame and never says Fight.
+      const fightButton = practice.phase === 'sheathed' && !view.autoStart;
+      const attackLabel = fightButton ? 'Fight' : 'Light attack';
       const labelNode = attackButton.firstChild;   // the text node; the side-mark SVG after it must survive the rewrite
       if (labelNode && labelNode.nodeType === 3) { if (labelNode.textContent !== attackLabel) labelNode.textContent = attackLabel; } else attackButton.textContent = attackLabel;
       // Side hint: the cuts alternate, so the button lights the side of the NEXT one (none while sheathed — the button says Fight).
-      const nextCut = practice.phase === 'sheathed' ? null : practice.duel.fighters[0].lastMove === 'light_right' ? 'left' : 'right';
+      const nextCut = fightButton ? null : practice.duel.fighters[0].lastMove === 'light_right' ? 'left' : 'right';
       if ((attackButton.dataset.next ?? null) !== nextCut) { if (nextCut) attackButton.dataset.next = nextCut; else delete attackButton.dataset.next; }
-      attackButton.dataset.mobile = practice.phase === 'sheathed' ? 'Fight' : 'Slash';
+      attackButton.dataset.mobile = fightButton ? 'Fight' : 'Slash';
       attackButton.setAttribute('aria-label', attackLabel);
       thrustButton.hidden = !practice.health || !practice.playerHealth || practice.phase === 'sheathed';
       thrustButton.setAttribute('aria-disabled', String(!controlsReady || !accepts(practice, 'thrust')));

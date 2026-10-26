@@ -25,5 +25,9 @@
     "about": "Dom 2026-10-26 after playing: 'the skull crack is good, but it's a bit slowed down ... maybe 25% faster. The whirlwind speed is fine.' The player's SKULL CRACK (SPECIAL 1, skill cleave) runs at `scale` of its V1 ticks, each rounded to the nearest tick (src/fight/special-pace.ts): committed windup 32 -> 24 (sandbox specialMeleeWindup), no-attack recovery after the strike 45 -> 34 (rules special.recovery), the clip's raise and return read over 120 -> 90 and 45 -> 34 so the Special_SkullCrack clip plays the same span 4/3 faster, the start whoosh 280 -> 210 ms. Damage, reach, cooldown and the cast pushback are unchanged. The Whirlwind (SPECIAL 2) and every opponent special keep V1's timing. ?skull=v1 = today's timing.",
     "skill": "cleave",
     "scale": 0.75
+  },
+  "start": {
+    "about": "Dom 2026-10-26 ('remove the start button… The game just starts'): no Fight press. On the first tick the fight runs (art in), the driver gives a sheathed hero V1's draw press itself (src/auto-start.ts); the sim and its 42-tick draw are V1's, the opponent engages when the draw ends, and a Rematch starts the same way. The STRIKE button is the light attack from the first frame. ?start=v1 = V1's Fight button (the first press draws).",
+    "auto": true
   }
 }

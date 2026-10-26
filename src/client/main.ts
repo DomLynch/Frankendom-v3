@@ -36,6 +36,7 @@ import { gfxOn } from '../fight/gfx-flag.ts';
 import { bareName, resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
+import { autoStartOn, startAction } from '../auto-start.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
@@ -84,6 +85,9 @@ const paused = () => !assetsReady || graphicsLost || document.hidden;   // :823 
 if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
 // Legs keep walking under a held guard (data/fight.json guardWalk); ?guard=v1 keeps V1's whole-body Guard. Set before the rigs are built.
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
+// The fight starts by itself (data/fight.json start, src/auto-start.ts): no Fight press, the driver draws for him on the first running
+// tick, at load and after every Rematch. ?start=v1 keeps V1's Fight button (the first press draws).
+const autoStart = autoStartOn(search, FIGHT.start.auto);
 
 // :1278 the scene: V1's rigs, camera, effects and finishers; the arena slot holds V2's stage (src/arena-stage.ts via stubs.ts)
 const gfxPost = gfxOn(search, FIGHT.gfx) ? () => import('../fight/gfx-lift.ts') : undefined;
@@ -131,7 +135,7 @@ function rematch() {
 element('reset-button').addEventListener('click', rematch);
 
 function updateHud() {   // :684, the career fight's view
-  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false });
+  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart });
   const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled;
   document.documentElement.classList.toggle('endgame-fade', !!phase && (hushed || phase.touring));
   document.documentElement.classList.toggle('endgame-hush', !!phase && hushed);
@@ -166,7 +170,8 @@ function frame(now: number) {
       previous = state;
       const intent = controls.intent();
       // :1526 match.step: the live intent, quantized as the recorder stores it, stepped against the warden's profile at his level
-      practice = stepPractice(practice, quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: intent.action, guard: intent.guard,
+      // the fight starts by itself: a sheathed hero with no press of his own steps with V1's draw press (src/auto-start.ts)
+      practice = stepPractice(practice, quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart, practice, intent.action), guard: intent.guard,
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel }), aiProfile);
       frameEvents.push(...practice.events);
       // :1552 the death's sound follows the renderer's own finisher pick
