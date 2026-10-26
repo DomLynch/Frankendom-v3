@@ -6,7 +6,7 @@ import { POISE_LADDER_ON } from './poise-era.ts';
 import { CONE_ON } from './cone-era.ts';
 import { breathTicks, coneOf, inCone, pulseDamage } from './cone-rules.ts';
 import { LADDER, flinchTicks, poiseTier } from './poise-ladder.ts';
-import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, type Direction, type GuardProfile, type Material, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
+import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, isDirectionalHeavy, isStabMove, type Direction, type GuardProfile, type Material, type MoveDef, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
 import { poolsOf, type PoolValues } from './pools.ts';
@@ -222,6 +222,12 @@ export const timing = (f: Fighter): Timing => { let t = baseTiming(f); const c =
 const isLight = (action: Action | null): boolean => action === 'light' || action === 'light_left' || action === 'light_right';
 /** A heavy press: V1's 'heavy', or a V3 directional heavy (the three move-defs.json `directional` ids), which every heavy rule treats alike. */
 export const isHeavy = (action: Action | null): boolean => action === 'heavy' || action === 'heavy_right' || action === 'heavy_left' || action === 'heavy_thrust';
+/** The heavy blow a shaft guard (heavyBreaks) cannot hold and a heavy-stopping guard (the scutum) braces for. V1 keyed it on direction 'overhead', which in V1 is exactly
+ *  the heavy class (heavy_overhead, heavy_riposte, heavy_counter, critical; plus the Cleave skill): the intent is the heavy's weight ("a shaft has no blade to catch it on"),
+ *  not where it comes from, so V3's directional heavies (side cuts and the heavy stab) count too. V1 never makes one, so no V1 fight changes. */
+export const heavyBlow = (def: Pick<MoveDef, 'id' | 'direction'>): boolean => def.direction === 'overhead' || isDirectionalHeavy(def.id);
+/** Would this blow break the guard, before a heavy-stopping guard (stopsHeavy) is asked? The hit resolution and the AI's read share it. */
+export const guardBreaker = (g: GuardProfile, def: Pick<MoveDef, 'id' | 'direction' | 'breaksGuard'>, charged: boolean): boolean => def.breaksGuard || charged || (g.heavyBreaks && heavyBlow(def));
 const baseGuard = (f: Fighter, R: typeof RULES): GuardProfile => ({ costScale: 1, arc: R.guardArc, window: R.parry, recovery: R.parryRecovery, commits: false, stopsHeavy: false, heavyBreaks: false, wide: false, postureDecay: 1, ...f.guardProfile });
 // A stance never moves the parry window (v52, stance-era.ts: timing is sacred). Only while a record BELOW v52 replays does the old Defensive window (a quarter longer, stance.ts LEGACY) apply.
 export const guardOf = (f: Fighter, R: typeof RULES = RULES): GuardProfile => { const g = baseGuard(f, R); return f.stance && !STANCE_ROWS_ON ? { ...g, window: Math.round(stanced(f, 'window', g.window)) } : g; };
@@ -546,7 +552,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         : bladeImpact(a.rig, a.weapon, pathId, a.age - 1, a.age, before[i].body, a.body, before[j].body, d.body, d.scale);
       // A miss is reported once, as the window closes. A thrust that meets nothing overextends: its clock hangs at full extension for `whiff` ticks
       // (the window-closing tick repeats while stalled, so the report is keyed on the stall not having started).
-      if (!location && a.age === t.windup + t.active - 1 && before[i].stall === 0) { events.push({ tick, type: 'AttackMissed', actor: i, move: a.move }); if (a.move === 'thrust') A.stall = R.stopHit.whiff; }
+      if (!location && a.age === t.windup + t.active - 1 && before[i].stall === 0) { events.push({ tick, type: 'AttackMissed', actor: i, move: a.move }); if (isStabMove(a.move)) A.stall = R.stopHit.whiff; }   // the thrust or the heavy stab
     } else {
       if (a.age !== t.windup) continue;
       if (distance(a.body, d.body) <= def.reach && Math.abs(wrapAngle(aim(a.body, d.body) - a.body.heading)) < R.kickArc) location = 'torso';
@@ -561,7 +567,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     // A Trickster's beating swing (it began inside the beat after his own feint) ignores a PASSIVELY held guard: one past its parry window and the perfect-block ticks. A timed parry, a perfect block and a
     // guard that has not yet come up still answer it, which is what a Defensive stance's wider window is for. Only a stance-carrying fighter ever has `beat`.
     const beaten = !!a.beat && guarding && d.age >= g.window + R.perfectBlock;
-    const breaks = (def.breaksGuard || charged || (g.heavyBreaks && def.direction === 'overhead')) && !g.stopsHeavy, blockCost = stanced(d, 'block', perked(d, 'guard', def.staminaDamage * g.costScale));
+    const breaks = guardBreaker(g, def, charged) && !g.stopsHeavy, blockCost = stanced(d, 'block', perked(d, 'guard', def.staminaDamage * g.costScale));
     const stagger = (ticks: number) => {
       const wall = walledHit ? stunned(D, 'wallSlam', R.wall.stagger) : 0;
       D.phase = D.health ? 'hurt' : 'dead'; D.age = 0; D.stun = D.health ? ticks + wall + (D.exhausted && (def.charges || a.move === 'kick') ? stunned(D, 'exhaustedHeavy', R.exhaustedStun) : 0) : R.death; D.buffer = null; D.counterWindow = 0;
@@ -619,7 +625,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         // The thrust is the stop-hit: into a swing, or into an opponent walking onto the point, it lands harder than a cut's counter-hit.
         // Walking onto the point: since the thrust started, the target has come at least stopHit.walk closer to where it started from (its own steps; the lunge does not count).
         const advancing = (d.phase === 'ready' || d.phase === 'guard') && a.attackFrom !== null && distance(d.body, { ...d.body, x: a.attackFrom.x, z: a.attackFrom.z }) < a.attackFrom.gap - R.stopHit.walk;
-        const stop = a.move === 'thrust' && (counter || advancing);
+        const stop = isStabMove(a.move) && (counter || advancing);   // the thrust or the heavy stab
         const rear = Math.abs(wrapAngle(aim(d.body, a.body) - d.body.heading)) > Math.PI - R.rear.arc / ARC_HALF;
         const side = !!FLANK_DAMAGE && d.phase === 'guard' && !facing && !rear;   // sandbox-mech flank: a side blow on a raised guard
         const plain = Math.round(damage * (stop ? R.stopHit.damage : counter ? R.counter.damage : 1) * (rear ? (d.phase === 'hurt' ? R.rear.downed : R.rear.damage) : 1) * (side ? FLANK_DAMAGE / 1000 : 1)), stun = Math.round(baseStun * (stop ? R.stopHit.stagger : counter ? R.counter.stagger : 1) * (rear ? R.rear.stagger : 1));

@@ -5,13 +5,13 @@
    "config": "career",
    "seed": 731,
    "script": "directional-heavies",
-   "ticks": 2049,
-   "hash": "1e9eb274c7b69f0b",
+   "ticks": 1898,
+   "hash": "9bf35ba33f46e2a3",
    "outcome": "killed",
    "directional": {
     "heavy_right": 2,
-    "heavy_left": 2,
-    "heavy_thrust": 4
+    "heavy_left": 3,
+    "heavy_thrust": 3
    }
   },
   {
@@ -19,7 +19,7 @@
    "seed": 731,
    "script": "directional-random",
    "ticks": 1679,
-   "hash": "f84421b1d2af0579",
+   "hash": "0e7915cd11b31b5d",
    "outcome": "killed",
    "directional": {
     "heavy_right": 1,
@@ -31,21 +31,21 @@
    "config": "page-first",
    "seed": 731,
    "script": "directional-heavies",
-   "ticks": 1248,
-   "hash": "58f3c3de8ac69494",
+   "ticks": 1417,
+   "hash": "f55afdf3bf41fad7",
    "outcome": "died",
    "directional": {
-    "heavy_right": 3,
-    "heavy_left": 1,
-    "heavy_thrust": 2
+    "heavy_right": 1,
+    "heavy_left": 3,
+    "heavy_thrust": 3
    }
   },
   {
    "config": "page-first",
    "seed": 731,
    "script": "directional-random",
-   "ticks": 1544,
-   "hash": "fa714f910bbdc79a",
+   "ticks": 1415,
+   "hash": "2dae1dd197ac922a",
    "outcome": "died",
    "directional": {
     "heavy_right": 1,
@@ -57,13 +57,13 @@
    "config": "page-first-novice",
    "seed": 731,
    "script": "directional-heavies",
-   "ticks": 1703,
-   "hash": "4c27bd4fb719a03c",
+   "ticks": 1709,
+   "hash": "8f56fe66a1b11635",
    "outcome": "died",
    "directional": {
-    "heavy_right": 2,
-    "heavy_left": 1,
-    "heavy_thrust": 5
+    "heavy_right": 3,
+    "heavy_left": 3,
+    "heavy_thrust": 1
    }
   },
   {
@@ -71,7 +71,7 @@
    "seed": 731,
    "script": "directional-random",
    "ticks": 1904,
-   "hash": "c48509eda457c2ee",
+   "hash": "2896d9f68c17b7c5",
    "outcome": "died",
    "directional": {
     "heavy_right": 1,
@@ -83,11 +83,11 @@
    "config": "base",
    "seed": 731,
    "script": "directional-heavies",
-   "ticks": 1449,
-   "hash": "ba1ef574e3b6e51a",
+   "ticks": 1672,
+   "hash": "a1e25937f6a498dd",
    "outcome": "killed",
    "directional": {
-    "heavy_right": 2,
+    "heavy_right": 3,
     "heavy_left": 2,
     "heavy_thrust": 3
    }
@@ -97,7 +97,7 @@
    "seed": 731,
    "script": "directional-random",
    "ticks": 3600,
-   "hash": "5d3b1565bde73166",
+   "hash": "b2fedf188806c0b7",
    "outcome": "none",
    "directional": {
     "heavy_right": 1,
@@ -109,13 +109,13 @@
    "config": "base",
    "seed": 828,
    "script": "directional-heavies",
-   "ticks": 1558,
-   "hash": "b7476fb66fe37bd0",
+   "ticks": 2222,
+   "hash": "47be88e2c3361b7f",
    "outcome": "killed",
    "directional": {
-    "heavy_right": 2,
-    "heavy_left": 1,
-    "heavy_thrust": 4
+    "heavy_right": 3,
+    "heavy_left": 2,
+    "heavy_thrust": 5
    }
   },
   {
@@ -123,7 +123,7 @@
    "seed": 828,
    "script": "directional-random",
    "ticks": 1964,
-   "hash": "669fb67bd098ecd5",
+   "hash": "da11ad130e938080",
    "outcome": "died",
    "directional": {
     "heavy_right": 0,
@@ -135,13 +135,13 @@
    "config": "base",
    "seed": 4242,
    "script": "directional-heavies",
-   "ticks": 1449,
-   "hash": "5c3979231573b5b0",
+   "ticks": 1672,
+   "hash": "4c4d59169758d1d7",
    "outcome": "killed",
    "directional": {
-    "heavy_right": 2,
-    "heavy_left": 1,
-    "heavy_thrust": 4
+    "heavy_right": 3,
+    "heavy_left": 3,
+    "heavy_thrust": 2
    }
   },
   {
@@ -149,7 +149,7 @@
    "seed": 4242,
    "script": "directional-random",
    "ticks": 2786,
-   "hash": "10dbf7ea63ae483f",
+   "hash": "41f769776693ea39",
    "outcome": "died",
    "directional": {
     "heavy_right": 0,

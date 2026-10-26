@@ -32,6 +32,19 @@ export const DIRECTIONAL_HEAVIES: readonly DirectionalHeavy[] = (DIRECTIONAL_TAB
   return d;
 });
 function chainPathOf(d: DirectionalHeavy): PathId { return `${d.id}_chain` as PathId; }   // a directional heavy's chained path: `<id>_chain`, the base moves' own naming
+// The one place a rule asks what a directional heavy IS (review of PR #10): its weight is its `from` move's (the overhead heavy), its shape is its `blade`'s (a cut that side,
+// or the stab). A rule keyed on the heavy reads heavyOf, a rule keyed on the stab or a side cut reads strikeOf; every other move answers itself, so no V1 move changes.
+const DIRECTIONAL_BY_ID: ReadonlyMap<string, DirectionalHeavy> = new Map(DIRECTIONAL_HEAVIES.map((d) => [d.id, d]));
+export const DIRECTIONAL_HEAVY_IDS: readonly MoveId[] = DIRECTIONAL_HEAVIES.map((d) => d.id);
+export const isDirectionalHeavy = (move: string | null | undefined): boolean => move != null && DIRECTIONAL_BY_ID.has(move);
+/** The move whose weight `move` carries: a directional heavy's `from` (heavy_overhead), any other move itself. */
+export const heavyOf = (move: string | null | undefined): string | null => (move == null ? null : DIRECTIONAL_BY_ID.get(move)?.from ?? move);
+/** The blow's shape: a directional heavy's `blade` (light_right / light_left / thrust), any other move itself. */
+export const strikeOf = (move: string | null | undefined): string | null => (move == null ? null : DIRECTIONAL_BY_ID.get(move)?.blade ?? move);
+/** The overhead heavy or one of its directional heavies (the player's HEAVY press, whichever way it goes). */
+export const isHeavyMove = (move: string | null | undefined): boolean => heavyOf(move) === 'heavy_overhead';
+/** The stab: the thrust or the heavy stab (heavy_thrust). Not the riposte or a thrust-direction skill: those keep their own rules. */
+export const isStabMove = (move: string | null | undefined): boolean => strikeOf(move) === 'thrust';
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 /** One weapon's move and path tables with its directional heavies resolved; the SAME objects back when they already hold exactly these rows.
  *  A directional heavy chains exactly as its `from` move: the same chain row, the from move's chained timing (wind-up scaled like the plain one) on its own

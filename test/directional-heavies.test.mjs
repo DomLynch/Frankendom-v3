@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DIRECTIONAL_HEAVIES } from '../src/fight/move-rows.ts';
 import { WEAPONS, WEAPONS86, OPPONENTS, weaponOf } from '../src/fight/moves.ts';
-import { initialDuel, stepDuel, idleIntent, legal } from '../src/fight/duel.ts';
+import { initialDuel, stepDuel, idleIntent, legal, guardOf } from '../src/fight/duel.ts';
+import { blowKind } from '../src/fight/sandbox-rules.ts';
 import { bladeAge } from '../src/fight/blade.ts';
 import { heavySlide, DIRECTIONAL_HEAVY, HEAVY_GRACE_MS, HEAVY_HOLD_MS, STAB_SLIDE_PX } from '../src/fight/input.ts';
 
@@ -86,22 +87,30 @@ function exchange(action, guard, before) {
 }
 const outcome = (events) => events.find((e) => ['Hit', 'Blocked', 'Parried', 'GuardBroken', 'AttackMissed'].includes(e.type) && e.move !== 'kick');
 
-test('undefended, each directional heavy lands as hard as the overhead (its borrowed sweep reaches)', () => {
+test('undefended, each directional heavy lands as hard as the overhead (its borrowed sweep reaches); the heavy stab pierces armour as the thrust does', () => {
   const overhead = outcome(exchange('heavy'));
   assert.equal(overhead.type, 'Hit');
   for (const id of IDS) {
     const o = outcome(exchange(id));
     assert.equal(o?.type, 'Hit', id);
     assert.equal(o.move, id);
-    assert.equal(o.damage, overhead.damage, `${id} deals the overhead's damage`);
+    if (id !== 'heavy_thrust') assert.equal(o.damage, overhead.damage, `${id} deals the overhead's damage`);
+    else {   // the overhead's numbers, but a stab: its blow kind is the thrust's (sandbox-rules-defs.json blowKinds), so the warden's armour takes less of it than of the cut
+      assert.equal(blowKind('longsword', id), blowKind('longsword', 'thrust'));
+      assert.ok(o.damage >= overhead.damage, `${id}: ${o.damage} vs the overhead's ${overhead.damage}`);
+    }
   }
 });
 
-test('a raised guard on that side blocks it (the guard mirrors the cut, as for the lights); another side does not', () => {
+test('a raised guard on that side meets it (the guard mirrors the cut, as for the lights); another side does not', () => {
   const blocks = { heavy_right: 'left', heavy_left: 'right', heavy_thrust: null };   // null: the straight guard, the stab's side
+  // The veteran's trident is a shaft guard (heavyBreaks): every heavy breaks it, the directional ones as the overhead does (duel.ts heavyBlow); a blade guard would block.
+  const met = guardOf(initialDuel(OPPONENTS.veteran).fighters[1]).heavyBreaks ? 'GuardBroken' : 'Blocked';
+  assert.equal(met, 'GuardBroken', 'the veteran holds a shaft guard');
+  assert.equal(outcome(exchange('heavy', 'overhead'))?.type, met, 'the overhead into the overhead guard');
   for (const id of IDS) for (const guard of [null, 'left', 'right', 'overhead', 'low']) {
     const o = outcome(exchange(id, guard));
-    assert.equal(o?.type, guard === blocks[id] ? 'Blocked' : 'Hit', `${id} against a ${guard ?? 'straight'} guard`);
+    assert.equal(o?.type, guard === blocks[id] ? met : 'Hit', `${id} against a ${guard ?? 'straight'} guard`);
   }
 });
 

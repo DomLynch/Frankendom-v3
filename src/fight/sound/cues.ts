@@ -2,7 +2,7 @@ import { audioRule } from './audio-rules.ts';
 import { GLANCE_GAIN, GLANCE_RATE, specialSoundOf } from '../sandbox-rules.ts';
 import type { ClarityEvent, CombatEvent } from '../combat.ts';
 import type { Finish } from '../duel.ts';
-import { MOVES, RULES, WEAPON_LOOK, type MoveId, type WeaponId } from '../moves.ts';
+import { DIRECTIONAL_HEAVY_IDS, MOVES, RULES, WEAPON_LOOK, isStabMove, type MoveId, type WeaponId } from '../moves.ts';
 import { finisherRow, selectFinisher, type FinisherId } from '../finishers.ts';
 import { isTemplate } from '../finisher-look.ts';
 import type { FinisherCue } from '../finisher-rows.ts';
@@ -21,7 +21,7 @@ const fromRow = <T extends object>(c: T): T => { if (specialCounting()) specialR
 // Event → cue mapping. Pure data: the simulation's events decide what is heard; gain, room send and pitch spread are per cue.
 // Order matters — the voice limiter serves cues in this order, so impacts come before air.
 export type Cue = { name: CueName; gain: number; room: number; delay?: number; rate?: number; hold?: number };   // hold: seconds a looped cue climbs (feedback.ts)
-const HEAVY = new Set(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'riposte', 'slash_riposte']);
+const HEAVY = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'riposte', 'slash_riposte', ...DIRECTIONAL_HEAVY_IDS]);   // + V3's directional heavies: the heavy's swing and hit
 const cue = (name: CueName, gain: number, room: number, delay?: number, rate?: number): Cue => ({ name, gain, room, ...(delay ? { delay } : {}), ...(rate ? { rate } : {}) });
 // The wall's six lorarii each keep one whip voice: guard 0 the deepest, guard 5 the thinnest, fixed so the same man always
 // sounds like himself over a long fight. An event with no `guard` (a replay written before the tell) plays at rate 1.
@@ -100,7 +100,7 @@ export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation,
       if (gore && sound?.goreAfter) for (const c of sound.goreAfter) impacts.push(play(c));
       if (bone) impacts.push(cue('bone_crack', .5, .12, .65));
       if (!bone && gore && e.move !== 'kick' && deaths.length === 1) {
-        const stab = sound?.stab !== false && (sound?.stab === true || e.move === 'thrust' || e.move === 'riposte' || WEAPON_LOOK[e.weapon ?? presentation?.weapons[e.actor] ?? '']?.stabs === true);
+        const stab = sound?.stab !== false && (sound?.stab === true || isStabMove(e.move) || e.move === 'riposte' || WEAPON_LOOK[e.weapon ?? presentation?.weapons[e.actor] ?? '']?.stabs === true);
         impacts.push(cue(stab ? 'flesh_stab' : 'flesh_cut', .45, .05));
         for (const c of sound?.wound ?? []) impacts.push(play(c));
       }

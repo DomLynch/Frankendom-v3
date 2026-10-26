@@ -1,4 +1,5 @@
 import { MOVES, PATHS, withDirectionalHeavies } from './move-rows.ts';
+export { DIRECTIONAL_HEAVY_IDS, isDirectionalHeavy, heavyOf, strikeOf, isHeavyMove, isStabMove } from './move-rows.ts';   // V3 directional heavies: what a rule keyed on the heavy or the stab reads
 import WEAPON_DEFS from './weapon-defs.json' with { type: 'json' };
 import SKILL_DEFS from './skill-defs.json' with { type: 'json' };
 import { loadSkillDefs } from './skills.ts';

@@ -172,6 +172,10 @@ export function stepPractice(current: Practice, intent: Intent, profile: AiProfi
 export const canStrike = (s: Practice): boolean => legal(s.duel.fighters[0], 'light');
 export const canDefend = (s: Practice): boolean => s.health > 0 && s.playerHealth > 0 && (s.phase === 'ready' || s.phase === 'guard');
 // Controls stay responsive while busy: an action is accepted now, or queued in the last ticks of a committed action.
+/** The HUD button a refused press shakes (hud.ts `refused`): any heavy press (V1's 'heavy' or a V3 directional heavy, duel.ts isHeavy) is the HEAVY button's. */
+export const refusedButton = (action: Action | undefined): 'heavy' | 'thrust' | 'kick' | 'skill' | 'skill2' | 'dodge' | 'guard' | 'attack' =>
+  action !== undefined && isHeavy(action) ? 'heavy' : action === 'thrust' || action === 'kick' || action === 'skill' || action === 'skill2' ? action
+    : action === 'dodge' || action === 'backstep' ? 'dodge' : action === 'parry' ? 'guard' : 'attack';
 export const accepts = (s: Practice, action: Action): boolean => s.health > 0 && s.playerHealth > 0
   && (legal(s.duel.fighters[0], action) || (inBufferWindow(s.duel.fighters[0]) && !(isHeavy(action) && s.phase === 'draw')));
 
