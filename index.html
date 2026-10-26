@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Frankendom V3</title>
+<style>
+  /* the fight is a game surface, not a document: every browser gesture is refused (V1 style.css:1-5) */
+  :root { touch-action: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9db7d6; touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; font: 12px system-ui, sans-serif; }
+  canvas { display: block; position: fixed; inset: 0; width: 100%; height: 100%; }
+  #build { position: fixed; left: 8px; bottom: 4px; color: #ffffffaa; font-size: 9px; pointer-events: none; z-index: 50; }
+</style>
+<!-- three.js as a module, the version V1 ships (RPG-game package.json @ 82a994d15) -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/",
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="build"></div>
+<script type="module" src="./src/client/main.js"></script>
+</body>
+</html>
