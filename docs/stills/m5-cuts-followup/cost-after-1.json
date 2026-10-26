@@ -1,0 +1,134 @@
+{
+  "frames": 1552,
+  "totalMs": 1429.4999999988358,
+  "maxMs": 18.099999999976717,
+  "lastMs": 0.40000000002328306,
+  "ticks": 1884,
+  "state": "frozen",
+  "rig": "106",
+  "measure": "physics/bodies/minotaur-106.measure.json",
+  "byMode": {
+    "alive": {
+      "frames": 1103,
+      "totalMs": 1113.7999999985332,
+      "maxMs": 9.599999999976717
+    },
+    "dead": {
+      "frames": 449,
+      "totalMs": 315.7000000003027,
+      "maxMs": 18.099999999976717
+    }
+  },
+  "cuts": [
+    {
+      "type": "cut",
+      "unit": "head",
+      "gear": [],
+      "source": "kill"
+    },
+    {
+      "type": "cut",
+      "unit": "arm_left",
+      "gear": [],
+      "source": "tap"
+    },
+    {
+      "type": "cut",
+      "unit": "torso_waist",
+      "gear": [],
+      "source": "tap"
+    },
+    {
+      "type": "cut",
+      "unit": "leg_left",
+      "gear": [],
+      "source": "tap"
+    }
+  ],
+  "cutSteps": [
+    {
+      "unit": "head",
+      "cut": 0.2999999999301508,
+      "carve": 14.20000000006985,
+      "caps": 0.19999999995343387,
+      "props": 0,
+      "total": 14.699999999953434
+    },
+    {
+      "unit": "arm_left",
+      "cut": 0.09999999997671694,
+      "carve": 7.900000000023283,
+      "caps": 0,
+      "props": 0,
+      "total": 8.099999999976717
+    },
+    {
+      "unit": "torso_waist",
+      "cut": 0.09999999997671694,
+      "carve": 15,
+      "caps": 0,
+      "props": 0,
+      "total": 15.20000000006985
+    },
+    {
+      "unit": "leg_left",
+      "cut": 0.09999999997671694,
+      "carve": 2,
+      "caps": 0.09999999997671694,
+      "props": 0,
+      "total": 2.299999999930151
+    }
+  ],
+  "lastTap": "up 0px 0ms mode dead rd frozen | hit thigh_twist_02_l",
+  "pieces": [
+    "head:MeshCut:6226",
+    "head:Mesh_1Cut:4922",
+    "arm_left:MeshCut:6802",
+    "arm_left:Mesh_1Cut:179",
+    "torso_waist:MeshCut:9081",
+    "torso_waist:Mesh_1Cut:1951",
+    "leg_left:MeshCut:3527",
+    "leg_left:Mesh_1Cut:2482"
+  ],
+  "finish": {
+    "victim": 1,
+    "location": "torso",
+    "move": "kick",
+    "heading": -1.7594818526350886
+  },
+  "cutFrames": [
+    {
+      "unit": "head",
+      "source": "kill",
+      "callbackMs": 57.6,
+      "gapToNextMs": 62.4,
+      "prevMs": 20.4
+    },
+    {
+      "unit": "arm_left",
+      "source": "tap",
+      "callbackMs": 24.6,
+      "gapToNextMs": 26.8,
+      "prevMs": 3.5
+    },
+    {
+      "unit": "torso_waist",
+      "source": "tap",
+      "callbackMs": 30.6,
+      "gapToNextMs": 34.2,
+      "prevMs": 16.5
+    },
+    {
+      "unit": "leg_left",
+      "source": "tap",
+      "callbackMs": 20.2,
+      "gapToNextMs": 23,
+      "prevMs": 13.6
+    }
+  ],
+  "frameStats": {
+    "frames": 1765,
+    "medianMs": 19.400000000023283,
+    "maxMs": 177.40000000002328
+  }
+}
