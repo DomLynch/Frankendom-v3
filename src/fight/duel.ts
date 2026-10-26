@@ -16,6 +16,7 @@ import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from '
 import { bandFactor } from './bands.ts';
 import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
 import { foeSpecialFirst, specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
+import { SPECIAL_TERMS, termCooldown, termed, termStamina } from './special-terms.ts';   // V3: the hero's specials every 9 s, no stamina; off in a headless run, so Gate 0 steps V1's numbers
 import { paceTicks } from './special-pace.ts';   // V3: the player's paced special (the Skull Crack ×0.75); off in a headless run, so Gate 0 steps V1's ticks
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
 import { SHARED_COOLDOWN } from './spell-rows.ts';
@@ -295,9 +296,9 @@ export function legal(f: Fighter, action: Action): boolean {
   if (isHeavy(action) || action === 'thrust') return (standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina;
   if (action === 'kick') return standing && f.stamina >= movesOf(f).kick.stamina;
   if (action === 'skill' && f.specialShare !== undefined) return !f.skillCooldown && (standing || stepTail) && !healSpent(f, f.spell) && (!f.spell || (paysManaFor(f.spell.id) ? (f.mana ?? 0) >= manaCost(f.spell.cost) : f.stamina >= f.spell.cost));   // a special: no stamina, any class; a SPELL costs its stamina and is refused short of it
-  if (action === 'skill2' && f.skill2 !== undefined) return !f.skillCooldown2 && (standing || stepTail) && f.stamina >= movesOf(f)[SKILL_MOVE[f.skill2]!].stamina;   // slot b as a melee special: its own cooldown, the move row's stamina (the shared bar), no Special Moves needed
+  if (action === 'skill2' && f.skill2 !== undefined) return !f.skillCooldown2 && (standing || stepTail) && f.stamina >= termStamina(f, movesOf(f)[SKILL_MOVE[f.skill2]!].stamina);   // V3 special-terms.ts: the hero's gate is the row's (0) while on   // slot b as a melee special: its own cooldown, the move row's stamina (the shared bar), no Special Moves needed
   if (action === 'skill2') return f.specialShare !== undefined && !!f.spell2 && !f.skillCooldown2 && (standing || stepTail) && !healSpent(f, f.spell2) && (paysManaFor(f.spell2.id) ? (f.mana ?? 0) >= manaCost(f.spell2.cost) : f.stamina >= f.spell2.cost);   // slot b: its own cooldown, the shared stamina bar; an empty slot is inert
-  if (action === 'skill') return f.skill !== null && !f.skillCooldown && (standing || stepTail) && f.stamina >= movesOf(f)[SKILL_MOVE[f.skill]!].stamina;   // as a heavy, plus an equipped skill that has cooled
+  if (action === 'skill') return f.skill !== null && !f.skillCooldown && (standing || stepTail) && f.stamina >= termStamina(f, movesOf(f)[SKILL_MOVE[f.skill]!].stamina);   // as a heavy, plus an equipped skill that has cooled
   if (action === 'dodge') return (standing && f.stamina >= RULES.rollCost) || (stepping && f.stamina >= RULES.rollCost - RULES.backstep.cost);   // holding the control turns the step into a roll
   if (action === 'backstep') return standing && f.stamina >= RULES.backstep.cost;
   return (f.phase === 'ready' && !f.exposed) || feintable(f);
@@ -396,9 +397,11 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         const id = chooseMove(me, action!), def = movesOf(me)[id];
         // Chained timing: a listed follow-up inside the chain window, or a light out of an evade (dodge-attack).
         const follows = me.chain > 0 && me.lastMove !== null && !!movesOf(me)[me.lastMove].chain?.follow.includes(id);
-        beginAttack(next, id, !!def.chained && (follows || (isLight(action) && (me.evaded > 0 || me.phase === 'backstep'))), foe.body); spend(i, missilePaysNoStamina(me.weapon) ? 0 : perked(me, 'thrift', def.stamina));
-        if (action === 'skill2') next.skillCooldown2 = R.skillCooldown;   // slot b as a melee special: its own cooldown, spent at commitment like slot a
-        if (action === 'skill') next.skillCooldown = R.skillCooldown;   // spent at commitment, with the stamina: a whiff, a block or a parry all spend it
+        beginAttack(next, id, !!def.chained && (follows || (isLight(action) && (me.evaded > 0 || me.phase === 'backstep'))), foe.body);
+        const termedSkill = (action === 'skill' || action === 'skill2') && termed(me);   // V3 special-terms.ts: the hero's special pays the row's stamina (0: nothing spent, the regen delay untouched)
+        if (!termedSkill) spend(i, missilePaysNoStamina(me.weapon) ? 0 : perked(me, 'thrift', def.stamina)); else if (SPECIAL_TERMS!.stamina) spend(i, SPECIAL_TERMS!.stamina);
+        if (action === 'skill2') next.skillCooldown2 = termCooldown(me, R.skillCooldown);   // slot b as a melee special: its own cooldown, spent at commitment like slot a
+        if (action === 'skill') next.skillCooldown = termCooldown(me, R.skillCooldown);   // spent at commitment, with the stamina: a whiff, a block or a parry all spend it
         events.push({ tick, type: 'AttackStarted', actor: i, move: id, direction: def.direction });   // the side the blow comes from: what a guard must mirror (directional guard; the browser gate reads it)
       }
       face(R.turnStart);
@@ -660,7 +663,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const j = (1 - i) as Side, A = fighters[i], D = fighters[j];
     if (!releasing[i]) continue;
     const spell = castOf(A);   // slot a or b: the cooldown below is that slot's own (spell-slot-defs sharedCooldown 1 = both)
-    A.special = 0; delete A.castHurt; delete A.castPush; coolSlot(A, specialCooldown(R.special.cooldown)); A.specialRecover = paceTicks(A, R.special.recovery);   // re-armed and held back from attacking, counted from the release
+    A.special = 0; delete A.castHurt; delete A.castPush; coolSlot(A, spell ? specialCooldown(R.special.cooldown) : termCooldown(A, specialCooldown(R.special.cooldown))); A.specialRecover = paceTicks(A, R.special.recovery);   // re-armed and held back from attacking, counted from the release
     const bowRow = A.bowSpecial && !spell ? bowSpecialOf(A.weapon, A.bowSpecial, Infinity, undefined) : undefined;   // A.bowSpecial stays set through the recovery (the renderer plays the bow's loose clip off it); the next cast sets or clears it
     if (!standing[j]) continue;
     if (bowRow) {   // sandbox bowSpecial: the special's arrows fly through the one missile model (a roll dodges them all, a guard blocks the lanes it covers)
