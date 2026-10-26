@@ -1,0 +1,22 @@
+{
+  "id": "directional-random",
+  "about": "V3 only (no V1 reference). A minute of seeded random play as 07-random-mix, with the three directional heavies in the action draw beside V1's heavy. Every number is here, none in code.",
+  "random": {
+    "seed": 20261026,
+    "ticks": 3600,
+    "prelude": [ { "ticks": 1, "action": "light" }, { "ticks": 45 } ],
+    "segmentTicks": [4, 40],
+    "moveChance": 0.7,
+    "runChance": 0.15,
+    "actionChance": 0.55,
+    "actions": { "light": 6, "light_left": 2, "light_right": 2, "heavy": 2, "heavy_right": 2, "heavy_left": 2, "heavy_thrust": 2, "thrust": 2, "kick": 2, "dodge": 2, "backstep": 1, "parry": 2, "skill": 1, "skill2": 1 },
+    "repeatChance": 0.3,
+    "every": [5, 20],
+    "guardChance": 0.2,
+    "directionChance": 0.5,
+    "directions": ["left", "right", "overhead", "thrust", "low"],
+    "heldChance": 0.25,
+    "unlockChance": 0.1,
+    "cancelChance": 0.05
+  }
+}

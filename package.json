@@ -10,7 +10,8 @@
     "check:stubs": "node scripts/check-stubs.mjs",
     "test": "node --test \"test/**/*.test.mjs\"",
     "gate0": "node --test test/gate0/gate0.test.mjs",
-    "gate0:table": "node scripts/gate0-table.mjs"
+    "gate0:table": "node scripts/gate0-table.mjs",
+    "gate0:v3": "node scripts/gate0-v3-golden.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

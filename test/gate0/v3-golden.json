@@ -1,0 +1,213 @@
+{
+ "about": "Gate 0 V3-only rows (test/gate0/v3-scripts; scripts/gate0-v3-golden.mjs --write re-pins). V1 has no reference for these inputs (the directional heavies are V3 only); each row is this tree run twice in independent module copies, hash = running sha256 of duel + ai + events every tick (first 16 hex). directional = the player's directional heavies started.",
+ "rows": [
+  {
+   "config": "career",
+   "seed": 731,
+   "script": "directional-heavies",
+   "ticks": 1898,
+   "hash": "9bf35ba33f46e2a3",
+   "outcome": "killed",
+   "directional": {
+    "heavy_right": 2,
+    "heavy_left": 3,
+    "heavy_thrust": 3
+   }
+  },
+  {
+   "config": "career",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 1679,
+   "hash": "0e7915cd11b31b5d",
+   "outcome": "killed",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 1,
+    "heavy_thrust": 0
+   }
+  },
+  {
+   "config": "page-first",
+   "seed": 731,
+   "script": "directional-heavies",
+   "ticks": 1417,
+   "hash": "f55afdf3bf41fad7",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 3,
+    "heavy_thrust": 3
+   }
+  },
+  {
+   "config": "page-first",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 1415,
+   "hash": "2dae1dd197ac922a",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 0,
+    "heavy_thrust": 0
+   }
+  },
+  {
+   "config": "page-first-novice",
+   "seed": 731,
+   "script": "directional-heavies",
+   "ticks": 1709,
+   "hash": "8f56fe66a1b11635",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 3,
+    "heavy_left": 3,
+    "heavy_thrust": 1
+   }
+  },
+  {
+   "config": "page-first-novice",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 1904,
+   "hash": "2896d9f68c17b7c5",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 1,
+    "heavy_thrust": 0
+   }
+  },
+  {
+   "config": "page-first-clips",
+   "seed": 731,
+   "script": "directional-heavies",
+   "ticks": 1709,
+   "hash": "8f56fe66a1b11635",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 3,
+    "heavy_left": 3,
+    "heavy_thrust": 1
+   }
+  },
+  {
+   "config": "page-first-clips",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 1904,
+   "hash": "2896d9f68c17b7c5",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 1,
+    "heavy_thrust": 0
+   }
+  },
+  {
+   "config": "page-reach-clip",
+   "seed": 731,
+   "script": "directional-heavies",
+   "ticks": 1763,
+   "hash": "4b58085a62178444",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 2,
+    "heavy_left": 4,
+    "heavy_thrust": 2
+   }
+  },
+  {
+   "config": "page-reach-clip",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 2209,
+   "hash": "da162596213026d2",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 2,
+    "heavy_thrust": 0
+   }
+  },
+  {
+   "config": "base",
+   "seed": 731,
+   "script": "directional-heavies",
+   "ticks": 1672,
+   "hash": "a1e25937f6a498dd",
+   "outcome": "killed",
+   "directional": {
+    "heavy_right": 3,
+    "heavy_left": 2,
+    "heavy_thrust": 3
+   }
+  },
+  {
+   "config": "base",
+   "seed": 731,
+   "script": "directional-random",
+   "ticks": 3600,
+   "hash": "b2fedf188806c0b7",
+   "outcome": "none",
+   "directional": {
+    "heavy_right": 1,
+    "heavy_left": 0,
+    "heavy_thrust": 1
+   }
+  },
+  {
+   "config": "base",
+   "seed": 828,
+   "script": "directional-heavies",
+   "ticks": 2222,
+   "hash": "47be88e2c3361b7f",
+   "outcome": "killed",
+   "directional": {
+    "heavy_right": 3,
+    "heavy_left": 2,
+    "heavy_thrust": 5
+   }
+  },
+  {
+   "config": "base",
+   "seed": 828,
+   "script": "directional-random",
+   "ticks": 1964,
+   "hash": "da11ad130e938080",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 0,
+    "heavy_left": 3,
+    "heavy_thrust": 0
+   }
+  },
+  {
+   "config": "base",
+   "seed": 4242,
+   "script": "directional-heavies",
+   "ticks": 1672,
+   "hash": "4c4d59169758d1d7",
+   "outcome": "killed",
+   "directional": {
+    "heavy_right": 3,
+    "heavy_left": 3,
+    "heavy_thrust": 2
+   }
+  },
+  {
+   "config": "base",
+   "seed": 4242,
+   "script": "directional-random",
+   "ticks": 2786,
+   "hash": "41f769776693ea39",
+   "outcome": "died",
+   "directional": {
+    "heavy_right": 0,
+    "heavy_left": 3,
+    "heavy_thrust": 0
+   }
+  }
+ ]
+}
