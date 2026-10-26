@@ -40,10 +40,11 @@ test('each rig\'s measure row is the body V3 draws on that rig: its role joints 
   }
 });
 
-test('?ragdoll=always skips the finisher (the finisher row); anything else keeps the rotation', () => {
-  assert.equal(finisherModeFor(ROWS, ''), 'keep');
+test('the ragdoll is every death by default (Dom 2026-10-26); ?ragdoll=finishers brings the finisher rotation back', () => {
+  assert.equal(finisherModeFor(ROWS, ''), 'skip');
   assert.equal(finisherModeFor(ROWS, '?ragdoll=always'), 'skip');
-  assert.equal(finisherModeFor(ROWS, '?ragdoll=sometimes'), 'keep');
+  assert.equal(finisherModeFor(ROWS, '?ragdoll=finishers'), 'keep');
+  assert.equal(finisherModeFor(ROWS, '?ragdoll=sometimes'), 'skip');
 });
 
 test('every ragdoll row names a body the opponent is drawn in, the package\'s 20 parts, and bones that exist in that body on each rig (through data/rig.json)', async () => {

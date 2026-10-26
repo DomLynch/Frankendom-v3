@@ -45,5 +45,5 @@
     "lift": 6,
     "blendInS": 0
   },
-  "finisher": { "default": "keep", "query": "ragdoll", "values": { "always": "skip" } }
+  "finisher": { "default": "skip", "query": "ragdoll", "values": { "always": "skip", "finishers": "keep" } }
 }
