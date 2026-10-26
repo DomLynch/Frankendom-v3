@@ -11,7 +11,7 @@ import { foeBodyFile, chooseFoeBody } from '../src/fight/foe-body.ts';
 
 const ROWS = JSON.parse(readFileSync(new URL('../data/physics.json', import.meta.url), 'utf8'));
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
-const measure = (row) => JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${row.measure['65'].split('/').pop()}`, import.meta.url), 'utf8'));
+const measure = (row, rig = '65') => JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${row.measure[rig].split('/').pop()}`, import.meta.url), 'utf8'));
 const glbNodes = (file) => { const b = readFileSync(new URL(`../src/assets/${file}.glb`, import.meta.url)); return new Set(JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString()).nodes.map((n) => n.name)); };
 
 test('on by default for the fight the page plays, off under ?physics=v1 and for a foe without a row', () => {
@@ -20,6 +20,24 @@ test('on by default for the fight the page plays, off under ?physics=v1 and for 
   assert.equal(ragdollRowFor(ROWS, '?physics=v1', id), null);
   assert.equal(ragdollRowFor(ROWS, '', fightOpponent(FIGHT, '?pitborn=v1')), null);   // the Centurion's fight keeps today's death
   assert.equal(ragdollRowFor({ ...ROWS, on: false }, '', id), null);
+});
+
+test('each rig\'s measure row is the body V3 draws on that rig: its role joints are that GLB\'s bind pose (feet on the floor)', async () => {
+  const THREE = await import('three'), RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
+  const MAP65 = { Hips: 'pelvis', Head: 'Head', LeftHand: 'hand_l', RightHand: 'hand_r', LeftFoot: 'foot_l', RightToeBase: 'ball_r' };
+  for (const row of ROWS.opponents) for (const rig of Object.keys(row.measure)) {
+    const file = rig === '106' ? RIG.files[row.body] : row.body, b = readFileSync(new URL(`../src/assets/${file}.glb`, import.meta.url));
+    const gl = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString()), parent = {};
+    gl.nodes.forEach((n, i) => (n.children || []).forEach((c) => { parent[c] = i; }));
+    const local = (n) => n.matrix ? new THREE.Matrix4().fromArray(n.matrix) : new THREE.Matrix4().compose(new THREE.Vector3(...(n.translation || [0, 0, 0])), new THREE.Quaternion(...(n.rotation || [0, 0, 0, 1])), new THREE.Vector3(...(n.scale || [1, 1, 1])));
+    const world = (i) => (parent[i] === undefined ? local(gl.nodes[i]) : world(parent[i]).multiply(local(gl.nodes[i])));
+    const at = (name65) => { const name = rig === '106' ? RIG.bones[name65] : name65, i = gl.nodes.findIndex((n) => n.name === name); assert.ok(i >= 0, `${file}.glb has ${name}`); return new THREE.Vector3().setFromMatrixPosition(world(i)); };
+    const m = measure(row, rig), floor = at(MAP65.RightToeBase).y - m.joints.RightToeBase[1];
+    for (const [role, name65] of Object.entries(MAP65)) {
+      const p = at(name65), q = m.joints[role];
+      assert.ok(Math.hypot(p.x - q[0], p.y - floor - q[1], p.z - q[2]) < 0.005, `${file} ${role}: GLB ${p.toArray().map((x) => x.toFixed(3))} vs row ${q}`);
+    }
+  }
 });
 
 test('?ragdoll=always skips the finisher (the finisher row); anything else keeps the rotation', () => {

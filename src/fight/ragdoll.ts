@@ -82,7 +82,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
-  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }> };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
+  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }> };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
   (globalThis as { __ragdoll?: typeof cost }).__ragdoll = cost;
 
   // The bones `w` of the way from the clip's pose (on them now) to the ragdoll's: 1 = the ragdoll's alone.
@@ -121,6 +121,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       // the 65-rig names through the one bone map (data/rig.json via rig-bones.ts): on a 65 body the name itself, on a 106 body its Mixamo joint
       partBones = Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(opponentRig.anchor, name)!]));
       const rigId = rigOf(opponentRig.anchor), measurePath = (foe.measure as Record<string, string | undefined>)[rigId];
+      cost.rig = rigId; cost.measure = measurePath ?? null;   // which body row the page's ragdoll is built from (the stills and phone checks read it)
       if (!measurePath) { cost.state = `no measure row for rig ${rigId}`; return Promise.resolve(); }   // today's death on that rig
       const missing = Object.entries(partBones).filter(([, b]) => !b).map(([p]) => p);
       if (missing.length) { cost.state = `no bone for ${missing.join(', ')}`; return Promise.resolve(); }
@@ -181,8 +182,9 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         if (tune?.settle) { rig.drive(); for (let i = 0; i < tune.settle; i++) { physics.step(tick); rig.drive(); } }
         const anim = Object.entries(partBones).map(([p, b]) => [p, b.getWorldQuaternion(new THREE.Quaternion()), b.quaternion.clone(), b.position.clone()] as const);
         rig.applyPose();
-        // per part: the whole orientation's angle, and (`<part>~`) the angle between the bone's long axes (the rig's bones run along local X): what is left is twist
-        const axis = (q: THREE.Quaternion) => new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+        // per part: the whole orientation's angle, and (`<part>~`) the angle between the bone's long axes: what is left is twist. Both rigs' bones run
+        // along local Y (minotaur.glb's lowerarm_l -> hand_l and minotaur-106.glb's LeftForeArm -> LeftHand are +Y offsets).
+        const axis = (q: THREE.Quaternion) => new THREE.Vector3(0, 1, 0).applyQuaternion(q);
         trace.push({ ...Object.fromEntries(anim.flatMap(([p, q]) => { const r = partBones[p]!.getWorldQuaternion(new THREE.Quaternion()); return [[p, +q.angleTo(r).toFixed(3)], [`${p}~`, +axis(q).angleTo(axis(r)).toFixed(3)]]; })), _stagger: stagger >= 0 ? staggerDepth(rows.states.stagger, stagger) : -1 });
         for (const [p, , lq, lp] of anim) { partBones[p]!.quaternion.copy(lq); partBones[p]!.position.copy(lp); }
         group.updateWorldMatrix(true, true);
