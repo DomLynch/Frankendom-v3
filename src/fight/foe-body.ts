@@ -5,17 +5,24 @@
 // shaped for the Centurion's body. ?foe=v1 draws the Centurion exactly (veteran.glb, his whole kit, his rank looks). The page picks once,
 // before the rigs load, and only the body picked is fetched.
 /** opponent id -> the body drawn by default in its place (rig file stem under src/assets, kit file stem under src/assets/loot). */
-const BODIES: Readonly<Record<string, { body: string; kit: string }>> = { veteran: { body: 'minotaur', kit: 'carriers-minotaur' } };
+// `kit: null`: no kit drawn at all (Dom 2026-10-26: "remove the Minotaur's shield"). Visual only: the sim still fights him with the scutum's
+// guard (moves.ts LOADOUT_FROM), so Gate 0 is untouched. ?shield=v1 = his scutum-only kit back.
+const BODIES: Readonly<Record<string, { body: string; kit: string | null; shieldKit: string }>> = { veteran: { body: 'minotaur', kit: null, shieldKit: 'carriers-minotaur' } };
 
-let v1 = false;
+let v1 = false, shield = false;
 /** ?foe=v1 → every opponent draws his V1 body; anything else → the BODIES row. Returns whether the V1 bodies were picked. */
 export function chooseFoeBody(search: string): boolean {
-  v1 = new URLSearchParams(search).get('foe') === 'v1';
+  const q = new URLSearchParams(search);
+  v1 = q.get('foe') === 'v1';
+  shield = q.get('shield') === 'v1';
   return v1;
 }
 /** The rig file stem drawn for `id` whose roster body is `rosterBody` ('minotaur' for the Centurion by default, 'veteran' under ?foe=v1). */
 export const foeBodyFile = (id: string, rosterBody: string): string => (!v1 && BODIES[id]?.body) || rosterBody;
-/** The kit file stem for `id` (under src/assets/loot): the cut kit with the new body, `carriers-<id>` as V1 has it otherwise. */
-export const foeKitFile = (id: string): string => (!v1 && BODIES[id]?.kit) || `carriers-${id}`;
+/** The kit file stem for `id` (under src/assets/loot), or null for none: the new body's row (?shield=v1 its shield kit), `carriers-<id>` as V1 has it otherwise. */
+export const foeKitFile = (id: string): string | null => {
+  const row = v1 ? undefined : BODIES[id];
+  return row ? (shield ? row.shieldKit : row.kit) : `carriers-${id}`;
+};
 /** Whether `id` draws a body other than his V1 one (his rank-look files are fitted to the V1 body, so they stay off). */
 export const foeBodySwapped = (id: string): boolean => !v1 && !!BODIES[id];

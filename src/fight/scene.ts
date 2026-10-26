@@ -261,7 +261,8 @@ export function createScene(
   let playerTier: Tier | undefined;   // the player's own rung (the rank the HUD shows), for his weapon's shape; setPlayerTier
   // Two-handed or not is the weapon he FIGHTS with (the sim's, `weapons` below): the Centurion's gladius brings his scutum up (SCOPE:76).
   let twoHanded = weaponOf(OPPONENTS[opponentId].weapon).grip === 'two-hand';
-  const carrierUrl = kitWorn(opponentId, false).length ? carrierUrls[`../assets/loot/${foeKitFile(opponentId)}.glb`] : undefined;
+  const kitFile = foeKitFile(opponentId);   // null: no kit on him (the shieldless Minotaur, foe-body.ts)
+  const carrierUrl = kitFile && kitWorn(opponentId, false).length ? carrierUrls[`../assets/loot/${kitFile}.glb`] : undefined;
   // V3 fast load (2026-10-26): his kit (armour, helmet, scutum; 3.0 MB) streams in after the first frame instead of gating it, then he is
   // dressed and his opened-waist bake is taken again, as a rematch at a new rung does (setTier). ?load=v1: V1's order, the kit beside his rig.
   const lateKit = !(typeof location !== 'undefined' && /[?&]load=v1\b/.test(location.search));
