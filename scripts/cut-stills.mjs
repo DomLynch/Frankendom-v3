@@ -38,6 +38,9 @@ if (process.env.COST) {
   });
   await page.goto(`${base}/${queries[0] ? `?${queries[0]}` : ''}`);
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 120000 });
+  await page.waitForTimeout(3000);   // the physics chunk, the hidden cut art and the warm-up draws are in by now
+  const heap0 = await page.evaluate(() => performance.memory?.usedJSHeapSize ?? null);   // first-visit memory: the JS heap once the ragdoll stands (typed arrays count), before any fight
+  console.log(`heap after load ${heap0 === null ? 'n/a' : (heap0 / 1048576).toFixed(1)} MB`);
   await page.evaluate((s) => new Promise((done) => {
     const fire = (code, type) => window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
     fire('KeyW', 'keydown'); let t = 0;

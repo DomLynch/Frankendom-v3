@@ -21,7 +21,11 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
   page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
   await page.addInitScript((id) => { globalThis.__finisherPick = id; }, finisher);
-  if (REAL) {   // REAL=1: no fake clock, real time: the ragdoll's own per-frame cost by mode (alive / dead), cut included (no stills)
+  if (REAL) {   // REAL=1: no fake clock, real time: the ragdoll's own per-frame cost by mode (alive / dead), cut included (no stills); and every rAF callback timed, the render inside it (scripts/cut-stills.mjs COST)
+    await page.addInitScript(() => {
+      const raf = window.requestAnimationFrame.bind(window), frames = globalThis.__frames = []; let last = null;
+      window.requestAnimationFrame = (cb) => raf((t) => { const s = performance.now(); if (last) last[1] = s - last[3]; cb(t); last = [performance.now() - s, 0, (globalThis.__v3Cuts ?? []).length, s, globalThis.__v3Fight?.finish ? 1 : 0]; frames.push(last); });
+    });
     await page.goto(`${base}/${query ? `?${query}` : ''}`);
     await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
     await page.waitForTimeout(3000);
@@ -36,6 +40,9 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
     const c = await page.evaluate(() => ({ cuts: globalThis.__v3Cuts ?? [], byMode: globalThis.__ragdoll?.byMode, state: globalThis.__ragdoll?.state }));
     const mean = (m) => m ? `${(m.totalMs / m.frames).toFixed(3)} ms mean, ${m.maxMs.toFixed(2)} max over ${m.frames}` : 'none';
     console.log(`${tag} REAL: ragdoll ${c.state}, cuts ${JSON.stringify(c.cuts)}, alive ${mean(c.byMode?.alive)}, dead ${mean(c.byMode?.dead)}, errors ${errors.length}`);
+    const frames = await page.evaluate(() => globalThis.__frames), ordinary = frames.filter((f, i) => i && f[2] === frames[i - 1][2] && f[4] === frames[i - 1][4]).map((f) => f[0]).sort((a, b) => a - b);
+    const killAt = frames.findIndex((f, i) => i && f[4] && !frames[i - 1][4]);
+    console.log(`${tag} frames ${frames.length}: callback median ${ordinary[ordinary.length >> 1]?.toFixed(1)} ms; kill frame ${killAt > 0 ? frames[killAt][0].toFixed(1) : 'n/a'} ms; ${frames.map((f, i) => (i && f[2] > frames[i - 1][2] ? `cut frame ${f[0].toFixed(1)} ms` : '')).filter(Boolean).join(', ') || 'no cut frame'}; worst after the kill ${killAt > 0 ? Math.max(...frames.slice(killAt).map((f) => f[0])).toFixed(1) : 'n/a'} ms`);
     report.push({ tag, finisher, query, real: c, errors }); await page.close(); continue;
   }
   await page.clock.install();
