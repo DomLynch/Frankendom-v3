@@ -7,6 +7,7 @@ import { keepBladeTables } from '../scripts/blade-tables.mjs';
 import { bladePathsByRig } from '../src/fight/blade-paths.ts';
 import { OPPONENTS, opponentAt } from '../src/fight/moves.ts';
 import { validateFile } from '../src/sim/validate.js';
+import { fightOpponent } from '../src/fight/foe-pick.ts';
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 const SRC = readFileSync(new URL('../src/fight/blade-paths.ts', import.meta.url), 'utf8');
@@ -16,13 +17,16 @@ test('fight.json validates with the bladeTables row', () => {
   assert.deepEqual(validateFile('fight', FIGHT), []);
 });
 
-test('every weapon the duel can reach has its table kept: the hero, and the opponent at every level', () => {
+test('every weapon the duel can reach has its table kept: the hero, and the opponent at every level (default and ?pitborn=v1)', () => {
   assert.ok(kept('hero', FIGHT.weapon), `hero/${FIGHT.weapon}`);
-  const o = OPPONENTS[FIGHT.opponent];
-  for (let level = 1; level <= 100; level++) {
-    const body = opponentAt(o, level);
-    assert.ok(kept(body.rig, body.weapon), `${FIGHT.opponent} at level ${level}: ${body.rig}/${body.weapon}`);
+  for (const search of ['', '?pitborn=v1', '?foe=v1']) {
+    const id = fightOpponent(FIGHT, search), o = OPPONENTS[id];
+    for (let level = 1; level <= 100; level++) {
+      const body = opponentAt(o, level);
+      assert.ok(kept(body.rig, body.weapon), `${id} (${search || 'default'}) at level ${level}: ${body.rig}/${body.weapon}`);
+    }
   }
+  assert.deepEqual([fightOpponent(FIGHT, ''), fightOpponent(FIGHT, '?pitborn=v1')], ['pitborn', 'veteran']);
 });
 
 test('the cut keeps the named tables byte for byte and drops the rest', () => {

@@ -25,6 +25,7 @@ import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
 import { foeDisplayName, foeNameFor, setFoeName } from '../fight/foe-name.ts';
+import { fightOpponent } from '../fight/foe-pick.ts';
 import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
@@ -47,7 +48,8 @@ import { autoStartOn, startAction } from '../auto-start.ts';
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
 const canvas = element<HTMLCanvasElement>('world');
-const opponentId = FIGHT.opponent as OpponentId, opponent = OPPONENTS[opponentId], level = FIGHT.level;
+// V1's Pitborn in the Minotaur's body (data/fight.json opponent); ?pitborn=v1 / ?foe=v1 = the Centurion's fight (src/fight/foe-pick.ts, the one read)
+const opponentId = fightOpponent(FIGHT, search) as OpponentId, opponent = OPPONENTS[opponentId], level = FIGHT.level;
 // :86 the opponent's swing parked in its chamber: the hold her rising charge cue climbs through
 const foeHolding = (f: Fighter) => f.phase === 'attack' && f.charge > 0 && f.move !== null && f.age <= (weaponOf(f.weapon).moves[f.move].chamber ?? -1);
 
@@ -94,10 +96,11 @@ if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.s
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
 // The swing trail softer (data/fight.json trail: cuts at half, the stab 30% less, both fighters); ?trail=v1 = today's trail.
 setTrailOpacity(/[?&]trail=v1\b/.test(search) ? null : FIGHT.trail);
-// The Minotaur draws V1's Cleaver over the gladius he fights with (data/fight.json foeWeapon, visual only); ?foeweapon=v1 = the gladius, ?foe=v1 = the Centurion.
+// ?pitborn=v1: the Minotaur draws V1's Cleaver over the Centurion's gladius (data/fight.json foeWeapon, keyed to him, visual only; a no-op for the
+// Pitborn, who fights with his own cleaver); ?foeweapon=v1 = the gladius, ?foe=v1 = the Centurion.
 setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
-// The HUD names the Minotaur body the Minotaur (data/fight.json foeName, display only); ?foe=v1 = the Centurion.
-setFoeName(foeNameFor(FIGHT.foeName, search));
+// The HUD names the Minotaur body the Minotaur whoever fights in it (data/fight.json foeName, display only); ?foe=v1 = the Centurion.
+setFoeName(foeNameFor(FIGHT.foeName, search, opponentId));
 // Clip-to-clip blends in milliseconds (data/fight.json blendMs/settleMs, V2's rows: swings, hits and rolls ease in and out, the roll settles); ?blend=v1 = V1's transitions exactly.
 if (/[?&]blend=v1\b/.test(search)) setBlend(null); else setBlend(FIGHT.blendMs, FIGHT.settleMs);
 // Dom's picked strike clips on V1's blade sweeps (data/hero-clips.json); ?reach=clip = the sweeps re-baked from the clips; ?clips=v1 = V1's clips and sweeps exactly.

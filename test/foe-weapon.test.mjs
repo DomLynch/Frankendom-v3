@@ -8,6 +8,8 @@ import { readFileSync } from 'node:fs';
 import { foeDrawnWeapon, foeWeaponFor, setFoeWeapon } from '../src/fight/foe-weapon.ts';
 import { shapesFor } from '../src/fight/weapon-shapes.ts';
 import { validateFile } from '../src/sim/validate.js';
+import { fightOpponent } from '../src/fight/foe-pick.ts';
+import { LOADOUT_FROM, OPPONENTS, opponentAt } from '../src/fight/moves.ts';
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 const bytes = (path) => readFileSync(new URL(path, import.meta.url));
@@ -15,7 +17,7 @@ const glb = (path) => { const b = bytes(path), n = b.readUInt32LE(12); return { 
 const sha = (path) => createHash('sha256').update(bytes(path)).digest('hex');
 
 test('the row draws the cleaver over the gladius the fight is armed with; the sim weapon is untouched', () => {
-  assert.deepEqual([FIGHT.foeWeapon.opponent, FIGHT.foeWeapon.weapon, FIGHT.foeWeapon.drawn], [FIGHT.opponent, 'gladius', 'cleaver']);
+  assert.deepEqual([FIGHT.foeWeapon.opponent, FIGHT.foeWeapon.weapon, FIGHT.foeWeapon.drawn], [fightOpponent(FIGHT, '?pitborn=v1'), 'gladius', 'cleaver'], "?pitborn=v1's Centurion");
   assert.deepEqual(validateFile('fight', FIGHT), [], 'fight.json validates');
   setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, ''));
   assert.equal(foeDrawnWeapon('veteran', 'gladius'), 'cleaver');
@@ -33,6 +35,19 @@ test('?foeweapon=v1 and ?foe=v1 put the gladius back', () => {
   }
   setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, '?trail=v1'));
   assert.equal(foeDrawnWeapon('veteran', 'gladius'), 'cleaver', 'another flag leaves it on');
+  setFoeWeapon(null);
+});
+
+test('the Pitborn (the default since Dom 10-26) really fights with the cleaver: the row is a no-op for him, his shape is cleaver-plain', () => {
+  const id = fightOpponent(FIGHT, '');
+  assert.equal(id, 'pitborn');
+  const body = opponentAt(OPPONENTS[id], FIGHT.level);
+  assert.equal(body.weapon, 'cleaver', 'his own weapon at level 18');
+  assert.deepEqual(body.guard ?? {}, OPPONENTS[id].guard ?? {}, 'no loadout swap: no scutum guard');
+  assert.equal(LOADOUT_FROM[id], undefined, 'no shield loadout at any level');
+  setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, ''));
+  assert.equal(foeDrawnWeapon(id, 'cleaver'), 'cleaver');
+  assert.equal(shapesFor({ opponent: foeDrawnWeapon(id, body.weapon), opponentId: id, playerLevel: 1, opponentLevel: 1 }).opponent, '/weapons/shapes/cleaver-plain.glb');
   setFoeWeapon(null);
 });
 

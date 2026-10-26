@@ -3,7 +3,8 @@
 // timing), and his scutum stays. Only two things the scene draws change: the equip file grafted into his hand (src/assets/weapons/foe/<drawn>.glb,
 // the gladius's file with V1's Cleaver part in its WeaponDrawn socket and the gladius's clips: scripts/foe-body/graft-weapon.mjs) and the rank
 // shape laid over it (weapon-shapes.ts: <drawn>-plain at his Recruit rung, as gladius-plain is for the gladius).
-// Set by the page before the rigs load; null = the gladius as before. ?foeweapon=v1 = the gladius on the Minotaur; ?foe=v1 = the Centurion exactly
+// Since Dom's later 10-26 call the opponent fights as V1's Pitborn with his own cleaver (foe-pick.ts), so this row (keyed to `veteran`) is a no-op
+// by default and draws only under ?pitborn=v1, the fight before that call. Set by the page before the rigs load; null = the gladius as before. ?foeweapon=v1 = the gladius on the Minotaur; ?foe=v1 = the Centurion exactly
 // (his body, his kit and his gladius).
 export type FoeWeaponRow = { opponent: string; weapon: string; drawn: string };
 

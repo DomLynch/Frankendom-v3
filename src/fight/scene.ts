@@ -60,7 +60,7 @@ import { scorch } from './scorch.ts';
 import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself (V3 meets only the veteran: the other nine opponents' signatures are not shipped)
 import { settleWithin } from './warm-gate.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
-import { chooseFoeBody, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
+import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
@@ -74,10 +74,9 @@ const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets
 // V3: the opponent's DRAWN weapon over the one he fights with (foe-weapon.ts, data/fight.json foeWeapon: V1's Cleaver on the Minotaur, the
 // sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1 / ?foe=v1: the gladius's).
 const FOE_EQUIP_URLS: Record<string, string> = { '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href };
-const foeEquipUrl = (opponentId: string, weapon: WeaponId): string | undefined => {
-  const drawn = foeDrawnWeapon(opponentId, weapon);
-  return drawn === weapon ? equipUrl(weapon) : FOE_EQUIP_URLS[`../assets/weapons/foe/${drawn}.glb`] ?? equipUrl(weapon);
-};
+// The Pitborn (foe-pick.ts, Dom 2026-10-26) really fights with the cleaver: the same file, grafted over the trident his Minotaur body bakes.
+const foeEquipUrl = (opponentId: string, weapon: WeaponId): string | undefined =>
+  FOE_EQUIP_URLS[`../assets/weapons/foe/${foeDrawnWeapon(opponentId, weapon)}.glb`] ?? equipUrl(weapon);
 // A rank look's pre-swap bake takes up to this many ms of each frame (it runs while the fight plays; one bounded step is ~8 ms at worst).
 const LOOK_BAKE_MS = cameraRule('lookBakeMs');
 export const CARRIED_WEAPONS: readonly WeaponId[] = PLAYER_WEAPONS.filter((weapon) => WEAPON_LOOK[weapon]?.baked || equipUrl(weapon));
@@ -350,7 +349,8 @@ export function createScene(
     weapons.then((pair) => {
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
-      const opponentEquip = pair[1] === ROSTER[opponentId].weapon ? undefined : foeEquipUrl(opponentId, pair[1]);   // a drawn weapon over his (foe-weapon.ts) is its own file
+      // The weapon his drawn body bakes (foe-body.ts: the Minotaur's is veteran.glb's trident) needs no file; a drawn weapon over his (foe-weapon.ts) is its own file.
+      const opponentEquip = pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
       const load = (hero: string) => loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
       return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody)))(fighterUrls[`../assets/${heroBodyFile()}.glb`]!);   // the hero-body row: Exo (warrior.glb) or the classic hero
     }),

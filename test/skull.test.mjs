@@ -15,13 +15,17 @@ import { SPECIAL_RECOVER, specialStage } from '../src/fight/special-look.ts';
 import { setSpecialPace, specialPaceFor } from '../src/fight/special-pace.ts';
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
-const opponent = OPPONENTS[FIGHT.opponent], profile = profileAt(opponent, FIGHT.level);
+// Re-pinned 2026-10-26 (fix-forward, Dom's Pitborn call): the HERO's Skull Crack ticks, scripted against the Centurion they were written on
+// (data/fight.json opponentV1, still the page's fight under ?pitborn=v1). The Pitborn (the default since) whips the scripted windup and hits
+// through it, so the script never reaches the strike; the pace under test is the hero's and the same for both.
+const FOE = FIGHT.opponentV1.opponent;
+const opponent = OPPONENTS[FOE], profile = profileAt(opponent, FIGHT.level);
 
 // The page fight as src/client/main.ts starts it, under the pace `search` picks.
 function fight(search) {
-  setPlayScale(playScaleFor(FIGHT.opponent, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
+  setPlayScale(playScaleFor(FOE, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));
-  const aiSkill = Object.values(SKILL_ROWS).find((r) => r.opponent === FIGHT.opponent)?.id ?? null, name = specialOf(FIGHT.opponent, FIGHT.level);
+  const aiSkill = Object.values(SKILL_ROWS).find((r) => r.opponent === FOE)?.id ?? null, name = specialOf(FOE, FIGHT.level);
   return initialPractice(FIGHT.seed, opponentAt(opponent, FIGHT.level), FIGHT.weapon, FIGHT.skill,
     { level: FIGHT.level, aiSkill, ...(name ? { name } : {}) }, undefined, FIGHT.stance, undefined, undefined, undefined, undefined, undefined, FIGHT.skill2);
 }
@@ -35,7 +39,8 @@ function run(search, action, ticks = 900) {
     const press = t === 2 ? 'light' : fired < 0 && t > 60 && ready && gap < 2 ? action : null;
     if (press === action) fired = t;
     p = stepPractice(p, quantizeIntent({ move: { x: 0, z: fired < 0 && gap > 1.6 ? 1 : 0, yaw: 0, run: false }, action: press, guard: false, lock: true }), profile);
-    trace.push({ f: structuredClone(p.duel.fighters), events: p.events.map((e) => e.type), pose: actorPose(p, 0), stage: specialStage(p.duel.fighters[0]) });
+    // the hero's own events: since Dom's Pitborn call (2026-10-26) the opponent has specials of his own (Butcher's Cleave, Earth Fold), whose SpecialLanded is not the hero's
+    trace.push({ f: structuredClone(p.duel.fighters), events: p.events.filter((e) => e.actor === 0).map((e) => e.type), pose: actorPose(p, 0), stage: specialStage(p.duel.fighters[0]) });
   }
   setSpecialPace(null);
   assert.ok(fired > 0, `the hero pressed ${action}`);

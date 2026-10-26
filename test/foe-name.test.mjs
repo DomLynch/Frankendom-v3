@@ -4,24 +4,35 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { foeDisplayName, foeNameFor, setFoeName } from '../src/fight/foe-name.ts';
 import { validateFile } from '../src/sim/validate.js';
+import { fightOpponent } from '../src/fight/foe-pick.ts';
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 
-test('the fight opponent is named the Minotaur; the sim id stays veteran', () => {
+test('the fight opponent (the Pitborn since Dom 10-26) is named the Minotaur; the sim id is his own', () => {
   assert.deepEqual([FIGHT.foeName.opponent, FIGHT.foeName.name], [FIGHT.opponent, 'Minotaur']);
-  assert.equal(FIGHT.opponent, 'veteran');
+  assert.equal(FIGHT.opponent, 'pitborn');
   assert.deepEqual(validateFile('fight', FIGHT), [], 'fight.json validates');
-  setFoeName(foeNameFor(FIGHT.foeName, ''));
-  assert.equal(foeDisplayName('veteran'), 'Minotaur');
+  setFoeName(foeNameFor(FIGHT.foeName, '', fightOpponent(FIGHT, '')));
+  assert.equal(foeDisplayName('pitborn'), 'Minotaur');
+  assert.equal(foeDisplayName('veteran'), 'Centurion', 'the name is on the page opponent only');
   assert.notEqual(foeDisplayName('goblin'), 'Minotaur', 'other opponents keep their roster names');
-  setFoeName(foeNameFor(FIGHT.foeName, '?trail=v1'));
-  assert.equal(foeDisplayName('veteran'), 'Minotaur', 'another flag leaves it on');
+  setFoeName(foeNameFor(FIGHT.foeName, '?trail=v1', fightOpponent(FIGHT, '?trail=v1')));
+  assert.equal(foeDisplayName('pitborn'), 'Minotaur', 'another flag leaves it on');
   setFoeName(null);
 });
 
-test('?foe=v1 keeps the Centurion', () => {
-  for (const q of ['?foe=v1', '?hero=v1&foe=v1']) {
-    setFoeName(foeNameFor(FIGHT.foeName, q));
+test('?pitborn=v1: the Centurion in the Minotaur body, still named the Minotaur', () => {
+  const q = '?pitborn=v1';
+  assert.equal(fightOpponent(FIGHT, q), 'veteran');
+  setFoeName(foeNameFor(FIGHT.foeName, q, fightOpponent(FIGHT, q)));
+  assert.equal(foeDisplayName('veteran'), 'Minotaur');
+  setFoeName(null);
+});
+
+test('?foe=v1 keeps the Centurion (his fight, body and name)', () => {
+  for (const q of ['?foe=v1', '?hero=v1&foe=v1', '?pitborn=v1&foe=v1']) {
+    assert.equal(fightOpponent(FIGHT, q), 'veteran', q);
+    setFoeName(foeNameFor(FIGHT.foeName, q, fightOpponent(FIGHT, q)));
     assert.equal(foeDisplayName('veteran'), 'Centurion', q);
   }
   setFoeName(null);

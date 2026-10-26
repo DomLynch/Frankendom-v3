@@ -15,13 +15,19 @@ import { setSpecialPace, specialPaceFor } from '../src/fight/special-pace.ts';
 import { setSpecialTerms, specialTermsFor } from '../src/fight/special-terms.ts';
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
-const opponent = OPPONENTS[FIGHT.opponent], profile = profileAt(opponent, FIGHT.level);
+// Re-pinned 2026-10-26 (fix-forward, Dom's Pitborn call): these are the HERO's special rules, scripted against the Centurion they were written
+// on (data/fight.json opponentV1, still the page's fight under ?pitborn=v1). The Pitborn (the default since) whips the scripted Skull Crack's
+// windup and hits through it (SpecialInterrupted), so "counted from the strike" never reaches its strike; the rules under test are the same
+// for both. The ring-never-lies sweep runs against both opponents.
+const HERO_RULES_FOE = FIGHT.opponentV1.opponent;
+let foeId = HERO_RULES_FOE, opponent = OPPONENTS[foeId], profile = profileAt(opponent, FIGHT.level);
+const use = (id) => { foeId = id; opponent = OPPONENTS[id]; profile = profileAt(opponent, FIGHT.level); };
 
 // The page fight as src/client/main.ts starts it, under the flags `search` picks.
 function fight(search = '') {
-  setPlayScale(playScaleFor(FIGHT.opponent, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
+  setPlayScale(playScaleFor(foeId, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search)); setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));
-  const aiSkill = Object.values(SKILL_ROWS).find((r) => r.opponent === FIGHT.opponent)?.id ?? null, name = specialOf(FIGHT.opponent, FIGHT.level);
+  const aiSkill = Object.values(SKILL_ROWS).find((r) => r.opponent === foeId)?.id ?? null, name = specialOf(foeId, FIGHT.level);
   return initialPractice(FIGHT.seed, opponentAt(opponent, FIGHT.level), FIGHT.weapon, FIGHT.skill,
     { level: FIGHT.level, aiSkill, ...(name ? { name } : {}) }, undefined, FIGHT.stance, undefined, undefined, undefined, undefined, undefined, FIGHT.skill2);
 }
@@ -133,8 +139,10 @@ test('helper: the buffer window — lit in a swing tail only when the queued pre
 
 // The ring never lies: from every state of a scripted fight, press once and watch the next bufferTtl ticks. ready <=> the special starts
 // (the Skull Crack's far refusal counts as not taken). A hit on the hero in that span clears any buffer, so those probes are skipped.
-for (const search of ['', '?spec=v1']) for (const slot of ['skill', 'skill2']) {
-  test(`the ring never lies: ${slot}, ${search || 'default'}`, () => {
+// Against the Pitborn the scripted fight is shorter (he kills or is killed sooner): ~410-440 probes, so his floor is 400.
+for (const [foe, floor] of [[HERO_RULES_FOE, 500], [FIGHT.opponent, 400]]) for (const search of ['', '?spec=v1']) for (const slot of ['skill', 'skill2']) {
+  test(`the ring never lies: ${slot}, ${search || 'default'}, vs ${foe}`, (t) => {
+    use(foe); t.after(() => use(HERO_RULES_FOE));
     let p = fight(search), checked = 0, lit = 0;
     for (let t = 0; t < 2400 && p.health && p.playerHealth; t++) {
       if (t > 60 && p.duel.fighters[0].phase !== 'hurt' && p.duel.fighters[0].phase !== 'sheathed' && p.duel.fighters[0].phase !== 'draw') {
@@ -148,7 +156,7 @@ for (const search of ['', '?spec=v1']) for (const slot of ['skill', 'skill2']) {
       const press = t === 2 ? 'light' : t > 60 && t % 23 === 0 ? 'light' : t > 60 && t % 97 === 0 ? 'heavy' : null;
       p = step(p, press, true);
     }
-    assert.ok(checked > 500 && lit > 20, `${checked} probes, ${lit} lit`);
+    assert.ok(checked > floor && lit > 20, `${checked} probes, ${lit} lit`);
     off();
   });
 }
