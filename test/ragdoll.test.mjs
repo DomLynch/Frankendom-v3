@@ -43,7 +43,8 @@ test('each rig\'s measure row is the body V3 draws on that rig: its role joints 
 test('the ragdoll is every death by default (Dom 2026-10-26); ?ragdoll=finishers brings the finisher rotation back', () => {
   assert.equal(finisherModeFor(ROWS, ''), 'skip');
   assert.equal(finisherModeFor(ROWS, '?ragdoll=always'), 'skip');
-  assert.equal(finisherModeFor(ROWS, '?ragdoll=finishers'), 'keep');
+  assert.equal(finisherModeFor(ROWS, '?ragdoll=finishers'), 'physics');   // V1's camera, blood and sound, the physics body (test/finisher-cuts.test.mjs)
+  assert.equal(finisherModeFor(ROWS, '?ragdoll=clips'), 'keep');          // V1's finishers with V1's clips, no ragdoll body
   assert.equal(finisherModeFor(ROWS, '?ragdoll=sometimes'), 'skip');
 });
 

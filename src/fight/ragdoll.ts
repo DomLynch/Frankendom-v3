@@ -16,6 +16,7 @@ import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
+import { createLateCuts, finisherCutRow, finisherPush, PHYSICS_MODE } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
 
 export type PhysicsRows = typeof PHYSICS;
 type OpponentRow = PhysicsRows['opponents'][number];
@@ -48,7 +49,8 @@ export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: str
   return rows.opponents.find((o) => o.id === opponentId) ?? null;
 }
 
-/** data/physics.json `finisher`: 'skip' (the default: every death of a ragdolled foe is the plain death and ragdolls) or 'keep' (?ragdoll=finishers: the rotation's finishers play; only the plain death ragdolls). */
+/** data/physics.json `finisher`: 'skip' (the default: every death of a ragdolled foe is the plain death and ragdolls), 'physics' (?ragdoll=finishers: the rotation's finishers play
+ *  V1's camera, blood and sound, the victim's body the ragdoll cut by data/physics.json finisherCuts) or 'keep' (?ragdoll=clips: V1's finishers with V1's clips; only the plain death ragdolls). */
 export function finisherModeFor(rows: PhysicsRows, search: string): string {
   const f = rows.finisher as { default: string; query: string; values: Record<string, string> }, v = new URLSearchParams(search).get(f.query);
   return (v !== null && f.values[v]) || f.default;
@@ -58,12 +60,20 @@ let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
-  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip') : null;
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE) : null;
   return page;
 }
+/** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
+ *  finisher's camera, blood and sound by its id and skips V1's victim clip and its bakes. */
+export function ragdollBody(finisher: FinisherId | null): boolean { return !!page && !!finisherCutRow(PHYSICS, finisher) && page.takesFinisher(); }
 /** The finisher pick's override for the scene's picture AND main.ts's death cue (one answer for both): the plain death while the finisher row
  *  says 'skip' and the ragdoll is standing ready to take the kill; null (the rotation as it is) otherwise. */
-export function ragdollFinisher(): FinisherId | null { return page?.skipsFinishers() ? PLAIN_DEATH : null; }
+export function ragdollFinisher(): FinisherId | null {
+  // A stills / trace harness forces the rotation's pick (the dev picker's place; a blade kill only: resolveFinisher keeps eligibility). Local hosts only: never read on the live site.
+  const local = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  const forced = local ? (globalThis as { __finisherPick?: string }).__finisherPick : undefined;
+  return forced ?? (page?.skipsFinishers() ? PLAIN_DEATH : null);
+}
 
 /** The part a blow at `location` lands on, and its impulse in the ragdoll's frame (the attacker's facing, `heading`, turned into `frame`). */
 export function blowImpulse(row: { parts: Record<string, string>; impulse: number; lift: number }, location: string | undefined, heading: number | undefined, frameYaw: number): { part: string; impulse: Vec3 } | null {
@@ -95,11 +105,12 @@ type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
 export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
 // rows: data/physics.json; foe: the opponent's row (ragdollRowFor); load: the chunk's import (scene.ts hands `() => import('./physics-chunk.ts')`)
-export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false) {
+export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false) {
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
+  const late = createLateCuts();   // a finisher row's cut made some seconds after the killing blow (finisherCuts atS)
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
   // Cuts (data/physics.json `cut`): the pieces taken off the skinned body, the caps over the seams, the helmet props, and the ticks the world still steps for a piece to settle.
   const cutRows: CutRows = rows.cut, gearRow = foe as { helmet?: boolean; gear?: Record<string, readonly string[]> };
@@ -127,7 +138,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // untouched GLTF scene). Its first tick snaps the capsules onto the clip's pose (snapToTarget), so it never starts from the spawn pose.
   function build() {
     if (!physics || !group || !rigged) return;
-    clearCuts();   // the rematch: the body whole again, this fight's cut list empty
+    clearCuts(); late.clear();   // the rematch: the body whole again, this fight's cut list empty
     if (!rd?.reset()) {
       rd?.destroy();
       rd = physics.createRagdoll(measure, { id: foe.id, motorTuning: tune?.motorTuning ?? rows.motorTuning, solveHinges: tune?.solveHinges ?? rows.solveHinges });
@@ -274,6 +285,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     //  `armed`: only once a frame with no finish in progress has seen the ragdoll ready, so a chunk that lands mid-finish never flips the pick
     //  between the picture (scene.ts) and the death cue (main.ts) halfway through a kill.
     skipsFinishers() { return skipFinishers && armed && !disabled && !!rig && mode !== 'skip'; },
+    /** ?ragdoll=finishers (finisher mode 'physics'): the ragdoll is built and standing (or already down), so a finisher with a finisherCuts row plays with this body. */
+    takesFinisher() { return bodyFinishers && armed && !disabled && !!rig && mode !== 'skip'; },
     // scene.ts, every frame, after the opponent's rig has been posed by its clips (and before anything reads his bones):
     //   dt: the frame's presentation seconds (0 in a hit-stop); events: the sim's events this frame; finish: the sim's finish (null in play);
     //   finisher: the scene's pick for this kill (a cinematic finisher keeps its own clip: no ragdoll).
@@ -293,12 +306,16 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       if (!finish) armed = true;
       const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === 1) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
-        if (finisher !== null && !isPlainDeath(finisher)) { mode = 'skip'; cost.state = 'finisher'; }   // a cinematic finisher keeps its clip (finisher row 'keep')
+        // A finisher with a finisherCuts row plays with this body under ?ragdoll=finishers (its row picks the cut, none for Run Through); any other keeps its clip (finisher row 'keep')
+        const fc = bodyFinishers && finisher !== null && !isPlainDeath(finisher) ? finisherCutRow(rows, finisher) : undefined;
+        if (finisher !== null && !isPlainDeath(finisher) && !fc) { mode = 'skip'; cost.state = 'finisher'; }
         else {
           rig.drive(); rd.snapToTarget();   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp
-          rd.kill(blowImpulse(rows.kill, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
-          const unit = killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it
-          if (unit) cutUnit(unit, 'kill', blowImpulse({ ...cutRows.kill, parts: { [killed.location!]: unit } }, killed.location, killed.heading, group.rotation.y)?.impulse);   // the push is the row's, whatever the location
+          rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
+          const unit = fc ? fc.unit ?? undefined : killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it; a finisher's row decides its own cut
+          const push = (u: string) => blowImpulse({ ...(fc?.kill ?? cutRows.kill), parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group!.rotation.y)?.impulse;   // the push is the row's, whatever the location
+          if (unit && (!fc || fc.atS <= 0)) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit));
+          else if (unit) late.add(unit, fc!.atS, 'finisher');
         }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== 1) continue;
@@ -306,6 +323,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         stagger = 0;
       }
       if (mode === 'skip') { cost.lastMs = 0; return; }
+      for (const due of late.tick(dt)) cutUnit(due.unit, due.source);   // a finisher row's cut made after the blow (atS)
       acc += dt;
       let ticks = 0;
       while (acc >= tick && ticks < rows.maxTicksPerFrame) {
