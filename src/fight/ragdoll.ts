@@ -12,6 +12,7 @@ import PHYSICS from '../../data/physics.json' with { type: 'json' };
 import { isPlainDeath, PLAIN_DEATH } from './finisher-look.ts';
 import { afterFirstFrame } from '../late-art.ts';
 import { bone, rigOf } from './rig-bones.ts';
+import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 
@@ -78,7 +79,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
-  let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true;
+  let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
   const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }> };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
   (globalThis as { __ragdoll?: typeof cost }).__ragdoll = cost;
@@ -107,7 +108,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       rig = chunk!.createThreeRig(THREE, rd, partBones, group, bind ? { bind } : undefined);
     }
     if (tune?.gain !== undefined) rd!.setMotorGain(tune.gain, tune.damping);
-    mode = 'alive'; acc = 0; stagger = -1; dying = 0; snap = true; cost.state = 'alive';
+    mode = 'alive'; acc = 0; stagger = -1; dying = 0; snap = true; armed = false; cost.state = 'alive';
   }
   // A tuning harness (scripts/ragdoll-stills.mjs TUNE=gain,damping,blend) may set globalThis.__ragdollTune before the page loads: the rows' values otherwise.
   const tune = (globalThis as { __ragdollTune?: { gain?: number; damping?: number; blend?: Record<string, number>; settle?: number } }).__ragdollTune;
@@ -131,14 +132,24 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     },
     get state() { return rd?.state ?? cost.state; },
     /** ?ragdoll=always and a ragdoll built (a rig with no measure row, or a chunk not in yet, keeps the rotation). Latched once a death has begun. */
-    skipsFinishers() { return skipFinishers && !!rig && mode !== 'skip'; },
+    //  `armed`: only once a frame with no finish in progress has seen the ragdoll ready, so a chunk that lands mid-finish never flips the pick
+    //  between the picture (scene.ts) and the death cue (main.ts) halfway through a kill.
+    skipsFinishers() { return skipFinishers && armed && !disabled && !!rig && mode !== 'skip'; },
     // scene.ts, every frame, after the opponent's rig has been posed by its clips (and before anything reads his bones):
     //   dt: the frame's presentation seconds (0 in a hit-stop); events: the sim's events this frame; finish: the sim's finish (null in play);
     //   finisher: the scene's pick for this kill (a cinematic finisher keeps its own clip: no ragdoll).
+    // A physics error never breaks the frame: the ragdoll is off for the rest of the page (the clips alone, today's death) and it is reported once.
     frame(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null) {
+      if (disabled) return;
+      try { step(dt, events, finish, finisher); } catch (error) { disabled = true; armed = false; cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
+    },
+  };
+
+  function step(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null) {
       if (!rd || !rig || !physics || !group) return;
       const start = performance.now();
       if (!finish && mode !== 'alive') build();   // the rematch: a fresh ragdoll, standing
+      if (!finish) armed = true;
       const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === 1) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
         if (finisher !== null && !isPlainDeath(finisher)) { mode = 'skip'; cost.state = 'finisher'; }   // a cinematic finisher keeps its clip (finisher row 'keep')
@@ -184,6 +195,5 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
       cost.frames++; cost.totalMs += ms; cost.maxMs = Math.max(cost.maxMs, ms); cost.lastMs = ms; cost.ticks += ticks; cost.state = rd.state;
       by.frames++; by.totalMs += ms; by.maxMs = Math.max(by.maxMs, ms);
-    },
-  };
+  }
 }

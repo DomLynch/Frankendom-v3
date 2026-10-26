@@ -42,6 +42,7 @@ test('every ragdoll row names a body the opponent is drawn in, the package\'s 20
     for (const [part, bone] of Object.entries(map)) assert.ok(nodes106.has(RIG.bones[bone]), `${RIG.files[row.body]}.glb has ${RIG.bones[bone]} (${part} = ${bone})`);
     for (const rig of Object.keys(row.measure)) assert.ok(['65', '106'].includes(rig), `measure keyed by rig: ${rig}`);
     for (const which of ['hit', 'kill']) for (const [location, part] of Object.entries(ROWS[which].parts)) assert.ok(rd.partIds.includes(part), `${which}.parts.${location} = ${part} is a part`);
+    for (const [part, w] of Object.entries(ROWS.hit.blend)) assert.ok(rd.partIds.includes(part) && w >= 0 && w <= 1, `hit.blend.${part} = ${w} is a part id with a share in 0..1`);
     for (const role of Object.keys(ROWS.states.stagger.targets)) assert.ok(rd.row.roles.some((r) => r.role === role), `stagger target ${role} is a role`);
     rd.destroy();
   }
