@@ -8,6 +8,7 @@ import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, 
 import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 import { specialStage } from './special-look.ts';
+import { holdPoseOf } from './move-rows.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
 import { simBound } from './sim-bounds-rows.ts';
 const RESULT_AGE_CAP = simBound('practice.resultAgeCap');   // rows: sim-bounds-defs.json
@@ -193,7 +194,22 @@ export function actorPose(s: Practice, side: Side): { pose: Pose; progress: numb
   // downstroke as the strike and the recovery after it.
   const special = phase === 'ready' ? specialStage(f) : null;
   if (special) { const c = specs.heavy.contact / specs.heavy.recovery; return { pose: 'attack', progress: special.stage === 'windup' ? c * special.progress : c + (1 - c) * special.progress, attack: 'heavy', contact: c }; }
-  return { pose, progress: Math.min(1, f.age / Math.max(1, duration)), attack, contact };
+  return { pose, progress: Math.min(1, (phase === 'attack' ? poseAge(f) : f.age) / Math.max(1, duration)), attack, contact };
+}
+/** The fraction of the wind-up (progress / contact) after which the weapon trail draws (characters.ts). */
+export const TRAIL_FROM = 0.7;
+// VIEW ONLY (review of PR #10): the wind-up age a HELD directional heavy is drawn at. The sim parks it at the overhead's chamber tick, which on the
+// borrowed cut / stab clips is a crouch with the blade tucked; the row's holdPoseAge (the late wind-up, blade cocked) is drawn instead, eased in over
+// holdBlendTicks of the hold. Released, the drawn age runs linearly from where the hold left it back onto the sim's age by the tick the trail turns on
+// (TRAIL_FROM of the wind-up), so the release never snaps back, and the trail, the contact frame and everything after are drawn exactly as before.
+// Every other move, an unheld or chained swing, and ?heavy=v1 (no directional heavies) draw f.age.
+export function poseAge(f: Pick<Fighter, 'phase' | 'move' | 'charge' | 'age' | 'weapon' | 'chained'>): number {
+  const hold = f.phase === 'attack' && !f.chained && f.charge > 0 ? holdPoseOf(f.move) : null, chamber = hold ? movesOf(f)[f.move!].chamber : null;
+  if (!hold || chamber == null) return f.age;
+  const held = chamber + (hold.age - chamber) * Math.min(1, f.charge / hold.blend), rejoin = Math.max(held, TRAIL_FROM * timing(f as Fighter).windup);
+  if (f.age <= chamber) return held;
+  if (f.age >= rejoin) return f.age;
+  return held + (rejoin - held) * (f.age - chamber) / (rejoin - chamber);
 }
 
 const NAMES: Partial<Record<MoveId, string>> = {   // a skill's name is its row's (skill-defs.json)

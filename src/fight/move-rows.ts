@@ -25,7 +25,7 @@ const BASE_PATHS = Object.fromEntries((PATH_TABLE.rows as unknown as (PathSpec &
 // V3 directional heavies (not in V1). A row names the move it copies (`from`, the overhead heavy), the side it comes from and the path whose clip and baked sweep
 // it borrows (`blade`); resolved against ONE weapon's tables, so a weapon that retunes its heavy retunes its directional heavies with it. Added keys only: every
 // V1 move and path keeps its object, so no V1 fight can reach them (only the new actions in duel.ts chooseMove do).
-export type DirectionalHeavy = { id: MoveId; from: MoveId; direction: MoveDef['direction']; blade: PathId; windupFactor: number };
+export type DirectionalHeavy = { id: MoveId; from: MoveId; direction: MoveDef['direction']; blade: PathId; windupFactor: number; holdPoseAge?: number; holdBlendTicks?: number };   // holdPose*: view only (combat.ts poseAge), never copied into a MoveDef or PathSpec
 export const DIRECTIONAL_HEAVIES: readonly DirectionalHeavy[] = (DIRECTIONAL_TABLE.rows as unknown as DirectionalHeavy[]).map((d) => {
   if (!MOVE_DIRECTIONS.includes(d.direction)) throw Error(`move-defs directional "${d.id}": direction ${d.direction} is not one of ${MOVE_DIRECTIONS.join(', ')}`);
   if ([d.id, chainPathOf(d)].some((k) => Object.hasOwn(BASE_MOVES, k) || Object.hasOwn(BASE_PATHS, k))) throw Error(`move-defs directional "${d.id}": the id is already a move or a path`);
@@ -37,6 +37,11 @@ function chainPathOf(d: DirectionalHeavy): PathId { return `${d.id}_chain` as Pa
 const DIRECTIONAL_BY_ID: ReadonlyMap<string, DirectionalHeavy> = new Map(DIRECTIONAL_HEAVIES.map((d) => [d.id, d]));
 export const DIRECTIONAL_HEAVY_IDS: readonly MoveId[] = DIRECTIONAL_HEAVIES.map((d) => d.id);
 export const isDirectionalHeavy = (move: string | null | undefined): boolean => move != null && DIRECTIONAL_BY_ID.has(move);
+/** VIEW ONLY: the drawn hold of a directional heavy (move-defs.json `holdPoseAge` / `holdBlendTicks`), or null for every other move. No sim file reads it. */
+export const holdPoseOf = (move: string | null | undefined): { age: number; blend: number } | null => {
+  const d = move == null ? undefined : DIRECTIONAL_BY_ID.get(move);
+  return d?.holdPoseAge == null ? null : { age: d.holdPoseAge, blend: d.holdBlendTicks ?? 1 };
+};
 /** The move whose weight `move` carries: a directional heavy's `from` (heavy_overhead), any other move itself. */
 export const heavyOf = (move: string | null | undefined): string | null => (move == null ? null : DIRECTIONAL_BY_ID.get(move)?.from ?? move);
 /** The blow's shape: a directional heavy's `blade` (light_right / light_left / thrust), any other move itself. */

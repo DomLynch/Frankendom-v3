@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DIRECTIONAL_HEAVIES } from '../src/fight/move-rows.ts';
 import { WEAPONS, WEAPONS86, OPPONENTS, weaponOf } from '../src/fight/moves.ts';
-import { initialDuel, stepDuel, idleIntent, legal, guardOf } from '../src/fight/duel.ts';
+import { initialDuel, stepDuel, idleIntent, legal, guardOf, timing } from '../src/fight/duel.ts';
+import { poseAge, TRAIL_FROM } from '../src/fight/combat.ts';
 import { blowKind } from '../src/fight/sandbox-rules.ts';
 import { bladeAge } from '../src/fight/blade.ts';
 import { heavySlide, DIRECTIONAL_HEAVY, HEAVY_GRACE_MS, HEAVY_HOLD_MS, STAB_SLIDE_PX } from '../src/fight/input.ts';
@@ -138,4 +139,37 @@ test('input: the slide picks the heavy, the rows are on, the grace is a row', ()
   assert.equal(heavySlide(s, 0), 'heavy_right');
   assert.equal(heavySlide(-s, -s / 4), 'heavy_left');
   assert.equal(heavySlide(s / 4, -s), 'heavy_thrust');
+});
+
+// The drawn hold (review of PR #10): view only. A held directional heavy is DRAWN at its row's holdPoseAge (blade cocked), not the chamber's crouch; the sim's
+// ages, charge and contact tick are the overhead's, and released, the drawn age rejoins the sim's (no snap back, monotonic) by the tick the trail turns on.
+test('held: drawn at holdPoseAge, the sim untouched, no snap on release, the trail and contact frames unchanged', () => {
+  const hold = 40;
+  const run = (action) => {
+    let d = initialDuel(OPPONENTS.veteran);
+    d = { ...d, fighters: [{ ...d.fighters[0], phase: 'ready', age: 0, move: null, stamina: 1000 }, d.fighters[1]] };
+    const ticks = [];
+    for (let t = 0; t < 70; t++) {
+      d = stepDuel(d, [it({ action: t === 0 ? action : null, held: t < hold }), it()]);
+      const f = d.fighters[0];
+      if (f.phase !== 'attack') break;
+      ticks.push({ age: f.age, charge: f.charge, charged: f.charged, drawn: poseAge(f), windup: timing(f).windup, chamber: weaponOf(f.weapon).moves[f.move].chamber });
+    }
+    return ticks;
+  };
+  const overhead = run('heavy');
+  for (const t of overhead) assert.equal(t.drawn, t.age, 'the overhead draws its own age');
+  for (const id of IDS) {
+    const ticks = run(id), row = DIRECTIONAL_HEAVIES.find((d) => d.id === id);
+    const toContact = (list) => list.slice(0, list.findIndex((t) => t.age >= t.windup) + 1).map(({ age, charge, charged }) => ({ age, charge, charged }));   // after contact the stab's own rules may hold it
+    assert.deepEqual(toContact(ticks), toContact(overhead), `${id}: the sim's clock to contact is the overhead's`);
+    const parked = ticks.filter((t) => t.charge >= row.holdBlendTicks && t.age === t.chamber);
+    assert.ok(parked.length > 10, `${id}: parked long enough to see`);
+    for (const t of parked) assert.equal(t.drawn, row.holdPoseAge, `${id}: held at the cocked pose`);
+    for (let i = 1; i < ticks.length; i++) {
+      assert.ok(ticks[i].drawn >= ticks[i - 1].drawn || ticks[i].charge === ticks[i - 1].charge + 1, `${id} tick ${i}: the drawn age never runs back once released`);
+      assert.ok(ticks[i].drawn - ticks[i - 1].drawn <= 2, `${id} tick ${i}: no jump forward (${ticks[i - 1].drawn} -> ${ticks[i].drawn})`);
+    }
+    for (const t of ticks) if (t.age >= TRAIL_FROM * t.windup) assert.equal(t.drawn, t.age, `${id} age ${t.age}: trail on, drawn = sim`);
+  }
 });

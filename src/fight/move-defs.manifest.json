@@ -7,6 +7,7 @@
       "required": { "clip": "string", "source": "number", "windup": "number", "active": "number", "recovery": "number" } },
     { "table": "movedirectional", "file": "move-defs.json", "at": "directional", "key": "id",
       "required": { "from": "string", "direction": "string", "blade": "string", "windupFactor": { "type": "number", "min": 0.5, "max": 3 } },
+      "optional": { "holdPoseAge": { "type": "number", "min": 0 }, "holdBlendTicks": { "type": "number", "min": 1 } },
       "refs": { "from": "move", "blade": "movepath" } }
   ]
 }
