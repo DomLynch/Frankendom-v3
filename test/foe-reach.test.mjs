@@ -31,9 +31,9 @@ test('the row: the Pitborn in the Minotaur, the hero rig\'s cleaver, ?reach=v1; 
   assert.ok(validateFile('fight', { ...FIGHT, foeReach: { ...ROW, extra: 1 } }).some((e) => /foeReach\.extra/.test(e)));
 });
 
-test('which sweeps: the Minotaur\'s by default; V1\'s under ?reach=v1, ?pitborn=v1 and ?foe=v1', () => {
+test('which sweeps: the Minotaur\'s by default; V1\'s under ?reach=v1 and ?pitborn=v1 (?foe=v1 is gone: the default)', () => {
   const cases = [['', BLADE_MINOTAUR], ['?reach=v1', null], ['?reach=clip', BLADE_MINOTAUR], ['?clips=v1', BLADE_MINOTAUR], ['?gfx=v1&reach=v1', null],
-    ['?pitborn=v1', null], ['?foe=v1', null], ['?pitborn=v1&reach=v1', null], ['?shield=v1', BLADE_MINOTAUR]];
+    ['?pitborn=v1', null], ['?foe=v1', BLADE_MINOTAUR], ['?pitborn=v1&reach=v1', null], ['?shield=v1', BLADE_MINOTAUR]];
   for (const [search, sweeps] of cases) {
     assert.equal(foeSweepsFor(ROW, search, fightOpponent(FIGHT, search))?.hero?.cleaver ?? null, sweeps, search || '(none)');
   }

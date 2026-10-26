@@ -2,8 +2,8 @@
 // (blade-paths.ts), baked in V1 from another body's clips; the Minotaur he is drawn as plays the Centurion's clips, whose drawn cleaver falls
 // short of them. By default the sim sweeps the cleaver where the Minotaur draws it (src/fight/blade-minotaur.ts, scripts/foe-body/bake-blades.mjs),
 // laid over V1's table for that (rig, weapon) only (blade.ts setSweepOverride, with the hero's own table: src/hero-clips.ts). data/fight.json
-// `foeReach`: only for its `opponent` drawn in its `body` (not under ?pitborn=v1, whose Centurion fights with the gladius, nor ?foe=v1, V1's
-// bodies), and `?<query>=<v1>` (?reach=v1) = V1's cleaver sweeps exactly. No rendering imports: tests ask the same function the page does.
+// `foeReach`: only for its `opponent` drawn in its `body` (not under ?pitborn=v1, whose Centurion fights with the gladius; ?foe=v1, V1's 65
+// bodies, is gone), and `?<query>=<v1>` (?reach=v1) = V1's cleaver sweeps exactly. No rendering imports: tests ask the same function the page does.
 import { BLADE_MINOTAUR } from './blade-minotaur.ts';
 
 export type SweepTable = Record<string, Record<string, Record<string, number[][]>>>;
@@ -16,7 +16,7 @@ export const foeReachV1 = (row: FoeReachRow, search: string): boolean => new URL
 export function foeSweepsFor(row: FoeReachRow, search: string, opponentId: string): SweepTable | null {
   const bake = BAKES[row.body];
   if (!bake) throw new Error(`foeReach: no bake for the ${row.body} body`);
-  if (opponentId !== row.opponent || new URLSearchParams(search).get('foe') === 'v1' || foeReachV1(row, search)) return null;
+  if (opponentId !== row.opponent || foeReachV1(row, search)) return null;
   return { [row.rig]: { [row.weapon]: bake } };
 }
 /** Two override tables as one (each names its own (rig, weapon) pairs; a pair in both is an error, never a silent pick). */

@@ -51,7 +51,7 @@ import { autoStartOn, startAction } from '../auto-start.ts';
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
 const canvas = element<HTMLCanvasElement>('world');
-// V1's Pitborn in the Minotaur's body (data/fight.json opponent); ?pitborn=v1 / ?foe=v1 = the Centurion's fight (src/fight/foe-pick.ts, the one read)
+// V1's Pitborn in the Minotaur's body (data/fight.json opponent); ?pitborn=v1 = the Centurion's fight, on the same 106 body (src/fight/foe-pick.ts, the one read)
 const opponentId = fightOpponent(FIGHT, search) as OpponentId, opponent = OPPONENTS[opponentId], level = FIGHT.level;
 // :86 the opponent's swing parked in its chamber: the hold her rising charge cue climbs through
 const foeHolding = (f: Fighter) => f.phase === 'attack' && f.charge > 0 && f.move !== null && f.age <= (weaponOf(f.weapon).moves[f.move].chamber ?? -1);
@@ -102,9 +102,9 @@ setTrailOpacity(/[?&]trail=v1\b/.test(search) ? null : FIGHT.trail);
 // A landed special no longer sinks the struck body into the sand (data/fight.json specialSink, Dom); ?dip=v1 = V1's knee-dip drop.
 setSpecialSink(/[?&]dip=v1\b/.test(search) || FIGHT.specialSink.sink);
 // ?pitborn=v1: the Minotaur draws V1's Cleaver over the Centurion's gladius (data/fight.json foeWeapon, keyed to him, visual only; a no-op for the
-// Pitborn, who fights with his own cleaver); ?foeweapon=v1 = the gladius, ?foe=v1 = the Centurion.
+// Pitborn, who fights with his own cleaver); ?foeweapon=v1 = the gladius.
 setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
-// The HUD names the Minotaur body the Minotaur whoever fights in it (data/fight.json foeName, display only); ?foe=v1 = the Centurion.
+// The HUD names the Minotaur body the Minotaur whoever fights in it (data/fight.json foeName, display only).
 setFoeName(foeNameFor(FIGHT.foeName, search, opponentId));
 // Clip-to-clip blends in milliseconds (data/fight.json blendMs/settleMs, V2's rows: swings, hits and rolls ease in and out, the roll settles); ?blend=v1 = V1's transitions exactly.
 if (/[?&]blend=v1\b/.test(search)) setBlend(null); else setBlend(FIGHT.blendMs, FIGHT.settleMs);

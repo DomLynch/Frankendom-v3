@@ -60,11 +60,22 @@ import { createSignatures } from './signature.ts';
 import { scorch } from './scorch.ts';
 import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself (V3 meets only the veteran: the other nine opponents' signatures are not shipped)
 import { settleWithin } from './warm-gate.ts';
-import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
-import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
+import { heroBodyFile } from './hero-body-rows.ts';
+import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { foeRagdollFor, ragdollFinisher } from './ragdoll.ts';
+/** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
+export class RigLoadError extends Error {
+  readonly files: string[];
+  constructor(files: (string | undefined)[], cause: unknown) {
+    super(`106 body load failed (${files.map((f) => f?.split('/').pop() ?? 'none').join(', ')}): ${(cause as Error)?.message ?? String(cause)}`, { cause });
+    this.name = 'RigLoadError';
+    this.files = files.map((f) => f ?? 'none');
+  }
+}
+/** A baked clip a 106 body has no clips106 file for: rejected, never a 65-keyed file (none is shipped). */
+const noClip = (role: string) => (): Promise<{ default: unknown }> => Promise.reject(new Error(`no 106 clip for ${role}`));
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
 
@@ -75,7 +86,7 @@ const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: o
 const EQUIP_URLS: Record<string, string> = { '../assets/weapons/player/gladius.glb': new URL('../assets/weapons/player/gladius.glb', import.meta.url).href };
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // V3: the opponent's DRAWN weapon over the one he fights with (foe-weapon.ts, data/fight.json foeWeapon: V1's Cleaver on the Minotaur, the
-// sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1 / ?foe=v1: the gladius's).
+// sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1: the gladius's).
 const FOE_EQUIP_URLS: Record<string, string> = { '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href };
 // The Pitborn (foe-pick.ts, Dom 2026-10-26) really fights with the cleaver: the same file, grafted over the trident his Minotaur body bakes.
 const foeEquipUrl = (opponentId: string, weapon: WeaponId): string | undefined =>
@@ -241,18 +252,17 @@ export function createScene(
   // Every roster body except the held ones (roster.ts `hold`): glob patterns must be literals, so the exclusions are spelled out here —
   // tests/roster.test.ts checks the two lists agree. Held GLBs stay in src/assets for their lanes; they are just not in the beta bundle.
   // Hero preview (hero-preview.ts): a fitted set under /herolook/ stands in for the player's rig. It wears its armour on the rig itself, so
-  // the player's loot pieces are never layered over it (the opponent still wears his kit); a file that fails to load falls back to warrior.glb.
+  // the player's loot pieces are never layered over it (the opponent still wears his kit); a file that fails to load falls back to the hero's 106 body.
   const heroUrl = heroPreview(typeof location === 'undefined' ? '' : location.search);
-  chooseHeroBody(typeof location === 'undefined' ? '' : location.search);   // V3: Psyche, or ?hero=v1 warrior.glb (hero-body-rows.ts); only the one picked is fetched
-  chooseFoeBody(typeof location === 'undefined' ? '' : location.search);   // V3: the Minotaur on the Centurion's rig, or ?foe=v1 the Centurion (foe-body.ts); only the one picked is fetched
-  const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/minotaur.glb': new URL('../assets/minotaur.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href,
-    '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies); the 106-joint Psyche and Minotaur, drawn by default (rig-bones.ts, data/rig.json default: 106 only, no query key)
-  // psyche.glb / minotaur.glb (65) stay addressable only as the load's fallback when a 106 file fails (below); warrior.glb (?hero=v1) and veteran.glb (?foe=v1) have no 106 file.
-  // The opponent's own cut of loot.glb (scripts/split-loot.mjs): a fight fetches his kit only, never the whole 9.4 MB file.
-  const carrierUrls: Record<string, string> = { '../assets/loot/carriers-minotaur.glb': new URL('../assets/loot/carriers-minotaur.glb', import.meta.url).href, '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Minotaur's kit (the scutum alone), the Centurion's
-  // The foe's rig file: a roster body from the glob, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts), like the world bodies' '/world/...': the Origins preview build has no publicDir, so a BASE_URL-relative path would 404 there.
-  // `rig65`: the 65 file even where the 106 one was picked (the fallback when a 106 file fails to load: the fight never waits on the swap).
-  const foeUrl = (id: string, rig65 = false): string => ON_DEMAND_BEASTS.has(id) ? beastBodyUrl(id) : fighterUrls[`../assets/${foeBodyFile(id, ROSTER[id as OpponentId].body, rig65)}.glb`]!;
+  // 106 ONLY (Dom 2026-10-26: "no risk of going back to the old 65 rig"; docs/PLAN.md section 10). The loader table holds the 106-joint
+  // Psyche and Minotaur and nothing else: no 65 body (psyche.glb, minotaur.glb, warrior.glb, veteran.glb) is addressable, so none is
+  // built into dist/ (data/build.json notShipped; test/rig-bones.test.mjs is the lock). No query picks a body.
+  const fighterUrls: Record<string, string> = { '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href };
+  // The opponent's own cut of loot.glb (scripts/split-loot.mjs): none in V3. The Minotaur wears no kit (foe-body.ts) and the old cuts
+  // (carriers-minotaur.glb, carriers-veteran.glb) are skinned to the 65 rig, so they are not shipped.
+  const carrierUrls: Record<string, string> = {};
+  // The foe's rig file: his 106 body from the table above, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts).
+  const foeUrl = (id: string): string => ON_DEMAND_BEASTS.has(id) ? beastBodyUrl(id) : fighterUrls[`../assets/${foeBodyFile(id, ROSTER[id as OpponentId].body)}.glb`]!;
   // Combat waits for the arena's worker textures and props too (arena.ready never rejects): their GPU uploads then land during the
   // loading screen instead of stalling the first exchange (measured 69 ms p95 in the first window when they arrived late under load).
   // The load is retryable: a phone that sleeps mid-download aborts the fetch (2 MiB of the Nightborn's 5.1 MB, 2026-09-21 09:15) and
@@ -357,12 +367,15 @@ export function createScene(
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
       // The weapon his drawn body bakes (foe-body.ts: the Minotaur's is veteran.glb's trident; a 106 body bakes none) needs no file; a drawn weapon over his (foe-weapon.ts) is its own file.
-      const opponentEquip = (rig65: boolean) => pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon, rig65) ? undefined : foeEquipUrl(opponentId, pair[1]);
-      const load = (hero: string, rig65 = false) => loadWarriors(hero, foeUrl(opponentId, rig65), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip(rig65), SHIELD_CARRIERS.has(opponentId));
-      // V3 rig swap: the 106 file of a side whose rig is 106 (rig-bones.ts); if either 106 file fails, both sides load their 65 files (reported), so a fight never waits on the swap.
-      const hero65 = fighterUrls[`../assets/${heroBodyFile()}.glb`]!, hero106 = fighterUrls[`../assets/${heroRigFile(heroBodyFile())}.glb`]!, swapped = hero106 !== hero65 || foeUrl(opponentId) !== foeUrl(opponentId, true);
-      const loadBody = (heroBody: string) => swapped ? load(heroBody === hero65 ? hero106 : heroBody).catch((error: unknown) => { captureException(error, { tags: { rig: '106' } }); return load(heroBody, true); }) : load(heroBody);
-      return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => loadBody(heroBody)) : loadBody(heroBody)))(hero65);   // the hero-body row: Exo (warrior.glb) or the classic hero
+      const opponentEquip = pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
+      const foe = foeUrl(opponentId);
+      const load = (hero: string) => loadWarriors(hero, foe, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
+      // 106 only: both sides load their 106 files. A failure is NOT papered over with another body (the 65 fallback is gone, Dom 2026-10-26):
+      // it is a RigLoadError, reported and shown on screen by the catch below, so a broken 106 file is noticed.
+      const hero = fighterUrls[`../assets/${heroRigFile(heroBodyFile())}.glb`];
+      const loadBody = () => (hero && foe ? load(hero) : Promise.reject(new Error(`no 106 body in the loader table for ${hero ? opponentId : heroBodyFile()}`)))
+        .catch((error: unknown) => { throw new RigLoadError([hero, foe], error); });
+      return heroUrl ? load(heroUrl).catch(() => loadBody()) : loadBody();   // a /herolook/ preview that fails falls back to the hero's 106 body
     }),
     arena.ready,
     carrierUrl && !lateKit ? loadKit() : null,
@@ -370,7 +383,7 @@ export function createScene(
   ])
     .then(async ([loaded]) => {
       warriors = loaded;
-      // Which body file each side drew, so a 106 body takes its own baked clips (data/rig.json clips106); a 65 body (or a 106 load that fell back to 65) ignores it.
+      // Which body file each side drew, so each 106 body takes its own baked clips (data/rig.json clips106).
       loaded.player.useClips106(heroRigFile(heroBodyFile())); loaded.opponent.useClips106(foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body));
       sizeBeast(loaded, opponentId);   // a beast is drawn at the size it is met walking (src/fight/beast-scale.ts)
       dress();   // his kit before the opened-waist bake, so the cut body wears what the whole one did
@@ -416,9 +429,13 @@ export function createScene(
     })
     .catch((error) => {
       // A bare fighter after every retry (FRANKENDOM-5) names its file, the missing map and the tries, so the next event says which art failed.
-      captureException(error, error instanceof MissingTextures ? { tags: { fighter: error.url.split('/').pop(), missing: error.missing, attempts: error.attempts } } : undefined);
+      // A 106 body that failed (RigLoadError) is tagged rig: '106' with the files asked for, and says so on screen: nothing else is drawn in its place.
+      const rig = error instanceof RigLoadError, cause: unknown = rig ? error.cause : error;
+      const tags = { ...(cause instanceof MissingTextures ? { fighter: cause.url.split('/').pop(), missing: cause.missing, attempts: cause.attempts } : {}), ...(rig ? { rig: '106', files: error.files.join(' ') } : {}) };
+      captureException(cause, Object.keys(tags).length ? { tags } : undefined);
+      if (rig) (globalThis as { __rigLoadError?: { files: string[]; message: string } }).__rigLoadError = { files: error.files, message: String((cause as Error)?.message ?? cause) };   // the browser check reads it
       player.visible = opponent.visible = true;   // the capsules stand in so the fight is still readable while the notice offers a retry
-      assetStatus('Warrior art could not load. Movement still works; tap here to retry.', 'failed');
+      assetStatus(rig ? 'The fighters (106-joint rig) could not load, so they are not drawn. Reload to try again; the error has been reported.' : 'Warrior art could not load. Movement still works; tap here to retry.', 'failed');
     })
     .finally(() => {
       loading = null;
@@ -446,8 +463,8 @@ export function createScene(
   let severHead: SeveredHead | null = null;
   // Fetched on demand (src/fight/hamstrung-assets.ts), never in loadFighters: the killer's clip, the victim's clip and his weapon-drop bake.
   const hamstrungAssets = createHamstrungAssets(
-    // Each body its own file: a 65 body the 65 clip, a 106 body its data/rig.json clips106 file (characters.ts clipLoader; the killer is the player, the victim the opponent).
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Hamstrung') ?? (() => import('../assets/hamstrung-killer.json')))(), (warriors?.opponent.clipLoader('Death_Hamstrung') ?? (() => import('../assets/hamstrung-victim-hero.json')))()]); return { killer, victim }; },
+    // Each body its own data/rig.json clips106 file (characters.ts clipLoader; the killer is the player, the victim the opponent). No 65 clip JSON is shipped: a body without its file rejects (the plain death).
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Hamstrung') ?? noClip('Fin_Hamstrung'))(), (warriors?.opponent.clipLoader('Death_Hamstrung') ?? noClip('Death_Hamstrung'))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Hamstrung', parse(killer));
@@ -464,7 +481,7 @@ export function createScene(
   const wantHamstrung = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId) && warriors.player.takesBaked('Fin_Hamstrung') && warriors.opponent.takesBaked('Death_Hamstrung')) void hamstrungAssets.request(warriors); };
   // Execution (src/fight/execution.ts) loads on the picker's choice only (no idle prefetch: it re-skins 12 poses), never as part of ready, and a failure is the plain death.
   const executionAssets = createHamstrungAssets(
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Execution') ?? (() => import('../assets/execution-killer.json')))(), (warriors?.opponent.clipLoader('Death_Execution') ?? (() => import('../assets/execution-victim-hero.json')))()]); return { killer, victim }; },
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Execution') ?? noClip('Fin_Execution'))(), (warriors?.opponent.clipLoader('Death_Execution') ?? noClip('Death_Execution'))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Execution', parse(killer));

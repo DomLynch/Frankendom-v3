@@ -59,12 +59,8 @@ export const FINISHER_CLIPS = ['Death_SplitCrown', 'Death_RunThrough', 'Fin_RunT
 export const SPECIAL_ROLES = ['Special_SkullCrack', 'Special_Whirlwind', 'Special_GroundSlam', 'Special_Lunge', 'Special_BowPower', 'Special_BowFan', 'Special_BowPin', 'Special_BowQuick'] as const;   // the Bow* roles are a bow carrier's draw-and-loose (sandbox bowSpecial rows name them), played in place of the melee special's clip
 export type SpecialRole = (typeof SPECIAL_ROLES)[number];
 export const ADDITIVE_ROLES = ['Death_Hamstrung', 'Fin_Hamstrung', 'Death_Execution', 'Fin_Execution', ...SPECIAL_ROLES] as const;
-const SPECIAL_LOADERS: Record<SpecialRole, () => Promise<{ default: unknown }>> = {
-  Special_SkullCrack: () => import('../assets/special-skullcrack.json'), Special_Whirlwind: () => import('../assets/special-whirlwind.json'),
-  Special_GroundSlam: () => import('../assets/special-groundslam.json'), Special_Lunge: () => import('../assets/special-lunge.json'),
-  Special_BowPower: () => import('../assets/special-bowpower.json'), Special_BowFan: () => import('../assets/special-bowfan.json'),
-  Special_BowPin: () => import('../assets/special-bowpin.json'), Special_BowQuick: () => import('../assets/special-bowquick.json'),
-};
+// 106 only (Dom 2026-10-26): the 65-keyed clip JSONs (src/assets/special-*.json, execution-*.json, hamstrung-*.json) have no loader here and are
+// not shipped (data/build.json notShipped); every body takes its own data/rig.json clips106 file (clips-106.ts), or none.
 const isBowRole = (r: SpecialRole): boolean => r.startsWith('Special_Bow');
 export const specialRow = (role: SpecialRole): { weapons: readonly string[]; strike: number } => SPECIAL_CLIP_ROWS.clips.find(c => c.role === role) as unknown as { weapons: readonly string[]; strike: number };
 // The special clip a fighter's move plays right now (null = none): the swing of a skill row that names one, or its cast (the pre-release raise) while the special is under way.
@@ -1150,13 +1146,13 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // the kneel and the fall rest on the sand whatever the mesh (a body's feet, chest and face differ from the one the clip was authored on, which the pelvis ratio cannot see).
       /** scene.ts: this body's file stem when it is a 106 body ('psyche-106'), so its baked clips come from its own data/rig.json clips106 folder. */
       useClips106(body: string) { clipBody = body; },
-      /** The loader of a baked clip JSON this body plays for `role`: a 65 body the 65 file (specials: SPECIAL_LOADERS); a 106 body its clips106
-       *  file, or undefined when it has none (it plays what it would without the clip). */
+      /** The loader of a baked clip JSON this body plays for `role`: its clips106 file, or undefined when it has none (it plays what it would
+       *  without the clip). No 65-keyed file is shipped, so a 65 body (none is loadable in production) has none either. */
       clipLoader(role: (typeof ADDITIVE_ROLES)[number]): (() => Promise<{ default: unknown }>) | undefined {
-        return rigOf(root) === '106' ? clip106Loader(clipBody, role) : (SPECIAL_LOADERS as Record<string, () => Promise<{ default: unknown }>>)[role];
+        return rigOf(root) === '106' ? clip106Loader(clipBody, role) : undefined;
       },
-      /** Whether this body can play `role`'s baked clip at all: a 65 body always (its 65 file), a 106 body only with a clips106 file. */
-      takesBaked(role: (typeof ADDITIVE_ROLES)[number]): boolean { return rigOf(root) === '65' || !!clip106Loader(clipBody, role); },
+      /** Whether this body can play `role`'s baked clip at all: only with a clips106 file. */
+      takesBaked(role: (typeof ADDITIVE_ROLES)[number]): boolean { return rigOf(root) === '106' && !!clip106Loader(clipBody, role); },
       adoptClip(role: (typeof ADDITIVE_ROLES)[number], clip: AnimationClip, sourcePelvis?: number, fitFloor?: readonly number[]) {
         if (clips[role]) return;
         const rig = rigOf(root), rest = boneOf(asset.scene, 'pelvis')?.position.length();

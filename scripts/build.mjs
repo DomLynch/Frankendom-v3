@@ -114,6 +114,11 @@ const physicsFile = join(out, 'b/vendor', `physics.${createHash('sha256').update
 writeFileSync(physicsFile, physicsChunk);
 physicsSpec = relative(ENTRY_DIR, physicsFile).split('\\').join('/');
 const result = await bundleMain(true, () => vendorSpec);
+// 106 only (Dom 2026-10-26; data/build.json notShipped): no 65 body, kit or 65-keyed clip JSON may be referenced by the bundle. A reference is a
+// loader that could fetch a 65 file in production, so the build fails rather than ship it (or a 404 in its place).
+const NOT_SHIPPED = JSON.parse(readFileSync(join(root, 'data/build.json'), 'utf8')).notShipped.map((p) => join(root, p));
+const named = [...assets, ...lazyJson].filter((f) => NOT_SHIPPED.some((n) => n === f || n.startsWith(f.endsWith('/') ? f : f + '/')));
+if (named.length) throw new Error(`data/build.json notShipped: the bundle references ${named.map(rel).join(', ')} (106 only: no 65 loader in production)`);
 // The body measure rows the ragdoll fetches (data/physics.json `measure`: physics/bodies/<body>.measure.json), from the package as pinned.
 cpSync(join(root, 'node_modules/@frankendom/physics/data/bodies'), join(out, 'physics/bodies'), { recursive: true });
 for (const f of lazyJson) {
@@ -129,18 +134,14 @@ if (!html.includes(entryTag)) throw new Error('index.html: entry script not foun
 // the vendor module is fetched beside main.js, not after it (the browser would only find it once main.js had arrived)
 writeFileSync(join(out, 'index.html'), html.replace(entryTag, `<link rel="modulepreload" href="./${rel(vendorFile).replace('dist/', '')}">\n  ${entryTag}`));
 writeFileSync(join(out, 'build.txt'), id);
+for (const n of NOT_SHIPPED) if (existsSync(join(out, rel(n)))) throw new Error(`data/build.json notShipped: ${rel(n)} was copied into dist/ (106 only)`);
 
 // V1's production GLB packing (scripts/optimize-glb.mjs, copied from V1 as it is): meshopt-coded buffers, int8 normals and uint8 skin
-// weights, unused images dropped, JPEGs recoded losslessly by jpegtran. The Centurion's two files come out as V1's live site serves them
-// (carriers-veteran.glb byte for byte; veteran.glb the same but with every image kept inside, where V1 moves two shared ones to their own files).
-// The hero's warrior.glb (V1's 27 clips + Dom's picks, #19) is packed the same way, as V1's live hero is; its animation stays bit-exact, and
-// the sim's blade sweeps are baked data (blade-paths.ts, blade-picks.ts), never read from the GLB.
-// Only the dist copy is packed: the sources stay plain for Blender and the bakes (scripts/hero-clips/*).
-// ?load=v1 does not unpack them: the loaders have had the meshopt decoder since V1.
-// Psyche (the hero since 2026-10-26) is packed the same way as warrior.glb (?hero=v1).
-// The Minotaur (the opponent's body since 2026-10-26, scripts/foe-body/) and his scutum-only kit too, as the Centurion's (?foe=v1).
+// weights, unused images dropped, JPEGs recoded losslessly by jpegtran. Only the dist copy is packed: the sources stay plain for Blender and
+// the bakes. ?load=v1 does not unpack them: the loaders have had the meshopt decoder since V1.
+// The 65 bodies and kits (psyche.glb, warrior.glb, minotaur.glb, veteran.glb, carriers-*.glb) are no longer shipped (106 only, data/build.json notShipped).
 // The Minotaur's drawn Cleaver (data/fight.json foeWeapon): its equip file and V1's plain rank shape (public/, served at /weapons/shapes/).
-const PACKED = ['src/assets/psyche.glb', 'src/assets/warrior.glb', 'src/assets/minotaur.glb', 'src/assets/veteran.glb', 'src/assets/loot/carriers-minotaur.glb', 'src/assets/loot/carriers-veteran.glb', 'src/assets/weapons/foe/cleaver.glb', 'weapons/shapes/cleaver-plain.glb'];
+const PACKED = ['src/assets/weapons/foe/cleaver.glb', 'weapons/shapes/cleaver-plain.glb'];
 // The 106-joint bodies (src/assets/*-106.glb, src/fight/rig-bones.ts) are not in the list: OpenTrident ships them meshopt-packed and quantized already.
 for (const glb of PACKED) {
   const target = join(out, glb);

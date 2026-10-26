@@ -1,16 +1,16 @@
 // The Minotaur as the opponent (Dom 2026-10-26): src/assets/minotaur.glb is Mixamo's Minotaur on the Centurion's veteran.glb rig
 // (scripts/foe-body/build-minotaur.sh). What the game asks of his body is veteran.glb's: the 65 joints, all 39 clips byte for byte, the weapon
-// sockets where veteran.glb has them, a Body draw for his kit, the pelvis where the clips key it. His kit is the scutum alone. ?foe=v1 = veteran.glb.
+// sockets where veteran.glb has them, a Body draw for his kit, the pelvis where the clips key it. These 65 files stay in src/assets for the
+// tests and bakes; the page draws minotaur-106.glb only (106 only, Dom 2026-10-26; ?foe=v1 and ?shield=v1 are gone; test/rig-bones.test.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { chooseFoeBody, foeBakedWeapon as foeBaked, foeBodyFile as foeBody, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
+import { chooseFoeBody, foeBakedWeapon, foeBodyFile as foeBody, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
 import { fightOpponent } from '../src/fight/foe-pick.ts';
 import { OPPONENTS, opponentAt } from '../src/fight/moves.ts';
 
-// The body rows below name the 65 stems (foeBodyFile's `rig65`: minotaur.glb, the load's fallback); the 106 body drawn by default (minotaur-106) is test/rig-bones.test.mjs's.
+// The body rows below name the 65 stems (foeBodyFile's `stem`: minotaur, the name the rows key by); the 106 file drawn (minotaur-106) is test/rig-bones.test.mjs's.
 const foeBodyFile = (id, body) => foeBody(id, body, true);
-const foeBakedWeapon = (id, weapon) => foeBaked(id, weapon, true);
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 
@@ -56,30 +56,28 @@ test("the Minotaur's kit is the Centurion's scutum alone, read as veteran.Shield
   assert.equal(kit.j.nodes[0].extras.pieces['veteran.Shield'], '~kit.Shield');
 });
 
-test('?foe=v1 draws the Centurion and his whole kit; anything else the Minotaur', () => {
-  assert.equal(chooseFoeBody(''), false);
-  assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran'), foeBodySwapped('veteran')], ['minotaur', null, true], 'no shield on the Minotaur');
+// 106 only (Dom 2026-10-26): one body per opponent, no query picks another. ?foe=v1 (veteran.glb + carriers-veteran.glb) and ?shield=v1
+// (carriers-minotaur.glb, a 65-rigged kit) are gone; the 106 file drawn is foeBodyFile without `stem`.
+test('the Centurion and the Pitborn both draw the 106 Minotaur with no kit, whatever the query', () => {
+  for (const q of ['', '?foe=v1', '?shield=v1', '?foe=v1&hero=v1']) {
+    assert.equal(chooseFoeBody(q), false, `${q}: reads no query`);
+    for (const id of ['veteran', 'pitborn']) {
+      assert.deepEqual([foeBodyFile(id, id), foeBody(id, id), foeKitFile(id), foeBodySwapped(id)], ['minotaur', 'minotaur-106', null, true], `${id} ${q}`);
+    }
+  }
   assert.equal(foeBodyFile('goblin', 'goblin'), 'goblin', 'other opponents keep their own');
-  chooseFoeBody('?shield=v1');
-  assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran')], ['minotaur', 'carriers-minotaur'], '?shield=v1 = his scutum back');
-  assert.equal(chooseFoeBody('?foe=v1&hero=v1'), true);
-  assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran'), foeBodySwapped('veteran')], ['veteran', 'carriers-veteran', false]);
-  chooseFoeBody('');
 });
 
 // Dom 2026-10-26 (later): the opponent fights as V1's Pitborn in the Minotaur's body (data/fight.json opponent, src/fight/foe-pick.ts): no kit,
-// no shield (not even under ?shield=v1), his cleaver grafted over the trident minotaur.glb bakes. ?pitborn=v1 = the Centurion's fight above.
-test('the Pitborn draws the Minotaur with no kit; his cleaver is grafted over the baked trident; ?pitborn=v1 / ?foe=v1 = the Centurion', () => {
+// no shield, his cleaver grafted at the 106 body's socket (minotaur-106.glb bakes no weapon). ?pitborn=v1 = the Centurion's fight, same body.
+test('the Pitborn\'s cleaver is grafted (the 106 body bakes none); ?pitborn=v1 = the Centurion, ?foe=v1 = nothing', () => {
   assert.equal(fightOpponent(FIGHT, ''), 'pitborn');
-  assert.equal(chooseFoeBody(''), false);
-  assert.deepEqual([foeBodyFile('pitborn', 'pitborn'), foeKitFile('pitborn'), foeBodySwapped('pitborn')], ['minotaur', null, true]);
-  assert.equal(foeBakedWeapon('pitborn', 'cleaver'), 'trident', 'minotaur.glb bakes the trident, so the cleaver is grafted');
+  assert.equal(foeBakedWeapon('pitborn', 'cleaver'), '', 'minotaur-106.glb bakes no weapon, so the cleaver is grafted');
+  assert.equal(foeBakedWeapon('veteran', 'gladius'), '');
   assert.notEqual(foeBakedWeapon('pitborn', 'cleaver'), opponentAt(OPPONENTS.pitborn, FIGHT.level).weapon);
-  assert.ok(veteran.j.animations.some((a) => a.name === 'Trident_Idle') && minotaur.j.nodes.some((n) => n.name === 'WeaponDrawn'), 'the trident family and the socket the graft replaces');
-  chooseFoeBody('?shield=v1');
-  assert.equal(foeKitFile('pitborn'), null, 'the Pitborn never had a shield');
-  for (const q of ['?pitborn=v1', '?foe=v1', '?pitborn=v1&shield=v1']) assert.equal(fightOpponent(FIGHT, q), 'veteran', q);
-  chooseFoeBody('');
+  assert.equal(foeBakedWeapon('goblin', 'axe'), 'axe', 'a body with no row bakes its roster weapon');
+  for (const q of ['?pitborn=v1', '?pitborn=v1&shield=v1', '?pitborn=v1&foe=v1']) assert.equal(fightOpponent(FIGHT, q), 'veteran', q);
+  for (const q of ['?foe=v1', '?shield=v1']) assert.equal(fightOpponent(FIGHT, q), 'pitborn', q);
 });
 
 test("the cleaver plays the sword clip family, and minotaur.glb carries every clip of it (no fallback)", () => {

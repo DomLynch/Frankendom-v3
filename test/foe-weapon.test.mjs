@@ -27,8 +27,10 @@ test('the row draws the cleaver over the gladius the fight is armed with; the si
   setFoeWeapon(null);
 });
 
-test('?foeweapon=v1 and ?foe=v1 put the gladius back', () => {
-  for (const q of ['?foeweapon=v1', '?foe=v1', '?hero=v1&foe=v1']) {
+test('?foeweapon=v1 puts the gladius back; ?foe=v1 (removed with the 65 bodies) does nothing', () => {
+  setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, '?foe=v1'));
+  assert.equal(foeDrawnWeapon('veteran', 'gladius'), 'cleaver', '?foe=v1 is gone');
+  for (const q of ['?foeweapon=v1', '?foe=v1&foeweapon=v1']) {
     setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, q));
     assert.equal(foeDrawnWeapon('veteran', 'gladius'), 'gladius', q);
     assert.equal(shapesFor({ opponent: foeDrawnWeapon('veteran', 'gladius'), opponentId: 'veteran', playerLevel: 1, opponentLevel: 1 }).opponent, '/weapons/shapes/gladius-plain.glb', q);
