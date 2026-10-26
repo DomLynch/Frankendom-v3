@@ -6,6 +6,11 @@
     "dir": { "psyche-106": "106/psyche", "minotaur-106": "106/minotaur" },
     "files": { "Special_SkullCrack": "special-skullcrack.json", "Special_Whirlwind": "special-whirlwind.json", "Special_GroundSlam": "special-groundslam.json", "Special_Lunge": "special-lunge.json", "Fin_Execution": "execution-killer.json", "Death_Execution": "execution-victim-hero.json", "Fin_Hamstrung": "hamstrung-killer.json", "Death_Hamstrung": "hamstrung-victim-hero.json" }
   },
+  "clipLoad": {
+    "about": "When a 106 body's baked clip JSONs are fetched (perf, 2026-10-26: on a slow link the hero's specials landed ~5 s after ready, so the first Skull Crack or Whirlwind of a visit played the weapon's plain swing). `hero`: the hero's own clip roles, fetched the moment its rig is built, ahead of anything else (scene.ts, once warriors are loaded; characters.ts prefetchClips; only a role its weapon plays, as on the first cast). `afterFirstFrame`: roles fetched on idle after the first frame, never before it (the Hamstrung finisher's killer and victim, the opponent's included). Everything else (the opponent's specials, the Execution) stays on first need. Which clip plays when is unchanged: this only moves when a file is requested.",
+    "hero": ["Special_SkullCrack", "Special_Whirlwind", "Special_GroundSlam", "Special_Lunge"],
+    "afterFirstFrame": ["Fin_Hamstrung", "Death_Hamstrung"]
+  },
   "held": { "weapon": "WeaponDrawn", "sword": "SwordDrawn", "sheath": "SwordSheathed" },
   "files": { "psyche": "psyche-106", "minotaur": "minotaur-106" },
   "detect": { "65": "pelvis", "106": "mixamorig:Hips" },

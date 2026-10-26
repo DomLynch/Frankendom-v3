@@ -79,6 +79,8 @@ export const clip106Path = (body: string | undefined, role: string): string | un
   const dir = body ? CLIPS_106.dir[body] : undefined, file = CLIPS_106.files[role];
   return dir && file ? `${dir}/${file}` : undefined;
 };
+/** When the baked clips are fetched (data/rig.json clipLoad): `hero` the moment the hero's rig is built, `afterFirstFrame` on idle once the first frame is drawn. */
+export const CLIP_LOAD = RIG.clipLoad as { hero: readonly string[]; afterFirstFrame: readonly string[] };
 /** Every 106 clip path the data names (the loader table in clips-106.ts must hold each: test/rig-bones.test.mjs). */
 export const clip106Paths = (): readonly string[] => Object.keys(CLIPS_106.dir).flatMap(body => Object.keys(CLIPS_106.files).map(role => clip106Path(body, role)!));
 /** Where the 65 rig's weapon frame sits in its sword hand (data/rig.json grip65: `hand`, the 65 bone an equip part hangs from unless it names
