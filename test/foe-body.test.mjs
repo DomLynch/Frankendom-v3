@@ -50,8 +50,10 @@ test("the Minotaur's kit is the Centurion's scutum alone, read as veteran.Shield
 
 test('?foe=v1 draws the Centurion and his whole kit; anything else the Minotaur', () => {
   assert.equal(chooseFoeBody(''), false);
-  assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran'), foeBodySwapped('veteran')], ['minotaur', 'carriers-minotaur', true]);
+  assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran'), foeBodySwapped('veteran')], ['minotaur', null, true], 'no shield on the Minotaur');
   assert.equal(foeBodyFile('goblin', 'goblin'), 'goblin', 'other opponents keep their own');
+  chooseFoeBody('?shield=v1');
+  assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran')], ['minotaur', 'carriers-minotaur'], '?shield=v1 = his scutum back');
   assert.equal(chooseFoeBody('?foe=v1&hero=v1'), true);
   assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran'), foeBodySwapped('veteran')], ['veteran', 'carriers-veteran', false]);
   chooseFoeBody('');
