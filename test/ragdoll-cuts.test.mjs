@@ -120,6 +120,9 @@ test('a cut splits the skinned body: the piece takes the triangles the cut bone 
   assert.equal(triangles(s.mesh.geometry), 2, 'the near ring pair stays on the body; the seam triangle with one arm vertex of three is on neither (6 = 3 + 2 + 1)');
   assert.notEqual(s.mesh.geometry, s.geometry, 'the body draws its filtered twin');
   assert.equal(made[0].skeleton, s.mesh.skeleton, 'the piece follows the same bones');
+  const influence = (g, bone) => { let w = 0; const i = g.getAttribute('skinIndex'), k = g.getAttribute('skinWeight'); for (let v = 0; v < i.count; v++) for (let j = 0; j < 4; j++) if (i.getComponent(v, j) === bone) w += k.getComponent(v, j); return w; };
+  assert.ok(influence(made[0].geometry, 1) === 0 && influence(made[0].geometry, 2) > 0, 'the piece is skinned to the cut bones only (the spine, index 1, has none)');
+  assert.ok(influence(s.mesh.geometry, 2) === 0 && influence(s.mesh.geometry, 1) > 0, 'the body has lost the cut bones\' influence');
   assert.equal(made[0].parent, s.mesh.parent);
   assert.equal(cutter.carve(s.arm, { piece: 0.5, bodyKeepBelow: 0.5 }).length, 0, 'a second cut of the same bone has nothing left to take');
   cutter.restore();

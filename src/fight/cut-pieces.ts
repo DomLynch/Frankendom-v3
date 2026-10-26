@@ -38,16 +38,20 @@ export function createPieceCutter(anchor: Object3D) {
           const index = g.index, tris = index ? Uint32Array.from(index.array as ArrayLike<number>) : Uint32Array.from({ length: position.count }, (_, i) => i);
           const filtered = new BufferGeometry();
           for (const [name, attribute] of Object.entries(g.attributes)) filtered.setAttribute(name, attribute);
+          // the body's own skin copies: a cut takes the cut bones' influence off every vertex that stays (no skin stretching to a piece that has left)
+          filtered.setAttribute('skinIndex', new BufferAttribute(Uint16Array.from({ length: position.count * 4 }, (_, i) => skinIndex.getComponent((i / 4) | 0, i % 4)), 4));
+          filtered.setAttribute('skinWeight', new BufferAttribute(Float32Array.from({ length: position.count * 4 }, (_, i) => skinWeight.getComponent((i / 4) | 0, i % 4)), 4));
           filtered.setIndex(new BufferAttribute(tris, 1));
           body = { original: g, filtered, tris, count: tris.length };
           bodies.set(m, body);
         }
+        const si = body.filtered.getAttribute('skinIndex') as BufferAttribute, sw = body.filtered.getAttribute('skinWeight') as BufferAttribute, ia = si.array as Uint16Array, wa4 = sw.array as Float32Array;
         const share = new Float32Array(position.count).fill(-1);
         const held = (v: number) => {   // the weight the carried bones hold on this vertex
           let s = share[v]!;
           if (s >= 0) return s;
           s = 0;
-          for (let j = 0; j < 4; j++) if (carried[skinIndex.getComponent(v, j)]) s += skinWeight.getComponent(v, j);
+          for (let j = 0; j < 4; j++) if (carried[ia[v * 4 + j]!]) s += wa4[v * 4 + j]!;
           return (share[v] = s);
         };
         const take: number[] = [], tris = body.tris;
@@ -65,6 +69,24 @@ export function createPieceCutter(anchor: Object3D) {
         const own = new BufferGeometry();
         for (const [name, attribute] of Object.entries(g.attributes)) own.setAttribute(name, attribute);
         own.setIndex(new BufferAttribute(Uint32Array.from(take), 1));
+        // The skin of each side follows its own bones only: the piece keeps the carried influences (renormalised; a vertex with none rides the cut bone), the body
+        // loses them (renormalised; a vertex with nothing else rides the bone the cut bone hangs from). Without this a vertex shared across the cut stretches
+        // between the body and the piece as it flies.
+        const rootAt = Math.max(0, m.skeleton.bones.indexOf(root as never)), parentAt = Math.max(0, m.skeleton.bones.indexOf(root.parent as never));
+        const pi = new Uint16Array(ia.length), pw = new Float32Array(wa4.length);
+        for (let v = 0; v < position.count; v++) {
+          let c = 0, r = 0;
+          for (let j = 0; j < 4; j++) { const w = wa4[v * 4 + j]!; if (carried[ia[v * 4 + j]!]) c += w; else r += w; }
+          for (let j = 0; j < 4; j++) {
+            const k = v * 4 + j, mine = carried[ia[k]!];
+            pi[k] = ia[k]!; pw[k] = c > 1e-4 ? (mine ? wa4[k]! / c : 0) : 0;
+            wa4[k] = r > 1e-4 ? (mine ? 0 : wa4[k]! / r) : 0;
+          }
+          if (c <= 1e-4) { pi[v * 4] = rootAt; pw[v * 4] = 1; }
+          if (r <= 1e-4) { ia[v * 4] = parentAt; wa4[v * 4] = 1; }
+        }
+        sw.needsUpdate = true; si.needsUpdate = true;
+        own.setAttribute('skinIndex', new BufferAttribute(pi, 4)); own.setAttribute('skinWeight', new BufferAttribute(pw, 4));
         const piece = new SkinnedMesh(own, m.material);
         piece.name = `${m.name}Cut`; piece.userData.cutPiece = true;
         piece.position.copy(m.position); piece.quaternion.copy(m.quaternion); piece.scale.copy(m.scale);
@@ -83,9 +105,9 @@ export function createPieceCutter(anchor: Object3D) {
       bodies.clear(); pieces.length = 0;
     },
     /** The bone the ray strikes first on the body or a piece (the nearest vertex of the face it meets, that vertex's heaviest bone), with the point. */
-    pick(ray: Raycaster): { bone: Object3D; point: Vector3 } | null {
+    pick(ray: Raycaster, remeasure = true): { bone: Object3D; point: Vector3 } | null {
       const meshes = [...draws(), ...pieces];
-      for (const m of meshes) { m.computeBoundingBox(); m.computeBoundingSphere(); }   // the cached bounds are of the pose the mesh was last measured in
+      if (remeasure) for (const m of meshes) { m.computeBoundingBox(); m.computeBoundingSphere(); }   // the cached bounds are of the pose the mesh was last measured in
       const hit = ray.intersectObjects(meshes, false)[0];
       if (!hit || !hit.face || !isSkinned(hit.object)) return null;
       const m = hit.object, g = m.geometry, skinIndex = g.getAttribute('skinIndex'), skinWeight = g.getAttribute('skinWeight');

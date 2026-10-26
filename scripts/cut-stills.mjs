@@ -21,6 +21,7 @@ const open = async (query, tune) => {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+  if (process.env.CUTDEBUG) await page.addInitScript((v) => { globalThis.__cutDebug = v; }, process.env.CUTDEBUG);
   if (tune) await page.addInitScript((t) => { globalThis.__ragdollTune = t; }, tune);
   return page;
 };
@@ -83,13 +84,14 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
     for (let k = 0; k < 900 && !v1 && (await cost())?.state !== 'frozen'; k += 10) await run(10);
     await run(30);
     await shoot('tap--1');
-    const at = v1 ? null : await page.evaluate((p) => globalThis.__ragdoll.screenOf?.(p), TAP);
+    // TAP is a unit (arm_left ...: the first grid point of the screen a tap would cut that unit at) or a part (armLeft ...: that bone's own screen point)
+    const at = v1 ? null : /_/.test(TAP) || TAP === 'head' ? await page.evaluate((u) => { for (let y = 120; y < 700; y += 5) for (let x = 20; x < 360; x += 5) if (globalThis.__ragdoll.probe?.(x, y) === u) return [x, y]; return null; }, TAP) : await page.evaluate((p) => globalThis.__ragdoll.screenOf?.(p), TAP);
     if (at) { console.log(`${tag}: tapping ${TAP} at ${at.map((x) => x.toFixed(0))}`); await page.touchscreen.tap(at[0], at[1]); }
     let k = 0; for (const t of AFTER) { await run(t - k); k = t; await shoot(`tap-${t}`); }
   }
   const state = await cost();
-  report[tag] = { ticks: n, hitAt, killedAt, finish, ragdoll: state };
-  console.log(`${tag}: ${n} ticks, kill at ${killedAt} (${JSON.stringify(finish)}); ragdoll state ${state?.state}; cuts ${JSON.stringify(state?.cuts ?? [])}`);
+  report[tag] = { ticks: n, hitAt, killedAt, finish, ragdoll: state, pieces: await page.evaluate(() => globalThis.__ragdoll?.debug?.()) };
+  console.log(`${tag}: ${n} ticks, kill at ${killedAt} (${JSON.stringify(finish)}); ragdoll state ${state?.state}; cuts ${JSON.stringify(state?.cuts ?? [])}${state?.lastTap ? `; last tap: ${state.lastTap}` : ''}`);
   await page.close();
 }
 writeFileSync(`${out}/cut-report.json`, JSON.stringify(report, null, 2));

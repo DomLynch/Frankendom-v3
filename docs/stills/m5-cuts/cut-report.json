@@ -1,0 +1,106 @@
+{
+  "default": {
+    "ticks": 138,
+    "hitAt": 20,
+    "killedAt": 138,
+    "finish": {
+      "victim": 1,
+      "location": "torso",
+      "move": "kick",
+      "heading": 3.141592653589793
+    },
+    "ragdoll": {
+      "frames": 414,
+      "totalMs": 0,
+      "maxMs": 0,
+      "lastMs": 0,
+      "ticks": 390,
+      "state": "frozen",
+      "rig": "106",
+      "measure": "physics/bodies/minotaur-106.measure.json",
+      "byMode": {
+        "alive": {
+          "frames": 204,
+          "totalMs": 0,
+          "maxMs": 0
+        },
+        "dead": {
+          "frames": 210,
+          "totalMs": 0,
+          "maxMs": 0
+        }
+      },
+      "cuts": [
+        {
+          "type": "cut",
+          "unit": "head",
+          "gear": [],
+          "source": "kill"
+        }
+      ],
+      "lastTap": "",
+      "pieces": [
+        "head:MeshCut:6226",
+        "head:Mesh_1Cut:4922"
+      ]
+    }
+  },
+  "physics-v1": {
+    "ticks": 138,
+    "hitAt": 19,
+    "killedAt": 138,
+    "finish": {
+      "victim": 1,
+      "location": "torso",
+      "move": "kick",
+      "heading": 2.3330855410336735
+    },
+    "ragdoll": null
+  },
+  "ragdoll-finishers": {
+    "ticks": 138,
+    "hitAt": 20,
+    "killedAt": 138,
+    "finish": {
+      "victim": 1,
+      "location": "torso",
+      "move": "kick",
+      "heading": 3.141592653589793
+    },
+    "ragdoll": {
+      "frames": 413,
+      "totalMs": 0,
+      "maxMs": 0,
+      "lastMs": 0,
+      "ticks": 389,
+      "state": "frozen",
+      "rig": "106",
+      "measure": "physics/bodies/minotaur-106.measure.json",
+      "byMode": {
+        "alive": {
+          "frames": 203,
+          "totalMs": 0,
+          "maxMs": 0
+        },
+        "dead": {
+          "frames": 210,
+          "totalMs": 0,
+          "maxMs": 0
+        }
+      },
+      "cuts": [
+        {
+          "type": "cut",
+          "unit": "head",
+          "gear": [],
+          "source": "kill"
+        }
+      ],
+      "lastTap": "",
+      "pieces": [
+        "head:MeshCut:6226",
+        "head:Mesh_1Cut:4922"
+      ]
+    }
+  }
+}
