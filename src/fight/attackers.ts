@@ -1,0 +1,4 @@
+// The ONE attacker cap (Dom: three on one). A leaf module so the node-safe door (src/fight/server.ts closure: replay -> pack) and the open-world loop (src/fight/world.ts) read the same number without pack.ts importing the world loop.
+// tests/k7-engine-parity.test.ts fails if a second attacker/token cap constant is declared anywhere else, or if a duel ever holds more than this many creatures on one player.
+import { worldRule } from './world-rules.ts';
+export const MAX_ATTACKERS = worldRule('maxAttackers');   // creatures on one player at once: the nearest fights him on his lock-on, the rest join on their own duel against him; a fourth holds off at the ring (world.ts), and a shared-health group holds the rest idle in the sim (pack.ts startStreams)

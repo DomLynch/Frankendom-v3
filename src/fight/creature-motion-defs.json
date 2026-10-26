@@ -1,0 +1,11 @@
+{
+  "motions": [
+    {"id": "wolf", "circleChance": 0.35, "circleWithinM": 3, "stopAtReach": 0.85, "reapproach": 1.1, "holdRedecideScale": 3, "turnRateCapRadPerS": 3.141592653589793, "circleRedecideMinS": 2, "circleRedecideMaxS": 4, "strafeSpeedCapMps": 1.4},
+    {"id": "ember-wolf", "circleChance": 0.35, "circleWithinM": 3, "stopAtReach": 0.85, "reapproach": 1.1, "holdRedecideScale": 3, "turnRateCapRadPerS": 3.141592653589793, "circleRedecideMinS": 2, "circleRedecideMaxS": 4, "strafeSpeedCapMps": 1.4},
+    {"id": "boar", "circleChance": 0, "circleWithinM": 3, "stopAtReach": 0.85, "reapproach": 1.1, "holdRedecideScale": 3, "turnRateCapRadPerS": 3.141592653589793, "circleRedecideMinS": 2, "circleRedecideMaxS": 4, "strafeSpeedCapMps": 0},
+    {"id": "bear", "circleChance": 0, "circleWithinM": 3, "stopAtReach": 0.85, "reapproach": 1.1, "holdRedecideScale": 3, "turnRateCapRadPerS": 3.141592653589793, "circleRedecideMinS": 2, "circleRedecideMaxS": 4, "strafeSpeedCapMps": 0},
+    {"id": "cave-troll", "circleChance": 0, "circleWithinM": 3, "stopAtReach": 0.85, "reapproach": 1.1, "holdRedecideScale": 3, "turnRateCapRadPerS": 3.141592653589793, "circleRedecideMinS": 2, "circleRedecideMaxS": 4, "strafeSpeedCapMps": 0},
+    {"id": "giant-salamander", "circleChance": 0.15, "circleWithinM": 3, "stopAtReach": 0.85, "reapproach": 1.1, "holdRedecideScale": 3, "turnRateCapRadPerS": 3.141592653589793, "circleRedecideMinS": 2, "circleRedecideMaxS": 4, "strafeSpeedCapMps": 1.4},
+    {"id": "goblin", "circleChance": 0, "circleWithinM": 3, "stopAtReach": 0.85, "reapproach": 1.1, "holdRedecideScale": 3, "turnRateCapRadPerS": 3.141592653589793, "circleRedecideMinS": 2, "circleRedecideMaxS": 4, "strafeSpeedCapMps": 0}
+  ]
+}

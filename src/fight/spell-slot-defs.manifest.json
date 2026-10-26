@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "spellSlot", "file": "spell-slot-defs.json", "at": "slots", "key": "id", "required": { "action": "string", "order": "integer" } },
+    { "table": "spellSlotRule", "file": "spell-slot-defs.json", "at": "rules", "key": "id", "required": { "value": "number", "unit": "string" } }
+  ]
+}

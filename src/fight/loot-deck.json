@@ -1,0 +1,16 @@
+{
+  "rollPoints": [
+    { "id": "spawn", "note": "the deck is drawn when the mob spawns, so the drop is fixed before the fight and the kill only reveals it" },
+    { "id": "kill", "note": "drawn at the kill (a fallback for a mob that has no spawn-time roll)" }
+  ],
+  "resets": [
+    { "id": "drop", "clearsPity": true, "reshuffles": false, "note": "a hit card was drawn: the miss streak starts again" },
+    { "id": "rank-up", "clearsPity": true, "reshuffles": true, "note": "the player's ladder rank changed: a fresh deck for the new rank" },
+    { "id": "deck-empty", "clearsPity": false, "reshuffles": true, "note": "every card drawn: reshuffle; the miss streak carries over" }
+  ],
+  "decks": [
+    { "id": "ranked", "scope": "account", "rolledAt": "spawn", "deckSize": 4, "hits": 1, "softPityFrom": 3, "pityStep": 25, "hardPity": 4, "resets": ["drop", "rank-up", "deck-empty"] },
+    { "id": "wild", "scope": "account", "rolledAt": "spawn", "deckSize": 6, "hits": 1, "softPityFrom": 4, "pityStep": 15, "hardPity": 7, "resets": ["drop", "deck-empty"] },
+    { "id": "boss", "scope": "account", "rolledAt": "spawn", "deckSize": 2, "hits": 1, "softPityFrom": 1, "pityStep": 50, "hardPity": 1, "resets": ["drop", "deck-empty"] }
+  ]
+}

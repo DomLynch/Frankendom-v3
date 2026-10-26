@@ -1,0 +1,16 @@
+{
+  "tables": [
+    {
+      "table": "poiseladder",
+      "file": "poise-ladder-defs.json",
+      "at": "rules",
+      "key": "id",
+      "required": {
+        "flinchFrom": "number",
+        "staggerFrom": "number",
+        "flinchStagger": "number",
+        "immunity": "integer"
+      }
+    }
+  ]
+}

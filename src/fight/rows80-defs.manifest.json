@@ -1,0 +1,7 @@
+{
+  "tables": [
+    { "table": "specialTimer80", "file": "rows80-defs.json", "at": "specialTimers", "key": "id", "required": { "ticks": "number" } },
+    { "table": "foeOpener80", "file": "rows80-defs.json", "at": "foeOpeners", "key": "id", "required": { "maxLevel": "number", "ticks": "number" } },
+    { "table": "rows80Dial", "file": "rows80-defs.json", "at": "dials", "key": "id", "required": { "value": "number" } }
+  ]
+}

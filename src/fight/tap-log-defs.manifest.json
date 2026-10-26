@@ -1,0 +1,6 @@
+{
+  "tables": [
+    { "table": "tapLogLabel", "file": "tap-log-defs.json", "at": "labels", "key": "id", "required": { "text": "string" } },
+    { "table": "tapLogNumber", "file": "tap-log-defs.json", "at": "numbers", "key": "id", "required": { "value": "number" } }
+  ]
+}

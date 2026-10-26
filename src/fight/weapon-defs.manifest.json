@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "weapon", "file": "weapon-defs.json", "at": "weapons", "key": "id", "required": {}, "refs": { "extends": "weapon" } }
+  ]
+}

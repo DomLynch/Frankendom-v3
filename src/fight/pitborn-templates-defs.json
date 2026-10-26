@@ -1,0 +1,7 @@
+{
+  "templates": [
+    {"id":"crack","params":["cracks","clods","grit","crackAlpha","clodAlpha","gritAlpha","gritTint"]},
+    {"id":"ashfall","params":["flakes","patches","smoke","patchAlpha","smokeAlpha","flakeAlpha"]},
+    {"id":"gale","params":["streaks","sand","grit","strokeAlpha","sandAlpha","gritTint","over"]}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "bands": [
+    {"id":"early","level":1},
+    {"id":"late","level":16}
+  ],
+  "classes": [
+    {"id":"witch","specials":["wake","stirring"]},
+    {"id":"plaguedoctor","specials":["tempo","pulse"]},
+    {"id":"knight","specials":["drag","swing"]},
+    {"id":"nightborn","specials":["lunge","cuts"]},
+    {"id":"veteran","specials":["setfoot","standfast"]},
+    {"id":"goblin","specials":["knuckledirt","ratrun"]},
+    {"id":"executioner","specials":["heelreap","blackfurrow"]},
+    {"id":"pitborn","specials":["cleaverset","earthfold"]},
+    {"id":"dwarf","specials":["groundset","ironsettle"]},
+    {"id":"shieldmaiden","specials":["cutmark","gatherededge"]}
+  ]
+}

@@ -1,0 +1,380 @@
+[
+ {
+  "id": "arawn",
+  "label": "Baying Circle",
+  "opponent": "executioner",
+  "rank": 8,
+  "fx": "executioner",
+  "at": "feet",
+  "lift": -0.06,
+  "cue": "baying",
+  "classSkill": "skill_reaping",
+  "look": {
+   "day": {
+    "core": [
+     0.1,
+     0.055,
+     0.04
+    ],
+    "edge": [
+     0.2,
+     0.12,
+     0.08
+    ]
+   },
+   "night": {
+    "core": [
+     0.05,
+     0.034,
+     0.026
+    ],
+    "edge": [
+     0.11,
+     0.08,
+     0.06
+    ]
+   }
+  }
+ },
+ {
+  "id": "thanatos",
+  "label": "Long Shadow",
+  "opponent": "executioner",
+  "rank": 9,
+  "fx": "executioner",
+  "at": "feet",
+  "lift": -0.14,
+  "cue": "longshadow",
+  "classSkill": "skill_reaping",
+  "look": {
+   "day": {
+    "core": [
+     0.004,
+     0.003,
+     0.003
+    ],
+    "edge": [
+     0.03,
+     0.024,
+     0.02
+    ]
+   },
+   "night": {
+    "core": [
+     0.003,
+     0.002,
+     0.002
+    ],
+    "edge": [
+     0.012,
+     0.009,
+     0.007
+    ]
+   }
+  }
+ },
+ {
+  "id": "reaper",
+  "label": "Harvest Sweep",
+  "opponent": "executioner",
+  "rank": 10,
+  "fx": "executioner",
+  "at": "feet",
+  "lift": -0.1,
+  "cue": "harvest",
+  "classSkill": "skill_reaping",
+  "look": {
+   "day": {
+    "core": [
+     0.09,
+     0.055,
+     0.04
+    ],
+    "edge": [
+     0.2,
+     0.13,
+     0.09
+    ]
+   },
+   "night": {
+    "core": [
+     0.04,
+     0.028,
+     0.022
+    ],
+    "edge": [
+     0.05,
+     0.036,
+     0.028
+    ]
+   }
+  }
+ },
+ {
+  "id": "mist",
+  "label": "Avalon Mist",
+  "opponent": "witch",
+  "rank": 8,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "avalon",
+  "classSkill": "skill_witchfire"
+ },
+ {
+  "id": "echo",
+  "label": "Foretold Step",
+  "opponent": "witch",
+  "rank": 9,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "foretold",
+  "classSkill": "skill_witchfire",
+  "travel": "foretold"
+ },
+ {
+  "id": "price",
+  "label": "The Price",
+  "opponent": "witch",
+  "rank": 10,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "theprice",
+  "classSkill": "skill_witchfire"
+ },
+ {
+  "id": "flies",
+  "label": "Plague Flies",
+  "opponent": "plaguedoctor",
+  "rank": 8,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "plagueflies",
+  "classSkill": "skill_miasma"
+ },
+ {
+  "id": "stain",
+  "label": "Poison Stain",
+  "opponent": "plaguedoctor",
+  "rank": 9,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "poisonstain",
+  "classSkill": "skill_miasma"
+ },
+ {
+  "id": "breath",
+  "label": "Last Breath",
+  "opponent": "plaguedoctor",
+  "rank": 10,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "lastbreath",
+  "classSkill": "skill_miasma"
+ },
+ {
+  "id": "sling",
+  "label": "The Sling",
+  "opponent": "knight",
+  "rank": 8,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "thesling",
+  "classSkill": "skill_ironrush"
+ },
+ {
+  "id": "haze",
+  "label": "Wrath",
+  "opponent": "knight",
+  "rank": 9,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "wrath",
+  "classSkill": "skill_ironrush"
+ },
+ {
+  "id": "storm",
+  "label": "Storm Follows Him",
+  "opponent": "knight",
+  "rank": 10,
+  "fx": "boss",
+  "at": "feet",
+  "lift": -0.28,
+  "cue": "storm",
+  "classSkill": "skill_ironrush"
+ },
+ {
+  "id": "reynard",
+  "label": "Dirty Fistful",
+  "opponent": "goblin",
+  "rank": 8,
+  "fx": "goblin",
+  "at": "feet",
+  "lift": -0.06,
+  "cue": "fistful",
+  "classSkill": "skill_jab",
+  "held": "ready"
+ },
+ {
+  "id": "hermes",
+  "label": "Gone",
+  "opponent": "goblin",
+  "rank": 9,
+  "fx": "goblin",
+  "at": "feet",
+  "lift": -0.1,
+  "cue": "gone",
+  "classSkill": "skill_jab"
+ },
+ {
+  "id": "loki",
+  "label": "Three Liars",
+  "opponent": "goblin",
+  "rank": 10,
+  "fx": "goblin",
+  "at": "feet",
+  "lift": -0.1,
+  "cue": "liars",
+  "classSkill": "skill_jab"
+ },
+ {
+  "id": "set",
+  "label": "Red Wind",
+  "opponent": "nightborn",
+  "rank": 8,
+  "fx": "redwind",
+  "at": "feet",
+  "lift": 0.12,
+  "cue": "redwind",
+  "classSkill": "skill_lunge",
+  "held": "thrust"
+ },
+ {
+  "id": "hades",
+  "label": "Hades' Shadow",
+  "opponent": "nightborn",
+  "rank": 9,
+  "fx": "hades",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "hades",
+  "classSkill": "skill_lunge"
+ },
+ {
+  "id": "nyx",
+  "label": "Nyx Nightfall",
+  "opponent": "nightborn",
+  "rank": 10,
+  "fx": "nightfall",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "nyx",
+  "classSkill": "skill_lunge"
+ },
+ {
+  "id": "dwarf8",
+  "label": "The Word",
+  "opponent": "dwarf",
+  "rank": 8,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "theword",
+  "classSkill": "skill_stomp"
+ },
+ {
+  "id": "dwarf9",
+  "label": "Three Blows",
+  "opponent": "dwarf",
+  "rank": 9,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "threeblows",
+  "classSkill": "skill_stomp"
+ },
+ {
+  "id": "dwarf10",
+  "label": "Rim Shake",
+  "opponent": "dwarf",
+  "rank": 10,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "rimshake",
+  "classSkill": "skill_stomp"
+ },
+ {
+  "id": "shield8",
+  "label": "Bared Face",
+  "opponent": "shieldmaiden",
+  "rank": 8,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "baredface",
+  "classSkill": "skill_hewer"
+ },
+ {
+  "id": "shield9",
+  "label": "The Ring",
+  "opponent": "shieldmaiden",
+  "rank": 9,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "thering",
+  "classSkill": "skill_hewer"
+ },
+ {
+  "id": "shield10",
+  "label": "Aegis Sweep",
+  "opponent": "shieldmaiden",
+  "rank": 10,
+  "fx": "dwarfshield",
+  "at": "head",
+  "lift": -0.28,
+  "cue": "aegis",
+  "classSkill": "skill_hewer"
+ },
+ {
+  "id": "antaeus",
+  "label": "Cracking Ground",
+  "opponent": "pitborn",
+  "rank": 8,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": 0.12,
+  "cue": "cracking",
+  "classSkill": "skill_cleave"
+ },
+ {
+  "id": "surtr",
+  "label": "Ash Fall",
+  "opponent": "pitborn",
+  "rank": 9,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": -0.2,
+  "cue": "ashfall",
+  "classSkill": "skill_cleave"
+ },
+ {
+  "id": "typhon",
+  "label": "Wind Wall",
+  "opponent": "pitborn",
+  "rank": 10,
+  "fx": "pitborn",
+  "at": "feet",
+  "lift": 0,
+  "cue": "windwall",
+  "classSkill": "skill_cleave"
+ }
+]

@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "special", "file": "special-defs.json", "at": "specials", "key": "id", "required": { "family": "string", "template": "string", "opponent": "string", "cast": "object", "cast.actor": "integer", "params": "object" } }
+  ]
+}

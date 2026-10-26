@@ -1,0 +1,141 @@
+import { audioRule } from './audio-rules.ts';
+import { GLANCE_GAIN, GLANCE_RATE, specialSoundOf } from '../sandbox-rules.ts';
+import type { ClarityEvent, CombatEvent } from '../combat.ts';
+import type { Finish } from '../duel.ts';
+import { MOVES, RULES, WEAPON_LOOK, type MoveId, type WeaponId } from '../moves.ts';
+import { finisherRow, selectFinisher, type FinisherId } from '../finishers.ts';
+import { isTemplate } from '../finisher-look.ts';
+import type { FinisherCue } from '../finisher-rows.ts';
+import { HAMSTRUNG_BEATS } from '../hamstrung.ts';
+import { poseOf, EXECUTION_BEATS, executionAt } from '../execution.ts';
+import { hasBlood, type OpponentId } from '../../roster.ts';
+import type { CueName } from '../../audio/manifest.ts';
+import { defenceGrade, GRADE_AUDIO } from '../defence-grade.ts';
+import { specialCounting } from '../special-counter.ts';
+
+// ?debug=1 only: the cues a melee special's own specialSound row made, so feedback.ts counts them where they really play (special-counter.ts). Empty and never written with debug off.
+const specialRowCues = new WeakSet<object>();
+export const isSpecialRowCue = (c: object): boolean => specialRowCues.has(c);
+const fromRow = <T extends object>(c: T): T => { if (specialCounting()) specialRowCues.add(c); return c; };
+
+// Event → cue mapping. Pure data: the simulation's events decide what is heard; gain, room send and pitch spread are per cue.
+// Order matters — the voice limiter serves cues in this order, so impacts come before air.
+export type Cue = { name: CueName; gain: number; room: number; delay?: number; rate?: number; hold?: number };   // hold: seconds a looped cue climbs (feedback.ts)
+const HEAVY = new Set(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'riposte', 'slash_riposte']);
+const cue = (name: CueName, gain: number, room: number, delay?: number, rate?: number): Cue => ({ name, gain, room, ...(delay ? { delay } : {}), ...(rate ? { rate } : {}) });
+// The wall's six lorarii each keep one whip voice: guard 0 the deepest, guard 5 the thinnest, fixed so the same man always
+// sounds like himself over a long fight. An event with no `guard` (a replay written before the tell) plays at rate 1.
+const WHIP_RAISE = audioRule('whipRaise');   // seconds of the raise cue — the lash tick is what it has to land on, so `lead` becomes its delay
+const whipRate = (guard?: number) => guard === undefined ? 1 : audioRule('whipRateBase') + Math.min(audioRule('whipGuardCap'), Math.max(0, guard)) * audioRule('whipGuardStep');   // the base, the guard cap and the step are audio-rules rows
+export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
+// Dom has not signed off the interrupt voice (he rejected the first grunt, 2026-10-06): the slot is wired and tested but SILENT until he picks. His OK is this one constant.
+export const EFFORT_VOICE = false;
+export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE, defence = false): Cue[] {
+  const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
+  const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;
+  const selected = pick ? presentation?.override ?? pick : null;
+  const finisher = selected && poseOf(selected) ? selected : null;
+  const gore = presentation?.gore !== false;
+  // The finisher's own sounds are its row's (src/fight/finisher-defs.json `sound`); Hamstrung's and Execution's are their templates' beats, below.
+  const sound = finisher ? finisherRow(finisher)?.sound : undefined, staged = isTemplate(finisher, 'hamstring', 'execute');
+  // A row cue: `at` seconds after the kill, or `atDeath` of the way through the slowed death clip (the 5 % a severed head waits for is the visible decapitation's).
+  const play = (c: FinisherCue): Cue => cue(c.cue as CueName, c.gain, c.room, c.at ?? (RULES.death / 60) / .75 * c.atDeath!);
+  // A hero melee skill that the engine plays as an ORDINARY attack: Zone 1 gives a hero with no spell no `specialShare`, so duel.ts does not take its special branch and the press is AttackStarted / Hit
+  // carrying move 'skill_<id>' (measured in a real Zone 1 page, #3324), never SpecialStarted / SpecialLanded. The hero is slot 0; a foe's attack with a skill move keeps the generic cues. Rows or generic, never both.
+  const skillRows = (e: CombatEvent) => e.actor === 0 && !e.spell && e.move?.startsWith('skill_') ? specialSoundOf(e.move.slice('skill_'.length)) : [];
+  const rowCue = (r: ReturnType<typeof specialSoundOf>[number]) => fromRow(cue(r.cue as CueName, r.gain / 1000, r.room / 1000, r.delay ? r.delay / 1000 : undefined));
+
+  for (const e of events) {
+    if (e.type === 'PostureBroken') impacts.push(cue('bone_crack', .55, .05));   // a dry thud on the break, whoever's posture it was (Strategy 2026-10-07)
+    const bone = e.target === 1 && opponent !== undefined && !hasBlood(opponent);
+    // Owner 2026-09-22: flesh wounds and weapon hits down; parry, block and guard break stay as they are. The first pass
+    // (1 → .75) barely moved the output — these gains feed the bus compressor (−20 dB, 5:1) before the ceiling, which gives
+    // most of a cue cut back: measured −2.5 dB nominal landed as −1 dB. At .3 the drop is real and targeted (rendered probes,
+    // same graph): hit-light −30.1 → −34.2 LUFS-I while blocked stays −29.1, so hits sit 5 dB under the guards, not 1 dB over.
+    if (e.type === 'Hit' && !staged && e.target !== undefined && e.target !== e.actor && skillRows(e).length) {   // the skill's own landing: its land rows instead of hit_flesh (the sandbox's SpecialLanded)
+      for (const r of skillRows(e).filter((x) => x.on !== 'start')) { const c = rowCue(r); impacts.push(e.glance && GLANCE_GAIN ? { ...c, gain: c.gain * GLANCE_GAIN / 1000, rate: GLANCE_RATE / 1000 } : c); }   // an off-band skill blow lands quiet and low like any other glance
+      if (e.guarded) impacts.push(cue('block', .3, .2, undefined, .8));   // a skill blow through a guard held on the wrong side keeps the glancing scrape under it (Combat #750)
+    }
+    else if (e.type === 'Hit' && !staged) {   // Hamstrung's and Execution's blows are timed on the scene (below), not on the killing tick
+      { const c: Cue = bone ? cue('bone_crack', e.charged || HEAVY.has(e.move ?? '') ? .65 : .4, .12) : e.move === 'kick' ? cue('hit_kick', .3, .2) : e.charged || HEAVY.has(e.move ?? '') ? cue('hit_heavy', .3, .3) : cue('hit_flesh', .3, .3); impacts.push(e.glance && GLANCE_GAIN ? { ...c, gain: c.gain * GLANCE_GAIN / 1000, rate: GLANCE_RATE / 1000 } : c); }   // sandbox-mech reach bands: an off-band blow lands quiet and low (glanceGain / glanceRate rows), no new sprite
+      // SCOPE 7 change C (Lead 2026-09-25): a blow through a guard held on the wrong side (or a kick into a raised guard) is
+      // `guarded` (Combat #750). It lands as a hit, with a quiet glancing scrape of steel under it: the block cue, low and slowed,
+      // so a failed block sounds unlike both a clean block and an open hit. No new sprite bytes.
+      if (e.guarded) impacts.push(cue('block', .3, .2, undefined, .8));
+    }
+    else if (e.type === 'SpecialLanded' && !e.spell && e.target !== undefined && e.target !== e.actor && e.move?.startsWith('skill_')) { for (const r of specialSoundOf(e.move.slice('skill_'.length)).filter((x) => x.on !== 'start')) impacts.push(rowCue(r)); }   // a melee special's own landing sound (sandbox specialSound rows; none on trunk)
+    else if (e.type === 'SpecialStarted' && !e.spell && e.move?.startsWith('skill_')) { for (const r of specialSoundOf(e.move.slice('skill_'.length)).filter((x) => x.on === 'start')) air.push(rowCue(r)); }   // the swing's own whoosh, timed into the committed windup (sandbox specialSound rows with on: start)
+    else if (e.type === 'GuardBroken') impacts.push(cue('guard_break', 1, .35), cue(bone ? 'bone_crack' : 'hit_flesh', .55, .2));
+    else if (defence && defenceGrade(e)) impacts.push(...GRADE_AUDIO[defenceGrade(e)!].map((l) => cue(l.name, l.gain, l.room, l.delay, l.rate)));   // ?look=defence (defence-grade.ts): the player's own Parried/Blocked by grade
+    else if (e.type === 'Parried') impacts.push(cue('parry', 1, .45));
+    // The anti-turtling lash and its tell. WhipRaised carries `lead`, the ticks until the lash, so the raise is delayed to end
+    // on the lash tick instead of opening a second of silence before it: 60 ticks before the first lash, 30 before a repeat.
+    // It is air, not an impact — quiet and far back in the room, because the man holding it is at the wall, not in the fight.
+    // Gain .1, measured on the phone band (2026-09-23): at .3 the dense swell read −29.2 LUFS, level with the lash and a block;
+    // at .1 it sits 8.4 dB under the lash (−37.6), between a heavy swing and a light hit.
+    else if (e.type === 'Whipped') impacts.push(cue('whip', .85, .25, undefined, whipRate(e.guard)));
+    else if (e.type === 'WhipRaised') air.push(cue('whip_raise', .1, .5, Math.round(Math.max(0, (e.lead ?? 60) / 60 - WHIP_RAISE) * 1000) / 1000, whipRate(e.guard)));
+    // Perfect block .55 (SCOPE 7 change B, measured 2026-09-26): its brighter, longer ring at 1 read −26.7 phone LUFS, over the
+    // parry; .55 sets it at −30.1, between a block (−30.5) and a parry (−29.7).
+    else if (e.type === 'Blocked') impacts.push(e.perfect ? cue('block_perfect', .55, .35) : cue('block', 1, .35));
+    else if (e.type === 'Killed') {
+      if (isTemplate(finisher, 'hamstring')) {
+        // Two blows, each held for the scene's hit-stop: the knee cut (the weapon falls and rolls), then the thrust into the back.
+        const { knee, back, duration, hold } = HAMSTRUNG_BEATS, kneeAt = knee * duration, backAt = back * duration + hold;
+        impacts.push(cue('whoosh_heavy', .18, .18, kneeAt - .2), cue(gore ? 'flesh_cut' : 'hit_heavy', .6, .12, kneeAt), cue('death_voice', .35, .1, kneeAt + .06),
+          cue('roll', .24, .12, kneeAt + hold + .65), cue('whoosh_light', .12, .12, backAt - .16), cue(gore ? 'flesh_stab' : 'hit_heavy', .65, .12, backAt));
+        continue;
+      }
+      if (isTemplate(finisher, 'execute')) {
+        // The raise's whoosh before the held half-second (it hangs in silence), the cut at the nape, his voice breaking on it, then the body onto the sand.
+        const raiseAt = executionAt(EXECUTION_BEATS.raise), cutAt = executionAt(EXECUTION_BEATS.strike);
+        impacts.push(cue('whoosh_heavy', .18, .18, raiseAt - .25), cue(gore ? 'flesh_cut' : 'hit_heavy', .6, .12, cutAt), cue('death_voice', .35, .1, cutAt + .06),
+          cue('kill', .5, .25, cutAt + .55));
+        continue;
+      }
+      if (!bone) impacts.push(cue('death_voice', .45, .1, .03));
+      // The body meeting the sand: the row's fall (the impaled corpse kneels and stays on the blade, so Run Through's is a roll, never a floor slam;
+      // Opened's halves land later with gore on), or an unadorned kill's for no finisher.
+      impacts.push(sound ? play(gore && sound.goreFall ? sound.goreFall : sound.fall) : cue('kill', .65, .25, .65));
+      if (gore && sound?.goreAfter) for (const c of sound.goreAfter) impacts.push(play(c));
+      if (bone) impacts.push(cue('bone_crack', .5, .12, .65));
+      if (!bone && gore && e.move !== 'kick' && deaths.length === 1) {
+        const stab = sound?.stab !== false && (sound?.stab === true || e.move === 'thrust' || e.move === 'riposte' || WEAPON_LOOK[e.weapon ?? presentation?.weapons[e.actor] ?? '']?.stabs === true);
+        impacts.push(cue(stab ? 'flesh_stab' : 'flesh_cut', .45, .05));
+        for (const c of sound?.wound ?? []) impacts.push(play(c));
+      }
+    }
+    // Strategy 2026-09-24: the opponent's charge is her own cue, so the sound means "she is charging". Actor 1 is always the
+    // opponent (the player is actor 0), the same convention `bone` reads above. It RISES through the whole hold: it starts on her
+    // Charging and climbs for the full charge.max, the tick the sim forces the swing; feedback.ts fades it the tick she releases,
+    // feints or is staggered. Charging also fires for a merely chambered light, so only a move that charges starts it. Her
+    // Charged adds nothing — the climb is already sounding. Yours stays the one-shot gather on your Charged.
+    else if (e.type === 'Charging' && e.actor === 1 && MOVES[e.move as MoveId]?.charges) air.push({ ...cue('charge_foe', .07, .5), hold: RULES.charge.max / 60 });
+    else if (e.type === 'Charged' && e.actor !== 1) air.push(cue('charge', .1, .4));
+    // Clarity (Lead's brief 2026-10-06), no new sprite bytes. A whiff is a lone swish on the window's close, a lower, slower breath of the swing's
+    // own whoosh: air, never an impact, and no spark (nothing was struck). The opponent's whiff is the same cue: it is your opening.
+    else if (e.type === 'AttackMissed') air.push(cue('whoosh_light', .1, .1, undefined, .8));
+    else if (e.type === 'AttackStarted' && skillRows(e).length) { for (const r of skillRows(e).filter((x) => x.on === 'start')) air.push(rowCue(r)); }   // the skill's own swing: its start rows (none = silent, as the sandbox's SpecialStarted was), not the generic whoosh
+    else if (e.type === 'AttackStarted') air.push(e.move === 'kick' ? cue('whoosh_light', .09, .12) : HEAVY.has(e.move ?? '') ? cue('whoosh_heavy', .18, .18) : cue('whoosh_light', .12, .12));
+    else if (e.type === 'ActionStarted' && e.action === 'draw') air.push(cue('draw', .2, .3));
+    else if (e.type === 'ActionStarted' && e.action === 'roll') air.push(cue('roll', .12, .12));
+    else if (e.type === 'ActionStarted' && e.action === 'backstep') air.push(cue('backstep', .09, .08));
+  }
+  // A cut-off swing (derived in combat.ts clarityOf): a short effort grunt under the hit, so being interrupted sounds unlike
+  // being hit while open and unlike dying. The foe's is the same cue slower (a deeper chest) and a little quieter.
+  if (voice) for (const c of clarity) if (c.type === 'AttackInterrupted' && !deaths.length) impacts.push(c.actor === 0 ? cue('effort_voice', .2, .1, .02) : cue('effort_voice', .14, .12, .02, .84));
+  // The crowd backs either winner. A double fall has no winner and gets one startled gasp, never two cheers.
+  if (deaths.length) impacts.push(deaths.length > 1 || presentation?.finish.draw ? cue('crowd_gasp', .25, .18, .35) : isTemplate(finisher, 'hamstring') ? cue('crowd_cheer', .28, .16, HAMSTRUNG_BEATS.back * HAMSTRUNG_BEATS.duration + 2 * HAMSTRUNG_BEATS.hold + .4) : isTemplate(finisher, 'execute') ? cue('crowd_cheer', .28, .16, executionAt(EXECUTION_BEATS.strike) + .5) : cue('crowd_cheer', finisher && gore ? .3 : .23, .16, .35));
+  return [...impacts, ...air].slice(0, deaths.length ? 8 : 4).sort((a, b) => (a.delay ?? 0) - (b.delay ?? 0));
+}
+
+// Seeded randomness (mulberry32) for variant rotation and pitch: reseeded per duel so a fight replays the same way.
+export const seeded = (seed: number) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// Next variant index: uniform over the others, so no cue repeats its last variant when it has more than one.
+export function nextVariant(random: () => number, count: number, last: number): number {
+  if (count < 2) return 0;
+  if (last < 0 || last >= count) return Math.floor(random() * count);
+  const pick = Math.floor(random() * (count - 1));
+  return pick >= last ? pick + 1 : pick;
+}
+export const PITCH_SPREAD = audioRule('pitchSpread');   // ±5 % playback rate per play

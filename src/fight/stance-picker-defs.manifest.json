@@ -1,0 +1,7 @@
+{
+  "tables": [
+    {"table": "stancePick", "file": "stance-picker-defs.json", "at": "picks", "key": "id", "required": {"pick": "string", "order": "integer", "label": "string", "colour": "string", "icon": "string", "effect": "string"}},
+    {"table": "stancePickerDial", "file": "stance-picker-defs.json", "at": "dials", "key": "id", "required": {"value": "number"}},
+    {"table": "stanceMenuText", "file": "stance-picker-defs.json", "at": "texts", "key": "id", "required": {"text": "string"}}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "table": "charactersDialsDial",
+      "file": "characters-dials-defs.json",
+      "at": "dials",
+      "key": "id",
+      "required": {
+        "value": "number"
+      }
+    }
+  ]
+}

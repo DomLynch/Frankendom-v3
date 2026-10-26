@@ -1,0 +1,19 @@
+{
+  "tables": [
+    { "table": "rangedModel", "file": "ranged-model-defs.json", "at": "models", "key": "id",
+      "required": {
+        "file": "string",
+        "node": "string",
+        "hand": "string",
+        "holdRxDeg": { "type": "number", "min": -180, "max": 180 },
+        "holdRyDeg": { "type": "number", "min": -180, "max": 180 },
+        "holdRzDeg": { "type": "number", "min": -180, "max": 180 },
+        "holdPx": { "type": "number", "min": -1, "max": 1 },
+        "holdPy": { "type": "number", "min": -1, "max": 1 },
+        "holdPz": { "type": "number", "min": -1, "max": 1 },
+        "clips": "string",
+        "metalness": { "type": "number", "min": 0, "max": 1 },
+        "roughness": { "type": "number", "min": 0, "max": 1 }
+      } }
+  ]
+}

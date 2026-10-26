@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "record-drop", "file": "record-drop-defs.json", "at": "drops", "key": "id", "required": { "reason": "string" } }
+  ]
+}

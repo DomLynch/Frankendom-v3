@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "camera-rule", "file": "camera-rules-defs.json", "at": "rules", "key": "id", "required": { "value": "number", "unit": "string" } }
+  ]
+}

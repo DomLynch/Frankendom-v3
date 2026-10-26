@@ -1,0 +1,34 @@
+{
+  "models": [
+    {
+      "id": "bow",
+      "file": "weapons/ranged/bow-v1.glb",
+      "node": "WeaponDrawn",
+      "hand": "hand_l",
+      "holdRxDeg": -1.9,
+      "holdRyDeg": 34.6,
+      "holdRzDeg": 114.3,
+      "holdPx": 0,
+      "holdPy": 0,
+      "holdPz": 0,
+      "clips": "warrior",
+      "metalness": 0.08,
+      "roughness": 0.85
+    },
+    {
+      "id": "staff",
+      "file": "weapons/ranged/staff-v1.glb",
+      "node": "WeaponDrawn",
+      "hand": "hand_r",
+      "holdRxDeg": 90,
+      "holdRyDeg": 0,
+      "holdRzDeg": 0,
+      "holdPx": 0,
+      "holdPy": 0.08,
+      "holdPz": 0.015,
+      "clips": "equip",
+      "metalness": 0.08,
+      "roughness": 0.85
+    }
+  ]
+}

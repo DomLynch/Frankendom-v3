@@ -1,0 +1,7 @@
+{
+  "worldLevels": [
+    {"id":"goblin:1","opponent":"goblin","level":1,"health":45},
+    {"id":"nightborn:2","opponent":"nightborn","level":2,"profileLevel":8},
+    {"id":"nightborn:3","opponent":"nightborn","level":3,"profileLevel":8}
+  ]
+}
