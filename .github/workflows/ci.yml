@@ -28,6 +28,9 @@ jobs:
       # V3-only rows (test/gate0/v3-scripts): no V1 reference; this tree twice + the pinned hashes in test/gate0/v3-golden.json
       - name: Gate 0 V3-only table
         run: npm run --silent gate0:v3 >> "$GITHUB_STEP_SUMMARY"
+      # the build packs the Centurion's GLBs as V1 does (scripts/optimize-glb.mjs), which recodes their JPEGs losslessly with jpegtran
+      - name: jpegtran
+        run: command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)
       - run: npm run build
 
   # Every green main goes live at https://v3.frankendom.com (site root, no prefix), once the deploy secrets exist.
@@ -61,7 +64,7 @@ jobs:
       # data stay at stable root paths (scripts/build.mjs)
       - name: Assemble site
         if: steps.cfg.outputs.on
-        run: npm ci && BUILD="${GITHUB_SHA}" npm run build && grep -q "b/${GITHUB_SHA}/src/client/main.js" dist/index.html
+        run: (command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)) && npm ci &&BUILD="${GITHUB_SHA}" npm run build && grep -q "b/${GITHUB_SHA}/src/client/main.js" dist/index.html
       - name: Publish
         if: steps.cfg.outputs.on
         run: |

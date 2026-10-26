@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { BLADE_PICKS } from '../src/fight/blade-picks.ts';
 import { bladePathsByRig } from '../src/fight/blade-paths.ts';
 import { WEAPONS, total } from '../src/fight/moves.ts';
+import { pullbackFor, reachFor, sweepTableFor } from '../src/hero-reach.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ROWS = JSON.parse(readFileSync(new URL('../data/hero-clips.json', import.meta.url), 'utf8'));
@@ -52,5 +53,24 @@ test('a sim sweep for every path a row names, one pose per tick, and none for an
     assert.equal(BLADE_PICKS[kind].length, total(w.paths[kind]) + 1, `${kind}: ticks + 1 poses`);
     assert.equal(BLADE_PICKS[kind].length, bladePathsByRig[ROWS.rig][ROWS.weapon][kind].length, `${kind}: as long as V1's`);
     for (const pose of BLADE_PICKS[kind]) assert.ok(pose.length === 6 && pose.every(Number.isFinite), `${kind}: base and tip`);
+  }
+});
+
+test("reach (Strategy 2026-10-26): V1's sweeps under the picked clips by default, the clips' own under ?reach=clip, V1's always under ?clips=v1", () => {
+  assert.equal(ROWS.sweeps.default, 'v1', 'the row keeps V1\'s reach by default');
+  const cases = [['', 'v1', null], ['?reach=clip', 'clip', BLADE_PICKS], ['?reach=v1', 'v1', null], ['?reach=bogus', 'v1', null],
+    ['?clips=v1', 'v1', null], ['?clips=v1&reach=clip', 'v1', null], ['?gfx=v1&reach=clip', 'clip', BLADE_PICKS]];
+  for (const [search, reach, sweeps] of cases) {
+    assert.equal(reachFor(search), reach, search);
+    assert.equal(sweepTableFor(search)?.[ROWS.rig]?.[ROWS.weapon] ?? null, sweeps, search);
+    for (const r of ROWS.clips) assert.equal(pullbackFor(search, r), reach === 'v1' ? r.pullback : 0, `${search} ${r.clip} pullback`);
+  }
+});
+
+test("a row's pullback is its picked sweep's tip minus V1's, forward, at the contact tick of every path it draws (to the millimetre)", () => {
+  const w = WEAPONS[ROWS.weapon], v1 = bladePathsByRig[ROWS.rig][ROWS.weapon];
+  for (const r of ROWS.clips) for (const kind of r.paths) {
+    const c = w.paths[kind].windup, measured = BLADE_PICKS[kind][c][5] - v1[kind][c][5];
+    assert.ok(Math.abs(measured - r.pullback) <= 0.001, `${r.clip} ${kind}: measured ${measured.toFixed(4)} m, row ${r.pullback}`);
   }
 });
