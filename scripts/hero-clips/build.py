@@ -9,6 +9,8 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from glbkit import Glb, qinv, qmul, qnorm, qrot
 from retarget import LIB, backhand, build, calibrate, pose, sword_path, twist, untwist
+from mirror_full import mirror_full
+from aim_hold import aim_hold
 
 # How far the shoulders may turn from the hips (degrees). V1's own clips stay within 62. The first mirror (#19) kept the trunk's own motion
 # over mirrored hips and turned the shoulders up to 153 degrees from the hips; the right cut as Mixamo made it turns 94 just after contact.
@@ -65,11 +67,13 @@ def main():
     for r in rows['clips']:
         times, local, pel = build(W, Cs, k, r['mixamo'], r['from'], r['to'])
         WR, WP, _ = pose(W, local, pel); before = float(np.abs(twist(W, WR, WP)).max())
-        if r['mirror']: local, _ = backhand(W, local, pel, MAX_TWIST)   # the right-handed mirror, the whole body mirrored
+        if r['mirror'] == 'full': local = mirror_full(W, local, pel)   # the whole body: a left-handed clip made right-handed (mirror_full.py)
+        elif r['mirror']: local, _ = backhand(W, local, pel, MAX_TWIST)   # a right-hand cut made a right-hand backhand, the whole body mirrored
         else: local, _ = untwist(W, local, pel, MAX_TWIST)              # unchanged when within MAX_TWIST
         WR, WP, _ = pose(W, local, pel); after = float(np.abs(twist(W, WR, WP)).max())
         turn = None
         if r.get('aim'): local, turn = aim_blade(W, times, local, pel, r['contact'] - r['from'], r['aim'])
+        if r.get('aimFrom') is not None: local, _ = aim_hold(W, times, local, pel, r['aimFrom'] - r['from'], r['aim'])   # aim_hold.py
         add_clip(W, r['clip'], times, local, pel)
         base, tip, hand, _ = sword_path(W, times, local, pel)
         c = int(np.argmin(np.abs(times - (r['contact'] - r['from']))))
