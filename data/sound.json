@@ -1,0 +1,10 @@
+{
+  "about": "How V3 starts the sound (src/client/main.ts; V2 PRs #48 and #65). The AudioContext is made and the sprite decoded at page load, the first touch only resumes it, and coming back to the page (pageshow, focus, visible again) asks again. ?snd=v1 restores V1's start (context and decode on the first touch, no silent clip). ?snd=1 shows the audio state beside the build label every statusMs.",
+  "keep": {
+    "about": "The looping silent clip that keeps iOS playing under the ringer's silent switch (src/audio/keep.ts): 8-bit mono PCM, samples long at rate Hz (0.1 s), at volume.",
+    "samples": 800,
+    "rate": 8000,
+    "volume": 0.01
+  },
+  "statusMs": 500
+}

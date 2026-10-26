@@ -5,6 +5,7 @@
 import FIGHT from '../../data/fight.json' with { type: 'json' };
 import BRAINS from '../../data/brains.json' with { type: 'json' };
 import { brainFor, brainProfile } from '../brain.ts';
+import SOUND from '../../data/sound.json' with { type: 'json' };
 import { initialPractice, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
 import { OPPONENTS, RULES, opponentAt, profileAt, weaponOf, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
@@ -21,6 +22,7 @@ import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
+import { createKeep } from '../audio/keep.ts';
 import { SPECIAL_CUE_OF } from '../fight/sound/special.ts';
 import { bossSpecialFor, bossSpecialId } from '../fight/special-identity.ts';
 import { classSpecialFor } from '../fight/class-special-identity.ts';
@@ -43,8 +45,13 @@ const foeHolding = (f: Fighter) => f.phase === 'attack' && f.charge > 0 && f.mov
 // :96 page zoom locked on the fight surface; double taps refused there only
 lockPageZoom(document, { surface: '#world, #joystick, #actions', clickDriven: '#reset-button, #camera-button, #recenter-button' });
 const feedback = createFeedback();
+// Sound start (data/sound.json; V2 #65, #48): the context is made and the sprite decoded now, the first touch only resumes it and starts
+// the silent clip for iOS's ringer switch. ?snd=v1: V1's start, context and decode on the first touch (:101).
+const snd = new URLSearchParams(search).get('snd'), v1Sound = snd === 'v1', keep = createKeep(SOUND.keep);
+if (!v1Sound) feedback.prepare();
 // :101 WebKit grants audio on touchend/click/keydown, not touch-start: the whole family unlocks
-for (const type of ['pointerdown', 'touchend', 'click', 'keydown']) window.addEventListener(type, () => feedback.unlock(), { passive: true });
+for (const type of v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
+  window.addEventListener(type, v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, { passive: true });
 const hud = createHud(element);
 mountManaBar();
 
@@ -98,6 +105,12 @@ const controls = createInput({   // :832
 function clearInput() { controls.clear(); hitStop = 0; accumulator = 0; }   // :713
 window.addEventListener('blur', clearInput);
 document.addEventListener('visibilitychange', clearInput);
+// Back on the page (app switch, a call, the lock screen): clearInput hushed the sound and the context is suspended or interrupted; ask
+// again now (iOS grants it as soon as it allows) instead of waiting for the next touch. After clearInput, so it is not undone.
+if (!v1Sound) {
+  const rewake = () => { if (!document.hidden) feedback.unlock(); };
+  window.addEventListener('pageshow', rewake); window.addEventListener('focus', rewake); document.addEventListener('visibilitychange', rewake);
+}
 document.addEventListener('pointerdown', () => { if (practice.finish && view.finishPhase().touring) view.stopTour(); });   // :1422
 
 function nameOpponent() {   // :397 without the legend
@@ -192,5 +205,8 @@ function frame(now: number) {
 }
 nameOpponent();
 updateHud();
-fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { element('build').textContent = t.slice(0, 7); }).catch(() => {});
+let buildLabel = '';
+fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, 7); element('build').textContent = buildLabel; }).catch(() => {});
+// ?snd=1: the audio state beside the build label, e.g. "f297c4e running+sprite+keep 12" (context, sprite decoded, silent clip, cues played)
+if (snd === '1') setInterval(() => { element('build').textContent = `${buildLabel} ${feedback.state()}${keep.playing() ? '+keep' : ''}`; }, SOUND.statusMs);
 requestAnimationFrame(frame);
