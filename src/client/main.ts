@@ -24,6 +24,7 @@ import { setLockFrame } from '../fight/camera.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
+import { foeDisplayName, foeNameFor, setFoeName } from '../fight/foe-name.ts';
 import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -37,7 +38,7 @@ import { PLAIN_DEATH, isTemplate } from '../fight/finisher-look.ts';
 import { hamstrungPick, resolveHamstrung } from '../fight/hamstrung.ts';
 import { executionPick, resolveExecution } from '../fight/execution.ts';
 import { gfxOn } from '../fight/gfx-flag.ts';
-import { bareName, resolveFinisher, type OpponentId } from '../roster.ts';
+import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
@@ -94,6 +95,8 @@ setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
 setTrailOpacity(/[?&]trail=v1\b/.test(search) ? null : FIGHT.trail);
 // The Minotaur draws V1's Cleaver over the gladius he fights with (data/fight.json foeWeapon, visual only); ?foeweapon=v1 = the gladius, ?foe=v1 = the Centurion.
 setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
+// The HUD names the Minotaur body the Minotaur (data/fight.json foeName, display only); ?foe=v1 = the Centurion.
+setFoeName(foeNameFor(FIGHT.foeName, search));
 // Dom's picked strike clips on V1's blade sweeps (data/hero-clips.json); ?reach=clip = the sweeps re-baked from the clips; ?clips=v1 = V1's clips and sweeps exactly.
 applyHeroClips(search);
 // The fight starts by itself (data/fight.json start, src/auto-start.ts): no Fight press, the driver draws for him on the first running
@@ -134,7 +137,7 @@ if (!v1Sound) {
 document.addEventListener('pointerdown', () => { if (practice.finish && view.finishPhase().touring) view.stopTour(); });   // :1422
 
 function nameOpponent() {   // :397 without the legend
-  const label = element('opponent-name'), name = bareName(opponentId);
+  const label = element('opponent-name'), name = foeDisplayName(opponentId);
   label.textContent = `THE ${name.toUpperCase()}`; label.dataset.mobile = name;
 }
 // :892 nextFight → match.rematch → began: the same warden, the next seed
