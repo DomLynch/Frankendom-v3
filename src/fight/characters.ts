@@ -9,6 +9,7 @@ import { swingProgress } from './blade.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
+import { swingTrailOpacity } from './trail-opacity.ts';   // V3: the swing trail softer per clip key (data/fight.json trail); ?trail=v1 = V1's
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, SKILL_ROWS, skillOfMove, type Direction, type WeaponId } from './moves.ts';
 import SPECIAL_CLIP_ROWS from '../assets/special-clips.json' with { type: 'json' };
 import { HURT_STYLES, READY_STYLES, PLAIN_POSTURE, pickStyle } from './character-style-rows.ts';
@@ -130,8 +131,7 @@ const ONE_SHOT: readonly Role[] = ['Attack', 'Hit', 'Death', 'Draw', 'Roll', 'Gu
 // V3: legs walk under a held guard (buildWarriors' guardUpper). The page sets the lower-body bone pattern from data/fight.json before the
 // rigs are built; null (?guard=v1) keeps V1's whole-body Guard clip. The roles are the armed locomotion the update loop weights.
 let GUARD_WALK: RegExp | null = null;
-export const setGuardWalk = (lowerBones: string | null): void => { GUARD_WALK = lowerBones ? new RegExp(lowerBones) : null; };
-const GUARD_WALK_ROLES: readonly Role[] = ['ArmedWalk', 'StrafeLeft', 'StrafeRight', 'ArmedRun'];
+export const setGuardWalk = (lowerBones: string | null): void => { GUARD_WALK = lowerBones ? new RegExp(lowerBones) : null; };const GUARD_WALK_ROLES: readonly Role[] = ['ArmedWalk', 'StrafeLeft', 'StrafeRight', 'ArmedRun'];
 // V3: Dom's picked strike clips (data/hero-clips.json, baked into warrior.glb beside V1's). The player's actor with `weapon` plays `clip` for
 // `role` and eases it so the clip's contact key (`source`, 0-1) meets the sim's contact tick. Set before the rigs are built; null (?clips=v1)
 // = V1's clips. A rig without the clip (an older GLB) keeps V1's.
@@ -994,7 +994,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
           root.updateWorldMatrix(true, true);
         }
         trail.visible = (pose === 'attack' && progress > contact * TRAIL_FROM && progress < contact + .18) || (!!special && !dead);
-        { const key = special ? `${special.opacity}|${special.color}` : ''; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? .12; m.color.set(special?.color ?? '#e8dfc8'); } }
+        { const swing = swingTrailOpacity(attack), key = special ? `${special.opacity}|${special.color}` : `${swing}`; if (key !== trailKey) { trailKey = key; const m = trail.material as MeshBasicMaterial; m.opacity = special?.opacity ?? swing; m.color.set(special?.color ?? '#e8dfc8'); } }
         if (trail.visible && step > 0) {
           anchor.updateWorldMatrix(true, true);
           const override = combatRole && contactByClip?.[clips[combatRole].name], strike = override ? [override.from, override.to] : segment;

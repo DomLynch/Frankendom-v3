@@ -29,5 +29,14 @@
   "start": {
     "about": "Dom 2026-10-26 ('remove the start button… The game just starts'): no Fight press. On the first tick the fight runs (art in), the driver gives a sheathed hero V1's draw press itself (src/auto-start.ts); the sim and its 42-tick draw are V1's, the opponent engages when the draw ends, and a Rematch starts the same way. The STRIKE button is the light attack from the first frame. ?start=v1 = V1's Fight button (the first press draws).",
     "auto": true
+  },
+  "trail": {
+    "about": "Dom 2026-10-26 on his phone: the swing's pale blade trail is 'a bit too much ... maybe half of that' on the cuts, and the stab 'about 30%' less. The swing trail (src/fight/characters.ts, one cream ribbon at opacity 0.12, normal blending, the same on both fighters) draws at 0.12 x this row's number for the clip key the swing plays (src/fight/trail-opacity.ts): the cuts (light = light_right and heavy_right, return = light_left and its chain and heavy_left, heavy = the overhead, slashRiposte) at 0.5, the stab (thrust = thrust, chained thrust and heavy_thrust; riposte, a thrust) at 0.7. Both fighters, visual only. A melee special's own trail (sandbox specialTrail rows) and the Pommel Strike keep theirs. ?trail=v1 = today's trail.",
+    "light": 0.5,
+    "return": 0.5,
+    "heavy": 0.5,
+    "slashRiposte": 0.5,
+    "thrust": 0.7,
+    "riposte": 0.7
   }
 }
