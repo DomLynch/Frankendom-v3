@@ -12,14 +12,7 @@
   html, body { background: #9db7d6; }
   #build { position: fixed; left: 8px; bottom: 4px; color: #ffffffaa; font-size: 9px; pointer-events: none; z-index: 50; }
 </style>
-<!-- three.js as a module, the version V1 ships (RPG-game package.json @ 82a994d15) -->
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/",
-  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"
-} }
-</script>
+<!-- three.js 0.186.0 (the version V1 ships) is bundled into main.js by scripts/build.mjs; no CDN import map -->
 </head>
 <body>
   <!-- V1's fight DOM (RPG-game index.html @ 82a994d15 lines 14-33), less the journal, accounts, versus card, loot, share, duel, clip and sparring -->

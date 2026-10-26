@@ -1,7 +1,8 @@
 // Builds the site into dist/: all the code bundled by esbuild into ONE module (b/<build>/src/client/main.js), served under b/<build>/ so a
 // phone never runs a cached older module after a deploy. It replaced one module per source file (402 modules, 3.1 MB, which a phone
-// resolved import level by import level: 30-60 s to a playable fight on Dom's phone, 2026-10-26). three.js stays external, from the CDN
-// import map in index.html. Data JSON a module imports statically is bundled into it. Code that loads on demand (specials, finishers,
+// resolved import level by import level: 30-60 s to a playable fight on Dom's phone, 2026-10-26). three.js (package.json, pinned
+// to 0.186.0, the version V1 ships) and its addons are bundled in too, tree-shaken: they used to come from 18 jsdelivr files through an
+// import map in index.html (0.47 MB and a second origin to connect to on a phone's first visit). Data JSON a module imports statically is bundled into it. Code that loads on demand (specials, finishers,
 // the gfx lift) rides the same file, still run only when first asked for (esbuild's lazy module wrappers); only the big clip JSON loaded
 // by a dynamic import (special-*.json, the finishers' killer/victim clips, ~1.5 MB) stays a separate .json.js module, fetched when used.
 // Binary assets (GLB, audio, textures, fonts) are served under content-hashed names outside b/ (see "Content-hashed art" below), so a
@@ -51,7 +52,7 @@ rmSync(out, { recursive: true, force: true });
 const result = await build({
   entryPoints: [join(root, ENTRY)], outdir: ENTRY_DIR, entryNames: '[name]',
   bundle: true, splitting: false, format: 'esm', target: 'es2022', minify: true, keepNames: true, legalComments: 'none', metafile: true,
-  external: ['three', 'three/*'], logLevel: 'warning', charset: 'utf8',
+  logLevel: 'warning', charset: 'utf8',
   plugins: [{ name: 'v3', setup(b) {
     b.onResolve({ filter: /\.json$/ }, (args) => {
       if (args.kind !== 'dynamic-import') return undefined;
