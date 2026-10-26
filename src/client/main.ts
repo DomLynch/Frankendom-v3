@@ -15,6 +15,7 @@ import { wrapAngle } from '../fight/sim.ts';
 import { playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.ts';
 import { setStab } from '../fight/stab-rule.ts';
 import { setStanceRows } from '../fight/stance-era.ts';
+import { setSpecialPace, specialPaceFor } from '../fight/special-pace.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setLockFrame } from '../fight/camera.ts';
@@ -61,6 +62,7 @@ let seed = FIGHT.seed, epoch = 0;
 const nextSeed = (s: number): number => (Math.imul(s, 1664525) + 1013904223) >>> 0;   // match.ts:75
 function fresh(): Practice {
   setPlayScale(playScaleFor(opponentId, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
+  setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
   epoch++;
   return initialPractice(seed, opponentAt(opponent, level), FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
     recordSpecials({ specials: FIGHT.specials, level, opponent: opponentId }), undefined, FIGHT.stance as PickedStance,

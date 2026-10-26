@@ -4,6 +4,7 @@
 // (the strike), SpecialFizzled (the caster fell during the windup) or SpecialInterrupted (damage cut it; presented as a fizzle), then SPECIAL_RECOVER ticks of presentation after the strike.
 import { RULES } from './moves.ts';
 import type { Fighter } from './duel.ts';
+import { paceTicks } from './special-pace.ts';
 import type { OpponentId } from '../roster.ts';
 import BOSS_ROWS from './bosses.json' with { type: 'json' };
 import LOOK_RULES from './look-rules.json' with { type: 'json' };
@@ -51,9 +52,11 @@ export const specialParam = (search: string): SpecialTest | null => {
 // Where a fighter stands in his own special: winding up (progress 0..1 to the strike), or recovering after it (0..1). Null otherwise. The
 // recovery is read off the sim's own no-attack recovery (duel.ts specialRecover: RULES.special.recovery on the release tick, one less every
 // tick after), so it needs no memory. Not off the cooldown: that re-arms at the release (Dom's final rule, 2026-10-01), not at the cast.
-export function specialStage(f: Pick<Fighter, 'specialShare' | 'special' | 'specialRecover' | 'health'>): { stage: 'windup' | 'recover'; progress: number } | null {
+// V3 special-pace.ts: a paced special (the Skull Crack, ×0.75) reads all three spans at its pace, so its clip covers the same span faster, never cut.
+export function specialStage(f: Pick<Fighter, 'specialShare' | 'special' | 'specialRecover' | 'health'> & Partial<Pick<Fighter, 'picked' | 'skill' | 'spell' | 'castSlot' | 'bowSpecial'>>): { stage: 'windup' | 'recover'; progress: number } | null {
   if (f.specialShare === undefined || !f.health) return null;
-  if (f.special) return { stage: 'windup', progress: Math.max(0, 1 - f.special / RULES.special.windup) };
-  const since = f.specialRecover ? RULES.special.recovery - f.specialRecover : -1;   // 0 on the strike tick
-  return since >= 0 && since < SPECIAL_RECOVER ? { stage: 'recover', progress: since / SPECIAL_RECOVER } : null;
+  if (f.special) return { stage: 'windup', progress: Math.max(0, 1 - f.special / paceTicks(f, RULES.special.windup)) };
+  const since = f.specialRecover ? paceTicks(f, RULES.special.recovery) - f.specialRecover : -1;   // 0 on the strike tick
+  const recover = paceTicks(f, SPECIAL_RECOVER);
+  return since >= 0 && since < recover ? { stage: 'recover', progress: since / recover } : null;
 }
