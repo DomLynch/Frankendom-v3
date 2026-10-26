@@ -1,4 +1,5 @@
 import { cameraRule } from './camera-rules.ts';
+import { specialLift } from './special-sink.ts';
 import { impactTier } from './hit-impact.ts';
 import { shardRows, specialShardsOf, specialTrailOf } from './sandbox-rules.ts';
 import { ROSTER, supportsFinishers, resolveFinisher } from '../roster.ts';
@@ -694,7 +695,7 @@ export function createScene(
       for (const [side, body] of [[0, player], [1, opponent]] as const) {
         const since = practice.duel.tick - specialStruck[side];
         // A mode may lift him (Red Wind's column scours UP through him, Shield Quake's ripple bursts up under him); the claw drops him.
-        if (since >= 0 && since < SPECIAL_STRUCK) body.position.y = (runtimeSpecial ? specialLifts[side] : (mode?.lift ?? -0.28)) * (since < 6 ? since / 6 : 1 - (since - 6) / (SPECIAL_STRUCK - 6));
+        if (since >= 0 && since < SPECIAL_STRUCK) body.position.y = specialLift(runtimeSpecial ? specialLifts[side] : (mode?.lift ?? -0.28)) * (since < 6 ? since / 6 : 1 - (since - 6) / (SPECIAL_STRUCK - 6));
       }
       // Run Through revision (owner 2026-09-18): the blade STAYS through the body. The killer holds the downward drive
       // (Fin_RunThrough, keyed to settle by a quarter of the window then hold) on the same 0.75× finisher clock; the

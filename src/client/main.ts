@@ -23,6 +23,7 @@ import { createScene } from '../fight/scene.ts';
 import { setLockFrame } from '../fight/camera.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
+import { setSpecialSink } from '../fight/special-sink.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
 import { foeDisplayName, foeNameFor, setFoeName } from '../fight/foe-name.ts';
 import { fightOpponent } from '../fight/foe-pick.ts';
@@ -97,6 +98,8 @@ if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.s
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
 // The swing trail softer (data/fight.json trail: cuts at half, the stab 30% less, both fighters); ?trail=v1 = today's trail.
 setTrailOpacity(/[?&]trail=v1\b/.test(search) ? null : FIGHT.trail);
+// A landed special no longer sinks the struck body into the sand (data/fight.json specialSink, Dom); ?dip=v1 = V1's knee-dip drop.
+setSpecialSink(/[?&]dip=v1\b/.test(search) || FIGHT.specialSink.sink);
 // ?pitborn=v1: the Minotaur draws V1's Cleaver over the Centurion's gladius (data/fight.json foeWeapon, keyed to him, visual only; a no-op for the
 // Pitborn, who fights with his own cleaver); ?foeweapon=v1 = the gladius, ?foe=v1 = the Centurion.
 setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
