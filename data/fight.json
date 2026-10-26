@@ -1,6 +1,10 @@
 {
-  "about": "The one fight V3 plays: the first career fight of a frankendom.com page load at 82a994d15 (V1 main.ts + match.ts begin('career')): the Centurion at the Match's default level (PRESET_LEVEL.normal = level-anchor-defs.json normal, 18: V1 only moves to the career level on a rematch, and a rematch that changes his loadout reloads the page, so a guest always meets him at 18 with the gladius and scutum), met at a guest's tier (Recruit), the Match's default seed, the longsword, SPECIAL 1/2 from career-rules.json betaCut slot defaults, specials on (rows80 specialsFromLevel 1), the default stance pick (stance.ts PICKS[0]). Rematch steps the seed as V1 nextSeed does. tempoHz: V1's default tempo (main.ts TEMPO_KEY). frameDtMaxS: the most one frame injects into the sim (V1 first-loss-rules.json frame-dt-max-s). gfx: V1's gfx lift (fx-rows gfx.default on).",
-  "opponent": "veteran",
+  "about": "The one fight V3 plays: the first career fight of a frankendom.com page load at 82a994d15 (V1 main.ts + match.ts begin('career')): the Centurion at the Match's default level (PRESET_LEVEL.normal = level-anchor-defs.json normal, 18: V1 only moves to the career level on a rematch, and a rematch that changes his loadout reloads the page, so a guest always meets him at 18 with the gladius and scutum), met at a guest's tier (Recruit), the Match's default seed, the longsword, SPECIAL 1/2 from career-rules.json betaCut slot defaults, specials on (rows80 specialsFromLevel 1), the default stance pick (stance.ts PICKS[0]). Rematch steps the seed as V1 nextSeed does. tempoHz: V1's default tempo (main.ts TEMPO_KEY). frameDtMaxS: the most one frame injects into the sim (V1 first-loss-rules.json frame-dt-max-s). gfx: V1's gfx lift (fx-rows gfx.default on). Dom 2026-10-26 (later): the opponent keeps the Minotaur's look but fights as V1's Pitborn (`opponent`): the Pitborn's moves, cleaver (at every level), stats, AI profile under the `ai` brain row and class special (Earth Fold at 18), no shield and no shield-bearer block; the same level, seed and picks. ?pitborn=v1 (and ?foe=v1) = the Centurion's fight above exactly (`opponentV1`, src/fight/foe-pick.ts).",
+  "opponent": "pitborn",
+  "opponentV1": {
+    "about": "?pitborn=v1 (and ?foe=v1, the Centurion exactly): the opponent before Dom's 2026-10-26 Pitborn call, the Centurion at `level` (gladius + scutum), drawn as the Minotaur with the Cleaver over his gladius (`foeWeapon`) and no shield (src/fight/foe-body.ts). Gate 0's V1-vs-V3 configs are pinned to him (test/gate0/configs.json).",
+    "opponent": "veteran"
+  },
   "level": 18,
   "seed": 731,
   "weapon": "longsword",
@@ -55,14 +59,14 @@
     "pulseMs": 1600
   },
   "foeWeapon": {
-    "about": "Dom 2026-10-26, his pick in OpenTrident's weapon picker (Frankendom → Cleaver): the Minotaur wields V1's plain Cleaver. Lead: a VISUAL weapon only. The sim, the AI and Gate 0 still fight with `weapon` (the gladius: its id, moves, reach, damage and timing) and his scutum stays; the scene draws `drawn` instead (src/fight/foe-weapon.ts): its equip file src/assets/weapons/foe/<drawn>.glb (the gladius's file, same hand socket and clips, V1's Cleaver part in the socket: scripts/foe-body/graft-weapon.mjs) and its rank shape at his rung (public/weapons/shapes/cleaver-plain.glb, V1's file). ?foeweapon=v1 = the gladius on him; ?foe=v1 = the Centurion exactly.",
+    "about": "Dom 2026-10-26, his pick in OpenTrident's weapon picker (Frankendom → Cleaver): the Minotaur wields V1's plain Cleaver. Lead: a VISUAL weapon only. The sim, the AI and Gate 0 still fight with `weapon` (the gladius: its id, moves, reach, damage and timing) and his scutum stays; the scene draws `drawn` instead (src/fight/foe-weapon.ts): its equip file src/assets/weapons/foe/<drawn>.glb (the gladius's file, same hand socket and clips, V1's Cleaver part in the socket: scripts/foe-body/graft-weapon.mjs) and its rank shape at his rung (public/weapons/shapes/cleaver-plain.glb, V1's file). ?foeweapon=v1 = the gladius on him; ?foe=v1 = the Centurion exactly. Since Dom's later 10-26 call the opponent is the Pitborn, who really fights with the cleaver (the same equip file, grafted over the trident minotaur.glb bakes), so this row, keyed to the Centurion, draws only under ?pitborn=v1.",
     "opponent": "veteran",
     "weapon": "gladius",
     "drawn": "cleaver"
   },
   "foeName": {
-    "about": "Dom 2026-10-26 (docs/V3-OWED-2026-10-26.md, HUD): the opponent's body is the Minotaur (src/fight/foe-body.ts), so the HUD names him the Minotaur: the name over his bar and the status line (src/fight/foe-name.ts). Display only: the sim, the AI, his stats, specials, level and Gate 0 still see the Centurion (id `opponent`). ?foe=v1 = the Centurion's body and name.",
-    "opponent": "veteran",
+    "about": "Dom 2026-10-26 (docs/V3-OWED-2026-10-26.md, HUD): the opponent's body is the Minotaur (src/fight/foe-body.ts), so the HUD names him the Minotaur: the name over his bar and the status line (src/fight/foe-name.ts). Display only: the sim, the AI, his stats, specials, level and Gate 0 still see the Centurion (id `opponent`). ?foe=v1 = the Centurion's body and name. Since Dom's later 10-26 call the Pitborn fights in the Minotaur's body (`opponent`), still named the Minotaur; under ?pitborn=v1 the name goes on the Centurion, as before (src/fight/foe-name.ts: whoever fights in the body).",
+    "opponent": "pitborn",
     "name": "Minotaur"
   },
   "blendMs": {
@@ -82,7 +86,7 @@
     "roll": 120
   },
   "bladeTables": {
-    "about": "First-visit weight (docs/V3-OWED-2026-10-26.md: blade-paths.ts was 31 % of main.js). V1's src/fight/blade-paths.ts bakes every (rig, weapon) sweep V1 ships (8 rigs, 18 tables, 413 KB); V3's duel reads only these, measured by instrumenting bladeFrames over npm test + gate0:v3 (2026-10-26): the hero's longsword, the Centurion's gladius (level 18) and his Recruit trident (level < LOADOUT_FROM, Gate 0's level-1 rows). The build (scripts/blade-tables.mjs) bundles only these; the source file stays V1's as copied. test/blade-tables.test.mjs pins that every weapon the fight can reach is listed. Build only: the sim reads the same numbers.",
-    "hero": ["longsword", "gladius", "trident"]
+    "about": "First-visit weight (docs/V3-OWED-2026-10-26.md: blade-paths.ts was 31 % of main.js). V1's src/fight/blade-paths.ts bakes every (rig, weapon) sweep V1 ships (8 rigs, 18 tables, 413 KB); V3's duel reads only these, measured by instrumenting bladeFrames over npm test + gate0:v3 (2026-10-26): the hero's longsword, the Centurion's gladius (level 18) and his Recruit trident (level < LOADOUT_FROM, Gate 0's level-1 rows). The build (scripts/blade-tables.mjs) bundles only these; the source file stays V1's as copied. test/blade-tables.test.mjs pins that every weapon the fight can reach is listed. Build only: the sim reads the same numbers. 2026-10-26 (Dom's Pitborn call): + the Pitborn's cleaver (rig hero at every level); the gladius and trident stay for ?pitborn=v1 and Gate 0's Centurion configs.",
+    "hero": ["longsword", "gladius", "trident", "cleaver"]
   }
 }

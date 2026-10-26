@@ -223,6 +223,7 @@ async function loadFighter(url: string) {
 // rig carries, and the entry point fights with that one (drawn = simulated).
 // `opponentEquipUrl`: the equip file of a weapon the opponent's rig does not bake (the Centurion's gladius over his trident, SCOPE:76). It is
 // grafted onto his rig the same way; a file that fails is reported and he keeps the weapon his rig bakes (a fight never waits on it).
+// Only a shield carrier (`carry`) gets the scutum arm with it (armOpponent); the Pitborn's cleaver on the Minotaur's rig (foe-body.ts) is a bare graft.
 export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false) {
   const equip = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
   const [hero, enemy, part, enemyPart] = await Promise.all([
@@ -232,7 +233,7 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
     opponentUrl === url ? undefined : equip(opponentEquipUrl),
   ]);
   let opponent: FighterAsset | undefined = enemy;
-  if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = armOpponent(opponent, enemyPart); } catch (error) { equipFailed(error); }
+  if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = carry ? armOpponent(opponent, enemyPart) : equipWeapon(opponent, enemyPart); } catch (error) { equipFailed(error); }
   return armWarriors(hero, opponent, weapons, part, equipFailed, carry);
 }
 // A live duel's peer drawn on the HERO rig (Strategy 2026-10-01, Option A): the page's second fighter is the hero's own warrior.glb, loaded a

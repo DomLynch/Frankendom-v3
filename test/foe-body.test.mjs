@@ -4,7 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { chooseFoeBody, foeBodyFile, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
+import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from '../src/fight/foe-body.ts';
+import { fightOpponent } from '../src/fight/foe-pick.ts';
+import { OPPONENTS, opponentAt } from '../src/fight/moves.ts';
+
+const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 
 const glb = (path) => { const bytes = readFileSync(new URL(path, import.meta.url)), n = bytes.readUInt32LE(12); return { j: JSON.parse(bytes.subarray(20, 20 + n)), bin: bytes.subarray(28 + n) }; };
 const minotaur = glb('../src/assets/minotaur.glb'), veteran = glb('../src/assets/veteran.glb');
@@ -57,4 +61,25 @@ test('?foe=v1 draws the Centurion and his whole kit; anything else the Minotaur'
   assert.equal(chooseFoeBody('?foe=v1&hero=v1'), true);
   assert.deepEqual([foeBodyFile('veteran', 'veteran'), foeKitFile('veteran'), foeBodySwapped('veteran')], ['veteran', 'carriers-veteran', false]);
   chooseFoeBody('');
+});
+
+// Dom 2026-10-26 (later): the opponent fights as V1's Pitborn in the Minotaur's body (data/fight.json opponent, src/fight/foe-pick.ts): no kit,
+// no shield (not even under ?shield=v1), his cleaver grafted over the trident minotaur.glb bakes. ?pitborn=v1 = the Centurion's fight above.
+test('the Pitborn draws the Minotaur with no kit; his cleaver is grafted over the baked trident; ?pitborn=v1 / ?foe=v1 = the Centurion', () => {
+  assert.equal(fightOpponent(FIGHT, ''), 'pitborn');
+  assert.equal(chooseFoeBody(''), false);
+  assert.deepEqual([foeBodyFile('pitborn', 'pitborn'), foeKitFile('pitborn'), foeBodySwapped('pitborn')], ['minotaur', null, true]);
+  assert.equal(foeBakedWeapon('pitborn', 'cleaver'), 'trident', 'minotaur.glb bakes the trident, so the cleaver is grafted');
+  assert.notEqual(foeBakedWeapon('pitborn', 'cleaver'), opponentAt(OPPONENTS.pitborn, FIGHT.level).weapon);
+  assert.ok(veteran.j.animations.some((a) => a.name === 'Trident_Idle') && minotaur.j.nodes.some((n) => n.name === 'WeaponDrawn'), 'the trident family and the socket the graft replaces');
+  chooseFoeBody('?shield=v1');
+  assert.equal(foeKitFile('pitborn'), null, 'the Pitborn never had a shield');
+  for (const q of ['?pitborn=v1', '?foe=v1', '?pitborn=v1&shield=v1']) assert.equal(fightOpponent(FIGHT, q), 'veteran', q);
+  chooseFoeBody('');
+});
+
+test("the cleaver plays the sword clip family, and minotaur.glb carries every clip of it (no fallback)", () => {
+  const names = new Set(minotaur.j.animations.map((a) => a.name));
+  for (const clip of ['Idle', 'Walk', 'Jog', 'Run', 'Armed', 'Attack', 'Return', 'Heavy', 'Riposte', 'Guard', 'BlockImpact', 'Parry', 'Deflected', 'Hit', 'Death', 'Kick', 'Roll', 'ArmedWalk', 'StrafeLeft', 'StrafeRight', 'Death_SplitCrown', 'Death_RunThrough', 'Fin_RunThrough', 'Death_QuietOne'])
+    assert.ok(names.has(clip), clip);
 });
