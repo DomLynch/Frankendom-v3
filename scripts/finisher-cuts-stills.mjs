@@ -14,13 +14,30 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || un
 const TICK = 1000 / 60, CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), MAX_TICKS = Number(process.env.MAX_TICKS ?? 3000);
 const AFTER = (process.env.AFTER ?? '4,20,60,160').split(',').map(Number);
 const FINISHERS = (process.env.FINISHERS ?? 'opened,runThrough,splitCrown').split(',');
-const report = [];
+const REAL = !!process.env.REAL, report = [];
 for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const finisher of FINISHERS) {
   const tag = `${finisher}-${query.replace(/[^a-z0-9]+/gi, '-') || 'default'}`, errors = [];
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
   await page.addInitScript((id) => { globalThis.__finisherPick = id; }, finisher);
+  if (REAL) {   // REAL=1: no fake clock, real time: the ragdoll's own per-frame cost by mode (alive / dead), cut included (no stills)
+    await page.goto(`${base}/${query ? `?${query}` : ''}`);
+    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await page.waitForTimeout(3000);
+    await page.keyboard.down('KeyW');
+    for (let t = 0; t < 120 && !(await page.evaluate(() => globalThis.__v3Fight.finish?.victim === 1)); t++) {
+      await page.keyboard.down('KeyD'); await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF'); await page.keyboard.up('KeyD');
+      await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); });
+      await page.waitForTimeout(500);
+    }
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(6000);
+    const c = await page.evaluate(() => ({ cuts: globalThis.__v3Cuts ?? [], byMode: globalThis.__ragdoll?.byMode, state: globalThis.__ragdoll?.state }));
+    const mean = (m) => m ? `${(m.totalMs / m.frames).toFixed(3)} ms mean, ${m.maxMs.toFixed(2)} max over ${m.frames}` : 'none';
+    console.log(`${tag} REAL: ragdoll ${c.state}, cuts ${JSON.stringify(c.cuts)}, alive ${mean(c.byMode?.alive)}, dead ${mean(c.byMode?.dead)}, errors ${errors.length}`);
+    report.push({ tag, finisher, query, real: c, errors }); await page.close(); continue;
+  }
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
