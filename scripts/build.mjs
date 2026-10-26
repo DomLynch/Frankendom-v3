@@ -124,6 +124,7 @@ writeFileSync(join(out, 'build.txt'), id);
 // The Minotaur (the opponent's body since 2026-10-26, scripts/foe-body/) and his scutum-only kit too, as the Centurion's (?foe=v1).
 // The Minotaur's drawn Cleaver (data/fight.json foeWeapon): its equip file and V1's plain rank shape (public/, served at /weapons/shapes/).
 const PACKED = ['src/assets/psyche.glb', 'src/assets/warrior.glb', 'src/assets/minotaur.glb', 'src/assets/veteran.glb', 'src/assets/loot/carriers-minotaur.glb', 'src/assets/loot/carriers-veteran.glb', 'src/assets/weapons/foe/cleaver.glb', 'weapons/shapes/cleaver-plain.glb'];
+// The 106-joint bodies (src/assets/*-106.glb, src/fight/rig-bones.ts) are not in the list: OpenTrident ships them meshopt-packed and quantized already.
 for (const glb of PACKED) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target)));

@@ -4,6 +4,7 @@ import { type WoundHit } from './gore.ts';
 import { weaponOf } from './moves.ts';
 import type { CombatEvent } from './duel.ts';
 import { sigNum } from './signature-rows.ts';
+import { heldWeapon } from './rig-bones.ts';
 
 // The Veteran's signature (brief row 1, variant A): Battle Scars. A heavy (or any cut past the light cut's 14) landed ON him scores a fresh
 // gouge across his armour at the site the sim named: bright metal through the bronze patina, laid along the line the blade travelled
@@ -68,7 +69,7 @@ const a0 = new THREE.Vector3(), a1 = new THREE.Vector3(), b0 = new THREE.Vector3
 const shaftDir = new THREE.Vector3(), across = new THREE.Vector3(), yAxis = new THREE.Vector3(0, 1, 0);
 
 // A weapon's striking segment in world space (`contact` from/to along its local +Y, as the blade bake and the tip probe read it).
-const drawnOf = (root: THREE.Object3D | null) => root?.getObjectByName('WeaponDrawn') ?? root?.getObjectByName('SwordDrawn');
+const drawnOf = (root: THREE.Object3D | null) => root ? heldWeapon(root) : undefined;
 function segment(root: THREE.Object3D | null, from: THREE.Vector3, to: THREE.Vector3, wholeShaft: boolean): boolean {
   const drawn = drawnOf(root);
   if (!drawn) return false;

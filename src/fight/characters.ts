@@ -7,6 +7,7 @@ import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
+import { bone as boneOf, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';   // V3 rig swap: every bone lookup goes through the one map (65 body = today's lookup)
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
 import { swingTrailOpacity } from './trail-opacity.ts';   // V3: the swing trail softer per clip key (data/fight.json trail); ?trail=v1 = V1's
@@ -192,7 +193,9 @@ export { MissingTextures, retryTransient, transientLoadError } from '../retry.ts
 // The skin map a parsed fighter lacks ('' when it has them all): a creature's body needs map + roughnessMap, a warrior's Steel map + normalMap.
 function missingMap(scene: Group): string {
   const creature = scene.getObjectByName('CreatureBody');
-  const mesh = creature ?? scene.getObjectByName('Steel');
+  let mesh = creature ?? scene.getObjectByName('Steel');
+  // A 106 body's Steel may be two primitives, which three.js loads as a Group of meshes (ch25): its first mesh is the skin. A 65 body: as it was.
+  if (!creature && mesh && !(mesh instanceof Mesh) && rigOf(scene) === '106') { let first: Mesh | undefined; mesh.traverse(o => { if (!first && o instanceof Mesh) first = o; }); mesh = first ?? mesh; }
   const name = creature ? 'CreatureBody' : 'Steel';
   if (!(creature ? mesh instanceof SkinnedMesh : mesh instanceof Mesh) || !((mesh as Mesh).material instanceof MeshStandardMaterial)) return `${name} mesh`;
   const material = (mesh as Mesh).material as MeshStandardMaterial;
@@ -207,6 +210,8 @@ export const loadTextured = (url: string, load: () => Promise<FighterAsset>, sle
   }, 3, 800, sleep);
 async function loadFighter(url: string) {
   const asset = await loadTextured(url, () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url));
+  // A 106 body: OpenTrident's armour layers off (data/rig.json hide), and no loot or kit on it: every loot.glb/kit draw is skinned to the 65 skeleton's bind.
+  if (rigOf(asset.scene) === '106') { for (const name of HIDDEN_ON_106) asset.scene.getObjectByName(name)?.removeFromParent(); asset.scene.userData.noLoot = true; }
   // The owner's iPhone defect (2026-09-18): under GPU memory pressure iOS silently drops uploaded fighter
   // textures — black mannequins. On phones we cap the skins at 1K before the first upload (the 2K Gambeson
   // atlas is the offender); desktop keeps the full set. three.js uploads lazily, so this runs pre-render.
@@ -302,14 +307,29 @@ export function shapeMeshOf(scene: Object3D): Mesh {
 // The hero rig with the equip file's weapon in place of the sword pair (a WeaponDrawn is always in hand: no sheath), and the file's clips
 // played over warrior.glb's same-named ones. A copy: the loaded rig stays whole for the longsword fallback.
 export function equipWeapon(hero: FighterAsset, part: FighterAsset): FighterAsset {
-  const scene = clone(hero.scene) as Group, weapon = part.scene.getObjectByName('WeaponDrawn'), hand = scene.getObjectByName((weapon?.userData.hand as string | undefined) ?? 'hand_r');   // a part may name its hand (the sandbox bow: hand_l)
+  const scene = clone(hero.scene) as Group, weapon = part.scene.getObjectByName('WeaponDrawn'), handName = (weapon?.userData.hand as string | undefined) ?? 'hand_r';   // a part may name its hand (the sandbox bow: hand_l)
+  let hand = boneOf(scene, handName);
   if (!hand || !weapon) throw new Error('Equip file has no WeaponDrawn, or the rig no hand_r');
+  // A 106 body: the part was placed for hand_r's frame (warrior.glb's sword frame GRIP_65 in it); it is re-seated so that frame lands on this
+  // body's sword frame (OpenTrident's fk_socket_hand_r, which carries the 65 rig's frame; else its own SwordDrawn), under the hand those hang from. A 65 body: hand_r, as today.
+  if (handName === 'hand_r' && rigOf(scene) === '106') {
+    const own = boneOf(scene, HELD.sword);
+    if (own?.parent) {
+      const grip = new Matrix4().compose(new Vector3(...GRIP_65.translation), new Quaternion(...GRIP_65.rotation), new Vector3(1, 1, 1));
+      const seat = new Group(); seat.name = 'Grip106';
+      new Matrix4().compose(own.position, own.quaternion, own.scale).multiply(grip.invert()).decompose(seat.position, seat.quaternion, seat.scale);
+      own.parent.add(seat); hand = seat;
+    }
+  }
   // Whatever the rig carries goes: warrior.glb's sword pair, or an opponent's baked weapon (the Centurion's trident is WeaponDrawn, _1, _2).
   const carriedNodes: Object3D[] = []; scene.traverse(o => { if (/^(SwordSheathed|SwordDrawn|WeaponDrawn|WeaponSheathed)(_\d+)?$/.test(o.name)) carriedNodes.push(o); });
   for (const node of carriedNodes) node.removeFromParent();
   hand.add(weapon.clone());
-  const own = new Set(part.animations.map(clip => clip.name));
-  return { scene, animations: [...part.animations, ...hero.animations.filter(clip => !own.has(clip.name))] };
+  // A 106 body keeps its own retargeted clips: an equip file's clips are keyed to the 65 joints (the cleaver's and gladius's Death_QuietOne),
+  // so only a clip the body lacks is taken, bound by name (rig-bones.ts trackOn). A 65 body: the file's clips over its own, as today.
+  const rig = rigOf(scene), partClips = rig === '65' ? part.animations : part.animations.filter(clip => !hero.animations.some(h => h.name === clip.name)).map(clip => { const copy = clip.clone(); for (const track of copy.tracks) track.name = trackOn(rig, track.name); return copy; });
+  const own = new Set(partClips.map(clip => clip.name));
+  return { scene, animations: [...partClips, ...hero.animations.filter(clip => !own.has(clip.name))] };
 }
 // Loot (brief 5): the pieces of loot.glb, skinned to the hero rig with warrior.glb's bind (build-warrior.mjs WARRIOR_LOOT). Fetched on its own,
 // after the rigs, never as part of a fight's load; the player's actor wears the pieces (`wear`) once both are in. Each draw's userData names
@@ -441,16 +461,20 @@ export class MissingClip extends Error {
 }
 // The clip each role plays for this weapon. Two roles on one clip (the trident's sweep) get their own copies: the mixer keys actions by clip.
 export function fighterClips(asset: FighterAsset, weapon: WeaponId, player: boolean): Record<Role, AnimationClip> {
-  const clips = {} as Record<Role, AnimationClip>, used = new Set<AnimationClip>(), quadruped = isQuadruped(asset);
+  const clips = {} as Record<Role, AnimationClip>, used = new Set<AnimationClip>(), quadruped = isQuadruped(asset), rig106 = rigOf(asset.scene) === '106', gaps: string[] = [];
   for (const role of [...ROLES, ...ADDITIVE_ROLES]) {
     // A player override needs the rig to carry it: the equip file does (tests/weapons.test.ts pins it); a shared opponent rig standing in
     // for the player (buildWarriors without an opponent asset) keeps the shared row.
     const own = player ? heroPick(weapon, role)?.clip ?? PLAYER_CLIPS[weapon]?.[role] : undefined;
-    const name = own && asset.animations.some(a => a.name === own) ? own : (quadruped && QUADRUPED_CLIPS[role]) || clipFor(weapon, role), clip = asset.animations.find(a => a.name === name) ?? (role === 'ArmedRun' ? asset.animations.find(a => a.name === 'ArmedWalk') : undefined);
+    const name = own && asset.animations.some(a => a.name === own) ? own : (quadruped && QUADRUPED_CLIPS[role]) || clipFor(weapon, role);
+    let clip = asset.animations.find(a => a.name === name) ?? (role === 'ArmedRun' ? asset.animations.find(a => a.name === 'ArmedWalk') : undefined);
+    // A 106 body lacking a (non-additive) role's clip plays the first gap-fill clip it has (data/rig.json gapFill), listed on window.__rigGaps. A 65 body: MissingClip, as today.
+    if (!clip && rig106 && !(ADDITIVE_ROLES as readonly string[]).includes(role)) { clip = gapFillFor(role).map(n => asset.animations.find(a => a.name === n)).find(Boolean); if (clip) gaps.push(`${role}->${clip.name}`); }
     if (!clip && (ADDITIVE_ROLES as readonly string[]).includes(role)) continue;   // an appended scene this rig does not carry
     if (!clip?.tracks.length || !Number.isFinite(clip.duration) || clip.duration <= 0) throw new MissingClip(name, role, weapon);
     clips[role] = used.has(clip) ? clip.clone() : clip; used.add(clip);
   }
+  if (gaps.length) ((globalThis as { __rigGaps?: Record<string, string[]> }).__rigGaps ??= {})[player ? 'hero' : 'foe'] = gaps;   // the stills and the headless check read what was filled
   return clips;
 }
 // Two actors from parsed assets (textures already checked by the loader; tests build from the parsed rig alone): the
@@ -549,7 +573,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     for (const role of roles) { actions[role] = mixer.clipAction(clips[role]).play(); actions[role].setEffectiveWeight(role === 'Idle' ? 1 : 0); }
     // The weapon on the rig: a WeaponDrawn node (a two-handed weapon, always in hand: no sheathed/drawn swap) or the sword's two nodes.
     // The trail follows the striking part: the node's own contact segment (extras.contact, metres along its Y) or the sword's blade.
-    const weaponNode = root.getObjectByName('WeaponDrawn'), sheathed = root.getObjectByName('SwordSheathed'), drawn = root.getObjectByName('SwordDrawn');
+    const weaponNode = boneOf(root, HELD.weapon), sheathed = boneOf(root, HELD.sheath), drawn = boneOf(root, HELD.sword);   // rig-bones.ts: a 106 body's own nodes, else its sockets
     if (!weaponNode && !(sheathed && drawn)) throw new Error('Warrior weapon attachments are missing');
     // The weapon's own draws and their materials, for `grade` (read after spectralAppearance, so a spectral weapon keeps its own material).
     const weaponDraws: [Mesh, MeshStandardMaterial][] = [];
@@ -557,13 +581,13 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // `reshape` swaps a shape over the own draws: every mesh the weapon carries goes off, the graded ones come back as they were.
     const ownMeshes: Mesh[] = []; let shaped: Mesh[] = [];
     for (const node of [weaponNode, sheathed, drawn]) node?.traverse(object => { if (object instanceof Mesh) ownMeshes.push(object); });
-    const blade = (weaponNode?.userData.contactNode ? root.getObjectByName(weaponNode.userData.contactNode) : weaponNode) ?? drawn!, contactSegment = blade?.userData.contact as { from: number; to: number } | undefined, segment = contactSegment ? [contactSegment.from, contactSegment.to] : [.24, .85];
+    const blade = (weaponNode?.userData.contactNode ? boneOf(root,weaponNode.userData.contactNode) : weaponNode) ?? drawn!, contactSegment = blade?.userData.contact as { from: number; to: number } | undefined, segment = contactSegment ? [contactSegment.from, contactSegment.to] : [.24, .85];
     for (const role of ONE_SHOT) { const action = actions[role]; if (!action) continue; action.setLoop(LoopOnce, 1); action.clampWhenFinished = true; action.paused = true; }
     // V3 (V2 #48, Dom: "guarding then backing off floats"): a guard held while moving keeps the legs walking. Legs-only copies of the
     // armed locomotion clips play under an upper-body copy of Guard, shared by how much he moves (update below); off = V1's whole-body Guard.
     const guardLegs: Partial<Record<Role, AnimationAction>> = {}; let guardUpper: AnimationAction | undefined;
     if (GUARD_WALK && clips.Guard) {
-      const lower = (t: { name: string }) => GUARD_WALK!.test(t.name);
+      const rig = rigOf(root), lower = (t: { name: string }) => GUARD_WALK!.test(trackAs65(rig, t.name));   // the row names 65 bones; a 106 track is read as its 65 bone (a 65 track: itself)
       for (const role of GUARD_WALK_ROLES) if (clips[role]) { const a = guardLegs[role] = mixer.clipAction(new AnimationClip(`${role}_Legs`, clips[role].duration, clips[role].tracks.filter(lower))).play(); a.setEffectiveWeight(0); }
       guardUpper = mixer.clipAction(new AnimationClip('Guard_Upper', clips.Guard.duration, clips.Guard.tracks.filter((t) => !lower(t)))).play();
       guardUpper.setEffectiveWeight(0); guardUpper.setLoop(LoopOnce, 1); guardUpper.clampWhenFinished = true; guardUpper.paused = true;
@@ -576,9 +600,9 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     trail.name = 'WeaponTrail'; trail.frustumCulled = false; trail.visible = false; anchor.add(trail);   // named: the Witch-fire hides it (witchfire.ts)
     const samples: Vector3[][] = [];
     const contactByClip = weaponNode?.userData.contactByClip as Record<string, { from: number; to: number }> | undefined;
-    const upperArm = root.getObjectByName('upperarm_r');
+    const upperArm = boneOf(root,'upperarm_r');
     let aimedRotation: Quaternion | undefined;
-    const offHand = ['upperarm_l', 'lowerarm_l', 'hand_l'].map(n => root.getObjectByName(n)), swordHand = root.getObjectByName('hand_r');
+    const offHand = ['upperarm_l', 'lowerarm_l', 'hand_l'].map(n => boneOf(root,n)), swordHand = boneOf(root,'hand_r');
     let aimedOffHand: [Quaternion, Quaternion] | undefined;
     // A two-handed weapon in a special's one-handed clip (special-clips.json `twoHanded`, the grip gap in metres per weapon): re-solve the left arm onto the haft `gap` behind the sword hand, keeping the clip's own elbow bend
     // (two-bone reach, the finishers' grip below). The left-arm bones are put back by the restore at the start of the next update (aimedOffHand).
@@ -620,7 +644,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       if (!upperL?.parent || !lowerL || !handL || amount <= 0) return;
       if (!faceLocal) {   // the board's face in hand_l's own frame: +Z in the rig's bind space (build-warrior.mjs lays it face-out along +Z)
         let inverse: Matrix4 | undefined;
-        root.traverse(o => { if (!inverse && o instanceof SkinnedMesh) { const i = o.skeleton.bones.findIndex(b => b.name === 'hand_l'); if (i >= 0) inverse = o.skeleton.boneInverses[i]; } });
+        root.traverse(o => { if (!inverse && o instanceof SkinnedMesh) { const i = o.skeleton.bones.findIndex(b => b.name === boneName(rigOf(root), 'hand_l')); if (i >= 0) inverse = o.skeleton.boneInverses[i]; } });
         if (!inverse) return;
         faceLocal = new Vector3(0, 0, 1).transformDirection(inverse);
       }
@@ -648,23 +672,23 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     // frame — the torso turns to that side, the sword arm lifts or drops. Measured on the warrior rig from the Guard pose (blade tip
     // relative to the pelvis, the fighter's right = −x): left +.14 m across, right −.23 m, overhead +.35 m up, low −.37 m down. Code-
     // tilted for the beta; the weapons lane replaces it with authored guard clips family by family. Blended so a slide never snaps.
-    const spine1 = root.getObjectByName('spine_01'), spine2 = root.getObjectByName('spine_02');
+    const spine1 = boneOf(root,'spine_01'), spine2 = boneOf(root,'spine_02');
     const search = typeof location === 'undefined' ? '' : location.search, hurtStyle = pickStyle(HURT_STYLES, 'hurt', search), readyStyle = pickStyle(READY_STYLES, 'ready', search);   // ?hurt= / ?ready= (character-style-rows.ts): no query = today's pose
     let hurtDrive = 0, readyDrive = 0;
-    const spine3 = root.getObjectByName('spine_03'), neckBone = root.getObjectByName('neck_01');
+    const spine3 = boneOf(root,'spine_03'), neckBone = boneOf(root,'neck_01');
     const tilt = { yaw: 0, arm: 0, spine: 0 }, tilted = [spine1, spine2, upperArm, spine3, neckBone].filter((b): b is NonNullable<typeof b> => !!b), untilted = tilted.map(b => b.quaternion.clone());
     let open: Opening | null = null, openW = 0;   // opening-pose.ts: the sim's open stagger on this body, and its eased weight
     let tired: Pick<Fatigue, 'level' | 'gassed' | 'second'> = { level: 0, gassed: 0, second: 0 }, tune: FatigueTune | undefined, breath = 0, calmWeight = 0;   // fatigue.ts: the tired-body layer (presentation only), its body's tuning, the breath clock and how calm the pose is
     // ?look=fatigue-read (fatigue-read.ts): the extra bones its pose moves, restored before every update like the guard tilt; empty and untouched without the flag.
     const FORWARD = new Vector3(0, 0, 1);
-    const readBones = ['spine_03', 'neck_01', 'Head', 'clavicle_l', 'clavicle_r'].map(n => root.getObjectByName(n)), readSaved = readBones.map(() => new Quaternion());
+    const readBones = ['spine_03', 'neck_01', 'Head', 'clavicle_l', 'clavicle_r'].map(n => boneOf(root,n)), readSaved = readBones.map(() => new Quaternion());
     let readApplied = false, readBreath = 0, readGuard = 0;
     // ?look=stances (stance-pose.ts): the stance's extra bones, restored before every update; empty and untouched without the flag.
     let stance: Stance = 'neutral', stanceW = 0, stanceClock = 0, stanceApplied = false;
-    const stanceBones = ['pelvis', 'thigh_l', 'thigh_r', 'calf_l', 'calf_r', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'Head', 'upperarm_r', 'lowerarm_r', 'upperarm_l'].map(n => root.getObjectByName(n)), stanceSaved = stanceBones.map(() => new Quaternion()), stancePelvis = new Vector3();
+    const stanceBones = ['pelvis', 'thigh_l', 'thigh_r', 'calf_l', 'calf_r', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'Head', 'upperarm_r', 'lowerarm_r', 'upperarm_l'].map(n => boneOf(root,n)), stanceSaved = stanceBones.map(() => new Quaternion()), stancePelvis = new Vector3();
     // upright ready pose (upright-ready.ts): this body's ready-pose offset on spine_02, spine_03 and neck_01, restored before every update; undefined and untouched without the flag.
     let upright: ReadyOffset | undefined, uprightW = 0, uprightApplied = false;
-    const uprightBones = ['spine_02', 'spine_03', 'neck_01'].map(n => root.getObjectByName(n)), uprightSaved = uprightBones.map(() => new Quaternion());
+    const uprightBones = ['spine_02', 'spine_03', 'neck_01'].map(n => boneOf(root,n)), uprightSaved = uprightBones.map(() => new Quaternion());
     const turnAbout = (bone: Object3D | null | undefined, axis: Vector3, angle: number) => {   // a world-axis turn of a bone (the clavicles' own axes are not the fighter's)
       if (!bone?.parent || !angle) return;
       const parent = bone.parent.getWorldQuaternion(new Quaternion()), turn = new Quaternion().setFromAxisAngle(axis.clone().applyQuaternion(root.getWorldQuaternion(new Quaternion())), angle);
@@ -1013,7 +1037,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       /** Cut the head off: bake the triangles the head bone(s) dominate into a loose prop and collapse the bone. `bones` = the rig's head bones (a catalogue row's finisher.cut.head; the Pit's humanoid rig is ['Head'], the default). */
       sever(bones: readonly string[] = ['Head']) {
         if (severed) return null;
-        const bone = bones.map((n) => root.getObjectByName(n)).find(Boolean);
+        const bone = bones.map((n) => boneOf(root, n)).find(Boolean);
         if (!bone) return null;
         severedBone = bone;
         severed = true;
@@ -1022,7 +1046,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         const group = new Group();
         root.traverse(object => {
           if (!(object instanceof SkinnedMesh) || !object.visible) return;   // only what he shows: a draw a loot piece or a rank look hid stays off the head too
-          const headIndices = new Set<number>(); object.skeleton.bones.forEach((b, i) => { if (bones.includes(b.name)) headIndices.add(i); }); const headIndex = headIndices.size ? 0 : -1;
+          const headIndices = new Set<number>(); object.skeleton.bones.forEach((b, i) => { if (bones.some((n) => boneName(rigOf(root), n) === b.name)) headIndices.add(i); }); const headIndex = headIndices.size ? 0 : -1;
           const geometry = object.geometry, position = geometry.getAttribute('position'), skinIndex = geometry.getAttribute('skinIndex'), skinWeight = geometry.getAttribute('skinWeight');
           if (headIndex < 0 || !position || !skinIndex || !skinWeight) return;
           object.skeleton.update();   // bake from THIS frame's pose, not last render's
@@ -1081,7 +1105,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         droppedWeapon?.dispose(); droppedWeapon = undefined;
         if (!severed) return;
         severed = false;
-        (severedBone ?? root.getObjectByName('Head'))?.scale.setScalar(1);
+        (severedBone ?? boneOf(root,'Head'))?.scale.setScalar(1);
         severedBone = null;
       },
       // The opened-waist bake snapshots what he wears; a re-dress at a new tier (a rematch after a rank-up) bakes it again, between fights.
@@ -1122,15 +1146,16 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // the kneel and the fall rest on the sand whatever the mesh (a body's feet, chest and face differ from the one the clip was authored on, which the pelvis ratio cannot see).
       adoptClip(role: (typeof ADDITIVE_ROLES)[number], clip: AnimationClip, sourcePelvis?: number, fitFloor?: readonly number[]) {
         if (clips[role]) return;
-        const rest = asset.scene.getObjectByName('pelvis')?.position.length();
+        const rig = rigOf(root), rest = boneOf(asset.scene, 'pelvis')?.position.length();
+        if (rig === '106') { clip = clip.clone(); for (const track of clip.tracks) track.name = trackOn(rig, track.name); }   // a 65-keyed clip (the baked JSONs) bound by NAME on a 106 body: not a retarget (the joints' rest frames differ)
         if (sourcePelvis && rest && Math.abs(rest / sourcePelvis - 1) > 1e-4) {
           clip = clip.clone();
-          for (const track of clip.tracks) if (track.name === 'pelvis.position') track.values = track.values.map(v => v * rest / sourcePelvis);
+          for (const track of clip.tracks) if (track.name === trackOn(rig, 'pelvis.position')) track.values = track.values.map(v => v * rest / sourcePelvis);
         }
         if (!clip.uuid) (clip as { uuid: string }).uuid = MathUtils.generateUUID();   // clip JSON ships without one (the build is byte-stable) and parse() leaves it undefined: the mixer keys its actions by uuid, so two adopted clips would be ONE action
         clips[role] = clip; roles.push(role);
         const action = actions[role] = mixer.clipAction(clip).play(); action.setEffectiveWeight(0); action.setLoop(LoopOnce, 1); action.clampWhenFinished = true; action.paused = true;
-        const track = fitFloor && clip.tracks.find(t => t.name === 'pelvis.position');
+        const track = fitFloor && clip.tracks.find(t => t.name === trackOn(rig, 'pelvis.position'));
         if (track) {
           const point = new Vector3();   // every 4th skinned vertex of what is drawn: the floor to a centimetre at a quarter of the cost of the exact box
           const low = (progress: number) => sample(role, progress, () => {
@@ -1139,7 +1164,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
             return min;
           });
           const marks = [...new Set([0, ...fitFloor!, 1])].sort((a, b) => a - b), start = low(0), lift = marks.map(m => (m ? start - low(m) : 0));
-          const up = root.getObjectByName('pelvis')!.parent!.matrixWorld.elements, rise = Math.hypot(up[8], up[9], up[10]);   // the rig's up is the pelvis parent's local z (Blender's), scaled
+          const up = boneOf(root,'pelvis')!.parent!.matrixWorld.elements, rise = Math.hypot(up[8], up[9], up[10]);   // the rig's up is the pelvis parent's local z (Blender's), scaled
           for (let i = 0; i < track.times.length; i++) {   // in place: the mixer's interpolant reads this very array
             const at = track.times[i] / clip.duration, next = marks.findIndex(m => m > at), k = next < 0 ? marks.length - 2 : Math.max(0, next - 1), f = Math.min(1, Math.max(0, (at - marks[k]) / (marks[k + 1] - marks[k])));
             track.values[i * 3 + 2] += (lift[k] + (lift[k + 1] - lift[k]) * f) / rise;
@@ -1160,7 +1185,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       },
       // The victim's nape (his neck bone) at the cut, at the origin, for the killer's step (executionStep); the live pose is untouched.
       executionContacts() {
-        return { nape: sample('Death_Execution', EXECUTION_BEATS.strike, () => root.getObjectByName('neck_01')!.getWorldPosition(new Vector3())) };
+        return { nape: sample('Death_Execution', EXECUTION_BEATS.strike, () => boneOf(root,'neck_01')!.getWorldPosition(new Vector3())) };
       },
       // Where the killer's anchor must stand, at `progress` of Fin_Execution, for the middle of the blade to meet `target`.
       executionStep(progress: number, target: Vector3) {
@@ -1169,8 +1194,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // The victim's knee and upper back at the two blows, at the origin, for the killer's steps (hamstrungStep); the live pose is untouched.
       hamstrungContacts() {
         return {
-          knee: sample('Death_Hamstrung', HAMSTRUNG_BEATS.knee, () => root.getObjectByName('calf_r')!.getWorldPosition(new Vector3())),
-          back: sample('Death_Hamstrung', HAMSTRUNG_BEATS.back, () => root.getObjectByName('spine_02')!.getWorldPosition(new Vector3())),
+          knee: sample('Death_Hamstrung', HAMSTRUNG_BEATS.knee, () => boneOf(root,'calf_r')!.getWorldPosition(new Vector3())),
+          back: sample('Death_Hamstrung', HAMSTRUNG_BEATS.back, () => boneOf(root,'spine_02')!.getWorldPosition(new Vector3())),
         };
       },
       // Where the killer's anchor must stand, at `progress` of Fin_Hamstrung, for the middle of the blade to meet `target`.
@@ -1188,7 +1213,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       },
       // Skull-only split, owner 2026-09-19. Reuse the proven head bake; keep the halves attached through the collapse.
       splitCrown(progress: number, mode: BloodMode) {
-        const bone = root.getObjectByName('Head');
+        const bone = boneOf(root, 'Head');
         if (!bone || progress < .045) return;
         if (!crown && !bloodHidden(mode)) {
           root.updateWorldMatrix(true, true);
@@ -1257,7 +1282,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         root.updateWorldMatrix(true, true);
       },
       // The world position of a named bone right now (the scene takes the victim's chest with it).
-      boneWorld(name: string): Vector3 | null { const bone = root.getObjectByName(name); if (!bone) return null; root.updateWorldMatrix(true, true); return bone.getWorldPosition(new Vector3()); }
+      boneWorld(name: string): Vector3 | null { const bone = boneOf(root, name); if (!bone) return null; root.updateWorldMatrix(true, true); return bone.getWorldPosition(new Vector3()); }
     };
   }
   const player = create(false);

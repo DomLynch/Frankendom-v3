@@ -12,6 +12,7 @@ import { bloodNum, bloodObj } from './blood-rows.ts';
 import { fxNum } from './fx-rows.ts';
 import { afterFirstFrame, lateArtLanded } from '../late-art.ts';
 import { phoneTier } from './quality.ts';
+import { bone as boneOf, HELD, heldWeapon } from './rig-bones.ts';
 // The phone skips the per-triangle surface rays (row gore.phone-surface-ray = 0 in blood-rows.json): on the contact frame they skin every vertex of the
 // creature once (surfaceHit > skinPass > intersectObjects), 77 % of a 155 ms task at x4 on an M5 (CPU profile 2026-10-21). The wound then
 // takes the fallback it already has for "nothing met": the site table's direction at its own radius out from the bone.
@@ -375,7 +376,7 @@ export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture
       let seed = woundSeed(next[side], hit);
       seed = lcg(seed); const draw = unit(seed);   // seeded like the runs: a replay lands the same cut on the same limb, the same shoulder
       const limb = draw < ARM_SHARE ? (draw < ARM_SHARE / 2 ? 1 : 2) : 0, mirror = draw >= .5;
-      const site = woundSite(hit, limb, mirror), bone = root.getObjectByName(site.bone) ?? (limb ? root.getObjectByName(woundSite(hit, 0, mirror).bone) : null);
+      const site = woundSite(hit, limb, mirror), bone = boneOf(root, site.bone) ?? (limb ? boneOf(root, woundSite(hit, 0, mirror).bone) : null);   // 65 names through the rig map
       if (!bone) return false;
       const mark = fighters[side][next[side] % WOUNDS_PER_FIGHTER]; next[side]++;
       const world = new THREE.Vector3(...site.dir).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), hit.heading);
@@ -513,8 +514,8 @@ export function createBladeBlood() {
         ? [side === 0 ? warriors.player.anchor : warriors.opponent.anchor]
         : [warriors.player.anchor, warriors.opponent.anchor];
       for (const anchor of anchors) {
-        const twoHanded = anchor.getObjectByName('WeaponDrawn'),
-          node = twoHanded ?? anchor.getObjectByName('SwordDrawn');
+        const twoHanded = boneOf(anchor, HELD.weapon),
+          node = twoHanded ?? heldWeapon(anchor);
         node?.traverse((object) => {
           if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial))
             return;

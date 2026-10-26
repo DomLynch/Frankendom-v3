@@ -61,6 +61,7 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { chooseHeroBody, heroBodyFile } from './hero-body-rows.ts';
 import { chooseFoeBody, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
+import { bone as boneOf, chooseRigs, heroRigFile } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 const COMPILE_BOUND_MS = cameraRule('compileBoundMs');   // a compile (warm-up only) that has not settled by then is given up on: a lost context never settles it, and the walk must not wait
 const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: one shared tuple, not a new array every frame (armfeel is on for everyone now)
@@ -242,11 +243,14 @@ export function createScene(
   const heroUrl = heroPreview(typeof location === 'undefined' ? '' : location.search);
   chooseHeroBody(typeof location === 'undefined' ? '' : location.search);   // V3: Psyche, or ?hero=v1 warrior.glb (hero-body-rows.ts); only the one picked is fetched
   chooseFoeBody(typeof location === 'undefined' ? '' : location.search);   // V3: the Minotaur on the Centurion's rig, or ?foe=v1 the Centurion (foe-body.ts); only the one picked is fetched
-  const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/minotaur.glb': new URL('../assets/minotaur.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies)
+  const fighterUrls: Record<string, string> = { '../assets/psyche.glb': new URL('../assets/psyche.glb', import.meta.url).href, '../assets/warrior.glb': new URL('../assets/warrior.glb', import.meta.url).href, '../assets/minotaur.glb': new URL('../assets/minotaur.glb', import.meta.url).href, '../assets/veteran.glb': new URL('../assets/veteran.glb', import.meta.url).href,
+    '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href };   // V3: the hero (two bodies) and the Centurion (two bodies); the 106-joint Psyche and Minotaur (rig-bones.ts, ?rig= / ?foerig=)
+  chooseRigs(typeof location === 'undefined' ? '' : location.search);   // V3 rig swap: which rig each side draws (data/rig.json default and query: ?rig=65|106, ?foerig=65|106); only the file picked is fetched
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): a fight fetches his kit only, never the whole 9.4 MB file.
   const carrierUrls: Record<string, string> = { '../assets/loot/carriers-minotaur.glb': new URL('../assets/loot/carriers-minotaur.glb', import.meta.url).href, '../assets/loot/carriers-veteran.glb': new URL('../assets/loot/carriers-veteran.glb', import.meta.url).href };   // V3: the Minotaur's kit (the scutum alone), the Centurion's
   // The foe's rig file: a roster body from the glob, except the on-demand beasts (boar, bear), which are public/beasts/<id>.glb fetched by an absolute site-root URL (src/fight/beast-scale.ts), like the world bodies' '/world/...': the Origins preview build has no publicDir, so a BASE_URL-relative path would 404 there.
-  const foeUrl = (id: string): string => ON_DEMAND_BEASTS.has(id) ? beastBodyUrl(id) : fighterUrls[`../assets/${foeBodyFile(id, ROSTER[id as OpponentId].body)}.glb`]!;
+  // `rig65`: the 65 file even where the 106 one was picked (the fallback when a 106 file fails to load: the fight never waits on the swap).
+  const foeUrl = (id: string, rig65 = false): string => ON_DEMAND_BEASTS.has(id) ? beastBodyUrl(id) : fighterUrls[`../assets/${foeBodyFile(id, ROSTER[id as OpponentId].body, rig65)}.glb`]!;
   // Combat waits for the arena's worker textures and props too (arena.ready never rejects): their GPU uploads then land during the
   // loading screen instead of stalling the first exchange (measured 69 ms p95 in the first window when they arrived late under load).
   // The load is retryable: a phone that sleeps mid-download aborts the fetch (2 MiB of the Nightborn's 5.1 MB, 2026-09-21 09:15) and
@@ -349,10 +353,13 @@ export function createScene(
     weapons.then((pair) => {
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
-      // The weapon his drawn body bakes (foe-body.ts: the Minotaur's is veteran.glb's trident) needs no file; a drawn weapon over his (foe-weapon.ts) is its own file.
-      const opponentEquip = pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
-      const load = (hero: string) => loadWarriors(hero, foeUrl(opponentId), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
-      return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => load(heroBody)) : load(heroBody)))(fighterUrls[`../assets/${heroBodyFile()}.glb`]!);   // the hero-body row: Exo (warrior.glb) or the classic hero
+      // The weapon his drawn body bakes (foe-body.ts: the Minotaur's is veteran.glb's trident; a 106 body bakes none) needs no file; a drawn weapon over his (foe-weapon.ts) is its own file.
+      const opponentEquip = (rig65: boolean) => pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon, rig65) ? undefined : foeEquipUrl(opponentId, pair[1]);
+      const load = (hero: string, rig65 = false) => loadWarriors(hero, foeUrl(opponentId, rig65), pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip(rig65), SHIELD_CARRIERS.has(opponentId));
+      // V3 rig swap: the 106 file of a side whose rig is 106 (rig-bones.ts); if either 106 file fails, both sides load their 65 files (reported), so a fight never waits on the swap.
+      const hero65 = fighterUrls[`../assets/${heroBodyFile()}.glb`]!, hero106 = fighterUrls[`../assets/${heroRigFile(heroBodyFile())}.glb`]!, swapped = hero106 !== hero65 || foeUrl(opponentId) !== foeUrl(opponentId, true);
+      const loadBody = (heroBody: string) => swapped ? load(heroBody === hero65 ? hero106 : heroBody).catch((error: unknown) => { captureException(error, { tags: { rig: '106' } }); return load(heroBody, true); }) : load(heroBody);
+      return ((heroBody: string) => (heroUrl ? load(heroUrl).catch(() => loadBody(heroBody)) : loadBody(heroBody)))(hero65);   // the hero-body row: Exo (warrior.glb) or the classic hero
     }),
     arena.ready,
     carrierUrl && !lateKit ? loadKit() : null,
@@ -374,7 +381,7 @@ export function createScene(
       else { player.add(loaded.player.anchor); opponent.add(loaded.opponent.anchor); }
       player.visible = opponent.visible = true;
       for (const rig of [loaded.player, loaded.opponent])
-        for (const name of ['foot_l', 'foot_r']) dustFeet.push(rig.anchor.getObjectByName(name) ?? null);
+        for (const name of ['foot_l', 'foot_r']) dustFeet.push(boneOf(rig.anchor, name) ?? null);
       dress();
       // Every shader the fight can need is compiled here, behind the welcome card, instead of the first time its object is drawn
       // mid-fight (a landed blow's sparks and blood, a stain, the graded wall): compile() walks the whole scene, hidden pools included.

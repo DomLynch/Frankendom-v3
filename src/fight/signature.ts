@@ -6,6 +6,7 @@ import { HEAVY_CLASS } from './clash-sparks.ts';
 import { surfaceHit, woundSite, type WoundHit } from './gore.ts';
 import { sigGroup } from './signature-rows.ts';
 import { fxNum } from './fx-rows.ts';
+import { bone as boneOf } from './rig-bones.ts';
 const HIT_RADIUS_MIN = fxNum('fx.signature.hitRadiusMin');
 const FADE_IN_MIN = fxNum('fx.signature.fadeInMin');
 
@@ -134,7 +135,7 @@ export function createSignatureMarks(scene: THREE.Scene) {
     // false when the rig has no such bone (the mark is then simply not made).
     // `site` overrides the table when an effect knows better where its blow meets the body (the Dwarf's overhead lands on the shoulder's top).
     body(side: Side, root: THREE.Object3D, hit: WoundHit, look: MarkLook, scale = 1, site: MarkSite = woundSite(hit)): boolean {
-      const bone = root.getObjectByName(site.bone);
+      const bone = boneOf(root, site.bone);
       if (!bone) return false;
       root.updateWorldMatrix(true, true);
       const out = new THREE.Vector3(...site.dir).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), hit.heading);
