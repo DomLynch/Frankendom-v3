@@ -7,7 +7,9 @@ import { asStance, moodOf, type PickedStance } from './stance.ts';
 import { MOVES, OPPONENTS, SKILL_MOVE, PATHS, PROFILES, RULES, total, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, BASH_MOVE, SKILL_ROWS, skillOfMove, type AiProfile, type MoveId, type Opponent, type PathId, type SkillId, type SpecialName, type Weapon, type WeaponId } from './moves.ts';
 import type { State } from './sim.ts';
 import { M } from './detmath.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
-import { specialStage } from './special-look.ts';
+import { specialStage, SPECIAL_RECOVER } from './special-look.ts';
+import { paceTicks } from './special-pace.ts';
+import type { BlendSpan } from './anim-blend.ts';
 import { holdPoseOf } from './move-rows.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
 import { simBound } from './sim-bounds-rows.ts';
@@ -225,7 +227,7 @@ export function specialReadiness(duel: Duel, slot: SpecialSlot): SpecialReadines
 
 // Presentation helper: which clip, how far through it, and where its contact pose sits. Animation observes; it never decides.
 type Pose = Exclude<LegacyPhase, 'hurt' | 'dead' | 'backstep'> | 'hit' | 'death';
-export function actorPose(s: Practice, side: Side): { pose: Pose; progress: number; attack: Attack; contact: number } {
+export function actorPose(s: Practice, side: Side): { pose: Pose; progress: number; attack: Attack; contact: number; span?: BlendSpan } {
   const f = s.duel.fighters[side], phase = legacyPhase(f), attack = clipOf(f), specs = attackSpecs(f.weapon);
   const pose: Pose = phase === 'dead' ? 'death' : phase === 'hurt' ? 'hit' : phase === 'backstep' ? 'ready' : phase;   // a backstep is armed footwork; travel direction drives the walk
   const duration = phase === 'attack' || phase === 'kick' ? total(timing(f))
@@ -236,8 +238,18 @@ export function actorPose(s: Practice, side: Side): { pose: Pose; progress: numb
   // A Special Move (special-look.ts; placeholder motion until the pilot's own clips): the heavy's raise held through the windup, its
   // downstroke as the strike and the recovery after it.
   const special = phase === 'ready' ? specialStage(f) : null;
-  if (special) { const c = specs.heavy.contact / specs.heavy.recovery; return { pose: 'attack', progress: special.stage === 'windup' ? c * special.progress : c + (1 - c) * special.progress, attack: 'heavy', contact: c }; }
-  return { pose, progress: Math.min(1, (phase === 'attack' ? poseAge(f) : f.age) / Math.max(1, duration)), attack, contact };
+  if (special) {
+    const c = specs.heavy.contact / specs.heavy.recovery, progress = special.stage === 'windup' ? c * special.progress : c + (1 - c) * special.progress;
+    // V3 blend rows (anim-blend.ts): where the special is in its windup + recovery, in ticks
+    const w = paceTicks(f, RULES.special.windup), r = paceTicks(f, SPECIAL_RECOVER), wind = special.stage === 'windup';
+    const age = wind ? special.progress * w : w + special.progress * r, left = wind ? (1 - special.progress) * w + r : (1 - special.progress) * r;
+    return { pose: 'attack', progress, attack: 'heavy', contact: c, span: { pose: 'attack', progress, kind: 'special', age, left } };
+  }
+  const progress = Math.min(1, (phase === 'attack' ? poseAge(f) : f.age) / Math.max(1, duration));
+  // V3 blend rows (anim-blend.ts): the move's own length in ticks, so a fade is in milliseconds whatever the move's length
+  const kind = phase === 'attack' || phase === 'kick' ? 'attack' : phase === 'hurt' ? 'hurt' : phase === 'roll' ? 'roll' : null;
+  const ticks = Math.max(1, duration), span: BlendSpan | undefined = kind ? { pose, progress, kind, age: progress * ticks, left: (1 - progress) * ticks } : undefined;
+  return { pose, progress, attack, contact, ...(span ? { span } : {}) };
 }
 /** The fraction of the wind-up (progress / contact) after which the weapon trail draws (characters.ts). */
 export const TRAIL_FROM = 0.7;

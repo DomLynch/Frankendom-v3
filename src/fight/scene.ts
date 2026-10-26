@@ -997,6 +997,9 @@ export function createScene(
         travel && dt ? (dx * Math.cos(state.heading) - dz * Math.sin(state.heading)) / (travel * dt) : 0,
         practice.result === 'blocked' ? (blockHeavy[0] ? 1.5 : 1) * Math.max(0, 1 - practice.resultAge / 12) : 0,
         practice.duel.fighters[0].guardDirection,
+        null,
+        false,
+        mine.span ?? null,   // V3 blend rows (anim-blend.ts): the move's ticks, honoured only while this pose and progress are shown
       );
       warriors?.player.opening(practice.opening?.side === 0 ? practice.opening : null);   // opening-pose.ts
       warriors?.opponent.opening(practice.opening?.side === 1 ? practice.opening : null);
@@ -1022,6 +1025,7 @@ export function createScene(
         practice.duel.fighters[1].guardDirection,
         CHARGE_LEAN[opponentId] ?? null,
         holdingCharge(practice.duel.fighters[1]),
+        theirs.span ?? null,
       );
       if (isTemplate(finisher, 'bisect') && practice.finish?.victim === 1) {
         warriors?.opponent.openWaist(victimProgress, bloodMode);

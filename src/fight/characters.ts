@@ -10,6 +10,7 @@ import { heroContact, heroSwing } from './hero-body-rows.ts';
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
 import { swingTrailOpacity } from './trail-opacity.ts';   // V3: the swing trail softer per clip key (data/fight.json trail); ?trail=v1 = V1's
+import { combatFade, weightEase, type BlendSpan } from './anim-blend.ts';   // V3: clip blends in ms (data/fight.json blendMs/settleMs); ?blend=v1 = V1's
 import { weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, SKILL_ROWS, skillOfMove, type Direction, type WeaponId } from './moves.ts';
 import SPECIAL_CLIP_ROWS from '../assets/special-clips.json' with { type: 'json' };
 import { HURT_STYLES, READY_STYLES, PLAIN_POSTURE, pickStyle } from './character-style-rows.ts';
@@ -855,7 +856,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       covered: (): readonly Mesh[] => [...covered.keys()],   // his own draws a `replace` piece hides (the debug probe asserts they stay hidden)
       // The clip carrying most of the pose right now and the node the weapon hangs from (the debug probe's word for what the rig is doing): `role:clip@node`.
       playing(): string { if (opened?.group.visible) return `Opened:WaistCut@${blade.name}`; let best: Role = 'Idle'; for (const role of roles) if (actions[role].getEffectiveWeight() > actions[best].getEffectiveWeight()) best = role; return `${best}:${clips[best].name}@${blade.name}`; },
-      update(travelSpeed: number, dt: number, pose: BodyPose = 'sheathed', progress = 0, attack: Attack = 'light', contact = .35, lateral = 0, recoil = 0, guardSide: Direction | null = null, lean: ChargeLean | null = null, holding = false) {
+      update(travelSpeed: number, dt: number, pose: BodyPose = 'sheathed', progress = 0, attack: Attack = 'light', contact = .35, lateral = 0, recoil = 0, guardSide: Direction | null = null, lean: ChargeLean | null = null, holding = false, span: BlendSpan | null = null) {
         // dt 0 evaluates the pose for the current tick without advancing anything (the frame loop's hit-stop): clip times still follow `progress`,
         // weights and gait hold, the mixer applies at zero, and no trail sample is taken.
         // A finisher body is its row's (finisher-look.ts): the clip role its pose word plays, which side it is, and its template's own code path
@@ -883,13 +884,13 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         const dead = pose === 'death' || fell;
         for (const role of roles) {
           const a = actions[role];
-          const fade = tmpl === 'bisect' ? Math.min(1,progress/.04) : combatRole === null ? 0 : ['draw','guard','block','parry','deflected'].includes(pose) || fin?.side === 'killer' ? 1 : Math.min(1, progress * 12, dead ? 1 : (1 - progress) * 10);
+          const fade = tmpl === 'bisect' ? Math.min(1,progress/.04) : combatRole === null ? 0 : ['draw','guard','block','parry','deflected'].includes(pose) || fin?.side === 'killer' ? 1 : combatFade(pose, progress, dead, span);   // V1: in over 1/12, out over the last 1/10; V3: the blendMs rows (anim-blend.ts)
           const hurtFade = hurtStyle && combatRole === 'Hit' ? fade * (hurtStyle.weight / 1000) : fade;   // ?hurt=: only part of the recorded Hit clip stays
           const target = (weights[role] || 0) * (1 - hurtFade) + Number(role === combatRole) * hurtFade;
           const activeBlade = pose === 'attack' && progress >= contact-1/specs[attack].recovery && progress <= contact+4/specs[attack].recovery;
           // A parried attacker is thrown off line on the impact tick itself (Strategy 2026-09-24: the parry's tell is the attacker, not a spark):
           // the weight snaps like a live blade does — the parry's hit-stop runs at dt 0, where an eased weight would hold the attack pose.
-          a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
+          a.setEffectiveWeight(tmpl === 'bisect' || (staged && progress >= .05) ? target : activeBlade || pose === 'deflected' ? Number(role === combatRole) : a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * weightEase(step));
           if (role === combatRole) a.time = Math.min(CLIP_END_MAX, Math.max(0, pose === 'attack' ? heroSwing(role, swingProgress(progress, contact, specialPlay ? specialRow(specialPlay).strike : pickedSource[role] ?? (asset === hero.asset && clips[role].name === role ? heroContact(role) : undefined) ?? specs[attack].source), !specialPlay && asset === hero.asset && clips[role].name === role) : pose === 'deflected' ? DEFLECT_FROM + progress * (1 - DEFLECT_FROM) : progress)) * clips[role].duration;
         }
         if (guardHold && combatRole === 'Guard') actions.Guard.time = guardClipTime(guardHold, clips.Guard.duration, CLIP_END_MAX * clips.Guard.duration, guardClock, pose === 'block' ? progress : null);
@@ -905,7 +906,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         if (carried) { offHand.forEach((b, i) => b!.quaternion.copy(uncarried[i])); carried = false; }
         if (guardUpper) {   // V3: moving guarded, the guard's upper body over the walking legs; standing, V1's whole Guard clip
           const guarded = pose === 'guard', moving = guarded ? Math.min(1, GUARD_WALK_ROLES.reduce((sum, role) => sum + (weights[role] ?? 0), 0)) : 0;
-          const toward = (a: AnimationAction, target: number) => a.setEffectiveWeight(a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * (1 - Math.exp(-step * 24)));
+          const toward = (a: AnimationAction, target: number) => a.setEffectiveWeight(a.getEffectiveWeight() + (target - a.getEffectiveWeight()) * weightEase(step));
           if (guarded) toward(actions.Guard, 1 - moving);
           toward(guardUpper, moving); guardUpper.time = actions.Guard.time;
           for (const role of GUARD_WALK_ROLES) { const legs = guardLegs[role]; if (!legs) continue; toward(legs, guarded ? weights[role] ?? 0 : 0); legs.time = actions[role].time; legs.setEffectiveTimeScale(actions[role].getEffectiveTimeScale()); }

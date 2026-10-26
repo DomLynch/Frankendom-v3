@@ -64,5 +64,21 @@
     "about": "Dom 2026-10-26 (docs/V3-OWED-2026-10-26.md, HUD): the opponent's body is the Minotaur (src/fight/foe-body.ts), so the HUD names him the Minotaur: the name over his bar and the status line (src/fight/foe-name.ts). Display only: the sim, the AI, his stats, specials, level and Gate 0 still see the Centurion (id `opponent`). ?foe=v1 = the Centurion's body and name.",
     "opponent": "veteran",
     "name": "Minotaur"
+  },
+  "blendMs": {
+    "about": "PM queue item (a), 'roll blend' (PLAN step-5 list): V2 #70's per-transition blend rows, numbers as they are in Frankendom-v2 data/anim.json blendMs (main 78d19d6; V2 render.js combatOf). V1 (characters.ts) fades a combat clip in over the first 1/12 and out over the last 1/10 of its move whatever the move's length, and eases every clip weight at 24/s. With these rows a combat clip's weight rises over `<kind>In` ms after its move starts and falls over `<kind>Out` ms before it ends: attack (every swing and the kick), special (a special's windup + recovery), hurt (a hit reaction), roll; `locomotion` is the time an eased weight (walk, run, guard, every clip) takes to close ~95% of its gap (V1's 24/s is 125 ms). None above 150 ms (V2's A1 cap). Deaths, finishers, the draw, guard/block/parry/deflect and the live-blade snap keep V1's. Both fighters, visual only (src/fight/anim-blend.ts). ?blend=v1 = V1's transitions exactly.",
+    "locomotion": 120,
+    "attackIn": 75,
+    "attackOut": 80,
+    "specialIn": 75,
+    "specialOut": 80,
+    "hurtIn": 40,
+    "hurtOut": 80,
+    "rollIn": 60,
+    "rollOut": 120
+  },
+  "settleMs": {
+    "about": "V2's one named exception to the 150 ms cap (Frankendom-v2 data/anim.json settleMs, Dom 2026-10-26 on V2: the roll 'suddenly switches to the normal stance'): the roll's weight eases out over this many ms before it ends, in place of blendMs.rollOut, so the roll settles into the stance instead of snapping. V2 set 300 for its 84-tick (1.4 s) roll-to-run, where 300 ms is the last 21 %; V3's roll is V1's 36 ticks (600 ms), where 300 ms is the whole second half and she rose while the sim still had her rolling (Lead 2026-10-26, on PR #35's stills). So 120 here: V2's rollOut, the same ~20 % tail of a 36-tick roll, and recovery reads where the sim recovers. ?blend=v1 = V1's.",
+    "roll": 120
   }
 }
