@@ -73,7 +73,8 @@ writeFileSync(join(out, 'build.txt'), id);
 // (carriers-veteran.glb byte for byte; veteran.glb the same but with every image kept inside, where V1 moves two shared ones to their own files).
 // Only the dist copy is packed: the sources stay plain for Blender. warrior.glb waits for its clip swap (anim/hero-clips-dom-picks).
 // ?load=v1 does not unpack them: the loaders have had the meshopt decoder since V1.
-const PACKED = ['src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb'];
+// Psyche (the hero since 2026-10-26) is packed the same way; warrior.glb (?hero=v1) stays as today's site serves it.
+const PACKED = ['src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb', 'src/assets/psyche.glb'];
 for (const glb of PACKED) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target)));

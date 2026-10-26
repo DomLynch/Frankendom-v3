@@ -13,7 +13,7 @@ export function catalogueBodyUrl(id: string): string | undefined {
 }
 
 export function heroBodyUrl(): string {
-  const bodies = import.meta.glob<string>(['../assets/warrior.glb', '../assets/hero-classic.glb'], { eager: true, query: '?url', import: 'default' });   // the hero's own body (K2 row 6): not a catalogue row; WHICH one is the hero-body row
+  const bodies = import.meta.glob<string>(['../assets/psyche.glb', '../assets/warrior.glb', '../assets/hero-classic.glb'], { eager: true, query: '?url', import: 'default' });   // the hero's own body (K2 row 6): not a catalogue row; WHICH one is the hero-body row
   return bodies[`../assets/${heroBodyFile()}.glb`];
 }
 
