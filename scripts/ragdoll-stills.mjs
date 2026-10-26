@@ -14,7 +14,7 @@ if (!base || !out) { console.error('usage: node scripts/ragdoll-stills.mjs <base
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const TICK = 1000 / 60, CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), KICK_EVERY = Number(process.env.KICK_EVERY ?? 40), MAX_TICKS = Number(process.env.MAX_TICKS ?? 4000);
-const HIT_AT = [0, 4, 10, 20, 35, 55], DEATH_AT = [0, 8, 16, 26, 40, 60, 90, 140, 220];
+const HIT_AT = [0, 4, 10, 20, 35, 55], DEATH_AT = [0, 2, 4, 8, 16, 26, 40, 60, 90, 140, 220];
 const report = {};
 if (process.env.COST) {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });

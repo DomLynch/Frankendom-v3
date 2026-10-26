@@ -20,7 +20,7 @@
     "meshoptimizer": "1.2.0"
   },
   "dependencies": {
-    "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/9fc54c75576a2fff0d7ed7bc8cb66e4904801546",
+    "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/6a9c84eedc0635aa75f92188de9630424335732b",
     "three": "0.186.0"
   }
 }

@@ -2,12 +2,11 @@
 // body while he fights, a landed blow dips his motors (the stagger), and his plain death falls as a ragdoll that stays down until the rematch.
 // PRESENTATION ONLY: it reads the sim's events and the rig's animated bones, and writes bones; the sim (duel.ts) never sees it and Gate 0 is
 // untouched. ?physics=v1 (the row's query) = today's death and hit behaviour exactly: nothing here is created and the chunk is never fetched.
-// Every number and name is a data row (data/physics.json); the package's own death ramp runs on its own rows (its data/states.json).
+// Every number and name is a data row (data/physics.json), the package's stagger and death runners included (`states`, passed to createPhysics).
 //
 // The sim frame of the ragdoll is the opponent's group (scene.ts `opponent`: the sim position and yaw), so walking costs the ragdoll nothing and
-// the corpse lies where the sim's body lies. The package's three-rig helper maps capsules <-> bones; it wants the model in its bind pose when the
-// rig is made, and the rig here has already been animated, so the bind pose is copied in from the loaded GLTF scene (never animated: characters.ts
-// `bindScene`) for the moment the rig is made, then the animated pose is put back.
+// the corpse lies where the sim's body lies. The package's three-rig helper maps capsules <-> bones; the rig here is already animated when it is
+// made, so the bind pose is read from the loaded GLTF scene (never animated: characters.ts `bindScene`) through three-rig's `bind` option.
 import * as THREE from 'three';
 import PHYSICS from '../../data/physics.json' with { type: 'json' };
 import { isPlainDeath, PLAIN_DEATH } from './finisher-look.ts';
@@ -19,14 +18,19 @@ import type { FinisherId } from './finishers.ts';
 export type PhysicsRows = typeof PHYSICS;
 type OpponentRow = PhysicsRows['opponents'][number];
 type Vec3 = [number, number, number];
+type Hit = { part: string; impulse: Vec3 };
 type Ragdoll = {
   state: string; partIds: string[];
-  setMotorStrength(rows: number | Record<string, number>): void; applyImpulse(part: string, v: Vec3): void;
-  kill(hit?: { part: string; impulse: Vec3 }): void; destroy(): void;
+  applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; setMotorGain(gain: number, damping?: number): void;
+  snapToTarget(): boolean; reset(): boolean; destroy(): void;
 };
-type Physics = { step(dt: number): number; createRagdoll(row: unknown, opts?: { position?: Vec3; id?: string }): Ragdoll; tickDt: number };
+type Physics = { step(dt: number): number; createRagdoll(row: unknown, opts?: { position?: Vec3; id?: string; motorGain?: number; motorDamping?: number }): Ragdoll; tickDt: number };
 type Rig = { drive(): void; applyPose(): void };
-type Chunk = { createPhysics(opts: { seed: number }): Promise<Physics>; createThreeRig(three: typeof THREE, rd: Ragdoll, bones: Record<string, THREE.Object3D>, root: THREE.Object3D): Rig };
+type Bones = Record<string, THREE.Object3D>;
+type Chunk = {
+  createPhysics(opts: { seed: number; states?: unknown }): Promise<Physics>;
+  createThreeRig(three: typeof THREE, rd: Ragdoll, bones: Bones, root: THREE.Object3D, opts?: { bind?: { bones: Bones; root: THREE.Object3D } }): Rig;
+};
 
 /** The opponent row in force on this page, or null: the feature off in the rows, ?physics=v1, or an opponent without a ragdoll. */
 export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: string): OpponentRow | null {
@@ -59,21 +63,11 @@ export function blowImpulse(row: { parts: Record<string, string>; impulse: numbe
   return { part, impulse: [Math.sin(yaw) * row.impulse, row.lift, Math.cos(yaw) * row.impulse] };
 }
 
-/** The stagger's motor strengths `t` seconds into it (1 = full): eased in, held, back up; null once it is over. */
-export function staggerStrengths(hit: PhysicsRows['hit'], t: number): Record<string, number> | null {
-  const end = hit.easeInS + hit.holdS + hit.upS;
-  if (t >= end) return null;
-  const k = t < hit.easeInS ? t / hit.easeInS : t < hit.easeInS + hit.holdS ? 1 : 1 - (t - hit.easeInS - hit.holdS) / hit.upS;
-  const out: Record<string, number> = {};
-  for (const [role, target] of Object.entries(hit.targets)) out[role] = 1 - (1 - target) * k;
-  return out;
-}
-/** How deep the stagger is `t` seconds in (0..1), for the bones' blend toward the ragdoll's pose. */
-export function staggerDepth(hit: PhysicsRows['hit'], t: number): number {
-  const s = staggerStrengths(hit, t);
-  if (!s) return 0;
-  const [role, target] = Object.entries(hit.targets).reduce((a, b) => (b[1] < a[1] ? b : a));
-  return (1 - s[role]!) / (1 - target);
+/** How deep the stagger is `t` seconds after the blow (0..1, the package's own shape from the same `states.stagger` row): eased in, held, back up;
+ *  -1 once it is over. The package dips the motors (rd.stagger); this is the bones' share of the ragdoll's pose on screen (hit.blend). */
+export function staggerDepth(st: PhysicsRows['states']['stagger'], t: number): number {
+  if (t < 0 || t >= st.ease_in_s + st.hold_s + st.up_s) return -1;
+  return t < st.ease_in_s ? t / st.ease_in_s : t < st.ease_in_s + st.hold_s ? 1 : 1 - (t - st.ease_in_s - st.hold_s) / st.up_s;
 }
 
 type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
@@ -84,41 +78,40 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
-  let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0;
-  const saved = new Map<THREE.Object3D, [THREE.Vector3, THREE.Quaternion, THREE.Vector3]>();
+  let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true;
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
   const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }> };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
   (globalThis as { __ragdoll?: typeof cost }).__ragdoll = cost;
 
   // The bones `w` of the way from the clip's pose (on them now) to the ragdoll's: 1 = the ragdoll's alone.
-  function poseToward(w: number) {
+  // `share`: a part's own weight (hit.blend: only the parts that track the clip closely enough to show), 1 for every part when absent.
+  function poseToward(w: number, share?: Record<string, number>) {
     if (w <= 0 || !rig || !group) return;
-    if (w >= 1) { rig.applyPose(); return; }
+    if (w >= 1 && !share) { rig.applyPose(); return; }
     for (const b of Object.values(partBones)) animQ.set(b, (animQ.get(b) ?? new THREE.Quaternion()).copy(b.quaternion));
     const hips = partBones.hips!; hipsPos.copy(hips.position);
     rig.applyPose();
-    for (const b of Object.values(partBones)) b.quaternion.copy(animQ.get(b)!.slerp(b.quaternion, w));
-    hips.position.lerpVectors(hipsPos, hips.position, w);
+    for (const [part, b] of Object.entries(partBones)) b.quaternion.copy(animQ.get(b)!.slerp(b.quaternion, Math.min(1, w * (share ? share[part] ?? 0 : 1))));
+    hips.position.lerpVectors(hipsPos, hips.position, Math.min(1, w * (share ? share.hips ?? 0 : 1)));
     group.updateWorldMatrix(true, true);
   }
 
-  // The bind pose on the live bones for the moment the rig is made (three-rig reads the rest orientations then), then today's pose back.
+  // A standing ragdoll: the package's reset() when it can (no cut has removed a joint), else a new one and its rig (the bind pose read from the
+  // untouched GLTF scene). Its first tick snaps the capsules onto the clip's pose (snapToTarget), so it never starts from the spawn pose.
   function build() {
     if (!physics || !group || !rigged) return;
-    rd?.destroy();
-    rd = physics.createRagdoll(measure, { id: foe.id });
-    const bind = new Map<string, THREE.Object3D>(); rigged.bindScene?.traverse((o) => { if (o.name && !bind.has(o.name)) bind.set(o.name, o); });
-    const hips = partBones.hips!;
-    saved.clear();
-    const keep = (o: THREE.Object3D) => saved.set(o, [o.position.clone(), o.quaternion.clone(), o.scale.clone()]);
-    for (let o = hips.parent; o && o !== group; o = o.parent) { keep(o); if (!bind.has(o.name)) { o.position.set(0, 0, 0); o.quaternion.identity(); } }   // the flinch pivot, the anchor: no presentation offset in the rest pose
-    rigged.anchor.traverse((o) => { const b = bind.get(o.name); if (b) { if (!saved.has(o)) keep(o); o.position.copy(b.position); o.quaternion.copy(b.quaternion); o.scale.copy(b.scale); } });
-    group.updateWorldMatrix(true, true);
-    rig = chunk!.createThreeRig(THREE, rd, partBones, group);
-    for (const [o, [p, q, s]] of saved) { o.position.copy(p); o.quaternion.copy(q); o.scale.copy(s); }
-    group.updateWorldMatrix(true, true);
-    mode = 'alive'; acc = 0; stagger = -1; dying = 0; cost.state = 'alive';
+    if (!rd?.reset()) {
+      rd?.destroy();
+      rd = physics.createRagdoll(measure, { id: foe.id, motorGain: rows.motorGain, motorDamping: rows.motorDamping });
+      const bind = rigged.bindScene ? { bones: Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(rigged!.bindScene!, name)!])), root: rigged.bindScene } : undefined;
+      rig = chunk!.createThreeRig(THREE, rd, partBones, group, bind ? { bind } : undefined);
+    }
+    if (tune?.gain !== undefined) rd!.setMotorGain(tune.gain, tune.damping);
+    mode = 'alive'; acc = 0; stagger = -1; dying = 0; snap = true; cost.state = 'alive';
   }
+  // A tuning harness (scripts/ragdoll-stills.mjs TUNE=gain,damping,blend) may set globalThis.__ragdollTune before the page loads: the rows' values otherwise.
+  const tune = (globalThis as { __ragdollTune?: { gain?: number; damping?: number; blend?: Record<string, number>; settle?: number } }).__ragdollTune;
+  const blend: Record<string, number> = tune?.blend ?? rows.hit.blend, blendOn = Object.values(blend).some((w) => w > 0);
 
   return {
     // scene.ts, once the rigs are in: the opponent's group (the sim frame) and his rig. The chunk and the body row load after the first frame.
@@ -133,7 +126,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       return afterFirstFrame()
         .then(() => new Promise((done) => setTimeout(done, rows.loadAfterFirstFrameMs)))
         .then(() => Promise.all([load(), fetch(new URL(measurePath, document.baseURI)).then((r) => { if (!r.ok) throw Error(`${measurePath}: ${r.status}`); return r.json(); })]))
-        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed }); build(); })
+        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed, states: rows.states }); build(); })
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
@@ -149,11 +142,13 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === 1) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
         if (finisher !== null && !isPlainDeath(finisher)) { mode = 'skip'; cost.state = 'finisher'; }   // a cinematic finisher keeps its clip (finisher row 'keep')
-        else { rd.kill(blowImpulse(rows.kill, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0; }
+        else {
+          rig.drive(); rd.snapToTarget();   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp
+          rd.kill(blowImpulse(rows.kill, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
+        }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== 1) continue;
-        const hit = blowImpulse(rows.hit, e.location, e.heading, group.rotation.y);
-        if (hit) rd.applyImpulse(hit.part, hit.impulse);
+        rd.stagger(blowImpulse(rows.hit, e.location, e.heading, group.rotation.y) ?? undefined);   // the package's dip (states.stagger) and the blow's impulse
         stagger = 0;
       }
       if (mode === 'skip') { cost.lastMs = 0; return; }
@@ -162,9 +157,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       while (acc >= tick && ticks < rows.maxTicksPerFrame) {
         if (mode === 'alive') {
           rig.drive();
-          const s = stagger >= 0 ? staggerStrengths(rows.hit, stagger) : null;
-          rd.setMotorStrength(s ? { all: 1, ...s } : 1);
-          if (stagger >= 0) stagger = s ? stagger + tick : -1;
+          if (snap) snap = !rd.snapToTarget();   // a new or reset ragdoll starts on the clip's pose
+          if (stagger >= 0) stagger = staggerDepth(rows.states.stagger, stagger + tick) < 0 ? -1 : stagger + tick;
         }
         if (rd.state !== 'frozen') physics.step(tick);
         acc -= tick; ticks++;
@@ -172,9 +166,13 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       if (ticks === rows.maxTicksPerFrame) acc = 0;
       const trace = (globalThis as { __ragdollTrace?: Record<string, number>[] }).__ragdollTrace;   // a debugging harness may ask: how far the ragdoll is from the animation, per part (radians)
       if (trace && mode === 'alive') {
+        // tune.settle: step that many more ticks toward this frame's pose first, so what is left is the error at rest (limits, mapping), not the lag
+        if (tune?.settle) { rig.drive(); for (let i = 0; i < tune.settle; i++) { physics.step(tick); rig.drive(); } }
         const anim = Object.entries(partBones).map(([p, b]) => [p, b.getWorldQuaternion(new THREE.Quaternion()), b.quaternion.clone(), b.position.clone()] as const);
         rig.applyPose();
-        trace.push(Object.fromEntries(anim.map(([p, q]) => [p, +q.angleTo(partBones[p]!.getWorldQuaternion(new THREE.Quaternion())).toFixed(3)])));
+        // per part: the whole orientation's angle, and (`<part>~`) the angle between the bone's long axes (the rig's bones run along local X): what is left is twist
+        const axis = (q: THREE.Quaternion) => new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+        trace.push({ ...Object.fromEntries(anim.flatMap(([p, q]) => { const r = partBones[p]!.getWorldQuaternion(new THREE.Quaternion()); return [[p, +q.angleTo(r).toFixed(3)], [`${p}~`, +axis(q).angleTo(axis(r)).toFixed(3)]]; })), _stagger: stagger >= 0 ? staggerDepth(rows.states.stagger, stagger) : -1 });
         for (const [p, , lq, lp] of anim) { partBones[p]!.quaternion.copy(lq); partBones[p]!.position.copy(lp); }
         group.updateWorldMatrix(true, true);
       }
@@ -182,7 +180,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         // From the clip's pose into the ragdoll's over kill.blendInS (the ragdoll lags a fast clip while he fights: no pop on the killing frame)
         dying += dt;
         poseToward(rows.kill.blendInS > 0 ? Math.min(1, dying / rows.kill.blendInS) : 1);
-      } else if (stagger >= 0 && rows.hit.blend > 0) poseToward(rows.hit.blend * staggerDepth(rows.hit, stagger));   // the stagger on screen, the most at the dip's deepest
+      } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger), blend);   // the stagger on screen, the most at the dip's deepest
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
       cost.frames++; cost.totalMs += ms; cost.maxMs = Math.max(cost.maxMs, ms); cost.lastMs = ms; cost.ticks += ticks; cost.state = rd.state;
       by.frames++; by.totalMs += ms; by.maxMs = Math.max(by.maxMs, ms);
