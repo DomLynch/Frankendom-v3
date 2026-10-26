@@ -81,7 +81,8 @@ writeFileSync(join(out, 'build.txt'), id);
 // the sim's blade sweeps are baked data (blade-paths.ts, blade-picks.ts), never read from the GLB.
 // Only the dist copy is packed: the sources stay plain for Blender and the bakes (scripts/hero-clips/*).
 // ?load=v1 does not unpack them: the loaders have had the meshopt decoder since V1.
-const PACKED = ['src/assets/warrior.glb', 'src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb'];
+// Psyche (the hero since 2026-10-26) is packed the same way as warrior.glb (?hero=v1).
+const PACKED = ['src/assets/psyche.glb', 'src/assets/warrior.glb', 'src/assets/veteran.glb', 'src/assets/loot/carriers-veteran.glb'];
 for (const glb of PACKED) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target)));

@@ -1,7 +1,7 @@
 {
   "heroBodyRows": [
-    { "id": "hero-body", "fields": { "body": "exo", "files": { "exo": "warrior", "classic": "hero-classic" },
-      "contact": { "exo": { "Attack": 0.4615, "Heavy": 0.4727 }, "classic": {} },
-      "start": { "exo": { "Attack": 0.1346, "Heavy": 0.0727 }, "classic": {} } } }
+    { "id": "hero-body", "fields": { "body": "psyche", "v1": "exo", "files": { "psyche": "psyche", "exo": "warrior", "classic": "hero-classic" },
+      "contact": { "psyche": { "Attack": 0.4615, "Heavy": 0.4727 }, "exo": { "Attack": 0.4615, "Heavy": 0.4727 }, "classic": {} },
+      "start": { "psyche": { "Attack": 0.1346, "Heavy": 0.0727 }, "exo": { "Attack": 0.1346, "Heavy": 0.0727 }, "classic": {} } } }
   ]
 }
