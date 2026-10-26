@@ -1,0 +1,28 @@
+{
+  "finishRows": [
+    {
+      "id": "rust",
+      "fields": {
+        "color": "#74462a",
+        "metalness": 0.18,
+        "roughness": 0.9
+      }
+    },
+    {
+      "id": "dull-iron",
+      "fields": {
+        "color": "#8e887e",
+        "metalness": 0.3,
+        "roughness": 0.85
+      }
+    },
+    {
+      "id": "old-bronze",
+      "fields": {
+        "color": "#7d5d30",
+        "metalness": 0.35,
+        "roughness": 0.75
+      }
+    }
+  ]
+}

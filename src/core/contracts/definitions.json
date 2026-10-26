@@ -1,0 +1,239 @@
+{
+  "gates": {
+    "pit": {
+      "order": 0,
+      "tier": "Recruit",
+      "open": true
+    },
+    "outer": {
+      "order": 1,
+      "tier": "Gladiator"
+    },
+    "second-realm": {
+      "order": 2,
+      "tier": "Champion",
+      "membership": true
+    },
+    "endgame": {
+      "order": 3,
+      "tier": "Origin",
+      "membership": true
+    }
+  },
+  "relations": {
+    "ally": {},
+    "rival": {},
+    "enemy": {},
+    "kin": {},
+    "patron": {},
+    "servant": {}
+  },
+  "questRoles": {
+    "giver": {},
+    "witness": {},
+    "target": {},
+    "ally": {},
+    "boss": {}
+  },
+  "attitudes": {
+    "hostile": {
+      "order": 0,
+      "atOrBelow": -500
+    },
+    "angry": {
+      "order": 1,
+      "atOrBelow": -100,
+      "expelledCeiling": true
+    },
+    "neutral": {
+      "order": 2
+    },
+    "friendly": {
+      "order": 3,
+      "atOrAbove": 250
+    }
+  },
+  "questScopes": {
+    "personal": {},
+    "party": {},
+    "world": {}
+  },
+  "rarities": {
+    "common": {
+      "order": 0
+    },
+    "fine": {
+      "order": 1
+    },
+    "rare": {
+      "order": 2
+    },
+    "relic": {
+      "order": 3
+    }
+  },
+  "materials": {
+    "iron": {
+      "order": 0, "sparks": true
+    },
+    "steel": {
+      "order": 1, "sparks": true
+    },
+    "bronze": {
+      "order": 2, "sparks": true
+    },
+    "gold": {
+      "order": 3
+    },
+    "leather": {
+      "order": 4
+    },
+    "cloth": {
+      "order": 5
+    },
+    "bone": {
+      "order": 6
+    },
+    "wood": {
+      "order": 7, "dull": true
+    },
+    "stone": {
+      "order": 8
+    },
+    "none": {
+      "order": 9
+    }
+  },
+  "presentations": {
+    "take-one": {},
+    "collect": {}
+  },
+  "serviceAccepts": {
+    "armour": {
+      "armour": true,
+      "weapons": false
+    },
+    "weapons": {
+      "armour": false,
+      "weapons": true
+    },
+    "all": {
+      "armour": true,
+      "weapons": true
+    }
+  },
+  "powers": {
+    "slot-weight": {
+      "tiered": true,
+      "upgradeable": true,
+      "gearOnly": true
+    },
+    "none": {}
+  },
+  "categories": {
+    "gear": {
+      "path": "gear",
+      "slot": "required",
+      "single": true,
+      "gear": true
+    },
+    "material": {
+      "path": "stock",
+      "slot": "none",
+      "craftInput": true
+    },
+    "quest": {
+      "path": "stock",
+      "slot": "none"
+    },
+    "cosmetic": {
+      "path": "stock",
+      "slot": "allowed",
+      "single": true
+    }
+  },
+  "story": {
+    "none": {},
+    "notable": {},
+    "story-critical": {
+      "blocksTrade": true,
+      "single": true,
+      "bindsOnAcquire": true,
+      "staysWithCharacter": true
+    }
+  },
+  "provenanceKinds": {
+    "arena-award": {
+      "tradeable": true
+    },
+    "legacy-unlock": {
+      "tradeable": true
+    },
+    "loot": {
+      "tradeable": true
+    },
+    "quest-reward": {
+      "tradeable": true
+    },
+    "creator-mint": {
+      "tradeable": true,
+      "onlyCategories": [
+        "cosmetic"
+      ]
+    },
+    "shop": {
+      "tradeable": true,
+      "needsPath": "gear",
+      "blockReason": "shop-not-gear"
+    },
+    "cash-shop": {
+      "tradeable": false,
+      "blockReason": "cash-shop"
+    }
+  },
+  "drawMaterials": {
+    "Steel": {"order": 1, "class": "metal"},
+    "Bronze": {"order": 2, "class": "metal"},
+    "DwarfIron": {"order": 3, "class": "metal"},
+    "Blade": {"order": 4, "class": "metal"},
+    "Antique brass": {"order": 5, "class": "trim"},
+    "Leather": {"order": 6, "class": "leather"},
+    "Waxed leather": {"order": 7, "class": "leather"},
+    "Heraldry": {"order": 8, "class": "cloth"},
+    "Gambeson": {"order": 9, "class": "cloth", "variants": true},
+    "Wrap": {"order": 10, "class": "cloth"},
+    "Felt": {"order": 11, "class": "cloth"},
+    "Bone": {"order": 12, "exempt": true},
+    "BoneWorn": {"order": 13, "exempt": true},
+    "Ruby": {"order": 14, "exempt": true},
+    "Skin": {"order": 15, "exempt": true},
+    "Hair": {"order": 16, "exempt": true},
+    "Eyes": {"order": 17, "exempt": true},
+    "Wood": {"order": 18, "exempt": true},
+    "WeaponLongsword": {"order": 19, "class": "metal"},
+    "WeaponLongswordShaft": {"order": 20, "class": "trim"},
+    "WeaponCleaver": {"order": 21, "class": "metal"},
+    "WeaponCleaverShaft": {"order": 22, "class": "trim"},
+    "WeaponKnife": {"order": 23, "class": "metal"},
+    "WeaponKnifeShaft": {"order": 24, "class": "trim"},
+    "WeaponEstoc": {"order": 25, "class": "metal"},
+    "WeaponEstocShaft": {"order": 26, "class": "trim"},
+    "WeaponTrident": {"order": 27, "class": "metal"},
+    "WeaponTridentShaft": {"order": 28, "exempt": true},
+    "GladiusSteel": {"order": 29, "class": "metal"},
+    "GladiusBronze": {"order": 30, "class": "trim"},
+    "GladiusBoneGrip": {"order": 31, "exempt": true},
+    "MaulIronBands": {"order": 32, "class": "metal"},
+    "Haft": {"order": 33, "exempt": true},
+    "Ash": {"order": 34, "exempt": true},
+    "MaulAshHaft": {"order": 35, "exempt": true},
+    "StaffWood": {"order": 36, "exempt": true},
+    "WitchStone": {"order": 37, "class": "stone"},
+    "WeatheredStone": {"order": 38, "class": "stone"}
+  },
+  "drawSuffixes": {
+    "Iron": {"order": 1, "class": "metal"},
+    "Cloth": {"order": 2, "class": "cloth"},
+    "Leather": {"order": 3, "class": "leather"}
+  }
+}
