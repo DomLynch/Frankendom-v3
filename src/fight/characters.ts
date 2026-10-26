@@ -869,11 +869,16 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       specialMove(role: SpecialRole | null) {
         specialRole = role;
         // Once any special is asked for, fetch every special clip this weapon plays (a second slot's clip is otherwise first asked for on its first press, and that cast shows the weapon's own swing until it lands).
-        if (role) for (const r of SPECIAL_ROLES) if (!clips[r] && !specialLoading.has(r) && this.clipLoader(r) && specialRow(r).weapons.includes(weapon) && isBowRole(r) === isBowRole(role)) {   // a bow carrier fetches the bow clips, a melee caster the melee ones
-          specialLoading.add(r);
-          void this.clipLoader(r)!().then(m => this.adoptClip(r, AnimationClip.parse(m.default as Parameters<typeof AnimationClip.parse>[0]))).catch(() => { specialLoading.delete(r); /* the weapon's own clip keeps playing */ });
-        }
+        if (role) for (const r of SPECIAL_ROLES) if (isBowRole(r) === isBowRole(role)) this.fetchSpecial(r);   // a bow carrier fetches the bow clips, a melee caster the melee ones
       },
+      /** Fetch this special's clip now, once, if the body has one for it and its weapon plays it. */
+      fetchSpecial(r: SpecialRole) {
+        if (clips[r] || specialLoading.has(r) || !this.clipLoader(r) || !specialRow(r).weapons.includes(weapon)) return;
+        specialLoading.add(r);
+        void this.clipLoader(r)!().then(m => this.adoptClip(r, AnimationClip.parse(m.default as Parameters<typeof AnimationClip.parse>[0]))).catch(() => { specialLoading.delete(r); /* the weapon's own clip keeps playing */ });
+      },
+      /** data/rig.json clipLoad.hero: the special roles to fetch as soon as this rig is built (only the weapon's own; nothing plays differently once it lands). */
+      prefetchClips(roles: readonly string[]) { for (const r of roles) if ((SPECIAL_ROLES as readonly string[]).includes(r)) this.fetchSpecial(r as SpecialRole); },
       // Fatigue (fatigue.ts, Lead's brief B): the driver's value for this body this frame, and the body's own tuning (Goblin quick and shallow, Executioner slow and deep).
       opening(o: Opening | null) { open = o; },   // opening-pose.ts: this body's open stagger (Practice.opening when its side is this body), or null
       fatigue(f: Pick<Fatigue, 'level' | 'gassed' | 'second'>, t?: FatigueTune) { tired = f; tune = t; },

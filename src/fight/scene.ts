@@ -63,7 +63,7 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
-import { bone as boneOf, heroRigFile } from './rig-bones.ts';
+import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { foeRagdollFor, ragdollFinisher } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
@@ -387,6 +387,7 @@ export function createScene(
       warriors = loaded;
       // Which body file each side drew, so each 106 body takes its own baked clips (data/rig.json clips106).
       loaded.player.useClips106(heroRigFile(heroBodyFile())); loaded.opponent.useClips106(foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body));
+      loaded.player.prefetchClips(CLIP_LOAD.hero);   // the hero's special clips first (data/rig.json clipLoad), before the opponent's finisher set and the first frame
       sizeBeast(loaded, opponentId);   // a beast is drawn at the size it is met walking (src/fight/beast-scale.ts)
       dress();   // his kit before the opened-waist bake, so the cut body wears what the whole one did
       playerDrawn(loaded.playerWeapon);
@@ -480,7 +481,7 @@ export function createScene(
   // The kill picks its finisher (once Hamstrung is in the rotation), so the clips are fetched in the background once the fight is ready, on idle. Silent on failure: hamstrungPick keeps the plain death.
   const prefetchHamstrung = () => { const start = () => { wantHamstrung(true); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 4000 }); else setTimeout(start, 1500); };
   // A 106 body without a clips106 file for its side of the scene (data/rig.json) fetches nothing: the kill is the plain death.
-  const wantHamstrung = (prefetch = false) => { if ((prefetch || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId) && warriors.player.takesBaked('Fin_Hamstrung') && warriors.opponent.takesBaked('Death_Hamstrung')) void hamstrungAssets.request(warriors); };
+  const wantHamstrung = (prefetch = false) => { if (((prefetch && CLIP_LOAD.afterFirstFrame.includes('Fin_Hamstrung')) || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId) && warriors.player.takesBaked('Fin_Hamstrung') && warriors.opponent.takesBaked('Death_Hamstrung')) void hamstrungAssets.request(warriors); };
   // Execution (src/fight/execution.ts) loads on the picker's choice only (no idle prefetch: it re-skins 12 poses), never as part of ready, and a failure is the plain death.
   const executionAssets = createHamstrungAssets(
     async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Execution') ?? noClip('Fin_Execution'))(), (warriors?.opponent.clipLoader('Death_Execution') ?? noClip('Death_Execution'))()]); return { killer, victim }; },

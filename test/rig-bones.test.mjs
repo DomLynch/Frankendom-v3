@@ -135,6 +135,15 @@ test("every 106 clip path the data names has a lazy loader (src/fight/clips-106.
   for (const p of clip106Paths()) assert.ok(src.includes(`'${p}': () => import('../assets/${p}')`), `${p}: its key imports its own file`);
 });
 
+test('clipLoad (data/rig.json): the hero fetches its own four specials first; every named role has a 106 file; the scene reads the row, not a literal', () => {
+  assert.deepEqual(RIG.clipLoad.hero, ['Special_SkullCrack', 'Special_Whirlwind', 'Special_GroundSlam', 'Special_Lunge']);
+  for (const role of [...RIG.clipLoad.hero, ...RIG.clipLoad.afterFirstFrame]) assert.ok(clip106Path('psyche-106', role) && clip106Path('minotaur-106', role), `${role} has a 106 file on both bodies`);
+  assert.ok(!RIG.clipLoad.hero.some((r) => RIG.clipLoad.afterFirstFrame.includes(r)), 'a role is in one list only');
+  const scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
+  assert.match(scene, /player\.prefetchClips\(CLIP_LOAD\.hero\)/);
+  assert.match(scene, /CLIP_LOAD\.afterFirstFrame\.includes\('Fin_Hamstrung'\)/);
+});
+
 test('only a body with a 106 file changes: Psyche and the Minotaur (V1\'s warrior.glb / veteran.glb have none, and are not shipped)', () => {
   assert.equal(rigFile('psyche', '106'), 'psyche-106'); assert.equal(rigFile('minotaur', '106'), 'minotaur-106');
   assert.equal(rigFile('psyche', '65'), 'psyche', 'the 65 stem: a name only (tests, bakes); never in the loader table');
