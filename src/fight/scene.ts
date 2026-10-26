@@ -347,7 +347,8 @@ export function createScene(
   let lookForced = false;   // this fight's look plays runThrough for opened, with no waist-cut bake (RUN_THROUGH_LOOKS)
   const rankLookUrl = () => rankLookFlagged ?? rankLookFor(opponentId, levelOf(tier ?? 'Recruit'), PHONE);
   let lookStarted: string | undefined | null = null;   // the look file the stream started on (undefined: none at that rung), null before it starts
-  const rankLook = !peerKit && (rankLookFlagged || (SHIPPING_LOOKS[opponentId] && !foeBodySwapped(opponentId))) ?   // his look files are fitted to his V1 body (foe-body.ts) rankLookStream(() => { const url = lookStarted = rankLookUrl(); lookForced = runThroughForced(url); (globalThis as { __rankLookForced?: boolean }).__rankLookForced = lookForced; return url ? loadRankLook(url).then(async (look) => {
+  // A swapped body (foe-body.ts: the Minotaur) wears no rank look: the look files are fitted to the V1 body.
+  const rankLook = !peerKit && (rankLookFlagged || (SHIPPING_LOOKS[opponentId] && !foeBodySwapped(opponentId))) ? rankLookStream(() => { const url = lookStarted = rankLookUrl(); lookForced = runThroughForced(url); (globalThis as { __rankLookForced?: boolean }).__rankLookForced = lookForced; return url ? loadRankLook(url).then(async (look) => {
     if (nightBronzeApplies(theme.id, opponentId, levelOf(tier ?? 'Recruit'))) toneNightBronze(look);
     // Warm-up before the swap frame: its shaders compile (with this scene's lights and shadows) and its maps upload now, off the beat.
     // Measured without it: a 150 ms swap frame at 375 (goblin-l3, dist).

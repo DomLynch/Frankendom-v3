@@ -29,8 +29,10 @@ test('the weapon sockets are where veteran.glb has them; the body is one Steel d
     assert.deepEqual([a.translation, a.rotation, a.scale, (a.children ?? []).length], [b.translation, b.rotation, b.scale, (b.children ?? []).length], `${name}: same place`);
     assert.equal(parentName(minotaur.j, node(minotaur.j, name)), parentName(veteran.j, node(veteran.j, name)), `${name}: same joint`);
   }
-  const steel = minotaur.j.nodes.filter((n) => n.name === 'Steel');
-  assert.equal(steel.length, 1, 'one node named Steel (characters.ts missingMap reads the first)');
+  const reach = new Set(), walk = (i) => { reach.add(i); (minotaur.j.nodes[i].children ?? []).forEach(walk); };
+  minotaur.j.scenes[0].nodes.forEach(walk);
+  const steel = [...reach].map((i) => minotaur.j.nodes[i]).filter((n) => n.name === 'Steel');
+  assert.equal(steel.length, 1, 'one node named Steel in the scene (characters.ts missingMap reads the first)');
   assert.ok(steel[0].skin === 0 && steel[0].extras?.slot === 'Body', 'a skinned Steel draw tagged Body (wear() hangs the scutum on it)');
   assert.equal(minotaur.j.meshes[steel[0].mesh].primitives.length, 1, 'one primitive: three.js makes it a SkinnedMesh, not a Group');
   const mat = minotaur.j.materials[minotaur.j.meshes[steel[0].mesh].primitives[0].material];
