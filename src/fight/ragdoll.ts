@@ -18,6 +18,7 @@ import { createRulesEval, rulesOnFor, type Presentation, type RulesPackage } fro
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
+import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
 import { createLateCuts, finisherCutRow, finisherPush, PHYSICS_MODE } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
 
 export type PhysicsRows = typeof PHYSICS;
@@ -107,6 +108,20 @@ export function unitOfBone(bone: THREE.Object3D, order: readonly string[], rootO
   return null;
 }
 
+/** A corpse left behind (leaveCorpse) ages by the frame's seconds: the pieces that left it are hidden after `pieceSeconds`, the whole copy is dropped after `keepSeconds`, and the oldest go first
+ *  when more than `max` stand. Pure on the list (data/physics.json `corpse`), so a test can run it; returns what to hide and what to drop. */
+export function ageCorpses<T extends { age: number; piecesHidden: boolean }>(list: T[], dt: number, row: { keepSeconds: number; pieceSeconds: number; max: number }): { keep: T[]; hide: T[]; drop: T[] } {
+  const hide: T[] = [], drop: T[] = [];
+  for (const c of list) {
+    c.age += dt;
+    if (c.age >= row.keepSeconds) drop.push(c);
+    else if (!c.piecesHidden && c.age >= row.pieceSeconds) { c.piecesHidden = true; hide.push(c); }
+  }
+  const alive = list.filter((c) => !drop.includes(c));
+  while (alive.length > row.max) drop.push(alive.shift()!);   // oldest first (the list is in the order they were left)
+  return { keep: alive, hide, drop };
+}
+
 /** The scale the pooled cap and helmet meshes wear for their warm-up draws (prepareCutArt): a speck. */
 export const WARM_SCALE = 1e-4;
 /** A pooled mesh taken for a cut: shown at its own `scale` (the warm-up speck never survives into a cut: caps and the helmet alike). */
@@ -167,6 +182,29 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       cutRig = cutRows.on && rigged.anchor.getObjectByName('piece_root') && cutManifestOf(chunk!) ? chunk!.createCutRig(THREE, rd, rigged.anchor, cutManifestOf(chunk!)) : undefined;
     }
     mode = 'alive'; acc = 0; stagger = -1; dying = 0; snap = true; armed = false; cost.state = 'alive';
+  }
+  // data/physics.json `corpse`: a dead foe's body can stay where it fell while the zone respawns him (leaveCorpse). It is a frozen copy of the rig as it lies, the cut pieces and caps
+  // included (SkeletonUtils.clone copies the bones as they stand; nothing animates the copy), so the hero can walk away and the foe come back beside it.
+  let corpses: { root: THREE.Object3D; age: number; piecesHidden: boolean; pieces: THREE.Object3D[] }[] = [];
+  const dropCorpse = (c: { root: THREE.Object3D }) => {
+    c.root.removeFromParent();
+    const skeletons = new Set<THREE.Skeleton>();
+    c.root.traverse((o) => { if (o instanceof THREE.SkinnedMesh) skeletons.add(o.skeleton); });
+    for (const skeleton of skeletons) skeleton.dispose();   // the copy's own bone texture; geometry and materials are the live rig's and stay
+  };
+  /** The zone loop respawns the foe: leave this dead one where it lies (a static copy that keeps its cuts) and stand the live rig up whole again, as a rematch does. false when there is no corpse to leave. */
+  function leaveCorpse(): boolean {
+    const row = rows.corpse;
+    if (disabled || mode !== 'dead' || !group || !rigged || !group.parent || !(row.keepSeconds > 0)) return false;
+    const copy = cloneRig(group), pieces: THREE.Object3D[] = [];
+    copy.traverse((o) => { if (o.name === 'WeaponTrail') o.visible = false; if (o instanceof THREE.SkinnedMesh) o.frustumCulled = false; if (o.userData.cutPiece !== undefined) pieces.push(o); });   // cutPiece: the triangle cutter's pieces (the older path)
+    const manifest = chunk && cutManifestOf(chunk) as { regions?: { mesh: string; detached_by?: string }[] } | undefined;
+    if (cutRig && rd && manifest?.regions) for (const r of manifest.regions) { const m = r.detached_by && rd.cuts.includes(r.detached_by) ? copy.getObjectByName(r.mesh) : undefined; if (m) pieces.push(m); }
+    group.parent.add(copy);
+    corpses.push({ root: copy, age: 0, piecesHidden: false, pieces });
+    cost.corpses = corpses.length;
+    build(); down = -1; getUp = -1; ruleCuts.length = 0; rules?.renew();   // the live rig whole again: the rematch's reset
+    return true;
   }
   function clearCuts() {
     cutter?.restore();
@@ -360,6 +398,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
+    /** The zone loop calls this at the foe's respawn (nothing passed): see leaveCorpse above. */
+    leaveCorpse,
     /** The sim's decapitation finisher (?ragdoll=finishers): V1's flying head is the picture; the package's cut of the head is made too, so its event and gear are listed. Once. */
     finisherCut(): CutEvent | null { return !rulesOn && mode === 'skip' && !disabled ? cutUnit(cutRows.sever, 'finisher') : null; },
     /** The corpse tap (the butcher's table): the ray (a tap on the canvas) cuts the part of the frozen corpse it strikes; null when it strikes nothing cuttable or the corpse is not down. */
@@ -418,6 +458,12 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     // A physics error never breaks the frame: the ragdoll is off for the rest of the page (the clips alone, today's death) and it is reported once.
     //   showGore: false in blood 'off' (a cut leaves the body whole, as the finisher's head stays on there).
     frame(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null, showGore = true) {
+      if (corpses.length) {   // the corpses left behind age on the page's clock, whatever the live ragdoll is doing
+        const { keep, hide, drop } = ageCorpses(corpses, dt, rows.corpse);
+        for (const c of hide) for (const p of c.pieces) p.visible = false;
+        for (const c of drop) dropCorpse(c);
+        corpses = keep; cost.corpses = corpses.length;
+      }
       if (disabled) return;
       if (warm > 0 && --warm === 0) {   // the warm-up draws (prepareCutArt) are done
         for (const mesh of [...capPool, ...helmetPool]) mesh.visible = false;
