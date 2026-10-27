@@ -18,13 +18,14 @@ const RUNS = Number(process.env.RUNS ?? 3), SECS = Number(process.env.SECS ?? 20
 // The M7 modules are default-on since #135 (data/feel-defaults.json): ?feel=v1 is none of them, ?feel=v1,<name> is that one alone, no query is all four.
 const BASE = 'feel=v1&rules=m4';
 const QUERIES = argQueries.length ? argQueries : process.env.QUERIES ? process.env.QUERIES.split('|') : [BASE, `feel=v1,clash&rules=m4`, `feel=v1,kick&rules=m4`, `feel=v1,hitreact&rules=m4`, `feel=v1,limbs&rules=m4`, 'rules=m4'];
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+const launch = () => chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
 const MIX = [['KeyF'], ['KeyG'], ['KeyD', 'KeyF'], ['KeyG'], ['KeyA', 'KeyF'], ['KeyF']];
 const press = async (page, codes) => { for (const c of codes) await page.keyboard.down(c); for (const c of codes.slice().reverse()) await page.keyboard.up(c); };
 const keep = (page) => page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; h.stamina = h.maxStamina; f.health = Math.max(f.health, Math.ceil(f.maxHealth / 2)); });
 const q = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
 
-async function one(query) {
+async function one(query) {   // a fresh browser per run: a crashed one (the corpse runs can) never takes the rest of the set down
+  const browser = await launch();
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.text().startsWith('dbg ')) console.error(m.text()); });
@@ -75,7 +76,7 @@ async function one(query) {
     await page.waitForTimeout(500);
   }
   const r = await page.evaluate(() => ({ cb: globalThis.__cb, rd: JSON.parse(JSON.stringify(globalThis.__ragdoll.byMode ?? {})), corpses: globalThis.__ragdoll.corpses, clash: globalThis.__feelClash && { frames: globalThis.__feelClash.frames, totalMs: globalThis.__feelClash.totalMs, maxMs: globalThis.__feelClash.maxMs, clashes: globalThis.__feelClash.clashes }, limbs: globalThis.__feelLimbs && { frames: globalThis.__feelLimbs.frames, totalMs: globalThis.__feelLimbs.totalMs, maxMs: globalThis.__feelLimbs.maxMs }, zone: globalThis.__v3Zone ?? null, hitreact: (globalThis.__hitreactLog ?? []).length, events: (globalThis.__feelEvents ?? []).map((e) => e.name), cuts: (globalThis.__v3Cuts ?? []).length }));
-  await page.close();
+  await browser.close();
   const cb = [...r.cb].sort((a, b) => a - b), avg = cb.reduce((a, b) => a + b, 0) / cb.length;
   const per = (m, m0) => m && { avgMs: +((m.totalMs - (m0?.totalMs ?? 0)) / Math.max(1, m.frames - (m0?.frames ?? 0))).toFixed(4), maxMs: +m.maxMs.toFixed(3), frames: m.frames - (m0?.frames ?? 0) };
   const ragdoll = Object.fromEntries(Object.entries(r.rd).map(([k, m]) => [k, per(m, rt0.rd[k])]));
@@ -98,4 +99,3 @@ for (const { query, best: b } of all) {
   console.log(`| ${query || '(default)'} | ${b.n} | ${b.avgMs} | ${b.medianMs} | ${b.p95Ms} | ${b.p99Ms} | ${b.maxMs} | ${base0 ? (b.avgMs - base0.avgMs).toFixed(3) : ''} | ${base0 ? (b.p95Ms - base0.p95Ms).toFixed(3) : ''} | ${mod} |`);
 }
 writeFileSync(`${out}/perf-${TAG}.json`, JSON.stringify({ when: new Date().toISOString(), runs: RUNS, secs: SECS, corpses: CORPSES, all }, null, 2));
-await browser.close();
