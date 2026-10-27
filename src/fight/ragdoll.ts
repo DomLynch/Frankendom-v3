@@ -163,6 +163,21 @@ export function counterparts(root: THREE.Object3D, copy: THREE.Object3D): Map<TH
 /** Whether a cue button shows for a bone at `p` (normalised device coords): on the screen or a little past its edge (the button is a thumb wide), not behind the camera. A corpse the camera has turned away
  *  from (it follows the respawned foe) has none. */
 export const cueOnScreen = (p: { x: number; y: number; z: number }): boolean => p.z <= 1 && Math.abs(p.x) <= 1.1 && Math.abs(p.y) <= 1.1;
+/** M8: the corpse's own rig and cut rig on `copy` (a SkeletonUtils clone of `live`, the body that died): the bones and anchor that stand where the live ones stand, the three-rig made against the bind
+ *  pose and the spawn pose of the live rig's making (the three-rig reads the ragdoll's pose once, then), the cut rig on the clone's meshes. Throws before anything is made when the clone lacks a bone.
+ *  armCorpse (in createFoeRagdoll) is this plus the corpse's bookkeeping; test/corpse-ragdoll.test.mjs runs this one. */
+export function makeCorpseRig(chunk: Pick<Chunk, 'createThreeRig' | 'createCutRig'>, real: Ragdoll, live: THREE.Object3D, copy: THREE.Object3D, partBones: Bones, liveAnchor: THREE.Object3D,
+  bind: { bones: Bones; root: THREE.Object3D }, spawnHips: Vec3, manifest: unknown): { rig: Rig; cutRig: CutRig; bones: Bones; anchor: THREE.Object3D } {
+  const map = counterparts(live, copy);
+  const bones = Object.fromEntries(Object.entries(partBones).map(([part, b]) => [part, map.get(b)!]));
+  const anchor = map.get(liveAnchor);
+  if (!anchor || Object.values(bones).some((b) => !b)) throw new Error('the clone lacks a bone of the rig');
+  let making = true;
+  const view = new Proxy(real, { get: (t, k, r) => (making && k === 'readPose' ? () => spawnHips : Reflect.get(t, k, r)) }) as Ragdoll;
+  const rig = chunk.createThreeRig(THREE, view, bones, copy, { bind });
+  making = false;
+  return { rig, cutRig: chunk.createCutRig(THREE, real, anchor, manifest), bones, anchor };
+}
 /** The corpse's piece for a cut unit, per the cut GLB's manifest: the meshes of the regions that unit detaches. */
 export const piecesOfUnit = (manifest: { regions?: { id: string; detached_by?: string }[] } | undefined, unit: string): string[] => (manifest?.regions ?? []).filter((r) => r.detached_by === unit).map((r) => r.id);
 
@@ -260,7 +275,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     for (const g of c.owned) g.dispose();   // geometry the copy cloned for itself (a carved body)
     const skeletons = new Set<THREE.Skeleton>();
     c.root.traverse((o) => { if (o instanceof THREE.SkinnedMesh) skeletons.add(o.skeleton); });
-    for (const skeleton of skeletons) skeleton.dispose();   // the copy's own bone texture; geometry and materials are the live rig's and stay
+    for (const skeleton of skeletons) skeleton.dispose();   // the copy's own bone texture (the cut rig's pieces and caps are meshes of this copy, so their skeletons go here); geometry and materials are the live rig's and stay
+    c.pieces.length = 0; c.hideAt.length = 0; c.gone.clear();   // the cut rig's meshes are not kept alive by the dropped corpse
   };
   /** The zone loop respawns the foe: leave this dead one where it lies (a static copy that keeps its cuts) and stand the live rig up whole again, as a rematch does. false when there is no corpse to leave. */
   function leaveCorpse(): boolean {
@@ -285,15 +301,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
    *  reads the ragdoll's pose once, at its making), its own cut rig on the cloned scene, and its cue buttons. The live foe is built again by the caller. Throws before anything is handed over. */
   function armCorpse(c: Corpse, manifest: unknown) {
     if (!chunk || !rd || !group || !rigged || !bindOpts) throw new Error('no untouched bind scene to make the corpse a rig from');
-    const real = rd, map = counterparts(group, c.root);
-    const bonesOf = Object.fromEntries(Object.entries(partBones).map(([part, b]) => [part, map.get(b)!]));
-    const anchor = map.get(rigged.anchor);
-    if (!anchor || Object.values(bonesOf).some((b) => !b)) throw new Error('the clone lacks a bone of the rig');
-    let making = true;
-    const view = new Proxy(real, { get: (t, k, r) => (making && k === 'readPose' ? () => spawnHips : Reflect.get(t, k, r)) }) as Ragdoll;
-    const rig2 = chunk.createThreeRig(THREE, view, bonesOf, c.root, { bind: bindOpts });
-    making = false;
-    const cut2 = chunk.createCutRig(THREE, real, anchor, manifest);
+    const real = rd, { rig: rig2, cutRig: cut2, bones: bonesOf, anchor } = makeCorpseRig(chunk, real, group, c.root, partBones, rigged.anchor, bindOpts, spawnHips, manifest);
     c.rd = real; c.rig = rig2; c.cutRig = cut2; c.bones = bonesOf; c.anchor = anchor;
     rd = undefined; rig = undefined; cutRig = undefined;   // handed over: build() makes the live foe a new ragdoll in a lane of its own
     c.cues = makeCueSet(() => c.id, (unit) => bonesOf[real.row.severable.find((s) => s.id === unit)?.cut_role ?? ''], () => !disabled && gore && !rulesOn && !!c.rd && c.rd.state === cutRows.tap.needs && c.frozenFor >= cutRows.cue.delayS, (unit) => c.done.has(unit), (unit, view2) => cutCorpse(c, unit, 'tap', view2));
@@ -474,6 +482,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     if (rulesOn || disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs || done.has(unit)) return null;
     try { return cutUnit(unit, 'tap', tapPush(view)); } catch (error) { cost.state = `cue failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
   }
+  /** Every cut button off (the ragdoll was disabled by an error, or the page stops running it): updateCues does not run then, so a button the last frame left showing would stay on screen and do nothing. */
+  function hideCues() { for (const s of [liveCues, ...corpses.map((c) => c.cues)]) if (s) for (const { el } of s.els) el.style.display = 'none'; }
   function updateCues() {
     const sets = [liveCues, ...corpses.map((c) => c.cues)].filter((s): s is CueSet => !!s);
     if (!sets.length || !cueCamera || !cueCanvas) return;
@@ -633,7 +643,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           c.frozenFor = c.rd?.state === cutRows.tap.needs ? c.frozenFor + dt : 0;
         }
       }
-      if (disabled) return;
+      if (disabled) { hideCues(); return; }
       if (warm > 0 && --warm === 0) {   // the warm-up draws (prepareCutArt) are done
         for (const mesh of [...capPool, ...helmetPool]) mesh.visible = false;
         if (cutRig) for (const mesh of Object.values(cutRig.caps)) { mesh.scale.setScalar(1); mesh.visible = false; }
@@ -650,7 +660,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           const by = (cost.byMode.corpses ??= { frames: 0, totalMs: 0, maxMs: 0 }), ms = performance.now() - t0;
           by.frames++; by.totalMs += ms; by.maxMs = Math.max(by.maxMs, ms);
         }
-      } catch (error) { disabled = true; armed = false; cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
+      } catch (error) { disabled = true; armed = false; hideCues(); cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     },
   };
 

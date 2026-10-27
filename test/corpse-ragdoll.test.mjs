@@ -9,7 +9,8 @@ import * as THREE from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { createPhysics } from '@frankendom/physics';
 import { createThreeRig } from '@frankendom/physics/three-rig';
-import { counterparts, cueOnScreen, freeSlot, piecesOfUnit, slotPosition } from '../src/fight/ragdoll.ts';
+import { createCutRig } from '@frankendom/physics/three-cuts';
+import { counterparts, cueOnScreen, freeSlot, makeCorpseRig, piecesOfUnit, slotPosition } from '../src/fight/ragdoll.ts';
 import { emitFeel, feel } from '../src/fight/feel.ts';
 import { validateFile } from '../src/sim/validate.js';
 
@@ -32,15 +33,14 @@ function fighter(physics, slot) {
   return { rd, root, bones, bind, spawnHips, rig: createThreeRig(THREE, rd, bones, root, { bind }) };
 }
 const worldOf = (b) => b.getWorldPosition(new THREE.Vector3());
-// what armCorpse does: clone the dead fighter, make a rig for the clone's bones with the spawn pose of the original standing in for the ragdoll's pose at the making
+// what armCorpse does, through the page's own function (src/fight/ragdoll.ts makeCorpseRig): clone the dead fighter and make the rig and the cut rig for the clone's bones, with the spawn pose of the
+// original standing in for the ragdoll's pose at the making. The cut manifest is the empty one (this fighter has no cut GLB meshes): the real cut rig, with nothing to find.
+const NO_CUT_ART = { schema: 'cut-pieces/1', regions: [], caps: [] };
+const CHUNK = { createThreeRig, createCutRig };
 function corpseOf(f) {
-  const copy = clone(f.root), map = counterparts(f.root, copy), bones = Object.fromEntries(Object.entries(f.bones).map(([p, b]) => [p, map.get(b)]));
-  let making = true;
-  const view = new Proxy(f.rd, { get: (t, k, r) => (making && k === 'readPose' ? () => f.spawnHips : Reflect.get(t, k, r)) });
-  const rig = createThreeRig(THREE, view, bones, copy, { bind: f.bind });
-  making = false;
+  const copy = clone(f.root), made = makeCorpseRig(CHUNK, f.rd, f.root, copy, f.bones, f.root, f.bind, f.spawnHips, NO_CUT_ART);
   copy.updateMatrixWorld(true);
-  return { copy, bones, rig, rd: f.rd };
+  return { copy, bones: made.bones, rig: made.rig, cutRig: made.cutRig, anchor: made.anchor, rd: f.rd };
 }
 const kill = (physics, f) => {
   f.rd.kill({ part: 'spine2', impulse: [0, 0, 60] });
@@ -52,7 +52,7 @@ const kill = (physics, f) => {
 test('the corpse rows are sane and validate: lanes spaced, the bus event named, cuttable a boolean', () => {
   assert.equal(typeof C.cuttable, 'boolean'); assert.ok(C.slotSpacingM >= 4, 'a lane is wider than a lying body'); assert.equal(C.event, 'corpse:cut');
   assert.deepEqual(validateFile('physics', ROWS), []);
-  for (const [k, v, re] of [['slotSpacingM', 0, /slotSpacingM/], ['event', '', /event/], ['cuttable', 'yes', /cuttable/]]) {
+  for (const [k, v, re] of [['slotSpacingM', 0, /slotSpacingM/], ['slotSpacingM', 3.9, /slotSpacingM/],['event', '', /event/], ['cuttable', 'yes', /cuttable/]]) {
     const bad = structuredClone(ROWS); bad.corpse[k] = v;
     assert.ok(validateFile('physics', bad).some((e) => re.test(e)), `${k} = ${JSON.stringify(v)} is refused`);
   }
@@ -147,6 +147,47 @@ test('the bus: a cut is announced under the row\'s name with the corpseId, to a 
   assert.deepEqual(got, [['corpse:cut', { unit: 'arm_left', gear: [], source: 'tap', corpseId: 'pitborn#2' }]]);
   assert.deepEqual(all, ['corpse:cut']);
   assert.deepEqual(globalThis.__feelEvents.at(-1), { name: 'corpse:cut', payload: { unit: 'arm_left', gear: [], source: 'tap', corpseId: 'pitborn#2' } });
+});
+
+test('makeCorpseRig: a clone that lacks a bone of the rig is refused before anything is made; the cut rig is the package\'s, on the clone', async () => {
+  const physics = await createPhysics({ seed: ROWS.seed, states: ROWS.states });
+  const f = fighter(physics, 0);
+  const stranger = clone(f.root); stranger.children.length = 0;   // not a clone of f.root: the walk of the trees differs
+  assert.throws(() => makeCorpseRig(CHUNK, f.rd, f.root, stranger, f.bones, f.root, f.bind, f.spawnHips, NO_CUT_ART), /clone has/);
+  assert.throws(() => makeCorpseRig(CHUNK, f.rd, f.root, clone(f.root), f.bones, f.root, f.bind, f.spawnHips, { schema: 'nope' }), /schema/, 'the package validates the cut manifest');
+  const made = corpseOf(f);
+  assert.deepEqual(Object.keys(made.bones).sort(), Object.keys(f.bones).sort());
+  for (const [part, b] of Object.entries(made.bones)) assert.notEqual(b, f.bones[part], `${part} is the clone's own bone`);
+  assert.deepEqual(Object.keys(made.cutRig.pieces), []); assert.equal(typeof made.cutRig.update, 'function');
+  physics.destroy();
+});
+
+// The page's corpse code runs in closures of createFoeRagdoll (it needs the page, the GLB and a camera), so these pins read the source of the functions the review named and fail when one loses the
+// step that matters: they are not a run of them (the stills harness, scripts/cut-stills.mjs with LEAVE and CUE, is the run in a browser).
+const SRC = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8');
+const bodyOf = (name) => {
+  const at = SRC.indexOf(`function ${name}(`) >= 0 ? SRC.indexOf(`function ${name}(`) : SRC.indexOf(`const ${name} = `);
+  assert.ok(at >= 0, `${name} is in ragdoll.ts`);
+  const next = SRC.slice(at + 10).search(/\n  (function |const [a-zA-Z]+ = \(|\/\*\*)/);
+  return SRC.slice(at, at + 10 + (next < 0 ? SRC.length : next));
+};
+test('source pins: dropCorpse frees what the corpse owns, leaveCorpse hands the ragdoll over through makeCorpseRig, cutCorpse and tapCorpses keep their guards, a disabled ragdoll hides its buttons', () => {
+  const drop = bodyOf('dropCorpse');
+  for (const need of ['c.root.removeFromParent()', 'el.remove()', 'c.rd?.destroy()', 'g.dispose()', 'skeleton.dispose()', 'c.gone.clear()']) assert.ok(drop.includes(need), `dropCorpse: ${need}`);
+  assert.match(bodyOf('leaveCorpse'), /snapshotRig\(/); assert.match(bodyOf('leaveCorpse'), /armCorpse\(c, manifest\)/); assert.match(bodyOf('leaveCorpse'), /while \(corpses\.length > row\.max\) dropCorpse\(/);
+  const leave = bodyOf('leaveCorpse');
+  assert.ok(leave.indexOf('dropCorpse(corpses.shift()!)') > 0 && leave.indexOf('dropCorpse(corpses.shift()!)') < leave.indexOf('build(); down'), 'the oldest corpses are dropped BEFORE the live foe is built (their lanes are his)');
+  assert.ok(drop.includes('c.cutRig = ') && drop.includes('c.rig = ') && drop.includes('c.cues = '), 'dropCorpse lets go of the corpse\'s rigs and buttons');
+  assert.match(SRC, /freeSlot\(corpses\.filter\(\(c\) => c\.rd\)\.map\(\(c\) => c\.slot\), count\)/, 'a new ragdoll takes the first lane no corpse holds');
+  assert.match(bodyOf('armCorpse'), /makeCorpseRig\(chunk, real, group, c\.root, partBones, rigged\.anchor, bindOpts, spawnHips, manifest\)/);
+  const cut = bodyOf('cutCorpse');
+  for (const need of ['rulesOn', 'disabled', '!gore', 'c.rd.state !== row.needs', 'c.done.has(unit)', 'c.rd.cut(unit', 'c.cutRig.update()', 'announce(event, c.id)']) assert.ok(cut.includes(need), `cutCorpse: ${need}`);
+  const tap = bodyOf('tapCorpses');
+  assert.match(tap, /for \(let i = corpses\.length - 1; i >= 0; i--\)/, 'newest first'); assert.match(tap, /c\.rd\.state !== row\.needs/); assert.match(tap, /cutCorpse\(/);
+  assert.match(bodyOf('updateCues'), /cueOnScreen\(p\)/);
+  assert.match(bodyOf('hideCues'), /liveCues, \.\.\.corpses\.map/); assert.match(bodyOf('hideCues'), /display = 'none'/);
+  assert.match(SRC, /disabled = true; armed = false; hideCues\(\)/, 'an error that disables the ragdoll hides the buttons');
+  assert.match(SRC, /if \(disabled\) \{ hideCues\(\); return; \}/, 'a disabled frame hides them again');
 });
 
 // the cue button's visibility (a bone in NDC): shown on screen and a little past the edge (the button is a thumb wide), hidden when the corpse is turned out of frame (the camera follows the respawned foe:

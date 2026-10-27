@@ -147,7 +147,7 @@ export function validateFile(name, json) {
     if (!Number.isInteger(c.max) || c.max < 0) errors.push(`${name}.corpse.max: must be an integer >= 0`);
     if (Number.isFinite(c.keepSeconds) && Number.isFinite(c.pieceSeconds) && c.pieceSeconds > c.keepSeconds) errors.push(`${name}.corpse.pieceSeconds: must be <= keepSeconds`);
     if (typeof c.cuttable !== 'boolean') errors.push(`${name}.corpse.cuttable: must be true or false`);
-    if (!(c.slotSpacingM > 0)) errors.push(`${name}.corpse.slotSpacingM: must be > 0 (each ragdoll in the one world has its own lane)`);
+    if (!(c.slotSpacingM >= 4)) errors.push(`${name}.corpse.slotSpacingM: must be >= 4 (each ragdoll in the one world has its own lane, wider than a lying body)`);
     if (typeof c.event !== 'string' || !c.event.trim()) errors.push(`${name}.corpse.event: must be the bus event name`);
   }
   if (name === 'sound') errors.push(...checkSoundZone(json.zone));
