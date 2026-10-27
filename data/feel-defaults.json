@@ -1,0 +1,12 @@
+{
+  "about": "Dom 2026-10-27: everything is on the MAIN URL, no ?flags to test. The M7 fight-feel modules (src/fight/feel.ts registry: hitreact #102, limbs #112, kick #106 with its sim knockdown #116, clash #104) are default ON; this row is the single place that says so (src/fight/feel-defaults.ts reads it; feel.ts activeFeels and knock-sim.ts knockSimFor both ask it, so the presentation and the sim cannot disagree). `modules`: the ?feel= names on without a query, in the order their hooks run. `query`/`off`: ?feel=<a,b> still names modules (they are added to the defaults) and ?feel=v1 turns every default off (a module named beside it, ?feel=v1,clash, still runs). `revert`: each module's own switch, ?<query>=<value> (?hitreact=v1, ?limbs=v1, ?kick=v1, ?clash=v1) turns that one module off, and for kick also its sim knockdown + finish window (data/feel-sim.json, the same name). limbs needs the M4 rules (data/rules.json default m4; ?rules=v1 = V1's rules, then limbs finds no part HP and does nothing). The sim knockdown changes a fight's outcome by design: it is entered only through src/client/main.ts, never by src/ alone, so Gate 0's replay (a copy of src/fight) steps exactly as before; test/feel-defaults.test.mjs pins that. Presence is NOT here and stays off (needs the service redeploy).",
+  "query": "feel",
+  "off": "v1",
+  "modules": ["hitreact", "limbs", "kick", "clash"],
+  "revert": {
+    "hitreact": { "query": "hitreact", "value": "v1" },
+    "limbs": { "query": "limbs", "value": "v1" },
+    "kick": { "query": "kick", "value": "v1" },
+    "clash": { "query": "clash", "value": "v1" }
+  }
+}

@@ -91,7 +91,8 @@ test('the push and the finisher mode: Run Through sags (a quarter of the kill), 
   assert.equal(finisherPush(finisherCutRow(ROWS, 'runThrough'), 70), 17.5);
   assert.equal(finisherPush(finisherCutRow(ROWS, 'opened'), 70), 70);
   assert.equal(finisherPush(undefined, 70), 70);
-  assert.equal(finisherModeFor(ROWS, ''), 'skip');
+  assert.equal(finisherModeFor(ROWS, ''), PHYSICS_MODE);   // the default since 2026-10-27; ?ragdoll=v1 is the plain death
+  assert.equal(finisherModeFor(ROWS, '?ragdoll=v1'), 'skip');
   assert.equal(finisherModeFor(ROWS, '?ragdoll=finishers'), PHYSICS_MODE);
   assert.equal(finisherModeFor(ROWS, '?ragdoll=clips'), 'keep');
   assert.equal(finisherModeFor(ROWS, '?physics=v1&ragdoll=finishers'), 'physics', 'the mode is the row\'s; ragdollRowFor gives no ragdoll under ?physics=v1, so no body and V1\'s clips play');

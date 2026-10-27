@@ -7,6 +7,7 @@
 // feel:guard_drop {side}, feel:weapon_drop {}, feel:kick_result {outcome, finisherWindowS}, feel:clash {kind, pushbackM}.
 import type * as THREE from 'three';
 import type { CombatEvent } from './duel.ts';
+import { type FeelDefaultRows, feelsOn } from './feel-defaults.ts';
 import { FEEL_NAMES, loadFeelChunk } from './feel-modules.ts';
 import type { Ragdoll } from './ragdoll.ts';
 
@@ -31,9 +32,9 @@ export const feelNames = (search: string): string[] => (new URLSearchParams(sear
 /** The hooks the page asked for (?feel=a,b). Already-registered names are in the returned list at once; a name of the feel chunk (feel-modules.ts FEEL_NAMES) is fetched on demand
  *  and pushed onto the SAME list when it arrives (ragdoll.ts iterates it live, so the module starts working a moment after the page does); a name nothing knows is ignored. A page
  *  with no ?feel= never touches the chunk. */
-export function activeFeels(search: string): FeelHooks[] {
+export function activeFeels(search: string, defaults?: FeelDefaultRows): FeelHooks[] {   // `defaults` (data/feel-defaults.json, Dom 2026-10-27): the modules on without a query; absent = only the ones the query names
   const out: FeelHooks[] = [], pending: string[] = [];
-  for (const n of feelNames(search)) { const h = registry.get(n); if (h) out.push(h); else if (FEEL_NAMES.includes(n)) pending.push(n); }
+  for (const n of feelsOn(defaults, search)) { const h = registry.get(n); if (h) out.push(h); else if (FEEL_NAMES.includes(n)) pending.push(n); }
   if (pending.length) void loadFeelChunk().then((mods) => { for (const n of pending) { const h = mods[n]; if (h) { registerFeel(n, h); out.push(h); } } }).catch(() => { /* the chunk is optional: no feel, no harm */ });
   return out;
 }

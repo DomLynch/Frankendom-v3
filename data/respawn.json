@@ -7,6 +7,16 @@
     "startAfterSeconds": 4,
     "cameraMetres": 8
   },
+  "freeCamera": {
+    "about": "Dom 2026-10-27, live build, on his phone: 'After the finishing shot the camera is still locked on ... After the kill shot the camera should go into the normal free mode so I can move around freely.' Strategy: the camera follows the hero ALWAYS in the one endless open world. V1's open world (origins/preview/main.ts, src/fight/follow-camera.ts) had no lock on a corpse: the camera stood behind the hero, a one-finger drag on empty ground looked round, and a fight eased a combat framing in and out. The free camera here is the fight camera (same height, distance, shoulder and zoom 1.1) aimed at a point gapMetres ahead of the hero instead of at a boss. It is on while nobody fights him (walking, the hero's respawn) and after a kill, from the moment the ceremony is over (the finisher has finished, or postKill.startAfterSeconds) or the moment he moves the stick. A fight (a boss engaged) is `fight`: 'pair' frames the hero and the boss from behind the hero (the lock, which is anchored on him and so follows him everywhere); 'follow' keeps the free camera even in a fight (a drag then looks round, the stick moves him relative to the view). handOverSeconds: the swing between the two cameras, round the hero and never through him. stickEndsCeremony: any stick input after the kill hands him control at once. A one-finger drag on the ground looks round, the recenter key (R) puts the camera behind him. on:false, ?freecam=v1 and ?postkill=v1 (no zone) keep the lock camera exactly as it was.",
+    "on": true,
+    "query": "freecam",
+    "off": "v1",
+    "gapMetres": 3.25,
+    "handOverSeconds": 1.2,
+    "stickEndsCeremony": true,
+    "fight": "pair"
+  },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
     "minDistance": 3.25
@@ -27,11 +37,12 @@
     "fallSeconds": 1.4
   },
   "openers": {
-    "about": "V1's openers (origins/zone-rows/zone1.row.json spawns.openers; world-rules firstFightSeconds 10): a zone that is not safe opens with a fight soon after the newcomer arrives. Strategy ruling 2026-10-27: auto-start stays OFF in the live zone (walk in or STRIKE); this is the gentle on-ramp. delaySeconds after the page is ready (assets loaded, the hero in control) with nobody engaged, the first `count` standing spawns of `spawns` (ids in the zone row) aggro the hero as if he had walked into their aggro: their aggro range grows to reach him (never past their own leash plus reachMetres: the newcomer at the start mark stands 6 m from the yard Pitborn, and that fight's leash is lifted by the same reachMetres; a hero who has wandered further off is left alone) and the ordinary engagement starts (auto-draw, the boss walks up). The clock runs once per visit: any engagement, a kill or a death spends it (a hero who has fought is no newcomer; it does not re-arm after a kill or respawn). The other spawns wait for the hero's aggro as before. on:false or the link query `query`=`off` turns it off (#91: nothing until you walk). ?postkill=v1 has no zone, so no opener.",
+    "about": "V1's openers (origins/zone-rows/zone1.row.json spawns.openers; world-rules firstFightSeconds 10): a zone that is not safe opens with a fight soon after the newcomer arrives. Strategy ruling 2026-10-27: auto-start stays OFF in the live zone (walk in or STRIKE); this is the gentle on-ramp. delaySeconds after the page is ready (assets loaded, the hero in control) with nobody engaged, the first `count` standing spawns of `spawns` (ids in the zone row) aggro the hero as if he had walked into their aggro: their aggro range grows to reach him (never past withinMetres, 12 m, from the opener spawn: the newcomer at the start mark stands about 8.8 m from the yard Pitborn (the field bosses stand about 14 m from the mark, so 12 m keeps the opener to the yard boss); a validated row, at least the spawn's aggro; a hero who has wandered further off is left alone; the fight's leash is also lifted by reachMetres, 5 m, which the 20 m boss-measured leash no longer needs) and the ordinary engagement starts (auto-draw, the boss walks up). The clock runs once per visit: any engagement, a kill or a death spends it (a hero who has fought is no newcomer; it does not re-arm after a kill or respawn). The other spawns wait for the hero's aggro as before. on:false or the link query `query`=`off` turns it off (#91: nothing until you walk). ?postkill=v1 has no zone, so no opener.",
     "on": true,
     "delaySeconds": 5,
     "count": 1,
     "reachMetres": 5,
+    "withinMetres": 12,
     "spawns": ["yard-pitborn"],
     "query": "opener",
     "off": "off"
@@ -53,10 +64,13 @@
     "delaySeconds": [1, 60],
     "count": [1, 3],
     "reachMetres": [0, 10],
+    "withinMetres": [1, 60],
     "fallSeconds": [0.1, 10],
     "startAfterSeconds": [0, 30],
     "walkRadiusMetres": [1, 60],
     "cameraMetres": [0, 20],
+    "freeCamGapMetres": [1, 10],
+    "handOverSeconds": [0.2, 5],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],
     "edgeMetres": [0, 4],
