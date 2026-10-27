@@ -14,7 +14,8 @@ import { afterFirstFrame, compileLateArt } from '../late-art.ts';
 import { bone, rigOf } from './rig-bones.ts';
 import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
 import RULES from '../../data/rules.json' with { type: 'json' };
-import { createRulesEval, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
+import { createHandSpeed, createRulesEval, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
+import { OPPONENTS, RULES as SIM_RULES, type OpponentId } from './moves.ts';   // ?rules=m4: his health (the budgets' scale) and a man's, both the sim's rows
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
@@ -153,6 +154,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const late = createLateCuts();   // a finisher row's cut made some seconds after the killing blow (finisherCuts atS)
   // ?rules=m4 (rules-eval.ts): `rules` is the evaluator, `down` the seconds a knockdown has left (the bones follow the ragdoll), `getUp` the seconds left of the blend back to the clip
   let rules: ReturnType<typeof createRulesEval> | undefined, down = -1, getUp = -1;
+  // ?rules=m4: the attacker's (the hero's) animated hand bone, sampled each frame: the hand speed at a hit (rules-eval.ts createHandSpeed)
+  const handSpeed = createHandSpeed(RULES); let heroHand: THREE.Object3D | undefined; const handPos = new THREE.Vector3();
   const ruleCuts: string[] = [];   // the units the evaluator cut during this fight: they come off the body when he dies (cutUnit needs the corpse)
   const lying = new Map<THREE.Object3D, THREE.Quaternion>(), lyingHips = new THREE.Vector3();
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
@@ -396,8 +399,9 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
 
   return {
     // scene.ts, once the rigs are in: the opponent's group (the sim frame) and his rig. The chunk and the body row load after the first frame.
-    attach(opponentGroup: THREE.Object3D, opponentRig: Rigged) {
+    attach(opponentGroup: THREE.Object3D, opponentRig: Rigged, heroRig?: Rigged) {
       group = opponentGroup; rigged = opponentRig;
+      heroHand = rulesOn && heroRig ? bone(heroRig.anchor, RULES.handBone) : undefined; handSpeed.reset();
       // the 65-rig names through the one bone map (data/rig.json via rig-bones.ts): on a 65 body the name itself, on a 106 body its Mixamo joint
       partBones = Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(opponentRig.anchor, name)!]));
       const rigId = rigOf(opponentRig.anchor), measurePath = (foe.measure as Record<string, string | undefined>)[rigId];
@@ -408,7 +412,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       return afterFirstFrame()
         .then(() => new Promise((done) => setTimeout(done, rows.loadAfterFirstFrameMs)))
         .then(() => Promise.all([load(), fetch(new URL(measurePath, document.baseURI)).then((r) => { if (!r.ok) throw Error(`${measurePath}: ${r.status}`); return r.json(); })]))
-        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed, states: rows.states }); if (rulesOn) rules = createRulesEval(RULES, c, row, foe.id); build(); prepareCutArt(); })
+        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed, states: rows.states }); if (rulesOn) rules = createRulesEval(RULES, c, row, foe.id, undefined, { foe: OPPONENTS[foe.id as OpponentId]?.health ?? SIM_RULES.health, man: SIM_RULES.health }); build(); prepareCutArt(); })
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
@@ -486,6 +490,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       gore = showGore;
       cueDelay = mode === 'dead' && rd?.state === cutRows.tap.needs ? cueDelay + dt : 0;
       updateCues();
+      if (heroHand) { heroHand.getWorldPosition(handPos); handSpeed.push(handPos.x, handPos.y, handPos.z, dt); }   // ?rules=m4: this frame's step of the hero's hand (before the hits are read)
       try { step(dt, events, finish, finisher); } catch (error) { disabled = true; armed = false; cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     },
   };
@@ -501,7 +506,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         const fc = bodyFinishers && finisher !== null && !isPlainDeath(finisher) ? finisherCutRow(rows, finisher) : undefined;
         if (finisher !== null && !isPlainDeath(finisher) && !fc) { mode = 'skip'; cost.state = 'finisher'; }
         else {
-          if (rules) for (const e of events) if (e.type === 'Hit' && e.target === 1) { const p = rules.hit(e, false); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
+          if (rules) for (const e of events) if (e.type === 'Hit' && e.target === 1) { const p = rules.hit(e, false, handSpeed.speed()); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
           if (down <= 0) { rig.drive(); rd.snapToTarget(); }   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp (from where he lies, if he is down)
           down = -1; getUp = -1;
           rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
@@ -514,7 +519,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== 1) continue;
-        const p = rules?.hit(e, true);   // ?rules=m4: the evaluator's reaction; null (a missile, a weapon with no row) falls to V1's stagger below
+        const p = rules?.hit(e, true, handSpeed.speed());   // ?rules=m4: the evaluator's reaction; null (a missile, a weapon with no row) falls to V1's stagger below
         if (p) { react(e, p); continue; }
         rd.stagger(blowImpulse(rows.hit, e.location, e.heading, group.rotation.y) ?? undefined);   // the package's dip (states.stagger) and the blow's impulse
         stagger = 0;

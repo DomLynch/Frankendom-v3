@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createEvaluator, createFighterState, loadRules } from '@frankendom/physics';
 import { validateFile } from '../src/sim/validate.js';
-import { createRulesEval, hitInput, present, rulesOnFor } from '../src/fight/rules-eval.ts';
+import { createHandSpeed, createRulesEval, handSpeedOf, hitInput, present, rulesOnFor } from '../src/fight/rules-eval.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ROWS = read('../data/rules.json'), WEAPONS = read('../src/fight/weapon-defs.json').weapons.map((w) => w.id);
@@ -131,4 +131,58 @@ test('deterministic: the same hits twice give the same results and the same debu
     return JSON.stringify(r.debug);
   };
   assert.equal(play(), play());
+});
+
+test('per-hit hand speed: a measured speed replaces the reference; a heavy is brought to its light-equivalent (divided by heavy_mult) so it is not counted twice; clamped to the package range; none = light_p50', () => {
+  const at = (o, m) => hitInput(ROWS, rules, hit(o), 'pitborn', m);
+  assert.equal(at({}, null).handSpeed, rules.swing.hand_speed_ref_m_s.light_p50);   // no sample: the reference row
+  assert.equal(at({}, 0).handSpeed, rules.swing.hand_speed_ref_m_s.light_p50);
+  assert.equal(at({}, 7.5).handSpeed, 7.5);   // a light: as measured
+  assert.ok(Math.abs(at({ move: 'heavy_overhead' }, 11.52).handSpeed - 11.52 / rules.swing.heavy_mult) < 1e-12);   // a heavy: light-equivalent
+  assert.equal(at({}, 99).handSpeed, rules.swing.hand_speed_ref_m_s[ROWS.speedMaxRef]);   // clamped high
+  assert.equal(at({}, 0.5).handSpeed, ROWS.speedMin);   // clamped low
+  assert.equal(handSpeedOf(ROWS, rules, 8, false).source, 'measured'); assert.equal(handSpeedOf(ROWS, rules, null, false).source, 'ref');
+});
+
+test('light and heavy differ with different speeds: a slow light is a hit, a fast light sticks, a heavy is stronger than the same animation speed as a light', () => {
+  const run = (o, m) => { const r = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0, { foe: 190, man: 150 }); const p = r.hit(hit({ weapon: 'gladius', ...o }), true, m); return [p, r.debug.last[0]]; };
+  const [slow] = run({}, 5), [fast] = run({}, 9.5), [heavy, hd] = run({ move: 'heavy_overhead' }, 9.5);
+  assert.ok(slow.strength < fast.strength && fast.strength < heavy.strength);
+  assert.deepEqual([slow.outcome, fast.outcome], ['hit', 'stick']);
+  assert.equal(hd.result.swing, 'heavy'); assert.equal(hd.source, 'measured'); assert.equal(hd.measured, 9.5);
+  assert.ok(hd.input.handSpeed < 9.5);   // the light-equivalent, not the animation's own speed
+  const spread = new Set([4.5, 6, 7.5, 9.7].map((m) => run({ weapon: 'longsword' }, m)[0].outcome));
+  assert.ok(spread.size >= 2, `a spread of outcomes over speeds, got ${[...spread]}`);
+});
+
+test('the hand sampler: speed of the last steps (peak of the window), snaps dropped, a stopped clock keeps the last, reset', () => {
+  const s = createHandSpeed(ROWS);
+  assert.equal(s.speed(), null);
+  s.push(0, 0, 0, 1 / 60); assert.equal(s.speed(), null);   // first sample: no step
+  s.push(0.1, 0, 0, 1 / 60); assert.ok(Math.abs(s.speed() - 6) < 1e-9);
+  s.push(0.1, 0, 0, 0); assert.ok(Math.abs(s.speed() - 6) < 1e-9);   // dt 0 (stills): unchanged
+  s.push(0.1, 0, 0, 1 / 60); assert.ok(Math.abs(s.speed() - 6) < 1e-9);   // slower step, the window still holds the peak
+  for (let i = 0; i < ROWS.speedWindow; i++) s.push(0.1, 0, 0, 1 / 60);
+  assert.equal(s.speed(), 0);   // the peak left the window
+  s.push(50, 0, 0, 1 / 60); assert.equal(s.speed(), 0);   // a pose snap (over snapOver) is dropped
+  s.reset(); assert.equal(s.speed(), null);
+});
+
+test('budgets: hp_scale from his sim health, a head budget that no non-cut blow kills in one hit; a cut still takes the part', () => {
+  assert.deepEqual(validateFile('rules', { ...ROWS, budgets: { head: 40, wing: 1 } }), ['rules.budgets.wing: unknown key']);
+  const ev = createEvaluator(rules), man = createFighterState(rules, BODY, { sword_side: 'right', leg_hp: 60 }), foe = createFighterState(rules, BODY, { sword_side: 'right', leg_hp: 60, hp_scale: 190 / 150, budgets: ROWS.budgets });
+  const blow = { weapon: 'gm_gladius', kind: 'slash', zone: 'head', armour: 'none', handSpeed: 6.25, swing: 'heavy', counterHit: false, t: 1 };   // a heavy gladius head blow at the typical swing
+  assert.equal(ev.evaluateHit(blow, man).outcome, 'kill');   // the package's 20: one blow
+  const r = ev.evaluateHit({ ...blow, t: 2 }, foe);
+  assert.notEqual(r.outcome, 'kill'); assert.ok(r.partHpAfter > 0);   // his head (40) survives it
+  // the worst non-cut head blow (strength just under the cut rung) is under the head budget, for every weapon row, at the fastest light-equivalent
+  const top = rules.swing.hand_speed_ref_m_s[ROWS.speedMaxRef];
+  for (const w of new Set(Object.values(ROWS.weapons).map((x) => x.rule))) for (const swing of ['light', 'heavy']) {
+    const r2 = ev.evaluateHit({ ...blow, weapon: w, handSpeed: top, swing, t: 3 }, createFighterState(rules, BODY, { sword_side: 'right', leg_hp: 60, hp_scale: 190 / 150, budgets: ROWS.budgets }));
+    if (r2.outcome !== 'cut' && r2.outcome !== 'kill') assert.ok(r2.partHpAfter > 0, `${w} ${swing}`);
+    if (r2.cut) assert.equal(r2.cut.unit, 'head');   // a big enough blow still cuts
+  }
+  assert.ok(ROWS.budgets.head > rules.strength_scale.rung_cut * rules.zones.head.body_part_mult * rules.global.damage_scale);   // a blow just under the cut rung
+  const rig = read('../data/rig.json');
+  assert.ok(ROWS.handBone in rig.bones, 'handBone is a data/rig.json bones key');
 });

@@ -396,7 +396,7 @@ export function createScene(
       }
       if (flinches) { pivots[0].clear(); pivots[1].clear(); pivots[0].add(loaded.player.anchor); pivots[1].add(loaded.opponent.anchor); player.add(pivots[0]); opponent.add(pivots[1]); }
       else { player.add(loaded.player.anchor); opponent.add(loaded.opponent.anchor); }
-      ragdoll?.attach(opponent, loaded.opponent).catch(captureException);   // his presentation ragdoll (ragdoll.ts): the chunk loads after the first frame
+      ragdoll?.attach(opponent, loaded.opponent, loaded.player).catch(captureException);   // his presentation ragdoll (ragdoll.ts): the chunk loads after the first frame
       player.visible = opponent.visible = true;
       for (const rig of [loaded.player, loaded.opponent])
         for (const name of ['foot_l', 'foot_r']) dustFeet.push(boneOf(rig.anchor, name) ?? null);
