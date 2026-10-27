@@ -25,7 +25,7 @@ export const SCHEMA = {
   'build': { keys: ['about', 'notShipped'] },
   // The presence service and its page client (server/presence/, src/presence/): V1's presence rule rows (id, value, unit); src/presence/rows.ts also checks every rule the code reads by name exists
   'presence': { keys: ['about', 'query', 'path', 'host', 'protocol', 'poseGlobal', 'frame', 'spawn', 'spawnAbout', 'rules'], rows: { rules: ['id', 'value', 'unit'] }, maps: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] }, finite: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] } },
-  'sound': { keys: ['about', 'keep', 'statusMs'], maps: { keep: ['about', 'samples', 'rate', 'volume'] } },
+  'sound': { keys: ['about', 'keep', 'statusMs', 'zone'], maps: { keep: ['about', 'samples', 'rate', 'volume'] } },
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
   'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
     maps: { bones: ['hips', 'spine', 'spine1', 'spine2', 'neck', 'head', 'armLeft', 'forearmLeft', 'handLeft', 'armRight', 'forearmRight', 'handRight', 'thighLeft', 'shinLeft', 'footLeft', 'toeLeft', 'thighRight', 'shinRight', 'footRight', 'toeRight'],
@@ -145,6 +145,7 @@ export function validateFile(name, json) {
     if (!Number.isInteger(c.max) || c.max < 0) errors.push(`${name}.corpse.max: must be an integer >= 0`);
     if (Number.isFinite(c.keepSeconds) && Number.isFinite(c.pieceSeconds) && c.pieceSeconds > c.keepSeconds) errors.push(`${name}.corpse.pieceSeconds: must be <= keepSeconds`);
   }
+  if (name === 'sound') errors.push(...checkSoundZone(json.zone));
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
@@ -154,6 +155,23 @@ export function validateFile(name, json) {
   }
   banned(json, name, errors);
   return errors;
+}
+
+// data/sound.json `zone` (src/audio/zone-cues.ts): the gateable cue ids (all required, none unknown), each 'on' | 'off' | 'once', and a toast time in 0.5..30 s.
+export const ZONE_CUE_IDS = ['bell', 'draw', 'crowd_cheer', 'crowd_gasp', 'kill', 'death_voice'];
+export const ZONE_CUE_MODES = ['on', 'off', 'once'];
+function checkSoundZone(z) {
+  const e = [], at = (p, m) => e.push(`sound.zone.${p}: ${m}`);
+  if (z === null || typeof z !== 'object' || Array.isArray(z)) return ['sound.zone: must be an object'];
+  for (const k of Object.keys(z)) if (!['about', 'cues', 'toastSeconds'].includes(k)) at(k, 'unknown key');
+  const cues = z.cues;
+  if (cues === null || typeof cues !== 'object' || Array.isArray(cues)) at('cues', 'must be an object of cue id -> on | off | once');
+  else {
+    for (const k of Object.keys(cues)) if (!ZONE_CUE_IDS.includes(k)) at(`cues.${k}`, `unknown cue id (${ZONE_CUE_IDS.join(', ')})`);
+    for (const k of ZONE_CUE_IDS) if (!ZONE_CUE_MODES.includes(cues[k])) at(`cues.${k}`, `must be one of ${ZONE_CUE_MODES.join(', ')}`);
+  }
+  if (!Number.isFinite(z.toastSeconds) || z.toastSeconds < 0.5 || z.toastSeconds > 30) at('toastSeconds', 'must be a finite number in 0.5..30');
+  return e;
 }
 
 // data/feel-sim.json values (src/fight/knock-sim.ts): every timer at least one tick, whole per-mille integers, ordered mass bands from 0, the finish window inside the time he is down.

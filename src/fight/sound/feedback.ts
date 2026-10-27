@@ -9,6 +9,7 @@ import { createBreath, type Breath } from './breath.ts';
 import { sayPowerWord } from './power-word.ts';
 import { voiceCreature, type CreatureCue } from './creature.ts';
 import { prepareBell } from '../../audio/bell.ts';
+import { zoneCueGate, type CueGate, type ZoneSoundRows } from '../../audio/zone-cues.ts';
 import { loadSpecial, playSpecial, type SpecialCue } from './special.ts';
 import { loadDuel, playDuel, type DuelCue } from './duel.ts';
 import { groundLootCue, type GroundLootKind } from './ground-loot.ts';
@@ -42,6 +43,7 @@ export function createFeedback(host?: FeedbackHost) {
   type Voice = { source: AudioBufferSourceNode | null; gain: GainNode; send: GainNode; until: number };
   let suspensions = 0;
   let pendingDraw: number | undefined;
+  let zoneGate: CueGate | null = null;
   let arenaAudio: ReturnType<typeof createArenaAudio> | undefined, arenaOutput: AudioNode;
   let context: BaseAudioContext | undefined, master: GainNode | undefined, balance: GainNode | undefined, bus: DynamicsCompressorNode | undefined, noise: AudioBuffer | undefined;
   const level = host?.balance ?? { combat: COMBAT_LEVEL, finish: FINISH_LEVEL };
@@ -173,6 +175,8 @@ export function createFeedback(host?: FeedbackHost) {
     // V3 (V2 PR #65): the context is made at page load (it starts 'suspended') and the sprite decoded at once, so the first touch
     // only resumes it. V1 decoded on the first touch, and a phone took seconds to decode while the fight went on with the synth stand-ins.
     prepare() { if (!host) open(); },
+    // The live zone's cue rows (data/sound.json zone); never called = the single fight's sound, exactly as before.
+    zoneCues(rows: ZoneSoundRows | null) { zoneGate = zoneCueGate(rows); },
     // A gesture in V3: V1's unlock, a one-sample buffer played inside the gesture (older WebKit's unlock), and a decode that failed retried.
     resume() {
       unlock();
@@ -227,7 +231,8 @@ export function createFeedback(host?: FeedbackHost) {
       if (!context || !live()) return;
       if (events.some(e => e.type === 'ActionStarted' && e.action === 'draw' && e.actor === 0)) random = seeded((host?.seed ?? BASE_SEED) + duel++ * 1013);   // a fresh duel, a fresh but repeatable roll
       const time = now();
-      if (frame) { arenaAudio ??= createArenaAudio(context, arenaOutput, now); arenaAudio.update(events, frame, pendingDraw === frame.match); pendingDraw = undefined; }
+      // The zone's rows can silence the opening bell or let it ring once per visit (data/sound.json zone.cues.bell).
+      if (frame) { arenaAudio ??= createArenaAudio(context, arenaOutput, now); arenaAudio.update(events, frame, pendingDraw === frame.match && (zoneGate?.allow('bell') ?? true)); pendingDraw = undefined; }
       // Death ends the duel: the impact, voice, delayed body and crowd share the finishing level.
       // Empty post-death ticks keep it; fresh combat or quiet/mute returns to the ordinary level.
       if (events.length) balance!.gain.setValueAtTime(events.some(e => e.type === 'Killed') ? level.finish : level.combat, time);
@@ -247,12 +252,13 @@ export function createFeedback(host?: FeedbackHost) {
       }
       if (wordBus && events.some(e => e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'GuardBroken')) { const g = wordBus.gain; g.cancelScheduledValues(time); g.setValueAtTime(.2, time); g.linearRampToValueAtTime(1, time + .5); }   // a landing blow or a parry/block owns the moment; the chant ducks to -14 dB and comes back
       armfeelPlay(events, time);
-      if (sprite) { for (const cue of cuesFor(events, presentation, frame?.opponent, clarity, undefined, defenceGrades)) { play(cue, time); if (isSpecialRowCue(cue)) countSpecial('cues'); } return; }
+      // zoneGate: the live zone drops the scene-change cues its rows turn off (data/sound.json zone.cues); none = every cue plays.
+      if (sprite) { for (const cue of cuesFor(events, presentation, frame?.opponent, clarity, undefined, defenceGrades)) { if (zoneGate && !zoneGate.allow(cue.name)) continue; play(cue, time); if (isSpecialRowCue(cue)) countSpecial('cues'); } return; }
       if (events.some(e => e.type === 'Hit' || e.type === 'GuardBroken')) synth('hit', time);
       else if (events.some(e => e.type === 'Parried')) synth('parry', time);
       else if (events.some(e => e.type === 'Blocked')) synth('steel', time);
       else if (events.some(e => e.type === 'Charged')) synth('charged', time);
-      else if (events.some(e => e.type === 'AttackStarted' || (e.type === 'ActionStarted' && (e.action === 'draw' || e.action === 'roll')))) synth('swing', time);
+      else if (events.some(e => e.type === 'AttackStarted' || (e.type === 'ActionStarted' && ((e.action === 'draw' && (zoneGate?.allow('draw') ?? true)) || e.action === 'roll')))) synth('swing', time);
     },
   };
 }
