@@ -8,7 +8,7 @@
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
   'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'skyline', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
-  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
+  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch', 'wide'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
   // The difficulty ladder over an opponent profile row (src/difficulty.ts): a row names only the brain knobs and the two scales; checked by checkDifficulty below
@@ -247,6 +247,7 @@ export function validateFile(name, json) {
     const z = json.camera.zoom;
     if (!Number.isFinite(z) || z < 0.5 || z > 2) errors.push(`${name}.camera.zoom: must be a finite number in 0.5..2`);
     errors.push(...checkCameraPitch(json.camera.pitch));
+    errors.push(...checkWideLens(json.camera.wide, name));
   }
   banned(json, name, errors);
   return errors;
@@ -256,6 +257,17 @@ export function validateFile(name, json) {
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
 export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views'];
+/** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
+function checkWideLens(w, name) {
+  const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
+  if (!w || typeof w !== 'object') return [`${name}.camera.wide: the wide-screen lens row is required`];
+  for (const k of Object.keys(w)) if (!['about', 'fromAspect', 'toAspect', 'zoom', 'maxHfovDeg'].includes(k)) errors.push(at(k, 'unknown key'));
+  if (!(Number.isFinite(w.fromAspect) && w.fromAspect >= 0.75 && w.fromAspect <= 2)) errors.push(at('fromAspect', 'must be a number in 0.75..2 (a portrait phone never gets the wide zoom)'));
+  if (!(Number.isFinite(w.toAspect) && Number.isFinite(w.fromAspect) && w.toAspect > w.fromAspect && w.toAspect <= 4)) errors.push(at('toAspect', 'must be a number above fromAspect, at most 4'));
+  if (!(Number.isFinite(w.zoom) && w.zoom >= 1 && w.zoom <= 2)) errors.push(at('zoom', 'must be a number in 1..2 (1 = no wide-screen zoom)'));
+  if (!(Number.isFinite(w.maxHfovDeg) && w.maxHfovDeg >= 40 && w.maxHfovDeg <= 120)) errors.push(at('maxHfovDeg', 'must be a number in 40..120 degrees'));
+  return errors;
+}
 function checkSkyline(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.${p}: ${m}`);
   if (s === null || typeof s !== 'object' || Array.isArray(s)) return ['stage.skyline: must be an object'];

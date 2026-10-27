@@ -20,6 +20,13 @@
     "lift": 0.67,
     "side": 1.0,
     "zoom": 1.1,
+    "wide": {
+      "about": "Dom 2026-10-27 (phone, landscape): the fight looked zoomed OUT, the hero and bosses tiny in a wide field of sand, where portrait is right. The lock's distance is already fitted by the vertical field (V1's min(aspect, 1)), so the hero is the same SHARE of the screen height in every shape; but a landscape phone is 375 px tall, so that share is 2.6x fewer pixels than on a portrait phone (measured: hero 0.35 of the height engaged on 375x812 = 282 px, 0.28 on 812x375 = 106 px). So a wide screen gets an extra lens zoom: 1 below fromAspect (every portrait phone and tablet: portrait is exactly as it was), `zoom` from toAspect (landscape phones and desktop), linear between; the horizontal field never passes maxHfovDeg on an ultra-wide. src/fight/camera-zoom.ts wideBoost, scene.ts applies it on every resize. ?wide=<n> (1..2) replaces zoom for a page load, ?wide=v1 = no wide-screen zoom. Presentation only.",
+      "fromAspect": 1,
+      "toAspect": 1.5,
+      "zoom": 1.2,
+      "maxHfovDeg": 80
+    },
     "pitch": {
       "about": "Zone follow camera pitch (Dom 2026-10-27: a skyline band should show under the HUD on a phone; at the default pitch the true horizon sits at the very top edge of the portrait screen). `default` is the preset a page load uses: 'off' = the camera exactly as it was. A preset is the angle (degrees) the view axis looks down, flatter = more horizon; the eye height follows so the hero keeps his screen position (heroY: the point on him that stays put; minEyeY: the eye never drops below). ?pitch=low (or flat, soft, or any number inside limits) switches the zone camera on a phone with no deploy; ?pitch=off is the default. Zone only: the single fight (?postkill=v1) never reads this. A finish eases back to the default frame, so the finishers and their tour are untouched; the multi-boss widen is applied first and the pitch follows it. Presentation only.",
       "default": "off",
