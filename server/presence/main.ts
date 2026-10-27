@@ -5,6 +5,7 @@ import { createPresence, listenHost } from './server.ts';
 import { RULES } from './interest.ts';
 
 const host = listenHost(process.env), port = presenceRule('presencePort');
-const presence = createPresence({ ipHeader: false });
+// Behind nginx (the loopback default) every socket's address is 127.0.0.1, so the per-IP caps must read the proxy's X-Real-IP (nginx overwrites it: deploy/presence/). Bound to anything else a client could send that header itself, so it is not trusted.
+const presence = createPresence({ ipHeader: host === '127.0.0.1' || host === '::1' });
 presence.server.listen(port, host, () => console.log(`presence listening on ${host}:${presence.port()} (layers: soft ${RULES.softCap}, hard ${RULES.hardCap})`));
 for (const sig of ['SIGINT', 'SIGTERM'] as const) process.on(sig, () => { void presence.close().then(() => process.exit(0)); });
