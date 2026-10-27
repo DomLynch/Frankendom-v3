@@ -108,6 +108,18 @@ export function unitOfBone(bone: THREE.Object3D, order: readonly string[], rootO
   return null;
 }
 
+/** A frozen copy of a dead rig as it lies (SkeletonUtils.clone: the bones as they stand, nothing animates it). `ownGeometry`: every skinned mesh gets a clone of its geometry (the triangle cutter's twin and pieces
+ *  share buffers the rematch rewrites and releases, so a copy of a carved body must not point at them). `pieces`: the copy's cut pieces (the triangle cutter's, marked `cutPiece`); `owned`: the geometry it made. */
+export function snapshotRig(root: THREE.Object3D, ownGeometry: boolean): { copy: THREE.Object3D; pieces: THREE.Object3D[]; owned: THREE.BufferGeometry[] } {
+  const copy = cloneRig(root), pieces: THREE.Object3D[] = [], owned: THREE.BufferGeometry[] = [];
+  copy.traverse((o) => {
+    if (o.name === 'WeaponTrail') o.visible = false;
+    if (o instanceof THREE.SkinnedMesh) { o.frustumCulled = false; if (ownGeometry) { o.geometry = o.geometry.clone(); owned.push(o.geometry); } }
+    if (o.userData.cutPiece !== undefined) pieces.push(o);
+  });
+  return { copy, pieces, owned };
+}
+
 /** A corpse left behind (leaveCorpse) ages by the frame's seconds: the pieces that left it are hidden after `pieceSeconds`, the whole copy is dropped after `keepSeconds`, and the oldest go first
  *  when more than `max` stand. Pure on the list (data/physics.json `corpse`), so a test can run it; returns what to hide and what to drop. */
 export function ageCorpses<T extends { age: number; piecesHidden: boolean }>(list: T[], dt: number, row: { keepSeconds: number; pieceSeconds: number; max: number }): { keep: T[]; hide: T[]; drop: T[] } {
@@ -186,23 +198,24 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   }
   // data/physics.json `corpse`: a dead foe's body can stay where it fell while the zone respawns him (leaveCorpse). It is a frozen copy of the rig as it lies, the cut pieces and caps
   // included (SkeletonUtils.clone copies the bones as they stand; nothing animates the copy), so the hero can walk away and the foe come back beside it.
-  let corpses: { root: THREE.Object3D; age: number; piecesHidden: boolean; pieces: THREE.Object3D[] }[] = [];
-  const dropCorpse = (c: { root: THREE.Object3D }) => {
+  let corpses: { root: THREE.Object3D; age: number; piecesHidden: boolean; pieces: THREE.Object3D[]; owned: THREE.BufferGeometry[] }[] = [];
+  const dropCorpse = (c: { root: THREE.Object3D; owned: THREE.BufferGeometry[] }) => {
     c.root.removeFromParent();
+    for (const g of c.owned) g.dispose();   // geometry the copy cloned for itself (a carved body)
     const skeletons = new Set<THREE.Skeleton>();
     c.root.traverse((o) => { if (o instanceof THREE.SkinnedMesh) skeletons.add(o.skeleton); });
     for (const skeleton of skeletons) skeleton.dispose();   // the copy's own bone texture; geometry and materials are the live rig's and stay
   };
   /** The zone loop respawns the foe: leave this dead one where it lies (a static copy that keeps its cuts) and stand the live rig up whole again, as a rematch does. false when there is no corpse to leave. */
   function leaveCorpse(): boolean {
-    const row = rows.corpse;
-    if (disabled || mode !== 'dead' || !group || !rigged || !group.parent || !(row.keepSeconds > 0)) return false;
-    const copy = cloneRig(group), pieces: THREE.Object3D[] = [];
-    copy.traverse((o) => { if (o.name === 'WeaponTrail') o.visible = false; if (o instanceof THREE.SkinnedMesh) o.frustumCulled = false; if (o.userData.cutPiece !== undefined) pieces.push(o); });   // cutPiece: the triangle cutter's pieces (the older path)
+    const row = rows.corpse as typeof rows.corpse | undefined;   // a physics.json without the row leaves no corpse (the old rematch behaviour)
+    if (disabled || mode !== 'dead' || !group || !rigged || !group.parent || !(row?.keepSeconds > 0)) return false;
+    // a body the triangle cutter has cut draws its shared twin and pieces, which build() (cutter.restore) rewrites and releases: the copy gets geometry of its own then (the cut GLB's meshes are never released)
+    const { copy, pieces, owned } = snapshotRig(group, !!cutter?.cut);
     const manifest = chunk && cutManifestOf(chunk) as { regions?: { mesh: string; detached_by?: string }[] } | undefined;
     if (cutRig && rd && manifest?.regions) for (const r of manifest.regions) { const m = r.detached_by && rd.cuts.includes(r.detached_by) ? copy.getObjectByName(r.mesh) : undefined; if (m) pieces.push(m); }
     group.parent.add(copy);
-    corpses.push({ root: copy, age: 0, piecesHidden: false, pieces });
+    corpses.push({ root: copy, age: 0, piecesHidden: false, pieces, owned });
     cost.corpses = corpses.length;
     build(); down = -1; getUp = -1; ruleCuts.length = 0; rules?.renew();   // the live rig whole again: the rematch's reset
     return true;
@@ -460,7 +473,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     //   showGore: false in blood 'off' (a cut leaves the body whole, as the finisher's head stays on there).
     frame(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null, showGore = true) {
       if (corpses.length) {   // the corpses left behind age on the page's clock, whatever the live ragdoll is doing
-        const { keep, hide, drop } = ageCorpses(corpses, dt, rows.corpse);
+        const { keep, hide, drop } = ageCorpses(corpses, dt, rows.corpse ?? { keepSeconds: 0, pieceSeconds: 0, max: 0 });   // (no row, no corpses: they would not have been left)
         for (const c of hide) for (const p of c.pieces) p.visible = false;
         for (const c of drop) dropCorpse(c);
         corpses = keep; cost.corpses = corpses.length;
