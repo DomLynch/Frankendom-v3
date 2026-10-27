@@ -61,6 +61,7 @@ for (const query of queries.length ? queries : ['rules=m4', 'rules=m4&feel=limbs
   const read = () => page.evaluate(() => { const p = globalThis.__v3Fight, [h, f] = p.duel.fighters; return { hero: h.phase, foeHealth: f.health, foeDead: p.finish?.victim === 1, foe: f.phase }; });
   for (let i = 0; i < 240 && /sheathed|draw/.test((await read()).hero); i++) await run(1);
   await run(30);
+  await page.screenshot({ path: `${out}/${tag}-idle.${EXT}`, ...SHOT });   // ready idle, before any input (the clock is paused: the shot changes nothing)
   await page.keyboard.down('KeyW');
   let a = 0, frame = 0;
   const total = AT + SECONDS * 60, trace = [];
