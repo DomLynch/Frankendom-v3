@@ -14,9 +14,9 @@ const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const ROWS = FIGHT.camera.pitch;
 const errs = (mut) => { const c = structuredClone(FIGHT); mut(c.camera.pitch); return validateFile('fight', c); };
 
-test('the shipped row: default off, presets 14 / 18 / 22 degrees, and the file validates', () => {
+test('the shipped row: default off, presets 10 / 14 / 18 / 22 degrees, and the file validates', () => {
   assert.equal(ROWS.default, 'off');
-  assert.deepEqual(ROWS.presets, { flat: 14, low: 18, soft: 22 });
+  assert.deepEqual(ROWS.presets, { horizon: 10, flat: 14, low: 18, soft: 22 });
   assert.equal(ROWS.query, 'pitch');
   assert.deepEqual(validateFile('fight', FIGHT), []);
 });
@@ -73,7 +73,7 @@ test('default == today\'s pitch: no pitch set is the lock camera as it was, and 
 });
 
 test('every preset keeps the hero where he stands on the screen, and shows more horizon than the default', () => {
-  const base = place(null), at = (cam) => ndc(cam, hero.x, 1, hero.z).y, baseHero = at(base), baseH = horizonNdc(base);
+  const base = place(null), at = (cam) => ndc(cam, hero.x, ROWS.heroY, hero.z).y, baseHero = at(base), baseH = horizonNdc(base);
   const baseAxis = Math.atan(baseH * Math.tan(FOV * Math.PI / 360)) * 180 / Math.PI;   // the default's axis pitch at this gap (it varies with the gap, ~20 degrees at the pit's start marks)
   let last = -Infinity;
   for (const [name, deg] of Object.entries(ROWS.presets).sort((p, q) => p[1] - q[1])) {
