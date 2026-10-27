@@ -48,6 +48,16 @@ test('the loader refuses a missing named rule, a non-positive value, a duplicate
   assert.throws(() => loadPresence({ ...DEFS, host: '' }), /"host"/);
 });
 
+test('the spawn row (zone-frame metres): is the pit\'s centre in the zone row (pitOrigin, one source), validates as a closed {x, z} map, and the loader refuses a missing or unwalkable one', async () => {
+  const { pitOrigin, WORLD } = await import('../../src/zone/spawns.ts'), { zoneFor } = await import('../../src/zone/zone-rows.ts');
+  assert.deepEqual(PRESENCE.spawn, pitOrigin(zoneFor(''), WORLD), 'the service places a join where the page puts the pit: change one and this fails');
+  const bad = clone(DEFS); bad.spawn.x = 'a';
+  assert.match(validateFile('presence', bad).join('\n'), /presence\.spawn\.x: must be a finite number/);
+  assert.match(validateFile('presence', { ...clone(DEFS), spawn: { x: 1, z: 2, y: 3 } }).join('\n'), /spawn/);
+  assert.throws(() => loadPresence({ ...DEFS, spawn: undefined }), /spawn is \{ x, z \}/);
+  assert.throws(() => loadPresence({ ...DEFS, spawn: { x: 400, z: 0 } }), /walkable/);
+});
+
 test('src/presence (the page side) imports nothing from server/, and nothing in it touches node: it can only ever be bundled for the browser', () => {
   const dir = new URL('../../src/presence/', import.meta.url);
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.ts'))) {

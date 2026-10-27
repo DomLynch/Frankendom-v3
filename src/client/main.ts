@@ -59,7 +59,7 @@ import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
-import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
+import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
@@ -389,5 +389,5 @@ if (snd === '1') setInterval(() => { element('build').textContent = `${buildLabe
 // Shared boss health (data/zone-client.json, src/zone/shared-hp-chunk.ts, docs/ZONE-CLIENT-CONTRACT.md): OFF unless the link has ?sharedhp=1 or ?sharedhp=http(s)://... Then the chunk (its own file, nothing in this bundle) makes the handle on
 // window.__v3SharedHp. INERT in this step: nothing feeds it sim events and nothing draws its bar; the sim's own health stays the truth of the fight (the wiring PR connects it).
 if (/[?&]sharedhp=/.test(search)) void import('../zone/shared-hp-chunk.ts').then((m) => { (window as unknown as { __v3SharedHp?: unknown }).__v3SharedHp = m.startSharedHp({ search, location }); }).catch(() => {});
-if (/[?&]presence=/.test(search)) void import('../presence/chunk.ts').then((m) => { (window as unknown as { __v3Presence?: unknown }).__v3Presence = m.startZonePresence({ search, location, hero: () => state, spawn: () => view.spawnRemote() }); }).catch(() => {});   // startZonePresence also installs globalThis.__v3HeroPose and draws the others (src/presence/draw.ts)
+if (/[?&]presence=/.test(search)) void import('../presence/chunk.ts').then((m) => { (window as unknown as { __v3Presence?: unknown }).__v3Presence = m.startZonePresence({ search, location, hero: () => state, spawn: () => view.spawnRemote(), origin: ZONE ? pitOrigin(zoneFor(search), WORLD) : undefined }); }).catch(() => {});   // startZonePresence also installs globalThis.__v3HeroPose and draws the others (src/presence/draw.ts)
 requestAnimationFrame(frame);

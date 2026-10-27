@@ -30,12 +30,14 @@ export function presenceUrlFor(search: string, loc: { protocol: string; host: st
 
 /** What main.ts calls (only with ?presence=): joins, installs the hero pose seam (globalThis.__v3HeroPose, absent on every other page) and draws the others. null when the link's value is malformed (nothing installed).
  *  `hero` reads the page's own hero state; `spawn` makes one drawable body from the hero's loaded rig (scene.ts spawnRemote), null until that rig exists. The handle gains `drawn()` (who is on screen) for the browser checks. */
-export function startZonePresence(o: { search: string; location: { protocol: string; host: string }; hero: () => { x: number; z: number; heading: number }; spawn: () => RemoteBody | null }): (PresenceHandle & { drawn: () => ReturnType<ReturnType<typeof createDraw>['debug']> }) | null {
-  const g = globalThis as Record<string, unknown>, pose = heroPoseFn(o.hero);
+export function startZonePresence(o: { search: string; location: { protocol: string; host: string }; hero: () => { x: number; z: number; heading: number }; spawn: () => RemoteBody | null; origin?: { x: number; z: number } }): (PresenceHandle & { drawn: () => ReturnType<ReturnType<typeof createDraw>['debug']> }) | null {
+  // origin: the pit's centre in the zone's frame (metres). The wire carries ZONE-frame positions; the page reads and draws in the pit's own frame, so add it going out and take it off coming in (none = the pit frame, as before).
+  const g = globalThis as Record<string, unknown>, at = o.origin ?? { x: 0, z: 0 };
+  const pose = heroPoseFn(() => { const h = o.hero(); return { x: h.x + at.x, z: h.z + at.z, heading: h.heading }; });
   g[SEAM] = pose;
   const handle = startPresence({ search: o.search, location: o.location, pose });
   if (!handle) { delete g[SEAM]; return null; }
-  const draw = createDraw({ remotes: (now) => handle.remotes(now), spawn: o.spawn, now: () => performance.now() }), stopLoop = startDrawLoop(draw), stop = handle.stop;
+  const draw = createDraw({ remotes: (now) => handle.remotes(now).map((s) => ({ ...s, x: s.x - at.x, z: s.z - at.z })), spawn: o.spawn, now: () => performance.now() }), stopLoop = startDrawLoop(draw), stop = handle.stop;
   return { ...handle, stop: () => { stopLoop(); stop(); }, drawn: draw.debug };
 }
 
