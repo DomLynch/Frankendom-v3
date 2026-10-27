@@ -430,7 +430,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     // scene.ts, once the rigs are in: the opponent's group (the sim frame) and his rig. The chunk and the body row load after the first frame.
     attach(opponentGroup: THREE.Object3D, opponentRig: Rigged, heroRig?: Rigged) {
       group = opponentGroup; rigged = opponentRig;
-      hideCutCaps(opponentRig.anchor);   // the cut GLB's twelve cap_* meshes ship visible: hidden now, before the first frame, not when the physics chunk lands (seconds later on a phone)
+      hideCutCaps(opponentRig.anchor);   // the cut GLB's cap_* meshes (sixteen with M9a's) ship visible: hidden now, before the first frame, not when the physics chunk lands (seconds later on a phone)
       heroHand = rulesOn && heroRig ? bone(heroRig.anchor, RULES.handBone) : undefined; handSpeed.reset();
       heroShoulder = rulesOn && heroRig ? bone(heroRig.anchor, RULES.handFrom) : undefined; handScale = (rulesOn && heroRig ? heroRig.anchor.getWorldScale(shoulderPos).x : 1) || 1;
       // the 65-rig names through the one bone map (data/rig.json via rig-bones.ts): on a 65 body the name itself, on a 106 body its Mixamo joint
