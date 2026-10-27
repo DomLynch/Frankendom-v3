@@ -64,9 +64,22 @@ for (const query of queries.length ? queries : ['', 'feel=hero']) {
     await keep(page);
     if (hitTick >= 0 && n - hitTick > Math.max(...SHOTS)) break;
   }
-  const end = await page.evaluate(() => ({ log: globalThis.__heroReactLog ?? [], state: globalThis.__ragdollHero?.state ?? null, cost: globalThis.__ragdollHero ? { frames: globalThis.__ragdollHero.frames, totalMs: globalThis.__ragdollHero.totalMs, maxMs: globalThis.__ragdollHero.maxMs } : null }));
+  // Her death: health set to 1 once, no more top-ups; the next blow kills her (the sim's Killed on fighter 0). Stills at +0, +10, +30, +70 ticks after her health reaches 0, and the ragdoll's state on each, so a
+  // run shows whether the hero ragdoll took the Killed (state leaves 'alive') while the Death clip also plays.
+  const death = { tick: -1, states: [] };
+  if (!process.env.NODEATH) {
+    await page.evaluate(() => { const h = globalThis.__v3Fight.duel.fighters[0]; h.health = 1; });
+    for (let n = 0; n < 1800 && !(death.tick >= 0 && n - death.tick > 70); n++) {
+      await run(1);
+      const s = await page.evaluate(() => ({ h: globalThis.__v3Fight.duel.fighters[0].health, finish: globalThis.__v3Fight.finish?.victim ?? null, rd: globalThis.__ragdollHero?.state ?? null }));
+      if (death.tick < 0 && s.h <= 0) death.tick = n;
+      if (death.tick >= 0) { const k = n - death.tick; if ([0, 10, 30, 70].includes(k)) { death.states.push({ k, ...s }); await page.screenshot({ path: `${out}/hero-${tag}-death-${String(k).padStart(3, '0')}.${EXT}`, ...SHOT }); } }
+    }
+  }
+  const end = await page.evaluate(() => ({ death: null, log: globalThis.__heroReactLog ?? [], state: globalThis.__ragdollHero?.state ?? null, cost: globalThis.__ragdollHero ? { frames: globalThis.__ragdollHero.frames, totalMs: globalThis.__ragdollHero.totalMs, maxMs: globalThis.__ragdollHero.maxMs } : null }));
   hitAt[tag] = hitTick;
   console.log(`${tag}: first blow on the hero at tick ${hitTick} after the wait began; ${frames} stills; reaction log ${JSON.stringify(end.log)}; hero ragdoll ${end.state}`);
+  end.death = death; console.log(`${tag}: death at +${death.tick}: ${JSON.stringify(death.states)}`);
   writeFileSync(`${out}/hero-${tag}-report.json`, JSON.stringify({ query, hitTick, ...end }, null, 2));
   await page.close();
 }
