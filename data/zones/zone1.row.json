@@ -1,0 +1,16 @@
+{
+  "about": "V3's first live zone (Strategy's live-zone brief, phase 1), in the shape of V1's origins/zone-rows/zone7.row.json cut to what one player in one zone needs. Positions are metres in the zone's own frame (V1's: x east, z south; the same frame as the yard and pit below). `respawn`: where a dead hero stands again at full health after `downSeconds` of `died` (the 'You died' beat, V1 main.ts:1030). `areas`: rectangles (V1 safeAreas): `pvp` is the area's own flag, `spawnsAllowed` false keeps every spawn row out of it. `spawns`: one row per creature camp; `kind` is an opponent profile id (today the opponent data/fight.json names; the difficulty profile rows replace it later); `respawnSeconds` is V1 spawn rows' own field; `roster` says the creature appears in the zone's roster listing; `behaviour`: aggro and leash are metres, roam is metres per second of wander, campSize is [min, max] creatures per camp (capped by src/fight/world-rules-defs.json campMax at spawn). The default zone id is data/zones/index.json. Validated by src/sim/validate.js validateZone; read by src/zone/zone-rows.ts only.",
+  "id": "1",
+  "name": "The Yard",
+  "alias": "yard",
+  "band": [1, 10],
+  "pvp": "on",
+  "respawn": { "x": 200, "z": 54, "facing": 3.142, "downSeconds": 2, "died": "You died" },
+  "areas": [
+    { "id": "yard", "name": "The yard", "shape": "rect", "min": [186, 33], "max": [214, 61], "pvp": "off", "spawnsAllowed": false },
+    { "id": "duel-pit", "name": "The Duel pit", "shape": "rect", "min": [217, 38], "max": [235, 56], "pvp": "on", "spawnsAllowed": false }
+  ],
+  "spawns": [
+    { "id": "yard-pitborn", "kind": "pitborn", "position": { "x": 244, "z": 47 }, "respawnSeconds": 40, "roster": true, "behaviour": { "aggro": 4, "leash": 9.8, "roam": 2.6, "campSize": [1, 1] } }
+  ]
+}

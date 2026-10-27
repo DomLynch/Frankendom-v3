@@ -1,0 +1,17 @@
+{
+  "about": "What the as-data gate scans (scripts/as-data/check.mjs): the live-zone code, where a number, timer, cap or label that belongs in a data row must not be written in code. `globs`: relative to the repo, ** crosses folders, * does not. A file a later PR adds under a glob is scanned from its first commit, at zero. `legacy`: files that existed before the gate (V1 donor code); only they may carry a count in baseline.json, and the count only shrinks.",
+  "globs": [
+    "src/zone/**",
+    "src/fight/world*.ts",
+    "src/fight/open-fight.ts",
+    "src/fight/zone-loop*.ts"
+  ],
+  "legacy": [
+    "src/fight/open-fight.ts",
+    "src/fight/world-combat.ts",
+    "src/fight/world-level-rows.ts",
+    "src/fight/world-record.ts",
+    "src/fight/world-rules.ts",
+    "src/fight/world.ts"
+  ]
+}

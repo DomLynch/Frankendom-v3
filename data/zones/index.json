@@ -1,0 +1,5 @@
+{
+  "about": "Which zone rows V3 ships and which one a page with no ?zone= plays (src/zone/zone-rows.ts). `default` is a zone id (a string: V1's migration 20261022110000 stored zone 0 as zone 1 once; ids are never numbers). `zones`: every id with a row file beside this one (data/zones/zone<id>.row.json, imported by src/zone/zone-rows.ts); test/zone-rows.test.mjs fails if this list and the imported rows differ. `?zone=<id>` picks another listed row (test rows only); an unknown id plays `default` with a console warning.",
+  "default": "1",
+  "zones": ["1"]
+}

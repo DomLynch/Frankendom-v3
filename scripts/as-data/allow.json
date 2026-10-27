@@ -1,0 +1,4 @@
+{
+  "about": "Explicit exceptions to the as-data gate: one row per file + kind + literal (kind: number | label | compare | data-id), each with a reason of 12+ characters. A row nothing matches is stale and fails the gate. Prefer a data row; an entry here is for a value that is not tuning (a protocol constant, a unit).",
+  "allow": []
+}
