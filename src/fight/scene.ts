@@ -33,6 +33,8 @@ import { HAMSTRUNG_BEATS, HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, hamstrungP
 import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, executionPick, poseOf, resolveExecution } from './execution.ts';
 import { createHamstrungAssets } from './hamstrung-assets.ts';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
+import { drawOpenGround } from '../zone/ground-draw.ts';
+import type { Sizing as GroundSizing } from '../zone/ground.ts';
 import { arenaFor, buildArena } from '../stubs.ts';   // V3: arena.ts, arena-themes.ts (V2's flat stage)
 import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
@@ -700,6 +702,7 @@ export function createScene(
     liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef }[]) { liveList = list; },
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
+    openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); },   // main.ts, the zone only (data/zone-ground.json): the floor and grid out past the pit, the far plane past the fog's edge; ?postkill=v1 / ?ground=v1 never call it
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
       rig.stopTour();

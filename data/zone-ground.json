@@ -1,0 +1,15 @@
+{
+  "about": "The zone's open ground (Dom 2026-10-27: the hero roams the world like an MMO, not a pit; Strategy lifted 'Stage untouched' for the zone only). The page drew a 400-unit floor (data/stage.json ground.size) scaled with the pit (world.pitScale in data/respawn.json), so it ended about 130 m out where the fog still shows 54% of it, and the grid ended 26 m out. In the zone this widens that same floor (same material, same colour, same fog: nothing new is drawn, no texture) so the hero walking out to postKill.walkRadiusMetres never sees its edge. groundRadiusMetres: metres from the pit's centre the floor reaches. gridRadiusMetres: how far the same grid (same cell size and colours) is laid; beyond it the plain floor (a grid thousands of lines deep only shimmers on a phone). edgeVisibility: the share of the floor's colour the fog may still show at the floor's edge (FogExp2, data/stage.json duel.fogDensity); the nearest the hero can stand to the edge (groundRadiusMetres less the walking radius and the camera's room, postKill.walkRadiusMetres + cameraMetres once the free walk is in) must be at least the distance where the fog is down to this, so the edge is fog, not a line. cameraFarMetres: the zone camera's far plane (it was 180 m for the pit), at least that fog distance so the far plane does not cut the floor short of the fog. ?ground=v1 = the pit's floor exactly as before. The pit has no wall drawn on this stage (src/arena-stage.ts: the stage is the floor and the sky), so there is no ring to keep; the pit's edge is the sim's circle.",
+  "flag": { "query": "ground", "off": "v1" },
+  "groundRadiusMetres": 340,
+  "gridRadiusMetres": 60,
+  "edgeVisibility": 0.05,
+  "cameraFarMetres": 330,
+  "limits": {
+    "about": "Validation ranges for the rows above.",
+    "groundRadiusMetres": [30, 1000],
+    "gridRadiusMetres": [10, 200],
+    "edgeVisibility": [0.001, 0.5],
+    "cameraFarMetres": [50, 1000]
+  }
+}
