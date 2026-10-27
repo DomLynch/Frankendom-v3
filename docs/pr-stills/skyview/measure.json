@@ -1,0 +1,82 @@
+{
+  "b": {
+    "fight375": {
+      "shot": "b-fight-375.png",
+      "backdropPct": 28.1,
+      "sandPct": 71.9,
+      "rows": 812
+    },
+    "walk375": {
+      "shot": "b-walk-375.png",
+      "backdropPct": 26,
+      "sandPct": 74,
+      "rows": 812
+    },
+    "fight812": {
+      "shot": "b-fight-812.png",
+      "backdropPct": 32.3,
+      "sandPct": 67.7,
+      "rows": 375
+    }
+  },
+  "default": {
+    "fight375": {
+      "shot": "default-fight-375.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 812
+    },
+    "walk375": {
+      "shot": "default-walk-375.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 812
+    },
+    "fight812": {
+      "shot": "default-fight-812.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 375
+    }
+  },
+  "a": {
+    "fight375": {
+      "shot": "a-fight-375.png",
+      "backdropPct": 11.3,
+      "sandPct": 88.7,
+      "rows": 812
+    },
+    "walk375": {
+      "shot": "a-walk-375.png",
+      "backdropPct": 11,
+      "sandPct": 89,
+      "rows": 812
+    },
+    "fight812": {
+      "shot": "a-fight-812.png",
+      "backdropPct": 12.3,
+      "sandPct": 87.7,
+      "rows": 375
+    }
+  },
+  "c": {
+    "fight375": {
+      "shot": "c-fight-375.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 812
+    },
+    "walk375": {
+      "shot": "c-walk-375.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 812
+    },
+    "fight812": {
+      "shot": "c-fight-812.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 375
+    }
+  }
+}

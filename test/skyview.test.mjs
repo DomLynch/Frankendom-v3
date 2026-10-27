@@ -97,7 +97,7 @@ test('the fade is by angle below the horizon: solid when steep, gone when shallo
   assert.equal(typeof move, 'function'); assert.equal(floor.material.transparent, true); assert.equal(floor.renderOrder, -900);
   const shader = { uniforms: {}, vertexShader: 'void main() {\n#include <project_vertex>\n}', fragmentShader: 'void main() {\n#include <opaque_fragment>\n}' };
   floor.material.onBeforeCompile(shader, {});
-  assert.match(shader.fragmentShader, /smoothstep\(fadeBand\.x, fadeBand\.y/); assert.match(shader.vertexShader, /vFadeWorld = /);
+  assert.match(shader.fragmentShader, /smoothstep\(fadeBand\.y, fadeBand\.x, fadeDepression/); assert.match(shader.vertexShader, /vFadeWorld = /);
   move(new THREE.Vector3(1, 2, 3)); assert.equal(shader.uniforms.fadeEye.value.z, 3);
   assert.deepEqual(shader.uniforms.fadeBand.value.toArray(), [SKYVIEWS.variants.b.fadeStartDegrees, SKYVIEWS.variants.b.fadeEndDegrees]);
 });
