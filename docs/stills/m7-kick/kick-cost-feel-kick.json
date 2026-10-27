@@ -1,0 +1,137 @@
+{
+  "byMode": {
+    "alive": {
+      "frames": 941,
+      "totalMs": 557.7000000178814,
+      "maxMs": 6.899999991059303
+    }
+  },
+  "state": "knockdown",
+  "feel": [
+    {
+      "tick": 364,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 424,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 482,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 527,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 643,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 703,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 762,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 822,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "midSwing",
+      "force": 1.0520317644127166,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.1572349408539884,
+      "pushVelocityMs": 4.6289397634159535
+    },
+    {
+      "tick": 882,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 942,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    },
+    {
+      "tick": 995,
+      "move": "kick",
+      "outcome": "knockdown",
+      "stance": "open",
+      "force": 1.1782755761422425,
+      "finisherWindowS": 1.4,
+      "finisherStartS": 0.5,
+      "pushDistanceM": 1.2961031337564668,
+      "pushVelocityMs": 5.184412535025867
+    }
+  ],
+  "events": 11,
+  "median": 2.7000000029802322,
+  "p99": 71.69999998807907,
+  "max": 164.40000000596046
+}
