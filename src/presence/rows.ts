@@ -4,7 +4,7 @@
 import DEFS from '../../data/presence.json' with { type: 'json' };
 
 export type PresenceRule = { readonly id: string; readonly value: number; readonly unit: string };
-export type PresenceDefs = { query: string; path: string; host: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; rules: readonly PresenceRule[] };
+export type PresenceDefs = { query: string; path: string; host: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; spawn: { x: number; z: number }; rules: readonly PresenceRule[] };
 
 /** Every rule the code reads by name (presenceRule's argument type). */
 export const NAMED = ['cellCm', 'radiusCm', 'nearCap', 'tier1Cm', 'tier1Every', 'tier2Cm', 'tier2Every', 'tier3Cm', 'tier3Every', 'tickMs', 'tickFloorMs', 'tickChecksPerTick', 'softCap', 'hardCap', 'maxLayers',
@@ -18,6 +18,9 @@ export function loadPresence(raw: Partial<PresenceDefs>): PresenceDefs {
   for (const k of ['query', 'path', 'host', 'protocol', 'poseGlobal'] as const) if (typeof raw[k] !== 'string' || !raw[k]) throw Error(`presence: "${k}" is a non-empty string`);
   const f = raw.frame;
   if (!(f && Number.isInteger(f.centreCm) && Number.isInteger(f.sizeCm) && f.centreCm > 0 && f.sizeCm <= 0xffff && f.centreCm <= f.sizeCm)) throw Error('presence: frame is { centreCm, sizeCm } whole centimetres inside the u16 range');
+  const sp = raw.spawn, half = (raw.rules ?? []).find((r) => r.id === 'walkHalfCm')?.value ?? 0;
+  if (!(sp && Number.isFinite(sp.x) && Number.isFinite(sp.z))) throw Error('presence: spawn is { x, z } in zone-frame metres');
+  if (Math.abs(sp.x * 100) > half || Math.abs(sp.z * 100) > half) throw Error('presence: spawn must stand on the walkable ground (within walkHalfCm of the frame centre)');
   const rows = raw.rules ?? [], seen = new Set<string>();
   for (const r of rows) {
     if (typeof r.id !== 'string' || typeof r.unit !== 'string') throw Error(`presence: a rule row is { id, value, unit } (${JSON.stringify(r)})`);

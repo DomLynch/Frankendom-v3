@@ -8,7 +8,7 @@ import LOOT_PIECES from './core/loot-pieces.json' with { type: 'json' };
 // core/grades.ts, core/finish-rows.ts, core/contracts/definitions.ts: V1's rows, as they are (the opponent's grade at his rung, spark materials)
 export { GRADES, TIERS, classOf, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from './core/grades.ts';   // core/grades.ts
 export { finishRow } from './core/finish-rows.ts';   // core/finish-rows.ts
-export { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, poseAt, spotsFor, tick, validateSpots, type Spawn } from './zone/spawns.ts';   // several bosses at their spots (live-zone phase 1b): the page's rules for the zone row's spawns
+export { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, tick, validateSpots, type Spawn } from './zone/spawns.ts';   // several bosses at their spots (live-zone phase 1b): the page's rules for the zone row's spawns
 export { ATTACKERS, attackersOn, dropped, framingWiden, joiners, validateFraming, MAX_ATTACKERS } from './zone/attackers.ts';   // real-time zone aggro: who joins the hero's fight and who lets go (the attackers' duels: src/fight/attacker-bout.ts)
 export { zoneFor, type ZoneRow } from './zone/zone-rows.ts';   // the zone row (data/zones/zone1.row.json): the zone loop's one read (src/fight/zone-loop.ts)
 export { materialRow } from './core/contracts/definitions.ts';   // core/contracts/definitions.ts

@@ -24,7 +24,7 @@ test('two players join the same layer, each sees the other\'s position and anima
     const a = await joinBot(p.port()), b = await joinBot(p.port());
     assert.equal(a.hello.layer, b.hello.layer);
     assert.notEqual(a.hello.id, b.hello.id);
-    assert.deepEqual(a.at(), { x: 0, z: 0 }, 'the server places a join at world (0, 0)');
+    assert.deepEqual(a.at(), { x: 0, z: 0 }, 'the server places a join at the spawn row (the bot speaks metres from it)');
     assert.deepEqual(a.hello.frame, { centreCm: 32768, sizeCm: 65535 });
     a.pose(1, 0); b.pose(0, 1);   // one metre each: inside the first pose's one-tick reach (a longer first step is a teleport)
     await until(() => a.seen().some((e) => e.z > 0.9) && b.seen().some((e) => e.x > 0.9));   // the packets before the poses landed carry the spawn

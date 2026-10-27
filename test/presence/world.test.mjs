@@ -120,13 +120,13 @@ test('a player with no known position starts at the spawn, and its first pose is
   const w = new World();
   const p = w.join(key(1), 0);
   assert.deepEqual([p.x, p.z], [SPAWN.x, SPAWN.z]);
-  assert.deepEqual([SPAWN.x, SPAWN.z], [C, C], 'the frame centre = world (0, 0)');
+  assert.deepEqual([SPAWN.x, SPAWN.z], [C + PRESENCE.spawn.x * 100, C + PRESENCE.spawn.z * 100], 'the spawn is the data row, in zone-frame metres (the pit\'s centre), not the frame centre');
   assert.equal(w.move(p, pose(5000, 6000), 100), 'snapped', 'a first pose far from the spawn is a teleport, not a placement');
-  assert.deepEqual([p.x, p.z], [C, C]);
-  assert.equal(w.move(p, pose(C + 100, C), 200), 'ok', 'a first pose within the clamp is an ordinary move');
-  assert.equal(p.layer.cells.get(Math.floor((C + 100) / 1600) * 4096 + Math.floor(C / 1600)).has(p), true, 'and the grid holds it there');
+  assert.deepEqual([p.x, p.z], [SPAWN.x, SPAWN.z]);
+  assert.equal(w.move(p, pose(SPAWN.x + 100, SPAWN.z), 200), 'ok', 'a first pose within the clamp is an ordinary move');
+  assert.equal(p.layer.cells.get(Math.floor((SPAWN.x + 100) / 1600) * 4096 + Math.floor(SPAWN.z / 1600)).has(p), true, 'and the grid holds it there');
   const off = w.join(key(2), 0, undefined, { x: 0, z: 0 });
-  assert.deepEqual([off.x, off.z], [C, C], 'a join spot off the walkable ground starts at the spawn');
+  assert.deepEqual([off.x, off.z], [SPAWN.x, SPAWN.z], 'a join spot off the walkable ground starts at the spawn');
 });
 
 // ---- the jitter credit (V1 origins/presence/move-jitter.test.ts) ----
@@ -134,7 +134,7 @@ test('a player with no known position starts at the spawn, and its first pose is
 function walk(cmS, every, count, arrive) {
   const w = new World(), p = w.join(key(1), 0), out = [];
   const packets = Array.from({ length: count }, (_, k) => ({ k, sentAt: (k + 1) * every })).map((q) => ({ ...q, at: arrive(q.k, q.sentAt) })).sort((a, b) => a.at - b.at || a.k - b.k);
-  for (const q of packets) out.push(w.move(p, { x: C + Math.round((cmS * q.sentAt) / 1000), z: C, heading: 0, anim: 0, flags: 0 }, q.at));
+  for (const q of packets) out.push(w.move(p, { x: SPAWN.x - Math.round((cmS * q.sentAt) / 1000), z: SPAWN.z, heading: 0, anim: 0, flags: 0 }, q.at));
   return out;
 }
 test('an honest sprinter whose packets bunch once is never struck, and one hiccup does not snowball into a drop', () => {
@@ -151,7 +151,7 @@ test('a speed hack still strikes and drops: 3000 cm/s sustained cannot out-run t
 });
 test('a jump cannot be banked: a teleport of 50 m after a long quiet spell is still a strike', () => {
   const w = new World(), p = w.join(key(1), 0);
-  assert.equal(w.move(p, { x: C + 5000, z: C, heading: 0, anim: 0, flags: 0 }, 60_000), 'snapped');
+  assert.equal(w.move(p, { x: SPAWN.x + 5000, z: SPAWN.z, heading: 0, anim: 0, flags: 0 }, 60_000), 'snapped');
 });
 test('tick-sized poses sent 1 ms apart are a speed hack: a tick of reach is only for the first pose', () => {
   const out = walk(105_000, 1, 60, (_, sentAt) => sentAt);
@@ -159,6 +159,6 @@ test('tick-sized poses sent 1 ms apart are a speed hack: a tick of reach is only
 });
 test('many packets in the same millisecond cannot spend more than the credit', () => {
   const w = new World(), p = w.join(key(1), 0), seen = [];
-  for (let k = 1; k <= 30; k++) seen.push(w.move(p, { x: C + 150 * k, z: C, heading: 0, anim: 0, flags: 0 }, 1000));
+  for (let k = 1; k <= 30; k++) seen.push(w.move(p, { x: SPAWN.x + 150 * k, z: SPAWN.z, heading: 0, anim: 0, flags: 0 }, 1000));
   assert.ok(seen.includes('snapped'));
 });

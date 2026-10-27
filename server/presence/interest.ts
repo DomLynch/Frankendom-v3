@@ -9,7 +9,7 @@ export type { Rules };
 
 const MS_PER_SECOND = 1000;
 const CELL_STRIDE = 4096;   // a grid cell's key is column * CELL_STRIDE + row; the frame is at most 655 m, so a row never reaches the stride and two cells never share a key
-export const SPAWN = { x: PRESENCE.frame.centreCm, z: PRESENCE.frame.centreCm };   // world (0, 0): where every join starts, chosen by the server
+export const SPAWN = { x: PRESENCE.frame.centreCm + Math.round(PRESENCE.spawn.x * 100), z: PRESENCE.frame.centreCm + Math.round(PRESENCE.spawn.z * 100) };   // the row `spawn` (zone-frame metres, the pit's centre): where every join starts, chosen by the server
 /** The ground a pose may be on: the square walkHalfCm around the frame's centre. */
 export const walkable = (x: number, z: number): boolean => { const half = presenceRule('walkHalfCm'), c = PRESENCE.frame.centreCm; return Math.abs(x - c) <= half && Math.abs(z - c) <= half; };
 

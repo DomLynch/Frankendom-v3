@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createDraw, heroPoseFn, startDrawLoop, SEAM } from '../../src/presence/draw.ts';
 import { startZonePresence } from '../../src/presence/chunk.ts';
-import { presenceRule } from '../../src/presence/rows.ts';
+import { presenceRule, PRESENCE } from '../../src/presence/rows.ts';
+import { decodeUp, encodeDown } from '../../src/presence/wire.ts';
 
 const body = () => { const b = { group: { visible: false, position: { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } }, rotation: { y: 0 } }, calls: [], update(speed, dt) { this.calls.push([speed, dt]); } }; return b; };
 const shown = (id, x, z, speed = 0, heading = 0) => ({ id, x, z, heading, speed });
@@ -90,6 +91,34 @@ test('startZonePresence installs the seam only for a good ?presence= value, and 
     assert.deepEqual(h.drawn().shown, []);
     h.stop();
   } finally { delete g[SEAM]; g.WebSocket = real; g.requestAnimationFrame = raf; g.cancelAnimationFrame = caf; }
+});
+
+test('the zone frame: with an origin the wire carries zone-frame metres (hero + origin) and a remote is drawn minus the origin; no origin = the pit frame as before', () => {
+  const loc = { protocol: 'http:', host: 'x.test' }, g = globalThis, C = PRESENCE.frame.centreCm, origin = { x: 226, z: 47 };
+  const raf = g.requestAnimationFrame, caf = g.cancelAnimationFrame, real = g.WebSocket; let loop = null; g.requestAnimationFrame = (fn) => { loop = fn; return 1; }; g.cancelAnimationFrame = () => {};
+  const sockets = []; g.WebSocket = class { constructor() { sockets.push(this); this.sent = []; this.readyState = 1; } send(b) { this.sent.push(b); } close() {} };
+  const run = (o) => {
+    sockets.length = 0;
+    const made = [], h = startZonePresence({ search: '?presence=ws://127.0.0.1:8794/presence', location: loc, hero: () => ({ x: 1, z: 2, heading: 0 }), spawn: () => (made.push(body()), made.at(-1)), ...o });
+    const s = sockets[0]; s.onopen();
+    s.onmessage({ data: JSON.stringify({ t: 'hello', id: 1, layer: 0, x: C, z: C, frame: PRESENCE.frame }) });
+    s.onmessage({ data: encodeDown(1, [{ id: 2, x: Math.round(C + (o.origin?.x ?? 0) * 100 + 300), z: Math.round(C + (o.origin?.z ?? 0) * 100 - 400), heading: 0, anim: 0, flags: 0, tick: 1 }]).buffer });
+    h.flush();
+    const up = decodeUp(s.sent.at(-1)), pos = h.remotes(performance.now())[0], t = performance.now();
+    loop(t); loop(t + 16);   // the draw loop: two frames
+    return { up, pos, h, made };
+  };
+  try {
+    const a = run({ origin });
+    assert.deepEqual([a.up.x, a.up.z], [C + 22700, C + 4900], 'zone-frame centimetres: hero (1, 2) + origin (226, 47)');
+    assert.deepEqual([a.pos.x, a.pos.z], [229, 43], 'the handle speaks zone-frame metres: the other stands at origin + (3, -4)');
+    assert.deepEqual([a.made[0].group.position.x, a.made[0].group.position.z], [3, -4], 'and is DRAWN in the pit frame: minus the origin');
+    a.h.stop();
+    const b = run({});
+    assert.deepEqual([b.up.x, b.up.z], [C + 100, C + 200], 'no origin = the pit frame, as before');
+    assert.deepEqual([b.made[0].group.position.x, b.made[0].group.position.z], [3, -4]);
+    b.h.stop();
+  } finally { g.WebSocket = real; g.requestAnimationFrame = raf; g.cancelAnimationFrame = caf; delete g[SEAM]; }
 });
 
 test('the default page is untouched: main.ts names the seam only inside the ?presence= branch, scene.ts spawnRemote sits in one marked block and is called from nowhere else, draw.ts imports no THREE', () => {

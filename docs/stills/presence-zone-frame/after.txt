@@ -1,0 +1,11 @@
+before walk  B {"pose":{"x":226,"z":49,"heading":1.57,"anim":1},"self":{"id":2,"layer":1}}
+before walk  A {"remotes":[{"id":2,"x":226,"z":49,"speed":0}],"drawn":{"pool":1,"shown":[{"id":2,"x":0,"z":2,"speed":0}]},"self":{"id":1,"layer":1}}
+B anim bytes while walking [1,1,1,2]
+B walking    B {"pose":{"x":226.14,"z":50.24,"heading":0.22,"anim":1},"self":{"id":2,"layer":1}}
+B walking    A {"remotes":[{"id":2,"x":226.08,"z":49.95,"speed":0}],"drawn":{"pool":1,"shown":[{"id":2,"x":0.08,"z":2.95,"speed":0}]},"self":{"id":1,"layer":1}}
+B walking+.6 A {"remotes":[{"id":2,"x":226.27,"z":50.62,"speed":0}],"drawn":{"pool":1,"shown":[{"id":2,"x":0.27,"z":3.62,"speed":0}]},"self":{"id":1,"layer":1}}
+B stopped    B {"pose":{"x":226.38,"z":50.9,"heading":0.39,"anim":1},"self":{"id":2,"layer":1}}
+B stopped    A {"remotes":[{"id":2,"x":226.38,"z":50.9,"speed":0}],"drawn":{"pool":1,"shown":[{"id":2,"x":0.38,"z":3.9,"speed":0}]},"self":{"id":1,"layer":1}}
+B left       A {"remotes":[],"drawn":{"pool":1,"shown":[]},"self":{"id":1,"layer":1}}
+fetched by A: presence chunk 1 ; total requests 63
+server health {"layers":1,"players":1,"perLayer":{"1":1},"sockets":1,"ips":1,"packets":712,"bytes":10680,"up":573,"snapped":0,"strikes":0,"joined":1,"refused":{},"maxTickMs":13.01016599999275,"ticks":483}

@@ -48,6 +48,40 @@ test('the loader refuses a missing named rule, a non-positive value, a duplicate
   assert.throws(() => loadPresence({ ...DEFS, host: '' }), /"host"/);
 });
 
+test('the spawn row (zone-frame metres): is the pit\'s centre in the zone row (pitOrigin, one source), validates as a closed {x, z} map, and the loader refuses a missing or unwalkable one', async () => {
+  const { pitOrigin, WORLD } = await import('../../src/zone/spawns.ts'), { zoneFor } = await import('../../src/zone/zone-rows.ts');
+  assert.deepEqual(PRESENCE.spawn, pitOrigin(zoneFor(''), WORLD), 'the service places a join where the page puts the pit: change one and this fails');
+  const bad = clone(DEFS); bad.spawn.x = 'a';
+  assert.match(validateFile('presence', bad).join('\n'), /presence\.spawn\.x: must be a finite number/);
+  assert.match(validateFile('presence', { ...clone(DEFS), spawn: { x: 1, z: 2, y: 3 } }).join('\n'), /spawn/);
+  assert.throws(() => loadPresence({ ...DEFS, spawn: undefined }), /spawn is \{ x, z \}/);
+  assert.throws(() => loadPresence({ ...DEFS, spawn: { x: 400, z: 0 } }), /walkable/);
+});
+
+test('the zone-frame guard: presence starts only when the page\'s pit origin IS the spawn row; no origin or another zone is refused; every shipped zone row (data/zones/*.row.json) is either equal or refused', async () => {
+  const { zoneFrameOk } = await import('../../src/presence/chunk.ts'), { pitOrigin, WORLD } = await import('../../src/zone/spawns.ts');
+  assert.equal(zoneFrameOk({ ...PRESENCE.spawn }), true);
+  assert.equal(zoneFrameOk(undefined), false, 'no zone, no origin: the pit frame would be a jump from the spawn');
+  assert.equal(zoneFrameOk({ x: PRESENCE.spawn.x + 1, z: PRESENCE.spawn.z }), false);
+  const dir = new URL('../../data/zones/', import.meta.url), rows = readdirSync(dir).filter((n) => n.endsWith('.row.json'));
+  assert.ok(rows.length >= 1);
+  for (const f of rows) {
+    const o = pitOrigin(JSON.parse(readFileSync(new URL(f, dir), 'utf8')), WORLD);
+    assert.equal(zoneFrameOk(o), o.x === PRESENCE.spawn.x && o.z === PRESENCE.spawn.z, `${f}: equal to the spawn row or refused`);
+  }
+  assert.equal(zoneFrameOk(pitOrigin(JSON.parse(readFileSync(new URL('zone1.row.json', dir), 'utf8')), WORLD)), true, 'the shipped default zone starts presence');
+});
+
+test('main.ts keeps the guard: on the presence path, zoneFrameOk(origin) returns early BEFORE startZonePresence is called (deleting it must fail here)', () => {
+  const main = readFileSync(new URL('../../src/client/main.ts', import.meta.url), 'utf8').replace(/\s\/\/.*$/gm, '');
+  const line = main.split('\n').find((l) => /import\('\.\.\/presence\/chunk\.ts'\)/.test(l));
+  assert.ok(line, 'the presence import line exists');
+  assert.match(line, /zoneFrameOk\(origin\)\)\s*return[^;]*;[^]*startZonePresence\(/, 'the guard returns before startZonePresence');
+  assert.ok(line.indexOf('zoneFrameOk(origin)') < line.indexOf('startZonePresence('), 'guard first');
+  const without = line.replace(/if \(!m\.zoneFrameOk\(origin\)\) return[^;]*;/, '');
+  assert.doesNotMatch(without, /zoneFrameOk\(origin\)\)\s*return/, 'the same check bites when the guard is removed');
+});
+
 test('src/presence (the page side) imports nothing from server/, and nothing in it touches node: it can only ever be bundled for the browser', () => {
   const dir = new URL('../../src/presence/', import.meta.url);
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.ts'))) {
