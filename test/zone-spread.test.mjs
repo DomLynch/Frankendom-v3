@@ -26,7 +26,7 @@ const walk = (p, move, ticks) => { for (let t = 0; t < ticks; t++) p = stepPract
 
 test('the shipped spread: bosses stand beyond the drawn floor, 10 m or more apart, aggro 2.5 / leash 20 intact, every spot\'s reach inside the spawn extent', () => {
   const s = spots();
-  assert.doesNotThrow(() => validateSpots(s, initialState(), wall(), WORLD, FIGHT.opponent));
+  assert.doesNotThrow(() => validateSpots(s, initialState(), wall(), WORLD, [FIGHT.opponent]));
   assert.ok(s.filter((x) => Math.hypot(x.x, x.z) > wall()).length >= 2, 'at least two bosses stand outside the drawn pit');
   for (const a of s) {
     assert.deepEqual([a.aggro, a.leash], [2.5, 20], `${a.id}: aggro 2.5 m, leash 20 m (the boss's own distance from its camp, #126)`);
@@ -183,7 +183,7 @@ test('the page wires it for the zone only: poseAt on the ground, the pose door r
   assert.match(main, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);/);
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');
   assert.match(live, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);\s*\n/, 'live code, not swallowed by a trailing comment');
-  assert.match(live, /fits \? pose : undefined, undefined/, 'a pose beyond the pit is not handed to the sim');
+  assert.match(live, /kindPractice\(k, KIND_CTX, s, fits \? pose : undefined\)/, 'a pose beyond the pit is not handed to the sim');
   assert.match(live, /roam = \{ \.\.\.practice\.fighter \}; view\.stopTour\(\); \}/, 'the finisher tour ends the moment the hero walks: the follow camera is behind him');
   assert.doesNotMatch(live, /intoPit\(/, 'nothing in the page draws the hero to a wall any more');
   assert.equal(ROWS.postKill.walkRadiusMetres, undefined, 'the post-kill walk has no limit row');

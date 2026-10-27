@@ -13,7 +13,7 @@ export const SCHEMA = {
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
   // The difficulty ladder over an opponent profile row (src/difficulty.ts): a row names only the brain knobs and the two scales; checked by checkDifficulty below
   'difficulty': { keys: ['about', 'default', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
-  'profiles': { keys: ['about', 'default', 'defaultBody', 'bodyQuery', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'body', 'brain', 'foeHealthScale', 'foeDamageScale'] } },
+  'profiles': { keys: ['about', 'default', 'defaultBody', 'bodyQuery', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'body', 'brain', 'foeHealthScale', 'foeDamageScale', 'knobs'] } },   // knobs: optional, this kind's own brain knobs over the difficulty row's (checkKinds)
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)
   'hero-clips': { keys: ['about', 'sweeps', 'rig', 'weapon', 'blade', 'clips'], rows: { clips: ['role', 'clip', 'mixamo', 'name', 'mirror', 'from', 'to', 'contact', 'pullback', 'aim', 'aimFrom', 'paths', 'hold', 'about'] }, maps: { blade: ['about', 'node', 'contact'], sweeps: ['about', 'default', 'query'] } },
   // The 65 -> 106 rig swap (src/fight/rig-bones.ts): which rig each side draws, the bone map, the weapon nodes and sockets, the 106 files.
@@ -664,6 +664,25 @@ export function checkDifficulty(difficulty, profiles, brains, fight) {
   }
   if (!(profiles.profiles ?? []).some((p) => p.id === profiles.default)) errors.push(`profiles.default: '${profiles.default}' is not a profile row`);
   if (fight && !(profiles.profiles ?? []).some((p) => p.id === fight.profile)) errors.push(`fight.profile: '${fight.profile}' is not a profiles.json row`);
+  return errors;
+}
+
+// data/profiles.json as the per-kind rows of the zone (Strategy + Dom 2026-10-27, one profile row per spawn `kind`; src/fight/spawn-kind.ts): ids are unique, each `opponent` is an archetype
+// (`archetypes`: src/fight/archetype-defs.json ids, i.e. Object.keys(OPPONENTS)), and an optional `knobs` row names only brain knobs, each in the difficulty ladder's range.
+export function checkKinds(profiles, archetypes) {
+  const errors = [], seen = new Set();
+  for (const p of profiles.profiles ?? []) {
+    if (seen.has(p.id)) errors.push(`profiles.${p.id}: duplicate id (a spawn kind names exactly one row)`); seen.add(p.id);
+    if (!archetypes.includes(p.opponent)) errors.push(`profiles.${p.id}.opponent: '${String(p.opponent)}' is not an archetype (${archetypes.join(', ')})`);
+    if (p.knobs === undefined) continue;
+    if (!p.knobs || typeof p.knobs !== 'object' || Array.isArray(p.knobs)) { errors.push(`profiles.${p.id}.knobs: must be an object of brain knobs`); continue; }
+    for (const [k, v] of Object.entries(p.knobs)) {
+      const range = ['reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'].includes(k) ? KNOB_RANGE[k] : null;
+      if (!range) { errors.push(`profiles.${p.id}.knobs.${k}: unknown knob`); continue; }
+      if (typeof v !== 'number' || !Number.isFinite(v) || v < range[0] || v > range[1]) errors.push(`profiles.${p.id}.knobs.${k}: ${String(v)} is not a number from ${range[0]} to ${range[1]}`);
+      else if ((k === 'reaction' || k === 'discipline') && !Number.isInteger(v)) errors.push(`profiles.${p.id}.knobs.${k}: ${v} is a whole number of ticks / percent`);
+    }
+  }
   return errors;
 }
 

@@ -10,7 +10,7 @@ import { project, stepPractice, type AiProfile, type CombatEvent, type Duel, typ
 import { RULES } from './moves.ts';
 
 /** One extra boss on the hero: its spawn (index into the zone's spawns), its own whole fight, and whether it has been killed (its corpse then stays in this record until its timer stands it again). */
-export type Attacker = { index: number; practice: Practice; dead: boolean };
+export type Attacker = { index: number; practice: Practice; dead: boolean; profile?: AiProfile };   // profile: this attacker's own AI profile (its kind's brain, src/fight/spawn-kind.ts); absent = the profile stepAttackers is given
 
 /** Events that say the hero was struck, defended or missed by the attacker (not the hero's own blows, not the attacker's special casts: those are drawn by the first boss's machinery only). */
 const struck = (e: CombatEvent): boolean =>
@@ -20,7 +20,7 @@ const struck = (e: CombatEvent): boolean =>
 const reacts = (e: CombatEvent): boolean => struck(e) && e.type !== 'AttackMissed';
 
 /** A new attacker from a whole fight the page built for it (its own boss at its spot, the hero where he stands). */
-export const joinAttacker = (index: number, practice: Practice): Attacker => ({ index, practice, dead: false });
+export const joinAttacker = (index: number, practice: Practice, profile?: AiProfile): Attacker => ({ index, practice, dead: false, ...(profile ? { profile } : {}) });
 
 /** The fight `a` carries on as the first boss (the hero's other boss died): its own duel with the hero as he stands now. */
 export function adopt(a: Attacker, hero: Fighter): Practice {
@@ -53,7 +53,7 @@ export function stepAttackers(before: Practice, after: Practice, intent: Intent,
   const next = list.map((a) => {
     if (a.dead) return a;
     const input: Practice = { ...a.practice, duel: { ...a.practice.duel, fighters: [hero0, a.practice.duel.fighters[1]], finish: null } };
-    const out = stepPractice(input, intent, profile);
+    const out = stepPractice(input, intent, a.profile ?? profile);
     const lost = Math.max(0, hero0.health - out.duel.fighters[0].health);
     damage += lost;
     for (const e of out.duel.events) if (struck(e)) events.push(e);

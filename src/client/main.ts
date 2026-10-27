@@ -7,17 +7,17 @@ import BRAINS from '../../data/brains.json' with { type: 'json' };
 import FEEL_SIM from '../../data/feel-sim.json' with { type: 'json' };
 import FEEL_DEFAULTS from '../../data/feel-defaults.json' with { type: 'json' };
 import { knockSimFor, setKnockSim, type KnockRows } from '../fight/knock-sim.ts';
-import { brainFor, brainProfile } from '../brain.ts';
+import type { BrainRow } from '../brain.ts';
+import { kindIds, kindPractice, kindTable, type KindCtx, type KindFight } from '../fight/spawn-kind.ts';   // a zone spawn's kind: its own opponent, stats, specials and brain
 import DIFFICULTY from '../../data/difficulty.json' with { type: 'json' };
 import PROFILES from '../../data/profiles.json' with { type: 'json' };
-import { difficultyPick, profileFor, resolveFight, scaledOpponent, scaledPractice, type DifficultyFile } from '../difficulty.ts';
-import { applyHeroClips } from '../hero-clips.ts';
+import { difficultyPick, type DifficultyFile, type ProfileRow } from '../difficulty.ts';
+import { applyFoeSweeps, applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
-import { initialPractice, project, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
-import { OPPONENTS, RULES, opponentAt, profileAt, weaponOf, type SkillId, type WeaponId } from '../fight/moves.ts';
+import { project, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
+import { RULES, weaponOf, type AiProfile, type Opponent, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
-import { recordSpecials } from '../fight/replay.ts';
 import { RADIUS, initialState, wrapAngle, type State } from '../fight/sim.ts';
 import { OPEN_RADIUS, playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.ts';
 import { setStab } from '../fight/stab-rule.ts';
@@ -39,7 +39,7 @@ import { heroSpecialFxFor, setHeroSpecialFx } from '../fight/hero-special-fx.ts'
 import { setSpecialSink } from '../fight/special-sink.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
 import { foeDisplayName, foeNameFor, setFoeName } from '../fight/foe-name.ts';
-import { fightOpponent } from '../fight/foe-pick.ts';
+import { pitbornV1 } from '../fight/foe-pick.ts';
 import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
 import { foeSweepsFor } from '../fight/foe-reach.ts';
 import { setBlend } from '../fight/anim-blend.ts';
@@ -75,11 +75,20 @@ const element = <T extends HTMLElement>(id: string) => document.getElementById(i
 const search = location.search;
 const canvas = element<HTMLCanvasElement>('world');
 // V1's Pitborn in the Minotaur's body (data/fight.json opponent); ?pitborn=v1 = the Centurion's fight, on the same 106 body (src/fight/foe-pick.ts, the one read)
-const opponentId = fightOpponent(FIGHT, search) as OpponentId, opponent = OPPONENTS[opponentId], level = FIGHT.level;
+const level = FIGHT.level;
 // The difficulty (data/difficulty.json over data/profiles.json, src/difficulty.ts): the fight config is { profile, difficulty row }; ?difficulty=1-10 picks the row
 // (default row otherwise, a console warning for a bad value), ?difficulty=legacy the fight before this setting. Under ?pitborn=v1 (the Centurion, not this profile's opponent) it is off: V1's Centurion as before.
-const resolved = resolveFight({ profile: FIGHT.profile, difficulty: difficultyPick(DIFFICULTY, search) }, PROFILES.profiles, DIFFICULTY as DifficultyFile, BRAINS.brains);
-const difficultyOn = resolved.opponent === opponentId;
+// PER-SPAWN KIND (src/fight/spawn-kind.ts): every zone spawn's `kind` is a data/profiles.json row; KINDS(kind) is its opponent, stats, scales and AI profile. The four lets below are the opponent of the
+// spawn the sim HOLDS, reassigned by useKind when the sim is handed to a spawn of another kind (and back); nothing else on the page names an opponent. ?pitborn=v1 makes every kind the Centurion (override).
+const KIND_CTX: KindCtx = { profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
+  override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: FIGHT.weapon as WeaponId, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
+const KINDS = kindTable(KIND_CTX);
+let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
+function useKind(k: KindFight) {
+  const changed = !foe || foe.opponentId !== k.opponentId;
+  foe = k; opponentId = k.opponentId as OpponentId; opponent = k.opponent; difficultyOn = k.scaled; aiProfile = k.ai;
+  if (changed) nameOpponent();   // the HUD names the spawn the sim holds
+}
 // :86 the opponent's swing parked in its chamber: the hold her rising charge cue climbs through
 const foeHolding = (f: Fighter) => f.phase === 'attack' && f.charge > 0 && f.move !== null && f.age <= (weaponOf(f.weapon).moves[f.move].chamber ?? -1);
 
@@ -97,7 +106,7 @@ const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.ready
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
-const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));   // the live zone (null under ?postkill=v1: the single fight, whose pit is exactly as before)
+const ZONE = zoneLoopFor(zoneFor(search), search, kindIds(KIND_CTX.profiles));   // the live zone (every spawn kind must be a profile row) (null under ?postkill=v1: the single fight, whose pit is exactly as before)
 // The zone's sound rows (data/sound.json zone): which scene-change cues stay silent and when the kill toast clears. Null under ?postkill=v1: every cue plays, the line stays.
 const ZONE_SOUND: ZoneSoundRows | null = ZONE ? zoneSoundRows(SOUND.zone) : null;
 feedback.zoneCues(ZONE_SOUND);
@@ -112,21 +121,15 @@ function fresh(pose?: DuelPose): Practice {
   epoch++;
   return make(seed, pose);
 }
-/** A whole fight on seed `s` (the hero and one boss, the difficulty rows' health and damage scales on the boss): `fresh`'s build without its side effects, which the zone's extra attackers reuse. */
-function make(s: number, pose?: DuelPose): Practice {
-  const body = opponentAt(opponent, level);
+/** A whole fight on seed `s` against kind `k` (default: the spawn the sim holds; the hero and one boss, the profile's and difficulty rows' health and damage scales on the boss): `fresh`'s build without its side effects, which the zone's extra attackers reuse with their own kind. */
+function make(s: number, pose?: DuelPose, k: KindFight = foe): Practice {
   const fits = !ZONE || !pose || poseFits(pose, RADIUS);   // a pose beyond the pit's wall is not the sim's to build: zoneDuel places it (spawns.ts)
-  const made = initialPractice(s, difficultyOn ? scaledOpponent(body, resolved) : body, FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
-    recordSpecials({ specials: FIGHT.specials, level, opponent: opponentId }), undefined, FIGHT.stance as PickedStance,
-    fits ? pose : undefined, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
-  const scaled = difficultyOn ? scaledPractice(made, resolved) : made;
+  const scaled = kindPractice(k, KIND_CTX, s, fits ? pose : undefined);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
   return ZONE ? project(zoneDuel(scaled.duel, fits ? undefined : pose), scaled.ai, scaled) : scaled;   // the zone's duels have no ring wall and may begin far from the pit (spawns.ts zoneDuel); the single fight keeps the pit's circle
 }
+useKind(KINDS(ZONE ? ZONE.spawn.kind : FIGHT.profile));   // the page opens on the first spawn's kind (the no-zone fight: the fight row's profile); every other spawn's kind is taken on its hand-over
 let practice = fresh(), frameEvents: CombatEvent[] = [];
-// the warden's brain: data/fight.json `ai` (a data/brains.json row) over his V1 profile at his level; ?ai=v1 = V1's profile untouched
-// (the difficulty row's knobs over it, src/difficulty.ts; ?ai=v1 = V1's profile untouched; off under ?pitborn=v1)
-const aiProfile = difficultyOn ? profileFor(profileAt(opponent, level), resolved, new URLSearchParams(search).get('ai') === 'v1')
-  : brainProfile(profileAt(opponent, level), brainFor(BRAINS.brains, FIGHT.ai, search));
+// the warden's brain (aiProfile, per kind: useKind): the kind's profile knobs over the difficulty row's over his V1 profile at his level (src/fight/spawn-kind.ts, src/difficulty.ts); ?ai=v1 = V1's profile untouched; off under ?pitborn=v1 (data/fight.json `ai`, a data/brains.json row)
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
@@ -232,7 +235,7 @@ let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
 const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
-if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
+if (ZONE) { validateSpots(SPOTS, initialState(), RADIUS, WORLD, kindIds(KIND_CTX.profiles)); for (const s of SPOTS) KINDS(s.kind); }   // every spawn fights as its own kind: each must be a profile row whose opponent is an archetype (built now, so a bad row fails at load)
 if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
 if (ZONE) setArenaClamp(OPEN_RADIUS);   // endless open ground: every camera clamp (walk, finisher side view, tour, intro orbit) is out of reach in the zone, so the camera follows the hero wherever he runs
@@ -250,8 +253,11 @@ if (multi) validateFraming();
 const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, OPEN_RADIUS, ZONE!.minDistance, heroStart);
-if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
+/** The kind spawn `index` fights as (its zone row's `kind`, a data/profiles.json row): the sim's opponent whenever it holds that spawn or that spawn joins as an attacker. */
+const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind);
+if (ZONE) { current = nearestStanding(spawns, heroStart); useKind(kindAt(current)); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
+  if (ZONE) useKind(kindAt(index));   // the sim's opponent becomes the spawn it is handed to (and back as the hero walks to another)
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
   roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false; walkBack = false;
@@ -269,8 +275,8 @@ const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(in
 function leashReset(index: number, at: { x: number; z: number }) {
   view.respawnFoe();
   epoch++; seed = nextSeed(seed); frameEvents = []; openerLift = 0; walkBack = false;
-  const out = resetHeld(practice, attackers, index, () => make(seed, poseFor(index, at)));
-  practice = out.practice; attackers = out.list; current = out.index; engaged = out.engaged;
+  const out = resetHeld(practice, attackers, index, () => make(seed, poseFor(index, at), kindAt(index)));
+  practice = out.practice; attackers = out.list; current = out.index; engaged = out.engaged; useKind(kindAt(current));   // an attacker may take the sim: its kind with it
   state = previous = practice.fighter;
   updateHud();
 }
@@ -283,6 +289,7 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
   const mine = practice.duel.fighters[0], hero: Fighter = { ...mine, body: { ...mine.body, x: at.x, z: at.z, heading: at.heading } };   // the hero stays where he stands: the ground is unbounded and a zone duel has no wall to draw him to
   epoch++; seed = nextSeed(seed); practice = adopt(a, hero); frameEvents = []; openerLift = 0;
   roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = a.index; engaged = true; killMarked = false; killedBy = null; walkBack = false;
+  useKind(kindAt(current));   // the attacker's own kind is now the sim's opponent (its duel was already built and stepped as that kind)
   attackers = attackers.filter((x) => x !== a);
   resetInput(walking); state = previous = practice.fighter;
   updateHud();
@@ -323,12 +330,19 @@ function zoneStep(dt: number) {
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
         attackers = attackers.filter((a) => !gone.includes(a.index));
-        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero))));
+        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai));   // each attacker fights as its own kind, its own brain
       }
     }
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
     else { const at = held(spawns, current, hero, WORLD.retargetMargin); if (at >= 0 && at !== current) hand(at, hero); }   // nobody engaged: the sim holds the nearest
   }
+}
+/** The cleaver sweep override is one global table per (rig, weapon) (blade.ts setSweepOverride): it follows the kinds on the hero now (the held one and the live attackers), the first kind with a bake of its own (foe-reach.ts foeSweepsFor) laying its table; none = V1's. Re-laid only when that kind changes. */
+let sweepOwner: string | null = foeSweepsFor(FIGHT.foeReach, search, opponentId) ? opponentId : null;
+function syncSweeps() {
+  const owner = [foe, ...attackers.filter((a) => !a.dead).map((a) => kindAt(a.index))].find((k) => foeSweepsFor(FIGHT.foeReach, search, k.opponentId) !== null)?.opponentId ?? null;
+  if (owner === sweepOwner) return;
+  sweepOwner = owner; applyFoeSweeps(search, owner === null ? null : foeSweepsFor(FIGHT.foeReach, search, owner));
 }
 // The zone's stills and the cost table read this (scripts/zone-stills.mjs)
 function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
@@ -378,7 +392,7 @@ function frame(now: number) {
   last = now;
   const dt = Math.min(elapsed, FIGHT.frameDtMaxS);
   if (!paused()) {
-    if (ZONE) zoneStep(dt);   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
+    if (ZONE) { zoneStep(dt); syncSweeps(); }   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
     if (heroStands()) killAge += dt;
     controls.promoteDodge(now);
     // :1517 the pause spends the frame's time first; what is left after it goes on to the simulation
