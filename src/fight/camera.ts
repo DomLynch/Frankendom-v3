@@ -259,6 +259,10 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       started = false;
     },
     // The zone's free camera: the view swings to stand behind a hero facing `heading` (the recenter button / R); no snap, the follow eases there.
+    // The look input's hook (a right thumb, a drag): turn the view `radians` about the hero (+ = the camera swings to its left). The free camera keeps the yaw it is given; the lock pulls it back in a fight.
+    lookYaw(radians: number) {
+      yaw = wrapAngle(yaw + radians);
+    },
     faceBehind(heading: number) {
       yaw = yawBehind(heading);
     },

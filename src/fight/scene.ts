@@ -691,6 +691,7 @@ export function createScene(
     // The zone's free follow camera (src/fight/free-camera.ts, main.ts): a one-finger drag on the ground looks round, recenter stands behind the hero, freeShare is 0 (lock) .. 1 (free).
     lookRound(dx: number) { rig.orbit(dx, 0); },
     faceBehind(heading: number) { rig.faceBehind(heading); },
+    lookYaw(radians: number) { rig.lookYaw(radians); },   // the clean hook for a look input: turns the view by radians about the hero (view.yaw reads it back)
     get freeShare() { return rig.freeShare; },
     // The ONE call site of a foe respawn (src/client/main.ts rematch, zone only), called BEFORE his sim body is reset: the dead rig is left as it lies beside the live one
     // (ragdoll.leaveCorpse: cuts, pieces and caps kept, it ages out on data/physics.json corpse.keepSeconds), and the live rig is rebuilt whole. False = nothing to leave.
