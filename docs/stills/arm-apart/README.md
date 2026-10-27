@@ -1,27 +1,22 @@
 # Arm-apart proof (V3 on PR 111 sha ccbe6d0)
 
-**Evidence head: `13ca4ce`** (on base `ccbe6d0`; a later commit changes only this README line, no stills).
-**Cap proof (option a + c):** `capsdump.log` is a tick-1 and tick-40 dump of `cutRig.caps` (via `capsdump.patch`, a stills-only hook, not applied to the repo): exactly `cap_shoulder_right_arm` and `cap_shoulder_right_torso` are visible, material `cap_flesh`, the other 14 caps hidden. `caps-green-tap-40.jpg` (+ crop) tints those two meshes green and the stump's cap turns green. Caveat: physics differs per run, and in that green frame the arm landed off the left edge, so the arm's own cap is proven by the dump, not by that frame; the `aside3-orbit100-zoom0.8-3x` still shows the arm fully in frame, but its own cap is not clearly visible from that angle.
+**Claim, exactly:** the right arm lies apart from the corpse, and the stump cap (`cap_shoulder_right_torso`) is shown at 375 wide at tick 40. Nothing more is claimed.
+**Reviewed head: `26c2e8e`** (V3 reviewer PASS, limited to that claim). Later commits only add proof files and this README; no still it reviewed changed.
 
-**Previous best (PM r23 round 2):** `aside3-orbit100-zoom0.8-3x-tap-40.jpg` (+ `-crop.jpg`), 375 wide at 3x (1125 px), ASIDE=3 TAP=armRight, tick 40, `?zoom=0.8`, ORBIT=100, DSF=3 (`cut-stills-nocue.mjs` now takes DSF).
-The whole arm lies apart at the left with its sword upright, inside the frame; the corpse's shoulder stump shows the red `cap_flesh` cap clearly. The cap on the arm's own cut end is NOT clearly visible from this angle (its cut end faces away). Mesh and material receipt: `receipt.txt` (`cap_shoulder_right_arm` / `_torso`, material `cap_flesh` base colour 0.55, 0.10, 0.09 = the wound red, not a debug colour; names read from the GLB file, not the live scene).
-The older zoom 0.6 stills below are superseded.
+Reviewed still: `aside3-orbit100-zoom0.8-3x-tap-40.jpg` (+ `-crop.jpg`): 375 wide at 3x, ASIDE=3 TAP=armRight, tick 40, `?zoom=0.8`, ORBIT=100, cut buttons hidden. The whole arm lies apart at the left with its sword in frame; the stump on the corpse shows its cap.
 
-Primary still: `aside3-orbit80-zoom0.6-tap-40.jpg` (+ `-crop.jpg`), 375 wide at 2x, tick 40 after the tap on the right arm.
-The severed right arm lies apart at the left, away from the corpse, with a red flesh cap on its cut end; the corpse's shoulder stump also shows a red cap.
-Only the sword tip in the arm's hand touches the left edge. No cut-cue buttons on the corpse.
-
-Command (Mac, Metal, load ~2.4, ~6.5 s per run):
+Command (Mac, Metal, ~6.5 s per run; VPS capture pressure was 43-49, the HF CPU job failed on screenshot timeouts under SwiftShader):
 
     node scripts/build.mjs && node scripts/serve.mjs 21777 &
-    ORBIT=80 AFTER=1,40,200 TAP=armRight ASIDE=3 node docs/stills/arm-apart/cut-stills-nocue.mjs http://localhost:21777 out "zoom=0.6"
+    DSF=3 ORBIT=100 AFTER=1,40 TAP=armRight ASIDE=3 node scripts/cut-stills-nocue.mjs http://localhost:21777 out "zoom=0.8"
 
-`cut-stills-nocue.mjs` is `scripts/cut-stills.mjs` plus one init script that hides `.cut-cue` (stills only, no game code touched); copy it to `scripts/` to run it (it imports nothing relative). `?zoom=0.6` is the existing camera lens row (pulls the camera back), ASIDE=3 as asked, ORBIT=80 turns the camera toward the arm side.
+`cut-stills-nocue.mjs` (in this folder; copy to `scripts/`) is `scripts/cut-stills.mjs` plus an init script hiding `.cut-cue`, a DSF env, and a CAPS/TINT dump. No game code is changed.
 
-Other files:
-- `aside3-orbit80-zoom0.6-tap--1.jpg` the frozen corpse before the tap; `-tap-200.jpg` the arm settled apart.
-- `aside1.5-*`: first pass with the cut buttons still on (arm apart but buttons cover the corpse; superseded).
-- `aside3-tap-40-FAIL.jpg`: the plain ASIDE=3 default framing: corpse at the left edge under the cut buttons.
+Cap evidence:
+- `capsdump.log` (hook: `capsdump.patch`, not applied to the repo): at ticks 1 and 40, exactly `cap_shoulder_right_arm` and `cap_shoulder_right_torso` are visible (material `cap_flesh`), 14 other caps hidden.
+- `caps-green-tap-40.jpg` (+ crop): those meshes tinted green; the stump's cap turns green.
+- `receipt.txt`: mesh and material names read from `minotaur-106.glb`.
 
-Receipt: VPS capture queue sat at cpu-pressure 43-49 (limit 25); HF CPU job 6ae07c073fb22a235dd2879c failed (page screenshot timeouts under SwiftShader); the stills ran on the Mac.
-Limit: the cap is a small red patch at 375, readable in the crop, not a close-up.
+**Follow-up (not a blocker): the arm-side cap.** `cap_shoulder_right_arm` is visible in the dump, but its cut end faces away from the camera in the reviewed still, and the arm lands somewhere different on each run (sometimes off the left edge). A framing that shows that cap needs an orbit toward the arm's cut end, and a frame where the arm is in view with the green tint.
+
+Other files: `aside3-orbit80-zoom0.6-*` and `aside1.5-*` (earlier passes, superseded), `aside3-tap-40-FAIL.jpg` (plain ASIDE=3: corpse at the left edge under the cut buttons).
