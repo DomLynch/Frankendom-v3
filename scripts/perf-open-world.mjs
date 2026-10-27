@@ -17,7 +17,7 @@ mkdirSync(out, { recursive: true });
 const RUNS = Number(process.env.RUNS ?? 3), SECS = Number(process.env.SECS ?? 20), CORPSES = Number(process.env.CORPSES ?? 2), TAG = process.env.TAG ?? `c${CORPSES}`;
 // The M7 modules are default-on since #135 (data/feel-defaults.json): ?feel=v1 is none of them, ?feel=v1,<name> is that one alone, no query is all four.
 const BASE = 'feel=v1&rules=m4';
-const QUERIES = argQueries.length ? argQueries : [BASE, `feel=v1,clash&rules=m4`, `feel=v1,kick&rules=m4`, `feel=v1,hitreact&rules=m4`, `feel=v1,limbs&rules=m4`, 'rules=m4'];
+const QUERIES = argQueries.length ? argQueries : process.env.QUERIES ? process.env.QUERIES.split('|') : [BASE, `feel=v1,clash&rules=m4`, `feel=v1,kick&rules=m4`, `feel=v1,hitreact&rules=m4`, `feel=v1,limbs&rules=m4`, 'rules=m4'];
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
 const MIX = [['KeyF'], ['KeyG'], ['KeyD', 'KeyF'], ['KeyG'], ['KeyA', 'KeyF'], ['KeyF']];
 const press = async (page, codes) => { for (const c of codes) await page.keyboard.down(c); for (const c of codes.slice().reverse()) await page.keyboard.up(c); };
@@ -47,7 +47,8 @@ async function one(query) {
       let beat = 0; const dbg = setInterval(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; console.log(`dbg kill ${++beat * 10}s: ragdoll ${globalThis.__ragdoll.state}, foe ${f.phase} hp ${f.health} dead ${f.dead ?? ''} at ${f.body.x.toFixed(1)},${f.body.z.toFixed(1)}, hero ${h.phase} hp ${h.health}, zone ${JSON.stringify(globalThis.__v3Zone ?? null).slice(0, 160)}`); }, 10000);
       setTimeout(() => { clearInterval(id); clearInterval(dbg); done(false); }, 90000);   // a kill that never froze: go on with what stands, and say so
     })).then((froze) => { if (!froze) console.error(`corpse ${i + 1}: the body did not freeze in 90 s`); });
-    left = await page.evaluate(() => globalThis.__ragdoll.leave?.() ?? null);
+    // the zone loop leaves the body itself when the boss respawns (zone row respawnSeconds, real time): wait for it; a body it has not left by then is left by hand, but the foe is still dead then
+    left = await page.waitForFunction((n) => globalThis.__ragdoll.corpses >= n, i + 1, { timeout: 150000, polling: 1000 }).then(() => 'respawn').catch(() => page.evaluate(() => globalThis.__ragdoll.leave?.() ?? null));
     console.error(`corpse ${i + 1}/${CORPSES} left: ${left}`);
     await page.waitForTimeout(1500);
   }
