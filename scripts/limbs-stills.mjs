@@ -50,6 +50,7 @@ if (process.env.COST) {
   await browser.close(); process.exit(0);
 }
 
+const traces = {};
 for (const query of queries.length ? queries : ['rules=m4', 'rules=m4&feel=limbs']) {
   const tag = `${LIMB}-${query.includes('feel=limbs') ? 'limbs' : 'default'}`, page = await open();
   await page.clock.install();
@@ -92,6 +93,13 @@ for (const query of queries.length ? queries : ['rules=m4', 'rules=m4&feel=limbs
   const end = await page.evaluate(() => ({ events: globalThis.__feelEvents ?? [], feel: globalThis.__feelLimbs ?? null, hits: globalThis.__v3Rules?.hits, fighter: globalThis.__v3Rules?.fighter?.() }));
   console.log(`${tag}: ${frame} frames; rule hits ${end.hits}; events ${JSON.stringify(end.events.map((e) => e.name))}; stumbles ${end.feel?.stumbles ?? 'n/a'}`);
   writeFileSync(`${out}/${tag}-report.json`, JSON.stringify({ query, frames: frame, ...end, trace }, null, 2));
+  traces[query.includes('feel=limbs') ? 'limbs' : 'default'] = trace;
   await page.close();
+}
+// A/B guard: the two runs are one sim only when they were paused on the same tick (the fake clock's pause can land a tick or more apart on a busy machine). Compared by the foe's phase and the rule hits per sample.
+if (traces.default && traces.limbs) {
+  const d = traces.default, l = traces.limbs, at = d.findIndex((x, i) => !l[i] || x.foePhase !== l[i].foePhase || x.hits !== l[i].hits);
+  console.log(at < 0 ? `A/B: aligned over ${d.length} samples` : `A/B: DIVERGED at sample ${at} (foe ${d[at].foePhase} vs ${l[at]?.foePhase}, hits ${d[at].hits} vs ${l[at]?.hits}): not one sim, do not use this pair, run it again`);
+  if (at >= 0) process.exitCode = 3;
 }
 await browser.close();
