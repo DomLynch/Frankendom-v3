@@ -9,8 +9,8 @@ import { M } from '../fight/detmath.ts';
 import { respawnPose, intoPit } from '../fight/zone-loop.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; pitScale: number };
-type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; pitScale: [number, number] };
+export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; leashMargin: number; pitScale: number };
+type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; leashMargin: [number, number]; pitScale: [number, number] };
 export const WORLD = ROWS.world as WorldRows;
 const LIMITS = ROWS.limits as unknown as Limits;
 
@@ -41,7 +41,7 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
  * one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
  */
 export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kind?: string, limits: Limits = LIMITS): void {
-  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale'] as const) {
+  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
@@ -49,6 +49,7 @@ export function validateSpots(spots: readonly Spot[], heroStart: At, wall: numbe
   for (const s of spots) {
     if (kind !== undefined && s.kind !== kind) throw new Error(`spawn ${s.id} names kind "${s.kind}": the page builds one foe rig, "${kind}"`);
     if (!(Number.isFinite(s.x) && Number.isFinite(s.z)) || M.hypot(s.x, s.z) > wall - world.edgeMetres) throw new Error(`spawn ${s.id} stands outside the pit's wall (${wall} m less ${world.edgeMetres} m)`);
+    if (s.leash < wall + wall + world.leashMargin) throw new Error(`spawn ${s.id} leash ${s.leash} m is shorter than the fight circle's diameter ${wall + wall} m plus ${world.leashMargin} m (respawn.json world.leashMargin): a fight or a roll would trip it`);
     if (dist(s, heroStart) <= s.aggro) throw new Error(`spawn ${s.id} stands inside its own aggro of the hero's start`);
     for (const t of spots) if (t !== s && dist(s, t) <= s.aggro) throw new Error(`spawns ${s.id} and ${t.id} stand inside each other's aggro`);
     for (const t of spots) if (t !== s && dist(s, t) < world.minSpacing) throw new Error(`spawns ${s.id} and ${t.id} stand closer than ${world.minSpacing} m (respawn.json world.minSpacing)`);
@@ -80,7 +81,7 @@ export function held(spawns: readonly Spawn[], current: number, at: At, margin: 
   return now && isStanding(now) && dist(now, at) - dist(spawns[best]!, at) <= margin ? current : best;
 }
 
-/** The held spawn's leash: the hero is further from its spot than the row allows. */
+/** The held spawn's leash (MMO-style: the boss leaving its camp, not the hero crossing a line): `at`, the BOSS's own position, is further from the spot than the row allows. Callers pass the boss, never the hero. */
 export const leashed = (spawn: Spawn, at: At, lift = 0): boolean => dist(spawn, at) > spawn.leash + lift;   // lift: the opener's reach (openers.reachMetres), 0 for every other fight
 
 /** The spawn is killed: its timer starts, nobody else's moves. */

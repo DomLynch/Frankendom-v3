@@ -80,8 +80,8 @@ test('the camera composes with the lens zoom: one boss is byte-identical to main
 
 test('who lets go: past its own leash from its own spot', () => {
   const s = spawns(), here = { x: s[1].x, z: s[1].z }, away = { x: s[1].x + s[1].leash + 1, z: s[1].z };
-  assert.deepEqual(dropped(s, [1], here), []); assert.deepEqual(dropped(s, [1], away), [1]);
-  assert.deepEqual(dropped(s, [], away), []);
+  assert.deepEqual(dropped(s, [1], () => here), []); assert.deepEqual(dropped(s, [1], () => away), [1]);
+  assert.deepEqual(dropped(s, [], () => away), []);
 });
 
 const hero0 = { x: 0, z: 2 }, mark = { x: 0, z: -1.25 };

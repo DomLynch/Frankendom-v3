@@ -267,10 +267,10 @@ function zoneStep(dt: number) {
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
     if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = openerLeashLift(spawns[near]);   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
     if (engaged) {
-      if (leashed(spawns[current]!, hero, openerLift)) hand(current, hero);   // beyond the leash he resets at his spot at full health
+      if (leashed(spawns[current]!, practice.enemy, openerLift)) hand(current, hero);   // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health
       else if (multi) {   // real-time aggro: any other standing boss whose aggro he is inside attacks him now, whatever he is fighting; one beyond its own leash lets go
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
-        const gone = dropped(spawns, alive(), hero);
+        const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
         attackers = attackers.filter((a) => !gone.includes(a.index));
         for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero))));
       }

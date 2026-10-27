@@ -45,7 +45,7 @@ test('the shipped row pinned: id, band, respawn, areas, the spawn', () => {
     assert.equal(x.kind, FIGHT.opponent, "today's spawns are the opponent data/fight.json names (one foe rig is built)");
     assert.ok(KINDS.includes(x.kind), 'kind is a roster opponent id');
     assert.equal(x.roster, true);
-    assert.deepEqual(x.behaviour, { aggro: 2.5, leash: 5, roam: 2.6, campSize: [1, 1] });
+    assert.deepEqual(x.behaviour, { aggro: 2.5, leash: 18, roam: 2.6, campSize: [1, 1] });
   }
   const s = ROW.spawns[0];
   const yard = ROW.areas[0];

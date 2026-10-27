@@ -31,11 +31,11 @@ test('bad opener rows are refused: delay or count out of range, no spawn, a spaw
   assert.throws(bad({ spawns: [] }), /no spawn/); assert.throws(bad({ spawns: ['nobody'] }), /no spawn of the zone/);
 });
 
-test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is 6 m from the north Pitborn, just beyond the plain 5 m leash)', () => {
+test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is 6 m from the north Pitborn; the leash is the boss\'s 18 m now, the lift stays consistent)', () => {
   const s = spawns().find((x) => x.id === OPENERS.spawns[0]), d = Math.hypot(s.x - hero().x, s.z - hero().z);
-  assert.ok(d > s.leash, 'beyond the plain leash: why the fight\'s leash is lifted');
   assert.ok(d <= s.leash + OPENERS.reachMetres - 1, `the mark is ${d.toFixed(2)} m from the yard Pitborn: at least 1 m inside leash ${s.leash} + reach ${OPENERS.reachMetres}`);
-  assert.equal(leashed(s, hero()), true); assert.equal(leashed(s, hero(), OPENERS.reachMetres), false);
+  const past = { x: s.x + s.leash + 0.5, z: s.z };
+  assert.equal(leashed(s, past), true); assert.equal(leashed(s, past, OPENERS.reachMetres), false, 'the opener fight\'s leash is lifted by the reach');
 });
 
 test('before N nobody is in aggro; at N the opener spawn (only it) reaches him; the other two wait', () => {
@@ -87,7 +87,7 @@ test('the page wires it once: the clock runs when the assets are ready, any enga
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
   assert.match(main, /openerSpent = !ZONE \|\| !openerOn\(search\)/);
   assert.match(main, /if \(engaged\) openerSpent = true;/);
-  assert.match(main, /leashed\(spawns\[current\]!, hero, openerLift\)/);
+  assert.match(main, /leashed\(spawns\[current\]!, practice\.enemy, openerLift\)/);
   assert.match(main, /if \(practice\.finish\) \{ openerSpent = true; openerLift = 0; \}/);
   assert.match(main, /if \(!openerSpent && assetsReady\) openerIdle \+= dt;/);
   assert.match(main, /inAggro\(openerSpent \? spawns : openerReach\(spawns, OPENERS, openerIdle, hero\), hero\)/);
