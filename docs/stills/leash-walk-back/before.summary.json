@@ -1,0 +1,430 @@
+{
+ "query": "leash=v1",
+ "frames": 24,
+ "frameEveryMs": 250,
+ "bossPctStaged": 30,
+ "first": {
+  "ms": 0,
+  "engaged": true,
+  "current": 0,
+  "spot": {
+   "x": 0,
+   "z": -6.170000000000002
+  },
+  "boss": {
+   "x": 0,
+   "z": 20.36
+  },
+  "bossPct": 29.9,
+  "heroPct": 100,
+  "fromSpot": 26.53
+ },
+ "last": {
+  "ms": 5777,
+  "engaged": false,
+  "current": 2,
+  "spot": {
+   "x": -8,
+   "z": 11
+  },
+  "boss": {
+   "x": -8,
+   "z": 11
+  },
+  "bossPct": 100,
+  "heroPct": 100,
+  "fromSpot": 0
+ },
+ "minFromSpot": 0,
+ "framesWalkingNotEngaged": 0,
+ "bossPctRange": [
+  29.9,
+  100
+ ],
+ "log": [
+  {
+   "ms": 0,
+   "engaged": true,
+   "current": 0,
+   "spot": {
+    "x": 0,
+    "z": -6.170000000000002
+   },
+   "boss": {
+    "x": 0,
+    "z": 20.36
+   },
+   "bossPct": 29.9,
+   "heroPct": 100,
+   "fromSpot": 26.53
+  },
+  {
+   "ms": 250,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 501,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 752,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 1003,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 1254,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 1505,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 1756,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 2007,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 2258,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 2509,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 2759,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 3012,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 3263,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 3514,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 3766,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 4017,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 4268,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 4519,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 4771,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 5023,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 5274,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 5526,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  },
+  {
+   "ms": 5777,
+   "engaged": false,
+   "current": 2,
+   "spot": {
+    "x": -8,
+    "z": 11
+   },
+   "boss": {
+    "x": -8,
+    "z": 11
+   },
+   "bossPct": 100,
+   "heroPct": 100,
+   "fromSpot": 0
+  }
+ ]
+}
