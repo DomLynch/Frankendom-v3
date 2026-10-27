@@ -9,11 +9,11 @@ import { freeCameraFor, handsOver, stepShare, swingAround, validateFreeCamera, v
 import { validateFile } from '../src/sim/validate.js';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
-const ROWS = JSON.parse(read('../data/respawn.json')), FREE = ROWS.freeCamera, LIMITS = { gapMetres: ROWS.limits.freeCamGapMetres, handOverSeconds: ROWS.limits.handOverSeconds };
+const ROWS = JSON.parse(read('../data/respawn.json')), FREE = ROWS.freeCamera, LIMITS = { gapMetres: ROWS.limits.freeCamGapMetres, handOverSeconds: ROWS.limits.handOverSeconds, swingTailSeconds: ROWS.limits.swingTailSeconds, swingRate: ROWS.limits.swingRate };
 const patch = (f) => { const d = structuredClone(ROWS); f(d.freeCamera); return d; };
 
 test('the row is pinned: on, the pit\'s start gap, a 1.2 s swing, the stick ends the ceremony, a fight is framed as a pair; the schema knows it', () => {
-  assert.deepEqual({ ...FREE, about: undefined }, { about: undefined, on: true, query: 'freecam', off: 'v1', gapMetres: 3.25, handOverSeconds: 1.2, stickEndsCeremony: true, fight: 'pair' });
+  assert.deepEqual({ ...FREE, about: undefined }, { about: undefined, on: true, query: 'freecam', off: 'v1', gapMetres: 3.25, handOverSeconds: 1.2, swingTailSeconds: 0.5, swingRate: 3, stickEndsCeremony: true, fight: 'pair' });
   assert.equal(FREE.gapMetres, ROWS.spawn.minDistance, 'the camera\'s virtual foe stands at the gap a fight starts at: the fight camera\'s own frame');
   assert.deepEqual(validateFile('respawn', ROWS), [], 'the respawn schema accepts the row');
   assert.ok(validateFile('respawn', { ...ROWS, freeCamera: { ...FREE, extra: 1 } }).length > 0, 'a stray key in the row is refused');
@@ -24,6 +24,7 @@ test('bad rows are refused', () => {
   for (const [what, f, re] of [
     ['gap 0', (r) => { r.gapMetres = 0; }, /gapMetres/], ['gap NaN', (r) => { r.gapMetres = NaN; }, /gapMetres/], ['gap 99', (r) => { r.gapMetres = 99; }, /gapMetres/],
     ['swing 0', (r) => { r.handOverSeconds = 0; }, /handOverSeconds/], ['swing 60', (r) => { r.handOverSeconds = 60; }, /handOverSeconds/],
+    ['tail -1', (r) => { r.swingTailSeconds = -1; }, /swingTailSeconds/], ['rate 0', (r) => { r.swingRate = 0; }, /swingRate/], ['rate NaN', (r) => { r.swingRate = NaN; }, /swingRate/],
     ['fight "lock"', (r) => { r.fight = 'lock'; }, /fight/], ['on "yes"', (r) => { r.on = 'yes'; }, /true or false/], ['stick "yes"', (r) => { r.stickEndsCeremony = 'yes'; }, /true or false/],
     ['no query', (r) => { r.query = ''; }, /words/],
   ]) assert.throws(() => freeCameraFor(true, '', patch(f)), re, what);

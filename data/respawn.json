@@ -14,6 +14,8 @@
     "off": "v1",
     "gapMetres": 3.25,
     "handOverSeconds": 1.2,
+    "swingTailSeconds": 0.5,
+    "swingRate": 3,
     "stickEndsCeremony": true,
     "fight": "pair"
   },
@@ -26,7 +28,8 @@
     "deadzonePx": 6,
     "minXShare": 0.4,
     "inertiaSeconds": 0.25,
-    "flingWindowMs": 80
+    "flingWindowMs": 80,
+    "flingSmoothing": 0.5
   },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
@@ -94,11 +97,14 @@
     "cameraMetres": [0, 20],
     "freeCamGapMetres": [1, 10],
     "handOverSeconds": [0.2, 5],
+    "swingTailSeconds": [0, 5],
+    "swingRate": [0.5, 10],
     "lookSensitivityDegPerPx": [0.05, 1],
     "lookDeadzonePx": [0, 40],
     "lookMinXShare": [0, 0.9],
     "lookInertiaSeconds": [0, 1],
     "lookFlingWindowMs": [0, 500],
+    "lookFlingSmoothing": [0.05, 1],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],
     "edgeMetres": [0, 4],
