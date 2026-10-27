@@ -27,14 +27,14 @@ export type RulesPackage = {
 export function rulesOnFor(rows: RuleRows, search: string): boolean { return rows.on && new URLSearchParams(search).get(rows.query) === rows.m4; }
 
 /** Per-hit hand speed. `measured`: the attacker's animated hand-bone world speed at the hit (m/s), or null (none sampled: the page's clock was stopped, no hand bone).
- *  The package's `hand_speed_ref_m_s` numbers are a LIGHT swing's hand speed and `swing.heavy_mult` (1.92, the measured heavy/light ratio) stands for the charge, so a heavy's
- *  animation speed is brought back to its LIGHT-EQUIVALENT (divided by heavy_mult) before it goes in with swing "heavy": the evaluator multiplies it again, once (no double count).
+ *  The package's `hand_speed_ref_m_s` numbers are a LIGHT swing's hand speed (measured on the Minotaur's clips) and `swing.heavy_mult` stands for the charge. The hero's clip speed goes in
+ *  times rows.speedScale (median-to-median onto the package's units), and a heavy's over rows.heavyDivisor (1 when the heavy clips carry no charge in their speed: the evaluator applies heavy_mult once).
  *  The light-equivalent is clamped to the package's measured range (rows speedMin, the package's hand p10, and speedMaxRef, its full-speed light swing); no measure = the reference row (`handSpeedRef`, light_p50). */
 export function handSpeedOf(rows: RuleRows, rules: Pick<PkgRules, 'swing'>, measured: number | null | undefined, heavy: boolean): { speed: number; source: 'measured' | 'ref' } | null {
   const ref = rules.swing.hand_speed_ref_m_s[rows.handSpeedRef];
   if (typeof ref !== 'number') return null;
   if (typeof measured !== 'number' || !Number.isFinite(measured) || measured <= 0) return { speed: ref, source: 'ref' };
-  const lightEquivalent = heavy ? measured / rules.swing.heavy_mult : measured;
+  const lightEquivalent = measured * rows.speedScale / (heavy ? rows.heavyDivisor : 1);
   const hi = rules.swing.hand_speed_ref_m_s[rows.speedMaxRef] ?? ref;
   return { speed: Math.min(hi, Math.max(rows.speedMin, lightEquivalent)), source: 'measured' };
 }
@@ -55,18 +55,23 @@ export function hitInput(rows: RuleRows, rules: Pick<PkgRules, 'swing'>, e: Comb
 
 /** The attacker's hand speed from his animated hand bone: one world position a frame (`push`), the speed of each step; `speed()` is the fastest of the last `speedWindow` steps
  *  (a swing's peak is a frame or two before the contact the sim reports), or null with no usable step. A step over `snapOver` m/s is a pose snap (a teleport), not a swing: dropped. Pure: no three, no clock. */
-export function createHandSpeed(rows: Pick<RuleRows, 'speedWindow' | 'snapOver'>) {
-  let prev: [number, number, number] | null = null; const steps: number[] = [];
+export function createHandSpeed(rows: Pick<RuleRows, 'speedWindow' | 'snapOver' | 'speedSpanS'>) {
+  // The package measured a backward difference over 3 ticks (0.05 s) because V3's clips step at 20 fps: a one-frame difference on a 60 Hz page reads 0 for two frames and 3x the speed on the third.
+  // So each speed here is the displacement over the last `speedSpanS` seconds / those seconds, and the caller passes the hand RELATIVE to its shoulder (no root motion, no lunge, in the body's own metres).
+  let t = 0; let hist: { t: number; p: [number, number, number] }[] = []; const speeds: number[] = [];
   return {
     push(x: number, y: number, z: number, dt: number) {
-      const last = prev; prev = [x, y, z];
-      if (!last || !(dt > 0)) return;   // the first sample, or a stopped clock (stills): no step, the last speeds stand
-      const v = Math.hypot(x - last[0], y - last[1], z - last[2]) / dt;
+      if (!(dt > 0)) return;   // a stopped clock (stills): no step, the last speeds stand
+      t += dt; hist.push({ t, p: [x, y, z] });
+      let k = -1; for (let i = hist.length - 2; i >= 0; i--) if (t - hist[i].t >= rows.speedSpanS - 1e-9) { k = i; break; }
+      if (k < 0) return;   // not a full span yet
+      hist = hist.slice(k);
+      const a = hist[0], span = t - a.t, v = Math.hypot(x - a.p[0], y - a.p[1], z - a.p[2]) / span;
       if (v > rows.snapOver) return;
-      steps.push(v); if (steps.length > rows.speedWindow) steps.shift();
+      speeds.push(v); if (speeds.length > rows.speedWindow) speeds.shift();
     },
-    speed(): number | null { return steps.length ? Math.max(...steps) : null; },
-    reset() { prev = null; steps.length = 0; },
+    speed(): number | null { return speeds.length ? Math.max(...speeds) : null; },
+    reset() { t = 0; hist = []; speeds.length = 0; },
   };
 }
 

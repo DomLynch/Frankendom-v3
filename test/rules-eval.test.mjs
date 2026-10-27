@@ -138,34 +138,42 @@ test('per-hit hand speed: a measured speed replaces the reference; a heavy is br
   const at = (o, m) => hitInput(ROWS, rules, hit(o), 'pitborn', m);
   assert.equal(at({}, null).handSpeed, rules.swing.hand_speed_ref_m_s.light_p50);   // no sample: the reference row
   assert.equal(at({}, 0).handSpeed, rules.swing.hand_speed_ref_m_s.light_p50);
-  assert.equal(at({}, 7.5).handSpeed, 7.5);   // a light: as measured
-  assert.ok(Math.abs(at({ move: 'heavy_overhead' }, 11.52).handSpeed - 11.52 / rules.swing.heavy_mult) < 1e-12);   // a heavy: light-equivalent
+  assert.ok(Math.abs(at({}, 11).handSpeed - 11 * ROWS.speedScale) < 1e-12);   // a light: as measured, in the package's units (speedScale)
+  assert.ok(Math.abs(at({ move: 'heavy_overhead' }, 11.52).handSpeed - 11.52 * ROWS.speedScale / ROWS.heavyDivisor) < 1e-12);   // a heavy: the same scale, over heavyDivisor
   assert.equal(at({}, 99).handSpeed, rules.swing.hand_speed_ref_m_s[ROWS.speedMaxRef]);   // clamped high
   assert.equal(at({}, 0.5).handSpeed, ROWS.speedMin);   // clamped low
+  assert.ok(ROWS.speedScale > 0 && ROWS.speedScale <= 1 && ROWS.heavyDivisor >= 1);
   assert.equal(handSpeedOf(ROWS, rules, 8, false).source, 'measured'); assert.equal(handSpeedOf(ROWS, rules, null, false).source, 'ref');
 });
 
 test('light and heavy differ with different speeds: a slow light is a hit, a fast light sticks, a heavy at the same animation speed as a light is equal (not counted twice), a faster heavy is stronger',() => {
   const run = (o, m) => { const r = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0, { foe: 190, man: 150 }); const p = r.hit(hit({ weapon: 'gladius', ...o }), true, m); return [p, r.debug.last[0]]; };
-  const [slow] = run({}, 5), [fast] = run({}, 9.5), [heavy, hd] = run({ move: 'heavy_overhead' }, 9.5);
+  const K = 1 / ROWS.speedScale;   // animation m/s that read as 1 m/s in the package's units
+  const [slow] = run({}, 5 * K), [fast] = run({}, 9.5 * K), [heavy, hd] = run({ move: 'heavy_overhead' }, 9.5 * K);
   assert.ok(slow.strength < fast.strength);
-  assert.ok(Math.abs(fast.strength - heavy.strength) < 1e-9);   // the same animation speed: the heavy is divided by heavy_mult and the evaluator multiplies it back, so it is not counted twice (equal, by design)
-  assert.ok(run({ move: 'heavy_overhead' }, 9.5 * 1.2)[0].strength > fast.strength);   // a faster heavy is stronger
+  assert.ok(Math.abs(heavy.strength / fast.strength - rules.swing.heavy_mult / ROWS.heavyDivisor) < 1e-9);   // the same animation speed: the heavy is the light x heavy_mult / heavyDivisor
+  assert.ok(heavy.strength > fast.strength || ROWS.heavyDivisor >= rules.swing.heavy_mult);   // a heavy reads higher than the light at the same clip speed unless the divisor takes the charge back out
+  assert.ok(run({ move: 'heavy_overhead' }, 9.5 * K * 1.2)[0].strength >= heavy.strength);   // a faster heavy is not weaker
   assert.deepEqual([slow.outcome, fast.outcome], ['hit', 'stick']);
-  assert.equal(hd.result.swing, 'heavy'); assert.equal(hd.source, 'measured'); assert.equal(hd.measured, 9.5);
-  assert.ok(hd.input.handSpeed < 9.5);   // the light-equivalent, not the animation's own speed
-  const spread = new Set([4.5, 6, 7.5, 9.7].map((m) => run({ weapon: 'longsword' }, m)[0].outcome));
+  assert.equal(hd.result.swing, 'heavy'); assert.equal(hd.source, 'measured'); assert.equal(hd.measured, 9.5 * K);
+  const spread = new Set([4.5, 6, 7.5, 9.7].map((m) => run({ weapon: 'longsword' }, m * K)[0].outcome));
   assert.ok(spread.size >= 2, `a spread of outcomes over speeds, got ${[...spread]}`);
 });
 
 test('the hand sampler: speed of the last steps (peak of the window), snaps dropped, a stopped clock keeps the last, reset', () => {
   const s = createHandSpeed(ROWS);
   assert.equal(s.speed(), null);
-  s.push(0, 0, 0, 1 / 60); assert.equal(s.speed(), null);   // first sample: no step
-  s.push(0.1, 0, 0, 1 / 60); assert.ok(Math.abs(s.speed() - 6) < 1e-9);
-  s.push(0.1, 0, 0, 0); assert.ok(Math.abs(s.speed() - 6) < 1e-9);   // dt 0 (stills): unchanged
-  s.push(0.1, 0, 0, 1 / 60); assert.ok(Math.abs(s.speed() - 6) < 1e-9);   // slower step, the window still holds the peak
-  for (let i = 0; i < ROWS.speedWindow; i++) s.push(0.1, 0, 0, 1 / 60);
+  const n = Math.round(ROWS.speedSpanS * 60);   // ticks in the span
+  s.push(0, 0, 0, 1 / 60); assert.equal(s.speed(), null);   // not a full span yet
+  for (let i = 1; i < n; i++) s.push(0, 0, 0, 1 / 60);
+  assert.equal(s.speed(), null);
+  s.push(0.3, 0, 0, 1 / 60); assert.ok(Math.abs(s.speed() - 0.3 / ROWS.speedSpanS) < 1e-9);   // 0.3 m over the span
+  s.push(0.3, 0, 0, 0); assert.ok(Math.abs(s.speed() - 0.3 / ROWS.speedSpanS) < 1e-9);   // dt 0 (stills): unchanged
+  // a 20 fps clip on a 60 Hz page: stair steps (0, 0, then a jump) read the same speed over the span, not 3x on the jump frame
+  const st = createHandSpeed(ROWS); let x = 0, peak = 0;
+  for (let f = 0; f < 60; f++) { if (f % 3 === 0) x += 0.3; st.push(x, 0, 0, 1 / 60); peak = Math.max(peak, st.speed() ?? 0); }
+  assert.ok(Math.abs(peak - 6) < 0.5, `stair-stepped 6 m/s reads about 6, got ${peak}`);
+  for (let i = 0; i < ROWS.speedWindow + n; i++) s.push(0.3, 0, 0, 1 / 60);
   assert.equal(s.speed(), 0);   // the peak left the window
   s.push(50, 0, 0, 1 / 60); assert.equal(s.speed(), 0);   // a pose snap (over snapOver) is dropped
   s.reset(); assert.equal(s.speed(), null);

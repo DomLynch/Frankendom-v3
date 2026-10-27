@@ -155,7 +155,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // ?rules=m4 (rules-eval.ts): `rules` is the evaluator, `down` the seconds a knockdown has left (the bones follow the ragdoll), `getUp` the seconds left of the blend back to the clip
   let rules: ReturnType<typeof createRulesEval> | undefined, down = -1, getUp = -1;
   // ?rules=m4: the attacker's (the hero's) animated hand bone, sampled each frame: the hand speed at a hit (rules-eval.ts createHandSpeed)
-  const handSpeed = createHandSpeed(RULES); let heroHand: THREE.Object3D | undefined; const handPos = new THREE.Vector3();
+  const handSpeed = createHandSpeed(RULES); let heroHand: THREE.Object3D | undefined, heroShoulder: THREE.Object3D | undefined, handScale = 1; const handPos = new THREE.Vector3(), shoulderPos = new THREE.Vector3();
   const ruleCuts: string[] = [];   // the units the evaluator cut during this fight: they come off the body when he dies (cutUnit needs the corpse)
   const lying = new Map<THREE.Object3D, THREE.Quaternion>(), lyingHips = new THREE.Vector3();
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
@@ -402,6 +402,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     attach(opponentGroup: THREE.Object3D, opponentRig: Rigged, heroRig?: Rigged) {
       group = opponentGroup; rigged = opponentRig;
       heroHand = rulesOn && heroRig ? bone(heroRig.anchor, RULES.handBone) : undefined; handSpeed.reset();
+      heroShoulder = rulesOn && heroRig ? bone(heroRig.anchor, RULES.handFrom) : undefined; handScale = (rulesOn && heroRig ? heroRig.anchor.getWorldScale(shoulderPos).x : 1) || 1;
       // the 65-rig names through the one bone map (data/rig.json via rig-bones.ts): on a 65 body the name itself, on a 106 body its Mixamo joint
       partBones = Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(opponentRig.anchor, name)!]));
       const rigId = rigOf(opponentRig.anchor), measurePath = (foe.measure as Record<string, string | undefined>)[rigId];
@@ -490,7 +491,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       gore = showGore;
       cueDelay = mode === 'dead' && rd?.state === cutRows.tap.needs ? cueDelay + dt : 0;
       updateCues();
-      if (heroHand) { heroHand.getWorldPosition(handPos); handSpeed.push(handPos.x, handPos.y, handPos.z, dt); }   // ?rules=m4: this frame's step of the hero's hand (before the hits are read)
+      if (heroHand) { heroHand.getWorldPosition(handPos); if (heroShoulder) { heroShoulder.getWorldPosition(shoulderPos); handPos.sub(shoulderPos); } handPos.multiplyScalar(1 / handScale); handSpeed.push(handPos.x, handPos.y, handPos.z, dt); }   // ?rules=m4: this frame's step of the hero's hand (before the hits are read)
       try { step(dt, events, finish, finisher); } catch (error) { disabled = true; armed = false; cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     },
   };

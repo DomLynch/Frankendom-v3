@@ -33,12 +33,14 @@ for (let n = 0; a < Number(ATT) && n < 8000; n++) {
   if (n % GAP === 0) { const m = MIX[a % MIX.length]; if (m.length === 2 && m[0] === 'KeyG') { await page.keyboard.down('KeyG'); await page.keyboard.down(m[1]); await page.keyboard.up(m[1]); await page.keyboard.up('KeyG'); } else await press(...m); a++; }
   await run(1); await keep();
 }
-await run(60); await keep();
+if (process.env.KILLSTOP) await page.keyboard.up('KeyW');   // KILLSTOP=1: stop walking so the finishing G is the overhead heavy, not a directional one
+for (let n = 0; n < Number(process.env.SETTLE ?? 60); n++) { await run(1); await keep(); }   // SETTLE ticks with no new attack (the last one lands or ends before the finishing blow)
 const rules = await page.evaluate(() => globalThis.__v3Rules ?? null);
-// kill: a kick with the foe at 1 health (a kick kill is a plain death)
+// kill: the foe at 1 health and one more blow. KILL (default KeyC, a kick: a plain death) = the keys of the finishing blow, e.g. KILL=KeyG for a heavy overhead (the killing blow's evaluator cut then stands and comes off the corpse); KILLGAP ticks between tries (default 30)
+const KILL = (process.env.KILL ?? 'KeyC').split(','), KILLGAP = Number(process.env.KILLGAP ?? 30);
 await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; f.health = 1; });
 let killed = -1;
-for (let n = 0; n < 900 && killed < 0; n++) { if (n % 30 === 0) { await page.keyboard.down('KeyC'); await page.keyboard.up('KeyC'); } await run(1); await page.evaluate(() => { const [h] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; }); if ((await read()).foeDead) killed = n; }
+for (let n = 0; n < 900 && killed < 0; n++) { if (n % KILLGAP === 0) { for (const c of KILL) await page.keyboard.down(c); for (const c of KILL.slice().reverse()) await page.keyboard.up(c); } await run(1); await page.evaluate(() => { const [h] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; }); if ((await read()).foeDead) killed = n; }
 await page.keyboard.up('KeyW');
 const rd = () => page.evaluate(() => globalThis.__ragdoll ? { ...globalThis.__ragdoll, screenOf: undefined } : null);
 for (let k = 0; k < 900 && query.includes('rules') && (await rd())?.state !== 'frozen'; k += 10) await run(10);
@@ -47,7 +49,7 @@ await run(30);
 let k = 0; for (const t of AFTER) { await run(t - k); k = t; await page.screenshot({ path: `${out}/${tag}-corpse-${t}.png` }); }
 const end = await rd(), rulesEnd = await page.evaluate(() => globalThis.__v3Rules ?? null);
 const rows = (rulesEnd?.last ?? []).map((e, i) => ({ i, tick: e.input.t, weapon: e.input.weapon, kind: e.input.kind, swing: e.input.swing, zone: e.input.zone, counter: e.input.counterHit, anim_m_s: e.measured && +e.measured.toFixed(2), used_m_s: +e.input.handSpeed.toFixed(2), source: e.source, outcome: e.result.outcome, strength: +e.result.strength.toFixed(1), part: e.result.part, cut: e.presentation.cut }));
-writeFileSync(`${out}/${tag}-report.json`, JSON.stringify({ query, attacks: a, killed, rules: rulesEnd && { hits: rulesEnd.hits, skipped: rulesEnd.skipped, byOutcome: rulesEnd.byOutcome, deferredKills: rulesEnd.deferredKills, cuts: rulesEnd.cuts, cost: rulesEnd.cost }, rows, ragdoll: end && { state: end.state, cuts: end.cuts } }, null, 2));
+writeFileSync(`${out}/${tag}-report.json`, JSON.stringify({ query, attacks: a, killed, rules: rulesEnd && { hits: rulesEnd.hits, skipped: rulesEnd.skipped, byOutcome: rulesEnd.byOutcome, deferredKills: rulesEnd.deferredKills, cuts: rulesEnd.cuts, cost: rulesEnd.cost }, rows, ragdoll: end && { state: end.state, cuts: end.cuts, cost: end.cost }, finish: await page.evaluate(() => { const f = globalThis.__v3Fight?.finish; return f ? JSON.parse(JSON.stringify(f)) : null; }) }, null, 2));
 console.log(`${tag}: attacks ${a}, kill after ${killed} ticks, ragdoll ${end?.state}, cuts ${JSON.stringify(end?.cuts ?? [])}`);
 if (rulesEnd) { console.log(`rules: hits ${rulesEnd.hits}, skipped ${rulesEnd.skipped}, byOutcome ${JSON.stringify(rulesEnd.byOutcome)}, evaluator cuts ${JSON.stringify(rulesEnd.cuts)}`); console.table(rows); }
 await browser.close();
