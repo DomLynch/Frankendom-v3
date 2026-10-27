@@ -314,7 +314,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         if (!unit || done.has(unit)) return null;
         // the push is the tap's ray times row `awayMult` (negative = toward the camera) plus the ray's sideways (up x ray) times `sideMult`, so a limb piece flies where the player can see it
         const ray3 = ray.ray.direction.clone().transformDirection(group.matrixWorld.clone().invert()), side = new THREE.Vector3(0, 1, 0).cross(ray3).normalize();
-        const direction = ray3.multiplyScalar(row.awayMult).add(side.multiplyScalar(row.sideMult));
+        const direction = ray3.multiplyScalar(row.awayMult ?? 1).add(side.multiplyScalar(row.sideMult ?? 0));   // a row missing either keeps the old push (the validator also refuses it, validate.js `finite`)
         return cutUnit(unit, 'tap', [direction.x * row.impulse, direction.y * row.impulse + row.lift, direction.z * row.impulse]);
       } catch (error) { cost.state = `tap failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
     },
