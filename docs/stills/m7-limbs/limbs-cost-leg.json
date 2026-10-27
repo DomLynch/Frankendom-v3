@@ -1,19 +1,19 @@
 {
   "ragdoll": {
     "corpses": 0,
-    "frames": 1405,
-    "totalMs": 647.8999999761581,
-    "maxMs": 4,
-    "lastMs": 0.3999999910593033,
-    "ticks": 1394,
+    "frames": 1406,
+    "totalMs": 551.5000001490116,
+    "maxMs": 3.4000000059604645,
+    "lastMs": 0.29999999701976776,
+    "ticks": 1393,
     "state": "alive",
     "rig": "106",
     "measure": "physics/bodies/minotaur-106.measure.json",
     "byMode": {
       "alive": {
-        "frames": 1405,
-        "totalMs": 647.8999999761581,
-        "maxMs": 4
+        "frames": 1406,
+        "totalMs": 551.5000001490116,
+        "maxMs": 3.4000000059604645
       }
     },
     "cuts": [],
@@ -22,10 +22,10 @@
     "pieces": []
   },
   "feel": {
-    "frames": 1405,
-    "totalMs": 163.49999998509884,
-    "maxMs": 0.6000000089406967,
-    "stumbles": 1,
+    "frames": 1406,
+    "totalMs": 88.30000030994415,
+    "maxMs": 0.7999999970197678,
+    "stumbles": 2,
     "last": {
       "strength": {},
       "share": {}
@@ -40,5 +40,5 @@
       }
     }
   ],
-  "hits": 11
+  "hits": 10
 }
