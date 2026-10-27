@@ -21,7 +21,8 @@
   "legHp": 60,
   "legSide": "left",
   "heavyMoves": ["heavy_overhead", "heavy_riposte", "heavy_counter", "critical"],
-  "killAs": "damage",
+  "killAs": "stagger",
+  "knockdownSwing": "heavy",
   "renewOnKill": true,
   "cut": {
     "about": "Strategy's ruling (b), 2026-10-27: under ?rules=m4 a KILLING blow goes to the sim's finisher rotation (ragdoll.ts: a finisher that is not the plain death sets mode 'skip'), which never asks the evaluator, so a head blow at the cut rung could not take the head. `precedence` says who wins for a killing blow in a zone (head, torso, legs): 'evaluator' = the evaluator judges that killing blow first and, if it cuts, the death is the plain ragdoll death carrying the evaluator's cut (the head leaves with the kill; the scene and the death cue play the plain death, ragdollFinisher(events)); 'finisher' (the default for a zone with no entry, and today's behaviour exactly) = the rotation plays as before. Only a HEAD-zone killing blow is 'evaluator'; torso and legs keep the rotation. A blow below the cut rung is not a cut, so it keeps the rotation whatever this says. Only ?rules=m4 reads it; the default fight is unchanged.",
