@@ -108,13 +108,14 @@ test('knockdown: light leg blows add up to the fall (60 of the counter); it carr
 
 test('a kill is the sim\'s: while it lives the evaluator\'s kill is a knockdown, counted, and the fighter renewed; on the killing blow it is the kill', () => {
   const alive = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0);
-  const p = alive.hit(hit({ location: 'head', move: 'heavy_overhead' }), true);   // head budget 20: gone in one heavy
+  assert.equal(createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ location: 'head', move: 'heavy_overhead' }), true).outcome, 'stick');   // head budget 40: a gladius heavy (31 damage) no longer takes it in one blow
+  const p = alive.hit(hit({ weapon: 'longsword', location: 'head', move: 'heavy_overhead' }), true);   // a longsword heavy still does (a cut-rung blow removes the whole part)
   assert.equal(p.outcome, 'kill'); assert.equal(p.deferredKill, true); assert.equal(p.action, 'knockdown'); assert.equal(p.cause, ROWS.killAs);
   assert.equal(alive.debug.deferredKills, 1); assert.equal(alive.debug.renewals, 1);
   const torso = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0), t = torso.hit(hit({ weapon: 'longsword', move: 'heavy_overhead' }), true);   // a torso cut is a kill: neither happened
   assert.deepEqual([t.outcome, t.deferredKill, t.cut, torso.debug.cuts.length], ['kill', true, null, 0]);
-  assert.equal(alive.hit(hit({ location: 'head', move: 'heavy_overhead', tick: 1200 }), true).outcome, 'kill');   // whole again: the head can be struck again
-  const dead = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ location: 'head', move: 'heavy_overhead' }), false);
+  assert.equal(alive.hit(hit({ weapon: 'longsword', location: 'head', move: 'heavy_overhead', tick: 1200 }), true).outcome, 'kill');   // whole again: the head can be struck again
+  const dead = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location: 'head', move: 'heavy_overhead' }), false);
   assert.equal(dead.deferredKill, false);
 });
 
@@ -144,10 +145,12 @@ test('per-hit hand speed: a measured speed replaces the reference; a heavy is br
   assert.equal(handSpeedOf(ROWS, rules, 8, false).source, 'measured'); assert.equal(handSpeedOf(ROWS, rules, null, false).source, 'ref');
 });
 
-test('light and heavy differ with different speeds: a slow light is a hit, a fast light sticks, a heavy is stronger than the same animation speed as a light', () => {
+test('light and heavy differ with different speeds: a slow light is a hit, a fast light sticks, a heavy at the same animation speed as a light is equal (not counted twice), a faster heavy is stronger',() => {
   const run = (o, m) => { const r = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0, { foe: 190, man: 150 }); const p = r.hit(hit({ weapon: 'gladius', ...o }), true, m); return [p, r.debug.last[0]]; };
   const [slow] = run({}, 5), [fast] = run({}, 9.5), [heavy, hd] = run({ move: 'heavy_overhead' }, 9.5);
-  assert.ok(slow.strength < fast.strength && fast.strength < heavy.strength);
+  assert.ok(slow.strength < fast.strength);
+  assert.ok(Math.abs(fast.strength - heavy.strength) < 1e-9);   // the same animation speed: the heavy is divided by heavy_mult and the evaluator multiplies it back, so it is not counted twice (equal, by design)
+  assert.ok(run({ move: 'heavy_overhead' }, 9.5 * 1.2)[0].strength > fast.strength);   // a faster heavy is stronger
   assert.deepEqual([slow.outcome, fast.outcome], ['hit', 'stick']);
   assert.equal(hd.result.swing, 'heavy'); assert.equal(hd.source, 'measured'); assert.equal(hd.measured, 9.5);
   assert.ok(hd.input.handSpeed < 9.5);   // the light-equivalent, not the animation's own speed
