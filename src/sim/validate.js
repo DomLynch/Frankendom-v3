@@ -22,7 +22,7 @@ export const SCHEMA = {
   // The zone loop's roam rows and way-back flag (src/fight/zone-loop.ts validateLoop checks the values); spawns, respawnSeconds and the hero's respawn are the zone row's
   'respawn': { keys: ['about', 'flag', 'postKill', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres', 'minSpacing', 'pitScale'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], limits: ['about', 'delaySeconds', 'count', 'reachMetres', 'fallSeconds', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale'] } },
   // What scripts/build.mjs never ships (106 only: the 65 bodies, kits and 65-keyed clip JSONs; test/rig-bones.test.mjs)
-  'build': { keys: ['about', 'notShipped'] },
+  'build': { keys: ['about', 'clipDecimals', 'firstVisitBytes', 'notShipped'] },
   // The presence service and its page client (server/presence/, src/presence/): V1's presence rule rows (id, value, unit); src/presence/rows.ts also checks every rule the code reads by name exists
   'presence': { keys: ['about', 'query', 'path', 'host', 'protocol', 'poseGlobal', 'frame', 'spawn', 'spawnAbout', 'rules'], rows: { rules: ['id', 'value', 'unit'] }, maps: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] }, finite: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] } },
   'sound': { keys: ['about', 'keep', 'statusMs', 'zone'], maps: { keep: ['about', 'samples', 'rate', 'volume'] } },
@@ -94,6 +94,8 @@ export function validateFile(name, json) {
     const obj = path.split('.').reduce((o, p) => o?.[p], json);
     for (const k of keys) if (!Number.isFinite(obj?.[k])) errors.push(`${name}.${path}.${k}: must be a finite number`);
   }
+  if (name === 'build' && !(Number.isInteger(json.clipDecimals) && json.clipDecimals >= 3 && json.clipDecimals <= 8)) errors.push('build.clipDecimals: must be an integer 3 to 8 (fewer than 3 decimals would be visible on positions in metres)');
+  if (name === 'build' && !(Number.isInteger(json.firstVisitBytes) && json.firstVisitBytes > 0)) errors.push('build.firstVisitBytes: must be a positive integer (bytes on the wire at 375)');
   if (name === 'rules') {   // the hand-speed rows (rules-eval.ts handSpeedOf): finite, scale in (0, 1], divisor at least 1, span and window positive (an absent or bad one would reach the page as NaN)
     const num = (k, ok, want) => { if (!Number.isFinite(json[k]) || !ok(json[k])) errors.push(`${name}.${k}: must be ${want}`); };
     num('speedScale', (v) => v > 0 && v <= 1, 'a finite number in (0, 1]'); num('heavyDivisor', (v) => v >= 1, 'a finite number >= 1');
