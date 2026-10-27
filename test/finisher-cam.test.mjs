@@ -23,7 +23,7 @@ test('the flag: on by default, ?finishercam=v1 reverts', () => {
 test('the rows are sound and every id is a real finisher', () => {
   assert.deepEqual(cutCamProblems(ROWS), []);
   const ids = new Set(DEFS.map((f) => f.id));
-  for (const id of [...SIX, 'hamstrung']) assert.ok(ROWS[id], id);
+  assert.deepEqual(Object.keys(ROWS).sort(), [...SIX].sort(), 'one row per finisher the ragdoll cuts');
   for (const id of Object.keys(ROWS)) assert.ok(ids.has(id), `${id} is not in finisher-defs.json`);
   assert.ok(cutCamProblems({ x: { ...ROWS.opened, over: 0 } }).length > 0);
   assert.ok(cutCamProblems({ x: { ...ROWS.opened, from: 0.9, over: 0.3 } }).length > 0);
