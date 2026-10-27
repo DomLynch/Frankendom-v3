@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { createCameraRig, setFreeCamera, setArenaClamp } from '../src/fight/camera.ts';
-import { freeCameraFor, handsOver, stepShare, swing, validateFreeCamera, virtualFoe, wantsFreeCamera, yawBehind } from '../src/fight/free-camera.ts';
+import { freeCameraFor, handsOver, stepShare, swingAround, validateFreeCamera, virtualFoe, wantsFreeCamera, yawBehind } from '../src/fight/free-camera.ts';
 import { validateFile } from '../src/sim/validate.js';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -75,9 +75,9 @@ test('the pure pieces: the share runs over the row\'s seconds and snaps on the f
   assert.ok(Math.abs(yawBehind(0) - Math.PI) < 1e-9 || Math.abs(yawBehind(0) + Math.PI) < 1e-9);
   const from = { x: 6, y: 3, z: 0 }, to = { x: -6, y: 3, z: 0 }, about = { x: 0, z: 0 };   // the far side of the hero: a straight line goes through him
   let nearest = Infinity;
-  for (let k = 0; k <= 1.0001; k += 0.05) { const p = swing(from, to, about, k); nearest = Math.min(nearest, Math.hypot(p.x - about.x, p.z - about.z)); }
+  for (let k = 0; k <= 1.0001; k += 0.05) { const p = swingAround(from, to, about, k); nearest = Math.min(nearest, Math.hypot(p.x - about.x, p.z - about.z)); }
   assert.ok(nearest > 5.9, `the swing keeps its radius round the hero (nearest ${nearest.toFixed(2)} m)`);
-  const mid = swing(from, to, { x: 0, z: 0 }, 1); assert.ok(Math.abs(mid.x - to.x) < 1e-9 && Math.abs(mid.z - to.z) < 1e-9, 'it arrives');
+  const mid = swingAround(from, to, { x: 0, z: 0 }, 1); assert.ok(Math.abs(mid.x - to.x) < 1e-9 && Math.abs(mid.z - to.z) < 1e-9, 'it arrives');
 });
 
 const state = (x, z) => ({ x, z, heading: 0 });

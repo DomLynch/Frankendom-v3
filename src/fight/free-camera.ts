@@ -56,7 +56,7 @@ export const stepShare = (share: number, target: boolean, dt: number, seconds: n
 export const virtualFoe = (hero: { x: number; z: number }, yaw: number, gap: number): { x: number; z: number } => ({ x: hero.x - Math.sin(yaw) * gap, z: hero.z - Math.cos(yaw) * gap });
 
 /** `from` moved `k` (0..1) toward `to`, on the arc around `about` (angle and radius, then height) so a swing from one side of the hero to the other goes round him, never through him. */
-export function swing(from: { x: number; y: number; z: number }, to: { x: number; y: number; z: number }, about: { x: number; z: number }, k: number): { x: number; y: number; z: number } {
+export function swingAround(from: { x: number; y: number; z: number }, to: { x: number; y: number; z: number }, about: { x: number; z: number }, k: number): { x: number; y: number; z: number } {
   const fx = from.x - about.x, fz = from.z - about.z, tx = to.x - about.x, tz = to.z - about.z, fr = Math.hypot(fx, fz), tr = Math.hypot(tx, tz);
   if (fr < 1e-6 || tr < 1e-6) return { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k, z: from.z + (to.z - from.z) * k };
   const a = Math.atan2(fx, fz) + wrapAngle(Math.atan2(tx, tz) - Math.atan2(fx, fz)) * k, r = fr + (tr - fr) * k;

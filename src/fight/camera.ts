@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import type { Shove } from './camera-kick.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
-import { stepShare, swing, virtualFoe, yawBehind, type FreeCameraRows } from './free-camera.ts';
+import { stepShare, swingAround, virtualFoe, yawBehind, type FreeCameraRows } from './free-camera.ts';
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
@@ -409,7 +409,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       camera.position.sub(swayApplied); swayApplied.set(0, 0, 0);   // and the tumble's shift
       shoved = 0;
       if (swingLeft > 0 && started && FREE_CAM) {   // the hand-over between the lock / finisher camera and the free one (data/respawn.json freeCamera.handOverSeconds): round him, not through him
-        const k = 1 - Math.exp(-dt * 3 / FREE_CAM.handOverSeconds), at = swing(camera.position, desired, state, k);
+        const k = 1 - Math.exp(-dt * 3 / FREE_CAM.handOverSeconds), at = swingAround(camera.position, desired, state, k);
         camera.position.set(at.x, at.y, at.z);
         aim.lerp(look, k);
       } else {
