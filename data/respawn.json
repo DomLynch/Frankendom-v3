@@ -17,6 +17,17 @@
     "stickEndsCeremony": true,
     "fight": "pair"
   },
+  "look": {
+    "about": "Dom 2026-10-27, on his phone: 'we need the right thumb to be able to look left/right, rotate, while the left thumb is walking and moving, outside of combat.' Classic mobile MMO hands: the left stick walks him (relative to the camera, so the stick follows the view as it turns) and a one-finger drag on the empty right-hand part of the screen turns the follow camera round him. Only while the camera is free (nobody is fighting him: before an aggro and after a kill); in a fight the drag does nothing and a drag in progress is dropped when a fight starts. sensitivityDegPerPx: degrees of turn per pixel of drag (0.3 = the old hard-coded drag, 0.005 rad a pixel). deadzonePx: a drag shorter than this is a tap and turns nothing (a tap on a corpse still cuts it); the turn counts from where the dead zone ends. minXShare: a TOUCH must start right of this share of the screen width, the left thumb's side belongs to the stick (the stick and the buttons are their own controls and never reach the look); a mouse or pen may start anywhere. inertiaSeconds: after the finger lifts the view glides on and decays over this time constant, 0 = stops dead; flingWindowMs: a finger that rested longer than this before lifting does not glide. ?look=off turns the new look off and keeps the plain one-finger drag the free camera shipped with. The R key / recenter button still stands the camera behind him. Presentation only: no sim, digest or Gate 0 effect.",
+    "on": true,
+    "query": "look",
+    "off": "off",
+    "sensitivityDegPerPx": 0.3,
+    "deadzonePx": 6,
+    "minXShare": 0.4,
+    "inertiaSeconds": 0.25,
+    "flingWindowMs": 80
+  },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
     "minDistance": 3.25
@@ -77,6 +88,11 @@
     "cameraMetres": [0, 20],
     "freeCamGapMetres": [1, 10],
     "handOverSeconds": [0.2, 5],
+    "lookSensitivityDegPerPx": [0.05, 1],
+    "lookDeadzonePx": [0, 40],
+    "lookMinXShare": [0, 0.9],
+    "lookInertiaSeconds": [0, 1],
+    "lookFlingWindowMs": [0, 500],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],
     "edgeMetres": [0, 4],

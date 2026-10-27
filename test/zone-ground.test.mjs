@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SCHEMA, validateFile } from '../src/sim/validate.js';
-import { GROUND, anchorInto, checkGround, fogHidesAt, followSnap, groundFor, groundOn, groundSizing } from '../src/zone/ground.ts';
+import { GROUND, anchorInto, checkGround, fogHidesAt, followSnap, groundFor, groundOn, groundSizing, sandOn, depthPushFor } from '../src/zone/ground.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -99,4 +99,24 @@ test('the wiring: only the zone, behind the flag, builds the open ground; ?postk
   assert.match(draw, /group\.getObjectByName\('floor'\)/, 'the same floor mesh and material, only wider');
   assert.doesNotMatch(draw, /TextureLoader|new THREE\.Texture|MeshStandardMaterial|MeshBasicMaterial/, 'no new texture or material');
   assert.doesNotMatch(stage, /boundary|RingGeometry|wall/i, 'the stage draws no pit wall, rim or ring: nothing to hide in the zone');
+});
+
+test('sand quality: the floor depth push is a validated row, ?sand=v1 reverts it, the zone alone applies it', () => {
+  assert.deepEqual(validateFile('zone-ground', ROWS), []);
+  assert.deepEqual(ROWS.floorDepthPush.flag, { query: 'sand', off: 'v1' });
+  assert.deepEqual(depthPushFor(GROUND, true), { factor: ROWS.floorDepthPush.factor, units: ROWS.floorDepthPush.units });
+  assert.equal(depthPushFor(GROUND, false), null);
+  assert.equal(sandOn(''), true);
+  assert.equal(sandOn('?sand=v1'), false);
+  assert.equal(sandOn('?ground=v1&sand=v1'), false);
+  assert.equal(sandOn('?sand=v10'), true);
+  assert.equal(groundSizing(GROUND, 1.3, STAGE, false).depthPush, null);
+  assert.deepEqual(groundSizing(GROUND, 1.3).depthPush, { factor: 1, units: 4 });
+  const bad = (patch, re) => assert.match(checkGround(clone(patch), d).join('\n'), re);
+  bad((r) => { r.floorDepthPush.units = 500; }, /floorDepthPush\.units 500 is not in/);
+  bad((r) => { r.floorDepthPush.factor = NaN; }, /floorDepthPush\.factor NaN/);
+  const main = src('../src/client/main.ts'), draw = src('../src/zone/ground-draw.ts'), stage = src('../src/arena-stage.ts'), client = src('../src/client/stage.js');
+  assert.match(main, /groundFor\(WORLD\.pitScale, undefined, sandOn\(search\)\)/);
+  assert.match(draw, /if \(floor && s\.depthPush\) Object\.assign\(floor\.material as THREE\.Material, \{ polygonOffset: true, polygonOffsetFactor: s\.depthPush\.factor, polygonOffsetUnits: s\.depthPush\.units \}\)/);
+  assert.doesNotMatch(stage + client, /polygonOffset/, 'the pit floor (?ground=v1, ?postkill=v1) is untouched');
 });

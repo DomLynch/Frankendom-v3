@@ -6,15 +6,24 @@ import STAGE from '../../data/stage.json' with { type: 'json' };
 export type GroundRows = {
   flag: { query: string; off: string }; groundRadiusMetres: number; gridRadiusMetres: number; edgeVisibility: number; cameraFarMetres: number; cameraOffsetMetres: number;
   groundFollow: { on: boolean; snapMetres: number };
-  limits: { groundRadiusMetres: [number, number]; gridRadiusMetres: [number, number]; edgeVisibility: [number, number]; cameraFarMetres: [number, number]; cameraOffsetMetres: [number, number]; snapMetres: [number, number] };
+  floorDepthPush: { flag: { query: string; off: string }; factor: number; units: number };
+  limits: { groundRadiusMetres: [number, number]; gridRadiusMetres: [number, number]; edgeVisibility: [number, number]; cameraFarMetres: [number, number]; cameraOffsetMetres: [number, number]; snapMetres: [number, number]; depthFactor: [number, number]; depthUnits: [number, number] };
 };
+/** The floor's depth push (three.js polygonOffset), so the grid on the floor wins the depth test out to the far plane; null = none (?sand=v1). */
+export type DepthPush = { factor: number; units: number } | null;
 /** Sizes in the floor group's own units (the group is scaled with the start area, world.pitScale), what the drawing needs; `snap`: world metres the follow moves in (0 = it does not follow). */
-export type Sizing = { floorSide: number; gridSize: number; gridDivisions: number; far: number; snap: number };
+export type Sizing = { floorSide: number; gridSize: number; gridDivisions: number; far: number; snap: number; depthPush: DepthPush };
 
 export const GROUND = ROWS as unknown as GroundRows;
 
 /** The `?ground=` link: the old floor exactly as before when it says v1. */
 export const groundOn = (search: string, rows: GroundRows = GROUND): boolean => !new RegExp(`[?&]${rows.flag.query}=${rows.flag.off}(&|#|$)`).test(search);
+
+/** The `?sand=` link: the zone's floor without the depth push when it says v1. */
+export const sandOn = (search: string, rows: GroundRows = GROUND): boolean => !new RegExp(`[?&]${rows.floorDepthPush.flag.query}=${rows.floorDepthPush.flag.off}(&|#|$)`).test(search);
+
+/** The depth push for the floor: the rows' values, or null when the link reverts it. */
+export const depthPushFor = (rows: GroundRows, on: boolean): DepthPush => (on ? { factor: rows.floorDepthPush.factor, units: rows.floorDepthPush.units } : null);
 
 /** Metres from the camera at which exponential-squared fog (density `d`) shows only `visibility` of a surface. */
 export const fogHidesAt = (density: number, visibility: number): number => Math.sqrt(-Math.log(visibility)) / density;
@@ -33,6 +42,9 @@ export function checkGround(rows: GroundRows, density: number = STAGE.duel.fogDe
   const f = rows.groundFollow, [slo, shi] = rows.limits.snapMetres;
   if (typeof f?.on !== 'boolean') e.push(new Error('zone-ground.groundFollow.on must be true or false').message);
   if (!Number.isFinite(f?.snapMetres) || f.snapMetres < slo || f.snapMetres > shi) e.push(new Error(`zone-ground.groundFollow.snapMetres ${f?.snapMetres} is not in ${slo}..${shi}`).message);
+  const p = rows.floorDepthPush, [flo, fhi] = rows.limits.depthFactor, [ulo, uhi] = rows.limits.depthUnits;
+  if (!Number.isFinite(p?.factor) || p.factor < flo || p.factor > fhi) e.push(new Error(`zone-ground.floorDepthPush.factor ${p?.factor} is not in ${flo}..${fhi}`).message);
+  if (!Number.isFinite(p?.units) || p.units < ulo || p.units > uhi) e.push(new Error(`zone-ground.floorDepthPush.units ${p?.units} is not in ${ulo}..${uhi}`).message);
   if (!(density > 0)) e.push(new Error(`stage duel.fogDensity ${density} must be above 0`).message);
   if (e.length) return e;
   if (rows.gridRadiusMetres > rows.groundRadiusMetres) e.push(new Error('zone-ground.gridRadiusMetres is beyond the floor').message);
@@ -62,14 +74,14 @@ export const anchorInto = (out: { x: number; z: number }, x: number, z: number, 
 };
 
 /** The floor's sizes in the group's units: `scale` is the group's scale (world.pitScale); the grid keeps the stage's own cell, so it joins the old grid line for line. */
-export function groundSizing(rows: GroundRows, scale: number, stage = STAGE): Sizing {
+export function groundSizing(rows: GroundRows, scale: number, stage = STAGE, sand = true): Sizing {
   const cell = stage.grid.size / stage.grid.divisions, cells = Math.ceil(rows.gridRadiusMetres / scale / cell), reach = rows.groundRadiusMetres / scale;
-  return { floorSide: Math.max(stage.ground.size, reach + reach), gridSize: (cells + cells) * cell, gridDivisions: cells + cells, far: rows.cameraFarMetres, snap: followSnap(rows, scale, stage) };
+  return { floorSide: Math.max(stage.ground.size, reach + reach), gridSize: (cells + cells) * cell, gridDivisions: cells + cells, far: rows.cameraFarMetres, snap: followSnap(rows, scale, stage), depthPush: depthPushFor(rows, sand) };
 }
 
 /** The page's one read: the checked sizing for the zone's scale (and the walking reach, when the rows have one). Throws on a bad row. */
-export function groundFor(scale: number, reach?: number): Sizing {
+export function groundFor(scale: number, reach?: number, sand = true): Sizing {
   const bad = checkGround(GROUND, STAGE.duel.fogDensity, reach);
   if (bad.length) throw new Error(bad.join('; '));
-  return groundSizing(GROUND, scale);
+  return groundSizing(GROUND, scale, STAGE, sand);
 }
