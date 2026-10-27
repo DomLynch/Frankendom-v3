@@ -1,0 +1,343 @@
+{
+ "base": "http://localhost:38782",
+ "seed": 731,
+ "counterForced": true,
+ "zoneForced": null,
+ "gap": 90,
+ "ready": {
+  "tick": 373,
+  "foe": "ready",
+  "rd": "alive",
+  "down": 0,
+  "simHealth": 137,
+  "head": 40,
+  "headMax": 40,
+  "torso": 24,
+  "torsoMax": 24,
+  "ev": null
+ },
+ "hits": [
+  {
+   "hit": 0,
+   "tick": 577,
+   "location": "torso",
+   "counterFlag": true,
+   "ev": {
+    "zone": "torso",
+    "swing": "light",
+    "counterHit": true,
+    "out": "stick",
+    "str": 28.7,
+    "kd": false,
+    "events": [
+     "light_floor"
+    ],
+    "act": "stagger",
+    "cause": "damage",
+    "deferredKill": false
+   },
+   "ragdollFell": false,
+   "t0": {
+    "tick": 577,
+    "foe": "ready",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 134,
+    "head": 40,
+    "headMax": 40,
+    "torso": 5.37,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "stick",
+     "str": 28.7,
+     "kd": false,
+     "events": [
+      "light_floor"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   },
+   "t12": {
+    "tick": 590,
+    "foe": "ready",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 134,
+    "head": 40,
+    "headMax": 40,
+    "torso": 5.37,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "stick",
+     "str": 28.7,
+     "kd": false,
+     "events": [
+      "light_floor"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   },
+   "t30": {
+    "tick": 601,
+    "foe": "ready",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 134,
+    "head": 40,
+    "headMax": 40,
+    "torso": 5.37,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "stick",
+     "str": 28.7,
+     "kd": false,
+     "events": [
+      "light_floor"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   }
+  },
+  {
+   "hit": 1,
+   "tick": 663,
+   "location": "torso",
+   "counterFlag": true,
+   "ev": {
+    "zone": "torso",
+    "swing": "light",
+    "counterHit": true,
+    "out": "stick",
+    "str": 32.4,
+    "kd": false,
+    "events": [
+     "light_floor",
+     "heavy_kill_floor"
+    ],
+    "act": "stagger",
+    "cause": "damage",
+    "deferredKill": false
+   },
+   "ragdollFell": false,
+   "t0": {
+    "tick": 663,
+    "foe": "guard",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 131,
+    "head": 40,
+    "headMax": 40,
+    "torso": 2.4,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "stick",
+     "str": 32.4,
+     "kd": false,
+     "events": [
+      "light_floor",
+      "heavy_kill_floor"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   },
+   "t12": {
+    "tick": 675,
+    "foe": "guard",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 131,
+    "head": 40,
+    "headMax": 40,
+    "torso": 2.4,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "stick",
+     "str": 32.4,
+     "kd": false,
+     "events": [
+      "light_floor",
+      "heavy_kill_floor"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   },
+   "t30": {
+    "tick": 693,
+    "foe": "guard",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 131,
+    "head": 40,
+    "headMax": 40,
+    "torso": 2.4,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "stick",
+     "str": 32.4,
+     "kd": false,
+     "events": [
+      "light_floor",
+      "heavy_kill_floor"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   }
+  },
+  {
+   "hit": 2,
+   "tick": 938,
+   "location": "torso",
+   "counterFlag": true,
+   "ev": {
+    "zone": "torso",
+    "swing": "light",
+    "counterHit": true,
+    "out": "knockdown",
+    "str": 32.5,
+    "kd": true,
+    "events": [
+     "heavy_kill_floor",
+     "knockdown"
+    ],
+    "act": "stagger",
+    "cause": "damage",
+    "deferredKill": false
+   },
+   "ragdollFell": false,
+   "t0": {
+    "tick": 938,
+    "foe": "attack",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 127,
+    "head": 40,
+    "headMax": 40,
+    "torso": 2.4,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "knockdown",
+     "str": 32.5,
+     "kd": true,
+     "events": [
+      "heavy_kill_floor",
+      "knockdown"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   },
+   "t12": {
+    "tick": 950,
+    "foe": "attack",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 127,
+    "head": 40,
+    "headMax": 40,
+    "torso": 2.4,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "knockdown",
+     "str": 32.5,
+     "kd": true,
+     "events": [
+      "heavy_kill_floor",
+      "knockdown"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   },
+   "t30": {
+    "tick": 969,
+    "foe": "attack",
+    "rd": "stagger",
+    "down": 0,
+    "simHealth": 127,
+    "head": 40,
+    "headMax": 40,
+    "torso": 2.4,
+    "torsoMax": 24,
+    "ev": {
+     "zone": "torso",
+     "swing": "light",
+     "counterHit": true,
+     "out": "knockdown",
+     "str": 32.5,
+     "kd": true,
+     "events": [
+      "heavy_kill_floor",
+      "knockdown"
+     ],
+     "act": "stagger",
+     "cause": "damage",
+     "deferredKill": false
+    }
+   }
+  }
+ ],
+ "final": {
+  "tick": 1009,
+  "foe": "ready",
+  "rd": "alive",
+  "down": 0,
+  "simHealth": 127,
+  "head": 40,
+  "headMax": 40,
+  "torso": 2.4,
+  "torsoMax": 24,
+  "ev": {
+   "zone": "torso",
+   "swing": "light",
+   "counterHit": true,
+   "out": "knockdown",
+   "str": 32.5,
+   "kd": true,
+   "events": [
+    "heavy_kill_floor",
+    "knockdown"
+   ],
+   "act": "stagger",
+   "cause": "damage",
+   "deferredKill": false
+  }
+ }
+}
