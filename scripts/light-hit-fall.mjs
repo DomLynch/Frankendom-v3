@@ -43,7 +43,8 @@ for (let a = 0; a < Number(N); a++) {
     if (baseHy !== null && s.hy !== null) maxdrop = Math.max(maxdrop, s.hy - baseHy);
     if (s.down) states.add('SIMDOWN');
   }
-  const lastR = await page.evaluate(() => (globalThis.__v3Rules?.last ?? []).map((e) => `${e.input.swing}@${e.input.handSpeed.toFixed(1)}m/s ${e.input.zone}:${e.result.outcome} dmg${e.result.damage} ${e.result.part}->${e.result.partHpAfter} act=${e.presentation.action}${e.presentation.deferredKill ? '(deferredKill)' : ''}`));
+  if (process.env.STILL && a === Number(process.env.STILL_AT ?? 9)) await page.screenshot({ path: process.env.STILL });   // STILL=<png>: the picture after swing STILL_AT (default the 10th)
+  const lastR =await page.evaluate(() => (globalThis.__v3Rules?.last ?? []).map((e) => `${e.input.swing}@${e.input.handSpeed.toFixed(1)}m/s ${e.input.zone}:${e.result.outcome} dmg${e.result.damage} ${e.result.part}->${e.result.partHpAfter} act=${e.presentation.action}${e.presentation.deferredKill ? '(deferredKill)' : ''}`));
   const ro = lastR.slice(seen); seen = lastR.length;
   res.push({ a, ro: ro.join(' ; '), states: [...states].join('|'), maxdrop, ev: evs.filter((e) => /Hit|Stagger|Knock|Parried|Block|Guard|Posture|Exhaust/.test(e)).join(' ') });
 }
