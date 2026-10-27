@@ -86,7 +86,7 @@ async function one(query) {
 const all = [];
 for (const query of QUERIES) {
   const runs = [];
-  for (let i = 0; i < RUNS; i++) { const r = await one(query).catch((e) => { console.error(`run ${i + 1} ${query}: ${e.message.split('\n')[0]}`); return null; }); if (!r) continue; runs.push(r); console.log(`run ${i + 1}/${RUNS} ${query || 'default'} [${TAG}] n=${r.n} avg ${r.avgMs} median ${r.medianMs} p95 ${r.p95Ms} p99 ${r.p99Ms} max ${r.maxMs} ms; corpses ${r.corpses}; load ${r.loadBefore}/${r.cores}`); }
+  for (let i = 0; i < RUNS; i++) { const r = await one(query).catch((e) => { console.error(`run ${i + 1} ${query}: ${e.message.split('\n')[0]}`); return null; }); if (!r) continue; runs.push(r); console.log(`run ${i + 1}/${RUNS} ${query || 'default'} [${TAG}] n=${r.n} avg ${r.avgMs} median ${r.medianMs} p95 ${r.p95Ms} p99 ${r.p99Ms} max ${r.maxMs} ms; corpses ${r.corpses}; load ${r.loadBefore}/${r.cores}; JS ms/frame ${Object.entries(r.ragdoll).map(([k, m]) => `ragdoll.${k} ${m?.avgMs} (max ${m?.maxMs}, ${m?.frames}f)`).join(', ')}${r.clashModule ? `; clash ${r.clashModule.avgMs}` : ''}${r.limbsModule ? `; limbs ${r.limbsModule.avgMs}` : ''}; clashes ${r.clashes ?? 0}, hitreact plans ${r.hitreactPlans}`); }
   if (!runs.length) continue;
   const best = runs.reduce((a, b) => (b.p95Ms < a.p95Ms ? b : a));   // best of three by p95, as the M8 row
   all.push({ query, best, runs });
