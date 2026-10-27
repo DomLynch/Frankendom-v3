@@ -11,20 +11,20 @@
     }
   ],
   "feel": {
-    "frames": 1027,
+    "frames": 1009,
     "totalMs": 0,
     "maxMs": 0,
     "stumbles": 1,
     "last": {
       "strength": {
-        "thighLeft": 0.10271763617978227,
-        "shinLeft": 0.0861741089438258,
-        "footLeft": 0.16889174512360805,
-        "toeLeft": 0.2516093813033904,
-        "thighRight": 1,
-        "shinRight": 1,
-        "footRight": 1,
-        "toeRight": 1
+        "thighLeft": 0.12,
+        "shinLeft": 0.09999999999999998,
+        "footLeft": 0.19999999999999996,
+        "toeLeft": 0.30000000000000004,
+        "thighRight": 0.508320398932691,
+        "shinRight": 0.508320398932691,
+        "footRight": 0.508320398932691,
+        "toeRight": 0.508320398932691
       },
       "share": {
         "thighLeft": 0.9,
@@ -94,13 +94,13 @@
       "state": "alive",
       "foePhase": "attack",
       "hits": 1,
-      "thighMotor": 0.09616430896131077,
+      "thighMotor": 0.09679133974894413,
       "footL": [
-        236.1,
-        392.7
+        236.2,
+        392.6
       ],
       "shinL": [
-        231,
+        231.1,
         367.6
       ],
       "footR": [
@@ -113,18 +113,18 @@
       "state": "alive",
       "foePhase": "attack",
       "hits": 1,
-      "thighMotor": 0.1198634586692899,
+      "thighMotor": 0.06281774868768183,
       "footL": [
-        240.2,
-        397.1
+        239.7,
+        398.7
       ],
       "shinL": [
         232.2,
-        378
+        379.7
       ],
       "footR": [
-        200.8,
-        385.2
+        198.4,
+        385
       ]
     },
     {
@@ -132,18 +132,18 @@
       "state": "alive",
       "foePhase": "attack",
       "hits": 1,
-      "thighMotor": 0.12,
+      "thighMotor": 0.03231170861710424,
       "footL": [
-        239.1,
-        397
+        238.7,
+        402.2
       ],
       "shinL": [
-        229.6,
-        382.4
+        230.4,
+        390.8
       ],
       "footR": [
-        200.2,
-        394.7
+        196.3,
+        402.9
       ]
     },
     {
@@ -151,75 +151,37 @@
       "state": "alive",
       "foePhase": "attack",
       "hits": 1,
-      "thighMotor": 0.12,
+      "thighMotor": 0.02000136602899101,
       "footL": [
-        237.5,
-        358.2
+        238.3,
+        412.9
       ],
       "shinL": [
-        226,
-        346.6
-      ],
-      "footR": [
-        200,
-        370.1
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "attack",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        236.4,
-        377.7
-      ],
-      "shinL": [
-        222.4,
-        361.7
-      ],
-      "footR": [
-        199.7,
-        370.2
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        236.5,
-        375.1
-      ],
-      "shinL": [
-        219,
-        361.3
+        225.5,
+        396.7
       ],
       "footR": [
         195.2,
-        373.8
+        423.2
       ]
     },
     {
       "n": 0,
       "state": "alive",
-      "foePhase": "ready",
+      "foePhase": "attack",
       "hits": 1,
-      "thighMotor": 0.12,
+      "thighMotor": 0.040461432468424235,
       "footL": [
-        235.7,
-        375.9
+        237.7,
+        356.5
       ],
       "shinL": [
-        216.6,
-        361.4
+        205.1,
+        349.3
       ],
       "footR": [
-        190,
-        383
+        195.9,
+        371.4
       ]
     },
     {
@@ -227,18 +189,18 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 1,
-      "thighMotor": 0.12,
+      "thighMotor": 0.07387689564518207,
       "footL": [
-        233.3,
-        379.3
+        226.3,
+        354.2
       ],
       "shinL": [
-        215.1,
-        363.4
+        195,
+        337.9
       ],
       "footR": [
-        191.4,
-        394.4
+        192.8,
+        374.5
       ]
     },
     {
@@ -246,18 +208,37 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 1,
-      "thighMotor": 0.12,
+      "thighMotor": 0.10542061516515976,
       "footL": [
-        231.1,
-        383.1
+        218.2,
+        359.1
       ],
       "shinL": [
-        215.1,
-        365.8
+        190.3,
+        337.7
       ],
       "footR": [
-        194.7,
-        397.3
+        189.1,
+        383.2
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.1198634586692899,
+      "footL": [
+        214.3,
+        368.8
+      ],
+      "shinL": [
+        191.6,
+        341.3
+      ],
+      "footR": [
+        190.4,
+        392.2
       ]
     },
     {
@@ -267,12 +248,31 @@
       "hits": 1,
       "thighMotor": 0.12,
       "footL": [
-        229,
-        387.1
+        208.6,
+        379.2
       ],
       "shinL": [
-        216,
-        368.5
+        195.8,
+        348.3
+      ],
+      "footR": [
+        193.9,
+        396.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        204,
+        389.3
+      ],
+      "shinL": [
+        201,
+        356.9
       ],
       "footR": [
         196.1,
@@ -284,18 +284,18 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 1,
-      "thighMotor": 0.11824004123975253,
+      "thighMotor": 0.12,
       "footL": [
-        227.1,
-        390.9
+        203.4,
+        398.2
       ],
       "shinL": [
-        217.5,
-        370.5
+        207.1,
+        363.5
       ],
       "footR": [
-        196.6,
-        400
+        196.7,
+        399.9
       ]
     },
     {
@@ -303,18 +303,132 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 1,
-      "thighMotor": 0.09802769888065212,
+      "thighMotor": 0.12,
       "footL": [
-        225,
-        395.5
+        205.9,
+        405.6
       ],
       "shinL": [
-        218.8,
-        372.9
+        212.8,
+        368.7
       ],
       "footR": [
-        195.7,
-        401.4
+        197.2,
+        400.9
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        210.9,
+        410.6
+      ],
+      "shinL": [
+        218.1,
+        372
+      ],
+      "footR": [
+        197,
+        400.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        217.9,
+        414.6
+      ],
+      "shinL": [
+        222.9,
+        374.9
+      ],
+      "footR": [
+        197.3,
+        401.7
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        227,
+        418
+      ],
+      "shinL": [
+        228.2,
+        377.2
+      ],
+      "footR": [
+        198.7,
+        403.3
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        233.7,
+        420.9
+      ],
+      "shinL": [
+        231.7,
+        379.3
+      ],
+      "footR": [
+        199.4,
+        404.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.11381533400218967,
+      "footL": [
+        239.1,
+        423.7
+      ],
+      "shinL": [
+        234.6,
+        381.8
+      ],
+      "footR": [
+        199.6,
+        405
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.08754402221349133,
+      "footL": [
+        241.2,
+        427.9
+      ],
+      "shinL": [
+        235.9,
+        385.6
+      ],
+      "footR": [
+        198.4,
+        405.6
       ]
     },
     {
@@ -324,16 +438,16 @@
       "hits": 1,
       "thighMotor": 0.05280255406829659,
       "footL": [
-        223.4,
-        402.2
+        245.7,
+        431.8
       ],
       "shinL": [
-        220.1,
-        376.9
+        238.5,
+        389.7
       ],
       "footR": [
-        192,
-        402.4
+        196.6,
+        405.9
       ]
     },
     {
@@ -343,15 +457,53 @@
       "hits": 1,
       "thighMotor": 0.026363917178177695,
       "footL": [
-        222.1,
-        406.9
+        247.9,
+        435.3
       ],
       "shinL": [
-        221.1,
-        379
+        239.9,
+        393.3
       ],
       "footR": [
-        191.1,
+        195.6,
+        405.6
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.024680272732810773,
+      "footL": [
+        250.2,
+        438.2
+      ],
+      "shinL": [
+        241.9,
+        395.7
+      ],
+      "footR": [
+        195.5,
+        405.2
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.049382184126311235,
+      "footL": [
+        250.6,
+        438.1
+      ],
+      "shinL": [
+        242.4,
+        395.1
+      ],
+      "footR": [
+        197.7,
         404.5
       ]
     },
@@ -360,56 +512,18 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 1,
-      "thighMotor": 0.020992538399578778,
+      "thighMotor": 0.08403826236105649,
       "footL": [
-        221.5,
-        411.7
+        249.4,
+        439.7
       ],
       "shinL": [
-        222.5,
-        380.4
+        242.6,
+        395.3
       ],
       "footR": [
-        191.4,
-        405.9
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.0392816895347729,
-      "footL": [
-        221.8,
-        415.6
-      ],
-      "shinL": [
-        224.1,
-        381.1
-      ],
-      "footR": [
-        193.4,
-        406.6
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.07240147012777681,
-      "footL": [
-        222.5,
-        417.9
-      ],
-      "shinL": [
-        225.5,
-        381
-      ],
-      "footR": [
-        196.5,
-        406.2
+        200.3,
+        403.8
       ]
     },
     {
@@ -419,16 +533,16 @@
       "hits": 1,
       "thighMotor": 0.11191674559935744,
       "footL": [
-        223.5,
-        420
+        248.5,
+        444.3
       ],
       "shinL": [
-        226.8,
-        381.4
+        242.3,
+        399.6
       ],
       "footR": [
-        200.4,
-        404.7
+        200.5,
+        409
       ]
     },
     {
@@ -438,107 +552,12 @@
       "hits": 1,
       "thighMotor": 0.12,
       "footL": [
-        223.8,
-        422.3
+        249.6,
+        444.7
       ],
       "shinL": [
-        227.3,
-        383.4
-      ],
-      "footR": [
-        201.8,
-        403.7
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        224.3,
-        424.6
-      ],
-      "shinL": [
-        227.8,
-        385.8
-      ],
-      "footR": [
-        202.6,
-        402.6
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        224.8,
-        426.4
-      ],
-      "shinL": [
-        228.5,
-        388.2
-      ],
-      "footR": [
-        202.2,
-        402.7
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        224.8,
-        427.2
-      ],
-      "shinL": [
-        228.5,
-        389.9
-      ],
-      "footR": [
-        202.7,
-        402.5
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        226.6,
-        430.1
-      ],
-      "shinL": [
-        229.4,
-        392.6
-      ],
-      "footR": [
-        202.9,
-        402.7
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        229.3,
-        434.7
-      ],
-      "shinL": [
-        227.5,
-        399.9
+        241.8,
+        401.4
       ],
       "footR": [
         200.7,
@@ -552,31 +571,12 @@
       "hits": 1,
       "thighMotor": 0.12,
       "footL": [
-        229.1,
-        434.1
+        251.8,
+        444.7
       ],
       "shinL": [
-        224.8,
-        401.7
-      ],
-      "footR": [
-        200.8,
-        409.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.12,
-      "footL": [
-        230.6,
-        433.1
-      ],
-      "shinL": [
-        223.5,
-        403.2
+        241.6,
+        402.9
       ],
       "footR": [
         201.1,
@@ -590,12 +590,12 @@
       "hits": 1,
       "thighMotor": 0.12,
       "footL": [
-        232.7,
-        431.8
+        252.3,
+        444.8
       ],
       "shinL": [
-        222.9,
-        405
+        240.6,
+        404.5
       ],
       "footR": [
         201.1,
@@ -607,17 +607,416 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 1,
-      "thighMotor": 0.11450830153758834,
+      "thighMotor": 0.12,
       "footL": [
-        232.5,
-        431.4
+        252.4,
+        444.8
       ],
       "shinL": [
-        221.3,
-        406.7
+        239.6,
+        406.1
       ],
       "footR": [
-        200.6,
+        201,
+        410.2
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        252.6,
+        444.5
+      ],
+      "shinL": [
+        238.5,
+        407.8
+      ],
+      "footR": [
+        200.7,
+        410.9
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        252.5,
+        443.5
+      ],
+      "shinL": [
+        237.1,
+        409.4
+      ],
+      "footR": [
+        200.5,
+        411.7
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 1,
+      "thighMotor": 0.12,
+      "footL": [
+        251.7,
+        441.8
+      ],
+      "shinL": [
+        234.8,
+        411.4
+      ],
+      "footR": [
+        200,
+        412.7
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        243.8,
+        445.2
+      ],
+      "shinL": [
+        229.4,
+        416.9
+      ],
+      "footR": [
+        192.2,
+        426.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.020000000000000018,
+      "footL": [
+        248.2,
+        439.7
+      ],
+      "shinL": [
+        231,
+        432.4
+      ],
+      "footR": [
+        214.1,
+        413.6
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.020000000000000018,
+      "footL": [
+        243.2,
+        438.6
+      ],
+      "shinL": [
+        227.2,
+        435.1
+      ],
+      "footR": [
+        214.5,
+        419.2
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.020000000000000018,
+      "footL": [
+        237.4,
+        434.4
+      ],
+      "shinL": [
+        221.4,
+        434.4
+      ],
+      "footR": [
+        215.2,
+        423.9
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.020000000000000018,
+      "footL": [
+        232.7,
+        431.9
+      ],
+      "shinL": [
+        216.1,
+        433.4
+      ],
+      "footR": [
+        215.9,
+        427.9
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.020000000000000018,
+      "footL": [
+        228,
+        431.3
+      ],
+      "shinL": [
+        209.8,
+        432
+      ],
+      "footR": [
+        216.2,
+        427.7
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.020000000000000018,
+      "footL": [
+        225.5,
+        432.6
+      ],
+      "shinL": [
+        206.1,
+        431.1
+      ],
+      "footR": [
+        217.3,
+        427
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.059183031001244675,
+      "footL": [
+        223.9,
+        432.8
+      ],
+      "shinL": [
+        203.4,
+        429.6
+      ],
+      "footR": [
+        217.7,
+        427
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.0936003896795438,
+      "footL": [
+        223.2,
+        433.7
+      ],
+      "shinL": [
+        202.3,
+        426.3
+      ],
+      "footR": [
+        213.7,
+        428.4
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.11662361147022063,
+      "footL": [
+        224.4,
+        434.4
+      ],
+      "shinL": [
+        202.7,
+        423.1
+      ],
+      "footR": [
+        209.4,
+        427.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        227.3,
+        433.8
+      ],
+      "shinL": [
+        204.6,
+        419.2
+      ],
+      "footR": [
+        204.6,
+        422.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        230.5,
+        433.4
+      ],
+      "shinL": [
+        207.4,
+        416.4
+      ],
+      "footR": [
+        202.1,
+        416.8
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        233.6,
+        433.1
+      ],
+      "shinL": [
+        211,
+        413.2
+      ],
+      "footR": [
+        200.5,
+        412.8
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        235.1,
+        434.9
+      ],
+      "shinL": [
+        214,
+        411.6
+      ],
+      "footR": [
+        201.1,
+        411.6
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        237.2,
+        436.5
+      ],
+      "shinL": [
+        217.2,
+        411.9
+      ],
+      "footR": [
+        201.2,
+        411.3
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        239.1,
+        438.2
+      ],
+      "shinL": [
+        220.9,
+        411.9
+      ],
+      "footR": [
+        201.3,
+        410.9
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        239.8,
+        439.2
+      ],
+      "shinL": [
+        223.3,
+        411.7
+      ],
+      "footR": [
+        201.3,
+        410.7
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        240.1,
+        440.3
+      ],
+      "shinL": [
+        225.2,
+        411.4
+      ],
+      "footR": [
+        201.3,
         410.4
       ]
     },
@@ -625,304 +1024,19 @@
       "n": 0,
       "state": "alive",
       "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.07754781788360696,
-      "footL": [
-        230.5,
-        429.2
-      ],
-      "shinL": [
-        217.6,
-        411
-      ],
-      "footR": [
-        197.6,
-        412.3
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.04352145223558819,
-      "footL": [
-        228.9,
-        427.6
-      ],
-      "shinL": [
-        215,
-        414.4
-      ],
-      "footR": [
-        194.8,
-        413.9
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 1,
-      "thighMotor": 0.02227878219216589,
-      "footL": [
-        227.7,
-        426.1
-      ],
-      "shinL": [
-        213.3,
-        416.9
-      ],
-      "footR": [
-        192.9,
-        415.2
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
       "hits": 2,
-      "thighMotor": 0.024075650712707133,
+      "thighMotor": 0.11893284620635924,
       "footL": [
-        221.7,
-        426.2
+        240,
+        440.8
       ],
       "shinL": [
-        208.3,
-        420.8
-      ],
-      "footR": [
-        191.4,
-        425.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.020000000000000018,
-      "footL": [
-        226.1,
-        419.3
-      ],
-      "shinL": [
-        206.5,
-        435.6
-      ],
-      "footR": [
-        217.5,
-        407.1
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.020000000000000018,
-      "footL": [
-        225.1,
-        415.9
-      ],
-      "shinL": [
-        204.9,
-        436.3
-      ],
-      "footR": [
-        222.5,
-        415.7
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.020000000000000018,
-      "footL": [
-        224.9,
-        414
-      ],
-      "shinL": [
-        204.3,
-        435.4
-      ],
-      "footR": [
         226.3,
-        421.3
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.020000000000000018,
-      "footL": [
-        224.9,
-        414
-      ],
-      "shinL": [
-        204,
-        435.5
+        411.2
       ],
       "footR": [
-        228.6,
-        425.1
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.020000000000000018,
-      "footL": [
-        225.6,
-        414.8
-      ],
-      "shinL": [
-        204.4,
-        436
-      ],
-      "footR": [
-        232.2,
-        425.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.020000000000000018,
-      "footL": [
-        226.6,
-        416.6
-      ],
-      "shinL": [
-        205.5,
-        436.7
-      ],
-      "footR": [
-        234.9,
-        423.3
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.08533333333333415,
-      "footL": [
-        228.6,
-        415.9
-      ],
-      "shinL": [
-        207.6,
-        435.8
-      ],
-      "footR": [
-        235.4,
-        422.6
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        231.7,
-        415.2
-      ],
-      "shinL": [
-        211,
-        431.3
-      ],
-      "footR": [
-        226.8,
-        425.9
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        234.3,
-        415.9
-      ],
-      "shinL": [
-        213.8,
-        427.6
-      ],
-      "footR": [
-        218.6,
-        425.1
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        236.7,
-        416.8
-      ],
-      "shinL": [
-        216.8,
-        423.6
-      ],
-      "footR": [
-        211.2,
-        420.7
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        238.8,
-        416.4
-      ],
-      "shinL": [
-        219.7,
-        419.3
-      ],
-      "footR": [
-        204.5,
-        415.7
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        240.2,
-        415.4
-      ],
-      "shinL": [
-        221.8,
-        414.9
-      ],
-      "footR": [
-        201.3,
-        412.6
+        201.1,
+        410.1
       ]
     },
     {
@@ -932,16 +1046,16 @@
       "hits": 2,
       "thighMotor": 0.10042585239402108,
       "footL": [
-        240.4,
-        418.5
+        238.6,
+        441.7
       ],
       "shinL": [
-        223.4,
-        413.8
+        227.8,
+        411.8
       ],
       "footR": [
-        199.6,
-        412
+        198.9,
+        409.3
       ]
     },
     {
@@ -951,54 +1065,16 @@
       "hits": 2,
       "thighMotor": 0.06722942625419287,
       "footL": [
-        241,
-        419.9
+        237.2,
+        443.3
       ],
       "shinL": [
-        224.4,
-        415.8
-      ],
-      "footR": [
-        197.2,
-        412.7
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.03537061771075452,
-      "footL": [
-        241.8,
-        419.4
-      ],
-      "shinL": [
-        225.3,
-        417.8
-      ],
-      "footR": [
-        194.9,
-        413.2
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.020230682350981827,
-      "footL": [
-        242.7,
-        418.5
-      ],
-      "shinL": [
-        226.4,
-        418.6
+        229.2,
+        413.4
       ],
       "footR": [
         193.8,
-        413.3
+        407.5
       ]
     },
     {
@@ -1006,18 +1082,56 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 2,
-      "thighMotor": 0.029119096768328592,
+      "thighMotor": 0.027882912404702212,
       "footL": [
-        243.4,
-        418.6
+        237.8,
+        443.6
       ],
       "shinL": [
-        227.4,
-        417.7
+        231.8,
+        415.5
       ],
       "footR": [
-        194.4,
-        412.8
+        188.5,
+        406
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.020492328624767145,
+      "footL": [
+        239.2,
+        441
+      ],
+      "shinL": [
+        234.5,
+        415.1
+      ],
+      "footR": [
+        185.5,
+        404.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.037003773256070044,
+      "footL": [
+        239.9,
+        437.7
+      ],
+      "shinL": [
+        237.1,
+        412.6
+      ],
+      "footR": [
+        183.9,
+        403
       ]
     },
     {
@@ -1027,16 +1141,16 @@
       "hits": 2,
       "thighMotor": 0.0694456126562872,
       "footL": [
-        243.1,
-        419.6
+        239.9,
+        436
       ],
       "shinL": [
-        229.1,
-        414.3
+        239.3,
+        409
       ],
       "footR": [
-        197.2,
-        411.2
+        183.7,
+        401.6
       ]
     },
     {
@@ -1046,35 +1160,16 @@
       "hits": 2,
       "thighMotor": 0.10215510718291367,
       "footL": [
-        242.1,
-        420.9
+        239,
+        436.1
       ],
       "shinL": [
-        230.1,
-        411.3
+        240.6,
+        406.1
       ],
       "footR": [
-        198.2,
-        408.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.11934029478693987,
-      "footL": [
-        234.5,
-        423.5
-      ],
-      "shinL": [
-        225.5,
-        410.1
-      ],
-      "footR": [
-        191.4,
-        403.3
+        184,
+        400.7
       ]
     },
     {
@@ -1084,106 +1179,11 @@
       "hits": 2,
       "thighMotor": 0.12,
       "footL": [
-        237.7,
-        423.4
+        236.9,
+        438.5
       ],
       "shinL": [
-        231.8,
-        408.5
-      ],
-      "footR": [
-        195.1,
-        404
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        235.3,
-        423.4
-      ],
-      "shinL": [
-        233.1,
-        407.4
-      ],
-      "footR": [
-        192.5,
-        402.5
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        232.7,
-        422.7
-      ],
-      "shinL": [
-        234.3,
-        406.2
-      ],
-      "footR": [
-        189.7,
-        401.5
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        229.3,
-        422.9
-      ],
-      "shinL": [
-        235.6,
-        404.9
-      ],
-      "footR": [
-        186.5,
-        400.5
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        226.8,
-        424.2
-      ],
-      "shinL": [
-        235.9,
-        404.7
-      ],
-      "footR": [
-        184.7,
-        400.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        224.4,
-        426.3
-      ],
-      "shinL": [
-        235.7,
+        241.1,
         405.6
       ],
       "footR": [
@@ -1198,12 +1198,12 @@
       "hits": 2,
       "thighMotor": 0.12,
       "footL": [
-        222.7,
-        428.8
+        235.8,
+        440.9
       ],
       "shinL": [
-        235.6,
-        407.2
+        241.7,
+        407
       ],
       "footR": [
         182.8,
@@ -1217,12 +1217,12 @@
       "hits": 2,
       "thighMotor": 0.12,
       "footL": [
-        215.5,
-        430.2
+        229,
+        446
       ],
       "shinL": [
-        231.4,
-        413.1
+        238.5,
+        414.2
       ],
       "footR": [
         177.7,
@@ -1234,75 +1234,75 @@
       "state": "alive",
       "foePhase": "ready",
       "hits": 2,
-      "thighMotor": 0.11577693751421185,
+      "thighMotor": 0.12,
       "footL": [
-        220.9,
-        429.1
-      ],
-      "shinL": [
-        233.6,
-        409.6
-      ],
-      "footR": [
-        184.8,
-        403.5
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.109789222467581,
-      "footL": [
-        212.2,
-        426.7
-      ],
-      "shinL": [
-        227.3,
-        411.5
-      ],
-      "footR": [
-        178.8,
-        400.9
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.109789222467581,
-      "footL": [
-        190.7,
-        437.6
-      ],
-      "shinL": [
-        211.2,
-        429.3
-      ],
-      "footR": [
-        163.4,
-        404.9
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "ready",
-      "hits": 2,
-      "thighMotor": 0.10158555031265575,
-      "footL": [
-        171.3,
-        444
-      ],
-      "shinL": [
-        195.7,
+        233.8,
         443.3
       ],
+      "shinL": [
+        240.4,
+        409.4
+      ],
       "footR": [
-        151.6,
-        405.8
+        184.4,
+        403.3
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        234.2,
+        445.5
+      ],
+      "shinL": [
+        226.3,
+        395.3
+      ],
+      "footR": [
+        191.1,
+        396.7
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        234.3,
+        447.9
+      ],
+      "shinL": [
+        226.5,
+        398.3
+      ],
+      "footR": [
+        191.7,
+        399.4
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "ready",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        232.9,
+        444.1
+      ],
+      "shinL": [
+        238.2,
+        410.1
+      ],
+      "footR": [
+        186.6,
+        403.2
       ]
     },
     {
@@ -1310,18 +1310,132 @@
       "state": "alive",
       "foePhase": "guard",
       "hits": 2,
-      "thighMotor": 0.06870654733323908,
+      "thighMotor": 0.12,
       "footL": [
-        217.1,
-        434.9
+        235.5,
+        451.3
       ],
       "shinL": [
-        225.5,
-        425
+        235.7,
+        422.2
       ],
       "footR": [
-        186.4,
-        421.5
+        189.8,
+        420.3
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "guard",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        236,
+        444.3
+      ],
+      "shinL": [
+        232.8,
+        422.7
+      ],
+      "footR": [
+        190.8,
+        421.9
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "guard",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        236.9,
+        437.1
+      ],
+      "shinL": [
+        229.8,
+        420.7
+      ],
+      "footR": [
+        191.2,
+        422.3
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "guard",
+      "hits": 2,
+      "thighMotor": 0.12,
+      "footL": [
+        237.4,
+        433.7
+      ],
+      "shinL": [
+        227.9,
+        419.3
+      ],
+      "footR": [
+        191.3,
+        422.4
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "guard",
+      "hits": 2,
+      "thighMotor": 0.11577693751421185,
+      "footL": [
+        237.8,
+        431.5
+      ],
+      "shinL": [
+        224.9,
+        417.7
+      ],
+      "footR": [
+        191.1,
+        422.5
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "guard",
+      "hits": 2,
+      "thighMotor": 0.09162280320240192,
+      "footL": [
+        237.4,
+        432.4
+      ],
+      "shinL": [
+        223.2,
+        418.7
+      ],
+      "footR": [
+        189.6,
+        423.2
+      ]
+    },
+    {
+      "n": 0,
+      "state": "alive",
+      "foePhase": "guard",
+      "hits": 2,
+      "thighMotor": 0.057029299756116786,
+      "footL": [
+        236.6,
+        433.3
+      ],
+      "shinL": [
+        221.8,
+        420.9
+      ],
+      "footR": [
+        187.4,
+        424.1
       ]
     },
     {
@@ -1331,16 +1445,16 @@
       "hits": 2,
       "thighMotor": 0.02869797825317319,
       "footL": [
-        221.9,
-        434.3
+        235.9,
+        434
       ],
       "shinL": [
-        219.5,
-        430.2
+        220.9,
+        423.6
       ],
       "footR": [
-        185.2,
-        424.4
+        185.7,
+        424.8
       ]
     },
     {
@@ -1350,16 +1464,16 @@
       "hits": 2,
       "thighMotor": 0.020307043155237237,
       "footL": [
-        232.5,
-        426.4
+        235.6,
+        435.2
       ],
       "shinL": [
-        217.8,
-        431.9
+        220.5,
+        425.7
       ],
       "footR": [
-        185,
-        424.9
+        185.2,
+        425
       ]
     },
     {
@@ -1367,18 +1481,18 @@
       "state": "alive",
       "foePhase": "guard",
       "hits": 2,
-      "thighMotor": 0.03590759126279422,
+      "thighMotor": 0.04542798365520154,
       "footL": [
-        241.4,
-        419.7
+        237.8,
+        436
       ],
       "shinL": [
-        217,
-        431
+        220.7,
+        425.9
       ],
       "footR": [
-        186.1,
-        424.6
+        186.7,
+        424.4
       ]
     },
     {
@@ -1386,18 +1500,18 @@
       "state": "alive",
       "foePhase": "guard",
       "hits": 2,
-      "thighMotor": 0.0679677647093817,
+      "thighMotor": 0.07973185897360704,
       "footL": [
-        248,
-        415.5
+        240.5,
+        434.3
       ],
       "shinL": [
-        217.2,
-        428.8
+        221.3,
+        423.9
       ],
       "footR": [
-        188.1,
-        423.8
+        188.8,
+        423.5
       ]
     },
     {
@@ -1405,37 +1519,18 @@
       "state": "alive",
       "foePhase": "guard",
       "hits": 2,
-      "thighMotor": 0.10100909005234097,
+      "thighMotor": 0.10933724690168044,
       "footL": [
-        251.3,
-        413.7
+        242.3,
+        434.6
       ],
       "shinL": [
-        217.8,
-        426.5
+        221.3,
+        422.6
       ],
       "footR": [
-        190.2,
-        423
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "guard",
-      "hits": 2,
-      "thighMotor": 0.11907939916995318,
-      "footL": [
-        254.1,
-        413.1
-      ],
-      "shinL": [
-        218.9,
-        425.3
-      ],
-      "footR": [
-        191.3,
-        422.5
+        190.7,
+        422.7
       ]
     },
     {
@@ -1445,12 +1540,12 @@
       "hits": 2,
       "thighMotor": 0.12,
       "footL": [
-        256.1,
-        415.1
+        243.7,
+        435.3
       ],
       "shinL": [
-        220.9,
-        425.1
+        221.9,
+        422.4
       ],
       "footR": [
         191.4,
@@ -1464,107 +1559,12 @@
       "hits": 2,
       "thighMotor": 0.12,
       "footL": [
-        256.8,
-        417
+        244.7,
+        436
       ],
       "shinL": [
         222.8,
-        425
-      ],
-      "footR": [
-        191.4,
-        422.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "guard",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        256.8,
-        419.6
-      ],
-      "shinL": [
-        224.6,
-        424.9
-      ],
-      "footR": [
-        191.4,
-        422.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "guard",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        256.3,
-        421.8
-      ],
-      "shinL": [
-        226.3,
-        424.7
-      ],
-      "footR": [
-        191.4,
-        422.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "guard",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        255.3,
-        422.6
-      ],
-      "shinL": [
-        227.8,
-        424.6
-      ],
-      "footR": [
-        191.4,
-        422.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "guard",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        254.5,
-        423.2
-      ],
-      "shinL": [
-        229.2,
-        424.6
-      ],
-      "footR": [
-        191.4,
-        422.4
-      ]
-    },
-    {
-      "n": 0,
-      "state": "alive",
-      "foePhase": "guard",
-      "hits": 2,
-      "thighMotor": 0.12,
-      "footL": [
-        253.8,
-        424.6
-      ],
-      "shinL": [
-        230.4,
-        424.6
+        422.9
       ],
       "footR": [
         191.4,
@@ -1578,12 +1578,12 @@
       "hits": 2,
       "thighMotor": 0.12,
       "footL": [
-        253.5,
-        427.5
+        245,
+        436.3
       ],
       "shinL": [
-        230.2,
-        420.4
+        222.4,
+        417.7
       ],
       "footR": [
         192.2,
@@ -1595,18 +1595,18 @@
       "state": "alive",
       "foePhase": "attack",
       "hits": 2,
-      "thighMotor": 0.11635149691533986,
+      "thighMotor": 0.12,
       "footL": [
-        253.9,
-        426.8
+        246.9,
+        434
       ],
       "shinL": [
-        232.8,
-        419.7
+        225.4,
+        417.1
       ],
       "footR": [
-        193.8,
-        418.9
+        194.1,
+        418.8
       ]
     }
   ]
