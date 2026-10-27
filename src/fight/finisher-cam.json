@@ -3,7 +3,7 @@
   "minEye": 1.7,
   "rows": {
     "decapitation": { "from": 0.05, "over": 0.25, "bone": "neck_01",  "mix": 0.35, "angle": 1.0, "dist": 1.8, "span": 0.8, "rise": 1.3, "stickBeatS": 3.2,  "blood": { "burst": 1.7, "pool": 1.5 } },
-    "splitCrown":   { "from": 0.05, "over": 0.25, "bone": "Head",     "mix": 0.35, "angle": 1.0, "dist": 1.8, "span": 0.8, "rise": 1.3, "stickBeatS": 4.07, "blood": { "burst": 1.6, "pool": 1.5 } },
+    "splitCrown":   { "from": 0.05, "over": 0.25, "bone": "neck_01",  "mix": 0.3, "angle": 1.0, "dist": 1.8, "span": 0.8, "rise": 1.3, "stickBeatS": 4.07, "blood": { "burst": 1.6, "pool": 1.5 } },
     "dismember":    { "from": 0.05, "over": 0.25, "bone": "spine_02", "mix": 0.3,  "angle": 1.1, "dist": 1.9, "span": 0.9, "rise": 1.3, "stickBeatS": 2.4,  "blood": { "burst": 1.6, "pool": 1.5 } },
     "hamstringCut": { "from": 0.05, "over": 0.25, "bone": "calf_r",   "mix": 0.3,  "angle": 1.1, "dist": 1.9, "span": 0.9, "rise": 1.3, "stickBeatS": 2.4,  "blood": { "burst": 1.6, "pool": 1.5 } },
     "opened":       { "from": 0.05, "over": 0.25, "bone": "spine_01", "mix": 0.3,  "angle": 1.3, "dist": 1.9, "span": 0.9, "rise": 1.3, "stickBeatS": 3.2,  "blood": { "burst": 1.5, "pool": 1.4 } },
