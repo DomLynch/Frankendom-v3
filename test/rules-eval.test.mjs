@@ -143,6 +143,22 @@ test('per-hit hand speed: a measured speed replaces the reference; a heavy is br
   assert.equal(at({}, 99).handSpeed, rules.swing.hand_speed_ref_m_s[ROWS.speedMaxRef]);   // clamped high
   assert.equal(at({}, 0.5).handSpeed, ROWS.speedMin);   // clamped low
   assert.ok(ROWS.speedScale > 0 && ROWS.speedScale <= 1 && ROWS.heavyDivisor >= 1);
+  // an absent row is the identity, not NaN (the page still gets a finite speed)
+  const { speedScale: _s, heavyDivisor: _h, ...bare } = ROWS;
+  for (const heavy of [false, true]) { const v = handSpeedOf(bare, rules, 7, heavy).speed; assert.ok(Number.isFinite(v) && v === 7, `absent rows: ${v}`); }
+  assert.equal(handSpeedOf({ ...ROWS, speedScale: NaN, heavyDivisor: 'x' }, rules, 7, true).speed, 7);
+});
+
+test('the hand-speed rows are checked at load: absent, non-finite, out-of-range values are errors', () => {
+  const bad = (o) => validateFile('rules', { ...ROWS, ...o });
+  assert.deepEqual(bad({}), []);
+  const { speedScale: _s, heavyDivisor: _h, ...bare } = ROWS;
+  assert.deepEqual(validateFile('rules', bare), ['rules.speedScale: must be a finite number in (0, 1]', 'rules.heavyDivisor: must be a finite number >= 1']);
+  for (const v of [0, -1, 1.5, NaN, Infinity, '0.5', null]) assert.deepEqual(bad({ speedScale: v }), ['rules.speedScale: must be a finite number in (0, 1]'], `speedScale ${v}`);
+  for (const v of [0.5, 0, NaN, Infinity, '1', null]) assert.deepEqual(bad({ heavyDivisor: v }), ['rules.heavyDivisor: must be a finite number >= 1'], `heavyDivisor ${v}`);
+  assert.deepEqual(bad({ speedSpanS: 0 }), ['rules.speedSpanS: must be a finite number > 0']);
+  assert.deepEqual(bad({ speedWindow: 2.5 }), ['rules.speedWindow: must be an integer >= 1']);
+  assert.deepEqual(bad({ speedScale: 1, heavyDivisor: 2 }), []);
   assert.equal(handSpeedOf(ROWS, rules, 8, false).source, 'measured'); assert.equal(handSpeedOf(ROWS, rules, null, false).source, 'ref');
 });
 

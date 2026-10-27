@@ -34,7 +34,9 @@ export function handSpeedOf(rows: RuleRows, rules: Pick<PkgRules, 'swing'>, meas
   const ref = rules.swing.hand_speed_ref_m_s[rows.handSpeedRef];
   if (typeof ref !== 'number') return null;
   if (typeof measured !== 'number' || !Number.isFinite(measured) || measured <= 0) return { speed: ref, source: 'ref' };
-  const lightEquivalent = measured * rows.speedScale / (heavy ? rows.heavyDivisor : 1);
+  // an absent or non-finite row is the identity (scale 1, divisor 1), never NaN; the validator rejects the file itself (src/sim/validate.js)
+  const scale = Number.isFinite(rows.speedScale) && rows.speedScale > 0 ? rows.speedScale : 1, divisor = Number.isFinite(rows.heavyDivisor) && rows.heavyDivisor >= 1 ? rows.heavyDivisor : 1;
+  const lightEquivalent = measured * scale / (heavy ? divisor : 1);
   const hi = rules.swing.hand_speed_ref_m_s[rows.speedMaxRef] ?? ref;
   return { speed: Math.min(hi, Math.max(rows.speedMin, lightEquivalent)), source: 'measured' };
 }
