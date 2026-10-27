@@ -44,7 +44,7 @@ test('the validator refuses bad fold rows', () => {
 });
 
 test('?skyfold=v1, the row off, ?sky=v1 and the look before the melt (no view) each build nothing', () => {
-  assert.equal(foldFor(''), FOLD.variants.a);
+  assert.equal(foldFor(''), FOLD.variants.b);
   assert.equal(foldFor('?skyfold=a'), FOLD.variants.a);
   assert.equal(foldFor('?skyfold=b'), FOLD.variants.b);
   assert.equal(foldFor('?foo=1&skyfold=b'), FOLD.variants.b);
@@ -105,7 +105,7 @@ test('draw order: after the strip, before the sand; no depth write, no fog, no t
 
 test('A downloads nothing: it takes the strip\'s own picture when that lands, and follows the camera and the strip\'s fade', () => {
   const scene = new THREE.Scene(); let fetched = 0;
-  const fold = createSkyfold(scene, '', VIEW, FOLD, SKYLINE, () => { fetched++; return Promise.reject(Error('no')); });
+  const fold = createSkyfold(scene, '?skyfold=a', VIEW, FOLD, SKYLINE, () => { fetched++; return Promise.reject(Error('no')); });
   assert.equal(fold.mesh.visible, false);
   const tex = new THREE.Texture();
   const strip = { texture: undefined, opacity: 0 };
@@ -119,9 +119,12 @@ test('A downloads nothing: it takes the strip\'s own picture when that lands, an
   assert.equal(fetched, 0);
 });
 
-test('the baked band for B is a small wrap-safe WebP, and it is not on the first-visit path unless asked for', () => {
+test('B (the default) is a small baked WebP and the first visit still fits the weight budget', () => {
   const file = new URL(`../src/assets/skyline/${FOLD.variants.b.file}`, import.meta.url), size = statSync(file).size, buf = readFileSync(file);
   assert.equal(buf.toString('latin1', 0, 4), 'RIFF'); assert.equal(buf.toString('latin1', 8, 12), 'WEBP');
-  assert.ok(size > 1_000 && size < 200_000, String(size));
-  assert.equal(FOLD.default, 'a');   // the default downloads no new file
+  assert.ok(size > 1_000 && size < 50_000, String(size));   // a WebP does not gzip: this is its wire size
+  assert.equal(FOLD.default, 'b');
+  assert.equal(foldFor(''), FOLD.variants.b);
+  const LIVE_WIRE_AT_809C86E = 5_414_619, budget = JSON.parse(read('../data/build.json')).firstVisitBytes;
+  assert.ok(LIVE_WIRE_AT_809C86E + size <= budget, `${LIVE_WIRE_AT_809C86E + size} > ${budget}`);   // 5.4 MB + the band stays under 5.5 MB: the budget row is not raised
 });
