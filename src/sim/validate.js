@@ -253,8 +253,10 @@ export function validateFile(name, json) {
   return errors;
 }
 
-// data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's far plane (180 m) and the file a plain asset name.
-export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs'];
+// data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only
+// lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
+export const SKYLINE_RIM_LIMIT = 175;
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views'];
 /** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
 function checkWideLens(w, name) {
   const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
@@ -276,7 +278,36 @@ function checkSkyline(s) {
   const rng = (k, lo, hi, int) => { if (!Number.isFinite(s[k]) || s[k] < lo || s[k] > hi || (int && !Number.isInteger(s[k]))) at(k, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
   rng('seamOverlapPx', 0, 2000, true); rng('quality', 40, 100, true); rng('radius', 20, 160); rng('heightMetres', 5, 400); rng('horizonFraction', 0.5, 1);
   rng('yawDegrees', -360, 360); rng('brightness', 0.1, 1.5); rng('fadeSeconds', 0, 10); rng('loadAfterFirstFrameMs', 0, 10000, true);
-  if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > 175) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
+  if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > SKYLINE_RIM_LIMIT) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
+  e.push(...checkSkyViews(s));
+  return e;
+}
+
+// data/stage.json `skyline.views` (src/fight/skyview.ts): the ?skyview= looks. Every variant has every key; the band is both 0 (off) or start < end; the strip, lowered or resized, keeps its rim inside the far plane.
+export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fadeEndDegrees', 'dropMetres', 'heightMetres', 'brightness'];
+function checkSkyViews(s) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return ['stage.skyline.views: must be an object'];
+  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'default', 'variants'].includes(k)) at(k, 'unknown key');
+  if (typeof v.query !== 'string' || !/^[a-z0-9]+$/i.test(v.query) || v.query === s.query) at('query', 'must be a plain word other than skyline.query');
+  if (typeof v.v1 !== 'string' || !/^[a-z0-9]+$/i.test(v.v1)) at('v1', 'must be a plain word (the link value for the look before the variants)');
+  const vs = v.variants;
+  if (vs === null || typeof vs !== 'object' || Array.isArray(vs)) return [...e, 'stage.skyline.views.variants: must be an object'];
+  if (typeof v.default !== 'string' || !(v.default === v.v1 || Object.prototype.hasOwnProperty.call(vs, v.default))) at('default', 'must be one of the variant ids, or the v1 word (the look before)');
+  if (typeof v.v1 === 'string' && Object.prototype.hasOwnProperty.call(vs, v.v1)) at('v1', 'must not also be a variant id');
+  for (const [id, w] of Object.entries(vs)) {
+    const p = `variants.${id}`, bad = (k, m) => at(`${p}.${k}`, m);
+    if (!/^[a-z0-9]+$/i.test(id)) at(p, 'the id must be a plain word');
+    if (w === null || typeof w !== 'object' || Array.isArray(w)) { at(p, 'must be an object'); continue; }
+    for (const k of Object.keys(w)) if (!SKYVIEW_KEYS.includes(k)) bad(k, 'unknown key');
+    if (typeof w.fogColor !== 'string' || !(w.fogColor === '' || /^#[0-9a-f]{6}$/i.test(w.fogColor))) bad('fogColor', "must be '' or a #rrggbb colour");
+    const rng = (k, lo, hi) => { if (!Number.isFinite(w[k]) || w[k] < lo || w[k] > hi) bad(k, `must be a finite number in ${lo}..${hi}`); };
+    rng('fogDensity', 0, 0.1); rng('fadeStartDegrees', 0, 89); rng('fadeEndDegrees', 0, 89); rng('dropMetres', -60, 60); rng('brightness', 0.1, 1.5);
+    if (!Number.isFinite(w.heightMetres) || (w.heightMetres !== 0 && (w.heightMetres < 5 || w.heightMetres > 400))) bad('heightMetres', 'must be 0 (the strip row\'s) or a number in 5..400');
+    if (Number.isFinite(w.fadeStartDegrees) && Number.isFinite(w.fadeEndDegrees) && !(w.fadeStartDegrees === 0 && w.fadeEndDegrees === 0) && !(w.fadeStartDegrees > w.fadeEndDegrees)) bad('fadeStartDegrees', 'must be above fadeEndDegrees (or both 0 = off)');
+    const h = w.heightMetres > 0 ? w.heightMetres : s.heightMetres;
+    if (Number.isFinite(s.radius) && Number.isFinite(h) && Number.isFinite(s.horizonFraction) && Number.isFinite(w.dropMetres) && Math.hypot(s.radius, Math.max(Math.abs(s.horizonFraction * h - w.dropMetres), Math.abs((1 - s.horizonFraction) * h + w.dropMetres))) > SKYLINE_RIM_LIMIT) bad('dropMetres', 'the strip, lowered, must keep its rim inside the camera far plane (180 m)');
+  }
   return e;
 }
 

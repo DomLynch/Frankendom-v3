@@ -68,7 +68,8 @@ import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, spawnBodyFile 
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { fovForZoom, wideBoost, type WideRow } from './camera-zoom.ts';
-import { createSkyline } from './skyline.ts';
+import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
+import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -139,7 +140,10 @@ export function createScene(
   const specialStruck = [-Infinity, -Infinity];
   scene.background = new THREE.Color(theme.fog);
   scene.fog = new THREE.FogExp2(theme.fog, theme.fogDensity);
-  const skyline = createSkyline(scene, typeof location === 'undefined' ? '' : location.search);   // data/stage.json skyline: the 360-degree sunset strip, fetched after the first frame; ?sky=v1 = the flat sky above, nothing built
+  const pageSearch = typeof location === 'undefined' ? '' : location.search;
+  const skyView = skylineOn(pageSearch) ? skyViewFor(pageSearch) : null;   // data/stage.json skyline.views: no link = its `default` (B); ?skyview=a|c; ?skyview=v1 = the look before it, nothing below runs; ?sky=v1 = the flat sky
+  if (skyView) applyFog(scene, skyView);
+  const skyline = createSkyline(scene, pageSearch, SKYLINE, undefined, skyView);   // data/stage.json skyline: the 360-degree sunset strip, fetched after the first frame; ?sky=v1 = the flat sky above, nothing built
   let environmentTarget: THREE.WebGLRenderTarget | undefined;
   // The environment map: the arena's own ash sky (an equirect the world lane paints, warm sand below the horizon) once it has landed,
   // so bronze and iron reflect this place; the studio RoomEnvironment only until then (audit 2026-09-20).
@@ -159,6 +163,7 @@ export function createScene(
   }
   rebuildEnvironment();
   const camera = new THREE.PerspectiveCamera(51, 1, 0.1, 180);
+  scene.userData.camera = camera;   // read by the stills' probes (scripts/skyview-stills.mjs: where the horizon falls on screen); nothing in the page reads it
   const metal = new THREE.MeshStandardMaterial({ color: '#89949b', metalness: 0.72, roughness: 0.4 });
   // Brass for the capsule stand-ins (it warms on a threat while they stand in); the arena has its own materials in arena.ts.
   // The brass target ring under the opponent is gone (owner 2026-09-21: a UI shape on the sand, and the hero never had one).
@@ -226,6 +231,7 @@ export function createScene(
     missileFx = createMissileFx(scene),   // sandbox-mech missiles: the bolt in flight, nothing while none flies
     impactFx = createImpactFx(scene),   // a flash + ground ring per contact row (hit-stop-defs.json flash/ring/tint columns; a row without them draws nothing)
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
+  const floorFade = skyView ? fadeFloor(arena.group, skyView) : null;   // B: the far sand and grid melt to nothing by angle (skyview.ts); null = the floor as it was
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
@@ -721,7 +727,7 @@ export function createScene(
     liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef }[]) { liveList = list; },
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
-    openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; if (groundSnap > 0) scene.add(sun.target); },
+    openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
@@ -1179,6 +1185,7 @@ export function createScene(
       const specialDim = runtimeSpecial?.exposure ?? (specialFx as ModeFx | undefined)?.exposure ?? 1;   // Nyx's Nightfall drain
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
+      floorFade?.move(camera.position);
       skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts); the camera was placed by rig.update above
       syncIdleFoes(practice, dt);
       syncLiveFoes(dt);

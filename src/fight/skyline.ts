@@ -5,7 +5,10 @@
 import * as THREE from 'three';
 import STAGE from '../../data/stage.json' with { type: 'json' };
 import { afterFirstFrame } from '../late-art.ts';
+import type { SkyView } from './skyview.ts';
 
+/** The strip draws first of all the transparents (skyview.ts FLOOR_ORDER sits just after it). */
+export const SKYLINE_ORDER = -1000;
 export type SkylineRow = typeof STAGE.skyline;
 export const SKYLINE: SkylineRow = STAGE.skyline;
 
@@ -15,8 +18,9 @@ export function skylineOn(search: string, row: SkylineRow = SKYLINE): boolean {
 }
 
 /** Where the cylinder's centre sits relative to the camera: the strip's horizon (`horizonFraction` down it) lands at the camera's eye level. */
-export function centreOffsetY(row: SkylineRow = SKYLINE): number {
-  return row.heightMetres / 2 - (1 - row.horizonFraction) * row.heightMetres;
+export function centreOffsetY(row: SkylineRow = SKYLINE, view: SkyView | null = null): number {
+  const height = view && view.heightMetres > 0 ? view.heightMetres : row.heightMetres;
+  return height / 2 - (1 - row.horizonFraction) * height - (view ? view.dropMetres : 0);   // ?skyview: dropMetres lowers the whole strip (0 = today)
 }
 
 export type Skyline = {
@@ -32,15 +36,17 @@ export type Skyline = {
 export function createSkyline(
   scene: THREE.Scene, search: string, row: SkylineRow = SKYLINE,
   load: () => Promise<THREE.Texture> = () => new THREE.TextureLoader().loadAsync(new URL(`../assets/skyline/${row.file}`, import.meta.url).href),
+  view: SkyView | null = null,   // ?skyview=a|b|c (skyview.ts): its drop, height and brightness; null = the row as it is
 ): Skyline | null {
   if (!skylineOn(search, row)) return null;
+  const shade = view ? view.brightness : row.brightness, height = view && view.heightMetres > 0 ? view.heightMetres : row.heightMetres;
   const material = new THREE.MeshBasicMaterial({
     side: THREE.BackSide, fog: false, toneMapped: false, transparent: true, opacity: 0, depthWrite: false,   // nothing behind it to write; nothing nearer is hidden by it
-    color: new THREE.Color(row.brightness, row.brightness, row.brightness),
+    color: new THREE.Color(shade, shade, shade),
   });
-  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(row.radius, row.radius, row.heightMetres, 96, 1, true), material);
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(row.radius, row.radius, height, 96, 1, true), material);
   mesh.name = 'skyline';
-  mesh.renderOrder = -1000;   // first among the transparent draws, so every particle and trail composites over it
+  mesh.renderOrder = SKYLINE_ORDER;   // first among the transparent draws, so every particle and trail composites over it
   mesh.frustumCulled = false;
   mesh.rotation.y = THREE.MathUtils.degToRad(row.yawDegrees);
   mesh.visible = false;
@@ -62,7 +68,7 @@ export function createSkyline(
   return {
     mesh,
     update(camera, dt) {
-      mesh.position.set(camera.x, camera.y + centreOffsetY(row), camera.z);
+      mesh.position.set(camera.x, camera.y + centreOffsetY(row, view), camera.z);
       if (state === 'fading') {
         opacity = Math.min(1, opacity + (row.fadeSeconds > 0 ? dt / row.fadeSeconds : 1));
         material.opacity = opacity;
