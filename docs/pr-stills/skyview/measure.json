@@ -1,0 +1,42 @@
+{
+  "default": {
+    "fight375": {
+      "shot": "default-fight-375.png",
+      "backdropPct": 8.6,
+      "sandPct": 91.4,
+      "rows": 812
+    },
+    "walk375": {
+      "shot": "default-walk-375.png",
+      "backdropPct": 33.9,
+      "sandPct": 66.1,
+      "rows": 812
+    },
+    "fight812": {
+      "shot": "default-fight-812.png",
+      "backdropPct": 4.8,
+      "sandPct": 95.2,
+      "rows": 375
+    }
+  },
+  "v1": {
+    "fight375": {
+      "shot": "v1-fight-375.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 812
+    },
+    "walk375": {
+      "shot": "v1-walk-375.png",
+      "backdropPct": 12.8,
+      "sandPct": 87.2,
+      "rows": 812
+    },
+    "fight812": {
+      "shot": "v1-fight-812.png",
+      "backdropPct": 0,
+      "sandPct": 100,
+      "rows": 375
+    }
+  }
+}

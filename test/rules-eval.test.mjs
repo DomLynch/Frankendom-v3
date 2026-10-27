@@ -38,20 +38,20 @@ test('every weapon V3 fights with has a row, and each row names a package weapon
   assert.ok(ROWS.handSpeedRef in rules.swing.hand_speed_ref_m_s && ROWS.impulseAt in rules.strength_scale);
 });
 
-test('M4 is the default (Dom 2026-10-27, data/rules.json default row); ?rules=v1 is V1\'s rules', () => {
+test('INTERIM: V1\'s rules are the default again (data/rules.json default v1: M4\'s evaluator pool dropped him on light hits); ?rules=m4 opts in', () => {
   assert.equal(ROWS.on, true);
-  assert.equal(ROWS.default, ROWS.m4);
-  assert.equal(rulesOnFor(ROWS, ''), true);
+  assert.equal(ROWS.default, ROWS.v1);
+  assert.equal(rulesOnFor(ROWS, ''), false);
   assert.equal(rulesOnFor(ROWS, '?rules=v1'), false);
   assert.equal(rulesOnFor(ROWS, '?x=1&rules=v1'), false);
-  assert.equal(rulesOnFor(ROWS, '?rules=sometimes'), true);
-  assert.equal(rulesOnFor(ROWS, '?physics=v1&foo=m4'), true);
+  assert.equal(rulesOnFor(ROWS, '?rules=sometimes'), false);
+  assert.equal(rulesOnFor(ROWS, '?physics=v1&foo=m4'), false);
   assert.equal(rulesOnFor(ROWS, '?rules=m4'), true);
   assert.equal(rulesOnFor(ROWS, '?x=1&rules=m4'), true);
   assert.equal(rulesOnFor({ ...ROWS, on: false }, '?rules=m4'), false);
   assert.equal(rulesOnFor({ ...ROWS, on: false }, ''), false);
-  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.v1 }, ''), false);   // the default is the row, not a constant in the code
-  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.v1 }, '?rules=m4'), true);
+  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.m4 }, ''), true);   // the default is the row, not a constant in the code
+  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.m4 }, '?rules=v1'), false);
 });
 
 test('hit event -> evaluator input: light and heavy, head / torso / legs, counter-hit, stab, blunt, time', () => {

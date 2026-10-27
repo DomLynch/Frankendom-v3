@@ -7,6 +7,7 @@ import type { Sizing } from './ground.ts';
 export function drawOpenGround(group: THREE.Group, camera: THREE.PerspectiveCamera, s: Sizing): void {
   const floor = group.getObjectByName('floor') as THREE.Mesh | null;
   if (floor) { floor.geometry.dispose(); floor.geometry = new THREE.PlaneGeometry(s.floorSide, s.floorSide); }
+  if (floor && s.depthPush) Object.assign(floor.material as THREE.Material, { polygonOffset: true, polygonOffsetFactor: s.depthPush.factor, polygonOffsetUnits: s.depthPush.units });
   const grid = group.children.find((c) => c instanceof THREE.GridHelper);
   if (grid) { group.remove(grid); (grid as THREE.GridHelper).geometry.dispose(); }
   const g = STAGE.grid;
