@@ -12,6 +12,7 @@ import PHYSICS from '../../data/physics.json' with { type: 'json' };
 import { isPlainDeath, PLAIN_DEATH } from './finisher-look.ts';
 import { afterFirstFrame, compileLateArt } from '../late-art.ts';
 import { bone, rigOf } from './rig-bones.ts';
+import { foeBodyFile } from './foe-body.ts';
 import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
 import RULES from '../../data/rules.json' with { type: 'json' };
 import { createHandSpeed, createRulesEval, cutPrecedence, evaluatorTakesKill, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
@@ -56,7 +57,7 @@ type CutRig = { update(): void; pieces: Record<string, THREE.Mesh>; caps: Record
 /** The opponent row in force on this page, or null: the feature off in the rows, ?physics=v1, or an opponent without a ragdoll. */
 export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: string): OpponentRow | null {
   if (!rows.on || new URLSearchParams(search).get(rows.query) === rows.v1) return null;
-  return rows.opponents.find((o) => o.id === opponentId) ?? null;
+  return rows.opponents.find((o) => o.id === opponentId && foeBodyFile(o.id, o.body, true) === o.body) ?? null;   // boss-body row (BOSS-BODIES.md): a ragdoll row is fitted to its own body; another body keeps today's death until it has a measure row
 }
 
 /** data/physics.json `finisher`: 'skip' (the default: every death of a ragdolled foe is the plain death and ragdolls), 'physics' (?ragdoll=finishers: the rotation's finishers play
