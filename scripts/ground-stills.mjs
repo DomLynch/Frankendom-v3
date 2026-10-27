@@ -39,5 +39,14 @@ for (const z of AT) {
   await view({ x: 0, y: 5.5, z: z - 3.2, tx: 0, ty: 0.5, tz: z + 60 }); await shot(`${z}-2-high`);
   await view({ x: -0.5, y: 1.9, z, tx: 90, ty: 1.3, tz: z }); await shot(`${z}-3-side`);
 }
+// a far field boss on drawn ground: the spawns farthest from the world's centre (the zone's frame less the centre, which is the held boss's spot less its place), the hero 5 m short of each
+const spots = await page.evaluate(() => { const z = globalThis.__v3Zone, e = globalThis.__v3Fight?.enemy; if (!z || !e) return []; const held = z.spawns[z.current], ox = held.x - e.x, oz = held.z - e.z; return z.spawns.map((s) => ({ id: s.id, x: s.x - ox, z: s.z - oz })); });
+console.log(`${tag} spots`, JSON.stringify(spots));
+for (const s of spots.filter((p) => Math.hypot(p.x, p.z) > 3).slice(0, 2)) {
+  const r = Math.hypot(s.x, s.z), ux = s.x / r, uz = s.z / r, hx = s.x - ux * 5, hz = s.z - uz * 5;
+  await page.evaluate((p) => { globalThis.__pin = p; }, { x: hx, z: hz });
+  await view({ x: hx - ux * 3.5, y: 2.2, z: hz - uz * 3.5, tx: s.x, ty: 1.2, tz: s.z }); await shot(`boss-${s.id}`);
+  console.log(`${tag} boss ${s.id} at ${r.toFixed(1)} m`);
+}
 console.log(`${tag} done`);
 await browser.close();
