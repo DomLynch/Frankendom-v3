@@ -28,6 +28,17 @@ export function adopt(a: Attacker, hero: Fighter): Practice {
   return project(duel, a.practice.ai, a.practice);
 }
 
+/**
+ * The held boss `index` went past its leash: only that boss resets. The hero (his health, stance, body) and every other attacker's fight carry on untouched. With another live boss on him, that boss's
+ * fight becomes the primary one (the leashed boss stands again at its spot, drawn from the zone's spawns); alone, `rebuilt()` gives the same boss fresh at its spot (full health) and the hero
+ * carries on against it, not engaged. Nothing is built for the hero: he is never reset.
+ */
+export function resetHeld(primary: Practice, list: readonly Attacker[], index: number, rebuilt: () => Practice): { practice: Practice; list: Attacker[]; index: number; engaged: boolean } {
+  const hero = primary.duel.fighters[0], next = list.find((a) => !a.dead);
+  if (next) return { practice: adopt(next, hero), list: list.filter((x) => x !== next), index: next.index, engaged: true };
+  return { practice: adopt(joinAttacker(index, rebuilt()), hero), list: list.slice(), index, engaged: false };
+}
+
 export type Stepped = { practice: Practice; list: Attacker[]; killer: number | null };
 
 /**

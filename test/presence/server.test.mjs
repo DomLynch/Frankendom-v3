@@ -249,12 +249,22 @@ test('a client that does not read is closed once its queued bytes pass maxWriteB
     assert.equal(p.world.stats().players, 0);
     assert.equal(p.stats().refused.backlog, 1);
     s.destroy();
-    const t = await rawJoin(p.port());   // the pong path too
+  } finally { await p.close(); }
+});
+test('a client that does not read is closed on its ping too: the pong path alone refuses a backed-up socket', async () => {
+  // Its own server with the tick and the heartbeat parked: with them running, a tick or beat could close the socket (counting one refusal) before the ping landed, and the ping, still read from the
+  // half-open peer, would close it again (a second count), so the total was 1 or 2 by timing (the CI flake). Parked, the ping is the only writer, so exactly one refusal is the answer.
+  const socks = [];
+  const p = await start({ rules: { ...RULES, tickMs: 3_600_000 }, limits: { ...LIMITS, beatMs: 3_600_000, maxWriteBytes: 1000 } });
+  p.server.on('connection', (s) => socks.push(s));
+  try {
+    const t = await rawJoin(p.port());
     await until(() => p.world.stats().players === 1);
-    Object.defineProperty(socks[1], 'writableLength', { get: () => 5000 });
+    Object.defineProperty(socks[0], 'writableLength', { get: () => 5000 });
     t.write(PING);
     await until(() => p.world.stats().players === 0, 1500);
-    assert.equal(p.stats().refused.backlog, 2);
+    assert.equal(p.world.stats().players, 0);
+    assert.equal(p.stats().refused.backlog, 1);
     t.destroy();
   } finally { await p.close(); }
 });
