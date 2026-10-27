@@ -37,6 +37,8 @@ test('the cut rows name the package\'s units, parts and gear slots, and the vali
   assert.equal(row.helmet, false, 'the Minotaur wears no helmet (no armour until beta)');
   for (const k of ['piece', 'bodyKeepBelow']) assert.ok(C.seam[k] > 0 && C.seam[k] <= 1);
   assert.ok(C.tap.maxMovePx > 0 && C.tap.maxMs > 0 && C.tap.needs === 'frozen');
+  // Strategy 2026-10-27: a tapped limb piece flies sideways or toward the camera, never away from it (the player must see the flight): awayMult <= 0, sideMult > 0
+  assert.ok(C.tap.awayMult <= 0 && C.tap.sideMult > 0 && C.tap.impulse > 0 && C.tap.lift >= 0, 'tap push rows: toward or sideways, not away from the camera');
   assert.deepEqual(validateFile('physics', ROWS), []);
   physics.destroy();
 });
