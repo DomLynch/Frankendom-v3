@@ -1,0 +1,71 @@
+{
+  "about": "Phase 3 of the live zone (docs/ZONE-SERVER-DESIGN.md): the server's rules for shared boss health and damage-share credit. DESIGN ROWS ONLY: nothing in the game reads this file yet. Every number, cap, timer, pattern and label the server model (src/server-model/zone-model.ts) and the database (supabase/migrations/20261027000001_zone_server.sql, loaded through zone_rules_apply) use is a row here; the SQL carries no copy of a value, only sanity ranges. The weapon rows are design placeholders: the wiring PR derives them from the move table and the progression rows.",
+  "writerRoles": ["frankendom_zone_writer", "frankendom_zone_verifier"],
+  "ids": {
+    "instancePattern": "^z(0|[1-9][0-9]*):[a-z0-9._-]{1,64}$",
+    "tokenPattern": "^[A-Za-z0-9_-]{16,128}$",
+    "batchIdPattern": "^[A-Za-z0-9_.:-]{8,96}$",
+    "weaponPattern": "^[a-z0-9._:-]{1,64}$",
+    "note": "Zone ids are strings. The zone is the `zN:` prefix of the instance id, N = 0 or digits with no leading zero. `z01:` does not match and is REFUSED (never stored as zone 1; V1 migration 20261022110000, V1 world-spawns.ts zoneOfKey)."
+  },
+  "engage": {
+    "tokenBytes": 12,
+    "ttlS": 120,
+    "maxOpenPerAccount": 4,
+    "note": "A one-use token for one live spawn in one layer, one open per account per spawn, at most maxOpenPerAccount open. It lives ttlS after its last accepted hit or touch."
+  },
+  "hit": {
+    "maxBatchRows": 200,
+    "maxHitsPerRow": 50,
+    "firstHitAllowanceS": 1,
+    "maxElapsedS": 5,
+    "dpsSlack": 1.25,
+    "retryFailedBatch": false,
+    "note": "The phone only CLAIMS damage. The database applies at most hits x the weapon cap, with hits limited by the weapon's rate over the REAL time since this token's last accepted report (a long gap banks at most maxElapsedS), and never more than the hp left. retryFailedBatch is false and is a pinned row: a failed batch is never resent (a retry could apply damage twice); batchId dedupe is the second lock."
+  },
+  "progression": {
+    "maxDamageMult": 2.5,
+    "note": "Every weapon's damage cap is base x maxDamageMult, the largest multiplier the progression rows can give (Armagedom world-rows.js applyProgressionCeiling). A cap that ignored mastery would refuse upgraded hits. The wiring PR must set this from the progression rows (a test pinning the two together is owed then)."
+  },
+  "weapons": [
+    { "id": "gladius", "maxDamagePerHit": 14, "maxHitsPerS": 3 },
+    { "id": "longsword", "maxDamagePerHit": 20, "maxHitsPerS": 2.5 },
+    { "id": "cleaver", "maxDamagePerHit": 30, "maxHitsPerS": 1.5 }
+  ],
+  "share": {
+    "minSharePct": 5,
+    "renormalise": true,
+    "hitExpiryS": 120,
+    "note": "Credit per LIFE of a spawn (instance, layer, generation) from the APPLIED damage in the hit log. A hit older than hitExpiryS at the moment of the kill is not counted (it still took hp). A contributor with under minSharePct of the counted damage is not paid. The paid contributors split the reward in proportion to damage; renormalise makes their shares sum to 1. There is NO first-hit and NO last-hit bonus and no row for one."
+  },
+  "caps": {
+    "killsPerMin": 6,
+    "killsPerHour": 120,
+    "cooldownAcrossLayers": true,
+    "note": "Paid kills per account per minute and per hour (a capped contributor is recorded unpaid with reason cap; the others are not changed). cooldownAcrossLayers: an account paid for a spawn in one layer is not paid again for the same spawn id in another layer inside the respawn window (V1 'cooldown')."
+  },
+  "respawn": {
+    "minS": 10,
+    "maxS": 86400,
+    "defaultS": 300,
+    "note": "respawn_at = the database's now() + the spawn's own respawn seconds, clamped to [minS, maxS]. The seconds come from the zone row's spawn row at the first engage and are pinned in the spawn; the phone never sends them."
+  },
+  "log": {
+    "keepS": 86400,
+    "note": "Hit-log rows and closed tokens older than this are removed by zone_hit_log_prune."
+  },
+  "refusals": [
+    { "id": "dead", "status": 409, "text": "the creature is dead" },
+    { "id": "too-many", "status": 429, "text": "too many open engages" },
+    { "id": "moved", "status": 409, "text": "moved to another layer since the engage" },
+    { "id": "weapon", "status": 422, "text": "no rule for this weapon" },
+    { "id": "token", "status": 409, "text": "engage token unknown, used or expired" },
+    { "id": "mismatch", "status": 409, "text": "the spawn does not match its first engage" }
+  ],
+  "payReasons": [
+    { "id": "paid", "text": "paid by share" },
+    { "id": "floor", "text": "under the minimum share of the counted damage" },
+    { "id": "cap", "text": "kill cap reached" },
+    { "id": "cooldown", "text": "already paid for this spawn in another layer inside the respawn window" }
+  ]
+}
