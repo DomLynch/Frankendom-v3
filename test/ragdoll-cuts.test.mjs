@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { createPhysics } from '@frankendom/physics';
-import { ageCorpses, blowImpulse, cutEvent, showPooled, snapshotRig, unitOfBone, WARM_SCALE } from '../src/fight/ragdoll.ts';
+import { ageCorpses, blowImpulse, cutEvent, hideCutCaps, showPooled, snapshotRig, unitOfBone, WARM_SCALE } from '../src/fight/ragdoll.ts';
 import { createPieceCutter, isUnder } from '../src/fight/cut-pieces.ts';
 import { validateFile } from '../src/sim/validate.js';
 
@@ -192,4 +192,14 @@ test('leaveCorpse snapshots a carved body: the copy keeps the cut and its pieces
 test('a pooled cap or helmet mesh taken for a cut leaves the warm-up speck behind (the helmet is as big as its row says)', () => {
   const warmed = () => { const m = new THREE.Mesh(); m.scale.setScalar(WARM_SCALE); m.visible = false; return m; };
   for (const scale of [1, 0.123]) { const m = warmed(); showPooled(m, scale); assert.equal(m.visible, true); assert.deepEqual(m.scale.toArray(), [scale, scale, scale]); }
+});
+
+test('the cut GLB\'s cap_* meshes ship visible and hideCutCaps hides every one at attach (Dom 2026-10-27: pink patches at the start), the body pieces untouched', () => {
+  const root = new THREE.Group(), names = ['cap_neck_head', 'cap_shoulder_left_arm', 'cap_hip_right_leg', 'piece_root', 'piece_head'];
+  for (const n of names) { const m = new THREE.Mesh(); m.name = n; root.add(m); }
+  assert.equal(hideCutCaps(root), 3);
+  for (const n of names) assert.equal(root.getObjectByName(n).visible, !n.startsWith('cap_'), n);
+  assert.equal(hideCutCaps(root), 0);
+  const b = readFileSync(new URL('../src/assets/minotaur-106.glb', import.meta.url)), gl = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString());
+  assert.equal(gl.nodes.filter((n) => n.name?.startsWith('cap_')).length, 12);   // the file carries them (glTF nodes are visible by default): hiding is the loader's job
 });

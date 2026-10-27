@@ -137,6 +137,12 @@ export function ageCorpses<T extends { age: number; piecesHidden: boolean }>(lis
   return { keep: alive, hide, drop };
 }
 
+/** A cut GLB's cap meshes (cap_*, docs/CUT-CONTRACT.md) are in the file visible: they show only for a cut, so they are hidden as soon as the body is in the scene (Dom 2026-10-27: pink patches at the shoulders and belt for the first seconds, until the cut rig's warm-up hid them). */
+export function hideCutCaps(root: THREE.Object3D): number {
+  let n = 0;
+  root.traverse((o) => { if (o.name.startsWith('cap_') && o.visible) { o.visible = false; n++; } });
+  return n;
+}
 /** The scale the pooled cap and helmet meshes wear for their warm-up draws (prepareCutArt): a speck. */
 export const WARM_SCALE = 1e-4;
 /** A pooled mesh taken for a cut: shown at its own `scale` (the warm-up speck never survives into a cut: caps and the helmet alike). */
@@ -416,6 +422,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     // scene.ts, once the rigs are in: the opponent's group (the sim frame) and his rig. The chunk and the body row load after the first frame.
     attach(opponentGroup: THREE.Object3D, opponentRig: Rigged, heroRig?: Rigged) {
       group = opponentGroup; rigged = opponentRig;
+      hideCutCaps(opponentRig.anchor);   // the cut GLB's twelve cap_* meshes ship visible: hidden now, before the first frame, not when the physics chunk lands (seconds later on a phone)
       heroHand = rulesOn && heroRig ? bone(heroRig.anchor, RULES.handBone) : undefined; handSpeed.reset();
       heroShoulder = rulesOn && heroRig ? bone(heroRig.anchor, RULES.handFrom) : undefined; handScale = (rulesOn && heroRig ? heroRig.anchor.getWorldScale(shoulderPos).x : 1) || 1;
       // the 65-rig names through the one bone map (data/rig.json via rig-bones.ts): on a 65 body the name itself, on a 106 body its Mixamo joint
