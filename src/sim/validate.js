@@ -50,7 +50,7 @@ export const SCHEMA = {
   'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'kick', 'kickOnInjuredLeg', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
     maps: { flag: ['query', 'value'], knockdown: ['seconds', 'minSecondsBetween'], kick: ['interruptSeconds', 'flinchSeconds', 'interruptThroughPoise', 'resistanceSeconds', 'cooldownSeconds'], kickOnInjuredLeg: ['hits', 'windowS'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
-  'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'zones'] },
+  'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'classes', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
     maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
       hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
@@ -792,6 +792,14 @@ export function checkHitreact(json) {
   num('frontCos', json.frontCos, (v) => v > 0 && v < 1, 'a finite number in (0, 1)');
   num('knockdownQuietS', json.knockdownQuietS, (v) => v >= 0 && v <= 5, 'a finite number in [0, 5]');
   if (!['Left', 'Right'].includes(json.defaultSide)) at('defaultSide', "must be 'Left' or 'Right'");
+  const cl = json.classes;   // the blow class multipliers (light, heavy, counter): every one a finite number in (0, 3]
+  if (!cl || typeof cl !== 'object' || Array.isArray(cl)) at('classes', 'must be an object');
+  else {
+    keys('classes', cl, ['about', 'revert', 'heavyMoves', 'light', 'heavy', 'counter']);
+    if (!cl.revert || typeof cl.revert.query !== 'string' || typeof cl.revert.value !== 'string' || !/^[a-z0-9]+$/i.test(cl.revert.query + cl.revert.value)) at('classes.revert', 'must be { query, value } plain words');
+    if (!Array.isArray(cl.heavyMoves) || cl.heavyMoves.some((m) => typeof m !== 'string')) at('classes.heavyMoves', 'must be a list of move ids');
+    for (const c of ['light', 'heavy', 'counter']) if (keys(`classes.${c}`, cl[c], ['impulse', 'twist', 'dip', 'blend', 'holdS', 'backS'])) for (const k of ['impulse', 'twist', 'dip', 'blend', 'holdS', 'backS']) num(`classes.${c}.${k}`, cl[c][k], (x) => x > 0 && x <= 3, 'a finite number in (0, 3]');
+  }
   if (!json.zones || typeof json.zones !== 'object') return [...e, 'feel-hitreact.zones: must be an object'];
   for (const z of Object.keys(json.zones)) if (!HIT_ZONES.includes(z)) at(`zones.${z}`, 'unknown zone (head, torso, arms, legs)');
   for (const z of HIT_ZONES) {

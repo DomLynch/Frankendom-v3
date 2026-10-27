@@ -7,11 +7,14 @@
 import ROWS from '../../data/feel-hitreact.json' with { type: 'json' };
 import type { FeelCtx, FeelHooks } from './feel.ts';   // TYPES only: the feel chunk is its own bundle (feel-chunk.ts), a runtime import of feel.ts would be a second copy
 import type { CombatEvent } from './duel.ts';
+import { isHeavyMove } from './move-rows.ts';
 
 export type Vec3 = [number, number, number];
 export type Sector = 'front' | 'back' | 'left' | 'right';
 export type Rows = typeof ROWS;
 type ZoneRow = Rows['zones']['head'];
+export type BlowClass = 'light' | 'heavy' | 'counter';
+export type ClassRow = Rows['classes']['light'];
 export type Plan = {
   zone: string; sector: Sector; side: 'Left' | 'Right';
   dips: Record<string, number>;               // part id -> the strength its motor falls to at the deepest (1 = untouched)
@@ -30,23 +33,30 @@ export function sectorOf(heading: number, frameYaw: number, frontCos: number): {
 
 const named = (part: string, side: string) => part.replace('$near', side);
 
+/** The blow's class (data/feel-hitreact.json `classes`): a counter-hit, else a heavy (charged, or a heavy move), else a light. Reads only what the sim's Hit already carries. */
+export function classOf(rows: Rows, e: Pick<CombatEvent, 'counter' | 'charged' | 'move'>): BlowClass {
+  if (e.counter === true) return 'counter';
+  return e.charged === true || isHeavyMove(e.move) || (e.move !== undefined && rows.classes.heavyMoves.includes(e.move)) ? 'heavy' : 'light';
+}
+const FULL: ClassRow = { impulse: 1, twist: 1, dip: 1, blend: 1, holdS: 1, backS: 1 };
+
 /** The reaction a blow at `location` coming with `heading` plans, or null (no zone row, no heading). `scale` = the hit's strength (1 = a plain hit). */
-export function planHit(rows: Rows, location: string | undefined, heading: number | undefined, frameYaw: number, scale = 1): Plan | null {
+export function planHit(rows: Rows, location: string | undefined, heading: number | undefined, frameYaw: number, scale = 1, cls: ClassRow = FULL): Plan | null {   // cls: the blow class's multipliers (rows.classes); absent = the full reaction
   const zone = location ? (rows.zones as Record<string, ZoneRow | undefined>)[location] : undefined;
   if (!zone || heading === undefined) return null;
   const { sector, dir } = sectorOf(heading, frameYaw, rows.frontCos);
   const side = sector === 'right' ? 'Right' : sector === 'left' ? 'Left' : (rows.defaultSide as 'Left' | 'Right');
   const d = zone.dirs[sector], dips: Record<string, number> = {}, blend: Record<string, number> = {}, impulses: Plan['impulses'] = [];
-  for (const [p, s] of Object.entries(zone.dips)) dips[named(p, side)] = Math.max(0, Math.min(1, 1 - (1 - s) * d.dip));
-  for (const [p, s] of Object.entries(zone.blend)) blend[named(p, side)] = s;
-  const total = zone.impulse * d.impulse * scale;
-  for (const [p, w] of Object.entries(zone.split)) impulses.push({ part: named(p, side), v: [dir[0] * total * w, zone.lift * scale * Math.sign(w), dir[1] * total * w] });
-  const twist = zone.twist * d.twist * scale;
+  for (const [p, s] of Object.entries(zone.dips)) dips[named(p, side)] = Math.max(0, Math.min(1, 1 - (1 - s) * d.dip * cls.dip));
+  for (const [p, s] of Object.entries(zone.blend)) blend[named(p, side)] = s * cls.blend;
+  const total = zone.impulse * d.impulse * scale * cls.impulse;
+  for (const [p, w] of Object.entries(zone.split)) impulses.push({ part: named(p, side), v: [dir[0] * total * w, zone.lift * scale * cls.impulse * Math.sign(w), dir[1] * total * w] });
+  const twist = zone.twist * d.twist * scale * cls.twist;
   if (twist > 0) {   // a side blow: the chest one way, the belly the other (a couple about the vertical, perpendicular to the blow)
     const px = dir[1], pz = -dir[0];
     impulses.push({ part: 'spine2', v: [px * twist, 0, pz * twist] }, { part: 'spine', v: [-px * twist, 0, -pz * twist] });
   }
-  return { zone: location!, sector, side, dips, blend, impulses, easeInS: zone.timing.easeInS, holdS: zone.timing.holdS, backS: zone.timing.backS };
+  return { zone: location!, sector, side, dips, blend, impulses, easeInS: zone.timing.easeInS, holdS: zone.timing.holdS * cls.holdS, backS: zone.timing.backS * cls.backS };
 }
 
 /** How deep the reaction is `t` seconds after the blow: eased in, held, then back over backS (0..1); -1 once it is over. */
@@ -73,8 +83,8 @@ export function createHitReact(rows: Rows = ROWS) {
   return {
     get active() { return plan !== null; },
     get plan() { return plan; },
-    hit(rd: Motors, location: string | undefined, heading: number | undefined, frameYaw: number, scale = 1): Plan | null {
-      const next = planHit(rows, location, heading, frameYaw, scale);
+    hit(rd: Motors, location: string | undefined, heading: number | undefined, frameYaw: number, scale = 1, cls?: ClassRow): Plan | null {
+      const next = planHit(rows, location, heading, frameYaw, scale, cls);
       if (!next) return null;
       restore(rd);   // a second blow takes over from the first: its dips are put back before the new ones are written
       for (const i of next.impulses) rd.applyImpulse(i.part, i.v);
@@ -104,12 +114,15 @@ export type HitReact = ReturnType<typeof createHitReact>;
 // or above the rules' getUpS (test/feel-hitreact.test.mjs).
 const react = createHitReact();
 let quietS = 0;   // seconds of the get-up left after a knockdown ended
-const downNow = (ctx: FeelCtx): boolean => ctx.rd.state === 'knockdown';
+/** ?sway=v1 (rows.classes.revert): the page asks for the reaction as it was before the blow classes. */
+const swayRevert = (): boolean => new URLSearchParams((globalThis as { location?: { search: string } }).location?.search ?? '').get(ROWS.classes.revert.query) === ROWS.classes.revert.value;
+const downNow =(ctx: FeelCtx): boolean => ctx.rd.state === 'knockdown';
 export const feelHooks: FeelHooks = {
   hit(e: CombatEvent, ctx: FeelCtx) {
     if (downNow(ctx) || quietS > 0) return;   // already down or getting up: the package ignores a stagger then, and so do these rows
-    const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y);
-    if (plan) ((globalThis as { __hitreactLog?: unknown[] }).__hitreactLog ??= []).push({ tick: e.tick, zone: plan.zone, sector: plan.sector, side: plan.side });   // read by the clip harness
+    const cl = swayRevert() ? 'heavy' : classOf(ROWS, e);   // ?sway=v1: every blow as a heavy, the reaction before the classes
+    const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y, 1, swayRevert() ? FULL : ROWS.classes[cl]);
+    if (plan) ((globalThis as { __hitreactLog?: unknown[] }).__hitreactLog ??= []).push({ tick: e.tick, zone: plan.zone, sector: plan.sector, side: plan.side, cls: cl });   // read by the clip harness
   },
   frame(dt: number, _events: readonly CombatEvent[], ctx: FeelCtx) {
     if (ctx.mode !== 'alive') { react.reset(); quietS = 0; return; }

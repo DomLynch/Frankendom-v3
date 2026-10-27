@@ -142,7 +142,7 @@ test('the registered hooks: a Hit plans from the event and his own yaw; frame ru
   const blends = [], ctx = (mode, yaw = 0) => ({ rd, mode, group: { rotation: { y: yaw } }, blendToward: (s) => blends.push(s) });
   globalThis.__hitreactLog = [];
   HOOKS.hit({ type: 'Hit', tick: 7, location: 'head', heading: FRONT + 0.4 }, ctx('alive', 0.4));   // he is turned 0.4: the same front blow
-  assert.deepEqual(globalThis.__hitreactLog, [{ tick: 7, zone: 'head', sector: 'front', side: ROWS.defaultSide }]);
+  assert.deepEqual(globalThis.__hitreactLog, [{ tick: 7, zone: 'head', sector: 'front', side: ROWS.defaultSide, cls: 'light' }]);   // an event with no move or charge is a light
   HOOKS.frame(1 / 60, [], ctx('alive')); assert.ok(calls.some((c) => c[0] === 's'));
   assert.equal(blends.length, 1); assert.ok(blends[0].head > 0 && blends[0].head <= 1 && blends[0].neck > 0, 'the head and neck bones are blended toward the ragdoll by depth');
   const n = calls.length; HOOKS.frame(1 / 60, [], ctx('dead')); assert.equal(calls.length, n, 'dead: nothing written to the motors');
@@ -184,4 +184,47 @@ test('the module imports only TYPES from feel.ts (the feel chunk is its own bund
   assert.match(src, /import type \{ FeelCtx, FeelHooks \} from '\.\/feel\.ts'/); assert.doesNotMatch(src, /registerFeel/);
   assert.doesNotMatch(src, /from '\.\/ragdoll/, 'no import back into ragdoll.ts');
   assert.doesNotMatch(src, /from 'three'/, 'the core has no three dependency');
+});
+
+// ---- blow classes (Dom 2026-10-27: "every hit he sways left and right; tone it down"): a light is a small quick flinch, a heavy and a counter keep the full reaction ----
+import { classOf } from '../src/fight/feel-hitreact.ts';
+const CL = ROWS.classes, mag = (plan) => Math.max(...plan.impulses.map((i) => Math.hypot(...i.v)));
+const lateral = (plan) => Math.max(...plan.impulses.map((i) => Math.abs(i.v[0])));   // along his side-to-side axis (he faces +z, so x)
+
+test('classes: counter beats heavy beats light; a charged blow, a heavy move and the directional heavies are heavy', () => {
+  assert.equal(classOf(ROWS, { move: 'light_left' }), 'light');
+  assert.equal(classOf(ROWS, {}), 'light');
+  assert.equal(classOf(ROWS, { move: 'heavy_overhead' }), 'heavy');
+  assert.equal(classOf(ROWS, { move: 'light_left', charged: true }), 'heavy');
+  assert.equal(classOf(ROWS, { move: 'critical' }), 'heavy');
+  assert.equal(classOf(ROWS, { move: 'light_left', counter: true }), 'counter');
+  assert.equal(classOf(ROWS, { move: 'heavy_overhead', counter: true }), 'counter');
+});
+
+test('classes: a LIGHT side blow sways him less than a third as far as before (impulse, couple) and lets go faster; heavy and counter are the old reaction exactly', () => {
+  for (const loc of ['torso', 'head']) for (const heading of [FROM_RIGHT, FROM_LEFT]) {
+    const full = planHit(ROWS, loc, heading, 0), light = planHit(ROWS, loc, heading, 0, 1, CL.light);
+    assert.ok(lateral(light) <= lateral(full) * 0.35, `${loc}: lateral ${lateral(light)} vs ${lateral(full)}`);
+    assert.ok(light.holdS + light.backS <= (full.holdS + full.backS) * 0.5, `${loc}: settle ${light.holdS + light.backS} vs ${full.holdS + full.backS}`);
+    for (const [p, s] of Object.entries(light.dips)) assert.ok(s >= full.dips[p], `${loc} ${p}: the motors fall less`);
+    assert.deepEqual(planHit(ROWS, loc, heading, 0, 1, CL.heavy), full, 'heavy = unchanged');
+    assert.deepEqual(planHit(ROWS, loc, heading, 0, 1, CL.counter), full, 'counter = unchanged');
+  }
+  assert.ok(mag(planHit(ROWS, 'torso', FRONT, 0, 1, CL.light)) <= mag(planHit(ROWS, 'torso', FRONT, 0)) * 0.35);
+});
+
+test('classes: through the hook, a light blow writes a smaller push than a heavy one; ?sway=v1 gives every blow the full reaction back', () => {
+  const impulse = (e) => { const calls = []; const ctx = { rd: { state: 'alive', setMotorStrength() {}, applyImpulse: (p, v) => calls.push(Math.hypot(...v)) }, mode: 'alive', group: { rotation: { y: 0 } }, blendToward() {} }; HOOKS.hit({ type: 'Hit', tick: 1, location: 'torso', heading: FROM_RIGHT, ...e }, ctx); HOOKS.kill(); return Math.max(...calls); };
+  const light = impulse({ move: 'light_left' }), heavy = impulse({ move: 'heavy_overhead', charged: true });
+  assert.ok(light < heavy * 0.4, `${light} vs ${heavy}`);
+  globalThis.location = { search: '?sway=v1' };
+  try { assert.ok(Math.abs(impulse({ move: 'light_left' }) - heavy) < 1e-9, '?sway=v1: a light is planned as a heavy'); } finally { delete globalThis.location; }
+});
+
+test('classes: the validator rejects a missing, unknown or out-of-range class row', () => {
+  const t = (mut, re) => { const b = clone(ROWS); mut(b); assert.match(checkHitreact(b).join('\n'), re); };
+  t((b) => { delete b.classes; }, /classes: must be an object/);
+  t((b) => { b.classes.light.impulse = 0; }, /classes\.light\.impulse: must be a finite number in \(0, 3\]/);
+  t((b) => { b.classes.light.sway = 1; }, /classes\.light\.sway: unknown key/);
+  t((b) => { delete b.classes.counter; }, /classes\.counter: must be an object/);
 });
