@@ -72,7 +72,7 @@ import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
 import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
-import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
+import { foeRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
   readonly files: string[];
@@ -375,6 +375,7 @@ export function createScene(
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
   const ragdoll = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
+  const heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
     if (warriors) return Promise.resolve();
@@ -417,6 +418,7 @@ export function createScene(
       if (flinches) { pivots[0].clear(); pivots[1].clear(); pivots[0].add(loaded.player.anchor); pivots[1].add(loaded.opponent.anchor); player.add(pivots[0]); opponent.add(pivots[1]); }
       else { player.add(loaded.player.anchor); opponent.add(loaded.opponent.anchor); }
       ragdoll?.attach(opponent, loaded.opponent, loaded.player).catch(captureException);   // his presentation ragdoll (ragdoll.ts): the chunk loads after the first frame
+      heroRagdoll?.attach(player, loaded.player).catch(captureException);   // ?feel=hero: hers, the same way
       player.visible = opponent.visible = true;
       foeFade?.protect(player); foeFade?.adopt(opponent);
       for (const rig of [loaded.player, loaded.opponent])
@@ -993,6 +995,7 @@ export function createScene(
       if (isTemplate(finisher, 'cleave') && practice.finish?.victim === 1 && !ragBody)
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
+      heroRagdoll?.frame(animationDt, events, practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
       // (the clip's first 9 %) — baked from the rig at that pose, popped along the killing blow, ballistic to a stop. Blood
       // 'off' keeps the head on: gore is presentation, like the rest of the layer.

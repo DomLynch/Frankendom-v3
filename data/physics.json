@@ -10,6 +10,7 @@
   "opponents": [
     { "id": "pitborn", "body": "minotaur", "measure": { "65": "physics/bodies/minotaur.measure.json", "106": "physics/bodies/minotaur-106.measure.json" }, "helmet": false, "gear": {} }
   ],
+  "hero": { "id": "psyche", "body": "psyche", "measure": { "106": "physics/bodies/psyche-106.measure.json" }, "helmet": false, "gear": {} },
   "bones": {
     "hips": "pelvis", "spine": "spine_01", "spine1": "spine_02", "spine2": "spine_03", "neck": "neck_01", "head": "Head",
     "armLeft": "upperarm_l", "forearmLeft": "lowerarm_l", "handLeft": "hand_l",

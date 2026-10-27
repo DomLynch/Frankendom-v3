@@ -29,7 +29,7 @@ export const SCHEMA = {
   'presence': { keys: ['about', 'query', 'path', 'host', 'protocol', 'poseGlobal', 'frame', 'spawn', 'spawnAbout', 'rules'], rows: { rules: ['id', 'value', 'unit'] }, maps: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] }, finite: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] } },
   'sound': { keys: ['about', 'keep', 'statusMs', 'zone'], maps: { keep: ['about', 'samples', 'rate', 'volume'] } },
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
-  'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
+  'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'hero', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
     maps: { bones: ['hips', 'spine', 'spine1', 'spine2', 'neck', 'head', 'armLeft', 'forearmLeft', 'handLeft', 'armRight', 'forearmRight', 'handRight', 'thighLeft', 'shinLeft', 'footLeft', 'toeLeft', 'thighRight', 'shinRight', 'footRight', 'toeRight'],
       states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'cue', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max', 'cuttable', 'slotSpacingM', 'event'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows', 'halves'] },
     // an object of rows keyed by id: path -> the keys each row may carry
@@ -180,6 +180,25 @@ export function validateFile(name, json) {
     num('speedScale', (v) => v > 0 && v <= 1, 'a finite number in (0, 1]'); num('heavyDivisor', (v) => v >= 1, 'a finite number >= 1');
     num('speedSpanS', (v) => v > 0, 'a finite number > 0'); num('speedWindow', (v) => v >= 1 && Number.isInteger(v), 'an integer >= 1');
     num('speedMin', (v) => v > 0, 'a finite number > 0'); num('snapOver', (v) => v > 0, 'a finite number > 0');
+    // variants (rules-eval.ts variantFor / applyVariant, ?rules=<name>): per name only `about` and the package rows applyVariant lays over (a typo like rung_stik would be a dead key and the A/B would silently run the pin); a name is not the v1 / m4 row it would shadow
+    if ('variants' in json) {
+      const vs = json.variants, isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
+      if (!isObj(vs)) errors.push(`${name}.variants: must be an object of name -> variant`);
+      else for (const [vn, v] of Object.entries(vs)) {
+        if ([json.v1, json.m4].includes(vn)) errors.push(`${name}.variants.${vn}: a variant cannot take the name of the ${vn} row`);
+        if (!isObj(v)) { errors.push(`${name}.variants.${vn}: must be an object`); continue; }
+        const known = { about: null, strength_scale: ['rung_hit', 'rung_stick', 'rung_cut'], melee_speed_gate: ['min_speed_m_s'] };
+        for (const [k, val] of Object.entries(v)) {
+          if (!Object.hasOwn(known, k)) { errors.push(`${name}.variants.${vn}.${k}: unknown key (about, strength_scale, melee_speed_gate)`); continue; }
+          if (k === 'about') { if (typeof val !== 'string') errors.push(`${name}.variants.${vn}.about: must be a string`); continue; }
+          if (!isObj(val)) { errors.push(`${name}.variants.${vn}.${k}: must be an object`); continue; }
+          for (const [rk, rv] of Object.entries(val)) {
+            if (!known[k].includes(rk)) errors.push(`${name}.variants.${vn}.${k}.${rk}: unknown key (${known[k].join(', ')})`);
+            else if (!Number.isFinite(rv)) errors.push(`${name}.variants.${vn}.${k}.${rk}: must be a finite number`);
+          }
+        }
+      }
+    }
     // cut.precedence (rules-eval.ts cutPrecedence): per hit zone, who wins a KILLING blow: the evaluator's cut or the sim's finisher rotation. A zone with no entry is the rotation.
     const pr = json.cut?.precedence;
     if (!pr || typeof pr !== 'object' || Array.isArray(pr)) errors.push(`${name}.cut.precedence: must be an object of zone -> 'evaluator' | 'finisher'`);
@@ -221,6 +240,22 @@ export function validateFile(name, json) {
     for (const u of cue.units ?? []) if (!UNITS.includes(u)) errors.push(`${name}.cut.cue.units: unknown unit ${u}`);
     for (const u of cue.units ?? []) if (typeof cue.labels?.[u] !== 'string' || !cue.labels[u].trim()) errors.push(`${name}.cut.cue.labels.${u}: a unit needs a label`);
     if (!/^#[0-9a-fA-F]{6}$/.test(cue.color ?? '')) errors.push(`${name}.cut.cue.color: must be #rrggbb`);
+  }
+  if (name === 'physics' && json.hero !== undefined) {   // the hero's ragdoll row (?feel=hero): an opponent-shaped row, no helmet, no gear, a 106-rig measure file the package ships, and not an opponent's id
+    const h = json.hero, at = `${name}.hero`;
+    if (!h || typeof h !== 'object' || Array.isArray(h)) errors.push(`${at}: must be an object`);
+    else {
+      for (const k of Object.keys(h)) if (!['id', 'body', 'measure', 'helmet', 'gear'].includes(k)) errors.push(`${at}.${k}: unknown key`);
+      for (const k of ['id', 'body']) if (typeof h[k] !== 'string' || !h[k]) errors.push(`${at}.${k}: must be a non-empty string`);
+      if (h.helmet !== false) errors.push(`${at}.helmet: must be false`);
+      if (!h.gear || typeof h.gear !== 'object' || Array.isArray(h.gear) || Object.keys(h.gear).length) errors.push(`${at}.gear: must be an empty object`);
+      if (!h.measure || typeof h.measure !== 'object' || Array.isArray(h.measure)) errors.push(`${at}.measure: must be an object of rig -> path`);
+      else {
+        for (const [rig, p] of Object.entries(h.measure)) if (rig !== '106' || typeof p !== 'string' || !/^physics\/bodies\/[a-z0-9-]+\.measure\.json$/.test(p)) errors.push(`${at}.measure.${rig}: only the 106 rig, a physics/bodies/<body>.measure.json path`);
+        if (!h.measure['106']) errors.push(`${at}.measure.106: missing`);
+      }
+      if ((json.opponents ?? []).some((o) => o.id === h.id)) errors.push(`${at}.id: '${h.id}' is an opponent's id`);
+    }
   }
   if (name === 'physics' && json.finisherCuts?.rows) {   // a finisher row's units are the package's severable ids: the six real cuts and the two visual-only ones (physics 9056ef7); the fallback stand-in must be a real cut (a body without the visual unit gets it), and `also` holds no duplicate of `unit`
     const REAL = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'], VISUAL = ['head_split', 'belly_open'];

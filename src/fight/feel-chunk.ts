@@ -6,3 +6,4 @@ export { feelHooks as clash } from './feel-clash.ts';
 export { feelHooks as kick } from './feel-kick.ts';
 export { feelHooks as hitreact } from './feel-hitreact.ts';
 export { feelHooks as limbs } from './feel-limbs.ts';
+export { feelHooks as hero } from './feel-hero.ts';
