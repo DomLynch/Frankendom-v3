@@ -8,6 +8,7 @@ export type PitchRows = {
   limits: readonly number[];   // degrees; also bounds ?pitch=<number>
   heroY: number;   // m: the height on the hero the screen position is kept at (his chest)
   minEyeY: number;   // m: the eye never drops below this
+  portrait?: { preset: string; belowAspect: number };   // the preset a screen narrower than belowAspect (a portrait phone) gets when the link asks for nothing; landscape keeps `default`
   off: readonly string[];   // query values that mean 'the camera as it was'
   query: string;
 };
@@ -25,7 +26,15 @@ export const pitchChoice = (rows: PitchRows, search: string): number | null => {
   return asked !== undefined ? asked : (pick(rows.default) ?? null);
 };
 
-export type Pose = { x: number; y: number; z: number };
+/** The portrait pitch: the row's `portrait` preset (degrees) and the aspect below which it applies, or null when the row has none or the link asked for anything usable (?pitch=off = the camera as it was, on a phone too). */
+export const portraitPitch = (rows: PitchRows, search: string): { degrees: number; belowAspect: number } | null => {
+  const p = rows.portrait, q = new URLSearchParams(search).get(rows.query)?.trim().toLowerCase() ?? '';
+  if (!p || !Object.hasOwn(rows.presets, p.preset)) return null;
+  if (rows.off.includes(q) || Object.hasOwn(rows.presets, q) || (q !== '' && Number.isFinite(Number(q)) && Number(q) >= rows.limits[0] && Number(q) <= rows.limits[1])) return null;
+  return { degrees: rows.presets[p.preset]!, belowAspect: p.belowAspect };
+};
+
+export type Pose ={ x: number; y: number; z: number };
 /**
  * Re-pitch a lock pose: the view axis looks `degrees` down, and the eye height is set so the hero's `heroY` point sits at the same angle from the axis
  * as it did in the pose given (so his place on the screen is unchanged). Horizontal positions are untouched, so the framing of hero and boss (and the
