@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createEvaluator, createFighterState, loadRules } from '@frankendom/physics';
 import { validateFile } from '../src/sim/validate.js';
-import { createHandSpeed, createRulesEval, cutPrecedence, evaluatorTakesKill, handSpeedOf, hitInput, present, rulesOnFor } from '../src/fight/rules-eval.ts';
+import { applyVariant, createHandSpeed, createRulesEval, cutPrecedence, evaluatorTakesKill, handSpeedOf, hitInput, present, rulesOnFor, variantFor } from '../src/fight/rules-eval.ts';
 import { foeRagdollFor, ragdollFinisher } from '../src/fight/ragdoll.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -36,6 +36,30 @@ test('every weapon V3 fights with has a row, and each row names a package weapon
   assert.equal(ROWS.weapons.cleaver.rule, 'gm_battleaxe'); assert.equal(ROWS.weapons.trident.rule, 'gm_rapier');
   assert.ok(ROWS.armour.pitborn in rules.armour_tiers && ROWS.armour.default in rules.armour_tiers);
   assert.ok(ROWS.handSpeedRef in rules.swing.hand_speed_ref_m_s && ROWS.impulseAt in rules.strength_scale);
+});
+
+test('?rules=m4b is M4 with only the wider-sample rungs (Strategy 2026-10-27); m4, v1 and the default are unchanged', () => {
+  assert.equal(variantFor(ROWS, '?rules=m4b'), 'm4b');
+  for (const q of ['', '?rules=m4', '?rules=v1', '?rules=sometimes', '?rules=constructor', '?rules=__proto__', '?x=m4b']) assert.equal(variantFor(ROWS, q), null, q);
+  assert.equal(rulesOnFor(ROWS, '?rules=m4b'), true);
+  assert.equal(rulesOnFor({ ...ROWS, on: false }, '?rules=m4b'), false, 'on:false is off whatever the query');
+  const pkgRules = loadRules(), before = JSON.stringify(pkgRules);
+  assert.equal(applyVariant(pkgRules, ROWS, null), pkgRules, 'no variant: the package object itself');
+  const b = applyVariant(pkgRules, ROWS, 'm4b');
+  assert.deepEqual([b.strength_scale.rung_hit, b.strength_scale.rung_stick, b.strength_scale.rung_cut], [7.7, 14.5, 23.2]);
+  assert.equal(JSON.stringify(pkgRules), before, 'the package\'s own rows are never mutated');
+  // Strategy 2026-10-27: the speed gate moves with the hit rung (7.7), so the A/B's hit rung is real
+  assert.equal(b.melee_speed_gate.min_speed_m_s, 7.7);
+  assert.equal(pkgRules.melee_speed_gate.min_speed_m_s, 8.0, 'm4 keeps its gate');
+  // everything but those three rungs and the gate is the package's
+  const rest = (r) => JSON.stringify({ ...r, strength_scale: { ...r.strength_scale, rung_hit: 0, rung_stick: 0, rung_cut: 0 }, melee_speed_gate: { ...r.melee_speed_gate, min_speed_m_s: 0 } });
+  assert.equal(rest(b), rest(pkgRules));
+  // limbs reads the evaluator's part HP from window.__v3Rules whatever the rules query says, so m4b (an evaluator is built) feeds it like m4
+  const limbsSrc = readFileSync(new URL('../src/fight/feel-limbs.ts', import.meta.url), 'utf8');
+  const harness = limbsSrc.slice(limbsSrc.indexOf('function harnessFractions'), limbsSrc.indexOf('const hv = '));
+  assert.ok(harness.includes('__v3Rules') && !harness.includes('URLSearchParams') && !harness.includes('location'), 'harnessFractions does not look at the rules query');
+  assert.deepEqual([pkgRules.strength_scale.rung_hit, pkgRules.strength_scale.rung_stick, pkgRules.strength_scale.rung_cut], [8.0, 16.5, 24.3], 'm4 keeps the pins');
+  assert.ok(b.strength_scale.rung_hit < b.strength_scale.rung_stick && b.strength_scale.rung_stick < b.strength_scale.rung_cut);
 });
 
 test('INTERIM: V1\'s rules are the default again (data/rules.json default v1: M4\'s evaluator pool dropped him on light hits); ?rules=m4 opts in', () => {
