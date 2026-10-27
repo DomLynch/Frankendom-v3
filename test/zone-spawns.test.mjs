@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { OPPONENTS } from '../src/fight/moves.ts';
-import { initialPractice } from '../src/fight/combat.ts';
+import { initialPractice, stepPractice } from '../src/fight/combat.ts';
+import { idleIntent } from '../src/fight/duel.ts';
 import { initialState } from '../src/fight/sim.ts';
 import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
 import * as play from '../src/fight/play-radius.ts';
@@ -149,6 +150,24 @@ test('REPRO: a fight that drifts out from the spot (hero and boss together, up t
   console.log(rows.join('\n'));
 });
 
+test('REPRO on the real sim: the hero runs one way for 20 s with the real boss brain chasing (stepPractice); the old hero-measured 5 m leash trips, the boss-measured 20 m one does not', () => {
+  const s = list()[0], opp = OPPONENTS[FIGHT.opponent], rows = [];
+  for (const [mx, mz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    let p = initialPractice(731, opp, undefined, null, undefined, undefined, undefined, { hero: { x: s.x, z: s.z + 2.5 }, foe: { x: s.x, z: s.z }, heroFacing: Math.PI });
+    let oldTrips = 0, newTrips = 0, far = 0;
+    for (let i = 0; i < 1200; i++) {
+      p = stepPractice(p, { ...idleIntent(), move: { x: mx, z: mz, yaw: 0, run: true } });
+      const hero = { x: p.duel.fighters[0].body.x, z: p.duel.fighters[0].body.z }, boss = { x: p.enemy.x, z: p.enemy.z };
+      if (dist(s, hero) > 5) oldTrips++;
+      if (leashed(s, boss)) newTrips++;
+      far = Math.max(far, dist(s, boss));
+    }
+    rows.push(`run (${mx}, ${mz}): hero-measured 5 m leash trips on ${oldTrips} of 1200 ticks, boss-measured ${s.leash} m on ${newTrips}; the boss got ${far.toFixed(2)} m from its spot`);
+    assert.equal(newTrips, 0, rows.at(-1));
+  }
+  console.log(rows.join('\n'));
+});
+
 test('a kited boss gives up past the leash; the neighbours keep their own (no chaining)', () => {
   const s = list(), kited = { x: s[0].x, z: s[0].z + s[0].leash + 0.5 };
   assert.equal(leashed(s[0], kited), true);
@@ -175,8 +194,8 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');   // code with the trailing // comments stripped
   assert.match(live, /setPlayScale\([^;]*\); setLateNotice\(true\); setStab\(true\); setStanceRows\(true\);/, 'the era flags are live code in fresh(), not swallowed by a comment');
   assert.match(main, /spawns = kill\(spawns, current\)/);
-  assert.match(main, /leashed\(spawns\[current\]!, practice\.enemy(, openerLift)?\)/, 'the leash measures the boss, not the hero');
-  assert.match(main, /dropped\(spawns, alive\(\), \(i\) => attackers\.find\(\(a\) => a\.index === i\)!\.practice\.enemy\)/);
+  assert.match(live, /leashed\(spawns\[current\]!, practice\.enemy(, openerLift)?\)/, 'the leash measures the boss, not the hero (live code, not a comment)');
+  assert.match(live, /dropped\(spawns, alive\(\), \(i\) => attackers\.find\(\(a\) => a\.index === i\)!\.practice\.enemy\)/);
   assert.doesNotMatch(main, /respawnDue|sinceKill/);
   assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number; id\?: string; spawn\?: SpawnRef \}\[\]\)/);
   assert.match(scene, /snapshotRig\(opponent, false\)/);
