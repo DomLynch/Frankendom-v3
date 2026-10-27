@@ -111,7 +111,7 @@ export function poseAt(walker: At, spot: At, wall: number, minDistance: number, 
 
 // The opener (V1's `openers`, data/respawn.json openers): a newcomer who stands still still gets a fight. Choice (smallest correct): the opener spawn's AGGRO RANGE grows to reach the
 // hero once the idle clock is due, so the page's existing engagement (inAggro -> engaged / hand, auto-draw, the boss walks up in the sim) runs unchanged; no new fight code, no walking
-// rule of its own. The reach stops at `withinMetres` from the opener spawn (a row, validated: at least that spawn's aggro; the newcomer at the mark stands about 6 m from the yard Pitborn), so an idle hero further off is left alone (the 20 m leash plus reachMetres would have pulled a newcomer from 25 m). The page still lifts the leash by `reachMetres` for that fight.
+// rule of its own. The reach stops at `withinMetres` from the opener spawn (a row, validated: at least that spawn's aggro; the newcomer at the mark stands about 8.8 m from the yard Pitborn), so an idle hero further off is left alone (the 20 m leash plus reachMetres would have pulled a newcomer from 25 m). The page still lifts the leash by `reachMetres` for that fight.
 export type OpenerRows = { on: boolean; delaySeconds: number; count: number; reachMetres: number; withinMetres: number; spawns: string[]; query: string; off: string };
 type OpenerLimits = { delaySeconds: [number, number]; count: [number, number]; reachMetres: [number, number]; withinMetres: [number, number] };
 export const OPENERS = ROWS.openers as OpenerRows;
