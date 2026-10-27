@@ -14,13 +14,27 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || un
 const TICK = 1000 / 60, CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), MAX_TICKS = Number(process.env.MAX_TICKS ?? 3000);
 const AFTER = (process.env.AFTER ?? '4,20,60,160').split(',').map(Number);
 const FINISHERS = (process.env.FINISHERS ?? 'opened,runThrough,splitCrown').split(',');
-const REAL = !!process.env.REAL, report = [];
+const REAL = !!process.env.REAL, CAM = process.env.CAM, report = [];   // CAM=belly|head: the close-up (below)
 for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const finisher of FINISHERS) {
   const tag = `${finisher}-${query.replace(/[^a-z0-9]+/gi, '-') || 'default'}`, errors = [];
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
   await page.addInitScript((id) => { globalThis.__finisherPick = id; }, finisher);
+  if (CAM) await page.addInitScript(([boneName, side, rise, front]) => {   // CAM=belly|head: after the kill the camera stands to the foe's side, aimed at the foe's own bone (the one nearest the sim's foe), so the hero never stands between it and the cut (src/fight/camera.ts __v3CamShot)
+    const at = { x: 0, y: 0, z: 0 };
+    globalThis.__v3CamShot = (cam) => {
+      const p = globalThis.__v3Fight; if (!p?.finish || p.finish.victim !== 1) return;
+      const [hero, foe] = p.duel.fighters; let dx = hero.body.x - foe.body.x, dz = hero.body.z - foe.body.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      const root = globalThis.__v3Scene; if (!root) return;
+      let best = null, bd = 1e9; const w = cam.position.clone();
+      root.traverse((o) => { if (o.name !== boneName) return; o.getWorldPosition(w); const d = Math.hypot(w.x - foe.body.x, w.z - foe.body.z); if (d < bd) { bd = d; best = w.clone(); } });
+      if (best) { at.x = best.x; at.y = best.y; at.z = best.z; }
+      if (!at.y) return;
+      // CAM_FRONT: from the hero's side of the foe (the face / belly front) instead of the foe's flank
+      cam.position.set(at.x - dz * side * (1 - front) + dx * side * front, at.y + rise, at.z + dx * side * (1 - front) + dz * side * front); cam.lookAt(at.x, at.y, at.z); cam.updateMatrixWorld();
+    };
+  }, CAM === 'head' ? ['mixamorigHead', 1.5, 0.1, process.env.CAM_FRONT ? 1 : 0] : ['mixamorigSpine', 1.9, 0.1, process.env.CAM_FRONT ? 1 : 0]);
   if (REAL) {   // REAL=1: no fake clock, real time: the ragdoll's own per-frame cost by mode (alive / dead), cut included (no stills); and every rAF callback timed, the render inside it (scripts/cut-stills.mjs COST)
     await page.addInitScript(() => {
       const raf = window.requestAnimationFrame.bind(window), frames = globalThis.__frames = []; let last = null;
@@ -65,6 +79,7 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
     if (killedAt < 0 && s.victim === 1) { killedAt = n; await page.keyboard.up('KeyW'); }
     if (killedAt >= 0) { const k = n - killedAt; if (AFTER.includes(k)) await shoot(`k${String(k).padStart(3, '0')}`); if (k >= Math.max(...AFTER)) break; }
   }
+  if (CAM) console.log(`${tag} caps shown: ${await page.evaluate(() => { const o = []; globalThis.__v3Scene?.traverse((m) => { if (/^cap_(belly|split)/.test(m.name) && m.visible) { const kids = []; m.traverse((c) => { if (c.isMesh) { const bb = c.geometry.boundingBox ?? (c.geometry.computeBoundingBox(), c.geometry.boundingBox), cen = bb.getCenter(c.position.clone()); c.localToWorld(cen); kids.push(`${c.type} vis${c.visible} verts${c.geometry.attributes.position.count} col${c.material?.color?.getHexString?.()} op${c.material?.opacity} dw${c.material?.depthWrite} at ${cen.toArray().map((v) => v.toFixed(2))} scale ${c.scale.x.toFixed(2)}`); } }); o.push(`${m.name} ${kids.join(' | ') || m.material?.color?.getHexString?.()}`); } }); return o.join('; ') || 'none'; })}`);
   const info = await page.evaluate(() => ({ cuts: globalThis.__v3Cuts ?? [], cost: { ...globalThis.__ragdoll, screenOf: undefined, probe: undefined, cuts: undefined }, finish: globalThis.__v3Fight.finish && { ...globalThis.__v3Fight.finish } }));
   report.push({ tag, finisher, query, killedAt, ticks: n, last, errors, cuts: info.cuts, state: info.cost.state, byMode: info.cost.byMode, pieces: info.cost.pieces, finish: info.finish });
   console.log(`${tag}: killed at ${killedAt}, ${n} ticks, ragdoll ${info.cost.state}, cuts ${JSON.stringify(info.cuts)}, errors ${errors.length}${errors.length ? ' ' + errors.slice(0, 3).join(' | ') : ''}, byMode ${JSON.stringify(info.cost.byMode)}`);

@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { finisherCutRow, finisherPush, finisherUnits, createLateCuts, PHYSICS_MODE } from '../src/fight/finisher-cuts.ts';
+import { finisherCutRow, finisherPush, finisherUnits, halvesApart, createLateCuts, PHYSICS_MODE } from '../src/fight/finisher-cuts.ts';
 import { finisherModeFor } from '../src/fight/ragdoll.ts';
 import { validateFile } from '../src/sim/validate.js';
 
@@ -108,4 +108,14 @@ test('a late cut (atS) fires once, in order, after its seconds, and not after a 
   q.add('head', 1, 'finisher'); q.clear();
   assert.deepEqual(q.tick(5), []);
   assert.equal(q.pending, 0);
+});
+
+test('halvesApart: the split head\'s halves ease from touching to the data row\'s distance over its seconds, then hold (M9a, data/physics.json finisherCuts.halves)', () => {
+  const halves = JSON.parse(readFileSync(new URL('../data/physics.json', import.meta.url), 'utf8')).finisherCuts.halves;
+  assert.ok(halves.apartM > 0 && halves.overS > 0);
+  assert.equal(halvesApart(halves, 0), 0);
+  assert.equal(halvesApart(halves, -1), 0);
+  assert.ok(halvesApart(halves, halves.overS / 4) > 0 && halvesApart(halves, halves.overS / 4) < halves.apartM);
+  assert.equal(halvesApart(halves, halves.overS), halves.apartM);
+  assert.equal(halvesApart(halves, 10), halves.apartM);
 });

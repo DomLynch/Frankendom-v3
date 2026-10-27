@@ -22,7 +22,7 @@ import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 import { activeFeels, emitFeel, feel, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
-import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, PHYSICS_MODE, VISUAL_UNITS } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
+import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, halvesApart, PHYSICS_MODE, VISUAL_UNITS, type FinisherCutRows } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
 
 export type PhysicsRows = typeof PHYSICS;
 type OpponentRow = PhysicsRows['opponents'][number];
@@ -141,7 +141,7 @@ export function ageCorpses<T extends { age: number; piecesHidden: boolean }>(lis
 /** A cut GLB's cap meshes (cap_*, docs/CUT-CONTRACT.md) are in the file visible: they show only for a cut, so they are hidden as soon as the body is in the scene (Dom 2026-10-27: pink patches at the shoulders and belt for the first seconds, until the cut rig's warm-up hid them). */
 export function hideCutCaps(root: THREE.Object3D): number {
   let n = 0;
-  root.traverse((o) => { if (o.name.startsWith('cap_') && o.visible) { o.visible = false; n++; } });
+  root.traverse((o) => { if (o.name.startsWith('cap_') && !o.parent?.name.startsWith('cap_') && o.visible) { o.visible = false; n++; } });   // a cap that is a group (cap_belly_opening: two primitives, cap_belly_opening_1 / _2) hides as that one node: the cut rig shows the group, never its children
   return n;
 }
 /** The scale the pooled cap and helmet meshes wear for their warm-up draws (prepareCutArt): a speck. */
@@ -164,6 +164,28 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     const m = chunk && cutManifestOf(chunk) as { optional_units?: Record<string, { enabled?: boolean } | undefined> } | undefined;
     return !!cutRig && !!m?.optional_units?.[unit]?.enabled;
   };
+  // head_split (visual-only in the package: both halves follow the one head capsule): the two halves' bind matrices slide apart along the cut plane's normal, so the bones carry them apart
+  // and the cut faces show (data/physics.json finisherCuts.halves). Nothing returns to the package; a rematch (rd.cuts empty) puts the bind matrices back.
+  const halfBase = new WeakMap<THREE.SkinnedMesh, THREE.Matrix4>(), halfSlide = new THREE.Matrix4();
+  let halfAge = 0, halfMoved = false;
+  function slideHalves(dt: number) {
+    const on = !!rd?.cuts.includes('head_split');
+    if (!rigged || (!on && !halfMoved)) return;
+    const m = chunk && cutManifestOf(chunk) as { regions?: { mesh: string; separated_by?: string }[]; optional_planes?: { head_split?: { normal: number[] } } } | undefined, n = m?.optional_planes?.head_split?.normal;
+    if (!m?.regions || !n) return;
+    halfAge = on ? halfAge + dt : 0;
+    const d = on ? halvesApart((rows as unknown as FinisherCutRows).finisherCuts.halves, halfAge) / 2 : 0;
+    for (const r of m.regions) {
+      if (r.separated_by !== 'head_split') continue;
+      const side = r.mesh.endsWith('_left') ? 1 : -1;   // the left half is the plane's + side (the manifest: piece_head_left)
+      rigged.anchor.getObjectByName(r.mesh)?.traverse((o) => {
+        if (!(o instanceof THREE.SkinnedMesh)) return;
+        const base = halfBase.get(o) ?? halfBase.set(o, o.bindMatrix.clone()).get(o)!;
+        o.bindMatrix.copy(base).multiply(halfSlide.makeTranslation(n[0]! * d * side, n[1]! * d * side, n[2]! * d * side));
+      });
+    }
+    halfMoved = on;
+  }
   let cutRig: CutRig | undefined;   // the body is the physics cut GLB (piece_* and cap_* meshes, docs/CUT-CONTRACT.md): a cut shows the caps and the piece flies with its bones. Undefined = the old triangle cutter and ball caps
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
@@ -603,7 +625,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       } else if (mode === 'alive' && getUp > 0) { getUp -= dt; fromLying(getUp > 0 ? 1 - getUp / RULES.getUpS : 1); if (getUp <= 0) getUp = -1;
       } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger), blend);   // the stagger on screen, the most at the dip's deepest
       if (mode === 'dead' && follow.length + props.length) followCuts();
-      if (cutRig && warm === 0) cutRig.update();   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
+      if (cutRig && warm === 0) { cutRig.update(); slideHalves(dt); }   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
       cost.frames++; cost.totalMs += ms; cost.maxMs = Math.max(cost.maxMs, ms); cost.lastMs = ms; cost.ticks += ticks; cost.state = rd.state;
       by.frames++; by.totalMs += ms; by.maxMs = Math.max(by.maxMs, ms);

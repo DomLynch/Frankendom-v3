@@ -401,6 +401,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       shoved = kick;
       camera.position.addScaledVector(kickOffset, shoved);
       if (swing && (swayRight || swayDrop)) { swayApplied.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(swayRight * swing); swayApplied.y -= swayDrop * swing; camera.position.add(swayApplied); }
+      (globalThis as { __v3CamShot?: (c: THREE.Camera) => void }).__v3CamShot?.(camera);   // the stills' own close-up (scripts/finisher-cuts-stills.mjs CAM=): placed last, never set in play
     },
     // After the draw: the kick holds, then settles.
     settle(dt: number) {
