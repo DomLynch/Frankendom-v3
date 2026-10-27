@@ -44,7 +44,7 @@ test('?pitch= picks a preset, off or a number inside the limits; the default is 
 
 test('wiring pin: the page reads the row for the zone only, never under ?cam=v1, and the default is OFF (the camera is today\'s)', () => {
   const main = read('../src/client/main.ts');
-  assert.match(main, /if \(ZONE && !\/\[\?&\]cam=v1\\b\/\.test\(search\)\) setCameraPitch\(pitchChoice\(FIGHT\.camera\.pitch, search\), FIGHT\.camera\.pitch\);/);
+  assert.match(main, /if \(ZONE && !\/\[\?&\]cam=v1\\b\/\.test\(search\)\) setCameraPitch\(pitchChoice\(FIGHT\.camera\.pitch, search\), FIGHT\.camera\.pitch, portraitPitch\(FIGHT\.camera\.pitch, search\)\);/);
   assert.equal(pitchChoice(FIGHT.camera.pitch, ''), null);
   const cam = read('../src/fight/camera.ts');
   assert.match(cam, /let PITCH: [^\n]*= null;/);   // module default: no pitch

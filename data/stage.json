@@ -25,6 +25,34 @@
     "brightness": 0.9,
     "fadeSeconds": 1.2,
     "loadAfterFirstFrameMs": 300,
+    "plate": {
+      "about": "The skyline as a far backdrop PLATE (src/fight/skyplate.ts; Dom 2026-10-27, portrait phone: the 360-degree strip showed a tenth of a 10:1 picture blown up to a pink blur and the alien face could never fit). The plate is a `spanDegrees` arc of the strip's far cylinder (`radius`), facing the camp (it follows the camera's heading with the strip's follow rows, ?skyfollow=v1 pins it there): the face is dead ahead of the page's first heading (about -Z), turned by `turnDegrees` more (derived from `face`, so a new picture needs no yaw row), showing the picture `file` (src/assets/skyline/) at its NATIVE aspect, never stretched: a window of the picture `cropAspect` wide to tall is cut around `face` (u, v: the alien face centre as a fraction across and down the picture; the whole picture when it is no wider than that), and the arc is as tall as that window needs at its width. `horizonFraction` is the picture's horizon row, a fraction down it. `faceElevationDegrees` puts the face that many degrees above the eye's level (so the pitched-up phone camera has it in view; the picture's own horizon then sits below the eye, where the cloud sea meets the melted sand). The edges fade to nothing (`edgeFadeFraction` each side, `topFadeFraction`, `bottomFadeFraction`, fractions of the plate) into a plain sky gradient (`sky`: `hazeColor` at the bottom, `horizonColor` at the picture's horizon row, `topColor` at the top, a cylinder `halfHeightMetres` either side of the eye, `rings` rows) that is the sky everywhere else. THE PICTURE (Dom's Smiling Cosmic Titan Over Cloudsea, 2508x627 = exactly 4:1, shown whole at native proportions, WebP q88, 121 KB; horizon 80% down, face centre at 58.5% across and 63% down, moon and face in the middle half, edges fade to the sky colour, the top 40% plain blue): swapping the picture again is `file`, `cropAspect`, `horizonFraction` and `face`; nothing else changes (a picture wider than `cropAspect` is cut to that window around `face`, a narrower one is shown whole). The arc draws at SKYLINE_ORDER + `orderOffset`, over the folded cloud floor (fold.orderOffset) and under the sand, so inside its span the picture's own cloud sea shows and the floor's clouds carry on either side and below it; the plain sky gradient draws first of all. The old 360-degree strip's picture (`skyline.file`, 7782x820) stays for the rollback: ?skyplate=v1. ?skyplate=v1 (`query` = `v1`) draws the old whole 360-degree strip. ?sky=v1, ?skyfollow=v1 and ?skyfold=v1 keep their meaning.",
+      "on": true,
+      "query": "skyplate",
+      "v1": "v1",
+      "file": "skyline-titan.webp",
+      "spanDegrees": 100,
+      "cropAspect": 4,
+      "face": {
+        "u": 0.585,
+        "v": 0.63
+      },
+      "horizonFraction": 0.8,
+      "faceElevationDegrees": -5,
+      "turnDegrees": 0,
+      "orderOffset": 60,
+      "edgeFadeFraction": 0.12,
+      "topFadeFraction": 0.15,
+      "bottomFadeFraction": 0.1,
+      "segments": 48,
+      "sky": {
+        "topColor": "#2a5a9e",
+        "horizonColor": "#f5a68e",
+        "hazeColor": "#936877",
+        "halfHeightMetres": 85,
+        "rings": 24
+      }
+    },
     "views": {
       "about": "How much of the strip shows (src/fight/skyview.ts). Dom picked B (2026-10-27): `default` names the variant the page draws with no link; ?skyview=a|b|c picks one; ?skyview=v1 (`v1`) is the look before this (no melt, no lowering, nothing here runs); ?sky=v1 is still the flat sky. The camera, zoom and fight framing are never touched. Per variant: fogColor ('' = the scene's) is the strip's horizon haze (its lower band at horizonFraction, as drawn at `brightness`) and fogDensity (0 = the scene's, exp-squared) fogs the far sand into it; fadeStartDegrees / fadeEndDegrees (0/0 = off) melt the sand and its grid to transparent by how far below the horizon the camera sees it (solid at start and steeper, gone at end and shallower; an angle so it follows the strip's lowered bottom edge at any camera height, the phone fight camera looks 32 degrees down so its top edge is 8.6 degrees under the horizon), so the strip behind shows; dropMetres lowers the whole strip (the horizon of the image sits that far below the eye), heightMetres (0 = the row's) resizes it; brightness replaces the strip's own so the HUD reads over its bright cloud band. foeFade (true/false) fades the opponents and their gear by the same band measured at their feet, so a far boss dissolves into the clouds where the sand under him does (src/fight/foefade.ts; the hero is never faded; needs a band); ?foefade=v1 (foeFadeQuery / foeFadeV1) turns it off. A = fog only; B = fade + lowered strip + haze fog; C = lowered strip only.",
       "query": "skyview",

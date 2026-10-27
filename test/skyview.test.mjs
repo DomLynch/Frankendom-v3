@@ -85,7 +85,7 @@ test('?skyview=v1 equals the look before: no view = the row as it was (centre, h
   assert.equal(centreOffsetY(SKYLINE), 100 / 2 - (1 - 0.88) * 100);   // today's 38 m
   assert.equal(centreOffsetY(SKYLINE, null), centreOffsetY(SKYLINE));
   const scene = new THREE.Scene();
-  const sky = createSkyline(scene, '', SKYLINE, () => new Promise(() => {}));
+  const sky = createSkyline(scene, '?skyplate=v1', SKYLINE, () => new Promise(() => {}));
   assert.equal(sky.mesh.geometry.parameters.height, 100);
   assert.equal(sky.mesh.material.color.r, 0.9);
   sky.update(new THREE.Vector3(0, 2, 0), 0);
@@ -105,7 +105,7 @@ test('?skyview=v1 equals the look before: no view = the row as it was (centre, h
 test('a lowered strip sits dropMetres lower; a view sets its own brightness and height', () => {
   const view = { ...SKYVIEWS.variants.c, dropMetres: 10, heightMetres: 120, brightness: 0.5 };
   assert.equal(centreOffsetY(SKYLINE, view), 60 - 0.12 * 120 - 10);
-  const sky = createSkyline(new THREE.Scene(), '', SKYLINE, () => new Promise(() => {}), view);
+  const sky = createSkyline(new THREE.Scene(), '?skyplate=v1', SKYLINE, () => new Promise(() => {}), view);
   assert.equal(sky.mesh.geometry.parameters.height, 120); assert.equal(sky.mesh.material.color.r, 0.5);
   sky.update(new THREE.Vector3(0, 0, 0), 0);
   assert.equal(sky.mesh.position.y, centreOffsetY(SKYLINE, view));

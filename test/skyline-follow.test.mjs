@@ -60,7 +60,7 @@ test('stripYaw is the fixed yaw plus yawFollow x the camera yaw', () => {
 
 test('the strip turns after the camera, smoothly through +-pi, and never builds up an offset from lapping', () => {
   const F = 0.97, row = { ...SKYLINE, yawDegrees: 0, followOffsetDegrees: 0, yawFollow: F, yawFollowSeconds: 0.3 };
-  const sky = createSkyline(new THREE.Scene(), '', row, never);
+  const sky = createSkyline(new THREE.Scene(), '?skyplate=v1', row, never);   // the whole strip's maths (the plate's follow is pinned in skyplate.test.mjs)
   let last = 0;
   for (let i = 0; i <= 600; i++) {   // three lots of a full turn, the camera's heading wrapping at +-pi each lap
     sky.heading(camAt(i * 0.03)); sky.update(new THREE.Vector3(), 1 / 60);
@@ -76,7 +76,7 @@ test('the strip turns after the camera, smoothly through +-pi, and never builds 
 
 test('the follow starts on target and then eases (yawFollowSeconds), never snapping', () => {
   const row = { ...SKYLINE, yawDegrees: 0, followOffsetDegrees: 0, yawFollow: 1, yawFollowSeconds: 1 };
-  const sky = createSkyline(new THREE.Scene(), '', row, never);
+  const sky = createSkyline(new THREE.Scene(), '?skyplate=v1', row, never);
   sky.heading(camAt(2)); sky.update(new THREE.Vector3(), 0.016);
   assert.ok(Math.abs(sky.mesh.rotation.y - 2) < 1e-9);   // the first frame: no spin up from zero
   sky.heading(camAt(2.5)); sky.update(new THREE.Vector3(), 0.1);
@@ -91,7 +91,7 @@ test('?skyfollow=v1 (and yawFollow 0) keeps the strip fixed in world yaw', () =>
   assert.equal(skyFollowOn('?skyfollow=v1', SKYLINE), false);
   assert.equal(skyFollowOn('?foo=1&skyfollow=v1'), false);
   assert.equal(skyFollowOn('', { ...SKYLINE, yawFollow: 0 }), false);
-  const sky = createSkyline(new THREE.Scene(), '?skyfollow=v1', { ...SKYLINE, yawDegrees: 30 }, never);
+  const sky = createSkyline(new THREE.Scene(), '?skyfollow=v1&skyplate=v1', { ...SKYLINE, yawDegrees: 30 }, never);
   for (const yaw of [0, 1, 2, 3]) { sky.heading(camAt(yaw)); sky.update(new THREE.Vector3(), 1 / 60); assert.ok(Math.abs(sky.mesh.rotation.y - Math.PI / 6) < 1e-9); }
 });
 

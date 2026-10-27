@@ -31,7 +31,7 @@ import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClam
 import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';
 import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
-import { pitchChoice } from '../fight/camera-pitch.ts';
+import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
@@ -139,7 +139,7 @@ const paused = () => !assetsReady || graphicsLost || document.hidden;   // :823 
 // The lock camera: V2's lower, over-the-shoulder framing (data/fight.json camera); ?cam=v1 keeps V1's lock exactly.
 if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
 // The zone follow camera's pitch (data/fight.json camera.pitch): off by default (the lock exactly as it was); ?pitch=low (flat, soft, or degrees) flattens it to show a band of horizon. Zone only; ?cam=v1 and ?postkill=v1 never read it.
-if (ZONE && !/[?&]cam=v1\b/.test(search)) setCameraPitch(pitchChoice(FIGHT.camera.pitch, search), FIGHT.camera.pitch);
+if (ZONE && !/[?&]cam=v1\b/.test(search)) setCameraPitch(pitchChoice(FIGHT.camera.pitch, search), FIGHT.camera.pitch, portraitPitch(FIGHT.camera.pitch, search));
 // Legs keep walking under a held guard (data/fight.json guardWalk); ?guard=v1 keeps V1's whole-body Guard. Set before the rigs are built.
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
 // The swing trail softer (data/fight.json trail: cuts at half, the stab 30% less, both fighters); ?trail=v1 = today's trail.

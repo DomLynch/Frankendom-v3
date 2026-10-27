@@ -35,6 +35,7 @@
       "heroY": 0.4,
       "minEyeY": 1.2,
       "off": ["off", "default"],
+      "portrait": { "preset": "low", "belowAspect": 1 },
       "query": "pitch"
     }
   },

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import STAGE from '../../data/stage.json' with { type: 'json' };
 import { afterFirstFrame } from '../late-art.ts';
 import type { SkyView } from './skyview.ts';
+import { plateAhead, plateOn,plateGeometry, plateAlphaMap, plateCentreY, plateHorizonY, plateSize, plateWindow, skyGradient } from './skyplate.ts';
 
 /** The strip draws first of all the transparents (skyview.ts FLOOR_ORDER sits just after it). */
 export const SKYLINE_ORDER = -1000;
@@ -54,7 +55,7 @@ export type Skyline = {
 /** Builds the backdrop, or null under ?sky=v1 / `on: false`. `load` is the texture fetch (the page's own by default; the tests pass a stand-in). */
 export function createSkyline(
   scene: THREE.Scene, search: string, row: SkylineRow = SKYLINE,
-  load: () => Promise<THREE.Texture> = () => new THREE.TextureLoader().loadAsync(new URL(`../assets/skyline/${row.file}`, import.meta.url).href),
+  load: () => Promise<THREE.Texture> = () => new THREE.TextureLoader().loadAsync(new URL(`../assets/skyline/${plateOn(search, row.plate) ? row.plate.file : row.file}`, import.meta.url).href),
   view: SkyView | null = null,   // ?skyview=a|b|c (skyview.ts): its drop, height and brightness; null = the row as it is
 ): Skyline | null {
   if (!skylineOn(search, row)) return null;
@@ -63,15 +64,20 @@ export function createSkyline(
     side: THREE.BackSide, fog: false, toneMapped: false, transparent: true, opacity: 0, depthWrite: false,   // nothing behind it to write; nothing nearer is hidden by it
     color: new THREE.Color(shade, shade, shade),
   });
-  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(row.radius, row.radius, height, 96, 1, true), material);
+  const plate = plateOn(search, row.plate) ? row.plate : null;   // data/stage.json skyline.plate: a far backdrop arc at the picture's native aspect + a plain sky gradient; ?skyplate=v1 = the whole 360-degree strip (below)
+  let plateY = 0, dome: THREE.Mesh | undefined;   // plateY: the arc's centre relative to the eye (set when the picture lands and its real shape is known)
+  if (plate) plateY = plateCentreY(plate, row.radius, plateSize(plate, row.radius, plate.cropAspect).height);
+  const mesh = new THREE.Mesh(plate ? plateGeometry(plate, row.radius, plate.cropAspect * 100, 100) : new THREE.CylinderGeometry(row.radius, row.radius, height, 96, 1, true), material);
   mesh.name = 'skyline';
   mesh.renderOrder = SKYLINE_ORDER;   // first among the transparent draws, so every particle and trail composites over it
+  if (plate) mesh.renderOrder = SKYLINE_ORDER + plate.orderOffset;   // the arc draws over the folded floor and under the sand; its sky gradient (a child) stays first of all
   mesh.frustumCulled = false;
-  mesh.rotation.y = THREE.MathUtils.degToRad(row.yawDegrees);
+  const fixedYaw = plate ? plateAhead(plate) : THREE.MathUtils.degToRad(row.yawDegrees);   // ?skyfollow=v1: the strip stays at yawDegrees, the plate with its face dead ahead of the first heading (the camp)
+  mesh.rotation.y = fixedYaw;
   mesh.visible = false;
   scene.add(mesh);
   const follow = skyFollowOn(search, row), dir = new THREE.Vector3();
-  let started = false, target = 0, turn = THREE.MathUtils.degToRad(row.yawDegrees);   // turn = the strip's yaw, eased toward target by the shortest way (so winding never builds up: the alien is at most (1 - yawFollow) x 180 degrees off)
+  let started = false, target = 0, turn = fixedYaw;   // turn = the strip's yaw, eased toward target by the shortest way (so winding never builds up: the alien is at most (1 - yawFollow) x 180 degrees off)
   let state: Skyline['state'] = 'idle', opacity = 0, texture: THREE.Texture | undefined, disposed = false;
   afterFirstFrame()
     .then(() => { state = 'loading'; return new Promise<void>((done) => setTimeout(done, row.loadAfterFirstFrameMs)); })
@@ -83,6 +89,16 @@ export function createSkyline(
       t.colorSpace = THREE.SRGBColorSpace;
       t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping;   // the two ends are cross-faded in the file (seamOverlapPx), so the wrap is invisible
       t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.anisotropy = 1;
+      if (plate) {   // now the picture's own shape is known: cut the window, size the arc to it, fade its edges, lay the plain sky behind
+        const img = t.image as { width?: number; height?: number } | undefined, iw = img?.width || plate.cropAspect * 100, ih = img?.height || 100;
+        const size = plateSize(plate, row.radius, plateWindow(plate, iw, ih).aspect);
+        mesh.geometry.dispose(); mesh.geometry = plateGeometry(plate, row.radius, iw, ih);
+        plateY = plateCentreY(plate, row.radius, size.height);
+        material.alphaMap = plateAlphaMap(plate);
+        dome = new THREE.Mesh(skyGradient(plate, row.radius, plateHorizonY(plate, plateY, size.height), plateY + size.height / 2), new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, toneMapped: false, transparent: true, opacity: 0, depthWrite: false, vertexColors: true, color: new THREE.Color(shade, shade, shade) }));
+        dome.name = 'skyplate-sky'; dome.renderOrder = SKYLINE_ORDER - 1; dome.frustumCulled = false;
+        mesh.add(dome);
+      }
       material.map = t; material.needsUpdate = true; mesh.visible = true; state = 'fading';
     })
     .catch(() => { state = 'failed'; });   // the flat sky stays: nothing to report to the player
@@ -93,7 +109,7 @@ export function createSkyline(
       camera.getWorldDirection(dir);
       if (Math.hypot(dir.x, dir.z) < 1e-4) return;   // looking straight up or down: no heading, keep the last
       const h = headingOf(dir.x, dir.z);
-      target = stripYaw(row, h);   // the camera's heading folded into -pi..pi: the offset from the view never grows with how many times he has turned
+      target = plate ? fixedYaw + row.yawFollow * h : stripYaw(row, h);   // the camera's heading folded into -pi..pi: the offset from the view never grows with how many times he has turned
       if (!started) { started = true; turn = target; }   // the first frame starts on target: no spin-up
     },
     get yaw() { return turn; },
@@ -102,16 +118,18 @@ export function createSkyline(
         turn += shortestTurn(target - turn) * (row.yawFollowSeconds > 0 ? 1 - Math.exp(-dt / row.yawFollowSeconds) : 1);   // a slow ease: the far backdrop drifts after the turn
         mesh.rotation.y = turn;
       }
-      mesh.position.set(camera.x, camera.y + centreOffsetY(row, view), camera.z);
+      mesh.position.set(camera.x, camera.y + (plate ? plateY : centreOffsetY(row, view)), camera.z);
+      dome?.position.set(0, -plateY, 0);   // the gradient stays centred on the eye whatever the arc's height
       if (state === 'fading') {
         opacity = Math.min(1, opacity + (row.fadeSeconds > 0 ? dt / row.fadeSeconds : 1));
         material.opacity = opacity;
+        if (dome) (dome.material as THREE.MeshBasicMaterial).opacity = opacity;
         if (opacity >= 1) state = 'on';
       }
     },
     get state() { return state; },
     get opacity() { return opacity; },
     get texture() { return texture; },
-    dispose() { disposed = true; scene.remove(mesh); mesh.geometry.dispose(); material.dispose(); texture?.dispose(); },
+    dispose() { disposed = true; scene.remove(mesh); mesh.geometry.dispose(); material.dispose(); material.alphaMap?.dispose(); if (dome) { dome.geometry.dispose(); (dome.material as THREE.Material).dispose(); } texture?.dispose(); },
   };
 }

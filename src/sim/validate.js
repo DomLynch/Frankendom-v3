@@ -75,7 +75,16 @@ const BANNED = /^(block|blocks|immune|immunity)$/i;
 function checkCameraPitch(p) {
   const e = [], at = 'fight.camera.pitch', fin = (v) => typeof v === 'number' && Number.isFinite(v);
   if (!p || typeof p !== 'object' || Array.isArray(p)) return [`${at}: must be an object`];
-  for (const k of Object.keys(p)) if (!['about', 'default', 'presets', 'limits', 'heroY', 'minEyeY', 'off', 'query'].includes(k)) e.push(`${at}.${k}: unknown key`);
+  for (const k of Object.keys(p)) if (!['about', 'default', 'presets', 'limits', 'heroY', 'minEyeY', 'off', 'query', 'portrait'].includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (p.portrait !== undefined) {   // the pitch a portrait screen (aspect under belowAspect) gets when the link does not ask: a preset name, so the degrees stay in the presets row
+    const q = p.portrait;
+    if (!q || typeof q !== 'object' || Array.isArray(q)) e.push(`${at}.portrait: must be an object {preset, belowAspect}`);
+    else {
+      for (const k of Object.keys(q)) if (!['preset', 'belowAspect'].includes(k)) e.push(`${at}.portrait.${k}: unknown key`);
+      if (typeof q.preset !== 'string' || !(p.presets && typeof p.presets === 'object' && Object.hasOwn(p.presets, q.preset))) e.push(`${at}.portrait.preset: must be a preset name`);
+      if (!fin(q.belowAspect) || q.belowAspect < 0.3 || q.belowAspect > 1) e.push(`${at}.portrait.belowAspect: must be a number in 0.3..1 (landscape is never lifted)`);
+    }
+  }
   const lim = p.limits;
   const limOk = Array.isArray(lim) && lim.length === 2 && lim.every(fin) && lim[0] >= 5 && lim[1] <= 45 && lim[0] < lim[1];
   if (!limOk) e.push(`${at}.limits: must be [min, max] degrees inside 5..45`);
@@ -306,7 +315,38 @@ export function validateFile(name, json) {
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
-export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views', 'fold'];
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'plate', 'views', 'fold'];
+export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'orderOffset', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky'];
+// data/stage.json `skyline.plate` (src/fight/skyplate.ts): the far backdrop arc. A plain file name, a face inside the picture, fractions in range, colours as #rrggbb, and the rim (the arc at its tallest, the sky cylinder) inside the far plane.
+function checkSkyPlate(s) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.plate.${p}: ${m}`), p = s.plate;
+  if (p === null || typeof p !== 'object' || Array.isArray(p)) return ['stage.skyline.plate: must be an object'];
+  for (const k of Object.keys(p)) if (!SKYPLATE_KEYS.includes(k)) at(k, 'unknown key');
+  if (typeof p.on !== 'boolean') at('on', 'must be true or false');
+  for (const k of ['query', 'v1']) if (typeof p[k] !== 'string' || !/^[a-z0-9]+$/i.test(p[k])) at(k, 'must be a plain word');
+  const taken = [s.query, s.followQuery, s.views && s.views.query, s.views && s.views.foeFadeQuery, s.fold && s.fold.query];
+  if (typeof p.query === 'string' && taken.includes(p.query)) at('query', 'must differ from the other skyline query words');
+  if (typeof p.file !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(p.file)) at('file', 'must be a plain .webp file name in src/assets/skyline/');
+  const rng = (o, k, lo, hi, int, path = k) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi || (int && !Number.isInteger(o[k]))) at(path, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
+  rng(p, 'spanDegrees', 20, 180); rng(p, 'cropAspect', 1, 12); rng(p, 'horizonFraction', 0.3, 1); rng(p, 'faceElevationDegrees', -30, 30); rng(p, 'turnDegrees', -360, 360);
+  rng(p, 'orderOffset', 1, 99, true); if (Number.isInteger(p.orderOffset) && s.fold && Number.isInteger(s.fold.orderOffset) && !(p.orderOffset > s.fold.orderOffset)) at('orderOffset', 'must draw after the folded floor (above fold.orderOffset) and before the sand (under 100)');
+  rng(p, 'edgeFadeFraction', 0, 0.5); rng(p, 'topFadeFraction', 0, 0.5); rng(p, 'bottomFadeFraction', 0, 0.5); rng(p, 'segments', 8, 256, true);
+  if (p.face === null || typeof p.face !== 'object' || Array.isArray(p.face)) at('face', 'must be an object {u, v}: the face centre as a fraction across and down the picture');
+  else { for (const k of Object.keys(p.face)) if (!['u', 'v'].includes(k)) at(`face.${k}`, 'unknown key'); for (const k of ['u', 'v']) rng(p.face, k, 0, 1, false, `face.${k}`); }
+  const k = p.sky;
+  if (k === null || typeof k !== 'object' || Array.isArray(k)) at('sky', 'must be an object');
+  else {
+    for (const q of Object.keys(k)) if (!['topColor', 'horizonColor', 'hazeColor', 'halfHeightMetres', 'rings'].includes(q)) at(`sky.${q}`, 'unknown key');
+    for (const q of ['topColor', 'horizonColor', 'hazeColor']) if (typeof k[q] !== 'string' || !/^#[0-9a-f]{6}$/i.test(k[q])) at(`sky.${q}`, 'must be a #rrggbb colour');
+    rng(k, 'halfHeightMetres', 10, 400, false, 'sky.halfHeightMetres'); rng(k, 'rings', 2, 128, true, 'sky.rings');
+    if (Number.isFinite(s.radius) && Number.isFinite(k.halfHeightMetres) && Math.hypot(s.radius, k.halfHeightMetres) > SKYLINE_RIM_LIMIT) at('sky.halfHeightMetres', 'the sky cylinder rim must stay inside the camera far plane (180 m)');
+  }
+  if (Number.isFinite(s.radius) && Number.isFinite(p.spanDegrees) && Number.isFinite(p.cropAspect) && Number.isFinite(p.face && p.face.v) && Number.isFinite(p.faceElevationDegrees)) {
+    const h = (s.radius * p.spanDegrees * Math.PI / 180) / p.cropAspect, top = s.radius * Math.tan(p.faceElevationDegrees * Math.PI / 180) + (1 - p.face.v) * h, bottom = top - h;
+    if (Math.hypot(s.radius, Math.max(Math.abs(top), Math.abs(bottom))) > SKYLINE_RIM_LIMIT) at('spanDegrees', 'the arc, at the shape cropAspect gives it, must stay inside the camera far plane (180 m)');
+  }
+  return e;
+}
 /** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
 function checkWideLens(w, name) {
   const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
@@ -337,6 +377,7 @@ function checkSkyline(s) {
   if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > SKYLINE_RIM_LIMIT) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
   e.push(...checkSkyViews(s));
   e.push(...checkSkyFold(s));
+  e.push(...checkSkyPlate(s));
   return e;
 }
 

@@ -1,0 +1,378 @@
+{
+ "url": "http://localhost:18473/?skyplate=v1",
+ "playableMs": 737,
+ "files": 41,
+ "wire": 5442944,
+ "raw": 11741202,
+ "rows": [
+  {
+   "url": "http://localhost:18473/src/assets/psyche-106.11c8e72d.glb",
+   "raw": 1601388,
+   "wire": 1012059,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "http://localhost:18473/b/vendor/physics.4df1378d.js",
+   "raw": 3661553,
+   "wire": 973204,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/minotaur-106.5f1a9393.glb",
+   "raw": 1261140,
+   "wire": 812746,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/audio/sprite.40e6abe7.ogg",
+   "raw": 467546,
+   "wire": 467764,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "audio/ogg"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/client/main.js",
+   "raw": 1112483,
+   "wire": 402056,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/weapons/shapes/longsword-plain.a3defee2.glb",
+   "raw": 238288,
+   "wire": 201944,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "http://localhost:18473/b/vendor/three.d987e36b.js",
+   "raw": 719105,
+   "wire": 184517,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/skyline/skyline-alien.38184101.webp",
+   "raw": 181064,
+   "wire": 181283,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/webp"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/weapons/foe/cleaver.9a60033a.glb",
+   "raw": 233820,
+   "wire": 171592,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "http://localhost:18473/weapons/shapes/cleaver-plain.b530612c.glb",
+   "raw": 170700,
+   "wire": 170926,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/floor-pool.da340a7b.png",
+   "raw": 71591,
+   "wire": 71809,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/floor-pool-b.099f83ab.png",
+   "raw": 71038,
+   "wire": 71256,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/minotaur/special-groundslam.json.js",
+   "raw": 211660,
+   "wire": 55910,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/psyche/special-groundslam.json.js",
+   "raw": 212046,
+   "wire": 55608,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/minotaur/special-whirlwind.json.js",
+   "raw": 183289,
+   "wire": 47816,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/psyche/special-whirlwind.json.js",
+   "raw": 183606,
+   "wire": 47532,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/style.css",
+   "raw": 159316,
+   "wire": 40263,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/css"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/minotaur/special-lunge.json.js",
+   "raw": 143008,
+   "wire": 37399,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/psyche/special-lunge.json.js",
+   "raw": 143165,
+   "wire": 37385,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/minotaur/special-skullcrack.json.js",
+   "raw": 133114,
+   "wire": 35137,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/vendor/feel.3e16ef15.js",
+   "raw": 91024,
+   "wire": 34965,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/psyche/special-skullcrack.json.js",
+   "raw": 133069,
+   "wire": 34933,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-drip.23f262fe.png",
+   "raw": 33327,
+   "wire": 33544,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-drip-normal.a72a8798.png",
+   "raw": 31764,
+   "wire": 31981,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-wound-c.974caec8.png",
+   "raw": 28390,
+   "wire": 28607,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-wound-d-normal.6508b3c4.png",
+   "raw": 28381,
+   "wire": 28598,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-wound-b.b6accf65.png",
+   "raw": 26046,
+   "wire": 26263,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-wound-c-normal.6faf31b0.png",
+   "raw": 23082,
+   "wire": 23299,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-wound-b-normal.0f95468a.png",
+   "raw": 19932,
+   "wire": 20149,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/blood-wound-d.1027afa2.png",
+   "raw": 15508,
+   "wire": 15725,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/floor-splash-d.dbf7a47b.png",
+   "raw": 14877,
+   "wire": 15094,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/psyche/hamstrung-killer.json.js",
+   "raw": 56496,
+   "wire": 14120,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/floor-splash-c.ac1d8db6.png",
+   "raw": 13317,
+   "wire": 13534,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/floor-splash-b.7b733b84.png",
+   "raw": 12634,
+   "wire": 12851,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/skyline/skyfold-band.51068784.webp",
+   "raw": 10878,
+   "wire": 11096,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/webp"
+  },
+  {
+   "url": "http://localhost:18473/src/assets/blood/floor-splash.d3c9aa25.png",
+   "raw": 10128,
+   "wire": 10345,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "image/png"
+  },
+  {
+   "url": "http://localhost:18473/b/dev/src/assets/106/minotaur/hamstrung-victim-hero.json.js",
+   "raw": 26034,
+   "wire": 6115,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/javascript"
+  },
+  {
+   "url": "http://localhost:18473/?skyplate=v1",
+   "raw": 5754,
+   "wire": 2281,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/html"
+  },
+  {
+   "url": "http://localhost:18473/physics/bodies/minotaur-106.measure.json",
+   "raw": 1638,
+   "wire": 877,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "application/json"
+  },
+  {
+   "url": "http://localhost:18473/build.txt?v=1793113649032",
+   "raw": 3,
+   "wire": 218,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "text/plain"
+  },
+  {
+   "url": "http://localhost:18473/favicon.ico",
+   "raw": 0,
+   "wire": 143,
+   "status": 404,
+   "enc": "none",
+   "cache": "",
+   "type": "text/plain"
+  }
+ ]
+}

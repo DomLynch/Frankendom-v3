@@ -88,7 +88,7 @@ test('a landed strip fades in over the row time; a failed fetch leaves the flat 
   const lateArt = await import('../src/late-art.ts');
   const scene = new THREE.Scene();
   const row = { ...SKYLINE, loadAfterFirstFrameMs: 0, fadeSeconds: 1 };
-  const sky = createSkyline(scene, '', row, () => Promise.resolve(new THREE.Texture()));
+  const sky = createSkyline(scene, '?skyplate=v1', row, () => Promise.resolve(new THREE.Texture()));   // the whole strip; the plate has its own tests (skyplate.test.mjs)
   assert.equal(sky.state, 'idle'); assert.equal(sky.mesh.visible, false);
   lateArt.firstFrameDrawn(() => {});
   await new Promise((r) => setTimeout(r, 20));
