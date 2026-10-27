@@ -55,6 +55,8 @@ import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep } from '../fight/zone-loop.ts';
+import { attackersOn, dropped, isStanding, joiners } from '../stubs.ts';
+import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import type { DuelPose } from '../fight/duel.ts';
@@ -93,8 +95,12 @@ function fresh(pose?: DuelPose): Practice {
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   setFoeSpecialReach(foeSpecialReachFor(FIGHT.foeSpecialReach, search));   // V3: an opponent's melee special starts inside 2.2 m and fizzles past 2.6 m (data/fight.json foeSpecialReach); ?special=v1 = V1's 3.0 m, no release check
   epoch++;
+  return make(seed, pose);
+}
+/** A whole fight on seed `s` (the hero and one boss, the difficulty rows' health and damage scales on the boss): `fresh`'s build without its side effects, which the zone's extra attackers reuse. */
+function make(s: number, pose?: DuelPose): Practice {
   const body = opponentAt(opponent, level);
-  const made = initialPractice(seed, difficultyOn ? scaledOpponent(body, resolved) : body, FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
+  const made = initialPractice(s, difficultyOn ? scaledOpponent(body, resolved) : body, FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
     recordSpecials({ specials: FIGHT.specials, level, opponent: opponentId }), undefined, FIGHT.stance as PickedStance,
     pose, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
   return difficultyOn ? scaledPractice(made, resolved) : made;
@@ -195,6 +201,10 @@ if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
 let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, engaged = false, killMarked = false;
+// Real-time aggro (data/respawn.json attackers, src/zone/attackers.ts, src/fight/attacker-bout.ts): while the hero fights the held boss, every other standing spawn whose aggro he enters fights him too, in its own duel on his one health pool.
+// `attackers` holds them (a killed one stays, lying, until its own timer stands it again); `killedBy` is the attacker whose blow killed the hero (that boss starts again at full health). ?aggro=v1 / row off / ?postkill=v1: none, the others are frozen copies.
+const multi = !!ZONE && attackersOn(search);
+let attackers: Attacker[] = [], killedBy: number | null = null;
 const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, RADIUS, ZONE!.minDistance, heroStart);
@@ -203,35 +213,64 @@ function rematch(pose?: DuelPose, index = current, restart = true) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
   roam = null; sinceDeath = 0; current = index; engaged = false; killMarked = false;
+  attackers = attackers.filter((a) => a.dead); killedBy = null;   // every live attacker lets go and stands again at full health at its spot; a killed one keeps lying until its own timer is up
   clearInput(); state = previous = practice.fighter;
   if (restart) view.restartStandoff();
   updateHud();
 }
 /** The sim hands over to spawn `index` with the hero where he stands (no draw-in replayed: both rigs already stand armed). */
 const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false);
+/** The opening pose of attacker `index`: its boss at its own spot, the hero where he stands (he is never moved: the sim reads his real body every tick). */
+const poseOfAttacker = (index: number, at: { x: number; z: number }): DuelPose => ({ hero: { x: at.x, z: at.z }, foe: { x: spawns[index]!.x, z: spawns[index]!.z }, heroFacing: Math.atan2(spawns[index]!.x - at.x, spawns[index]!.z - at.z) });
+/** The kill's ceremony is over and another boss is on him: that boss's fight becomes the sim's fight, the hero's health as it is now (the first boss's corpse is left lying, as at every hand-over). */
+function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number }) {
+  view.respawnFoe();
+  const mine = practice.duel.fighters[0], hero: Fighter = { ...mine, body: { ...mine.body, x: at.x, z: at.z, heading: at.heading } };
+  epoch++; seed = nextSeed(seed); practice = adopt(a, hero); frameEvents = []; openerLift = 0;
+  roam = null; sinceDeath = 0; current = a.index; engaged = true; killMarked = false; killedBy = null;
+  attackers = attackers.filter((x) => x !== a);
+  clearInput(); state = previous = practice.fighter;
+  updateHud();
+}
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
   spawns = timers.spawns;
+  if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
+    attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
+    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) spawns = kill(spawns, a.index);
+  }
   if (practice.finish) { openerSpent = true; openerLift = 0; }   // opener: a kill or a death spends it (no re-arm)
   if (heroStands() && !killMarked) { killMarked = true; engaged = false; spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
-    const near = inAggro(spawns, hero), next = near >= 0 ? near : timers.due.includes(current) ? nearestStanding(spawns, hero) : -1;
-    if (next >= 0) hand(next, hero);
+    const live = attackers.find((a) => !a.dead), phase = view.finishPhase();
+    if (live) { if (roam || phase.complete || phase.age >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
+    else {
+      const near = inAggro(spawns, hero), next = near >= 0 ? near : timers.due.includes(current) ? nearestStanding(spawns, hero) : -1;
+      if (next >= 0) hand(next, hero);
+    }
   } else if (heroDied()) {
-    if ((sinceDeath += dt) >= ZONE!.diedSeconds) rematch(poseFor(current, heroStart), current);   // "You died" for diedSeconds, then the pit's mark at full health; that boss starts again at full health, the rest untouched
+    if ((sinceDeath += dt) >= ZONE!.diedSeconds) { const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish) {
     if (engaged) openerSpent = true;   // opener: any engagement spends it
     if (!openerSpent && assetsReady) openerIdle += dt;   // the newcomer's idle clock; its due spawn's aggro reaches him (spawns.ts openerReach)
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
     if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = openerLeashLift(spawns[near]);   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
-    if (engaged) { if (leashed(spawns[current]!, hero, openerLift)) hand(current, hero); }   // beyond the leash he resets at his spot at full health
+    if (engaged) {
+      if (leashed(spawns[current]!, hero, openerLift)) hand(current, hero);   // beyond the leash he resets at his spot at full health
+      else if (multi) {   // real-time aggro: any other standing boss whose aggro he is inside attacks him now, whatever he is fighting; one beyond its own leash lets go
+        const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
+        const gone = dropped(spawns, alive(), hero);
+        attackers = attackers.filter((a) => !gone.includes(a.index));
+        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero))));
+      }
+    }
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
     else { const at = held(spawns, current, hero, WORLD.retargetMargin); if (at >= 0 && at !== current) hand(at, hero); }   // nobody engaged: the sim holds the nearest
   }
 }
 // The zone's stills and the cost table read this (scripts/zone-stills.mjs)
-function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
+function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
 element('reset-button').addEventListener('click', () => rematch());
 
 function updateHud() {   // :684, the career fight's view
@@ -272,8 +311,14 @@ function frame(now: number) {
       const intent = controls.intent();
       // :1526 match.step: the live intent, quantized as the recorder stores it, stepped against the warden's profile at his level
       // the fight starts by itself: a sheathed hero with no press of his own steps with V1's draw press (src/auto-start.ts)
-      practice = stepPractice(practice, quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
-        guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel }), aiProfile);
+      const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
+        guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel });
+      const prior = practice;
+      practice = stepPractice(prior, duelIntent, aiProfile);
+      if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
+        const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
+        practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
+      }
       frameEvents.push(...practice.events);
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
@@ -313,7 +358,8 @@ function frame(now: number) {
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
-  if (ZONE) { view.idleFoes(idleOnes(spawns, current).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z) }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice }))); }   // the attackers' rigs (a killed one lies until its timer is up)
+  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
     locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null,

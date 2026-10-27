@@ -31,6 +31,12 @@
     "query": "opener",
     "off": "off"
   },
+  "attackers": {
+    "about": "Dom 2026-10-27, playing live: 'the third minotaur just looked at me ... in a real-time zone you should be attacked within range, regardless of whether you are already fighting another boss.' While the hero fights one boss, every other STANDING spawn whose aggro range he walks into joins as a live attacker: it runs the same boss brain against him in its own duel (its own health, moves and boss special; the difficulty rows' health and damage scales apply to it as to the first), the hero's health is the one pool every attacker draws from, and he can strike it back. At most MAX_ATTACKERS (src/fight/world-rules-defs.json maxAttackers, V1's 3, the first boss included) fight him at once; a further boss stands and waits. An attacker is leashed to its own spot like the held boss (the zone row's leash) and resets to full health standing there; its kill starts its own respawnSeconds clock. on:false or the link query `query`=`off` turns it off: the other bosses stand as frozen copies, as in #91. ?postkill=v1 has no zone, so no attackers.",
+    "on": true,
+    "query": "aggro",
+    "off": "v1"
+  },
   "limits": {
     "about": "Validation ranges for the rows above.",
     "delaySeconds": [1, 60],
