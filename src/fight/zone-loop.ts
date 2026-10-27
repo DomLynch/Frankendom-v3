@@ -3,7 +3,7 @@
 // downSeconds) and data/respawn.json (the roam rows and the way-back flag). Pure rules; the sim is untouched: this file is presentation timing and
 // the hero's post-kill walk. No timing, label or id literal lives here, every one is a row (scripts/as-data/check.mjs scans this file at zero).
 // How long a corpse stays is Physics Dev's row (data/physics.json corpse.keepSeconds, ragdoll.leaveCorpse at the respawn), not one here.
-// A zone holds a LIST of spawn rows; the page plays the first (one opponent alive), so more spawns, players and shared boss health are rows later.
+// A zone holds a LIST of spawn rows; phase 1b (src/zone/spawns.ts) plays all of them, one duel sim at a time (the held spawn), the rest standing at their spots.
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { M } from './detmath.ts';
 import { advance, type State } from './sim.ts';
@@ -21,9 +21,8 @@ export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly str
   if (!(Number.isFinite(at) && at >= lo && at <= hi)) throw new Error(`respawn.json postKill.startAfterSeconds ${at} is not in ${lo}..${hi}`);
   const [near, far] = rows.limits.minDistance, gap = rows.spawn.minDistance;
   if (!(Number.isFinite(gap) && gap >= near && gap <= far)) throw new Error(`respawn.json spawn.minDistance ${gap} is not in ${near}..${far}`);
-  const spawn = zone.spawns[0];
-  if (!spawn) throw new Error(`zone ${zone.id} has no spawn row`);
-  if (opponents && !opponents.includes(spawn.kind)) throw new Error(`zone ${zone.id} spawn ${spawn.id} names unknown kind "${spawn.kind}"`);
+  if (!zone.spawns[0]) throw new Error(`zone ${zone.id} has no spawn row`);
+  for (const spawn of zone.spawns) if (opponents && !opponents.includes(spawn.kind)) throw new Error(`zone ${zone.id} spawn ${spawn.id} names unknown kind "${spawn.kind}"`);
 }
 
 /** The zone loop a page plays: the flag (`?postkill=v1`) or roam off is the frozen end screen (null); otherwise the zone row's first spawn. */
@@ -31,7 +30,7 @@ export function zoneLoopFor(zone: ZoneRow, search = '', opponents?: readonly str
   validateLoop(rows, zone, opponents);
   if (new URLSearchParams(search).get(rows.flag.query) === rows.flag.off || !rows.postKill.roam) return null;
   const s = zone.spawns[0]!;
-  return { startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };
+  return { startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };   // `spawn`: the first row; the page plays every row (src/zone/spawns.ts)
 }
 
 /** Whether a spawn's new opponent stands `since` seconds after its kill. */

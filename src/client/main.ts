@@ -15,7 +15,7 @@ import { OPPONENTS, RULES, opponentAt, profileAt, weaponOf, type SkillId, type W
 import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
 import { recordSpecials } from '../fight/replay.ts';
-import { RADIUS, initialTarget, wrapAngle, type State } from '../fight/sim.ts';
+import { RADIUS, initialState, wrapAngle, type State } from '../fight/sim.ts';
 import { playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.ts';
 import { setStab } from '../fight/stab-rule.ts';
 import { setStanceRows } from '../fight/stance-era.ts';
@@ -52,7 +52,8 @@ import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
-import { respawnDue, zoneLoopFor, respawnPose, roamStep } from '../fight/zone-loop.ts';
+import { zoneLoopFor, roamStep } from '../fight/zone-loop.ts';
+import { WORLD, held, idleOnes, inAggro, kill, leashed, nearestStanding, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
@@ -176,24 +177,51 @@ function nameOpponent() {   // :397 without the legend
 // as it always did (stepDuel returns early once a fighter has no health), so a hero who won keeps walking on a presentation-only body (`roam`, the
 // sim's own advance), the corpse lies where it fell, and the spawn stands a fresh opponent `respawnSeconds` after the kill, where the hero stands (the dead body is left beside him).
 // A hero who dies is "You died" for `heroDeath.diedSeconds`, then stands at the pit's mark at full health. No Rematch in the zone.
+// Several bosses (live-zone phase 1b, src/zone/spawns.ts, data/respawn.json world): the zone row's spawns each stand at their own spot with their own timers. The sim is still ONE duel, so it holds
+// the spawn the hero is nearest to (`current`, the live rig); the others stand as frozen copies at their spots (view.idleFoes); the fight starts when the hero walks into the held one's aggro
+// (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));
-let roam: State | null = null, sinceKill = 0, sinceDeath = 0;
+let roam: State | null = null, sinceDeath = 0;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
-function rematch(pose?: DuelPose) {
+const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
+if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
+let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, engaged = false, killMarked = false;
+const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
+/** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
+const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, RADIUS, ZONE!.minDistance, heroStart);
+if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
+function rematch(pose?: DuelPose, index = current, restart = true) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = [];
-  roam = null; sinceKill = 0; sinceDeath = 0;
+  roam = null; sinceDeath = 0; current = index; engaged = false; killMarked = false;
   clearInput(); state = previous = practice.fighter;
-  view.restartStandoff(); updateHud();
+  if (restart) view.restartStandoff();
+  updateHud();
 }
-function respawn() {   // the foe's respawn: the hero stays where he stands; a death warp (heroDied) or a refused pose is the pit's marks
-  const pose = ZONE && heroStands() ? respawnPose(roam ?? practice.fighter, initialTarget(), RADIUS, ZONE.minDistance) : null;
-  (globalThis as { __v3Respawn?: unknown }).__v3Respawn = { pose, mark: initialTarget(), wall: RADIUS };   // the stills read where the respawn stood them
-  rematch(pose ?? undefined);
+/** The sim hands over to spawn `index` with the hero where he stands (no draw-in replayed: both rigs already stand armed). */
+const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false);
+/** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
+function zoneStep(dt: number) {
+  const hero = state, timers = tick(spawns, dt);
+  spawns = timers.spawns;
+  if (heroStands() && !killMarked) { killMarked = true; engaged = false; spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
+  if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
+    const near = inAggro(spawns, hero), next = near >= 0 ? near : timers.due.includes(current) ? nearestStanding(spawns, hero) : -1;
+    if (next >= 0) hand(next, hero);
+  } else if (heroDied()) {
+    if ((sinceDeath += dt) >= ZONE!.diedSeconds) rematch(poseFor(current, heroStart), current);   // "You died" for diedSeconds, then the pit's mark at full health; that boss starts again at full health, the rest untouched
+  } else if (!practice.finish) {
+    const near = inAggro(spawns, hero);
+    if (engaged) { if (leashed(spawns[current]!, hero)) hand(current, hero); }   // beyond the leash he resets at his spot at full health
+    else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
+    else { const at = held(spawns, current, hero, WORLD.retargetMargin); if (at >= 0 && at !== current) hand(at, hero); }   // nobody engaged: the sim holds the nearest
+  }
 }
-element('reset-button').addEventListener('click', rematch.bind(null, undefined));
+// The zone's stills and the cost table read this (scripts/zone-stills.mjs)
+function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
+element('reset-button').addEventListener('click', () => rematch());
 
 function updateHud() {   // :684, the career fight's view
   hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied() });
@@ -220,10 +248,7 @@ function frame(now: number) {
   last = now;
   const dt = Math.min(elapsed, FIGHT.frameDtMaxS);
   if (!paused()) {
-    if (heroStands()) {   // the spawn stands a fresh opponent respawnSeconds after the kill (data/respawn.json); the dead body is left standing (view.respawnFoe)
-      sinceKill += dt;
-      if (respawnDue(ZONE!.spawn, sinceKill)) respawn();
-    } else if (heroDied() && (sinceDeath += dt) >= ZONE!.diedSeconds) rematch();   // "You died" for diedSeconds, then the pit's mark at full health
+    if (ZONE) zoneStep(dt);   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
     controls.promoteDodge(now);
     // :1517 the pause spends the frame's time first; what is left after it goes on to the simulation
     if (hitStop > 0) {
@@ -236,7 +261,7 @@ function frame(now: number) {
       const intent = controls.intent();
       // :1526 match.step: the live intent, quantized as the recorder stores it, stepped against the warden's profile at his level
       // the fight starts by itself: a sheathed hero with no press of his own steps with V1's draw press (src/auto-start.ts)
-      practice = stepPractice(practice, quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart, practice, intent.action), guard: intent.guard,
+      practice = stepPractice(practice, quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel }), aiProfile);
       frameEvents.push(...practice.events);
       // :1552 the death's sound follows the renderer's own finisher pick
@@ -277,6 +302,7 @@ function frame(now: number) {
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
+  if (ZONE) { view.idleFoes(idleOnes(spawns, current).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
     locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null,

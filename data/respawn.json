@@ -10,9 +10,19 @@
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
     "minDistance": 3.25
   },
+  "world": {
+    "about": "Live-zone phase 1b, several bosses at their spots (src/zone/spawns.ts, wired in src/client/main.ts). The page draws one place today, the Duel pit, so a spawn row's position (the zone's frame) is drawn at position minus the centre of the zone area `pitArea` (`centre`: how far across the area, 0 to 1, the sim's circle is centred; the result is the pit's own frame, where the sim's circle is). One duel sim runs at a time: it holds the spawn the hero is nearest to (the 'held' one, standing as the live rig); the other spawns stand as frozen copies of the standing rig at their spots (no sim, no ragdoll) until the hero walks into one's aggro, which hands the sim to it. retargetMargin: metres another spawn must be nearer than the held one before the sim moves to it while nobody has engaged (no flicker at the half-way line). edgeMetres: a spot stands at least this far inside the pit's wall (src/fight/sim.ts RADIUS). The fight starts when the hero is inside the held spawn's aggro (data/fight.json start.auto then draws for him); a hero beyond the held spawn's leash resets it to full health at its spot; a kill starts only that spawn's respawn timer (the zone row's respawnSeconds), the others are untouched.",
+    "pitArea": "duel-pit",
+    "centre": 0.5,
+    "retargetMargin": 1.5,
+    "edgeMetres": 1
+  },
   "limits": {
     "about": "Validation ranges for the rows above.",
     "startAfterSeconds": [0, 30],
-    "minDistance": [0.5, 20]
+    "minDistance": [0.5, 20],
+    "retargetMargin": [0, 10],
+    "edgeMetres": [0, 4],
+    "centre": [0, 1]
   }
 }

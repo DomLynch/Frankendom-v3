@@ -22,7 +22,7 @@ import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { bakeSafeFinisher, lookBakeOffFrom, lookBakes, rankLookFlag, runThroughForced, rankLookFor, rankLookStream, SHIPPING_LOOKS } from './rank-look.ts';
 import { kitWorn, levelOf, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/loot.ts
-import { standoffClock, standoffFlag, standoffPose } from './standoff.ts';
+import { STANDOFF_MS, standoffClock, standoffFlag, standoffPose } from './standoff.ts';
 import { actorPose, initialPractice, type CombatEvent, type Practice } from './combat.ts';
 import { ON_DEMAND_BEASTS, beastBodyUrl } from './beast-scale.ts';
 import { OPPONENTS, PLAYER_WEAPONS, RULES, opponentAt, weaponOf, DEFAULT_WEAPON, WEAPON_LOOK, type OpponentId, type WeaponId } from './moves.ts';
@@ -64,7 +64,7 @@ import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
-import { foeRagdollFor, ragdollBody, ragdollFinisher } from './ragdoll.ts';
+import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
   readonly files: string[];
@@ -520,6 +520,26 @@ export function createScene(
   const standoffOn = typeof location !== 'undefined' && standoffFlag(location.search);   // on by default, ?standoff=0 off (standoff.ts)
   const standoff = standoffClock();   // ms of frame time since the versus card lifted (frame dt, so a stepped harness clock plays it too); -1 before
   const rig = createCameraRig(camera);
+  // The zone's other bosses (live-zone phase 1b, src/zone/spawns.ts): the sim holds ONE foe, the live rig above; every other standing spawn is a frozen copy of that rig as it stands at rest
+  // (the same SkeletonUtils clone the corpse copy is, ragdoll.snapshotRig: geometry, materials and the weapon shared, its own bones; no mixer, no ragdoll, no sim) at its spot.
+  // main.ts hands the list each frame (`idleFoes`); the copies are made once, the first frame the live foe stands at rest after the draw-in, and are only moved, shown or hidden after that.
+  let idleList: readonly { x: number; z: number; heading: number }[] = [];
+  const idleCopies: THREE.Group[] = [];
+  function syncIdleFoes(practice: Practice) {
+    const rest = standoffOn ? standoff.age >= STANDOFF_MS : standoff.age >= 0, foe = practice.duel.fighters[1];
+    if (warriors && opponent.visible && rest && (!ragdoll || ragdoll.state === 'alive') && !practice.finish && foe.health === foe.maxHealth && (foe.phase === 'sheathed' || foe.phase === 'ready') && foe.age >= 0)
+      while (idleCopies.length < idleList.length) {
+        const holder = new THREE.Group(), { copy } = snapshotRig(opponent, false);
+        copy.position.set(0, 0, 0); copy.rotation.set(0, 0, 0);   // the live foe's own place and heading: the holder carries the copy's now
+        copy.traverse((o) => { if (o !== copy && o.scale.x <= WARM_SCALE) o.visible = false; });   // the cut caps' warm-up specks (ragdoll.ts prepareCutArt) are the live rig's to hide, not a copy's to carry
+        holder.add(copy); scene.add(holder); idleCopies.push(holder);
+      }
+    idleCopies.forEach((holder, i) => {
+      const at = idleList[i];
+      holder.visible = !!at;
+      if (at) { holder.position.set(at.x, 0, at.z); holder.rotation.y = at.heading; }
+    });
+  }
   // Kill dip: the killing blow darkens the frame 6 % for two frames and recovers over two more — the cinematic reserve (GAME_SPEC 80/15/5),
   // never on an ordinary hit. Applied around the draw on top of whatever exposure the renderer holds, so nothing else has to know.
   let dip = 0; // frames remaining, counted down per drawn frame while time passes
@@ -580,6 +600,9 @@ export function createScene(
     // The ONE call site of a foe respawn (src/client/main.ts rematch, zone only), called BEFORE his sim body is reset: the dead rig is left as it lies beside the live one
     // (ragdoll.leaveCorpse: cuts, pieces and caps kept, it ages out on data/physics.json corpse.keepSeconds), and the live rig is rebuilt whole. False = nothing to leave.
     respawnFoe(): boolean { return ragdoll?.leaveCorpse() ?? false; },
+    // The zone's other standing bosses (main.ts, every frame): where each stands (the pit's frame) and which way it faces. Drawn as frozen copies of the live foe at rest (syncIdleFoes).
+    idleFoes(list: readonly { x: number; z: number; heading: number }[]) { idleList = list; },
+    get idleFoeCount() { return idleCopies.filter((c) => c.visible).length; },   // the stills and the cost table read how many copies are on screen
     stopTour() {
       rig.stopTour();
     },
@@ -1032,6 +1055,7 @@ export function createScene(
       const specialDim = runtimeSpecial?.exposure ?? (specialFx as ModeFx | undefined)?.exposure ?? 1;   // Nyx's Nightfall drain
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
+      syncIdleFoes(practice);
       if (!look?.render()) { if (gfx) gfx.render(); else renderer.render(scene, camera); }
       renderer.toneMappingExposure = exposure;
       if (dip > 0 && dt > 0) dip--;
