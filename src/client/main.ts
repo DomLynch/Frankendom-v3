@@ -29,6 +29,7 @@ import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';
+import { createLook, lookFor } from '../fight/look-drag.ts';
 import { pitchChoice } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
@@ -217,6 +218,8 @@ let roam: State | null = null, sinceDeath = 0;
 // FREE is null under ?postkill=v1 (no zone), ?freecam=v1 and the row off: the lock camera exactly as it was
 const FREE = freeCameraFor(!!ZONE, search);
 setFreeCamera(FREE);
+// The look thumb's rows (data/respawn.json look): null = ?look=off, the row off, or no free camera
+const LOOK = lookFor(!!FREE, search), look = LOOK ? createLook(LOOK) : null;
 let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
@@ -313,10 +316,21 @@ function zoneStep(dt: number) {
 function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
 element('reset-button').addEventListener('click', () => rematch());
 if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger drag on empty ground looks round; the recenter key R stands behind him). The tap that cuts a corpse is a press that stays put (ragdoll.listenTaps), so a drag is never a cut.
-  let drag: { id: number; x: number } | null = null;
-  canvas.addEventListener('pointerdown', (e) => { if (drag || e.button !== 0 || paused()) return; drag = { id: e.pointerId, x: e.clientX }; try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ } });
-  canvas.addEventListener('pointermove', (e) => { if (!drag || drag.id !== e.pointerId) return; if (freeNow) view.lookRound(e.clientX - drag.x); drag.x = e.clientX; });
-  for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, (e) => { if (drag?.id === (e as PointerEvent).pointerId) drag = null; });
+  // The look thumb (data/respawn.json look, src/fight/look-drag.ts): its own pointer id, so the left thumb's stick and every button keep working; only while the camera is free (frame(): a fight cancels it)
+  if (look) {
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || paused() || !freeNow || !look.down(e.pointerId, e.clientX, window.innerWidth, e.pointerType, e.timeStamp)) return;
+      try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
+    });
+    canvas.addEventListener('pointermove', (e) => { view.lookYaw(-look.move(e.pointerId, e.clientX, e.timeStamp)); });
+    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, (e) => { look.up((e as PointerEvent).pointerId, (e as PointerEvent).timeStamp); });
+  } else {
+    // ?look=off: the plain one-finger drag the free camera shipped with
+    let drag: { id: number; x: number } | null = null;
+    canvas.addEventListener('pointerdown', (e) => { if (drag || e.button !== 0 || paused()) return; drag = { id: e.pointerId, x: e.clientX }; try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ } });
+    canvas.addEventListener('pointermove', (e) => { if (!drag || drag.id !== e.pointerId) return; if (freeNow) view.lookRound(e.clientX - drag.x); drag.x = e.clientX; });
+    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, (e) => { if (drag?.id === (e as PointerEvent).pointerId) drag = null; });
+  }
   element('recenter-button').addEventListener('click', () => { if (freeNow) view.faceBehind(state.heading); });
 }
 
@@ -406,6 +420,7 @@ function frame(now: number) {
   } else { accumulator = 0; previous = state; }
   if (ZONE) setWalkClamp(roam ? ZONE.walkRadius + ZONE.cameraMetres : 0);   // the follow camera stands behind a hero who walked beyond the pit (data/respawn.json postKill.cameraMetres); the fight camera is unchanged
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
+  (globalThis as { __v3Yaw?: number }).__v3Yaw = +view.yaw.toFixed(4);
   (globalThis as { __v3FreeShare?: number }).__v3FreeShare = +view.freeShare.toFixed(3);   // the stills read how far the camera has swung to the free follow camera (scripts/free-camera-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
@@ -420,6 +435,8 @@ function frame(now: number) {
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged });
+  // a fight (or a pause) drops the look finger and its glide cleanly; the walk's move already reads view.yaw, so the stick stays camera-relative as the view turns
+  if (look) { if (freeNow && !paused()) view.lookYaw(-look.step(dt)); else look.cancel(); }
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
     locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
