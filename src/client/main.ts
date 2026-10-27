@@ -257,8 +257,8 @@ const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseA
 const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind);
 if (ZONE) { current = nearestStanding(spawns, heroStart); useKind(kindAt(current)); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
-  if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   if (ZONE) useKind(kindAt(index));   // the sim's opponent becomes the spawn it is handed to (and back as the hero walks to another)
+  if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
   roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false; walkBack = false;
   attackers = attackers.filter((a) => a.dead); killedBy = null;   // every live attacker lets go and stands again at full health at its spot; a killed one keeps lying until its own timer is up

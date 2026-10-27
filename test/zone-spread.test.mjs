@@ -183,7 +183,7 @@ test('the page wires it for the zone only: poseAt on the ground, the pose door r
   assert.match(main, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);/);
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');
   assert.match(live, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);\s*\n/, 'live code, not swallowed by a trailing comment');
-  assert.match(live, /fits \? pose : undefined, undefined/, 'a pose beyond the pit is not handed to the sim');
+  assert.match(live, /kindPractice\(k, KIND_CTX, s, fits \? pose : undefined\)/, 'a pose beyond the pit is not handed to the sim');
   assert.match(live, /roam = \{ \.\.\.practice\.fighter \}; view\.stopTour\(\); \}/, 'the finisher tour ends the moment the hero walks: the follow camera is behind him');
   assert.doesNotMatch(live, /intoPit\(/, 'nothing in the page draws the hero to a wall any more');
   assert.equal(ROWS.postKill.walkRadiusMetres, undefined, 'the post-kill walk has no limit row');

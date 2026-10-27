@@ -80,13 +80,14 @@ test('(a) handing the sim to a goblin spawn uses the goblin\'s stats, specials a
   const before = kindPractice(pit, CTX, 731, pose);
   const swapped = kindPractice(gob, CTX, 9, pose);
   const [, goblinFighter] = swapped.duel.fighters, [, pitFighter] = before.duel.fighters;
-  assert.equal(swapped.health, opponentAt(OPPONENTS.goblin, FIGHT.level).health, 'the goblin\'s own health bar (scales of 1)');
+  const goblinBody = scaledOpponent(opponentAt(OPPONENTS.goblin, FIGHT.level), gob.resolved);
+  assert.equal(swapped.health, goblinBody.health, 'the goblin\'s own health bar, the profile and difficulty scales on it');
   assert.notEqual(swapped.health, before.health, 'not the Pitborn\'s');
   assert.equal(goblinFighter.weapon, OPPONENTS.goblin.weapon, 'the goblin\'s own weapon');
   assert.notEqual(goblinFighter.weapon, pitFighter.weapon);
   const specials = recordSpecials({ specials: FIGHT.specials, level: FIGHT.level, opponent: 'goblin' });
-  assert.deepEqual(swapped, initialPractice(9, opponentAt(OPPONENTS.goblin, FIGHT.level), FIGHT.weapon, FIGHT.skill, specials, undefined, FIGHT.stance, pose, undefined, undefined, undefined, undefined, FIGHT.skill2),
-    'built by the sim\'s own door with the goblin\'s id: scales of 1 leave it untouched');
+  assert.deepEqual(swapped, scaledPractice(initialPractice(9, goblinBody, FIGHT.weapon, FIGHT.skill, specials, undefined, FIGHT.stance, pose, undefined, undefined, undefined, undefined, FIGHT.skill2), gob.resolved),
+    'built by the sim\'s own door with the goblin\'s id and recordSpecials(goblin)');
   // the brain: the goblin's profile knobs (dodge, aggression, reaction) over the difficulty row's, V1's goblin profile under them; the Pitborn's are the difficulty row's alone
   const row = DIFF.rows.find((r) => r.id === DIFF.default);
   assert.equal(gob.ai.dodge, 0.95); assert.equal(gob.ai.aggression, 0.9); assert.equal(gob.ai.reaction, 7);
@@ -112,7 +113,7 @@ test('(a) a kind\'s profile scales and knobs ride the profile row: health and da
 
 test('(a) an attacker steps with its own kind\'s brain, not the held boss\'s', () => {
   const kinds = kindTable(CTX), pit = kinds('pitborn'), gob = kinds(NEW);
-  const hero = { x: 0, z: 0 }, first = kindPractice(pit, CTX, 11, poseOf(hero, { x: 0, z: -20 })), joined = kindPractice(gob, CTX, 12, poseOf(hero, { x: 0, z: -1.6 }));
+  const hero = { x: 0, z: 0 }, first = kindPractice(pit, CTX, 11, poseOf(hero, { x: 0, z: -5 })), joined = kindPractice(gob, CTX, 12, poseOf(hero, { x: 0, z: -1.6 }));
   const still = { ...gob.ai, aggression: 0, reaction: 120 }, rush = { ...gob.ai, aggression: 1, reaction: 1, lapse: 0 };
   const play300 = (profile, held) => {
     let p = first, list = [joinAttacker(1, joined, held)];
