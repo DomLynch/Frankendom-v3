@@ -176,12 +176,13 @@ function nameOpponent() {   // :397 without the legend
 // The zone loop (data/zones/zone1.row.json via zoneFor, data/respawn.json, src/fight/zone-loop.ts; Dom 2026-10-27: a live real-time zone, not an instant duel). The duel sim stops at the kill
 // as it always did (stepDuel returns early once a fighter has no health), so a hero who won keeps walking on a presentation-only body (`roam`, the
 // sim's own advance), the corpse lies where it fell, and the spawn stands a fresh opponent `respawnSeconds` after the kill, where the hero stands (the dead body is left beside him).
-// A hero who dies is "You died" for `heroDeath.diedSeconds`, then stands at the pit's mark at full health. No Rematch in the zone.
+// A hero who dies falls for `heroDeath.fallSeconds`, lies "You died" until the zone row's `respawn.downSeconds`, then stands at the pit's mark at full health. No Rematch in the zone.
 // Several bosses (live-zone phase 1b, src/zone/spawns.ts, data/respawn.json world): the zone row's spawns each stand at their own spot with their own timers. The sim is still ONE duel, so it holds
 // the spawn the hero is nearest to (`current`, the live rig); the others stand as frozen copies at their spots (view.idleFoes); the fight starts when the hero walks into the held one's aggro
 // (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));
+view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;

@@ -13,7 +13,7 @@ if (!base || !out || !tag) { console.error('usage: node scripts/roam-stills.mjs 
 mkdirSync(out, { recursive: true });
 const WALK_S = Number(process.env.WALK_S ?? 2.5), PART = process.env.PART ?? 'armLeft', KEY = process.env.KEY ?? 'KeyA';
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 2), isMobile: true, hasTouch: true });
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
 const shot = async (n) => { await page.screenshot({ path: `${out}/${tag}-${n}.png` }); };
@@ -24,7 +24,11 @@ await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, 
 await page.waitForTimeout(3000);
 if (process.env.DIE) {   // the hero's death: he is held at 1 health with the foe full until a blow lands; "You died" (diedSeconds), then the pit mark at full health
   await page.evaluate(() => new Promise((done) => { const id = setInterval(() => { const [h] = globalThis.__v3Fight.duel.fighters; if (globalThis.__v3Fight.finish) { clearInterval(id); done(); } else h.health = Math.min(h.health, 1); }, 100); }));
-  await page.waitForTimeout(900); await shot('1-died'); console.log(`${tag} died`, JSON.stringify(await hero()));
+  if (process.env.FALL) {   // the death fall (data/respawn.json heroDeath.fallSeconds): mid-fall, then on the ground with "You died" (FALL=<mid ms>,<ground ms> after the death; 'stop' ends the run there, e.g. under ?postkill=v1)
+    const t0 = Date.now(), at = process.env.FALL.split(',').map(Number);   // one still per time, 1-fall-<ms>
+    for (const ms of at) { await page.waitForTimeout(Math.max(0, ms - (Date.now() - t0))); await shot(`1-fall-${ms}`); console.log(`${tag} fall ${ms} (${Date.now() - t0} real)`, await page.evaluate(() => document.body.innerText.includes('You died'))); }
+    if (process.env.STOP) { await browser.close(); process.exit(0); }
+  } else { await page.waitForTimeout(900); await shot('1-died'); console.log(`${tag} died`, JSON.stringify(await hero())); }
   const t0 = Date.now(); await page.waitForFunction(() => !globalThis.__v3Fight?.finish, null, { timeout: 60000 });
   console.log(`${tag} back after ${((Date.now() - t0) / 1000).toFixed(1)} s more`);
   await page.waitForTimeout(1500); await shot('2-back'); console.log(`${tag} back`, JSON.stringify(await hero()));

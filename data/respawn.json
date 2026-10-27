@@ -17,8 +17,13 @@
     "retargetMargin": 1.5,
     "edgeMetres": 1
   },
+  "heroDeath": {
+    "about": "The hero's death fall (Strategy ruling 2026-10-27: V1's `fall` of 1.4 s, src/fight/world-rules-defs.json). When the hero dies in the zone loop he plays the rig's own Death clip across `fallSeconds` (the Death role, which the hero's 106 body carries) and holds its last frame, on the ground, until the zone row's respawn.downSeconds is over and he stands at the pit's mark (the 'You died' beat). It must fit inside downSeconds. Presentation only: the sim stays stopped at the kill. ?postkill=v1 = the frozen end screen as before (no fall).",
+    "fallSeconds": 1.4
+  },
   "limits": {
     "about": "Validation ranges for the rows above.",
+    "fallSeconds": [0.1, 10],
     "startAfterSeconds": [0, 30],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],

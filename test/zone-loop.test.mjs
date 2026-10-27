@@ -22,10 +22,10 @@ test('the rows are pinned: roam on, hand-over 4 s, the zone row\'s spawn (Pitbor
   assert.deepEqual(ROWS.flag, { query: 'postkill', off: 'v1' });
   assert.equal(ZONE.spawns[0].kind, FIGHT.opponent, 'the zone row\'s spawn kind is the page fight\'s opponent');
   assert.equal(ZONE.spawns[0].respawnSeconds, 40); assert.equal(ZONE.respawn.downSeconds, 2); assert.equal(ZONE.respawn.died, 'You died');
-  for (const dup of ['spawns', 'respawn', 'corpse', 'heroDeath']) assert.equal(ROWS[dup], undefined, `${dup} is the zone row's / Physics Dev's row, not repeated here`);
+  for (const dup of ['spawns', 'respawn', 'corpse']) assert.equal(ROWS[dup], undefined, `${dup} is the zone row's / Physics Dev's row, not repeated here`);
   assert.ok(read('../data/physics.json').corpse.keepSeconds > 0, 'one corpse timer: data/physics.json corpse.keepSeconds (ragdoll.leaveCorpse)');
   const z = zoneLoopFor(ZONE, '', ids);
-  assert.deepEqual(z, { startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'pitborn', respawnSeconds: 40 } });
+  assert.deepEqual(z, { startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, fallSeconds: 1.4, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'pitborn', respawnSeconds: 40 } });
 });
 
 test('bad rows are refused', () => {
@@ -90,6 +90,23 @@ test('the spawn row is validated', () => {
   assert.throws(() => validateLoop(loop((d) => { d.spawn.minDistance = 0; }), ZONE, ids), /minDistance/);
   assert.throws(() => validateLoop(loop((d) => { d.spawn.minDistance = 99; }), ZONE, ids), /minDistance/);
   assert.equal(zoneLoopFor(ZONE, '', ids).minDistance, 3.25);
+});
+
+test('the hero\'s death fall is a row: 1.4 s (V1 world rule `fall`), inside the died beat, validated, off under ?postkill=v1', () => {
+  assert.equal(ROWS.heroDeath.fallSeconds, 1.4);
+  assert.equal(ROWS.heroDeath.fallSeconds, read('../src/fight/world-rules-defs.json').rules.find((r) => r.id === 'fall').value, 'V1\'s own fall');
+  assert.ok(ROWS.heroDeath.fallSeconds <= ZONE.respawn.downSeconds, 'the fall ends before the warp');
+  for (const bad of [0, -1, 11, NaN, '1.4']) assert.throws(() => validateLoop(loop((d) => { d.heroDeath.fallSeconds = bad; }), ZONE, ids), /fallSeconds/);
+  assert.throws(() => validateLoop(ROWS, zone((z) => { z.respawn.downSeconds = 1; }), ids), /longer than/);
+  assert.equal(zoneLoopFor(ZONE, '?postkill=v1', ids), null, 'no loop, no fall: the scene is told 0');
+});
+
+test('the page wires the fall: main tells the scene the row (0 without the loop), the scene drives the Death clip on a clock and holds it', () => {
+  const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8'), main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts');
+  assert.match(main, /view\.heroFall\(ZONE \? ZONE\.fallSeconds : 0\)/);
+  assert.match(scene, /heroFall\(seconds: number\) \{ fallSeconds = seconds; \}/);
+  assert.match(scene, /const mine = heroFalls\(stand\([^\n]*practice\.finish\?\.victim === 0, animationDt\)/);
+  assert.match(scene, /pose: 'death', progress: Math\.min\(1, fallAge \/ fallSeconds\)/);
 });
 
 test('the page wires the loop: the zone row via zoneFor, the corpse left BEFORE his sim body resets, the HUD drops the Rematch in the zone', () => {
