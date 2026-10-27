@@ -62,20 +62,20 @@ test('?rules=m4b is M4 with only the wider-sample rungs (Strategy 2026-10-27); m
   assert.ok(b.strength_scale.rung_hit < b.strength_scale.rung_stick && b.strength_scale.rung_stick < b.strength_scale.rung_cut);
 });
 
-test('INTERIM: V1\'s rules are the default again (data/rules.json default v1: M4\'s evaluator pool dropped him on light hits); ?rules=m4 opts in', () => {
+test('M4 is the default again (data/rules.json default m4, the light-hit fall fixed in #149); ?rules=v1 is the way back to V1\'s rules', () => {
   assert.equal(ROWS.on, true);
-  assert.equal(ROWS.default, ROWS.v1);
-  assert.equal(rulesOnFor(ROWS, ''), false);
+  assert.equal(ROWS.default, ROWS.m4);
+  assert.equal(rulesOnFor(ROWS, ''), true);
   assert.equal(rulesOnFor(ROWS, '?rules=v1'), false);
   assert.equal(rulesOnFor(ROWS, '?x=1&rules=v1'), false);
-  assert.equal(rulesOnFor(ROWS, '?rules=sometimes'), false);
-  assert.equal(rulesOnFor(ROWS, '?physics=v1&foo=m4'), false);
+  assert.equal(rulesOnFor(ROWS, '?rules=sometimes'), true);   // an unknown value gets the default
+  assert.equal(rulesOnFor(ROWS, '?physics=v1&foo=m4'), true);
   assert.equal(rulesOnFor(ROWS, '?rules=m4'), true);
   assert.equal(rulesOnFor(ROWS, '?x=1&rules=m4'), true);
   assert.equal(rulesOnFor({ ...ROWS, on: false }, '?rules=m4'), false);
   assert.equal(rulesOnFor({ ...ROWS, on: false }, ''), false);
-  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.m4 }, ''), true);   // the default is the row, not a constant in the code
-  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.m4 }, '?rules=v1'), false);
+  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.v1 }, ''), false);   // the default is the row, not a constant in the code
+  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.v1 }, '?rules=m4'), true);
 });
 
 test('hit event -> evaluator input: light and heavy, head / torso / legs, counter-hit, stab, blunt, time', () => {
