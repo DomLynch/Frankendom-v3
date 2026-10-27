@@ -36,10 +36,10 @@ export function plateHorizonY(row: PlateRow, centreY: number, height: number): n
 /** The plate's turn about the vertical (radians) that puts the face dead ahead of a camera heading 0 (looking down -Z), plus `turnDegrees`: the face sits at 2 pi x face.u round the strip's cylinder, so it needs 180 degrees minus that. */
 export function plateAhead(row: PlateRow): number { return THREE.MathUtils.degToRad(180 - 360 * row.face.u + row.turnDegrees); }
 
-/** The arc: a partial cylinder centred on the face's own direction in the full strip (so the strip's yaw maths, the follow's offset included, puts the face ahead as before), its uv a window of the picture. */
+/** The arc: a partial cylinder whose face lands on the face's own direction in the full strip (so the yaw maths puts the face ahead), its uv a window of the picture. */
 export function plateGeometry(row: PlateRow, radius: number, imgW: number, imgH: number): THREE.CylinderGeometry {
   const win = plateWindow(row, imgW, imgH), { height } = plateSize(row, radius, win.aspect), span = THREE.MathUtils.degToRad(row.spanDegrees);
-  const g = new THREE.CylinderGeometry(radius, radius, height, row.segments, 1, true, Math.PI * 2 * row.face.u - span / 2, span);
+  const g = new THREE.CylinderGeometry(radius, radius, height, row.segments, 1, true, Math.PI * 2 * row.face.u - ((row.face.u - win.u0) / win.w) * span, span);   // the arc is placed so the FACE (wherever it sits in the window) is at 2 pi x face.u, where plateAhead turns it dead ahead
   const uv = g.getAttribute('uv');
   for (let i = 0; i < uv.count; i++) uv.setX(i, win.u0 + uv.getX(i) * win.w);
   uv.needsUpdate = true;

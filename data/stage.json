@@ -38,7 +38,7 @@
         "v": 0.63
       },
       "horizonFraction": 0.8,
-      "faceElevationDegrees": 0,
+      "faceElevationDegrees": -5,
       "turnDegrees": 0,
       "edgeFadeFraction": 0.12,
       "topFadeFraction": 0.15,
