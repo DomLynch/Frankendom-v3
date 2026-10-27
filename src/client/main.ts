@@ -42,7 +42,7 @@ import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
-import { toastOver, type ZoneSoundRows } from '../audio/zone-cues.ts';
+import { toastOver, zoneSoundRows, type ZoneSoundRows } from '../audio/zone-cues.ts';
 import { createKeep } from '../audio/keep.ts';
 import { SPECIAL_CUE_OF } from '../fight/sound/special.ts';
 import { bossSpecialFor, bossSpecialId } from '../fight/special-identity.ts';
@@ -92,7 +92,7 @@ mountManaBar();
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
 const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));   // the live zone (null under ?postkill=v1: the single fight, whose pit is exactly as before)
 // The zone's sound rows (data/sound.json zone): which scene-change cues stay silent and when the kill toast clears. Null under ?postkill=v1: every cue plays, the line stays.
-const ZONE_SOUND: ZoneSoundRows | null = ZONE ? SOUND.zone as unknown as ZoneSoundRows : null;
+const ZONE_SOUND: ZoneSoundRows | null = ZONE ? zoneSoundRows(SOUND.zone) : null;
 feedback.zoneCues(ZONE_SOUND);
 let seed = FIGHT.seed, epoch = 0;
 const nextSeed = (s: number): number => (Math.imul(s, 1664525) + 1013904223) >>> 0;   // match.ts:75
