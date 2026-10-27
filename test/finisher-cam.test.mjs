@@ -2,7 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cutCamPose, cutCamProblems, cutCamRows, cutCamShare, finisherCamOn } from '../src/fight/finisher-cam.ts';
+import { cutCamPose, cutCamProblems, cutCamRows, cutCamShare, finisherCamOn, stickMinBeat } from '../src/fight/finisher-cam.ts';
+import { handsOver } from '../src/fight/free-camera.ts';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const ROWS = JSON.parse(read('../src/fight/finisher-cam.json')).rows;
@@ -71,6 +72,21 @@ test('a narrower screen stands further back; no pose is NaN with the hero on the
   assert.ok(Math.hypot(a.x, a.z - 3) > Math.hypot(b.x, b.z - 3));
   cutCamPose(ROWS.opened, { x: 1, z: 1 }, { x: 1, z: 1 }, 1, tanHalfH(0.46), { x: 1, y: 0.5, z: 1 }, a);
   for (const v of Object.values(a)) assert.ok(Number.isFinite(v));
+});
+
+test('the stick min-beat: a stick held in the first 1.5 s does not end the ceremony, later it does, ?finishercam=v1 ends it at 0', () => {
+  const FREE = JSON.parse(read('../data/respawn.json')).freeCamera;
+  assert.equal(FREE.stickEndsCeremony, true);
+  const beat = stickMinBeat(''), v1 = stickMinBeat('?finishercam=v1');
+  assert.equal(beat, 1.5);
+  assert.equal(v1, 0);
+  assert.equal(handsOver(FREE, false, true, 0.2, beat), false, 'held at 0.2 s: the finisher plays');
+  assert.equal(handsOver(FREE, false, true, 1.49, beat), false);
+  assert.equal(handsOver(FREE, false, true, 1.6, beat), true, 'held at 1.6 s: ends as today');
+  assert.equal(handsOver(FREE, false, true, 0, v1), true, 'v1: ends at once');
+  assert.equal(handsOver(FREE, false, false, 3, beat), false, 'no stick, no walk');
+  assert.equal(handsOver(FREE, true, true, 0.2, beat), true, 'the ceremony\'s own end still hands him over');
+  assert.equal(handsOver(FREE, false, true), true, 'no timing given: as before');
 });
 
 test('wired: the camera and the blood read the rows, the flag reverts both, and no sim file knows them', () => {

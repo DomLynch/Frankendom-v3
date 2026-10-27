@@ -10,6 +10,9 @@ export type CutCamPose = { x: number; y: number; z: number; lookX: number; lookY
 /** Off for ?finishercam=v1 (any other value keeps the default, ON). */
 export const finisherCamOn = (search: string): boolean => new URLSearchParams(search).get('finishercam') !== 'v1';
 
+/** Seconds after the kill a held stick may not yet end the finisher ceremony (freeCamera.stickEndsCeremony, free-camera.ts handsOver); 0 for ?finishercam=v1 = ends at once, as before. */
+export const stickMinBeat = (search: string): number => finisherCamOn(search) ? (ROWS as { stickEndsCeremonyAfterS: number }).stickEndsCeremonyAfterS : 0;
+
 /** The rows for this page: null when reverted. */
 export const cutCamRows = (search: string): Readonly<Record<string, CutCamRow>> | null => finisherCamOn(search) ? (ROWS.rows as Record<string, CutCamRow>) : null;
 

@@ -151,7 +151,7 @@ const PINS = [
   ['../src/client/main.ts', 'the camera is given them', /setFreeCamera\(FREE\);/],
   ['../src/client/main.ts', 'the follow camera is decided every frame from the world', /freeNow = wantsFreeCamera\(FREE, \{ finished: !!practice\.finish, heroStands: heroStands\(\), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged \}\);/],
   ['../src/client/main.ts', 'and handed to the draw', /roam !== null, freeNow,\s*\);/],
-  ['../src/client/main.ts', 'the stick ends the ceremony through the row', /handsOver\(FREE, freeAfterKill \|\| phase\.complete \|\| killAge >= ZONE!\.startAfterSeconds, !!\(intent\.x \|\| intent\.z\)\)/],
+  ['../src/client/main.ts', 'the stick ends the ceremony through the row', /handsOver\(FREE, freeAfterKill \|\| phase\.complete \|\| killAge >= ZONE!\.startAfterSeconds, !!\(intent\.x \|\| intent\.z\), killAge, STICK_BEAT\)/],
   ['../src/client/main.ts', 'a drag looks round only when the camera is free', /if \(freeNow\) view\.lookRound\(e\.clientX - drag\.x\);/],
   ['../src/client/main.ts', 'recenter stands behind him', /if \(freeNow\) view\.faceBehind\(state\.heading\);/],
   ['../src/client/main.ts', 'the toast is timed from the kill, not from the rig\'s finish age', /toastOver\(ZONE_SOUND, killAge\)/],
