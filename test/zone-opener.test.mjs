@@ -68,7 +68,7 @@ test('the page wires it once: the clock runs when the assets are ready, any enga
   assert.match(main, /openerSpent = !ZONE \|\| !openerOn\(search\)/);
   assert.match(main, /if \(engaged\) openerSpent = true;/);
   assert.match(main, /leashed\(spawns\[current\]!, hero, openerLift\)/);
-  assert.match(main, /if \(practice\.finish\) openerSpent = true;/);
+  assert.match(main, /if \(practice\.finish\) \{ openerSpent = true; openerLift = 0; \}/);
   assert.match(main, /if \(!openerSpent && assetsReady\) openerIdle \+= dt;/);
   assert.match(main, /inAggro\(openerSpent \? spawns : openerReach\(spawns, OPENERS, openerIdle, hero\), hero\)/);
 });
