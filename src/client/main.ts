@@ -35,7 +35,7 @@ import { setSpecialSink } from '../fight/special-sink.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
 import { foeDisplayName, foeNameFor, setFoeName } from '../fight/foe-name.ts';
 import { fightOpponent } from '../fight/foe-pick.ts';
-import { setBossBody } from '../fight/foe-body.ts';
+import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
 import { foeSweepsFor } from '../fight/foe-reach.ts';
 import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
@@ -202,6 +202,7 @@ const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 
 const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
 if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
+if (ZONE) { const bad = spotBodyProblems(SPOTS); if (bad.length) throw new Error(`zone row bodies: ${bad.join('; ')}`); }   // a spawn's own body (zone row spawns[].body) is a usable boss body; none in the shipped zone
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
 let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, engaged = false, killMarked = false;
 // Real-time aggro (data/respawn.json attackers, src/zone/attackers.ts, src/fight/attacker-bout.ts): while the hero fights the held boss, every other standing spawn whose aggro he enters fights him too, in its own duel on his one health pool.
@@ -368,8 +369,8 @@ function frame(now: number) {
     if (aim === 1 && widen - 1 < 1 / 1000) widen = 1;
     view.setWiden(widen);
   }
-  if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice }))); }   // the attackers' rigs (a killed one lies until its timer is up)
-  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z) }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]! }))); }   // the attackers' rigs (a killed one lies until its timer is up)
+  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s }))); zoneDebug(); }   // the other standing bosses, facing the hero
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
     locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null,

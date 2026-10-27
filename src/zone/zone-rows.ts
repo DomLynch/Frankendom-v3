@@ -6,10 +6,11 @@
 // src/sim/validate.js validateZone / validateZoneIndex, the same checks test/zone-rows.test.mjs pins.
 import { validateZone, validateZoneIndex } from '../sim/validate.js';
 import INDEX from '../../data/zones/index.json' with { type: 'json' };
+import RIG from '../../data/rig.json' with { type: 'json' };
 import ZONE1 from '../../data/zones/zone1.row.json' with { type: 'json' };
 
 export type ZoneBehaviour = { aggro: number; leash: number; roam: number; campSize: [number, number] };
-export type ZoneSpawn = { id: string; kind: string; position: { x: number; z: number }; respawnSeconds: number; roster: boolean; behaviour: ZoneBehaviour };
+export type ZoneSpawn = { id: string; kind: string; position: { x: number; z: number }; respawnSeconds: number; roster: boolean; behaviour: ZoneBehaviour; body?: string };   // body: a data/rig.json files stem drawn for this spawn (absent: its kind's profile body, foe-body.ts spawnBodyFile)
 export type ZoneArea = { id: string; name: string; shape: 'rect'; min: [number, number]; max: [number, number]; pvp: 'on' | 'off'; spawnsAllowed: boolean };
 export type ZoneRespawn = { x: number; z: number; facing: number; downSeconds: number; died: string };
 export type ZoneRow = { about?: string; id: string; name: string; alias: string; band: [number, number]; pvp: 'on' | 'off'; respawn: ZoneRespawn; areas: ZoneArea[]; spawns: ZoneSpawn[] };
@@ -24,10 +25,10 @@ const SHIPPED: ZoneRow[] = [ZONE1 as unknown as ZoneRow];
  * take the default zone down); an index that fails validateZoneIndex warns and still returns the set it could build. Never throws.
  * `kinds`: the opponent profile ids a spawn `kind` may name (omit to skip that check).
  */
-export function buildZoneSet(index: ZoneIndex, list: readonly ZoneRow[], kinds?: readonly string[]): ZoneSet {
+export function buildZoneSet(index: ZoneIndex, list: readonly ZoneRow[], kinds?: readonly string[], bodies?: unknown): ZoneSet {   // bodies: data/rig.json, checks a spawn's `body`
   const rows: Record<string, ZoneRow> = {};
   for (const row of list) {
-    const bad = validateZone(row, kinds ? [...kinds] : undefined) as string[];
+    const bad = validateZone(row, kinds ? [...kinds] : undefined, bodies) as string[];
     if (bad.length) console.error(`zone row '${row?.id}' is invalid and not loaded: ${bad.join('; ')}`);
     else rows[row.id] = row;
   }
@@ -36,7 +37,7 @@ export function buildZoneSet(index: ZoneIndex, list: readonly ZoneRow[], kinds?:
   return { default: index.default, rows };
 }
 
-export const ZONES: ZoneSet = buildZoneSet(INDEX as ZoneIndex, SHIPPED);
+export const ZONES: ZoneSet = buildZoneSet(INDEX as ZoneIndex, SHIPPED, undefined, RIG);
 
 /** The zone id a page address asks for (`?zone=<id>`), or undefined. */
 export const zoneIdFromSearch = (search: string): string | undefined => new URLSearchParams(search).get('zone') ?? undefined;

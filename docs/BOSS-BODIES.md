@@ -53,6 +53,14 @@ The repo's two files are smaller than their library originals (Psyche 5.34 to 1.
 
 At the default nothing is added: the boss is still `minotaur-106.glb`, `fighterUrls` is unchanged, and no new asset is requested. The PR adds data keys to `profiles.json` and the body check to the bundle (see the PR body for the measured bundle delta and the CDP wire count).
 
+## Per-spawn body (built; no second body ships yet)
+
+A zone spawn row (`data/zones/zone1.row.json spawns[]`) may carry an optional `"body": "<rig.json files stem>"`. Absent (every shipped spawn), the spawn draws its kind's profile body, exactly as before. `validateZone(row, kinds, rig)` checks it with the same `bodyProblem` a profile body gets; the page also refuses the hero's body (`spotBodyProblems`). `?boss=<body>` still wins for the whole page.
+
+`scene.ts` keeps a rig cache keyed by the body's 106 file stem (`bodyAssets`, filled by `characters.ts loadFoeBody`, the first time a spawn of that body stands or attacks) and builds the actor with `buildWarriors(...).spawnBody(asset, weapon)`. A spawn in the live rig's body takes the old paths unchanged (frozen copies, `spawnFoe`). A spawn in another body is drawn standing (`idleFoes`) or attacking (`liveFoes`) from its own rig, and is simply not drawn until that body's file has loaded.
+
+Not covered yet: the spawn the sim HOLDS (the page's one live foe, which carries the ragdoll, cuts and finishers) is always the page's body, so a held spawn with another body draws in the live body until it is handed back to a standing/attacking draw. Mixed bodies are therefore for the standing and attacking bosses; the held duel foe is the next step (it needs the live rig rebuilt per hand-over). A boss body in the repo other than the Minotaur is still the work listed above.
+
 ## Mixed bosses in one zone ("all spawns must be the same kind"), exactly what blocks it
 
 - `src/zone/spawns.ts validateSpots(..., kind)` throws when a spawn row's `kind` differs from the page's one foe (`ZONE.spawn.kind`, `src/client/main.ts` line ~190). That is a guard, not the cause.
