@@ -20,7 +20,8 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2",
-    "meshoptimizer": "1.2.0"
+    "meshoptimizer": "1.2.0",
+    "pg": "8.16.3"
   },
   "dependencies": {
     "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/c0b55adcb634e1db6b25abc9d84fab1c8628da5d",
