@@ -85,7 +85,8 @@ jobs:
           psql -tAc "select count(*) from pg_class where relname like 'zone\_%' and relkind = 'r'" | grep -qx 0
           psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/20261027000001_zone_server.sql
       - name: Run the SQL against the JS model
-        run: node --test --test-reporter=spec test/sql/zone-sql.test.mjs
+        timeout-minutes: 4
+        run: node --test --test-force-exit --test-timeout=60000 --test-reporter=spec test/sql/zone-sql.test.mjs
 
   # Every green main goes live at https://v3.frankendom.com (site root, no prefix), once the deploy secrets exist.
   # The key is locked by rrsync to the site folder on the VPS, so the remote path is "./".
