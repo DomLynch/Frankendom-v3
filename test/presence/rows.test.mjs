@@ -12,8 +12,8 @@ import { MAX_ENTITIES } from '../../src/presence/wire.ts';
 const DEFS = JSON.parse(readFileSync(new URL('../../data/presence.json', import.meta.url), 'utf8'));
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
-test('every presence rule equals V1\'s value (origins/presence/presence-rules-defs.json, same ids) or is a named V3 addition', () => {
-  assert.deepEqual(RULES, { cellCm: 1600, radiusCm: 4000, nearCap: 40, tiers: [[1200, 1], [2500, 2], [4000, 5]], tickMs: 100, softCap: 80, hardCap: 100, maxSpeedCmS: 700, speedSlack: 1.5, strikesToDrop: 5, strikeWindowMs: 10_000, emptyLayerMs: 300_000, jitterMs: 500 });
+test('every presence rule equals V1\'s value (origins/presence/presence-rules-defs.json, same ids) or is a named V3 addition (softCap/hardCap: yard-sized 20/24 for the shared VPS, V1 had 80/100)', () => {
+  assert.deepEqual(RULES, { cellCm: 1600, radiusCm: 4000, nearCap: 40, tiers: [[1200, 1], [2500, 2], [4000, 5]], tickMs: 100, softCap: 20, hardCap: 24, maxSpeedCmS: 700, speedSlack: 1.5, strikesToDrop: 5, strikeWindowMs: 10_000, emptyLayerMs: 300_000, jitterMs: 500 });
   assert.deepEqual(RULES, interestRules());
   assert.deepEqual(LIMITS, { maxMessage: 64, perSecond: 30, idleMs: 30_000, ipSockets: 16, ipJoinsPerMinute: 30, beatMs: 2000, maxWriteBytes: 65_536 });
   assert.deepEqual([presenceRule('maxLayers'), presenceRule('tickRing'), presenceRule('tickFloorMs'), presenceRule('tickChecksPerTick'), presenceRule('closeGraceMs'), presenceRule('logEveryMs')], [20, 40_000, 5, 4, 1000, 60_000]);
