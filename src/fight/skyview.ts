@@ -23,20 +23,22 @@ export function applyFog(scene: THREE.Scene, view: SkyView): void {
   if (view.fogDensity > 0) fog.density = view.fogDensity;
 }
 
-/** Alpha for a surface `metres` from the eye: 1 up to `start`, 0 from `end`, smooth between (the shader's smoothstep, here for the tests); 1 everywhere when the band is off. */
-export function fadeAlpha(metres: number, start: number, end: number): number {
-  if (!(end > start)) return 1;
-  const t = Math.min(1, Math.max(0, (metres - start) / (end - start)));
-  return 1 - t * t * (3 - 2 * t);
+/** Alpha for a floor point seen `depression` degrees below the eye's horizon: 1 at `start` and steeper, 0 at `end` and shallower, smooth between (the shader's smoothstep, here for the tests); 1 everywhere when the band is off. */
+export function fadeAlpha(depression: number, start: number, end: number): number {
+  if (!(start > end)) return 1;
+  const t = Math.min(1, Math.max(0, (depression - end) / (start - end)));
+  return t * t * (3 - 2 * t);
 }
 
 /**
- * Melts a floor material (the sand, the grid) to transparent between `fadeStartMetres` and `fadeEndMetres` of the eye (horizontal). Returns the per-frame call that
- * moves the eye; null when the variant has no band. The floor draws right after the strip and before every other transparent, so particles and trails stay over it.
+ * Melts a floor material (the sand, the grid) to transparent by how far below the horizon the eye sees it: solid at `fadeStartDegrees` and steeper, gone at `fadeEndDegrees`
+ * and shallower. An angle, not a distance, so the melt stays where the lowered strip's bottom edge is however high the camera stands (the free walk lifts it). Returns the
+ * per-frame call that moves the eye; null when the variant has no band. The floor draws right after the strip and before every other transparent, so particles and trails stay over it.
  */
 export function fadeFloor(parts: THREE.Object3D, view: SkyView, order: number): ((eye: THREE.Vector3) => void) | null {
-  if (!(view.fadeEndMetres > view.fadeStartMetres)) return null;
-  const eye = { value: new THREE.Vector3() }, band = { value: new THREE.Vector2(view.fadeStartMetres, view.fadeEndMetres) };
+  if (!(view.fadeStartDegrees > view.fadeEndDegrees)) return null;
+  const eye = { value: new THREE.Vector3() }, band = { value: new THREE.Vector2(view.fadeStartDegrees, view.fadeEndDegrees) };
+  parts.userData.skyviewFade = { eye, band };   // read by the stills' probe only
   parts.traverse((o) => {
     const m = (o as THREE.Mesh).material as THREE.Material | undefined;
     if (!m || Array.isArray(m)) return;
@@ -51,9 +53,9 @@ export function fadeFloor(parts: THREE.Object3D, view: SkyView, order: number): 
         .replace('#include <project_vertex>', '#include <project_vertex>\n  vFadeWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       shader.fragmentShader = shader.fragmentShader
         .replace('void main() {', 'uniform vec3 fadeEye;\nuniform vec2 fadeBand;\nvarying vec3 vFadeWorld;\nvoid main() {')
-        .replace('#include <opaque_fragment>', '#include <opaque_fragment>\n  gl_FragColor.a *= 1.0 - smoothstep(fadeBand.x, fadeBand.y, length(vFadeWorld.xz - fadeEye.xz));');
+        .replace('#include <opaque_fragment>', '#include <opaque_fragment>\n  float fadeDepression = degrees(atan(max(fadeEye.y - vFadeWorld.y, 0.0001), length(vFadeWorld.xz - fadeEye.xz)));\n  gl_FragColor.a *= smoothstep(fadeBand.y, fadeBand.x, fadeDepression);');
     };
-    m.customProgramCacheKey = () => `skyview-fade-${view.fadeStartMetres}-${view.fadeEndMetres}`;
+    m.customProgramCacheKey = () => `skyview-fade-${view.fadeStartDegrees}-${view.fadeEndDegrees}`;
     m.needsUpdate = true;
   });
   return (e) => { eye.value.copy(e); };

@@ -20,12 +20,12 @@
     "fadeSeconds": 1.2,
     "loadAfterFirstFrameMs": 300,
     "views": {
-      "about": "How much of the strip shows (src/fight/skyview.ts), chosen by the link ?skyview=a|b|c; no link = today's look exactly (nothing here runs). The camera, zoom and fight framing are never touched. Per variant: fogColor ('' = the scene's) is the strip's horizon haze (its lower band at horizonFraction, as drawn at `brightness`) and fogDensity (0 = the scene's, exp-squared) fogs the far sand into it; fadeStartMetres..fadeEndMetres (0/0 = off) melts the sand and its grid to transparent by horizontal distance from the camera, so the strip behind shows; dropMetres lowers the whole strip (the horizon of the image sits that far below the eye), heightMetres (0 = the row's) resizes it; brightness replaces the strip's own so the HUD reads over its bright cloud band. A = fog only; B = fade + lowered strip + haze fog; C = lowered strip only.",
+      "about": "How much of the strip shows (src/fight/skyview.ts), chosen by the link ?skyview=a|b|c; no link = today's look exactly (nothing here runs). The camera, zoom and fight framing are never touched. Per variant: fogColor ('' = the scene's) is the strip's horizon haze (its lower band at horizonFraction, as drawn at `brightness`) and fogDensity (0 = the scene's, exp-squared) fogs the far sand into it; fadeStartDegrees / fadeEndDegrees (0/0 = off) melt the sand and its grid to transparent by how far below the horizon the camera sees it (solid at start and steeper, gone at end and shallower; an angle so it follows the strip's lowered bottom edge at any camera height, the phone fight camera looks 32 degrees down so its top edge is 8.6 degrees under the horizon), so the strip behind shows; dropMetres lowers the whole strip (the horizon of the image sits that far below the eye), heightMetres (0 = the row's) resizes it; brightness replaces the strip's own so the HUD reads over its bright cloud band. A = fog only; B = fade + lowered strip + haze fog; C = lowered strip only.",
       "query": "skyview",
       "variants": {
-        "a": { "fogColor": "#936877", "fogDensity": 0.014, "fadeStartMetres": 0, "fadeEndMetres": 0, "dropMetres": 0, "heightMetres": 0, "brightness": 0.9 },
-        "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartMetres": 21, "fadeEndMetres": 29, "dropMetres": 40, "heightMetres": 120, "brightness": 0.85 },
-        "c": { "fogColor": "", "fogDensity": 0, "fadeStartMetres": 0, "fadeEndMetres": 0, "dropMetres": 40, "heightMetres": 120, "brightness": 0.9 }
+        "a": { "fogColor": "#936877", "fogDensity": 0.014, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 0, "heightMetres": 0, "brightness": 0.9 },
+        "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartDegrees": 25.5, "fadeEndDegrees": 20.5, "dropMetres": 40, "heightMetres": 120, "brightness": 0.85 },
+        "c": { "fogColor": "", "fogDensity": 0, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 40, "heightMetres": 120, "brightness": 0.9 }
       }
     }
   },

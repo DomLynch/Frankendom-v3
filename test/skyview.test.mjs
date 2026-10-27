@@ -20,8 +20,9 @@ test('the shipped views validate and name three variants', () => {
 test('the validator refuses bad view rows', () => {
   assert.match(bad({ fogColor: 'red' }), /fogColor/);
   assert.match(bad({ fogDensity: -1 }), /fogDensity/);
-  assert.match(bad({ fadeStartMetres: 90, fadeEndMetres: 40 }), /fadeEndMetres/);
-  assert.match(bad({ fadeStartMetres: 0, fadeEndMetres: 0 }), /^$/);   // both 0 = off is fine
+  assert.match(bad({ fadeStartDegrees: 10, fadeEndDegrees: 20 }), /fadeStartDegrees/);
+  assert.match(bad({ fadeStartDegrees: 95, fadeEndDegrees: 20 }), /fadeStartDegrees/);
+  assert.match(bad({ fadeStartDegrees: 0, fadeEndDegrees: 0 }), /^$/);   // both 0 = off is fine
   assert.match(bad({ dropMetres: 500 }), /dropMetres/);
   assert.match(bad({ dropMetres: 60, heightMetres: 400 }), /far plane/);
   assert.match(bad({ brightness: NaN }), /brightness/);
@@ -84,10 +85,10 @@ test('fog: a variant sets the haze colour and density; a 0 density / empty colou
   assert.equal(scene.fog.density, SKYVIEWS.variants.a.fogDensity); assert.equal('#' + scene.fog.color.getHexString(), SKYVIEWS.variants.a.fogColor);
 });
 
-test('the fade: 1 near, 0 far, smooth between; off band = never fades', () => {
-  assert.equal(fadeAlpha(10, 35, 95), 1); assert.equal(fadeAlpha(200, 35, 95), 0);
-  assert.equal(fadeAlpha(65, 35, 95), 0.5);
-  assert.equal(fadeAlpha(500, 0, 0), 1);
+test('the fade is by angle below the horizon: solid when steep, gone when shallow, smooth between; off band = never fades', () => {
+  assert.equal(fadeAlpha(40, 25.5, 20.5), 1); assert.equal(fadeAlpha(5, 25.5, 20.5), 0);
+  assert.equal(fadeAlpha(23, 25.5, 20.5), 0.5);
+  assert.equal(fadeAlpha(5, 0, 0), 1);
   assert.equal(fadeFloor(new THREE.Group(), SKYVIEWS.variants.a, -900), null);
   assert.equal(fadeFloor(new THREE.Group(), SKYVIEWS.variants.c, -900), null);
   const group = new THREE.Group(), floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial());
@@ -98,11 +99,11 @@ test('the fade: 1 near, 0 far, smooth between; off band = never fades', () => {
   floor.material.onBeforeCompile(shader, {});
   assert.match(shader.fragmentShader, /smoothstep\(fadeBand\.x, fadeBand\.y/); assert.match(shader.vertexShader, /vFadeWorld = /);
   move(new THREE.Vector3(1, 2, 3)); assert.equal(shader.uniforms.fadeEye.value.z, 3);
-  assert.deepEqual(shader.uniforms.fadeBand.value.toArray(), [SKYVIEWS.variants.b.fadeStartMetres, SKYVIEWS.variants.b.fadeEndMetres]);
+  assert.deepEqual(shader.uniforms.fadeBand.value.toArray(), [SKYVIEWS.variants.b.fadeStartDegrees, SKYVIEWS.variants.b.fadeEndDegrees]);
 });
 
 test('no literals: skyview.ts reads its numbers from the row', () => {
   const src = read('../src/fight/skyview.ts');
-  for (const k of ['fogColor', 'fogDensity', 'fadeStartMetres', 'fadeEndMetres']) assert.match(src, new RegExp(`view\\.${k}`));
+  for (const k of ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fadeEndDegrees']) assert.match(src, new RegExp(`view\\.${k}`));
   assert.match(read('../src/fight/skyline.ts'), /view\.dropMetres/);
 });

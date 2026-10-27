@@ -241,7 +241,7 @@ function checkSkyline(s) {
 }
 
 // data/stage.json `skyline.views` (src/fight/skyview.ts): the ?skyview= looks. Every variant has every key; the band is both 0 (off) or start < end; the strip, lowered or resized, keeps its rim inside the far plane.
-export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartMetres', 'fadeEndMetres', 'dropMetres', 'heightMetres', 'brightness'];
+export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fadeEndDegrees', 'dropMetres', 'heightMetres', 'brightness'];
 function checkSkyViews(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
   if (v === null || typeof v !== 'object' || Array.isArray(v)) return ['stage.skyline.views: must be an object'];
@@ -256,9 +256,9 @@ function checkSkyViews(s) {
     for (const k of Object.keys(w)) if (!SKYVIEW_KEYS.includes(k)) bad(k, 'unknown key');
     if (typeof w.fogColor !== 'string' || !(w.fogColor === '' || /^#[0-9a-f]{6}$/i.test(w.fogColor))) bad('fogColor', "must be '' or a #rrggbb colour");
     const rng = (k, lo, hi) => { if (!Number.isFinite(w[k]) || w[k] < lo || w[k] > hi) bad(k, `must be a finite number in ${lo}..${hi}`); };
-    rng('fogDensity', 0, 0.1); rng('fadeStartMetres', 0, 400); rng('fadeEndMetres', 0, 400); rng('dropMetres', -60, 60); rng('brightness', 0.1, 1.5);
+    rng('fogDensity', 0, 0.1); rng('fadeStartDegrees', 0, 89); rng('fadeEndDegrees', 0, 89); rng('dropMetres', -60, 60); rng('brightness', 0.1, 1.5);
     if (!Number.isFinite(w.heightMetres) || (w.heightMetres !== 0 && (w.heightMetres < 5 || w.heightMetres > 400))) bad('heightMetres', 'must be 0 (the strip row\'s) or a number in 5..400');
-    if (Number.isFinite(w.fadeStartMetres) && Number.isFinite(w.fadeEndMetres) && !(w.fadeStartMetres === 0 && w.fadeEndMetres === 0) && !(w.fadeEndMetres > w.fadeStartMetres)) bad('fadeEndMetres', 'must be above fadeStartMetres (or both 0 = off)');
+    if (Number.isFinite(w.fadeStartDegrees) && Number.isFinite(w.fadeEndDegrees) && !(w.fadeStartDegrees === 0 && w.fadeEndDegrees === 0) && !(w.fadeStartDegrees > w.fadeEndDegrees)) bad('fadeStartDegrees', 'must be above fadeEndDegrees (or both 0 = off)');
     const h = w.heightMetres > 0 ? w.heightMetres : s.heightMetres;
     if (Number.isFinite(s.radius) && Number.isFinite(h) && Number.isFinite(s.horizonFraction) && Number.isFinite(w.dropMetres) && Math.hypot(s.radius, Math.max(Math.abs(s.horizonFraction * h - w.dropMetres), Math.abs((1 - s.horizonFraction) * h + w.dropMetres))) > 175) bad('dropMetres', 'the strip, lowered, must keep its rim inside the camera far plane (180 m)');
   }
