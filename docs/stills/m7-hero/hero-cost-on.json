@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "corpses": 0,
+    "cueState": "",
+    "corpseCuts": [],
+    "frames": 69,
+    "totalMs": 243.90000534057617,
+    "maxMs": 9.399999618530273,
+    "lastMs": 9.399999618530273,
+    "ticks": 249,
+    "state": "alive",
+    "rig": "106",
+    "measure": "physics/bodies/psyche-106.measure.json",
+    "byMode": {
+      "alive": {
+        "frames": 69,
+        "totalMs": 243.90000534057617,
+        "maxMs": 9.399999618530273
+      }
+    },
+    "cuts": [],
+    "cutSteps": [],
+    "lastTap": "",
+    "pieces": []
+  },
+  "foe": {
+    "corpses": 0,
+    "cueState": "pitborn#1:waiting | pitborn#1 head ndc no bone",
+    "corpseCuts": [],
+    "frames": 69,
+    "totalMs": 286.99999046325684,
+    "maxMs": 23.799999237060547,
+    "lastMs": 6,
+    "ticks": 249,
+    "state": "alive",
+    "rig": "106",
+    "measure": "physics/bodies/minotaur-106.measure.json",
+    "byMode": {
+      "alive": {
+        "frames": 69,
+        "totalMs": 286.99999046325684,
+        "maxMs": 23.799999237060547
+      }
+    },
+    "cuts": [],
+    "cutSteps": [],
+    "lastTap": "",
+    "pieces": []
+  },
+  "log": []
+}

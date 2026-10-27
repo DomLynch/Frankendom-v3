@@ -1,0 +1,40 @@
+{
+  "query": "feel=hero",
+  "hitTick": 302,
+  "death": {
+    "tick": 50,
+    "states": [
+      {
+        "k": 0,
+        "h": 0,
+        "finish": 0,
+        "rd": "dying"
+      },
+      {
+        "k": 10,
+        "h": 0,
+        "finish": 0,
+        "rd": "dying"
+      },
+      {
+        "k": 30,
+        "h": 0,
+        "finish": 0,
+        "rd": "dying"
+      },
+      {
+        "k": 70,
+        "h": 0,
+        "finish": 0,
+        "rd": "dying"
+      }
+    ]
+  },
+  "log": [],
+  "state": "dying",
+  "cost": {
+    "frames": 771,
+    "totalMs": 0,
+    "maxMs": 0
+  }
+}

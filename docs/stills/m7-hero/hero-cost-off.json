@@ -1,0 +1,27 @@
+{
+  "foe": {
+    "corpses": 0,
+    "cueState": "pitborn#1:waiting | pitborn#1 head ndc no bone",
+    "corpseCuts": [],
+    "frames": 61,
+    "totalMs": 274.1000003814697,
+    "maxMs": 19.100000381469727,
+    "lastMs": 6.200000762939453,
+    "ticks": 211,
+    "state": "alive",
+    "rig": "106",
+    "measure": "physics/bodies/minotaur-106.measure.json",
+    "byMode": {
+      "alive": {
+        "frames": 61,
+        "totalMs": 274.1000003814697,
+        "maxMs": 19.100000381469727
+      }
+    },
+    "cuts": [],
+    "cutSteps": [],
+    "lastTap": "",
+    "pieces": []
+  },
+  "log": []
+}

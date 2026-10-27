@@ -59,7 +59,7 @@ for (const query of queries.length ? queries : ['', 'feel=hero']) {
     const before = await page.evaluate(() => globalThis.__v3Fight.duel.fighters[0].health);
     await run(1);
     const now = await page.evaluate(() => ({ h: globalThis.__v3Fight.duel.fighters[0].health, max: globalThis.__v3Fight.duel.fighters[0].maxHealth }));
-    if (hitTick < 0 && now.h < before) hitTick = n;
+    if (hitTick < 0 && now.h < before) { hitTick = n; console.log(`${tag}: events on the tick her health fell: ${JSON.stringify(await page.evaluate(() => (globalThis.__v3Fight.events ?? []).map((e) => ({ type: e.type, actor: e.actor, target: e.target, location: e.location }))))}`); }
     if (hitTick >= 0 && SHOTS.includes(n - hitTick)) { await page.screenshot({ path: `${out}/hero-${tag}-${String(n - hitTick).padStart(3, '0')}.${EXT}`, ...SHOT }); frames++; }
     await keep(page);
     if (hitTick >= 0 && n - hitTick > Math.max(...SHOTS)) break;
@@ -79,6 +79,7 @@ for (const query of queries.length ? queries : ['', 'feel=hero']) {
   const end = await page.evaluate(() => ({ death: null, log: globalThis.__heroReactLog ?? [], state: globalThis.__ragdollHero?.state ?? null, cost: globalThis.__ragdollHero ? { frames: globalThis.__ragdollHero.frames, totalMs: globalThis.__ragdollHero.totalMs, maxMs: globalThis.__ragdollHero.maxMs } : null }));
   hitAt[tag] = hitTick;
   console.log(`${tag}: first blow on the hero at tick ${hitTick} after the wait began; ${frames} stills; reaction log ${JSON.stringify(end.log)}; hero ragdoll ${end.state}`);
+  end.seen = await page.evaluate(() => ({ seen: globalThis.__heroReactSeen ?? null, hitsSeen: globalThis.__ragdollHero?.hitsSeen ?? null, feelHooks: globalThis.__ragdollHero?.feelHooks ?? null })); console.log(`${tag}: hits that reached the hook ${JSON.stringify(end.seen)}`);
   end.death = death; console.log(`${tag}: death at +${death.tick}: ${JSON.stringify(death.states)}`);
   writeFileSync(`${out}/hero-${tag}-report.json`, JSON.stringify({ query, hitTick, ...end }, null, 2));
   await page.close();
