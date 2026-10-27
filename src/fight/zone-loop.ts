@@ -51,7 +51,8 @@ export function validateWalk(walkRadius: number, pitWall: number): void {
 /** A hero beyond the pit's wall (the zone's free walk) enters a duel on the wall's edge, in line with where he stood: the sim's circle is the pit. */
 export function intoPit(at: { x: number; z: number }, wall: number): { x: number; z: number } {
   const r = M.hypot(at.x, at.z);
-  return r > wall ? { x: at.x * wall / r, z: at.z * wall / r } : { x: at.x, z: at.z };
+  const k = wall / r * (1 - Number.EPSILON);   // one rounding step inside the wall, so the pose check (hypot > wall) never trips on float error
+  return r > wall ? { x: at.x * k, z: at.z * k } : { x: at.x, z: at.z };
 }
 
 /** One tick of the hero's walk after the kill: the sim's own movement (sim.ts advance), stopped by the corpse and `wall` (the pit's wall, or the zone's walking radius, data/respawn.json postKill.walkRadiusMetres). */
