@@ -22,7 +22,7 @@ const list = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, leashMargin: 2, pitScale: 0.65 });
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, leashMargin: 15, pitScale: 0.65 });
   for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
@@ -135,23 +135,18 @@ test('the leash: only a BOSS past its own leash from its spot gives up', () => {
 });
 
 // Dom 2026-10-27 (live, phone): 'I started the fight and rolled out of an area; it froze and restarted the same fight. It should be a free roam area.' main.ts measured the leash from the
-// spot to the HERO (leash 5 m) while the duel moves both across the whole 7.18 m circle, so a roll or a step >5 m from the spot reset the boss mid-fight. REPRO/regression:
-test('REPRO: a fight anywhere in the circle never trips the leash (boss-measured, leash >= circle diameter + margin); the old 5 m hero-measured leash did', () => {
-  const spots = list(), OLD = 5, rows = [];
-  let oldTrips = 0, total = 0, worst = 0;
-  for (const s of spots) {
-    let far = 0;
-    for (let x = -wall(); x <= wall(); x += 0.25) for (let z = -wall(); z <= wall(); z += 0.25) {
-      if (Math.hypot(x, z) > wall()) continue;   // a hero or boss stands anywhere inside the wall; the boss is on the hero (within 2 m)
-      const d = dist(s, { x, z }); far = Math.max(far, d); total++;
-      if (d > OLD) oldTrips++;
-      assert.equal(leashed(s, { x, z }), false, `${s.id}: a fight at (${x}, ${z}), ${d.toFixed(2)} m from its spot, must not reset it (leash ${s.leash})`);
-    }
-    worst = Math.max(worst, far); rows.push(`${s.id}: farthest fight point ${far.toFixed(2)} m from its spot (leash ${s.leash})`);
+// spot to the HERO (leash 5 m) while the fight moves both well past 5 m from the spot, so a roll or a few steps reset the boss mid-fight. REPRO/regression:
+test('REPRO: a fight that drifts out from the spot (hero and boss together, up to 15 m) never trips the leash; on main (leash 5) it tripped past 5 m', () => {
+  const s = list()[0], OLD = 5, rows = [];
+  let firstOld = null;
+  for (let d = 0; d <= 15; d += 0.5) {
+    const hero = { x: s.x, z: s.z + d }, boss = { x: s.x, z: s.z + Math.max(0, d - 1.5) };   // the boss on the hero, 1.5 m behind him
+    if (firstOld === null && dist(s, hero) > OLD) firstOld = d;
+    rows.push(`${d} m: hero-measured at 5 m ${dist(s, hero) > OLD}, boss-measured at ${s.leash} m ${leashed(s, boss)}`);
+    assert.equal(leashed(s, boss), false, `a fight ${d} m from the spot must not reset the boss (leash ${s.leash})`);
   }
-  assert.ok(oldTrips / total > 0.5, `on main (leash 5 from the spot) ${(100 * oldTrips / total).toFixed(0)}% of the circle reset the fight`);
-  assert.ok(worst <= 2 * wall() && worst < spots[0].leash);
-  console.log(rows.join('\n'), `\nold rule: ${(100 * oldTrips / total).toFixed(0)}% of fight positions beyond 5 m`);
+  assert.equal(firstOld, 5.5, 'on main the hero-measured 5 m leash reset the fight from 5.5 m out');
+  console.log(rows.join('\n'));
 });
 
 test('a kited boss gives up past the leash; the neighbours keep their own (no chaining)', () => {
@@ -160,13 +155,13 @@ test('a kited boss gives up past the leash; the neighbours keep their own (no ch
   assert.equal(leashed(s[1], kited), dist(s[1], kited) > s[1].leash, 'each spot measures its own boss against its own row');
 });
 
-test('validateSpots refuses a leash shorter than the fight circle\'s diameter plus the margin', () => {
+test('validateSpots refuses a leash shorter than the aggro plus the margin', () => {
   const ok = spotsFor(ZONE), short = structuredClone(ok);
-  assert.ok(ok.every((s) => s.leash >= 2 * wall() + WORLD.leashMargin));
-  short[1].leash = 2 * wall() + WORLD.leashMargin - 0.1;
-  assert.throws(() => validateSpots(short, start(), wall()), /leash .* shorter than the fight circle's diameter/);
+  assert.ok(ok.every((s) => s.leash >= s.aggro + WORLD.leashMargin));
+  short[1].leash = short[1].aggro + WORLD.leashMargin - 0.1;
+  assert.throws(() => validateSpots(short, start(), wall()), /leash .* shorter than its aggro/);
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, leashMargin: 99 }), /leashMargin/);
-  assert.throws(() => validateSpots(ok, start(), wall() + 1), /leash/, 'a wider circle (pit-scale change) breaks the row loudly instead of silently resetting fights');
+  assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, leashMargin: ok[0].leash }), /leash .* shorter than its aggro/, 'a bigger margin row breaks loudly instead of silently resetting fights');
 });
 
 test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for the aggro, the others drawn as copies, the old single-spawn timer is gone', () => {

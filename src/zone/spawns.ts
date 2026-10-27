@@ -49,7 +49,7 @@ export function validateSpots(spots: readonly Spot[], heroStart: At, wall: numbe
   for (const s of spots) {
     if (kind !== undefined && s.kind !== kind) throw new Error(`spawn ${s.id} names kind "${s.kind}": the page builds one foe rig, "${kind}"`);
     if (!(Number.isFinite(s.x) && Number.isFinite(s.z)) || M.hypot(s.x, s.z) > wall - world.edgeMetres) throw new Error(`spawn ${s.id} stands outside the pit's wall (${wall} m less ${world.edgeMetres} m)`);
-    if (s.leash < wall + wall + world.leashMargin) throw new Error(`spawn ${s.id} leash ${s.leash} m is shorter than the fight circle's diameter ${wall + wall} m plus ${world.leashMargin} m (respawn.json world.leashMargin): a fight or a roll would trip it`);
+    if (s.leash < s.aggro + world.leashMargin) throw new Error(`spawn ${s.id} leash ${s.leash} m is shorter than its aggro ${s.aggro} m plus ${world.leashMargin} m (respawn.json world.leashMargin): a roll or a step in a fight would trip it`);
     if (dist(s, heroStart) <= s.aggro) throw new Error(`spawn ${s.id} stands inside its own aggro of the hero's start`);
     for (const t of spots) if (t !== s && dist(s, t) <= s.aggro) throw new Error(`spawns ${s.id} and ${t.id} stand inside each other's aggro`);
     for (const t of spots) if (t !== s && dist(s, t) < world.minSpacing) throw new Error(`spawns ${s.id} and ${t.id} stand closer than ${world.minSpacing} m (respawn.json world.minSpacing)`);

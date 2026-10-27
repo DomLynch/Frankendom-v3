@@ -31,7 +31,7 @@ test('bad opener rows are refused: delay or count out of range, no spawn, a spaw
   assert.throws(bad({ spawns: [] }), /no spawn/); assert.throws(bad({ spawns: ['nobody'] }), /no spawn of the zone/);
 });
 
-test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is 6 m from the north Pitborn; the leash is the boss\'s 18 m now, the lift stays consistent)', () => {
+test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is 6 m from the north Pitborn; the leash is the boss\'s 20 m now, the lift stays consistent)', () => {
   const s = spawns().find((x) => x.id === OPENERS.spawns[0]), d = Math.hypot(s.x - hero().x, s.z - hero().z);
   assert.ok(d <= s.leash + OPENERS.reachMetres - 1, `the mark is ${d.toFixed(2)} m from the yard Pitborn: at least 1 m inside leash ${s.leash} + reach ${OPENERS.reachMetres}`);
   const past = { x: s.x + s.leash + 0.5, z: s.z };
