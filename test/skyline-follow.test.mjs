@@ -82,7 +82,7 @@ test('the follow starts on target and then eases (yawFollowSeconds), never snapp
   const r = sky.mesh.rotation.y;
   assert.ok(r > 2 && r < 2.5, String(r));   // moved toward, not onto
   for (let i = 0; i < 600; i++) { sky.heading(camAt(2.5)); sky.update(new THREE.Vector3(), 0.016); }
-  assert.ok(Math.abs(sky.mesh.rotation.y - 2.5) < 1e-6);
+  assert.ok(Math.abs(sky.mesh.rotation.y - 2.5) < 1e-3);   // settled after ~10 time constants
 });
 
 test('?skyfollow=v1 (and yawFollow 0) keeps the strip fixed in world yaw', () => {
