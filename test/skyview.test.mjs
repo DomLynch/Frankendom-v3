@@ -77,6 +77,10 @@ test('fog: a variant sets the haze colour and density; a 0 density / empty colou
   applyFog(scene, SKYVIEWS.variants.c);
   assert.equal(scene.fog.density, 0.006); assert.equal(scene.fog.color.getHexString(), '9db7d6');
   applyFog(scene, SKYVIEWS.variants.a);
+  assert.equal(scene.background, null);   // (no background set in this scene)
+  const flat = new THREE.Scene(); flat.background = new THREE.Color('#9db7d6'); flat.fog = new THREE.FogExp2('#9db7d6', 0.006);
+  applyFog(flat, SKYVIEWS.variants.b);
+  assert.equal('#' + flat.background.getHexString(), SKYVIEWS.variants.b.fogColor);   // the flat sky takes the haze colour too
   assert.equal(scene.fog.density, SKYVIEWS.variants.a.fogDensity); assert.equal('#' + scene.fog.color.getHexString(), SKYVIEWS.variants.a.fogColor);
 });
 

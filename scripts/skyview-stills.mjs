@@ -64,7 +64,9 @@ for (const id of IDS) {
     }, 250);
   }));
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', bubbles: true })));
-  await page.waitForTimeout(4800);
+  await page.waitForFunction((r) => { const p = globalThis.__v3Roam; return !!p && Math.hypot(p.x, p.z) >= r; }, Number(process.env.WALK_R ?? 14), { timeout: 60000, polling: 50 }).catch(() => {});   // the same place for every variant, however slow the box
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyS', bubbles: true })));
+  await page.waitForTimeout(1500);
   await page.screenshot({ path: `${out}/${id}-walk-375.png` });
   results[id].walk375 = await measure(page, `${id}-walk-375.png`, `${id} walk 375`);
   await page.close();

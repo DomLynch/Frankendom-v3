@@ -24,8 +24,8 @@
       "query": "skyview",
       "variants": {
         "a": { "fogColor": "#936877", "fogDensity": 0.014, "fadeStartMetres": 0, "fadeEndMetres": 0, "dropMetres": 0, "heightMetres": 0, "brightness": 0.9 },
-        "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartMetres": 22, "fadeEndMetres": 33, "dropMetres": 30, "heightMetres": 120, "brightness": 0.85 },
-        "c": { "fogColor": "", "fogDensity": 0, "fadeStartMetres": 0, "fadeEndMetres": 0, "dropMetres": 30, "heightMetres": 120, "brightness": 0.9 }
+        "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartMetres": 21, "fadeEndMetres": 29, "dropMetres": 40, "heightMetres": 120, "brightness": 0.85 },
+        "c": { "fogColor": "", "fogDensity": 0, "fadeStartMetres": 0, "fadeEndMetres": 0, "dropMetres": 40, "heightMetres": 120, "brightness": 0.9 }
       }
     }
   },

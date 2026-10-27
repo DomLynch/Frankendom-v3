@@ -19,7 +19,7 @@ export function skyViewFor(search: string, rows: SkyViews = SKYVIEWS): SkyView |
 export function applyFog(scene: THREE.Scene, view: SkyView): void {
   const fog = scene.fog;
   if (!(fog instanceof THREE.FogExp2)) return;
-  if (view.fogColor) fog.color.set(view.fogColor);
+  if (view.fogColor) { fog.color.set(view.fogColor); if (scene.background instanceof THREE.Color) scene.background.set(view.fogColor); }   // the flat sky behind the strip is the haze too: where the melted sand shows no strip it blends to the haze, not to blue
   if (view.fogDensity > 0) fog.density = view.fogDensity;
 }
 
