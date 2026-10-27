@@ -1,0 +1,353 @@
+{
+ "scenario": "heavy",
+ "query": "default",
+ "swingsOrPresses": 14,
+ "frames": 179,
+ "tickHz": 60,
+ "frameEveryTicks": 6,
+ "heroHits": 14,
+ "kickInterrupted": 0,
+ "legInjured": 14,
+ "kickedDownSim": 1,
+ "kickedDownEvents": [
+  "t522:heavy_overhead:injuredLeg"
+ ],
+ "ragdollKnockdownTicks": 130,
+ "simDownTicks": 117,
+ "maxLegHits": 7,
+ "hitsByLocation": {
+  "legs": 14
+ },
+ "blowsLanded": [
+  "t31:heavy_overhead@legs",
+  "t101:heavy_overhead@legs",
+  "t175:heavy_overhead@legs",
+  "t243:heavy_overhead@legs",
+  "t299:critical@legs",
+  "t382:heavy_overhead@legs",
+  "t452:heavy_overhead@legs",
+  "t522:heavy_overhead@legs",
+  "t580:critical@legs",
+  "t662:heavy_overhead@legs",
+  "t720:critical@legs",
+  "t802:heavy_overhead@legs",
+  "t872:heavy_overhead@legs",
+  "t942:heavy_overhead@legs"
+ ],
+ "ragdollStates": [
+  "alive",
+  "stagger",
+  "knockdown"
+ ],
+ "rules": {
+  "hits": 14,
+  "byOutcome": {
+   "stick": 7,
+   "knockdown": 1,
+   "miss": 6
+  }
+ },
+ "fell": true,
+ "trail": [
+  {
+   "t": 0,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 30,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 31,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 60,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 83,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 90,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 101,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 120,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 150,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 159,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 175,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 180,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 210,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 228,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 240,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 243,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 270,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 296,
+   "st": "alive",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 299,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 300,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 330,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 351,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 360,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 382,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 390,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 420,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 450,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 480,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 510,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 512,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 522,
+   "st": "stagger",
+   "down": 120,
+   "phase": "hurt"
+  },
+  {
+   "t": 540,
+   "st": "stagger",
+   "down": 100,
+   "phase": "hurt"
+  },
+  {
+   "t": 570,
+   "st": "stagger",
+   "down": 71,
+   "phase": "hurt"
+  },
+  {
+   "t": 573,
+   "st": "alive",
+   "down": 67,
+   "phase": "hurt"
+  },
+  {
+   "t": 600,
+   "st": "alive",
+   "down": 40,
+   "phase": "hurt"
+  },
+  {
+   "t": 630,
+   "st": "alive",
+   "down": 9,
+   "phase": "hurt"
+  },
+  {
+   "t": 660,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 690,
+   "st": "alive",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 720,
+   "st": "alive",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 750,
+   "st": "alive",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 780,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 810,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 840,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 870,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 900,
+   "st": "alive",
+   "down": 0,
+   "phase": "guard"
+  },
+  {
+   "t": 930,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 960,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 990,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 1020,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 1050,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  }
+ ]
+}

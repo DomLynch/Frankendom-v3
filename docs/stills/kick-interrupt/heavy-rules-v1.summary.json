@@ -1,0 +1,370 @@
+{
+ "scenario": "heavy",
+ "query": "rules=v1",
+ "swingsOrPresses": 14,
+ "frames": 179,
+ "tickHz": 60,
+ "frameEveryTicks": 6,
+ "heroHits": 10,
+ "kickInterrupted": 0,
+ "legInjured": 10,
+ "kickedDownSim": 1,
+ "kickedDownEvents": [
+  "t801:heavy_overhead:injuredLeg"
+ ],
+ "ragdollKnockdownTicks": 0,
+ "simDownTicks": 118,
+ "maxLegHits": 7,
+ "hitsByLocation": {
+  "legs": 10
+ },
+ "blowsLanded": [
+  "t32:heavy_overhead@legs",
+  "t102:heavy_overhead@legs",
+  "t175:heavy_overhead@legs",
+  "t453:heavy_overhead@legs",
+  "t592:heavy_overhead@legs",
+  "t667:heavy_overhead@legs",
+  "t724:critical@legs",
+  "t801:heavy_overhead@legs",
+  "t858:critical@legs",
+  "t941:heavy_overhead@legs"
+ ],
+ "ragdollStates": [
+  "alive",
+  "stagger"
+ ],
+ "fell": true,
+ "trail": [
+  {
+   "t": 0,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 30,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 32,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 60,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 84,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 90,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 102,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 120,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 150,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 160,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 175,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 180,
+   "st": "stagger",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 210,
+   "st": "stagger",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 227,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 240,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 270,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 300,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 330,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 360,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 390,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 420,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 450,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 453,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 480,
+   "st": "stagger",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 505,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 510,
+   "st": "alive",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 540,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 570,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 592,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 600,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 630,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 645,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 660,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 667,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 690,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 720,
+   "st": "alive",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 724,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 750,
+   "st": "stagger",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 776,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 780,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 801,
+   "st": "stagger",
+   "down": 120,
+   "phase": "hurt"
+  },
+  {
+   "t": 810,
+   "st": "stagger",
+   "down": 110,
+   "phase": "hurt"
+  },
+  {
+   "t": 840,
+   "st": "stagger",
+   "down": 81,
+   "phase": "hurt"
+  },
+  {
+   "t": 853,
+   "st": "alive",
+   "down": 67,
+   "phase": "hurt"
+  },
+  {
+   "t": 858,
+   "st": "stagger",
+   "down": 61,
+   "phase": "hurt"
+  },
+  {
+   "t": 870,
+   "st": "stagger",
+   "down": 50,
+   "phase": "hurt"
+  },
+  {
+   "t": 900,
+   "st": "stagger",
+   "down": 19,
+   "phase": "hurt"
+  },
+  {
+   "t": 911,
+   "st": "alive",
+   "down": 8,
+   "phase": "hurt"
+  },
+  {
+   "t": 930,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 941,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 960,
+   "st": "stagger",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 990,
+   "st": "stagger",
+   "down": 0,
+   "phase": "guard"
+  },
+  {
+   "t": 993,
+   "st": "alive",
+   "down": 0,
+   "phase": "guard"
+  },
+  {
+   "t": 1020,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 1050,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  }
+ ]
+}

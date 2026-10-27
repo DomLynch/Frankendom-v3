@@ -1,0 +1,123 @@
+{
+ "scenario": "kick",
+ "query": "rules=v1",
+ "swingsOrPresses": 20,
+ "frames": 65,
+ "tickHz": 60,
+ "frameEveryTicks": 6,
+ "heroHits": 5,
+ "kickInterrupted": 0,
+ "legInjured": 0,
+ "kickedDownSim": 0,
+ "kickedDownEvents": [],
+ "ragdollKnockdownTicks": 330,
+ "simDownTicks": 0,
+ "maxLegHits": 0,
+ "hitsByLocation": {
+  "torso": 5
+ },
+ "blowsLanded": [
+  "t62:kick@torso",
+  "t106:kick@torso",
+  "t156:kick@torso",
+  "t200:kick@torso",
+  "t246:kick@torso"
+ ],
+ "ragdollStates": [
+  "alive",
+  "knockdown"
+ ],
+ "fell": true,
+ "trail": [
+  {
+   "t": 0,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 18,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 30,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 60,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 90,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 120,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 150,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 180,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "attack"
+  },
+  {
+   "t": 210,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 240,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 270,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "hurt"
+  },
+  {
+   "t": 300,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 330,
+   "st": "knockdown",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 348,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  },
+  {
+   "t": 360,
+   "st": "alive",
+   "down": 0,
+   "phase": "ready"
+  }
+ ]
+}
