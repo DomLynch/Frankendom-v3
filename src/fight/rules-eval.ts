@@ -84,11 +84,12 @@ export function createHandSpeed(rows: Pick<RuleRows, 'speedWindow' | 'snapOver' 
 export type Presentation = { action: 'none' | 'stagger' | 'knockdown'; scale: number; cause: 'damage' | 'push'; downS: number; cut: string | null; outcome: EvalResult['outcome']; strength: number; deferredKill: boolean };
 
 /** The result -> the ragdoll's action. A kill is the SIM's alone: while it lives (`simAlive`) the evaluator's kill is shown as `killAs` (a knockdown), flagged deferred. */
-export function present(rows: RuleRows, rules: Pick<PkgRules, 'strength_scale' | 'knockdown'>, r: EvalResult, simAlive: boolean): Presentation {
+export function present(rows: RuleRows, rules: Pick<PkgRules, 'strength_scale' | 'knockdown'>, r: EvalResult, simAlive: boolean, swing: string = 'heavy'): Presentation {
   const ref = rules.strength_scale[rows.impulseAt] ?? 1, [lo, hi] = rows.impulseClamp;
   const base = { scale: Math.min(hi!, Math.max(lo!, r.strength / ref)), cause: 'damage' as const, downS: 0, cut: r.cut?.unit ?? null, outcome: r.outcome, strength: r.strength, deferredKill: false };
   if (r.outcome === 'miss') return { ...base, action: 'none' };
   if (r.outcome === 'kill' && simAlive) {   // no fall time of its own: the package's fall + down for that cause
+    if (!rows.killAsSwings.includes(swing)) return { ...base, action: 'stagger', cut: null, deferredKill: true };   // a light blow the sim did not kill is a flinch: only the swings in killAsSwings lay him down
     const cause = rows.killAs as 'damage' | 'push', fall = rules.knockdown.fall_seconds;
     return { ...base, action: 'knockdown', cause, downS: fall[cause]! + fall.down!, cut: null, deferredKill: true };   // the kill did not happen, so neither did the cut that made it (a torso cut is a kill)
   }
@@ -156,7 +157,7 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
       if (!input) { debug.skipped++; return null; }
       const start = clock();
       const r = ev.evaluateHit(input, state);
-      const p = present(rows, ev.rules, r, simAlive);
+      const p = present(rows, ev.rules, r, simAlive, input.swing);
       const ms = clock() - start;
       debug.hits++; debug.byOutcome[r.outcome] = (debug.byOutcome[r.outcome] ?? 0) + 1;
       if (p.deferredKill) { debug.deferredKills++; if (rows.renewOnKill) { state = fresh(); debug.renewals++; } }

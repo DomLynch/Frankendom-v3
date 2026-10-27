@@ -112,6 +112,19 @@ test('knockdown: light leg blows add up to the fall (60 of the counter); it carr
   assert.equal(r.debug.byOutcome.knockdown, 1);
 });
 
+test('a LIGHT blow never lays him down: the evaluator\'s kill on a light counter-hit (longsword, torso/head/legs) is a stagger while the sim lives; a heavy one still falls', () => {
+  assert.deepEqual(ROWS.killAsSwings, ['heavy']);
+  for (const location of ['torso', 'head', 'legs']) {
+    const light = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location, move: 'light_left', counter: true }), true);
+    assert.equal(light.outcome, 'kill', `${location}: the evaluator still judges it lethal`);
+    assert.equal(light.action, 'stagger', `${location}: shown as a flinch`);
+    const heavy = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location, move: 'heavy_overhead', counter: true }), true);
+    assert.equal(heavy.action, 'knockdown', `${location}: a heavy kill still falls`);
+  }
+  assert.equal(present(ROWS, rules, { outcome: 'kill', strength: 30, cut: null, knockdown: null }, true, 'light').action, 'stagger');
+  assert.equal(present(ROWS, rules, { outcome: 'kill', strength: 30, cut: null, knockdown: null }, true, 'heavy').action, 'knockdown');
+});
+
 test('a kill is the sim\'s: while it lives the evaluator\'s kill is a knockdown, counted, and the fighter renewed; on the killing blow it is the kill', () => {
   const alive = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0);
   assert.equal(createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ location: 'head', move: 'heavy_overhead' }), true).outcome, 'stick');   // head budget 40: a gladius heavy (31 damage) no longer takes it in one blow

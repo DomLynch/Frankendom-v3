@@ -13,7 +13,7 @@ page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 await page.addInitScript((zone) => {
   globalThis.__hits = [];
   const push = Array.prototype.push;
-  Array.prototype.push = function (...a) { for (const e of a) if (e && typeof e === 'object' && (e.type === 'Hit' || e.type === 'KnockedDown' || e.type === 'Staggered' || e.type === 'Killed') && e.target !== 0) { if (zone && e.type === 'Hit' && e.location && !e.missile) e.location = zone; globalThis.__hits.push({ ...e }); } return push.apply(this, a); };
+  Array.prototype.push = function (...a) { for (const e of a) if (e && typeof e === 'object' && (e.type === 'Hit' || e.type === 'KnockedDown' || e.type === 'Staggered' || e.type === 'Killed') && e.target !== 0) { if (zone && e.type === 'Hit' && e.location && !e.missile) e.location = zone; push.call(globalThis.__hits, { ...e }); } return push.apply(this, a); };
 }, ZONE);
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
 await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
