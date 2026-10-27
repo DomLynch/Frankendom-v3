@@ -24,8 +24,12 @@ const press = async (page, codes) => { for (const c of codes) await page.keyboar
 const keep = (page) => page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; h.stamina = h.maxStamina; f.health = Math.max(f.health, Math.ceil(f.maxHealth / 2)); });
 const q = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
 
-async function one(query) {   // a fresh browser per run: a crashed one (the corpse runs can) never takes the rest of the set down
+async function one(query) {   // a fresh browser per run: a crashed one (the corpse runs can) never takes the rest of the set down, and a timed-out run never leaks its Chromium
   const browser = await launch();
+  try { return await measure(browser, query); } finally { await browser.close().catch(() => {}); }
+}
+
+async function measure(browser, query) {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.text().startsWith('dbg ')) console.error(m.text()); });
@@ -76,8 +80,8 @@ async function one(query) {   // a fresh browser per run: a crashed one (the cor
     await page.waitForTimeout(500);
   }
   const r = await page.evaluate(() => ({ cb: globalThis.__cb, rd: JSON.parse(JSON.stringify(globalThis.__ragdoll.byMode ?? {})), corpses: globalThis.__ragdoll.corpses, clash: globalThis.__feelClash && { frames: globalThis.__feelClash.frames, totalMs: globalThis.__feelClash.totalMs, maxMs: globalThis.__feelClash.maxMs, clashes: globalThis.__feelClash.clashes }, limbs: globalThis.__feelLimbs && { frames: globalThis.__feelLimbs.frames, totalMs: globalThis.__feelLimbs.totalMs, maxMs: globalThis.__feelLimbs.maxMs }, zone: globalThis.__v3Zone ?? null, hitreact: (globalThis.__hitreactLog ?? []).length, events: (globalThis.__feelEvents ?? []).map((e) => e.name), cuts: (globalThis.__v3Cuts ?? []).length }));
-  await browser.close();
-  const cb = [...r.cb].sort((a, b) => a - b), avg = cb.reduce((a, b) => a + b, 0) / cb.length;
+  await page.close();
+  const cb =[...r.cb].sort((a, b) => a - b), avg = cb.reduce((a, b) => a + b, 0) / cb.length;
   const per = (m, m0) => m && { avgMs: +((m.totalMs - (m0?.totalMs ?? 0)) / Math.max(1, m.frames - (m0?.frames ?? 0))).toFixed(4), maxMs: +m.maxMs.toFixed(3), frames: m.frames - (m0?.frames ?? 0) };
   const ragdoll = Object.fromEntries(Object.entries(r.rd).map(([k, m]) => [k, per(m, rt0.rd[k])]));
   const events = r.events.reduce((a, e) => ((a[e] = (a[e] ?? 0) + 1), a), {});
