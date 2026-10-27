@@ -9,8 +9,8 @@ import { M } from '../fight/detmath.ts';
 import { respawnPose } from '../fight/zone-loop.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number };
-type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number] };
+export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number };
+type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number] };
 export const WORLD = ROWS.world as WorldRows;
 const LIMITS = ROWS.limits as unknown as Limits;
 
@@ -41,7 +41,7 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
  * one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
  */
 export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kind?: string, limits: Limits = LIMITS): void {
-  for (const key of ['retargetMargin', 'edgeMetres', 'centre'] as const) {
+  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
@@ -51,6 +51,7 @@ export function validateSpots(spots: readonly Spot[], heroStart: At, wall: numbe
     if (!(Number.isFinite(s.x) && Number.isFinite(s.z)) || M.hypot(s.x, s.z) > wall - world.edgeMetres) throw new Error(`spawn ${s.id} stands outside the pit's wall (${wall} m less ${world.edgeMetres} m)`);
     if (dist(s, heroStart) <= s.aggro) throw new Error(`spawn ${s.id} stands inside its own aggro of the hero's start`);
     for (const t of spots) if (t !== s && dist(s, t) <= s.aggro) throw new Error(`spawns ${s.id} and ${t.id} stand inside each other's aggro`);
+    for (const t of spots) if (t !== s && dist(s, t) < world.minSpacing) throw new Error(`spawns ${s.id} and ${t.id} stand closer than ${world.minSpacing} m (respawn.json world.minSpacing)`);
   }
   if (new Set(spots.map((s) => s.id)).size !== spots.length) throw new Error('two spawns share an id');
 }

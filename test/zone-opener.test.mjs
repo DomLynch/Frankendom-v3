@@ -6,9 +6,11 @@ import { readFileSync } from 'node:fs';
 import { zoneFor } from '../src/zone/zone-rows.ts';
 import { OPENERS, inAggro, kill, leashed, openerLeashLift, openerOn, openerReach, spotsFor, tick, validateOpeners } from '../src/zone/spawns.ts';
 import { initialState } from '../src/fight/sim.ts';
+import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
-const ZONE = zoneFor(''), ROWS = read('../data/respawn.json');
+const ZONE = zoneFor(''), ROWS = read('../data/respawn.json'), FIGHT = read('../data/fight.json');
+setPlayScale(playScaleFor(FIGHT.opponent, Infinity));   // the circle the page fights in (main.ts fresh()): the newcomer's mark is z 2, not the full-size 4
 const spawns = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const hero = () => initialState();   // the pit's mark: where a newcomer stands
 
@@ -29,7 +31,7 @@ test('bad opener rows are refused: delay or count out of range, no spawn, a spaw
   assert.throws(bad({ spawns: [] }), /no spawn/); assert.throws(bad({ spawns: ['nobody'] }), /no spawn of the zone/);
 });
 
-test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is just beyond the plain 6 m leash)', () => {
+test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is 6 m from the north Pitborn, just beyond the plain 5 m leash)', () => {
   const s = spawns().find((x) => x.id === OPENERS.spawns[0]), d = Math.hypot(s.x - hero().x, s.z - hero().z);
   assert.ok(d > s.leash, 'beyond the plain leash: why the fight\'s leash is lifted');
   assert.ok(d <= s.leash + OPENERS.reachMetres);

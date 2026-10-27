@@ -7,7 +7,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 const root = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const src = join(root, 'src');
 const STUBS = join(src, 'stubs.ts');
-const FORBIDDEN = [/^src\/core\/(?!registry\.ts$)/, /^src\/net\//, /^src\/zones?[/.-]/, /^src\/legends?[/.-]/, /^src\/pit\//];
+import { forbidden } from './stub-patterns.mjs';   // the patterns (src/zones forbidden, V3's own src/zone/ allowed) live there so a test can pin them
 const IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"](\.{1,2}\/[^'"]+)['"]/g;
 
 const files = (dir) => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? files(p) : /\.(ts|js|mjs)$/.test(f) ? [p] : []; });
@@ -18,7 +18,7 @@ for (const file of files(src)) {
   readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
     for (const m of line.matchAll(IMPORT)) {
       const target = relative(root, resolve(dirname(file), m[1])).split('\\').join('/');
-      if (FORBIDDEN.some((re) => re.test(target))) bad.push(`${relative(root, file)}:${i + 1}: imports ${target} (route it through src/stubs.ts)`);
+      if (forbidden(target)) bad.push(`${relative(root, file)}:${i + 1}: imports ${target} (route it through src/stubs.ts)`);
     }
   });
 }

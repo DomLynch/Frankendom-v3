@@ -20,7 +20,7 @@ export const SCHEMA = {
   // `bones`, `files`, `weapons` and `gapFill` are keyed by names (bones, body stems, nodes, roles), so only their owners' keys are closed here.
   'rig': { keys: ['about', 'default', 'held', 'files', 'detect', 'bones', 'weapons', 'hide', 'gapFill', 'grip65', 'clips106', 'clipLoad'], maps: { default: ['hero', 'foe'], held: ['weapon', 'sword', 'sheath'], detect: ['65', '106'], grip65: ['hand', 'translation', 'rotation'], clips106: ['about', 'dir', 'files'], clipLoad: ['about', 'hero', 'afterFirstFrame'] } },
   // The zone loop's roam rows and way-back flag (src/fight/zone-loop.ts validateLoop checks the values); spawns, respawnSeconds and the hero's respawn are the zone row's
-  'respawn': { keys: ['about', 'flag', 'postKill', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], limits: ['about', 'delaySeconds', 'count', 'reachMetres', 'fallSeconds', 'startAfterSeconds', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre'] } },
+  'respawn': { keys: ['about', 'flag', 'postKill', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres', 'minSpacing'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], limits: ['about', 'delaySeconds', 'count', 'reachMetres', 'fallSeconds', 'startAfterSeconds', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre', 'minSpacing'] } },
   // What scripts/build.mjs never ships (106 only: the 65 bodies, kits and 65-keyed clip JSONs; test/rig-bones.test.mjs)
   'build': { keys: ['about', 'notShipped'] },
   // The presence service and its page client (server/presence/, src/presence/): V1's presence rule rows (id, value, unit); src/presence/rows.ts also checks every rule the code reads by name exists
@@ -36,6 +36,10 @@ export const SCHEMA = {
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
+  // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
+  'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
+    maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], cue: ['about', 'on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
+    finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
     maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
@@ -45,6 +49,11 @@ export const SCHEMA = {
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
     maps: { ids: ['instancePattern', 'tokenPattern', 'batchIdPattern', 'weaponPattern', 'note'], engage: ['tokenBytes', 'ttlS', 'maxOpenPerAccount', 'note'], hit: ['maxBatchRows', 'maxHitsPerRow', 'firstHitAllowanceS', 'maxElapsedS', 'dpsSlack', 'retryFailedBatch', 'note'],
       progression: ['maxDamageMult', 'note'], share: ['minSharePct', 'floorEqualShareFraction', 'renormalise', 'hitExpiryS', 'note'], caps: ['killsPerMin', 'killsPerHour', 'cooldownAcrossLayers', 'note'], respawn: ['minS', 'maxS', 'defaultS', 'note'], log: ['keepS', 'note'] } },
+  // Phase 3 step 1, the page side of shared boss health (docs/ZONE-CLIENT-CONTRACT.md, src/zone/shared-hp-client.ts): OFF unless ?sharedhp=. The client's own parseClientRows checks the values and the action vocabulary.
+  'zone-client': { keys: ['about', 'query', 'path', 'hosts', 'routes', 'timing', 'sim', 'batch', 'backoff', 'kill', 'refusals', 'sqlClasses', 'transportClasses', 'fallback'],
+    rows: { refusals: ['id', 'action', 'delayMs'], sqlClasses: ['id', 'match', 'action'], transportClasses: ['id', 'kinds', 'status', 'action'] },
+    maps: { routes: ['engage', 'touch', 'hits', 'state', 'kill'], timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['hit', 'heroSide', 'foeSide'], batch: ['idPrefix', 'idSep'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], kill: ['tries', 'retryMs', 'settled', 'unpaid'], fallback: ['sql', 'transport'] },
+    finite: { timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['heroSide', 'foeSide'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], kill: ['tries', 'retryMs'] } },
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;
@@ -93,6 +102,33 @@ export function validateFile(name, json) {
       if (!['head', 'torso', 'legs'].includes(zone)) errors.push(`${name}.cut.precedence.${zone}: unknown zone (head, torso, legs)`);
       if (who !== 'evaluator' && who !== 'finisher') errors.push(`${name}.cut.precedence.${zone}: must be 'evaluator' or 'finisher'`);
     }
+  }
+  if (name === 'feel-kick') {   // ranges: positive forces and times, ordered clamps, known stances and outcomes, a plain #rrggbb (pasted into CSS), a moves list the sim knows
+    const pos = (path, v) => { if (!Number.isFinite(v) || v <= 0) errors.push(`${name}.${path}: must be a finite number > 0`); };
+    const pair = (path, v, lo) => { if (!Array.isArray(v) || v.length !== 2 || !v.every(Number.isFinite) || v[0] < lo || v[0] > v[1]) errors.push(`${name}.${path}: must be [min, max] with ${lo} <= min <= max`); };
+    pair('massClamp', json.massClamp, 0.01); pair('push.impulseClamp', json.push?.impulseClamp, 0);
+    for (const [k, v] of Object.entries(json.massKg ?? {})) pos(`massKg.${k}`, v);
+    if (!json.massKg || !('default' in json.massKg)) errors.push(`${name}.massKg.default: a default mass is required`);
+    for (const k of ['massExp', 'knockdownAt', 'getUpS']) pos(k, json[k]);    for (const k of ['open', 'guarding', 'midSwing', 'recovering']) pos(`stance.${k}`, json.stance?.[k]);
+    pos('push.impulsePerForce', json.push?.impulsePerForce); pos('push.pushS', json.push?.pushS);
+    for (const o of ['stagger', 'knockdown']) {
+      pos(`push.distanceM.${o}`, json.push?.distanceM?.[o]); pos(`window.${o}.lengthS`, json.window?.[o]?.lengthS);
+      if (!(json.window?.[o]?.startS >= 0)) errors.push(`${name}.window.${o}.startS: must be a finite number >= 0`);
+    }
+    for (const k of ['swingS', 'recoverS']) pos(`track.${k}`, json.track?.[k]);
+    for (const k of ['push', 'down']) pos(`fall.${k}`, json.fall?.[k]);
+    pos('push.refImpulse', json.push?.refImpulse);
+    for (const k of ['xPct', 'yPct']) if (!(json.cue?.[k] >= 0 && json.cue[k] <= 100)) errors.push(`${name}.cue.${k}: must be a number in [0, 100]`);
+    if (!Array.isArray(json.moves) || !json.moves.length || json.moves.some((m) => typeof m !== 'string')) errors.push(`${name}.moves: must be a non-empty list of move ids`);
+    for (const [m, r] of Object.entries(json.shove?.moves ?? {})) {
+      pos(`shove.moves.${m}.forceMult`, r.forceMult); if (typeof r.canKnockdown !== 'boolean') errors.push(`${name}.shove.moves.${m}.canKnockdown: must be a boolean`);
+      for (const k of Object.keys(r)) if (!['forceMult', 'canKnockdown'].includes(k)) errors.push(`${name}.shove.moves.${m}.${k}: unknown key`);
+      if ((json.moves ?? []).includes(m)) errors.push(`${name}.shove.moves.${m}: a move is a kick or a shove, not both`);
+    }
+    if (!/^#[0-9a-fA-F]{6}$/.test(json.cue?.color ?? '')) errors.push(`${name}.cue.color: must be #rrggbb`);
+    if (typeof json.cue?.text !== 'string' || !json.cue.text.trim()) errors.push(`${name}.cue.text: must be a non-empty string`);
+    if (!Number.isInteger(json.event?.keep) || json.event.keep < 1) errors.push(`${name}.event.keep: must be an integer >= 1`);
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(json.event?.log ?? '')) errors.push(`${name}.event.log: must be an identifier (a globalThis name)`);
   }
   if (name === 'physics' && json.cut?.cue) {   // the cue's units are the package's severable ids, every unit has a label, and the colour is pasted into CSS: a plain #rrggbb only
     const cue = json.cut.cue, UNITS = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'];

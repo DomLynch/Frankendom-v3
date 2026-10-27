@@ -3,3 +3,4 @@
 // (no registerFeel here: this chunk is a second bundle and has its own copy of anything it imports, so it must import only TYPES from feel.ts) and is listed below under its ?feel= name,
 // and in FEEL_NAMES (feel-modules.ts), one line each.
 export { feelHooks as clash } from './feel-clash.ts';
+export { feelHooks as kick } from './feel-kick.ts';
