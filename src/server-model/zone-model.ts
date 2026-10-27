@@ -73,7 +73,7 @@ export type Credit = { instance: string; layer: number; generation: number; acco
 export type World = { rules: Rules; spawns: Map<string, Spawn>; engages: Map<string, Engage>; hits: HitRow[]; credits: Credit[]; batches: Map<string, unknown> };
 
 export const newWorld = (rules: Rules): World => ({ rules, spawns: new Map(), engages: new Map(), hits: [], credits: [], batches: new Map() });
-export class ModelError extends Error { constructor(readonly code: string, msg: string) { super(msg); } }
+export class ModelError extends Error { code: string; constructor(code: string, msg: string) { super(msg); this.code = code; } }
 
 const key = (instance: string, layer: number): string => `${instance}#${layer}`;
 const refuse = (w: World, id: string, extra: Record<string, unknown> = {}): { refused: string } & Record<string, unknown> => {

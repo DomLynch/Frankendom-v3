@@ -116,8 +116,8 @@ test('the floor row: under minSharePct of the counted damage is not paid; exactl
   const run = (rs, a, b) => {
     const w = newWorld(rs);
     eng(w, A, 0); eng(w, B, 0);
-    swing(w, A, a, 2, 0);
-    return swing(w, B, b, 2, 0).credits;
+    swing(w, A, a, 3, 0);   // 3 hits x 35 = 105 allowed, so a claim of up to 100 is not clipped
+    return swing(w, B, b, 1, 0).credits;
   };
   const under = run(R, 96, 4);   // B has 4% of 100 < 5%
   assert.deepEqual(under.map((c) => [c.reason, c.paid, c.payShare]), [['paid', true, 1], ['floor', false, 0]]);
@@ -208,19 +208,20 @@ test('respawn seconds are the spawn row\'s, pinned at the first engage and clamp
 
 test('the phone only claims: damage is capped by weapon rows, real elapsed time and the hp left', () => {
   const w = newWorld(R);
-  eng(w, A, 0);
+  eng(w, A, 0, { maxHp: 10000 });   // a bar too big to die, so the cap (not the hp) is what limits the claim
   const cap = weaponCaps(R).get('gladius');
   const first = swing(w, A, 1e9, 1000, 0);
   const allowed = Math.min(R.hit.maxHitsPerRow, Math.ceil(cap.maxHitsPerS * R.hit.firstHitAllowanceS * R.hit.dpsSlack));
-  assert.equal(first.applied, Math.min(allowed * cap.maxDamage, cap.maxDamage * cap.maxHitsPerS * R.hit.firstHitAllowanceS * R.hit.dpsSlack, 100));
+  assert.equal(first.applied, Math.min(allowed * cap.maxDamage, cap.maxDamage * cap.maxHitsPerS * R.hit.firstHitAllowanceS * R.hit.dpsSlack, 10000));
+  assert.ok(first.applied < 1e9 && first.killed === false);
   assert.equal(swing(w, A, 50, 1, 0).applied, 0, 'zero real time since the last report allows nothing');
   const w2 = newWorld(R);
-  eng(w2, A, 0);
+  eng(w2, A, 0, { maxHp: 10000 });
   swing(w2, A, 1, 1, 0);
-  const gap = swing(w2, A, 1e9, 1000, 3_600_000);   // an hour later: a long gap banks at most maxElapsedS
+  const gap = swing(w2, A, 1e9, 1000, 100_000);   // 100 s later (inside the token's life): a long gap banks at most maxElapsedS
   assert.ok(gap.applied <= cap.maxDamage * cap.maxHitsPerS * R.hit.maxElapsedS * R.hit.dpsSlack + 1e-9);
-  assert.equal(swing(w2, A, -5, 1, 3_700_000).applied, 0, 'negative claims apply nothing');
-  assert.equal(hit(w2, { account: A, token: tok(A), weapon: 'warhammer', claimed: 5, hits: 1, layer: 1 }, 3_800_000).refused, 'weapon');
+  assert.equal(swing(w2, A, -5, 1, 100_000 + 5_000).applied, 0, 'negative claims apply nothing');
+  assert.equal(hit(w2, { account: A, token: tok(A), weapon: 'warhammer', claimed: 5, hits: 1, layer: 1 }, 110_000).refused, 'weapon');
 });
 
 test('a layer change mid-fight is "moved": refused, nothing written, the token stays open; layers are separate bars', () => {
