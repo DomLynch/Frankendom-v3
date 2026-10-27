@@ -495,6 +495,12 @@ export function createScene(
   let executionSteps: THREE.Vector3 | null = null; // where the killer's anchor stands for the cut, solved once per finish
   let finishHold = 0; // Hamstrung: seconds left of the hit-stop a blow holds the scene for (the clock and both rigs stand still, the camera and the blood run on)
   let hamstrungSteps: { knee: THREE.Vector3; back: THREE.Vector3 } | null = null; // where the killer's anchor stands for each blow, solved once per finish
+  // The hero's death fall (zone loop, data/respawn.json heroDeath.fallSeconds via main.ts heroFall; 0 = off): the sim is stopped at his death, so his Death clip is driven by this clock instead, and holds its last frame.
+  let fallSeconds = 0, fallAge = 0;
+  const heroFalls = <P extends { pose: string; progress: number }>(p: P, dead: boolean, dt: number): P => {
+    if (!fallSeconds || !dead) { fallAge = 0; return p; }
+    fallAge += dt; return { ...p, pose: 'death', progress: Math.min(1, fallAge / fallSeconds) };
+  };
   let finishClock = -1; // the finisher corpse animates at 0.75× on a presentation clock (owner 2026-09-18: savour it) — the sim window stays 144 ticks
   // Finisher complete (Lead brief 2026-09-22, for Web's loot panel): has the ceremony FINISHED PLAYING, and at what finish
   // age did it first say so. Latched from the scene's own state in the frame loop below, never from a delay; cleared with
@@ -603,6 +609,7 @@ export function createScene(
     // The zone's other standing bosses (main.ts, every frame): where each stands (the pit's frame) and which way it faces. Drawn as frozen copies of the live foe at rest (syncIdleFoes).
     idleFoes(list: readonly { x: number; z: number; heading: number }[]) { idleList = list; },
     get idleFoeCount() { return idleCopies.filter((c) => c.visible).length; },   // the stills and the cost table read how many copies are on screen
+    heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
       rig.stopTour();
     },
@@ -760,7 +767,7 @@ export function createScene(
       };
       standoff.advance(dt * 1000);
       const stand = (p: ReturnType<typeof actorPose>) => standoffOn && standoff.age >= 0 && !practice.finish ? standoffPose(p, standoff.age) : p;
-      const mine = stand(struck(held(actorPose(practice, 0), 0), 0)),
+      const mine = heroFalls(stand(struck(held(actorPose(practice, 0), 0), 0)), practice.finish?.victim === 0, animationDt),
         theirs = stand(struck(held(actorPose(practice, 1), 1), 1));
       // The knee-dip: the struck body drops fast and rises back over SPECIAL_STRUCK (presentation only: the sim's body never moves).
       for (const [side, body] of [[0, player], [1, opponent]] as const) {

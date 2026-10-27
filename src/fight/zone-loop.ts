@@ -9,11 +9,11 @@ import { M } from './detmath.ts';
 import { advance, type State } from './sim.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number }; spawn: { minDistance: number }; limits: { startAfterSeconds: [number, number]; minDistance: [number, number] } };
+type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number }; spawn: { minDistance: number }; heroDeath: { fallSeconds: number }; limits: { startAfterSeconds: [number, number]; minDistance: [number, number]; fallSeconds: [number, number] } };
 const LOOP = ROWS as unknown as Rows;
 
 /** What the page plays: the zone's first spawn, the hero's down time, the roam hand-over. */
-export type Respawn = { readonly startAfterSeconds: number; readonly minDistance: number; readonly diedSeconds: number; readonly zone: string; readonly spawn: { readonly id: string; readonly kind: string; readonly respawnSeconds: number } };
+export type Respawn = { readonly startAfterSeconds: number; readonly minDistance: number; readonly diedSeconds: number; readonly fallSeconds: number; readonly zone: string; readonly spawn: { readonly id: string; readonly kind: string; readonly respawnSeconds: number } };
 
 /** Throws on a bad roam row, or a first spawn whose `kind` is no opponent (`opponents`, optional). */
 export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly string[]): void {
@@ -21,6 +21,9 @@ export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly str
   if (!(Number.isFinite(at) && at >= lo && at <= hi)) throw new Error(`respawn.json postKill.startAfterSeconds ${at} is not in ${lo}..${hi}`);
   const [near, far] = rows.limits.minDistance, gap = rows.spawn.minDistance;
   if (!(Number.isFinite(gap) && gap >= near && gap <= far)) throw new Error(`respawn.json spawn.minDistance ${gap} is not in ${near}..${far}`);
+  const [short, long] = rows.limits.fallSeconds, fall = rows.heroDeath.fallSeconds;
+  if (!(Number.isFinite(fall) && fall >= short && fall <= long)) throw new Error(`respawn.json heroDeath.fallSeconds ${fall} is not in ${short}..${long}`);
+  if (fall > zone.respawn.downSeconds) throw new Error(`respawn.json heroDeath.fallSeconds ${fall} is longer than zone ${zone.id} respawn.downSeconds ${zone.respawn.downSeconds}`);
   if (!zone.spawns[0]) throw new Error(`zone ${zone.id} has no spawn row`);
   for (const spawn of zone.spawns) if (opponents && !opponents.includes(spawn.kind)) throw new Error(`zone ${zone.id} spawn ${spawn.id} names unknown kind "${spawn.kind}"`);
 }
@@ -30,7 +33,7 @@ export function zoneLoopFor(zone: ZoneRow, search = '', opponents?: readonly str
   validateLoop(rows, zone, opponents);
   if (new URLSearchParams(search).get(rows.flag.query) === rows.flag.off || !rows.postKill.roam) return null;
   const s = zone.spawns[0]!;
-  return { startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };   // `spawn`: the first row; the page plays every row (src/zone/spawns.ts)
+  return { startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, fallSeconds: rows.heroDeath.fallSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };   // `spawn`: the first row; the page plays every row (src/zone/spawns.ts)
 }
 
 /** Whether a spawn's new opponent stands `since` seconds after its kill. */

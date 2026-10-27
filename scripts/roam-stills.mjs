@@ -24,7 +24,12 @@ await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, 
 await page.waitForTimeout(3000);
 if (process.env.DIE) {   // the hero's death: he is held at 1 health with the foe full until a blow lands; "You died" (diedSeconds), then the pit mark at full health
   await page.evaluate(() => new Promise((done) => { const id = setInterval(() => { const [h] = globalThis.__v3Fight.duel.fighters; if (globalThis.__v3Fight.finish) { clearInterval(id); done(); } else h.health = Math.min(h.health, 1); }, 100); }));
-  await page.waitForTimeout(900); await shot('1-died'); console.log(`${tag} died`, JSON.stringify(await hero()));
+  if (process.env.FALL) {   // the death fall (data/respawn.json heroDeath.fallSeconds): mid-fall, then on the ground with "You died" (FALL=<mid ms>,<ground ms> after the death; 'stop' ends the run there, e.g. under ?postkill=v1)
+    const [mid, ground] = process.env.FALL.split(',').map(Number);
+    await page.waitForTimeout(mid); await shot('1-fall'); console.log(`${tag} fall`, JSON.stringify(await hero()));
+    await page.waitForTimeout(ground - mid); await shot('2-ground'); console.log(`${tag} ground`, JSON.stringify(await hero()), await page.evaluate(() => document.body.innerText.includes('You died')));
+    if (process.env.STOP) { await browser.close(); process.exit(0); }
+  } else { await page.waitForTimeout(900); await shot('1-died'); console.log(`${tag} died`, JSON.stringify(await hero())); }
   const t0 = Date.now(); await page.waitForFunction(() => !globalThis.__v3Fight?.finish, null, { timeout: 60000 });
   console.log(`${tag} back after ${((Date.now() - t0) / 1000).toFixed(1)} s more`);
   await page.waitForTimeout(1500); await shot('2-back'); console.log(`${tag} back`, JSON.stringify(await hero()));
