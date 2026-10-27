@@ -28,6 +28,9 @@ export function presenceUrlFor(search: string, loc: { protocol: string; host: st
   return v && /^wss?:\/\/[^\s/]+(\/\S*)?$/.test(v) ? v : null;
 }
 
+/** The service places every join at the `spawn` row (zone-frame metres). A page whose pit origin is not that spot (another ?zone=, or no zone so no origin) would open with a jump the service snaps and then drops, so it must not start presence. */
+export const zoneFrameOk = (origin: { x: number; z: number } | undefined, spawn: { x: number; z: number } = PRESENCE.spawn): boolean => !!origin && origin.x === spawn.x && origin.z === spawn.z;
+
 /** What main.ts calls (only with ?presence=): joins, installs the hero pose seam (globalThis.__v3HeroPose, absent on every other page) and draws the others. null when the link's value is malformed (nothing installed).
  *  `hero` reads the page's own hero state; `spawn` makes one drawable body from the hero's loaded rig (scene.ts spawnRemote), null until that rig exists. The handle gains `drawn()` (who is on screen) for the browser checks. */
 export function startZonePresence(o: { search: string; location: { protocol: string; host: string }; hero: () => { x: number; z: number; heading: number }; spawn: () => RemoteBody | null; origin?: { x: number; z: number } }): (PresenceHandle & { drawn: () => ReturnType<ReturnType<typeof createDraw>['debug']> }) | null {

@@ -58,6 +58,20 @@ test('the spawn row (zone-frame metres): is the pit\'s centre in the zone row (p
   assert.throws(() => loadPresence({ ...DEFS, spawn: { x: 400, z: 0 } }), /walkable/);
 });
 
+test('the zone-frame guard: presence starts only when the page\'s pit origin IS the spawn row; no origin or another zone is refused; every shipped zone row (data/zones/*.row.json) is either equal or refused', async () => {
+  const { zoneFrameOk } = await import('../../src/presence/chunk.ts'), { pitOrigin, WORLD } = await import('../../src/zone/spawns.ts');
+  assert.equal(zoneFrameOk({ ...PRESENCE.spawn }), true);
+  assert.equal(zoneFrameOk(undefined), false, 'no zone, no origin: the pit frame would be a jump from the spawn');
+  assert.equal(zoneFrameOk({ x: PRESENCE.spawn.x + 1, z: PRESENCE.spawn.z }), false);
+  const dir = new URL('../../data/zones/', import.meta.url), rows = readdirSync(dir).filter((n) => n.endsWith('.row.json'));
+  assert.ok(rows.length >= 1);
+  for (const f of rows) {
+    const o = pitOrigin(JSON.parse(readFileSync(new URL(f, dir), 'utf8')), WORLD);
+    assert.equal(zoneFrameOk(o), o.x === PRESENCE.spawn.x && o.z === PRESENCE.spawn.z, `${f}: equal to the spawn row or refused`);
+  }
+  assert.equal(zoneFrameOk(pitOrigin(JSON.parse(readFileSync(new URL('zone1.row.json', dir), 'utf8')), WORLD)), true, 'the shipped default zone starts presence');
+});
+
 test('src/presence (the page side) imports nothing from server/, and nothing in it touches node: it can only ever be bundled for the browser', () => {
   const dir = new URL('../../src/presence/', import.meta.url);
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.ts'))) {
