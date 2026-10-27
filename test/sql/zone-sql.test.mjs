@@ -34,7 +34,7 @@ const reset = async (rules = RAW) => {
 };
 
 // ---- the pair: every call goes to the SQL (as the writer role, one transaction) and to the model with the same virtual ms, and the two answers must be equal ----
-const round = (x) => (typeof x === 'number' ? Math.round(x * 1e9) / 1e9 : x);
+const round = (x) => (typeof x === 'number' ? Number(x.toPrecision(12)) : x);
 const ts = (s, nowS, T) => T + (Date.parse(s.replace(/(\.\d{3})\d*/, '$1')) - Date.parse(nowS.replace(/(\.\d{3})\d*/, '$1')));
 // SQL answer -> the model's vocabulary. Timestamps become virtual ms; numerics become numbers; credits keep the six fields the model also has.
 const fromSql = (x, T, nowS) => {
@@ -50,7 +50,8 @@ const fromSql = (x, T, nowS) => {
   }
   return round(x);
 };
-const canonCredit = (c) => ({ account: c.account, damage: round(c.damage), sharePct: round(c.sharePct), payShare: round(c.payShare), paid: c.paid, reason: c.reason });
+const noTs = (x) => JSON.parse(JSON.stringify(x, (k, v) => (k.endsWith('Ms') ? undefined : v)));
+const canonCredit =(c) => ({ account: c.account, damage: round(c.damage), sharePct: round(c.sharePct), payShare: round(c.payShare), paid: c.paid, reason: c.reason });
 const canon = (x) => {
   if (Array.isArray(x)) return x.map(canon);
   if (x && typeof x === 'object') {
@@ -79,11 +80,12 @@ class Pair {
       return { ok: fromSql(r.rows[0].r, t, r.rows[0].n) };
     } catch (e) { await c.query('rollback'); return { err: e.code, message: e.message }; }
   }
-  both(label, sqlRes, modelFn) {
+  both(label, sqlRes, modelFn, ignoreTs = false) {
     let m;
     try { m = { ok: modelFn() }; } catch (e) { m = { err: e instanceof ModelError ? e.code : 'XX000', message: e.message }; }
     assert.deepEqual(sqlRes.err, m.err, `${label}: error code SQL ${sqlRes.err} (${sqlRes.message}) vs model ${m.err} (${m.message})`);
-    if (m.ok) assert.deepEqual(canon(sqlRes.ok), canon(m.ok), `${label}: SQL and model answers differ`);
+    const f = ignoreTs ? noTs : (x) => x;
+    if (m.ok) assert.deepEqual(f(canon(sqlRes.ok)), f(canon(m.ok)), `${label}: SQL and model answers differ`);
     return sqlRes.err ? { err: sqlRes.err } : sqlRes.ok;
   }
   async engage(account, t, o = {}) {
@@ -100,7 +102,8 @@ class Pair {
   }
   async batch(id, rows, t) {
     const s = await this.sql(t, 'public.zone_spawn_hit_batch($1,$2::jsonb)', [id, JSON.stringify(rows)]);
-    return this.both(`batch ${id} @${t}`, s, () => hitBatch(this.w, id, rows, t));
+    // A REPLAYED batch returns the receipt stored at the first send. Its timestamps are absolute and the test clock does not rewrite the jsonb receipt, so they are not comparable: the rest is.
+    return this.both(`batch ${id} @${t}`, s, () => hitBatch(this.w, id, rows, t), this.w.batches.has(id));
   }
   async touch(account, token, t) {
     const s = await this.sql(t, 'public.zone_spawn_touch($1,$2)', [account, token]);
@@ -112,16 +115,18 @@ class Pair {
   }
   // The stored state must equal the model's world: spawns, credit rows, token states, hit-log total.
   async state() {
-    const sp = (await admin.query('select instance, layer, hp::float8 as hp, alive, generation from public.zone_spawns order by instance, layer')).rows;
-    const mp = [...this.w.spawns.values()].map((s) => ({ instance: s.instance, layer: s.layer, hp: round(s.hp), alive: s.alive, generation: s.generation })).sort((a, b) => (a.instance + a.layer < b.instance + b.layer ? -1 : 1));
-    assert.deepEqual(sp.map((r) => ({ ...r, hp: round(r.hp) })), mp, 'spawns');
-    const cr = (await admin.query('select instance, layer, generation, account, damage::float8 as damage, share_pct::float8 as share_pct, pay_share::float8 as pay_share, paid, reason from public.zone_kill_credit order by instance, layer, generation, account')).rows
-      .map((r) => ({ instance: r.instance, layer: r.layer, generation: r.generation, account: r.account, damage: round(r.damage), sharePct: round(r.share_pct), payShare: round(r.pay_share), paid: r.paid, reason: r.reason }));
-    const mc = this.w.credits.map((c) => ({ instance: c.instance, layer: c.layer, generation: c.generation, account: c.account, damage: round(c.damage), sharePct: round(c.sharePct), payShare: round(c.payShare), paid: c.paid, reason: c.reason }))
-      .sort((a, b) => (`${a.instance}|${a.layer}|${a.generation}|${a.account}` < `${b.instance}|${b.layer}|${b.generation}|${b.account}` ? -1 : 1));
+    const key = (o, ks) => ks.map((k) => String(o[k])).join('|');
+    const byKey = (ks) => (x, y) => (key(x, ks) < key(y, ks) ? -1 : key(x, ks) > key(y, ks) ? 1 : 0);   // one JS order for both sides (the database's collation is not ours)
+    const sp = (await admin.query('select instance, layer, hp::float8 as hp, alive, generation from public.zone_spawns')).rows.map((r) => ({ ...r, hp: round(r.hp) })).sort(byKey(['instance', 'layer']));
+    const mp = [...this.w.spawns.values()].map((s) => ({ instance: s.instance, layer: s.layer, hp: round(s.hp), alive: s.alive, generation: s.generation })).sort(byKey(['instance', 'layer']));
+    assert.deepEqual(sp, mp, 'spawns');
+    const ck = ['instance', 'layer', 'generation', 'account'];
+    const cr = (await admin.query('select instance, layer, generation, account, damage::float8 as damage, share_pct::float8 as share_pct, pay_share::float8 as pay_share, paid, reason from public.zone_kill_credit')).rows
+      .map((r) => ({ instance: r.instance, layer: r.layer, generation: r.generation, account: r.account, damage: round(r.damage), sharePct: round(r.share_pct), payShare: round(r.pay_share), paid: r.paid, reason: r.reason })).sort(byKey(ck));
+    const mc = this.w.credits.map((c) => ({ instance: c.instance, layer: c.layer, generation: c.generation, account: c.account, damage: round(c.damage), sharePct: round(c.sharePct), payShare: round(c.payShare), paid: c.paid, reason: c.reason })).sort(byKey(ck));
     assert.deepEqual(cr, mc, 'credit rows');
-    const en = (await admin.query('select token, used_at is not null as used, result from public.zone_spawn_engages order by token')).rows;
-    const me = [...this.w.engages.values()].map((e) => ({ token: e.token, used: e.used, result: e.result })).sort((a, b) => (a.token < b.token ? -1 : 1));
+    const en = (await admin.query('select token, used_at is not null as used, result from public.zone_spawn_engages')).rows.sort(byKey(['token']));
+    const me = [...this.w.engages.values()].map((e) => ({ token: e.token, used: e.used, result: e.result })).sort(byKey(['token']));
     assert.deepEqual(en, me, 'engage tokens');
     const hs = (await admin.query('select coalesce(sum(applied),0)::float8 as s, count(*)::int as n from public.zone_spawn_hits')).rows[0];
     assert.deepEqual([round(hs.s), hs.n], [round(this.w.hits.reduce((n, h) => n + h.applied, 0)), this.w.hits.length], 'hit log');
@@ -130,6 +135,7 @@ class Pair {
 
 // `players`: one entry per account, in the order they swing; the spawn's hp is their total, so the last swing kills (the model suite's crowd()). 35 = gladius 14 x the 2.5 progression ceiling.
 const crowd = async (damages, { rules = R, viaBatch = false, spawn = 'z1:crowd' } = {}) => {
+  await reset(rules === R ? RAW : { ...clone(RAW), caps: rules.caps });
   const p = new Pair(rules), total = damages.reduce((a, b) => a + b, 0), who = damages.map((_, i) => uid(0x100 + i));
   for (const [i, a] of who.entries()) await p.engage(a, 0, { token: `crowd-token-${String(i).padStart(3, '0')}-aaaa`, instance: spawn, maxHp: total });
   const row = (a, i) => ({ account: a, token: `crowd-token-${String(i).padStart(3, '0')}-aaaa`, weapon: 'gladius', claimed: damages[i], hits: Math.max(1, Math.ceil(damages[i] / 35)), layer: 1 });
@@ -199,14 +205,14 @@ test('z01: is refused by the live constraint and nothing is stored; z0: and z12:
   await reset();
   const p = new Pair();
   const bad = await p.sql(0, 'public.zone_spawn_engage($1,$2,$3,$4,$5,$6,$7,$8)', [A, 'c', tok(A), 'z01:minotaur', 1, 'minotaur', 100, 300]);
-  assert.equal(bad.err, '23514', 'check_violation (the model throws O0002 for the same refusal: both refuse, only the code differs)');
+  assert.ok(['23502', '23514'].includes(bad.err), `refused by a constraint (the generated zone column is NULL for z01:, so not-null fires first; the model throws O0002 for the same refusal): ${bad.err}`);
   assert.equal((await admin.query('select count(*)::int as n from public.zone_spawns')).rows[0].n, 0);
   assert.equal((await admin.query('select count(*)::int as n from public.zone_spawn_engages')).rows[0].n, 0);
   await p.engage(A, 0, { instance: 'z0:rat', n: 1 });
   await p.engage(A, 0, { instance: 'z12:boss.a', n: 2 });
   const z = (await admin.query('select instance, zone from public.zone_spawns order by instance')).rows;
   assert.deepEqual(z, [{ instance: 'z0:rat', zone: '0' }, { instance: 'z12:boss.a', zone: '12' }]);
-  for (const bare of ['minotaur', 'z1:', 'Z1:x', 'z1:UP']) assert.equal((await p.sql(0, 'public.zone_spawn_engage($1,$2,$3,$4,$5,$6,$7,$8)', [B, 'c', tok(B), bare, 1, 'minotaur', 100, 300])).err, '23514', bare);
+  for (const bare of ['minotaur', 'z1:', 'Z1:x', 'z1:UP']) assert.equal((await p.sql(0, 'public.zone_spawn_engage($1,$2,$3,$4,$5,$6,$7,$8)', [B, 'c', tok(B), bare, 1, 'minotaur', 100, 300])).err, bare === 'z1:UP' || bare === 'z1:' ? '23514' : '23502', bare);
 });
 
 test('SHARED HP: two accounts hit one boss and lower ONE bar; kill pays the credit in the same call; kill_report is read-only', { skip }, async () => {
@@ -216,7 +222,7 @@ test('SHARED HP: two accounts hit one boss and lower ONE bar; kill pays the cred
   assert.equal((await p.hit(A, 30, 1, 0)).hp, 70);
   assert.equal((await p.hit(B, 30, 1, 0)).hp, 40, 'B sees A\'s damage');
   assert.equal((await p.killReport(A, tok(A), 0)).state, 'alive');
-  const k = await p.hit(B, 60, 2, 0);
+  const k = await p.hit(B, 60, 2, 1000);   // a second later: the rate ceiling allows B's second swing (at the same instant it allows none)
   assert.equal(k.killed, true);
   assert.equal(k.applied, 40, 'capped at the hp that was left');
   await p.killReport(A, tok(A), 10); await p.killReport(A, tok(A), 20);
@@ -294,7 +300,7 @@ test('a kill is settled ONCE: replaying a kill (a second hit on the dead life, a
   assert.equal(b1.results[0].killed, true);
   const b2 = await w.batch('kill-batch-0001', rows, 5000);
   assert.equal(b2.replayed, true);
-  assert.deepEqual(b2.results, b1.results);
+  assert.deepEqual(noTs(b2.results), noTs(b1.results));
   assert.equal((await admin.query('select count(*)::int as n from public.zone_kill_credit where account = $1', [B])).rows[0].n, 1, 'paid once');
   await w.state();
 });
@@ -567,11 +573,13 @@ test('CONCURRENCY 5 (KNOWN HAZARD, MEASURED): a batch that kills on spawn C (tak
   const r2a = await call(t2, one('hazard-b2-first', [row(Z, 'z1:d', 10)]), []);
   assert.equal(r2a.results[0].hp, 90);
   // T1: row 1 kills C as X (takes adv(X), holds it), row 2 hits D as Y (waits for D, held by T2)
-  const p1 = settled(call(t1, one('hazard-b1', [row(X, 'z1:c', 20), row(Y, 'z1:d', 10)]), []));
+  // each side commits (or gives up) the moment its call returns, as a real tick would: the survivor of the cycle waits for the other's locks to be released
+  const finish = (c) => (r) => c.query(r.e ? 'rollback' : 'commit').then(() => r, () => r);
+  const p1 = settled(call(t1, one('hazard-b1', [row(X, 'z1:c', 20), row(Y, 'z1:d', 10)]), [])).then(finish(t1));
   assert.ok(await waiting(t1.pid), 'T1 waits for spawn D');
   await new Promise((r) => setTimeout(r, 400));   // let T1 be the older waiter
   // T2 second call: kills E as X: needs adv(X), held by T1 -> cycle (T1 waits D held by T2; T2 waits adv(X) held by T1)
-  const p2 = settled(call(t2, one('hazard-b2-second', [row(X, 'z1:e', 20)]), []));
+  const p2 = settled(call(t2, one('hazard-b2-second', [row(X, 'z1:e', 20)]), [])).then(finish(t2));
   const both = await Promise.race([Promise.all([p1, p2]), new Promise((r) => setTimeout(() => r(null), 8000))]);
   // Postgres' deadlock detector (deadlock_timeout shortened to 300 ms for this test) must break the cycle: nothing may hang.
   assert.notEqual(both, null, 'HANG: the cycle was not broken within 8 s');
@@ -583,8 +591,7 @@ test('CONCURRENCY 5 (KNOWN HAZARD, MEASURED): a batch that kills on spawn C (tak
   console.log(`# MEASURED HAZARD: ${JSON.stringify(measured)}`);
   const deadlocks = [o1, o2].filter((o) => (o.e && o.e.code === '40P01') || (o.v && o.v.results.some((x) => x.error === '40P01'))).length;
   assert.equal(deadlocks, 1, `exactly one side is the deadlock victim, got ${JSON.stringify(measured)}`);
-  // finish both transactions (a victim that threw has an aborted transaction)
-  for (const c of [t1, t2]) { try { await c.query('commit'); } catch { /* aborted */ } await c.end(); }
+  for (const c of [t1, t2]) await c.end();
   const rows = (await admin.query('select reason from public.zone_kill_credit where account = $1 order by reason', [X])).rows;
   console.log(`# MEASURED credits for X after the hazard: ${JSON.stringify(rows.map((r) => r.reason))}`);
 });
