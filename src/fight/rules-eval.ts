@@ -93,7 +93,8 @@ export function present(rows: RuleRows, rules: Pick<PkgRules, 'strength_scale' |
     const cause = rows.killAs as 'damage' | 'push', fall = rules.knockdown.fall_seconds;
     return { ...base, action: 'knockdown', cause, downS: fall[cause]! + fall.down!, cut: null, deferredKill: true };   // the kill did not happen, so neither did the cut that made it (a torso cut is a kill)
   }
-  if (r.knockdown) return { ...base, action: 'knockdown', cause: r.knockdown.cause, downS: r.knockdown.fallSeconds + r.knockdown.downSeconds };
+  // the evaluator's own knockdown (cumulative damage or push) lays him down only for the swing class `knockdownSwing` names ('heavy'): a light hit is a flinch on his feet ('any' = every swing)
+  if (r.knockdown && (rows.knockdownSwing === 'any' || swing === rows.knockdownSwing)) return { ...base, action: 'knockdown', cause: r.knockdown.cause, downS: r.knockdown.fallSeconds + r.knockdown.downSeconds };
   return { ...base, action: 'stagger' };
 }
 
