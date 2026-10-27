@@ -26,8 +26,11 @@ const rows = (a, b, from, to, threshold) => calc.evaluate(async ([a, b, from, to
 }, [a, b, from, to, threshold]);
 
 async function measure(page, path, tag) {
+  await page.addStyleTag({ content: '* { visibility: hidden !important } canvas { visibility: visible !important }' });   // the HUD is out of both frames, so only the sand differs
+  await page.waitForTimeout(300);
   const on = (await page.screenshot({ type: 'png' })).toString('base64');
-  await page.addStyleTag({ content: '* { visibility: hidden !important } canvas { visibility: visible !important }' });
+  const cam = await page.evaluate(() => { const c = globalThis.__v3Scene.userData.camera; const d = c.getWorldDirection(new c.position.constructor()); const sk = globalThis.__v3Scene.getObjectByName('skyline'); return { y: +c.position.y.toFixed(2), x: +c.position.x.toFixed(1), z: +c.position.z.toFixed(1), pitchDeg: +(Math.asin(d.y) * 180 / Math.PI).toFixed(1), fov: +c.fov.toFixed(1), aspect: +c.aspect.toFixed(3), skyY: sk ? +sk.position.y.toFixed(1) : null }; });
+  console.log(tag, 'camera', JSON.stringify(cam));
   await page.evaluate(() => { const s = globalThis.__v3Scene; s.traverse((o) => { if (o.type === 'Group' && o.getObjectByName('floor') && o.children.length <= 3) { o.visible = false; globalThis.__hidden = o; } }); });
   await page.waitForTimeout(500);
   const off = (await page.screenshot({ type: 'png' })).toString('base64');

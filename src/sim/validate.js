@@ -260,7 +260,7 @@ function checkSkyViews(s) {
     if (!Number.isFinite(w.heightMetres) || (w.heightMetres !== 0 && (w.heightMetres < 5 || w.heightMetres > 400))) bad('heightMetres', 'must be 0 (the strip row\'s) or a number in 5..400');
     if (Number.isFinite(w.fadeStartMetres) && Number.isFinite(w.fadeEndMetres) && !(w.fadeStartMetres === 0 && w.fadeEndMetres === 0) && !(w.fadeEndMetres > w.fadeStartMetres)) bad('fadeEndMetres', 'must be above fadeStartMetres (or both 0 = off)');
     const h = w.heightMetres > 0 ? w.heightMetres : s.heightMetres;
-    if (Number.isFinite(s.radius) && Number.isFinite(h) && Number.isFinite(s.horizonFraction) && Number.isFinite(w.dropMetres) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * h + Math.abs(w.dropMetres)) > 175) bad('dropMetres', 'the strip, lowered, must keep its rim inside the camera far plane (180 m)');
+    if (Number.isFinite(s.radius) && Number.isFinite(h) && Number.isFinite(s.horizonFraction) && Number.isFinite(w.dropMetres) && Math.hypot(s.radius, Math.max(Math.abs(s.horizonFraction * h - w.dropMetres), Math.abs((1 - s.horizonFraction) * h + w.dropMetres))) > 175) bad('dropMetres', 'the strip, lowered, must keep its rim inside the camera far plane (180 m)');
   }
   return e;
 }

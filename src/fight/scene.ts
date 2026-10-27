@@ -161,6 +161,7 @@ export function createScene(
   }
   rebuildEnvironment();
   const camera = new THREE.PerspectiveCamera(51, 1, 0.1, 180);
+  scene.userData.camera = camera;   // read by the stills' probes (scripts/skyview-stills.mjs: where the horizon falls on screen); nothing in the page reads it
   const metal = new THREE.MeshStandardMaterial({ color: '#89949b', metalness: 0.72, roughness: 0.4 });
   // Brass for the capsule stand-ins (it warms on a threat while they stand in); the arena has its own materials in arena.ts.
   // The brass target ring under the opponent is gone (owner 2026-09-21: a UI shape on the sand, and the hero never had one).
