@@ -149,7 +149,7 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   assert.doesNotMatch(main, /respawnDue|sinceKill/);
   assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number \}\[\]\)/);
   assert.match(scene, /snapshotRig\(opponent, false\)/);
-  assert.match(scene, /syncIdleFoes\(practice\);\n\s*if \(!look\?\.render\(\)\)/, 'the copies are placed just before the draw');
+  assert.match(scene, /syncIdleFoes\(practice\);\n\s*syncLiveFoes\(dt\);\n\s*if \(!look\?\.render\(\)\)/, 'the copies are placed just before the draw');
 });
 
 test('?postkill=v1 and a one-spawn zone are the old fight: no zone state, the sim at the pit marks', () => {

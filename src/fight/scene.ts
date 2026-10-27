@@ -549,6 +549,27 @@ export function createScene(
       if (at) { holder.position.set(at.x, 0, at.z); holder.rotation.y = at.heading; }
     });
   }
+  // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
+  let liveList: readonly { id: string; practice: Practice }[] = [], frameWiden = 1;
+  const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
+  function syncLiveFoes(dt: number) {
+    const seen = new Set<string>();
+    if (warriors) for (const { id, practice: p } of liveList) {
+      seen.add(id);
+      let live = liveFoes.get(id);
+      if (!live) {
+        const actor = warriors.spawnFoe(), group = new THREE.Group();
+        group.add(actor.anchor); sizeBeast({ opponent: actor }, opponentId); actor.setUpright(readyOffset(opponentId)); scene.add(group);
+        live = { group, actor, x: p.enemy.x, z: p.enemy.z }; liveFoes.set(id, live);
+      }
+      const pose = actorPose(p, 1), f = p.duel.fighters[1], speed = dt > 0 ? Math.hypot(p.enemy.x - live.x, p.enemy.z - live.z) / dt : 0;
+      live.x = p.enemy.x; live.z = p.enemy.z;
+      live.group.visible = true; live.group.position.set(p.enemy.x, 0, p.enemy.z); live.group.rotation.y = p.enemy.heading;
+      live.actor.fatigue(p.fatigue[1], FOE_TUNE[opponentId]);
+      live.actor.update(speed, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, f.guardDirection, CHARGE_LEAN[opponentId] ?? null, holdingCharge(f), pose.span ?? null);
+    }
+    for (const [id, live] of liveFoes) if (!seen.has(id)) live.group.visible = false;
+  }
   // Kill dip: the killing blow darkens the frame 6 % for two frames and recovers over two more — the cinematic reserve (GAME_SPEC 80/15/5),
   // never on an ordinary hit. Applied around the draw on top of whatever exposure the renderer holds, so nothing else has to know.
   let dip = 0; // frames remaining, counted down per drawn frame while time passes
@@ -616,6 +637,11 @@ export function createScene(
     // The zone's other standing bosses (main.ts, every frame): where each stands (the pit's frame) and which way it faces. Drawn as frozen copies of the live foe at rest (syncIdleFoes).
     idleFoes(list: readonly { x: number; z: number; heading: number }[]) { idleList = list; },
     get idleFoeCount() { return idleCopies.filter((c) => c.visible).length; },   // the stills and the cost table read how many copies are on screen
+    // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
+    // programs, its own bones and mixer), posed from that fight's own Practice. Presentation only; the first boss is the live rig above and is never in this list.
+    liveFoes(list: readonly { id: string; practice: Practice }[]) { liveList = list; },
+    setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
+    get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
       rig.stopTour();
@@ -1050,7 +1076,7 @@ export function createScene(
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
-      } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId));
+      } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden);
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock
       // for a posed finisher, the plain fall's own progress for a plain death, so the plain death completes earlier and the
@@ -1070,6 +1096,7 @@ export function createScene(
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
       syncIdleFoes(practice);
+      syncLiveFoes(dt);
       if (!look?.render()) { if (gfx) gfx.render(); else renderer.render(scene, camera); }
       renderer.toneMappingExposure = exposure;
       if (dip > 0 && dt > 0) dip--;

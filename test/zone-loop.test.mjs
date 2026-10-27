@@ -113,7 +113,7 @@ test('the page wires the loop: the zone row via zoneFor, the corpse left BEFORE 
   const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8'), main = src('../src/client/main.ts'), hud = src('../src/fight/hud.ts');
   assert.match(main, /zoneLoopFor\(zoneFor\(search\), search/);
   assert.match(main, /zone: heroStands\(\) \|\| heroDied\(\)/);
-  assert.match(main, /diedSeconds\) rematch\(poseFor\(current, heroStart\), current\)/);
+  assert.match(main, /diedSeconds\) \{ const who = killedBy \?\? current; rematch\(poseFor\(who, heroStart\), who\); \}/);
   assert.match(main, /if \(ZONE\) view\.respawnFoe\(\);[^\n]*\n\s*seed = nextSeed/);
   assert.match(src('../src/fight/scene.ts'), /respawnFoe\(\): boolean \{ return ragdoll\?\.leaveCorpse\(\)/);
   assert.match(hud, /resetButton\.hidden = !!view\.zone/);

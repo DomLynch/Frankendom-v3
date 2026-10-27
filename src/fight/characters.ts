@@ -1305,5 +1305,5 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
   }
   const player = create(false);
   // spawn: one more actor of the hero's own rig from the same asset (shared geometry, skins and materials, so no new program): the zone's other players (origins/preview/remote-heroes.ts).
-  return { player, opponent: solo ? player : create(true), spawn: () => create(false) };
+  return { player, opponent: solo ? player : create(true), spawn: () => create(false), spawnFoe: () => create(true) };   // spawnFoe: one more actor of the opponent's own rig (the zone's extra attackers); with no opponent asset it is the hero's
 }
