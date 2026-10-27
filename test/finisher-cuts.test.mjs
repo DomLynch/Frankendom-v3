@@ -33,7 +33,8 @@ test('the finisher -> cut unit mapping (M9a, physics 9056ef7): Opened = belly_op
   const unit = (id) => finisherCutRow(ROWS, id)?.unit;
   assert.equal(unit('opened'), 'belly_open');
   assert.equal(finisherCutRow(ROWS, 'opened').fallback, 'torso_waist');
-  assert.equal(unit('runThrough'), null);
+  assert.equal(unit('runThrough'), 'belly_open');   // Dom 2026-10-27: Run Through shows the belly wound (a body without it: nothing, blood only)
+  assert.equal(unit('dismember'), 'arm_right'); assert.equal(unit('hamstringCut'), 'leg_right');
   assert.equal(unit('splitCrown'), 'head');
   assert.deepEqual(finisherCutRow(ROWS, 'splitCrown').also, ['head_split']);
   assert.equal(unit('decapitation'), 'head');
@@ -66,7 +67,9 @@ test('finisherUnits: a body whose cut GLB has the visual units gets them (Split 
   assert.deepEqual(finisherUnits(row('opened'), plain), ['torso_waist']);
   assert.deepEqual(finisherUnits(row('opened'), only(['head_split'])), ['torso_waist']);
   assert.deepEqual(finisherUnits(row('decapitation'), plain), ['head']);
-  assert.deepEqual(finisherUnits(row('runThrough'), withBoth), []);
+  assert.deepEqual(finisherUnits(row('runThrough'), withBoth), ['belly_open']); assert.deepEqual(finisherUnits(row('runThrough'), () => false), []);
+  assert.deepEqual(finisherUnits(row('dismember'), () => true), ['arm_right', 'arm_left', 'leg_right']); assert.equal(row('dismember').alsoAtS, 0.35);
+  assert.deepEqual(finisherUnits(row('hamstringCut'), () => true), ['leg_right', 'leg_left']);
   assert.deepEqual(finisherUnits({ unit: 'belly_open', fallback: null, atS: 0, push: 1, kill: null, plane: null }, plain), [], 'a null fallback = no cut');
 });
 
@@ -84,7 +87,7 @@ test('the shipped Minotaur cut manifest carries both visual units, the head halv
 
 test('the finishers needing a cut the six units cannot do say so in the row: Split Crown and Opened (Run Through and Decapitation need none)', () => {
   const needs = Object.entries(ROWS.finisherCuts.rows).filter(([, r]) => r.plane).map(([id]) => id).sort();
-  assert.deepEqual(needs, ['opened', 'splitCrown']);
+  assert.deepEqual(needs, ['dismember', 'hamstringCut', 'opened', 'runThrough', 'splitCrown']);
 });
 
 test('the push and the finisher mode: Run Through sags (a quarter of the kill), the others as the plain kill; ?ragdoll=finishers = the physics body, ?ragdoll=clips = V1\'s clips, default unchanged', () => {
