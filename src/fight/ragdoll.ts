@@ -28,7 +28,7 @@ type Tuning = Record<string, { gain?: number; damping?: number }>;
 /** What the package's rd.cut returns (physics f38dba0, docs/API.md 'Cuts (M5)'): the unit, the gear slots and roles that go with it, the stump's cap, the helmet prop. */
 type CutResult = { unit: string; gear_slots: string[]; carries_roles: string[]; cap: { part: string; position: Vec3 }; props: { readPose(): ArrayLike<number>; destroy(): void }[] };
 type Ragdoll = {
-  state: string; awake: boolean; partIds: string[];
+  state: string; awake: boolean; partIds: string[]; cuts: readonly string[];
   row: { roles: { id: string; parent: string | null; radius_m: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[]; severable: { id: string; cut_role: string }[] };
   applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; knockdown(kind: 'damage' | 'push', hit?: Hit): void;
   cut(unit: string, opts?: { helmet?: boolean; impulse?: Vec3 }): CutResult | null; readPose(): ArrayLike<number>;
@@ -43,7 +43,11 @@ type Bones = Record<string, THREE.Object3D>;
 type Chunk = RulesPackage & {
   createPhysics(opts: { seed: number; states?: unknown }): Promise<Physics>;
   createThreeRig(three: typeof THREE, rd: Ragdoll, bones: Bones, root: THREE.Object3D, opts?: { bind?: { bones: Bones; root: THREE.Object3D } }): Rig;
+  createCutRig(three: typeof THREE, rd: Ragdoll, scene: THREE.Object3D, manifest: unknown, opts?: { rows?: unknown }): CutRig;
+  minotaurCutManifest: unknown;   // the manifest of src/assets/minotaur-106.glb (the physics cut GLB)
 };
+/** The package's cut-piece rig (three-cuts.mjs): `update()` shows each cap whose unit is in `rd.cuts`; the pieces are always drawn and the bones carry them. */
+type CutRig = { update(): void; pieces: Record<string, THREE.Mesh>; caps: Record<string, THREE.Mesh> };
 
 /** The opponent row in force on this page, or null: the feature off in the rows, ?physics=v1, or an opponent without a ragdoll. */
 export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: string): OpponentRow | null {
@@ -115,6 +119,8 @@ export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false) {
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
+  const cutManifestOf = (c: Chunk): unknown => (foe.body === 'minotaur' ? c.minotaurCutManifest : undefined);   // the cut GLB's manifest for this foe's body (the Minotaur's only so far)
+  let cutRig: CutRig | undefined;   // the body is the physics cut GLB (piece_* and cap_* meshes, docs/CUT-CONTRACT.md): a cut shows the caps and the piece flies with its bones. Undefined = the old triangle cutter and ball caps
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const late = createLateCuts();   // a finisher row's cut made some seconds after the killing blow (finisherCuts atS)
@@ -157,6 +163,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       rd = physics.createRagdoll(measure, { id: foe.id, motorTuning: tune?.motorTuning ?? rows.motorTuning, solveHinges: tune?.solveHinges ?? rows.solveHinges });
       const bind = rigged.bindScene ? { bones: Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(rigged!.bindScene!, name)!])), root: rigged.bindScene } : undefined;
       rig = chunk!.createThreeRig(THREE, rd, partBones, group, bind ? { bind } : undefined);
+      // the cut GLB (a body with piece_root): the caps follow THIS ragdoll's cut set, so a new ragdoll (after a cut the old one cannot reset) gets a new cut rig
+      cutRig = cutRows.on && rigged.anchor.getObjectByName('piece_root') && cutManifestOf(chunk!) ? chunk!.createCutRig(THREE, rd, rigged.anchor, cutManifestOf(chunk!)) : undefined;
     }
     mode = 'alive'; acc = 0; stagger = -1; dying = 0; snap = true; armed = false; cost.state = 'alive';
   }
@@ -173,6 +181,11 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // with `helmet`), their materials and shared geometry, all hidden in the opponent's group; then the scene compiles their programs (late-art.ts), off any frame that matters.
   function prepareCutArt() {
     if (!rd || !group || !rigged || !cutRows.on) return;
+    if (cutRig) {   // the cut GLB: its cap meshes are in the scene already (hidden), so only their first draw is warmed (the old pool's two frames as a speck), the helmet ball aside
+      for (const mesh of Object.values(cutRig.caps)) { mesh.scale.setScalar(WARM_SCALE); mesh.visible = true; }
+      warm = 2;
+      return;
+    }
     cutter ??= createPieceCutter(rigged.anchor);
     cutter.prepare(rd.row.severable.map((s) => partBones[s.cut_role]).filter((b): b is THREE.Object3D => !!b));
     capGeometry ??= new THREE.SphereGeometry(1, cutRows.cap.segments[0], cutRows.cap.segments[1]);
@@ -201,7 +214,13 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     if (!result) return null;
     done.add(unit);
     const part = result.cap.part, role = rd.row.roles.find((r) => r.id === part), root = partBones[part];
-    if (role && root && mode === 'dead') {
+    if (role && root && mode === 'dead' && cutRig) {   // the cut GLB: the piece is already its own mesh on its bones and the caps show from rd.cuts (cutRig.update, every frame)
+      let t = performance.now();
+      cost.pieces.push(...rd.cuts.map((u) => `${u}:cut-glb`));
+      for (const prop of result.props) { const mesh = helmetPool.pop(); if (mesh) { showPooled(mesh, 1); props.push({ mesh, prop }); } else prop.destroy(); }
+      steps.props = performance.now() - t;
+      cutBones.push({ bone: root, home: root.position.clone() });
+    } else if (role && root && mode === 'dead') {
       cutter ??= createPieceCutter(rigged.anchor);
       let t = performance.now();
       cost.pieces.push(...cutter.carve(root, cutRows.seam).map((m) => `${unit}:${m.name}:${m.geometry.index!.count / 3}`));   // what each cut took, per draw (the stills read it)
@@ -334,7 +353,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     //   showGore: false in blood 'off' (a cut leaves the body whole, as the finisher's head stays on there).
     frame(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null, showGore = true) {
       if (disabled) return;
-      if (warm > 0 && --warm === 0) for (const mesh of [...capPool, ...helmetPool]) mesh.visible = false;   // the warm-up draws (prepareCutArt) are done
+      if (warm > 0 && --warm === 0) {   // the warm-up draws (prepareCutArt) are done
+        for (const mesh of [...capPool, ...helmetPool]) mesh.visible = false;
+        if (cutRig) for (const mesh of Object.values(cutRig.caps)) { mesh.scale.setScalar(1); mesh.visible = false; }
+      }
       gore = showGore;
       try { step(dt, events, finish, finisher); } catch (error) { disabled = true; armed = false; cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     },
@@ -410,6 +432,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       } else if (mode === 'alive' && getUp > 0) { getUp -= dt; fromLying(getUp > 0 ? 1 - getUp / RULES.getUpS : 1); if (getUp <= 0) getUp = -1;
       } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger), blend);   // the stagger on screen, the most at the dip's deepest
       if (mode === 'dead' && follow.length + props.length) followCuts();
+      if (cutRig && warm === 0) cutRig.update();   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
       cost.frames++; cost.totalMs += ms; cost.maxMs = Math.max(cost.maxMs, ms); cost.lastMs = ms; cost.ticks += ticks; cost.state = rd.state;
       by.frames++; by.totalMs += ms; by.maxMs = Math.max(by.maxMs, ms);
