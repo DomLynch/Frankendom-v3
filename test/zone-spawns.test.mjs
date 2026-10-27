@@ -164,22 +164,25 @@ test('REPRO: a fight that drifts out from the spot (hero and boss together, up t
   console.log(rows.join('\n'));
 });
 
-test('REPRO on the real sim: the hero runs one way for 20 s with the real boss brain chasing (stepPractice); the old hero-measured 5 m leash trips, the boss-measured 20 m one does not', () => {
+test('REPRO on the real sim: the hero runs one way for 20 s with the real boss brain chasing (stepPractice); the old hero-measured 5 m leash trips within a second or two, the boss-measured 20 m one only once the boss is dragged past 20 m', () => {
   const s = list()[0], opp = OPPONENTS[FIGHT.opponent], rows = [];
   for (const [mx, mz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
     const built = initialPractice(731, opp, undefined, null, undefined, undefined, undefined, { hero: { x: s.x, z: s.z + 2.5 }, foe: { x: s.x, z: s.z }, heroFacing: Math.PI });
     let p = project(zoneDuel(built.duel), built.ai, built);   // the zone's own duel as main.ts fresh() builds it: the open world's radius (OPEN_RADIUS), no ring wall to stop the boss or the hero
-    let oldTrips = 0, newTrips = 0, far = 0;
+    let oldTrips = 0, newTrips = 0, far = 0, firstOld = Infinity, firstNew = Infinity, farAtOld = 0;
     for (let i = 0; i < 1200; i++) {
       p = stepPractice(p, { ...idleIntent(), action: startAction(true, p, null), move: { x: mx, z: mz, yaw: 0, run: true } });   // the page's auto-draw (data/fight.json start.auto): the boss waits until the hero has drawn
       const hero = { x: p.duel.fighters[0].body.x, z: p.duel.fighters[0].body.z }, boss = { x: p.enemy.x, z: p.enemy.z };
-      if (dist(s, hero) > 5) oldTrips++;
-      if (leashed(s, boss)) newTrips++;
+      if (dist(s, hero) > 5) { oldTrips++; if (firstOld === Infinity) { firstOld = i; farAtOld = dist(s, boss); } }
+      if (leashed(s, boss)) { newTrips++; if (firstNew === Infinity) firstNew = i; }
       far = Math.max(far, dist(s, boss));
     }
-    rows.push(`run (${mx}, ${mz}): hero-measured 5 m leash trips on ${oldTrips} of 1200 ticks, boss-measured ${s.leash} m on ${newTrips}; the boss got ${far.toFixed(2)} m from its spot`);
-    assert.equal(newTrips, 0, rows.at(-1));
-    if (mx !== 0 || mz > 0) assert.ok(far > 5 && oldTrips > 1000, `the boss really chased (${far.toFixed(2)} m) and the old rule really tripped (${oldTrips})`);
+    rows.push(`run (${mx}, ${mz}): hero-measured 5 m leash first trips at tick ${firstOld} (boss ${farAtOld.toFixed(1)} m out, ${oldTrips} of 1200 ticks); boss-measured ${s.leash} m first trips at tick ${firstNew} (${newTrips} ticks); the boss got ${far.toFixed(2)} m from its spot`);
+    if (mx !== 0 || mz > 0) {   // running away on open ground: the old rule reset the fight within a second or two with the boss on his heels; the boss-measured leash lets go only once the boss itself is dragged past 20 m, many seconds later
+      assert.ok(firstOld < 120 && farAtOld < s.leash, rows.at(-1));
+      assert.ok(firstNew > 3 * firstOld + 120, rows.at(-1));
+      assert.ok(far > s.leash, 'a sustained kite does drag the boss past the leash: it lets go (the instant reset stays until walk-back lands)');
+    }
   }
   console.log(rows.join('\n'));
 });
