@@ -21,7 +21,7 @@ import { OPPONENTS, RULES as SIM_RULES, type OpponentId } from './moves.ts';   /
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
-import { activeFeels, emitFeel, feel, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
+import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
 import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, halvesApart, PHYSICS_MODE, VISUAL_UNITS, type FinisherCutRows } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
 
@@ -73,6 +73,13 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
   page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
+}
+/** scene.ts, ?feel=hero (data/physics.json `hero`): the HERO's presentation ragdoll, a second createFoeRagdoll on sim fighter 0 (hit reactions from the same data/feel-hitreact.json rows as the opponent's, the package's
+ *  death fall on her killing blow). No cuts, no corpse, no finisher, no rules path. Null without the flag, under ?physics=v1, or with the physics rows off: nothing is created. */
+export function heroRagdollFor(search: string): FoeRagdoll | null {
+  if (!PHYSICS.on || !feelNames(search).includes('hero') || new URLSearchParams(search).get(PHYSICS.query) === PHYSICS.v1) return null;
+  const rows = { ...PHYSICS, cut: { ...PHYSICS.cut, on: false, onKill: {} } } as PhysicsRows;
+  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as Promise<Chunk>, false, false, false, activeFeels(search, undefined, true), search, 0, '__ragdollHero');
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
  *  finisher's camera, blood and sound by its id and skips V1's victim clip and its bakes. */
@@ -191,8 +198,8 @@ type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
 export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
 // rows: data/physics.json; foe: the opponent's row (ragdollRowFor); load: the chunk's import (scene.ts hands `() => import('./physics-chunk.ts')`)
-export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false, feels: readonly FeelHooks[] = [], search = '') {
-  const feelCtx = (): FeelCtx => ({ rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs, blendToward: (share) => poseToward(1, share) });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
+export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false, feels: readonly FeelHooks[] = [], search = '', side = 1, costKey = '__ragdoll') {   // side: the sim fighter this body is (1 the opponent; 0 the hero under ?feel=hero, heroRagdollFor); costKey: its cost record's name on globalThis
+  const feelCtx = (): FeelCtx => ({ target: side, rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs, blendToward: (share) => poseToward(1, share) });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   const cutManifestOf = (c: Chunk): unknown => (foe.body === 'minotaur' ? c.minotaurCutManifest : undefined);   // the cut GLB's manifest for this foe's body (the Minotaur's only so far)
@@ -246,8 +253,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let lives = 0, lifeId = `${foe.id}#0`, slot = 0, spawnHips: Vec3 = [0, 0, 0], bindOpts: { bones: Bones; root: THREE.Object3D } | undefined;
   const done = new Set<string>(), follow: { mesh: THREE.Mesh; at: number; off: THREE.Vector3 }[] = [], props: { mesh: THREE.Mesh; prop: CutResult['props'][number] }[] = [];
   const cutLog = (): CutEvent[] => ((globalThis as Record<string, unknown>)[cutRows.log] ??= []) as CutEvent[];
-  const cost = { corpses: 0, cueState: '', corpseCuts: [] as { corpseId: string; unit: string; source: string }[], corpseInfo: undefined as (() => Record<string, unknown>[]) | undefined, corpseLimb: undefined as ((index: number, unit: string) => number | null) | undefined, leave: undefined as (() => boolean) | undefined, frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }>, cuts: [] as CutEvent[], cutSteps: [] as Record<string, number | string>[], lastTap: '', pieces: [] as string[], screenOf: undefined as ((part: string) => [number, number] | null) | undefined, probe: undefined as ((x: number, y: number) => string | null) | undefined, limbDistance: undefined as ((unit: string) => number | null) | undefined };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
-  (globalThis as { __ragdoll?: typeof cost }).__ragdoll = cost;
+  const cost = { hitsSeen: 0, feelHooks: 0, corpses: 0, cueState: '', corpseCuts: [] as { corpseId: string; unit: string; source: string }[], corpseInfo: undefined as (() => Record<string, unknown>[]) | undefined, corpseLimb: undefined as ((index: number, unit: string) => number | null) | undefined, leave: undefined as (() => boolean) | undefined, frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }>, cuts: [] as CutEvent[], cutSteps: [] as Record<string, number | string>[], lastTap: '', pieces: [] as string[], screenOf: undefined as ((part: string) => [number, number] | null) | undefined, probe: undefined as ((x: number, y: number) => string | null) | undefined, limbDistance: undefined as ((unit: string) => number | null) | undefined };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
+  (globalThis as Record<string, unknown>)[costKey] = cost;
   cost.corpseInfo = () => corpses.map((c) => ({ id: c.id, slot: c.slot, age: +c.age.toFixed(2), kept: !!c.rd, state: c.rd?.state ?? 'static', awake: c.rd?.awake ?? false, cuts: [...c.done], gone: c.gone.size }));   // the stills / phone checks
   cost.corpseLimb = (index, unit) => {   // metres from a corpse's cut unit bone (it follows its capsule once cut) to its chest bone, world space
     const c = corpses[index], root = c?.bones?.[c.rd?.row.severable.find((s) => s.id === unit)?.cut_role ?? ''], chest = c?.bones?.spine2;
@@ -570,10 +577,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // death is the plain ragdoll death carrying that cut (takesKill, step). Once per kill (memo by the Killed's tick). Null: not applicable (no evaluator, no kill, a zone that keeps the rotation, ragdoll not ready).
   function judgeKill(events: readonly CombatEvent[]): { tick: number; takes: boolean } | null {
     if (!rules || disabled || !armed || !rig || mode !== 'alive') return judged;
-    const killed = events.find((e) => e.type === 'Killed' && e.target === 1);
+    const killed = events.find((e) => e.type === 'Killed' && e.target === side);
     if (!killed || cutPrecedence(RULES, killed.location) !== 'evaluator') return judged;
     if (judged?.tick === killed.tick) return judged;
-    const ps = events.filter((e) => e.type === 'Hit' && e.target === 1 && e.tick === killed.tick).map((e) => rules!.hit(e, false, handSpeed.speed()));   // the killing blow's own Hits (the sim's Killed decides the death)
+    const ps = events.filter((e) => e.type === 'Hit' && e.target === side && e.tick === killed.tick).map((e) => rules!.hit(e, false, handSpeed.speed()));   // the killing blow's own Hits (the sim's Killed decides the death)
     for (const p of ps) if (p?.cut && !ruleCuts.includes(p.cut)) ruleCuts.push(p.cut);
     return (judged = { tick: killed.tick, takes: evaluatorTakesKill(RULES, killed.location, ps) });
   }
@@ -699,14 +706,14 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       const start = performance.now();
       if (!finish && mode !== 'alive') { build(); down = -1; getUp = -1; ruleCuts.length = 0; judged = null; rules?.renew(); }   // the rematch: a fresh ragdoll, standing (and the evaluator's fighter whole again)
       if (!finish) armed = true;
-      const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === 1) : undefined;
+      const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === side) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
         // A finisher with a finisherCuts row plays with this body under ?ragdoll=finishers (its row picks the cut, none for Run Through); any other keeps its clip (finisher row 'keep')
         const fc = bodyFinishers && finisher !== null && !isPlainDeath(finisher) ? finisherCutRow(rows, finisher) : undefined;
         const judgedKill = judgeKill(events), verdict = judgedKill?.tick === killed.tick ? judgedKill : null;   // ?rules=m4 cut.precedence: the evaluator's verdict on this killing blow when its zone's row says 'evaluator' (null: the rotation decides, as before)
         if (finisher !== null && !isPlainDeath(finisher) && !fc && !verdict?.takes) { mode = 'skip'; cost.state = 'finisher'; }
         else {
-          if (rules) for (const e of events) if (e.type === 'Hit' && e.target === 1 && e.tick !== verdict?.tick) { const p = rules.hit(e, false, handSpeed.speed()); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
+          if (rules) for (const e of events) if (e.type === 'Hit' && e.target === side && e.tick !== verdict?.tick) { const p = rules.hit(e, false, handSpeed.speed()); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
           if (down <= 0) { rig.drive(); rd.snapToTarget(); }   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp (from where he lies, if he is down)
           down = -1; getUp = -1;
           rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
@@ -719,8 +726,9 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           for (const unit of units) { if (!fc || fc.atS <= 0) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit)); else late.add(unit, fc.atS, 'finisher'); }
         }
       } else if (mode === 'alive') for (const e of events) {
-        if (e.type !== 'Hit' || e.target !== 1) continue;
+        if (e.type !== 'Hit' || e.target !== side) continue;
         const p = rules?.hit(e, true, handSpeed.speed());   // ?rules=m4: the evaluator's reaction; null (a missile, a weapon with no row) falls to V1's stagger below
+        cost.hitsSeen++; cost.feelHooks = feels.length;   // the stills read these: blows that reached this ragdoll, and how many ?feel= modules it holds
         for (const f of feels) f.hit?.(e, feelCtx());   // M7 (?feel=): a blow landed on him, whichever reaction follows (after the evaluator's verdict, before the reaction)
         if (p) { react(e, p); continue; }
         rd.stagger(blowImpulse(rows.hit, e.location, e.heading, group.rotation.y) ?? undefined);   // the package's dip (states.stagger) and the blow's impulse

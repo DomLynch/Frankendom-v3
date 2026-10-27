@@ -12,7 +12,7 @@ import { FEEL_NAMES, loadFeelChunk } from './feel-modules.ts';
 import type { Ragdoll } from './ragdoll.ts';
 
 /** What a hook may use: the foe's ragdoll (the package's API: stagger, applyImpulse, ...), his bones by the package's part ids, his group, his mode, and the sim-event emitter. */
-export type FeelCtx = { rd: Ragdoll; partBones: Record<string, THREE.Object3D>; group: THREE.Object3D; mode: 'alive' | 'dead' | 'skip'; emit: (name: string, payload?: unknown) => void; limbs: () => Record<string, number>;
+export type FeelCtx = { /** The sim fighter this body is: 1 the opponent, 0 the hero (?feel=hero). */ target: number; rd: Ragdoll; partBones: Record<string, THREE.Object3D>; group: THREE.Object3D; mode: 'alive' | 'dead' | 'skip'; emit: (name: string, payload?: unknown) => void; limbs: () => Record<string, number>;
   /** Show the ragdoll's pose on these parts this frame (share: part id -> 0..1, the weight of the ragdoll against the clip; the ragdoll's poseToward(1, share)). Call it after the frame's own pose: the limp and a sagging arm need the bones to follow the ragdoll on those parts. */
   blendToward: (share: Record<string, number>) => void };
 export type FeelHooks = {
@@ -32,9 +32,10 @@ export const feelNames = (search: string): string[] => (new URLSearchParams(sear
 /** The hooks the page asked for (?feel=a,b). Already-registered names are in the returned list at once; a name of the feel chunk (feel-modules.ts FEEL_NAMES) is fetched on demand
  *  and pushed onto the SAME list when it arrives (ragdoll.ts iterates it live, so the module starts working a moment after the page does); a name nothing knows is ignored. A page
  *  with no ?feel= never touches the chunk. */
-export function activeFeels(search: string, defaults?: FeelDefaultRows): FeelHooks[] {   // `defaults` (data/feel-defaults.json, Dom 2026-10-27): the modules on without a query; absent = only the ones the query names
+export function activeFeels(search: string, defaults?: FeelDefaultRows, forHero = false): FeelHooks[] {   // `defaults` (data/feel-defaults.json, Dom 2026-10-27): the modules on without a query; absent = only the ones the query names
   const out: FeelHooks[] = [], pending: string[] = [];
-  for (const n of feelsOn(defaults, search)) { const h = registry.get(n); if (h) out.push(h); else if (FEEL_NAMES.includes(n)) pending.push(n); }
+  // 'hero' (never a default: it is not in data/feel-defaults.json) drives the hero's own ragdoll (ragdoll.ts heroRagdollFor) and nothing on the opponent's; every other name the opponent's
+  for (const n of feelsOn(defaults, search).filter((x) => (x === 'hero') === forHero)) { const h = registry.get(n); if (h) out.push(h); else if (FEEL_NAMES.includes(n)) pending.push(n); }
   if (pending.length) void loadFeelChunk().then((mods) => { for (const n of pending) { const h = mods[n]; if (h) { registerFeel(n, h); out.push(h); } } }).catch(() => { /* the chunk is optional: no feel, no harm */ });
   return out;
 }
