@@ -27,6 +27,9 @@ test('the unit: own user, pinned checkout, the real entry file, restarts on fail
   assert.ok(existsSync(new URL(`../${exec[1]}`, import.meta.url)), 'the entry file exists in the repo');
   assert.ok(!has(/^PRESENCE_HOST=/) && !has(/^Environment=.*PRESENCE_HOST/), 'the bind address stays the loopback default row');
   assert.ok(!has(/^Environment=.*(TOKEN|KEY|SECRET|PASSWORD)/i), 'no secret in the unit');
+  const sectionOf = (key) => { let s = ''; for (const l of unit) { if (/^\[.+\]$/.test(l)) s = l; else if (l.startsWith(`${key}=`)) return s; } return null; };
+  assert.equal(sectionOf('StartLimitIntervalSec'), '[Unit]', 'StartLimitIntervalSec belongs in [Unit] (systemd ignores it in [Service])');
+  assert.equal(sectionOf('StartLimitBurst'), '[Unit]', 'StartLimitBurst belongs in [Unit]');
   assert.ok(!/frankendom-presence\.service/.test(unit.join('\n')), 'never names V1\'s unit');
   const mem = Number(unit.find((l) => l.startsWith('MemoryMax=')).match(/\d+/)[0]), cpu = Number(unit.find((l) => l.startsWith('CPUQuota=')).match(/\d+/)[0]);
   assert.ok(mem <= 512 && cpu <= 100, 'capped: at most 512 MB and one core');

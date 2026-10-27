@@ -6,6 +6,10 @@
 [Unit]
 Description=Frankendom V3 presence (live zone, other players)
 After=network.target
+# Stop a crash loop from burning the shared box: 5 starts in 60 s and systemd gives up (a person looks). These two keys belong in [Unit]
+# (in [Service] systemd 255 ignores them with 'Unknown key name', verified by systemd-analyze on the box 2026-10-27).
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -15,9 +19,6 @@ WorkingDirectory=/opt/frankendom-v3-presence/current
 ExecStart=/usr/bin/node server/presence/main.ts
 Restart=on-failure
 RestartSec=3
-# Stop a crash loop from burning the shared box: 5 starts in 60 s and systemd gives up (a person looks).
-StartLimitIntervalSec=60
-StartLimitBurst=5
 TimeoutStopSec=10
 
 # The VPS is shared and already loaded: a runaway here is stopped by the kernel, not by hope. A guard, not a measured figure: V1's same service sits at about 75 MB resident idle on this box (2026-10-27), so 256M is 3x that; CPUQuota=50% is half a core of the 16.
