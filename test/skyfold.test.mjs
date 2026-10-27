@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
-import { SKYLINE, SKYLINE_ORDER } from '../src/fight/skyline.ts';
+import { SKYLINE, SKYLINE_ORDER, createSkyline } from '../src/fight/skyline.ts';
 import { SKYVIEWS, FLOOR_ORDER } from '../src/fight/skyview.ts';
 import { FOLD, FOLD_ORDER, foldFor, ringDistance, ringV, ringAlpha, foldGeometry, createSkyfold } from '../src/fight/skyfold.ts';
 
