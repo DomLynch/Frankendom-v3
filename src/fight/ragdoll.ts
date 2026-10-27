@@ -21,6 +21,8 @@ import { OPPONENTS, RULES as SIM_RULES, type OpponentId } from './moves.ts';   /
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
+import { setGoreEvery } from './finishers.ts';
+import { setRagdollPlays } from '../roster.ts';
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
 import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, halvesApart, PHYSICS_MODE, VISUAL_UNITS, type FinisherCutRows } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
@@ -69,10 +71,15 @@ export function finisherModeFor(rows: PhysicsRows, search: string): string {
   return (v !== null && f.values[v]) || f.default;
 }
 
+const NO_FINISHERS: readonly string[] = [];
 let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page), for the finisher pick below
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
+  // Gore on every kill (Dom 2026-10-27), default on; ?gore=v1 reverts to the roster's gate and the 5-way rotation with the plain death. Only while this page's ragdoll plays finishers.
+  const gore = !!foe && finisherModeFor(PHYSICS, search) === PHYSICS_MODE && new URLSearchParams(search).get('gore') !== 'v1';
+  const cutIds = Object.keys(PHYSICS.finisherCuts.rows);   // once, not per call
+  goreOn = gore; setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? cutIds : NO_FINISHERS) : null);
   page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
@@ -82,6 +89,7 @@ export function heldRagdollFor(search: string, opponentId: string, body: string)
   const foe = ragdollRowFor(PHYSICS, search, opponentId, body);
   return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
 }
+let goreOn = false;   // ?gore=v1 off (foeRagdollFor)
 let heldPlainOnly = false;   // the live foe wears a body other than the page's own: the baked finishers (Opened, Hamstrung, Execution, sever) are prepared on the first body alone, so every kill is the plain death
 /** scene.ts, at a swap of the live foe's body (held-body.ts): the finisher pick (ragdollBody, ragdollFinisher) now reads `ragdoll` (null: that body has none), and `plainOnly` forces the plain death for a body the baked finishers are not prepared on. */
 export function setHeldRagdoll(ragdoll: FoeRagdoll | null, plainOnly: boolean): void { page = ragdoll; heldPlainOnly = plainOnly; }
@@ -102,7 +110,8 @@ export function ragdollFinisher(events?: readonly CombatEvent[]): FinisherId | n
   const local = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   const forced = local ? (globalThis as { __finisherPick?: string }).__finisherPick : undefined;
   // ?rules=m4 cut.precedence: a head-zone killing blow the evaluator cuts is the plain ragdoll death (its cut is the head), not the rotation's finisher; `events` is the frame's (scene.ts) or the step's (main.ts)
-  return forced ?? (heldPlainOnly || page?.skipsFinishers() || (events && page?.takesKill(events)) ? PLAIN_DEATH : null);
+  // Gore on every kill (Dom 2026-10-27): a held body whose ragdoll takes finishers cuts its own body, so the baked finishers' home-body-only gate (heldPlainOnly) does not make it a plain death (?gore=v1 keeps the gate).
+  return forced ?? ((heldPlainOnly && !(goreOn && page?.takesFinisher())) || page?.skipsFinishers() || (events && page?.takesKill(events)) ? PLAIN_DEATH : null);
 }
 
 /** The part a blow at `location` lands on, and its impulse in the ragdoll's frame (the attacker's facing, `heading`, turned into `frame`). */
@@ -754,7 +763,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           const onKill = killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it
           const units = fc ? finisherUnits(fc, hasUnit) : rulesOn ? [] : onKill ? [onKill] : [];   // defaults-on (Dom 2026-10-27): the M4 rules and the physics finishers are both default, so a finisher row's cut (Split Crown, Opened ...) is made under the rules too; the head-zone onKill rule stays the evaluator's alone   // a finisher's row decides its own cut(s): its unit (or the fallback stand-in), then its `also` units this body carries
           const push = (u: string) => blowImpulse({ ...(fc?.kill ?? cutRows.kill), parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group!.rotation.y)?.impulse;   // the push is the row's, whatever the location
-          for (const unit of units) { if (!fc || fc.atS <= 0) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit)); else late.add(unit, fc.atS, 'finisher'); }
+          units.forEach((unit, i) => { const at = (fc?.atS ?? 0) + (i > 0 ? fc?.alsoAtS ?? 0 : 0); if (!fc || at <= 0) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit)); else late.add(unit, at, 'finisher'); });   // alsoAtS: the second blow of a dismemberment / hamstring
         }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== side) continue;

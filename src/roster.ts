@@ -22,9 +22,13 @@ const recipeOf = (r: BodyRow) => ({
 });
 export const ROSTER = Object.fromEntries(CATALOGUE_ROWS.filter((r): r is BodyRow => !('body' in r)).map((r) => [r.id, recipeOf(r)])) as unknown as { [R in BodyRow as R['id']]: Recipe<R> };
 export type OpponentId = BodyRow['id'];
+// The finishers the page's ragdoll plays with its own cuts (ragdoll.ts, ?ragdoll=finishers, the default): the roster's `allowed` gates the BAKED finishers, which the Minotaur has only
+// for Opened, but the ragdoll cuts any body, so while it takes finishers these count as supported too (Dom 2026-10-27, gore on every kill). null = off (?gore=v1).
+let ragdollPlays: (() => readonly FinisherId[]) | null = null;
+export function setRagdollPlays(plays: (() => readonly FinisherId[]) | null): void { ragdollPlays = plays; }
 export function supportsFinishers(id: OpponentId, finisher?: FinisherId | null): boolean {
   const recipe = ROSTER[id];
-  return !('finishers' in recipe) || (!!finisher && (recipe.finishers as readonly FinisherId[]).includes(finisher));
+  return !('finishers' in recipe) || (!!finisher && ((recipe.finishers as readonly FinisherId[]).includes(finisher) || !!ragdollPlays?.().includes(finisher)));
 }
 // One presentation decision for the scene and audio; the owner's picker never overrides kill eligibility.
 export function resolveFinisher(id: OpponentId, finish: Finish, weapons: readonly [WeaponId, WeaponId], override: FinisherId | null = null, previous: FinisherId | null = null): FinisherId | null {

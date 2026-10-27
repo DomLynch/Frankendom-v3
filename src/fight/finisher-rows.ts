@@ -6,7 +6,8 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 // The verbs: fall (the victim's own clip, or the plain Death), cleave (the skull seam), sever (the severed head), impale (held on the
 // blade), bisect (the waist bake), hamstring (two low blows timed on the scene, each holding it) and execute (the kneeling cut, its pose
 // re-skinned onto the victim); those two fetch their clips lazily and each has its own scene path.
-export const FINISHER_TEMPLATES = ['fall', 'cleave', 'sever', 'impale', 'bisect', 'hamstring', 'execute'] as const;
+export const FINISHER_TEMPLATES = ['fall', 'cleave', 'sever', 'impale', 'bisect', 'hamstring', 'execute', 'cut'] as const;
+// `cut` (Dom 2026-10-27, six finishers on every kill): the ragdoll body IS the finisher, the victim falls and the cuts are the row's finisherCuts row (dismemberment, hamstring); no clip, so without the ragdoll it is never picked.
 export type FinisherTemplate = (typeof FINISHER_TEMPLATES)[number];
 // A row's `pose` is its clip word (null: the plain Death). characters.ts no longer branches on the word: what it plays for a finisher body is the
 // row's `body` (the victim's and the killer's pose words and the clip role each plays), and the template picks any code path of its own.
@@ -38,7 +39,7 @@ export type FinisherCamera = { dolly: { push: number; slide: number; turn: numbe
 // `shelved`: the clip and pose stay, but the scene plays the plain fall in their place (the Quiet One left the game, Dom 2026-09-27; nothing picks it).
 // `label`: the finisher's name on screen. `picker`: its place in the dev picker (main.ts), absent = not offered; a position, because the file's
 // order is the rotation's pool order and cannot follow the picker's.
-export type FinisherRow = { id: string; label: string; picker?: number; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; zone?: boolean; bakeFallback?: string; body?: FinisherBody; sound?: FinisherSound; blood: { start: number }; camera: FinisherCamera };
+export type FinisherRow = { id: string; label: string; picker?: number; template: FinisherTemplate; rotation: boolean; pose: FinisherPose | null; seconds?: number; secondsFrom?: string; shelved?: boolean; zone?: boolean; bakeFallback?: string; body?: FinisherBody; sound?: FinisherSound; blood: { start: number; sites?: readonly string[] }; camera: FinisherCamera };
 export type FinisherTable = { rows: readonly FinisherRow[]; byId: ReadonlyMap<string, FinisherRow>; rotation: readonly string[] };
 
 const isTemplate = (v: unknown): v is FinisherTemplate => (FINISHER_TEMPLATES as readonly unknown[]).includes(v);

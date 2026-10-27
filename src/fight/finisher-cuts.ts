@@ -7,7 +7,8 @@ export type FinisherCutRow = {
   unit: string | null;                                  // the package's cut unit, or null = no cut (Run Through: the blade stays)
   also?: string[];                                      // M9a: units cut with the same blow after `unit` (Split Crown: head_split with head); a body whose cut GLB lacks one simply leaves it out
   fallback?: string | null;                             // M9a: the unit that stands in when the body's cut GLB does not carry `unit` (a visual unit such as belly_open): null = no cut
-  atS: number;                                         // seconds after the killing blow the cut is made
+  alsoAtS?: number;                                     // Dom 2026-10-27: the `also` units are cut this many seconds after `unit` (dismemberment's second blow, the hamstring's second leg); absent = with it
+  atS: number;                                        // seconds after the killing blow the cut is made
   push: number;                                         // multiplier on the kill's impulse
   kill: { impulse: number; lift: number } | null;       // the cut piece's push; null = cut.kill
   plane: string | null;                                 // what the unit only stands in for (a new cut plane for Strategy to rule on)

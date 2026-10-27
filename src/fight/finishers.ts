@@ -21,6 +21,12 @@ export const finisherRow = (id: FinisherId): FinisherRow | undefined => FINISHER
 // rows flagged `rotation`, in file order.
 export const ROTATION: readonly FinisherId[] = FINISHERS.rotation;
 
+// Gore every kill (Dom 2026-10-27: "they should happen for almost every fight; rotate them"): while on, the automatic pick never lands on the plain death, so every blade
+// kill gets a gore finisher (still never the previous one). Set by ragdoll.ts with the ragdoll's finisher mode; ?gore=v1 leaves it off (the 5-way rotation with the plain death).
+const PLAIN: FinisherId = 'plainDeath';
+let goreEvery = false;
+export function setGoreEvery(on: boolean): void { goreEvery = on; }
+
 // `previous` is the ceremony the last fight actually showed (owner 2026-09-20: "the same finish can't appear twice in a
 // row — keeps it fresh"). It is excluded from the pool for this kill; the pick stays a pure function of the kill event
 // and that one presentation fact, so a replay with the same history is identical. null = first fight / no ceremony yet.
@@ -44,7 +50,9 @@ export function selectFinisher(finish: Finish, weapons: readonly [WeaponId, Weap
   // Beta rotation (owner 2026-09-20, simplifying for the freeze): five outcomes — Split Crown, Decapitation, Run Through,
   // Opened, plain death. The Quiet One is out of the automatic pick (too subtle to read on a phone); its clip, pose and
   // gore stay shipped and the dev picker can still force it. Never the previous fight's ceremony again.
-  const pool = ROTATION.filter((id) => id !== previous);
+  // The six (Dom 2026-10-27): Split Crown, Decapitation, Run Through, Opened, Dismemberment, Hamstrung. The `cut` rows (dismember, hamstringCut) have no clip, so they are in the pool only while gore is on (the ragdoll cuts them).
+  const pool = ROTATION.filter((id) => id !== previous && (goreEvery ? id !== PLAIN : FINISHERS.byId.get(id)?.template !== 'cut'));
+  if (!pool.length) return null;
   return pool[Math.abs(hash % pool.length)];
 }
 
