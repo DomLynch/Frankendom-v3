@@ -29,7 +29,8 @@ test('the shipped spread: bosses stand beyond the pit, 10 m or more apart, aggro
   assert.doesNotThrow(() => validateSpots(s, initialState(), wall(), WORLD, FIGHT.opponent));
   assert.ok(s.filter((x) => Math.hypot(x.x, x.z) > wall()).length >= 2, 'at least two bosses stand outside the drawn pit');
   for (const a of s) {
-    assert.deepEqual([a.aggro, a.leash], [2.5, 5], `${a.id}: aggro 2.5 m and leash 5 m as before`);
+    assert.deepEqual([a.aggro, a.leash], [2.5, 20], `${a.id}: aggro 2.5 m, leash 20 m (the boss's own distance from its camp, #126)`);
+    assert.ok(a.leash >= a.aggro + WORLD.leashMargin);
     assert.ok(Math.hypot(a.x, a.z) + Math.max(a.leash, wall()) <= WORLD.spreadRadiusMetres, `${a.id}: its fight arena (the larger of the pit circle and the leash) lies inside the spawn extent`);
     for (const b of s) if (a !== b) assert.ok(dist(a, b) >= WORLD.minSpacing && dist(a, b) >= 10, `${a.id} ~ ${b.id} = ${dist(a, b).toFixed(2)} m`);
   }
@@ -40,9 +41,9 @@ test('the shipped spread: bosses stand beyond the pit, 10 m or more apart, aggro
   assert.ok(o.x === 226 && o.z === 47, 'the pit is still where the page and the presence service put it');
 });
 
-test('coverage: no hero position anywhere on the ground is inside two bosses\' aggro, and none is in one boss\'s leash and another\'s aggro (the opener\'s reach included)', () => {
+test('coverage: no hero position is inside two bosses\' aggro; leashes of far camps overlap (leash 20) and a hero in one boss\'s leash can meet another\'s aggro, which joins', () => {
   const s = spots(), R = WORLD.spreadRadiusMetres;
-  let both = 0, joined = 0, covered = 0, points = 0;
+  let both = 0, joined = 0, covered = 0, points = 0, twoLeashes = 0;
   for (let x = -R; x <= R; x += 0.5) for (let z = -R; z <= R; z += 0.5) {
     const hero = { x, z };
     if (Math.hypot(x, z) > R) continue;
@@ -50,13 +51,13 @@ test('coverage: no hero position anywhere on the ground is inside two bosses\' a
     const near = s.filter((b) => dist(b, hero) <= b.aggro);
     if (near.length > 1) both++;
     if (near.length) covered++;
-    s.forEach((b, i) => { if (dist(b, hero) <= b.leash + OPENERS.reachMetres && joiners(s, i, [], hero).length) joined++; });
+    if (s.filter((b) => dist(b, hero) <= b.leash).length > 1) twoLeashes++;
+    s.forEach((b, i) => { if (dist(b, hero) <= b.leash && joiners(s, i, [], hero).length) joined++; });
   }
   assert.ok(points > 1000 && covered > 0);
-  assert.equal(both, 0, 'no point is in two aggro circles');
-  assert.equal(joined, 0, 'a hero fighting one boss (inside its leash, lifted by the opener\'s reach) is never inside another\'s aggro: nobody joins, so the second-opponent camera widen is never asked for a boss across the zone');
-  const gaps = s.flatMap((a) => s.filter((b) => b !== a).map((b) => dist(a, b) - a.leash - OPENERS.reachMetres - b.aggro));
-  assert.ok(Math.min(...gaps) > 0, `every pair clears leash + reach + aggro by ${Math.min(...gaps).toFixed(2)} m or more`);
+  assert.equal(both, 0, 'no point is in two aggro ranges: an engage is never ambiguous');
+  assert.ok(twoLeashes > 0 && joined > 0, 'with leash 20 the leashes of camps 16 to 24 m apart overlap, so a hero fighting one boss can walk into another\'s aggro: that boss joins (multi-aggro, #110). Nobody chains: each spawn keeps its own aggro and leash, and the joiner is only ever within its 2.5 m aggro of the hero');
+  for (const a of s) for (const b of s) if (a !== b) assert.ok(dist(a, b) > a.aggro + b.aggro, 'aggro ranges never overlap');
 });
 
 test('poseAt far from the pit: the pose is placed at the SPOT, the hero where he stands (stepped back to minDistance), never the pit\'s marks; beyond the ground it falls back to his start', () => {

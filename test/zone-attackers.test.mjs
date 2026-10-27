@@ -63,7 +63,7 @@ test('the camera composes with the lens zoom: one boss is byte-identical to main
   const s = spawns(), A = s[0], rows = ATTACKERS.camera;
   // The farthest a second boss can be while it attacks: the hero stands at the first boss's leash and inside the second boss's aggro, on the line between them. The shipped spawns stand 16 m or more apart
   // (spawn spread, PR B2), further than leash + aggro, so no pair of them ever meets this geometry (the next test); the bout is built on a boss placed at exactly the farthest feasible spot.
-  const toward = { x: s[1].x - A.x, z: s[1].z - A.z }, reach = Math.hypot(toward.x, toward.z), lie = A.leash + s[1].aggro * 0.9;
+  const toward = { x: s[1].x - A.x, z: s[1].z - A.z }, reach = Math.hypot(toward.x, toward.z), lie = JSON.parse(read('../data/respawn.json')).spawn.minDistance + s[1].aggro * 0.9;   // the hero stands one fight gap from the first boss (a boss follows him, whatever its leash) and inside the second's aggro on the far side
   const B = { ...s[1], x: A.x + (toward.x / reach) * lie, z: A.z + (toward.z / reach) * lie };
   const dx = A.x - B.x, dz = A.z - B.z, len = Math.hypot(dx, dz), hero = { x: B.x + (dx / len) * B.aggro * 0.9, z: B.z + (dz / len) * B.aggro * 0.9, heading: 0, distance: 0 };
   const yaw = Math.atan2(hero.x - A.x, hero.z - A.z), centre = { x: (hero.x + A.x) / 2, z: (hero.z + A.z) / 2 };
@@ -83,8 +83,8 @@ test('the camera composes with the lens zoom: one boss is byte-identical to main
 
 test('who lets go: past its own leash from its own spot', () => {
   const s = spawns(), here = { x: s[1].x, z: s[1].z }, away = { x: s[1].x + s[1].leash + 1, z: s[1].z };
-  assert.deepEqual(dropped(s, [1], here), []); assert.deepEqual(dropped(s, [1], away), [1]);
-  assert.deepEqual(dropped(s, [], away), []);
+  assert.deepEqual(dropped(s, [1], () => here), []); assert.deepEqual(dropped(s, [1], () => away), [1]);
+  assert.deepEqual(dropped(s, [], () => away), []);
 });
 
 const hero0 = { x: 0, z: 2 }, mark = { x: 0, z: -1.25 };

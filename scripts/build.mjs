@@ -147,9 +147,12 @@ const named = [...assets, ...lazyJson].filter((f) => NOT_SHIPPED.some((n) => n =
 if (named.length) throw new Error(`data/build.json notShipped: the bundle references ${named.map(rel).join(', ')} (106 only: no 65 loader in production)`);
 // The body measure rows the ragdoll fetches (data/physics.json `measure`: physics/bodies/<body>.measure.json), from the package as pinned.
 cpSync(join(root, 'node_modules/@frankendom/physics/data/bodies'), join(out, 'physics/bodies'), { recursive: true });
+// The shipped copy of each lazy JSON (the baked clips) has every number rounded to data/build.json clipDecimals; src/assets stays full precision.
+const { clipDecimals } = JSON.parse(readFileSync(join(root, 'data/build.json'), 'utf8')), roundTo = 10 ** clipDecimals;
 for (const f of lazyJson) {
   mkdirSync(dirname(lazyModule(f)), { recursive: true });
-  writeFileSync(lazyModule(f), `export default ${JSON.stringify(JSON.parse(readFileSync(f, 'utf8')))};\n`);
+  const rounded = JSON.parse(readFileSync(f, 'utf8'), (_, v) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * roundTo) / roundTo : v));
+  writeFileSync(lazyModule(f), `export default ${JSON.stringify(rounded)};\n`);
 }
 for (const a of assets) cpSync(a, join(out, rel(a)), { recursive: true });
 cpSync(join(root, 'data'), join(out, 'data'), { recursive: true });

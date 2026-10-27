@@ -25,8 +25,8 @@ const list = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, pitScale: 0.65, spreadRadiusMetres: 26 });
-  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale', 'spreadRadiusMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 40 });
+  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
 
@@ -44,7 +44,6 @@ test('the shipped zone row: three spots across the zone\'s ground (leash circle 
   // Dom 2026-10-27 'space them about two times apart' (they stood 3.5 m from their neighbour): every pair is a row's distance apart or more, about 7 m
   for (const a of spots) for (const b of spots) if (a !== b) assert.ok(dist(a, b) >= WORLD.minSpacing, `${a.id} and ${b.id} are ${dist(a, b).toFixed(2)} m apart`);
   assert.ok(Math.min(...spots.flatMap((a) => spots.filter((b) => b !== a).map((b) => dist(a, b)))) >= 10.5, 'more than 10 m between neighbours (Dom: still too close at 6.9 m)');
-  for (const s of spots) for (const t of spots) if (t !== s) assert.ok(s.leash < dist(s, t), `${s.id}: its leash (${s.leash} m) is shorter than the way to ${t.id}`);
   assert.equal(new Set(spots.map((s) => s.respawnSeconds)).size, 3, 'each has its own timer');
 });
 
@@ -142,13 +141,40 @@ test('a hero who walked on after a kill meets the next boss: the dead one is ski
   assert.equal(inAggro(s, nearDead), 0, 'after the respawn the same spot is a boss again');
 });
 
-test('the leash: only a hero past the engaged spawn\'s own leash resets it', () => {
+test('the leash: only a BOSS past its own leash from its spot gives up', () => {
   const s = list()[0];
   assert.equal(leashed(s, { x: s.x + s.leash - 0.1, z: s.z }), false);
   assert.equal(leashed(s, { x: s.x + s.leash + 0.1, z: s.z }), true);
-  const far = { x: 0, z: wall() - 0.05 };   // the far side of the circle from the north spot: a hero can really get past a 5 m leash inside the 5.05 m circle
-  assert.equal(leashed(s, far), true, 'reachable inside the wall');
-  assert.ok(Math.hypot(far.x, far.z) <= wall());
+});
+
+// Dom 2026-10-27 (live, phone): 'I started the fight and rolled out of an area; it froze and restarted the same fight. It should be a free roam area.' main.ts measured the leash from the
+// spot to the HERO (leash 5 m) while the fight moves both well past 5 m from the spot, so a roll or a few steps reset the boss mid-fight. REPRO/regression:
+test('REPRO: a fight that drifts out from the spot (hero and boss together, up to 15 m) never trips the leash; on main (leash 5) it tripped past 5 m', () => {
+  const s = list()[0], OLD = 5, rows = [];
+  let firstOld = null;
+  for (let d = 0; d <= 15; d += 0.5) {
+    const hero = { x: s.x, z: s.z + d }, boss = { x: s.x, z: s.z + Math.max(0, d - 1.5) };   // the boss on the hero, 1.5 m behind him
+    if (firstOld === null && dist(s, hero) > OLD) firstOld = d;
+    rows.push(`${d} m: hero-measured at 5 m ${dist(s, hero) > OLD}, boss-measured at ${s.leash} m ${leashed(s, boss)}`);
+    assert.equal(leashed(s, boss), false, `a fight ${d} m from the spot must not reset the boss (leash ${s.leash})`);
+  }
+  assert.equal(firstOld, 5.5, 'on main the hero-measured 5 m leash reset the fight from 5.5 m out');
+  console.log(rows.join('\n'));
+});
+
+test('a kited boss gives up past the leash; the neighbours keep their own (no chaining)', () => {
+  const s = list(), kited = { x: s[0].x, z: s[0].z + s[0].leash + 0.5 };
+  assert.equal(leashed(s[0], kited), true);
+  assert.equal(leashed(s[1], kited), dist(s[1], kited) > s[1].leash, 'each spot measures its own boss against its own row');
+});
+
+test('validateSpots refuses a leash shorter than the aggro plus the margin', () => {
+  const ok = spotsFor(ZONE), short = structuredClone(ok);
+  assert.ok(ok.every((s) => s.leash >= s.aggro + WORLD.leashMargin));
+  short[1].leash = short[1].aggro + WORLD.leashMargin - 0.1;
+  assert.throws(() => validateSpots(short, start(), wall()), /leash .* shorter than its aggro/);
+  assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, leashMargin: 99 }), /leashMargin/);
+  assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, leashMargin: ok[0].leash }), /leash .* shorter than its aggro/, 'a bigger margin row breaks loudly instead of silently resetting fights');
 });
 
 test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for the aggro, the others drawn as copies, the old single-spawn timer is gone', () => {
@@ -162,7 +188,8 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');   // code with the trailing // comments stripped
   assert.match(live, /setPlayScale\([^;]*\); setLateNotice\(true\); setStab\(true\); setStanceRows\(true\);/, 'the era flags are live code in fresh(), not swallowed by a comment');
   assert.match(main, /spawns = kill\(spawns, current\)/);
-  assert.match(main, /leashed\(spawns\[current\]!, hero(, openerLift)?\)/);
+  assert.match(main, /leashed\(spawns\[current\]!, practice\.enemy(, openerLift)?\)/, 'the leash measures the boss, not the hero');
+  assert.match(main, /dropped\(spawns, alive\(\), \(i\) => attackers\.find\(\(a\) => a\.index === i\)!\.practice\.enemy\)/);
   assert.doesNotMatch(main, /respawnDue|sinceKill/);
   assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number; id\?: string; spawn\?: SpawnRef \}\[\]\)/);
   assert.match(scene, /snapshotRig\(opponent, false\)/);
