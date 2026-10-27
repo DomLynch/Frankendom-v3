@@ -13,14 +13,14 @@ import SERVER_RAW from '../../data/zone-server-rules.json' with { type: 'json' }
 import CLIENT_RAW from '../../data/zone-client.json' with { type: 'json' };
 import { parseRules, weaponCaps, type Rules } from '../server-model/zone-model.ts';
 
-export const ACT = { lost: 'lost', reengage: 'reengage', dead: 'dead', backoff: 'backoff', stop: 'stop', block: 'block' } as const;
+export const ACT = { lost: 'lost', reengage: 'reengage', dead: 'dead', backoff: 'backoff', wait: 'wait', stop: 'stop', block: 'block' } as const;
 export type Action = (typeof ACT)[keyof typeof ACT];
 export const ACTIONS: readonly Action[] = Object.values(ACT);
 export const PHASE = { idle: 'idle', engaging: 'engaging', engaged: 'engaged', dead: 'dead', off: 'off' } as const;
 export type Phase = (typeof PHASE)[keyof typeof PHASE];
 
 export type ClientRows = {
-  query: string; path: string;
+  query: string; path: string; hosts: string[];
   routes: { engage: string; touch: string; hits: string; state: string; kill: string };
   timing: { tickMs: number; flushMs: number; stateMs: number; touchMs: number; timeoutMs: number; engageRetryMs: number };
   sim: { hit: string; heroSide: number; foeSide: number };
@@ -43,6 +43,7 @@ export function parseClientRows(json: unknown, server: Rules): ClientRows {
   assert(r && typeof r === 'object', 'zone-client: not an object');
   assert(/^[a-z]+$/.test(r.query), 'zone-client.query: one lowercase word');
   assert(/^\/[a-z0-9/_-]*$/.test(r.path), 'zone-client.path: a path from /');
+  assert(Array.isArray(r.hosts) && r.hosts.every((h) => typeof h === 'string' && /^[a-z0-9.-]+(:[0-9]+)?$/.test(h)), 'zone-client.hosts: a list of host[:port] names in lowercase');
   for (const [k, v] of Object.entries(r.routes)) assert(/^\/[a-z0-9_-]+$/.test(v), `zone-client.routes.${k}: a path from /`);
   for (const [k, v] of Object.entries(r.timing)) assert(positive(v), `zone-client.timing.${k}: a positive number`);
   assert(Number.isInteger(r.sim.heroSide) && Number.isInteger(r.sim.foeSide) && r.sim.heroSide !== r.sim.foeSide, 'zone-client.sim: two different integer sides');
@@ -193,6 +194,7 @@ export function createSharedHp(o: Options): SharedHp {
   const run: Record<Action, (now: number, c: Ctx) => void> = {
     lost: () => {},
     backoff: (now) => fail(now),
+    wait: (now) => { backoffUntil = Math.max(backoffUntil, now + rows.backoff.baseMs); },   // a server answer, not a failure: nothing counts toward stale
     reengage: (now, c) => { token = null; pending.clear(); engageAt = now + (c.delayMs ?? T.engageRetryMs); if (phase === PHASE.engaged) setPhase(PHASE.idle); },
     dead: (now, c) => goDead(now, c.respawnAt),
     stop: () => { pending.clear(); setPhase(PHASE.off); },

@@ -6,14 +6,15 @@
 //   no answer / aborted         -> rejects { kind: offline } or { kind: timeout }
 import type { ClientRows, Transport, TransportError } from './shared-hp-client.ts';
 
-export type Fetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal; credentials: 'include' }) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+export type Fetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal; credentials: 'include' | 'same-origin' }) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
-export function httpTransport(o: { base: string; rows: ClientRows; fetch: Fetch }): Transport {
+/** `credentials`: 'same-origin' (the default) sends cookies only to this page's own host; 'include' is for an allow-listed cross-origin writer (the chunk decides). */
+export function httpTransport(o: { base: string; rows: ClientRows; fetch: Fetch; credentials?: 'include' | 'same-origin' }): Transport {
   const base = o.base.replace(/\/+$/, ''), kinds = { offline: 'offline', timeout: 'timeout', status: 'status' };
   async function post(route: string, body: unknown): Promise<any> {
     let res;
     try {
-      res = await o.fetch(base + route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(o.rows.timing.timeoutMs), credentials: 'include' });
+      res = await o.fetch(base + route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(o.rows.timing.timeoutMs), credentials: o.credentials ?? 'same-origin' });
     } catch (err) {
       const e: TransportError = { kind: /timeout|abort/i.test(String((err as { name?: unknown })?.name)) ? kinds.timeout : kinds.offline };
       throw e;

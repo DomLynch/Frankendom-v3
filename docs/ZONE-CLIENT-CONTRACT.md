@@ -16,7 +16,7 @@ The phone never talks to the database, never sends an account id, never sends hp
 
 ## 2. The five routes (phone to writer)
 
-JSON in, JSON out, POST, one base URL (`?sharedhp=1` = this page's own host at `data/zone-client.json` `path` = `/zone`; or `?sharedhp=https://host/path`). Routes are rows (`routes`): `/engage`, `/touch`, `/hits`, `/state`, `/kill`. Credentials ride the writer's own session (cookie or bearer; not designed here: V3 has no accounts table yet, see section 8). A refusal is DATA: the body has `refused` and the HTTP status is the row's status (`dead` 409, `too-many` 429, `moved` 409, `weapon` 422, `token` 409, `mismatch` 409); the client reads the body whatever the status. Any other non-2xx must carry `{error: <SQLSTATE or O-code>, message}` when a SQL function raised, so the client can class it (section 5).
+JSON in, JSON out, POST, one base URL (`?sharedhp=1` = this page's own host at `data/zone-client.json` `path` = `/zone`; or `?sharedhp=https://host/path`, accepted ONLY when that host is this page's own host or is listed in the `hosts` row of `data/zone-client.json`, default none; a link cannot aim the fetch at an arbitrary host. Cookies are sent `same-origin`, and `include` only for a listed cross-origin host). Routes are rows (`routes`): `/engage`, `/touch`, `/hits`, `/state`, `/kill`. Credentials ride the writer's own session (cookie or bearer; not designed here: V3 has no accounts table yet, see section 8). A refusal is DATA: the body has `refused` and the HTTP status is the row's status (`dead` 409, `too-many` 429, `moved` 409, `weapon` 422, `token` 409, `mismatch` 409); the client reads the body whatever the status. Any other non-2xx must carry `{error: <SQLSTATE or O-code>, message}` when a SQL function raised, so the client can class it (section 5).
 
 | Route | Phone sends | Writer calls | Answer (exactly the SQL's jsonb, minus what the phone must not see) |
 |---|---|---|---|
@@ -74,14 +74,14 @@ Gap (honest, owed): the sim has 13 weapon ids (`longsword, trident, cleaver, est
 
 ## 5. Error handling, by CLASS (rows `refusals`, `sqlClasses`, `transportClasses`, `fallback`)
 
-The PR #89 review: the writer treats ANY error in a result slot as a lost row (40P01 included), never assumes a batch id can be resent, and handles `z01` (SQL `23502`, model `O0002`) and the duplicate token (SQL `23505`, the model overwrites) by CLASS, not by one exact code. A code is matched by PREFIX against the rows in order, first row wins; nothing matched is the fallback row (`lost`). Actions are a closed set: `lost` (this row's damage is gone), `reengage` (drop the token, engage again after `delayMs` or `timing.engageRetryMs`), `dead`, `backoff` (every channel waits), `stop` (stop sharing this boss), `block` (never claim this weapon again).
+The PR #89 review: the writer treats ANY error in a result slot as a lost row (40P01 included), never assumes a batch id can be resent, and handles `z01` (SQL `23502`, model `O0002`) and the duplicate token (SQL `23505`, the model overwrites) by CLASS, not by one exact code. A code is matched by PREFIX against the rows in order, first row wins; nothing matched is the fallback row (`lost`). Actions are a closed set: `lost` (this row's damage is gone), `reengage` (drop the token, engage again after `delayMs` or `timing.engageRetryMs`), `dead`, `backoff` (every channel waits; a failure, counts toward stale), `wait` (every channel waits, not a failure), `stop` (stop sharing this boss), `block` (never claim this weapon again).
 
 Where a code appears: a slot's `error` in `/hits`; the body `error` of a failed `/touch`, `/kill`, `/engage`, `/state`.
 
 | Class | Codes (prefix) | Cause | Action |
 |---|---|---|---|
 | `token` | `O0009` | token unknown, used or expired | `reengage` |
-| `unloaded` | `O0010` | the rows were never loaded into `zone_config` | `backoff` (and the row is lost) |
+| `unloaded` | `O0010` | the rows were never loaded into `zone_config` | `wait` (the row is lost; every channel waits `backoff.baseMs`; a server ANSWER, so it never counts toward a stale bar) |
 | `privilege` | `42501`, `42883` | a function not granted to this role / not there (the both-writer-roles trap) | `stop` |
 | `input` | `O0002`, `22`, `23502`, `23514`, `42` | bad shape: token/batch id pattern, `z01:` instance (`23502` on the generated zone column), a check constraint | `stop` (a client bug; retrying cannot help) |
 | `conflict` | `23505` | duplicate token (the writer minted a colliding one) | `reengage` (a new token) |

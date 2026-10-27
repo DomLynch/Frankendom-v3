@@ -63,7 +63,7 @@ test('parseClientRows refuses an unknown action, a missing refusal row, a bad ba
   bad((r) => { r.transportClasses[0].kinds = []; r.transportClasses[0].status = []; }, /kind or a status/);
   bad((r) => { r.fallback.sql = 'resend'; }, /unknown action/);
   bad((r) => { r.backoff.maxMs = 1; }, /maxMs at least baseMs/);
-  assert.equal(ACTIONS.length, 6);
+  assert.equal(ACTIONS.length, 7);
 });
 
 test('every refusal and every pay-relevant error class of the contract has a row, and each row names a known action', () => {
@@ -532,8 +532,49 @@ test('the flag ?sharedhp= is OFF by default: no flag, 0, off or a malformed valu
     assert.equal(touched, 0);
   }
   assert.equal(sharedHpUrlFor('?sharedhp=1', loc), `https://play.example${ROWS.path}`);
-  assert.equal(sharedHpUrlFor('?sharedhp=https://zone.example:8443/zone/', loc), 'https://zone.example:8443/zone');
-  assert.equal(sharedHpUrlFor('?a=b&sharedhp=http://localhost:8892', loc), 'http://localhost:8892');
+  assert.equal(sharedHpUrlFor('?sharedhp=https://play.example/zone/', loc), 'https://play.example/zone', 'this page\'s own host');
+  assert.equal(sharedHpUrlFor('?a=b&sharedhp=http://PLAY.example:80', loc), null, 'a different port is a different host');
+});
+
+test('?sharedhp=<url> cannot aim the fetch at an arbitrary host: only this page\'s own host or a host in data/zone-client.json hosts (default none); credentials follow', async () => {
+  const loc = { protocol: 'https:', host: 'play.example' };
+  assert.deepEqual(ROWS.hosts, [], 'the default is same-origin only');
+  for (const s of ['?sharedhp=https://evil.example/zone', '?sharedhp=https://play.example@evil.example/zone', '?sharedhp=https://evil.example%2Fplay.example', '?sharedhp=http://localhost:8892', '?sharedhp=https://zone.example:8443/zone/']) assert.equal(sharedHpUrlFor(s, loc), null, s);
+  const seen = [];
+  const mk = (search) => startSharedHp({ search, location: loc, now: () => 0, session: 'sess', every: () => () => {}, fetch: async (u, init) => { seen.push({ u, c: init.credentials }); return { ok: true, status: 200, json: async () => ({ spawns: [] }) }; } });
+  const own = mk('?sharedhp=1');
+  await own.create({ instance: INSTANCE, layer: () => 1 }).start(0).catch(() => {});
+  assert.equal(seen.at(-1).c, 'same-origin');
+  ROWS.hosts.push('zone.example:8443');
+  try {
+    assert.equal(sharedHpUrlFor('?sharedhp=https://zone.example:8443/zone/', loc), 'https://zone.example:8443/zone');
+    const far = mk('?sharedhp=https://zone.example:8443/zone');
+    await far.create({ instance: INSTANCE, layer: () => 1 }).start(0).catch(() => {});
+    assert.equal(seen.at(-1).c, 'include', 'cookies go cross-origin only to a host the rows name');
+    assert.equal(seen.at(-1).u.startsWith('https://zone.example:8443/zone'), true);
+  } finally { ROWS.hosts.pop(); }
+  assert.deepEqual(ROWS.hosts, []);
+  assert.throws(() => parseClientRows({ ...clone(RAW), hosts: ['Evil.Example/x'] }, SERVER), /hosts/);
+});
+
+test('the unloaded class (O0010) is a server ANSWER: every channel waits its row\'s time, the bar is never marked stale, and the answer still counts as a live line', async () => {
+  const f = fake({ hits: (q) => ({ replayed: false, results: [{ token: q.rows[0].token, error: 'O0010', message: 'zone rules not loaded' }] }) });
+  const { c } = await up(f);
+  let now = 0;
+  for (let i = 0; i < ROWS.backoff.offlineAfter * 3; i++) { c.hit(ev(5)); await c.tick(now); now += ROWS.backoff.maxMs; }
+  assert.equal(c.counters().lost >= ROWS.backoff.offlineAfter, true);
+  assert.equal(c.bar().stale, false);
+  assert.equal(shownHealth({ hp: 1, max: 2 }, c.bar()).shared, true);
+  c.hit(ev(5)); await c.tick(now); const n = f.log.hits.length;
+  c.hit(ev(5)); await c.tick(now + ROWS.backoff.baseMs - 1);
+  assert.equal(f.log.hits.length, n, 'inside baseMs after the answer: no call');
+  assert.equal(ROWS.sqlClasses.find((x) => x.id === 'unloaded').action, ACT.wait);
+});
+
+test('the stub-boundary patterns: src/zones/x, src/zones, src/zone.ts and src/zone-x.ts are forbidden, V3\'s src/zone/x is allowed', async () => {
+  const { forbidden } = await import('../scripts/stub-patterns.mjs');
+  for (const t of ['src/zones/x', 'src/zones', 'src/zones.ts', 'src/zone.ts', 'src/zone-x.ts', 'src/net/x', 'src/legends/y', 'src/pit/z', 'src/core/duel']) assert.equal(forbidden(t), true, t);
+  for (const t of ['src/zone/x', 'src/zone/shared-hp-client', 'src/zone', 'src/zonesish', 'src/core/registry.ts', 'src/fight/zone-loop']) assert.equal(forbidden(t), false, t);
 });
 
 test('the chunk handle is inert until used: it opens no connection by itself, creates clients that one timer drives, and stop() stops them', async () => {

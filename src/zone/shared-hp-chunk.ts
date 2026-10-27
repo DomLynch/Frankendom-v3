@@ -13,8 +13,12 @@ export function sharedHpUrlFor(search: string, loc: { protocol: string; host: st
   const v = new URLSearchParams(search).get(ROWS.query);
   if (v === null) return null;
   if (/^1$/.test(v)) return `${loc.protocol}//${loc.host}${ROWS.path}`;
-  return /^https?:\/\/[^\s/]+(\/\S*)?$/.test(v) ? v.replace(/\/+$/, '') : null;
+  const m = /^https?:\/\/([^\s/@]+)(\/\S*)?$/.exec(v);   // no userinfo: a host with an @ is refused
+  if (!m) return null;
+  const host = m[1]!.toLowerCase();
+  return host === loc.host.toLowerCase() || ROWS.hosts.includes(host) ? v.replace(/\/+$/, '') : null;   // this page's own host, or one the rows name; any other host is off
 }
+const sameHost = (url: string, loc: { host: string }): boolean => new URL(url).host.toLowerCase() === loc.host.toLowerCase();
 
 export type SharedHpHandle = {
   url: string;
@@ -29,7 +33,7 @@ export function startSharedHp(o: { search: string; location: { protocol: string;
   if (!url) return null;
   const now = o.now ?? (() => performance.now());
   const session = o.session ?? globalThis.crypto?.randomUUID?.() ?? String(now());
-  const transport = httpTransport({ base: url, rows: ROWS, fetch: o.fetch ?? ((u, init) => globalThis.fetch(u, init)) });
+  const transport = httpTransport({ base: url, rows: ROWS, credentials: sameHost(url, o.location) ? 'same-origin' : 'include', fetch: o.fetch ?? ((u, init) => globalThis.fetch(u, init)) });
   const list = new Set<SharedHp>();
   const every = o.every ?? ((fn, ms) => { const id = setInterval(fn, ms); return () => clearInterval(id); });
   const stopTimer = every(() => { const t = now(); for (const c of list) void c.tick(t).catch(() => {}); }, ROWS.timing.tickMs);
