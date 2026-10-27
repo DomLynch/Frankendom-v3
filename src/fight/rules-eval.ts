@@ -36,12 +36,13 @@ export function variantFor(rows: RuleRows, search: string): string | null {
   return q !== null && Object.prototype.hasOwnProperty.call(rows.variants, q) ? q : null;
 }
 
-/** The package's rules with a variant's rows laid over them (a copy: the package's own object is never touched). Only `strength_scale` keys the variant names are replaced. */
+/** The package's rules with a variant's rows laid over them (a copy: the package's own object is never touched). Only the `strength_scale` and `melee_speed_gate` keys the variant names are replaced. */
 export function applyVariant(rules: PkgRules, rows: RuleRows, name: string | null): PkgRules {
   if (!name) return rules;
-  const v = (rows.variants as Record<string, { strength_scale?: Record<string, number> }>)[name];
-  const copy = JSON.parse(JSON.stringify(rules)) as PkgRules;
+  const v = (rows.variants as Record<string, { strength_scale?: Record<string, number>; melee_speed_gate?: Record<string, number> }>)[name];
+  const copy = JSON.parse(JSON.stringify(rules)) as PkgRules & { melee_speed_gate: Record<string, unknown> };
   copy.strength_scale = { ...copy.strength_scale, ...(v?.strength_scale ?? {}) };
+  copy.melee_speed_gate = { ...copy.melee_speed_gate, ...(v?.melee_speed_gate ?? {}) };
   return copy;
 }
 

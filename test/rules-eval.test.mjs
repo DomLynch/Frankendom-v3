@@ -48,9 +48,16 @@ test('?rules=m4b is M4 with only the wider-sample rungs (Strategy 2026-10-27); m
   const b = applyVariant(pkgRules, ROWS, 'm4b');
   assert.deepEqual([b.strength_scale.rung_hit, b.strength_scale.rung_stick, b.strength_scale.rung_cut], [7.7, 14.5, 23.2]);
   assert.equal(JSON.stringify(pkgRules), before, 'the package\'s own rows are never mutated');
-  // everything but those three rungs is the package's
-  const rest = (r) => JSON.stringify({ ...r, strength_scale: { ...r.strength_scale, rung_hit: 0, rung_stick: 0, rung_cut: 0 } });
+  // Strategy 2026-10-27: the speed gate moves with the hit rung (7.7), so the A/B's hit rung is real
+  assert.equal(b.melee_speed_gate.min_speed_m_s, 7.7);
+  assert.equal(pkgRules.melee_speed_gate.min_speed_m_s, 8.0, 'm4 keeps its gate');
+  // everything but those three rungs and the gate is the package's
+  const rest = (r) => JSON.stringify({ ...r, strength_scale: { ...r.strength_scale, rung_hit: 0, rung_stick: 0, rung_cut: 0 }, melee_speed_gate: { ...r.melee_speed_gate, min_speed_m_s: 0 } });
   assert.equal(rest(b), rest(pkgRules));
+  // limbs reads the evaluator's part HP from window.__v3Rules whatever the rules query says, so m4b (an evaluator is built) feeds it like m4
+  const limbsSrc = readFileSync(new URL('../src/fight/feel-limbs.ts', import.meta.url), 'utf8');
+  const harness = limbsSrc.slice(limbsSrc.indexOf('function harnessFractions'), limbsSrc.indexOf('const hv = '));
+  assert.ok(harness.includes('__v3Rules') && !harness.includes('URLSearchParams') && !harness.includes('location'), 'harnessFractions does not look at the rules query');
   assert.deepEqual([pkgRules.strength_scale.rung_hit, pkgRules.strength_scale.rung_stick, pkgRules.strength_scale.rung_cut], [8.0, 16.5, 24.3], 'm4 keeps the pins');
   assert.ok(b.strength_scale.rung_hit < b.strength_scale.rung_stick && b.strength_scale.rung_stick < b.strength_scale.rung_cut);
 });
