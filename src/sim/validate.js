@@ -84,6 +84,107 @@ export function validateFile(name, json) {
   return errors;
 }
 
+// ---- zone rows (data/zones/*.json; read by src/zone/zone-rows.ts). Closed key sets and a closed range for every number. ----------------------
+// ZONE_RANGES is the one place the allowed spans live: [min, max] inclusive. The test pins them against the shipped row.
+export const ZONE_RANGES = {
+  band: [1, 100], facing: [-7, 7], downSeconds: [0.1, 60], respawnSeconds: [1, 3600],
+  aggro: [0.5, 100], leash: [0.5, 200], roam: [0, 50], campSize: [1, 16], coord: [-100000, 100000],
+};
+const ZONE_ID = /^[a-z0-9][a-z0-9-]*$/;   // a string id; "z01:" and a bare number are refused (V1 migration 20261022110000: zone 0 was once stored as zone 1)
+const ZONE_KEYS = {
+  row: ['about', 'id', 'name', 'alias', 'band', 'pvp', 'respawn', 'areas', 'spawns'],
+  respawn: ['x', 'z', 'facing', 'downSeconds', 'died'],
+  area: ['id', 'name', 'shape', 'min', 'max', 'pvp', 'spawnsAllowed'],
+  spawn: ['id', 'kind', 'position', 'respawnSeconds', 'roster', 'behaviour'],
+  behaviour: ['aggro', 'leash', 'roam', 'campSize'],
+  index: ['about', 'default', 'zones'],
+};
+
+/** One zone row: a list of error strings (empty = valid). `kinds`: when given, every spawn `kind` must be one of them (the opponent profile ids). */
+export function validateZone(row, kinds) {
+  const e = [];
+  const at = (path, msg) => e.push(`zone.${path}: ${msg}`);
+  const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  const num = (path, v, [lo, hi]) => { if (!Number.isFinite(v) || v < lo || v > hi) at(path, `must be a number in [${lo}, ${hi}]`); };
+  const str = (path, v) => { if (typeof v !== 'string' || !v.trim()) at(path, 'must be a non-empty string'); };
+  const keys = (path, obj, allowed) => { for (const k of Object.keys(obj)) if (!allowed.includes(k)) at(`${path}.${k}`, 'unknown key'); for (const k of allowed) if (k !== 'about' && !(k in obj)) at(`${path}.${k}`, 'missing'); };
+  const pair = (path, v, range) => { if (!Array.isArray(v) || v.length !== 2) at(path, 'must be [a, b]'); else { num(`${path}[0]`, v[0], range); num(`${path}[1]`, v[1], range); } };
+  if (!isObj(row)) return ['zone: must be an object'];
+  keys('row', row, ZONE_KEYS.row);
+  if (typeof row.id !== 'string' || !ZONE_ID.test(row.id)) at('id', 'must be a lowercase string id (a number or a "z01:" form is refused)');
+  str('name', row.name);
+  if (typeof row.alias !== 'string' || !/^[a-z][a-z0-9-]*$/.test(row.alias)) at('alias', 'must be a lowercase word');
+  pair('band', row.band, ZONE_RANGES.band);
+  if (Array.isArray(row.band) && row.band[0] > row.band[1]) at('band', 'min is above max');
+  if (!['on', 'off'].includes(row.pvp)) at('pvp', "must be 'on' or 'off'");
+  if (!isObj(row.respawn)) at('respawn', 'must be an object');
+  else {
+    keys('respawn', row.respawn, ZONE_KEYS.respawn);
+    num('respawn.x', row.respawn.x, ZONE_RANGES.coord); num('respawn.z', row.respawn.z, ZONE_RANGES.coord);
+    num('respawn.facing', row.respawn.facing, ZONE_RANGES.facing); num('respawn.downSeconds', row.respawn.downSeconds, ZONE_RANGES.downSeconds);
+    str('respawn.died', row.respawn.died);
+  }
+  const inside = (a, x, z) => x >= a.min[0] && x <= a.max[0] && z >= a.min[1] && z <= a.max[1];
+  const areas = Array.isArray(row.areas) ? row.areas : (at('areas', 'must be an array'), []);
+  const seenArea = new Set();
+  areas.forEach((a, i) => {
+    const p = `areas[${i}]`;
+    if (!isObj(a)) return at(p, 'must be an object');
+    keys(p, a, ZONE_KEYS.area);
+    str(`${p}.id`, a.id); str(`${p}.name`, a.name);
+    if (seenArea.has(a.id)) at(`${p}.id`, `duplicate id '${a.id}'`); seenArea.add(a.id);
+    if (a.shape !== 'rect') at(`${p}.shape`, "must be 'rect'");
+    pair(`${p}.min`, a.min, ZONE_RANGES.coord); pair(`${p}.max`, a.max, ZONE_RANGES.coord);
+    if (Array.isArray(a.min) && Array.isArray(a.max) && (a.min[0] >= a.max[0] || a.min[1] >= a.max[1])) at(p, 'min must be below max on both axes');
+    if (!['on', 'off'].includes(a.pvp)) at(`${p}.pvp`, "must be 'on' or 'off'");
+    if (typeof a.spawnsAllowed !== 'boolean') at(`${p}.spawnsAllowed`, 'must be a boolean');
+  });
+  const spawns = Array.isArray(row.spawns) ? row.spawns : (at('spawns', 'must be an array'), []);
+  if (!spawns.length) at('spawns', 'needs at least one spawn row');
+  const seenSpawn = new Set();
+  spawns.forEach((s, i) => {
+    const p = `spawns[${i}]`;
+    if (!isObj(s)) return at(p, 'must be an object');
+    keys(p, s, ZONE_KEYS.spawn);
+    str(`${p}.id`, s.id); str(`${p}.kind`, s.kind);
+    if (seenSpawn.has(s.id)) at(`${p}.id`, `duplicate id '${s.id}'`); seenSpawn.add(s.id);
+    if (kinds && !kinds.includes(s.kind)) at(`${p}.kind`, `'${s.kind}' is not an opponent profile id`);
+    if (!isObj(s.position)) at(`${p}.position`, 'must be {x, z}');
+    else {
+      keys(`${p}.position`, s.position, ['x', 'z']);
+      num(`${p}.position.x`, s.position.x, ZONE_RANGES.coord); num(`${p}.position.z`, s.position.z, ZONE_RANGES.coord);
+      for (const a of areas) if (a.spawnsAllowed === false && Array.isArray(a.min) && Array.isArray(a.max) && inside(a, s.position.x, s.position.z)) at(`${p}.position`, `is inside area '${a.id}', which allows no spawns`);
+    }
+    num(`${p}.respawnSeconds`, s.respawnSeconds, ZONE_RANGES.respawnSeconds);
+    if (typeof s.roster !== 'boolean') at(`${p}.roster`, 'must be a boolean');
+    if (!isObj(s.behaviour)) at(`${p}.behaviour`, 'must be an object');
+    else {
+      const b = s.behaviour;
+      keys(`${p}.behaviour`, b, ZONE_KEYS.behaviour);
+      num(`${p}.behaviour.aggro`, b.aggro, ZONE_RANGES.aggro); num(`${p}.behaviour.leash`, b.leash, ZONE_RANGES.leash); num(`${p}.behaviour.roam`, b.roam, ZONE_RANGES.roam);
+      if (Number.isFinite(b.aggro) && Number.isFinite(b.leash) && b.leash < b.aggro) at(`${p}.behaviour.leash`, 'is shorter than aggro');
+      pair(`${p}.behaviour.campSize`, b.campSize, ZONE_RANGES.campSize);
+      if (Array.isArray(b.campSize) && (!Number.isInteger(b.campSize[0]) || !Number.isInteger(b.campSize[1]) || b.campSize[0] > b.campSize[1])) at(`${p}.behaviour.campSize`, 'must be whole numbers, min <= max');
+    }
+  });
+  banned(row, 'zone', e);
+  return e;
+}
+
+/** data/zones/index.json against the loaded rows (`rows`: id -> row): the default is a listed id, every listed id has a row whose own id matches. */
+export function validateZoneIndex(index, rows) {
+  const e = [];
+  for (const k of Object.keys(index ?? {})) if (!ZONE_KEYS.index.includes(k)) e.push(`zones.index.${k}: unknown key`);
+  if (typeof index?.default !== 'string' || !ZONE_ID.test(index.default)) e.push('zones.index.default: must be a string zone id');
+  if (!Array.isArray(index?.zones) || !index.zones.length) e.push('zones.index.zones: needs at least one id');
+  else {
+    if (!index.zones.includes(index.default)) e.push(`zones.index.default '${index.default}' is not in zones`);
+    for (const id of index.zones) if (rows[id]?.id !== id) e.push(`zones.index: '${id}' has no row with that id`);
+    for (const id of Object.keys(rows)) if (!index.zones.includes(id)) e.push(`zones.index: row '${id}' is not listed`);
+  }
+  return e;
+}
+
 // all files together
 export function validateAll(files) {
   return Object.entries(files).flatMap(([name, json]) => validateFile(name, json));

@@ -10,6 +10,7 @@
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs",
     "check:stubs": "node scripts/check-stubs.mjs",
+    "check:as-data": "node scripts/as-data/check.mjs",
     "test": "node --test \"test/**/*.test.mjs\"",
     "gate0": "node --test test/gate0/gate0.test.mjs",
     "gate0:table": "node scripts/gate0-table.mjs",
