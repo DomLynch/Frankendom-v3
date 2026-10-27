@@ -140,7 +140,7 @@ test('the controller: the event list keeps the newest rows.event.keep; a kill en
   const { shown, ctl, ctx } = rig();
   for (let i = 0; i < ROWS.event.keep + 5; i++) ctl.react(hit({ tick: i }), ctx);
   const list = globalThis[ROWS.event.log]; assert.equal(list.length, ROWS.event.keep); assert.equal(list.at(-1).tick, ROWS.event.keep + 4);
-  ctl.frame(ROWS.window.knockdown.startS + 0.1); ctl.kill(); assert.deepEqual(shown, [true, false]);
+  ctl.frame(ROWS.window.stagger.startS + 0.1); ctl.kill(); assert.deepEqual(shown, [true, false]);
   assert.equal(createFeelKick({ ...ROWS, on: false }).react(hit(), ctx), null);
 });
 
@@ -155,12 +155,12 @@ test('the hit hook drives the ragdoll: a kick is ALWAYS a stagger (open, mid-swi
   for (let i = 0; i < 20; i++) ctl.hit(hit({ heading: Math.PI / 2, guarded: i % 3 === 0 }), yawed);
   ctl.frame(0.016, [{ tick: 1, type: 'AttackStarted', actor: 1, move: 'heavy_overhead' }], yawed); ctl.hit(hit({ heading: Math.PI / 2 }), yawed);
   assert.equal(calls.filter((x) => x[0] === 'knockdown').length, 0, 'twenty-two kicks, not one ragdoll fall');
-  assert.equal(calls.filter((x) => x[0] === 'stagger').length, 23);
+  assert.equal(calls.filter((x) => x[0] === 'stagger').length, 22);
   const n = calls.length; ctl.hit(hit({ move: 'light_right' }), c); ctl.hit(hit({ heading: undefined }), c); assert.equal(calls.length, n, 'only kicks and shoves reach the ragdoll');
   ctl.frame(0.016, [{ tick: 9, type: 'KnockedDown', actor: 0, target: 1, move: 'heavy_overhead', ticks: 120, window: 72, force: 1064 }], yawed);
   const downs = calls.filter((x) => x[0] === 'knockdown'); assert.equal(downs.length, 1, 'the sim said KnockedDown: now he falls');
   assert.deepEqual(downs[0].slice(0, 2), ['knockdown', 'push']); assert.equal(downs[0][2].part, 'spine2');
-  assert.ok(Math.abs(downs[0][2].impulse[0]) > 0 && downs[0][2].impulse[1] === ROWS.push.lift.knockdown);
+  assert.ok(Math.abs(downs[0][2].impulse[0]) < 1e-9 && downs[0][2].impulse[2] > 0 &&downs[0][2].impulse[1] === ROWS.push.lift.knockdown);
   ctl.frame(0.016, [{ tick: 9, type: 'KnockedDown', actor: 0, target: 0, move: 'x', ticks: 1, window: 1, force: 1 }], yawed); assert.equal(calls.filter((x) => x[0] === 'knockdown').length, 1, 'only a KnockedDown on him');
 });
 

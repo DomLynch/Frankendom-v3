@@ -118,18 +118,18 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
       return p;
     },
     frame(dt: number, events: readonly CombatEvent[] = [], ctx?: FeelCtx) {
-      if (down && ctx) {
-        if (ctx.rd.state === 'knockdown') lying(ctx, 1);
-        else { down = false; getUp = rows.getUpS; }
-      }
-      if (!down && getUp > 0 && ctx) { getUp -= dt; lying(ctx, Math.max(0, getUp / rows.getUpS)); }
-      track.swing = Math.max(0, track.swing - dt); track.recover = Math.max(0, track.recover - dt);
       if (ctx) for (const e of events) {   // the sim ordered a fall (a clean heavy, an injured leg): only now does the ragdoll go down
         if (e.type === 'KnockedDown' && e.target === 1 && rows.on) {
           const f = fallPush(rows, (e as { force?: number }).force ?? 0, lastYaw);
           ctx.rd.knockdown('push', { part: f.part, impulse: f.impulse }); down = true; getUp = -1; since = 0; win = rows.window.knockdown; debug.windowOpen = false;
         }
       }
+      if (down && ctx) {
+        if (ctx.rd.state === 'knockdown') lying(ctx, 1);
+        else { down = false; getUp = rows.getUpS; }
+      }
+      if (!down && getUp > 0 && ctx) { getUp -= dt; lying(ctx, Math.max(0, getUp / rows.getUpS)); }
+      track.swing = Math.max(0, track.swing - dt); track.recover = Math.max(0, track.recover - dt);
       for (const e of events) {   // after this frame's hits were read: the stance for the NEXT kick
         if (e.type === 'AttackStarted' && e.actor === 1) track.swing = rows.track.swingS;
         else if ((e.type === 'AttackMissed' || e.type === 'Hit') && e.actor === 1) track.swing = 0;

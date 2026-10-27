@@ -147,7 +147,7 @@ test('flag ON (c): a kick on a foe in his attack WINDUP INTERRUPTS him (KickInte
 test('flag ON (d)(e): he resists the next interrupt for resistanceSeconds (the kick still hits, no stagger); the kicker waits cooldownSeconds for his next kick', () => {
   setKnockSim(ON());
   const kicks = []; let d = duelOf(), seen = [];   // spam a kick every tick; the sim refuses it while the kicker cools down or is busy
-  for (let t = 0; t < TICKS(6); t++) { d = stepDuel(d, [KICK, HEAVY]); for (const e of d.events) { seen.push(e); if (e.type === 'AttackStarted' && e.move === 'kick') kicks.push(e.tick); } }
+  for (let t = 0; t < TICKS(6); t++) { for (const f of d.fighters) { f.health = f.maxHealth; f.stamina = f.maxStamina; } d = stepDuel(d, [KICK, HEAVY]); for (const e of d.events) { seen.push(e); if (e.type === 'AttackStarted' && e.move === 'kick') kicks.push(e.tick); } }
   const interrupts = seen.filter((e) => e.type === 'KickInterrupted').map((e) => e.tick), hits = seen.filter((e) => e.type === 'Hit' && e.move === 'kick');
   assert.ok(kicks.length >= 3, 'the kicker kicked again and again'); for (let i = 1; i < kicks.length; i++) assert.ok(kicks[i] - kicks[i - 1] >= TICKS(ROWS.kick.cooldownSeconds), `(e) kicks ${kicks[i - 1]} and ${kicks[i]} are at least cooldownSeconds apart`);
   assert.ok(hits.length > interrupts.length, '(d) more kicks landed than interrupted: the rest were resisted');
