@@ -50,13 +50,15 @@ type Chunk = RulesPackage & {
   createThreeRig(three: typeof THREE, rd: Ragdoll, bones: Bones, root: THREE.Object3D, opts?: { bind?: { bones: Bones; root: THREE.Object3D } }): Rig;
   createCutRig(three: typeof THREE, rd: Ragdoll, scene: THREE.Object3D, manifest: unknown, opts?: { rows?: unknown }): CutRig;
   minotaurCutManifest: unknown;   // the manifest of src/assets/minotaur-106.glb (the physics cut GLB)
+  cutManifests?: Record<string, unknown>;   // body stem -> the manifest beside that body's physics cut GLB (a body not listed has no cut data: it dies the plain way)
 };
 /** The package's cut-piece rig (three-cuts.mjs): `update()` shows each cap whose unit is in `rd.cuts`; the pieces are always drawn and the bones carry them. */
 type CutRig = { update(): void; pieces: Record<string, THREE.Mesh>; caps: Record<string, THREE.Mesh> };
 
 /** The opponent row in force on this page, or null: the feature off in the rows, ?physics=v1, or an opponent without a ragdoll. */
-export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: string): OpponentRow | null {
+export function ragdollRowFor(rows: PhysicsRows, search: string, opponentId: string, body?: string): OpponentRow | null {   // body: a held spawn's own body stem (held-body.ts); absent, the body this id draws on the page
   if (!rows.on || new URLSearchParams(search).get(rows.query) === rows.v1) return null;
+  if (body !== undefined) return rows.opponents.find((o) => o.id === opponentId && o.body === body) ?? null;   // a held spawn in another body: only a row fitted to exactly that body (id + body); none = the plain death
   return rows.opponents.find((o) => o.id === opponentId && foeBodyFile(o.id, o.body, true) === o.body) ?? null;   // boss-body row (BOSS-BODIES.md): a ragdoll row is fitted to its own body; another body keeps today's death until it has a measure row
 }
 
@@ -74,6 +76,15 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
   page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
+/** held-body.ts: the ragdoll of a HELD spawn in another body than the page's own (`body`: the data/rig.json files stem the physics rows are keyed by). Null = no data/physics.json opponents row fitted to that id and body: that body dies the plain way. It is not the page's
+ *  ragdoll until the scene mounts it (setHeldRagdoll). Its cost record is `__ragdoll:<body>`, so the page's own is never overwritten. */
+export function heldRagdollFor(search: string, opponentId: string, body: string): FoeRagdoll | null {
+  const foe = ragdollRowFor(PHYSICS, search, opponentId, body);
+  return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
+}
+let heldPlainOnly = false;   // the live foe wears a body other than the page's own: the baked finishers (Opened, Hamstrung, Execution, sever) are prepared on the first body alone, so every kill is the plain death
+/** scene.ts, at a swap of the live foe's body (held-body.ts): the finisher pick (ragdollBody, ragdollFinisher) now reads `ragdoll` (null: that body has none), and `plainOnly` forces the plain death for a body the baked finishers are not prepared on. */
+export function setHeldRagdoll(ragdoll: FoeRagdoll | null, plainOnly: boolean): void { page = ragdoll; heldPlainOnly = plainOnly; }
 /** scene.ts, ?feel=hero (data/physics.json `hero`): the HERO's presentation ragdoll, a second createFoeRagdoll on sim fighter 0 (hit reactions from the same data/feel-hitreact.json rows as the opponent's, the package's
  *  death fall on her killing blow). No cuts, no corpse, no finisher, no rules path. Null without the flag, under ?physics=v1, or with the physics rows off: nothing is created. */
 export function heroRagdollFor(search: string): FoeRagdoll | null {
@@ -91,7 +102,7 @@ export function ragdollFinisher(events?: readonly CombatEvent[]): FinisherId | n
   const local = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   const forced = local ? (globalThis as { __finisherPick?: string }).__finisherPick : undefined;
   // ?rules=m4 cut.precedence: a head-zone killing blow the evaluator cuts is the plain ragdoll death (its cut is the head), not the rotation's finisher; `events` is the frame's (scene.ts) or the step's (main.ts)
-  return forced ?? (page?.skipsFinishers() || (events && page?.takesKill(events)) ? PLAIN_DEATH : null);
+  return forced ?? (heldPlainOnly || page?.skipsFinishers() || (events && page?.takesKill(events)) ? PLAIN_DEATH : null);
 }
 
 /** The part a blow at `location` lands on, and its impulse in the ragdoll's frame (the attacker's facing, `heading`, turned into `frame`). */
@@ -202,7 +213,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const feelCtx = (): FeelCtx => ({ target: side, rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs, blendToward: (share) => poseToward(1, share) });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
-  const cutManifestOf = (c: Chunk): unknown => (foe.body === 'minotaur' ? c.minotaurCutManifest : undefined);   // the cut GLB's manifest for this foe's body (the Minotaur's only so far)
+  const cutManifestOf = (c: Chunk): unknown => c.cutManifests?.[foe.body] ?? (foe.body === 'minotaur' ? c.minotaurCutManifest : undefined);   // the cut GLB's manifest for this foe's body (physics-chunk.ts cutManifests: the Minotaur's only so far); a body without one has no cut data and dies the plain way
   /** Can this body cut `unit`? A visual unit (head_split, belly_open: nothing detaches) only when the cut GLB's manifest carries it (`optional_units`, a file made with --head-split / --belly-open); any other unit as before. */
   const hasUnit = (unit: string): boolean => {
     if (!(VISUAL_UNITS as readonly string[]).includes(unit)) return true;
@@ -302,7 +313,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   type Corpse = { id: string; root: THREE.Object3D; age: number; piecesHidden: boolean; pieces: THREE.Object3D[]; owned: THREE.BufferGeometry[]; slot: number;
     rd?: Ragdoll; rig?: Rig; cutRig?: CutRig; bones?: Bones; anchor?: THREE.Object3D; cutter?: PieceCutter; cues?: CueSet;
     done: Set<string>; gone: Set<THREE.Object3D>; hideAt: { mesh: THREE.Object3D; at: number }[]; dirty: boolean; frozenFor: number };
-  let corpses: Corpse[] = [];
+  let corpses: Corpse[] = [], idleAcc = 0;   // idleAcc: idleFrame's physics clock
   const dropCorpse = (c: Corpse) => {
     c.root.removeFromParent();
     if (c.cues) for (const { el } of c.cues.els) el.remove();
@@ -618,6 +629,11 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
+    idleFrame,
+    /** held-body.ts: corpses this ragdoll still keeps (a parked ragdoll with none can be left alone). */
+    get corpseCount() { return corpses.length; },
+    /** held-body.ts: the live ragdoll is mid-death or mid-skip (not standing): a swap of the live rig waits. */
+    get busy() { return !disabled && !!rd && mode !== 'alive'; },
     /** The zone loop calls this at the foe's respawn (nothing passed): see leaveCorpse above. */
     leaveCorpse,
     /** The sim's decapitation finisher (?ragdoll=finishers): V1's flying head is the picture; the package's cut of the head is made too, so its event and gear are listed. Once. */
@@ -670,16 +686,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     // A physics error never breaks the frame: the ragdoll is off for the rest of the page (the clips alone, today's death) and it is reported once.
     //   showGore: false in blood 'off' (a cut leaves the body whole, as the finisher's head stays on there).
     frame(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null, showGore = true) {
-      if (corpses.length) {   // the corpses left behind age on the page's clock, whatever the live ragdoll is doing
-        const { keep, hide, drop } = ageCorpses(corpses, dt, rows.corpse ?? { keepSeconds: 0, pieceSeconds: 0, max: 0 });   // (no row, no corpses: they would not have been left)
-        for (const c of hide) for (const p of c.pieces) { p.visible = false; c.gone.add(p); }
-        for (const c of drop) dropCorpse(c);
-        corpses = keep; cost.corpses = corpses.length;
-        for (const c of corpses) {   // M8: the pieces a later cut took off go pieceSeconds after THEIR cut; a corpse that kept its ragdoll counts the seconds it has been frozen (its cue waits cut.cue.delayS)
-          if (c.hideAt.length) c.hideAt = c.hideAt.filter((h) => { if (c.age < h.at) return true; h.mesh.visible = false; c.gone.add(h.mesh); return false; });
-          c.frozenFor = c.rd?.state === cutRows.tap.needs ? c.frozenFor + dt : 0;
-        }
-      }
+      ageAll(dt);
       if (disabled) { hideCues(); return; }
       if (warm > 0 && --warm === 0) {   // the warm-up draws (prepareCutArt) are done
         for (const mesh of [...capPool, ...helmetPool]) mesh.visible = false;
@@ -701,6 +708,30 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     },
   };
 
+  /** The corpses left behind age on the page's clock, whatever the live ragdoll is doing (frame), or whichever body the live foe wears (idleFrame). */
+  function ageAll(dt: number) {
+    if (!corpses.length) return;
+    const { keep, hide, drop } = ageCorpses(corpses, dt, rows.corpse ?? { keepSeconds: 0, pieceSeconds: 0, max: 0 });   // (no row, no corpses: they would not have been left)
+    for (const c of hide) for (const p of c.pieces) { p.visible = false; c.gone.add(p); }
+    for (const c of drop) dropCorpse(c);
+    corpses = keep; cost.corpses = corpses.length;
+    for (const c of corpses) {   // M8: the pieces a later cut took off go pieceSeconds after THEIR cut; a corpse that kept its ragdoll counts the seconds it has been frozen (its cue waits cut.cue.delayS)
+      if (c.hideAt.length) c.hideAt = c.hideAt.filter((h) => { if (c.age < h.at) return true; h.mesh.visible = false; c.gone.add(h.mesh); return false; });
+      c.frozenFor = c.rd?.state === cutRows.tap.needs ? c.frozenFor + dt : 0;
+    }
+  }
+  /** held-body.ts: this ragdoll's body is not the live foe's now (the sim holds a spawn in another body). Its live rig is parked, untouched; the corpses it left still age out, fall and show their cut buttons (a cut piece in flight finishes its fall). */
+  function idleFrame(dt: number) {
+    if (!corpses.length) { idleAcc = 0; return; }
+    ageAll(dt);
+    if (disabled || !physics || !corpses.some((c) => c.rd?.awake)) { idleAcc = 0; if (!disabled) updateCues(); return; }
+    try {
+      idleAcc += dt;
+      for (let ticks = 0; idleAcc >= tick && ticks < rows.maxTicksPerFrame; ticks++) { physics.step(tick); idleAcc -= tick; }
+      for (const c of corpses) if (c.rd && c.rig && (c.dirty || c.rd.awake)) { c.rig.applyPose(); c.dirty = c.rd.awake; }
+      updateCues();
+    } catch (error) { disabled = true; armed = false; hideCues(); cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
+  }
   function step(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null) {
       if (!rd || !rig || !physics || !group) return;
       const start = performance.now();

@@ -59,7 +59,19 @@ A zone spawn row (`data/zones/zone1.row.json spawns[]`) may carry an optional `"
 
 `scene.ts` keeps a rig cache keyed by the body's 106 file stem (`bodyAssets`, filled by `characters.ts loadFoeBody`, the first time a spawn of that body stands or attacks) and builds the actor with `buildWarriors(...).spawnBody(asset, weapon)`. A spawn in the live rig's body takes the old paths unchanged (frozen copies, `spawnFoe`). A spawn in another body is drawn standing (`idleFoes`) or attacking (`liveFoes`) from its own rig, and is simply not drawn until that body's file has loaded.
 
-Not covered yet: the spawn the sim HOLDS (the page's one live foe, which carries the ragdoll, cuts and finishers) is always the page's body, so a held spawn with another body draws in the live body until it is handed back to a standing/attacking draw. Mixed bodies are therefore for the standing and attacking bosses; the held duel foe is the next step (it needs the live rig rebuilt per hand-over). A boss body in the repo other than the Minotaur is still the work listed above.
+### The held duel foe wears its own body (PR 2 of "10 different bosses")
+
+The spawn the sim HOLDS (the page's one live foe: ragdoll, cuts, corpses, stagger) now wears its own body too. `main.ts` says each frame which spawn is held (`view.holdBody(spawns[current])`); `scene.ts` hands its body to `src/fight/held-body.ts`, a small cache with no three.js in it:
+
+- Same body as the live rig (every spawn of the shipped zone): nothing happens, no controller is made, nothing is built or fetched.
+- Another body, first time: its file is fetched (the same fetch a standing or attacking spawn of that body would have started, one file once), the live rig is built from it (`spawnBody`, `useClips106`, `sizeBeast`) and its ragdoll made from its own `data/physics.json opponents` row; the sim is untouched and the old body stays on screen until all that is in. Then the live rig is swapped: anchor moved in the foe group, `warriors.opponent` re-pointed, the ragdoll attached (once) and made the page's, taps on its corpses listened for, the far fade re-adopted, the feet the sand reads re-pointed, the frozen idle copies (snapshots of the old body) dropped to be made again.
+- A hand-back, or a hand-over to a body already built, is a cache hit: no build, no fetch, the previous rig and ragdoll are the ones built the first time (the first body's are never thrown away).
+- The swap waits while the live foe is mid-kill (a finish playing, or the ragdoll not standing).
+- Corpses left by a body the live foe has left keep ageing out, falling (a cut piece in flight) and showing their cut buttons (`ragdoll.idleFrame`).
+- Degrade, never throw: a body whose file or wiring fails is dropped and the foe keeps the body it wears; a body with no `physics.json opponents` row (or no `measure` for its rig) has no ragdoll and dies the plain way; a body with a row but no cut GLB/manifest (`physics-chunk.ts cutManifests`) ragdolls without cuts.
+- The baked finishers (Opened, Split Crown, Hamstrung, Execution, the baked sever) are prepared on the page's first body alone, so every kill of a swapped body is the plain death (`ragdoll.ts setHeldRagdoll(…, plainOnly)`); they come back on the swap back.
+
+What each new body needs from Physics (the physics#40 cut-batch row file, once per body): its cut GLB (the body file with `piece_*`/`cap_*` nodes, `docs/CUT-CONTRACT.md`), its `<body>-106.cut.manifest.json` (an import and one line in `physics-chunk.ts cutManifests`), and a `data/physics.json opponents` row `{ id, body, measure: { 106: physics/bodies/<body>-106.measure.json } }`. Without them the body works and dies the plain way. A boss body in the repo other than the Minotaur is still the work listed above.
 
 ## Mixed bosses in one zone ("all spawns must be the same kind"), exactly what blocks it
 
