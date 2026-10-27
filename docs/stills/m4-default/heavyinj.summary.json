@@ -1,0 +1,173 @@
+{
+ "mode": "heavyinj",
+ "query": "default",
+ "stagingLights": 12,
+ "torsoBeforeHeavy": 0.5614872077580488,
+ "partsBeforeHeavy": {
+  "head": 1,
+  "torso": 0.5614872077580488,
+  "arm_left": 1,
+  "arm_right": 1,
+  "leg_left": 1,
+  "leg_right": 1
+ },
+ "stateBeforeHeavy": "alive",
+ "lightLog": [
+  "light1: torso=0.869 st=alive",
+  "light2: torso=0.710 st=alive",
+  "light3: torso=1.000 st=alive",
+  "light4: torso=1.000 st=alive",
+  "light5: torso=1.000 st=alive",
+  "light6: torso=0.841 st=alive",
+  "light7: torso=0.701 st=alive",
+  "light8: torso=0.701 st=alive",
+  "light9: torso=0.701 st=alive",
+  "light10: torso=0.701 st=alive",
+  "light11: torso=0.701 st=alive",
+  "light12: torso=0.561 st=alive"
+ ],
+ "fallsDuringStaging": [],
+ "kdTicksStaging": 0,
+ "torsoAtHeavy": 0.5614872077580488,
+ "stateAtHeavy": "alive",
+ "torsoAtLastHeavyAttempt": 0.5614872077580488,
+ "heavyAttempts": 1,
+ "heavyResult": [
+  "heavy@4.0m/s torso:stick dmg13.6 torso->29.1 act=stagger"
+ ],
+ "heavyHits": [
+  "t1112:heavy_overhead@torso"
+ ],
+ "heavyFalls": [],
+ "heavyKnockdownTicks": 0,
+ "heavyTrail": [
+  {
+   "a": 0,
+   "k": 0,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 10,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 20,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 30,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 31,
+   "st": "stagger",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 40,
+   "st": "stagger",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 50,
+   "st": "stagger",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 60,
+   "st": "stagger",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 70,
+   "st": "stagger",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 80,
+   "st": "stagger",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 83,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 90,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 100,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 110,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 120,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 130,
+   "st": "alive",
+   "down": 0
+  },
+  {
+   "a": 0,
+   "k": 140,
+   "st": "alive",
+   "down": 0
+  }
+ ],
+ "heavyFell": false,
+ "heroHits": 7,
+ "heroHitList": [
+  "t21:light_right@torso",
+  "t110:light_left@torso",
+  "t201:light_right@torso",
+  "t470:light_left@torso",
+  "t560:light_right@torso",
+  "t1010:light_right@torso",
+  "t1112:heavy_overhead@torso"
+ ],
+ "allKnockedDownEvents": [],
+ "ragdollKnockdownTicks": 0,
+ "simDownTicks": 0,
+ "ragdollStates": [
+  "alive",
+  "stagger"
+ ],
+ "rules": {
+  "hits": 7,
+  "byOutcome": {
+   "hit": 3,
+   "stick": 3,
+   "kill": 1
+  }
+ }
+}

@@ -1,0 +1,33 @@
+{
+ "mode": "counter",
+ "query": "default",
+ "pressed": 1,
+ "waitedTicks": 169,
+ "perPress": [
+  {
+   "n": 1,
+   "foePhase": "attack",
+   "hit": 1
+  }
+ ],
+ "rulesLast": [
+  "light@5.6m/s torso:kill torso->0.0 act=stagger"
+ ],
+ "heroHits": 1,
+ "heroHitList": [
+  "t190:light_right@torso"
+ ],
+ "allKnockedDownEvents": [],
+ "ragdollKnockdownTicks": 0,
+ "simDownTicks": 0,
+ "ragdollStates": [
+  "alive",
+  "stagger"
+ ],
+ "rules": {
+  "hits": 1,
+  "byOutcome": {
+   "kill": 1
+  }
+ }
+}

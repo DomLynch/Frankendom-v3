@@ -1,0 +1,64 @@
+{
+ "mode": "cuts",
+ "query": "default",
+ "cuts": {
+  "cuts": [],
+  "byOutcome": {
+   "hit": 5,
+   "stick": 7,
+   "knockdown": 1,
+   "kill": 1
+  },
+  "hits": 14,
+  "zones": [
+   "light@5.6 torso:hit torso->66.0 act=stagger",
+   "light@6.8 torso:stick torso->54.0 act=stagger",
+   "heavy@4.0 legs:stick leg_left->65.8 act=stagger",
+   "light@6.8 torso:stick torso->41.9 act=stagger",
+   "light@6.0 torso:hit torso->31.3 act=stagger",
+   "heavy@4.0 legs:knockdown leg_left->55.6 act=knockdown",
+   "light@6.0 torso:hit torso->20.6 act=stagger",
+   "heavy@4.0 legs:stick leg_left->45.4 act=stagger",
+   "light@6.0 torso:hit torso->10.0 act=stagger",
+   "light@6.0 torso:kill torso->0.0 act=stagger(deferredKill)",
+   "light@6.8 torso:stick torso->63.9 act=stagger",
+   "heavy@4.0 legs:stick leg_left->65.8 act=stagger",
+   "light@6.2 torso:stick torso->53.1 act=stagger",
+   "light@6.0 torso:hit torso->42.4 act=stagger"
+  ]
+ },
+ "heroHits": 14,
+ "heroHitList": [
+  "t21:light_right@torso",
+  "t110:light_left@torso",
+  "t212:heavy_overhead@legs",
+  "t561:light_left@torso",
+  "t649:light_right@torso",
+  "t754:heavy_overhead@legs",
+  "t831:light_right@torso",
+  "t1023:heavy_overhead@legs",
+  "t1099:light_right@torso",
+  "t1370:light_right@torso",
+  "t1461:light_left@torso",
+  "t1562:heavy_overhead@legs",
+  "t1632:slash_riposte@torso",
+  "t1731:light_right@torso"
+ ],
+ "allKnockedDownEvents": [],
+ "ragdollKnockdownTicks": 129,
+ "simDownTicks": 0,
+ "ragdollStates": [
+  "alive",
+  "stagger",
+  "knockdown"
+ ],
+ "rules": {
+  "hits": 14,
+  "byOutcome": {
+   "hit": 5,
+   "stick": 7,
+   "knockdown": 1,
+   "kill": 1
+  }
+ }
+}
