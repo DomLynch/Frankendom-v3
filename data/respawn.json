@@ -70,8 +70,20 @@
       "easeSeconds": 0.5
     }
   },
+  "walkBack": {
+    "about": "Dom 2026-10-27: past its leash (the zone row's spawns[].behaviour.leash) a boss no longer snaps back to full health; it lets go and WALKS back to its spot, visibly, at speedMetresPerSecond (a walking pace, slower than the hero's run so he can always out-run it), regenerating regenPerSecond of its maximum health a second on the way. While it walks it cannot hurt the hero and cannot be hurt. It resets to full health on arrival (within arriveMetres of the spot). If it has walked back inside its leash and the hero is inside its aggro again, the walk is cancelled and the fight goes on from where it is. Another boss already on the hero keeps the old instant reset. ?leash=v1 = the old instant reset everywhere. Ranges: limits.walkSpeedMetresPerSecond, walkRegenPerSecond, walkArriveMetres.",
+    "on": true,
+    "query": "leash",
+    "off": "v1",
+    "speedMetresPerSecond": 3,
+    "regenPerSecond": 0.2,
+    "arriveMetres": 0.25
+  },
   "limits": {
     "about": "Validation ranges for the rows above.",
+    "walkSpeedMetresPerSecond": [0.5, 12],
+    "walkRegenPerSecond": [0, 1],
+    "walkArriveMetres": [0.05, 2],
     "delaySeconds": [1, 60],
     "count": [1, 3],
     "reachMetres": [0, 10],
