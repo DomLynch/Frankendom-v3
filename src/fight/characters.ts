@@ -238,6 +238,12 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
   if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = carry ? armOpponent(opponent, enemyPart) : equipWeapon(opponent, enemyPart); } catch (error) { equipFailed(error); }
   return armWarriors(hero, opponent, weapons, part, equipFailed, carry);
 }
+/** One more boss body, loaded alone (the per-spawn body rig cache, scene.ts bodyRigs): the file, with the boss's weapon grafted exactly as loadWarriors grafts the opponent's. A failed graft is reported and the body keeps what it bakes. */
+export async function loadFoeBody(url: string, equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, carry = false): Promise<FighterAsset> {
+  const [body, part] = await Promise.all([loadFighter(url), equipUrl ? loadEquip(equipUrl).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined]);
+  if (!part) return body;
+  try { if (part instanceof Error) throw part; return carry ? armOpponent(body, part) : equipWeapon(body, part); } catch (error) { equipFailed(error); return body; }
+}
 // A live duel's peer drawn on the HERO rig (Strategy 2026-10-01, Option A): the page's second fighter is the hero's own warrior.glb, loaded a
 // second time under another cache key, with the peer's weapon grafted exactly as the player's is (equipWeapon, no shield carry), so he reads
 // as a player and not as the page's roster opponent. Only a ?duel= page reaches this, and only once both kits are known (scene.ts `peerKit`).
@@ -536,8 +542,8 @@ export function sizeBeast(warriors: { opponent: { anchor: Group } }, opponentId:
 export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], solo = false) {   // solo: the caller poses ONE actor (a zone creature): the opponent is not built, `.opponent` aliases `.player`
   const hero = { asset, weapon: weapons[0], clips: fighterClips(asset, weapons[0], true) }, enemy = opponentAsset ? { asset: opponentAsset, weapon: weapons[1], clips: fighterClips(opponentAsset, weapons[1], false) } : undefined;
   if (!enemy && weapons[1] !== weapons[0]) throw new Error('A shared rig carries one weapon');
-  function create(opponent: boolean) {
-    const { asset, clips, weapon } = opponent && enemy ? enemy : hero, specs = attackSpecs(weapon);
+  function create(opponent: boolean, source?: { asset: FighterAsset; weapon: WeaponId; clips: ReturnType<typeof fighterClips> }) {   // source: another body's asset (spawnBody), else the opponent's or hero's own
+    const { asset, clips, weapon } = source ?? (opponent && enemy ? enemy : hero), specs = attackSpecs(weapon);
     const roles = [...ROLES, ...ADDITIVE_ROLES].filter(role => clips[role]);   // the roles this rig carries clips for (the appended scenes are optional)
     // V3: a picked clip's own contact key, for the roles this actor plays a pick on (setHeroClips)
     const pickedSource: Partial<Record<Role, number>> = Object.fromEntries(roles.flatMap(role => { const p = heroPick(weapon, role); return p && clips[role].name === p.clip ? [[role, p.source]] : []; }));
@@ -1305,5 +1311,5 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
   }
   const player = create(false);
   // spawn: one more actor of the hero's own rig from the same asset (shared geometry, skins and materials, so no new program): the zone's other players (origins/preview/remote-heroes.ts).
-  return { player, opponent: solo ? player : create(true), spawn: () => create(false), spawnFoe: () => create(true) };   // spawnFoe: one more actor of the opponent's own rig (the zone's extra attackers); with no opponent asset it is the hero's
+  return { player, opponent: solo ? player : create(true), spawn: () => create(false), spawnFoe: () => create(true), spawnBody: (body: FighterAsset, weapon: WeaponId) => create(true, { asset: body, weapon, clips: fighterClips(body, weapon, false) }) };   // spawnBody: an actor of ANOTHER boss body (a zone spawn's own body row, scene.ts bodyRigs), built like the opponent's from that body's loaded asset   // spawnFoe: one more actor of the opponent's own rig (the zone's extra attackers); with no opponent asset it is the hero's
 }

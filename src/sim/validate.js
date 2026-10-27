@@ -242,19 +242,19 @@ const ZONE_KEYS = {
   row: ['about', 'id', 'name', 'alias', 'band', 'pvp', 'respawn', 'areas', 'spawns'],
   respawn: ['x', 'z', 'facing', 'downSeconds', 'died'],
   area: ['id', 'name', 'shape', 'min', 'max', 'pvp', 'spawnsAllowed'],
-  spawn: ['id', 'kind', 'position', 'respawnSeconds', 'roster', 'behaviour'],
+  spawn: ['id', 'kind', 'position', 'respawnSeconds', 'roster', 'behaviour', 'body'],   // body: optional (per-spawn body, docs/BOSS-BODIES.md): a data/rig.json files stem drawn for this spawn instead of its kind's profile body
   behaviour: ['aggro', 'leash', 'roam', 'campSize'],
   index: ['about', 'default', 'zones'],
 };
 
 /** One zone row: a list of error strings (empty = valid). `kinds`: when given, every spawn `kind` must be one of them (the opponent profile ids). */
-export function validateZone(row, kinds) {
+export function validateZone(row, kinds, rig) {   // rig (data/rig.json, optional): when given, a spawn's optional `body` must pass bodyProblem
   const e = [];
   const at = (path, msg) => e.push(`zone.${path}: ${msg}`);
   const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
   const num = (path, v, [lo, hi]) => { if (!Number.isFinite(v) || v < lo || v > hi) at(path, `must be a number in [${lo}, ${hi}]`); };
   const str = (path, v) => { if (typeof v !== 'string' || !v.trim()) at(path, 'must be a non-empty string'); };
-  const keys = (path, obj, allowed) => { for (const k of Object.keys(obj)) if (!allowed.includes(k)) at(`${path}.${k}`, 'unknown key'); for (const k of allowed) if (k !== 'about' && !(k in obj)) at(`${path}.${k}`, 'missing'); };
+  const keys = (path, obj, allowed) => { for (const k of Object.keys(obj)) if (!allowed.includes(k)) at(`${path}.${k}`, 'unknown key'); for (const k of allowed) if (k !== 'about' && k !== 'body' && !(k in obj)) at(`${path}.${k}`, 'missing'); };
   const pair = (path, v, range) => { if (!Array.isArray(v) || v.length !== 2) at(path, 'must be [a, b]'); else { num(`${path}[0]`, v[0], range); num(`${path}[1]`, v[1], range); } };
   if (!isObj(row)) return ['zone: must be an object'];
   keys('row', row, ZONE_KEYS.row);
@@ -296,6 +296,7 @@ export function validateZone(row, kinds) {
     str(`${p}.id`, s.id); str(`${p}.kind`, s.kind);
     if (seenSpawn.has(s.id)) at(`${p}.id`, `duplicate id '${s.id}'`); seenSpawn.add(s.id);
     if (kinds && !kinds.includes(s.kind)) at(`${p}.kind`, `'${s.kind}' is not an opponent profile id`);
+    if ('body' in s) { if (rig) { const why = bodyProblem(s.body, rig); if (why) at(`${p}.body`, why); } else str(`${p}.body`, s.body); }
     if (!isObj(s.position)) at(`${p}.position`, 'must be {x, z}');
     else {
       keys(`${p}.position`, s.position, ['x', 'z']);

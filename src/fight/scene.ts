@@ -17,7 +17,7 @@ import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { buildWarriors, specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
+import { buildWarriors, specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadFoeBody, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { RemoteSwords } from '../presence/sword.ts';
 import { shapesFlag,shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
@@ -62,7 +62,7 @@ import { scorch } from './scorch.ts';
 import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself (V3 meets only the veteran: the other nine opponents' signatures are not shipped)
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
-import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
+import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, spawnBodyFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { fovForZoom } from './camera-zoom.ts';
@@ -532,11 +532,63 @@ export function createScene(
   // The zone's other bosses (live-zone phase 1b, src/zone/spawns.ts): the sim holds ONE foe, the live rig above; every other standing spawn is a frozen copy of that rig as it stands at rest
   // (the same SkeletonUtils clone the corpse copy is, ragdoll.snapshotRig: geometry, materials and the weapon shared, its own bones; no mixer, no ragdoll, no sim) at its spot.
   // main.ts hands the list each frame (`idleFoes`); the copies are made once, the first frame the live foe stands at rest after the draw-in, and are only moved, shown or hidden after that.
+  // Per-spawn bodies (Dom 2026-10-27, mixed bosses; docs/BOSS-BODIES.md): a spawn whose body (the zone row's `body`, else its kind's profile body, foe-body.ts spawnBodyFile) is not the live rig's is drawn from ITS body's rig, loaded
+  // once into `bodyAssets` (keyed by the 106 file stem, the body id) the first time a spawn of that body stands or attacks. A spawn in the live body (every spawn of the shipped zone) takes the paths below unchanged.
+  const liveBody = foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body);
+  type SpawnRef = { kind: string; body?: string };
+  const bodyOfSpawn = (s: SpawnRef): string => spawnBodyFile(s.kind, ROSTER[s.kind as OpponentId]?.body ?? ROSTER[opponentId as OpponentId].body, s.body);
+  const bodyAssets = new Map<string, { asset?: Awaited<ReturnType<typeof loadFoeBody>>; failed?: boolean }>();
+  /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
+  function bodyRig(file: string) {
+    let entry = bodyAssets.get(file);
+    if (!entry) {
+      const row: { asset?: Awaited<ReturnType<typeof loadFoeBody>>; failed?: boolean } = entry = {}; bodyAssets.set(file, row);
+      const url = fighterUrls[`../assets/${file}.glb`], weapon = builtFoeWeapon;
+      if (!url || !weapon) row.failed = true;
+      else void loadFoeBody(url, weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId))
+        .then((asset) => { row.asset = asset; }, (error: unknown) => { row.failed = true; captureException(error); });
+    }
+    return entry.asset;
+  }
+  /** One more actor in boss body `file` (the live body: the opponent's own spawnFoe), or undefined while that body's rig is not loaded. */
+  function actorOfBody(file: string): NonNullable<typeof warriors>['opponent'] | undefined {
+    if (!warriors) return undefined;
+    if (file === liveBody) return warriors.spawnFoe();
+    const asset = bodyRig(file);
+    if (!asset || !builtFoeWeapon) return undefined;
+    const actor = warriors.spawnBody(asset, builtFoeWeapon);
+    actor.useClips106(file);   // this body's own baked clips (data/rig.json clips106)
+    return actor;
+  }
   let idleList: readonly { x: number; z: number; heading: number }[] = [];
+  let idleOther: readonly { id: string; x: number; z: number; heading: number; file: string }[] = [];   // the standing spawns in another body than the live rig
+  const idleOtherActors = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; pose: ReturnType<typeof actorPose>; guard: Practice['duel']['fighters'][1]['guardDirection']; holding: boolean }>();
   const idleCopies: THREE.Group[] = [];
-  function syncIdleFoes(practice: Practice) {
+  function syncIdleFoes(practice: Practice, dt: number) {
     const rest = standoffOn ? standoff.age >= STANDOFF_MS : standoff.age >= 0, foe = practice.duel.fighters[1];
-    if (warriors && opponent.visible && rest && (!ragdoll || ragdoll.state === 'alive') && !practice.finish && foe.health === foe.maxHealth && (foe.phase === 'sheathed' || foe.phase === 'ready') && foe.age >= 0)
+    const atRest = !!warriors && opponent.visible && rest && (!ragdoll || ragdoll.state === 'alive') && !practice.finish && foe.health === foe.maxHealth && (foe.phase === 'sheathed' || foe.phase === 'ready') && foe.age >= 0;
+    if (idleOther.length || idleOtherActors.size) {
+      const seen = new Set<string>();
+      for (const at of idleOther) {
+        seen.add(at.id);
+        let entry = idleOtherActors.get(at.id);
+        if (!entry && atRest) {   // made the first frame the live foe stands at rest (as the copies are), and only if that body's rig has loaded
+          const actor = actorOfBody(at.file);
+          if (actor) {
+            const group = new THREE.Group(), pose = actorPose(practice, 1);
+            group.add(actor.anchor); sizeBeast({ opponent: actor }, opponentId); actor.setUpright(readyOffset(opponentId)); scene.add(group);
+            entry = { group, actor, pose, guard: foe.guardDirection, holding: holdingCharge(foe) };
+            idleOtherActors.set(at.id, entry);
+          }
+        }
+        if (!entry) continue;
+        entry.group.visible = true; entry.group.position.set(at.x, 0, at.z); entry.group.rotation.y = at.heading;
+        const { pose } = entry;
+        entry.actor.update(0, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, entry.guard, CHARGE_LEAN[opponentId] ?? null, entry.holding, pose.span ?? null);   // the rest pose it was made in, held (speed 0)
+      }
+      for (const [id, entry] of idleOtherActors) if (!seen.has(id)) entry.group.visible = false;
+    }
+    if (atRest)
       while (idleCopies.length < idleList.length) {
         const holder = new THREE.Group(), { copy } = snapshotRig(opponent, false);
         copy.position.set(0, 0, 0); copy.rotation.set(0, 0, 0);   // the live foe's own place and heading: the holder carries the copy's now
@@ -550,15 +602,17 @@ export function createScene(
     });
   }
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
-  let liveList: readonly { id: string; practice: Practice }[] = [], frameWiden = 1;
+  let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef }[] = [], frameWiden = 1;
   const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
   function syncLiveFoes(dt: number) {
     const seen = new Set<string>();
-    if (warriors) for (const { id, practice: p } of liveList) {
+    if (warriors) for (const { id, practice: p, spawn } of liveList) {
       seen.add(id);
       let live = liveFoes.get(id);
       if (!live) {
-        const actor = warriors.spawnFoe(), group = new THREE.Group();
+        const actor = actorOfBody(spawn ? bodyOfSpawn(spawn) : liveBody), group = new THREE.Group();
+        if (!actor) continue;   // another body's rig is still loading (or failed): not drawn yet, the fight goes on
+
         group.add(actor.anchor); sizeBeast({ opponent: actor }, opponentId); actor.setUpright(readyOffset(opponentId)); scene.add(group);
         live = { group, actor, x: p.enemy.x, z: p.enemy.z }; liveFoes.set(id, live);
       }
@@ -635,11 +689,15 @@ export function createScene(
     // (ragdoll.leaveCorpse: cuts, pieces and caps kept, it ages out on data/physics.json corpse.keepSeconds), and the live rig is rebuilt whole. False = nothing to leave.
     respawnFoe(): boolean { return ragdoll?.leaveCorpse() ?? false; },
     // The zone's other standing bosses (main.ts, every frame): where each stands (the pit's frame) and which way it faces. Drawn as frozen copies of the live foe at rest (syncIdleFoes).
-    idleFoes(list: readonly { x: number; z: number; heading: number }[]) { idleList = list; },
-    get idleFoeCount() { return idleCopies.filter((c) => c.visible).length; },   // the stills and the cost table read how many copies are on screen
+    // `spawn` (optional, the spawn's kind and its zone row's `body`): a spawn in another body than the live rig is drawn from that body's own rig (bodyRig); absent or the live body: the frozen copies as before.
+    idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef }[]) {
+      idleList = list.every((e) => !e.spawn || bodyOfSpawn(e.spawn) === liveBody) ? list : list.filter((e) => !e.spawn || bodyOfSpawn(e.spawn) === liveBody);
+      idleOther = list.flatMap((e) => (e.spawn && e.id !== undefined && bodyOfSpawn(e.spawn) !== liveBody ? [{ id: e.id, x: e.x, z: e.z, heading: e.heading, file: bodyOfSpawn(e.spawn) }] : []));
+    },
+    get idleFoeCount() { return idleCopies.filter((c) => c.visible).length + [...idleOtherActors.values()].filter((e) => e.group.visible).length; },   // the stills and the cost table read how many copies are on screen
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
     // programs, its own bones and mixer), posed from that fight's own Practice. Presentation only; the first boss is the live rig above and is never in this list.
-    liveFoes(list: readonly { id: string; practice: Practice }[]) { liveList = list; },
+    liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef }[]) { liveList = list; },
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
@@ -1095,7 +1153,7 @@ export function createScene(
       const specialDim = runtimeSpecial?.exposure ?? (specialFx as ModeFx | undefined)?.exposure ?? 1;   // Nyx's Nightfall drain
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
-      syncIdleFoes(practice);
+      syncIdleFoes(practice, dt);
       syncLiveFoes(dt);
       if (!look?.render()) { if (gfx) gfx.render(); else renderer.render(scene, camera); }
       renderer.toneMappingExposure = exposure;

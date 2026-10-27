@@ -16,7 +16,7 @@ const LIMITS = ROWS.limits as unknown as Limits;
 
 type At = { x: number; z: number };
 /** A boss's spot in the pit's own frame (metres, the sim's axes) with the zone row's behaviour. */
-export type Spot = { id: string; kind: string; x: number; z: number; aggro: number; leash: number; respawnSeconds: number };
+export type Spot = { id: string; kind: string; x: number; z: number; aggro: number; leash: number; respawnSeconds: number; body?: string };   // body: the zone row's per-spawn body (a data/rig.json files stem), absent for its kind's profile body
 /** A spawn: its spot and how long it has been dead (null = standing). The state machine is these two fields plus which spawn the sim holds (main.ts). */
 export type Spawn = Spot & { deadFor: number | null };
 
@@ -32,7 +32,7 @@ export function pitOrigin(zone: ZoneRow, world: WorldRows = WORLD): At {
 /** Every spawn row of the zone as a spot in the pit's frame. */
 export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
   const o = pitOrigin(zone, world);
-  return zone.spawns.map((s) => ({ id: s.id, kind: s.kind, x: s.position.x - o.x, z: s.position.z - o.z, aggro: s.behaviour.aggro, leash: s.behaviour.leash, respawnSeconds: s.respawnSeconds }));
+  return zone.spawns.map((s) => ({ id: s.id, kind: s.kind, x: s.position.x - o.x, z: s.position.z - o.z, aggro: s.behaviour.aggro, leash: s.behaviour.leash, respawnSeconds: s.respawnSeconds, ...(s.body === undefined ? {} : { body: s.body }) }));
 }
 
 /**

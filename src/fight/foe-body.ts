@@ -40,6 +40,12 @@ export const chooseFoeBody = (_search?: string): boolean => false;
  *  `stem`: the body row's 65 stem instead ('minotaur'), the name the bone and ragdoll rows key by; it is only a name: the page's loader
  *  table (scene.ts fighterUrls) holds the 106 files alone, so a 65 stem can never be fetched. */
 export const foeBodyFile = (id: string, rosterBody: string, stem = false): string => ((s: string) => stem ? s : foeRigFile(s))(rowOf(id)?.body || rosterBody);
+/** The 106 file stem a zone spawn of `id` draws: the spawn row's own `body` (data/zones `spawns[].body`, a data/rig.json files stem) when it has one, else exactly `foeBodyFile` (its kind's profile body).
+ *  ?boss=<body> still draws every boss in one body for the page. This is the key of the scene's rig cache (scene.ts bodyRigs). */
+export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => (spawnBody === undefined || override !== null ? foeBodyFile(id, rosterBody) : foeRigFile(spawnBody));
+/** Problems with the per-spawn bodies of a zone's spots (empty = fine): each must pass the same check a profile body does (a rig.json files row with clips106 folder, not the hero's body). */
+export const spotBodyProblems = (spots: readonly { id: string; body?: string }[], rig: typeof RIG = RIG, hero: string = heroBodyFile()): string[] =>
+  spots.flatMap((s) => { const why = s.body === undefined ? null : bodyProblem(s.body, rig, hero); return why ? [`spawn ${s.id} body: ${why}`] : []; });
 /** The kit file stem for `id` (under src/assets/loot), or null for none: the body row's (none on the Minotaur), `carriers-<id>` as V1 has it otherwise. */
 export const foeKitFile = (id: string): string | null => {
   const row = rowOf(id);
