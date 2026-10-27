@@ -56,10 +56,10 @@ for (const query of queries.length ? queries : ['', 'feel=hero']) {
   await page.screenshot({ path: `${out}/hero-${tag}-idle.${EXT}`, ...SHOT });
   let hitTick = -1, frames = 0;
   for (let n = 0; n < MAXWAIT + 40; n++) {
-    const before = await page.evaluate(() => globalThis.__v3Fight.duel.fighters[0].health);
     await run(1);
-    const now = await page.evaluate(() => ({ h: globalThis.__v3Fight.duel.fighters[0].health, max: globalThis.__v3Fight.duel.fighters[0].maxHealth }));
-    if (hitTick < 0 && now.h < before) { hitTick = n; console.log(`${tag}: events on the tick her health fell: ${JSON.stringify(await page.evaluate(() => (globalThis.__v3Fight.events ?? []).map((e) => ({ type: e.type, actor: e.actor, target: e.target, location: e.location }))))}`); }
+    // the first sim Hit on her (a melee blow: the event the hero ragdoll's hit hook reads; a SpecialLanded, a missile or a poison tick is not one)
+    const blow = await page.evaluate(() => (globalThis.__v3Fight.events ?? []).filter((e) => e.type === 'Hit' && e.target === 0).map((e) => ({ location: e.location, heading: e.heading, damage: e.damage })));
+    if (hitTick < 0 && blow.length) { hitTick = n; console.log(`${tag}: her first Hit at tick ${n}: ${JSON.stringify(blow)}`); }
     if (hitTick >= 0 && SHOTS.includes(n - hitTick)) { await page.screenshot({ path: `${out}/hero-${tag}-${String(n - hitTick).padStart(3, '0')}.${EXT}`, ...SHOT }); frames++; }
     await keep(page);
     if (hitTick >= 0 && n - hitTick > Math.max(...SHOTS)) break;
