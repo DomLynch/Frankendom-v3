@@ -36,7 +36,7 @@ uniform float uAspect; uniform vec2 uTexel;
 uniform vec2 uGlobeC; uniform float uGlobeR, uGlobeShift; uniform vec2 uGlobeHi; uniform float uGlobeHiSize, uGlobeHiStr, uGlobeMapOn, uGlobeLit; uniform sampler2D uGlobeMap;
 uniform vec2 uPlanetC; uniform float uPlanetR, uPlanetShift, uPlanetPulse, uPlanetLower, uPlanetMapOn, uPlanetLit; uniform vec3 uPlanetGlowCol; uniform sampler2D uPlanetMap;
 uniform vec3 uLight;
-uniform vec4 uBox; uniform float uBand, uBandW, uBandStr, uSlant, uEdgeLo, uEdgeHi, uLumLo, uMaskOn; uniform vec3 uBandCol; uniform sampler2D uMask;
+uniform vec4 uBox; uniform float uBand, uBandW, uBandStr, uSlant, uEdgeLo, uEdgeHi, uLumLo, uCool, uMaskOn; uniform vec3 uBandCol; uniform sampler2D uMask;
 float skyFold(float a) { float m = mod(a + 1.5707963, 6.2831853); if (m > 3.1415927) m = 6.2831853 - m; return m - 1.5707963; }
 float skyLuma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 `;
@@ -82,7 +82,7 @@ if (uBandStr > 0.0) {
   if (uMaskOn > 0.5) feat = texture2D(uMask, vMapUv).r;
   else {
     float l0 = skyLuma(sampledDiffuseColor.rgb), lx = skyLuma(texture2D(map, vMapUv + vec2(uTexel.x * 2.0, 0.0)).rgb), ly = skyLuma(texture2D(map, vMapUv + vec2(0.0, uTexel.y * 2.0)).rgb);
-    feat = smoothstep(uEdgeLo, uEdgeHi, abs(l0 - lx) + abs(l0 - ly)) * smoothstep(uLumLo, uLumLo + 0.15, l0);
+    feat = smoothstep(uEdgeLo, uEdgeHi, abs(l0 - lx) + abs(l0 - ly)) * smoothstep(uLumLo, uLumLo + 0.15, l0) * smoothstep(uCool, uCool + 0.08, sampledDiffuseColor.b - sampledDiffuseColor.r);   // cool-toned only: the lilac stone and the cyan glow, not the warm face
   }
   vec2 b = smoothstep(vec2(uBox.x, uBox.z), vec2(uBox.x + 0.03, uBox.z + 0.05), skyP) * (1.0 - smoothstep(vec2(uBox.y - 0.03, uBox.w - 0.05), vec2(uBox.y, uBox.w), skyP));
   float s = (skyP.x + uSlant * skyP.y - uBand) / uBandW;
@@ -112,7 +112,7 @@ export function createSkyAnim(search: string, imgW: number, imgH: number, row: A
     uGlobeMapOn: { value: 0 }, uGlobeLit: { value: g.mapLit }, uGlobeMap: { value: dummy as THREE.Texture },
     uPlanetC: { value: new THREE.Vector2(p.centre.u, p.centre.v) }, uPlanetR: { value: p.radius }, uPlanetShift: { value: 0 }, uPlanetPulse: { value: 0 }, uPlanetLower: { value: p.lowerFadeFrom }, uPlanetMapOn: { value: 0 }, uPlanetLit: { value: p.mapLit },
     uPlanetGlowCol: { value: new THREE.Color(p.glow.color).multiplyScalar(p.glow.strength) }, uPlanetMap: { value: dummy as THREE.Texture },
-    uBox: { value: new THREE.Vector4(l.box.u0, l.box.u1, l.box.v0, l.box.v1) }, uBand: { value: -9 }, uBandW: { value: l.width }, uBandStr: { value: l.strength }, uSlant: { value: l.slant }, uEdgeLo: { value: l.edgeLo }, uEdgeHi: { value: l.edgeHi }, uLumLo: { value: l.lumaFrom },
+    uBox: { value: new THREE.Vector4(l.box.u0, l.box.u1, l.box.v0, l.box.v1) }, uBand: { value: -9 }, uBandW: { value: l.width }, uBandStr: { value: l.strength }, uSlant: { value: l.slant }, uEdgeLo: { value: l.edgeLo }, uEdgeHi: { value: l.edgeHi }, uLumLo: { value: l.lumaFrom }, uCool: { value: l.coolFrom },
     uMaskOn: { value: 0 }, uBandCol: { value: new THREE.Color(l.color) }, uMask: { value: dummy as THREE.Texture },
   };
   const grab = (file: string, key: 'uGlobeMap' | 'uPlanetMap' | 'uMask', on: 'uGlobeMapOn' | 'uPlanetMapOn' | 'uMaskOn', srgb: boolean) => {   // an optional designer picture: fetched once, then just a uniform

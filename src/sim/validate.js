@@ -377,7 +377,8 @@ function checkSkyAnim(a, plateQuery) {
     if (keys(a.planet.glow, ['color', 'strength', 'pulseSeconds'], 'planet.glow')) { col(a.planet.glow, 'color', 'planet.glow'); rng(a.planet.glow, 'strength', 0, 1, 'planet.glow'); rng(a.planet.glow, 'pulseSeconds', 0.5, 600, 'planet.glow'); }
   }
   const l = a.glisten;
-  if (keys(l, ['file', 'box', 'periodSeconds', 'sweepSeconds', 'width', 'slant', 'strength', 'color', 'edgeLo', 'edgeHi', 'lumaFrom'], 'glisten')) {
+  if (keys(l, ['file', 'box', 'periodSeconds', 'sweepSeconds', 'width', 'slant', 'strength', 'color', 'edgeLo', 'edgeHi', 'lumaFrom', 'coolFrom'], 'glisten')) {
+    rng(l, 'coolFrom', -1, 1, 'glisten');
     file(l, 'file', 'glisten'); col(l, 'color', 'glisten'); rng(l, 'periodSeconds', 1, 600, 'glisten'); rng(l, 'sweepSeconds', 0.2, 600, 'glisten'); rng(l, 'width', 0.002, 0.3, 'glisten'); rng(l, 'slant', -2, 2, 'glisten'); rng(l, 'strength', 0, 1.5, 'glisten');
     rng(l, 'edgeLo', 0, 1, 'glisten'); rng(l, 'edgeHi', 0, 1, 'glisten'); rng(l, 'lumaFrom', 0, 1, 'glisten');
     if (Number.isFinite(l.periodSeconds) && Number.isFinite(l.sweepSeconds) && l.sweepSeconds > l.periodSeconds) at('glisten.sweepSeconds', 'must not exceed periodSeconds');
