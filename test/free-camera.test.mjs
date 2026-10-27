@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
-import { createCameraRig, setFreeCamera, setArenaClamp } from '../src/fight/camera.ts';
+import { createCameraRig, setFreeCamera, setArenaClamp, setCameraPitch } from '../src/fight/camera.ts';
 import { freeCameraFor, handsOver, stepShare, swingAround, validateFreeCamera, virtualFoe, wantsFreeCamera, yawBehind } from '../src/fight/free-camera.ts';
 import { validateFile } from '../src/sim/validate.js';
 
@@ -117,6 +117,13 @@ test('the rig: the hand-over swings round the hero and never through him, from e
     for (let t = 0; t < 3; t += 1 / 60) { rig.update(1 / 60, hero, corpse, true, null, 1, 0, 0, 1, true); nearest = Math.min(nearest, Math.hypot(rig.camera.position.x - hero.x, rig.camera.position.z - hero.z)); }
     assert.ok(nearest > 2.5, `from ${angle.toFixed(1)} rad the camera came within ${nearest.toFixed(2)} m of him`);
   }
+});
+
+test('the camera pitch row (#133) still works in the free state: a flatter pitch lowers the free camera as it lowers the fight camera', () => {
+  const eyeY = (pitch) => { setCameraPitch(pitch, { heroY: 0.4, minEyeY: 1.2 }); const r = rigAt(FREE); run(r, 3, state(0, 3.25), { x: 0, z: 0 }, true); return r.camera.position.y; };
+  const off = eyeY(null), flat = eyeY(10);
+  setCameraPitch(null, { heroY: 0.4, minEyeY: 1.2 });
+  assert.ok(flat < off - 0.3, `pitch 10 lowers the free camera (${flat.toFixed(2)} m against ${off.toFixed(2)} m)`);
 });
 
 test('the rig: with no rows (?postkill=v1, ?freecam=v1) the free flag changes nothing', () => {

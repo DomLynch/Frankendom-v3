@@ -8,7 +8,7 @@
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
   'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'skyline', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
-  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
+  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
   // The difficulty ladder over an opponent profile row (src/difficulty.ts): a row names only the brain knobs and the two scales; checked by checkDifficulty below
@@ -20,7 +20,7 @@ export const SCHEMA = {
   // `bones`, `files`, `weapons` and `gapFill` are keyed by names (bones, body stems, nodes, roles), so only their owners' keys are closed here.
   'rig': { keys: ['about', 'default', 'held', 'files', 'detect', 'bones', 'weapons', 'hide', 'gapFill', 'grip65', 'clips106', 'clipLoad'], maps: { default: ['hero', 'foe'], held: ['weapon', 'sword', 'sheath'], detect: ['65', '106'], grip65: ['hand', 'translation', 'rotation'], clips106: ['about', 'dir', 'files'], clipLoad: ['about', 'hero', 'afterFirstFrame'] } },
   // The zone loop's roam rows and way-back flag (src/fight/zone-loop.ts validateLoop checks the values); spawns, respawnSeconds and the hero's respawn are the zone row's
-  'respawn': { keys: ['about', 'flag', 'postKill', 'freeCamera', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres'], freeCamera: ['about', 'on', 'query', 'off', 'gapMetres', 'handOverSeconds', 'stickEndsCeremony', 'fight'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], limits: ['about', 'delaySeconds', 'count', 'reachMetres', 'fallSeconds', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres', 'freeCamGapMetres', 'handOverSeconds', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] } },
+  'respawn': { keys: ['about', 'flag', 'postKill', 'freeCamera', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres'], freeCamera: ['about', 'on', 'query', 'off', 'gapMetres', 'handOverSeconds', 'stickEndsCeremony', 'fight'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'withinMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], limits: ['about', 'delaySeconds', 'count', 'reachMetres', 'withinMetres','fallSeconds', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres', 'freeCamGapMetres', 'handOverSeconds', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] } },
   // What scripts/build.mjs never ships (106 only: the 65 bodies, kits and 65-keyed clip JSONs; test/rig-bones.test.mjs)
   'build': { keys: ['about', 'clipDecimals', 'firstVisitBytes', 'notShipped'] },
   // The presence service and its page client (server/presence/, src/presence/): V1's presence rule rows (id, value, unit); src/presence/rows.ts also checks every rule the code reads by name exists
@@ -34,13 +34,15 @@ export const SCHEMA = {
     rowMaps: { 'finisherCuts.rows': ['unit', 'also', 'fallback', 'atS', 'push', 'kill', 'plane'] },
     finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
-  'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
+  'rules': { keys: ['about', 'on', 'default', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
   'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], cue: ['about', 'on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
     finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
-  // The SIM knockdown + finish window (src/fight/knock-sim.ts, step in duel.ts), behind ?feel=kick: whole seconds / per-mille rows; checkFeelSim below checks the values
+  // The M7 feel modules that are on without a query (src/fight/feel-defaults.ts), each with its own ?x=v1 revert; test/feel-defaults.test.mjs pins the names against the registry
+  'feel-defaults': { keys: ['about', 'query', 'off', 'modules', 'revert'] },
+  // The SIM knockdown + finish window (src/fight/knock-sim.ts, step in duel.ts), on with the kick module (data/feel-defaults.json): whole seconds / per-mille rows; checkFeelSim below checks the values
   'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
     maps: { flag: ['query', 'value'], knockdown: ['seconds'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
@@ -64,6 +66,30 @@ export const SCHEMA = {
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;
+
+// data/fight.json camera.pitch (src/fight/camera-pitch.ts): the zone follow camera's pitch presets, in degrees inside the limits; 'default' is a preset name or an off word.
+function checkCameraPitch(p) {
+  const e = [], at = 'fight.camera.pitch', fin = (v) => typeof v === 'number' && Number.isFinite(v);
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return [`${at}: must be an object`];
+  for (const k of Object.keys(p)) if (!['about', 'default', 'presets', 'limits', 'heroY', 'minEyeY', 'off', 'query'].includes(k)) e.push(`${at}.${k}: unknown key`);
+  const lim = p.limits;
+  const limOk = Array.isArray(lim) && lim.length === 2 && lim.every(fin) && lim[0] >= 5 && lim[1] <= 45 && lim[0] < lim[1];
+  if (!limOk) e.push(`${at}.limits: must be [min, max] degrees inside 5..45`);
+  const off = p.off;
+  if (!Array.isArray(off) || off.length === 0 || off.some((o) => typeof o !== 'string' || !/^[a-z0-9]+$/.test(o))) e.push(`${at}.off: must be a non-empty list of lower-case words`);
+  const pre = p.presets;
+  if (!pre || typeof pre !== 'object' || Array.isArray(pre) || Object.keys(pre).length === 0) e.push(`${at}.presets: must be a non-empty object of name -> degrees`);
+  else for (const [n, d] of Object.entries(pre)) {
+    if (!/^[a-z][a-z0-9]*$/.test(n)) e.push(`${at}.presets.${n}: name must be a lower-case word`);
+    else if (Array.isArray(off) && off.includes(n)) e.push(`${at}.presets.${n}: collides with an off word`);
+    if (!fin(d) || (limOk && (d < lim[0] || d > lim[1]))) e.push(`${at}.presets.${n}: must be degrees inside the limits`);
+  }
+  if (typeof p.default !== 'string' || !((Array.isArray(off) && off.includes(p.default)) || (pre && Object.hasOwn(pre, p.default)))) e.push(`${at}.default: must be an off word or a preset name`);
+  if (!fin(p.heroY) || p.heroY < 0 || p.heroY > 2) e.push(`${at}.heroY: must be a number in 0..2`);
+  if (!fin(p.minEyeY) || p.minEyeY < 0.5 || p.minEyeY > 5) e.push(`${at}.minEyeY: must be a number in 0.5..5`);
+  if (typeof p.query !== 'string' || !/^[a-z]+$/.test(p.query)) e.push(`${at}.query: must be a lower-case word`);
+  return e;
+}
 
 function banned(value, path, errors) {
   if (Array.isArray(value)) value.forEach((v, i) => banned(v, `${path}[${i}]`, errors));
@@ -218,6 +244,7 @@ export function validateFile(name, json) {
   if (name === 'fight' && json.camera) {   // the lens zoom (src/fight/camera-zoom.ts): a finite number in 0.5..2 (1 = the camera as before); an absent one would reach the page as NaN
     const z = json.camera.zoom;
     if (!Number.isFinite(z) || z < 0.5 || z > 2) errors.push(`${name}.camera.zoom: must be a finite number in 0.5..2`);
+    errors.push(...checkCameraPitch(json.camera.pitch));
   }
   banned(json, name, errors);
   return errors;

@@ -15,7 +15,7 @@ const spawns = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const hero = () => initialState();   // the pit's mark: where a newcomer stands
 
 test('the default is pinned: on, 5 s, one spawn (the yard Pitborn), ?opener=off; every number in range', () => {
-  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, reachMetres: 5, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
+  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, reachMetres: 5, withinMetres: 12, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
   assert.doesNotThrow(() => validateOpeners(OPENERS, spotsFor(ZONE)));
   assert.ok(OPENERS.delaySeconds >= ROWS.limits.delaySeconds[0] && OPENERS.delaySeconds <= ROWS.limits.delaySeconds[1]);
   assert.equal(openerOn(''), true); assert.equal(openerOn('?x=1'), true);
@@ -33,7 +33,7 @@ test('bad opener rows are refused: delay or count out of range, no spawn, a spaw
 
 test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is 6 m from the north Pitborn; the leash is the boss\'s 20 m now, the lift stays consistent)', () => {
   const s = spawns().find((x) => x.id === OPENERS.spawns[0]), d = Math.hypot(s.x - hero().x, s.z - hero().z);
-  assert.ok(d <= s.leash + OPENERS.reachMetres - 1, `the mark is ${d.toFixed(2)} m from the yard Pitborn: at least 1 m inside leash ${s.leash} + reach ${OPENERS.reachMetres}`);
+  assert.ok(d <= OPENERS.withinMetres - 1, `the mark is ${d.toFixed(2)} m from the yard Pitborn: at least 1 m inside withinMetres ${OPENERS.withinMetres}`);
   const past = { x: s.x + s.leash + 0.5, z: s.z };
   assert.equal(leashed(s, past), true); assert.equal(leashed(s, past, OPENERS.reachMetres), false, 'the opener fight\'s leash is lifted by the reach');
 });
@@ -49,8 +49,10 @@ test('before N nobody is in aggro; at N the opener spawn (only it) reaches him; 
 });
 
 test('the reach stops at the leash: a hero who wandered beyond it is left alone; count caps how many open', () => {
-  const s = spawns(), far = { x: s[0].x + s[0].leash + OPENERS.reachMetres + 1, z: s[0].z };
-  assert.equal(inAggro(openerReach(s, OPENERS, 99, far), far), -1);
+  const s = spawns(), far = { x: s[0].x + OPENERS.withinMetres + 1, z: s[0].z }, edge = { x: s[0].x + OPENERS.withinMetres - 0.1, z: s[0].z };
+  assert.equal(inAggro(openerReach(s, OPENERS, 99, far), far), -1, 'an idle hero beyond withinMetres is left alone (the 20 m leash does not widen it)');
+  assert.equal(inAggro(openerReach(s, OPENERS, 99, edge), edge), 0, 'just inside it, the opener reaches');
+  assert.throws(() => validateOpeners({ ...OPENERS, withinMetres: 1 }, spotsFor(ZONE)), /withinMetres .* shorter than yard-pitborn's aggro/);
   const two = openerReach(s, { ...OPENERS, count: 1, spawns: ['pit-pitborn-east', 'yard-pitborn'] }, 99, hero());
   assert.equal(two.filter((x, i) => x.aggro !== s[i].aggro).length, 1, 'count 1: only the first listed');
   assert.equal(two[1].aggro > s[1].aggro, true);

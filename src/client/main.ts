@@ -5,6 +5,7 @@
 import FIGHT from '../../data/fight.json' with { type: 'json' };
 import BRAINS from '../../data/brains.json' with { type: 'json' };
 import FEEL_SIM from '../../data/feel-sim.json' with { type: 'json' };
+import FEEL_DEFAULTS from '../../data/feel-defaults.json' with { type: 'json' };
 import { knockSimFor, setKnockSim, type KnockRows } from '../fight/knock-sim.ts';
 import { brainFor, brainProfile } from '../brain.ts';
 import DIFFICULTY from '../../data/difficulty.json' with { type: 'json' };
@@ -26,8 +27,9 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
-import { setArenaClamp, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
+import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';
+import { pitchChoice } from '../fight/camera-pitch.ts';
 import { cameraZoom } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
@@ -102,7 +104,7 @@ function fresh(pose?: DuelPose): Practice {
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   setFoeSpecialReach(foeSpecialReachFor(FIGHT.foeSpecialReach, search));   // V3: an opponent's melee special starts inside 2.2 m and fizzles past 2.6 m (data/fight.json foeSpecialReach); ?special=v1 = V1's 3.0 m, no release check
-  setKnockSim(knockSimFor(FEEL_SIM as KnockRows, search));   // V3: the sim knockdown + finish window (data/feel-sim.json), only under ?feel=kick; absent = the fight as before, byte for byte
+  setKnockSim(knockSimFor(FEEL_SIM as KnockRows, search, FEEL_DEFAULTS));   // V3: the sim knockdown + finish window (data/feel-sim.json) rides the kick module: on by default (data/feel-defaults.json), ?kick=v1 or ?feel=v1 = the fight as before; a headless run (Gate 0) never calls this, so it steps as before, byte for byte
   epoch++;
   return make(seed, pose);
 }
@@ -132,6 +134,8 @@ const paused = () => !assetsReady || graphicsLost || document.hidden;   // :823 
 
 // The lock camera: V2's lower, over-the-shoulder framing (data/fight.json camera); ?cam=v1 keeps V1's lock exactly.
 if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
+// The zone follow camera's pitch (data/fight.json camera.pitch): off by default (the lock exactly as it was); ?pitch=low (flat, soft, or degrees) flattens it to show a band of horizon. Zone only; ?cam=v1 and ?postkill=v1 never read it.
+if (ZONE && !/[?&]cam=v1\b/.test(search)) setCameraPitch(pitchChoice(FIGHT.camera.pitch, search), FIGHT.camera.pitch);
 // Legs keep walking under a held guard (data/fight.json guardWalk); ?guard=v1 keeps V1's whole-body Guard. Set before the rigs are built.
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
 // The swing trail softer (data/fight.json trail: cuts at half, the stab 30% less, both fighters); ?trail=v1 = today's trail.
