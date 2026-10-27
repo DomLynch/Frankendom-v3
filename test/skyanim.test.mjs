@@ -1,63 +1,81 @@
-// The skyline plate's small coded motion (src/fight/skyanim.ts, data/stage.json skyline.plate.anim): rows validate, ?skyanim=off and reduced motion turn it off, the clock
-// stops when the tab is hidden, the shader is patched onto the plate's own material (no extra draw, no texture upload), and the layer files are optional rows.
+// The skyline plate's layers and small coded motion (src/fight/skyanim.ts, data/stage.json skyline.plate.anim): rows validate, the designer's layer files are named by rows and ship, ?skyanim=off and
+// reduced motion stop the motion (the layers still composite), the clock stops when the tab is hidden, the shader is patched onto the plate's own material, ?skyflat uses the flattened picture.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
 import { createSkyline, SKYLINE } from '../src/fight/skyline.ts';
-import { animOn, spinShift, bandCentre, createSkyAnim, SKY_ANIM } from '../src/fight/skyanim.ts';
+import { plateFile, plateFlat } from '../src/fight/skyplate.ts';
+import { animOn, spinShift, bandCentre, spriteFrame, createSkyAnim, SKY_ANIM } from '../src/fight/skyanim.ts';
 
 const STAGE = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8'));
 const bad = (mut) => { const s = structuredClone(STAGE); mut(s.skyline.plate.anim); return validateFile('stage', s); };
-const A = SKY_ANIM;
+const A = SKY_ANIM, P = SKYLINE.plate;
+const asset = (f) => new URL(`../src/assets/skyline/${f}`, import.meta.url);
 
 test('the shipped anim row validates; bad rows are refused', () => {
   assert.deepEqual(validateFile('stage', STAGE), []);
   const cases = [(a) => { a.extra = 1; }, (a) => { a.on = 'yes'; }, (a) => { a.query = 'skyplate'; }, (a) => { a.off = 'no way'; }, (a) => { a.about = 'short'; }, (a) => { delete a.globe; }, (a) => { a.globe.radius = 0.9; },
-    (a) => { a.globe.secondsPerTurn = 0; }, (a) => { a.globe.file = '../x.webp'; }, (a) => { a.globe.file = 'x.png'; }, (a) => { a.globe.centre.u = 2; }, (a) => { a.globe.highlight.strength = 5; }, (a) => { delete a.globe.highlight; },
-    (a) => { a.planet.swingDegrees = 200; }, (a) => { a.planet.glow.color = 'pink'; }, (a) => { a.planet.glow.pulseSeconds = 0; }, (a) => { a.glisten.sweepSeconds = 99; }, (a) => { a.glisten.edgeHi = 0.01; },
-    (a) => { a.glisten.box.u1 = a.glisten.box.u0; }, (a) => { a.glisten.width = 0; }, (a) => { a.light = { x: 0, y: 0, z: 0 }; }, (a) => { a.respectReducedMotion = 1; }, (a) => { a.glisten.nope = 1; }];
+    (a) => { a.globe.spin.secondsPerTurn = 0; }, (a) => { a.globe.file = '../x.webp'; }, (a) => { a.globe.file = 'x.gif'; }, (a) => { a.globe.centre.u = 2; }, (a) => { a.globe.highlight.strength = 5; }, (a) => { delete a.globe.highlight; },
+    (a) => { a.globe.rect.u1 = a.globe.rect.u0; }, (a) => { a.globe.rect.u0 = 0.9; a.globe.rect.u1 = 0.95; }, (a) => { a.planet.glow.color = 'pink'; }, (a) => { a.planet.glow.pulseSeconds = 0; }, (a) => { a.planet.on = 1; },
+    (a) => { a.glisten.sweepSeconds = 99; }, (a) => { a.glisten.width = 0; }, (a) => { a.glisten.twinkle.amount = 3; }, (a) => { a.glisten.nope = 1; }, (a) => { a.respectReducedMotion = 1; }, (a) => { a.readyTimeoutSeconds = 0; },
+    (a) => { a.globe.sprite.rects.pop(); }, (a) => { a.globe.sprite.rects[3].x = 5000; }, (a) => { a.globe.sprite.frames = 100; }, (a) => { a.globe.sprite.ballRadiusPx = 300; }, (a) => { a.globe.sprite.loadScale = 0; }, (a) => { a.globe.sprite.rects[0].w = -1; }];
   for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad anim row #${i} is refused`);
   const none = structuredClone(STAGE); delete none.skyline.plate.anim;
   assert.ok(validateFile('stage', none).length >= 1);
+  const noflat = structuredClone(STAGE); noflat.skyline.plate.flatQuery = 'sky';
+  assert.ok(validateFile('stage', noflat).length >= 1);
 });
 
-test('the shipped numbers sit on the picture: globe in the raised hand, planet at the left, glisten box over the rings, all as rows', () => {
-  assert.ok(A.on); assert.equal(A.query, 'skyanim'); assert.equal(A.off, 'off'); assert.ok(A.respectReducedMotion);
-  assert.ok(Math.abs(A.globe.centre.u - 0.68) < 0.02 && A.globe.radius < 0.02);
-  assert.ok(A.planet.centre.u < 0.4 && A.planet.radius > 0.03);
-  assert.ok(A.glisten.box.u0 < SKYLINE.plate.face.u && A.glisten.box.u1 > SKYLINE.plate.face.u);
-  for (const f of [A.globe.file, A.planet.file, A.glisten.file]) assert.equal(f, '', 'today the effects are made from the flattened plate: no extra asset');
-  const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
-  for (const k of ['secondsPerTurn', 'swingDegrees', 'periodSeconds', 'sweepSeconds', 'strength', 'edgeLo', 'lowerFadeFrom', 'respectReducedMotion', 'pulseSeconds', 'orbitSeconds']) assert.match(src, new RegExp(`\\b${k}\\b`), k);
+test('the designer layer set: every file the rows name ships, the plate is the clean 4:1 picture, registration matches the manifest, the sprite rects are the 8x3 sheet', () => {
+  assert.match(P.file, /^01_clean_plate\.webp$/);
+  for (const f of [P.file, P.flatFile, A.planet.file, A.globe.file, A.globe.sprite.file, A.glisten.file]) assert.ok(existsSync(asset(f)), f);
+  const w = readFileSync(asset(P.file)); assert.equal(w.toString('latin1', 8, 12), 'WEBP');
+  const kind = w.toString('latin1', 12, 16), width = kind === 'VP8X' ? 1 + (w[24] | (w[25] << 8) | (w[26] << 16)) : w.readUInt16LE(26) & 0x3fff, height = kind === 'VP8X' ? 1 + (w[27] | (w[28] << 8) | (w[29] << 16)) : w.readUInt16LE(28) & 0x3fff;
+  assert.equal(width, 4096); assert.equal(height, 1024); assert.equal(P.cropAspect, width / height);
+  assert.ok(Math.abs(A.globe.centre.u * 4096 - 2787.0) < 0.5 && Math.abs(A.globe.centre.v * 1024 - 681.9) < 0.5 && Math.abs(A.globe.radius * 4096 - 32.7) < 0.2);
+  assert.ok(Math.abs(A.planet.centre.u * 4096 - 1367.8) < 0.5 && Math.abs(A.planet.centre.v * 1024 - 736.6) < 0.5 && Math.abs(A.planet.radius * 4096 - 249.1) < 0.3);
+  const s = A.globe.sprite; assert.equal(s.frames, 24); assert.equal(s.columns * s.rows, 24); assert.equal(s.frameSeconds, 0.15); assert.equal(s.cellPx, 222);
+  assert.deepEqual(s.rects[0], { x: 145, y: 59, w: 222, h: 222 }); assert.deepEqual(s.rects[23], { x: 3729, y: 741, w: 222, h: 222 });
   assert.ok(existsSync(new URL('../docs/SKY-LAYERS.md', import.meta.url)), 'the designer brief ships');
+  assert.ok(statSync(asset(P.file)).size < 200_000, 'the clean plate is recompressed (the designer original was 251 KB)');
 });
 
-test('?skyanim=off and the row off turn it off; the default is on', () => {
+test('the layers wired to rows: every layer has an on row, and a layer that looks poor ships off', () => {
+  for (const k of ['planet', 'globe', 'glisten']) assert.equal(typeof A[k].on, 'boolean', k);
+  assert.equal(typeof A.globe.sprite.on, 'boolean'); assert.equal(typeof A.planet.glow.on, 'boolean'); assert.equal(typeof A.globe.spin.on, 'boolean');
+  const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
+  for (const k of ['secondsPerTurn', 'swingDegrees', 'frameSeconds', 'periodSeconds', 'sweepSeconds', 'spreadTexels', 'twinkle', 'readyTimeoutSeconds', 'respectReducedMotion', 'pulseSeconds', 'orbitSeconds', 'rects']) assert.match(src, new RegExp(`\\b${k}\\b`), k);
+});
+
+test('?skyanim=off and the row off stop the motion (the layers still composite); the default moves', () => {
   assert.equal(animOn('', A), true); assert.equal(animOn('?skyanim=off', A), false); assert.equal(animOn('?skyanim=1', A), true); assert.equal(animOn('', { ...A, on: false }), false);
-  assert.equal(createSkyAnim('?skyanim=off', 2508, 627), null);
-  assert.ok(createSkyAnim('', 2508, 627));
+  assert.equal(createSkyAnim('?skyanim=off', 4096, 1024).moving, false);
+  assert.equal(createSkyAnim('', 4096, 1024).moving, true);
+  assert.equal(createSkyAnim('', 4096, 1024, { ...A, on: false }), null);
+  assert.equal(createSkyAnim('', 4096, 1024, A, true), null, '?skyflat draws no layers');
+  const off = createSkyAnim('?skyanim=off', 4096, 1024); off.update(1); assert.equal(off.time, 0);
 });
 
-test('prefers-reduced-motion turns it off', () => {
+test('prefers-reduced-motion stops the motion', () => {
   const was = globalThis.matchMedia;
   globalThis.matchMedia = (q) => ({ matches: /reduce/.test(q) });
-  try { assert.equal(createSkyAnim('', 2508, 627), null); assert.ok(createSkyAnim('', 2508, 627, { ...A, respectReducedMotion: false })); }
+  try { assert.equal(createSkyAnim('', 4096, 1024).moving, false); assert.equal(createSkyAnim('', 4096, 1024, { ...A, respectReducedMotion: false }).moving, true); }
   finally { if (was) globalThis.matchMedia = was; else delete globalThis.matchMedia; }
 });
 
-test('the motion maths: a continuous turn takes secondsPerTurn, a swing stays within its degrees, the band sweeps the box then rests', () => {
+test('the motion maths: a turn takes secondsPerTurn, a swing stays within its degrees, the band sweeps then rests, the sprite steps and loops', () => {
   assert.ok(Math.abs(spinShift(36, 0, 36) - 2 * Math.PI) < 1e-9);
   for (let t = 0; t < 120; t += 1.7) assert.ok(Math.abs(spinShift(60, 9, t)) <= THREE.MathUtils.degToRad(9) + 1e-9);
   const g = A.glisten;
-  assert.ok(bandCentre(g, 0) < g.box.u0); assert.ok(bandCentre(g, g.sweepSeconds * 0.5) > g.box.u0 && bandCentre(g, g.sweepSeconds * 0.5) < g.box.u1);
-  assert.ok(bandCentre(g, g.sweepSeconds + 0.1) > g.box.u1, 'resting off the far edge');
-  assert.ok(Math.abs(bandCentre(g, 0) - bandCentre(g, g.periodSeconds)) < 1e-9, 'a periodic sweep');
+  assert.ok(bandCentre(g, 0) < g.rect.u0); assert.ok(bandCentre(g, g.sweepSeconds * 0.5) > g.rect.u0 && bandCentre(g, g.sweepSeconds * 0.5) < g.rect.u1);
+  assert.ok(bandCentre(g, g.sweepSeconds + 0.1) > g.rect.u1, 'resting off the far edge'); assert.ok(Math.abs(bandCentre(g, 0) - bandCentre(g, g.periodSeconds)) < 1e-9, 'periodic');
+  const s = A.globe.sprite; assert.equal(spriteFrame(s, 0), 0); assert.equal(spriteFrame(s, 0.16), 1); assert.equal(spriteFrame(s, 0.15 * 24 + 0.01), 0); assert.equal(spriteFrame(s, 0.15 * 23.5), 23);
 });
 
 test('the clock advances, is clamped per step, and stands still while the tab is hidden', () => {
-  const a = createSkyAnim('', 2508, 627);
+  const a = createSkyAnim('', 4096, 1024);
   a.update(0.016); assert.ok(Math.abs(a.time - 0.016) < 1e-9);
   a.update(50); assert.ok(a.time <= 0.016 + 0.1 + 1e-9, 'a long stall does not jump the motion');
   const t0 = a.time, was = globalThis.document;
@@ -67,30 +85,31 @@ test('the clock advances, is clamped per step, and stands still while the tab is
   a.dispose();
 });
 
-test('it patches the plate material in place: the shader gains the effect lines, nothing else about the material changes', () => {
-  const a = createSkyAnim('', 2508, 627), m = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, fog: false });
+test('it patches the plate material in place: the shader gains the layer lines, nothing else about the material changes', () => {
+  const a = createSkyAnim('', 4096, 1024), m = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, fog: false });
   a.apply(m);
   const shader = { uniforms: {}, fragmentShader: '#include <common>\nvoid main(){\n#include <map_fragment>\n}' };
   m.onBeforeCompile(shader, null);
-  assert.match(shader.fragmentShader, /uGlobeShift/); assert.match(shader.fragmentShader, /uBand/); assert.doesNotMatch(shader.fragmentShader, /#include <map_fragment>/);
-  for (const k of ['uAspect', 'uGlobeShift', 'uPlanetPulse', 'uBand']) assert.ok(k in shader.uniforms, k);
+  assert.match(shader.fragmentShader, /uGlobeShift/); assert.match(shader.fragmentShader, /uMaskTex/); assert.doesNotMatch(shader.fragmentShader, /#include <map_fragment>/);
+  for (const k of ['uAspect', 'uGlobeShift', 'uPlanetPulse', 'uBand', 'uPlanetTex']) assert.ok(k in shader.uniforms, k);
   assert.equal(m.transparent, true); assert.equal(m.depthWrite, false); assert.equal(m.fog, false);
   const before = shader.uniforms.uGlobeShift.value; a.update(1); assert.notEqual(shader.uniforms.uGlobeShift.value, before, 'the shared uniform moves with the clock');
   a.dispose();
 });
 
-test('the skyline plate carries it and ?skyanim=off draws the plain plate (the plate itself is unchanged either way)', async () => {
-  const tex = () => { const t = new THREE.DataTexture(new Uint8Array(4), 1, 1); t.image = { width: 2508, height: 627, data: new Uint8Array(4) }; return t; };
+test('?skyflat=1 loads the flattened plate and none of the layers; the default loads the clean plate; ?skyplate=v1 still draws the old strip', () => {
+  assert.equal(plateFile('', P), P.file); assert.equal(plateFile('?skyflat=1', P), P.flatFile); assert.equal(plateFlat('?skyflat=1', P), true); assert.equal(plateFlat('', P), false);
+  const old = createSkyline(new THREE.Scene(), '?skyplate=v1', SKYLINE, () => new Promise(() => {})); assert.equal(old.mesh.geometry.parameters.thetaLength, Math.PI * 2); old.dispose();
+});
+
+test('the skyline plate shows once its layers are in, carries the patched material, and the follow/fade path still runs', async () => {
+  const tex = () => { const t = new THREE.DataTexture(new Uint8Array(4), 1, 1); t.image = { width: 4096, height: 1024, data: new Uint8Array(4) }; return t; };
   const sky = createSkyline(new THREE.Scene(), '', SKYLINE, async () => tex());
-  const off = createSkyline(new THREE.Scene(), '?skyanim=off', SKYLINE, async () => tex());
   await new Promise((r) => setTimeout(r, SKYLINE.loadAfterFirstFrameMs + 400));
-  assert.ok(sky && off);
-  if (sky.state !== 'idle' && sky.state !== 'loading') {
-    assert.equal(typeof sky.mesh.material.onBeforeCompile, 'function');
+  assert.ok(sky);
+  if (sky.state === 'fading' || sky.state === 'on') {
     assert.ok(sky.mesh.material.customProgramCacheKey().includes('skyanim'));
-    assert.ok(!off.mesh.material.customProgramCacheKey().includes('skyanim'));
-    sky.update(new THREE.Vector3(), 0.016); off.update(new THREE.Vector3(), 0.016);   // the camera/follow/fade path still runs
-    assert.ok(sky.opacity > 0 && off.opacity > 0);
+    sky.update(new THREE.Vector3(), 0.016); assert.ok(sky.opacity > 0);
   }
-  sky.dispose(); off.dispose();
+  sky.dispose();
 });

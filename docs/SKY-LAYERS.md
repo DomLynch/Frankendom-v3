@@ -1,27 +1,24 @@
-# Sky layers: what the designer supplies
+# Sky layers: the designer's file list (as delivered 2026-10-27)
 
-The skyline plate (Dom's smiling cosmic titan, `src/assets/skyline/skyline-titan.webp`, 2508x627, exactly 4:1) has small coded motion on top of it
-(`src/fight/skyanim.ts`, rows in `data/stage.json` under `skyline.plate.anim`). Today every effect is made from the one flattened picture, so it
-costs no extra bytes. A proper layer set replaces the made-from-flat parts, one row at a time, with no code change.
+The skyline plate (Dom's smiling cosmic titan) is a CLEAN plate with registered layers over it, plus small coded motion
+(`src/fight/skyanim.ts`, rows in `data/stage.json` under `skyline.plate` and `skyline.plate.anim`). Every file is named by a row, all live in
+`src/assets/skyline/`, and a re-delivery is a file swap (same name = replace the file; a new name = change the row's `file`). Everything is registered to the 4096x1024 plate.
 
-All files are WebP, go in `src/assets/skyline/`, and are named in the row (`data/stage.json`). Keep the total of new files under about 150 KB:
-the first visit is under a 5.5 MB wire budget (`data/build.json` firstVisitBytes) and the plate is part of it.
-
-| Layer | Row | File spec | What it replaces |
+| File | Row | Spec | Used for |
 | --- | --- | --- | --- |
-| Clean plate | `skyline.plate.file` | Same 4:1 shape (2508x627 or 4096x1024), sRGB. The sky, titan, ring technology and cloud sea WITHOUT the small globe in his hand and WITHOUT the red-pink planet. Set `cropAspect` and `face` if the shape or face position changes. | The flattened plate. Then the globe and planet are drawn only by their own layers (below). |
-| Globe surface map | `skyline.plate.anim.globe.file` | Equirectangular (2:1) sphere surface, 256x128 or 512x256, sRGB, alpha allowed (alpha = see-through), seamless left to right. | The fake spin of the globe's own pixels. With a map it spins for real (continuous turn every `secondsPerTurn`) and is lit by `anim.light` (`mapLit` 0..1; 0 = flat). |
-| Planet surface map | `skyline.plate.anim.planet.file` | Equirectangular (2:1) surface, 1024x512, sRGB, seamless left to right. Alpha = atmosphere edge. | The slow swing of the planet's disc. With a map it turns for real and is lit by `anim.light`. |
-| Glisten mask | `skyline.plate.anim.glisten.file` | Greyscale, red channel used: white where the ring technology should glisten, black elsewhere. Same aspect as the plate, 1254x314 is plenty (about 10 KB). | The mask the shader derives from bright, high-contrast edge pixels. |
+| `01_clean_plate.webp` | `skyline.plate.file` | 4096x1024 (4:1), sRGB, no globe, no planet. Shipped recompressed to WebP q80 (134 KB; the delivered file was 251 KB, no visible loss at phone size). | The base picture, shown at native aspect. |
+| `03_red_planet_cutout.webp` | `anim.planet.file` | RGBA, full plate size (4096x1024), registered; only the lit half disc above the cloud horizon has alpha. | Composited over the plate at its place (the plate has no planet), plus a faint rim glow pulse. |
+| `02_globe_cutout.webp` | `anim.globe.file` | RGBA, full plate size, registered. | Composited over the plate; its own pixels are spun a little (fake spin) and a glint drifts over it. |
+| `04_glisten_mask.png` | `anim.glisten.file` | 8-bit greyscale, full plate size; white = may shimmer. | Drives the additive shimmer on the ring technology. The halo never moves. |
+| `05_globe_turn_24_frames.webp` | `anim.globe.sprite.file` | 4096x1024 sheet, 8x3 frames, each frame a 222 px cell with a sphere of radius about 104 px, per-frame x,y,w,h in the manifest (`anim.globe.sprite.rects`). | The globe turn by sprite steps, 0.15 s per frame. Off by default (see below). |
+| `06_red_planet_tileable_texture.webp` | not used | 1024x512, mirrored symmetric pink image. | Not wired: a slow drift under the cut-out's alpha would show the mirror seam. A re-delivery that is a true seamless texture can be wired as a row. |
+| `manifest.json` | the registration rows | globe centre 2787.0, 681.9 px, radius 32.7 px; planet centre 1367.8, 736.6 px, radius 249.1 px; sprite frames 24, 0.15 s. | `anim.globe.centre/radius`, `anim.planet.centre/radius` are these divided by the plate size (radius by its width); `anim.globe.sprite.rects` are the manifest's frame rects. |
 
-Positions are fractions of the plate picture (u across, v down, y down), radii are fractions of the picture's width:
+Cut-outs and the mask are cropped to their `rect` (a row, in plate fractions) when they land, so the GPU never holds a full 4096x1024 texture per layer. They are fetched
+after the first frame and the plate waits for them (up to `readyTimeoutSeconds`), so nothing pops in. A layer with `on` false is not fetched.
 
-* `globe.centre`, `globe.radius` (now 0.680, 0.670, r 0.0078: the small world left of the raised hand)
-* `planet.centre`, `planet.radius` (now 0.336, 0.722, r 0.057)
-* `glisten.box` (u0, u1, v0, v1) limits where the sweep can show
+Switches: `?skyanim=off` stops the motion (the cut-outs still composite: they are part of the picture); prefers-reduced-motion does the same; `?skyflat=1` shows the old flattened plate
+(`skyline.plate.flatFile`) with no layers; `?skyplate=v1` draws the old 360-degree strip.
 
-If the clean plate moves the globe or planet, change those rows to match; nothing else moves. To check a layer, open the page with and without
-`?skyanim=off` (the off link shows the plate on its own). Layers are optional per row: leave a `file` as `''` and that effect is made from the plate.
-
-Not needed from the designer: a turn-frame sheet is not used. The globe spin is a surface map turned by the shader, which is smaller (one 512x256 map
-instead of a frame sheet) and never shows a frame step.
+What would help in the next delivery: a globe turn sheet that reads as one clean world (the frames now show a pink arch pattern on a blue ball), the planet cut-out with its lower part
+kept at full alpha (it is faded near the horizon) or a full disc, a glisten mask with wider soft shapes (the speckles are about a pixel across), and a true seamless planet texture.
