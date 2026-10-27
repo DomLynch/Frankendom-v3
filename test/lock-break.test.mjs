@@ -23,7 +23,7 @@ test('the row is pinned, the schema knows it, bad rows are refused', () => {
   assert.deepEqual(validateFile('respawn', ROWS), []);
   assert.ok(validateFile('respawn', { ...ROWS, lockBreak: { ...R, extra: 1 } }).length > 0);
   for (const k of Object.keys(LIM)) for (const v of [NaN, LIM[k][1] + 1, LIM[k][0] - 1]) assert.throws(() => validateLockBreak({ ...R, [k]: v }, LIM), new RegExp(k), `${k}=${v}`);
-  assert.throws(() => validateLockBreak({ ...R, relockAngleDeg: 130, breakAngleDeg: 120 }, LIM), /smaller/);
+  assert.throws(() => validateLockBreak({ ...R, relockAngleDeg: 100, breakAngleDeg: 90 }, LIM), /smaller/);
   assert.throws(() => validateLockBreak({ ...R, on: 'yes' }, LIM), /true or false/);
   for (const gone of ['staminaCost', 'minEngageSeconds']) assert.equal(gone in R, false, `no artificial gate row: ${gone}`);
 });
