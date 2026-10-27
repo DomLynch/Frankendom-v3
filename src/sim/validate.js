@@ -256,7 +256,7 @@ export function validateFile(name, json) {
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
-export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views'];
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views'];
 /** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
 function checkWideLens(w, name) {
   const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
@@ -282,7 +282,7 @@ function checkSkyline(s) {
     for (const k of Object.keys(s.face)) if (!['u', 'v'].includes(k)) at(`face.${k}`, 'unknown key');
     for (const k of ['u', 'v']) if (!Number.isFinite(s.face[k]) || s.face[k] < 0 || s.face[k] > 1) at(`face.${k}`, 'must be a finite number in 0..1');
   }
-  rng('yawDegrees', -360, 360); rng('yawFollow', 0, 1); rng('yawFollowSeconds', 0, 20);
+  rng('yawDegrees', -360, 360); rng('followOffsetDegrees', -360, 360); rng('yawFollow', 0, 1); rng('yawFollowSeconds', 0, 20);
   if (typeof s.followQuery === 'string' && (s.followQuery === s.query || s.followQuery === (s.views || {}).query)) at('followQuery', 'must be a plain word other than skyline.query and skyline.views.query'); rng('brightness', 0.1, 1.5); rng('fadeSeconds', 0, 10); rng('loadAfterFirstFrameMs', 0, 10000, true);
   if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > SKYLINE_RIM_LIMIT) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
   e.push(...checkSkyViews(s));

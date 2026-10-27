@@ -33,8 +33,8 @@ const TAU = Math.PI * 2;
 export function headingOf(dirX: number, dirZ: number): number { return Math.atan2(-dirX, -dirZ); }
 /** Carries a running (unwrapped) yaw on to a new heading by the shortest turn from the last, so the follow never jumps at +-pi. */
 export function unwrapYaw(running: number, heading: number): number { return heading + TAU * Math.round((running - heading) / TAU); }
-/** The strip's turn about the vertical for an unwrapped camera yaw: the row's fixed yaw plus `yawFollow` x the camera's. */
-export function stripYaw(row: SkylineRow, cameraYaw: number): number { return THREE.MathUtils.degToRad(row.yawDegrees) + row.yawFollow * cameraYaw; }
+/** The strip's turn about the vertical for an unwrapped camera yaw: the row's fixed yaw, plus `followOffsetDegrees` (the follow only: it puts the alien ahead), plus `yawFollow` x the camera's. */
+export function stripYaw(row: SkylineRow, cameraYaw: number): number { return THREE.MathUtils.degToRad(row.yawDegrees + row.followOffsetDegrees) + row.yawFollow * cameraYaw; }
 
 export type Skyline = {
   mesh: THREE.Mesh;

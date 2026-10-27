@@ -22,6 +22,8 @@ test('the validator refuses bad follow rows', () => {
   assert.match(bad({ yawFollow: -0.1 }), /skyline\.yawFollow/);
   assert.match(bad({ yawFollow: NaN }), /skyline\.yawFollow/);
   assert.match(bad({ yawFollow: '0.5' }), /skyline\.yawFollow/);
+  assert.match(bad({ followOffsetDegrees: 900 }), /skyline\.followOffsetDegrees/);
+  assert.match(bad({ followOffsetDegrees: 'x' }), /skyline\.followOffsetDegrees/);
   assert.match(bad({ yawFollowSeconds: -1 }), /skyline\.yawFollowSeconds/);
   assert.match(bad({ yawFollowSeconds: 99 }), /skyline\.yawFollowSeconds/);
   assert.match(bad({ followQuery: 'no way' }), /skyline\.followQuery/);
@@ -55,13 +57,15 @@ test('unwrapYaw takes the shortest turn, so crossing +-pi never jumps', () => {
 });
 
 test('stripYaw is the fixed yaw plus yawFollow x the camera yaw', () => {
-  const row = { ...SKYLINE, yawDegrees: 90, yawFollow: 0.5 };
+  const row = { ...SKYLINE, yawDegrees: 90, followOffsetDegrees: 0, yawFollow: 0.5 };
   assert.ok(Math.abs(stripYaw(row, 2) - (Math.PI / 2 + 1)) < 1e-12);
   assert.equal(stripYaw({ ...row, yawFollow: 0 }, 5), Math.PI / 2);
+  assert.ok(Math.abs(stripYaw({ ...row, followOffsetDegrees: -90 }, 2) - 1) < 1e-12);   // the follow-only offset adds to the fixed yaw
+  assert.equal(SKYLINE.yawDegrees, 0);   // ?skyfollow=v1 is the look before: fixed at 0
 });
 
 test('the strip turns after the camera, with no jump when the camera wraps through +-pi', () => {
-  const row = { ...SKYLINE, yawDegrees: 0, yawFollow: 0.9, yawFollowSeconds: 0 };   // no ease: the rotation is the exact follow
+  const row = { ...SKYLINE, yawDegrees: 0, followOffsetDegrees: 0, yawFollow: 0.9, yawFollowSeconds: 0 };   // no ease: the rotation is the exact follow
   const sky = createSkyline(new THREE.Scene(), '', row, never);
   let last = 0;
   for (let i = 0; i <= 300; i++) {
@@ -74,7 +78,7 @@ test('the strip turns after the camera, with no jump when the camera wraps throu
 });
 
 test('the follow starts on target and then eases (yawFollowSeconds), never snapping', () => {
-  const row = { ...SKYLINE, yawDegrees: 0, yawFollow: 1, yawFollowSeconds: 1 };
+  const row = { ...SKYLINE, yawDegrees: 0, followOffsetDegrees: 0, yawFollow: 1, yawFollowSeconds: 1 };
   const sky = createSkyline(new THREE.Scene(), '', row, never);
   sky.heading(camAt(2)); sky.update(new THREE.Vector3(), 0.016);
   assert.ok(Math.abs(sky.mesh.rotation.y - 2) < 1e-9);   // the first frame: no spin up from zero
