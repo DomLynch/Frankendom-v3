@@ -137,7 +137,7 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   assert.match(main, /view\.idleFoes\(idleOnes\(spawns, current\)/);
   assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, ZONE\.spawn\.kind\)/);
   assert.match(main, /spawns = kill\(spawns, current\)/);
-  assert.match(main, /leashed\(spawns\[current\]!, hero\)/);
+  assert.match(main, /leashed\(spawns\[current\]!, hero(, openerLift)?\)/);
   assert.doesNotMatch(main, /respawnDue|sinceKill/);
   assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number \}\[\]\)/);
   assert.match(scene, /snapshotRig\(opponent, false\)/);
