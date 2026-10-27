@@ -29,8 +29,7 @@ test('the rows validate, and a bad row is refused (finite, ordered, #rrggbb, a m
   assert.match(bad((r) => { delete r.massKg.default; }), /massKg\.default/);
   assert.match(bad((r) => { r.window.knockdown.lengthS = 0; }), /window\.knockdown\.lengthS/);
   assert.match(bad((r) => { r.push.pushS = 0; }), /push\.pushS/);
-  assert.match(bad((r) => { r.cue.color = 'red;}x{'; }), /cue\.color/);
-  assert.match(bad((r) => { r.cue.yPct = 140; }), /cue\.yPct/);
+  assert.match(bad((r) => { r.cue = { text: 'FINISH NOW' }; }), /feel-kick\.cue: unknown key/, 'the text cue row is gone: a cue row is refused');
   assert.match(bad((r) => { r.shove.moves.kick = { forceMult: 1, canKnockdown: true }; }), /a kick or a shove, not both/);
   assert.match(bad((r) => { r.shove.moves.skill_pommel.canKnockdown = 'no'; }), /canKnockdown/);
   assert.match(bad((r) => { r.event.log = 'a b'; }), /event\.log/);
@@ -106,21 +105,25 @@ test('the Presentation is what ragdoll.ts react() takes: a knockdown by push for
 });
 
 function rig() {
-  const emitted = [], shown = [], ctl = createFeelKick(ROWS, { cueHost: { show: (on) => shown.push(on) } });
-  return { emitted, shown, ctl, ctx: { emit: (n, p) => emitted.push([n, p]), foeId: 'pitborn' } };
+  const emitted = [], ctl = createFeelKick(ROWS);
+  return { emitted, ctl, ctx: { emit: (n, p) => emitted.push([n, p]), foeId: 'pitborn' } };
 }
 
-test('the controller: a kick on an open foe is a STAGGER Presentation (never a knockdown), emits feel:kick_result, opens the cue and closes it', () => {
+test('the controller: a kick on an open foe is a STAGGER Presentation (never a knockdown), emits feel:kick_result, and no element is ever created', async () => {
   delete globalThis[ROWS.event.log];
-  const { emitted, shown, ctl, ctx } = rig(), p = ctl.react(hit(), ctx);
+  const made = [], doc = globalThis.document; globalThis.document = { createElement: (t) => { made.push(t); return {}; }, body: { appendChild: (x) => made.push(x) }, head: { appendChild: (x) => made.push(x) } };
+  const { emitted, ctl, ctx } = rig(), p = ctl.react(hit(), ctx);
   assert.equal(p.action, 'stagger');
   assert.equal(emitted.length, 1); assert.equal(emitted[0][0], 'feel:kick_result');
   assert.deepEqual([emitted[0][1].outcome, emitted[0][1].finisherWindowS, emitted[0][1].stance], ['stagger', ROWS.window.stagger.lengthS, 'open']);
   assert.equal(globalThis[ROWS.event.log].length, 1); assert.equal(emitted[0][1].presentationOnly, true, 'the event promises no sim window');
   for (const k of ['about']) assert.match(ROWS[k], /PLACEHOLDER/); assert.match(ROWS.stance.about, /PLACEHOLDER/); assert.match(ROWS.window.about, /PLACEHOLDER/);
   assert.doesNotMatch(JSON.stringify(ROWS), /feel-sim\.json/, 'no wording that points at a file that does not exist yet');
-  ctl.frame(0.1); assert.deepEqual(shown, [true]);
-  ctl.frame(ROWS.window.stagger.lengthS + 0.1); assert.deepEqual(shown, [true, false]); assert.equal(ctl.debug.windowOpen, false);
+  ctl.frame(0.1); assert.equal(ctl.debug.windowOpen, true, 'the window is still a number on the controller');
+  ctl.frame(ROWS.window.stagger.lengthS + 0.1); assert.equal(ctl.debug.windowOpen, false);
+  globalThis.document = doc; if (doc === undefined) delete globalThis.document;
+  assert.deepEqual(made, [], 'nothing was ever created in the page: no FINISH NOW text box');
+  assert.equal('createCueElement' in await import('../src/fight/feel-kick.ts'), false);
 });
 
 test('the controller tracks his stance from the sim\'s events: mid-swing after AttackStarted, recovering after Staggered, guarding on a guarded Hit; other hits and targets are left alone', () => {
@@ -150,7 +153,7 @@ function fakeCtx(state = 'alive') {
 }
 
 test('the hit hook drives the ragdoll: a kick is ALWAYS a stagger (open, mid-swing, guarding), never knockdown; a fall comes only from the sim\'s KnockedDown, along his facing', () => {
-  const { calls, c } = fakeCtx(), ctl = createFeelKick(ROWS, { cueHost: { show() {} } }), yawed = { ...c, group: { rotation: { y: Math.PI / 2 } } };
+  const { calls, c } = fakeCtx(), ctl = createFeelKick(ROWS), yawed = { ...c, group: { rotation: { y: Math.PI / 2 } } };
   ctl.hit(hit({ heading: Math.PI / 2 }), yawed);
   for (let i = 0; i < 20; i++) ctl.hit(hit({ heading: Math.PI / 2, guarded: i % 3 === 0 }), yawed);
   ctl.frame(0.016, [{ tick: 1, type: 'AttackStarted', actor: 1, move: 'heavy_overhead' }], yawed); ctl.hit(hit({ heading: Math.PI / 2 }), yawed);
@@ -165,7 +168,7 @@ test('the hit hook drives the ragdoll: a kick is ALWAYS a stagger (open, mid-swi
 });
 
 test('the frame hook: bones follow the ragdoll every frame he is knocked down, then ease back to the clip over getUpS', () => {
-  const ctl = createFeelKick(ROWS, { cueHost: { show() {} } }), down = fakeCtx('knockdown'), up = fakeCtx('alive');
+  const ctl = createFeelKick(ROWS), down = fakeCtx('knockdown'), up = fakeCtx('alive');
   ctl.hit(hit(), down.c);
   ctl.frame(0.016, [{ tick: 1, type: 'KnockedDown', actor: 0, target: 1, move: 'heavy_overhead', ticks: 120, window: 72, force: 1064 }], down.c); ctl.frame(0.016, [], down.c);
   assert.equal(down.blends.length, 2); assert.deepEqual(down.blends[0], { hips: 1, head: 1 });
