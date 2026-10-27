@@ -132,6 +132,7 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
     const unit = process.env.LIMB ?? (/_/.test(TAP) ? TAP : null), dist = [];
     let k = 0; for (const t of AFTER) { await run(t - k); k = t; await shoot(`tap-${t}`); if (unit) dist.push(`${(t / 60).toFixed(2)}s ${(await page.evaluate((u) => globalThis.__ragdoll.limbDistance?.(u), unit))?.toFixed(3)} m`); }
     if (unit) console.log(`${tag}: ${unit} bone to chest, by time after the tap: ${dist.join(' | ')}`);
+    if (process.env.LEAVE) { const s = await cost(); console.log(`${tag}: after ${(k / 60).toFixed(1)} s: corpses standing ${s?.corpses}, the live ragdoll is ${s?.state}`); }
   }
   const state = await cost();
   report[tag] = { ticks: n, hitAt, killedAt, finish, ragdoll: state, pieces: await page.evaluate(() => globalThis.__ragdoll?.debug?.()) };
