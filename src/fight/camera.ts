@@ -276,7 +276,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
     // `drop`, easing in and back out over `seconds`.
     tilt(angle: number, seconds: number, right = 0, drop = 0) { tiltAngle = angle; tiltFor = seconds; tiltAge = 0; swayRight = right; swayDrop = drop; },
     // Place the camera for this frame: lock or orbit framing, the finisher push-in, the side-view reveal, then the settle and the kick.
-    update(dt: number, state: State, enemy: { x: number; z: number }, locked: boolean, finish: CameraFinish | null, enemyScale = 1, enemyTall = 0, enemyLow = 0) {
+    update(dt: number, state: State, enemy: { x: number; z: number }, locked: boolean, finish: CameraFinish | null, enemyScale = 1, enemyTall = 0, enemyLow = 0, widen = 1) {   // widen: the lock backs off by this when another boss is on him (src/zone/attackers.ts framingWiden); 1 = the one-boss frame, untouched
       const blend = 1 - Math.exp(-dt * 8);
       if (locked) {
         const lockYaw = Math.atan2(state.x - enemy.x, state.z - enemy.z);
@@ -286,7 +286,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       // ease out over SHORT_FADE once it begins, so the kill settles on the same frame as for a man (release row 25).
       shortFade = finish ? Math.max(0, shortFade - dt / SHORT_FADE) : 1;
       const shortShare = shortFade * shortFade * (3 - 2 * shortFade);   // smoothstep: no kink where the ease starts or ends
-      const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare, 1 + (FIGHT_BACK - 1) * shortShare, 1 + (LOCK_LIFT - 1) * shortShare, LOCK_SIDE * shortShare);   // a finish takes the fight-back scale out on the same ease as the short-foe lift, so it frames as it always did
+      const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare, (1 + (FIGHT_BACK - 1) * shortShare) * (1 + (widen - 1) * shortShare), 1 + (LOCK_LIFT - 1) * shortShare, LOCK_SIDE * shortShare);   // a finish takes the fight-back scale out on the same ease as the short-foe lift, so it frames as it always did
       look.set(cameraTarget.lookX, locked ? 0.8 : 1, cameraTarget.lookZ);
       desired.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
       // The authorized slow push-in over the death window (finishers & gore 2026-09-17): a dolly toward the fallen, never a cut,

@@ -7,7 +7,7 @@ import { OPPONENTS, opponentAt, profileAt } from '../src/fight/moves.ts';
 import { initialPractice, stepPractice } from '../src/fight/combat.ts';
 import { idleIntent } from '../src/fight/duel.ts';
 import { adopt, joinAttacker, stepAttackers } from '../src/fight/attacker-bout.ts';
-import { ATTACKERS, MAX_ATTACKERS, attackersOn, dropped, joiners } from '../src/zone/attackers.ts';
+import { ATTACKERS, MAX_ATTACKERS, attackersOn, dropped, framingWiden, joiners, validateFraming } from '../src/zone/attackers.ts';
 import { kill, spotsFor } from '../src/zone/spawns.ts';
 import { zoneFor } from '../src/zone/zone-rows.ts';
 
@@ -20,7 +20,7 @@ const poseOf = (hero, spot) => ({ hero, foe: spot, heroFacing: Math.atan2(spot.x
 const intentOf = (practice, action = null) => ({ ...idleIntent(), action: practice.phase === 'sheathed' && !practice.finish && action === null ? 'light' : action });
 
 test('the default is pinned: on, ?aggro=v1 turns it off, the cap is the V1 row (3, the first boss included)', () => {
-  assert.deepEqual({ ...ATTACKERS, about: undefined }, { about: undefined, on: true, query: 'aggro', off: 'v1' });
+  assert.deepEqual({ ...ATTACKERS, about: undefined, camera: { ...ATTACKERS.camera, about: undefined } }, { about: undefined, on: true, query: 'aggro', off: 'v1', camera: { about: undefined, widenAtMetres: 2.5, maxWiden: 1.6, easeSeconds: 0.5 } });
   assert.equal(attackersOn(''), true); assert.equal(attackersOn('?aggro=v1'), false); assert.equal(attackersOn('?aggro=1'), true);
   assert.equal(attackersOn('', { ...ATTACKERS, on: false }), false, 'the row off');
   assert.equal(MAX_ATTACKERS, JSON.parse(read('../src/fight/world-rules-defs.json')).rules.find((r) => r.id === 'maxAttackers').value);
@@ -39,6 +39,20 @@ test('who joins: a standing boss the hero is inside the aggro of, nearest first,
   assert.deepEqual(joiners(dead, 0, [], at(1)), [], 'a dead boss does not attack');
   const far = { x: s[0].x + 100, z: s[0].z };
   assert.deepEqual(joiners(s, 0, [], far), [], 'out of every aggro nobody joins');
+});
+
+test('the camera framing row: one boss is exactly the old frame, a far attacker widens it in proportion, capped; bad rows are refused', () => {
+  const rows = ATTACKERS.camera, c = { x: 0, z: 0 };
+  assert.equal(framingWiden(c, []), 1, 'one boss live: no widening at all');
+  assert.equal(framingWiden(c, [{ x: rows.widenAtMetres, z: 0 }]), 1, 'inside the row\'s distance: still 1');
+  const mid = framingWiden(c, [{ x: rows.widenAtMetres * 1.2, z: 0 }]);
+  assert.ok(mid > 1 && mid < rows.maxWiden && Math.abs(mid - 1.2) < 1e-9);
+  assert.equal(framingWiden(c, [{ x: 1000, z: 0 }]), rows.maxWiden, 'capped');
+  assert.equal(framingWiden(c, [{ x: rows.widenAtMetres * 1.1, z: 0 }, { x: 0, z: rows.widenAtMetres * 1.3 }]), 1.3, 'the farthest attacker decides');
+  assert.doesNotThrow(() => validateFraming(rows));
+  for (const bad of [{ widenAtMetres: 0 }, { maxWiden: 0.5 }, { easeSeconds: 0 }, { maxWiden: NaN }]) assert.throws(() => validateFraming({ ...rows, ...bad }), /attackers\.camera/);
+  const cam = read('../src/fight/camera.ts');
+  assert.match(cam, /enemyLow = 0, widen = 1\)/); assert.match(cam, /\* \(1 \+ \(widen - 1\) \* shortShare\)/);
 });
 
 test('who lets go: past its own leash from its own spot', () => {

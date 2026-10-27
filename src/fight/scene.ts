@@ -550,7 +550,7 @@ export function createScene(
     });
   }
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
-  let liveList: readonly { id: string; practice: Practice }[] = [];
+  let liveList: readonly { id: string; practice: Practice }[] = [], frameWiden = 1;
   const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
   function syncLiveFoes(dt: number) {
     const seen = new Set<string>();
@@ -640,6 +640,7 @@ export function createScene(
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
     // programs, its own bones and mixer), posed from that fight's own Practice. Presentation only; the first boss is the live rig above and is never in this list.
     liveFoes(list: readonly { id: string; practice: Practice }[]) { liveList = list; },
+    setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
@@ -1075,7 +1076,7 @@ export function createScene(
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
-      } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId));
+      } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden);
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock
       // for a posed finisher, the plain fall's own progress for a plain death, so the plain death completes earlier and the

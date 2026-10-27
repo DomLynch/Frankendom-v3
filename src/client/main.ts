@@ -55,7 +55,7 @@ import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep } from '../fight/zone-loop.ts';
-import { attackersOn, dropped, isStanding, joiners } from '../stubs.ts';
+import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
@@ -204,7 +204,8 @@ let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, 
 // Real-time aggro (data/respawn.json attackers, src/zone/attackers.ts, src/fight/attacker-bout.ts): while the hero fights the held boss, every other standing spawn whose aggro he enters fights him too, in its own duel on his one health pool.
 // `attackers` holds them (a killed one stays, lying, until its own timer stands it again); `killedBy` is the attacker whose blow killed the hero (that boss starts again at full health). ?aggro=v1 / row off / ?postkill=v1: none, the others are frozen copies.
 const multi = !!ZONE && attackersOn(search);
-let attackers: Attacker[] = [], killedBy: number | null = null;
+let attackers: Attacker[] = [], killedBy: number | null = null, widen = 1;   // widen: the lock camera's back-off for the attackers on him (framingWiden, eased); exactly 1 while only one boss is live
+if (multi) validateFraming();
 const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, RADIUS, ZONE!.minDistance, heroStart);
@@ -358,6 +359,12 @@ function frame(now: number) {
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
+  if (multi) {   // every live attacker stays in frame: the lock backs off by framingWiden, eased; the dead lie where they fell and no longer count; with none it snaps back to exactly 1
+    const aim = framingWiden({ x: (state.x + practice.enemy.x) / 2, z: (state.z + practice.enemy.z) / 2 }, attackers.filter((a) => !a.dead).map((a) => a.practice.enemy)), rows = ATTACKERS.camera;
+    widen += (aim - widen) * (1 - Math.exp(-dt / rows.easeSeconds));
+    if (aim === 1 && widen - 1 < 1 / 1000) widen = 1;
+    view.setWiden(widen);
+  }
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice }))); }   // the attackers' rigs (a killed one lies until its timer is up)
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   view.render(

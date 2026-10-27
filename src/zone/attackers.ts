@@ -7,7 +7,8 @@ import { M } from '../fight/detmath.ts';
 import { MAX_ATTACKERS } from '../fight/attackers.ts';
 import { isStanding, leashed, type Spawn } from '../stubs.ts';   // spawns.ts is reached through the stub boundary (scripts/check-stubs.mjs); the cycle is only read inside functions
 
-export type AttackerRows = { on: boolean; query: string; off: string };
+export type FramingRows = { widenAtMetres: number; maxWiden: number; easeSeconds: number };
+export type AttackerRows = { on: boolean; query: string; off: string; camera: FramingRows };
 export const ATTACKERS = ROWS.attackers as AttackerRows;
 export { MAX_ATTACKERS };
 
@@ -31,3 +32,17 @@ export function joiners(spawns: readonly Spawn[], current: number, live: readonl
 
 /** The attackers that let go: the hero is further from the attacker's own spot than its leash. */
 export const dropped = (spawns: readonly Spawn[], live: readonly number[], hero: At): number[] => live.filter((i) => leashed(spawns[i]!, hero));
+
+/** Throws on a bad framing row: the distance and the ease must be positive, the widest the camera may back off at least the one-boss frame. */
+export function validateFraming(rows: FramingRows = ATTACKERS.camera): void {
+  if (!(Number.isFinite(rows.widenAtMetres) && rows.widenAtMetres > 0)) throw new Error(`respawn.json attackers.camera.widenAtMetres ${rows.widenAtMetres} is not above 0`);
+  if (!(Number.isFinite(rows.maxWiden) && rows.maxWiden >= 1)) throw new Error(`respawn.json attackers.camera.maxWiden ${rows.maxWiden} is not at least 1`);
+  if (!(Number.isFinite(rows.easeSeconds) && rows.easeSeconds > 0)) throw new Error(`respawn.json attackers.camera.easeSeconds ${rows.easeSeconds} is not above 0`);
+}
+
+/** How far the lock camera backs off so every live attacker stays in frame: the frame is centred on `centre` (half way between the hero and the first boss); an attacker further than widenAtMetres from it widens by distance / widenAtMetres, capped at maxWiden. No attacker: exactly 1. */
+export function framingWiden(centre: At, others: readonly At[], rows: FramingRows = ATTACKERS.camera): number {
+  let widen = 1;
+  for (const o of others) widen = Math.max(widen, Math.min(rows.maxWiden, dist(o, centre) / rows.widenAtMetres));
+  return widen;
+}
