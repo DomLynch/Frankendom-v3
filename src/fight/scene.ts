@@ -19,7 +19,8 @@ import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildWarriors, specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
-import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
+import { RemoteSwords } from '../presence/sword.ts';
+import { shapesFlag,shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { bakeSafeFinisher, lookBakeOffFrom, lookBakes, rankLookFlag, runThroughForced, rankLookFor, rankLookStream, SHIPPING_LOOKS } from './rank-look.ts';
 import { kitWorn, levelOf, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/loot.ts
 import { STANDOFF_MS, standoffClock, standoffFlag, standoffPose } from './standoff.ts';
@@ -64,6 +65,7 @@ import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
+import { fovForZoom } from './camera-zoom.ts';
 import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -289,6 +291,7 @@ export function createScene(
   // flag's table, else the shipping one.
   const shapeTable = (typeof location === 'undefined' ? undefined : shapesFlag(location.search)) ?? SHIPPING_SHAPES;
   const shapes = new Map<string, Promise<THREE.Mesh | undefined>>();
+  const remoteSwords = new RemoteSwords<THREE.Mesh>();   // other players' bodies wear the hero's shape whenever it lands or changes (presence/sword.ts)
   // The two sword files (~1 MB each, PNG) still start once the rigs are in, not beside them (tried 2026-10-26: on a 9 Mbps link they
   // share the wire with the rigs and the fight became playable ~1.6 s later; they never gated playable). Until they land each fighter holds
   // his weapon's own part.
@@ -299,7 +302,7 @@ export function createScene(
       const actor = loaded[who], url = urls()[who];
       if (!url) { actor.reshape(undefined); continue; }
       if (!shapes.has(url)) shapes.set(url, loadShape(url).catch((error: unknown) => { captureException(error, { tags: { shape: url } }); return undefined; }));
-      void shapes.get(url)!.then((mesh) => { if (warriors === loaded && urls()[who] === url) { actor.reshape(mesh); ((globalThis as { __weaponShapes?: Record<string, string | undefined> }).__weaponShapes ??= {})[who] = mesh ? url : undefined; } });   // the stills and phone check read what went on
+      void shapes.get(url)!.then((mesh) => { if (warriors === loaded && urls()[who] === url) { actor.reshape(mesh); if (who === 'player') remoteSwords.set(mesh);((globalThis as { __weaponShapes?: Record<string, string | undefined> }).__weaponShapes ??= {})[who] = mesh ? url : undefined; } });   // the stills and phone check read what went on
     }
   }
   const shieldsOn = SHIPPING_SHIELDS.has(opponentId), shields = new Map<string, THREE.SkinnedMesh>(), shieldLoads = new Set<string>();
@@ -570,6 +573,8 @@ export function createScene(
   return {
     // V3: only the members src/client/main.ts calls. V1's journal, zone, gear-room, loot and test-probe hooks are gone (docs/V3-OWED-2026-10-26.md §3, PR 1).
     renderer,
+    /** The lens zoom (data/fight.json camera.zoom, camera-zoom.ts): 1 = the 51 degree lens as it was. Presentation only. */
+    setZoom(zoom: number): void { camera.fov = fovForZoom(zoom); camera.updateProjectionMatrix(); },
     // --- other players (presence wiring, src/presence/draw.ts; called only with ?presence=) --------------------------------------------------------------------------------------------------
     // One more body of the hero's own rig, cloned from the asset the hero was built from (buildWarriors clones: no fetch, no parse, the hero's materials and programs), hung in the scene on its own group.
     // Null until the hero's rig is built. No collider, no sim: the caller poses it. Not in the fight: nothing else in this file knows it exists.
@@ -577,9 +582,8 @@ export function createScene(
       if (!warriors) return null;
       const actor = buildWarriors(warriors.asset, undefined, [warriors.playerWeapon, warriors.playerWeapon], true).player, group = new THREE.Group();
       group.visible = false; group.add(actor.anchor); actor.setUpright(readyOffset('hero')); scene.add(group);
-      // His sword: the hero's own painted shape, from the load the hero already made (`shapes` is keyed by file: no new fetch; a shape not landed yet leaves the rig's own part). Hung on the same weapon node, so the same hand and held transform. The mesh is shared, never disposed with the pooled body.
-      const shape = shapes.get(shapesFor({ player: warriors.playerWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: 1 }, shapeTable).player ?? '');
-      void shape?.then((mesh) => { if (mesh) actor.reshape(mesh); });
+      // His sword: the hero's own painted shape (no new fetch). remoteSwords (presence/sword.ts) gives it now if it has landed, else when reshape() above resolves it, and again at a rank change. Same weapon node, hand and held transform; the mesh is shared, never disposed with the pooled body.
+      remoteSwords.add(actor);
       return { group, update: (speed: number, dt: number, contact: number) => { actor.update(speed, dt, 'ready', 0, 'light', contact, 0); } };
     },
     // --- end other players ------------------------------------------------------------------------------------------------------------------------------------------------------------------
