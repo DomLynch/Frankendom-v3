@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { OPPONENTS } from '../src/fight/moves.ts';
-import { initialPractice, stepPractice } from '../src/fight/combat.ts';
+import { initialPractice, project, stepPractice } from '../src/fight/combat.ts';
 import { idleIntent } from '../src/fight/duel.ts';
 import { initialState } from '../src/fight/sim.ts';
 import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
@@ -166,7 +166,8 @@ test('REPRO: a fight that drifts out from the spot (hero and boss together, up t
 test('REPRO on the real sim: the hero runs one way for 20 s with the real boss brain chasing (stepPractice); the old hero-measured 5 m leash trips, the boss-measured 20 m one does not', () => {
   const s = list()[0], opp = OPPONENTS[FIGHT.opponent], rows = [];
   for (const [mx, mz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-    let p = initialPractice(731, opp, undefined, null, undefined, undefined, undefined, { hero: { x: s.x, z: s.z + 2.5 }, foe: { x: s.x, z: s.z }, heroFacing: Math.PI });
+    const built = initialPractice(731, opp, undefined, null, undefined, undefined, undefined, { hero: { x: s.x, z: s.z + 2.5 }, foe: { x: s.x, z: s.z }, heroFacing: Math.PI });
+    let p = project(zoneDuel(built.duel), built.ai, built);   // the zone's own duel as main.ts fresh() builds it: the open world's radius (OPEN_RADIUS), no ring wall to stop the boss or the hero
     let oldTrips = 0, newTrips = 0, far = 0;
     for (let i = 0; i < 1200; i++) {
       p = stepPractice(p, { ...idleIntent(), move: { x: mx, z: mz, yaw: 0, run: true } });
