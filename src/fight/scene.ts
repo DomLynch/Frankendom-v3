@@ -130,6 +130,7 @@ export function createScene(
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = theme.exposure;
   const scene = new THREE.Scene();
+  (globalThis as { __v3Scene?: THREE.Scene }).__v3Scene = scene;   // the stills' close-up camera finds a body's bones here (scripts/finisher-cuts-stills.mjs CAM=)
   // Special Moves (special-look.ts): the tick each side was last struck by a special (its head-hit stagger is presentation only). The cloud
   // is Finishers' special-fx.ts, loaded below only in a fight with Special Moves.
   const specialStruck = [-Infinity, -Infinity];

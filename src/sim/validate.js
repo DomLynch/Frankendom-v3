@@ -29,10 +29,10 @@ export const SCHEMA = {
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
   'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
     maps: { bones: ['hips', 'spine', 'spine1', 'spine2', 'neck', 'head', 'armLeft', 'forearmLeft', 'handLeft', 'armRight', 'forearmRight', 'handRight', 'thighLeft', 'shinLeft', 'footLeft', 'toeLeft', 'thighRight', 'shinRight', 'footRight', 'toeRight'],
-      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'cue', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max', 'cuttable', 'slotSpacingM', 'event'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows'] },
+      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'cue', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max', 'cuttable', 'slotSpacingM', 'event'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows', 'halves'] },
     // an object of rows keyed by id: path -> the keys each row may carry
-    rowMaps: { 'finisherCuts.rows': ['unit', 'atS', 'push', 'kill', 'plane'] },
-    finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'] } },
+    rowMaps: { 'finisherCuts.rows': ['unit', 'also', 'fallback', 'atS', 'push', 'kill', 'plane'] },
+    finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
@@ -48,6 +48,9 @@ export const SCHEMA = {
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
     maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
       hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
+  // M7 limb damage that changes the fight (src/fight/feel-limbs.ts), opt-in ?feel=limbs (needs ?rules=m4); one row per part (leg, arm_sword, arm_off, torso, head). checked by the 'feel-limbs' block below
+  'feel-limbs': { keys: ['about', 'on', 'query', 'value', 'needs', 'events', 'levelStep', 'limbs'], maps: { needs: ['query', 'value'], events: ['limp', 'guardDrop', 'weaponDrop'], limbs: ['parts'] },
+    rowMaps: { 'limbs.parts': ['startFrac', 'sided', 'motor', 'blend', 'gait', 'stumble', 'drop', 'sim'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
@@ -70,6 +73,52 @@ function banned(value, path, errors) {
       banned(v, `${path}.${k}`, errors);
     }
   }
+}
+
+// data/feel-limbs.json (src/fight/feel-limbs.ts): every number the module reads is finite and in range, every part has its rows, the roles are the package's, and the event names are strings.
+// Absent or non-finite would reach the page as NaN (a motor strength NaN would freeze a joint), so this is the only guard.
+export const FEEL_PARTS = ['leg', 'arm_sword', 'arm_off', 'torso', 'head'];
+const FEEL_ROLES = ['arm', 'forearm', 'hand', 'thigh', 'shin', 'foot', 'toe', 'spine', 'spine1', 'spine2', 'neck', 'head'];
+function checkFeelLimbs(json, errors) {
+  const n = 'feel-limbs', fin = (v) => Number.isFinite(v);
+  const num = (path, v, lo, hi) => { if (!fin(v) || v < lo || v > hi) errors.push(`${n}.${path}: must be a finite number in [${lo}, ${hi}]`); };
+  for (const k of ['query', 'value']) if (typeof json[k] !== 'string' || !json[k]) errors.push(`${n}.${k}: must be a non-empty string`);
+  if (typeof json.on !== 'boolean') errors.push(`${n}.on: must be a boolean`);
+  for (const k of ['query', 'value']) if (typeof json.needs?.[k] !== 'string' || !json.needs[k]) errors.push(`${n}.needs.${k}: must be a non-empty string`);
+  for (const k of ['limp', 'guardDrop', 'weaponDrop']) if (typeof json.events?.[k] !== 'string' || !json.events[k]) errors.push(`${n}.events.${k}: must be a non-empty string`);
+  num('levelStep', json.levelStep, 0.01, 1);
+  const parts = json.limbs?.parts ?? {};
+  for (const id of FEEL_PARTS) if (!parts[id]) errors.push(`${n}.limbs.parts.${id}: missing`);
+  for (const id of Object.keys(parts)) if (!FEEL_PARTS.includes(id)) errors.push(`${n}.limbs.parts.${id}: unknown part (${FEEL_PARTS.join(', ')})`);
+  for (const [id, p] of Object.entries(parts)) {
+    const at = `limbs.parts.${id}`;
+    num(`${at}.startFrac`, p.startFrac, 0.01, 1);
+    if (typeof p.sided !== 'boolean') errors.push(`${n}.${at}.sided: must be a boolean`);
+    else if (p.sided !== (id !== 'head' && id !== 'torso')) errors.push(`${n}.${at}.sided: must be ${id !== 'head' && id !== 'torso'} (legs and arms take their side from the part id; head and torso have none)`);
+    for (const [map, lo] of [['motor', 0.01], ['blend', 0]]) {
+      if (!p[map] || !Object.keys(p[map]).length) errors.push(`${n}.${at}.${map}: needs at least one role`);
+      for (const [role, v] of Object.entries(p[map] ?? {})) { if (!FEEL_ROLES.includes(role)) errors.push(`${n}.${at}.${map}.${role}: unknown role`); num(`${at}.${map}.${role}`, v, lo, 1); }
+    }
+    for (const role of Object.keys(p.blend ?? {})) if (!(role in (p.motor ?? {}))) errors.push(`${n}.${at}.blend.${role}: no motor row for that role`);
+    if (p.gait) { for (const k of ['periodS']) num(`${at}.gait.${k}`, p.gait[k], 0.1, 10); for (const k of ['dipTo', 'goodDipTo']) num(`${at}.gait.${k}`, p.gait[k], 0.01, 1); num(`${at}.gait.dipFrac`, p.gait.dipFrac, 0.05, 0.95); num(`${at}.gait.hipsDropM`, p.gait.hipsDropM, 0, 0.5); num(`${at}.gait.hipsTiltRad`, p.gait.hipsTiltRad, 0, 1); num(`${at}.gait.hipsBaseFrac`, p.gait.hipsBaseFrac, 0, 1); }
+    if (p.stumble) {
+      const s = p.stumble;
+      if (typeof s.heavyOnly !== 'boolean') errors.push(`${n}.${at}.stumble.heavyOnly: must be a boolean`);
+      num(`${at}.stumble.level`, s.level, 0.01, 1); num(`${at}.stumble.dipTo`, s.dipTo, 0.01, 1); num(`${at}.stumble.blend`, s.blend, 0, 1); num(`${at}.stumble.hipsDropM`, s.hipsDropM, 0, 0.5); num(`${at}.stumble.hipsTiltRad`, s.hipsTiltRad, 0, 1);
+      for (const k of ['inS', 'holdS', 'upS']) num(`${at}.stumble.${k}`, s[k], 0.01, 10); num(`${at}.stumble.cooldownS`, s.cooldownS, 0, 60);
+    }
+    if (p.drop) {
+      const d = p.drop;
+      num(`${at}.drop.afterS`, d.afterS, 0, 10); num(`${at}.drop.gravity`, d.gravity, 0.1, 50); num(`${at}.drop.restitution`, d.restitution, 0, 0.95); num(`${at}.drop.minBounceSpeed`, d.minBounceSpeed, 0, 10); num(`${at}.drop.bounceFriction`, d.bounceFriction, 0, 1); num(`${at}.drop.restHeightM`, d.restHeightM, 0, 1); num(`${at}.drop.lieS`, d.lieS, 0.05, 10);
+      if (!Number.isInteger(d.bounces) || d.bounces < 0 || d.bounces > 6) errors.push(`${n}.${at}.drop.bounces: must be an integer in [0, 6]`);
+      for (const k of ['velocity', 'spin']) if (!Array.isArray(d[k]) || d[k].length !== 3 || !d[k].every(fin)) errors.push(`${n}.${at}.drop.${k}: must be three finite numbers`);
+    }
+    if (!p.sim || typeof p.sim !== 'object') errors.push(`${n}.${at}.sim: missing (the sim-facing numbers)`);
+    for (const [k, v] of Object.entries(p.sim ?? {})) if (typeof v === 'number' ? !fin(v) || v < 0 : typeof v !== 'boolean') errors.push(`${n}.${at}.sim.${k}: must be a finite number >= 0 or a boolean`);
+  }
+  if (!parts.leg?.gait) errors.push(`${n}.limbs.parts.leg.gait: missing`);
+  if (!parts.leg?.stumble) errors.push(`${n}.limbs.parts.leg.stumble: missing`);
+  if (!parts.arm_sword?.drop) errors.push(`${n}.limbs.parts.arm_sword.drop: missing`);
 }
 
 // one file: returns a list of error strings (empty = valid)
@@ -136,11 +185,22 @@ export function validateFile(name, json) {
     if (!Number.isInteger(json.event?.keep) || json.event.keep < 1) errors.push(`${name}.event.keep: must be an integer >= 1`);
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(json.event?.log ?? '')) errors.push(`${name}.event.log: must be an identifier (a globalThis name)`);
   }
+  if (name === 'feel-limbs') checkFeelLimbs(json, errors);
   if (name === 'physics' && json.cut?.cue) {   // the cue's units are the package's severable ids, every unit has a label, and the colour is pasted into CSS: a plain #rrggbb only
     const cue = json.cut.cue, UNITS = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'];
     for (const u of cue.units ?? []) if (!UNITS.includes(u)) errors.push(`${name}.cut.cue.units: unknown unit ${u}`);
     for (const u of cue.units ?? []) if (typeof cue.labels?.[u] !== 'string' || !cue.labels[u].trim()) errors.push(`${name}.cut.cue.labels.${u}: a unit needs a label`);
     if (!/^#[0-9a-fA-F]{6}$/.test(cue.color ?? '')) errors.push(`${name}.cut.cue.color: must be #rrggbb`);
+  }
+  if (name === 'physics' && json.finisherCuts?.rows) {   // a finisher row's units are the package's severable ids: the six real cuts and the two visual-only ones (physics 9056ef7); the fallback stand-in must be a real cut (a body without the visual unit gets it), and `also` holds no duplicate of `unit`
+    const REAL = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'], VISUAL = ['head_split', 'belly_open'];
+    for (const [id, row] of Object.entries(json.finisherCuts.rows)) {
+      const at = `${name}.finisherCuts.rows.${id}`;
+      if (row.unit !== null && ![...REAL, ...VISUAL].includes(row.unit)) errors.push(`${at}.unit: unknown unit ${row.unit}`);
+      if (row.also !== undefined && (!Array.isArray(row.also) || row.also.some((u) => ![...REAL, ...VISUAL].includes(u) || u === row.unit))) errors.push(`${at}.also: must be a list of known units other than unit`);
+      if (row.fallback !== undefined && row.fallback !== null && !REAL.includes(row.fallback)) errors.push(`${at}.fallback: must be null or a real cut unit (${REAL.join(', ')})`);
+      if (row.fallback !== undefined && !VISUAL.includes(row.unit)) errors.push(`${at}.fallback: only a visual unit (${VISUAL.join(', ')}) needs a stand-in`);
+    }
   }
   if (name === 'physics' && json.corpse) {   // how many corpses stand is a whole number (0 = none), and a corpse's pieces go no later than the body
     const c = json.corpse;
