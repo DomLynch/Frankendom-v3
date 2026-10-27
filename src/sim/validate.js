@@ -224,7 +224,7 @@ export function validateFile(name, json) {
 }
 
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's far plane (180 m) and the file a plain asset name.
-export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs'];
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views'];
 function checkSkyline(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.${p}: ${m}`);
   if (s === null || typeof s !== 'object' || Array.isArray(s)) return ['stage.skyline: must be an object'];
@@ -236,6 +236,32 @@ function checkSkyline(s) {
   rng('seamOverlapPx', 0, 2000, true); rng('quality', 40, 100, true); rng('radius', 20, 160); rng('heightMetres', 5, 400); rng('horizonFraction', 0.5, 1);
   rng('yawDegrees', -360, 360); rng('brightness', 0.1, 1.5); rng('fadeSeconds', 0, 10); rng('loadAfterFirstFrameMs', 0, 10000, true);
   if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > 175) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
+  e.push(...checkSkyViews(s));
+  return e;
+}
+
+// data/stage.json `skyline.views` (src/fight/skyview.ts): the ?skyview= looks. Every variant has every key; the band is both 0 (off) or start < end; the strip, lowered or resized, keeps its rim inside the far plane.
+export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartMetres', 'fadeEndMetres', 'dropMetres', 'heightMetres', 'brightness'];
+function checkSkyViews(s) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return ['stage.skyline.views: must be an object'];
+  for (const k of Object.keys(v)) if (!['about', 'query', 'variants'].includes(k)) at(k, 'unknown key');
+  if (typeof v.query !== 'string' || !/^[a-z0-9]+$/i.test(v.query) || v.query === s.query) at('query', 'must be a plain word other than skyline.query');
+  const vs = v.variants;
+  if (vs === null || typeof vs !== 'object' || Array.isArray(vs)) return [...e, 'stage.skyline.views.variants: must be an object'];
+  for (const [id, w] of Object.entries(vs)) {
+    const p = `variants.${id}`, bad = (k, m) => at(`${p}.${k}`, m);
+    if (!/^[a-z0-9]+$/i.test(id)) at(p, 'the id must be a plain word');
+    if (w === null || typeof w !== 'object' || Array.isArray(w)) { at(p, 'must be an object'); continue; }
+    for (const k of Object.keys(w)) if (!SKYVIEW_KEYS.includes(k)) bad(k, 'unknown key');
+    if (typeof w.fogColor !== 'string' || !(w.fogColor === '' || /^#[0-9a-f]{6}$/i.test(w.fogColor))) bad('fogColor', "must be '' or a #rrggbb colour");
+    const rng = (k, lo, hi) => { if (!Number.isFinite(w[k]) || w[k] < lo || w[k] > hi) bad(k, `must be a finite number in ${lo}..${hi}`); };
+    rng('fogDensity', 0, 0.1); rng('fadeStartMetres', 0, 400); rng('fadeEndMetres', 0, 400); rng('dropMetres', -60, 60); rng('brightness', 0.1, 1.5);
+    if (!Number.isFinite(w.heightMetres) || (w.heightMetres !== 0 && (w.heightMetres < 5 || w.heightMetres > 400))) bad('heightMetres', 'must be 0 (the strip row\'s) or a number in 5..400');
+    if (Number.isFinite(w.fadeStartMetres) && Number.isFinite(w.fadeEndMetres) && !(w.fadeStartMetres === 0 && w.fadeEndMetres === 0) && !(w.fadeEndMetres > w.fadeStartMetres)) bad('fadeEndMetres', 'must be above fadeStartMetres (or both 0 = off)');
+    const h = w.heightMetres > 0 ? w.heightMetres : s.heightMetres;
+    if (Number.isFinite(s.radius) && Number.isFinite(h) && Number.isFinite(s.horizonFraction) && Number.isFinite(w.dropMetres) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * h + Math.abs(w.dropMetres)) > 175) bad('dropMetres', 'the strip, lowered, must keep its rim inside the camera far plane (180 m)');
+  }
   return e;
 }
 
