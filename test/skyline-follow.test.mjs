@@ -91,7 +91,7 @@ test('?skyfollow=v1 (and yawFollow 0) keeps the strip fixed in world yaw', () =>
   assert.equal(skyFollowOn('?skyfollow=v1', SKYLINE), false);
   assert.equal(skyFollowOn('?foo=1&skyfollow=v1'), false);
   assert.equal(skyFollowOn('', { ...SKYLINE, yawFollow: 0 }), false);
-  const sky = createSkyline(new THREE.Scene(), '?skyfollow=v1', { ...SKYLINE, yawDegrees: 30 }, never);
+  const sky = createSkyline(new THREE.Scene(), '?skyfollow=v1&skyplate=v1', { ...SKYLINE, yawDegrees: 30 }, never);
   for (const yaw of [0, 1, 2, 3]) { sky.heading(camAt(yaw)); sky.update(new THREE.Vector3(), 1 / 60); assert.ok(Math.abs(sky.mesh.rotation.y - Math.PI / 6) < 1e-9); }
 });
 
