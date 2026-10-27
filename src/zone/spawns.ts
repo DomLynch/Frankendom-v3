@@ -105,3 +105,31 @@ export const idleOnes = (spawns: readonly Spawn[], current: number): Spawn[] => 
 export function poseAt(hero: At, spot: At, wall: number, minDistance: number, start: At): NonNullable<ReturnType<typeof respawnPose>> {
   return respawnPose(hero, spot, wall, minDistance) ?? respawnPose(start, spot, wall, minDistance) ?? { hero: { x: start.x, z: start.z }, foe: { x: spot.x, z: spot.z }, heroFacing: M.atan2(spot.x - start.x, spot.z - start.z) };
 }
+
+// The opener (V1's `openers`, data/respawn.json openers): a newcomer who stands still still gets a fight. Choice (smallest correct): the opener spawn's AGGRO RANGE grows to reach the
+// hero once the idle clock is due, so the page's existing engagement (inAggro -> engaged / hand, auto-draw, the boss walks up in the sim) runs unchanged; no new fight code, no walking
+// rule of its own. The reach stops at the spawn's leash: a hero who has wandered past it is left alone (he would be reset at once).
+export type OpenerRows = { on: boolean; delaySeconds: number; count: number; spawns: string[]; query: string; off: string };
+type OpenerLimits = { delaySeconds: [number, number]; count: [number, number] };
+export const OPENERS = ROWS.openers as OpenerRows;
+const OPENER_LIMITS = ROWS.limits as unknown as OpenerLimits;
+
+/** Throws on a bad openers row: delay or count out of range, no spawn ids, or an id that is no spawn of the zone. */
+export function validateOpeners(rows: OpenerRows, spots: readonly Spot[], limits: OpenerLimits = OPENER_LIMITS): void {
+  for (const key of ['delaySeconds', 'count'] as const) {
+    const [lo, hi] = limits[key], v = rows[key];
+    if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json openers.${key} ${v} is not in ${lo}..${hi}`);
+  }
+  if (!Array.isArray(rows.spawns) || !rows.spawns.length) throw new Error('respawn.json openers.spawns names no spawn');
+  for (const id of rows.spawns) if (!spots.some((s) => s.id === id)) throw new Error(`respawn.json openers.spawns names "${id}", which is no spawn of the zone`);
+}
+
+/** The openers are on: the row says so and the link does not carry the off switch. */
+export const openerOn = (search: string, rows: OpenerRows = OPENERS): boolean => rows.on && new URLSearchParams(search).get(rows.query) !== rows.off;
+
+/** The spawns as the engagement sees them after `idle` seconds with nobody engaged: once `delaySeconds` is up, the first `count` standing opener spawns reach the hero (aggro = his distance, at most their leash). */
+export function openerReach(spawns: readonly Spawn[], rows: OpenerRows, idle: number, at: At): Spawn[] {
+  if (!(idle >= rows.delaySeconds)) return spawns.slice();
+  const open = new Set(rows.spawns.map((id) => spawns.find((s) => s.id === id)).filter((s): s is Spawn => !!s && isStanding(s)).slice(0, rows.count));
+  return spawns.map((s) => (open.has(s) ? { ...s, aggro: Math.max(s.aggro, Math.min(dist(s, at), s.leash)) } : s));
+}
