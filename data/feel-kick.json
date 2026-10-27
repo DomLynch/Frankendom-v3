@@ -41,7 +41,8 @@
   "shove": {
     "about": "a non-kick shove, by sim move id: forceMult scales the kicker's force, canKnockdown false = it staggers at most. Opt-in under the same ?feel=kick.",
     "moves": {
-      "skill_pommel": { "forceMult": 0.55, "canKnockdown": false }
+      "skill_pommel": { "forceMult": 0.55, "canKnockdown": false },
+      "skill_shove": { "forceMult": 0.8, "canKnockdown": false }
     }
   },
   "event": { "name": "feel:kick_result", "log": "__v3FeelKick", "keep": 40 }
