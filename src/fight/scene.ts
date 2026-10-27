@@ -619,7 +619,7 @@ export function createScene(
       if (warriors) rankLook?.tick(practice);   // a rank look swaps on only at an idle beat, never with a finish playing
       const fightWeapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       if (!practice.finish) { hamstrungLatch = null; executionLatch = null; } else { hamstrungLatch ??= hamstrungOk(); executionLatch ??= executionOk(); }
-      finisherOverride = ragdollFinisher();   // ?ragdoll=always (data/physics.json finisher): his death is the plain one, as a ragdoll; null otherwise (ragdoll.ts)
+      finisherOverride = ragdollFinisher(events);   // ?rules=m4 cut.precedence: a head-zone kill the evaluator cuts is the plain death too. ?ragdoll=always (data/physics.json finisher): his death is the plain one, as a ragdoll; null otherwise (ragdoll.ts)
       const picked = executionPick(hamstrungPick(finisherOverride, hamstrungLatch === true), executionLatch === true);   // one id for the picture and (main.ts) the cues
       const resolved = practice.finish
         ? resolveExecution(opponentId, practice.finish, fightWeapons, picked, lastFinisher, resolveHamstrung(

@@ -14,7 +14,7 @@ import { afterFirstFrame, compileLateArt } from '../late-art.ts';
 import { bone, rigOf } from './rig-bones.ts';
 import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
 import RULES from '../../data/rules.json' with { type: 'json' };
-import { createHandSpeed, createRulesEval, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
+import { createHandSpeed, createRulesEval, cutPrecedence, evaluatorTakesKill, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
 import { OPPONENTS, RULES as SIM_RULES, type OpponentId } from './moves.ts';   // ?rules=m4: his health (the budgets' scale) and a man's, both the sim's rows
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
@@ -76,11 +76,12 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
 export function ragdollBody(finisher: FinisherId | null): boolean { return !!page && !!finisherCutRow(PHYSICS, finisher) && page.takesFinisher(); }
 /** The finisher pick's override for the scene's picture AND main.ts's death cue (one answer for both): the plain death while the finisher row
  *  says 'skip' and the ragdoll is standing ready to take the kill; null (the rotation as it is) otherwise. */
-export function ragdollFinisher(): FinisherId | null {
+export function ragdollFinisher(events?: readonly CombatEvent[]): FinisherId | null {
   // A stills / trace harness forces the rotation's pick (the dev picker's place; a blade kill only: resolveFinisher keeps eligibility). Local hosts only: never read on the live site.
   const local = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   const forced = local ? (globalThis as { __finisherPick?: string }).__finisherPick : undefined;
-  return forced ?? (page?.skipsFinishers() ? PLAIN_DEATH : null);
+  // ?rules=m4 cut.precedence: a head-zone killing blow the evaluator cuts is the plain ragdoll death (its cut is the head), not the rotation's finisher; `events` is the frame's (scene.ts) or the step's (main.ts)
+  return forced ?? (page?.skipsFinishers() || (events && page?.takesKill(events)) ? PLAIN_DEATH : null);
 }
 
 /** The part a blow at `location` lands on, and its impulse in the ragdoll's frame (the attacker's facing, `heading`, turned into `frame`). */
@@ -156,6 +157,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let rules: ReturnType<typeof createRulesEval> | undefined, down = -1, getUp = -1;
   // ?rules=m4: the attacker's (the hero's) animated hand bone, sampled each frame: the hand speed at a hit (rules-eval.ts createHandSpeed)
   const handSpeed = createHandSpeed(RULES); let heroHand: THREE.Object3D | undefined, heroShoulder: THREE.Object3D | undefined, handScale = 1; const handPos = new THREE.Vector3(), shoulderPos = new THREE.Vector3();
+  let judged: { tick: number; takes: boolean } | null = null;   // ?rules=m4 (data/rules.json cut.precedence): the verdict on the killing blow, made once per kill (the evaluator's state moves on every hit)
   const ruleCuts: string[] = [];   // the units the evaluator cut during this fight: they come off the body when he dies (cutUnit needs the corpse)
   const lying = new Map<THREE.Object3D, THREE.Quaternion>(), lyingHips = new THREE.Vector3();
   const animQ = new Map<THREE.Object3D, THREE.Quaternion>(), hipsPos = new THREE.Vector3();
@@ -220,7 +222,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     group.parent.add(copy);
     corpses.push({ root: copy, age: 0, piecesHidden: false, pieces, owned });
     cost.corpses = corpses.length;
-    build(); down = -1; getUp = -1; ruleCuts.length = 0; rules?.renew();   // the live rig whole again: the rematch's reset
+    build(); down = -1; getUp = -1; ruleCuts.length = 0; judged = null; rules?.renew();   // the live rig whole again: the rematch's reset
     return true;
   }
   function clearCuts() {
@@ -384,6 +386,17 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     for (const b of Object.values(partBones)) b.quaternion.copy(lying.get(b)!.clone().slerp(b.quaternion, w));
     partBones.hips!.position.lerpVectors(lyingHips, partBones.hips!.position, w); group!.updateWorldMatrix(true, true);
   }
+  // ?rules=m4, cut.precedence: for a killing blow in a zone whose row says 'evaluator' (head by default) the evaluator judges the blow FIRST, before the scene and the death cue pick a finisher; a cut means the
+  // death is the plain ragdoll death carrying that cut (takesKill, step). Once per kill (memo by the Killed's tick). Null: not applicable (no evaluator, no kill, a zone that keeps the rotation, ragdoll not ready).
+  function judgeKill(events: readonly CombatEvent[]): { tick: number; takes: boolean } | null {
+    if (!rules || disabled || !armed || !rig || mode !== 'alive') return judged;
+    const killed = events.find((e) => e.type === 'Killed' && e.target === 1);
+    if (!killed || cutPrecedence(RULES, killed.location) !== 'evaluator') return judged;
+    if (judged?.tick === killed.tick) return judged;
+    const ps = events.filter((e) => e.type === 'Hit' && e.target === 1 && e.tick === killed.tick).map((e) => rules!.hit(e, false, handSpeed.speed()));   // the killing blow's own Hits (the sim's Killed decides the death)
+    for (const p of ps) if (p?.cut && !ruleCuts.includes(p.cut)) ruleCuts.push(p.cut);
+    return (judged = { tick: killed.tick, takes: evaluatorTakesKill(RULES, killed.location, ps) });
+  }
   // ?rules=m4: one sim Hit on him through the evaluator: the stagger (impulse by strength), a knockdown (the bones follow the ragdoll while he is down), a cut (queued in ruleCuts, taken off the corpse at his death).
   function react(e: CombatEvent, p: Presentation) {
     if (p.cut && !ruleCuts.includes(p.cut)) ruleCuts.push(p.cut);
@@ -468,6 +481,9 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     /** The finisher row says 'skip' (the default) and a ragdoll built (a rig with no measure row, or a chunk not in yet, keeps the rotation). Latched once a death has begun. */
     //  `armed`: only once a frame with no finish in progress has seen the ragdoll ready, so a chunk that lands mid-finish never flips the pick
     //  between the picture (scene.ts) and the death cue (main.ts) halfway through a kill.
+    /** ?rules=m4 (data/rules.json cut.precedence): does the evaluator take this killing blow from the finisher rotation (a head-zone blow at the cut rung)? Then the death is the plain ragdoll death with the head cut,
+     *  and scene.ts / main.ts pick the plain death for the picture and the cue (ragdollFinisher(events)). Judged once per kill; stays true for the rest of that finish. */
+    takesKill(events: readonly CombatEvent[]): boolean { return judgeKill(events)?.takes === true; },
     skipsFinishers() { return skipFinishers && armed && !disabled && !!rig && mode !== 'skip'; },
     /** ?ragdoll=finishers (finisher mode 'physics'): the ragdoll is built and standing (or already down), so a finisher with a finisherCuts row plays with this body. */
     takesFinisher() { return bodyFinishers && armed && !disabled && !!rig && mode !== 'skip'; },
@@ -499,15 +515,16 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   function step(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null) {
       if (!rd || !rig || !physics || !group) return;
       const start = performance.now();
-      if (!finish && mode !== 'alive') { build(); down = -1; getUp = -1; ruleCuts.length = 0; rules?.renew(); }   // the rematch: a fresh ragdoll, standing (and the evaluator's fighter whole again)
+      if (!finish && mode !== 'alive') { build(); down = -1; getUp = -1; ruleCuts.length = 0; judged = null; rules?.renew(); }   // the rematch: a fresh ragdoll, standing (and the evaluator's fighter whole again)
       if (!finish) armed = true;
       const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === 1) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
         // A finisher with a finisherCuts row plays with this body under ?ragdoll=finishers (its row picks the cut, none for Run Through); any other keeps its clip (finisher row 'keep')
         const fc = bodyFinishers && finisher !== null && !isPlainDeath(finisher) ? finisherCutRow(rows, finisher) : undefined;
-        if (finisher !== null && !isPlainDeath(finisher) && !fc) { mode = 'skip'; cost.state = 'finisher'; }
+        const judgedKill = judgeKill(events), verdict = judgedKill?.tick === killed.tick ? judgedKill : null;   // ?rules=m4 cut.precedence: the evaluator's verdict on this killing blow when its zone's row says 'evaluator' (null: the rotation decides, as before)
+        if (finisher !== null && !isPlainDeath(finisher) && !fc && !verdict?.takes) { mode = 'skip'; cost.state = 'finisher'; }
         else {
-          if (rules) for (const e of events) if (e.type === 'Hit' && e.target === 1) { const p = rules.hit(e, false, handSpeed.speed()); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
+          if (rules) for (const e of events) if (e.type === 'Hit' && e.target === 1 && e.tick !== verdict?.tick) { const p = rules.hit(e, false, handSpeed.speed()); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
           if (down <= 0) { rig.drive(); rd.snapToTarget(); }   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp (from where he lies, if he is down)
           down = -1; getUp = -1;
           rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
