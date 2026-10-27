@@ -1,0 +1,137 @@
+// M8 corpses in the live zone: a corpse keeps its own ragdoll in the ONE physics world (data/physics.json `corpse`: cuttable, slotSpacingM, event), so it can be cut again and its piece flies.
+// These pin, in Node and on the package's real Minotaur body row: the lanes (the live foe built beside a corpse never disturbs it), the corpse's rig made from the cloned bones AFTER the death
+// (the proxy trick in ragdoll.ts armCorpse: three-rig reads the ragdoll's pose once, at its making) puts the cloned bones where the live rig put the originals, a cut corpse's piece moves while the
+// other corpses and the live foe do not, and the frame cost of four corpses and one live foe (the package's 3 ms budget, the same shape as its test:budget).
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import * as THREE from 'three';
+import { clone } from 'three/addons/utils/SkeletonUtils.js';
+import { createPhysics } from '@frankendom/physics';
+import { createThreeRig } from '@frankendom/physics/three-rig';
+import { counterparts, freeSlot, piecesOfUnit, slotPosition } from '../src/fight/ragdoll.ts';
+import { emitFeel, feel } from '../src/fight/feel.ts';
+import { validateFile } from '../src/sim/validate.js';
+
+const ROWS = JSON.parse(readFileSync(new URL('../data/physics.json', import.meta.url), 'utf8')), C = ROWS.corpse;
+const measure = JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${ROWS.opponents[0].measure['106'].split('/').pop()}`, import.meta.url), 'utf8'));
+const TICK = 1 / ROWS.tickHz, BUDGET_MS = Number(process.env.BUDGET_MS || 3);
+
+// a fighter: the ragdoll in lane `slot`, a group at a moved and turned place (the sim frame), a bone per role at its rest pivot, the rig made at once (the page's build())
+function fighter(physics, slot) {
+  const rd = physics.createRagdoll(measure, { id: `f${slot}`, position: slotPosition(slot, C.slotSpacingM), motorTuning: ROWS.motorTuning, solveHinges: ROWS.solveHinges });
+  const root = new THREE.Group(); root.position.set(3, 0, -2); root.rotation.y = 0.9;
+  const bones = {};
+  rd.row.roles.forEach((r) => {
+    const b = new THREE.Object3D(), parent = r.parent ? bones[r.parent] : root, pp = r.parent ? rd.row.roles.find((x) => x.id === r.parent).rest.pivot : [0, 0, 0];
+    b.name = r.id; b.position.set(r.rest.pivot[0] - pp[0], r.rest.pivot[1] - pp[1], r.rest.pivot[2] - pp[2]); parent.add(b); bones[r.id] = b;
+  });
+  root.updateMatrixWorld(true);
+  const pristine = clone(root), map = counterparts(root, pristine), bind = { bones: Object.fromEntries(Object.entries(bones).map(([p, b]) => [p, map.get(b)])), root: pristine };   // the never-animated scene
+  const p0 = rd.readPose(), spawnHips = [p0[0], p0[1], p0[2]];
+  return { rd, root, bones, bind, spawnHips, rig: createThreeRig(THREE, rd, bones, root, { bind }) };
+}
+const worldOf = (b) => b.getWorldPosition(new THREE.Vector3());
+// what armCorpse does: clone the dead fighter, make a rig for the clone's bones with the spawn pose of the original standing in for the ragdoll's pose at the making
+function corpseOf(f) {
+  const copy = clone(f.root), map = counterparts(f.root, copy), bones = Object.fromEntries(Object.entries(f.bones).map(([p, b]) => [p, map.get(b)]));
+  let making = true;
+  const view = new Proxy(f.rd, { get: (t, k, r) => (making && k === 'readPose' ? () => f.spawnHips : Reflect.get(t, k, r)) });
+  const rig = createThreeRig(THREE, view, bones, copy, { bind: f.bind });
+  making = false;
+  copy.updateMatrixWorld(true);
+  return { copy, bones, rig, rd: f.rd };
+}
+const kill = (physics, f) => {
+  f.rd.kill({ part: 'spine2', impulse: [0, 0, 60] });
+  for (let i = 0; i < ROWS.tickHz * 10 && f.rd.state !== 'frozen'; i++) physics.step(TICK);
+  assert.equal(f.rd.state, 'frozen');
+  f.rig.applyPose();
+};
+
+test('the corpse rows are sane and validate: lanes spaced, the bus event named, cuttable a boolean', () => {
+  assert.equal(typeof C.cuttable, 'boolean'); assert.ok(C.slotSpacingM >= 4, 'a lane is wider than a lying body'); assert.equal(C.event, 'corpse:cut');
+  assert.deepEqual(validateFile('physics', ROWS), []);
+  for (const [k, v, re] of [['slotSpacingM', 0, /slotSpacingM/], ['event', '', /event/], ['cuttable', 'yes', /cuttable/]]) {
+    const bad = structuredClone(ROWS); bad.corpse[k] = v;
+    assert.ok(validateFile('physics', bad).some((e) => re.test(e)), `${k} = ${JSON.stringify(v)} is refused`);
+  }
+});
+
+test('lanes: the first free one of max + 1, a lane x apart; the clone maps every object to its twin; a cut unit names the pieces it detaches', () => {
+  assert.equal(freeSlot([], 5), 0); assert.equal(freeSlot([0, 1], 5), 2); assert.equal(freeSlot([0, 2], 5), 1); assert.equal(freeSlot([0, 1, 2, 3, 4], 5), 5, 'past the last, never a shared lane');
+  assert.deepEqual(slotPosition(0, 6), [0, 0, 0]); assert.deepEqual(slotPosition(3, 6), [18, 0, 0]);
+  const a = new THREE.Group(), b = new THREE.Object3D(), c = new THREE.Object3D(); b.add(c); a.add(b, new THREE.Object3D()); c.name = 'c';
+  const copy = clone(a), map = counterparts(a, copy);
+  assert.equal(map.get(c).name, 'c'); assert.notEqual(map.get(c), c); assert.equal(map.size, 4);
+  const manifest = { regions: [{ id: 'arm_left', detached_by: 'arm_left' }, { id: 'hand', detached_by: 'arm_left' }, { id: 'root' }] };
+  assert.deepEqual(piecesOfUnit(manifest, 'arm_left'), ['arm_left', 'hand']); assert.deepEqual(piecesOfUnit(manifest, 'head'), []); assert.deepEqual(piecesOfUnit(undefined, 'head'), []);
+});
+
+test('a corpse that kept its ragdoll: the cloned bones sit where the live rig put the originals, the next foe stands beside it without touching it, and a cut piece flies', async () => {
+  const physics = await createPhysics({ seed: ROWS.seed, states: ROWS.states });
+  const dead = fighter(physics, 0);
+  for (let i = 0; i < 30; i++) { dead.rig.drive(); physics.step(TICK); }
+  kill(physics, dead);
+  const rest = Object.fromEntries(Object.entries(dead.bones).map(([p, b]) => [p, worldOf(b)]));
+  const corpse = corpseOf(dead);
+  corpse.rig.applyPose();   // the clone's own rig: it must land the clone's bones where the live rig put the originals
+  for (const p of ['hips', 'head', 'handLeft', 'footRight']) assert.ok(worldOf(corpse.bones[p]).distanceTo(rest[p]) < 1e-3, `${p}: the clone's rig puts it ${worldOf(corpse.bones[p]).distanceTo(rest[p]).toExponential(2)} m from the original`);
+  const lying = Float32Array.from(dead.rd.readPose());
+  // the zone respawns the foe: a new ragdoll in the next lane, standing and fighting beside the corpse (its rig on the live group)
+  const live = fighter(physics, 1);
+  for (let i = 0; i < 180; i++) { live.rig.drive(); physics.step(TICK); }
+  const after = dead.rd.readPose();
+  let drift = 0; for (let i = 0; i < lying.length; i++) drift = Math.max(drift, Math.abs(after[i] - lying[i]));
+  assert.ok(drift < 1e-3, `the corpse lay still while the live foe stood up beside it (largest change ${drift.toExponential(2)})`);
+  assert.equal(dead.rd.awake, false, 'its bodies stayed asleep');
+  assert.equal(live.rd.state, 'alive');
+  // cut the corpse's left arm (what the cue button does): the piece wakes, flies, settles; the rest of the corpse and the live foe stay
+  const handBefore = worldOf(corpse.bones.handLeft), headBefore = worldOf(corpse.bones.head), liveHip = Float32Array.from(live.rd.readPose().slice(0, 3));
+  const result = dead.rd.cut('arm_left', { helmet: false, impulse: [0, 6, 9] });
+  assert.equal(result.unit, 'arm_left'); assert.ok(dead.rd.awake, 'the piece the cut woke');
+  let steps = 0, far = 0;
+  for (; steps < ROWS.tickHz * 12 && (dead.rd.awake || steps < 5); steps++) { live.rig.drive(); physics.step(TICK); corpse.rig.applyPose(); far = Math.max(far, worldOf(corpse.bones.handLeft).distanceTo(handBefore)); }
+  assert.ok(far > 0.4, `the piece flew ${far.toFixed(2)} m`);
+  assert.equal(dead.rd.awake, false, `it settled (${steps} ticks) and the world stops being stepped for it`);
+  assert.ok(worldOf(corpse.bones.head).distanceTo(headBefore) < 0.02, 'the corpse\'s head stayed where it lay');
+  assert.ok(worldOf(dead.bones.handLeft).distanceTo(rest.handLeft) < 1e-6, 'the live group\'s bones (the original) were not moved by the corpse\'s rig');
+  const hip = live.rd.readPose(); assert.ok(Math.hypot(hip[0] - liveHip[0], hip[2] - liveHip[2]) < 0.5, 'the live foe held his place');
+  assert.ok(dead.rd.cuts.includes('arm_left') && !live.rd.cuts.length, 'the cut is the corpse\'s alone');
+  dead.rd.destroy();   // dropped: its lane is free again, the world goes on
+  physics.step(TICK);
+  physics.destroy();
+});
+
+test('frame cost: four corpses (one with a piece in flight) and one live foe, one world: under the package\'s 3 ms budget, average and p95', async () => {
+  const physics = await createPhysics({ seed: ROWS.seed, states: ROWS.states });
+  const corpses = [];
+  for (let k = 0; k < C.max; k++) { const f = fighter(physics, k); for (let i = 0; i < 20; i++) { f.rig.drive(); physics.step(TICK); } kill(physics, f); corpses.push({ ...corpseOf(f), f }); }
+  const live = fighter(physics, C.max);
+  for (let i = 0; i < 30; i++) { live.rig.drive(); physics.step(TICK); }
+  const times = [], idle = [];
+  for (let t = 0; t < 360; t++) {
+    if (t === 120) corpses[0].f.rd.cut('arm_right', { helmet: false, impulse: [0, 6, 9] });   // a cut in progress, as the package's budget scene has
+    const t0 = performance.now();
+    live.rig.drive();
+    if (live.rd.state !== 'frozen' || live.rd.awake || corpses.some((c) => c.f.rd.awake)) physics.step(TICK);   // the page's rule (ragdoll.ts step)
+    for (const c of corpses) if (c.f.rd.awake) c.rig.applyPose();
+    const ms = performance.now() - t0;
+    if (t >= 30) (t < 120 ? idle : times).push(ms);
+  }
+  const stat = (a) => { a = a.slice().sort((x, y) => x - y); return { avg: a.reduce((s, x) => s + x, 0) / a.length, p95: a[Math.floor(a.length * 0.95)], max: a[a.length - 1] }; };
+  const all = stat([...idle, ...times]), cutting = stat(times);
+  console.log(`# 4 corpses + 1 live foe: avg ${all.avg.toFixed(3)} ms, p95 ${all.p95.toFixed(3)} ms, max ${all.max.toFixed(3)} ms; from the cut on: avg ${cutting.avg.toFixed(3)} ms, p95 ${cutting.p95.toFixed(3)} ms (budget ${BUDGET_MS})`);
+  physics.destroy();
+  assert.ok(all.avg < BUDGET_MS, `average ${all.avg} ms`);
+  assert.ok(all.p95 < BUDGET_MS, `p95 ${all.p95} ms`);
+});
+
+test('the bus: a cut is announced under the row\'s name with the corpseId, to a feel.on subscriber and the harness log', () => {
+  const got = [], off = feel.on(C.event, (name, payload) => got.push([name, payload])), all = [], offAll = feel.on('*', (name) => all.push(name));
+  emitFeel(C.event, { unit: 'arm_left', gear: [], source: 'tap', corpseId: 'pitborn#2' });
+  off(); offAll();
+  assert.deepEqual(got, [['corpse:cut', { unit: 'arm_left', gear: [], source: 'tap', corpseId: 'pitborn#2' }]]);
+  assert.deepEqual(all, ['corpse:cut']);
+  assert.deepEqual(globalThis.__feelEvents.at(-1), { name: 'corpse:cut', payload: { unit: 'arm_left', gear: [], source: 'tap', corpseId: 'pitborn#2' } });
+});
