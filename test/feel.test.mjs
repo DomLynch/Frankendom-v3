@@ -42,5 +42,6 @@ test('limb state comes from the sim: feel.setLimbState hands the budget fraction
 
 test('ragdoll.ts calls the registry at the three sites (a Hit on him, every frame, his killing blow) and takes the hooks from the page', () => {
   const src = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8');
+  assert.ok(src.includes('blendToward: (share) => poseToward(1, share)'), 'the hook context can pose parts from the ragdoll');
   for (const call of ['f.hit?.(e, feelCtx())', 'f.frame?.(dt, events, feelCtx())', 'f.kill?.(killed, feelCtx())', 'activeFeels(search)']) assert.ok(src.includes(call), call);
 });
