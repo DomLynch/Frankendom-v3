@@ -96,7 +96,7 @@ test('a hero beyond the pit wall enters a duel on the wall\'s edge, in line with
     const pose = poseAt({ x: 11, z: 0 }, spot, RADIUS, ROWS.spawn.minDistance, start);
     assert.ok(Math.abs(pose.hero.x - RADIUS) < 1e-6 && Math.abs(pose.hero.z) < 1e-6, 'he starts on the wall at his bearing');
     const from = { x: 0, z: -10 };
-    const far = poseAt(from, { x: 0, z: -4 }, RADIUS, ROWS.spawn.minDistance, start);
+    const far = poseAt(from, { x: 0, z: -2 }, RADIUS, ROWS.spawn.minDistance, start);
     assert.notDeepEqual(far.hero, { x: start.x, z: start.z }, 'not the start mark');
   } finally { setPlayScale(1); }
 });
