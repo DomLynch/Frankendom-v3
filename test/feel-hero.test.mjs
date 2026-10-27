@@ -123,3 +123,13 @@ test('hero ragdoll: no cuts, no corpse, no finisher, no rules path; her kill is 
   assert.match(body, /false, false, false, activeFeels\(search, undefined, true\), search, 0, '__ragdollHero'/);
   assert.match(s, /e\.type === 'Killed' && e\.target === side/); assert.match(s, /rd\.kill\(blowImpulse\(/);
 });
+
+test('hero blow classes: a light on her is softened (smaller push, ctx.soften set) like the Minotaur\'s; a heavy is the full reaction; ?sway=v1 gives the light the full reaction back', () => {
+  const run = (e) => { const f = fixture(0), soften = { impulse: 1, blend: 1, time: 1 }; f.ctx.soften = soften; HERO.hit({ ...HIT, ...e }, f.ctx); HERO.kill(); return { push: Math.max(...f.log.impulses.map(([, v]) => Math.hypot(...v))), soften }; };
+  const light = run({ move: 'light_left' }), heavy = run({ move: 'heavy_overhead', charged: true });
+  assert.ok(light.push < heavy.push * 0.4, `${light.push} vs ${heavy.push}`);
+  assert.ok(light.soften.impulse < 1 && light.soften.blend < 1 && light.soften.time > 1, 'the package\'s own stagger is softened for a light');
+  assert.deepEqual(heavy.soften, { impulse: 1, blend: 1, time: 1 });
+  globalThis.location = { search: '?feel=hero&sway=v1' };
+  try { const v1 = run({ move: 'light_left' }); assert.ok(Math.abs(v1.push - heavy.push) < 1e-9, '?sway=v1: unchanged'); assert.deepEqual(v1.soften, { impulse: 1, blend: 1, time: 1 }); } finally { delete globalThis.location; }
+});

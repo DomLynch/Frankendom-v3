@@ -201,6 +201,12 @@ test('classes: counter beats heavy beats light; a charged blow, a heavy move and
   assert.equal(classOf(ROWS, { move: 'heavy_overhead', counter: true }), 'counter');
 });
 
+test('classes: the big skills and the ripostes are heavy (full reaction), the small skills and the plain cuts stay light; a counter flag beats them all', () => {
+  for (const m of ['skill_cleave', 'skill_reaping', 'skill_pommel', 'skill_stomp', 'riposte', 'slash_riposte', 'heavy_riposte', 'heavy_counter', 'critical']) assert.equal(classOf(ROWS, { move: m }), 'heavy', m);
+  for (const m of ['light_left', 'light_right', 'skill_jab', 'skill_lunge']) assert.equal(classOf(ROWS, { move: m }), 'light', m);
+  assert.equal(classOf(ROWS, { move: 'riposte', counter: true }), 'counter');
+});
+
 test('classes: a LIGHT side blow sways him less than a third as far as before (impulse, couple) and lets go faster; heavy and counter are the old reaction exactly', () => {
   for (const loc of ['torso', 'head']) for (const heading of [FROM_RIGHT, FROM_LEFT]) {
     const full = planHit(ROWS, loc, heading, 0), light = planHit(ROWS, loc, heading, 0, 1, CL.light);
