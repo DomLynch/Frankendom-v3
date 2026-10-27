@@ -5,7 +5,7 @@
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { M } from '../fight/detmath.ts';
 import { MAX_ATTACKERS } from '../fight/attackers.ts';
-import { isStanding, leashed, type Spawn } from './spawns.ts';
+import { isStanding, leashed, type Spawn } from '../stubs.ts';   // spawns.ts is reached through the stub boundary (scripts/check-stubs.mjs); the cycle is only read inside functions
 
 export type AttackerRows = { on: boolean; query: string; off: string };
 export const ATTACKERS = ROWS.attackers as AttackerRows;
