@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { OPPONENTS } from '../src/fight/moves.ts';
 import { initialPractice, stepPractice } from '../src/fight/combat.ts';
 import { idleIntent } from '../src/fight/duel.ts';
+import { startAction } from '../src/auto-start.ts';
 import { initialState } from '../src/fight/sim.ts';
 import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
 import * as play from '../src/fight/play-radius.ts';
@@ -170,7 +171,7 @@ test('REPRO on the real sim: the hero runs one way for 20 s with the real boss b
     let p = project(zoneDuel(built.duel), built.ai, built);   // the zone's own duel as main.ts fresh() builds it: the open world's radius (OPEN_RADIUS), no ring wall to stop the boss or the hero
     let oldTrips = 0, newTrips = 0, far = 0;
     for (let i = 0; i < 1200; i++) {
-      p = stepPractice(p, { ...idleIntent(), move: { x: mx, z: mz, yaw: 0, run: true } });
+      p = stepPractice(p, { ...idleIntent(), action: startAction(true, p, null), move: { x: mx, z: mz, yaw: 0, run: true } });   // the page's auto-draw (data/fight.json start.auto): the boss waits until the hero has drawn
       const hero = { x: p.duel.fighters[0].body.x, z: p.duel.fighters[0].body.z }, boss = { x: p.enemy.x, z: p.enemy.z };
       if (dist(s, hero) > 5) oldTrips++;
       if (leashed(s, boss)) newTrips++;
@@ -178,6 +179,7 @@ test('REPRO on the real sim: the hero runs one way for 20 s with the real boss b
     }
     rows.push(`run (${mx}, ${mz}): hero-measured 5 m leash trips on ${oldTrips} of 1200 ticks, boss-measured ${s.leash} m on ${newTrips}; the boss got ${far.toFixed(2)} m from its spot`);
     assert.equal(newTrips, 0, rows.at(-1));
+    if (mx !== 0 || mz > 0) assert.ok(far > 5 && oldTrips > 1000, `the boss really chased (${far.toFixed(2)} m) and the old rule really tripped (${oldTrips})`);
   }
   console.log(rows.join('\n'));
 });
