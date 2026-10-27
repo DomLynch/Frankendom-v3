@@ -41,7 +41,8 @@ async function one(query) {
     await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 120000 });
     await page.evaluate(() => new Promise((done) => {
       const fire = (code, type) => window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
-      const id = setInterval(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); fire('KeyC', 'keydown'); fire('KeyC', 'keyup'); if (globalThis.__ragdoll.state === 'frozen') { clearInterval(id); setTimeout(() => done(true), 1500); } }, 250);
+      const id = setInterval(() => { const [h, f] = globalThis.__v3Fight.duel.fighters, hh = h.body.heading; h.health = h.maxHealth; f.health = Math.min(f.health, 1);
+        f.body = { ...f.body, x: h.body.x + Math.sin(hh) * 1.0, z: h.body.z + Math.cos(hh) * 1.0, heading: hh + Math.PI };   /* a respawned foe stands at his spot, not engaged: bring him to the hero for the kick */ fire('KeyC', 'keydown'); fire('KeyC', 'keyup'); if (globalThis.__ragdoll.state === 'frozen') { clearInterval(id); setTimeout(() => done(true), 1500); } }, 250);
       setTimeout(() => { clearInterval(id); done(false); }, 90000);   // a kill that never froze: go on with what stands, and say so
     })).then((froze) => { if (!froze) console.error(`corpse ${i + 1}: the body did not freeze in 90 s`); });
     left = await page.evaluate(() => globalThis.__ragdoll.leave?.() ?? null);
@@ -88,7 +89,7 @@ for (const query of QUERIES) {
   all.push({ query, best, runs });
 }
 const base0 = all.find((a) => a.query === BASE)?.best;
-console.log(`\n| query | N | avg ms | median | p95 | p99 | max | d avg vs default | d p95 vs default | module counter |\n|---|---|---|---|---|---|---|---|---|---|`);
+console.log(`\ncorpses asked ${CORPSES}, standing in the best runs: ${all.map((a) => a.best.corpses).join(', ')}\n| query | N | avg ms | median | p95 | p99 | max | d avg vs default | d p95 vs default | module counter |\n|---|---|---|---|---|---|---|---|---|---|`);
 for (const { query, best: b } of all) {
   const mod = b.clashModule ? `clash ${b.clashModule.avgMs} ms/frame (${b.clashes} clashes)` : b.limbsModule ? `limbs ${b.limbsModule.avgMs} ms/frame` : '';
   console.log(`| ${query || '(default)'} | ${b.n} | ${b.avgMs} | ${b.medianMs} | ${b.p95Ms} | ${b.p99Ms} | ${b.maxMs} | ${base0 ? (b.avgMs - base0.avgMs).toFixed(3) : ''} | ${base0 ? (b.p95Ms - base0.p95Ms).toFixed(3) : ''} | ${mod} |`);

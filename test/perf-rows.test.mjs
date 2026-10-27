@@ -24,5 +24,7 @@ test('a bad row is refused', () => {
   assert.match(bad((r) => { delete r.tiers.full; }), /tiers\.full: a tier row is required/);
   assert.match(bad((r) => { r.ladder = ['corpses', 'corpses']; }), /ladder/);
   assert.match(bad((r) => { r.ladder = ['wings']; }), /ladder/);
+  assert.match(bad((r) => { r.ladder = ['corpses']; }), /ladder/, 'a partial ladder is refused');
+  assert.match(bad((r) => { r.tiers.phone = null; }), /tiers\.phone: must be an object/, 'a null tier is an error, not a crash');
   assert.match(bad((r) => { r.windowFrames = 0; }), /windowFrames/);
 });

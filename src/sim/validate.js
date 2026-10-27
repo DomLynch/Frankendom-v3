@@ -243,13 +243,14 @@ export function validateFile(name, json) {
   if (name === 'perf') {   // each tier: positive frame ceilings, whole-number caps (0 = the lever is pulled from the start), flags a boolean; the ladder names known levers once each
     const KEYS = ['frameMsP95', 'jsMsBudget', 'corpsesMax', 'cutPiecesMax', 'reactionBlendOff', 'feelOff'], LEVERS = ['cutPieces', 'reactionBlend', 'corpses', 'feel'];
     for (const [tier, row] of Object.entries(json.tiers ?? {})) {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) { errors.push(`${name}.tiers.${tier}: must be an object`); continue; }
       for (const k of Object.keys(row)) if (!KEYS.includes(k)) errors.push(`${name}.tiers.${tier}.${k}: unknown key`);
       for (const k of ['frameMsP95', 'jsMsBudget']) if (!Number.isFinite(row[k]) || row[k] <= 0) errors.push(`${name}.tiers.${tier}.${k}: must be a finite number > 0`);
       for (const k of ['corpsesMax', 'cutPiecesMax']) if (!Number.isInteger(row[k]) || row[k] < 0) errors.push(`${name}.tiers.${tier}.${k}: must be an integer >= 0`);
       for (const k of ['reactionBlendOff', 'feelOff']) if (typeof row[k] !== 'boolean') errors.push(`${name}.tiers.${tier}.${k}: must be true or false`);
     }
     for (const t of ['phone', 'full']) if (!json.tiers?.[t]) errors.push(`${name}.tiers.${t}: a tier row is required`);
-    if (!Array.isArray(json.ladder) || new Set(json.ladder).size !== json.ladder.length || json.ladder.some((l) => !LEVERS.includes(l))) errors.push(`${name}.ladder: must list each of ${LEVERS.join(', ')} at most once`);
+    if (!Array.isArray(json.ladder) || json.ladder.length !== LEVERS.length || new Set(json.ladder).size !== json.ladder.length || json.ladder.some((l) => !LEVERS.includes(l))) errors.push(`${name}.ladder: must list each of ${LEVERS.join(', ')} exactly once`);
     for (const k of ['windowFrames', 'overWindows']) if (!Number.isInteger(json[k]) || json[k] < 1) errors.push(`${name}.${k}: must be an integer >= 1`);
   }
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
