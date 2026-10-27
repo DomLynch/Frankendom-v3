@@ -91,10 +91,10 @@ for (const query of queries.length ? queries : ['', 'feel=kick']) {
     if (t % STEP === 0) { await shoot(); n++; }
     const types = await page.evaluate(() => (globalThis.__v3Fight.events ?? []).map((e) => `${e.type}${e.move ? `:${e.move}` : ''}${e.guarded ? ':guarded' : ''}`));
     if (types.length) sim.push(`t${t} ${types.join(',')}`);
-    if (t % 10 === 0) seen.push(await page.evaluate((k) => ({ foe: globalThis.__v3Fight.duel.fighters[1].phase, ragdoll: globalThis.__ragdoll?.state, cue: !!document.querySelector('.feel-kick-cue') && getComputedStyle(document.querySelector('.feel-kick-cue')).display !== 'none', kicks: (globalThis[k] ?? []).length }), '__v3FeelKick'));
+    if (t % 10 === 0) seen.push(await page.evaluate((k) => ({ foe: globalThis.__v3Fight.duel.fighters[1].phase, ragdoll: globalThis.__ragdoll?.state, kicks: (globalThis[k] ?? []).length }), '__v3FeelKick'));
   }
   const events = await page.evaluate(() => ({ feel: globalThis.__v3FeelKick ?? [], bus: globalThis.__feelEvents ?? [], cost: globalThis.__ragdoll?.byMode }));
-  console.log(`${SCENE} ${tag}: ${n} frames; kick results ${JSON.stringify(events.feel.map((e) => [e.outcome, e.stance, +e.force.toFixed(2), e.finisherWindowS]))}; ragdoll/cue every 10 ticks: ${seen.map((s) => `${s.foe}/${s.ragdoll}${s.cue ? '/CUE' : ''}`).join(' ')}`);
+  console.log(`${SCENE} ${tag}: ${n} frames; kick results ${JSON.stringify(events.feel.map((e) => [e.outcome, e.stance, +e.force.toFixed(2), e.finisherWindowS]))}; ragdoll every 10 ticks: ${seen.map((s) => `${s.foe}/${s.ragdoll}`).join(' ')}`);
   console.log(`${SCENE} ${tag}: sim events ${sim.join(' | ')}`);
   console.log(`${SCENE} ${tag}: ragdoll cost ${JSON.stringify(events.cost)}`);
   await page.close();

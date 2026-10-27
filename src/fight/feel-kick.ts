@@ -1,8 +1,9 @@
 // M7 deliverable 3, KNOCKBACK, SHOVE AND KICK (data/feel-kick.json), opt-in ?feel=kick (src/fight/feel.ts registry). PRESENTATION ONLY: it reads the sim's kick Hit event on the opponent
-// and says how his ragdoll shows it (a stagger or a knockdown by push, by the kicker's mass and his stance), then shows a 'finish now' cue for the finisher window and emits
+// and says how his ragdoll shows it (a stagger or a knockdown by push, by the kicker's mass and his stance), and emits
 // ctx.emit('feel:kick_result', { outcome, finisherWindowS, presentationOnly: true, ... }). The outcome and the window change the fight, so they will be the SIM's (Strategy / V3 Dev, 2026-10-27): the
 // numbers in data/feel-kick.json are PLACEHOLDERS that V3 Dev's sim rows will replace, the event promises no sim window (presentationOnly), and nothing here writes the sim.
 // The core (kickResult, stanceOf, massOf, windowAt, kindOf) is pure: no three, no DOM, no clock.
+// This module draws NOTHING over the canvas: the 'FINISH NOW' text cue (added in PR #106) was removed on Dom's word (2026-10-27); the finisher window is a number on the event only.
 import FEEL from '../../data/feel-kick.json' with { type: 'json' };
 import FIGHT from '../../data/fight.json' with { type: 'json' };
 import type { FeelCtx, FeelHooks } from './feel.ts';   // TYPES only: the feel chunk is its own bundle (feel-chunk.ts) and has its own copy of anything it imports
@@ -69,29 +70,14 @@ export function presentationOf(rows: FeelKickRows, r: KickResult): Presentation 
 /** The event this module emits for the sim (rows `event.name`). */
 export type KickEvent = { presentationOnly: true; tick: number; move: string; outcome: Outcome; stance: Stance; force: number; finisherWindowS: number; finisherStartS: number; pushDistanceM: number; pushVelocityMs: number };
 
-/** A DOM cue: a pulsing label over the canvas (rows `cue`), at a fixed spot (xPct, yPct of the viewport). Browser only. */
-export function createCueElement(rows: FeelKickRows = FEEL): { show(on: boolean, text: string): void } {
-  const c = rows.cue, style = document.createElement('style');
-  style.textContent = `.feel-kick-cue{position:fixed;z-index:30;left:${c.xPct}%;top:${c.yPct}%;transform:translate(-50%,-50%);padding:2px 10px;border-radius:14px;border:2px solid ${c.color};background:#000a;color:${c.color};font:800 ${c.sizePx}px/1.1 sans-serif;letter-spacing:.06em;white-space:nowrap;pointer-events:none;display:none;animation:feel-kick-pulse ${c.pulseS}s ease-in-out infinite}@keyframes feel-kick-pulse{0%,100%{opacity:1}50%{opacity:.55}}`;
-  document.head.appendChild(style);
-  const el = document.createElement('div'); el.className = 'feel-kick-cue'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el);
-  return { show(on, text) { el.textContent = text; el.style.display = on ? 'block' : 'none'; } };
-}
-
-/** One page's controller. `hit` handles a kick or shove Hit on the opponent (returns the ragdoll's Presentation, or null when it is not ours), `frame` ages the stance trackers and the window and shows the cue,
- *  `kill` ends the window. `cueHost`: the cue (a test passes its own; the page gets the DOM one on first use). `debug` is on globalThis.__v3Feel. */
-export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { show(on: boolean, text: string): void } } = {}) {
+/** One page's controller. `hit` handles a kick or shove Hit on the opponent (returns the ragdoll's Presentation, or null when it is not ours), `frame` ages the stance trackers and the window,
+ *  `kill` ends the window. Nothing is drawn. `debug` is on globalThis.__v3Feel. */
+export function createFeelKick(rows: FeelKickRows = FEEL) {
   const log = (): KickEvent[] => ((globalThis as Record<string, unknown>)[rows.event.log] ??= []) as KickEvent[];
   const track = { swing: 0, recover: 0 };
-  let since = -1, win: { startS: number; lengthS: number } | null = null, shown = false, host = opts.cueHost;
-  const debug = { hits: 0, last: null as (KickResult & { move: string }) | null, cueFrames: 0, windowOpen: false };
+  let since = -1, win: { startS: number; lengthS: number } | null = null;
+  const debug = { hits: 0, last: null as (KickResult & { move: string }) | null, windowOpen: false };
   (globalThis as { __v3Feel?: unknown }).__v3Feel = debug;
-  const cue = (on: boolean) => {
-    if (on === shown) return;
-    shown = on;
-    if (!host && typeof document !== 'undefined' && rows.cue.on) host = createCueElement(rows);
-    host?.show(on, rows.cue.text);
-  };
   function react(e: CombatEvent, ctx: Pick<FeelCtx, 'emit'> & { foeId?: string }): Presentation | null {
     const kind = e.type === 'Hit' && e.target === 1 ? kindOf(rows, e.move) : null;
     if (!rows.on || !kind) return null;
@@ -135,14 +121,12 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
         else if ((e.type === 'AttackMissed' || e.type === 'Hit') && e.actor === 1) track.swing = 0;
         else if ((e.type === 'Staggered' && e.actor === 1) || (e.type === 'Parried' && e.target === 1)) { track.swing = 0; track.recover = rows.track.recoverS; }
       }
-      if (since < 0 || !win) return cue(false);
+      if (since < 0 || !win) return;
       since += dt;
       debug.windowOpen = windowAt(win, since);
-      if (since >= win.startS + win.lengthS) { since = -1; win = null; debug.windowOpen = false; return cue(false); }
-      if (debug.windowOpen) debug.cueFrames++;
-      cue(rows.cue.on && debug.windowOpen);
+      if (since >= win.startS + win.lengthS) { since = -1; win = null; debug.windowOpen = false; }
     },
-    kill() { since = -1; win = null; debug.windowOpen = false; down = false; getUp = -1; cue(false); },
+    kill() { since = -1; win = null; debug.windowOpen = false; down = false; getUp = -1; },
   };
 }
 

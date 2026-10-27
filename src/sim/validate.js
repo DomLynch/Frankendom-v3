@@ -39,9 +39,9 @@ export const SCHEMA = {
   'rules': { keys: ['about', 'on', 'default', 'query', 'v1', 'm4', 'variants', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'killAsSwings', 'knockdownSwing', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
-  'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
-    maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], cue: ['about', 'on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
-    finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
+  'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'shove', 'event'],
+    maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
+    finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'event': ['keep'] } },
   // The open-world performance budget (data/perf.json, docs/proposals/perf-open-world-2026-10-27.md): per tier a frame ceiling and the caps of the levers
   'perf': { keys: ['about', 'tiers', 'ladder', 'windowFrames', 'overWindows'], maps: { tiers: ['phone', 'full'] } },
   // The M7 feel modules that are on without a query (src/fight/feel-defaults.ts), each with its own ?x=v1 revert; test/feel-defaults.test.mjs pins the names against the registry
@@ -231,15 +231,12 @@ export function validateFile(name, json) {
     for (const k of ['swingS', 'recoverS']) pos(`track.${k}`, json.track?.[k]);
     for (const k of ['push', 'down']) pos(`fall.${k}`, json.fall?.[k]);
     pos('push.refImpulse', json.push?.refImpulse);
-    for (const k of ['xPct', 'yPct']) if (!(json.cue?.[k] >= 0 && json.cue[k] <= 100)) errors.push(`${name}.cue.${k}: must be a number in [0, 100]`);
     if (!Array.isArray(json.moves) || !json.moves.length || json.moves.some((m) => typeof m !== 'string')) errors.push(`${name}.moves: must be a non-empty list of move ids`);
     for (const [m, r] of Object.entries(json.shove?.moves ?? {})) {
       pos(`shove.moves.${m}.forceMult`, r.forceMult); if (typeof r.canKnockdown !== 'boolean') errors.push(`${name}.shove.moves.${m}.canKnockdown: must be a boolean`);
       for (const k of Object.keys(r)) if (!['forceMult', 'canKnockdown'].includes(k)) errors.push(`${name}.shove.moves.${m}.${k}: unknown key`);
       if ((json.moves ?? []).includes(m)) errors.push(`${name}.shove.moves.${m}: a move is a kick or a shove, not both`);
     }
-    if (!/^#[0-9a-fA-F]{6}$/.test(json.cue?.color ?? '')) errors.push(`${name}.cue.color: must be #rrggbb`);
-    if (typeof json.cue?.text !== 'string' || !json.cue.text.trim()) errors.push(`${name}.cue.text: must be a non-empty string`);
     if (!Number.isInteger(json.event?.keep) || json.event.keep < 1) errors.push(`${name}.event.keep: must be an integer >= 1`);
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(json.event?.log ?? '')) errors.push(`${name}.event.log: must be an identifier (a globalThis name)`);
   }
