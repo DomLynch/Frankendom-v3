@@ -96,7 +96,7 @@ const code = (p) => read(p).replace(/(^|\s)\/\/.*$/gm, '$1').replace(/\/\*[\s\S]
 const PINS = [
   ['../src/client/main.ts', 'the rows are validated and read only when the zone loop is on', /const ZONE_SOUND\b[^=\n]*=\s*ZONE\s*\?\s*zoneSoundRows\(SOUND\.zone\)\s*:\s*null/],
   ['../src/client/main.ts', 'the rows are handed to the sound', /feedback\.zoneCues\(ZONE_SOUND\)/],
-  ['../src/client/main.ts', 'the HUD is told when the kill toast is over', /toastOver:\s*heroStands\(\)\s*&&\s*toastOver\(ZONE_SOUND,\s*view\.finishPhase\(\)\.age\)/],
+  ['../src/client/main.ts', 'the HUD is told when the kill toast is over', /toastOver:\s*heroStands\(\)\s*&&\s*toastOver\(ZONE_SOUND,\s*killAge\)/],   // re-pinned with the free camera: the rig's finish age restarts when its finisher camera lets go, which would show the toast again; killAge counts from the kill
   ['../src/fight/hud.ts', 'the HUD clears the kill line when told', /view\.zone\s*\?\s*\(view\.toastOver\s*\?\s*''\s*:\s*line\)/],
   ['../src/fight/sound/feedback.ts', 'the bell argument asks the gate, and the token is spent on a real ring', /zoneGate\?\.peek\('bell'\)\s*\?\?\s*true[\s\S]*?arenaAudio\.bells\(\)\s*>\s*rung\)\s*zoneGate\?\.spend\('bell'\)/],
   ['../src/fight/sound/feedback.ts', 'the sprite cue list is filtered by the gate', /for \(const cue of cuesFor\([^)]*\)\) \{ if \(zoneGate && !zoneGate\.allow\(cue\.name\)\) continue;/],

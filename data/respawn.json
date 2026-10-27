@@ -7,6 +7,16 @@
     "startAfterSeconds": 4,
     "cameraMetres": 8
   },
+  "freeCamera": {
+    "about": "Dom 2026-10-27, live build, on his phone: 'After the finishing shot the camera is still locked on ... After the kill shot the camera should go into the normal free mode so I can move around freely.' Strategy: the camera follows the hero ALWAYS in the one endless open world. V1's open world (origins/preview/main.ts, src/fight/follow-camera.ts) had no lock on a corpse: the camera stood behind the hero, a one-finger drag on empty ground looked round, and a fight eased a combat framing in and out. The free camera here is the fight camera (same height, distance, shoulder and zoom 1.1) aimed at a point gapMetres ahead of the hero instead of at a boss. It is on while nobody fights him (walking, the hero's respawn) and after a kill, from the moment the ceremony is over (the finisher has finished, or postKill.startAfterSeconds) or the moment he moves the stick. A fight (a boss engaged) is `fight`: 'pair' frames the hero and the boss from behind the hero (the lock, which is anchored on him and so follows him everywhere); 'follow' keeps the free camera even in a fight (a drag then looks round, the stick moves him relative to the view). handOverSeconds: the swing between the two cameras, round the hero and never through him. stickEndsCeremony: any stick input after the kill hands him control at once. A one-finger drag on the ground looks round, the recenter key (R) puts the camera behind him. on:false, ?freecam=v1 and ?postkill=v1 (no zone) keep the lock camera exactly as it was.",
+    "on": true,
+    "query": "freecam",
+    "off": "v1",
+    "gapMetres": 3.25,
+    "handOverSeconds": 1.2,
+    "stickEndsCeremony": true,
+    "fight": "pair"
+  },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
     "minDistance": 3.25
@@ -57,6 +67,8 @@
     "startAfterSeconds": [0, 30],
     "walkRadiusMetres": [1, 60],
     "cameraMetres": [0, 20],
+    "freeCamGapMetres": [1, 10],
+    "handOverSeconds": [0.2, 5],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],
     "edgeMetres": [0, 4],

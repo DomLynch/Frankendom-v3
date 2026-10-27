@@ -26,7 +26,8 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
-import { setArenaClamp, setLockFrame, setWalkClamp } from '../fight/camera.ts';
+import { setArenaClamp, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
+import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';
 import { cameraZoom } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
@@ -203,6 +204,12 @@ function nameOpponent() {   // :397 without the legend
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0;
+// The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
+// ceremony is over or he moves the stick; any stick input ends the ceremony at once. killAge counts the seconds since the kill landed (the rig's own finish age restarts when its finisher camera lets go); freeAfterKill latches the hand-over for this kill.
+// FREE is null under ?postkill=v1 (no zone), ?freecam=v1 and the row off: the lock camera exactly as it was
+const FREE = freeCameraFor(!!ZONE, search);
+setFreeCamera(FREE);
+let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
 const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
@@ -225,7 +232,7 @@ if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseF
 function rematch(pose?: DuelPose, index = current, restart = true) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
-  roam = null; sinceDeath = 0; current = index; engaged = false; killMarked = false;
+  roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false;
   attackers = attackers.filter((a) => a.dead); killedBy = null;   // every live attacker lets go and stands again at full health at its spot; a killed one keeps lying until its own timer is up
   clearInput(); state = previous = practice.fighter;
   if (restart) view.restartStandoff();
@@ -252,7 +259,7 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
   view.respawnFoe();
   const mine = practice.duel.fighters[0], hero: Fighter = { ...mine, body: { ...mine.body, x: at.x, z: at.z, heading: at.heading } };   // the hero stays where he stands: the ground is unbounded and a zone duel has no wall to draw him to
   epoch++; seed = nextSeed(seed); practice = adopt(a, hero); frameEvents = []; openerLift = 0;
-  roam = null; sinceDeath = 0; current = a.index; engaged = true; killMarked = false; killedBy = null;
+  roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = a.index; engaged = true; killMarked = false; killedBy = null;
   attackers = attackers.filter((x) => x !== a);
   clearInput(); state = previous = practice.fighter;
   updateHud();
@@ -269,7 +276,7 @@ function zoneStep(dt: number) {
   if (heroStands() && !killMarked) { killMarked = true; engaged = false; spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
     const live = attackers.find((a) => !a.dead), phase = view.finishPhase();
-    if (live) { if (roam || phase.complete || phase.age >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
+    if (live) { if (roam || freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
     else {
       const near = inAggro(spawns, hero), next = near >= 0 ? near : timers.due.includes(current) ? nearestStanding(spawns, hero) : -1;
       if (next >= 0) hand(next, hero);
@@ -297,9 +304,16 @@ function zoneStep(dt: number) {
 // The zone's stills and the cost table read this (scripts/zone-stills.mjs)
 function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
 element('reset-button').addEventListener('click', () => rematch());
+if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger drag on empty ground looks round; the recenter key R stands behind him). The tap that cuts a corpse is a press that stays put (ragdoll.listenTaps), so a drag is never a cut.
+  let drag: { id: number; x: number } | null = null;
+  canvas.addEventListener('pointerdown', (e) => { if (drag || e.button !== 0 || paused()) return; drag = { id: e.pointerId, x: e.clientX }; try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ } });
+  canvas.addEventListener('pointermove', (e) => { if (!drag || drag.id !== e.pointerId) return; if (freeNow) view.lookRound(e.clientX - drag.x); drag.x = e.clientX; });
+  for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, (e) => { if (drag?.id === (e as PointerEvent).pointerId) drag = null; });
+  element('recenter-button').addEventListener('click', () => { if (freeNow) view.faceBehind(state.heading); });
+}
 
 function updateHud() {   // :684, the career fight's view
-  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, view.finishPhase().age) });
+  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge) });
   const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null;   // a walking hero keeps the whole HUD (Respawn included) up
   document.documentElement.classList.toggle('endgame-fade', !!phase && !walking && (hushed || phase.touring));
   document.documentElement.classList.toggle('endgame-hush', !!phase && !walking && hushed);
@@ -324,6 +338,7 @@ function frame(now: number) {
   const dt = Math.min(elapsed, FIGHT.frameDtMaxS);
   if (!paused()) {
     if (ZONE) zoneStep(dt);   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
+    if (heroStands()) killAge += dt;
     controls.promoteDodge(now);
     // :1517 the pause spends the frame's time first; what is left after it goes on to the simulation
     if (hitStop > 0) {
@@ -371,7 +386,8 @@ function frame(now: number) {
       state = practice.fighter;
       if (heroStands()) {   // the zone loop: the sim is over, the hero walks (presentation only) once the kill's ceremony lets him go
         const phase = view.finishPhase();
-        if (!roam && (intent.x || intent.z) && (phase.complete || phase.age >= ZONE!.startAfterSeconds)) { roam = { ...practice.fighter }; view.stopTour(); }
+        // the ceremony is over, or (freeCamera.stickEndsCeremony) any stick input ends it
+        if (!roam && handsOver(FREE, freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds, !!(intent.x || intent.z))) { roam = { ...practice.fighter }; view.stopTour(); }
         if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, ZONE!.walkRadius);   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
       accumulator -= step();
@@ -392,9 +408,12 @@ function frame(now: number) {
   }
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]! }))); }   // the attackers' rigs (a killed one lies until its timer is up)
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
+  // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
+  freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged });
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
-    locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null,
+    locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
   );
   frameEvents = [];
   updateHud();
