@@ -1,0 +1,44 @@
+{
+  "ragdoll": {
+    "corpses": 0,
+    "frames": 1408,
+    "totalMs": 554.1000003069639,
+    "maxMs": 3.5,
+    "lastMs": 0.29999999701976776,
+    "ticks": 1407,
+    "state": "alive",
+    "rig": "106",
+    "measure": "physics/bodies/minotaur-106.measure.json",
+    "byMode": {
+      "alive": {
+        "frames": 1408,
+        "totalMs": 554.1000003069639,
+        "maxMs": 3.5
+      }
+    },
+    "cuts": [],
+    "cutSteps": [],
+    "lastTap": "",
+    "pieces": []
+  },
+  "feel": {
+    "frames": 1408,
+    "totalMs": 72.50000004470348,
+    "maxMs": 0.3999999910593033,
+    "stumbles": 2,
+    "last": {
+      "strength": {},
+      "share": {}
+    }
+  },
+  "events": [
+    {
+      "name": "feel:limp",
+      "payload": {
+        "part": "leg_left",
+        "level": 1
+      }
+    }
+  ],
+  "hits": 10
+}
