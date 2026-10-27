@@ -2,8 +2,8 @@
   "default": {
     "fight375": {
       "shot": "default-fight-375.png",
-      "backdropPct": 11.1,
-      "sandPct": 88.9,
+      "backdropPct": 8.6,
+      "sandPct": 91.4,
       "rows": 812
     },
     "walk375": {
@@ -14,8 +14,8 @@
     },
     "fight812": {
       "shot": "default-fight-812.png",
-      "backdropPct": 12.8,
-      "sandPct": 87.2,
+      "backdropPct": 4.8,
+      "sandPct": 95.2,
       "rows": 375
     }
   },
@@ -34,8 +34,8 @@
     },
     "fight812": {
       "shot": "v1-fight-812.png",
-      "backdropPct": 0.3,
-      "sandPct": 99.7,
+      "backdropPct": 0,
+      "sandPct": 100,
       "rows": 375
     }
   }
