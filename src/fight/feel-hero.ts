@@ -4,7 +4,7 @@
 // PRESENTATION ONLY, as hitreact is: it reads one sim Hit (location, heading) and writes motor strengths, impulses and a bone blend; nothing goes back to the sim.
 // The state is per module instance (the Minotaur's feel-hitreact.ts keeps its own), so the two bodies never share a blow.
 import ROWS from '../../data/feel-hitreact.json' with { type: 'json' };
-import { createHitReact } from './feel-hitreact.ts';
+import { blowClass, createHitReact } from './feel-hitreact.ts';
 import type { CombatEvent } from './duel.ts';
 import type { FeelCtx, FeelHooks } from './feel.ts';
 
@@ -16,7 +16,7 @@ export const feelHooks: FeelHooks = {
     const seen = ((globalThis as { __heroReactSeen?: Record<string, unknown> }).__heroReactSeen ??= { hits: 0 });   // read by the clip harness: how many hits reached the hook, and the last one's fields
     seen.hits = (seen.hits as number) + 1; seen.last = { target: ctx.target, location: e.location, heading: e.heading, state: ctx.rd.state, quietS };
     if (ctx.target !== 0 || downNow(ctx) || quietS > 0) return;
-    const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y);
+    const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y, 1, blowClass(e).row);   // the same blow classes as the Minotaur's (feel-hitreact.ts): a light flinches, a heavy and a counter keep the full reaction
     if (plan) ((globalThis as { __heroReactLog?: unknown[] }).__heroReactLog ??= []).push({ tick: e.tick, zone: plan.zone, sector: plan.sector, side: plan.side });   // read by the clip harness
   },
   frame(dt: number, _events: readonly CombatEvent[], ctx: FeelCtx) {

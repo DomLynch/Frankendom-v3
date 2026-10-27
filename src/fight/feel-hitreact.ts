@@ -116,12 +116,15 @@ const react = createHitReact();
 let quietS = 0;   // seconds of the get-up left after a knockdown ended
 /** ?sway=v1 (rows.classes.revert): the page asks for the reaction as it was before the blow classes. */
 const swayRevert = (): boolean => new URLSearchParams((globalThis as { location?: { search: string } }).location?.search ?? '').get(ROWS.classes.revert.query) === ROWS.classes.revert.value;
-const downNow =(ctx: FeelCtx): boolean => ctx.rd.state === 'knockdown';
+/** The class and multiplier row a blow plans with (feel-hero.ts uses it too, so both bodies react alike); ?sway=v1: every blow as a heavy, the reaction before the classes. */
+export const blowClass = (e: Pick<CombatEvent, 'counter' | 'charged' | 'move'>): { name: BlowClass; row: ClassRow } =>
+  swayRevert() ? { name: 'heavy', row: FULL } : (() => { const name = classOf(ROWS, e); return { name, row: ROWS.classes[name] }; })();
+const downNow = (ctx: FeelCtx): boolean => ctx.rd.state === 'knockdown';
 export const feelHooks: FeelHooks = {
   hit(e: CombatEvent, ctx: FeelCtx) {
     if (downNow(ctx) || quietS > 0) return;   // already down or getting up: the package ignores a stagger then, and so do these rows
-    const cl = swayRevert() ? 'heavy' : classOf(ROWS, e);   // ?sway=v1: every blow as a heavy, the reaction before the classes
-    const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y, 1, swayRevert() ? FULL : ROWS.classes[cl]);
+    const { name: cl, row } = blowClass(e);
+    const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y, 1, row);
     if (plan) ((globalThis as { __hitreactLog?: unknown[] }).__hitreactLog ??= []).push({ tick: e.tick, zone: plan.zone, sector: plan.sector, side: plan.side, cls: cl });   // read by the clip harness
   },
   frame(dt: number, _events: readonly CombatEvent[], ctx: FeelCtx) {
