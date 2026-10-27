@@ -60,8 +60,11 @@ test('the camera composes with the lens zoom: one boss is byte-identical to main
   setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
   const BACK = JSON.parse(read('../src/fight/camera-rules-defs.json')).rules.find((r) => r.id === 'fightBackDefault').value;   // the lock's fight-back scale: camera.update multiplies it by widen
   assert.equal(cameraZoom(FIGHT.camera.zoom, ''), FIGHT.camera.zoom);
-  const s = spawns(), A = s[0], B = s[1], rows = ATTACKERS.camera;
-  // the hero stands inside the second boss's aggro (towards the first), the first boss at its own spot: the farthest the second one can be while it attacks
+  const s = spawns(), A = s[0], rows = ATTACKERS.camera;
+  // The farthest a second boss can be while it attacks: the hero stands at the first boss's leash and inside the second boss's aggro, on the line between them. The shipped spawns stand 16 m or more apart
+  // (spawn spread, PR B2), further than leash + aggro, so no pair of them ever meets this geometry (the next test); the bout is built on a boss placed at exactly the farthest feasible spot.
+  const toward = { x: s[1].x - A.x, z: s[1].z - A.z }, reach = Math.hypot(toward.x, toward.z), lie = A.leash + s[1].aggro * 0.9;
+  const B = { ...s[1], x: A.x + (toward.x / reach) * lie, z: A.z + (toward.z / reach) * lie };
   const dx = A.x - B.x, dz = A.z - B.z, len = Math.hypot(dx, dz), hero = { x: B.x + (dx / len) * B.aggro * 0.9, z: B.z + (dz / len) * B.aggro * 0.9, heading: 0, distance: 0 };
   const yaw = Math.atan2(hero.x - A.x, hero.z - A.z), centre = { x: (hero.x + A.x) / 2, z: (hero.z + A.z) / 2 };
   const inFrame = (zoom, widen, p) => {

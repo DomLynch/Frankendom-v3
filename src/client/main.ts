@@ -12,7 +12,7 @@ import PROFILES from '../../data/profiles.json' with { type: 'json' };
 import { difficultyPick, profileFor, resolveFight, scaledOpponent, scaledPractice, type DifficultyFile } from '../difficulty.ts';
 import { applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
-import { initialPractice, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
+import { initialPractice, project, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
 import { OPPONENTS, RULES, opponentAt, profileAt, weaponOf, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
@@ -26,7 +26,7 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
-import { setLockFrame, setWalkClamp } from '../fight/camera.ts';
+import { setArenaClamp, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { cameraZoom } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
@@ -60,7 +60,7 @@ import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
-import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
+import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
@@ -108,10 +108,12 @@ function fresh(pose?: DuelPose): Practice {
 /** A whole fight on seed `s` (the hero and one boss, the difficulty rows' health and damage scales on the boss): `fresh`'s build without its side effects, which the zone's extra attackers reuse. */
 function make(s: number, pose?: DuelPose): Practice {
   const body = opponentAt(opponent, level);
+  const fits = !ZONE || !pose || poseFits(pose, RADIUS);   // a pose beyond the pit's wall is not the sim's to build: zoneDuel places it (spawns.ts)
   const made = initialPractice(s, difficultyOn ? scaledOpponent(body, resolved) : body, FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
     recordSpecials({ specials: FIGHT.specials, level, opponent: opponentId }), undefined, FIGHT.stance as PickedStance,
-    pose, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
-  return difficultyOn ? scaledPractice(made, resolved) : made;
+    fits ? pose : undefined, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
+  const scaled = difficultyOn ? scaledPractice(made, resolved) : made;
+  return ZONE ? project(zoneDuel(scaled.duel, fits ? undefined : pose), scaled.ai, scaled) : scaled;   // the zone's duels have no ring wall and may begin far from the pit (spawns.ts zoneDuel); the single fight keeps the pit's circle
 }
 let practice = fresh(), frameEvents: CombatEvent[] = [];
 // the warden's brain: data/fight.json `ai` (a data/brains.json row) over his V1 profile at his level; ?ai=v1 = V1's profile untouched
@@ -207,6 +209,7 @@ const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
 if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
 if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
+if (ZONE) setArenaClamp(WORLD.cameraClampMetres);   // the camera follows the hero across the zone's ground, not only the pit's colonnade (data/respawn.json world.cameraClampMetres)
 if (ZONE) { const bad = spotBodyProblems(SPOTS); if (bad.length) throw new Error(`zone row bodies: ${bad.join('; ')}`); }   // a spawn's own body (zone row spawns[].body) is a usable boss body; none in the shipped zone
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
 let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, engaged = false, killMarked = false;
@@ -217,7 +220,7 @@ let attackers: Attacker[] = [], killedBy: number | null = null, widen = 1;   // 
 if (multi) validateFraming();
 const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
-const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, RADIUS, ZONE!.minDistance, heroStart);
+const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, WORLD.spreadRadiusMetres, ZONE!.minDistance, heroStart);
 if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
