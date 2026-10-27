@@ -1,0 +1,160 @@
+{
+  "project": "FRANKENDOM: ORIGINS",
+  "version": "sky layer pack 2",
+  "source_clean_plate": "frankendom_sky_assets/01_clean_plate.webp (pack 1)",
+  "plate_size_px": [
+    4096,
+    1024
+  ],
+  "coordinate_origin": "top-left; x right, y down; overlay crops positioned using x,y exactly; no scaling",
+  "files": {
+    "07_eyes_closed.webp": {
+      "rect_px": [
+        2246,
+        606,
+        2473,
+        687
+      ],
+      "type": "RGBA eye patch",
+      "eye_state": "both closed",
+      "blend": "straight alpha over 13_plate_fixed.webp"
+    },
+    "08_eyes_wink.webp": {
+      "rect_px": [
+        2246,
+        606,
+        2473,
+        687
+      ],
+      "type": "RGBA eye patch",
+      "eye_state": "viewer-left closed, viewer-right open",
+      "blend": "straight alpha over 13_plate_fixed.webp"
+    },
+    "09_drool_mask.png": {
+      "rect_px": [
+        0,
+        0,
+        4096,
+        1024
+      ],
+      "type": "grayscale full-plate mask",
+      "interpretation": "0 none, 255 drool"
+    },
+    "10_drop_sprite.png": {
+      "rect_px": [
+        0,
+        0,
+        24,
+        48
+      ],
+      "type": "RGBA freefall particle",
+      "anchor_px": [
+        12,
+        0
+      ],
+      "spawn_plate_px": [
+        2407,
+        745
+      ]
+    },
+    "10_drop_sprite_stretched.png": {
+      "rect_px": [
+        0,
+        0,
+        24,
+        96
+      ],
+      "type": "RGBA freefall particle",
+      "anchor_px": [
+        12,
+        0
+      ],
+      "spawn_plate_px": [
+        2407,
+        745
+      ]
+    },
+    "11_planet_surface.webp": {
+      "rect_px": [
+        0,
+        0,
+        2048,
+        1024
+      ],
+      "type": "equirectangular pink-red planetary texture",
+      "wrap_u": "repeat",
+      "wrap_v": "clamp",
+      "seam_note": "left and right source edge pixels matched exactly before lossy compression"
+    },
+    "12_planet_shading.webp": {
+      "rect_px": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "type": "RGBA planetary disc shading overlay",
+      "render": "overlay registered to planet disc; scale to desired on-screen planet radius, alpha blend"
+    },
+    "13_plate_fixed.webp": {
+      "rect_px": [
+        0,
+        0,
+        4096,
+        1024
+      ],
+      "type": "full-plate RGB",
+      "changes": "removed residual ghost smudge near x=1530-1590,y=770-865, subtly sharpened rightmost horizon x=3380-4080,y=749-877"
+    }
+  },
+  "place_on_planet": {
+    "center_px": [
+      1367.8,
+      736.6
+    ],
+    "radius_px": 249.1,
+    "recommended_disc_px": [
+      1119,
+      488,
+      498,
+      498
+    ]
+  },
+  "eye_geometry": {
+    "viewer_left_center_px": [
+      2300,
+      645
+    ],
+    "viewer_right_center_px": [
+      2413,
+      631
+    ]
+  },
+  "drool_streak_bbox_px": [
+    2394,
+    679,
+    2421,
+    752
+  ],
+  "behaviour": {
+    "blink": "blink closed patch at native source resolution then return base; hold 90-140ms",
+    "wink": "hold left wink 150-240ms",
+    "drool": "animate moving particle beneath stationary streak; stretched variant at higher speeds",
+    "planet_rotation": "move U texture coordinate with repeat wrapping; keep shading disc fixed; optional cloud strip not provided"
+  },
+  "assets_reconstructed_from_flat_artwork": true,
+  "notes": "Eye eyelids were manually painted/inpainted from matching source skin tone; face original open eyelids are narrow. Planet texture is procedural with wrapped x coordinates, not physically accurate reconstructed far side. Shading disc is RGBA to overlay sphere texture.",
+  "target_total_KB": 150,
+  "file_sizes_bytes": {
+    "07_eyes_closed.webp": 4856,
+    "08_eyes_wink.webp": 3740,
+    "09_drool_mask.png": 5321,
+    "10_drop_sprite.png": 1737,
+    "10_drop_sprite_stretched.png": 2365,
+    "11_planet_surface.webp": 17308,
+    "12_planet_shading.webp": 17036,
+    "13_plate_fixed.webp": 79166
+  },
+  "asset_total_bytes": 131529,
+  "planet_tile_edge_max_abs_difference_RGB_uncompressed": 0
+}
