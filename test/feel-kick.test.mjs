@@ -140,10 +140,10 @@ test('the controller tracks his stance from the sim\'s events: mid-swing after A
 
 test('the controller: the event list keeps the newest rows.event.keep; a kill ends the window; rows.on false is silent', () => {
   delete globalThis[ROWS.event.log];
-  const { shown, ctl, ctx } = rig();
+  const { ctl, ctx } = rig();
   for (let i = 0; i < ROWS.event.keep + 5; i++) ctl.react(hit({ tick: i }), ctx);
   const list = globalThis[ROWS.event.log]; assert.equal(list.length, ROWS.event.keep); assert.equal(list.at(-1).tick, ROWS.event.keep + 4);
-  ctl.frame(ROWS.window.stagger.startS + 0.1); ctl.kill(); assert.deepEqual(shown, [true, false]);
+  ctl.frame(ROWS.window.stagger.startS + 0.1); assert.equal(ctl.debug.windowOpen, true); ctl.kill(); assert.equal(ctl.debug.windowOpen, false);
   assert.equal(createFeelKick({ ...ROWS, on: false }).react(hit(), ctx), null);
 });
 
