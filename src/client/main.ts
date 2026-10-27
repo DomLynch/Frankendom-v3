@@ -50,7 +50,7 @@ import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { respawnDue, zoneLoopFor, respawnPose, roamStep } from '../fight/zone-loop.ts';
-import { zoneFor } from '../zone/zone-rows.ts';
+import { zoneFor } from '../stubs.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84

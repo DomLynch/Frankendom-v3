@@ -7,7 +7,7 @@
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { M } from './detmath.ts';
 import { advance, type State } from './sim.ts';
-import type { ZoneRow } from '../zone/zone-rows.ts';
+import type { ZoneRow } from '../stubs.ts';
 
 type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number }; spawn: { minDistance: number }; limits: { startAfterSeconds: [number, number]; minDistance: [number, number] } };
 const LOOP = ROWS as unknown as Rows;

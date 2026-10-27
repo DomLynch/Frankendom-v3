@@ -8,6 +8,7 @@ import LOOT_PIECES from './core/loot-pieces.json' with { type: 'json' };
 // core/grades.ts, core/finish-rows.ts, core/contracts/definitions.ts: V1's rows, as they are (the opponent's grade at his rung, spark materials)
 export { GRADES, TIERS, classOf, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from './core/grades.ts';   // core/grades.ts
 export { finishRow } from './core/finish-rows.ts';   // core/finish-rows.ts
+export { zoneFor, type ZoneRow } from './zone/zone-rows.ts';   // the zone row (data/zones/zone1.row.json): the zone loop's one read (src/fight/zone-loop.ts)
 export { materialRow } from './core/contracts/definitions.ts';   // core/contracts/definitions.ts
 // core/loot.ts (pulls in legends, the economy and the account): the three reads the duel makes, V1's own expressions over V1's own rows
 export type LootId = `${string}.${string}`;   // core/loot.ts LootId
