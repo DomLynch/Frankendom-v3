@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import type { Shove } from './camera-kick.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
+import { stepShare, swingAround, virtualFoe, yawBehind, type FreeCameraRows } from './free-camera.ts';
 import { repitch, type PitchRows } from './camera-pitch.ts';
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
@@ -17,6 +18,9 @@ export const setFightBack = (scale: number): void => { FIGHT_BACK = scale; };
 let WALK_CLAMP = 0;
 /** The zone's free walk (data/respawn.json postKill): while the hero walks beyond the pit the follow camera may stand this far from the centre (the walking radius plus its back-off), so it never folds in front of him. 0 = the colonnade ring alone, as before. */
 export const setWalkClamp = (radius: number): void => { WALK_CLAMP = radius; };
+let FREE_CAM: Pick<FreeCameraRows, 'gapMetres' | 'handOverSeconds'> | null = null;
+/** The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts): its rows, or null = the lock camera exactly as it was (?postkill=v1, ?freecam=v1). */
+export const setFreeCamera = (rows: Pick<FreeCameraRows, 'gapMetres' | 'handOverSeconds'> | null): void => { FREE_CAM = rows; };
 // V3: the lock camera's height scale and its step over the player's right shoulder (m), set by the page from data/fight.json (V2's lower,
 // over-the-shoulder framing). 1 and 0 are V1's lock exactly; a finish eases both back to that, as it does the fight-back scale.
 let PITCH: { degrees: number; rows: Pick<PitchRows, 'heroY' | 'minEyeY'> } | null = null;
@@ -221,6 +225,8 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
   let yaw = 0,
     pitch = 0.45,
     started = false;
+  let freeShare = 0, swingLeft = 0;   // the free follow camera's share (0 = the lock, 1 = free) and the seconds the hand-over swing still runs
+  const SWING_TAIL = 0.5;   // seconds the swing goes on after the share stops moving, so the camera arrives (the share itself runs over freeCamera.handOverSeconds)
   // Camera kick: a blow nudges the camera a few centimetres along the blow's heading and it settles in ~0.15 s. Small on purpose
   // (readable brutality: nothing may obscure a pose); off when the viewer prefers reduced motion. Placeholder for the visual lane's impact pass.
   // The kick is a world-space offset scaled by `kick` (1 → 0): a landing blow drops the camera and shoves it a little along the blow; a parry
@@ -251,6 +257,18 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       yaw = 0;
       pitch = 0.45;
       started = false;
+    },
+    // The zone's free camera: the view swings to stand behind a hero facing `heading` (the recenter button / R); no snap, the follow eases there.
+    // The look input's hook (a right thumb, a drag): turn the view `radians` about the hero (+ = the camera swings to its left). The free camera keeps the yaw it is given; the lock pulls it back in a fight.
+    lookYaw(radians: number) {
+      yaw = wrapAngle(yaw + radians);
+    },
+    faceBehind(heading: number) {
+      yaw = yawBehind(heading);
+    },
+    /** 0 = the lock camera .. 1 = the zone's free follow camera. */
+    get freeShare() {
+      return freeShare;
     },
     // A touch on the arena after the kill: the player takes the camera back for the rest of this finish.
     stopTour() {
@@ -285,8 +303,14 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
     // `drop`, easing in and back out over `seconds`.
     tilt(angle: number, seconds: number, right = 0, drop = 0) { tiltAngle = angle; tiltFor = seconds; tiltAge = 0; swayRight = right; swayDrop = drop; },
     // Place the camera for this frame: lock or orbit framing, the finisher push-in, the side-view reveal, then the settle and the kick.
-    update(dt: number, state: State, enemy: { x: number; z: number }, locked: boolean, finish: CameraFinish | null, enemyScale = 1, enemyTall = 0, enemyLow = 0, widen = 1) {   // widen: the lock backs off by this when another boss is on him (src/zone/attackers.ts framingWiden); 1 = the one-boss frame, untouched
+    update(dt: number, state: State, foe: { x: number; z: number }, locked: boolean, finish: CameraFinish | null, foeScale = 1, foeTall = 0, foeLow = 0, foeWiden = 1, free = false) {   // widen: the lock backs off by this when another boss is on him (src/zone/attackers.ts framingWiden); 1 = the one-boss frame, untouched. free: the zone's follow camera (src/fight/free-camera.ts): the foe is a point ahead of him, nothing is locked on
       const blend = 1 - Math.exp(-dt * 8);
+      const was = freeShare;
+      freeShare = FREE_CAM ? stepShare(freeShare, free, dt, FREE_CAM.handOverSeconds, !started) : 0;
+      swingLeft = freeShare !== was ? SWING_TAIL : Math.max(0, swingLeft - dt);   // while the share moves (and a moment after) the camera swings round the hero to its new place, never through him
+      const keep = 1 - freeShare * freeShare * (3 - 2 * freeShare), ahead = FREE_CAM && freeShare > 0 ? virtualFoe(state, yaw, FREE_CAM.gapMetres) : foe;
+      const enemy = freeShare > 0 ? { x: foe.x + (ahead.x - foe.x) * (1 - keep), z: foe.z + (ahead.z - foe.z) * (1 - keep) } : foe;
+      const on = freeShare > 0, enemyScale = on ? 1 - (1 - foeScale) * keep : foeScale, enemyTall = on ? foeTall * keep : foeTall, enemyLow = on ? foeLow * keep : foeLow, widen = on ? 1 + (foeWiden - 1) * keep : foeWiden;   // off (the lock, ?freecam=v1, ?postkill=v1): the arguments untouched, bit for bit
       if (locked) {
         const lockYaw = Math.atan2(state.x - enemy.x, state.z - enemy.z);
         yaw += wrapAngle(lockYaw - yaw) * blend;
@@ -397,8 +421,14 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       camera.position.addScaledVector(kickOffset, -shoved); // last draw's shove comes off before the settle
       camera.position.sub(swayApplied); swayApplied.set(0, 0, 0);   // and the tumble's shift
       shoved = 0;
-      camera.position.lerp(desired, started ? blend : 1);
-      aim.lerp(look, started ? blend : 1);
+      if (swingLeft > 0 && started && FREE_CAM) {   // the hand-over between the lock / finisher camera and the free one (data/respawn.json freeCamera.handOverSeconds): round him, not through him
+        const k = 1 - Math.exp(-dt * 3 / FREE_CAM.handOverSeconds), at = swingAround(camera.position, desired, state, k);
+        camera.position.set(at.x, at.y, at.z);
+        aim.lerp(look, k);
+      } else {
+        camera.position.lerp(desired, started ? blend : 1);
+        aim.lerp(look, started ? blend : 1);
+      }
       camera.lookAt(aim);
       const swing = tiltAge < tiltFor ? Math.sin(Math.PI * (tiltAge / tiltFor)) : 0;
       if (swing) camera.rotateZ(tiltAngle * swing);

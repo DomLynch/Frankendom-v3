@@ -691,6 +691,11 @@ export function createScene(
     get yaw() {
       return rig.yaw;
     },
+    // The zone's free follow camera (src/fight/free-camera.ts, main.ts): a one-finger drag on the ground looks round, recenter stands behind the hero, freeShare is 0 (lock) .. 1 (free).
+    lookRound(dx: number) { rig.orbit(dx, 0); },
+    faceBehind(heading: number) { rig.faceBehind(heading); },
+    lookYaw(radians: number) { rig.lookYaw(radians); },   // the clean hook for a look input: turns the view by radians about the hero (view.yaw reads it back)
+    get freeShare() { return rig.freeShare; },
     // The ONE call site of a foe respawn (src/client/main.ts rematch, zone only), called BEFORE his sim body is reset: the dead rig is left as it lies beside the live one
     // (ragdoll.leaveCorpse: cuts, pieces and caps kept, it ages out on data/physics.json corpse.keepSeconds), and the live rig is rebuilt whole. False = nothing to leave.
     respawnFoe(): boolean { return ragdoll?.leaveCorpse() ?? false; },
@@ -741,6 +746,7 @@ export function createScene(
       specialEpoch = 0,
       specialFight?: SpecialFightIdentity,
       roamed = false,   // the zone loop (src/fight/respawn.ts): the hero has walked off after the kill; the sim is over, his body is free, the camera follows him and the corpse stays as it fell
+      freeCamera = false,   // the zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts): no finisher camera, no lock on the corpse; the hero keeps whatever pose he holds until `roamed`
     ) {
       if (arena.group.scale.x !== PLAY_SCALE) { arena.group.scale.setScalar(PLAY_SCALE); const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // the painted boundary ring is the full arena's circle: in a smaller one the wall is the edge   // the floor, ring, backdrop and props come inward with the play circle of the fight on screen (play-radius.ts; Match sets it)
       if (groundSnap > 0) { anchorInto(groundAt, state.x, state.z, groundSnap); arena.group.position.set(groundAt.x, 0, groundAt.z); sun.position.set(sunHome.x + groundAt.x, sunHome.y, sunHome.z + groundAt.z); sun.target.position.set(groundAt.x, 0, groundAt.z); }   // the zone's endless ground (data/zone-ground.json groundFollow): the floor, its grid and the sun's shadow frustum stand on the hero, in whole grid cells
@@ -1138,12 +1144,13 @@ export function createScene(
         for (const name of ['Head', 'hand_l', 'hand_r', 'foot_l', 'foot_r']) { const p = warriors.opponent.boneWorld(name); if (p) measured = Math.max(measured, Math.hypot(p.x - origin.x, p.z - origin.z)); }
         openedReach = Math.min(Math.max(openedReach, measured), openedReach + 0.015);
       } else if (!practice.finish) openedReach = 0;
-      rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed ? {   // roamed: no finisher camera, the follow lock on the walking hero
+      // roamed or free: no finisher camera, the follow lock on the walking hero
+      rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed && !freeCamera ? {
         finisher, posed: !!finisherPose, draw: !!practice.finish.draw, victim: practice.finish.victim, clock: finishClock,
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
-      } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden);
+      } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden, freeCamera);
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock
       // for a posed finisher, the plain fall's own progress for a plain death, so the plain death completes earlier and the

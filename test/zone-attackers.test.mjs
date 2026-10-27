@@ -52,7 +52,8 @@ test('the camera framing row: one boss is exactly the old frame, a far attacker 
   assert.doesNotThrow(() => validateFraming(rows));
   for (const bad of [{ widenAtMetres: 0 }, { maxWiden: 0.5 }, { easeSeconds: 0 }, { maxWiden: NaN }]) assert.throws(() => validateFraming({ ...rows, ...bad }), /attackers\.camera/);
   const cam = read('../src/fight/camera.ts');
-  assert.match(cam, /enemyLow = 0, widen = 1\)/); assert.match(cam, /\* \(1 \+ \(widen - 1\) \* shortShare\)/);
+  assert.match(cam, /foeLow = 0, foeWiden = 1, free = false\)/);   // re-pinned with the free camera: the arguments are foe*, and `widen` below is their value after the free camera's share is taken off (equal to the argument while the lock is on)
+  assert.match(cam, /widen = on \? 1 \+ \(foeWiden - 1\) \* keep : foeWiden/); assert.match(cam, /\* \(1 \+ \(widen - 1\) \* shortShare\)/);
 });
 
 test('the camera composes with the lens zoom: one boss is byte-identical to main\'s frame, and with two live the second attacker is inside the 375 frame at zoom 1.1 and 1.0', async () => {
