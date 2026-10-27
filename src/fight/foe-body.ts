@@ -10,24 +10,42 @@
 // guard (moves.ts LOADOUT_FROM), so Gate 0 is untouched. The 106 body bakes no weapon: whatever he fights with is grafted at fk_socket_hand_r
 // from its equip file (scene.ts).
 import { foeRigFile } from './rig-bones.ts';   // data/rig.json (106 only): the drawn body's 106 file
+// The body is a DATA ROW (Dom 2026-10-27, docs/BOSS-BODIES.md): data/profiles.json `body` per profile (its `opponent`), `defaultBody` (the Minotaur) otherwise, checked against
+// data/rig.json by src/sim/validate.js checkBodies. ?<profiles.bodyQuery>=<body> (?boss=psyche) swaps it for the page (setBossBody, main.ts). The kit is still none for every body.
+import PROFILES from '../../data/profiles.json' with { type: 'json' };
+import RIG from '../../data/rig.json' with { type: 'json' };
+import { bodyProblem, checkBodies } from '../sim/validate.js';
+import { heroBodyFile } from './hero-body-rows.ts';   // the hero's stem: a boss cannot share it (validate.js bodyProblem)
 type BodyRow = { body: string; kit: string | null };
-const BODIES: Readonly<Record<string, BodyRow>> = {
-  pitborn: { body: 'minotaur', kit: null },
-  veteran: { body: 'minotaur', kit: null },
-};
+const rowErrors: string[] = checkBodies(PROFILES, RIG, heroBodyFile());
+if (rowErrors.length) throw new Error(`data/profiles.json bodies: ${rowErrors.join('; ')}`);
+// opponent id -> body stem: the profile rows' (the veteran, ?pitborn=v1's Centurion, has no profile row: the default body)
+const PROFILE_BODY: Record<string, string> = { veteran: PROFILES.defaultBody, ...Object.fromEntries(PROFILES.profiles.map((p: { opponent: string; body?: string }) => [p.opponent, p.body ?? PROFILES.defaultBody])) };
+let override: string | null = null;   // ?boss=<body>
+const rowOf = (id: string): BodyRow | undefined => (id in PROFILE_BODY ? { body: override ?? PROFILE_BODY[id]!, kit: null } : undefined);
+/** ?boss=<body> (data/profiles.json bodyQuery): this page draws every boss in `body`, a data/rig.json files key with clips. A bad value is ignored with a console warning (never throws). Returns the body now in force, or null for the rows' own. */
+export function setBossBody(search: string, warn: (m: string) => void = (m) => console.warn(m), rig: typeof RIG = RIG, hero: string = heroBodyFile()): string | null {   // rig, hero: the rows (tests pass others)
+  const raw = new URLSearchParams(search).get(PROFILES.bodyQuery);
+  override = null;
+  if (raw === null) return null;
+  const why = bodyProblem(raw, rig, hero);
+  if (why) warn(`?${PROFILES.bodyQuery}=${raw} ignored: ${why}`);
+  else override = raw;
+  return override;
+}
 
 /** @deprecated Reads no query any more (?foe=v1 and ?shield=v1 were removed with the 65 bodies); always false. Kept so old callers compile. */
 export const chooseFoeBody = (_search?: string): boolean => false;
 /** The rig file stem drawn for `id` whose roster body is `rosterBody`: the body row's body on its 106 file ('minotaur-106').
  *  `stem`: the body row's 65 stem instead ('minotaur'), the name the bone and ragdoll rows key by; it is only a name: the page's loader
  *  table (scene.ts fighterUrls) holds the 106 files alone, so a 65 stem can never be fetched. */
-export const foeBodyFile = (id: string, rosterBody: string, stem = false): string => ((s: string) => stem ? s : foeRigFile(s))(BODIES[id]?.body || rosterBody);
+export const foeBodyFile = (id: string, rosterBody: string, stem = false): string => ((s: string) => stem ? s : foeRigFile(s))(rowOf(id)?.body || rosterBody);
 /** The kit file stem for `id` (under src/assets/loot), or null for none: the body row's (none on the Minotaur), `carriers-<id>` as V1 has it otherwise. */
 export const foeKitFile = (id: string): string | null => {
-  const row = BODIES[id];
+  const row = rowOf(id);
   return row ? row.kit : `carriers-${id}`;
 };
 /** The weapon `id`'s drawn body bakes in his hand: none on a swapped (106) body, whose weapon is grafted at the socket; his roster weapon (`rosterWeapon`) otherwise. */
-export const foeBakedWeapon = (id: string, rosterWeapon: string): string => (BODIES[id] ? '' : rosterWeapon);
+export const foeBakedWeapon = (id: string, rosterWeapon: string): string => (rowOf(id) ? '' : rosterWeapon);
 /** Whether `id` draws a body other than his V1 one (his rank-look files are fitted to the V1 body, so they stay off). */
-export const foeBodySwapped = (id: string): boolean => !!BODIES[id];
+export const foeBodySwapped = (id: string): boolean => !!rowOf(id);

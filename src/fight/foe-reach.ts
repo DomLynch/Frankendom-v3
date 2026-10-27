@@ -5,6 +5,7 @@
 // `foeReach`: only for its `opponent` drawn in its `body` (not under ?pitborn=v1, whose Centurion fights with the gladius; ?foe=v1, V1's 65
 // bodies, is gone), and `?<query>=<v1>` (?reach=v1) = V1's cleaver sweeps exactly. No rendering imports: tests ask the same function the page does.
 import { BLADE_MINOTAUR } from './blade-minotaur.ts';
+import { foeBodyFile } from './foe-body.ts';
 
 export type SweepTable = Record<string, Record<string, Record<string, number[][]>>>;
 export type FoeReachRow = { opponent: string; body: string; rig: string; weapon: string; query: string; v1: string };
@@ -16,7 +17,7 @@ export const foeReachV1 = (row: FoeReachRow, search: string): boolean => new URL
 export function foeSweepsFor(row: FoeReachRow, search: string, opponentId: string): SweepTable | null {
   const bake = BAKES[row.body];
   if (!bake) throw new Error(`foeReach: no bake for the ${row.body} body`);
-  if (opponentId !== row.opponent || foeReachV1(row, search)) return null;
+  if (opponentId !== row.opponent || foeReachV1(row, search) || foeBodyFile(opponentId, row.body, true) !== row.body) return null;   // the bake is fitted to the row's body (BOSS-BODIES.md): another boss body sweeps V1's cleaver table
   return { [row.rig]: { [row.weapon]: bake } };
 }
 /** Two override tables as one (each names its own (rig, weapon) pairs; a pair in both is an error, never a silent pick). */

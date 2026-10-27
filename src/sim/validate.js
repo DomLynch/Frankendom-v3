@@ -13,7 +13,7 @@ export const SCHEMA = {
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
   // The difficulty ladder over an opponent profile row (src/difficulty.ts): a row names only the brain knobs and the two scales; checked by checkDifficulty below
   'difficulty': { keys: ['about', 'default', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
-  'profiles': { keys: ['about', 'default', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'brain', 'foeHealthScale', 'foeDamageScale'] } },
+  'profiles': { keys: ['about', 'default', 'defaultBody', 'bodyQuery', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'body', 'brain', 'foeHealthScale', 'foeDamageScale'] } },
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)
   'hero-clips': { keys: ['about', 'sweeps', 'rig', 'weapon', 'blade', 'clips'], rows: { clips: ['role', 'clip', 'mixamo', 'name', 'mirror', 'from', 'to', 'contact', 'pullback', 'aim', 'aimFrom', 'paths', 'hold', 'about'] }, maps: { blade: ['about', 'node', 'contact'], sweeps: ['about', 'default', 'query'] } },
   // The 65 -> 106 rig swap (src/fight/rig-bones.ts): which rig each side draws, the bone map, the weapon nodes and sockets, the 106 files.
@@ -284,9 +284,34 @@ export function checkDifficulty(difficulty, profiles, brains, fight) {
   return errors;
 }
 
+// Why a body stem (a data/rig.json `files` key, a 65 body stem) cannot be a boss's body, or null: it must be a rig.json `files` row, and its 106 file must have a
+// clips106 folder (the specials and finishers play the body's own retargeted clips; without it a special plays the plain swing). Dom 2026-10-27: a boss is a data row.
+export function bodyProblem(body, rig, heroBody) {
+  if (heroBody !== undefined && body === heroBody) return `'${body}' is the hero's body: the page would share one rig between hero and boss, and a shared rig carries one weapon`;
+  if (typeof body !== 'string' || !Object.hasOwn(rig.files ?? {}, body)) return `'${String(body)}' is not a data/rig.json files row (${Object.keys(rig.files ?? {}).join(', ')})`;
+  if (!Object.hasOwn(rig.clips106?.dir ?? {}, rig.files[body])) return `'${body}' (${rig.files[body]}) has no data/rig.json clips106.dir folder, so its specials and finishers would not play`;
+  return null;
+}
+// data/profiles.json bodies against data/rig.json: the default and every row's body is a usable body, and one opponent id is drawn in one body (foe-body.ts keys by it).
+// `heroBody` (a stem, optional): the hero's body; a boss cannot be drawn in it, because the page shares one loaded rig between two actors of one file and a shared rig carries one weapon (characters.ts buildWarriors).
+export function checkBodies(profiles, rig, heroBody) {
+  const errors = [], seen = new Map();
+  const bad = (where, body) => { const why = bodyProblem(body, rig, heroBody); if (why) errors.push(`${where}: ${why}`); };
+  bad('profiles.defaultBody', profiles.defaultBody);
+  if (typeof profiles.bodyQuery !== 'string' || !/^[a-z]+$/.test(profiles.bodyQuery)) errors.push(`profiles.bodyQuery: '${String(profiles.bodyQuery)}' is not a lower-case query key`);
+  for (const p of profiles.profiles ?? []) {
+    const body = p.body ?? profiles.defaultBody;
+    if (p.body !== undefined) bad(`profiles.${p.id}.body`, p.body);
+    if (seen.has(p.opponent) && seen.get(p.opponent) !== body) errors.push(`profiles.${p.id}.body: '${body}' but another profile draws opponent '${p.opponent}' in '${seen.get(p.opponent)}' (one body per opponent id)`);
+    seen.set(p.opponent, body);
+  }
+  return errors;
+}
+
 // all files together
 export function validateAll(files) {
   const errors = Object.entries(files).flatMap(([name, json]) => validateFile(name, json));
+  if (files.profiles && files.rig) errors.push(...checkBodies(files.profiles, files.rig));
   if (files.difficulty && files.profiles) errors.push(...checkDifficulty(files.difficulty, files.profiles, files.brains ?? {}, files.fight));
   return errors;
 }
