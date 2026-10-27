@@ -1,0 +1,7 @@
+{
+  "about": "Opponent PROFILE rows (Strategy 2026-10-27; the donor pattern of AzerothCore creature_template and EQEmu npc_types): the unit a fight is built from. A row names who he is (`opponent`: a V1 roster id, src/fight/moves.ts OPPONENTS), the brain laid over his V1 AI profile (`brain`: a data/brains.json row id, or null = V1's profile as it is) and his stat scales at 100 % (foeHealthScale, foeDamageScale; a difficulty row's scales multiply these). A difficulty row (data/difficulty.json) overrides the brain knobs and scales on top of one profile. Room is left for a profile to carry its own body, weapon and specials later (optional keys, not built: the Pitborn's body, cleaver and Earth Fold are V1's rows for `opponent`). The fight config is { profile id, difficulty row id } (data/fight.json `profile`, data/difficulty.json `default`, ?difficulty=): plain data, deterministic, so a server can choose both per encounter. PvP uses neither.",
+  "default": "pitborn",
+  "profiles": [
+    { "id": "pitborn", "about": "The level-18 Pitborn (V3's Minotaur): V1's cleaver, stats and class special; his skill knobs come from the difficulty row (brain null = V1's own for anything a row leaves out: spamRun 6).", "opponent": "pitborn", "brain": null, "foeHealthScale": 1, "foeDamageScale": 1 }
+  ]
+}

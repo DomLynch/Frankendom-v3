@@ -24,20 +24,21 @@ test('wire: the up pose and the down packet round-trip, an entity is 11 bytes, a
   assert.equal(decodeDown(packet.subarray(0, packet.length - 1)), null);
 });
 
-test('layers: fill the fullest layer under the soft cap, open a new one at 80, a friend may fill to 100, and the world can be full', () => {
+test('layers: fill the fullest layer under the soft cap, open a new one at the soft cap (20), a friend may fill to the hard cap (24), and the world can be full', () => {
   const w = new World(RULES, 2);
+  const { softCap: soft, hardCap: hard } = RULES;
   const first = w.join(key(1), 0);
-  for (let i = 2; i <= 80; i++) assert.equal(w.join(key(i), 0).layer.id, first.layer.id);
-  assert.equal(w.layers.get(first.layer.id).players.size, 80);
-  const eighty1 = w.join(key(81), 0);
-  assert.notEqual(eighty1.layer.id, first.layer.id, 'the 81st arrival opens a second layer');
-  assert.equal(w.join(key(82), 0).layer.id, eighty1.layer.id, 'then fills the fullest layer under the soft cap');
+  for (let i = 2; i <= soft; i++) assert.equal(w.join(key(i), 0).layer.id, first.layer.id);
+  assert.equal(w.layers.get(first.layer.id).players.size, soft);
+  const over = w.join(key(81), 0);
+  assert.notEqual(over.layer.id, first.layer.id, 'the arrival past the soft cap opens a second layer');
+  assert.equal(w.join(key(82), 0).layer.id, over.layer.id, 'then fills the fullest layer under the soft cap');
   assert.equal(w.join(key(200), 0, key(1)).layer.id, first.layer.id, 'a friend goes to the friend\'s layer past the soft cap');
-  for (let i = 201; i <= 219; i++) assert.equal(w.join(key(i), 0, key(1)).layer.id, first.layer.id);
-  assert.equal(w.layers.get(first.layer.id).players.size, 100);
+  for (let i = 201; i < 200 + hard - soft; i++) assert.equal(w.join(key(i), 0, key(1)).layer.id, first.layer.id);
+  assert.equal(w.layers.get(first.layer.id).players.size, hard);
   assert.notEqual(w.join(key(300), 0, key(1)).layer.id, first.layer.id, 'the hard cap holds even for a friend');
   assert.equal(w.join(key(1), 0), null, 'a key is in once');
-  for (let i = 400; i < 480; i++) w.join(key(i), 0);
+  for (let i = 400; i < 400 + 2 * soft; i++) w.join(key(i), 0);
   assert.equal(w.join(key(999), 0), null, 'both layers are at their soft cap and no third may open');
 });
 
@@ -68,7 +69,7 @@ test('interest: only others inside 40 m, each ring at its own rate, never yourse
 });
 
 test('interest: the 40 nearest are sent and the rest are culled; a packet never exceeds the cap', () => {
-  const w = new World(RULES, 1);
+  const w = new World({ ...RULES, softCap: 80, hardCap: 100 }, 1);   // the interest cap is tested in one wide layer, whatever the deploy caps are
   const me = put(w, 1, C, C);
   for (let i = 2; i <= 79; i++) put(w, i, C + (i % 10) * 100 + 1, C + Math.floor(i / 10) * 100);   // all within 12 m, so every one is due every tick
   const seen = w.seenBy(me, 0);
@@ -81,7 +82,7 @@ test('interest: the 40 nearest are sent and the rest are culled; a packet never 
 
 test('players in different layers never see each other', () => {
   const w = new World(RULES, 2);
-  const a = w.join(key(1), 0), many = []; for (let i = 2; i <= 80; i++) many.push(w.join(key(i), 0));
+  const a = w.join(key(1), 0), many = []; for (let i = 2; i <= RULES.softCap; i++) many.push(w.join(key(i), 0));
   const other = w.join(key(81), 0);
   assert.notEqual(other.layer.id, a.layer.id);
   assert.equal(w.seenBy(other, 0).length, 0, 'same spot, other layer: nothing');

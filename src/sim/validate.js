@@ -8,9 +8,12 @@
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
   'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
-  'fight': { keys: ['about', 'opponent', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
+  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
+  // The difficulty ladder over an opponent profile row (src/difficulty.ts): a row names only the brain knobs and the two scales; checked by checkDifficulty below
+  'difficulty': { keys: ['about', 'default', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
+  'profiles': { keys: ['about', 'default', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'brain', 'foeHealthScale', 'foeDamageScale'] } },
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)
   'hero-clips': { keys: ['about', 'sweeps', 'rig', 'weapon', 'blade', 'clips'], rows: { clips: ['role', 'clip', 'mixamo', 'name', 'mirror', 'from', 'to', 'contact', 'pullback', 'aim', 'aimFrom', 'paths', 'hold', 'about'] }, maps: { blade: ['about', 'node', 'contact'], sweeps: ['about', 'default', 'query'] } },
   // The 65 -> 106 rig swap (src/fight/rig-bones.ts): which rig each side draws, the bone map, the weapon nodes and sockets, the 106 files.
@@ -31,8 +34,8 @@ export const SCHEMA = {
     rowMaps: { 'finisherCuts.rows': ['unit', 'atS', 'push', 'kill', 'plane'] },
     finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'] } },
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
-  'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
-    maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'] } },
+  'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
+    maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
@@ -79,6 +82,13 @@ export function validateFile(name, json) {
     num('speedScale', (v) => v > 0 && v <= 1, 'a finite number in (0, 1]'); num('heavyDivisor', (v) => v >= 1, 'a finite number >= 1');
     num('speedSpanS', (v) => v > 0, 'a finite number > 0'); num('speedWindow', (v) => v >= 1 && Number.isInteger(v), 'an integer >= 1');
     num('speedMin', (v) => v > 0, 'a finite number > 0'); num('snapOver', (v) => v > 0, 'a finite number > 0');
+    // cut.precedence (rules-eval.ts cutPrecedence): per hit zone, who wins a KILLING blow: the evaluator's cut or the sim's finisher rotation. A zone with no entry is the rotation.
+    const pr = json.cut?.precedence;
+    if (!pr || typeof pr !== 'object' || Array.isArray(pr)) errors.push(`${name}.cut.precedence: must be an object of zone -> 'evaluator' | 'finisher'`);
+    else for (const [zone, who] of Object.entries(pr)) {
+      if (!['head', 'torso', 'legs'].includes(zone)) errors.push(`${name}.cut.precedence.${zone}: unknown zone (head, torso, legs)`);
+      if (who !== 'evaluator' && who !== 'finisher') errors.push(`${name}.cut.precedence.${zone}: must be 'evaluator' or 'finisher'`);
+    }
   }
   if (name === 'physics' && json.cut?.cue) {   // the cue's units are the package's severable ids, every unit has a label, and the colour is pasted into CSS: a plain #rrggbb only
     const cue = json.cut.cue, UNITS = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'];
@@ -196,7 +206,36 @@ export function validateZoneIndex(index, rows) {
   return e;
 }
 
+// Value ranges of a difficulty row (the V1 AiProfile knobs: reaction / discipline are whole numbers, the rest 0..1, the scales 0.1..1) and the direction each knob moves as the number rises
+const KNOB_RANGE = { reaction: [1, 120, -1], accuracy: [0, 1, 1], parry: [0, 1, 1], dodge: [0, 1, 1], aggression: [0, 1, 1], pressure: [0, 1, 1], discipline: [0, 100, -1], lapse: [0, 1, -1], read: [0, 1, 1], foeHealthScale: [0.1, 1, 1], foeDamageScale: [0.1, 1, 1] };
+
+// data/difficulty.json + data/profiles.json: every row has every knob in range, the ladder runs 1..N with each knob moving one way (never back), the default and `profile` ids resolve, a profile's brain is a brains.json row
+export function checkDifficulty(difficulty, profiles, brains, fight) {
+  const errors = [];
+  const rows = difficulty.rows ?? [];
+  const check = (row, where) => {
+    for (const [k, [lo, hi]] of Object.entries(KNOB_RANGE)) {
+      const v = row[k];
+      if (typeof v !== 'number' || !Number.isFinite(v) || v < lo || v > hi) errors.push(`${where}.${k}: ${String(v)} is not a number from ${lo} to ${hi}`);
+      else if ((k === 'reaction' || k === 'discipline') && !Number.isInteger(v)) errors.push(`${where}.${k}: ${v} is a whole number of ticks / percent`);
+    }
+  };
+  rows.forEach((r, i) => { if (r.id !== i + 1) errors.push(`difficulty.rows[${i}]: id ${String(r.id)}, the ladder runs 1..${rows.length} in order`); check(r, `difficulty.rows[${r.id}]`); });
+  (difficulty.named ?? []).forEach((r) => { if (typeof r.id !== 'string' || rows.some((x) => x.id === r.id)) errors.push(`difficulty.named[${String(r.id)}]: a named row has a string id of its own`); check(r, `difficulty.named[${r.id}]`); });
+  for (const [k, [, , dir]] of Object.entries(KNOB_RANGE)) for (let i = 1; i < rows.length; i++) if ((rows[i][k] - rows[i - 1][k]) * dir < 0) errors.push(`difficulty.rows[${rows[i].id}].${k}: ${rows[i][k]} moves the wrong way from row ${rows[i - 1].id}'s ${rows[i - 1][k]} (the ladder is monotonic)`);
+  if (!rows.some((r) => r.id === difficulty.default)) errors.push(`difficulty.default: ${String(difficulty.default)} is not a ladder row`);
+  for (const p of profiles.profiles ?? []) {
+    if (p.brain !== null && !(brains.brains ?? []).some((b) => b.id === p.brain)) errors.push(`profiles.${p.id}.brain: '${p.brain}' is not a brains.json row`);
+    for (const k of ['foeHealthScale', 'foeDamageScale']) if (!(p[k] >= 0.1 && p[k] <= 10)) errors.push(`profiles.${p.id}.${k}: ${String(p[k])} is not a number from 0.1 to 10`);
+  }
+  if (!(profiles.profiles ?? []).some((p) => p.id === profiles.default)) errors.push(`profiles.default: '${profiles.default}' is not a profile row`);
+  if (fight && !(profiles.profiles ?? []).some((p) => p.id === fight.profile)) errors.push(`fight.profile: '${fight.profile}' is not a profiles.json row`);
+  return errors;
+}
+
 // all files together
 export function validateAll(files) {
-  return Object.entries(files).flatMap(([name, json]) => validateFile(name, json));
+  const errors = Object.entries(files).flatMap(([name, json]) => validateFile(name, json));
+  if (files.difficulty && files.profiles) errors.push(...checkDifficulty(files.difficulty, files.profiles, files.brains ?? {}, files.fight));
+  return errors;
 }

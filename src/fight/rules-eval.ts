@@ -93,6 +93,18 @@ export function present(rows: RuleRows, rules: Pick<PkgRules, 'strength_scale' |
   return { ...base, action: 'stagger' };
 }
 
+/** data/rules.json `cut.precedence`: who wins a KILLING blow in this hit zone, the evaluator's cut or the sim's finisher rotation. Only an explicit 'evaluator' for the zone is the evaluator; no entry, no zone or any
+ *  other value is 'finisher' (today's behaviour: the rotation plays). The default row is head: 'evaluator' (Strategy's ruling (b)); only ?rules=m4 ever reads it. */
+export function cutPrecedence(rows: Pick<RuleRows, 'cut'>, location: string | undefined): 'evaluator' | 'finisher' {
+  const who = location ? (rows.cut?.precedence as Record<string, string | undefined> | undefined)?.[location] : undefined;
+  return who === 'evaluator' ? 'evaluator' : 'finisher';
+}
+/** Does the evaluator take this killing blow from the finisher rotation? Its zone's precedence is 'evaluator' AND the evaluator's verdict on a blow of that kill is a cut (`presentations`: what `hit` returned
+ *  for the killing batch's Hits). A kill below the cut rung is no cut, so it keeps the rotation whatever the row says. */
+export function evaluatorTakesKill(rows: Pick<RuleRows, 'cut'>, location: string | undefined, presentations: readonly (Presentation | null)[]): boolean {
+  return cutPrecedence(rows, location) === 'evaluator' && presentations.some((p) => !!p?.cut);
+}
+
 /** The page's rules (globalThis.__v3Rules and window.__v3Fight.rules): the totals, the last results, the cuts, the per-hit cost. */
 export type RulesDebug = {
   on: true; hits: number; skipped: number; byOutcome: Record<string, number>; deferredKills: number; renewals: number; cuts: { unit: string; tick: number; weapon: string }[];

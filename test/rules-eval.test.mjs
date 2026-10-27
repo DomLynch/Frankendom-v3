@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createEvaluator, createFighterState, loadRules } from '@frankendom/physics';
 import { validateFile } from '../src/sim/validate.js';
-import { createHandSpeed, createRulesEval, handSpeedOf, hitInput, present, rulesOnFor } from '../src/fight/rules-eval.ts';
+import { createHandSpeed, createRulesEval, cutPrecedence, evaluatorTakesKill, handSpeedOf, hitInput, present, rulesOnFor } from '../src/fight/rules-eval.ts';
+import { foeRagdollFor, ragdollFinisher } from '../src/fight/ragdoll.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ROWS = read('../data/rules.json'), WEAPONS = read('../src/fight/weapon-defs.json').weapons.map((w) => w.id);
@@ -212,4 +213,55 @@ test('budgets: hp_scale from his sim health, a head budget that no non-cut blow 
   assert.ok(ROWS.budgets.head > rules.strength_scale.rung_cut * rules.zones.head.body_part_mult * rules.global.damage_scale);   // a blow just under the cut rung
   const rig = read('../data/rig.json');
   assert.ok(ROWS.handBone in rig.bones, 'handBone is a data/rig.json bones key');
+});
+
+// ---- cut.precedence (Strategy's ruling (b)): who wins a KILLING blow, the evaluator's cut or the sim's finisher rotation ----
+const killingBlow = (rows, o) => { const p = createRulesEval(rows, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', move: 'heavy_overhead', ...o }), false); return { p, takes: evaluatorTakesKill(rows, o?.location ?? 'torso', [p]) }; };
+
+test('cut.precedence is a validated data row: the head is the evaluator\'s, torso and legs keep the rotation', () => {
+  assert.deepEqual(ROWS.cut.precedence, { head: 'evaluator' });
+  assert.deepEqual(validateFile('rules', ROWS), []);
+  assert.deepEqual(validateFile('rules', { ...ROWS, cut: { ...ROWS.cut, precedence: { head: 'finisher', torso: 'evaluator', legs: 'finisher' } } }), []);   // every choice stays a row
+  assert.deepEqual(validateFile('rules', { ...ROWS, cut: { ...ROWS.cut, precedence: { head: 'sometimes' } } }), ['rules.cut.precedence.head: must be \'evaluator\' or \'finisher\'']);
+  assert.deepEqual(validateFile('rules', { ...ROWS, cut: { ...ROWS.cut, precedence: { neck: 'evaluator' } } }), ['rules.cut.precedence.neck: unknown zone (head, torso, legs)']);
+  assert.deepEqual(validateFile('rules', { ...ROWS, cut: { about: 'x' } }), ['rules.cut.precedence: must be an object of zone -> \'evaluator\' | \'finisher\'']);
+  assert.deepEqual(validateFile('rules', { ...ROWS, cut: { ...ROWS.cut, extra: 1 } }), ['rules.cut.extra: unknown key']);
+  const { cut, ...without } = ROWS;
+  assert.ok(validateFile('rules', without).length > 0, 'the row is required');
+  assert.equal(cutPrecedence(ROWS, 'head'), 'evaluator');
+  for (const z of ['torso', 'legs', undefined, 'neck']) assert.equal(cutPrecedence(ROWS, z), 'finisher', `${z} keeps the rotation`);
+  assert.equal(cutPrecedence({ cut: { precedence: { head: 'finisher' } } }, 'head'), 'finisher');
+  assert.equal(cutPrecedence({ cut: { precedence: {} } }, 'head'), 'finisher');
+  assert.equal(cutPrecedence({}, 'head'), 'finisher');   // no row = today's behaviour
+});
+
+test('a head-zone killing blow at or above the cut rung is the evaluator\'s: the head leaves with the kill; a torso kill, a leg kill and a blow below the rung keep the finisher rotation', () => {
+  const head = killingBlow(ROWS, { location: 'head' });
+  assert.ok(head.p.strength >= rules.strength_scale.rung_cut, `strength ${head.p.strength} is at the cut rung ${rules.strength_scale.rung_cut}`);
+  assert.deepEqual([head.p.outcome, head.p.cut, head.takes], ['kill', 'head', true]);
+  const torso = killingBlow(ROWS, { location: 'torso' });   // the evaluator would cut the waist here, but the rotation keeps a torso kill
+  assert.deepEqual([torso.p.outcome, torso.p.cut, torso.takes], ['kill', 'torso_waist', false]);
+  const legs = killingBlow(ROWS, { location: 'legs' });
+  assert.deepEqual([legs.p.cut, legs.takes], ['leg_left', false]);
+  const light = killingBlow(ROWS, { location: 'head', weapon: 'gladius', move: 'light_right' });   // below the cut rung: no cut, so no precedence to take
+  assert.ok(light.p.strength < rules.strength_scale.rung_cut); assert.deepEqual([light.p.cut, light.takes], [null, false]);
+  assert.equal(evaluatorTakesKill(ROWS, 'head', []), false); assert.equal(evaluatorTakesKill(ROWS, 'head', [null]), false);   // no verdict, no take
+  assert.equal(evaluatorTakesKill(ROWS, 'head', [null, head.p]), true);   // any Hit of the killing batch that cuts
+});
+
+test('row \'finisher\' is today\'s behaviour, row \'evaluator\' on another zone is a data choice: only the row decides', () => {
+  const finisher = { ...ROWS, cut: { ...ROWS.cut, precedence: { head: 'finisher' } } };
+  assert.equal(killingBlow(finisher, { location: 'head' }).takes, false);   // the rotation as before, the same blow
+  const torsoToo = { ...ROWS, cut: { ...ROWS.cut, precedence: { head: 'evaluator', torso: 'evaluator' } } };
+  assert.equal(killingBlow(torsoToo, { location: 'torso' }).takes, true);
+  assert.equal(killingBlow(torsoToo, { location: 'legs' }).takes, false);
+});
+
+test('without ?rules=m4 nothing changes: the pick is the rotation\'s (null) whatever the killing blow, and a ragdoll that is not ready never takes a kill', () => {
+  const kill = [hit({ weapon: 'longsword', move: 'heavy_overhead', location: 'head' }), { tick: 600, type: 'Killed', actor: 0, target: 1, move: 'heavy_overhead', location: 'head', heading: 0 }];
+  assert.equal(ragdollFinisher(), null); assert.equal(ragdollFinisher(kill), null);   // no ragdoll on the page at all
+  for (const search of ['', '?rules=v1', '?rules=m4']) {
+    foeRagdollFor(search, 'pitborn');   // built but not attached (no chunk): not armed, no evaluator
+    assert.equal(ragdollFinisher(kill), null, search || '(default)');
+  }
 });
