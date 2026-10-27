@@ -416,6 +416,7 @@ function frame(now: number) {
   } else { accumulator = 0; previous = state; }
   if (ZONE) setWalkClamp(roam ? ZONE.walkRadius + ZONE.cameraMetres : 0);   // the follow camera stands behind a hero who walked beyond the pit (data/respawn.json postKill.cameraMetres); the fight camera is unchanged
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
+  (globalThis as { __v3Yaw?: number }).__v3Yaw = +view.yaw.toFixed(4);
   (globalThis as { __v3FreeShare?: number }).__v3FreeShare = +view.freeShare.toFixed(3);   // the stills read how far the camera has swung to the free follow camera (scripts/free-camera-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
