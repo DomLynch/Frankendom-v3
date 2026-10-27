@@ -3,4 +3,5 @@
 //   import './feel-limbs.ts';
 //   import './feel-kick.ts';
 //   import './feel-clash.ts';
+import './feel-kick.ts';
 export {};

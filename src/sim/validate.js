@@ -37,9 +37,9 @@ export const SCHEMA = {
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
-  'feel-kick': { keys: ['about', 'on', 'query', 'value', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'phase', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
-    maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], push: ['impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['stagger', 'knockdown'], cue: ['on', 'text', 'color', 'sizePx', 'pulseS', 'anchorBone', 'liftPx'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
-    finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'push': ['impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'liftPx'], 'event': ['keep'] } },
+  'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
+    maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['stagger', 'knockdown'], cue: ['on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
+    finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
@@ -107,9 +107,10 @@ export function validateFile(name, json) {
       pos(`push.distanceM.${o}`, json.push?.distanceM?.[o]); pos(`window.${o}.lengthS`, json.window?.[o]?.lengthS);
       if (!(json.window?.[o]?.startS >= 0)) errors.push(`${name}.window.${o}.startS: must be a finite number >= 0`);
     }
-    const stances = Object.keys(json.stance ?? {}).filter((k) => k !== 'about');
-    for (const [ph, st] of Object.entries(json.phase ?? {})) if (!stances.includes(st)) errors.push(`${name}.phase.${ph}: unknown stance ${st}`);
-    if (!('default' in (json.phase ?? {}))) errors.push(`${name}.phase.default: a default stance is required`);
+    for (const k of ['swingS', 'recoverS']) pos(`track.${k}`, json.track?.[k]);
+    for (const k of ['push', 'down']) pos(`fall.${k}`, json.fall?.[k]);
+    pos('push.refImpulse', json.push?.refImpulse);
+    for (const k of ['xPct', 'yPct']) if (!(json.cue?.[k] >= 0 && json.cue[k] <= 100)) errors.push(`${name}.cue.${k}: must be a number in [0, 100]`);
     if (!Array.isArray(json.moves) || !json.moves.length || json.moves.some((m) => typeof m !== 'string')) errors.push(`${name}.moves: must be a non-empty list of move ids`);
     for (const [m, r] of Object.entries(json.shove?.moves ?? {})) {
       pos(`shove.moves.${m}.forceMult`, r.forceMult); if (typeof r.canKnockdown !== 'boolean') errors.push(`${name}.shove.moves.${m}.canKnockdown: must be a boolean`);
