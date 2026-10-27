@@ -1,0 +1,100 @@
+{
+  "frames": 1629,
+  "totalMs": 1523.9000000017695,
+  "maxMs": 37.800000000046566,
+  "lastMs": 0.40000000002328306,
+  "ticks": 2006,
+  "state": "frozen",
+  "rig": "106",
+  "measure": "physics/bodies/minotaur-106.measure.json",
+  "byMode": {
+    "alive": {
+      "frames": 1176,
+      "totalMs": 1185.2000000019325,
+      "maxMs": 13.399999999906868
+    },
+    "dead": {
+      "frames": 453,
+      "totalMs": 338.699999999837,
+      "maxMs": 37.800000000046566
+    }
+  },
+  "cuts": [
+    {
+      "type": "cut",
+      "unit": "head",
+      "gear": [],
+      "source": "kill"
+    },
+    {
+      "type": "cut",
+      "unit": "arm_left",
+      "gear": [],
+      "source": "tap"
+    },
+    {
+      "type": "cut",
+      "unit": "torso_waist",
+      "gear": [],
+      "source": "tap"
+    },
+    {
+      "type": "cut",
+      "unit": "leg_left",
+      "gear": [],
+      "source": "tap"
+    }
+  ],
+  "lastTap": "up 0px 0ms mode dead rd frozen | hit thigh_twist_02_l",
+  "pieces": [
+    "head:MeshCut:6226",
+    "head:Mesh_1Cut:4922",
+    "arm_left:MeshCut:6802",
+    "arm_left:Mesh_1Cut:179",
+    "torso_waist:MeshCut:9081",
+    "torso_waist:Mesh_1Cut:1951",
+    "leg_left:MeshCut:3527",
+    "leg_left:Mesh_1Cut:2482"
+  ],
+  "finish": {
+    "victim": 1,
+    "location": "torso",
+    "move": "kick",
+    "heading": -1.191887874110397
+  },
+  "cutFrames": [
+    {
+      "unit": "head",
+      "source": "kill",
+      "callbackMs": 78.5,
+      "gapToNextMs": 82.8,
+      "prevMs": 20.6
+    },
+    {
+      "unit": "arm_left",
+      "source": "tap",
+      "callbackMs": 28.5,
+      "gapToNextMs": 30.7,
+      "prevMs": 3.4
+    },
+    {
+      "unit": "torso_waist",
+      "source": "tap",
+      "callbackMs": 21.1,
+      "gapToNextMs": 23,
+      "prevMs": 13.7
+    },
+    {
+      "unit": "leg_left",
+      "source": "tap",
+      "callbackMs": 21.2,
+      "gapToNextMs": 23.1,
+      "prevMs": 20.9
+    }
+  ],
+  "frameStats": {
+    "frames": 1814,
+    "medianMs": 19.70000000006985,
+    "maxMs": 537.2999999999302
+  }
+}
