@@ -126,7 +126,7 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
       const cues = await page.evaluate(() => [...document.querySelectorAll('.cut-cue')].map((e) => ({ unit: e.getAttribute('aria-label'), shown: getComputedStyle(e).display !== 'none' })));
       console.log(`${tag}: cue buttons ${JSON.stringify(cues)}; sets ${await page.evaluate(() => globalThis.__ragdoll.cueState)}`);
       await shoot('cue-shown');
-      await page.click(`.cut-cue[aria-label="Cut ${process.env.CUE.replace('_', ' ')}"]:visible`, { timeout: Number(process.env.CLICK_MS ?? 30000) });   // :visible, so with LEAVE it is the left corpse's own button (the live foe's are hidden)
+      await page.click(`.cut-cue[aria-label="Cut ${process.env.CUE.replace('_', ' ')}"]:visible`, { timeout: Number(process.env.CLICK_MS ?? 30000), force: true });   // force: the pulse animation never reaches "stable" under the paused fake clock   // :visible, so with LEAVE it is the left corpse's own button (the live foe's are hidden)
     } else if (at) { console.log(`${tag}: tapping ${TAP} at ${at.map((x) => x.toFixed(0))}`); await page.touchscreen.tap(at[0], at[1]); }
     // LIMB=<unit> (default: the tapped unit when it is one): print the metres from that unit's cut bone to the chest bone at each AFTER tick (the harness read, no picture needed)
     const unit = process.env.LIMB ?? (/_/.test(TAP) ? TAP : null), dist = [];
