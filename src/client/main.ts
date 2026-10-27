@@ -4,6 +4,8 @@
 // or menus. Every number is a V1 row or a data/fight.json row; line refs are V1 src/main.ts @ 82a994d15.
 import FIGHT from '../../data/fight.json' with { type: 'json' };
 import BRAINS from '../../data/brains.json' with { type: 'json' };
+import FEEL_SIM from '../../data/feel-sim.json' with { type: 'json' };
+import { knockSimFor, setKnockSim, type KnockRows } from '../fight/knock-sim.ts';
 import { brainFor, brainProfile } from '../brain.ts';
 import DIFFICULTY from '../../data/difficulty.json' with { type: 'json' };
 import PROFILES from '../../data/profiles.json' with { type: 'json' };
@@ -94,6 +96,7 @@ function fresh(pose?: DuelPose): Practice {
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   setFoeSpecialReach(foeSpecialReachFor(FIGHT.foeSpecialReach, search));   // V3: an opponent's melee special starts inside 2.2 m and fizzles past 2.6 m (data/fight.json foeSpecialReach); ?special=v1 = V1's 3.0 m, no release check
+  setKnockSim(knockSimFor(FEEL_SIM as KnockRows, search));   // V3: the sim knockdown + finish window (data/feel-sim.json), only under ?feel=kick; absent = the fight as before, byte for byte
   epoch++;
   return make(seed, pose);
 }

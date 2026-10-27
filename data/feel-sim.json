@@ -1,0 +1,29 @@
+{
+  "about": "SIM knockdown and finish window (V3 Dev, 2026-10-27; Strategy's ruling: the SIM owns the outcome, never a value out of Jolt). Behind ?feel=kick only (flag.query / flag.value): with the flag off the sim steps byte for byte as before (Gate 0). A kick, or a heavy blow that lands clean (not shrugged by poise, not on a guard), makes a FORCE: massBand (the attacker's mass over the target's, in whole percent, picks a per-mille from massBands) x stance (what the target was doing when the blow landed, from the sim's own phase) x the move's perMille, all whole per-mille integers, no pow / sqrt / transcendental. Force at or over knockdownAtPerMille = KNOCKDOWN: the target is stunned (phase hurt, nothing else) for knockdown.seconds + getUp.seconds, cannot be knocked down again until he is up, and the attacker's next heavy is the CRITICAL for finishWindow.seconds (the posture-break window's own mechanism: Fighter.critical). Below it = the ordinary stagger, unchanged. REAL TIME: every timer is whole sim ticks of the fighter that owns it (seconds x tickHz, 60 = sim.ts STEP), counted down once per tick, so each boss has his own clock and nobody else's fight slows, locks or dilates (Dom: a live MMO, others can attack at any time). PLACEHOLDER numbers (the Physics presentation rows in data/feel-kick.json mirror them until the ragdoll reads the sim's KnockedDown event). targets: who can be knocked down ('foe' = the opponents, 'hero' = the player's side); the hero stays out until Dom asks.",
+  "flag": { "query": "feel", "value": "kick" },
+  "tickHz": 60,
+  "knockdown": { "seconds": 1.4 },
+  "getUp": { "seconds": 0.6 },
+  "finishWindow": { "seconds": 1.2 },
+  "targets": ["foe"],
+  "knockdownAtPerMille": 1000,
+  "massKg": { "default": 80, "hero": 85, "pitborn": 120 },
+  "massBands": [
+    { "minRatioPct": 0, "perMille": 600 },
+    { "minRatioPct": 60, "perMille": 800 },
+    { "minRatioPct": 90, "perMille": 950 },
+    { "minRatioPct": 110, "perMille": 1100 },
+    { "minRatioPct": 140, "perMille": 1250 },
+    { "minRatioPct": 180, "perMille": 1400 }
+  ],
+  "stance": { "open": 1400, "guarding": 600, "midSwing": 1250, "recovering": 1350 },
+  "moves": {
+    "kick": { "perMille": 1000 },
+    "heavy_overhead": { "perMille": 800 },
+    "heavy_riposte": { "perMille": 800 },
+    "heavy_counter": { "perMille": 800 },
+    "heavy_right": { "perMille": 800 },
+    "heavy_left": { "perMille": 800 },
+    "heavy_thrust": { "perMille": 700 }
+  }
+}
