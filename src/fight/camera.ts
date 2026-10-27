@@ -253,6 +253,10 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       yaw -= dx * 0.005;
       pitch = THREE.MathUtils.clamp(pitch + dy * 0.003, 0.22, 0.9);
     },
+    // The look thumb (src/fight/look-drag.ts): turn the view `radians` round the hero, the way a drag to the right always turned it. The follow keeps the camera on its circle round him.
+    turn(radians: number) {
+      yaw = wrapAngle(yaw - radians);
+    },
     recenter() {
       yaw = 0;
       pitch = 0.45;
