@@ -63,6 +63,10 @@ const THREE = /^three(\/|$)/;
 // waits on it and a code-only deploy costs a returning player nothing for it. Jolt's glue reaches node:module / fs / path only on its Node branch.
 const PHYSICS_CHUNK = join(root, 'src/fight/physics-chunk.ts');
 let physicsSpec = './physics-chunk.js';   // the probe bundle's stand-in; the real name is set once the chunk is written
+// The presence chunk (src/presence/chunk.ts, ~3 KB: the page side of the live zone's presence service), imported by main.ts only when the link has ?presence= (data/presence.json), is its own
+// content-hashed module, b/vendor/presence.<hash>.js, the same way: a first visit adds nothing to main.js and fetches nothing.
+const PRESENCE_CHUNK = join(root, 'src/presence/chunk.ts');
+let presenceSpec = './presence-chunk.js';   // the probe bundle's stand-in
 const bundleMain = (minify, threeTo) => build({
   entryPoints: [join(root, ENTRY)], outdir: ENTRY_DIR, entryNames: '[name]', write: minify,
   bundle: true, splitting: false, format: 'esm', target: 'es2022', minify, keepNames: true, legalComments: 'none', metafile: true,
@@ -70,6 +74,7 @@ const bundleMain = (minify, threeTo) => build({
   plugins: [{ name: 'v3', setup(b) {
     b.onResolve({ filter: THREE }, (args) => ({ path: threeTo(args.path), external: true }));
     b.onResolve({ filter: /physics-chunk\.ts$/ }, (args) => (args.kind === 'dynamic-import' && resolve(args.resolveDir, args.path) === PHYSICS_CHUNK ? { path: physicsSpec, external: true } : undefined));
+    b.onResolve({ filter: /presence\/chunk\.ts$/ }, (args) => (args.kind === 'dynamic-import' && resolve(args.resolveDir, args.path) === PRESENCE_CHUNK ? { path: presenceSpec, external: true } : undefined));
     b.onResolve({ filter: /\.json$/ }, (args) => {
       if (args.kind !== 'dynamic-import') return undefined;
       const file = resolve(args.resolveDir, args.path); lazyJson.add(file);
@@ -113,6 +118,10 @@ const physicsChunk = (await build({ entryPoints: [PHYSICS_CHUNK], write: false, 
 const physicsFile = join(out, 'b/vendor', `physics.${createHash('sha256').update(physicsChunk).digest('hex').slice(0, 8)}.js`);
 writeFileSync(physicsFile, physicsChunk);
 physicsSpec = relative(ENTRY_DIR, physicsFile).split('\\').join('/');
+const presenceChunk = (await build({ entryPoints: [PRESENCE_CHUNK], write: false, bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true, legalComments: 'none', logLevel: 'warning', charset: 'utf8' })).outputFiles[0].contents;
+const presenceFile = join(out, 'b/vendor', `presence.${createHash('sha256').update(presenceChunk).digest('hex').slice(0, 8)}.js`);
+writeFileSync(presenceFile, presenceChunk);
+presenceSpec = relative(ENTRY_DIR, presenceFile).split('\\').join('/');
 const result = await bundleMain(true, () => vendorSpec);
 // 106 only (Dom 2026-10-26; data/build.json notShipped): no 65 body, kit or 65-keyed clip JSON may be referenced by the bundle. A reference is a
 // loader that could fetch a 65 file in production, so the build fails rather than ship it (or a 404 in its place).
@@ -183,4 +192,4 @@ for (const f of files(out).filter((f) => GZ.test(f))) {
 }
 
 const main = join(ENTRY_DIR, 'main.js'), kb = (n) => (n / 1024).toFixed(0);
-console.log(`dist/ build ${id}: ${Object.keys(result.metafile.inputs).length} sources -> main.js ${kb(statSync(main).size)} KB (gzip ${kb(statSync(main + '.gz').size)} KB) + ${rel(vendorFile).replace('dist/', '')} ${kb(statSync(vendorFile).size)} KB (gzip ${kb(statSync(vendorFile + '.gz').size)} KB) + lazy ${rel(physicsFile).replace('dist/', '')} ${kb(statSync(physicsFile).size)} KB (gzip ${kb(statSync(physicsFile + '.gz').size)} KB) + ${lazyJson.size} lazy JSON modules, assets ${assets.size}, art files hashed ${Object.keys(artMap).length}; .gz twins ${(raw / 1048576).toFixed(1)} MB -> ${(packed / 1048576).toFixed(1)} MB`);
+console.log(`dist/ build ${id}: ${Object.keys(result.metafile.inputs).length} sources -> main.js ${kb(statSync(main).size)} KB (gzip ${kb(statSync(main + '.gz').size)} KB) + ${rel(vendorFile).replace('dist/', '')} ${kb(statSync(vendorFile).size)} KB (gzip ${kb(statSync(vendorFile + '.gz').size)} KB) + lazy ${rel(physicsFile).replace('dist/', '')} ${kb(statSync(physicsFile).size)} KB (gzip ${kb(statSync(physicsFile + '.gz').size)} KB) + lazy ${rel(presenceFile).replace('dist/', '')} ${kb(statSync(presenceFile).size)} KB (gzip ${kb(statSync(presenceFile + '.gz').size)} KB) + ${lazyJson.size} lazy JSON modules, assets ${assets.size}, art files hashed ${Object.keys(artMap).length}; .gz twins ${(raw / 1048576).toFixed(1)} MB -> ${(packed / 1048576).toFixed(1)} MB`);

@@ -251,4 +251,7 @@ let buildLabel = '';
 fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, 7); element('build').textContent = buildLabel; }).catch(() => {});
 // ?snd=1: the audio state beside the build label, e.g. "f297c4e running+sprite+keep 12" (context, sprite decoded, silent clip, cues played)
 if (snd === '1') setInterval(() => { element('build').textContent = `${buildLabel} ${feedback.state()}${keep.playing() ? '+keep' : ''}`; }, SOUND.statusMs);
+// Other players (data/presence.json, src/presence/chunk.ts): OFF unless the link has ?presence=1 or ?presence=ws(s)://... Then the client chunk (its own file, nothing in this bundle) joins the presence
+// service; the handle is on window.__v3Presence for the scene wiring step and the browser checks (remotes(), on(), self(), state()). Others have no collider and play no part in the fight.
+if (/[?&]presence=/.test(search)) void import('../presence/chunk.ts').then((m) => { (window as unknown as { __v3Presence?: unknown }).__v3Presence = m.startPresence({ search, location }); }).catch(() => {});
 requestAnimationFrame(frame);
