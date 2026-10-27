@@ -4,6 +4,7 @@
 // per-mille integers once, and the step reads only those. Integers and IEEE basic maths only: no pow, sqrt or transcendental in the sim.
 // REAL TIME, per fighter: the timers are ticks on the fighter that owns them (Fighter.down; the attacker's Fighter.critical for the window), counted once per tick of his own duel, so one boss
 // going down never slows, locks or dilates anyone else's fight (Dom: a live MMO, others can attack at any time).
+import { STEP } from './sim.ts';
 export type KnockStance = 'open' | 'guarding' | 'midSwing' | 'recovering';
 export type KnockRows = {
   flag: { query: string; value: string }; tickHz: number;
@@ -25,17 +26,17 @@ export let KNOCK_SIM: KnockSim | null = null;
 export function setKnockSim(rows: KnockSim | null): void { KNOCK_SIM = rows; }
 
 /** The sim's tick rate (src/fight/sim.ts STEP = 1/60), which the rows' tickHz must equal. */
-export const KNOCK_TICK_HZ = 60;
+export const KNOCK_TICK_HZ = Math.round(1 / STEP);
 
 /** Rows -> the step's integers, or null when the page did not ask (`?feel=kick` among the comma separated ?feel= values). A bad row throws: a silent default would change a fight's outcome. */
 export function knockSimFor(rows: KnockRows | undefined, search = ''): KnockSim | null {
   if (!rows) return null;
   const asked = (new URLSearchParams(search).get(rows.flag.query) ?? '').split(',').map((s) => s.trim()).includes(rows.flag.value);
   if (!asked) return null;
-  if (rows.tickHz !== KNOCK_TICK_HZ) throw new Error(`feel-sim tickHz ${rows.tickHz} is not the sim's ${KNOCK_TICK_HZ}`);
+  if (rows.tickHz !== KNOCK_TICK_HZ) throw new Error(`feel-sim tickHz ${rows.tickHz} is not the sim's ${KNOCK_TICK_HZ} (sim.ts STEP)`);
   const ticks = (name: string, s: number): number => { const t = Math.round(s * rows.tickHz); if (!(Number.isFinite(s) && t >= 1)) throw new Error(`feel-sim ${name} ${s} s is under one tick`); return t; };
   const down = ticks('knockdown.seconds', rows.knockdown.seconds), getUp = ticks('getUp.seconds', rows.getUp.seconds), window = ticks('finishWindow.seconds', rows.finishWindow.seconds);
-  if (window > down + getUp) throw new Error('feel-sim finishWindow.seconds is longer than he is down');
+  if (window > down) throw new Error('feel-sim finishWindow.seconds is longer than knockdown.seconds (the window must close before he rises)');
   if (!rows.massBands.length || rows.massBands[0]!.minRatioPct !== 0) throw new Error('feel-sim massBands must start at minRatioPct 0');
   return { down, getUp, window, at: rows.knockdownAtPerMille, foe: rows.targets.includes('foe'), hero: rows.targets.includes('hero'), kg: rows.massKg, bands: rows.massBands, stance: rows.stance, moves: Object.fromEntries(Object.entries(rows.moves).map(([k, v]) => [k, v.perMille])) };
 }
@@ -58,7 +59,7 @@ export function bandOf(bands: KnockSim['bands'], attackerKg: number, targetKg: n
 export function knockForce(k: KnockSim, input: { move: string | null; attackerId: string; targetId: string; stance: KnockStance }): number {
   const mv = input.move ? k.moves[input.move] : undefined;
   if (mv === undefined) return 0;
-  const kg = (id: string): number => k.kg[id] ?? k.kg.default!;
+  const kg = (id: string): number => (Object.hasOwn(k.kg, id) ? k.kg[id]! : k.kg.default!);
   return Math.floor((bandOf(k.bands, kg(input.attackerId), kg(input.targetId)) * k.stance[input.stance] * mv) / 1000000);
 }
 

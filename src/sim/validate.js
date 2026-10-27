@@ -166,7 +166,7 @@ function checkFeelSim(j) {
   if (j.tickHz !== 60) at('tickHz', 'must be 60 (the sim step, src/fight/sim.ts STEP)');
   const hz = Number.isFinite(j.tickHz) && j.tickHz > 0 ? j.tickHz : 60;
   for (const k of ['knockdown', 'getUp', 'finishWindow']) secs(`${k}.seconds`, j[k]?.seconds, hz);
-  if (Number.isFinite(j.finishWindow?.seconds) && Number.isFinite(j.knockdown?.seconds) && Number.isFinite(j.getUp?.seconds) && Math.round(j.finishWindow.seconds * hz) > Math.round(j.knockdown.seconds * hz) + Math.round(j.getUp.seconds * hz)) at('finishWindow.seconds', 'must be <= knockdown.seconds + getUp.seconds (the window closes by the time he is up)');
+  if (Number.isFinite(j.finishWindow?.seconds) && Number.isFinite(j.knockdown?.seconds) && Math.round(j.finishWindow.seconds * hz) > Math.round(j.knockdown.seconds * hz)) at('finishWindow.seconds', 'must be <= knockdown.seconds (the window closes before he starts to rise)');
   if (!Array.isArray(j.targets) || !j.targets.length || j.targets.some((t) => t !== 'hero' && t !== 'foe') || new Set(j.targets).size !== j.targets.length) at('targets', "must be a non-empty list of 'hero' and / or 'foe'");
   pm('knockdownAtPerMille', j.knockdownAtPerMille);
   if (!obj(j.massKg) || !('default' in j.massKg)) at('massKg.default', 'a default mass is required');

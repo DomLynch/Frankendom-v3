@@ -22,6 +22,8 @@ test('the rows validate; a bad row is refused (ticks, per-mille, bands from 0, t
   assert.match(bad((r) => { r.knockdown.seconds = 0; }), /knockdown\.seconds/);
   assert.match(bad((r) => { r.getUp.seconds = 0.001; }), /getUp\.seconds/);
   assert.match(bad((r) => { r.finishWindow.seconds = 9; }), /finishWindow\.seconds: must be <=/);
+  assert.match(bad((r) => { r.finishWindow.seconds = r.knockdown.seconds + 0.1; }), /finishWindow\.seconds: must be <= knockdown\.seconds/, 'a window longer than the fall alone would run into the rise');
+  assert.deepEqual(validateFile('feel-sim', (() => { const r = clone(ROWS); r.finishWindow.seconds = r.knockdown.seconds; return r; })()), [], 'equal to the fall is allowed');
   assert.match(bad((r) => { r.tickHz = 30; }), /tickHz/);
   assert.match(bad((r) => { r.targets = ['boss']; }), /targets/);
   assert.match(bad((r) => { r.knockdownAtPerMille = 1.5; }), /knockdownAtPerMille/);
@@ -45,7 +47,8 @@ test('the page parses the rows only when asked: ?feel=kick (also among others); 
   const k = knockSimFor(ROWS, '?feel=clash,kick');
   assert.deepEqual([k.down, k.getUp, k.window, k.at, k.foe, k.hero], [TICKS(ROWS.knockdown.seconds), TICKS(ROWS.getUp.seconds), TICKS(ROWS.finishWindow.seconds), ROWS.knockdownAtPerMille, true, false]);
   assert.throws(() => knockSimFor({ ...ROWS, tickHz: 30 }, '?feel=kick'), /tickHz/);
-  assert.throws(() => knockSimFor({ ...ROWS, finishWindow: { seconds: 9 } }, '?feel=kick'), /longer than he is down/);
+  assert.throws(() => knockSimFor({ ...ROWS, finishWindow: { seconds: 9 } }, '?feel=kick'), /longer than knockdown\.seconds/);
+  assert.throws(() => knockSimFor({ ...ROWS, finishWindow: { seconds: ROWS.knockdown.seconds + 0.1 } }, '?feel=kick'), /longer than knockdown\.seconds/);
   assert.throws(() => knockSimFor({ ...ROWS, massBands: [{ minRatioPct: 10, perMille: 900 }] }, '?feel=kick'), /start at minRatioPct 0/);
 });
 
@@ -79,7 +82,13 @@ const runKick = (max = 120) => {   // step until the kick's Hit lands on the foe
   throw new Error('the kick never landed');
 };
 
-test('flag OFF: a kick lands exactly as before (no KnockedDown, no down field, no finish window)', () => {
+test('flag OFF: a whole short run is identical whether the page never asked or asked for another feel; a kick lands as before (no KnockedDown, no down field, no finish window)', () => {
+  const run = () => { let d = duelOf(), out = []; for (let t = 0; t < 150; t++) { d = stepDuel(d, [t % 40 === 0 ? KICK : idleIntent(), idleIntent()]); out.push(JSON.stringify(d)); } return out; };
+  setKnockSim(null); const base = run();
+  setKnockSim(knockSimFor(ROWS, '?feel=clash')); assert.deepEqual(run(), base, 'a page without ?feel=kick steps the baseline, tick for tick');
+  assert.ok(base.every((s) => !s.includes('KnockedDown') && !s.includes('"down"')));
+  setKnockSim(ON()); assert.notDeepEqual(run(), base, 'the flag does change the run (the test can tell)');
+  setKnockSim(null);
   const { d, seen } = runKick();
   assert.ok(!seen.some((e) => e.type === 'KnockedDown')); assert.equal(d.fighters[1].down, undefined); assert.equal(d.fighters[0].critical, 0);
 });
