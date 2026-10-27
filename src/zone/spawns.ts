@@ -127,6 +127,9 @@ export function validateOpeners(rows: OpenerRows, spots: readonly Spot[], limits
 /** The openers are on: the row says so and the link does not carry the off switch. */
 export const openerOn = (search: string, rows: OpenerRows = OPENERS): boolean => rows.on && new URLSearchParams(search).get(rows.query) !== rows.off;
 
+/** The leash lift of a fight with `spawn` while the opener is due: `reachMetres` for an opener spawn (rows.spawns), 0 for any other boss. */
+export const openerLeashLift = (spawn: Spawn | undefined, rows: OpenerRows = OPENERS): number => (spawn && rows.spawns.includes(spawn.id) ? rows.reachMetres : 0);
+
 /** The spawns as the engagement sees them after `idle` seconds with nobody engaged: once `delaySeconds` is up, the first `count` standing opener spawns reach the hero (aggro = his distance, at most their leash plus reachMetres). */
 export function openerReach(spawns: readonly Spawn[], rows: OpenerRows, idle: number, at: At): Spawn[] {
   if (!(idle >= rows.delaySeconds)) return spawns.slice();

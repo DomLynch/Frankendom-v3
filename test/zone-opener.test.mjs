@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { zoneFor } from '../src/zone/zone-rows.ts';
-import { OPENERS, inAggro, kill, leashed, openerOn, openerReach, spotsFor, tick, validateOpeners } from '../src/zone/spawns.ts';
+import { OPENERS, inAggro, kill, leashed, openerLeashLift, openerOn, openerReach, spotsFor, tick, validateOpeners } from '../src/zone/spawns.ts';
 import { initialState } from '../src/fight/sim.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -61,6 +61,24 @@ test('a dead opener spawn does not reach; after its respawn the rule would reach
   assert.equal(inAggro(openerReach(s, OPENERS, 99, hero()), hero()), -1, 'dead: not standing');
   s = tick(s, 999).spawns;
   assert.ok(inAggro(openerReach(s, OPENERS, 99, hero()), hero()) >= 0, 'pure rule: standing and idle past N reaches');
+});
+
+test('the leash lift is the opener fight\'s alone: an opener spawn gets reachMetres, any other boss gets none', () => {
+  const s = spawns();
+  assert.equal(openerLeashLift(s[0]), OPENERS.reachMetres, 'the yard Pitborn');
+  assert.equal(openerLeashLift(s[1]), 0, 'a normal aggro on another boss after the delay: no lift');
+  assert.equal(openerLeashLift(s[2]), 0);
+  assert.equal(openerLeashLift(undefined), 0);
+  assert.equal(openerLeashLift(s[0], { ...OPENERS, spawns: [] }), 0);
+  assert.equal(leashed(s[1], { x: s[1].x + s[1].leash + 0.5, z: s[1].z }, openerLeashLift(s[1])), true, 'so that boss resets at its plain leash');
+});
+
+test('the page sets the lift only from the spawn in aggro and clears it on every reset (hand-over, leash reset, respawn)', () => {
+  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
+  assert.match(main, /openerLift = openerLeashLift\(spawns\[near\]\);/);
+  assert.doesNotMatch(main, /openerLift = OPENERS\.reachMetres/);
+  const rematch = main.slice(main.indexOf('function rematch('), main.indexOf('const hand = '));
+  assert.match(rematch, /openerLift = 0;/, 'rematch is what hand() and the leash reset call');
 });
 
 test('the page wires it once: the clock runs when the assets are ready, any engagement/kill/death spends it, ?opener=off and ?postkill=v1 start spent', () => {
