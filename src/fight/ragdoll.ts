@@ -148,7 +148,7 @@ export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
 // rows: data/physics.json; foe: the opponent's row (ragdollRowFor); load: the chunk's import (scene.ts hands `() => import('./physics-chunk.ts')`)
 export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false, feels: readonly FeelHooks[] = []) {
-  const feelCtx = (): FeelCtx => ({ rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
+  const feelCtx = (): FeelCtx => ({ rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs, blendToward: (share) => poseToward(1, share) });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   const cutManifestOf = (c: Chunk): unknown => (foe.body === 'minotaur' ? c.minotaurCutManifest : undefined);   // the cut GLB's manifest for this foe's body (the Minotaur's only so far)
