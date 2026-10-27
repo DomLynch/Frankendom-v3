@@ -24,7 +24,7 @@ for (const query of queries.length ? queries : ['', 'skyfollow=v1']) {
       mesh.geometry.dispose(); mesh.geometry = new T(row.radius, row.radius, hack.h, 96, 1, true);
       const set = mesh.position.set.bind(mesh.position);
       mesh.position.set = (x, y, z) => set(x, y - (mesh.userData.baseOffset ?? 0) + (hack.h / 2 - (1 - row.horizon) * hack.h - hack.drop), z);
-      mesh.userData.baseOffset = 120 / 2 - 0.12 * 120 - 23;
+      mesh.userData.baseOffset = 100 / 2 - 0.12 * 100 - 72;   // the shipped B: 100 m tall, dropped 72 m
       const e = mesh.rotation, off = (hack.yawOff * Math.PI) / 180;
       Object.defineProperty(e, 'y', { get() { return this._y; }, set(v) { this._y = v + off; this._onChangeCallback(); }, configurable: true });
     }, JSON.parse(process.env.HACK));
