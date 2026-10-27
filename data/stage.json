@@ -26,11 +26,14 @@
     "fadeSeconds": 1.2,
     "loadAfterFirstFrameMs": 300,
     "plate": {
-      "about": "The skyline as a far backdrop PLATE (src/fight/skyplate.ts; Dom 2026-10-27, portrait phone: the 360-degree strip showed a tenth of a 10:1 picture blown up to a pink blur and the alien face could never fit). The plate is a `spanDegrees` arc of the strip's far cylinder (`radius`), facing the camp (it follows the camera's heading with the strip's follow rows, ?skyfollow=v1 pins it there): the face is dead ahead of the page's first heading (about -Z), turned by `turnDegrees` more (derived from `face`, so a new picture needs no yaw row), showing the picture `file` (src/assets/skyline/) at its NATIVE aspect, never stretched: a window of the picture `cropAspect` wide to tall is cut around `face` (u, v: the alien face centre as a fraction across and down the picture; the whole picture when it is no wider than that), and the arc is as tall as that window needs at its width. `horizonFraction` is the picture's horizon row, a fraction down it. `faceElevationDegrees` puts the face that many degrees above the eye's level (so the pitched-up phone camera has it in view; the picture's own horizon then sits below the eye, where the cloud sea meets the melted sand). The edges fade to nothing (`edgeFadeFraction` each side, `topFadeFraction`, `bottomFadeFraction`, fractions of the plate) into a plain sky gradient (`sky`: `hazeColor` at the bottom, `horizonColor` at the picture's horizon row, `topColor` at the top, a cylinder `halfHeightMetres` either side of the eye, `rings` rows) that is the sky everywhere else. THE PICTURE (Dom's Smiling Cosmic Titan Over Cloudsea, 2508x627 = exactly 4:1, shown whole at native proportions, WebP q88, 121 KB; horizon 80% down, face centre at 58.5% across and 63% down, moon and face in the middle half, edges fade to the sky colour, the top 40% plain blue): swapping the picture again is `file`, `cropAspect`, `horizonFraction` and `face`; nothing else changes (a picture wider than `cropAspect` is cut to that window around `face`, a narrower one is shown whole). The arc draws at SKYLINE_ORDER + `orderOffset`, over the folded cloud floor (fold.orderOffset) and under the sand, so inside its span the picture's own cloud sea shows and the floor's clouds carry on either side and below it; the plain sky gradient draws first of all. The old 360-degree strip's picture (`skyline.file`, 7782x820) stays for the rollback: ?skyplate=v1. ?skyplate=v1 (`query` = `v1`) draws the old whole 360-degree strip. ?sky=v1, ?skyfollow=v1 and ?skyfold=v1 keep their meaning.",
+      "about": "The skyline as a far backdrop PLATE (src/fight/skyplate.ts; Dom 2026-10-27, portrait phone: the 360-degree strip showed a tenth of a 10:1 picture blown up to a pink blur and the alien face could never fit). The plate is a `spanDegrees` arc of the strip's far cylinder (`radius`), facing the camp (it follows the camera's heading with the strip's follow rows, ?skyfollow=v1 pins it there): the face is dead ahead of the page's first heading (about -Z), turned by `turnDegrees` more (derived from `face`, so a new picture needs no yaw row), showing the picture `file` (src/assets/skyline/) at its NATIVE aspect, never stretched: a window of the picture `cropAspect` wide to tall is cut around `face` (u, v: the alien face centre as a fraction across and down the picture; the whole picture when it is no wider than that), and the arc is as tall as that window needs at its width. `horizonFraction` is the picture's horizon row, a fraction down it. `faceElevationDegrees` puts the face that many degrees above the eye's level (so the pitched-up phone camera has it in view; the picture's own horizon then sits below the eye, where the cloud sea meets the melted sand). The edges fade to nothing (`edgeFadeFraction` each side, `topFadeFraction`, `bottomFadeFraction`, fractions of the plate) into a plain sky gradient (`sky`: `hazeColor` at the bottom, `horizonColor` at the picture's horizon row, `topColor` at the top, a cylinder `halfHeightMetres` either side of the eye, `rings` rows) that is the sky everywhere else. DESIGNER LAYER SET (2026-10-27): `file` is now the designer's CLEAN plate 01_clean_plate.webp, 4096x1024 (4:1, recompressed to WebP q80, 251 KB -> 134 KB; no globe, no planet, registered to the first picture within 0 px so `face`, `horizonFraction` and `cropAspect` are unchanged); the planet and globe cut-outs go over it (anim.about, docs/SKY-LAYERS.md). `flatFile` (the first flattened 2508x627 picture, skyline-titan.webp) with `flatQuery`/`flatValue`: ?skyflat=1 shows it with none of the layers. THE FIRST PICTURE (Dom's Smiling Cosmic Titan Over Cloudsea, 2508x627 = exactly 4:1, shown whole at native proportions, WebP q88, 121 KB; horizon 80% down, face centre at 58.5% across and 63% down, moon and face in the middle half, edges fade to the sky colour, the top 40% plain blue): swapping the picture again is `file`, `cropAspect`, `horizonFraction` and `face`; nothing else changes (a picture wider than `cropAspect` is cut to that window around `face`, a narrower one is shown whole). The arc draws at SKYLINE_ORDER + `orderOffset`, over the folded cloud floor (fold.orderOffset) and under the sand, so inside its span the picture's own cloud sea shows and the floor's clouds carry on either side and below it; the plain sky gradient draws first of all. The old 360-degree strip's picture (`skyline.file`, 7782x820) stays for the rollback: ?skyplate=v1. ?skyplate=v1 (`query` = `v1`) draws the old whole 360-degree strip. ?sky=v1, ?skyfollow=v1 and ?skyfold=v1 keep their meaning.",
       "on": true,
       "query": "skyplate",
       "v1": "v1",
-      "file": "skyline-titan.webp",
+      "file": "01_clean_plate.webp",
+      "flatFile": "skyline-titan.webp",
+      "flatQuery": "skyflat",
+      "flatValue": "1",
       "spanDegrees": 100,
       "cropAspect": 4,
       "face": {
@@ -51,6 +54,248 @@
         "hazeColor": "#936877",
         "halfHeightMetres": 85,
         "rings": 24
+      },
+      "anim": {
+        "about": "THE PLATE'S LAYERS AND SMALL CODED MOTION (src/fight/skyanim.ts; Dom 2026-10-27 'small motion on the static image'; the designer's registered layer set of the same day, 4096x1024, manifest.json). Presentation only: the plate material gets a few shader lines and uniforms, so a frame costs one clock tick and a few uniform writes (no texture re-upload, no extra draw). `plate.file` is the CLEAN plate (no globe, no planet); the planet and globe cut-outs are composited over it at their registered place, so they are part of the picture. Every layer file is named by its row (a .webp or .png in src/assets/skyline/): a re-delivery is a file swap. Positions are fractions across (u) and down (v, y down) the PLATE picture, radii are fractions of its WIDTH; a `rect` is the crop of the layer picture that is kept (u0,v0,u1,v1, fractions of the plate), so the GPU holds small textures, not full-size ones. `on`/`query`/`off`: ?skyanim=off stops the MOTION (the layers still composite: they are the picture); `respectReducedMotion` true = prefers-reduced-motion stops it too; the clock stops while the tab is hidden. `on` false draws no layers at all and is only right with a flattened plate (?skyflat=1 uses plate.flatFile, the old flattened picture, with none). `readyTimeoutSeconds`: the plate waits this long for the layer pictures so a layer never pops in. A layer with `on` false is not even fetched. PLANET: `file` = RGBA cut-out of the red planet (registered to the plate), `rect`, `centre`, `radius`; `glow` is a faint rim glow that pulses (`color`, `strength`, `pulseSeconds`, `lowerFadeFrom` = disc-radius y below which the glow fades out, where the cloud sea crosses the disc; `on` false = static planet). GLOBE: `file` = RGBA cut-out, `rect`, `centre`, `radius`; `spin` = a fake spin of the cut-out's own pixels (longitude shifted and mirror-folded so it never seams; `secondsPerTurn`, `swingDegrees` 0 = a continuous turn, above 0 = a swing of that many degrees each way); `highlight` = a soft moving glint (`strength`, `size` and `orbit` in disc radii, `lift`, `orbitSeconds`); `sprite` = the designer's 24-frame turn sheet (`file`, `columns`, `rows`, `frames`, `frameSeconds` per frame step, `cellPx` = a frame cell in the sheet, `ballRadiusPx` = the sphere's radius inside a cell, `sheetPx`, `loadScale` = the sheet is downscaled by this when it lands, `rects` = each frame's x,y,w,h in the sheet); sprite.on false by default because its frames read as a pink arch on a blue ball, not a clean world. GLISTEN: `file` = the designer's greyscale mask (white = may shimmer; the halo structure stays still), `rect` = the crop kept, `spreadTexels` = the speckles are a pixel or two so they are grown this many texels, `color`, `strength`, `baseGlow` = the always-on part of the shimmer, a sweep band `width` wide, tilted by `slant`, crossing the rect in `sweepSeconds` every `periodSeconds` adds to it, and `twinkle` (`periodSeconds`, `cells` across the plate, `amount` 0..1) shifts the highlights. SWAPPING: new plate = plate.file (same 4:1 shape; change cropAspect/face/horizonFraction only if the shape or face moves); new layer = its `file` (and rect/centre/radius if it moves); docs/SKY-LAYERS.md lists the files.",
+        "on": true,
+        "query": "skyanim",
+        "off": "off",
+        "respectReducedMotion": true,
+        "readyTimeoutSeconds": 5,
+        "planet": {
+          "on": true,
+          "file": "03_red_planet_cutout.webp",
+          "rect": {
+            "u0": 0.27,
+            "v0": 0.47,
+            "u1": 0.4,
+            "v1": 0.82
+          },
+          "centre": {
+            "u": 0.33394,
+            "v": 0.71934
+          },
+          "radius": 0.06082,
+          "glow": {
+            "on": true,
+            "color": "#ff7aa8",
+            "strength": 0.18,
+            "pulseSeconds": 7,
+            "lowerFadeFrom": 0.35
+          }
+        },
+        "globe": {
+          "on": true,
+          "file": "02_globe_cutout.webp",
+          "rect": {
+            "u0": 0.66846,
+            "v0": 0.61807,
+            "u1": 0.69238,
+            "v1": 0.71377
+          },
+          "centre": {
+            "u": 0.68042,
+            "v": 0.66592
+          },
+          "radius": 0.00798,
+          "spin": {
+            "on": true,
+            "secondsPerTurn": 36,
+            "swingDegrees": 0
+          },
+          "highlight": {
+            "on": true,
+            "strength": 0.3,
+            "size": 0.45,
+            "orbit": 0.45,
+            "lift": 0.15,
+            "orbitSeconds": 14
+          },
+          "sprite": {
+            "on": false,
+            "file": "05_globe_turn_24_frames.webp",
+            "columns": 8,
+            "rows": 3,
+            "frames": 24,
+            "frameSeconds": 0.15,
+            "cellPx": 222,
+            "ballRadiusPx": 104,
+            "sheetPx": {
+              "w": 4096,
+              "h": 1024
+            },
+            "loadScale": 0.4,
+            "rects": [
+              {
+                "x": 145,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 657,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 1169,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 1681,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 2193,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 2705,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 3217,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 3729,
+                "y": 59,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 145,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 657,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 1169,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 1681,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 2193,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 2705,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 3217,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 3729,
+                "y": 400,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 145,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 657,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 1169,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 1681,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 2193,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 2705,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 3217,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              },
+              {
+                "x": 3729,
+                "y": 741,
+                "w": 222,
+                "h": 222
+              }
+            ]
+          }
+        },
+        "glisten": {
+          "on": true,
+          "file": "04_glisten_mask.png",
+          "rect": {
+            "u0": 0.43,
+            "v0": 0.41,
+            "u1": 0.71,
+            "v1": 0.74
+          },
+          "periodSeconds": 9,
+          "sweepSeconds": 2.6,
+          "width": 0.03,
+          "slant": 0.35,
+          "strength": 1.4,
+          "color": "#d8ecff",
+          "baseGlow": 0.25,
+          "twinkle": {
+            "periodSeconds": 2.4,
+            "cells": 700,
+            "amount": 0.8
+          },
+          "spreadTexels": 2
+        }
       }
     },
     "views": {

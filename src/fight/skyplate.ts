@@ -13,6 +13,11 @@ export function plateOn(search: string, row: PlateRow): boolean {
   return row.on && new URLSearchParams(search).get(row.query) !== row.v1;
 }
 
+/** ?skyflat=1 (`flatQuery`/`flatValue`): the plate shows the old FLATTENED picture (`flatFile`, globe and planet painted in) with none of the layers or their motion: the look before the designer's layer set. */
+export function plateFlat(search: string, row: PlateRow): boolean { return new URLSearchParams(search).get(row.flatQuery) === row.flatValue; }
+/** The picture file the plate loads: the clean plate (`file`; the layers go over it), or under ?skyflat the flattened one. */
+export function plateFile(search: string, row: PlateRow): string { return plateFlat(search, row) ? row.flatFile : row.file; }
+
 /** The window of the picture the plate shows: `w` = its width as a fraction of the picture's, `aspect` = width / height at the picture's native pixels (never stretched), `u0` = its left edge (fraction), centred on the face and kept inside the picture. */
 export function plateWindow(row: PlateRow, imgW: number, imgH: number): { w: number; aspect: number; u0: number } {
   const native = imgW / imgH, w = Math.min(1, row.cropAspect / native);

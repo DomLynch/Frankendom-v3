@@ -37,8 +37,8 @@ test('the shipped numbers: about 100 degrees, 4:1 window, the swap is rows only 
 test('the plate picture ships: a WebP under 400 KB whose shape is exactly cropAspect (no stretch), and the old strip picture is still there for the rollback', () => {
   const buf = readFileSync(new URL(`../src/assets/skyline/${P.file}`, import.meta.url));
   assert.equal(buf.toString('latin1', 0, 4), 'RIFF'); assert.equal(buf.toString('latin1', 8, 12), 'WEBP'); assert.ok(buf.length < 400_000, String(buf.length));
-  assert.equal(buf.toString('latin1', 12, 16), 'VP8 ');
-  const w = buf.readUInt16LE(26) & 0x3fff, h = buf.readUInt16LE(28) & 0x3fff;
+  const vp8x = buf.toString('latin1', 12, 16) === 'VP8X'; assert.ok(vp8x || buf.toString('latin1', 12, 16) === 'VP8 ');   // the designer's clean plate is a VP8X file (4096 x 1024)
+  const w = vp8x ? 1 + (buf[24] | (buf[25] << 8) | (buf[26] << 16)) : buf.readUInt16LE(26) & 0x3fff, h = vp8x ? 1 + (buf[27] | (buf[28] << 8) | (buf[29] << 16)) : buf.readUInt16LE(28) & 0x3fff;
   assert.ok(Math.abs(w / h - P.cropAspect) < 0.01, `${w}x${h}`);
   assert.ok(readFileSync(new URL(`../src/assets/skyline/${SKYLINE.file}`, import.meta.url)).length > 50_000);
 });

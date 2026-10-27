@@ -316,7 +316,7 @@ export function validateFile(name, json) {
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
 export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'plate', 'views', 'fold'];
-export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'orderOffset', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky'];
+export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'orderOffset', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky', 'anim', 'flatFile', 'flatQuery', 'flatValue'];
 // data/stage.json `skyline.plate` (src/fight/skyplate.ts): the far backdrop arc. A plain file name, a face inside the picture, fractions in range, colours as #rrggbb, and the rim (the arc at its tallest, the sky cylinder) inside the far plane.
 function checkSkyPlate(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.plate.${p}: ${m}`), p = s.plate;
@@ -327,6 +327,9 @@ function checkSkyPlate(s) {
   const taken = [s.query, s.followQuery, s.views && s.views.query, s.views && s.views.foeFadeQuery, s.fold && s.fold.query];
   if (typeof p.query === 'string' && taken.includes(p.query)) at('query', 'must differ from the other skyline query words');
   if (typeof p.file !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(p.file)) at('file', 'must be a plain .webp file name in src/assets/skyline/');
+  if (typeof p.flatFile !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(p.flatFile)) at('flatFile', 'must be a plain .webp file name in src/assets/skyline/ (the old flattened plate picture, shown with no layers under ?skyflat)');
+  for (const k of ['flatQuery', 'flatValue']) if (typeof p[k] !== 'string' || !/^[a-z0-9]+$/i.test(p[k])) at(k, 'must be a plain word');
+  if (typeof p.flatQuery === 'string' && (taken.includes(p.flatQuery) || p.flatQuery === p.query || p.flatQuery === (p.anim || {}).query)) at('flatQuery', 'must differ from the other skyline query words');
   const rng = (o, k, lo, hi, int, path = k) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi || (int && !Number.isInteger(o[k]))) at(path, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
   rng(p, 'spanDegrees', 20, 180); rng(p, 'cropAspect', 1, 12); rng(p, 'horizonFraction', 0.3, 1); rng(p, 'faceElevationDegrees', -30, 30); rng(p, 'turnDegrees', -360, 360);
   rng(p, 'orderOffset', 1, 99, true); if (Number.isInteger(p.orderOffset) && s.fold && Number.isInteger(s.fold.orderOffset) && !(p.orderOffset > s.fold.orderOffset)) at('orderOffset', 'must draw after the folded floor (above fold.orderOffset) and before the sand (under 100)');
@@ -345,9 +348,64 @@ function checkSkyPlate(s) {
     const h = (s.radius * p.spanDegrees * Math.PI / 180) / p.cropAspect, top = s.radius * Math.tan(p.faceElevationDegrees * Math.PI / 180) + (1 - p.face.v) * h, bottom = top - h;
     if (Math.hypot(s.radius, Math.max(Math.abs(top), Math.abs(bottom))) > SKYLINE_RIM_LIMIT) at('spanDegrees', 'the arc, at the shape cropAspect gives it, must stay inside the camera far plane (180 m)');
   }
+  e.push(...checkSkyAnim(p.anim, p.query));
   return e;
 }
-/** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
+// data/stage.json `skyline.plate.anim` (src/fight/skyanim.ts): the plate's layers and small coded motion. Every layer is a row with a plain picture file name (.webp or .png in src/assets/skyline/), fractions in range, a crop rect inside the plate, positive periods, #rrggbb colours; the sprite sheet's frame rects are real rects, one per frame.
+function checkSkyAnim(a, plateQuery) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.plate.anim${p ? `.${p}` : ''}: ${m}`);
+  if (a === null || typeof a !== 'object' || Array.isArray(a)) return ['stage.skyline.plate.anim: must be an object'];
+  const J = (path, k) => (path ? `${path}.${k}` : k);
+  const keys = (o, allowed, path) => { if (o === null || typeof o !== 'object' || Array.isArray(o)) { at(path, 'must be an object'); return false; } for (const k of Object.keys(o)) if (!allowed.includes(k)) at(J(path, k), 'unknown key'); for (const k of allowed) if (!(k in o)) at(J(path, k), 'missing'); return true; };
+  const rng = (o, k, lo, hi, path, int) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi || (int && !Number.isInteger(o[k]))) at(J(path, k), `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
+  const col = (o, k, path) => { if (typeof o[k] !== 'string' || !/^#[0-9a-f]{6}$/i.test(o[k])) at(J(path, k), 'must be a #rrggbb colour'); };
+  const bool = (o, k, path) => { if (typeof o[k] !== 'boolean') at(J(path, k), 'must be true or false'); };
+  const file = (o, k, path) => { if (typeof o[k] !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.(webp|png)$/i.test(o[k])) at(J(path, k), 'must be a plain .webp or .png file name in src/assets/skyline/'); };
+  const centre = (o, path) => { if (keys(o.centre, ['u', 'v'], J(path, 'centre'))) { rng(o.centre, 'u', 0, 1, J(path, 'centre')); rng(o.centre, 'v', 0, 1, J(path, 'centre')); } };
+  const rect = (o, path) => { if (keys(o.rect, ['u0', 'v0', 'u1', 'v1'], J(path, 'rect'))) { for (const k of ['u0', 'v0', 'u1', 'v1']) rng(o.rect, k, 0, 1, J(path, 'rect')); if (!(o.rect.u1 > o.rect.u0 + 0.005) || !(o.rect.v1 > o.rect.v0 + 0.005)) at(J(path, 'rect'), 'must be a real rect (u1 above u0, v1 above v0)'); } return o.rect; };
+  const inside = (r, c, rad, path) => { if (r && c && Number.isFinite(c.u) && Number.isFinite(c.v) && Number.isFinite(rad) && !(c.u - rad >= r.u0 - 1e-9 && c.u + rad <= r.u1 + 1e-9 && c.v >= r.v0 && c.v <= r.v1)) at(J(path, 'rect'), 'must contain the layer (its centre and a radius either side)'); };
+  keys(a, ['about', 'on', 'query', 'off', 'respectReducedMotion', 'readyTimeoutSeconds', 'planet', 'globe', 'glisten'], '');
+  if (typeof a.about !== 'string' || a.about.length < 200) at('about', 'must explain the rows (at least 200 characters)');
+  for (const k of ['on', 'respectReducedMotion']) bool(a, k, '');
+  for (const k of ['query', 'off']) if (typeof a[k] !== 'string' || !/^[a-z0-9]+$/i.test(a[k])) at(k, 'must be a plain word');
+  if (a.query === plateQuery) at('query', 'must differ from the plate query word');
+  rng(a, 'readyTimeoutSeconds', 0.5, 30, '');
+  const p = a.planet;
+  if (keys(p, ['on', 'file', 'rect', 'centre', 'radius', 'glow'], 'planet')) {
+    bool(p, 'on', 'planet'); file(p, 'file', 'planet'); centre(p, 'planet'); rng(p, 'radius', 0.001, 0.3, 'planet'); const r = rect(p, 'planet'); inside(r, p.centre, Number.isFinite(p.radius) ? Math.min(p.radius, 0.0) : 0, 'planet');
+    if (keys(p.glow, ['on', 'color', 'strength', 'pulseSeconds', 'lowerFadeFrom'], 'planet.glow')) { bool(p.glow, 'on', 'planet.glow'); col(p.glow, 'color', 'planet.glow'); rng(p.glow, 'strength', 0, 1, 'planet.glow'); rng(p.glow, 'pulseSeconds', 0.5, 600, 'planet.glow'); rng(p.glow, 'lowerFadeFrom', -1, 1, 'planet.glow'); }
+  }
+  const g = a.globe;
+  if (keys(g, ['on', 'file', 'rect', 'centre', 'radius', 'spin', 'highlight', 'sprite'], 'globe')) {
+    bool(g, 'on', 'globe'); file(g, 'file', 'globe'); centre(g, 'globe'); rng(g, 'radius', 0.001, 0.1, 'globe'); const r = rect(g, 'globe'); inside(r, g.centre, Number.isFinite(g.radius) ? g.radius : 0, 'globe');
+    if (keys(g.spin, ['on', 'secondsPerTurn', 'swingDegrees'], 'globe.spin')) { bool(g.spin, 'on', 'globe.spin'); rng(g.spin, 'secondsPerTurn', 1, 3600, 'globe.spin'); rng(g.spin, 'swingDegrees', 0, 90, 'globe.spin'); }
+    if (keys(g.highlight, ['on', 'strength', 'size', 'orbit', 'lift', 'orbitSeconds'], 'globe.highlight')) { const h = g.highlight; bool(h, 'on', 'globe.highlight'); rng(h, 'strength', 0, 1, 'globe.highlight'); rng(h, 'size', 0.05, 2, 'globe.highlight'); rng(h, 'orbit', 0, 1, 'globe.highlight'); rng(h, 'lift', -1, 1, 'globe.highlight'); rng(h, 'orbitSeconds', 1, 600, 'globe.highlight'); }
+    const s = g.sprite;
+    if (keys(s, ['on', 'file', 'columns', 'rows', 'frames', 'frameSeconds', 'cellPx', 'ballRadiusPx', 'sheetPx', 'loadScale', 'rects'], 'globe.sprite')) {
+      bool(s, 'on', 'globe.sprite'); file(s, 'file', 'globe.sprite'); rng(s, 'columns', 1, 64, 'globe.sprite', true); rng(s, 'rows', 1, 64, 'globe.sprite', true); rng(s, 'frames', 1, 256, 'globe.sprite', true);
+      rng(s, 'frameSeconds', 0.02, 10, 'globe.sprite'); rng(s, 'cellPx', 8, 4096, 'globe.sprite'); rng(s, 'ballRadiusPx', 4, 2048, 'globe.sprite'); rng(s, 'loadScale', 0.1, 1, 'globe.sprite');
+      if (Number.isFinite(s.cellPx) && Number.isFinite(s.ballRadiusPx) && s.ballRadiusPx * 2 > s.cellPx + 1) at('globe.sprite.ballRadiusPx', 'the sphere must fit its cell');
+      if (Number.isFinite(s.columns) && Number.isFinite(s.rows) && Number.isFinite(s.frames) && s.frames > s.columns * s.rows) at('globe.sprite.frames', 'cannot exceed columns x rows');
+      let W = 0, H = 0;
+      if (keys(s.sheetPx, ['w', 'h'], 'globe.sprite.sheetPx')) { rng(s.sheetPx, 'w', 8, 16384, 'globe.sprite.sheetPx', true); rng(s.sheetPx, 'h', 8, 16384, 'globe.sprite.sheetPx', true); W = s.sheetPx.w; H = s.sheetPx.h; }
+      if (!Array.isArray(s.rects) || s.rects.length !== s.frames) at('globe.sprite.rects', 'must be an array with one rect per frame');
+      else for (const [i, q] of s.rects.entries()) {
+        const pth = `globe.sprite.rects.${i}`;
+        if (!keys(q, ['x', 'y', 'w', 'h'], pth)) continue;
+        for (const k of ['x', 'y', 'w', 'h']) rng(q, k, 0, 16384, pth);
+        if (W && H && Number.isFinite(q.x + q.y + q.w + q.h) && (q.x + q.w > W || q.y + q.h > H)) at(pth, 'must lie inside the sheet');
+      }
+    }
+  }
+  const l = a.glisten;
+  if (keys(l, ['on', 'file', 'rect', 'periodSeconds', 'sweepSeconds', 'width', 'slant', 'strength', 'color', 'baseGlow', 'twinkle', 'spreadTexels'], 'glisten')) {
+    bool(l, 'on', 'glisten'); file(l, 'file', 'glisten'); rect(l, 'glisten'); col(l, 'color', 'glisten'); rng(l, 'periodSeconds', 1, 600, 'glisten'); rng(l, 'sweepSeconds', 0.2, 600, 'glisten'); rng(l, 'width', 0.002, 0.3, 'glisten'); rng(l, 'slant', -2, 2, 'glisten'); rng(l, 'strength', 0, 2, 'glisten'); rng(l, 'baseGlow', 0, 2, 'glisten'); rng(l, 'spreadTexels', 0, 8, 'glisten');
+    if (Number.isFinite(l.periodSeconds) && Number.isFinite(l.sweepSeconds) && l.sweepSeconds > l.periodSeconds) at('glisten.sweepSeconds', 'must not exceed periodSeconds');
+    if (keys(l.twinkle, ['periodSeconds', 'cells', 'amount'], 'glisten.twinkle')) { rng(l.twinkle, 'periodSeconds', 0.2, 600, 'glisten.twinkle'); rng(l.twinkle, 'cells', 10, 8192, 'glisten.twinkle'); rng(l.twinkle, 'amount', 0, 1, 'glisten.twinkle'); }
+  }
+  return e;
+}
+/** data/fight.json camera.wide(src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
 function checkWideLens(w, name) {
   const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
   if (!w || typeof w !== 'object') return [`${name}.camera.wide: the wide-screen lens row is required`];
