@@ -37,7 +37,7 @@ test('the flag off changes nothing: no hero ragdoll is made, and the opponent\'s
   assert.match(scene, /const heroRagdoll = typeof location === 'undefined' \? null : heroRagdollFor\(location\.search\)/);
   assert.match(scene, /heroRagdoll\?\.attach\(player, loaded\.player\)/); assert.match(scene, /heroRagdoll\?\.frame\(/);
   assert.match(ragdoll, /side = 1, costKey = '__ragdoll'\)/, 'the opponent\'s ragdoll is still fighter 1 with its old cost record');
-  assert.match(ragdoll, /foe \? createFoeRagdoll\(PHYSICS, foe, [^\n]*activeFeels\(search, FEEL_DEFAULTS\)\) : null/, 'foeRagdollFor passes no side: unchanged');
+  assert.match(ragdoll, /foe \? createFoeRagdoll\(PHYSICS, foe, [^\n]*activeFeels\(search, FEEL_DEFAULTS\), search\) : null/, 'foeRagdollFor passes no side: unchanged');
   const defaults = JSON.parse(src('data/feel-defaults.json'));
   assert.equal(defaults.modules.includes('hero'), false, 'hero is not a default module: the main URL never builds her ragdoll');
   assert.equal(JSON.stringify(defaults.revert).includes('hero'), false);
@@ -120,6 +120,6 @@ test('hero ragdoll: no cuts, no corpse, no finisher, no rules path; her kill is 
   const s = src('src/fight/ragdoll.ts'); const i = s.indexOf('export function heroRagdollFor');
   const body = s.slice(i, s.indexOf('/** scene.ts: does the ragdoll play', i));
   assert.match(body, /cut: \{ \.\.\.PHYSICS\.cut, on: false, onKill: \{\} \}/);
-  assert.match(body, /false, false, false, activeFeels\(search, undefined, true\), 0, '__ragdollHero'/);
+  assert.match(body, /false, false, false, activeFeels\(search, undefined, true\), search, 0, '__ragdollHero'/);
   assert.match(s, /e\.type === 'Killed' && e\.target === side/); assert.match(s, /rd\.kill\(blowImpulse\(/);
 });

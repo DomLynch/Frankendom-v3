@@ -71,7 +71,7 @@ let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
-  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS)) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
 /** scene.ts, ?feel=hero (data/physics.json `hero`): the HERO's presentation ragdoll, a second createFoeRagdoll on sim fighter 0 (hit reactions from the same data/feel-hitreact.json rows as the opponent's, the package's
@@ -79,7 +79,7 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
 export function heroRagdollFor(search: string): FoeRagdoll | null {
   if (!PHYSICS.on || !feelNames(search).includes('hero') || new URLSearchParams(search).get(PHYSICS.query) === PHYSICS.v1) return null;
   const rows = { ...PHYSICS, cut: { ...PHYSICS.cut, on: false, onKill: {} } } as PhysicsRows;
-  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as Promise<Chunk>, false, false, false, activeFeels(search, undefined, true), 0, '__ragdollHero');
+  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as Promise<Chunk>, false, false, false, activeFeels(search, undefined, true), search, 0, '__ragdollHero');
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
  *  finisher's camera, blood and sound by its id and skips V1's victim clip and its bakes. */
@@ -198,7 +198,7 @@ type Rigged = { anchor: THREE.Object3D; bindScene?: THREE.Object3D };
 export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
 // rows: data/physics.json; foe: the opponent's row (ragdollRowFor); load: the chunk's import (scene.ts hands `() => import('./physics-chunk.ts')`)
-export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false, feels: readonly FeelHooks[] = [], side = 1, costKey = '__ragdoll') {   // side: the sim fighter this body is (1 the opponent; 0 the hero under ?feel=hero, heroRagdollFor); costKey: its cost record's name on globalThis
+export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false, feels: readonly FeelHooks[] = [], search = '', side = 1, costKey = '__ragdoll') {   // side: the sim fighter this body is (1 the opponent; 0 the hero under ?feel=hero, heroRagdollFor); costKey: its cost record's name on globalThis
   const feelCtx = (): FeelCtx => ({ target: side, rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs, blendToward: (share) => poseToward(1, share) });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
@@ -614,7 +614,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       return afterFirstFrame()
         .then(() => new Promise((done) => setTimeout(done, rows.loadAfterFirstFrameMs)))
         .then(() => Promise.all([load(), fetch(new URL(measurePath, document.baseURI)).then((r) => { if (!r.ok) throw Error(`${measurePath}: ${r.status}`); return r.json(); })]))
-        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed, states: rows.states }); if (rulesOn) rules = createRulesEval(RULES, c, row, foe.id, undefined, { foe: OPPONENTS[foe.id as OpponentId]?.health ?? SIM_RULES.health, man: SIM_RULES.health }); build(); prepareCutArt(); })
+        .then(async ([c, row]) => { chunk = c; measure = row; physics = await c.createPhysics({ seed: rows.seed, states: rows.states }); if (rulesOn) rules = createRulesEval(RULES, c, row, foe.id, undefined, { foe: OPPONENTS[foe.id as OpponentId]?.health ?? SIM_RULES.health, man: SIM_RULES.health }, search); build(); prepareCutArt(); })
         .catch((error: unknown) => { cost.state = `failed: ${error instanceof Error ? error.message : String(error)}`; throw error; });
     },
     get state() { return rd?.state ?? cost.state; },
