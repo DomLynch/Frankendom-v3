@@ -153,6 +153,12 @@ test('the page wires it for the zone only: poseAt on the ground, the pose door r
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');
   assert.match(live, /if \(ZONE\) setArenaClamp\(WORLD\.cameraClampMetres\);\n/, 'live code, not swallowed by a trailing comment');
   assert.match(live, /fits \? pose : undefined, undefined/, 'a pose beyond the pit is not handed to the sim');
+  assert.match(live, /roam = \{ \.\.\.practice\.fighter \}; view\.stopTour\(\); \}/, 'the finisher tour ends the moment the hero walks: the follow camera is behind him');
+  assert.match(live, /on = intoPit\(at, WORLD\.spreadRadiusMetres\)/, 'adoptAttacker draws the hero onto the ground the way poseAt does');
+  assert.equal(ROWS.postKill.walkRadiusMetres, WORLD.spreadRadiusMetres, 'the post-kill walk reaches every boss the spawns reach (PR A row = the ground)');
+  assert.ok(ROWS.postKill.walkRadiusMetres + ROWS.postKill.cameraMetres <= WORLD.cameraClampMetres, 'the walk camera fits inside the zone camera clamp');
+  const cam = read('../src/fight/camera.ts');
+  assert.equal((cam.match(/ARENA_CLAMP/g) ?? []).length >= 8 && !/const ARENA_CLAMP/.test(cam), true, 'finisher side view, tour and intro orbit all clamp at the one settable ARENA_CLAMP');
   const sim = ['sim', 'duel', 'combat', 'play-radius'].map((f) => read(`../src/fight/${f}.ts`)).join('\n');
   assert.doesNotMatch(sim, /zoneDuel|spreadRadius|setArenaClamp/, 'the sim files do not know the zone');
 });

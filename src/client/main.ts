@@ -57,7 +57,7 @@ import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
-import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
+import { zoneLoopFor, roamStep, validateWalk, intoPit } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
@@ -238,7 +238,7 @@ const poseOfAttacker = (index: number, at: { x: number; z: number }): DuelPose =
 /** The kill's ceremony is over and another boss is on him: that boss's fight becomes the sim's fight, the hero's health as it is now (the first boss's corpse is left lying, as at every hand-over). */
 function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number }) {
   view.respawnFoe();
-  const mine = practice.duel.fighters[0], hero: Fighter = { ...mine, body: { ...mine.body, x: at.x, z: at.z, heading: at.heading } };
+  const mine = practice.duel.fighters[0], on = intoPit(at, WORLD.spreadRadiusMetres), hero: Fighter = { ...mine, body: { ...mine.body, x: on.x, z: on.z, heading: at.heading } };   // on: the zone's ground (spawns.ts poseAt draws him in the same way)
   epoch++; seed = nextSeed(seed); practice = adopt(a, hero); frameEvents = []; openerLift = 0;
   roam = null; sinceDeath = 0; current = a.index; engaged = true; killMarked = false; killedBy = null;
   attackers = attackers.filter((x) => x !== a);
@@ -359,7 +359,7 @@ function frame(now: number) {
       state = practice.fighter;
       if (heroStands()) {   // the zone loop: the sim is over, the hero walks (presentation only) once the kill's ceremony lets him go
         const phase = view.finishPhase();
-        if (!roam && (intent.x || intent.z) && (phase.complete || phase.age >= ZONE!.startAfterSeconds)) roam = { ...practice.fighter };
+        if (!roam && (intent.x || intent.z) && (phase.complete || phase.age >= ZONE!.startAfterSeconds)) { roam = { ...practice.fighter }; view.stopTour(); }
         if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, ZONE!.walkRadius);   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
       accumulator -= step();

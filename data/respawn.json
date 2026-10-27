@@ -5,7 +5,7 @@
     "about": "roam: after the opponent dies the hero is controllable (stick, camera) and the fight camera follows him; the duel sim is stopped at the kill, the hero's walk is presentation-only. startAfterSeconds: the longest the killing blow's ceremony holds him before the stick takes over (he takes over sooner when the finisher has finished playing). walkRadiusMetres (Dom 2026-10-27: 'after the kill I can move ... it should be free roaming, MMO style'): in the zone only, how far from the pit's centre the hero may walk after a kill, past the pit's wall (the duel sim's circle, world.pitScale, is untouched; a fight that starts with him beyond the wall starts on the wall's edge, in line with where he stood); never smaller than the pit's wall. ?postkill=v1 keeps the pit wall. cameraMetres: how far beyond walkRadiusMetres the follow camera may stand (the walking camera is 7.5 m behind him), so it never folds in front of a hero at the edge.",
     "roam": true,
     "startAfterSeconds": 4,
-    "walkRadiusMetres": 12,
+    "walkRadiusMetres": 26,
     "cameraMetres": 8
   },
   "spawn": {

@@ -26,7 +26,7 @@ test('the rows are pinned: roam on, hand-over 4 s, the zone row\'s spawn (Pitbor
   for (const dup of ['spawns', 'respawn', 'corpse']) assert.equal(ROWS[dup], undefined, `${dup} is the zone row's / Physics Dev's row, not repeated here`);
   assert.ok(read('../data/physics.json').corpse.keepSeconds > 0, 'one corpse timer: data/physics.json corpse.keepSeconds (ragdoll.leaveCorpse)');
   const z = zoneLoopFor(ZONE, '', ids);
-  assert.deepEqual(z, { walkRadius: 12, cameraMetres: 8, startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, fallSeconds: 1.4, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'pitborn', respawnSeconds: 40 } });
+  assert.deepEqual(z, { walkRadius: 26, cameraMetres: 8, startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, fallSeconds: 1.4, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'pitborn', respawnSeconds: 40 } });
 });
 
 test('bad rows are refused', () => {
