@@ -7,7 +7,7 @@
   "m4": "m4",
   "variants": {
     "m4b": {
-      "about": "Strategy 2026-10-27: M4 with the rungs from the wider 40-swing sample (physics docs/M4-CALIBRATION.md, candidate 7.7 / 14.5 / 23.2 against the pins 8.0 / 16.5 / 24.3) so Dom can A/B on his phone with ?rules=m4b; nothing is re-pinned and ?rules=m4 and the default are unchanged. Only these package rows are replaced, everything else is the package's own. Strategy 2026-10-27: min_speed_m_s moves to 7.7 with rung_hit (the package's own source note says they are the same number, the p10), so the hit rung is real in the A/B and not hidden under the 8.0 gate.",
+      "about": "Strategy 2026-10-27: M4 with the rungs from the wider 40-swing sample (physics docs/M4-CALIBRATION.md, candidate 7.7 / 14.5 / 23.2 against the pins 8.0 / 16.5 / 24.3) so Dom can A/B on his phone with ?rules=m4b; nothing is re-pinned and ?rules=m4 and the default are unchanged. Only these package rows are replaced, everything else is the package's own. Strategy 2026-10-27: min_speed_m_s moves to 7.7 with rung_hit (the package's own source note says they are the same number, the p10), so the hit rung is real in the A/B and not hidden under the 8.0 gate. CONFOUND: `impulseAt` is rung_stick, so m4b also scales every stagger / knockdown impulse by strength / rung_stick (clamped to `impulseClamp`), about 14% stronger shoves (16.5 / 14.5) on top of the hit rules; a felt difference in m4b may be the shove and not the rungs.",
       "strength_scale": { "rung_hit": 7.7, "rung_stick": 14.5, "rung_cut": 23.2 },
       "melee_speed_gate": { "min_speed_m_s": 7.7 }
     }
