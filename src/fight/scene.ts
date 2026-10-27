@@ -874,6 +874,7 @@ export function createScene(
       }
       const finisher = bakeFallback || resolved;
       if (resolved) fightFinisher = resolved;   // the rotation follows the pick, not the fallback
+      if (practice.finish) { const g = globalThis as { __v3Picked?: { resolved: FinisherId | null; played: FinisherId | null; move: string; location: string; heading: number; body: boolean } }; g.__v3Picked = { resolved, played: finisher, move: practice.finish.move, location: practice.finish.location, heading: practice.finish.heading, body: bodyLatch === true }; }   // read-only trace of this kill's pick (stills / kill-trace harnesses); not read by the game
       else if (!practice.finish && fightFinisher) { lastFinisher = fightFinisher; fightFinisher = null; }
       // A rank look's waist-cut rebake, one step a frame (Lead ruling on #918: whole, it froze the kill for 1983 ms at CPU ×4). The gate
       // reads each step's ms; an opened kill that lands before the last step finishes it in openWaist() and is flagged.

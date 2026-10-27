@@ -50,7 +50,7 @@ export const SCHEMA = {
   'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'kick', 'kickOnInjuredLeg', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
     maps: { flag: ['query', 'value'], knockdown: ['seconds', 'minSecondsBetween'], kick: ['interruptSeconds', 'flinchSeconds', 'interruptThroughPoise', 'resistanceSeconds', 'cooldownSeconds'], kickOnInjuredLeg: ['hits', 'windowS'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
-  'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'zones'] },
+  'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'classes', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
     maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
       hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
