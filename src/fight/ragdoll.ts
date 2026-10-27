@@ -21,6 +21,8 @@ import { OPPONENTS, RULES as SIM_RULES, type OpponentId } from './moves.ts';   /
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
+import { setGoreEvery } from './finishers.ts';
+import { setRagdollPlays } from '../roster.ts';
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
 import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, halvesApart, PHYSICS_MODE, VISUAL_UNITS, type FinisherCutRows } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
@@ -73,6 +75,9 @@ let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
+  // Gore on every kill (Dom 2026-10-27), default on; ?gore=v1 reverts to the roster's gate and the 5-way rotation with the plain death. Only while this page's ragdoll plays finishers.
+  const gore = !!foe && finisherModeFor(PHYSICS, search) === PHYSICS_MODE && new URLSearchParams(search).get('gore') !== 'v1';
+  setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? Object.keys(PHYSICS.finisherCuts.rows) : []) : null);
   page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
