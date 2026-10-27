@@ -69,11 +69,22 @@ for (const query of queries.length ? queries : ['', 'feel=hero']) {
   const death = { tick: -1, states: [] };
   if (!process.env.NODEATH) {
     await page.evaluate(() => { const h = globalThis.__v3Fight.duel.fighters[0]; h.health = 1; });
+    const DEATH_AT = [0, 5, 10, 20, 30, 35, 40, 45, 50, 55, 60, 65, 70];   // the handover from the Death clip to the ragdoll at +0..+20, then every 5 ticks to +70
+    const probe = () => page.evaluate(() => ({ h: globalThis.__v3Fight.duel.fighters[0].health, finish: globalThis.__v3Fight.finish?.victim ?? null, rd: globalThis.__ragdollHero?.state ?? null }));
     for (let n = 0; n < 1800 && !(death.tick >= 0 && n - death.tick > 70); n++) {
       await run(1);
-      const s = await page.evaluate(() => ({ h: globalThis.__v3Fight.duel.fighters[0].health, finish: globalThis.__v3Fight.finish?.victim ?? null, rd: globalThis.__ragdollHero?.state ?? null }));
+      const s = await probe();
       if (death.tick < 0 && s.h <= 0) death.tick = n;
-      if (death.tick >= 0) { const k = n - death.tick; if ([0, 10, 30, 70].includes(k)) { death.states.push({ k, ...s }); await page.screenshot({ path: `${out}/hero-${tag}-death-${String(k).padStart(3, '0')}.${EXT}`, ...SHOT }); } }
+      if (death.tick >= 0) { const k = n - death.tick; if (DEATH_AT.includes(k)) { death.states.push({ k, ...s }); await page.screenshot({ path: `${out}/hero-${tag}-death-${String(k).padStart(3, '0')}.${EXT}`, ...SHOT }); } }
+    }
+    // The rematch (the reset button, main.ts rematch): she stands up again from the ragdoll's body; stills at +5, +20, +40, +90 ticks after the click and the ragdoll's state on each.
+    if (death.tick >= 0) {
+      await page.evaluate(() => document.getElementById('reset-button')?.click());
+      death.stand = [];
+      for (let r = 1; r <= 90; r++) {
+        await run(1);
+        if ([5, 20, 40, 90].includes(r)) { death.stand.push({ r, ...(await probe()) }); await page.screenshot({ path: `${out}/hero-${tag}-stand-${String(r).padStart(3, '0')}.${EXT}`, ...SHOT }); }
+      }
     }
   }
   const end = await page.evaluate(() => ({ death: null, log: globalThis.__heroReactLog ?? [], state: globalThis.__ragdollHero?.state ?? null, cost: globalThis.__ragdollHero ? { frames: globalThis.__ragdollHero.frames, totalMs: globalThis.__ragdollHero.totalMs, maxMs: globalThis.__ragdollHero.maxMs } : null }));
