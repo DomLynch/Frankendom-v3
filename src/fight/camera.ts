@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import type { Shove } from './camera-kick.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
+import { repitch, type PitchRows } from './camera-pitch.ts';
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
@@ -18,6 +19,9 @@ let WALK_CLAMP = 0;
 export const setWalkClamp = (radius: number): void => { WALK_CLAMP = radius; };
 // V3: the lock camera's height scale and its step over the player's right shoulder (m), set by the page from data/fight.json (V2's lower,
 // over-the-shoulder framing). 1 and 0 are V1's lock exactly; a finish eases both back to that, as it does the fight-back scale.
+let PITCH: { degrees: number; rows: Pick<PitchRows, 'heroY' | 'minEyeY'> } | null = null;
+/** The zone's follow-camera pitch (data/fight.json camera.pitch, src/fight/camera-pitch.ts): degrees the view axis looks down, or null = the lock exactly as it was. A finish eases it back to the default frame. */
+export const setCameraPitch = (degrees: number | null, rows: Pick<PitchRows, 'heroY' | 'minEyeY'>): void => { PITCH = degrees === null ? null : { degrees, rows }; };
 let LOCK_LIFT = 1, LOCK_SIDE = 0;
 export const setLockFrame = (lift: number, side: number): void => { LOCK_LIFT = lift; LOCK_SIDE = side; };
 const AIM_PER_SHRINK = cameraRule('aimPerShrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
@@ -292,6 +296,11 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare, (1 + (FIGHT_BACK - 1) * shortShare) * (1 + (widen - 1) * shortShare), 1 + (LOCK_LIFT - 1) * shortShare, LOCK_SIDE * shortShare);   // a finish takes the fight-back scale out on the same ease as the short-foe lift, so it frames as it always did
       look.set(cameraTarget.lookX, locked ? 0.8 : 1, cameraTarget.lookZ);
       desired.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
+      if (PITCH && locked) {   // the zone's flatter pitch, shared out by the same ease as the short-foe terms: a finish frames as it always did
+        const flat = repitch(cameraTarget, { x: cameraTarget.lookX, y: look.y, z: cameraTarget.lookZ }, state, PITCH.degrees, PITCH.rows);
+        desired.y += (flat.eyeY - desired.y) * shortShare;
+        look.y += (flat.lookY - look.y) * shortShare;
+      }
       // The authorized slow push-in over the death window (finishers & gore 2026-09-17): a dolly toward the fallen, never a cut,
       // never an FOV change. Off when the viewer prefers reduced motion; the frame loop's hit-stop stays the one impact pause.
       // Paced to the slowed finisher clock (1.3 s / 0.75); a plain-death pick gets no dolly — an ordinary kill stays ordinary.

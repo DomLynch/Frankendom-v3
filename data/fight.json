@@ -19,7 +19,17 @@
     "about": "V2's lower, over-the-shoulder fight camera on V1's lock (src/fight/camera.ts setLockFrame; ?cam=v1 = V1's lock exactly). V2 (Frankendom-v2 data/camera.json portrait: back 6.5, up 2.8, side 1.0, zoom 0.9) puts the eye ~2.8 m up and 1.0 m over the right shoulder; V1's lock at a 2.5 m gap is 4.2 m up (max(lockLiftFloor 3.2, gap x 1.3) x fightBack 1.3) and 5.7 m back. lift scales V1's lock height (2.8 / 4.2); side is V2's shoulder step in metres. A finish eases both back to V1's lock, as V1 does fightBack. zoom (Dom 2026-10-27, 'the camera is still a bit far out ... just add 10%'): the lens, 1.1 = everything 10% larger on screen about the frame centre (vertical field of view 51 deg -> 2 atan(tan 25.5 deg / zoom), src/fight/camera-zoom.ts, scene.ts); 1 = the camera exactly as before; limits 0.5..2. ?zoom=1 reverts on a phone without a deploy, ?zoom=1.1 is the row, any value in the limits works. Presentation only.",
     "lift": 0.67,
     "side": 1.0,
-    "zoom": 1.1
+    "zoom": 1.1,
+    "pitch": {
+      "about": "Zone follow camera pitch (Dom 2026-10-27: a skyline band should show under the HUD on a phone; at the default pitch the true horizon sits at the very top edge of the portrait screen). `default` is the preset a page load uses: 'off' = the camera exactly as it was. A preset is the angle (degrees) the view axis looks down, flatter = more horizon; the eye height follows so the hero keeps his screen position (heroY: the point on him that stays put; minEyeY: the eye never drops below). ?pitch=low (or flat, soft, or any number inside limits) switches the zone camera on a phone with no deploy; ?pitch=off is the default. Zone only: the single fight (?postkill=v1) never reads this. A finish eases back to the default frame, so the finishers and their tour are untouched; the multi-boss widen is applied first and the pitch follows it. Presentation only.",
+      "default": "off",
+      "presets": { "flat": 14, "low": 18, "soft": 22 },
+      "limits": [8, 30],
+      "heroY": 1,
+      "minEyeY": 1.2,
+      "off": ["off", "default"],
+      "query": "pitch"
+    }
   },
   "ai": "novice",
   "profile": "pitborn",
