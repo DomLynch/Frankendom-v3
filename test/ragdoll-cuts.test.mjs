@@ -28,7 +28,11 @@ const frozen = async () => {
 
 test('the cut rows name the package\'s units, parts and gear slots, and the validator accepts them', async () => {
   const { physics, rd, row } = await standing(), C = ROWS.cut, units = rd.row.severable.map((s) => s.id), slots = new Set(rd.row.severable.flatMap((s) => s.gear_slots));
-  assert.deepEqual([...units].sort(), [...C.tap.order].sort(), 'the tap order lists each of the six units once');
+  // M9a (physics 9056ef7): the package also lists two VISUAL-ONLY units (head_split, belly_open: no bone, no piece to tap or to put a button on). They are the finishers' (finisherCuts), never the tap's or the cue's.
+  const visual = rd.row.severable.filter((s) => s.visual_only).map((s) => s.id), real = units.filter((u) => !visual.includes(u));
+  assert.deepEqual(visual.sort(), ['belly_open', 'head_split']);
+  assert.deepEqual([...real].sort(), [...C.tap.order].sort(), 'the tap order lists each of the six real units once');
+  assert.ok(!C.tap.order.some((u) => visual.includes(u)) && !C.cue.units.some((u) => visual.includes(u)), 'no tap or cue on a visual unit');
   for (const [location, unit] of Object.entries(C.onKill)) { assert.ok(['head', 'torso', 'legs'].includes(location), `${location} is a sim hit location`); assert.ok(units.includes(unit), `onKill.${location} = ${unit} is a unit`); }
   assert.ok(C.kill.impulse > 0 && C.kill.lift >= 0);
   assert.ok(units.includes(C.sever));
@@ -84,6 +88,10 @@ test('the cut event lists the ids on the slots that went with the piece (none fo
   assert.deepEqual(cutEvent({ gear: {} }, result, 'tap'), { type: 'cut', unit: 'arm_left', gear: [], source: 'tap' });
   assert.deepEqual(cutEvent({ gear: { arms: ['vambrace'], hands: ['gauntlet', 'ring'], head: ['helm'] } }, result, 'tap').gear, ['vambrace', 'gauntlet', 'ring']);
   assert.deepEqual(cutEvent(ROWS.opponents[0], { unit: 'head', gear_slots: ['head'] }, 'kill'), { type: 'cut', unit: 'head', gear: [], source: 'kill' });
+  // M9a: a visual unit (head_split, belly_open) carries no gear slot (physics 9056ef7), so its event never repeats the head's or the chest's gear that the head / waist cut already lists
+  const worn = { gear: { head: ['helm'], chest: ['cuirass'] } };
+  assert.deepEqual(cutEvent(worn, { unit: 'head_split', gear_slots: [] }, 'finisher'), { type: 'cut', unit: 'head_split', gear: [], source: 'finisher' });
+  assert.deepEqual(cutEvent(worn, { unit: 'belly_open', gear_slots: [] }, 'finisher'), { type: 'cut', unit: 'belly_open', gear: [], source: 'finisher' });
 });
 
 // a rig as a strip: hips > spine > (arm, head), the tap's bones
@@ -200,6 +208,9 @@ test('the cut GLB\'s cap_* meshes ship visible and hideCutCaps hides every one a
   assert.equal(hideCutCaps(root), 3);
   for (const n of names) assert.equal(root.getObjectByName(n).visible, !n.startsWith('cap_'), n);
   assert.equal(hideCutCaps(root), 0);
+  const group = new THREE.Group(); group.name = 'cap_belly_opening'; for (const n of ['cap_belly_opening_1', 'cap_belly_opening_2']) { const m = new THREE.Mesh(); m.name = n; group.add(m); }
+  assert.equal(hideCutCaps(group), 1);   // the group alone: showing it (cutRig.update) shows both primitives
+  assert.deepEqual(group.children.map((c) => c.visible), [true, true]);
   const b = readFileSync(new URL('../src/assets/minotaur-106.glb', import.meta.url)), gl = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString());
-  assert.equal(gl.nodes.filter((n) => n.name?.startsWith('cap_')).length, 12);   // the file carries them (glTF nodes are visible by default): hiding is the loader's job
+  assert.equal(gl.nodes.filter((n) => n.name?.startsWith('cap_')).length, 16);   // the file carries them (12 stump caps + the head_split and belly_open faces, M9a) (glTF nodes are visible by default): hiding is the loader's job
 });

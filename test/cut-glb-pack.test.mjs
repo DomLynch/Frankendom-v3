@@ -23,8 +23,12 @@ test('size: the shipped body is about half the source', () => {
 
 test('structure: pieces, caps, skin joints, nodes and the 26 clips survive', () => {
   assert.deepEqual(B.d.meshes.map((m) => m.name), A.d.meshes.map((m) => m.name));
-  assert.equal(B.d.meshes.length, 19);
-  assert.ok(B.d.meshes.slice(0, 7).every((m) => m.name.startsWith('piece_')) && B.d.meshes.slice(7).every((m) => m.name.startsWith('cap_')));
+  // M9a: the file is made with --head-split --belly-open: 8 pieces (the head is its two halves) and 16 caps (3 more than the plain 12 + the neck caps per half), each named in the manifest
+  assert.equal(B.d.meshes.length, 24);
+  assert.ok(B.d.meshes.slice(0, 8).every((m) => m.name.startsWith('piece_')) && B.d.meshes.slice(8).every((m) => m.name.startsWith('cap_')));
+  const manifest = JSON.parse(readFileSync(new URL('../src/assets/minotaur-106.cut.manifest.json', import.meta.url), 'utf8'));
+  assert.deepEqual(B.d.meshes.map((m) => m.name).sort(), [...manifest.regions.map((r) => r.mesh), ...manifest.caps.map((c) => c.mesh)].sort(), 'every piece and cap the manifest names is in the packed file, and no other mesh');
+  for (const name of ['piece_head_left', 'piece_head_right', 'cap_split_head_left', 'cap_split_head_right', 'cap_belly_opening']) assert.ok(B.d.meshes.some((m) => m.name === name), name);
   assert.deepEqual(B.d.nodes.map((n) => n.name), A.d.nodes.map((n) => n.name));
   assert.deepEqual(B.d.nodes.map((n) => [n.mesh, n.skin, n.children]), A.d.nodes.map((n) => [n.mesh, n.skin, n.children]));
   assert.deepEqual(B.d.skins[0].joints, A.d.skins[0].joints);
