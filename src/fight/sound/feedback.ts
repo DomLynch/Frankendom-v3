@@ -232,7 +232,14 @@ export function createFeedback(host?: FeedbackHost) {
       if (events.some(e => e.type === 'ActionStarted' && e.action === 'draw' && e.actor === 0)) random = seeded((host?.seed ?? BASE_SEED) + duel++ * 1013);   // a fresh duel, a fresh but repeatable roll
       const time = now();
       // The zone's rows can silence the opening bell or let it ring once per visit (data/sound.json zone.cues.bell).
-      if (frame) { arenaAudio ??= createArenaAudio(context, arenaOutput, now); arenaAudio.update(events, frame, pendingDraw === frame.match && (zoneGate?.allow('bell') ?? true)); pendingDraw = undefined; }
+      // A 'once' bell's token is spent only when the arena really rang it (a bell not yet built, or full voices, spends nothing).
+      if (frame) {
+        arenaAudio ??= createArenaAudio(context, arenaOutput, now);
+        const wantBell = pendingDraw === frame.match && (zoneGate?.peek('bell') ?? true), rung = arenaAudio.bells();
+        arenaAudio.update(events, frame, wantBell);
+        if (wantBell && arenaAudio.bells() > rung) zoneGate?.spend('bell');
+        pendingDraw = undefined;
+      }
       // Death ends the duel: the impact, voice, delayed body and crowd share the finishing level.
       // Empty post-death ticks keep it; fresh combat or quiet/mute returns to the ordinary level.
       if (events.length) balance!.gain.setValueAtTime(events.some(e => e.type === 'Killed') ? level.finish : level.combat, time);

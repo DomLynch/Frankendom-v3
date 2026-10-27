@@ -27,6 +27,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
   type Voice = { source: AudioBufferSourceNode; until: number };
   const voices = new Set<Voice>(), last: Partial<Record<ArenaCue, number>> = {};
   let buffer: AudioBuffer | null = null, match: number | undefined, random = seeded(1), bell: AudioBuffer | undefined;
+  let bells = 0;   // bells that really sounded
   let bellPlayed = false, sleeping = true, bedAt = 0, accentAt = 0, reactionAt = 0, gruntAt = 0, contactAt = 0;
   let wall: { source: AudioBufferSourceNode; envelope: GainNode; until: number } | undefined;   // the wall-hugger jeer bed, one at a time
   const ready = loadArena(context).then(value => { buffer = value; return !!value; });
@@ -80,6 +81,7 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
   }
   return {
     ready: () => ready,
+    bells: () => bells,
     stop,
     update(events: CombatEvent[], frame: ArenaFrame, draw: boolean) {
       const time = now();
@@ -93,7 +95,8 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
       const moments = ROARS.length ? momentsOf(events) : undefined;   // the crowd roar rows (crowd-defs.json): none ship, so nothing here runs
       if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); if (moments) for (const r of ROARS) if (r.on === 'kill' && moments.has('kill')) play(r.cue, r.gain, 0, r.outlive === true); return; }
       wallJeer(frame.loiter ?? 0, time);
-      if (!bellPlayed && draw) { bellPlayed = true; play('bell', .9); }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
+      // A bell that returns no duration made no sound (no bell built yet, voices full): it is not counted, so the zone's 'once' token is not spent on it (feedback.ts).
+      if (!bellPlayed && draw) { bellPlayed = true; if (play('bell', .9)) bells++; }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
       if (sleeping) { sleeping = false; bedAt = time; accentAt = time + 12 + random() * 10; }
       if (time >= bedAt) { const duration = play('bed', .15); bedAt = time + (duration ? duration - .9 : .1); }

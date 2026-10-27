@@ -160,7 +160,7 @@ export function validateFile(name, json) {
 // data/sound.json `zone` (src/audio/zone-cues.ts): the gateable cue ids (all required, none unknown), each 'on' | 'off' | 'once', and a toast time in 0.5..30 s.
 export const ZONE_CUE_IDS = ['bell', 'draw', 'crowd_cheer', 'crowd_gasp', 'kill', 'death_voice'];
 export const ZONE_CUE_MODES = ['on', 'off', 'once'];
-function checkSoundZone(z) {
+export function checkSoundZone(z) {
   const e = [], at = (p, m) => e.push(`sound.zone.${p}: ${m}`);
   if (z === null || typeof z !== 'object' || Array.isArray(z)) return ['sound.zone: must be an object'];
   for (const k of Object.keys(z)) if (!['about', 'cues', 'toastSeconds'].includes(k)) at(k, 'unknown key');
