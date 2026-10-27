@@ -37,9 +37,13 @@ export const SCHEMA = {
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
-  'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
+  'feel-kick': { keys: ['about', 'on', 'foe', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['stagger', 'knockdown'], cue: ['on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
     finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
+  // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
+  'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
+    maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
+      hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
@@ -101,6 +105,7 @@ export function validateFile(name, json) {
     for (const [k, v] of Object.entries(json.massKg ?? {})) pos(`massKg.${k}`, v);
     if (!json.massKg || !('default' in json.massKg)) errors.push(`${name}.massKg.default: a default mass is required`);
     for (const k of ['massExp', 'knockdownAt', 'getUpS']) pos(k, json[k]);
+    if (typeof json.foe !== 'string' || !json.foe.trim()) errors.push(`${name}.foe: must be a non-empty opponent id`);
     for (const k of ['open', 'guarding', 'midSwing', 'recovering']) pos(`stance.${k}`, json.stance?.[k]);
     pos('push.impulsePerForce', json.push?.impulsePerForce); pos('push.pushS', json.push?.pushS);
     for (const o of ['stagger', 'knockdown']) {
@@ -133,8 +138,51 @@ export function validateFile(name, json) {
     if (!Number.isInteger(c.max) || c.max < 0) errors.push(`${name}.corpse.max: must be an integer >= 0`);
     if (Number.isFinite(c.keepSeconds) && Number.isFinite(c.pieceSeconds) && c.pieceSeconds > c.keepSeconds) errors.push(`${name}.corpse.pieceSeconds: must be <= keepSeconds`);
   }
+  if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   banned(json, name, errors);
   return errors;
+}
+
+// data/feel-clash.json values (src/fight/feel-clash.ts): every number finite and in range, every weight a positive kg, every fraction in [0, 1]. A bad row would reach the page as NaN in a motor or an impulse.
+export function checkFeelClash(j) {
+  const e = [], at = (p, m) => e.push(`feel-clash.${p}: ${m}`), fin = (v) => Number.isFinite(v);
+  const range = (p, v, lo, hi) => { if (!fin(v) || v < lo || v > hi) at(p, `must be a finite number in [${lo}, ${hi}]`); };
+  const obj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  if (typeof j.on !== 'boolean') at('on', 'must be a boolean');
+  for (const k of ['query', 'value']) if (typeof j[k] !== 'string' || !/^[a-z]+$/.test(j[k])) at(k, 'must be a lowercase word');
+  range('tickHz', j.tickHz, 1, 240); range('refKg', j.refKg, 0.01, 100);
+  if (!obj(j.weaponKg) || !Object.keys(j.weaponKg).length) at('weaponKg', 'must be an object of weapon id -> kg');
+  else for (const [id, kg] of Object.entries(j.weaponKg)) range(`weaponKg.${id}`, kg, 0.01, 100);
+  range('swing.light', j.swing?.light, 0.1, 10); range('swing.heavy', j.swing?.heavy, 0.1, 10); range('swing.charged', j.swing?.charged, 0.1, 10);
+  range('impulse.base', j.impulse?.base, 0, 1000); range('impulse.lift', j.impulse?.lift, -50, 50); range('impulse.min', j.impulse?.min, 0, 1000); range('impulse.max', j.impulse?.max, 0, 1000);
+  if (fin(j.impulse?.min) && fin(j.impulse?.max) && j.impulse.min > j.impulse.max) at('impulse.min', 'must be <= max');
+  for (const kind of ['blocked', 'perfect', 'parried', 'broken']) {
+    const k = j.kinds?.[kind];
+    if (!obj(k)) { at(`kinds.${kind}`, 'missing'); continue; }
+    for (const key of Object.keys(k)) if (!['recoil', 'absorbed', 'dip', 'stagger'].includes(key)) at(`kinds.${kind}.${key}`, 'unknown key');
+    range(`kinds.${kind}.recoil`, k.recoil, 0, 10); range(`kinds.${kind}.absorbed`, k.absorbed, 0, 1); range(`kinds.${kind}.dip`, k.dip, 0.01, 1);
+    if (typeof k.stagger !== 'boolean') at(`kinds.${kind}.stagger`, 'must be a boolean');
+    range(`pushback.metres.${kind}`, j.pushback?.metres?.[kind], 0, 5);
+  }
+  for (const side of [['attacker', ['weapon', 'spine']], ['defender', ['guard', 'spine']]]) for (const g of side[1]) {
+    const list = j.parts?.[side[0]]?.[g];
+    if (!Array.isArray(list) || !list.length || list.some((p) => typeof p !== 'string' || !p)) at(`parts.${side[0]}.${g}`, 'must be a non-empty list of part ids');
+  }
+  for (const k of ['arm', 'forearm', 'hand', 'spine']) range(`dipParts.${k}`, j.dipParts?.[k], 0, 1);
+  range('timing.easeInS', j.timing?.easeInS, 0, 5); range('timing.holdS', j.timing?.holdS, 0, 5); range('timing.upS', j.timing?.upS, 0.001, 5); range('timing.lightScale', j.timing?.lightScale, 0.1, 1);
+  if (typeof j.pushback?.heavyOnly !== 'boolean') at('pushback.heavyOnly', 'must be a boolean');
+  if (typeof j.event?.type !== 'string' || !j.event.type || typeof j.event?.log !== 'string' || !j.event.log) at('event', 'type and log must be non-empty strings');
+  for (const k of ['weaponArmRad', 'guardArmRad', 'spineRad']) if (!Array.isArray(j.hero?.[k]) || j.hero[k].length !== 3 || j.hero[k].some((v) => !fin(v) || Math.abs(v) > 1.5)) at(`hero.${k}`, 'must be [x, y, z] radians, each within +-1.5');
+  range('hero.maxStrength', j.hero?.maxStrength, 1, 10);
+  for (const k of ['weaponArm', 'guardArm', 'spine']) if (typeof j.hero?.bones?.[k] !== 'string' || !j.hero.bones[k]) at(`hero.bones.${k}`, 'must be a bone name');
+  const s = j.spark ?? {};
+  if (typeof s.on !== 'boolean') at('spark.on', 'must be a boolean');
+  range('spark.at', s.at, 0, 1); range('spark.liftM', s.liftM, -2, 2); range('spark.count', s.count, 0, 200); range('spark.countHeavy', s.countHeavy, 0, 200); range('spark.max', s.max, 1, 500);
+  range('spark.speedMps', s.speedMps, 0, 50); range('spark.lifeS', s.lifeS, 0.01, 5); range('spark.sizePx', s.sizePx, 1, 64);
+  if (!/^#[0-9a-fA-F]{6}$/.test(s.color ?? '')) at('spark.color', 'must be #rrggbb');
+  if (typeof s.handBones?.hero !== 'string' || typeof s.handBones?.foe !== 'string') at('spark.handBones', 'hero and foe bone names are required');
+  range('perf.frameBudgetMs', j.perf?.frameBudgetMs, 0, 100);
+  return e;
 }
 
 // ---- zone rows (data/zones/*.json; read by src/zone/zone-rows.ts). Closed key sets and a closed range for every number. ----------------------

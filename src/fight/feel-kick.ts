@@ -4,7 +4,7 @@
 // own events and rows, data/feel-sim.json, never from Jolt; when they disagree the sim wins): the rows here are the presentation's mirror, and nothing here writes the sim.
 // The core (kickResult, stanceOf, massOf, windowAt, kindOf) is pure: no three, no DOM, no clock.
 import FEEL from '../../data/feel-kick.json' with { type: 'json' };
-import { registerFeel, type FeelCtx, type FeelHooks } from './feel.ts';
+import type { FeelCtx, FeelHooks } from './feel.ts';   // TYPES only: the feel chunk is its own bundle (feel-chunk.ts) and has its own copy of anything it imports
 import type { CombatEvent } from './duel.ts';
 import type { Presentation } from './rules-eval.ts';
 
@@ -103,7 +103,7 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
     react,
     /** The registry's hit hook: react, then give the ragdoll the push (rd.knockdown('push') or rd.stagger) in its own frame (the Hit's heading turned by the group's yaw). */
     hit(e: CombatEvent, ctx: FeelCtx): Presentation | null {
-      const p = react(e, { emit: ctx.emit, foeId: FOE });
+      const p = react(e, { emit: ctx.emit, foeId: rows.foe });
       if (!p || e.heading === undefined) return p;
       const yaw = e.heading - ctx.group.rotation.y, mag = p.scale * rows.push.refImpulse, push = { part: rows.push.part, impulse: [Math.sin(yaw) * mag, rows.push.lift[p.action as Outcome], Math.cos(yaw) * mag] as [number, number, number] };
       if (p.action === 'knockdown') { ctx.rd.knockdown('push', push); down = true; getUp = -1; } else ctx.rd.stagger(push);
@@ -131,13 +131,12 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
     kill() { since = -1; win = null; debug.windowOpen = false; down = false; getUp = -1; cue(false); },
   };
 }
-const FOE = 'pitborn';   // the one opponent with a ragdoll (data/physics.json opponents); the hook's ctx does not carry his id
 
 // The registry hooks (feel.ts): one controller for the page. The hit hook drives the ragdoll itself (knockdown by push, or a stagger) BEFORE ragdoll.ts's own V1 stagger, which the package ignores
 // once he is down; the frame hook makes the bones follow the ragdoll while he lies (ctx.blendToward, feel.ts PR #100) and eases him back to the clip.
 const controller = createFeelKick();
-registerFeel('kick', {
+export const feelHooks: FeelHooks = {
   hit: (e: CombatEvent, ctx: FeelCtx) => { controller.hit(e, ctx); },
   frame: (dt: number, events: readonly CombatEvent[], ctx: FeelCtx) => controller.frame(dt, events, ctx),
   kill: () => controller.kill(),
-} satisfies FeelHooks);
+};

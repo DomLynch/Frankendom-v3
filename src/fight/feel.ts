@@ -7,6 +7,7 @@
 // feel:guard_drop {side}, feel:weapon_drop {}, feel:kick_result {outcome, finisherWindowS}, feel:clash {kind, pushbackM}.
 import type * as THREE from 'three';
 import type { CombatEvent } from './duel.ts';
+import { FEEL_NAMES, loadFeelChunk } from './feel-modules.ts';
 import type { Ragdoll } from './ragdoll.ts';
 
 /** What a hook may use: the foe's ragdoll (the package's API: stagger, applyImpulse, ...), his bones by the package's part ids, his group, his mode, and the sim-event emitter. */
@@ -27,8 +28,15 @@ const registry = new Map<string, FeelHooks>();
 export function registerFeel(name: string, hooks: FeelHooks): void { registry.set(name, hooks); }
 /** The names in `?feel=a,b` (empty when the query is absent). */
 export const feelNames = (search: string): string[] => (new URLSearchParams(search).get('feel') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-/** The registered hooks the page asked for, in the order it listed them; a name nothing registered is ignored. */
-export const activeFeels = (search: string): FeelHooks[] => feelNames(search).flatMap((n) => { const h = registry.get(n); return h ? [h] : []; });
+/** The hooks the page asked for (?feel=a,b). Already-registered names are in the returned list at once; a name of the feel chunk (feel-modules.ts FEEL_NAMES) is fetched on demand
+ *  and pushed onto the SAME list when it arrives (ragdoll.ts iterates it live, so the module starts working a moment after the page does); a name nothing knows is ignored. A page
+ *  with no ?feel= never touches the chunk. */
+export function activeFeels(search: string): FeelHooks[] {
+  const out: FeelHooks[] = [], pending: string[] = [];
+  for (const n of feelNames(search)) { const h = registry.get(n); if (h) out.push(h); else if (FEEL_NAMES.includes(n)) pending.push(n); }
+  if (pending.length) void loadFeelChunk().then((mods) => { for (const n of pending) { const h = mods[n]; if (h) { registerFeel(n, h); out.push(h); } } }).catch(() => { /* the chunk is optional: no feel, no harm */ });
+  return out;
+}
 
 /** How many of the latest events `globalThis.__feelEvents` keeps. */
 export const FEEL_LOG_MAX = 200;

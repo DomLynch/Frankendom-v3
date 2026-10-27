@@ -20,6 +20,23 @@ test('activeFeels returns the registered hooks the page asked for, in its order,
   assert.deepEqual(activeFeels('?feel=t-a'), [c]);
 });
 
+test('a module of the feel chunk loads on demand: nothing without ?feel=, the hooks arrive on the SAME list a moment after the page asks', async () => {
+  assert.deepEqual(activeFeels(''), []);
+  const live = activeFeels('?feel=clash');
+  assert.ok(Array.isArray(live));
+  for (let i = 0; i < 50 && !live.length; i++) await new Promise((r) => setTimeout(r, 20));
+  assert.equal(live.length, 1, 'the clash hooks were pushed onto the list the page already holds');
+  assert.equal(typeof live[0].frame, 'function');
+  assert.deepEqual(activeFeels('?feel=clash'), live, 'once loaded it is registered: a second ask has it at once');
+});
+
+test('feel-modules.ts and feel-chunk.ts agree: every FEEL_NAMES entry is exported by the chunk, main.js never imports a module statically', async () => {
+  const { FEEL_NAMES } = await import('../src/fight/feel-modules.ts');
+  const chunkSrc = readFileSync(new URL('../src/fight/feel-chunk.ts', import.meta.url), 'utf8');
+  for (const n of FEEL_NAMES) assert.match(chunkSrc, new RegExp(`as ${n} }`), `feel-chunk.ts exports ${n}`);
+  for (const f of ['ragdoll.ts', 'feel.ts', 'feel-modules.ts']) assert.doesNotMatch(readFileSync(new URL(`../src/fight/${f}`, import.meta.url), 'utf8'), /^import ['"]\.\/feel-(clash|hitreact|limbs|kick)\.ts/m, `${f} has no static module import`);
+});
+
 test('feel events reach the named subscriber and the "*" one, are readable on globalThis.__feelEvents, and stop after unsubscribe', () => {
   globalThis.__feelEvents = [];
   const seen = [], off1 = feel.on('feel:limp', (n, p) => seen.push(['limp', n, p])), off2 = feel.on('*', (n) => seen.push(['*', n]));

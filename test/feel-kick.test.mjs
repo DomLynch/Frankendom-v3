@@ -6,8 +6,9 @@ import { readFileSync } from 'node:fs';
 import { loadRules } from '@frankendom/physics';
 import { validateFile } from '../src/sim/validate.js';
 import { activeFeels } from '../src/fight/feel.ts';
-import { createFeelKick, kickResult, kindOf, massOf, presentationOf, stanceOf, windowAt } from '../src/fight/feel-kick.ts';
-import '../src/fight/feel-modules.ts';
+import { createFeelKick, feelHooks, kickResult, kindOf, massOf, presentationOf, stanceOf, windowAt } from '../src/fight/feel-kick.ts';
+import { FEEL_NAMES } from '../src/fight/feel-modules.ts';
+import * as chunk from '../src/fight/feel-chunk.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ROWS = read('../data/feel-kick.json'), PHYSICS = read('../data/physics.json');
@@ -35,8 +36,9 @@ test('the rows validate, and a bad row is refused (finite, ordered, #rrggbb, a m
   assert.match(bad((r) => { r.event.log = 'a b'; }), /event\.log/);
 });
 
-test('the module registers as ?feel=kick (feel-modules.ts), alone or beside others; nothing without the query', () => {
-  assert.equal(activeFeels('?feel=kick').length, 1); assert.equal(activeFeels('?feel=hitreact,kick').length >= 1, true);
+test('the module is in the feel chunk as `kick` and its name is in FEEL_NAMES; nothing is active without the query', () => {
+  assert.ok(FEEL_NAMES.includes('kick')); assert.equal(typeof chunk.kick.hit, 'function'); assert.equal(typeof chunk.kick.frame, 'function'); assert.equal(typeof chunk.kick.kill, 'function');
+  assert.equal(chunk.kick, feelHooks);
   assert.equal(activeFeels('').length, 0); assert.equal(activeFeels('?feel=v1').length, 0);
 });
 
