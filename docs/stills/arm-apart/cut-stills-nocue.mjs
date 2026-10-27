@@ -79,7 +79,7 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   await run(120);
   if (!v1) await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 60000 });
-  const shoot = async (name) => { await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };
+  const shoot = async (name) => { if (process.env.CAPS) { const d = await page.evaluate((t) => globalThis.__ragdoll.capsDump?.(t), process.env.TINT); console.log(`${tag}: ${name} cutRig.caps ${JSON.stringify(d?.filter((c) => c.visible))} (hidden: ${d?.filter((c) => !c.visible).length})`); } await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };
   const read = () => page.evaluate(() => { const p = globalThis.__v3Fight, [h, f] = p.duel.fighters; return { hero: h.phase, foeHealth: f.health, foeDead: p.finish?.victim === 1, finish: p.finish && { ...p.finish } }; });
   const cost = () => page.evaluate(() => globalThis.__ragdoll ? { ...globalThis.__ragdoll, screenOf: undefined } : null);
   for (let i = 0; i < 240 && /sheathed|draw/.test((await read()).hero); i++) await run(1);

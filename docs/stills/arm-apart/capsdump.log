@@ -1,0 +1,5 @@
+cutRig.caps at tick 1 and 40 after the arm_right tap (ASIDE=3 ORBIT=100 ?zoom=0.8, ccbe6d0 + capsdump.patch, Mac Metal). Dump = cutRig.caps entries with visible=true; the other 14 are hidden.
+before the tap (tap--1): cutRig.caps [] (hidden: 16)
+tap-1:  [{"name":"cap_shoulder_right_arm","visible":true,"scale":1,"material":"cap_flesh","color":"c45955"},{"name":"cap_shoulder_right_torso","visible":true,"scale":1,"material":"cap_flesh","color":"c45955"}] (hidden: 14)
+tap-40: [{"name":"cap_shoulder_right_arm","visible":true,"scale":1,"material":"cap_flesh","color":"c45955"},{"name":"cap_shoulder_right_torso","visible":true,"scale":1,"material":"cap_flesh","color":"c45955"}] (hidden: 14)
+Tinted run (TINT=#00ff00 on those two names): same list with color 00ff00; caps-green-tap-40.jpg shows the stump's cap green in place of the red. Physics differs per run: the arm landed off the left edge in that run, so the arm's own cap is in the dump but not in that green frame.
