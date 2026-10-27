@@ -5,6 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT=${OUT:-$PWD/perf-out}
+command -v jpegtran >/dev/null || { apt-get update -qq >/dev/null 2>&1; apt-get install -y -qq libjpeg-turbo-progs >/dev/null 2>&1; }   # the build packs textures with jpegtran (scripts/lossless-jpeg.mjs)
 [ -d node_modules/playwright ] || npm i --no-save --no-audit --no-fund playwright@1.62.1 >/dev/null 2>&1
 npx playwright install --with-deps chromium >/dev/null 2>&1 || npx playwright install chromium >/dev/null 2>&1
 [ -d node_modules/esbuild ] || npm ci --no-audit --no-fund >/dev/null 2>&1
