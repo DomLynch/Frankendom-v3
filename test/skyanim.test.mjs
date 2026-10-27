@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
 import { createSkyline, SKYLINE } from '../src/fight/skyline.ts';
 import { plateFile, plateFlat } from '../src/fight/skyplate.ts';
-import { animOn, spinShift, bandCentre, spriteFrame, createSkyAnim, SKY_ANIM, seededRandom, sparkleEnvelope, createSparkler, breathWindow, sineOffsetPx } from '../src/fight/skyanim.ts';
+import { animOn, spinShift, bandCentre, spriteFrame, createSkyAnim, SKY_ANIM, seededRandom, sparkleEnvelope, createSparkler, breathWindow, sineOffsetPx, createBlinker, createDrooler, planetTurn } from '../src/fight/skyanim.ts';
 
 const STAGE = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8'));
 const bad = (mut) => { const s = structuredClone(STAGE); mut(s.skyline.plate.anim); return validateFile('stage', s); };
@@ -29,8 +29,8 @@ test('the shipped anim row validates; bad rows are refused', () => {
 });
 
 test('the designer layer set: every file the rows name ships, the plate is the clean 4:1 picture, registration matches the manifest, the sprite rects are the 8x3 sheet', () => {
-  assert.match(P.file, /^01_clean_plate\.webp$/);
-  for (const f of [P.file, P.flatFile, A.planet.file, A.globe.file, A.globe.sprite.file, A.glisten.file]) assert.ok(existsSync(asset(f)), f);
+  assert.match(P.file, /^13_plate_fixed\.webp$/);
+  for (const f of [P.file, P.flatFile, A.planet.file, A.globe.file, A.globe.sprite.file, A.glisten.file, A.planet.sphere.file, A.planet.sphere.shading.file, A.eyes.blink.file, A.eyes.wink.file, A.drool.shimmer.file, A.drool.drop.file, A.drool.drop.stretchedFile]) assert.ok(existsSync(asset(f)), f);
   const w = readFileSync(asset(P.file)); assert.equal(w.toString('latin1', 8, 12), 'WEBP');
   const kind = w.toString('latin1', 12, 16), width = kind === 'VP8X' ? 1 + (w[24] | (w[25] << 8) | (w[26] << 16)) : w.readUInt16LE(26) & 0x3fff, height = kind === 'VP8X' ? 1 + (w[27] | (w[28] << 8) | (w[29] << 16)) : w.readUInt16LE(28) & 0x3fff;
   assert.equal(width, 4096); assert.equal(height, 1024); assert.equal(P.cropAspect, width / height);
@@ -162,4 +162,67 @@ test('the skyline plate shows once its layers are in, carries the patched materi
     sky.update(new THREE.Vector3(), 0.016); assert.ok(sky.opacity > 0);
   }
   sky.dispose();
+});
+
+test('pack 2 rows: eyes, drool and the planet sphere validate, each effect has its own on, bad rows are refused', () => {
+  for (const k of ['eyes', 'drool']) assert.equal(typeof A[k].on, 'boolean', k);
+  for (const x of [A.eyes.blink, A.eyes.wink, A.drool.shimmer, A.drool.drop, A.planet.sphere]) assert.equal(typeof x.on, 'boolean');
+  assert.deepEqual(A.eyes.rectPx, { x: 2246, y: 606, w: 227, h: 81 }, 'the manifest rect');
+  assert.deepEqual(A.drool.drop.spawnPx, { x: 2407, y: 745 }); assert.deepEqual(A.drool.drop.anchorPx, { x: 12, y: 0 });
+  assert.ok(A.eyes.blink.holdMinSeconds >= 0.09 && A.eyes.blink.holdMaxSeconds <= 0.14 && A.eyes.wink.holdMinSeconds >= 0.15 && A.eyes.wink.holdMaxSeconds <= 0.24 && A.eyes.intervalMinSeconds >= 4 && A.eyes.intervalMaxSeconds <= 9);
+  const cases = [(a) => { delete a.eyes; }, (a) => { delete a.drool; }, (a) => { delete a.planet.sphere; }, (a) => { a.eyes.extra = 1; }, (a) => { a.eyes.intervalMaxSeconds = 1; }, (a) => { a.eyes.rectPx.w = 0; }, (a) => { a.eyes.blink.file = 'x.gif'; },
+    (a) => { a.eyes.blink.holdMaxSeconds = 0.03; }, (a) => { a.eyes.wink.everyEvents = 1; }, (a) => { a.eyes.wink.everyJitter = 3; }, (a) => { a.eyes.featherPx = 99; }, (a) => { a.eyes.seed = 1.5; }, (a) => { delete a.eyes.wink.everyEvents; },
+    (a) => { a.drool.shimmer.color = 'pink'; }, (a) => { a.drool.shimmer.periodSeconds = 0; }, (a) => { delete a.drool.drop; }, (a) => { a.drool.drop.spawnMaxSeconds = 1; }, (a) => { a.drool.drop.fallDistancePx = 0; }, (a) => { a.drool.drop.fadeOutPx = 9999; },
+    (a) => { a.drool.drop.startSpeedPx = 0; a.drool.drop.accelPx = 0; }, (a) => { a.drool.drop.strength = 2; }, (a) => { a.drool.drop.spawnPx.x = -1; }, (a) => { a.drool.drop.stretchedFile = '../x.png'; }, (a) => { a.planet.sphere.secondsPerTurn = 0; },
+    (a) => { a.planet.sphere.loadScale = 0; }, (a) => { a.planet.sphere.shading.discFraction = 2; }, (a) => { delete a.planet.sphere.shading; }, (a) => { a.planet.sphere.on = 1; },
+    (a) => { delete a.eyes.trim; }, (a) => { a.eyes.trim.ellipses.pop(); }, (a) => { a.eyes.trim.ellipses[0].rx = 0; }, (a) => { a.eyes.trim.featherFraction = 0; }, (a) => { a.eyes.trim.on = 'yes'; },
+    (a) => { a.sparkle.armWeight = 9; }, (a) => { delete a.sparkle.coreSize; }, (a) => { a.sparkle.armThickness = 0; }];
+  assert.ok(A.sparkle.anchors.find((x) => x.name === 'crown-top').scale <= 0.7, 'the crown-top glint is short (no long spike to the HUD)');
+  assert.doesNotMatch(readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8'), /\* 0\.85 \*|ss \* 0\.12|ss \* 0\.1\)/, 'the glint shape is rows, not literals');
+  for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad pack-2 row #${i} is refused`);
+});
+
+test('eyes: seeded and repeatable, gaps 4-9 s, holds in the rows, a wink about every 4th event, never two winks in a row', () => {
+  const E = A.eyes, run = () => {
+    const b = createBlinker(E), ev = []; let was = 0;
+    for (let t = 0; t < 1200; t += 0.005) { const s = b.at(t); if (s.kind && !was) ev.push({ kind: s.kind, start: t, hold: 0, amt: 0 }); if (s.kind) { const e = ev[ev.length - 1]; e.hold = t - e.start; e.amt = Math.max(e.amt, s.amount); } was = s.kind; }
+    return ev;
+  };
+  const a = run(), b = run(); assert.deepEqual(a, b, 'the same every visit');
+  assert.ok(a.length > 120, `events keep coming (${a.length})`); assert.ok(a[0].start >= E.firstDelaySeconds - 1e-9);
+  const winks = a.filter((e) => e.kind === 2); assert.ok(winks.length > 15 && a.length / winks.length > 2.5 && a.length / winks.length < 6, `a wink about every 4th (1 in ${(a.length / winks.length).toFixed(1)})`);
+  for (let i = 1; i < a.length; i++) { assert.ok(!(a[i].kind === 2 && a[i - 1].kind === 2), 'never two winks in a row'); const gap = a[i].start - a[i - 1].start - a[i - 1].hold; assert.ok(gap >= E.intervalMinSeconds - 0.02 && gap <= E.intervalMaxSeconds + 0.02, `gap ${gap}`); }
+  for (const e of a) { const h = e.kind === 1 ? E.blink : E.wink; assert.ok(e.hold >= h.holdMinSeconds - 0.01 && e.hold <= h.holdMaxSeconds + 0.01, `hold ${e.hold}`); assert.ok(e.amt > 0.99, 'reaches fully closed'); }
+  const off = structuredClone(E); off.wink.on = false; const bo = createBlinker(off); let sawWink = false; for (let t = 0; t < 600; t += 0.01) if (bo.at(t).kind === 2) sawWink = true; assert.equal(sawWink, false, 'wink.on false = no winks');
+});
+
+test('drool: the droplet waits 6-10 s, falls its distance, goes plain then stretched, fades in and out, and is gone between drops', () => {
+  const D = A.drool.drop, d = createDrooler(D), starts = [], ends = []; let was = 0, maxY = 0, sawStretch = false, sawPlain = false;
+  for (let t = 0; t < 400; t += 0.01) {
+    const s = d.at(t);
+    if (s.alpha > 0 && !was) starts.push(t); if (s.alpha === 0 && was) ends.push(t);
+    if (s.alpha > 0) { maxY = Math.max(maxY, s.y); if (s.stretch) sawStretch = true; else sawPlain = true; assert.ok(s.alpha <= D.strength + 1e-9); }
+    was = s.alpha > 0 ? 1 : 0;
+  }
+  assert.ok(starts.length > 25, `drops keep falling (${starts.length})`); assert.ok(starts[0] >= D.firstDelaySeconds - 0.02 && starts[0] < D.firstDelaySeconds + 0.5);
+  assert.ok(maxY <= D.fallDistancePx + 1e-9 && maxY > D.fallDistancePx * 0.7, `falls its distance (${maxY})`); assert.ok(sawStretch && sawPlain, 'plain at low speed, stretched at higher');
+  for (let i = 1; i < starts.length; i++) { const gap = starts[i] - ends[i - 1]; assert.ok(gap >= D.spawnMinSeconds - 0.1 && gap <= D.spawnMaxSeconds + 0.1, `spawn gap ${gap}`); }
+  assert.equal(createDrooler(D).at(0).alpha, 0, 'nothing before the first spawn');
+});
+
+test('planet sphere: the turn wraps once per secondsPerTurn, ?skyanim=off holds it still, sphere.on false is the rollback, the shader wraps the surface and keeps the cut-out alpha; eyes and drop stop under off', () => {
+  const S = A.planet.sphere; assert.ok(Math.abs(planetTurn(S.startTurns, S.secondsPerTurn, 0) - S.startTurns) < 1e-9);
+  for (let t = 0; t < 400; t += 3.3) { const x = planetTurn(S.startTurns, S.secondsPerTurn, t); assert.ok(x >= 0 && x < 1); }
+  assert.ok(Math.abs(planetTurn(S.startTurns, S.secondsPerTurn, S.secondsPerTurn) - S.startTurns) < 1e-9, 'one turn per secondsPerTurn');
+  const mk = (search, row) => { const a = createSkyAnim(search, 4096, 1024, row), m = new THREE.MeshBasicMaterial(); a.apply(m); const sh = { uniforms: {}, fragmentShader: '#include <common>\nvoid main(){\n#include <map_fragment>\n}' }; m.onBeforeCompile(sh, null); return { a, sh, u: sh.uniforms }; };
+  const live = mk('', A); assert.match(live.sh.fragmentShader, /uSurfTex/); assert.match(live.sh.fragmentShader, /uShadeTex/); assert.match(live.sh.fragmentShader, /o\.a > 0\.0/, 'the cut-out alpha still decides what shows');
+  const t0 = live.u.uPlanetTurn.value; for (let i = 0; i < 100; i++) live.a.update(0.05); assert.notEqual(live.u.uPlanetTurn.value, t0, 'the planet turns');
+  let eyes = 0; for (let i = 0; i < 2400; i++) { live.a.update(0.05); if (live.u.uEyeAmt.value > 0) eyes++; } assert.ok(eyes > 0, 'the eyes fire within two minutes');
+  const noEyes = structuredClone(A); noEyes.eyes.on = false; const ne = mk('', noEyes); for (let i = 0; i < 2400; i++) { ne.a.update(0.05); assert.equal(ne.u.uEyeAmt.value, 0); }
+  const off = mk('?skyanim=off', A), o0 = off.u.uPlanetTurn.value; for (let i = 0; i < 2400; i++) off.a.update(0.05); assert.equal(off.u.uPlanetTurn.value, o0, '?skyanim=off holds the planet still'); assert.equal(off.u.uEyeAmt.value, 0); assert.equal(off.u.uDropA.value, 0);
+  assert.equal(S.on, false, 'the sphere ships OFF (flatter than the painted cut-out); the code stays behind its row for a better texture');
+  const noSphere = structuredClone(A); noSphere.planet.sphere.on = false; assert.equal(mk('', noSphere).u.uSphereOn.value, 0, 'rollback row: sphere.on false keeps the flat cut-out');
+  const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
+  for (const k of ['secondsPerTurn', 'startTurns', 'discFraction', 'featherPx', 'holdMinSeconds', 'everyEvents', 'spawnMinSeconds', 'fallDistancePx', 'accelPx', 'stretchFromSpeedPx', 'fadeOutPx', 'waves']) assert.match(src, new RegExp(`\\b${k}\\b`), k);
+  assert.match(src, /RepeatWrapping/); assert.match(src, /ClampToEdgeWrapping/);
 });

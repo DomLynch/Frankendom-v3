@@ -6,6 +6,9 @@
 //   globe    the small world: its RGBA cut-out, with a fake spin (the sphere's own pixels re-mapped, mirror-folded so it never seams) and a drifting glint, or (sprite.on) the designer's 24-frame turn sheet
 //   glisten  the designer's greyscale mask drives an additive twinkle (and a slow sweep) on the ring technology; the halo itself never moves
 // Cut-outs and the mask are cropped to their own rect when they land (so the GPU holds a few small textures, not four 4096 x 1024 ones) and are fetched after the plate lands; the plate waits for them (`ready`).
+//   eyes     (pack 2) blink and wink RGBA patches over the face at native size on a seeded schedule, the patch edge feathered so no seam shows
+//   drool    (pack 2) a slow shimmer down the stationary streak (the designer's mask) and a droplet that spawns, falls (plain sprite, then the stretched one at speed) and fades
+//   planet.sphere (pack 2) the planet is a real turning sphere: an equirectangular surface wrapped on the disc, the designer's shading disc fixed on top, the cut-out's alpha still hides the part behind the clouds
 // ?skyanim=off (`query`, `off`), prefers-reduced-motion (`respectReducedMotion`) and a hidden tab stop the MOTION (the composite stays: it is the picture). `on: false` draws no layers (use a flattened plate).
 import * as THREE from 'three';
 import STAGE from '../../data/stage.json' with { type: 'json' };
@@ -69,8 +72,49 @@ export function breathWindow(b: AnimRow['breathing'], u: number, v: number): num
 /** A sine offset in plate pixels at clock `t`: `amplitudePx` either side over `periodSeconds`, started `phase` of a turn in. */
 export function sineOffsetPx(amplitudePx: number, periodSeconds: number, phase: number, t: number): number { return amplitudePx * Math.sin(TAU * (t / periodSeconds + phase)); }
 
+/** The eye scheduler: one event at a time, every min..max seconds (seeded), a blink or a wink (a wink about every `wink.everyEvents` events, +/- `everyJitter`, always at least one blink between two winks). `at(t)` returns the live event (kind 0 none, 1 blink, 2 wink; amount 0..1 with a short ramp in and out). */
+export function createBlinker(row: AnimRow['eyes'], rand: () => number = seededRandom(row.seed)) {
+  const gap = () => row.intervalMinSeconds + rand() * (row.intervalMaxSeconds - row.intervalMinSeconds);
+  const pickWink = () => Math.max(2, row.wink.everyEvents + Math.round((rand() * 2 - 1) * row.wink.everyJitter));
+  let nextAt = row.firstDelaySeconds, start = 0, hold = 0, kind = 0, untilWink = pickWink();
+  const out = { kind: 0, amount: 0 };
+  return {
+    at(t: number) {
+      if (kind && t - start >= hold) { kind = 0; nextAt = start + hold + gap(); }
+      if (!kind && t >= nextAt) {
+        untilWink--;
+        let k = 1; if (untilWink <= 0) { k = 2; untilWink = pickWink(); }
+        const c = k === 2 ? row.wink : row.blink;
+        if (c.on) { kind = k; start = t; hold = c.holdMinSeconds + rand() * (c.holdMaxSeconds - c.holdMinSeconds); } else nextAt = t + gap();
+      }
+      const f = Math.max(row.fadeSeconds, 1e-6);
+      out.kind = kind; out.amount = kind ? Math.min(1, (t - start) / f, (start + hold - t) / f) : 0;
+      return out;
+    },
+  };
+}
+/** The droplet scheduler: waits spawnMin..spawnMax seconds (seeded), then falls `fallDistancePx` plate pixels (start speed + constant acceleration), fading in, then out over the last `fadeOutPx`; `stretch` is 1 from `stretchFromSpeedPx`. `at(t)` returns the live drop (y = pixels fallen, alpha 0 when none). */
+export function createDrooler(row: AnimRow['drool']['drop'], rand: () => number = seededRandom(row.seed)) {
+  let nextAt = row.firstDelaySeconds, start = -1;
+  const out = { y: 0, alpha: 0, stretch: 0, speed: 0 };
+  const fall = (a: number) => row.startSpeedPx * a + 0.5 * row.accelPx * a * a;
+  return {
+    at(t: number) {
+      if (start >= 0 && fall(t - start) >= row.fallDistancePx) { start = -1; nextAt = t + row.spawnMinSeconds + rand() * (row.spawnMaxSeconds - row.spawnMinSeconds); }
+      if (start < 0 && t >= nextAt) start = t;
+      if (start < 0) { out.y = 0; out.alpha = 0; out.stretch = 0; out.speed = 0; return out; }
+      const a = t - start, y = Math.min(row.fallDistancePx, fall(a));
+      out.y = y; out.speed = row.startSpeedPx + row.accelPx * a; out.stretch = out.speed >= row.stretchFromSpeedPx ? 1 : 0;
+      out.alpha = row.strength * Math.min(1, a / Math.max(row.fadeInSeconds, 1e-6)) * (row.fadeOutPx > 0 ? Math.min(1, (row.fallDistancePx - y) / row.fadeOutPx) : 1);
+      return out;
+    },
+  };
+}
+/** The planet's turn (a fraction of a turn, 0..1) at clock `t`: features move left to right (a world turning eastward), starting `startTurns` round. */
+export function planetTurn(startTurns: number, secondsPerTurn: number, t: number): number { const x = (startTurns - t / secondsPerTurn) % 1; return x < 0 ? x + 1 : x; }
+
 const HEAD = /* glsl */ `
-uniform vec4 uBreathRect; uniform vec2 uBreathFeather, uSparkPos, uCrownC, uCrownR; uniform float uBreathLift, uBob, uSparkI, uSparkSize, uCrownI; uniform vec3 uSparkCol, uCrownCol;
+uniform vec4 uBreathRect; uniform vec2 uBreathFeather, uSparkPos, uCrownC, uCrownR; uniform float uBreathLift, uBob, uSparkI, uSparkSize, uCrownI; uniform vec3 uSparkCol, uCrownCol, uSparkShape;
 uniform float uAspect, uPlanetOn, uGlobeOn, uSpriteOn, uGlisOn;
 uniform sampler2D uPlanetTex, uGlobeTex, uSpriteTex, uMaskTex;
 uniform vec4 uPlanetRect, uGlobeRect, uMaskRect;
@@ -79,6 +123,10 @@ uniform float uPlanetR, uPlanetPulse, uPlanetLower, uGlobeR, uGlobeShift, uGlobe
 uniform vec2 uGlobeHi; uniform vec3 uPlanetGlowCol;
 uniform float uBand, uBandW, uBandStr, uSlant, uTime, uTwinkleSec, uTwinkleCells, uTwinkleAmt, uBase, uSpread;
 uniform vec3 uBandCol;
+uniform sampler2D uEyeTexA, uEyeTexB, uDroolTex, uDropTexA, uDropTexB, uSurfTex, uShadeTex;
+uniform vec4 uEyeRect, uDroolRect, uDropRect; uniform vec2 uEyeFeather, uDroolTexel; uniform vec3 uDroolCol;
+uniform vec4 uEyeE0, uEyeE1; uniform vec3 uEyeTrim; uniform vec2 uPlateSize;
+uniform float uEyeAmt, uEyeKind, uDropA, uDropUse, uDroolI, uDroolPhase, uDroolWaves, uDroolSpread, uSphereOn, uPlanetTurn, uShadeDisc, uShadeStr;
 float skyFold(float a) { float m = mod(a + 1.5707963, 6.2831853); if (m > 3.1415927) m = 6.2831853 - m; return m - 1.5707963; }
 float skyHash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
 vec4 skyLayer(sampler2D tex, vec4 rect, vec2 p) {   // p, rect in plate fractions (y down); a cropped layer, transparent outside its rect
@@ -92,10 +140,46 @@ vec2 skyP = vec2(vMapUv.x, 1.0 - vMapUv.y);
 float skyWin = smoothstep(uBreathRect.x, uBreathRect.x + uBreathFeather.x, skyP.x) * (1.0 - smoothstep(uBreathRect.z - uBreathFeather.x, uBreathRect.z, skyP.x)) * smoothstep(uBreathRect.y, uBreathRect.y + uBreathFeather.y, skyP.y) * (1.0 - smoothstep(uBreathRect.w - uBreathFeather.y, uBreathRect.w, skyP.y));
 vec2 skyB = vec2(skyP.x, skyP.y + uBreathLift * skyWin);   // the BODY's picture space: sampled a little lower = the body lifted; the clouds, horizon and edges (window 0) stay put
 vec4 sampledDiffuseColor = texture2D(map, vec2(vMapUv.x, 1.0 - skyB.y));
+if (uEyeAmt > 0.0) {   // a blink or wink patch at native size, in the body's picture space (it rides the breath), its edge feathered
+  vec2 el = (skyB - uEyeRect.xy) / (uEyeRect.zw - uEyeRect.xy);
+  if (el.x > 0.0 && el.y > 0.0 && el.x < 1.0 && el.y < 1.0) {
+    vec2 ef = min(el, 1.0 - el) / uEyeFeather; float ew = clamp(min(ef.x, ef.y), 0.0, 1.0); ew = ew * ew * (3.0 - 2.0 * ew);
+    if (uEyeTrim.x > 0.5) {   // keep the patch only inside the two eye ellipses (the patches carry a thin dark hairline across the cheek and nose)
+      vec2 pp = skyB * uPlateSize;
+      float e0 = length((pp - uEyeE0.xy) / uEyeE0.zw), e1 = length((pp - uEyeE1.xy) / uEyeE1.zw);
+      float f = max(uEyeTrim.z, 0.01), m0 = 1.0 - smoothstep(1.0 - f, 1.0, e0), m1 = 1.0 - smoothstep(1.0 - f, 1.0, e1);
+      ew *= max(m0, m1);
+    }
+    vec4 e = uEyeKind < 1.5 ? texture2D(uEyeTexA, vec2(el.x, 1.0 - el.y)) : texture2D(uEyeTexB, vec2(el.x, 1.0 - el.y));
+    sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, e.rgb, e.a * ew * uEyeAmt);
+  }
+}
+if (uDroolI > 0.0) {   // a slow light running down the stationary streak (the designer's mask)
+  vec2 dl = (skyB - uDroolRect.xy) / (uDroolRect.zw - uDroolRect.xy);
+  if (dl.x > 0.0 && dl.y > 0.0 && dl.x < 1.0 && dl.y < 1.0) {
+    float dm = 0.0; vec2 dt = uDroolTexel * uDroolSpread;
+    for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) dm = max(dm, texture2D(uDroolTex, vec2(dl.x, 1.0 - dl.y) + vec2(float(i), float(j)) * dt).r * (i == 0 && j == 0 ? 1.0 : 0.7));
+    sampledDiffuseColor.rgb += uDroolCol * uDroolI * dm * (0.5 + 0.5 * sin(6.2831853 * (uDroolPhase - dl.y * uDroolWaves)));
+  }
+}
+if (uDropA > 0.0) {   // the falling droplet (plain sprite, or the stretched one at speed), in the body's picture space
+  vec2 dd = (skyB - uDropRect.xy) / (uDropRect.zw - uDropRect.xy);
+  if (dd.x > 0.0 && dd.y > 0.0 && dd.x < 1.0 && dd.y < 1.0) {
+    vec4 dp = uDropUse < 0.5 ? texture2D(uDropTexA, vec2(dd.x, 1.0 - dd.y)) : texture2D(uDropTexB, vec2(dd.x, 1.0 - dd.y));
+    sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, dp.rgb, dp.a * uDropA);
+  }
+}
 if (uPlanetOn > 0.5) {
   vec4 o = skyLayer(uPlanetTex, uPlanetRect, skyP);
-  sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, o.rgb, o.a);
   vec2 q = vec2((skyP.x - uPlanetC.x) / uPlanetR, (skyP.y - uPlanetC.y) / (uPlanetR / uAspect)); float d = length(q);
+  if (uSphereOn > 0.5 && o.a > 0.0) {   // a real sphere: the surface wrapped on the disc and turned, the shading disc fixed on top; the cut-out's alpha still hides what is behind the clouds
+    vec2 qt = vec2(q.x, (skyP.y - uPlanetC.y) / (uPlanetR * uAspect)); float dt = length(qt);   // the true disc in plate pixels (a height fraction is 1/aspect of a width fraction; the glow's q above is squashed)
+    vec2 qs = qt / max(dt, 1.0); float z = sqrt(max(0.0, 1.0 - dot(qs, qs)));
+    vec3 sf = texture2D(uSurfTex, vec2(0.5 + atan(qs.x, max(z, 1e-4)) * 0.15915494 + uPlanetTurn, 0.5 - asin(clamp(qs.y, -1.0, 1.0)) * 0.31830989)).rgb;
+    vec2 su = 0.5 + 0.5 * qt * uShadeDisc; vec4 sh = texture2D(uShadeTex, vec2(su.x, 1.0 - su.y));
+    o.rgb = mix(sf, sh.rgb, sh.a * uShadeStr);
+  }
+  sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, o.rgb, o.a);
   float rim = smoothstep(0.80, 1.0, d) * (1.0 - smoothstep(1.0, 1.06, d)) * (0.45 + 0.55 * clamp(q.x, 0.0, 1.0)) * (1.0 - smoothstep(uPlanetLower, uPlanetLower + 0.35, q.y));
   sampledDiffuseColor.rgb += uPlanetGlowCol * uPlanetPulse * rim * o.a;
 }
@@ -129,7 +213,7 @@ if (uCrownI > 0.0) {   // a soft slow pulse over the crown's ring-tech
 }
 if (uSparkI > 0.0) {   // a 4-point star glint: a bright core and four thin arms, in the body's picture space so it rides the breath
   vec2 sd = vec2(skyB.x - uSparkPos.x, (skyB.y - uSparkPos.y) / uAspect); float ss = uSparkSize;
-  float star = exp(-dot(sd, sd) / (ss * ss * 0.12)) + 0.85 * (exp(-abs(sd.y) / (ss * 0.1) - abs(sd.x) / ss) + exp(-abs(sd.x) / (ss * 0.1) - abs(sd.y) / ss));
+  float star = exp(-dot(sd, sd) / (ss * ss * uSparkShape.x)) + uSparkShape.y * (exp(-abs(sd.y) / (ss * uSparkShape.z) - abs(sd.x) / ss) + exp(-abs(sd.x) / (ss * uSparkShape.z) - abs(sd.y) / ss));   // core size, arm weight and arm thickness are rows (sparkle.coreSize, armWeight, armThickness)
   sampledDiffuseColor.rgb += uSparkCol * uSparkI * star;
 }
 diffuseColor *= sampledDiffuseColor;
@@ -150,9 +234,12 @@ export type SkyAnim = {
 
 type Rect = { u0: number; v0: number; u1: number; v1: number };
 const rectVec = (r: Rect) => new THREE.Vector4(r.u0, r.v0, r.u1, r.v1);
+type PxRect = { x: number; y: number; w: number; h: number };
+const pxRect = (r: PxRect, W: number, H: number) => new THREE.Vector4(r.x / W, r.y / H, (r.x + r.w) / W, (r.y + r.h) / H);
+const pxFrac = (r: PxRect, W: number, H: number): Rect => ({ u0: r.x / W, v0: r.y / H, u1: (r.x + r.w) / W, v1: (r.y + r.h) / H });
 
 /** Crops a layer picture to `rect` (fractions of the picture, null = all of it), at `scale`, into a canvas texture. */
-async function loadLayer(file: string, rect: Rect | null, scale: number, srgb: boolean): Promise<THREE.Texture> {
+async function loadLayer(file: string, rect: Rect | null, scale: number, srgb: boolean, wrapU = false): Promise<THREE.Texture> {
   const url = new URL(`../assets/skyline/${file}`, import.meta.url).href;
   const img = new Image(); img.decoding = 'async'; img.src = url; await img.decode();
   const r = rect ?? { u0: 0, v0: 0, u1: 1, v1: 1 }, sx = Math.floor(r.u0 * img.naturalWidth), sy = Math.floor(r.v0 * img.naturalHeight);
@@ -160,6 +247,7 @@ async function loadLayer(file: string, rect: Rect | null, scale: number, srgb: b
   const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(sw * scale)); c.height = Math.max(1, Math.round(sh * scale));
   const g = c.getContext('2d')!; g.imageSmoothingQuality = 'high'; g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
   const t = new THREE.CanvasTexture(c); t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.anisotropy = 1;
+  if (wrapU) { t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping; }   // an equirectangular surface: repeats across, clamps up and down
   return t;
 }
 
@@ -168,7 +256,7 @@ export function createSkyAnim(search: string, imgW: number, imgH: number, row: A
   if (!row.on || flat) return null;
   const moving = animOn(search, row) && !(row.respectReducedMotion && reducedMotion());
   let t = 0, disposed = false;
-  const g = row.globe, p = row.planet, l = row.glisten, sk = row.sparkle, cg = row.crownGlow, br = row.breathing, sp = g.sprite, dummy = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat); dummy.needsUpdate = true;
+  const g = row.globe, p = row.planet, ey = row.eyes, dr = row.drool, ds = dr.shimmer, dd = dr.drop, sph = p.sphere, l = row.glisten, sk = row.sparkle, cg = row.crownGlow, br = row.breathing, sp = g.sprite, dummy = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat); dummy.needsUpdate = true;
   const own: THREE.Texture[] = [dummy];
   const u = {
     uAspect: { value: imgW / imgH }, uPlanetOn: { value: 0 }, uGlobeOn: { value: 0 }, uSpriteOn: { value: 0 }, uGlisOn: { value: 0 },
@@ -180,19 +268,46 @@ export function createSkyAnim(search: string, imgW: number, imgH: number, row: A
     uBand: { value: -9 }, uBandW: { value: l.width }, uBandStr: { value: l.strength }, uSlant: { value: l.slant }, uTime: { value: 0 }, uTwinkleSec: { value: l.twinkle.periodSeconds }, uTwinkleCells: { value: l.twinkle.cells }, uTwinkleAmt: { value: l.twinkle.amount },
     uBase: { value: l.baseGlow }, uSpread: { value: l.spreadTexels }, uBandCol: { value: new THREE.Color(l.color) },
     uBreathRect: { value: rectVec(br.rect) }, uBreathFeather: { value: new THREE.Vector2(br.featherFraction * (br.rect.u1 - br.rect.u0), br.featherFraction * (br.rect.v1 - br.rect.v0)) }, uBreathLift: { value: 0 }, uBob: { value: 0 },
-    uSparkPos: { value: new THREE.Vector2() }, uSparkI: { value: 0 }, uSparkSize: { value: sk.size }, uSparkCol: { value: new THREE.Color(sk.color).multiplyScalar(sk.strength) },
+    uSparkPos: { value: new THREE.Vector2() }, uSparkI: { value: 0 }, uSparkSize: { value: sk.size }, uSparkCol: { value: new THREE.Color(sk.color).multiplyScalar(sk.strength) }, uSparkShape: { value: new THREE.Vector3(sk.coreSize, sk.armWeight, sk.armThickness) },
+    uEyeTexA: { value: dummy as THREE.Texture }, uEyeTexB: { value: dummy as THREE.Texture }, uDroolTex: { value: dummy as THREE.Texture }, uDropTexA: { value: dummy as THREE.Texture }, uDropTexB: { value: dummy as THREE.Texture }, uSurfTex: { value: dummy as THREE.Texture }, uShadeTex: { value: dummy as THREE.Texture },
+    uEyeRect: { value: pxRect(ey.rectPx, imgW, imgH) }, uEyeFeather: { value: new THREE.Vector2(Math.max(1e-4, ey.featherPx / ey.rectPx.w), Math.max(1e-4, ey.featherPx / ey.rectPx.h)) }, uEyeAmt: { value: 0 }, uEyeKind: { value: 1 },
+    uEyeE0: { value: new THREE.Vector4(ey.trim.ellipses[0].x, ey.trim.ellipses[0].y, ey.trim.ellipses[0].rx, ey.trim.ellipses[0].ry) }, uEyeE1: { value: new THREE.Vector4(ey.trim.ellipses[1].x, ey.trim.ellipses[1].y, ey.trim.ellipses[1].rx, ey.trim.ellipses[1].ry) },
+    uEyeTrim: { value: new THREE.Vector3(ey.trim.on ? 1 : 0, 0, ey.trim.featherFraction) }, uPlateSize: { value: new THREE.Vector2(imgW, imgH) },
+    uDroolRect: { value: pxRect(ds.rectPx, imgW, imgH) }, uDroolTexel: { value: new THREE.Vector2(1, 1) }, uDroolCol: { value: new THREE.Color(ds.color).multiplyScalar(ds.strength) }, uDroolI: { value: 0 }, uDroolPhase: { value: 0 }, uDroolWaves: { value: ds.waves }, uDroolSpread: { value: ds.spreadTexels },
+    uDropRect: { value: new THREE.Vector4() }, uDropA: { value: 0 }, uDropUse: { value: 0 },
+    uSphereOn: { value: 0 }, uPlanetTurn: { value: planetTurn(sph.startTurns, sph.secondsPerTurn, 0) }, uShadeDisc: { value: sph.shading.discFraction }, uShadeStr: { value: sph.shading.strength },
     uCrownC: { value: new THREE.Vector2(cg.centre.u, cg.centre.v) }, uCrownR: { value: new THREE.Vector2(cg.radiusU, cg.radiusV) }, uCrownI: { value: 0 }, uCrownCol: { value: new THREE.Color(cg.color).multiplyScalar(cg.strength) },
   };
   const sparkler = sk.on ? createSparkler(sk) : null;
   const jobs: Promise<void>[] = [];
-  const grab = (on: boolean, file: string, rect: Rect | null, scale: number, srgb: boolean, set: (tx: THREE.Texture) => void) => {
+  const grab = (on: boolean, file: string, rect: Rect | null, scale: number, srgb: boolean, set: (tx: THREE.Texture) => void, wrapU = false) => {
     if (!on || !file || typeof document === 'undefined' || typeof Image === 'undefined') return;   // a layer that is off is not even fetched
-    jobs.push(loadLayer(file, rect, scale, srgb).then((tx) => { if (disposed) { tx.dispose(); return; } own.push(tx); set(tx); }).catch(() => {}));   // a missing layer: that layer is skipped, the plate carries on
+    jobs.push(loadLayer(file, rect, scale, srgb, wrapU).then((tx) => { if (disposed) { tx.dispose(); return; } own.push(tx); set(tx); }).catch(() => {}));   // a missing layer: that layer is skipped, the plate carries on
   };
   grab(p.on, p.file, p.rect, 1, true, (tx) => { u.uPlanetTex.value = tx; u.uPlanetOn.value = 1; });
   grab(g.on, g.file, g.rect, 1, true, (tx) => { u.uGlobeTex.value = tx; u.uGlobeOn.value = 1; });
   grab(sp.on && moving, sp.file, null, sp.loadScale, true, (tx) => { u.uSpriteTex.value = tx; u.uSpriteOn.value = 1; });
   grab(l.on && moving, l.file, l.rect, 1, false, (tx) => { u.uMaskTex.value = tx; u.uGlisOn.value = 1; const im = tx.image as { width: number; height: number }; u.uMaskTexel.value.set(1 / im.width, 1 / im.height); });
+  // Pack 2. The turning planet is part of the picture (the plate waits for it); the eyes and the droplet only show later, so they load after the plate shows and never hold it.
+  if (sph.on) {
+    let got = 0; const both = () => { if (++got === 2) u.uSphereOn.value = 1; };
+    grab(p.on, sph.file, null, sph.loadScale, true, (tx) => { u.uSurfTex.value = tx; both(); }, true);
+    grab(p.on, sph.shading.file, null, 1, true, (tx) => { u.uShadeTex.value = tx; both(); });
+  }
+  const grabLate = (on: boolean, file: string, rect: Rect | null, srgb: boolean, set: (tx: THREE.Texture) => void) => {
+    if (!on || !moving || typeof document === 'undefined' || typeof Image === 'undefined') return;
+    void loadLayer(file, rect, 1, srgb).then((tx) => { if (disposed) { tx.dispose(); return; } own.push(tx); set(tx); }).catch(() => {});
+  };
+  const spriteH = { a: 0, b: 0 }, spriteW = { a: 0, b: 0 };
+  const imgOf = (tx: THREE.Texture) => tx.image as { width: number; height: number };
+  void Promise.resolve().then(() => {
+    grabLate(ey.on && ey.blink.on, ey.blink.file, null, true, (tx) => { u.uEyeTexA.value = tx; });
+    grabLate(ey.on && ey.wink.on, ey.wink.file, null, true, (tx) => { u.uEyeTexB.value = tx; });
+    grabLate(dr.on && ds.on, ds.file, pxFrac(ds.rectPx, imgW, imgH), false, (tx) => { u.uDroolTex.value = tx; u.uDroolI.value = 1; u.uDroolTexel.value.set(1 / imgOf(tx).width, 1 / imgOf(tx).height); });
+    grabLate(dr.on && dd.on, dd.file, null, true, (tx) => { u.uDropTexA.value = tx; spriteW.a = imgOf(tx).width; spriteH.a = imgOf(tx).height; });
+    grabLate(dr.on && dd.on, dd.stretchedFile, null, true, (tx) => { u.uDropTexB.value = tx; spriteW.b = imgOf(tx).width; spriteH.b = imgOf(tx).height; });
+  });
+  const blinker = ey.on && moving ? createBlinker(ey) : null, drooler = dr.on && dd.on && moving ? createDrooler(dd) : null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const ready = Promise.race([Promise.all(jobs).then(() => undefined), new Promise<void>((done) => { timer = setTimeout(done, row.readyTimeoutSeconds * 1000); (timer as { unref?: () => void }).unref?.(); })]).then(() => clearTimeout(timer));
   const tick = () => {
@@ -206,6 +321,14 @@ export function createSkyAnim(search: string, imgW: number, imgH: number, row: A
     u.uBreathLift.value = br.on ? sineOffsetPx(br.amplitudePx, br.periodSeconds, br.phase, t) / imgH : 0;   // plate pixels -> a fraction of the picture's height
     u.uBob.value = g.bob.on ? sineOffsetPx(g.bob.amplitudePx, g.bob.periodSeconds, g.bob.phase, t) / imgH : 0;
     u.uCrownI.value = cg.on ? 0.5 + 0.5 * Math.sin(TAU * t / cg.pulseSeconds) : 0;
+    u.uPlanetTurn.value = planetTurn(sph.startTurns, sph.secondsPerTurn, t);
+    if (blinker) { const b = blinker.at(t); u.uEyeKind.value = b.kind; u.uEyeAmt.value = b.amount; }
+    u.uDroolPhase.value = t / ds.periodSeconds;
+    if (drooler) {
+      const d = drooler.at(t), w = d.stretch ? spriteW.b : spriteW.a, h = d.stretch ? spriteH.b : spriteH.a;
+      u.uDropA.value = w && h ? d.alpha : 0; u.uDropUse.value = d.stretch;
+      const x0 = (dd.spawnPx.x - dd.anchorPx.x) / imgW, y0 = (dd.spawnPx.y - dd.anchorPx.y + d.y) / imgH; u.uDropRect.value.set(x0, y0, x0 + w / imgW, y0 + h / imgH);
+    }
     if (sparkler) { const s = sparkler.at(t), a = sk.anchors[s.anchor]; u.uSparkPos.value.set(a.u, a.v); u.uSparkSize.value = sk.size * a.scale; u.uSparkI.value = s.intensity; }
   };
   tick();
@@ -215,7 +338,7 @@ export function createSkyAnim(search: string, imgW: number, imgH: number, row: A
         Object.assign(s.uniforms, u);
         s.fragmentShader = s.fragmentShader.replace('#include <common>', `#include <common>\n${HEAD}`).replace('#include <map_fragment>', BODY);
       };
-      m.customProgramCacheKey = () => 'skyanim3'; m.needsUpdate = true;
+      m.customProgramCacheKey = () => 'skyanim4'; m.needsUpdate = true;
     },
     update(dt) {
       if (!moving || (typeof document !== 'undefined' && document.hidden)) return;   // a hidden tab stands still

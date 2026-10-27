@@ -364,14 +364,19 @@ function checkSkyAnim(a, plateQuery) {
   const centre = (o, path) => { if (keys(o.centre, ['u', 'v'], J(path, 'centre'))) { rng(o.centre, 'u', 0, 1, J(path, 'centre')); rng(o.centre, 'v', 0, 1, J(path, 'centre')); } };
   const rect = (o, path) => { if (keys(o.rect, ['u0', 'v0', 'u1', 'v1'], J(path, 'rect'))) { for (const k of ['u0', 'v0', 'u1', 'v1']) rng(o.rect, k, 0, 1, J(path, 'rect')); if (!(o.rect.u1 > o.rect.u0 + 0.005) || !(o.rect.v1 > o.rect.v0 + 0.005)) at(J(path, 'rect'), 'must be a real rect (u1 above u0, v1 above v0)'); } return o.rect; };
   const inside = (r, c, rad, path) => { if (r && c && Number.isFinite(c.u) && Number.isFinite(c.v) && Number.isFinite(rad) && !(c.u - rad >= r.u0 - 1e-9 && c.u + rad <= r.u1 + 1e-9 && c.v >= r.v0 && c.v <= r.v1)) at(J(path, 'rect'), 'must contain the layer (its centre and a radius either side)'); };
-  keys(a, ['about', 'on', 'query', 'off', 'respectReducedMotion', 'readyTimeoutSeconds', 'planet', 'globe', 'glisten', 'sparkle', 'crownGlow', 'breathing'], '');
+  keys(a, ['about', 'on', 'query', 'off', 'respectReducedMotion', 'readyTimeoutSeconds', 'planet', 'globe', 'glisten', 'sparkle', 'crownGlow', 'breathing', 'eyes', 'drool'], '');
   if (typeof a.about !== 'string' || a.about.length < 200) at('about', 'must explain the rows (at least 200 characters)');
   for (const k of ['on', 'respectReducedMotion']) bool(a, k, '');
   for (const k of ['query', 'off']) if (typeof a[k] !== 'string' || !/^[a-z0-9]+$/i.test(a[k])) at(k, 'must be a plain word');
   if (a.query === plateQuery) at('query', 'must differ from the plate query word');
   rng(a, 'readyTimeoutSeconds', 0.5, 30, '');
   const p = a.planet;
-  if (keys(p, ['on', 'file', 'rect', 'centre', 'radius', 'glow'], 'planet')) {
+  if (keys(p, ['on', 'file', 'rect', 'centre', 'radius', 'glow', 'sphere'], 'planet')) {
+    const sp = p.sphere;   // the turning world inside the disc (pack 2): an equirectangular surface wrapped on a sphere, the designer's shading disc fixed on top
+    if (keys(sp, ['on', 'file', 'loadScale', 'secondsPerTurn', 'startTurns', 'shading'], 'planet.sphere')) {
+      bool(sp, 'on', 'planet.sphere'); file(sp, 'file', 'planet.sphere'); rng(sp, 'loadScale', 0.1, 1, 'planet.sphere'); rng(sp, 'secondsPerTurn', 1, 36000, 'planet.sphere'); rng(sp, 'startTurns', 0, 1, 'planet.sphere');
+      if (keys(sp.shading, ['file', 'discFraction', 'strength'], 'planet.sphere.shading')) { file(sp.shading, 'file', 'planet.sphere.shading'); rng(sp.shading, 'discFraction', 0.5, 1, 'planet.sphere.shading'); rng(sp.shading, 'strength', 0, 1, 'planet.sphere.shading'); }
+    }
     bool(p, 'on', 'planet'); file(p, 'file', 'planet'); centre(p, 'planet'); rng(p, 'radius', 0.001, 0.3, 'planet'); const r = rect(p, 'planet'); inside(r, p.centre, Number.isFinite(p.radius) ? Math.min(p.radius, 0.0) : 0, 'planet');
     if (keys(p.glow, ['on', 'color', 'strength', 'pulseSeconds', 'lowerFadeFrom'], 'planet.glow')) { bool(p.glow, 'on', 'planet.glow'); col(p.glow, 'color', 'planet.glow'); rng(p.glow, 'strength', 0, 1, 'planet.glow'); rng(p.glow, 'pulseSeconds', 0.5, 600, 'planet.glow'); rng(p.glow, 'lowerFadeFrom', -1, 1, 'planet.glow'); }
   }
@@ -406,8 +411,8 @@ function checkSkyAnim(a, plateQuery) {
   }
   // Sky life: a procedural star glint on a list of anchors, a slow crown glow pulse, a body breath (a feathered sine lift) over a rect.
   const sk = a.sparkle;
-  if (keys(sk, ['on', 'color', 'strength', 'size', 'durationSeconds', 'minGapSeconds', 'maxGapSeconds', 'firstDelaySeconds', 'seed', 'anchors'], 'sparkle')) {
-    bool(sk, 'on', 'sparkle'); col(sk, 'color', 'sparkle'); rng(sk, 'strength', 0, 3, 'sparkle'); rng(sk, 'size', 0.0005, 0.05, 'sparkle'); rng(sk, 'durationSeconds', 0.05, 5, 'sparkle');
+  if (keys(sk, ['on', 'color', 'strength', 'size', 'coreSize', 'armWeight', 'armThickness', 'durationSeconds', 'minGapSeconds', 'maxGapSeconds', 'firstDelaySeconds', 'seed', 'anchors'], 'sparkle')) {
+    bool(sk, 'on', 'sparkle'); col(sk, 'color', 'sparkle'); rng(sk, 'strength', 0, 3, 'sparkle'); rng(sk, 'size', 0.0005, 0.05, 'sparkle'); rng(sk, 'coreSize', 0.01, 2, 'sparkle'); rng(sk, 'armWeight', 0, 3, 'sparkle'); rng(sk, 'armThickness', 0.01, 1, 'sparkle'); rng(sk, 'durationSeconds', 0.05, 5, 'sparkle');
     rng(sk, 'minGapSeconds', 0.1, 600, 'sparkle'); rng(sk, 'maxGapSeconds', 0.1, 600, 'sparkle'); rng(sk, 'firstDelaySeconds', 0, 600, 'sparkle'); rng(sk, 'seed', 0, 4294967295, 'sparkle', true);
     if (Number.isFinite(sk.minGapSeconds) && Number.isFinite(sk.maxGapSeconds) && sk.maxGapSeconds < sk.minGapSeconds) at('sparkle.maxGapSeconds', 'must not be below minGapSeconds');
     if (Number.isFinite(sk.minGapSeconds) && Number.isFinite(sk.durationSeconds) && sk.minGapSeconds < sk.durationSeconds) at('sparkle.minGapSeconds', 'must not be below durationSeconds (one glint at a time)');
@@ -418,6 +423,42 @@ function checkSkyAnim(a, plateQuery) {
   if (keys(cg, ['on', 'centre', 'radiusU', 'radiusV', 'color', 'strength', 'pulseSeconds'], 'crownGlow')) { bool(cg, 'on', 'crownGlow'); centre(cg, 'crownGlow'); rng(cg, 'radiusU', 0.001, 0.2, 'crownGlow'); rng(cg, 'radiusV', 0.001, 0.2, 'crownGlow'); col(cg, 'color', 'crownGlow'); rng(cg, 'strength', 0, 1, 'crownGlow'); rng(cg, 'pulseSeconds', 0.5, 600, 'crownGlow'); }
   const br = a.breathing;
   if (keys(br, ['on', 'rect', 'featherFraction', 'amplitudePx', 'periodSeconds', 'phase'], 'breathing')) { bool(br, 'on', 'breathing'); rect(br, 'breathing'); rng(br, 'featherFraction', 0.05, 0.5, 'breathing'); rng(br, 'amplitudePx', 0, 12, 'breathing'); rng(br, 'periodSeconds', 0.5, 600, 'breathing'); rng(br, 'phase', 0, 1, 'breathing'); }
+  // Pack 2: eyes (blink and wink patches in plate pixels), drool (streak shimmer + a falling droplet), all rows with their own `on`.
+  const pxRect = (o, k, path) => { if (keys(o[k], ['x', 'y', 'w', 'h'], J(path, k))) { for (const q of ['x', 'y']) rng(o[k], q, 0, 16384, J(path, k)); for (const q of ['w', 'h']) rng(o[k], q, 1, 16384, J(path, k)); } };
+  const pxPt = (o, k, path) => { if (keys(o[k], ['x', 'y'], J(path, k))) { rng(o[k], 'x', 0, 16384, J(path, k)); rng(o[k], 'y', 0, 16384, J(path, k)); } };
+  const ey = a.eyes;
+  if (keys(ey, ['on', 'blink', 'wink', 'rectPx', 'intervalMinSeconds', 'intervalMaxSeconds', 'firstDelaySeconds', 'seed', 'fadeSeconds', 'featherPx', 'trim'], 'eyes')) {
+    const tr = ey.trim;
+    if (keys(tr, ['on', 'ellipses', 'featherFraction'], 'eyes.trim')) {
+      bool(tr, 'on', 'eyes.trim'); rng(tr, 'featherFraction', 0.01, 1, 'eyes.trim');
+      if (!Array.isArray(tr.ellipses) || tr.ellipses.length !== 2) at('eyes.trim.ellipses', 'must be exactly two ellipses (one per eye)');
+      else for (const [i, q] of tr.ellipses.entries()) { const pth = `eyes.trim.ellipses.${i}`; if (keys(q, ['x', 'y', 'rx', 'ry'], pth)) { rng(q, 'x', 0, 16384, pth); rng(q, 'y', 0, 16384, pth); rng(q, 'rx', 1, 2000, pth); rng(q, 'ry', 1, 2000, pth); } }
+    }
+    bool(ey, 'on', 'eyes'); pxRect(ey, 'rectPx', 'eyes'); rng(ey, 'intervalMinSeconds', 0.3, 600, 'eyes'); rng(ey, 'intervalMaxSeconds', 0.3, 600, 'eyes'); rng(ey, 'firstDelaySeconds', 0, 600, 'eyes'); rng(ey, 'seed', 0, 4294967295, 'eyes', true); rng(ey, 'fadeSeconds', 0, 1, 'eyes'); rng(ey, 'featherPx', 0, 40, 'eyes');
+    if (Number.isFinite(ey.intervalMinSeconds) && Number.isFinite(ey.intervalMaxSeconds) && ey.intervalMaxSeconds < ey.intervalMinSeconds) at('eyes.intervalMaxSeconds', 'must not be below intervalMinSeconds');
+    for (const k of ['blink', 'wink']) {
+      const keysK = k === 'blink' ? ['on', 'file', 'holdMinSeconds', 'holdMaxSeconds'] : ['on', 'file', 'holdMinSeconds', 'holdMaxSeconds', 'everyEvents', 'everyJitter'], o = ey[k], path = `eyes.${k}`;
+      if (!keys(o, keysK, path)) continue;
+      bool(o, 'on', path); file(o, 'file', path); rng(o, 'holdMinSeconds', 0.02, 2, path); rng(o, 'holdMaxSeconds', 0.02, 2, path);
+      if (Number.isFinite(o.holdMinSeconds) && Number.isFinite(o.holdMaxSeconds) && o.holdMaxSeconds < o.holdMinSeconds) at(`${path}.holdMaxSeconds`, 'must not be below holdMinSeconds');
+      if (k === 'wink') { rng(o, 'everyEvents', 2, 100, path, true); rng(o, 'everyJitter', 0, 50, path, true); if (Number.isFinite(o.everyEvents) && Number.isFinite(o.everyJitter) && o.everyJitter >= o.everyEvents - 1) at(`${path}.everyJitter`, 'must stay below everyEvents - 1 (never two winks in a row)'); }
+    }
+  }
+  const dr = a.drool;
+  if (keys(dr, ['on', 'shimmer', 'drop'], 'drool')) {
+    bool(dr, 'on', 'drool');
+    const sh = dr.shimmer;
+    if (keys(sh, ['on', 'file', 'rectPx', 'color', 'strength', 'periodSeconds', 'waves', 'spreadTexels'], 'drool.shimmer')) { bool(sh, 'on', 'drool.shimmer'); file(sh, 'file', 'drool.shimmer'); pxRect(sh, 'rectPx', 'drool.shimmer'); col(sh, 'color', 'drool.shimmer'); rng(sh, 'strength', 0, 3, 'drool.shimmer'); rng(sh, 'periodSeconds', 0.2, 600, 'drool.shimmer'); rng(sh, 'waves', 0, 20, 'drool.shimmer'); rng(sh, 'spreadTexels', 0, 4, 'drool.shimmer'); }
+    const d = dr.drop;
+    if (keys(d, ['on', 'file', 'stretchedFile', 'spawnPx', 'anchorPx', 'spawnMinSeconds', 'spawnMaxSeconds', 'firstDelaySeconds', 'startSpeedPx', 'accelPx', 'fallDistancePx', 'fadeInSeconds', 'fadeOutPx', 'strength', 'stretchFromSpeedPx', 'seed'], 'drool.drop')) {
+      bool(d, 'on', 'drool.drop'); file(d, 'file', 'drool.drop'); file(d, 'stretchedFile', 'drool.drop'); pxPt(d, 'spawnPx', 'drool.drop'); pxPt(d, 'anchorPx', 'drool.drop');
+      rng(d, 'spawnMinSeconds', 0.5, 600, 'drool.drop'); rng(d, 'spawnMaxSeconds', 0.5, 600, 'drool.drop'); rng(d, 'firstDelaySeconds', 0, 600, 'drool.drop'); rng(d, 'startSpeedPx', 0, 2000, 'drool.drop'); rng(d, 'accelPx', 0, 20000, 'drool.drop');
+      rng(d, 'fallDistancePx', 1, 2000, 'drool.drop'); rng(d, 'fadeInSeconds', 0, 10, 'drool.drop'); rng(d, 'fadeOutPx', 0, 2000, 'drool.drop'); rng(d, 'strength', 0, 1, 'drool.drop'); rng(d, 'stretchFromSpeedPx', 0, 20000, 'drool.drop'); rng(d, 'seed', 0, 4294967295, 'drool.drop', true);
+      if (Number.isFinite(d.spawnMinSeconds) && Number.isFinite(d.spawnMaxSeconds) && d.spawnMaxSeconds < d.spawnMinSeconds) at('drool.drop.spawnMaxSeconds', 'must not be below spawnMinSeconds');
+      if (Number.isFinite(d.startSpeedPx) && Number.isFinite(d.accelPx) && d.startSpeedPx + d.accelPx <= 0) at('drool.drop.accelPx', 'the droplet must be able to fall (startSpeedPx or accelPx above 0)');
+      if (Number.isFinite(d.fadeOutPx) && Number.isFinite(d.fallDistancePx) && d.fadeOutPx > d.fallDistancePx) at('drool.drop.fadeOutPx', 'must not exceed fallDistancePx');
+    }
+  }
   return e;
 }
 /** data/fight.json camera.wide(src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
