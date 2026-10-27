@@ -137,7 +137,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const capPool: THREE.Mesh[] = [], helmetPool: THREE.Mesh[] = [], cutBones: { bone: THREE.Object3D; home: THREE.Vector3 }[] = [];   // cutBones: where each cut bone sat (the package's applyPose moves it to its capsule's joint; the rematch puts it back)
   const done = new Set<string>(), follow: { mesh: THREE.Mesh; at: number; off: THREE.Vector3 }[] = [], props: { mesh: THREE.Mesh; prop: CutResult['props'][number] }[] = [];
   const cutLog = (): CutEvent[] => ((globalThis as Record<string, unknown>)[cutRows.log] ??= []) as CutEvent[];
-  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }>, cuts: [] as CutEvent[], cutSteps: [] as Record<string, number | string>[], lastTap: '', pieces: [] as string[], screenOf: undefined as ((part: string) => [number, number] | null) | undefined, probe: undefined as ((x: number, y: number) => string | null) | undefined };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
+  const cost = { frames: 0, totalMs: 0, maxMs: 0, lastMs: 0, ticks: 0, state: 'loading', rig: '', measure: null as string | null, byMode: {} as Record<string, { frames: number; totalMs: number; maxMs: number }>, cuts: [] as CutEvent[], cutSteps: [] as Record<string, number | string>[], lastTap: '', pieces: [] as string[], screenOf: undefined as ((part: string) => [number, number] | null) | undefined, probe: undefined as ((x: number, y: number) => string | null) | undefined, limbDistance: undefined as ((unit: string) => number | null) | undefined };   // the per-frame cost, read by the stills (globalThis.__ragdoll)
   (globalThis as { __ragdoll?: typeof cost }).__ragdoll = cost;
 
   // The bones `w` of the way from the clip's pose (on them now) to the ragdoll's: 1 = the ragdoll's alone.
@@ -312,7 +312,9 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         cost.lastTap += ` | hit ${hit?.bone.name ?? 'nothing'}`;
         const unit = hit && unitOfBone(hit.bone, row.order, (u) => partBones[severable.find((s) => s.id === u)?.cut_role ?? '']);
         if (!unit || done.has(unit)) return null;
-        const direction = ray.ray.direction.clone().transformDirection(group.matrixWorld.clone().invert());   // the tap pushes the piece away from the camera
+        // the push is the tap's ray times row `awayMult` (negative = toward the camera) plus the ray's sideways (up x ray) times `sideMult`, so a limb piece flies where the player can see it
+        const ray3 = ray.ray.direction.clone().transformDirection(group.matrixWorld.clone().invert()), side = new THREE.Vector3(0, 1, 0).cross(ray3).normalize();
+        const direction = ray3.multiplyScalar(row.awayMult ?? 1).add(side.multiplyScalar(row.sideMult ?? 0));   // a row missing either keeps the old push (the validator also refuses it, validate.js `finite`)
         return cutUnit(unit, 'tap', [direction.x * row.impulse, direction.y * row.impulse + row.lift, direction.z * row.impulse]);
       } catch (error) { cost.state = `tap failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
     },
@@ -333,6 +335,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         const hit = cutter.pick(aim(x, y), probed !== cost.frames), severable = rd.row.severable;
         probed = cost.frames;
         return (hit && unitOfBone(hit.bone, cutRows.tap.order, (u) => partBones[severable.find((s) => s.id === u)?.cut_role ?? ''])) ?? null;
+      };
+      cost.limbDistance = (unit: string) => {   // the stills: metres from a cut unit's bone (the cut bone follows its capsule once cut) to the chest bone, in world space
+        const root = partBones[rd?.row.severable.find((s) => s.id === unit)?.cut_role ?? ''], chest = partBones.spine2;
+        return root && chest ? root.getWorldPosition(new THREE.Vector3()).distanceTo(chest.getWorldPosition(new THREE.Vector3())) : null;
       };
       cost.screenOf = (part: string) => {   // the stills: where a part's bone is on screen (CSS px), to tap it
         const b = partBones[part]; if (!b) return null;

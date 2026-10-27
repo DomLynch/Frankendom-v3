@@ -52,7 +52,7 @@
     "onKill": { "head": "head" },
     "sever": "head",
     "kill": { "impulse": 14, "lift": 5 },
-    "tap": { "on": true, "needs": "frozen", "order": ["head", "arm_left", "arm_right", "leg_left", "leg_right", "torso_waist"], "maxMovePx": 10, "maxMs": 500, "impulse": 6, "lift": 3 },
+    "tap": { "on": true, "needs": "frozen", "order": ["head", "arm_left", "arm_right", "leg_left", "leg_right", "torso_waist"], "maxMovePx": 10, "maxMs": 500, "impulse": 9, "lift": 6, "awayMult": -0.6, "sideMult": 0.8 },
     "seam": { "piece": 0.5, "bodyKeepBelow": 0.5 },
     "cap": { "color": "#8e1b16", "pieceColor": "#6b1511", "radiusMult": 0.95, "pieceRadiusMult": 0.85, "segments": [16, 12] },
     "helmet": { "color": "#5c5f66", "radiusM": 0.13 }

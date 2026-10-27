@@ -28,6 +28,14 @@ test('an armour block or immune field is rejected anywhere', () => {
   assert.match(validateFile('stage', bad).join('\n'), /stage\.light\.block: armour may not block/);
 });
 
+test('cut.tap numeric rows must be present and finite (a missing one would be a NaN push)', () => {
+  const missing = clone(files.physics); delete missing.cut.tap.awayMult;
+  assert.match(validateFile('physics', missing).join('\n'), /physics\.cut\.tap\.awayMult: must be a finite number/);
+  const nan = clone(files.physics); nan.cut.tap.sideMult = null;
+  assert.match(validateFile('physics', nan).join('\n'), /physics\.cut\.tap\.sideMult: must be a finite number/);
+  assert.deepEqual(validateFile('physics', files.physics), [], 'the shipped row validates');
+});
+
 test('a file with no schema is rejected', () => {
   assert.match(validateFile('nope', {}).join('\n'), /nope: no schema/);
 });

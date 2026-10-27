@@ -113,7 +113,10 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
     // TAP is a unit (arm_left ...: the first grid point of the screen a tap would cut that unit at) or a part (armLeft ...: that bone's own screen point)
     const at = v1 ? null : /_/.test(TAP) || TAP === 'head' ? await page.evaluate((u) => { for (let y = 120; y < 700; y += 5) for (let x = 20; x < 360; x += 5) if (globalThis.__ragdoll.probe?.(x, y) === u) return [x, y]; return null; }, TAP) : await page.evaluate((p) => globalThis.__ragdoll.screenOf?.(p), TAP);
     if (at) { console.log(`${tag}: tapping ${TAP} at ${at.map((x) => x.toFixed(0))}`); await page.touchscreen.tap(at[0], at[1]); }
-    let k = 0; for (const t of AFTER) { await run(t - k); k = t; await shoot(`tap-${t}`); }
+    // LIMB=<unit> (default: the tapped unit when it is one): print the metres from that unit's cut bone to the chest bone at each AFTER tick (the harness read, no picture needed)
+    const unit = process.env.LIMB ?? (/_/.test(TAP) ? TAP : null), dist = [];
+    let k = 0; for (const t of AFTER) { await run(t - k); k = t; await shoot(`tap-${t}`); if (unit) dist.push(`${(t / 60).toFixed(2)}s ${(await page.evaluate((u) => globalThis.__ragdoll.limbDistance?.(u), unit))?.toFixed(3)} m`); }
+    if (unit) console.log(`${tag}: ${unit} bone to chest, by time after the tap: ${dist.join(' | ')}`);
   }
   const state = await cost();
   report[tag] = { ticks: n, hitAt, killedAt, finish, ragdoll: state, pieces: await page.evaluate(() => globalThis.__ragdoll?.debug?.()) };
