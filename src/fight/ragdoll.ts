@@ -22,7 +22,7 @@ import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 import { activeFeels, emitFeel, feel, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
-import { createLateCuts, finisherCutRow, finisherPush, PHYSICS_MODE } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
+import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, PHYSICS_MODE, VISUAL_UNITS } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
 
 export type PhysicsRows = typeof PHYSICS;
 type OpponentRow = PhysicsRows['opponents'][number];
@@ -30,10 +30,10 @@ type Vec3 = [number, number, number];
 type Hit = { part: string; impulse: Vec3 };
 type Tuning = Record<string, { gain?: number; damping?: number }>;
 /** What the package's rd.cut returns (physics f38dba0, docs/API.md 'Cuts (M5)'): the unit, the gear slots and roles that go with it, the stump's cap, the helmet prop. */
-type CutResult = { unit: string; gear_slots: string[]; carries_roles: string[]; cap: { part: string; position: Vec3 }; props: { readPose(): ArrayLike<number>; destroy(): void }[] };
+type CutResult = { unit: string; gear_slots: string[]; carries_roles: string[]; cap: { part: string; position: Vec3 }; props: { readPose(): ArrayLike<number>; destroy(): void }[]; visual_only?: boolean };   // visual_only (head_split, belly_open; physics 9056ef7): nothing detaches, only caps show
 export type Ragdoll = {
   state: string; awake: boolean; partIds: string[]; cuts: readonly string[];
-  row: { roles: { id: string; parent: string | null; radius_m: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[]; severable: { id: string; cut_role: string }[] };
+  row: { roles: { id: string; parent: string | null; radius_m: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[]; severable: { id: string; cut_role: string | null; visual_only?: boolean }[] };
   applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; knockdown(kind: 'damage' | 'push', hit?: Hit): void;
   cut(unit: string, opts?: { helmet?: boolean; impulse?: Vec3 }): CutResult | null; readPose(): ArrayLike<number>;
   snapToTarget(): boolean; reset(): boolean; destroy(): void;
@@ -158,6 +158,12 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   const cutManifestOf = (c: Chunk): unknown => (foe.body === 'minotaur' ? c.minotaurCutManifest : undefined);   // the cut GLB's manifest for this foe's body (the Minotaur's only so far)
+  /** Can this body cut `unit`? A visual unit (head_split, belly_open: nothing detaches) only when the cut GLB's manifest carries it (`optional_units`, a file made with --head-split / --belly-open); any other unit as before. */
+  const hasUnit = (unit: string): boolean => {
+    if (!(VISUAL_UNITS as readonly string[]).includes(unit)) return true;
+    const m = chunk && cutManifestOf(chunk) as { optional_units?: Record<string, { enabled?: boolean } | undefined> } | undefined;
+    return !!cutRig && !!m?.optional_units?.[unit]?.enabled;
+  };
   let cutRig: CutRig | undefined;   // the body is the physics cut GLB (piece_* and cap_* meshes, docs/CUT-CONTRACT.md): a cut shows the caps and the piece flies with its bones. Undefined = the old triangle cutter and ball caps
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
@@ -274,6 +280,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // Only on a corpse (the ragdoll's bones follow its capsules) and with gore shown (blood 'off' keeps the body whole, as for the finisher's head).
   function cutUnit(unit: string, source: string, impulse?: Vec3): CutEvent | null {
     if (!rd || !group || !rigged || !cutRows.on || !gore || done.has(unit)) return null;
+    if (!hasUnit(unit)) return null;   // a visual unit the body's cut GLB does not carry: no cut (never the triangle cutter, which would carve the torso at its cap part)
     const t0 = performance.now(), steps: Record<string, number> = {};
     const result = rd.cut(unit, { helmet: !!gearRow.helmet, impulse });
     steps.cut = performance.now() - t0;
@@ -285,7 +292,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       cost.pieces.push(...rd.cuts.map((u) => `${u}:cut-glb`));
       for (const prop of result.props) { const mesh = helmetPool.pop(); if (mesh) { showPooled(mesh, 1); props.push({ mesh, prop }); } else prop.destroy(); }
       steps.props = performance.now() - t;
-      cutBones.push({ bone: root, home: root.position.clone() });
+      if (!result.visual_only) cutBones.push({ bone: root, home: root.position.clone() });   // a visual unit (head_split, belly_open) moves no bone: only its caps show
     } else if (role && root && mode === 'dead') {
       cutter ??= createPieceCutter(rigged.anchor);
       let t = performance.now();
@@ -541,10 +548,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           for (const f of feels) f.kill?.(killed, feelCtx());   // M7 (?feel=): his killing blow
           // ?rules=m4: the evaluator's cuts (this fight's, and the killing blow's) are the ONLY cut trigger: the head-zone rule, a finisher row's cut, the tap and the finisher's cut are off
           for (const u of rulesOn ? ruleCuts.splice(0) : []) cutUnit(u, 'rules', blowImpulse({ ...cutRows.kill, parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group.rotation.y)?.impulse);
-          const unit = rulesOn ? undefined : fc ? fc.unit ?? undefined : killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it; a finisher's row decides its own cut
+          const onKill = killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it
+          const units = rulesOn ? [] : fc ? finisherUnits(fc, hasUnit) : onKill ? [onKill] : [];   // a finisher's row decides its own cut(s): its unit (or the fallback stand-in), then its `also` units this body carries
           const push = (u: string) => blowImpulse({ ...(fc?.kill ?? cutRows.kill), parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group!.rotation.y)?.impulse;   // the push is the row's, whatever the location
-          if (unit && (!fc || fc.atS <= 0)) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit));
-          else if (unit) late.add(unit, fc!.atS, 'finisher');
+          for (const unit of units) { if (!fc || fc.atS <= 0) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit)); else late.add(unit, fc.atS, 'finisher'); }
         }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== 1) continue;
