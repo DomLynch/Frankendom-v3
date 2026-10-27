@@ -96,6 +96,12 @@ test('validate: variants rows take only known keys, finite rungs, and names that
   assert.ok(validateFile('rules', withVariant(ok, 'm4')).length > 0, 'a variant named m4 would shadow the m4 row');
   assert.ok(validateFile('rules', withVariant(ok, 'v1')).length > 0, 'a variant named v1 would shadow the v1 row');
   assert.ok(validateFile('rules', { ...ROWS, variants: [] }).length > 0, 'variants must be an object');
+  // Object.prototype names are unknown keys, reported (not a TypeError from the prototype's own toString / constructor)
+  for (const k of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+    const bad = JSON.parse(`{"${k}": {"rung_hit": 7.7}}`);
+    let errs; assert.doesNotThrow(() => { errs = validateFile('rules', withVariant({ ...ok, ...bad })); }, k);
+    assert.ok(errs.some((e) => e.includes('unknown key')), `${k} is reported as an unknown key`);
+  }
   // every key the validator allows is a real package row
   for (const k of Object.keys(ok.strength_scale)) assert.ok(k in rules.strength_scale, `${k} is a package strength_scale row`);
   for (const k of Object.keys(ok.melee_speed_gate)) assert.ok(k in rules.melee_speed_gate, `${k} is a package melee_speed_gate row`);
