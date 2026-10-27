@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { connect } from 'node:net';
-import { LIMITS, PROTOCOL, PATH, createPresence } from '../../server/presence/server.ts';
+import { LIMITS, PROTOCOL, PATH, createPresence, listenHost } from '../../server/presence/server.ts';
+import { PRESENCE } from '../../src/presence/rows.ts';
 import { RULES } from '../../server/presence/interest.ts';
 import { joinBot } from '../../server/presence/test-client.ts';
 
@@ -181,6 +182,54 @@ test('a close frame removes the player at once even when the peer never finishes
     assert.equal(n, 1, 'the server destroyed the half-open socket after the grace (only alice is left)');
     ghost.destroy(); alice.close();
   } finally { await p.close(); }
+});
+
+// ---- flood and backpressure (reviewer round 1) ----
+const PING = Buffer.from([0x89, 0x80, 0, 0, 0, 0]);   // masked (zero key) empty ping
+test('a ping flood is closed: pings count against perSecond like any frame (a pong each used to reset the idle timer for ever)', async () => {
+  const p = await start({ limits: { ...LIMITS, idleMs: 60_000 } });
+  try {
+    const s = await rawJoin(p.port());
+    await until(() => p.world.stats().players === 1);
+    for (let i = 0; i < LIMITS.perSecond + 20; i++) s.write(PING);
+    await until(() => p.world.stats().players === 0, 1500);
+    assert.equal(p.world.stats().players, 0, 'gone');
+    assert.equal(p.stats().refused['message-rate'], 1);
+    s.destroy();
+    const ok = await rawJoin(p.port());   // a few pings inside the rate are still answered
+    ok.write(PING); ok.write(PING);
+    await wait(150);
+    assert.equal(p.world.stats().players, 1, 'a polite pinger stays');
+    ok.destroy();
+  } finally { await p.close(); }
+});
+test('a client that does not read is closed once its queued bytes pass maxWriteBytes (tick, heartbeat and pong all stop writing to it)', async () => {
+  const socks = [];
+  const p = await start({ limits: { ...LIMITS, beatMs: 30, maxWriteBytes: 1000 } });
+  p.server.on('connection', (s) => socks.push(s));
+  try {
+    const s = await rawJoin(p.port());
+    await until(() => p.world.stats().players === 1);
+    // loopback kernel buffers hide a real backlog for MBs, so the socket's own queue length is what is forced: the server must act on writableLength and nothing else
+    Object.defineProperty(socks[0], 'writableLength', { get: () => 5000 });
+    await until(() => p.world.stats().players === 0, 1500);
+    assert.equal(p.world.stats().players, 0);
+    assert.equal(p.stats().refused.backlog, 1);
+    s.destroy();
+    const t = await rawJoin(p.port());   // the pong path too
+    await until(() => p.world.stats().players === 1);
+    Object.defineProperty(socks[1], 'writableLength', { get: () => 5000 });
+    t.write(PING);
+    await until(() => p.world.stats().players === 0, 1500);
+    assert.equal(p.stats().refused.backlog, 2);
+    t.destroy();
+  } finally { await p.close(); }
+});
+test('the bind address is loopback by default and PRESENCE_HOST is the one override', () => {
+  assert.equal(listenHost({}), '127.0.0.1');
+  assert.equal(listenHost({ PRESENCE_HOST: '' }), '127.0.0.1');
+  assert.equal(listenHost({ PRESENCE_HOST: '0.0.0.0' }), '0.0.0.0');
+  assert.equal(PRESENCE.host, '127.0.0.1');
 });
 
 test('perIp is swept: an address with no socket and an expired join window is forgotten', async () => {

@@ -15,12 +15,14 @@ const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const HTTP_OK = 200, HTTP_BAD_REQUEST = 400, HTTP_NOT_FOUND = 404, HTTP_TOO_MANY = 429, HTTP_UNAVAILABLE = 503;
 const FIN = 0x80, MASKED = 0x80, OPCODE_BITS = 0x0f, LENGTH_BITS = 0x7f, RESERVED_BITS = 0x70, LENGTH_16 = 126, LENGTH_64 = 127;
 const OP_CONTINUATION = 0, OP_TEXT = 1, OP_BINARY = 2, OP_CLOSE = 8, OP_PING = 9, OP_PONG = 10;
-const CLOSE_NORMAL = 1000, CLOSE_PROTOCOL = 1002, CLOSE_UNSUPPORTED = 1003, CLOSE_TOO_BIG = 1009, CLOSE_IDLE = 4000, CLOSE_MESSAGE_RATE = 4008, CLOSE_TELEPORT = 4009;
+const CLOSE_NORMAL = 1000, CLOSE_PROTOCOL = 1002, CLOSE_UNSUPPORTED = 1003, CLOSE_TOO_BIG = 1009, CLOSE_IDLE = 4000, CLOSE_MESSAGE_RATE = 4008, CLOSE_TELEPORT = 4009, CLOSE_BACKLOG = 4010;
 const HEADER_BYTES = 2, MASK_BYTES = 4, BYTE_BITS = 8, BYTE_MASK = 255, TICK_WRAP = 0xffff, SECOND_MS = 1000, MINUTE_MS = 60_000;   // SECOND_MS and MINUTE_MS: the window of a "per second" or "per minute" rate (perSecond, ipJoinsPerMinute)
 export const PROTOCOL = PRESENCE.protocol;
 export const PATH = PRESENCE.path;
+/** The address the service binds: PRESENCE_HOST if set (the one env override), else the `host` row (loopback). */
+export const listenHost = (env: Record<string, string | undefined>): string => env.PRESENCE_HOST || PRESENCE.host;
 export const HEALTH_PATH = `${PRESENCE.path}/health`;
-export const LIMITS = { maxMessage: presenceRule('maxMessage'), perSecond: presenceRule('perSecond'), idleMs: presenceRule('idleMs'), ipSockets: presenceRule('ipSockets'), ipJoinsPerMinute: presenceRule('ipJoinsPerMinute'), beatMs: presenceRule('beatMs') };
+export const LIMITS = { maxMessage: presenceRule('maxMessage'), perSecond: presenceRule('perSecond'), idleMs: presenceRule('idleMs'), ipSockets: presenceRule('ipSockets'), ipJoinsPerMinute: presenceRule('ipJoinsPerMinute'), beatMs: presenceRule('beatMs'), maxWriteBytes: presenceRule('maxWriteBytes') };
 export type Limits = typeof LIMITS;
 
 function frame(opcode: number, payload: Uint8Array): Buffer {
@@ -39,6 +41,7 @@ export function createPresence(opts: PresenceOptions = {}): Presence {
   const { rules = RULES, limits = LIMITS, now = Date.now, log = console.log, logEveryMs = presenceRule('logEveryMs'), sweepEveryMs = presenceRule('sweepEveryMs') } = opts;
   const world = new World(rules, opts.maxLayers ?? presenceRule('maxLayers'));
   const sockets = new Map<Player, Duplex>();
+  const closers = new Map<Player, (code: number, why?: string) => void>();   // each socket's own close(), for the tick and the heartbeat to shut a backed-up one
   const perIp = new Map<string, { sockets: number; windowStart: number; joins: number }>();
   const counts = { packets: 0, bytes: 0, up: 0, snapped: 0, strikes: 0, joined: 0, refused: {} as Record<string, number>, maxTickMs: 0, ticks: 0 };
   const refused = (why: string): void => { counts.refused[why] = (counts.refused[why] ?? 0) + 1; };
@@ -57,6 +60,7 @@ export function createPresence(opts: PresenceOptions = {}): Presence {
     for (const [p, packet] of world.tick(tickNo)) {
       const sock = sockets.get(p);
       if (!sock || sock.destroyed) continue;
+      if (sock.writableLength > limits.maxWriteBytes) { closers.get(p)?.(CLOSE_BACKLOG, 'backlog'); continue; }   // a client that does not read: closed, not queued for
       sock.write(frame(OP_BINARY, packet));
       counts.packets++; counts.bytes += packet.length;
     }
@@ -65,7 +69,7 @@ export function createPresence(opts: PresenceOptions = {}): Presence {
     tickRing[tickRingN++ % TICK_RING] = took;
   }, Math.max(presenceRule('tickFloorMs'), Math.floor(rules.tickMs / presenceRule('tickChecksPerTick'))));
   // seenAt on the heartbeat: a connected player standing still is still here.
-  const beats = setInterval(() => { world.sweep(now()); for (const [p, s] of sockets) if (!s.destroyed) { p.seenAt = now(); s.write(frame(OP_TEXT, Buffer.from('{"t":"beat"}'))); } }, limits.beatMs);
+  const beats = setInterval(() => { world.sweep(now()); for (const [p, s] of sockets) if (!s.destroyed) { if (s.writableLength > limits.maxWriteBytes) { closers.get(p)?.(CLOSE_BACKLOG, 'backlog'); continue; } p.seenAt = now(); s.write(frame(OP_TEXT, Buffer.from('{"t":"beat"}'))); } }, limits.beatMs);
   const reporter = setInterval(() => {
     log(`presence: ${JSON.stringify(world.stats())} packets ${counts.packets} bytes ${counts.bytes} up ${counts.up} joined ${counts.joined} maxTickMs ${counts.maxTickMs.toFixed(1)} refused ${JSON.stringify(counts.refused)} snapped ${counts.snapped} strikes ${counts.strikes}`);   // snapped: a pose refused and kept; strikes: every refused pose (snapped + the one that drops the player)
     counts.packets = 0; counts.bytes = 0; counts.up = 0; counts.snapped = 0; counts.strikes = 0; counts.joined = 0; counts.refused = {}; counts.maxTickMs = 0; counts.ticks = 0;
@@ -125,7 +129,8 @@ export function createPresence(opts: PresenceOptions = {}): Presence {
     };
     const touch = (): void => { clearTimeout(idle); idle = setTimeout(() => close(CLOSE_IDLE, 'idle'), limits.idleMs); };
     touch();
-    const gone = (): void => { clearTimeout(idle); if (sockets.get(player) !== socket) return; sockets.delete(player); world.leave(player, now()); release(); };
+    closers.set(player, close);
+    const gone = (): void => { clearTimeout(idle); if (sockets.get(player) !== socket) return; sockets.delete(player); closers.delete(player); world.leave(player, now()); release(); };
     socket.on('data', (chunk: Buffer) => {
       buffered = Buffer.concat([buffered, chunk]);
       for (;;) {
@@ -141,12 +146,12 @@ export function createPresence(opts: PresenceOptions = {}): Presence {
         buffered = buffered.subarray(at + MASK_BYTES + length);
         touch();
         if (opcode === OP_CLOSE) return close(CLOSE_NORMAL);
-        if (opcode === OP_PING) { socket.write(frame(OP_PONG, payload)); continue; }
-        if (opcode === OP_PONG) continue;
-        if (opcode !== OP_BINARY) return close(CLOSE_UNSUPPORTED, 'malformed');   // a text frame from a client is not part of this protocol (V1's warp and speech frames are not lifted)
-        const nowMs = now();
+        const nowMs = now();   // every frame but a close counts against perSecond, pings and pongs included (a ping flood is a flood)
         if (nowMs - windowStart >= SECOND_MS) { windowStart = nowMs; count = 0; }
         if (++count > limits.perSecond) return close(CLOSE_MESSAGE_RATE, 'message-rate');
+        if (opcode === OP_PING) { if (socket.writableLength > limits.maxWriteBytes) return close(CLOSE_BACKLOG, 'backlog'); socket.write(frame(OP_PONG, payload)); continue; }
+        if (opcode === OP_PONG) continue;
+        if (opcode !== OP_BINARY) return close(CLOSE_UNSUPPORTED, 'malformed');   // a text frame from a client is not part of this protocol (V1's warp and speech frames are not lifted)
         const up = decodeUp(payload);
         if (!up) return close(CLOSE_UNSUPPORTED, 'malformed');
         counts.up++;

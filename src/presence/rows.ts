@@ -4,17 +4,17 @@
 import DEFS from '../../data/presence.json' with { type: 'json' };
 
 export type PresenceRule = { readonly id: string; readonly value: number; readonly unit: string };
-export type PresenceDefs = { query: string; path: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; rules: readonly PresenceRule[] };
+export type PresenceDefs = { query: string; path: string; host: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; rules: readonly PresenceRule[] };
 
 /** Every rule the code reads by name (presenceRule's argument type). */
 export const NAMED = ['cellCm', 'radiusCm', 'nearCap', 'tier1Cm', 'tier1Every', 'tier2Cm', 'tier2Every', 'tier3Cm', 'tier3Every', 'tickMs', 'tickFloorMs', 'tickChecksPerTick', 'softCap', 'hardCap', 'maxLayers',
-  'maxSpeedCmS', 'speedSlack', 'jitterMs', 'strikesToDrop', 'strikeWindowMs', 'emptyLayerMs', 'maxMessage', 'perSecond', 'idleMs', 'ipSockets', 'ipJoinsPerMinute', 'beatMs', 'closeGraceMs', 'tickRing', 'logEveryMs',
+  'maxSpeedCmS', 'speedSlack', 'jitterMs', 'strikesToDrop', 'strikeWindowMs', 'emptyLayerMs', 'maxMessage', 'perSecond', 'idleMs', 'ipSockets', 'ipJoinsPerMinute', 'beatMs', 'maxWriteBytes', 'closeGraceMs', 'tickRing', 'logEveryMs',
   'sweepEveryMs', 'presencePort', 'walkHalfCm', 'giveUp', 'retryBaseMs', 'retryMaxMs', 'remoteSnap', 'remoteExpire'] as const;
 export type RuleId = (typeof NAMED)[number];
 
 /** The one loader: the file's shape, rules keyed by id (a duplicate is refused), a positive number for each, and a row for every rule read by name. */
 export function loadPresence(raw: Partial<PresenceDefs>): PresenceDefs {
-  for (const k of ['query', 'path', 'protocol', 'poseGlobal'] as const) if (typeof raw[k] !== 'string' || !raw[k]) throw Error(`presence: "${k}" is a non-empty string`);
+  for (const k of ['query', 'path', 'host', 'protocol', 'poseGlobal'] as const) if (typeof raw[k] !== 'string' || !raw[k]) throw Error(`presence: "${k}" is a non-empty string`);
   const f = raw.frame;
   if (!(f && Number.isInteger(f.centreCm) && Number.isInteger(f.sizeCm) && f.centreCm > 0 && f.sizeCm <= 0xffff && f.centreCm <= f.sizeCm)) throw Error('presence: frame is { centreCm, sizeCm } whole centimetres inside the u16 range');
   const rows = raw.rules ?? [], seen = new Set<string>();

@@ -15,13 +15,14 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 test('every presence rule equals V1\'s value (origins/presence/presence-rules-defs.json, same ids) or is a named V3 addition', () => {
   assert.deepEqual(RULES, { cellCm: 1600, radiusCm: 4000, nearCap: 40, tiers: [[1200, 1], [2500, 2], [4000, 5]], tickMs: 100, softCap: 80, hardCap: 100, maxSpeedCmS: 700, speedSlack: 1.5, strikesToDrop: 5, strikeWindowMs: 10_000, emptyLayerMs: 300_000, jitterMs: 500 });
   assert.deepEqual(RULES, interestRules());
-  assert.deepEqual(LIMITS, { maxMessage: 64, perSecond: 30, idleMs: 30_000, ipSockets: 16, ipJoinsPerMinute: 30, beatMs: 2000 });
+  assert.deepEqual(LIMITS, { maxMessage: 64, perSecond: 30, idleMs: 30_000, ipSockets: 16, ipJoinsPerMinute: 30, beatMs: 2000, maxWriteBytes: 65_536 });
   assert.deepEqual([presenceRule('maxLayers'), presenceRule('tickRing'), presenceRule('tickFloorMs'), presenceRule('tickChecksPerTick'), presenceRule('closeGraceMs'), presenceRule('logEveryMs')], [20, 40_000, 5, 4, 1000, 60_000]);
   assert.deepEqual([presenceRule('walkHalfCm'), presenceRule('presencePort'), presenceRule('sweepEveryMs')], [30_000, 8794, 60_000], 'V3 additions: the walkable square, the port (V1 used 8793), the per-IP sweep');
   assert.deepEqual([presenceRule('giveUp'), presenceRule('retryBaseMs'), presenceRule('retryMaxMs'), presenceRule('remoteSnap'), presenceRule('remoteExpire')], [6, 1000, 30_000, 6, 1500], 'the client: V1 preview-rules presenceGiveUp / remoteSnap / remoteExpire and the backoff literals');
   assert.deepEqual(PRESENCE.frame, { centreCm: 32768, sizeCm: 65535 });
   assert.deepEqual([PRESENCE.query, PRESENCE.path, PRESENCE.protocol, PRESENCE.poseGlobal, PATH, PROTOCOL], ['presence', '/presence', 'frankendom.v3.presence.1', '__v3HeroPose', '/presence', 'frankendom.v3.presence.1']);
-  assert.equal(PRESENCE.rules.length, 38);
+  assert.equal(PRESENCE.host, '127.0.0.1', 'the service binds loopback unless PRESENCE_HOST says otherwise');
+  assert.equal(PRESENCE.rules.length, 39);
   assert.equal(PRESENCE.rules.length, NAMED.length, 'every row is read by name and every name has a row');
   assert.equal(MAX_ENTITIES, 255, 'the packet count is one byte');
 });
@@ -42,7 +43,8 @@ test('the loader refuses a missing named rule, a non-positive value, a duplicate
   assert.throws(() => loadPresence({ ...DEFS, rules: [...rows, rows[0]] }), /given twice/);
   assert.throws(() => loadPresence({ ...DEFS, frame: { centreCm: 32768, sizeCm: 70000 } }), /u16/);
   assert.throws(() => loadPresence({ ...DEFS, path: '' }), /"path"/);
-  assert.equal(loadPresence({ ...DEFS, rules: [...rows, { id: 'extra', value: 2, unit: 'm' }] }).rules.length, 39);
+  assert.equal(loadPresence({ ...DEFS, rules: [...rows, { id: 'extra', value: 2, unit: 'm' }] }).rules.length, 40);
+  assert.throws(() => loadPresence({ ...DEFS, host: '' }), /"host"/);
 });
 
 test('src/presence (the page side) imports nothing from server/, and nothing in it touches node: it can only ever be bundled for the browser', () => {

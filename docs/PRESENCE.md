@@ -9,7 +9,7 @@ npm run presence          # listens on 127.0.0.1:8794 (data/presence.json presen
 npm run presence:smoke    # starts a service on a free port, connects two clients, walks them, prints what each sees; exit 0 = both saw the other
 ```
 
-Env (optional, no secrets): `PRESENCE_PORT`, `PRESENCE_HOST` (keep loopback behind a proxy), `PRESENCE_SOFT`, `PRESENCE_HARD`, `PRESENCE_MAX_LAYERS`, `PRESENCE_LOG_MS`. `GET /presence/health` returns the counters.
+The one env override is `PRESENCE_HOST`, the bind address (default: the `host` row, `127.0.0.1`; keep loopback and put a reverse proxy in front for anything public). Port, caps and limits are rows in `data/presence.json`. A socket that pings faster than `perSecond` or lets more than `maxWriteBytes` queue unread is closed. `GET /presence/health` returns the counters.
 
 Needs node 22.18+ (it runs the `.ts` files directly). No npm dependency.
 
