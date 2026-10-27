@@ -116,7 +116,9 @@ test('the controller: a kick on an open foe is a knockdown Presentation, emits f
   assert.equal(p.action, 'knockdown');
   assert.equal(emitted.length, 1); assert.equal(emitted[0][0], 'feel:kick_result');
   assert.deepEqual([emitted[0][1].outcome, emitted[0][1].finisherWindowS, emitted[0][1].stance], ['knockdown', ROWS.window.knockdown.lengthS, 'open']);
-  assert.equal(globalThis[ROWS.event.log].length, 1);
+  assert.equal(globalThis[ROWS.event.log].length, 1); assert.equal(emitted[0][1].presentationOnly, true, 'the event promises no sim window');
+  for (const k of ['about']) assert.match(ROWS[k], /PLACEHOLDER/); assert.match(ROWS.stance.about, /PLACEHOLDER/); assert.match(ROWS.window.about, /PLACEHOLDER/);
+  assert.doesNotMatch(JSON.stringify(ROWS), /feel-sim\.json/, 'no wording that points at a file that does not exist yet');
   ctl.frame(0.1); assert.deepEqual(shown, [], 'not yet: he is still falling');
   ctl.frame(ROWS.window.knockdown.startS); assert.deepEqual(shown, [true]);
   ctl.frame(ROWS.window.knockdown.lengthS + 0.1); assert.deepEqual(shown, [true, false]); assert.equal(ctl.debug.windowOpen, false);

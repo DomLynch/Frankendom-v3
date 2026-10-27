@@ -1,9 +1,10 @@
 // M7 deliverable 3, KNOCKBACK, SHOVE AND KICK (data/feel-kick.json), opt-in ?feel=kick (src/fight/feel.ts registry). PRESENTATION ONLY: it reads the sim's kick Hit event on the opponent
 // and says how his ragdoll shows it (a stagger or a knockdown by push, by the kicker's mass and his stance), then shows a 'finish now' cue for the finisher window and emits
-// ctx.emit('feel:kick_result', { outcome, finisherWindowS, ... }). The outcome and the window change the fight, so they are the SIM's (Strategy / V3 Dev, 2026-10-27: V3's sim computes them from its
-// own events and rows, data/feel-sim.json, never from Jolt; when they disagree the sim wins): the rows here are the presentation's mirror, and nothing here writes the sim.
+// ctx.emit('feel:kick_result', { outcome, finisherWindowS, presentationOnly: true, ... }). The outcome and the window change the fight, so they will be the SIM's (Strategy / V3 Dev, 2026-10-27): the
+// numbers in data/feel-kick.json are PLACEHOLDERS that V3 Dev's sim rows will replace, the event promises no sim window (presentationOnly), and nothing here writes the sim.
 // The core (kickResult, stanceOf, massOf, windowAt, kindOf) is pure: no three, no DOM, no clock.
 import FEEL from '../../data/feel-kick.json' with { type: 'json' };
+import FIGHT from '../../data/fight.json' with { type: 'json' };
 import type { FeelCtx, FeelHooks } from './feel.ts';   // TYPES only: the feel chunk is its own bundle (feel-chunk.ts) and has its own copy of anything it imports
 import type { CombatEvent } from './duel.ts';
 import type { Presentation } from './rules-eval.ts';
@@ -60,7 +61,7 @@ export function presentationOf(rows: FeelKickRows, r: KickResult): Presentation 
 }
 
 /** The event this module emits for the sim (rows `event.name`). */
-export type KickEvent = { tick: number; move: string; outcome: Outcome; stance: Stance; force: number; finisherWindowS: number; finisherStartS: number; pushDistanceM: number; pushVelocityMs: number };
+export type KickEvent = { presentationOnly: true; tick: number; move: string; outcome: Outcome; stance: Stance; force: number; finisherWindowS: number; finisherStartS: number; pushDistanceM: number; pushVelocityMs: number };
 
 /** A DOM cue: a pulsing label over the canvas (rows `cue`), at a fixed spot (xPct, yPct of the viewport). Browser only. */
 export function createCueElement(rows: FeelKickRows = FEEL): { show(on: boolean, text: string): void } {
@@ -90,7 +91,7 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
     if (!rows.on || !kind) return null;
     const r = kickResult(rows, { kickerKg: massOf(rows, 'hero'), targetKg: massOf(rows, ctx.foeId ?? 'default'), stance: stanceOf(track, e.guarded === true), ...kind });
     since = 0; win = r.window; debug.hits++; debug.last = { ...r, move: e.move! };
-    const ev: KickEvent = { tick: e.tick, move: e.move!, outcome: r.outcome, stance: r.stance, force: r.force, finisherWindowS: r.window.lengthS, finisherStartS: r.window.startS, pushDistanceM: r.pushDistanceM, pushVelocityMs: r.pushVelocityMs };
+    const ev: KickEvent = { presentationOnly: true, tick: e.tick, move: e.move!, outcome: r.outcome, stance: r.stance, force: r.force, finisherWindowS: r.window.lengthS, finisherStartS: r.window.startS, pushDistanceM: r.pushDistanceM, pushVelocityMs: r.pushVelocityMs };
     const list = log(); list.push(ev); while (list.length > rows.event.keep) list.shift();
     ctx.emit(rows.event.name, ev);
     return presentationOf(rows, r);
@@ -103,7 +104,7 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
     react,
     /** The registry's hit hook: react, then give the ragdoll the push (rd.knockdown('push') or rd.stagger) in its own frame (the Hit's heading turned by the group's yaw). */
     hit(e: CombatEvent, ctx: FeelCtx): Presentation | null {
-      const p = react(e, { emit: ctx.emit, foeId: rows.foe });
+      const p = react(e, { emit: ctx.emit, foeId: FIGHT.opponent });   // the hook's ctx does not carry his id: the fight config row's opponent (data/fight.json), the one fight with a ragdoll today
       if (!p || e.heading === undefined) return p;
       const yaw = e.heading - ctx.group.rotation.y, mag = p.scale * rows.push.refImpulse, push = { part: rows.push.part, impulse: [Math.sin(yaw) * mag, rows.push.lift[p.action as Outcome], Math.cos(yaw) * mag] as [number, number, number] };
       if (p.action === 'knockdown') { ctx.rd.knockdown('push', push); down = true; getUp = -1; } else ctx.rd.stagger(push);
