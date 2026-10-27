@@ -46,6 +46,8 @@ export type Skyline = {
   update(camera: THREE.Vector3, dt: number): void;
   readonly state: 'idle' | 'loading' | 'fading' | 'on' | 'failed';
   readonly opacity: number;
+  /** The landed picture (skyfold.ts lays its lower band on the ground; no second download); undefined until it lands. */
+  readonly texture: THREE.Texture | undefined;
   dispose(): void;
 };
 
@@ -109,6 +111,7 @@ export function createSkyline(
     },
     get state() { return state; },
     get opacity() { return opacity; },
+    get texture() { return texture; },
     dispose() { disposed = true; scene.remove(mesh); mesh.geometry.dispose(); material.dispose(); texture?.dispose(); },
   };
 }

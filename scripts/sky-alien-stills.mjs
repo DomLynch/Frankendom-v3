@@ -32,7 +32,7 @@ for (const query of queries.length ? queries : ['', 'skyfollow=v1']) {
   await page.waitForTimeout(4000);
   const read = () => page.evaluate(() => {
     const c = globalThis.__v3Scene.userData.camera, d = c.getWorldDirection(new c.position.constructor()), s = globalThis.__v3Scene.getObjectByName('skyline');
-    return { headingDeg: +(Math.atan2(-d.x, -d.z) * 180 / Math.PI).toFixed(1), pitchDeg: +(Math.asin(d.y) * 180 / Math.PI).toFixed(1), stripYawDeg: s ? +(s.rotation.y * 180 / Math.PI).toFixed(1) : null };
+    return { headingDeg: +(Math.atan2(-d.x, -d.z) * 180 / Math.PI).toFixed(1), pitchDeg: +(Math.asin(d.y) * 180 / Math.PI).toFixed(1), stripYawDeg: s ? +(s.rotation.y * 180 / Math.PI).toFixed(1) : null, foldYawDeg: (() => { const f = globalThis.__v3Scene.getObjectByName('skyfold'); return f ? +(f.rotation.y * 180 / Math.PI).toFixed(1) : null; })() };
   });
   const heads = [];
   await page.screenshot({ path: `${out}/${tag}-ready.png` }); heads.push({ shot: 'ready', ...(await read()) });
