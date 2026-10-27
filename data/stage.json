@@ -85,11 +85,11 @@
           "sweepSeconds": 2.6,
           "width": 0.03,
           "slant": 0.35,
-          "strength": 1,
+          "strength": 0.8,
           "color": "#d8ecff",
-          "edgeLo": 0.015,
-          "edgeHi": 0.08,
-          "lumaFrom": 0.08,
+          "edgeLo": 0.04,
+          "edgeHi": 0.12,
+          "lumaFrom": 0.1,
           "coolFrom": 0
         }
       }
