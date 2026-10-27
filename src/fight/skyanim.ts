@@ -173,9 +173,10 @@ if (uPlanetOn > 0.5) {
   vec4 o = skyLayer(uPlanetTex, uPlanetRect, skyP);
   vec2 q = vec2((skyP.x - uPlanetC.x) / uPlanetR, (skyP.y - uPlanetC.y) / (uPlanetR / uAspect)); float d = length(q);
   if (uSphereOn > 0.5 && o.a > 0.0) {   // a real sphere: the surface wrapped on the disc and turned, the shading disc fixed on top; the cut-out's alpha still hides what is behind the clouds
-    vec2 qs = q / max(d, 1.0); float z = sqrt(max(0.0, 1.0 - dot(qs, qs)));
+    vec2 qt = vec2(q.x, (skyP.y - uPlanetC.y) / (uPlanetR * uAspect)); float dt = length(qt);   // the true disc in plate pixels (a height fraction is 1/aspect of a width fraction; the glow's q above is squashed)
+    vec2 qs = qt / max(dt, 1.0); float z = sqrt(max(0.0, 1.0 - dot(qs, qs)));
     vec3 sf = texture2D(uSurfTex, vec2(0.5 + atan(qs.x, max(z, 1e-4)) * 0.15915494 + uPlanetTurn, 0.5 - asin(clamp(qs.y, -1.0, 1.0)) * 0.31830989)).rgb;
-    vec2 su = 0.5 + 0.5 * q * uShadeDisc; vec4 sh = texture2D(uShadeTex, vec2(su.x, 1.0 - su.y));
+    vec2 su = 0.5 + 0.5 * qt * uShadeDisc; vec4 sh = texture2D(uShadeTex, vec2(su.x, 1.0 - su.y));
     o.rgb = mix(sf, sh.rgb, sh.a * uShadeStr);
   }
   sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, o.rgb, o.a);
