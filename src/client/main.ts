@@ -5,6 +5,9 @@
 import FIGHT from '../../data/fight.json' with { type: 'json' };
 import BRAINS from '../../data/brains.json' with { type: 'json' };
 import { brainFor, brainProfile } from '../brain.ts';
+import DIFFICULTY from '../../data/difficulty.json' with { type: 'json' };
+import PROFILES from '../../data/profiles.json' with { type: 'json' };
+import { difficultyPick, profileFor, resolveFight, scaledOpponent, scaledPractice, type DifficultyFile } from '../difficulty.ts';
 import { applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
 import { initialPractice, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
@@ -58,6 +61,10 @@ const search = location.search;
 const canvas = element<HTMLCanvasElement>('world');
 // V1's Pitborn in the Minotaur's body (data/fight.json opponent); ?pitborn=v1 = the Centurion's fight, on the same 106 body (src/fight/foe-pick.ts, the one read)
 const opponentId = fightOpponent(FIGHT, search) as OpponentId, opponent = OPPONENTS[opponentId], level = FIGHT.level;
+// The difficulty (data/difficulty.json over data/profiles.json, src/difficulty.ts): the fight config is { profile, difficulty row }; ?difficulty=1-10 picks the row
+// (default row otherwise, a console warning for a bad value), ?difficulty=legacy the fight before this setting. Under ?pitborn=v1 (the Centurion, not this profile's opponent) it is off: V1's Centurion as before.
+const resolved = resolveFight({ profile: FIGHT.profile, difficulty: difficultyPick(DIFFICULTY, search) }, PROFILES.profiles, DIFFICULTY as DifficultyFile, BRAINS.brains);
+const difficultyOn = resolved.opponent === opponentId;
 // :86 the opponent's swing parked in its chamber: the hold her rising charge cue climbs through
 const foeHolding = (f: Fighter) => f.phase === 'attack' && f.charge > 0 && f.move !== null && f.age <= (weaponOf(f.weapon).moves[f.move].chamber ?? -1);
 
@@ -83,13 +90,17 @@ function fresh(pose?: DuelPose): Practice {
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   setFoeSpecialReach(foeSpecialReachFor(FIGHT.foeSpecialReach, search));   // V3: an opponent's melee special starts inside 2.2 m and fizzles past 2.6 m (data/fight.json foeSpecialReach); ?special=v1 = V1's 3.0 m, no release check
   epoch++;
-  return initialPractice(seed, opponentAt(opponent, level), FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
+  const body = opponentAt(opponent, level);
+  const made = initialPractice(seed, difficultyOn ? scaledOpponent(body, resolved) : body, FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
     recordSpecials({ specials: FIGHT.specials, level, opponent: opponentId }), undefined, FIGHT.stance as PickedStance,
     pose, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
+  return difficultyOn ? scaledPractice(made, resolved) : made;
 }
 let practice = fresh(), frameEvents: CombatEvent[] = [];
 // the warden's brain: data/fight.json `ai` (a data/brains.json row) over his V1 profile at his level; ?ai=v1 = V1's profile untouched
-const aiProfile = brainProfile(profileAt(opponent, level), brainFor(BRAINS.brains, FIGHT.ai, search));
+// (the difficulty row's knobs over it, src/difficulty.ts; ?ai=v1 = V1's profile untouched; off under ?pitborn=v1)
+const aiProfile = difficultyOn ? profileFor(profileAt(opponent, level), resolved, new URLSearchParams(search).get('ai') === 'v1')
+  : brainProfile(profileAt(opponent, level), brainFor(BRAINS.brains, FIGHT.ai, search));
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
