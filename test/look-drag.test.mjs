@@ -188,9 +188,9 @@ test('the stick stays camera-relative: the same push walks a different way once 
   // and the camera rig reports the yaw the page hands the walk
   const rig = createCameraRig(new THREE.PerspectiveCamera());
   const y0 = rig.yaw;
-  rig.turn(turnOf(LOOK, 100));
+  rig.lookYaw(-turnOf(LOOK, 100));
   assert.ok(Math.abs(Math.abs(rig.yaw - y0) - turnOf(LOOK, 100)) < 1e-9, 'the rig turned by exactly the drag');
-  rig.turn(-turnOf(LOOK, 100));
+  rig.lookYaw(turnOf(LOOK, 100));
   assert.ok(Math.abs(rig.yaw - y0) < 1e-9, 'and back');
 });
 
@@ -199,11 +199,11 @@ const code = (p) => read(p).replace(/(^|\s)\/\/.*$/gm, '$1').replace(/\/\*[\s\S]
 const PINS = [
   ['../src/client/main.ts', 'the rows come from the free camera: none without it', /const LOOK = lookFor\(!!FREE, search\), look = LOOK \? createLook\(LOOK\) : null;/],
   ['../src/client/main.ts', 'a press starts the look only while the camera is free, on its own pointer id', /if \(e\.button !== 0 \|\| paused\(\) \|\| !freeNow \|\| !look\.down\(e\.pointerId, e\.clientX, window\.innerWidth, e\.pointerType, e\.timeStamp\)\) return;/],
-  ['../src/client/main.ts', 'a move turns the view by the drag', /view\.lookBy\(look\.move\(e\.pointerId, e\.clientX, e\.timeStamp\)\);/],
+  ['../src/client/main.ts', 'a move turns the view by the drag', /view\.lookYaw\(-look\.move\(e\.pointerId, e\.clientX, e\.timeStamp\)\);/],
   ['../src/client/main.ts', 'a lift ends it', /look\.up\(\(e as PointerEvent\)\.pointerId, \(e as PointerEvent\)\.timeStamp\);/],
-  ['../src/client/main.ts', 'every frame: the glide while free, the cancel the moment a fight (or a pause) takes the camera', /if \(look\) \{ if \(freeNow && !paused\(\)\) view\.lookBy\(look\.step\(dt\)\); else look\.cancel\(\); \}/],
+  ['../src/client/main.ts', 'every frame: the glide while free, the cancel the moment a fight (or a pause) takes the camera', /if \(look\) \{ if \(freeNow && !paused\(\)\) view\.lookYaw\(-look\.step\(dt\)\); else look\.cancel\(\); \}/],
   ['../src/client/main.ts', '?look=off keeps the plain drag', /if \(freeNow\) view\.lookRound\(e\.clientX - drag\.x\);/],
-  ['../src/fight/scene.ts', 'the scene turns the rig', /lookBy\(radians: number\) \{ rig\.turn\(radians\); \}/],
+  ['../src/fight/scene.ts', 'the scene turns the rig (#136\'s hook)', /lookYaw\(radians: number\) \{ rig\.lookYaw\(radians\); \}/],
 ];
 test('the page wires the look thumb: its own pointer id, the free camera gate, the frame cancel, ?look=off', () => {
   for (const [file, what, re] of PINS) {

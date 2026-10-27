@@ -29,13 +29,15 @@ const pad = await page.evaluate(() => { const r = document.getElementById('joyst
 const hit = await page.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e ? (e.id || e.tagName) : null; }, [300, 420]);
 console.log(`${tag} stick pad`, JSON.stringify(pad), `element under the right thumb: ${hit}`);
 await shot('0-before'); const w0 = await where(); console.log(`${tag} before`, JSON.stringify(w0));
-const left = [1, pad.x, pad.y + 30], R0 = [300, 420];   // the left thumb pushes the stick toward the camera (down); the right thumb lands on empty ground
+const PUSH = (process.env.PUSH ?? '30,0').split(',').map(Number);   // where the left thumb pushes the stick from its centre (px): sideways by default, so the pit's wall is not met at once
+const left = [1, pad.x + PUSH[0], pad.y + PUSH[1]], R0 = [300, 420];   // the right thumb lands on empty ground
+const knob = () => page.evaluate(() => document.querySelector('#joystick > *')?.style.transform ?? null);
 await touch('touchStart', [left]);
 await page.waitForTimeout(300);
 await touch('touchStart', [left, [2, R0[0], R0[1]]]);
 await page.waitForTimeout(500);
 await shot('1-held'); const w1 = await where(); console.log(`${tag} held`, JSON.stringify(w1));
-for (let i = 1; i <= STEPS; i++) { await touch('touchMove', [left, [2, R0[0] - (DRAG_PX * i) / STEPS, R0[1]]]); await page.waitForTimeout(40); }
+for (let i = 1; i <= STEPS; i++) { await touch('touchMove', [left, [2, R0[0] - (DRAG_PX * i) / STEPS, R0[1]]]); await page.waitForTimeout(40); if (i % 3 === 0) { const w = await where(); console.log(`${tag} drag ${i}`, JSON.stringify({ yaw: w.yaw, hero: w.hero, knob: await knob() })); } }
 await page.waitForTimeout(200);
 await shot('2-turned'); const w2 = await where(); console.log(`${tag} turned`, JSON.stringify(w2));
 await touch('touchEnd', [left]);

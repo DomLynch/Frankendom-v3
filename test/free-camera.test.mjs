@@ -138,6 +138,8 @@ test('the drag looks round and recenter stands behind him: the free camera keeps
   const y0 = rig.yaw; rig.orbit(100, 0); assert.ok(rig.yaw !== y0);
   run(rig, 2, state(0, 3.25), { x: 0, z: 0 }, true);
   assert.ok(Math.abs(wrap(rig.yaw - (y0 - 0.5))) < 1e-6, 'the lock does not pull the dragged view back');
+  const y1 = rig.yaw; rig.lookYaw(0.4); assert.ok(Math.abs(wrap(rig.yaw - (y1 + 0.4))) < 1e-9, 'lookYaw turns the view by the given radians');
+  run(rig, 1, state(0, 3.25), { x: 0, z: 0 }, true); assert.ok(Math.abs(wrap(rig.yaw - (y1 + 0.4))) < 1e-6, 'and the free camera keeps it');
   rig.faceBehind(0.7); assert.ok(Math.abs(wrap(rig.yaw - yawBehind(0.7))) < 1e-9);
 });
 

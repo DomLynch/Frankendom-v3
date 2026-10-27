@@ -66,6 +66,7 @@ import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, val
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
+import { groundFor, groundOn } from '../zone/ground.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
@@ -207,6 +208,8 @@ function nameOpponent() {   // :397 without the legend
 // the spawn the hero is nearest to (`current`, the live rig); the others stand as frozen copies at their spots (view.idleFoes); the fight starts when the hero walks into the held one's aggro
 // (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
+if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
+if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0;
 // The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
@@ -318,7 +321,7 @@ if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger d
       if (e.button !== 0 || paused() || !freeNow || !look.down(e.pointerId, e.clientX, window.innerWidth, e.pointerType, e.timeStamp)) return;
       try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
     });
-    canvas.addEventListener('pointermove', (e) => { view.lookBy(look.move(e.pointerId, e.clientX, e.timeStamp)); });
+    canvas.addEventListener('pointermove', (e) => { view.lookYaw(-look.move(e.pointerId, e.clientX, e.timeStamp)); });
     for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, (e) => { look.up((e as PointerEvent).pointerId, (e as PointerEvent).timeStamp); });
   } else {
     // ?look=off: the plain one-finger drag the free camera shipped with
@@ -432,7 +435,7 @@ function frame(now: number) {
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged });
   // a fight (or a pause) drops the look finger and its glide cleanly; the walk's move already reads view.yaw, so the stick stays camera-relative as the view turns
-  if (look) { if (freeNow && !paused()) view.lookBy(look.step(dt)); else look.cancel(); }
+  if (look) { if (freeNow && !paused()) view.lookYaw(-look.step(dt)); else look.cancel(); }
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
     locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
