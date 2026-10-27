@@ -18,7 +18,18 @@
     "yawDegrees": 0,
     "brightness": 0.9,
     "fadeSeconds": 1.2,
-    "loadAfterFirstFrameMs": 300
+    "loadAfterFirstFrameMs": 300,
+    "views": {
+      "about": "How much of the strip shows (src/fight/skyview.ts). Dom picked B (2026-10-27): `default` names the variant the page draws with no link; ?skyview=a|b|c picks one; ?skyview=v1 (`v1`) is the look before this (no melt, no lowering, nothing here runs); ?sky=v1 is still the flat sky. The camera, zoom and fight framing are never touched. Per variant: fogColor ('' = the scene's) is the strip's horizon haze (its lower band at horizonFraction, as drawn at `brightness`) and fogDensity (0 = the scene's, exp-squared) fogs the far sand into it; fadeStartDegrees / fadeEndDegrees (0/0 = off) melt the sand and its grid to transparent by how far below the horizon the camera sees it (solid at start and steeper, gone at end and shallower; an angle so it follows the strip's lowered bottom edge at any camera height, the phone fight camera looks 32 degrees down so its top edge is 8.6 degrees under the horizon), so the strip behind shows; dropMetres lowers the whole strip (the horizon of the image sits that far below the eye), heightMetres (0 = the row's) resizes it; brightness replaces the strip's own so the HUD reads over its bright cloud band. A = fog only; B = fade + lowered strip + haze fog; C = lowered strip only.",
+      "query": "skyview",
+      "v1": "v1",
+      "default": "b",
+      "variants": {
+        "a": { "fogColor": "#936877", "fogDensity": 0.014, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 0, "heightMetres": 0, "brightness": 0.9 },
+        "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartDegrees": 14, "fadeEndDegrees": 9, "dropMetres": 23, "heightMetres": 120, "brightness": 0.85 },
+        "c": { "fogColor": "", "fogDensity": 0, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 23, "heightMetres": 120, "brightness": 0.9 }
+      }
+    }
   },
   "ruler": { "show": false, "height": 1.8, "tick": 0.1, "color": "#ffd166", "x": -2.9 },
   "light": {

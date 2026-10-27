@@ -1,7 +1,7 @@
 // DEFAULTS ON (Dom 2026-10-27: everything on the MAIN URL, no ?flags to test). Pins, from the shipped rows (like the 106-rig defaults test): each feature is ON with no query, each has
 // its own ?x=v1 revert that turns it OFF (and only it), and the headless sim (Gate 0's tree, src/ alone) never reads these defaults. Presence is NOT in this list: it stays off.
 //   ragdoll finishers  data/physics.json finisher {default physics}        revert ?ragdoll=v1
-//   M4 hit/cut rules   data/rules.json default m4                          revert ?rules=v1
+//   M4 hit/cut rules   INTERIM: data/rules.json default v1 (OFF by default), opt in ?rules=m4 until the evaluator's light-hit fall is fixed
 //   feel hitreact / limbs / kick / clash   data/feel-defaults.json modules  revert ?hitreact=v1 ?limbs=v1 ?kick=v1 ?clash=v1, all: ?feel=v1
 //   sim knockdown      data/feel-sim.json, rides the kick module            revert ?kick=v1 / ?feel=v1
 import { test, afterEach } from 'node:test';
@@ -37,8 +37,8 @@ test('the defaults row validates and names real modules, each with a revert quer
 test('with no query every one of them is ON (read from the shipped rows)', () => {
   assert.equal(finisherModeFor(PHYSICS, ''), 'physics', 'ragdoll finishers: Split Crown / Opened ... play as physics cuts');
   assert.equal(PHYSICS.finisher.default, 'physics');
-  assert.equal(rulesOnFor(RULES, ''), true, 'M4 hit/cut rules');
-  assert.equal(RULES.default, RULES.m4);
+  assert.equal(rulesOnFor(RULES, ''), false, 'INTERIM (2026-10-27): M4 hit/cut rules are OFF by default: its evaluator torso pool dropped the foe on light hits; ?rules=m4 opts in; flip back only on the proven fix');
+  assert.equal(RULES.default, RULES.v1);
   assert.deepEqual(feelsOn(DEFAULTS, ''), DEFAULTS.modules);
   for (const m of MODULES) assert.ok(feelsOn(DEFAULTS, '').includes(m), m);
   assert.notEqual(knockSimFor(SIM, '', DEFAULTS), null, 'the sim knockdown + finish window');
@@ -48,7 +48,8 @@ test('with no query every one of them is ON (read from the shipped rows)', () =>
 test('each ?x=v1 revert turns off its own feature and nothing else', () => {
   assert.equal(finisherModeFor(PHYSICS, '?ragdoll=v1'), 'skip', 'ragdoll finishers off: the plain ragdoll death, as before today');
   assert.equal(rulesOnFor(RULES, '?rules=v1'), false, "V1's rules");
-  assert.equal(rulesOnFor(RULES, '?ragdoll=v1&kick=v1&feel=v1'), true, 'another revert leaves M4 on');
+  assert.equal(rulesOnFor(RULES, '?rules=m4'), true, 'M4 is an explicit opt-in for now');
+  assert.equal(rulesOnFor(RULES, '?ragdoll=v1&kick=v1&feel=v1'), false, 'another revert leaves the default (V1 rules) alone');
   for (const m of MODULES) {
     const q = DEFAULTS.revert[m].query, others = MODULES.filter((o) => o !== m);
     assert.deepEqual(feelsOn(DEFAULTS, `?${q}=v1`), others, `?${q}=v1 turns off ${m} only`);
