@@ -7,7 +7,9 @@ import { dirname, join, relative, resolve } from 'node:path';
 const root = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const src = join(root, 'src');
 const STUBS = join(src, 'stubs.ts');
-const FORBIDDEN = [/^src\/core\/(?!registry\.ts$)/, /^src\/net\//, /^src\/zones?[/.-]/, /^src\/legends?[/.-]/, /^src\/pit\//];
+// src/zones/ (plural) and src/zone.ts / src/zone-*.ts are V1's dropped zone system. src/zone/ (singular folder) is V3's OWN live-zone code (spawns, zone rows, shared hp): its files and the chunk that
+// imports them may import each other, so only the plural folder and the singular-with-a-dot-or-dash names stay forbidden.
+const FORBIDDEN = [/^src\/core\/(?!registry\.ts$)/, /^src\/net\//, /^src\/zones[/.-]/, /^src\/zone[.-]/, /^src\/legends?[/.-]/, /^src\/pit\//];
 const IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"](\.{1,2}\/[^'"]+)['"]/g;
 
 const files = (dir) => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? files(p) : /\.(ts|js|mjs)$/.test(f) ? [p] : []; });

@@ -328,5 +328,8 @@ fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? 
 if (snd === '1') setInterval(() => { element('build').textContent = `${buildLabel} ${feedback.state()}${keep.playing() ? '+keep' : ''}`; }, SOUND.statusMs);
 // Other players (data/presence.json, src/presence/chunk.ts): OFF unless the link has ?presence=1 or ?presence=ws(s)://... Then the client chunk (its own file, nothing in this bundle) joins the presence
 // service; the handle is on window.__v3Presence for the scene wiring step and the browser checks (remotes(), on(), self(), state()). Others have no collider and play no part in the fight.
+// Shared boss health (data/zone-client.json, src/zone/shared-hp-chunk.ts, docs/ZONE-CLIENT-CONTRACT.md): OFF unless the link has ?sharedhp=1 or ?sharedhp=http(s)://... Then the chunk (its own file, nothing in this bundle) makes the handle on
+// window.__v3SharedHp. INERT in this step: nothing feeds it sim events and nothing draws its bar; the sim's own health stays the truth of the fight (the wiring PR connects it).
+if (/[?&]sharedhp=/.test(search)) void import('../zone/shared-hp-chunk.ts').then((m) => { (window as unknown as { __v3SharedHp?: unknown }).__v3SharedHp = m.startSharedHp({ search, location }); }).catch(() => {});
 if (/[?&]presence=/.test(search)) void import('../presence/chunk.ts').then((m) => { (window as unknown as { __v3Presence?: unknown }).__v3Presence = m.startZonePresence({ search, location, hero: () => state, spawn: () => view.spawnRemote() }); }).catch(() => {});   // startZonePresence also installs globalThis.__v3HeroPose and draws the others (src/presence/draw.ts)
 requestAnimationFrame(frame);
