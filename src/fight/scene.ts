@@ -71,6 +71,7 @@ import { fovForZoom, wideBoost, type WideRow } from './camera-zoom.ts';
 import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
 import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
+import { createFoeFade, foeFadeOn } from './foefade.ts';
 import { foeRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -234,6 +235,8 @@ export function createScene(
     impactFx = createImpactFx(scene),   // a flash + ground ring per contact row (hit-stop-defs.json flash/ring/tint columns; a row without them draws nothing)
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
   const floorFade = skyView ? fadeFloor(arena.group, skyView) : null;   // B: the far sand and grid melt to nothing by angle (skyview.ts); null = the floor as it was
+  const foeFade = skyView && foeFadeOn(pageSearch, skyView) ? createFoeFade(skyView) : null;   // the far opponent melts into the clouds where the sand does (foefade.ts); ?foefade=v1 or no band: null, nothing below runs
+  scene.userData.foeFade = foeFade;   // read by the stills' probe only
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
@@ -417,6 +420,7 @@ export function createScene(
       ragdoll?.attach(opponent, loaded.opponent, loaded.player).catch(captureException);   // his presentation ragdoll (ragdoll.ts): the chunk loads after the first frame
       heroRagdoll?.attach(player, loaded.player).catch(captureException);   // ?feel=hero: hers, the same way
       player.visible = opponent.visible = true;
+      foeFade?.protect(player); foeFade?.adopt(opponent);
       for (const rig of [loaded.player, loaded.opponent])
         for (const name of ['foot_l', 'foot_r']) dustFeet.push(boneOf(rig.anchor, name) ?? null);
       dress();
@@ -620,6 +624,14 @@ export function createScene(
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
   let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef }[] = [], frameWiden = 1;
   const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
+  let foeFadeTick = 0;
+  function foeAdoptAll() {
+    if (!foeFade) return;
+    foeFade.protect(player); foeFade.adopt(opponent);
+    for (const h of idleCopies) foeFade.adopt(h);
+    for (const e of idleOtherActors.values()) foeFade.adopt(e.group);
+    for (const e of liveFoes.values()) foeFade.adopt(e.group);
+  }
   function syncLiveFoes(dt: number) {
     const seen = new Set<string>();
     if (warriors) for (const { id, practice: p, spawn } of liveList) {
@@ -1191,6 +1203,7 @@ export function createScene(
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
       floorFade?.move(camera.position);
+      if (foeFade) { foeFade.move(camera.position); if ((foeFadeTick++ & 15) === 0) foeAdoptAll(); }   // the opponents' fade is measured from the eye; new gear and pooled bodies are picked up within 16 frames
       skyline?.heading(camera);
       skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts); the camera was placed by rig.update above
       skyfold?.update(camera.position, dt, skyline);   // the folded floor under the sand (skyfold.ts), after the strip so it reads the strip's current yaw

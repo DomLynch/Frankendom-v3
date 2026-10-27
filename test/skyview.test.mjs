@@ -22,7 +22,7 @@ test('the validator refuses bad view rows', () => {
   assert.match(bad({ fogDensity: -1 }), /fogDensity/);
   assert.match(bad({ fadeStartDegrees: 10, fadeEndDegrees: 20 }), /fadeStartDegrees/);
   assert.match(bad({ fadeStartDegrees: 95, fadeEndDegrees: 20 }), /fadeStartDegrees/);
-  assert.match(bad({ fadeStartDegrees: 0, fadeEndDegrees: 0 }), /^$/);   // both 0 = off is fine
+  assert.match(bad({ fadeStartDegrees: 0, fadeEndDegrees: 0, foeFade: false }), /^$/);   // both 0 = off is fine
   assert.match(bad({ dropMetres: 500 }), /dropMetres/);
   assert.match(bad({ dropMetres: 60, heightMetres: 400 }), /far plane/);
   assert.match(bad({ brightness: NaN }), /brightness/);

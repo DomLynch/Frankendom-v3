@@ -369,13 +369,15 @@ function checkSkyFold(s) {
 }
 
 // data/stage.json `skyline.views` (src/fight/skyview.ts): the ?skyview= looks. Every variant has every key; the band is both 0 (off) or start > end (degrees below the horizon: it fades from the start angle down to the end angle); the strip, lowered or resized, keeps its rim inside the far plane.
-export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fadeEndDegrees', 'dropMetres', 'heightMetres', 'brightness'];
+export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fadeEndDegrees', 'dropMetres', 'heightMetres', 'brightness', 'foeFade', 'foeFadeMinOpacity', 'foeFadeClearMetres'];
 function checkSkyViews(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
   if (v === null || typeof v !== 'object' || Array.isArray(v)) return ['stage.skyline.views: must be an object'];
-  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'default', 'variants'].includes(k)) at(k, 'unknown key');
+  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'foeFadeQuery', 'foeFadeV1', 'default', 'variants'].includes(k)) at(k, 'unknown key');
   if (typeof v.query !== 'string' || !/^[a-z0-9]+$/i.test(v.query) || v.query === s.query) at('query', 'must be a plain word other than skyline.query');
   if (typeof v.v1 !== 'string' || !/^[a-z0-9]+$/i.test(v.v1)) at('v1', 'must be a plain word (the link value for the look before the variants)');
+  for (const k of ['foeFadeQuery', 'foeFadeV1']) if (typeof v[k] !== 'string' || !/^[a-z0-9]+$/i.test(v[k])) at(k, 'must be a plain word');
+  if (v.foeFadeQuery === v.query || v.foeFadeQuery === s.query) at('foeFadeQuery', 'must differ from the skyview and sky query words');
   const vs = v.variants;
   if (vs === null || typeof vs !== 'object' || Array.isArray(vs)) return [...e, 'stage.skyline.views.variants: must be an object'];
   if (typeof v.default !== 'string' || !(v.default === v.v1 || Object.prototype.hasOwnProperty.call(vs, v.default))) at('default', 'must be one of the variant ids, or the v1 word (the look before)');
@@ -387,7 +389,9 @@ function checkSkyViews(s) {
     for (const k of Object.keys(w)) if (!SKYVIEW_KEYS.includes(k)) bad(k, 'unknown key');
     if (typeof w.fogColor !== 'string' || !(w.fogColor === '' || /^#[0-9a-f]{6}$/i.test(w.fogColor))) bad('fogColor', "must be '' or a #rrggbb colour");
     const rng = (k, lo, hi) => { if (!Number.isFinite(w[k]) || w[k] < lo || w[k] > hi) bad(k, `must be a finite number in ${lo}..${hi}`); };
-    rng('fogDensity', 0, 0.1); rng('fadeStartDegrees', 0, 89); rng('fadeEndDegrees', 0, 89); rng('dropMetres', -120, 120); rng('brightness', 0.1, 1.5);
+    rng('fogDensity', 0, 0.1); rng('fadeStartDegrees', 0, 89); rng('fadeEndDegrees', 0, 89); rng('dropMetres', -120, 120); rng('brightness', 0.1, 1.5); rng('foeFadeMinOpacity', 0, 1); rng('foeFadeClearMetres', 0, 150);
+    if (typeof w.foeFade !== 'boolean') bad('foeFade', 'must be true or false');
+    else if (w.foeFade && !(w.fadeStartDegrees > w.fadeEndDegrees)) bad('foeFade', 'needs a fade band (fadeStartDegrees above fadeEndDegrees)');
     if (!Number.isFinite(w.heightMetres) || (w.heightMetres !== 0 && (w.heightMetres < 5 || w.heightMetres > 400))) bad('heightMetres', 'must be 0 (the strip row\'s) or a number in 5..400');
     if (Number.isFinite(w.fadeStartDegrees) && Number.isFinite(w.fadeEndDegrees) && !(w.fadeStartDegrees === 0 && w.fadeEndDegrees === 0) && !(w.fadeStartDegrees > w.fadeEndDegrees)) bad('fadeStartDegrees', 'must be above fadeEndDegrees (or both 0 = off)');
     const h = w.heightMetres > 0 ? w.heightMetres : s.heightMetres;
