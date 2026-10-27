@@ -27,14 +27,14 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
       const p = globalThis.__v3Fight; if (!p?.finish || p.finish.victim !== 1) return;
       const [hero, foe] = p.duel.fighters; let dx = hero.body.x - foe.body.x, dz = hero.body.z - foe.body.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
       const root = globalThis.__v3Scene; if (!root) return;
-      let best = null, bd = 1e9; const w = cam.position.clone();
-      root.traverse((o) => { if (o.name !== boneName) return; o.getWorldPosition(w); const d = Math.hypot(w.x - foe.body.x, w.z - foe.body.z); if (d < bd) { bd = d; best = w.clone(); } });
-      if (best) { at.x = best.x; at.y = best.y; at.z = best.z; }
-      if (!at.y) return;
+      const w = cam.position.clone();
+      if (!at.bone) { let bd = 1e9; root.traverse((o) => { if (o.name !== boneName) return; o.getWorldPosition(w); const d = Math.hypot(w.x - foe.body.x, w.z - foe.body.z); if (d < bd) { bd = d; at.bone = o; } }); }   // the foe's bone, picked once (the hero has one of the same name)
+      if (!at.bone) return;
+      at.bone.getWorldPosition(w); at.x = w.x; at.y = w.y; at.z = w.z;
       // CAM_FRONT: from the hero's side of the foe (the face / belly front) instead of the foe's flank
       cam.position.set(at.x - dz * side * (1 - front) + dx * side * front, at.y + rise, at.z + dx * side * (1 - front) + dz * side * front); cam.lookAt(at.x, at.y, at.z); cam.updateMatrixWorld();
     };
-  }, CAM === 'head' ? ['mixamorigHead', 1.5, 0.1, process.env.CAM_FRONT ? 1 : 0] : ['mixamorigSpine', 1.9, 0.1, process.env.CAM_FRONT ? 1 : 0]);
+  }, CAM === 'head' ? ['mixamorigHead', 1.5 * Number(process.env.CAM_SIDE ?? 1), 0.1, process.env.CAM_FRONT ? 1 : 0] : ['mixamorigSpine', 1.9 * Number(process.env.CAM_SIDE ?? 1), 0.1, process.env.CAM_FRONT ? 1 : 0]);   // CAM_SIDE=-1: the foe's other flank
   if (REAL) {   // REAL=1: no fake clock, real time: the ragdoll's own per-frame cost by mode (alive / dead), cut included (no stills); and every rAF callback timed, the render inside it (scripts/cut-stills.mjs COST)
     await page.addInitScript(() => {
       const raf = window.requestAnimationFrame.bind(window), frames = globalThis.__frames = []; let last = null;
