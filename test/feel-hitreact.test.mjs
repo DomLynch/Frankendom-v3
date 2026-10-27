@@ -221,6 +221,23 @@ test('classes: through the hook, a light blow writes a smaller push than a heavy
   try { assert.ok(Math.abs(impulse({ move: 'light_left' }) - heavy) < 1e-9, '?sway=v1: a light is planned as a heavy'); } finally { delete globalThis.location; }
 });
 
+test('classes: the hook softens the package\'s own stagger for a light (impulse, blend, time) and leaves heavy, counter and ?sway=v1 at 1; no soften field on the ctx is fine', () => {
+  const run = (e) => { const soften = { impulse: 1, blend: 1, time: 1 }; HOOKS.hit({ type: 'Hit', tick: 1, location: 'torso', heading: FRONT, ...e }, { rd: { state: 'alive', setMotorStrength() {}, applyImpulse() {} }, mode: 'alive', group: { rotation: { y: 0 } }, blendToward() {}, soften }); HOOKS.kill(); return soften; };
+  const L = run({ move: 'light_left' });
+  assert.deepEqual(L, { impulse: CL.light.staggerImpulse, blend: CL.light.staggerBlend, time: CL.light.staggerTime });
+  assert.ok(L.impulse <= 0.6 && L.blend <= 0.6 && L.time >= 1.5, 'a light flinch: a smaller push, less of the pose, faster');
+  for (const e of [{ move: 'heavy_overhead', charged: true }, { move: 'light_left', counter: true }]) assert.deepEqual(run(e), { impulse: 1, blend: 1, time: 1 }, JSON.stringify(e));
+  globalThis.location = { search: '?sway=v1' };
+  try { assert.deepEqual(run({ move: 'light_left' }), { impulse: 1, blend: 1, time: 1 }, '?sway=v1'); } finally { delete globalThis.location; }
+  HOOKS.hit({ type: 'Hit', tick: 1, location: 'torso', heading: FRONT, move: 'light_left' }, { rd: { state: 'alive', setMotorStrength() {}, applyImpulse() {} }, mode: 'alive', group: { rotation: { y: 0 } }, blendToward() {} }); HOOKS.kill();
+});
+
+test('classes: ragdoll.ts reads ctx.soften in all three stagger places and puts it back to 1 after every blow', () => {
+  const src = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8');
+  assert.match(src, /p\.scale \* soften\.impulse/); assert.match(src, /\* staggerK\.time\)/); assert.match(src, /\* staggerK\.blend, blend\)/);
+  assert.match(src, /soften\.impulse = soften\.blend = soften\.time = 1;/);
+});
+
 test('classes: the validator rejects a missing, unknown or out-of-range class row', () => {
   const t = (mut, re) => { const b = clone(ROWS); mut(b); assert.match(checkHitreact(b).join('\n'), re); };
   t((b) => { delete b.classes; }, /classes: must be an object/);

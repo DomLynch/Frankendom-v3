@@ -798,7 +798,8 @@ export function checkHitreact(json) {
     keys('classes', cl, ['about', 'revert', 'heavyMoves', 'light', 'heavy', 'counter']);
     if (!cl.revert || typeof cl.revert.query !== 'string' || typeof cl.revert.value !== 'string' || !/^[a-z0-9]+$/i.test(cl.revert.query + cl.revert.value)) at('classes.revert', 'must be { query, value } plain words');
     if (!Array.isArray(cl.heavyMoves) || cl.heavyMoves.some((m) => typeof m !== 'string')) at('classes.heavyMoves', 'must be a list of move ids');
-    for (const c of ['light', 'heavy', 'counter']) if (keys(`classes.${c}`, cl[c], ['impulse', 'twist', 'dip', 'blend', 'holdS', 'backS'])) for (const k of ['impulse', 'twist', 'dip', 'blend', 'holdS', 'backS']) num(`classes.${c}.${k}`, cl[c][k], (x) => x > 0 && x <= 3, 'a finite number in (0, 3]');
+    const CK = ['impulse', 'twist', 'dip', 'blend', 'holdS', 'backS', 'staggerImpulse', 'staggerBlend', 'staggerTime'];   // staggerImpulse/Blend/Time: the package's own stagger (ragdoll.ts ctx.soften); Time > 1 plays it out faster
+    for (const c of ['light', 'heavy', 'counter']) if (keys(`classes.${c}`, cl[c], CK)) for (const k of CK) num(`classes.${c}.${k}`, cl[c][k], (x) => x > 0 && x <= 3, 'a finite number in (0, 3]');
   }
   if (!json.zones || typeof json.zones !== 'object') return [...e, 'feel-hitreact.zones: must be an object'];
   for (const z of Object.keys(json.zones)) if (!HIT_ZONES.includes(z)) at(`zones.${z}`, 'unknown zone (head, torso, arms, legs)');

@@ -38,7 +38,9 @@ export function classOf(rows: Rows, e: Pick<CombatEvent, 'counter' | 'charged' |
   if (e.counter === true) return 'counter';
   return e.charged === true || isHeavyMove(e.move) || (e.move !== undefined && rows.classes.heavyMoves.includes(e.move)) ? 'heavy' : 'light';
 }
-const FULL: ClassRow = { impulse: 1, twist: 1, dip: 1, blend: 1, holdS: 1, backS: 1 };
+const FULL: ClassRow = { impulse: 1, twist: 1, dip: 1, blend: 1, holdS: 1, backS: 1, staggerImpulse: 1, staggerBlend: 1, staggerTime: 1 };
+/** Put the class's softening of the package's own stagger (ragdoll.ts reads ctx.soften after the hooks) on this blow. Shared with feel-hero.ts. */
+export const soften = (ctx: { soften?: { impulse: number; blend: number; time: number } }, row: ClassRow): void => { if (ctx.soften) { ctx.soften.impulse = row.staggerImpulse; ctx.soften.blend = row.staggerBlend; ctx.soften.time = row.staggerTime; } };
 
 /** The reaction a blow at `location` coming with `heading` plans, or null (no zone row, no heading). `scale` = the hit's strength (1 = a plain hit). */
 export function planHit(rows: Rows, location: string | undefined, heading: number | undefined, frameYaw: number, scale = 1, cls: ClassRow = FULL): Plan | null {   // cls: the blow class's multipliers (rows.classes); absent = the full reaction
@@ -124,6 +126,7 @@ export const feelHooks: FeelHooks = {
   hit(e: CombatEvent, ctx: FeelCtx) {
     if (downNow(ctx) || quietS > 0) return;   // already down or getting up: the package ignores a stagger then, and so do these rows
     const { name: cl, row } = blowClass(e);
+    soften(ctx, row);   // the package's own stagger for this blow (ragdoll.ts puts it back to 1 after the blow)
     const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y, 1, row);
     if (plan) ((globalThis as { __hitreactLog?: unknown[] }).__hitreactLog ??= []).push({ tick: e.tick, zone: plan.zone, sector: plan.sector, side: plan.side, cls: cl });   // read by the clip harness
   },
