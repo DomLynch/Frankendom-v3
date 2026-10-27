@@ -24,7 +24,7 @@ await page.waitForTimeout(2000);
 await page.evaluate(() => {
   const r = globalThis.__v3Renderer, orig = r.render.bind(r);
   globalThis.__look = null; globalThis.__pin = { x: 0, z: 0 };
-  r.render = (scene, camera) => { const l = globalThis.__look; if (l && camera.isPerspectiveCamera) {   // the post chain's own full-screen pass has an orthographic camera: leave it alone camera.position.set(l.x, l.y, l.z); camera.lookAt(l.tx, l.ty, l.tz); camera.updateMatrixWorld(); } return orig(scene, camera); };
+  r.render = (scene, camera) => { const l = globalThis.__look; if (l && camera.isPerspectiveCamera) { camera.position.set(l.x, l.y, l.z); camera.lookAt(l.tx, l.ty, l.tz); camera.updateMatrixWorld(); } return orig(scene, camera); };
   const pin = () => { const h = globalThis.__v3Fight?.fighter, p = globalThis.__pin; if (h) { h.x = p.x; h.z = p.z; h.heading = 0; } };
   setInterval(pin, 4);
 });
