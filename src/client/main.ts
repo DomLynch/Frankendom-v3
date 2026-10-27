@@ -93,7 +93,7 @@ const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));   // 
 let seed = FIGHT.seed, epoch = 0;
 const nextSeed = (s: number): number => (Math.imul(s, 1664525) + 1013904223) >>> 0;   // match.ts:75
 function fresh(pose?: DuelPose): Practice {
-  setPlayScale(ZONE ? WORLD.pitScale : playScaleFor(opponentId, Infinity)); setLateNotice(true);   // the zone's pit is a wider circle (data/respawn.json world.pitScale) so the bosses stand further apart; the single fight keeps the Arena 1 circle setStab(true); setStanceRows(true);
+  setPlayScale(ZONE ? WORLD.pitScale : playScaleFor(opponentId, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);   // the zone's pit is a wider circle (data/respawn.json world.pitScale) so the bosses stand further apart; the single fight keeps the Arena 1 circle
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   setFoeSpecialReach(foeSpecialReachFor(FIGHT.foeSpecialReach, search));   // V3: an opponent's melee special starts inside 2.2 m and fizzles past 2.6 m (data/fight.json foeSpecialReach); ?special=v1 = V1's 3.0 m, no release check

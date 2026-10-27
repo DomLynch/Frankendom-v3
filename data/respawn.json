@@ -28,7 +28,7 @@
     "on": true,
     "delaySeconds": 5,
     "count": 1,
-    "reachMetres": 4,
+    "reachMetres": 5,
     "spawns": ["yard-pitborn"],
     "query": "opener",
     "off": "off"

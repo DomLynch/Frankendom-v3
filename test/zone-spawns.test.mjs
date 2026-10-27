@@ -146,6 +146,8 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, ZONE\.spawn\.kind\)/);
   assert.match(main, /setPlayScale\(ZONE \? WORLD\.pitScale : playScaleFor\(opponentId, Infinity\)\)/, 'the zone fights in the wider pit; the single fight (ZONE null, ?postkill=v1) keeps playScaleFor, Gate 0 untouched');
   assert.ok(ROWS.world.pitScale * 11.7 - 0.425 - ROWS.world.edgeMetres > 0 && 0.65 * 11.7 - 0.425 - 1 >= 6.1, 'the zone wall holds spots a ring of 6.1 m or more');
+  const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');   // code with the trailing // comments stripped
+  assert.match(live, /setPlayScale\([^;]*\); setLateNotice\(true\); setStab\(true\); setStanceRows\(true\);/, 'the era flags are live code in fresh(), not swallowed by a comment');
   assert.match(main, /spawns = kill\(spawns, current\)/);
   assert.match(main, /leashed\(spawns\[current\]!, hero(, openerLift)?\)/);
   assert.doesNotMatch(main, /respawnDue|sinceKill/);
