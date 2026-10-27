@@ -30,7 +30,7 @@ await run(30);
 await page.keyboard.down('KeyW');
 const keep = () => page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; h.stamina = h.maxStamina; f.health = Math.max(f.health, Math.ceil(f.maxHealth / 2)); });
 const log = [], fell = [];
-let landed = 0, prevRd = 'alive';
+let landed = 0, prevRd = 'alive', stills = 0;
 for (let b = 0; b < Number(BLOWS); b++) {
   for (const c of KEYS) await page.keyboard.down(c);
   for (const c of KEYS.slice().reverse()) await page.keyboard.up(c);
@@ -39,7 +39,16 @@ for (let b = 0; b < Number(BLOWS); b++) {
     const s = await snap(); s.blow = b;
     const interesting = s.hits.length || s.rd !== 'alive' || s.foe === 'hurt';
     if (interesting) log.push(s);
-    if (s.hits.some((h) => h.type === 'Hit')) landed++;
+    if (s.hits.some((h) => h.type === 'Hit')) {
+      landed++;
+      // STILLS=<n>: shoot the first n landed hits at +0, +12, +30 ticks (the flinch, then the recovery), named by hit number and the evaluator's verdict
+      if (process.env.STILLS && stills < Number(process.env.STILLS)) {
+        const tag = `${out}/hit${stills}-${s.ev?.out ?? 'none'}-${s.ev?.act ?? 'none'}`;
+        await page.screenshot({ path: `${tag}-t0.png` });
+        for (const [t, d] of [[12, 12], [30, 18]]) { for (let i = 0; i < d; i++) { await run(1); await keep(); } await page.screenshot({ path: `${tag}-t${t}.png` }); }
+        stills++; n += 30;
+      }
+    }
     if (s.rd === 'knockdown' && prevRd !== 'knockdown') fell.push(s);
     prevRd = s.rd;
   }
