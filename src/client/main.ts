@@ -12,7 +12,7 @@ import { OPPONENTS, RULES, opponentAt, profileAt, weaponOf, type SkillId, type W
 import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
 import { recordSpecials } from '../fight/replay.ts';
-import { wrapAngle } from '../fight/sim.ts';
+import { RADIUS, initialTarget, wrapAngle, type State } from '../fight/sim.ts';
 import { playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.ts';
 import { setStab } from '../fight/stab-rule.ts';
 import { setStanceRows } from '../fight/stance-era.ts';
@@ -49,6 +49,9 @@ import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
+import { respawnDue, zoneLoopFor, respawnPose, roamStep } from '../fight/zone-loop.ts';
+import { zoneFor } from '../zone/zone-rows.ts';
+import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
@@ -74,7 +77,7 @@ mountManaBar();
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
 let seed = FIGHT.seed, epoch = 0;
 const nextSeed = (s: number): number => (Math.imul(s, 1664525) + 1013904223) >>> 0;   // match.ts:75
-function fresh(): Practice {
+function fresh(pose?: DuelPose): Practice {
   setPlayScale(playScaleFor(opponentId, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
@@ -82,7 +85,7 @@ function fresh(): Practice {
   epoch++;
   return initialPractice(seed, opponentAt(opponent, level), FIGHT.weapon as WeaponId, FIGHT.skill as SkillId,
     recordSpecials({ specials: FIGHT.specials, level, opponent: opponentId }), undefined, FIGHT.stance as PickedStance,
-    undefined, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);
+    pose, undefined, undefined, undefined, undefined, FIGHT.skill2 as SkillId);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
 }
 let practice = fresh(), frameEvents: CombatEvent[] = [];
 // the warden's brain: data/fight.json `ai` (a data/brains.json row) over his V1 profile at his level; ?ai=v1 = V1's profile untouched
@@ -158,18 +161,34 @@ function nameOpponent() {   // :397 without the legend
   label.textContent = `THE ${name.toUpperCase()}`; label.dataset.mobile = name;
 }
 // :892 nextFight → match.rematch → began: the same warden, the next seed
-function rematch() {
-  seed = nextSeed(seed); practice = fresh(); frameEvents = [];
+// The zone loop (data/zones/zone1.row.json via zoneFor, data/respawn.json, src/fight/zone-loop.ts; Dom 2026-10-27: a live real-time zone, not an instant duel). The duel sim stops at the kill
+// as it always did (stepDuel returns early once a fighter has no health), so a hero who won keeps walking on a presentation-only body (`roam`, the
+// sim's own advance), the corpse lies where it fell, and the spawn stands a fresh opponent `respawnSeconds` after the kill, where the hero stands (the dead body is left beside him).
+// A hero who dies is "You died" for `heroDeath.diedSeconds`, then stands at the pit's mark at full health. No Rematch in the zone.
+// ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
+const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));
+let roam: State | null = null, sinceKill = 0, sinceDeath = 0;
+const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
+const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
+function rematch(pose?: DuelPose) {
+  if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
+  seed = nextSeed(seed); practice = fresh(pose); frameEvents = [];
+  roam = null; sinceKill = 0; sinceDeath = 0;
   clearInput(); state = previous = practice.fighter;
   view.restartStandoff(); updateHud();
 }
-element('reset-button').addEventListener('click', rematch);
+function respawn() {   // the foe's respawn: the hero stays where he stands; a death warp (heroDied) or a refused pose is the pit's marks
+  const pose = ZONE && heroStands() ? respawnPose(roam ?? practice.fighter, initialTarget(), RADIUS, ZONE.minDistance) : null;
+  (globalThis as { __v3Respawn?: unknown }).__v3Respawn = { pose, mark: initialTarget(), wall: RADIUS };   // the stills read where the respawn stood them
+  rematch(pose ?? undefined);
+}
+element('reset-button').addEventListener('click', rematch.bind(null, undefined));
 
 function updateHud() {   // :684, the career fight's view
-  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart });
-  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled;
-  document.documentElement.classList.toggle('endgame-fade', !!phase && (hushed || phase.touring));
-  document.documentElement.classList.toggle('endgame-hush', !!phase && hushed);
+  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied() });
+  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null;   // a walking hero keeps the whole HUD (Respawn included) up
+  document.documentElement.classList.toggle('endgame-fade', !!phase && !walking && (hushed || phase.touring));
+  document.documentElement.classList.toggle('endgame-hush', !!phase && !walking && hushed);
 }
 
 // :1490 the opponent's special cue is decoded ahead of his first cast
@@ -190,6 +209,10 @@ function frame(now: number) {
   last = now;
   const dt = Math.min(elapsed, FIGHT.frameDtMaxS);
   if (!paused()) {
+    if (heroStands()) {   // the spawn stands a fresh opponent respawnSeconds after the kill (data/respawn.json); the dead body is left standing (view.respawnFoe)
+      sinceKill += dt;
+      if (respawnDue(ZONE!.spawn, sinceKill)) respawn();
+    } else if (heroDied() && (sinceDeath += dt) >= ZONE!.diedSeconds) rematch();   // "You died" for diedSeconds, then the pit's mark at full health
     controls.promoteDodge(now);
     // :1517 the pause spends the frame's time first; what is left after it goes on to the simulation
     if (hitStop > 0) {
@@ -229,17 +252,23 @@ function frame(now: number) {
       hud.floatSpell(practice.events, practice.duel.fighters, view.project);
       controls.consumed(practice.events);
       state = practice.fighter;
+      if (heroStands()) {   // the zone loop: the sim is over, the hero walks (presentation only) once the kill's ceremony lets him go
+        const phase = view.finishPhase();
+        if (!roam && (intent.x || intent.z) && (phase.complete || phase.age >= ZONE!.startAfterSeconds)) roam = { ...practice.fighter };
+        if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, RADIUS);
+      }
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
       const stop = stopFor(practice.events);
       if (stop) { hitStop = stop; accumulator = 0; previous = state; }
     }
   } else { accumulator = 0; previous = state; }
+  (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
-    locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(),
+    locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null,
   );
   frameEvents = [];
   updateHud();

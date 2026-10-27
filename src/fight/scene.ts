@@ -567,6 +567,9 @@ export function createScene(
     get yaw() {
       return rig.yaw;
     },
+    // The ONE call site of a foe respawn (src/client/main.ts rematch, zone only), called BEFORE his sim body is reset: the dead rig is left as it lies beside the live one
+    // (ragdoll.leaveCorpse: cuts, pieces and caps kept, it ages out on data/physics.json corpse.keepSeconds), and the live rig is rebuilt whole. False = nothing to leave.
+    respawnFoe(): boolean { return ragdoll?.leaveCorpse() ?? false; },
     stopTour() {
       rig.stopTour();
     },
@@ -598,6 +601,7 @@ export function createScene(
       frozen = false,
       specialEpoch = 0,
       specialFight?: SpecialFightIdentity,
+      roamed = false,   // the zone loop (src/fight/respawn.ts): the hero has walked off after the kill; the sim is over, his body is free, the camera follows him and the corpse stays as it fell
     ) {
       if (arena.group.scale.x !== PLAY_SCALE) { arena.group.scale.setScalar(PLAY_SCALE); const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // the painted boundary ring is the full arena's circle: in a smaller one the wall is the edge   // the floor, ring, backdrop and props come inward with the play circle of the fight on screen (play-radius.ts; Match sets it)
       if (specialId && (previewEpoch !== specialEpoch || practice.duel.tick < previewTick)) {
@@ -734,10 +738,10 @@ export function createScene(
       // Run Through revision (owner 2026-09-18): the blade STAYS through the body. The killer holds the downward drive
       // (Fin_RunThrough, keyed to settle by a quarter of the window then hold) on the same 0.75× finisher clock; the
       // tableau freezes at progress 1 for as long as the corpse kneels (practice.finish holds until rematch).
-      const runThroughHold = isTemplate(finisher, 'impale') && practice.finish?.victim === 1;
+      const runThroughHold = !roamed && isTemplate(finisher, 'impale') && practice.finish?.victim === 1;   // roamed: the killer's held finisher pose and steps are over (his body is the stick's)
       const hamstrungFinish = isTemplate(finisher, 'hamstring') && practice.finish?.victim === 1;
       const executionFinish = isTemplate(finisher, 'execute') && practice.finish?.victim === 1;
-      const killerPose = practice.finish?.victim === 1 && finisher !== null ? finisherRow(finisher)?.body?.killer?.pose : undefined;   // the killer's own body in the finisher (its row's body.killer): Run Through's held drive, Hamstrung's and Execution's strikes
+      const killerPose = !roamed && practice.finish?.victim === 1 && finisher !== null ? finisherRow(finisher)?.body?.killer?.pose : undefined;   // the killer's own body in the finisher (its row's body.killer): Run Through's held drive, Hamstrung's and Execution's strikes
       // Owner 2026-09-18: savour the killshot — a cinematic finisher's corpse animates at 0.75× on a presentation clock that
       // may run past the sim window (the spec's "presentation may hold past the window": no simulation slow motion, the
       // 144-tick death and the hit-stop are untouched). A plain-death pick plays at full speed, exactly like an unadorned kill.
@@ -770,7 +774,7 @@ export function createScene(
         mineGait.travel,
         animationDt,
         mineGait.pose,
-        runThroughHold || hamstrungFinish || executionFinish ? finishClock : (playerDefence?.progress ?? mine.progress),
+        runThroughHold || (!roamed && (hamstrungFinish || executionFinish)) ? finishClock : (playerDefence?.progress ?? mine.progress),
         // V3 (data/hero-clips.json): a chained thrust is the stab too (V1 shows it with the riposte's clip); ?clips=v1 keeps V1's
         heroClipsOn() && mine.attack === 'riposte' && practice.duel.fighters[0].lastMove === 'thrust' ? 'thrust' : mine.attack,
         mine.contact,
@@ -869,7 +873,8 @@ export function createScene(
       // Poses and headings must be final before aiming at the animated torso. Simulation positions stay untouched.
       const chest = runThroughHold ? warriors?.opponent.boneWorld('spine_02') : null;
       if (chest) warriors?.player.aimBladeAt(chest, Math.min(1, finishClock / 0.25));
-      if (hamstrungFinish && warriors && hamstrungSteps) {
+      if (roamed && warriors) warriors.player.anchor.position.set(0, 0, 0);   // the killer's finisher steps (below) are over: he walks from where the sim put him
+      if (!roamed && hamstrungFinish && warriors && hamstrungSteps) {
         // The killer steps in to the knee, then on to the back (the same two steps solved above), the blade held on each wound as the blow lands.
         const smooth = (t: number) => { t = THREE.MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
         const first = finishClock < 0.4;
@@ -879,7 +884,7 @@ export function createScene(
         const weight = first ? smooth((finishClock - 0.12) / 0.1) * (1 - smooth((finishClock - HAMSTRUNG_BEATS.knee) / 0.13)) : smooth((finishClock - 0.54) / 0.1);
         if (target) warriors.player.aimBladeAt(target, weight, false);
       }
-      if (executionFinish && warriors && executionSteps) {
+      if (!roamed && executionFinish && warriors && executionSteps) {
         // The killer steps in behind the kneeling man over the first part of the clip and stands there through the held half-second; the arm turns onto the nape only
         // for the cut (the blade rises on the clip's own pose until then), and lets go as he falls.
         const smooth = (t: number) => { t = THREE.MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -993,7 +998,7 @@ export function createScene(
         for (const name of ['Head', 'hand_l', 'hand_r', 'foot_l', 'foot_r']) { const p = warriors.opponent.boneWorld(name); if (p) measured = Math.max(measured, Math.hypot(p.x - origin.x, p.z - origin.z)); }
         openedReach = Math.min(Math.max(openedReach, measured), openedReach + 0.015);
       } else if (!practice.finish) openedReach = 0;
-      rig.update(dt, state, practice.enemy, locked, practice.finish ? {
+      rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed ? {   // roamed: no finisher camera, the follow lock on the walking hero
         finisher, posed: !!finisherPose, draw: !!practice.finish.draw, victim: practice.finish.victim, clock: finishClock,
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
         big: ['wraith', 'minotaur'].includes(opponentId),
