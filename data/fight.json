@@ -23,9 +23,9 @@
     "pitch": {
       "about": "Zone follow camera pitch (Dom 2026-10-27: a skyline band should show under the HUD on a phone; at the default pitch the true horizon sits at the very top edge of the portrait screen). `default` is the preset a page load uses: 'off' = the camera exactly as it was. A preset is the angle (degrees) the view axis looks down, flatter = more horizon; the eye height follows so the hero keeps his screen position (heroY: the point on him that stays put; minEyeY: the eye never drops below). ?pitch=low (or flat, soft, or any number inside limits) switches the zone camera on a phone with no deploy; ?pitch=off is the default. Zone only: the single fight (?postkill=v1) never reads this. A finish eases back to the default frame, so the finishers and their tour are untouched; the multi-boss widen is applied first and the pitch follows it. Presentation only.",
       "default": "off",
-      "presets": { "flat": 14, "low": 18, "soft": 22 },
+      "presets": { "horizon": 10, "flat": 14, "low": 18, "soft": 22 },
       "limits": [8, 30],
-      "heroY": 1,
+      "heroY": 0.4,
       "minEyeY": 1.2,
       "off": ["off", "default"],
       "query": "pitch"
