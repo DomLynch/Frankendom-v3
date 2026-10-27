@@ -9,7 +9,7 @@ import { STEP } from './sim.ts';
 export type KnockStance = 'open' | 'guarding' | 'midSwing' | 'recovering';
 export type KnockRows = {
   flag: { query: string; value: string }; tickHz: number;
-  knockdown: { seconds: number }; getUp: { seconds: number }; finishWindow: { seconds: number };
+  knockdown: { seconds: number; minSecondsBetween: number }; kick: { interruptSeconds: number; flinchSeconds: number; interruptThroughPoise: boolean; resistanceSeconds: number; cooldownSeconds: number }; kickOnInjuredLeg: { hits: number; windowS: number }; getUp: { seconds: number }; finishWindow: { seconds: number };
   targets: readonly ('hero' | 'foe')[]; knockdownAtPerMille: number;
   massKg: Readonly<Record<string, number>> & { default: number };
   massBands: readonly { minRatioPct: number; perMille: number }[];
@@ -19,6 +19,9 @@ export type KnockRows = {
 /** The rows as the step reads them: ticks and per-mille integers. */
 export type KnockSim = {
   readonly down: number; readonly getUp: number; readonly window: number; readonly at: number;
+  readonly gap: number;   // knockdown.minSecondsBetween in ticks: no second knockdown of the same man inside it, whatever the cause
+  readonly interrupt: number; readonly flinch: number; readonly throughPoise: boolean; readonly resist: number; readonly kickCd: number;   // kick: the interrupt stagger, the target's interrupt resistance, the attacker's own kick cooldown (all ticks; 0 = none)
+  readonly legHits: number; readonly legWin: number; readonly legWindowS: number;   // kickOnInjuredLeg: leg hits that injure the leg, the window in ticks, and in seconds (for the LegInjured event)
   readonly foe: boolean; readonly hero: boolean;
   readonly kg: Readonly<Record<string, number>>; readonly bands: readonly { minRatioPct: number; perMille: number }[];
   readonly stance: Readonly<Record<KnockStance, number>>; readonly moves: Readonly<Record<string, number>>;
@@ -40,7 +43,11 @@ export function knockSimFor(rows: KnockRows | undefined, search = '', defaults?:
   const down = ticks('knockdown.seconds', rows.knockdown.seconds), getUp = ticks('getUp.seconds', rows.getUp.seconds), window = ticks('finishWindow.seconds', rows.finishWindow.seconds);
   if (window > down) throw new Error('feel-sim finishWindow.seconds is longer than knockdown.seconds (the window must close before he rises)');
   if (!rows.massBands.length || rows.massBands[0]!.minRatioPct !== 0) throw new Error('feel-sim massBands must start at minRatioPct 0');
-  return { down, getUp, window, at: rows.knockdownAtPerMille, foe: rows.targets.includes('foe'), hero: rows.targets.includes('hero'), kg: rows.massKg, bands: rows.massBands, stance: rows.stance, moves: Object.fromEntries(Object.entries(rows.moves).map(([k, v]) => [k, v.perMille])) };
+  const whole = (name: string, s: number, min: number): number => { const t = Math.round(s * rows.tickHz); if (!(Number.isFinite(s) && s >= 0 && t >= min)) throw new Error(`feel-sim ${name} ${s} s is under ${min} tick${min === 1 ? '' : 's'}`); return t; };
+  const gap = whole('knockdown.minSecondsBetween', rows.knockdown.minSecondsBetween, 0), interrupt = whole('kick.interruptSeconds', rows.kick.interruptSeconds, 1), flinch = whole('kick.flinchSeconds', rows.kick.flinchSeconds, 0), resist = whole('kick.resistanceSeconds', rows.kick.resistanceSeconds, 0), kickCd = whole('kick.cooldownSeconds', rows.kick.cooldownSeconds, 0);
+  const { hits: legHits, windowS: legWindowS } = rows.kickOnInjuredLeg, legWin = Math.round(legWindowS * rows.tickHz);
+  if (!(Number.isInteger(legHits) && legHits >= 1 && Number.isFinite(legWindowS) && legWin >= 1)) throw new Error('feel-sim kickOnInjuredLeg needs hits (whole, >= 1) and windowS (> 0)');
+  return { down, getUp, window, at: rows.knockdownAtPerMille, gap, interrupt, flinch, throughPoise: rows.kick.interruptThroughPoise === true, resist, kickCd, legHits, legWin, legWindowS, foe: rows.targets.includes('foe'), hero: rows.targets.includes('hero'), kg: rows.massKg, bands: rows.massBands, stance: rows.stance, moves: Object.fromEntries(Object.entries(rows.moves).map(([k, v]) => [k, v.perMille])) };
 }
 
 /** The target's stance from the sim's own phase when the blow landed (`raised`: his guard was up and faced the blow). Guard up = guarding; mid-attack = midSwing; hurt, rolling, backstepping = recovering; else open. */
@@ -65,9 +72,21 @@ export function knockForce(k: KnockSim, input: { move: string | null; attackerId
   return Math.floor((bandOf(k.bands, kg(input.attackerId), kg(input.targetId)) * k.stance[input.stance] * mv) / 1000000);
 }
 
-/** Does this blow knock him down? Ticks to lie (down + getUp, one stun) and the attacker's finish window, or null for the ordinary stagger. `rising`: he is already down or getting up (no second knockdown). */
-export function knockdownOf(k: KnockSim, input: { move: string | null; attackerId: string; targetId: string; stance: KnockStance; targetIsHero: boolean; rising: boolean }): { force: number; ticks: number; window: number } | null {
-  if (input.rising || (input.targetIsHero ? !k.hero : !k.foe)) return null;
+/** The leg hits still inside the window after one more at `tick` (older ones drop out; a pure function of the sim's own ticks, so a replay counts the same). */
+export function legHitsAfter(prior: readonly number[] | undefined, tick: number, windowTicks: number): number[] {
+  return [...(prior ?? []).filter((t) => tick - t < windowTicks), tick];
+}
+/** The leg hits inside the window at `tick`, without adding one. */
+export function legCount(prior: readonly number[] | undefined, tick: number, windowTicks: number): number {
+  return (prior ?? []).filter((t) => tick - t < windowTicks).length;
+}
+
+/** Does this blow knock him down? Ticks to lie (down + getUp, one stun) and the attacker's finish window, or null for the ordinary stagger. `rising`: he is already down or getting up (no second knockdown);
+ * `cooling`: his minSecondsBetween guard is still running (a valid cause cannot chain him to the floor); `injured`: his leg already took kickOnInjuredLeg.hits blows inside the window, so this blow (any move, a kick
+ * included) takes him down whatever its force. The kick's own row is 0 per-mille: a kick is an interrupt, never a knockdown by force. */
+export function knockdownOf(k: KnockSim, input: { move: string | null; attackerId: string; targetId: string; stance: KnockStance; targetIsHero: boolean; rising: boolean; cooling?: boolean; injured?: boolean }): { force: number; ticks: number; window: number; leg: boolean } | null {
+  if (input.rising || input.cooling || (input.targetIsHero ? !k.hero : !k.foe)) return null;
   const force = knockForce(k, input);
-  return force >= k.at && force > 0 ? { force, ticks: k.down + k.getUp, window: k.window } : null;
+  if (input.injured) return { force, ticks: k.down + k.getUp, window: k.window, leg: true };
+  return force >= k.at && force > 0 ? { force, ticks: k.down + k.getUp, window: k.window, leg: false } : null;
 }
