@@ -73,7 +73,7 @@ test('the face is dead ahead of the camera: the plate turn puts the face directi
   const w = (a) => a - 2 * Math.PI * Math.round(a / (2 * Math.PI));
   for (const u of [0.25, 0.585, 0.747, 0.9]) assert.ok(Math.abs(w(2 * Math.PI * u + plateAhead({ ...P, face: { ...P.face, u } }) - Math.PI)) < 1e-9, `u ${u}`);
   const sky = createSkyline(new THREE.Scene(), '', SKYLINE, () => new Promise(() => {}));
-  const cam = new THREE.Object3D(); cam.rotation.y = 0.3; cam.updateMatrixWorld();   // heading 0.3 rad (turned left)
+  const cam = new THREE.PerspectiveCamera(); cam.rotation.y = 0.3; cam.updateMatrixWorld();   // heading 0.3 rad (turned left)
   sky.heading(cam); sky.update(new THREE.Vector3(), 100);   // a long step: the ease has landed
   const face = 2 * Math.PI * P.face.u + sky.yaw, ahead = Math.PI + 0.3 * SKYLINE.yawFollow;   // the follow keeps yawFollow of the turn: the face stays within (1 - yawFollow) x the turn of dead ahead
   assert.ok(Math.abs(w(face - ahead)) < 1e-6, `${face} vs ${ahead}`);
