@@ -58,13 +58,14 @@ test('the camera framing row: one boss is exactly the old frame, a far attacker 
 test('the camera composes with the lens zoom: one boss is byte-identical to main\'s frame, and with two live the second attacker is inside the 375 frame at zoom 1.1 and 1.0', async () => {
   const THREE = await import('three'), { cameraPose, setLockFrame } = await import('../src/fight/camera.ts'), { fovForZoom, cameraZoom } = await import('../src/fight/camera-zoom.ts');
   setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
+  const BACK = JSON.parse(read('../src/fight/camera-rules-defs.json')).rules.find((r) => r.id === 'fightBackDefault').value;   // the lock's fight-back scale: camera.update multiplies it by widen
   assert.equal(cameraZoom(FIGHT.camera.zoom, ''), FIGHT.camera.zoom);
   const s = spawns(), A = s[0], B = s[1], rows = ATTACKERS.camera;
   // the hero stands inside the second boss's aggro (towards the first), the first boss at its own spot: the farthest the second one can be while it attacks
   const dx = A.x - B.x, dz = A.z - B.z, len = Math.hypot(dx, dz), hero = { x: B.x + (dx / len) * B.aggro * 0.9, z: B.z + (dz / len) * B.aggro * 0.9, heading: 0, distance: 0 };
   const yaw = Math.atan2(hero.x - A.x, hero.z - A.z), centre = { x: (hero.x + A.x) / 2, z: (hero.z + A.z) / 2 };
   const inFrame = (zoom, widen, p) => {
-    const cam = new THREE.PerspectiveCamera(fovForZoom(zoom), 375 / 812, 0.1, 100), pose = cameraPose(hero, yaw, 0, true, A, 1, 0, 0, widen);
+    const cam = new THREE.PerspectiveCamera(fovForZoom(zoom), 375 / 812, 0.1, 100), pose = cameraPose(hero, yaw, 0, true, A, 1, 0, 0, BACK * widen);
     cam.position.set(pose.x, pose.y, pose.z); cam.lookAt(pose.lookX, 0.8, pose.lookZ); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
     return [0, 1.8].every((y) => { const v = new THREE.Vector3(p.x, y, p.z).project(cam); return Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && v.z < 1; });
   };
@@ -74,7 +75,7 @@ test('the camera composes with the lens zoom: one boss is byte-identical to main
     for (const p of [hero, A, B]) assert.ok(inFrame(zoom, widen, p), `zoom ${zoom}: ${p === B ? 'the second boss' : p === A ? 'the first boss' : 'the hero'} is in frame (widen ${widen.toFixed(2)})`);
   }
   assert.ok(framingWiden(centre, [B], rows, 1.1) >= framingWiden(centre, [B], rows, 1), 'a tighter lens backs off at least as much');
-  assert.deepEqual(cameraPose(hero, yaw, 0, true, A, 1, 0, 0, 1), cameraPose(hero, yaw, 0, true, A, 1, 0, 0), 'widen 1 is the old frame');
+  assert.deepEqual(cameraPose(hero, yaw, 0, true, A, 1, 0, 0, BACK * 1), cameraPose(hero, yaw, 0, true, A, 1, 0, 0), 'widen 1 is the old frame, byte for byte');
 });
 
 test('who lets go: past its own leash from its own spot', () => {
