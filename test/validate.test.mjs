@@ -46,6 +46,14 @@ test('cut.cue: known units, a label for every unit, and a plain #rrggbb colour (
   assert.deepEqual(validateFile('physics', files.physics), []);
 });
 
+test('corpse rows: max is an integer >= 0, pieceSeconds <= keepSeconds, numbers finite', () => {
+  for (const [key, value, re] of [['max', 1.5, /corpse\.max: must be an integer >= 0/], ['max', -1, /corpse\.max: must be an integer >= 0/], ['pieceSeconds', 100, /corpse\.pieceSeconds: must be <= keepSeconds/], ['keepSeconds', null, /corpse\.keepSeconds: must be a finite number/]]) {
+    const bad = clone(files.physics); bad.corpse[key] = value;
+    assert.match(validateFile('physics', bad).join('\n'), re, `${key} = ${value}`);
+  }
+  assert.deepEqual(validateFile('physics', files.physics), []);
+});
+
 test('a file with no schema is rejected', () => {
   assert.match(validateFile('nope', {}).join('\n'), /nope: no schema/);
 });

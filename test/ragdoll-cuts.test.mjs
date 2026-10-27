@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { createPhysics } from '@frankendom/physics';
-import { blowImpulse, cutEvent, showPooled, unitOfBone, WARM_SCALE } from '../src/fight/ragdoll.ts';
+import { ageCorpses, blowImpulse, cutEvent, showPooled, snapshotRig, unitOfBone, WARM_SCALE } from '../src/fight/ragdoll.ts';
 import { createPieceCutter, isUnder } from '../src/fight/cut-pieces.ts';
 import { validateFile } from '../src/sim/validate.js';
 
@@ -148,6 +148,45 @@ test('a ray through the piece strikes the piece\'s bone; one through the body st
   assert.equal(ray(2.6)?.bone, s.arm, 'the arm piece');
   assert.equal(ray(0.5)?.bone, s.spine, 'the body');
   assert.equal(ray(9), null, 'a miss');
+});
+
+test('corpses left behind (leaveCorpse): the rows are sane and a corpse ages, loses its pieces, and is dropped on the clock; the oldest go first past max', () => {
+  const R = ROWS.corpse;
+  assert.ok(R.keepSeconds > 0 && R.pieceSeconds > 0 && R.pieceSeconds <= R.keepSeconds && Number.isInteger(R.max) && R.max >= 1, 'corpse rows: pieces go no later than the body, at least one stands');
+  assert.deepEqual(validateFile('physics', ROWS), [], 'the shipped rows validate (corpse keys and numbers)');
+  const row = { keepSeconds: 90, pieceSeconds: 12, max: 2 }, mk = () => ({ age: 0, piecesHidden: false });
+  const a = mk(), b = mk();
+  let r = ageCorpses([a, b], 11.9, row);
+  assert.deepEqual([r.hide.length, r.drop.length, r.keep.length], [0, 0, 2]);
+  r = ageCorpses(r.keep, 0.2, row);   // 12.1 s: the pieces of both go
+  assert.deepEqual([r.hide.length, r.drop.length, r.keep.length], [2, 0, 2]);
+  r = ageCorpses(r.keep, 1, row);     // already hidden: not hidden twice
+  assert.deepEqual([r.hide.length, r.drop.length], [0, 0]);
+  r = ageCorpses(r.keep, 80, row);    // 93.1 s: both are over keepSeconds
+  assert.deepEqual([r.drop.length, r.keep.length], [2, 0]);
+  const c = mk(), d = mk(), e = mk();
+  r = ageCorpses([c, d, e], 1, row);  // three stand with max 2: the first one (the oldest) is dropped
+  assert.deepEqual([r.drop, r.keep], [[c], [d, e]]);
+});
+
+test('leaveCorpse snapshots a carved body: the copy keeps the cut and its pieces, and the rematch\'s restore() leaves the copy intact while the live body is whole again', () => {
+  const s = strip(), cutter = createPieceCutter(s.anchor), triangles = (g) => { let n = 0; const a = g.index.array; for (let t = 0; t < a.length; t += 3) if (!(a[t] === a[t + 1] && a[t + 1] === a[t + 2])) n++; return n; };
+  cutter.prepare([s.arm]);
+  cutter.carve(s.arm, { piece: 0.5, bodyKeepBelow: 0.5 });
+  const { copy, pieces, owned } = snapshotRig(s.anchor, true);   // the order leaveCorpse uses: copy first, then build() -> cutter.restore()
+  const meshes = []; copy.traverse((o) => { if (o instanceof THREE.SkinnedMesh) meshes.push(o); });
+  assert.equal(meshes.length, 2, 'the copy has the body and the piece');
+  assert.equal(pieces.length, 1, 'the copy knows which mesh is the cut piece');
+  assert.equal(owned.length, 2, 'it cloned the geometry of both');
+  assert.ok(meshes.every((m) => !Object.values(s.anchor.children).includes(m)) && meshes.every((m) => m.geometry !== s.mesh.geometry), 'no copy mesh points at the live twin');
+  cutter.restore();   // the rematch: the live body's geometry back, the pieces gone and their geometry released
+  const [body] = meshes.filter((m) => m.userData.cutPiece === undefined), [piece] = meshes.filter((m) => m.userData.cutPiece !== undefined);
+  assert.equal(triangles(body.geometry), 2, 'the copy still has the cut body (the far ring pair gone)');
+  assert.equal(triangles(piece.geometry), 3, 'the cut piece is whole: its attributes were not released');
+  assert.ok(piece.geometry.getAttribute('position') && piece.geometry.getAttribute('skinIndex'), 'the piece still has its vertex data');
+  assert.equal(s.mesh.geometry, s.geometry, 'the live body draws its own whole geometry again');
+  assert.equal(triangles(s.geometry), 6, 'and it is whole');
+  for (const g of owned) g.dispose();
 });
 
 test('a pooled cap or helmet mesh taken for a cut leaves the warm-up speck behind (the helmet is as big as its row says)', () => {
