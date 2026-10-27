@@ -31,6 +31,14 @@ test('build.clipDecimals must be an integer 3 to 8', () => {
   assert.deepEqual(validateFile('build', files.build), []);
 });
 
+test('build.firstVisitBytes must be a positive integer', () => {
+  for (const v of [undefined, 0, -1, 5.5, '5500000']) {
+    const bad = clone(files.build);
+    if (v === undefined) delete bad.firstVisitBytes; else bad.firstVisitBytes = v;
+    assert.match(validateFile('build', bad).join('\n'), /build\.firstVisitBytes: must be a positive integer/);
+  }
+});
+
 test('an armour block or immune field is rejected anywhere', () => {
   const bad = clone(files.stage);
   bad.light.block = true;
