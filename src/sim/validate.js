@@ -178,6 +178,25 @@ export function validateFile(name, json) {
     num('speedScale', (v) => v > 0 && v <= 1, 'a finite number in (0, 1]'); num('heavyDivisor', (v) => v >= 1, 'a finite number >= 1');
     num('speedSpanS', (v) => v > 0, 'a finite number > 0'); num('speedWindow', (v) => v >= 1 && Number.isInteger(v), 'an integer >= 1');
     num('speedMin', (v) => v > 0, 'a finite number > 0'); num('snapOver', (v) => v > 0, 'a finite number > 0');
+    // variants (rules-eval.ts variantFor / applyVariant, ?rules=<name>): per name only `about` and the package rows applyVariant lays over (a typo like rung_stik would be a dead key and the A/B would silently run the pin); a name is not the v1 / m4 row it would shadow
+    if ('variants' in json) {
+      const vs = json.variants, isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
+      if (!isObj(vs)) errors.push(`${name}.variants: must be an object of name -> variant`);
+      else for (const [vn, v] of Object.entries(vs)) {
+        if ([json.v1, json.m4].includes(vn)) errors.push(`${name}.variants.${vn}: a variant cannot take the name of the ${vn} row`);
+        if (!isObj(v)) { errors.push(`${name}.variants.${vn}: must be an object`); continue; }
+        const known = { about: null, strength_scale: ['rung_hit', 'rung_stick', 'rung_cut'], melee_speed_gate: ['min_speed_m_s'] };
+        for (const [k, val] of Object.entries(v)) {
+          if (!(k in known)) { errors.push(`${name}.variants.${vn}.${k}: unknown key (about, strength_scale, melee_speed_gate)`); continue; }
+          if (k === 'about') { if (typeof val !== 'string') errors.push(`${name}.variants.${vn}.about: must be a string`); continue; }
+          if (!isObj(val)) { errors.push(`${name}.variants.${vn}.${k}: must be an object`); continue; }
+          for (const [rk, rv] of Object.entries(val)) {
+            if (!known[k].includes(rk)) errors.push(`${name}.variants.${vn}.${k}.${rk}: unknown key (${known[k].join(', ')})`);
+            else if (!Number.isFinite(rv)) errors.push(`${name}.variants.${vn}.${k}.${rk}: must be a finite number`);
+          }
+        }
+      }
+    }
     // cut.precedence (rules-eval.ts cutPrecedence): per hit zone, who wins a KILLING blow: the evaluator's cut or the sim's finisher rotation. A zone with no entry is the rotation.
     const pr = json.cut?.precedence;
     if (!pr || typeof pr !== 'object' || Array.isArray(pr)) errors.push(`${name}.cut.precedence: must be an object of zone -> 'evaluator' | 'finisher'`);
