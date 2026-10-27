@@ -22,6 +22,15 @@ test('an unknown key is rejected', () => {
   assert.match(errs, /stage\.skye: unknown key/);
 });
 
+test('build.clipDecimals must be an integer 3 to 8', () => {
+  for (const v of [undefined, 2, 9, 4.5, '4']) {
+    const bad = clone(files.build);
+    if (v === undefined) delete bad.clipDecimals; else bad.clipDecimals = v;
+    assert.match(validateFile('build', bad).join('\n'), /build\.clipDecimals: must be an integer 3 to 8/);
+  }
+  assert.deepEqual(validateFile('build', files.build), []);
+});
+
 test('an armour block or immune field is rejected anywhere', () => {
   const bad = clone(files.stage);
   bad.light.block = true;
