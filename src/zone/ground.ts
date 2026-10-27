@@ -27,20 +27,23 @@ export function checkGround(rows: GroundRows, density: number = STAGE.duel.fogDe
   const e: string[] = [];
   for (const k of ['groundRadiusMetres', 'gridRadiusMetres', 'edgeVisibility', 'cameraFarMetres'] as const) {
     const v = rows[k], [lo, hi] = rows.limits[k];
-    if (!Number.isFinite(v) || v < lo || v > hi) e.push(`zone-ground.${k} ${v} is not in ${lo}..${hi}`);
+    if (!Number.isFinite(v) || v < lo || v > hi) e.push(new Error(`zone-ground.${k} ${v} is not in ${lo}..${hi}`).message);
   }
   const f = rows.groundFollow, [slo, shi] = rows.limits.snapMetres;
-  if (typeof f?.on !== 'boolean') e.push('zone-ground.groundFollow.on must be true or false');
-  if (!Number.isFinite(f?.snapMetres) || f.snapMetres < slo || f.snapMetres > shi) e.push(`zone-ground.groundFollow.snapMetres ${f?.snapMetres} is not in ${slo}..${shi}`);
-  if (!(density > 0)) e.push(`stage duel.fogDensity ${density} must be above 0`);
+  if (typeof f?.on !== 'boolean') e.push(new Error('zone-ground.groundFollow.on must be true or false').message);
+  if (!Number.isFinite(f?.snapMetres) || f.snapMetres < slo || f.snapMetres > shi) e.push(new Error(`zone-ground.groundFollow.snapMetres ${f?.snapMetres} is not in ${slo}..${shi}`).message);
+  if (!(density > 0)) e.push(new Error(`stage duel.fogDensity ${density} must be above 0`).message);
   if (e.length) return e;
-  if (rows.gridRadiusMetres > rows.groundRadiusMetres) e.push('zone-ground.gridRadiusMetres is beyond the floor');
+  if (rows.gridRadiusMetres > rows.groundRadiusMetres) e.push(new Error('zone-ground.gridRadiusMetres is beyond the floor').message);
   const hide = fogHidesAt(density, rows.edgeVisibility);
-  if (rows.cameraFarMetres < hide) e.push(`zone-ground.cameraFarMetres ${rows.cameraFarMetres} cuts the floor off before the fog hides it (${hide.toFixed(0)} m)`);
-  if (rows.groundRadiusMetres < hide) e.push(`zone-ground.groundRadiusMetres ${rows.groundRadiusMetres} ends before the fog hides the edge (${hide.toFixed(0)} m)`);
-  if (!f.on && reach !== undefined && rows.groundRadiusMetres - reach < hide) e.push(`zone-ground.groundRadiusMetres ${rows.groundRadiusMetres} leaves ${(rows.groundRadiusMetres - reach).toFixed(0)} m beyond the walking reach ${reach} m; the fog needs ${hide.toFixed(0)} m to hide the edge`);
+  if (rows.cameraFarMetres < hide) e.push(new Error(`zone-ground.cameraFarMetres ${rows.cameraFarMetres} cuts the floor off before the fog hides it (${hide.toFixed(0)} m)`).message);
+  if (rows.groundRadiusMetres < hide) e.push(new Error(`zone-ground.groundRadiusMetres ${rows.groundRadiusMetres} ends before the fog hides the edge (${hide.toFixed(0)} m)`).message);
+  if (!f.on && reach !== undefined && rows.groundRadiusMetres - reach < hide) e.push(new Error(`zone-ground.groundRadiusMetres ${rows.groundRadiusMetres} leaves ${(rows.groundRadiusMetres - reach).toFixed(0)} m beyond the walking reach ${reach} m; the fog needs ${hide.toFixed(0)} m to hide the edge`).message);
   return e;
 }
+
+/** Whole cells for a ratio that is a whole number up to one rounding error (1.3 / 0.65), rounded up otherwise. */
+const cellsFor = (ratio: number): number => { const near = Math.round(ratio); return ratio <= near * (1 + Number.EPSILON) + Number.EPSILON ? near : Math.ceil(ratio); };
 
 /**
  * The follow snap in world metres: snapMetres rounded UP to a whole number of the stage's grid cells at this scale, so the floor moves by whole cells and the grid lines
@@ -49,15 +52,15 @@ export function checkGround(rows: GroundRows, density: number = STAGE.duel.fogDe
 export const followSnap = (rows: GroundRows, scale: number, stage = STAGE): number => {
   if (!rows.groundFollow.on) return 0;
   const cell = (stage.grid.size / stage.grid.divisions) * scale;
-  return Math.ceil(rows.groundFollow.snapMetres / cell - 1e-9) * cell;
+  return cellsFor(rows.groundFollow.snapMetres / cell) * cell;
 };
 /** Where the floor stands for a hero at (x, z): his place rounded to the snap (the floor and its grid are drawn about this point). */
 export const anchorFor = (x: number, z: number, snap: number): { x: number; z: number } => snap > 0 ? { x: Math.round(x / snap) * snap, z: Math.round(z / snap) * snap } : { x: 0, z: 0 };
 
 /** The floor's sizes in the group's units: `scale` is the group's scale (world.pitScale); the grid keeps the stage's own cell, so it joins the pit's grid line for line. */
 export function groundSizing(rows: GroundRows, scale: number, stage = STAGE): Sizing {
-  const cell = stage.grid.size / stage.grid.divisions, cells = Math.ceil(rows.gridRadiusMetres / scale / cell);
-  return { floorSide: Math.max(stage.ground.size, (2 * rows.groundRadiusMetres) / scale), gridSize: 2 * cells * cell, gridDivisions: 2 * cells, far: rows.cameraFarMetres, snap: followSnap(rows, scale, stage) };
+  const cell = stage.grid.size / stage.grid.divisions, cells = Math.ceil(rows.gridRadiusMetres / scale / cell), reach = rows.groundRadiusMetres / scale;
+  return { floorSide: Math.max(stage.ground.size, reach + reach), gridSize: (cells + cells) * cell, gridDivisions: cells + cells, far: rows.cameraFarMetres, snap: followSnap(rows, scale, stage) };
 }
 
 /** The page's one read: the checked sizing for the zone's pit scale (and the walking reach, when the rows have one). Throws on a bad row. */

@@ -37,7 +37,7 @@ for (const z of AT) {
   console.log(`${tag} at ${z}`, JSON.stringify(hero));
   await view({ x: 0, y: 1.9, z: z - 3.2, tx: 0, ty: 1.3, tz: z + 90 }); await shot(`${z}-1-out`);
   await view({ x: 0, y: 5.5, z: z - 3.2, tx: 0, ty: 0.5, tz: z + 60 }); await shot(`${z}-2-high`);
-  await view({ x: -0.5, y: 1.9, z, tx: 90, ty: 1.3, tz }); await shot(`${z}-3-side`);
+  await view({ x: -0.5, y: 1.9, z, tx: 90, ty: 1.3, tz: z }); await shot(`${z}-3-side`);
 }
 console.log(`${tag} done`);
 await browser.close();

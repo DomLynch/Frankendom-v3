@@ -7,10 +7,12 @@
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { M } from '../fight/detmath.ts';
 import { respawnPose, intoPit } from '../fight/zone-loop.ts';
+import { OPEN_RADIUS } from '../fight/play-radius.ts';
+import type { Duel, DuelPose } from '../fight/duel.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; leashMargin: number; pitScale: number };
-type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; leashMargin: [number, number]; pitScale: [number, number] };
+export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; leashMargin: number; pitScale: number; spreadRadiusMetres: number };
+type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; leashMargin: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number] };
 export const WORLD = ROWS.world as WorldRows;
 const LIMITS = ROWS.limits as unknown as Limits;
 
@@ -36,19 +38,22 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
 }
 
 /**
- * Throws on a bad row or a spot the page cannot stand a boss at: world rows out of range, a spot outside the pit's wall (less `edgeMetres`), the hero's start
- * inside a spot's aggro (the page would open with a fight), two spots inside each other's aggro (an engage would be ambiguous), or a spawn kind that is not the
- * one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
+ * Throws on a bad row or a spot the page cannot stand a boss at: world rows out of range, a spot whose reach is past the spawn extent (its distance from the pit area's centre plus the larger of
+ * its leash and `wall`, the drawn floor's play radius, is over `spreadRadiusMetres`: the ground itself is unbounded, this is only how far out spots go), a leash shorter than the aggro plus
+ * `leashMargin`, the hero's start inside a spot's aggro (the page would open with a fight), two spots inside each other's aggro (an engage would be
+ * ambiguous) or closer than `minSpacing`, or a spawn kind that is not the one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
  */
 export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kind?: string, limits: Limits = LIMITS): void {
-  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale'] as const) {
+  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
   if (!spots.length) throw new Error('the zone has no spawn spots');
   for (const s of spots) {
     if (kind !== undefined && s.kind !== kind) throw new Error(`spawn ${s.id} names kind "${s.kind}": the page builds one foe rig, "${kind}"`);
-    if (!(Number.isFinite(s.x) && Number.isFinite(s.z)) || M.hypot(s.x, s.z) > wall - world.edgeMetres) throw new Error(`spawn ${s.id} stands outside the pit's wall (${wall} m less ${world.edgeMetres} m)`);
+    if (!(Number.isFinite(s.x) && Number.isFinite(s.z))) throw new Error(`spawn ${s.id} has no place`);
+    const reach = M.hypot(s.x, s.z) + Math.max(s.leash, wall);
+    if (reach > world.spreadRadiusMetres) throw new Error(`spawn ${s.id} stands outside the zone's spawn extent (its reach is ${reach} m, respawn.json world.spreadRadiusMetres ${world.spreadRadiusMetres} m)`);
     if (s.leash < s.aggro + world.leashMargin) throw new Error(`spawn ${s.id} leash ${s.leash} m is shorter than its aggro ${s.aggro} m plus ${world.leashMargin} m (respawn.json world.leashMargin): a roll or a step in a fight would trip it`);
     if (dist(s, heroStart) <= s.aggro) throw new Error(`spawn ${s.id} stands inside its own aggro of the hero's start`);
     for (const t of spots) if (t !== s && dist(s, t) <= s.aggro) throw new Error(`spawns ${s.id} and ${t.id} stand inside each other's aggro`);
@@ -103,9 +108,31 @@ export function tick(spawns: readonly Spawn[], dt: number): { spawns: Spawn[]; d
 /** The spawns drawn as frozen standing copies: every standing one except the one the sim holds (that one is the live rig). */
 export const idleOnes = (spawns: readonly Spawn[], current: number): Spawn[] => spawns.filter((s, i) => isStanding(s) && i !== current);
 
-/** The duel pose of a spawn engaging the hero where he stands (never closer than `minDistance`: he is stepped back, zone-loop.ts respawnPose); outside the wall, the hero's start mark. */
+/** Whether the sim's own pose door takes this pose: both fighters inside the live wall (duel.ts validatePose, `wall` = the pit's RADIUS). A pose that does not fit is placed by `zoneDuel` instead. */
+export const poseFits = (pose: DuelPose, wall: number): boolean => [pose.hero, pose.foe].every((p) => M.hypot(p.x, p.z) <= wall);
+
+/**
+ * A zone duel on the zone's ground (PR B2). The sim's circle is centred on the pit and its pose door refuses a fighter outside it (duel.ts validatePose), so a fight at a spot far from the pit
+ * cannot be built or fought inside the pit's ring. Two things, both on the duel the page already built, neither in the sim:
+ *  - the WALL: the zone's duels carry the open world's radius (`open`, play-radius.ts OPEN_RADIUS, V1's open-fight.ts: nothing clamps, loiters or is shoved at a wall), the field `Duel.radius`
+ *    the sim already reads (duel.ts: `duel.radius ?? RADIUS`). The pair fights where they stand; the arena is the boss's leash circle around its spot (`leashed` lets the hero go and resets it);
+ *  - the PLACE: a `pose` the sim's door would refuse (`poseFits` false: a fighter beyond the pit's wall) is put on the finished duel by hand, both bodies set to where the pair stand, the foe
+ *    facing the hero. The caller builds that duel without a pose (the pit's marks), so nothing but the two bodies' x, z and heading differs from a fight begun at the marks. A pose that fits is the
+ *    sim's own and this leaves it alone. Fights of the zone only: a duel that never passes through here (the single fight, ?postkill=v1, Gate 0) keeps `radius` absent, byte for byte.
+ */
+export function zoneDuel<D extends Duel>(duel: D, pose?: DuelPose, open: number = OPEN_RADIUS): D {
+  const [hero, foe] = duel.fighters;
+  const placed = pose ? [{ ...hero, body: { ...hero.body, x: pose.hero.x, z: pose.hero.z, heading: pose.heroFacing } }, { ...foe, body: { ...foe.body, x: pose.foe.x, z: pose.foe.z, heading: M.atan2(pose.hero.x - pose.foe.x, pose.hero.z - pose.foe.z) } }] as D['fighters'] : duel.fighters;
+  return { ...duel, fighters: placed, radius: open };
+}
+
+/**
+ * The duel pose of a spawn engaging the hero where he stands, anywhere on the zone's ground (`wall` is the ground's radius, world.spreadRadiusMetres, not the pit's wall: the pose is
+ * placed relative to the SPOT, never the pit's marks): never closer than `minDistance` (he is stepped back along the line from the spot, zone-loop.ts respawnPose). A hero beyond the
+ * ground (no boss can have him in aggro or leash there) is drawn in to its edge (zone-loop.ts intoPit, PR A), so with the ground as the wall the hero is never moved on the way into a fight.
+ */
 export function poseAt(walker: At, spot: At, wall: number, minDistance: number, start: At): NonNullable<ReturnType<typeof respawnPose>> {
-  const hero = intoPit(walker, wall);   // the zone's free walk (postKill.walkRadiusMetres) can leave him beyond the pit's wall: a duel starts on the wall's edge, in line with where he stood
+  const hero = intoPit(walker, wall);
   return respawnPose(hero, spot, wall, minDistance) ?? respawnPose(start, spot, wall, minDistance) ?? { hero: { x: start.x, z: start.z }, foe: { x: spot.x, z: spot.z }, heroFacing: M.atan2(spot.x - start.x, spot.z - start.z) };
 }
 
