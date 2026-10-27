@@ -27,7 +27,7 @@ import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-rea
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setLockFrame, setWalkClamp } from '../fight/camera.ts';
-import { cameraZoom } from '../fight/camera-zoom.ts';
+import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { heroSpecialFxFor, setHeroSpecialFx } from '../fight/hero-special-fx.ts';
@@ -166,6 +166,7 @@ const view = createScene(
   opponentId, undefined, FIGHT.weapon as WeaponId, () => {}, level, gfxPost,
 );
 view.setZoom(cameraZoom(FIGHT.camera.zoom, search));   // the lens zoom (data/fight.json camera.zoom 1.1); ?zoom=1 = the camera as it was
+view.setWide(wideRow(FIGHT.camera.wide, search));   // the wide-screen lens (data/fight.json camera.wide): more zoom on a landscape or desktop screen, none on a portrait one; ?wide=v1 = without it
 view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 marks): a guest's rung, and the Centurion met at it
 
 const controls = createInput({   // :832
@@ -373,7 +374,7 @@ function frame(now: number) {
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
   if (multi) {   // every live attacker stays in frame: the lock backs off by framingWiden, eased; the dead lie where they fell and no longer count; with none it snaps back to exactly 1
-    const aim = framingWiden({ x: (state.x + practice.enemy.x) / 2, z: (state.z + practice.enemy.z) / 2 }, attackers.filter((a) => !a.dead).map((a) => a.practice.enemy), ATTACKERS.camera, cameraZoom(FIGHT.camera.zoom, search)), rows = ATTACKERS.camera;
+    const aim = framingWiden({ x: (state.x + practice.enemy.x) / 2, z: (state.z + practice.enemy.z) / 2 }, attackers.filter((a) => !a.dead).map((a) => a.practice.enemy), ATTACKERS.camera, cameraZoom(FIGHT.camera.zoom, search) * view.lensBoost), rows = ATTACKERS.camera;
     widen += (aim - widen) * (1 - Math.exp(-dt / rows.easeSeconds));
     if (aim === 1 && widen - 1 < 1 / 1000) widen = 1;
     view.setWiden(widen);

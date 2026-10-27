@@ -20,6 +20,9 @@ export const setWalkClamp = (radius: number): void => { WALK_CLAMP = radius; };
 // over-the-shoulder framing). 1 and 0 are V1's lock exactly; a finish eases both back to that, as it does the fight-back scale.
 let LOCK_LIFT = 1, LOCK_SIDE = 0;
 export const setLockFrame = (lift: number, side: number): void => { LOCK_LIFT = lift; LOCK_SIDE = side; };
+let LENS_BOOST = 1;
+/** The scene sets the wide-screen lens zoom on top of the page's (camera-zoom.ts wideBoost; 1 on every portrait screen): the finisher side view's fit is by the vertical field, which that zoom narrows. */
+export const setLensBoost = (boost: number): void => { LENS_BOOST = boost; };
 const AIM_PER_SHRINK = cameraRule('aimPerShrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
 // How tall each foe LOOKS against a man's, for the camera only. The sim's `scale` (moves.ts OPPONENTS[id].scale) is a hitbox/rate number and stays put (it is in the record's
 // SIM_FILES); a foe whose body is not a man's by that number says so here. The Ash Wolf is ~.8 m at the back (the sim says .8 for its rates): behind the hero's head at bite range
@@ -110,6 +113,7 @@ export function finisherSidePose(
   finisher: FinisherId,   // whose camera.side view (src/fight/finisher-defs.json)
   bodyScale = 1,
   reach = 0,   // Opened: farthest horizontal extent of any landed piece from the fallen's origin (0 = not measured)
+  lensBoost = LENS_BOOST,   // the wide-screen lens zoom (setLensBoost): the fit stands this much further back so the narrower vertical field still holds both; 1 = as it was
 ) {
   const dx = fallen.x - killer.x,
     dz = fallen.z - killer.z,
@@ -133,7 +137,7 @@ export function finisherSidePose(
   const beyond = view.beyond ?? Math.max(view.beyondBody! * bodyScale, reach + view.reachPad!);
   const back = Math.max(
     view.minBack,
-    ((gap / 2) * sideward + beyond) / (Math.tan((51 * Math.PI) / 360) * Math.min(aspect, 1)),
+    (((gap / 2) * sideward + beyond) / (Math.tan((51 * Math.PI) / 360) * Math.min(aspect, 1))) * lensBoost,
   );
   const side = (sign: number, front = 1) => ({
     x: lookX + (-uz * sign * sideward - ux * rearward * front) * back,

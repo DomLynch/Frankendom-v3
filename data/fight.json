@@ -19,7 +19,14 @@
     "about": "V2's lower, over-the-shoulder fight camera on V1's lock (src/fight/camera.ts setLockFrame; ?cam=v1 = V1's lock exactly). V2 (Frankendom-v2 data/camera.json portrait: back 6.5, up 2.8, side 1.0, zoom 0.9) puts the eye ~2.8 m up and 1.0 m over the right shoulder; V1's lock at a 2.5 m gap is 4.2 m up (max(lockLiftFloor 3.2, gap x 1.3) x fightBack 1.3) and 5.7 m back. lift scales V1's lock height (2.8 / 4.2); side is V2's shoulder step in metres. A finish eases both back to V1's lock, as V1 does fightBack. zoom (Dom 2026-10-27, 'the camera is still a bit far out ... just add 10%'): the lens, 1.1 = everything 10% larger on screen about the frame centre (vertical field of view 51 deg -> 2 atan(tan 25.5 deg / zoom), src/fight/camera-zoom.ts, scene.ts); 1 = the camera exactly as before; limits 0.5..2. ?zoom=1 reverts on a phone without a deploy, ?zoom=1.1 is the row, any value in the limits works. Presentation only.",
     "lift": 0.67,
     "side": 1.0,
-    "zoom": 1.1
+    "zoom": 1.1,
+    "wide": {
+      "about": "Dom 2026-10-27 (phone, landscape): the fight looked zoomed OUT, the hero and bosses tiny in a wide field of sand, where portrait is right. The lock's distance is already fitted by the vertical field (V1's min(aspect, 1)), so the hero is the same SHARE of the screen height in every shape; but a landscape phone is 375 px tall, so that share is 2.6x fewer pixels than on a portrait phone (measured: hero 0.35 of the height engaged on 375x812 = 282 px, 0.28 on 812x375 = 106 px). So a wide screen gets an extra lens zoom: 1 below fromAspect (every portrait phone and tablet: portrait is exactly as it was), `zoom` from toAspect (landscape phones and desktop), linear between; the horizontal field never passes maxHfovDeg on an ultra-wide. src/fight/camera-zoom.ts wideBoost, scene.ts applies it on every resize. ?wide=<n> (1..2) replaces zoom for a page load, ?wide=v1 = no wide-screen zoom. Presentation only.",
+      "fromAspect": 1,
+      "toAspect": 1.5,
+      "zoom": 1.5,
+      "maxHfovDeg": 80
+    }
   },
   "ai": "novice",
   "profile": "pitborn",
