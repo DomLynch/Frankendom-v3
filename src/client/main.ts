@@ -43,6 +43,7 @@ import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
 import { foeSweepsFor } from '../fight/foe-reach.ts';
 import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
+import { RADAR, bossBlips, mountRadar, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
@@ -476,11 +477,15 @@ function frame(now: number) {
     locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
   );
   frameEvents = [];
+  radar?.frame(state.x, state.z, view.yaw);
   updateHud();
   requestAnimationFrame(frame);
 }
 nameOpponent();
 updateHud();
+const radarOrigin = ZONE ? pitOrigin(zoneFor(search), WORLD) : { x: 0, z: 0 };   // the radar (data/radar.json): bosses at their live spots, other players from the presence handle; hero and yaw come in per frame
+const radarLive = (i: number) => { if (i === current) return practice.enemy; for (let k = 0; k < attackers.length; k++) if (attackers[k]!.index === i) return attackers[k]!.practice.enemy; return undefined; };   // a boss in a fight is at its sim position, the rest at their spots
+const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); } }) : null;
 let buildLabel = '';
 fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, 7); element('build').textContent = buildLabel; }).catch(() => {});
 // ?snd=1: the audio state beside the build label, e.g. "f297c4e running+sprite+keep 12" (context, sprite decoded, silent clip, cues played)
