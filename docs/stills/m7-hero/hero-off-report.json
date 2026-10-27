@@ -1,0 +1,36 @@
+{
+  "query": "",
+  "hitTick": 302,
+  "death": {
+    "tick": 50,
+    "states": [
+      {
+        "k": 0,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 10,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 30,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 70,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      }
+    ]
+  },
+  "log": [],
+  "state": null,
+  "cost": null
+}

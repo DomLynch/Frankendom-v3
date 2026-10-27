@@ -13,6 +13,8 @@ let quietS = 0;   // seconds of the get-up left after a knockdown ended (the sam
 const downNow = (ctx: FeelCtx): boolean => ctx.rd.state === 'knockdown';
 export const feelHooks: FeelHooks = {
   hit(e: CombatEvent, ctx: FeelCtx) {
+    const seen = ((globalThis as { __heroReactSeen?: Record<string, unknown> }).__heroReactSeen ??= { hits: 0 });   // read by the clip harness: how many hits reached the hook, and the last one's fields
+    seen.hits = (seen.hits as number) + 1; seen.last = { target: ctx.target, location: e.location, heading: e.heading, state: ctx.rd.state, quietS };
     if (ctx.target !== 0 || downNow(ctx) || quietS > 0) return;
     const plan = react.hit(ctx.rd, e.location, e.heading, ctx.group.rotation.y);
     if (plan) ((globalThis as { __heroReactLog?: unknown[] }).__heroReactLog ??= []).push({ tick: e.tick, zone: plan.zone, sector: plan.sector, side: plan.side });   // read by the clip harness
