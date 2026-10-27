@@ -3,6 +3,6 @@
 import type { FeelHooks } from './feel.ts';
 
 /** The ?feel= names that have a module in the chunk (main.js knows only these names, never the code). */
-export const FEEL_NAMES: readonly string[] = ['clash', 'kick', 'hitreact', 'limbs'];
+export const FEEL_NAMES: readonly string[] = ['clash', 'kick', 'hitreact', 'limbs', 'hero'];
 /** Fetch the feel chunk (a separate module scripts/build.mjs writes); resolves to the hooks by ?feel= name. */
 export const loadFeelChunk = (): Promise<Record<string, FeelHooks>> => import('./feel-chunk.ts') as Promise<Record<string, FeelHooks>>;
