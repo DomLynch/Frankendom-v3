@@ -1,56 +1,73 @@
-// The zone's open ground (data/zone-ground.json, src/zone/ground.ts, ground-draw.ts): the rows are validated, the sizing comes from them, the fog hides the floor's
-// edge from where the hero and his camera can stand, and the page builds the old stage under ?postkill=v1 and ?ground=v1.
+// The zone's endless open ground (data/zone-ground.json, src/zone/ground.ts, ground-draw.ts, the follow in scene.ts): the rows are validated, the sizing and the follow snap come from
+// them, the fog hides the floor's edge, the floor stands on the hero in whole grid cells (the sand and grid never swim), and the page builds the old stage under ?postkill=v1 and ?ground=v1.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SCHEMA, validateFile } from '../src/sim/validate.js';
-import { GROUND, checkGround, fogHidesAt, groundFor, groundOn, groundSizing } from '../src/zone/ground.ts';
+import { GROUND, anchorFor, checkGround, fogHidesAt, followSnap, groundFor, groundOn, groundSizing } from '../src/zone/ground.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const ROWS = read('../data/zone-ground.json'), STAGE = read('../data/stage.json'), RESPAWN = read('../data/respawn.json');
 const clone = (patch) => { const d = structuredClone(ROWS); patch(d); return d; };
+const d = STAGE.duel.fogDensity;
 
-test('the rows validate, the shipped values pass the fog and reach checks, and unknown keys are refused', () => {
+test('the rows validate, the shipped values pass the checks, and unknown keys are refused', () => {
   assert.ok(SCHEMA['zone-ground']);
   assert.deepEqual(validateFile('zone-ground', ROWS), []);
   assert.match(validateFile('zone-ground', { ...ROWS, extra: 1 }).join('\n'), /zone-ground\.extra: unknown key/);
-  assert.deepEqual(checkGround(ROWS, STAGE.duel.fogDensity), []);
+  assert.match(validateFile('zone-ground', { ...ROWS, groundFollow: { ...ROWS.groundFollow, extra: 1 } }).join('\n'), /groundFollow\.extra: unknown key/);
+  assert.deepEqual(checkGround(ROWS, d), []);
   assert.deepEqual(ROWS.flag, { query: 'ground', off: 'v1' });
+  assert.equal(ROWS.groundFollow.on, true);
 });
 
-test('bad rows are refused: out of range, NaN, grid beyond the floor, a far plane that cuts the floor short, an edge the fog does not hide', () => {
-  const bad = (patch, re, reach) => assert.match(checkGround(clone(patch), STAGE.duel.fogDensity, reach).join('\n'), re);
-  bad((d) => { d.groundRadiusMetres = 5; }, /groundRadiusMetres 5 is not in/);
-  bad((d) => { d.groundRadiusMetres = NaN; }, /groundRadiusMetres NaN/);
-  bad((d) => { d.edgeVisibility = 0; }, /edgeVisibility 0 is not in/);
-  bad((d) => { d.gridRadiusMetres = 400; d.limits.gridRadiusMetres = [10, 500]; }, /grid is beyond the floor|gridRadiusMetres/);
-  bad((d) => { d.cameraFarMetres = 180; }, /cuts the floor off before the fog hides it/);
-  bad((d) => { d.groundRadiusMetres = 100; }, /walking reach/, 20);
-  assert.deepEqual(checkGround(ROWS, STAGE.duel.fogDensity, 20), [], 'a 12 m walk plus 8 m camera room leaves the edge in fog');
+test('bad rows are refused: out of range, NaN, grid beyond the floor, a far plane that cuts the floor short, an edge the fog does not hide, a bad follow row', () => {
+  const bad = (patch, re, reach) => assert.match(checkGround(clone(patch), d, reach).join('\n'), re);
+  bad((r) => { r.groundRadiusMetres = 5; }, /groundRadiusMetres 5 is not in/);
+  bad((r) => { r.groundRadiusMetres = NaN; }, /groundRadiusMetres NaN/);
+  bad((r) => { r.edgeVisibility = 0; }, /edgeVisibility 0 is not in/);
+  bad((r) => { r.gridRadiusMetres = 400; r.limits.gridRadiusMetres = [10, 500]; }, /beyond the floor/);
+  bad((r) => { r.cameraFarMetres = 180; }, /cuts the floor off before the fog hides it/);
+  bad((r) => { r.groundRadiusMetres = 100; }, /ends before the fog hides the edge/);
+  bad((r) => { r.groundFollow.snapMetres = 0; }, /snapMetres 0 is not in/);
+  bad((r) => { r.groundFollow.snapMetres = NaN; }, /snapMetres NaN/);
+  bad((r) => { r.groundFollow.on = 'yes'; }, /groundFollow\.on must be true or false/);
+  bad((r) => { r.groundFollow.on = false; r.groundRadiusMetres = 300; }, /walking reach/, 20);   // a floor that stays on the pit must clear the walking reach; one that follows the hero need not
+  assert.deepEqual(checkGround(ROWS, d, 1e5), [], 'a following floor ignores the reach');
   assert.match(checkGround(ROWS, 0).join('\n'), /fogDensity/);
 });
 
 test('the sizing is the rows through the pit scale: the floor reaches the radius, the grid keeps the stage\'s cell, nothing is typed here', () => {
   const k = RESPAWN.world.pitScale, s = groundSizing(GROUND, k);
-  assert.ok(s.floorSide * k / 2 >= ROWS.groundRadiusMetres, 'the floor (in the scaled group) reaches the row\'s radius');
+  assert.ok(s.floorSide * k / 2 >= ROWS.groundRadiusMetres, 'the floor (in the scaled group) reaches the row\'s radius on every side of the hero');
   assert.ok(s.floorSide >= STAGE.ground.size, 'never smaller than the pit\'s own floor');
   const cell = STAGE.grid.size / STAGE.grid.divisions;
   assert.equal(s.gridSize / s.gridDivisions, cell, 'same cell as the pit grid, so they join line for line');
   assert.ok(s.gridSize * k / 2 >= ROWS.gridRadiusMetres && s.gridSize <= 2 * ROWS.gridRadiusMetres / k + 2 * cell);
-  assert.equal(s.gridDivisions % 2, 0, 'centre lines stay on the origin');
+  assert.equal(s.gridDivisions % 2, 0, 'centre lines stay on the anchor');
   assert.equal(s.far, ROWS.cameraFarMetres);
   assert.deepEqual(groundFor(k), s);
-  assert.throws(() => groundFor(k, 1e5), /walking reach/);
 });
 
-test('the fog distance is the exp-squared fog law, and the shipped far plane and edge clear it', () => {
-  const d = STAGE.duel.fogDensity, hide = fogHidesAt(d, ROWS.edgeVisibility);
+test('the follow: the floor stands on the hero in whole grid cells, so the grid lines and the sand stay fixed in the world as he runs', () => {
+  const k = RESPAWN.world.pitScale, cellWorld = (STAGE.grid.size / STAGE.grid.divisions) * k, snap = followSnap(GROUND, k);
+  assert.ok(snap >= ROWS.groundFollow.snapMetres - 1e-9, 'at least the row\'s step');
+  assert.ok(Math.abs(snap / cellWorld - Math.round(snap / cellWorld)) < 1e-9, 'a whole number of grid cells');
+  assert.equal(groundSizing(GROUND, k).snap, snap);
+  for (const [x, z] of [[0, 0], [0.3, -0.2], [500, 500], [-1234.5, 87.1], [12000, -20000], [1e5 + 0.37, 3]]) {   // up to about 100 km
+    const a = anchorFor(x, z, snap);
+    assert.ok(Math.abs(a.x - x) <= snap / 2 + 1e-6 && Math.abs(a.z - z) <= snap / 2 + 1e-6, `within half a step of the hero at ${x}, ${z}`);
+    for (const v of [a.x, a.z]) { const cells = v / cellWorld; assert.ok(Math.abs(cells - Math.round(cells)) < 1e-6 * Math.max(1, Math.abs(cells)), `on a grid line at ${v}`); }
+  }
+  assert.deepEqual(anchorFor(3, 4, 0), { x: 0, z: 0 }, 'snap 0 = the floor stays on the pit');
+  assert.equal(followSnap(clone((r) => { r.groundFollow.on = false; }), k), 0);
+});
+
+test('the fog distance is the exp-squared fog law, and the shipped far plane and floor edge clear it', () => {
+  const hide = fogHidesAt(d, ROWS.edgeVisibility);
   assert.ok(Math.abs(Math.exp(-((d * hide) ** 2)) - ROWS.edgeVisibility) < 1e-9);
-  assert.ok(ROWS.cameraFarMetres >= hide);
-  assert.ok(ROWS.groundRadiusMetres - 20 >= hide, '12 m walk + 8 m camera room (postKill, PR A) still leaves the edge in fog');
-  const walk = RESPAWN.postKill?.walkRadiusMetres;
-  if (walk !== undefined) assert.deepEqual(checkGround(ROWS, d, walk + (RESPAWN.postKill.cameraMetres ?? 0)), [], 'the real walking reach (once PR A\'s rows are in)');
+  assert.ok(ROWS.cameraFarMetres >= hide && ROWS.groundRadiusMetres >= hide);
 });
 
 test('?ground=v1 keeps the pit\'s floor; the link flag reads the row', () => {
@@ -61,15 +78,18 @@ test('?ground=v1 keeps the pit\'s floor; the link flag reads the row', () => {
   assert.equal(groundOn('?postkill=v1'), true, 'a different flag does not touch it (the zone gate handles ?postkill=v1)');
 });
 
-test('the wiring: only the zone, behind the flag, builds the open ground; ?postkill=v1 (no zone) builds the old stage', () => {
+test('the wiring: only the zone, behind the flag, builds the open ground; ?postkill=v1 (no zone) builds the old stage; the follow is the scene\'s and is off until opened', () => {
   const main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts'), stage = src('../src/arena-stage.ts'), draw = src('../src/zone/ground-draw.ts');
-  const calls = main.match(/openGround\(/g) ?? [];
-  assert.equal(calls.length, 1, 'one call site');
+  assert.equal((main.match(/openGround\(/g) ?? []).length, 1, 'one call site');
   assert.match(main, /if \(ZONE && groundOn\(search\)\) view\.openGround\(groundFor\(WORLD\.pitScale/);
   assert.match(main, /const ZONE = zoneLoopFor\(zoneFor\(search\), search/, 'ZONE is null under ?postkill=v1');
-  assert.match(scene, /openGround\(sizing: GroundSizing\) \{ drawOpenGround\(arena\.group, camera, sizing\); \}/);
+  assert.match(scene, /openGround\(sizing: GroundSizing\) \{ drawOpenGround\(arena\.group, camera, sizing\); groundSnap = sizing\.snap;/);
+  assert.match(scene, /let groundSnap = 0/, 'no follow until the zone opens the ground');
+  assert.match(scene, /if \(groundSnap > 0\) \{ groundAt = anchorFor\(state\.x, state\.z, groundSnap\);/);
+  assert.match(scene, /get groundAnchor\(\)/, 'the hook the skyline follows');
   assert.doesNotMatch(stage, /ground-draw|openGround|zone-ground/, 'the pit stage itself is unchanged: buildArena still draws the 400-unit floor');
   assert.match(stage, /createGround\(STAGE\)/);
   assert.match(draw, /group\.getObjectByName\('floor'\)/, 'the same floor mesh and material, only wider');
   assert.doesNotMatch(draw, /TextureLoader|new THREE\.Texture|MeshStandardMaterial|MeshBasicMaterial/, 'no new texture or material');
+  assert.doesNotMatch(stage, /boundary|RingGeometry|wall/i, 'the stage draws no pit wall, rim or ring: nothing to hide in the zone');
 });

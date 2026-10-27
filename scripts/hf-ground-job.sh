@@ -15,7 +15,8 @@ npx playwright install chromium 2>&1 | tail -3 || echo "playwright install faile
 command -v jpegtran >/dev/null || { npm i --no-save --no-audit --no-fund jpegtran-bin >/dev/null 2>&1; export PATH="$ROOT/node_modules/jpegtran-bin/vendor:$PATH"; command -v jpegtran || echo "no jpegtran"; }   # scripts/build.mjs packs textures losslessly
 node scripts/build.mjs | tail -1
 PORT=$((20000 + RANDOM % 5000)); (node scripts/serve.mjs $PORT >/dev/null 2>&1 & echo $! >/tmp/srv.pid); sleep 1
-timeout 600 node scripts/ground-stills.mjs "http://localhost:$PORT" "$OUT" before "ground=v1&opener=off" 2>&1 | grep -E "done|pageerror|console"
-timeout 600 node scripts/ground-stills.mjs "http://localhost:$PORT" "$OUT" after "opener=off" 2>&1 | grep -E "done|pageerror|console"
+timeout 800 node scripts/ground-stills.mjs "http://localhost:$PORT" "$OUT" before "ground=v1&opener=off" 2>&1 | tail -15
+timeout 800 node scripts/ground-stills.mjs "http://localhost:$PORT" "$OUT" after "opener=off" 2>&1 | tail -15
+ls -la "$OUT"
 kill "$(cat /tmp/srv.pid)"
 for f in "$OUT"/*.jpg; do echo "==IMG $(basename "$f")=="; base64 -w0 "$f"; echo; echo "==END=="; done
