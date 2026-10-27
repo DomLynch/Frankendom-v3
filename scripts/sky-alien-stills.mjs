@@ -37,7 +37,10 @@ for (const query of queries.length ? queries : ['', 'skyfollow=v1']) {
   const heads = [];
   await page.screenshot({ path: `${out}/${tag}-ready.png` }); heads.push({ shot: 'ready', ...(await read()) });
   for (let i = 0; i < HOLDS.length; i++) {
-    await page.keyboard.down('KeyD'); await page.waitForTimeout(HOLDS[i]); await page.keyboard.up('KeyD');
+    await page.keyboard.down('KeyD');
+    if (i === 1) { await page.waitForTimeout(HOLDS[i] * 0.7); await page.screenshot({ path: `${out}/${tag}-moving.png` }); heads.push({ shot: 'moving (mid-strafe, no settle)', ...(await read()) }); await page.waitForTimeout(HOLDS[i] * 0.3); }
+    else await page.waitForTimeout(HOLDS[i]);
+    await page.keyboard.up('KeyD');
     await page.waitForTimeout(2500);   // the slow follow settles
     await page.screenshot({ path: `${out}/${tag}-turn${i + 1}.png` }); heads.push({ shot: `turn${i + 1}`, ...(await read()) });
   }

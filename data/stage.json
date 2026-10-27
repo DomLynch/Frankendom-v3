@@ -19,7 +19,7 @@
     "followOffsetDegrees": -90,
     "face": { "u": 0.747, "v": 0.36 },
     "yawFollow": 0.97,
-    "yawFollowSeconds": 1.5,
+    "yawFollowSeconds": 0.3,
     "followQuery": "skyfollow",
     "followV1": "v1",
     "brightness": 0.9,
