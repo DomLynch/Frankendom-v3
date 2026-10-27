@@ -22,10 +22,10 @@ export const SCHEMA = {
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
   'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
     maps: { bones: ['hips', 'spine', 'spine1', 'spine2', 'neck', 'head', 'armLeft', 'forearmLeft', 'handLeft', 'armRight', 'forearmRight', 'handRight', 'thighLeft', 'shinLeft', 'footLeft', 'toeLeft', 'thighRight', 'shinRight', 'footRight', 'toeRight'],
-      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'seam', 'cap', 'helmet'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows'] },
+      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'cue', 'seam', 'cap', 'helmet'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows'] },
     // an object of rows keyed by id: path -> the keys each row may carry
     rowMaps: { 'finisherCuts.rows': ['unit', 'atS', 'push', 'kill', 'plane'] },
-    finite: { 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'] } },
+    finite: { 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'] } },
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'] },
 };
