@@ -25,7 +25,7 @@ const stage = (scene, gap, hold) => {
   if (!hold) return;
   f.body = { ...f.body, x: h.body.x + Math.sin(h.body.heading) * gap, z: h.body.z + Math.cos(h.body.heading) * gap, heading: h.body.heading + Math.PI };
   f.buffer = null;
-  if (scene === 'guard') { f.phase = 'guard'; f.age = 60; f.guardDirection = 'overhead'; } else { f.phase = 'ready'; f.age = 0; }
+  if (scene === 'guard') { if (f.phase === 'guard') f.guardDirection = 'overhead'; } else { f.phase = 'ready'; f.age = 0; }   // guard: the AI's own raised guard, turned to a side that does not cover a low blow (else the sim says Blocked and no kick lands)
 };
 
 if (process.env.COST) {
@@ -61,25 +61,41 @@ for (const query of queries.length ? queries : ['', 'feel=kick']) {
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
-  await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20);
+  await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 300);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   await run(120);
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 60000 });
   const phase = () => page.evaluate(() => globalThis.__v3Fight.duel.fighters[0].phase);
+  await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF');   // the first attack key draws the sword
   for (let i = 0; i < 240 && /sheathed|draw/.test(await phase()); i++) await run(1);
+  for (let i = 0; i < 240 && (await phase()) !== 'ready'; i++) await run(1);
   const hold = (on) => page.evaluate(`(${stage.toString()})('${SCENE}', ${GAP}, ${on})`);
   for (let i = 0; i < 40; i++) { await hold(true); await run(1); }   // settle in the staged spot
-  const seen = []; let n = 0;
+  if (SCENE === 'guard') {   // provoke the AI into raising a guard (light attacks from the staged spot), then kick the moment it is up; the same ticks for every query
+    let found = false;
+    for (let i = 0; i < 1500 && !found; i++) {
+      await hold(true);
+      if (i % 45 === 0) { await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF'); }
+      await run(1);
+      found = await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; return f.phase === 'guard' && f.age > 6 && h.phase === 'ready'; });
+    }
+    console.log(`${SCENE} ${tag}: guard ${found ? 'up' : 'NOT found'}`);
+  }
+  const seen = [], sim = []; let n = 0;
+  console.log(`${SCENE} ${tag}: hero phase before the kick: ${await phase()}`);
   const shoot = async () => page.screenshot({ path: `${out}/${SCENE}-${tag}-${String(n).padStart(3, '0')}.png` });
   await page.keyboard.down('KeyC'); await page.keyboard.up('KeyC');
   for (let t = 0; t < TICKS; t++) {
-    if (t < 30) await hold(true); else await hold(false);   // after the kick lands the sim is on its own (the foe may act); both stay at full health
+    if (t < 30) await hold(true); else await hold(false);   // (the staged spot and the guard side for the first 30 ticks, the kick lands at tick 18)   // after the kick lands the sim is on its own (the foe may act); both stay at full health
     await run(1);
     if (t % STEP === 0) { await shoot(); n++; }
+    const types = await page.evaluate(() => (globalThis.__v3Fight.events ?? []).map((e) => `${e.type}${e.move ? `:${e.move}` : ''}${e.guarded ? ':guarded' : ''}`));
+    if (types.length) sim.push(`t${t} ${types.join(',')}`);
     if (t % 10 === 0) seen.push(await page.evaluate((k) => ({ foe: globalThis.__v3Fight.duel.fighters[1].phase, ragdoll: globalThis.__ragdoll?.state, cue: !!document.querySelector('.feel-kick-cue') && getComputedStyle(document.querySelector('.feel-kick-cue')).display !== 'none', kicks: (globalThis[k] ?? []).length }), '__v3FeelKick'));
   }
   const events = await page.evaluate(() => ({ feel: globalThis.__v3FeelKick ?? [], bus: globalThis.__feelEvents ?? [], cost: globalThis.__ragdoll?.byMode }));
   console.log(`${SCENE} ${tag}: ${n} frames; kick results ${JSON.stringify(events.feel.map((e) => [e.outcome, e.stance, +e.force.toFixed(2), e.finisherWindowS]))}; ragdoll/cue every 10 ticks: ${seen.map((s) => `${s.foe}/${s.ragdoll}${s.cue ? '/CUE' : ''}`).join(' ')}`);
+  console.log(`${SCENE} ${tag}: sim events ${sim.join(' | ')}`);
   console.log(`${SCENE} ${tag}: ragdoll cost ${JSON.stringify(events.cost)}`);
   await page.close();
 }
