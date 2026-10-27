@@ -41,6 +41,16 @@ test('the shipped spread: bosses stand beyond the drawn floor, 10 m or more apar
   assert.ok(o.x === 226 && o.z === 47, 'the pit is still where the page and the presence service put it');
 });
 
+test('spacing as DRAWN (Dom: "one very close, the second right in my face, tag-teamed"): pairwise >= minSpacing, and every boss but the newcomer\'s own is >= startClearance from the start mark and the respawn mark', () => {
+  const s = spots(), start = initialState(), o = { x: 226, z: 47 }, respawn = { x: ZONE.respawn.x - o.x, z: ZONE.respawn.z - o.z };
+  assert.ok(WORLD.minSpacing >= 30 && WORLD.startClearance >= 25, 'the shipped rows');
+  for (const a of s) for (const b of s) if (a !== b) assert.ok(dist(a, b) >= WORLD.minSpacing, `${a.id} ~ ${b.id} = ${dist(a, b).toFixed(2)} m`);
+  const near = [...s].sort((a, b) => dist(a, start) - dist(b, start))[0];
+  assert.equal(near.id, OPENERS.spawns[0], 'the boss near the newcomer is the opener\'s');
+  for (const a of s) if (a !== near) for (const m of [start, respawn]) assert.ok(dist(a, m) >= WORLD.startClearance, `${a.id} is ${dist(a, m).toFixed(2)} m from a hero mark`);
+  assert.throws(() => validateSpots(s.map((x) => (x.id === 'pit-pitborn-west' ? { ...x, x: start.x + 12, z: start.z + 12 } : x)), start, wall(), { ...WORLD, minSpacing: 0 }), /startClearance/);
+});
+
 test('coverage: no hero position is inside two bosses\' aggro; leashes of far camps overlap (leash 20) and a hero in one boss\'s leash can meet another\'s aggro, which joins', () => {
   const s = spots(), R = WORLD.spreadRadiusMetres;
   let both = 0, joined = 0, covered = 0, points = 0, twoLeashes = 0;
@@ -56,7 +66,8 @@ test('coverage: no hero position is inside two bosses\' aggro; leashes of far ca
   }
   assert.ok(points > 1000 && covered > 0);
   assert.equal(both, 0, 'no point is in two aggro ranges: an engage is never ambiguous');
-  assert.ok(twoLeashes > 0 && joined > 0, 'with leash 20 the leashes of camps 16 to 24 m apart overlap, so a hero fighting one boss can walk into another\'s aggro: that boss joins (multi-aggro, #110). Nobody chains: each spawn keeps its own aggro and leash, and the joiner is only ever within its 2.5 m aggro of the hero');
+  assert.ok(twoLeashes > 0, 'the leashes of camps 33 m+ apart still overlap (leash 20) but a hero inside one boss\'s leash is never within another\'s 2.5 m aggro: no tag-team from the standing camps (Dom: "I got tag-teamed"); joining is exercised in the attackers tests');
+  assert.equal(joined, 0, 'no point of any boss\'s leash is within another boss\'s aggro');
   for (const a of s) for (const b of s) if (a !== b) assert.ok(dist(a, b) > a.aggro + b.aggro, 'aggro ranges never overlap');
 });
 

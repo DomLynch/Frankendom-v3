@@ -11,8 +11,8 @@ import { OPEN_RADIUS } from '../fight/play-radius.ts';
 import type { Duel, DuelPose } from '../fight/duel.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; leashMargin: number; pitScale: number; spreadRadiusMetres: number };
-type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; leashMargin: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number] };
+export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; startClearance: number; leashMargin: number; pitScale: number; spreadRadiusMetres: number };
+type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; startClearance: [number, number]; leashMargin: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number] };
 export const WORLD = ROWS.world as WorldRows;
 const LIMITS = ROWS.limits as unknown as Limits;
 
@@ -44,7 +44,7 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
  * ambiguous) or closer than `minSpacing`, or a spawn kind that is not the one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
  */
 export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kind?: string, limits: Limits = LIMITS): void {
-  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] as const) {
+  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
@@ -59,6 +59,8 @@ export function validateSpots(spots: readonly Spot[], heroStart: At, wall: numbe
     for (const t of spots) if (t !== s && dist(s, t) <= s.aggro) throw new Error(`spawns ${s.id} and ${t.id} stand inside each other's aggro`);
     for (const t of spots) if (t !== s && dist(s, t) < world.minSpacing) throw new Error(`spawns ${s.id} and ${t.id} stand closer than ${world.minSpacing} m (respawn.json world.minSpacing)`);
   }
+  const opener = spots.reduce((a, b) => (dist(b, heroStart) < dist(a, heroStart) ? b : a));   // the newcomer's own boss (the opener's yard Pitborn) is the one allowed near the start
+  for (const s of spots) if (s !== opener && dist(s, heroStart) < world.startClearance) throw new Error(`spawn ${s.id} stands ${dist(s, heroStart)} m from the hero's start, closer than ${world.startClearance} m (respawn.json world.startClearance): only the nearest boss may be near the newcomer`);
   if (new Set(spots.map((s) => s.id)).size !== spots.length) throw new Error('two spawns share an id');
 }
 
