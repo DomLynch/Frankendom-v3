@@ -185,6 +185,7 @@ export type CameraFinish = {
   clock: number;
   head: { x: number; z: number } | null;
   big: boolean;
+  focus?: { x: number; y: number; z: number } | null;   // finisher-cam.json: where the foe's cut is now (its bone's world position), null / absent = the row's own fixed spot
   // Opened (2026-09-21): how far, horizontally, the farthest settled piece (torso, legs, dropped weapon) reaches from the
   // fallen fighter's origin — measured from the pieces' world bounds, never shrinking, so the side view fits what actually
   // landed. A fixed margin let a large body's legs slide under the portrait controls (release check 17 on 54d2c70).
@@ -399,7 +400,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         const k = cutCamShare(cutRow, finish!.clock);
         if (k > 0) {
           const tanHalfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect;
-          cutCamPose(cutRow, state, enemy, foeScale, tanHalfH, cutPose);
+          cutCamPose(cutRow, state, enemy, foeScale, tanHalfH, finish!.focus ?? null, cutPose);
           const r = Math.hypot(cutPose.x, cutPose.z);
           if (r > ARENA_CLAMP) { cutPose.x *= ARENA_CLAMP / r; cutPose.z *= ARENA_CLAMP / r; }
           desired.lerp(eyeTarget.set(cutPose.x, cutPose.y, cutPose.z), k);

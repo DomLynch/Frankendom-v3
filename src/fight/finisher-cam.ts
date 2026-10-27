@@ -3,7 +3,8 @@
 // ?finishercam=v1 = the camera and the blood as they were before the rows.
 import ROWS from './finisher-cam.json' with { type: 'json' };
 
-export type CutCamRow = { from: number; over: number; angle: number; dist: number; span: number; eyeY: number; lookY: number; blood: { burst: number; pool: number } };
+export type CutCamRow = { from: number; over: number; bone: string; angle: number; dist: number; span: number; rise: number; eyeY: number; lookY: number; blood: { burst: number; pool: number } };
+export type CutFocus = { x: number; y: number; z: number };
 export type CutCamPose = { x: number; y: number; z: number; lookX: number; lookY: number; lookZ: number };
 
 /** Off for ?finishercam=v1 (any other value keeps the default, ON). */
@@ -16,7 +17,8 @@ export const cutCamRows = (search: string): Readonly<Record<string, CutCamRow>> 
 export function cutCamProblems(rows: Readonly<Record<string, CutCamRow>>): string[] {
   const bad: string[] = [];
   for (const [id, r] of Object.entries(rows)) {
-    for (const k of ['from', 'over', 'angle', 'dist', 'span', 'eyeY', 'lookY'] as const) if (!Number.isFinite(r[k])) bad.push(`${id}.${k}: not a number`);
+    if (typeof r.bone !== 'string' || !r.bone) bad.push(`${id}.bone: a bone name`);
+    for (const k of ['from', 'over', 'angle', 'dist', 'span', 'rise', 'eyeY', 'lookY'] as const) if (!Number.isFinite(r[k])) bad.push(`${id}.${k}: not a number`);
     if (!(r.over > 0)) bad.push(`${id}.over: must be > 0`);
     if (!(r.from >= 0 && r.from + r.over <= 1)) bad.push(`${id}: from + over must end inside the finisher clock 0..1`);
     if (!(r.dist > 0 && r.span > 0)) bad.push(`${id}: dist and span must be > 0`);
@@ -34,13 +36,14 @@ export const cutCamShare = (row: CutCamRow, clock: number): number => {
 /** The close side view of the foe's cut, written into `out`. `hero` and `foe` are ground positions, `scale` the foe's body scale, `tanHalfH` the tangent of half the
  *  horizontal field of view (tan(vfov/2) * aspect), so the span of him always fits across the screen. The camera stands round the foe from the line to the hero by
  *  `angle`, to the side (-axisZ, axisX) the dolly already slides to, so the hero is off to the side of the frame and never in front of the cut. */
-export function cutCamPose(row: CutCamRow, hero: { x: number; z: number }, foe: { x: number; z: number }, scale: number, tanHalfH: number, out: CutCamPose): CutCamPose {
-  const ax = foe.x - hero.x, az = foe.z - hero.z, len = Math.hypot(ax, az) || 1, nx = ax / len, nz = az / len;
+export function cutCamPose(row: CutCamRow, hero: { x: number; z: number }, foe: { x: number; z: number }, scale: number, tanHalfH: number, focus: CutFocus | null, out: CutCamPose): CutCamPose {
+  const cx = focus ? focus.x : foe.x, cz = focus ? focus.z : foe.z, cy = focus ? focus.y : row.lookY * scale;   // the cut: the followed bone, else the foe's own spot
+  const ax = cx - hero.x, az = cz - hero.z, len = Math.hypot(ax, az) || 1, nx = ax / len, nz = az / len;
   const dist = Math.max(row.dist * scale, tanHalfH > 0 ? (row.span * scale) / (2 * tanHalfH) : 0);
-  const back = -Math.cos(row.angle), side = Math.sin(row.angle);   // along the hero->foe axis (negative = back toward the hero) and across it
-  out.x = foe.x + (nx * back - nz * side) * dist;
-  out.z = foe.z + (nz * back + nx * side) * dist;
-  out.y = row.eyeY * scale;
-  out.lookX = foe.x; out.lookZ = foe.z; out.lookY = row.lookY * scale;
+  const back = -Math.cos(row.angle), side = Math.sin(row.angle);   // along the hero->cut axis (negative = back toward the hero) and across it
+  out.x = cx + (nx * back - nz * side) * dist;
+  out.z = cz + (nz * back + nx * side) * dist;
+  out.y = focus ? Math.max(0.9, cy + row.rise * scale) : row.eyeY * scale;
+  out.lookX = cx; out.lookZ = cz; out.lookY = cy;
   return out;
 }

@@ -21,6 +21,7 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
   page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
   await page.addInitScript((id) => { globalThis.__finisherPick = id; }, finisher);
+  if (process.env.CAMLOG && !CAM) await page.addInitScript(() => { globalThis.__v3CamShot = (c) => { const p = globalThis.__v3Fight, f = p?.finish; globalThis.__camlog = { cam: [c.position.x, c.position.y, c.position.z].map((v) => +v.toFixed(2)), fov: +c.fov.toFixed(1), aspect: +c.aspect.toFixed(3), finish: f ? { victim: f.victim, draw: !!f.draw } : null, foe: p ? [p.duel.fighters[1].body.x, p.duel.fighters[1].body.z].map((v) => +v.toFixed(2)) : null, hero: p ? [p.duel.fighters[0].body.x, p.duel.fighters[0].body.z].map((v) => +v.toFixed(2)) : null }; }; });
   if (CAM) await page.addInitScript(([boneName, side, rise, front]) => {   // CAM=belly|head: after the kill the camera stands to the foe's side, aimed at the foe's own bone (the one nearest the sim's foe), so the hero never stands between it and the cut (src/fight/camera.ts __v3CamShot)
     const at = { x: 0, y: 0, z: 0 };
     globalThis.__v3CamShot = (cam) => {
@@ -66,16 +67,24 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   const read = () => page.evaluate(() => { const p = globalThis.__v3Fight, [h, f] = p.duel.fighters; return { hero: h.phase, foeHealth: f.health, victim: p.finish?.victim ?? -1, move: p.finish?.move, location: p.finish?.location, ragdoll: globalThis.__ragdoll?.state }; });
-  const shoot = async (name) => { await page.waitForTimeout(150); await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };
+  const shoot = async (name) => {
+    await page.waitForTimeout(150);
+    if (process.env.CAMLOG) console.log(tag, name, JSON.stringify(await page.evaluate(() => globalThis.__camlog)));   // CAMLOG=1: where the lens stood for this still (the rig's last placed frame)
+    await page.screenshot({ path: `${out}/${tag}-${name}.png` });
+  };
   for (let i = 0; i < 240 && /sheathed|draw/.test((await read()).hero); i++) await run(1);
   await run(30);
   await page.keyboard.down('KeyW');
-  let killedAt = -1, n = 0, last = null;
+  let killedAt = -1, n = 0, last = null, stickUp = false;
   for (; n < MAX_TICKS; n++) {
     if (n % CUT_EVERY === 0 && killedAt < 0) { await page.keyboard.down('KeyD'); await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF'); await page.keyboard.up('KeyD'); }
     await run(1);
     const s = await read(); last = s;
-    if (killedAt < 0) await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); });
+    if (killedAt < 0) {
+      const gap = await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); return Math.hypot(h.body.x - f.body.x, h.body.z - f.body.z); });
+      // He lets go of the stick once he is in reach: in the game a stick held at the killing blow ends the ceremony at once (data/respawn.json freeCamera.stickEndsCeremony), so a player who watches the finisher is not holding it
+      if (!stickUp && gap < (Number(process.env.REACH ?? 1.6))) { stickUp = true; await page.keyboard.up('KeyW'); }
+    }
     if (killedAt < 0 && s.victim === 1) { killedAt = n; await page.keyboard.up('KeyW'); }
     if (killedAt >= 0) { const k = n - killedAt; if (AFTER.includes(k)) await shoot(`k${String(k).padStart(3, '0')}`); if (k >= Math.max(...AFTER)) break; }
   }

@@ -529,7 +529,9 @@ export function createScene(
     if (!fallSeconds || !dead) { fallAge = 0; return p; }
     fallAge += dt; return { ...p, pose: 'death', progress: Math.min(1, fallAge / fallSeconds) };
   };
-  let finishClock = -1; // the finisher corpse animates at 0.75× on a presentation clock (owner 2026-09-18: savour it) — the sim window stays 144 ticks
+  let cutBone: THREE.Object3D | null = null, cutBoneKey: string | null = null;   // finisher-cam.json: the foe's bone the cut is at, found once per finish, then read each frame (no allocation)
+  const cutFocus = { x: 0, y: 0, z: 0 }, cutAt = new THREE.Vector3();
+  let finishClock = -1;// the finisher corpse animates at 0.75× on a presentation clock (owner 2026-09-18: savour it) — the sim window stays 144 ticks
   // Finisher complete (Lead brief 2026-09-22, for Web's loot panel): has the ceremony FINISHED PLAYING, and at what finish
   // age did it first say so. Latched from the scene's own state in the frame loop below, never from a delay; cleared with
   // the finish. `finishCompleteAt` is the number the FINISHER_SECONDS table in src/fight/finishers.ts was measured from.
@@ -1236,12 +1238,20 @@ export function createScene(
         for (const name of ['Head', 'hand_l', 'hand_r', 'foot_l', 'foot_r']) { const p = warriors.opponent.boneWorld(name); if (p) measured = Math.max(measured, Math.hypot(p.x - origin.x, p.z - origin.z)); }
         openedReach = Math.min(Math.max(openedReach, measured), openedReach + 0.015);
       } else if (!practice.finish) openedReach = 0;
+      // The cut's place for the finisher camera (finisher-cam.json): the row's bone on the foe, followed live as the ragdoll falls.
+      const cutRow = CUT_BLOOD && finisher !== null && practice.finish?.victim === 1 ? CUT_BLOOD[finisher] : undefined;
+      if (!cutRow) { cutBone = null; cutBoneKey = null; }
+      else {
+        if (cutBoneKey !== finisher) { cutBoneKey = finisher; cutBone = boneOf(opponent, cutRow.bone) ?? null; }
+        if (cutBone) { cutBone.getWorldPosition(cutAt); cutFocus.x = cutAt.x; cutFocus.y = cutAt.y; cutFocus.z = cutAt.z; }
+      }
       // roamed or free: no finisher camera, the follow lock on the walking hero
       rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed && !freeCamera ? {
         finisher, posed: !!finisherPose, draw: !!practice.finish.draw, victim: practice.finish.victim, clock: finishClock,
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
+        focus: cutBone ? cutFocus : null,
       } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden, freeCamera);
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock

@@ -42,10 +42,16 @@ test('the pose: aims at the cut, stands to the dolly side, hero is off the line 
   const out = { x: 0, y: 0, z: 0, lookX: 0, lookY: 0, lookZ: 0 };
   for (const [id, r] of Object.entries(ROWS)) {
     const hero = { x: 0, z: 0 }, foe = { x: 0, z: 3 }, scale = 1.3;
-    cutCamPose(r, hero, foe, scale, tanHalfH(375 / 812), out);
+    cutCamPose(r, hero, foe, scale, tanHalfH(375 / 812), null, out);   // no bone: the row's own spot
     assert.equal(out.lookX, foe.x); assert.equal(out.lookZ, foe.z);
     assert.ok(Math.abs(out.lookY - r.lookY * scale) < 1e-9, id);
     assert.ok(Math.abs(out.y - r.eyeY * scale) < 1e-9, id);
+    // a followed bone: the aim IS the bone, the lens stands `rise` above it (never under the ground)
+    const bone = { x: 0.2, y: 0.4, z: 2.5 };
+    cutCamPose(r, hero, foe, scale, tanHalfH(375 / 812), bone, out);
+    assert.deepEqual([out.lookX, out.lookY, out.lookZ], [bone.x, bone.y, bone.z], id);
+    assert.ok(out.y >= 0.9 && Math.abs(out.y - Math.max(0.9, bone.y + r.rise * scale)) < 1e-9, id);
+    cutCamPose(r, hero, foe, scale, tanHalfH(375 / 812), null, out);
     // the dolly's slide side is (-axisZ, axisX) = (-3, 0): the camera stands at negative x for this axis
     assert.ok(out.x < foe.x, `${id}: not on the slide side`);
     const dist = Math.hypot(out.x - foe.x, out.z - foe.z);
@@ -60,15 +66,16 @@ test('the pose: aims at the cut, stands to the dolly side, hero is off the line 
 
 test('a narrower screen stands further back; no pose is NaN with the hero on the foe', () => {
   const a = { x: 0, y: 0, z: 0, lookX: 0, lookY: 0, lookZ: 0 }, b = { ...a };
-  cutCamPose(ROWS.dismember, { x: 0, z: 0 }, { x: 0, z: 3 }, 1, tanHalfH(0.4), a);
-  cutCamPose(ROWS.dismember, { x: 0, z: 0 }, { x: 0, z: 3 }, 1, tanHalfH(1.8), b);
+  cutCamPose(ROWS.dismember, { x: 0, z: 0 }, { x: 0, z: 3 }, 1, tanHalfH(0.4), null, a);
+  cutCamPose(ROWS.dismember, { x: 0, z: 0 }, { x: 0, z: 3 }, 1, tanHalfH(1.8), null, b);
   assert.ok(Math.hypot(a.x, a.z - 3) > Math.hypot(b.x, b.z - 3));
-  cutCamPose(ROWS.opened, { x: 1, z: 1 }, { x: 1, z: 1 }, 1, tanHalfH(0.46), a);
+  cutCamPose(ROWS.opened, { x: 1, z: 1 }, { x: 1, z: 1 }, 1, tanHalfH(0.46), { x: 1, y: 0.5, z: 1 }, a);
   for (const v of Object.values(a)) assert.ok(Number.isFinite(v));
 });
 
 test('wired: the camera and the blood read the rows, the flag reverts both, and no sim file knows them', () => {
   assert.match(read('../src/fight/camera.ts'), /cutCamRows\(/);
   assert.match(read('../src/fight/scene.ts'), /CUT_BLOOD\?\.\[finisher\]\?\.blood/);
+  assert.match(read('../src/fight/scene.ts'), /focus: cutBone \? cutFocus : null/);
   for (const f of ['../src/fight/sim.ts', '../src/sim/validate.js']) assert.doesNotMatch(read(f), /finisher-cam|finishercam/);
 });
