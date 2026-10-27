@@ -27,7 +27,7 @@ test('bad rows are refused: out of range, NaN, grid beyond the floor, a far plan
   bad((r) => { r.groundRadiusMetres = 5; }, /groundRadiusMetres 5 is not in/);
   bad((r) => { r.groundRadiusMetres = NaN; }, /groundRadiusMetres NaN/);
   bad((r) => { r.edgeVisibility = 0; }, /edgeVisibility 0 is not in/);
-  bad((r) => { r.gridRadiusMetres = 400; r.limits.gridRadiusMetres = [10, 500]; }, /beyond the floor/);
+  bad((r) => { r.gridRadiusMetres = r.groundRadiusMetres + 50; r.limits.gridRadiusMetres = [10, 1000]; }, /beyond the floor/);
   bad((r) => { r.cameraFarMetres = 180; }, /cuts the floor off before the fog hides it/);
   bad((r) => { r.groundRadiusMetres = 100; }, /less the camera offset/);
   bad((r) => { r.groundRadiusMetres = 300; r.cameraOffsetMetres = 50; }, /less the camera offset 50 is 250 m: the fog needs 289 m/);   // the camera's own distance from the hero is taken off the radius
