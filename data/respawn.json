@@ -14,6 +14,8 @@
     "off": "v1",
     "gapMetres": 3.25,
     "handOverSeconds": 1.2,
+    "swingTailSeconds": 0.5,
+    "swingRate": 3,
     "stickEndsCeremony": true,
     "fight": "pair"
   },
@@ -26,7 +28,8 @@
     "deadzonePx": 6,
     "minXShare": 0.4,
     "inertiaSeconds": 0.25,
-    "flingWindowMs": 80
+    "flingWindowMs": 80,
+    "flingSmoothing": 0.5
   },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
@@ -70,8 +73,26 @@
       "easeSeconds": 0.5
     }
   },
+  "walkBack": {
+    "about": "Dom 2026-10-27: past its leash (the zone row's spawns[].behaviour.leash) a boss no longer snaps back to full health; it lets go and WALKS back to its spot, visibly, at speedMetresPerSecond (a walking pace, slower than the hero's run so he can always out-run it), regenerating regenPerSecond of its maximum health a second on the way. While it walks it cannot hurt the hero and cannot be hurt. It resets to full health on arrival (within arriveMetres of the spot). If it has walked back inside its leash and the hero is inside its aggro again, the walk is cancelled and the fight goes on from where it is. Another boss already on the hero keeps the old instant reset. ?leash=v1 = the old instant reset everywhere. Ranges: limits.walkSpeedMetresPerSecond, walkRegenPerSecond, walkArriveMetres.",
+    "on": true,
+    "query": "leash",
+    "off": "v1",
+    "speedMetresPerSecond": 3,
+    "regenPerSecond": 0.08,
+    "arriveMetres": 0.25
+  },
+  "input": {
+    "about": "Dom 2026-10-27 (found by the right-thumb look agent): in the endless world the sim hands from one boss to the next as the hero walks past them, and the old hand-over cleared the controls, so a left thumb still on the stick lost the walk until it was lifted and pressed again. keepOnHandOver true: a hand-over while nobody fights him (the hero free-walking) leaves the stick and held buttons exactly as they are. Death and respawn, a page blur, the Respawn button and a fight that starts on a hero who was not walking still clear. ?input=v1 = the old clear on every hand-over.",
+    "keepOnHandOver": true,
+    "query": "input",
+    "off": "v1"
+  },
   "limits": {
     "about": "Validation ranges for the rows above.",
+    "walkSpeedMetresPerSecond": [0.5, 12],
+    "walkRegenPerSecond": [0, 1],
+    "walkArriveMetres": [0.05, 2],
     "delaySeconds": [1, 60],
     "count": [1, 3],
     "reachMetres": [0, 10],
@@ -82,11 +103,14 @@
     "cameraMetres": [0, 20],
     "freeCamGapMetres": [1, 10],
     "handOverSeconds": [0.2, 5],
+    "swingTailSeconds": [0, 5],
+    "swingRate": [0.5, 10],
     "lookSensitivityDegPerPx": [0.05, 1],
     "lookDeadzonePx": [0, 40],
     "lookMinXShare": [0, 0.9],
     "lookInertiaSeconds": [0, 1],
     "lookFlingWindowMs": [0, 500],
+    "lookFlingSmoothing": [0.05, 1],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],
     "edgeMetres": [0, 4],

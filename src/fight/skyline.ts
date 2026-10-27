@@ -23,12 +23,31 @@ export function centreOffsetY(row: SkylineRow = SKYLINE, view: SkyView | null = 
   return height / 2 - (1 - row.horizonFraction) * height - (view ? view.dropMetres : 0);   // ?skyview: dropMetres lowers the whole strip (0 = today)
 }
 
+/** ?skyfollow=v1 (`followV1`) turns the yaw follow off: the strip stays fixed in world yaw (the look before). */
+export function skyFollowOn(search: string, row: SkylineRow = SKYLINE): boolean {
+  return row.yawFollow > 0 && new URLSearchParams(search).get(row.followQuery) !== row.followV1;
+}
+
+const TAU = Math.PI * 2;
+/** The camera's heading as a rotation about the vertical (0 = looking down -Z, the turn Object3D.rotation.y makes), from its world direction. */
+export function headingOf(dirX: number, dirZ: number): number { return Math.atan2(-dirX, -dirZ); }
+/** An angle difference folded into -pi..pi: the shortest way round (the strip is a cylinder, so a whole turn is the same picture). */
+export function shortestTurn(delta: number): number { return delta - TAU * Math.round(delta / TAU); }
+/** The strip's turn about the vertical for an unwrapped camera yaw: the row's fixed yaw, plus `followOffsetDegrees` (the follow only: it puts the alien ahead), plus `yawFollow` x the camera's. */
+export function stripYaw(row: SkylineRow, cameraYaw: number): number { return THREE.MathUtils.degToRad(row.yawDegrees + row.followOffsetDegrees) + row.yawFollow * cameraYaw; }
+
 export type Skyline = {
   mesh: THREE.Mesh;
+  /** Tells the strip which way the camera faces this frame (call before update); a no-op under ?skyfollow=v1. */
+  heading(camera: THREE.Object3D): void;
+  /** The strip's current turn about the vertical, radians. */
+  readonly yaw: number;
   /** Called every frame before the draw: follows the camera (the strip is at infinity) and eases the fade-in. */
   update(camera: THREE.Vector3, dt: number): void;
   readonly state: 'idle' | 'loading' | 'fading' | 'on' | 'failed';
   readonly opacity: number;
+  /** The landed picture (skyfold.ts lays its lower band on the ground; no second download); undefined until it lands. */
+  readonly texture: THREE.Texture | undefined;
   dispose(): void;
 };
 
@@ -51,6 +70,8 @@ export function createSkyline(
   mesh.rotation.y = THREE.MathUtils.degToRad(row.yawDegrees);
   mesh.visible = false;
   scene.add(mesh);
+  const follow = skyFollowOn(search, row), dir = new THREE.Vector3();
+  let started = false, target = 0, turn = THREE.MathUtils.degToRad(row.yawDegrees);   // turn = the strip's yaw, eased toward target by the shortest way (so winding never builds up: the alien is at most (1 - yawFollow) x 180 degrees off)
   let state: Skyline['state'] = 'idle', opacity = 0, texture: THREE.Texture | undefined, disposed = false;
   afterFirstFrame()
     .then(() => { state = 'loading'; return new Promise<void>((done) => setTimeout(done, row.loadAfterFirstFrameMs)); })
@@ -67,7 +88,20 @@ export function createSkyline(
     .catch(() => { state = 'failed'; });   // the flat sky stays: nothing to report to the player
   return {
     mesh,
+    heading(camera) {
+      if (!follow) return;
+      camera.getWorldDirection(dir);
+      if (Math.hypot(dir.x, dir.z) < 1e-4) return;   // looking straight up or down: no heading, keep the last
+      const h = headingOf(dir.x, dir.z);
+      target = stripYaw(row, h);   // the camera's heading folded into -pi..pi: the offset from the view never grows with how many times he has turned
+      if (!started) { started = true; turn = target; }   // the first frame starts on target: no spin-up
+    },
+    get yaw() { return turn; },
     update(camera, dt) {
+      if (follow) {
+        turn += shortestTurn(target - turn) * (row.yawFollowSeconds > 0 ? 1 - Math.exp(-dt / row.yawFollowSeconds) : 1);   // a slow ease: the far backdrop drifts after the turn
+        mesh.rotation.y = turn;
+      }
       mesh.position.set(camera.x, camera.y + centreOffsetY(row, view), camera.z);
       if (state === 'fading') {
         opacity = Math.min(1, opacity + (row.fadeSeconds > 0 ? dt / row.fadeSeconds : 1));
@@ -77,6 +111,7 @@ export function createSkyline(
     },
     get state() { return state; },
     get opacity() { return opacity; },
+    get texture() { return texture; },
     dispose() { disposed = true; scene.remove(mesh); mesh.geometry.dispose(); material.dispose(); texture?.dispose(); },
   };
 }

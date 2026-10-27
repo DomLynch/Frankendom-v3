@@ -66,7 +66,7 @@ test('B as shipped: melt by angle, lowered and taller strip, haze fog, a dimmer 
   assert.match(b.fogColor, /^#[0-9a-f]{6}$/i);
   // the strip's bottom edge, seen from the eye, sits no higher than where the sand is solid again: no flat-sky gap between the melt and the picture
   const bottom = Math.atan(((1 - SKYLINE.horizonFraction) * b.heightMetres + b.dropMetres) / SKYLINE.radius) * 180 / Math.PI;
-  assert.ok(bottom >= b.fadeEndDegrees - 1 && bottom <= b.fadeStartDegrees + 1, String(bottom));
+  assert.ok(bottom >= b.fadeEndDegrees - 1, String(bottom));   // at or below where the sand has melted away: no gap; deeper than the solid-sand angle is fine (the sand hides the lower edge; Dom 2026-10-27 lowered B so the alien face is in the clear sky band)
 });
 
 test('the strip rim stays inside the camera: the base far plane (scene.ts) and the zone\'s longer one (zone-ground.json)', () => {

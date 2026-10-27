@@ -20,13 +20,13 @@ export function foeFadeOn(search: string, view: SkyView | null, rows: SkyViews =
 }
 
 /** The two shader edits for a band: the vertex shader measures the mesh origin's depression from the eye (feet on the ground), the fragment shader dissolves by it. */
-export function foeFadeShader(vertex: string, fragment: string, view: Pick<SkyView, 'fadeStartDegrees' | 'fadeEndDegrees'>): { vertexShader: string; fragmentShader: string } {
+export function foeFadeShader(vertex: string, fragment: string, view: Pick<SkyView, 'fadeStartDegrees' | 'fadeEndDegrees' | 'foeFadeMinOpacity' | 'foeFadeClearMetres'>): { vertexShader: string; fragmentShader: string } {
   const f = (n: number) => n.toFixed(4);
   if (!vertex.includes('#include <project_vertex>') || !vertex.includes('void main() {') || !fragment.includes('void main() {')) return { vertexShader: vertex, fragmentShader: fragment };   // a custom shader (trail, sprite, points): left as it is
   return {
     vertexShader: vertex
       .replace('void main() {', 'varying float vFoeFade;\nvoid main() {')
-      .replace('#include <project_vertex>', `#include <project_vertex>\n  vec3 foeFeet = vec3(modelMatrix[3].x, 0.0, modelMatrix[3].z);\n  float foeDepression = degrees(atan(max(cameraPosition.y - foeFeet.y, 0.0001), length(foeFeet.xz - cameraPosition.xz)));\n  vFoeFade = smoothstep(${f(view.fadeEndDegrees)}, ${f(view.fadeStartDegrees)}, foeDepression);`),
+      .replace('#include <project_vertex>', `#include <project_vertex>\n  vec3 foeFeet = vec3(modelMatrix[3].x, 0.0, modelMatrix[3].z);\n  float foeDepression = degrees(atan(max(cameraPosition.y - foeFeet.y, 0.0001), length(foeFeet.xz - cameraPosition.xz)));\n  float foeBand = max(smoothstep(${f(view.fadeEndDegrees)}, ${f(view.fadeStartDegrees)}, foeDepression), ${f(view.foeFadeMinOpacity)});\n  vFoeFade = length(foeFeet.xz - cameraPosition.xz) <= ${f(view.foeFadeClearMetres)} ? 1.0 : foeBand;`),
     fragmentShader: fragment.replace('void main() {', 'varying float vFoeFade;\nvoid main() {\n  if (vFoeFade <= fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;'),
   };
 }
@@ -52,7 +52,7 @@ export function createFoeFade(view: SkyView): FoeFade {
       before?.call(m, shader, renderer);
       Object.assign(shader, foeFadeShader(shader.vertexShader, shader.fragmentShader, view));
     };
-    m.customProgramCacheKey = () => `foefade-${view.fadeStartDegrees}-${view.fadeEndDegrees}-${base}`;
+    m.customProgramCacheKey = () => `foefade-${view.fadeStartDegrees}-${view.fadeEndDegrees}-${view.foeFadeMinOpacity}-${view.foeFadeClearMetres}-${base}`;
     m.needsUpdate = true;
   };
   return {
@@ -67,7 +67,8 @@ export function createFoeFade(view: SkyView): FoeFade {
     alphaOf(root) {
       root.updateWorldMatrix(true, false);
       feet.setFromMatrixPosition(root.matrixWorld); feet.y = 0;
-      return fadeAlpha(depressionDegrees(eye, feet), view.fadeStartDegrees, view.fadeEndDegrees);
+      if (Math.hypot(feet.x - eye.x, feet.z - eye.z) <= view.foeFadeClearMetres) return 1;   // inside the boss's reach (leash / aggro): never faded
+      return Math.max(fadeAlpha(depressionDegrees(eye, feet), view.fadeStartDegrees, view.fadeEndDegrees), view.foeFadeMinOpacity);   // a far boss stays at least half there
     },
   };
 }

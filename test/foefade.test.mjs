@@ -48,9 +48,45 @@ test('depression is measured to the FEET: a boss whose feet are on melted sand f
   head.position.y = 40;   // a head far above the eye: if the head were used the angle would flip to "above the horizon"
   root.add(head); fade.adopt(root); fade.move(new THREE.Vector3(0, 10, 0));
   root.position.set(0, 0, 40); assert.ok(fade.alphaOf(root) > 0.99);
-  root.position.set(0, 0, 63); assert.ok(fade.alphaOf(root) < 0.05);
-  root.position.set(0, 0, 200); assert.equal(fade.alphaOf(root), 0);
+  root.position.set(0, 0, 63); assert.ok(Math.abs(fade.alphaOf(root) - B.foeFadeMinOpacity) < 0.06);   // nearly gone by the sand's band, held at the floor
+  root.position.set(0, 0, 200); assert.equal(fade.alphaOf(root), B.foeFadeMinOpacity);   // never fully gone
   root.position.set(0, 0, 4); assert.equal(fade.alphaOf(root), 1);
+});
+
+test('half-opacity floor: a far boss is never below foeFadeMinOpacity (CPU twin and shader), and the rows say half', () => {
+  assert.equal(B.foeFadeMinOpacity, 0.5);
+  const fade = createFoeFade(B), root = new THREE.Group();
+  fade.move(new THREE.Vector3(0, 10, 0));
+  for (const z of [34, 42, 63, 120, 400]) { root.position.set(0, 0, z); assert.ok(fade.alphaOf(root) >= B.foeFadeMinOpacity, `z=${z}`); }
+  const shader = foeFadeShader('void main() {\n#include <project_vertex>\n}', 'void main() {\n#include <opaque_fragment>\n}', B);
+  assert.match(shader.vertexShader, new RegExp(`float foeBand = max\\(smoothstep\\(.*\\), ${B.foeFadeMinOpacity.toFixed(4)}\\);`));
+  assert.match(bad({ foeFadeMinOpacity: 1.5 }), /foeFadeMinOpacity: must be a finite number in 0\.\.1/);
+  assert.match(bad({ foeFadeMinOpacity: -0.1 }), /foeFadeMinOpacity/);
+  const none = structuredClone(STAGE); delete none.skyline.views.variants.b.foeFadeMinOpacity;
+  assert.match(validateFile('stage', none).join('\n'), /variants\.b\.foeFadeMinOpacity/);
+});
+
+test('in reach: a boss within the clear range (past the leash and the opener reach) is never faded; only one clearly beyond is', () => {
+  const zone = JSON.parse(read('../data/zones/zone1.row.json')), resp = JSON.parse(read('../data/respawn.json'));
+  const maxLeash = Math.max(...zone.spawns.map((s) => s.behaviour.leash)), reach = Math.max(...zone.spawns.map((s) => s.behaviour.aggro), resp.openers.withinMetres);
+  assert.ok(B.foeFadeClearMetres >= maxLeash + 5, 'clear range covers the 20 m leash with margin');
+  assert.ok(B.foeFadeClearMetres >= reach);
+  assert.ok(B.foeFadeClearMetres >= 25, 'covers the first boss aggro reach (about 25 m)');
+  assert.match(bad({ foeFadeClearMetres: -1 }), /foeFadeClearMetres/);
+  assert.match(bad({ foeFadeClearMetres: 'x' }), /foeFadeClearMetres/);
+  const fade = createFoeFade(B), root = new THREE.Group();
+  fade.move(new THREE.Vector3(0, 6, 0));   // a low eye: the band alone would already fade a boss this close
+  for (const z of [3, 20, 26, B.foeFadeClearMetres]) { root.position.set(0, 0, z); assert.equal(fade.alphaOf(root), 1, `z=${z}`); }
+  root.position.set(0, 0, B.foeFadeClearMetres + 12); assert.ok(fade.alphaOf(root) < 1);
+  const shader = foeFadeShader('void main() {\n#include <project_vertex>\n}', 'void main() {\n#include <opaque_fragment>\n}', B);
+  assert.match(shader.vertexShader, new RegExp(`length\\(foeFeet\\.xz - cameraPosition\\.xz\\) <= ${B.foeFadeClearMetres.toFixed(4)} \\? 1\\.0 : foeBand`));
+});
+
+test('the hero stays excluded and ?foefade=v1 still turns the whole fade off', () => {
+  const fade = createFoeFade(B), hero = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
+  hero.add(new THREE.Mesh(new THREE.BoxGeometry(), mat)); fade.protect(hero); fade.adopt(hero);
+  assert.equal(mat.customProgramCacheKey().startsWith('foefade-'), false);
+  assert.equal(foeFadeOn('?foefade=v1', B), false); assert.equal(foeFadeOn('', B), true);
 });
 
 test('adopt: gear materials get the fade, the shader multiplies alpha, onBeforeRender feeds the feet alpha; the hero\'s materials are never touched', () => {

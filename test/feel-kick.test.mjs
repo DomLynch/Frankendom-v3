@@ -95,7 +95,7 @@ test('a shove (the pommel strike) is a smaller push that never knocks down; othe
   const r = kick({ ...s, kickerKg: 400 });
   assert.equal(r.outcome, 'stagger'); assert.ok(r.force > ROWS.knockdownAt, 'the force alone would have dropped him: only the row stops it');
   assert.ok(kick({ ...s }).impulse < kick().impulse);
-  assert.equal(kindOf(ROWS, 'kick').canKnockdown, true); assert.equal(kindOf(ROWS, 'light_right'), null); assert.equal(kindOf(ROWS, undefined), null);
+  assert.equal(kindOf(ROWS, 'kick').canKnockdown, false, 'a kick is an interrupt: the presentation never falls on a kick'); assert.equal(kindOf(ROWS, 'light_right'), null); assert.equal(kindOf(ROWS, undefined), null);
 });
 
 test('the Presentation is what ragdoll.ts react() takes: a knockdown by push for the fall + down seconds, the impulse scaled over the hit impulse', () => {
@@ -110,18 +110,17 @@ function rig() {
   return { emitted, shown, ctl, ctx: { emit: (n, p) => emitted.push([n, p]), foeId: 'pitborn' } };
 }
 
-test('the controller: a kick on an open foe is a knockdown Presentation, emits feel:kick_result, opens the cue after the fall and closes it', () => {
+test('the controller: a kick on an open foe is a STAGGER Presentation (never a knockdown), emits feel:kick_result, opens the cue and closes it', () => {
   delete globalThis[ROWS.event.log];
   const { emitted, shown, ctl, ctx } = rig(), p = ctl.react(hit(), ctx);
-  assert.equal(p.action, 'knockdown');
+  assert.equal(p.action, 'stagger');
   assert.equal(emitted.length, 1); assert.equal(emitted[0][0], 'feel:kick_result');
-  assert.deepEqual([emitted[0][1].outcome, emitted[0][1].finisherWindowS, emitted[0][1].stance], ['knockdown', ROWS.window.knockdown.lengthS, 'open']);
+  assert.deepEqual([emitted[0][1].outcome, emitted[0][1].finisherWindowS, emitted[0][1].stance], ['stagger', ROWS.window.stagger.lengthS, 'open']);
   assert.equal(globalThis[ROWS.event.log].length, 1); assert.equal(emitted[0][1].presentationOnly, true, 'the event promises no sim window');
   for (const k of ['about']) assert.match(ROWS[k], /PLACEHOLDER/); assert.match(ROWS.stance.about, /PLACEHOLDER/); assert.match(ROWS.window.about, /PLACEHOLDER/);
   assert.doesNotMatch(JSON.stringify(ROWS), /feel-sim\.json/, 'no wording that points at a file that does not exist yet');
-  ctl.frame(0.1); assert.deepEqual(shown, [], 'not yet: he is still falling');
-  ctl.frame(ROWS.window.knockdown.startS); assert.deepEqual(shown, [true]);
-  ctl.frame(ROWS.window.knockdown.lengthS + 0.1); assert.deepEqual(shown, [true, false]); assert.equal(ctl.debug.windowOpen, false);
+  ctl.frame(0.1); assert.deepEqual(shown, [true]);
+  ctl.frame(ROWS.window.stagger.lengthS + 0.1); assert.deepEqual(shown, [true, false]); assert.equal(ctl.debug.windowOpen, false);
 });
 
 test('the controller tracks his stance from the sim\'s events: mid-swing after AttackStarted, recovering after Staggered, guarding on a guarded Hit; other hits and targets are left alone', () => {
@@ -141,7 +140,7 @@ test('the controller: the event list keeps the newest rows.event.keep; a kill en
   const { shown, ctl, ctx } = rig();
   for (let i = 0; i < ROWS.event.keep + 5; i++) ctl.react(hit({ tick: i }), ctx);
   const list = globalThis[ROWS.event.log]; assert.equal(list.length, ROWS.event.keep); assert.equal(list.at(-1).tick, ROWS.event.keep + 4);
-  ctl.frame(ROWS.window.knockdown.startS + 0.1); ctl.kill(); assert.deepEqual(shown, [true, false]);
+  ctl.frame(ROWS.window.stagger.startS + 0.1); ctl.kill(); assert.deepEqual(shown, [true, false]);
   assert.equal(createFeelKick({ ...ROWS, on: false }).react(hit(), ctx), null);
 });
 
@@ -150,20 +149,25 @@ function fakeCtx(state = 'alive') {
   return { calls, blends, c };
 }
 
-test('the hit hook drives the ragdoll: a knockdown by push along his facing (turned by the group\'s yaw), a stagger into a guard', () => {
-  const { calls, c } = fakeCtx(), ctl = createFeelKick(ROWS, { cueHost: { show() {} } });
-  ctl.hit(hit({ heading: Math.PI / 2 }), { ...c, group: { rotation: { y: Math.PI / 2 } } });
-  assert.deepEqual(calls[0].slice(0, 2), ['knockdown', 'push']); assert.equal(calls[0][2].part, 'spine2');
-  assert.ok(Math.abs(calls[0][2].impulse[0]) < 1e-9 && calls[0][2].impulse[2] > 0 && calls[0][2].impulse[1] === ROWS.push.lift.knockdown);
-  ctl.hit(hit({ guarded: true }), c); assert.equal(calls[1][0], 'stagger');
+test('the hit hook drives the ragdoll: a kick is ALWAYS a stagger (open, mid-swing, guarding), never knockdown; a fall comes only from the sim\'s KnockedDown, along his facing', () => {
+  const { calls, c } = fakeCtx(), ctl = createFeelKick(ROWS, { cueHost: { show() {} } }), yawed = { ...c, group: { rotation: { y: Math.PI / 2 } } };
+  ctl.hit(hit({ heading: Math.PI / 2 }), yawed);
+  for (let i = 0; i < 20; i++) ctl.hit(hit({ heading: Math.PI / 2, guarded: i % 3 === 0 }), yawed);
+  ctl.frame(0.016, [{ tick: 1, type: 'AttackStarted', actor: 1, move: 'heavy_overhead' }], yawed); ctl.hit(hit({ heading: Math.PI / 2 }), yawed);
+  assert.equal(calls.filter((x) => x[0] === 'knockdown').length, 0, 'twenty-two kicks, not one ragdoll fall');
+  assert.equal(calls.filter((x) => x[0] === 'stagger').length, 22);
   const n = calls.length; ctl.hit(hit({ move: 'light_right' }), c); ctl.hit(hit({ heading: undefined }), c); assert.equal(calls.length, n, 'only kicks and shoves reach the ragdoll');
-  assert.equal(calls.filter((x) => x[0] === 'knockdown').length, 1);
+  ctl.frame(0.016, [{ tick: 9, type: 'KnockedDown', actor: 0, target: 1, move: 'heavy_overhead', ticks: 120, window: 72, force: 1064 }], yawed);
+  const downs = calls.filter((x) => x[0] === 'knockdown'); assert.equal(downs.length, 1, 'the sim said KnockedDown: now he falls');
+  assert.deepEqual(downs[0].slice(0, 2), ['knockdown', 'push']); assert.equal(downs[0][2].part, 'spine2');
+  assert.ok(Math.abs(downs[0][2].impulse[0]) < 1e-9 && downs[0][2].impulse[2] > 0 &&downs[0][2].impulse[1] === ROWS.push.lift.knockdown);
+  ctl.frame(0.016, [{ tick: 9, type: 'KnockedDown', actor: 0, target: 0, move: 'x', ticks: 1, window: 1, force: 1 }], yawed); assert.equal(calls.filter((x) => x[0] === 'knockdown').length, 1, 'only a KnockedDown on him');
 });
 
 test('the frame hook: bones follow the ragdoll every frame he is knocked down, then ease back to the clip over getUpS', () => {
   const ctl = createFeelKick(ROWS, { cueHost: { show() {} } }), down = fakeCtx('knockdown'), up = fakeCtx('alive');
   ctl.hit(hit(), down.c);
-  ctl.frame(0.016, [], down.c); ctl.frame(0.016, [], down.c);
+  ctl.frame(0.016, [{ tick: 1, type: 'KnockedDown', actor: 0, target: 1, move: 'heavy_overhead', ticks: 120, window: 72, force: 1064 }], down.c); ctl.frame(0.016, [], down.c);
   assert.equal(down.blends.length, 2); assert.deepEqual(down.blends[0], { hips: 1, head: 1 });
   ctl.frame(ROWS.getUpS / 2, [], up.c); ctl.frame(ROWS.getUpS, [], up.c);
   assert.equal(up.blends.length, 2); assert.ok(up.blends[0].hips < 1 && up.blends[0].hips > 0, 'easing'); assert.equal(up.blends[1].hips, 0);

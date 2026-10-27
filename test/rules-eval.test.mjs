@@ -129,11 +129,36 @@ test('knockdown: light leg blows add up to the fall (60 of the counter); it carr
   const outcomes = [];
   for (let i = 0; i < 8; i++) outcomes.push(r.hit(hit({ weapon: 'longsword', location: 'legs', tick: 60 * (i + 1) }), true));
   assert.deepEqual(outcomes.map((o) => o.outcome), [...Array(7).fill('stick'), 'knockdown']);
-  const k = outcomes[7];
-  assert.equal(k.action, 'knockdown'); assert.equal(k.cause, 'damage');
-  assert.equal(k.downS, rules.knockdown.fall_seconds.damage + rules.knockdown.fall_seconds.down);
-  assert.deepEqual(outcomes.slice(0, 7).map((o) => o.action), Array(7).fill('stagger'));
+  // Dom 2026-10-27 (one light hit laid the Minotaur down, often): the evaluator's own fall on a LIGHT swing is a flinch (knockdownSwing 'heavy')
+  assert.equal(outcomes[7].action, 'stagger', 'a light swing never lays him down, even when the counter says fall');
+  assert.deepEqual(outcomes.map((o) => o.action), Array(8).fill('stagger'));
   assert.equal(r.debug.byOutcome.knockdown, 1);
+  // the same leg blows with a HEAVY swing: the fall lays him down, carrying the evaluator's fall + down seconds
+  const h = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0), hv = [];
+  for (let i = 0; i < 8; i++) hv.push(h.hit(hit({ weapon: 'gladius', location: 'legs', move: 'heavy_overhead', tick: 60 * (i + 1) }), true));   // a gladius heavy sticks and adds up (a longsword heavy cuts the leg off at once)
+  const k = hv.find((o) => o.outcome === 'knockdown');
+  assert.ok(k, 'a heavy swing reaches the evaluator\'s fall'); assert.equal(k.action, 'knockdown'); assert.equal(k.cause, 'damage');
+  assert.equal(k.downS, rules.knockdown.fall_seconds.damage + rules.knockdown.fall_seconds.down);
+});
+
+test('twenty light torso swings never lay the foe down, however his own pool runs (the live Minotaur pool 76 over a man\'s 60)', () => {
+  const r = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0, { foe: 76, man: 60 });
+  const acts = [];
+  for (let i = 0; i < 20; i++) acts.push(r.hit(hit({ move: 'light_right', location: 'torso', tick: 60 * (i + 1) }), true, 13)?.action);   // measured 13 m/s x speedScale 0.5 = the 6.5 light swing of the live runs
+  assert.equal(acts.filter((a) => a === 'knockdown').length, 0, JSON.stringify(acts));
+});
+
+test('a LIGHT blow never lays him down: the evaluator\'s kill on a light counter-hit (longsword, torso/head) is a stagger while the sim lives; a heavy one still falls', () => {
+  assert.deepEqual(ROWS.killAsSwings, ['heavy']);
+  for (const location of ['torso', 'head']) {
+    const light = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location, move: 'light_left', counter: true }), true);
+    assert.equal(light.outcome, 'kill', `${location}: the evaluator still judges it lethal`);
+    assert.equal(light.action, 'stagger', `${location}: shown as a flinch`);
+    const heavy = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location, move: 'heavy_overhead', counter: true }), true);
+    assert.equal(heavy.action, 'knockdown', `${location}: a heavy kill still falls`);
+  }
+  assert.equal(present(ROWS, rules, { outcome: 'kill', strength: 30, cut: null, knockdown: null }, true, 'light').action, 'stagger');
+  assert.equal(present(ROWS, rules, { outcome: 'kill', strength: 30, cut: null, knockdown: null }, true, 'heavy').action, 'knockdown');
 });
 
 test('a kill is the sim\'s: while it lives the evaluator\'s kill is a knockdown, counted, and the fighter renewed; on the killing blow it is the kill', () => {

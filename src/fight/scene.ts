@@ -69,6 +69,7 @@ import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { fovForZoom, wideBoost, type WideRow } from './camera-zoom.ts';
 import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
+import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
 import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
@@ -145,6 +146,7 @@ export function createScene(
   const skyView = skylineOn(pageSearch) ? skyViewFor(pageSearch) : null;   // data/stage.json skyline.views: no link = its `default` (B); ?skyview=a|c; ?skyview=v1 = the look before it, nothing below runs; ?sky=v1 = the flat sky
   if (skyView) applyFog(scene, skyView);
   const skyline = createSkyline(scene, pageSearch, SKYLINE, undefined, skyView);   // data/stage.json skyline: the 360-degree sunset strip, fetched after the first frame; ?sky=v1 = the flat sky above, nothing built
+  const skyfold = skyline ? createSkyfold(scene, pageSearch, skyView) : null;   // data/stage.json skyline.fold: the strip's lower band laid flat under the sand; ?skyfold=v1 builds nothing
   let environmentTarget: THREE.WebGLRenderTarget | undefined;
   // The environment map: the arena's own ash sky (an equirect the world lane paints, warm sand below the horizon) once it has landed,
   // so bronze and iron reflect this place; the studio RoomEnvironment only until then (audit 2026-09-20).
@@ -1198,8 +1200,10 @@ export function createScene(
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
       floorFade?.move(camera.position);
+      skyline?.heading(camera);
       if (foeFade) { foeFade.move(camera.position); if ((foeFadeTick++ & 15) === 0) foeAdoptAll(); }   // the opponents' fade is measured from the eye; new gear and pooled bodies are picked up within 16 frames
       skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts); the camera was placed by rig.update above
+      skyfold?.update(camera.position, dt, skyline);   // the folded floor under the sand (skyfold.ts), after the strip so it reads the strip's current yaw
       syncIdleFoes(practice, dt);
       syncLiveFoes(dt);
       if (!look?.render()) { if (gfx) gfx.render(); else renderer.render(scene, camera); }
