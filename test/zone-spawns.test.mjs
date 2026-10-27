@@ -10,6 +10,9 @@ import { initialState } from '../src/fight/sim.ts';
 import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
 import * as play from '../src/fight/play-radius.ts';
 import { zoneFor } from '../src/zone/zone-rows.ts';
+import { OPEN_RADIUS } from '../src/fight/play-radius.ts';
+import { project } from '../src/fight/combat.ts';
+import { poseFits, zoneDuel } from '../src/zone/spawns.ts';
 import { WORLD, held, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, standing, tick, validateSpots } from '../src/zone/spawns.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -22,8 +25,8 @@ const list = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, pitScale: 0.65, spreadRadiusMetres: 26, cameraClampMetres: 40 });
-  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale', 'spreadRadiusMetres', 'cameraClampMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, pitScale: 0.65, spreadRadiusMetres: 26 });
+  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale', 'spreadRadiusMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
 
@@ -32,8 +35,7 @@ test('the shipped zone row: three spots across the zone\'s ground (leash circle 
   assert.equal(spots.length, 3);
   assert.doesNotThrow(() => validateSpots(spots, start(), wall(), WORLD, FIGHT.opponent));
   for (const s of spots) {
-    assert.ok(Math.hypot(s.x, s.z) + s.leash <= WORLD.spreadRadiusMetres, `${s.id}: its leash circle lies on the zone's ground`);
-    assert.ok(Math.abs(Math.hypot(s.x, s.z) - wall()) >= WORLD.edgeMetres, `${s.id} does not stand in the drawn pit wall`);
+    assert.ok(Math.hypot(s.x, s.z) + Math.max(s.leash, wall()) <= WORLD.spreadRadiusMetres, `${s.id}: its fight arena lies inside the spawn extent`);
     assert.ok(dist(s, start()) > s.aggro, `${s.id}: the page does not open on a fight`);
     assert.ok(s.leash > s.aggro);
   }
@@ -48,12 +50,12 @@ test('the shipped zone row: three spots across the zone\'s ground (leash circle 
 
 test('bad spots are refused: off the zone\'s ground, in the pit wall, on the hero\'s start, inside each other\'s aggro, another kind, a bad world row', () => {
   const ok = spotsFor(ZONE), edit = (f) => { const s = structuredClone(ok); f(s); return s; };
-  assert.throws(() => validateSpots(edit((s) => { s[0].x = 40; }), start(), wall()), /outside the zone's ground/);
-  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - s[0].leash + 0.1); }), start(), wall()), /outside the zone's ground/, 'the leash circle must lie on it, not only the spot');
-  assert.doesNotThrow(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - s[0].leash - 0.1); }), start(), wall()), 'a spot well beyond the pit is fine');
-  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -wall(); }), start(), wall()), /stands in the pit's wall/);
-  assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, spreadRadiusMetres: 99 }), /spreadRadiusMetres/);
-  assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, cameraClampMetres: 20 }), /inside world\.spreadRadiusMetres/);
+  const arena = (s) => Math.max(s.leash, wall());
+  assert.throws(() => validateSpots(edit((s) => { s[0].x = 40; }), start(), wall()), /outside the zone's spawn extent/);
+  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - arena(s[0]) + 0.1); }), start(), wall()), /outside the zone's spawn extent/, 'the fight arena must lie inside it, not only the spot');
+  assert.doesNotThrow(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - arena(s[0]) - 0.1); }), start(), wall()), 'a spot well beyond the pit is fine');
+  assert.doesNotThrow(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -wall(); }), start(), wall()), 'there is no pit wall to stand in any more: open ground');
+  assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, spreadRadiusMetres: 999 }), /spreadRadiusMetres/);
   assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = 1; }), start(), wall()), /inside its own aggro of the hero's start/);
   assert.throws(() => validateSpots(edit((s) => { s[1].x = s[0].x + 1; s[1].z = s[0].z; }), start(), wall()), /inside each other's aggro/);
   assert.throws(() => validateSpots(ok, start(), wall(), WORLD, 'nobody'), /one foe rig/);
@@ -71,10 +73,11 @@ test('every spot makes a valid duel pose for a hero anywhere he can walk: the si
   for (let i = 0; i < spawns.length; i++) {
     for (let a = 0; a < 16; a++) for (const r of [0, 1, 2.5, 4.5, 12, 20, WORLD.spreadRadiusMetres]) {
       const hero = { x: r * Math.cos(a / 16 * 2 * Math.PI), z: r * Math.sin(a / 16 * 2 * Math.PI) };
-      const pose = poseAt(hero, spawns[i], WORLD.spreadRadiusMetres, ROWS.spawn.minDistance, start());
+      const pose = poseAt(hero, spawns[i], OPEN_RADIUS, ROWS.spawn.minDistance, start());
       assert.ok(dist(pose.hero, pose.foe) >= ROWS.spawn.minDistance - 1e-9 || dist(pose.hero, start()) < 1e-9, `${spawns[i].id} from ${JSON.stringify(hero)}`);
       assert.deepEqual(pose.foe, { x: spawns[i].x, z: spawns[i].z }, `${spawns[i].id}: the boss stands at its own spot, never at the pit's marks`);
-      assert.doesNotThrow(() => initialPractice(731, OPPONENTS[FIGHT.opponent], undefined, null, undefined, undefined, undefined, pose));
+      if (dist(hero, spawns[i]) >= ROWS.spawn.minDistance) assert.deepEqual(pose.hero, hero, `${spawns[i].id}: a hero far enough is never moved (no wall edge to draw him to)`);
+      assert.doesNotThrow(() => { const made = initialPractice(731, OPPONENTS[FIGHT.opponent], undefined, null, undefined, undefined, undefined, poseFits(pose, wall()) ? pose : undefined); if (!poseFits(pose, wall())) project(zoneDuel(made.duel, pose), made.ai, made); });
     }
   }
 });

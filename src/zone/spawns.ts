@@ -11,8 +11,8 @@ import { OPEN_RADIUS } from '../fight/play-radius.ts';
 import type { Duel, DuelPose } from '../fight/duel.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; pitScale: number; spreadRadiusMetres: number; cameraClampMetres: number };
-type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number]; cameraClampMetres: [number, number] };
+export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; pitScale: number; spreadRadiusMetres: number };
+type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number] };
 export const WORLD = ROWS.world as WorldRows;
 const LIMITS = ROWS.limits as unknown as Limits;
 
@@ -38,23 +38,21 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
 }
 
 /**
- * Throws on a bad row or a spot the page cannot stand a boss at: world rows out of range, a spot whose leash circle does not lie on the zone's ground (its distance from the
- * pit's centre plus its leash is over `spreadRadiusMetres`: the zone is not the pit any more), a spot on the drawn pit's wall (`wall`, the pit's circle: within `edgeMetres` of it
- * either side, so no boss stands in the wall), the hero's start inside a spot's aggro (the page would open with a fight), two spots inside each other's aggro (an engage would be
+ * Throws on a bad row or a spot the page cannot stand a boss at: world rows out of range, a spot whose fight arena does not lie inside the spawn extent (its distance from the pit's
+ * centre plus the larger of its leash and the fight arena `wall`, the sim's circle, is over `spreadRadiusMetres`: the ground itself is unbounded, this is only how far out spots go), the hero's start inside a spot's aggro (the page would open with a fight), two spots inside each other's aggro (an engage would be
  * ambiguous) or closer than `minSpacing`, or a spawn kind that is not the one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
  */
 export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kind?: string, limits: Limits = LIMITS): void {
-  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale', 'spreadRadiusMetres', 'cameraClampMetres'] as const) {
+  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale', 'spreadRadiusMetres'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
-  if (world.cameraClampMetres < world.spreadRadiusMetres) throw new Error(`respawn.json world.cameraClampMetres ${world.cameraClampMetres} is inside world.spreadRadiusMetres ${world.spreadRadiusMetres}`);
   if (!spots.length) throw new Error('the zone has no spawn spots');
   for (const s of spots) {
     if (kind !== undefined && s.kind !== kind) throw new Error(`spawn ${s.id} names kind "${s.kind}": the page builds one foe rig, "${kind}"`);
     if (!(Number.isFinite(s.x) && Number.isFinite(s.z))) throw new Error(`spawn ${s.id} has no place`);
-    if (M.hypot(s.x, s.z) + s.leash > world.spreadRadiusMetres) throw new Error(`spawn ${s.id} stands outside the zone's ground (its leash circle reaches ${M.hypot(s.x, s.z) + s.leash} m, respawn.json world.spreadRadiusMetres ${world.spreadRadiusMetres} m)`);
-    if (Math.abs(M.hypot(s.x, s.z) - wall) < world.edgeMetres) throw new Error(`spawn ${s.id} stands in the pit's wall (${wall} m, within ${world.edgeMetres} m of it)`);
+    const reach = M.hypot(s.x, s.z) + Math.max(s.leash, wall);
+    if (reach > world.spreadRadiusMetres) throw new Error(`spawn ${s.id} stands outside the zone's spawn extent (its fight arena reaches ${reach} m, respawn.json world.spreadRadiusMetres ${world.spreadRadiusMetres} m)`);
     if (dist(s, heroStart) <= s.aggro) throw new Error(`spawn ${s.id} stands inside its own aggro of the hero's start`);
     for (const t of spots) if (t !== s && dist(s, t) <= s.aggro) throw new Error(`spawns ${s.id} and ${t.id} stand inside each other's aggro`);
     for (const t of spots) if (t !== s && dist(s, t) < world.minSpacing) throw new Error(`spawns ${s.id} and ${t.id} stand closer than ${world.minSpacing} m (respawn.json world.minSpacing)`);

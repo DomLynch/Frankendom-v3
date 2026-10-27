@@ -7,9 +7,10 @@
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { M } from './detmath.ts';
 import { advance, type State } from './sim.ts';
+import { OPEN_RADIUS } from './play-radius.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number; walkRadiusMetres: number; cameraMetres: number }; spawn: { minDistance: number }; heroDeath: { fallSeconds: number }; limits: { walkRadiusMetres: [number, number]; cameraMetres: [number, number]; startAfterSeconds: [number, number]; minDistance: [number, number]; fallSeconds: [number, number] } };
+type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number; walkRadiusMetres: number | null; cameraMetres: number }; spawn: { minDistance: number }; heroDeath: { fallSeconds: number }; limits: { walkRadiusMetres: [number, number]; cameraMetres: [number, number]; startAfterSeconds: [number, number]; minDistance: [number, number]; fallSeconds: [number, number] } };
 const LOOP = ROWS as unknown as Rows;
 
 /** What the page plays: the zone's first spawn, the hero's down time, the roam hand-over. */
@@ -20,7 +21,7 @@ export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly str
   const [lo, hi] = rows.limits.startAfterSeconds, at = rows.postKill.startAfterSeconds;
   if (!(Number.isFinite(at) && at >= lo && at <= hi)) throw new Error(`respawn.json postKill.startAfterSeconds ${at} is not in ${lo}..${hi}`);
   const [walkLo, walkHi] = rows.limits.walkRadiusMetres, walk = rows.postKill.walkRadiusMetres;
-  if (!(Number.isFinite(walk) && walk >= walkLo && walk <= walkHi)) throw new Error(`respawn.json postKill.walkRadiusMetres ${walk} is not in ${walkLo}..${walkHi}`);
+  if (walk !== null && !(Number.isFinite(walk) && walk >= walkLo && walk <= walkHi)) throw new Error(`respawn.json postKill.walkRadiusMetres ${walk} is not in ${walkLo}..${walkHi}`);
   const [camLo, camHi] = rows.limits.cameraMetres, cam = rows.postKill.cameraMetres;
   if (!(Number.isFinite(cam) && cam >= camLo && cam <= camHi)) throw new Error(`respawn.json postKill.cameraMetres ${cam} is not in ${camLo}..${camHi}`);
   const [near, far] = rows.limits.minDistance, gap = rows.spawn.minDistance;
@@ -37,7 +38,7 @@ export function zoneLoopFor(zone: ZoneRow, search = '', opponents?: readonly str
   validateLoop(rows, zone, opponents);
   if (new URLSearchParams(search).get(rows.flag.query) === rows.flag.off || !rows.postKill.roam) return null;
   const s = zone.spawns[0]!;
-  return { walkRadius: rows.postKill.walkRadiusMetres, cameraMetres: rows.postKill.cameraMetres, startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, fallSeconds: rows.heroDeath.fallSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };   // `spawn`: the first row; the page plays every row (src/zone/spawns.ts)
+  return { walkRadius: rows.postKill.walkRadiusMetres ?? OPEN_RADIUS, cameraMetres: rows.postKill.cameraMetres, startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, fallSeconds: rows.heroDeath.fallSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };   // `spawn`: the first row; the page plays every row (src/zone/spawns.ts)
 }
 
 /** Whether a spawn's new opponent stands `since` seconds after its kill. */

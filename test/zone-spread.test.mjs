@@ -30,7 +30,7 @@ test('the shipped spread: bosses stand beyond the pit, 10 m or more apart, aggro
   assert.ok(s.filter((x) => Math.hypot(x.x, x.z) > wall()).length >= 2, 'at least two bosses stand outside the drawn pit');
   for (const a of s) {
     assert.deepEqual([a.aggro, a.leash], [2.5, 5], `${a.id}: aggro 2.5 m and leash 5 m as before`);
-    assert.ok(Math.hypot(a.x, a.z) + a.leash <= WORLD.spreadRadiusMetres, `${a.id}: leash circle on the ground`);
+    assert.ok(Math.hypot(a.x, a.z) + Math.max(a.leash, wall()) <= WORLD.spreadRadiusMetres, `${a.id}: its fight arena (the larger of the pit circle and the leash) lies inside the spawn extent`);
     for (const b of s) if (a !== b) assert.ok(dist(a, b) >= WORLD.minSpacing && dist(a, b) >= 10, `${a.id} ~ ${b.id} = ${dist(a, b).toFixed(2)} m`);
   }
   const areas = Object.fromEntries(ZONE.areas.map((a) => [a.id, a]));
@@ -63,22 +63,21 @@ test('poseAt far from the pit: the pose is placed at the SPOT, the hero where he
   const s = spots(), start = initialState(), gap = ROWS.spawn.minDistance;
   for (const spot of s) for (let a = 0; a < 12; a++) for (const r of [gap, 3, 5, 9]) {
     const hero = { x: spot.x + r * Math.cos(a / 12 * 2 * Math.PI), z: spot.z + r * Math.sin(a / 12 * 2 * Math.PI) };
-    if (Math.hypot(hero.x, hero.z) > WORLD.spreadRadiusMetres) continue;
-    const pose = poseAt(hero, spot, WORLD.spreadRadiusMetres, gap, start);
+    const pose = poseAt(hero, spot, play.OPEN_RADIUS, gap, start);
     assert.deepEqual(pose.foe, { x: spot.x, z: spot.z });
     assert.ok(dist(pose.hero, pose.foe) >= gap - 1e-9, 'never closer than minDistance');
     if (dist(hero, spot) >= gap) assert.deepEqual(pose.hero, hero, 'the hero stays where he is when he is far enough');
     assert.ok(Math.abs(Math.atan2(spot.x - pose.hero.x, spot.z - pose.hero.z) - pose.heroFacing) < 1e-9, 'he faces the boss');
   }
-  const far = s.find((x) => Math.hypot(x.x, x.z) > wall()), pose = poseAt({ x: far.x - 3, z: far.z }, far, WORLD.spreadRadiusMetres, gap, start);
+  const far = s.find((x) => Math.hypot(x.x, x.z) > wall()), pose = poseAt({ x: far.x - 3, z: far.z }, far, play.OPEN_RADIUS, gap, start);
   assert.equal(poseFits(pose, wall()), false, 'a far spot is outside the pit\'s wall: the sim\'s own pose door would refuse it');
   assert.throws(() => fresh(pose), /inside the wall/, 'the refusal that poseFits / zoneDuel route around');
-  assert.deepEqual(poseAt({ x: 1e3, z: 0 }, s[0], WORLD.spreadRadiusMetres, gap, start).hero, { x: start.x, z: start.z }, 'a hero beyond the ground gets his start mark');
-  assert.equal(poseFits(poseAt(start, s[0], WORLD.spreadRadiusMetres, gap, start), wall()), s[0].x ** 2 + s[0].z ** 2 <= wall() ** 2, 'a pit-side pose fits when both stand in the pit');
+  assert.deepEqual(poseAt({ x: 1e3, z: 0 }, s[0], play.OPEN_RADIUS, gap, start).hero, { x: 1e3, z: 0 }, 'a hero a kilometre out is not drawn in or sent to the start mark: the ground has no edge');
+  assert.equal(poseFits(poseAt(start, s[0], play.OPEN_RADIUS, gap, start), wall()), s[0].x ** 2 + s[0].z ** 2 <= wall() ** 2, 'a pit-side pose fits when both stand in the pit');
 });
 
 test('a fight begun at a far spot: placed by hand on the finished duel, no ring wall; the hero walks past the pit wall, the boss stays at its spot', () => {
-  const far = spots().find((x) => Math.hypot(x.x, x.z) > wall()), pose = poseAt({ x: far.x - 4, z: far.z - 1 }, far, WORLD.spreadRadiusMetres, ROWS.spawn.minDistance, initialState());
+  const far = spots().find((x) => Math.hypot(x.x, x.z) > wall()), pose = poseAt({ x: far.x - 4, z: far.z - 1 }, far, play.OPEN_RADIUS, ROWS.spawn.minDistance, initialState());
   const made = fresh(), placed = project(zoneDuel(made.duel, pose), made.ai, made);
   assert.deepEqual([placed.duel.fighters[0].body.x, placed.duel.fighters[0].body.z], [pose.hero.x, pose.hero.z]);
   assert.deepEqual([placed.duel.fighters[1].body.x, placed.duel.fighters[1].body.z], [far.x, far.z]);
@@ -94,8 +93,29 @@ test('a fight begun at a far spot: placed by hand on the finished duel, no ring 
   assert.ok(!('radius' in pit.duel), 'and carries no radius: byte for byte what it was');
 });
 
+test('a long run 5 km from the origin: the sim and the AI stay finite (no NaN / Infinity), nobody is clamped, a roll or run is never stopped by a wall, and the fight goes on', () => {
+  for (const at of [{ x: 5000, z: -3000 }, { x: -4200, z: 6100 }, { x: 0, z: 1e5 }]) {
+    const pose = { hero: { x: at.x, z: at.z }, foe: { x: at.x + 2.6, z: at.z + 1 }, heroFacing: Math.atan2(2.6, 1) };
+    const made = fresh(), start = project(zoneDuel(made.duel, pose), made.ai, made);
+    let p = start, hits = 0, moved = 0;
+    for (let t = 0; t < 3600; t++) {
+      const phase = p.phase, action = phase === 'sheathed' ? 'light' : t % 90 === 0 ? 'light' : t % 400 === 399 ? 'roll' : null;
+      p = stepPractice(p, { ...idleIntent(), action, move: t % 200 < 100 ? { x: 0, z: 1, yaw: 0.3 * (t % 7), run: t % 3 === 0 } : { x: 0, z: 0, yaw: 0, run: false } }, profile);
+      for (const f of p.duel.fighters) for (const v of [f.body.x, f.body.z, f.body.heading, f.health, f.stamina, f.posture, f.loiter]) assert.ok(Number.isFinite(v), `non-finite at tick ${t} for ${JSON.stringify(at)}`);
+      assert.ok(Number.isFinite(p.health) && Number.isFinite(p.playerHealth));
+      hits += p.events.filter((e) => e.type === 'Hit').length;
+      moved = Math.max(moved, Math.hypot(p.fighter.x - at.x, p.fighter.z - at.z));
+      if (p.finish) break;
+    }
+    assert.ok(Math.hypot(p.fighter.x, p.fighter.z) > 1000 || p.finish, 'the hero is where he fought, never clamped toward the origin');
+    assert.ok(moved > 1, 'the hero ran');
+    assert.ok(p.duel.fighters.every((f) => f.loiter === 0), 'no wall band, no loiter clock: the lash never starts');
+    assert.ok(hits >= 0 && p.duel.radius === play.OPEN_RADIUS);
+  }
+});
+
 test('a pose that fits is the sim\'s own: zoneDuel changes nothing but the radius', () => {
-  const s = spots(), pose = poseAt(initialState(), s[0], WORLD.spreadRadiusMetres, ROWS.spawn.minDistance, initialState());
+  const s = spots(), pose = poseAt(initialState(), s[0], play.OPEN_RADIUS, ROWS.spawn.minDistance, initialState());
   assert.ok(poseFits(pose, wall()));
   const sim = fresh(pose), same = zoneDuel(sim.duel);
   assert.deepEqual({ ...same, radius: undefined }, { ...sim.duel, radius: undefined });
@@ -121,7 +141,7 @@ test('the held sim and the engage from a far position: the walk from the pit to 
   const lost = { x: 0, z: WORLD.spreadRadiusMetres };
   assert.equal(inAggro(s, lost), -1); assert.ok(nearestStanding(s, lost) >= 0);
   // pose for the hand-over from the held pit boss to the far one, hero where he stands (mid-way, beyond the pit wall)
-  const mid = { x: target.x - 3, z: target.z }, p = poseAt(mid, target, WORLD.spreadRadiusMetres, ROWS.spawn.minDistance, start);
+  const mid = { x: target.x - 3, z: target.z }, p = poseAt(mid, target, play.OPEN_RADIUS, ROWS.spawn.minDistance, start);
   assert.deepEqual(p.foe, { x: target.x, z: target.z });
 });
 
@@ -132,13 +152,12 @@ test('the camera: a walking camera follows the hero out to the far boss (the pit
   const hero = { x: far.x, z: far.z, heading: 0, distance: 0 }, yaw = 0.7;
   const before = cam.cameraPose(hero, yaw, 0, false);
   assert.ok(Math.hypot(before.x, before.z) <= clamp + 1e-9, 'unset (the single fight): clamped to the colonnade, as before');
-  cam.setArenaClamp(WORLD.cameraClampMetres);
+  cam.setArenaClamp(play.OPEN_RADIUS);
   const walking = cam.cameraPose(hero, yaw, 0, false);
   assert.equal(walking.lookX, hero.x); assert.equal(walking.lookZ, hero.z);
   assert.ok(Math.hypot(walking.x - hero.x, walking.z - hero.z) < 8, `the walking camera stays with the hero (${Math.hypot(walking.x - hero.x, walking.z - hero.z).toFixed(2)} m)`);
   const boss = { x: far.x + 1, z: far.z + 2 }, lock = cam.cameraPose(hero, yaw, 0, true, boss);
   assert.ok(Math.abs(lock.lookX - ((hero.x + boss.x) / 2)) < 1 && Math.abs(lock.lookZ - ((hero.z + boss.z) / 2)) < 1, 'the lock camera looks at the pair, wherever they stand');
-  assert.ok(Math.hypot(lock.x, lock.z) <= WORLD.cameraClampMetres + 1e-9);
   const pitHero = { x: 3, z: 2, heading: 0, distance: 0 }, pitBefore = cam.cameraPose(pitHero, yaw, 0, true, { x: 0, z: 0 });
   cam.setArenaClamp(clamp);
   assert.deepEqual(cam.cameraPose(pitHero, yaw, 0, true, { x: 0, z: 0 }), pitBefore, 'inside the pit the wider clamp changes nothing');
@@ -146,17 +165,16 @@ test('the camera: a walking camera follows the hero out to the far boss (the pit
 
 test('the page wires it for the zone only: poseAt on the ground, the pose door routed by poseFits, the radius via zoneDuel, the camera clamp; no key in the single fight', () => {
   const main = read('../src/client/main.ts');
-  assert.match(main, /poseAt\(at, spawns\[index\]!, WORLD\.spreadRadiusMetres, ZONE!\.minDistance, heroStart\)/);
+  assert.match(main, /poseAt\(at, spawns\[index\]!, OPEN_RADIUS, ZONE!\.minDistance, heroStart\)/);
   assert.match(main, /const fits = !ZONE \|\| !pose \|\| poseFits\(pose, RADIUS\);/, 'with no zone every pose is the sim\'s own');
   assert.match(main, /return ZONE \? project\(zoneDuel\(scaled\.duel, fits \? undefined : pose\), scaled\.ai, scaled\) : scaled;/, 'no zone = the practice untouched');
-  assert.match(main, /if \(ZONE\) setArenaClamp\(WORLD\.cameraClampMetres\);/);
+  assert.match(main, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);/);
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');
-  assert.match(live, /if \(ZONE\) setArenaClamp\(WORLD\.cameraClampMetres\);\n/, 'live code, not swallowed by a trailing comment');
+  assert.match(live, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);\n/, 'live code, not swallowed by a trailing comment');
   assert.match(live, /fits \? pose : undefined, undefined/, 'a pose beyond the pit is not handed to the sim');
   assert.match(live, /roam = \{ \.\.\.practice\.fighter \}; view\.stopTour\(\); \}/, 'the finisher tour ends the moment the hero walks: the follow camera is behind him');
-  assert.match(live, /on = intoPit\(at, WORLD\.spreadRadiusMetres\)/, 'adoptAttacker draws the hero onto the ground the way poseAt does');
-  assert.equal(ROWS.postKill.walkRadiusMetres, WORLD.spreadRadiusMetres, 'the post-kill walk reaches every boss the spawns reach (PR A row = the ground)');
-  assert.ok(ROWS.postKill.walkRadiusMetres + ROWS.postKill.cameraMetres <= WORLD.cameraClampMetres, 'the walk camera fits inside the zone camera clamp');
+  assert.doesNotMatch(live, /intoPit\(/, 'nothing in the page draws the hero to a wall any more');
+  assert.equal(ROWS.postKill.walkRadiusMetres, null, 'the post-kill walk is unbounded');
   const cam = read('../src/fight/camera.ts');
   assert.equal((cam.match(/ARENA_CLAMP/g) ?? []).length >= 8 && !/const ARENA_CLAMP/.test(cam), true, 'finisher side view, tour and intro orbit all clamp at the one settable ARENA_CLAMP');
   const sim = ['sim', 'duel', 'combat', 'play-radius'].map((f) => read(`../src/fight/${f}.ts`)).join('\n');

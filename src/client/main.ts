@@ -18,7 +18,7 @@ import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
 import { recordSpecials } from '../fight/replay.ts';
 import { RADIUS, initialState, wrapAngle, type State } from '../fight/sim.ts';
-import { playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.ts';
+import { OPEN_RADIUS, playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.ts';
 import { setStab } from '../fight/stab-rule.ts';
 import { setStanceRows } from '../fight/stance-era.ts';
 import { setSpecialPace, specialPaceFor } from '../fight/special-pace.ts';
@@ -57,7 +57,7 @@ import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
-import { zoneLoopFor, roamStep, validateWalk, intoPit } from '../fight/zone-loop.ts';
+import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
@@ -209,7 +209,7 @@ const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
 if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
 if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
-if (ZONE) setArenaClamp(WORLD.cameraClampMetres);   // the camera follows the hero across the zone's ground, not only the pit's colonnade (data/respawn.json world.cameraClampMetres)
+if (ZONE) setArenaClamp(OPEN_RADIUS);   // endless open ground: every camera clamp (walk, finisher side view, tour, intro orbit) is out of reach in the zone, so the camera follows the hero wherever he runs
 if (ZONE) { const bad = spotBodyProblems(SPOTS); if (bad.length) throw new Error(`zone row bodies: ${bad.join('; ')}`); }   // a spawn's own body (zone row spawns[].body) is a usable boss body; none in the shipped zone
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
 let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, engaged = false, killMarked = false;
@@ -220,7 +220,7 @@ let attackers: Attacker[] = [], killedBy: number | null = null, widen = 1;   // 
 if (multi) validateFraming();
 const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
-const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, WORLD.spreadRadiusMetres, ZONE!.minDistance, heroStart);
+const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, OPEN_RADIUS, ZONE!.minDistance, heroStart);
 if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
@@ -238,7 +238,7 @@ const poseOfAttacker = (index: number, at: { x: number; z: number }): DuelPose =
 /** The kill's ceremony is over and another boss is on him: that boss's fight becomes the sim's fight, the hero's health as it is now (the first boss's corpse is left lying, as at every hand-over). */
 function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number }) {
   view.respawnFoe();
-  const mine = practice.duel.fighters[0], on = intoPit(at, WORLD.spreadRadiusMetres), hero: Fighter = { ...mine, body: { ...mine.body, x: on.x, z: on.z, heading: at.heading } };   // on: the zone's ground (spawns.ts poseAt draws him in the same way)
+  const mine = practice.duel.fighters[0], hero: Fighter = { ...mine, body: { ...mine.body, x: at.x, z: at.z, heading: at.heading } };   // the hero stays where he stands: the ground is unbounded and a zone duel has no wall to draw him to
   epoch++; seed = nextSeed(seed); practice = adopt(a, hero); frameEvents = []; openerLift = 0;
   roam = null; sinceDeath = 0; current = a.index; engaged = true; killMarked = false; killedBy = null;
   attackers = attackers.filter((x) => x !== a);
