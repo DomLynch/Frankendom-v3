@@ -30,7 +30,8 @@ export function joinBot(port: number, opts: { protocols?: string[]; path?: strin
     ws.binaryType = 'arraybuffer';
     const log: { at: number; ids: number[] }[] = [];   // every down packet: when it arrived and which ids it carried (presence sends NO packet when nothing is due, so seen() keeps the last one)
     let closed: number | null = null, latest: Entity[] = [], hello: Hello | null = null, settled = false;
-    const toM = (cm: number): number => (cm - PRESENCE.frame.centreCm) / 100;
+    // A bot speaks metres RELATIVE TO THE SERVICE'S SPAWN (data/presence.json `spawn`, the pit's centre in the zone frame): (0, 0) is where a join starts, whatever the zone frame says.
+    const toX = (cm: number): number => (cm - PRESENCE.frame.centreCm) / 100 - PRESENCE.spawn.x, toZ = (cm: number): number => (cm - PRESENCE.frame.centreCm) / 100 - PRESENCE.spawn.z;
     ws.onmessage = (ev) => {
       if (typeof ev.data === 'string') {
         const m = JSON.parse(ev.data) as { t?: string };
@@ -45,9 +46,9 @@ export function joinBot(port: number, opts: { protocols?: string[]; path?: strin
     const bot: Bot = {
       get hello() { return hello!; }, get frame() { return hello!.frame; },
       packets: () => log.map((p) => ({ at: p.at, ids: [...p.ids] })),
-      seen: () => latest.map((e) => ({ id: e.id, x: toM(e.x), z: toM(e.z), heading: e.heading, anim: e.anim, flags: e.flags })),
-      pose: (x, z, heading = 0) => ws.send(encodeUp({ x: Math.round(PRESENCE.frame.centreCm + x * 100), z: Math.round(PRESENCE.frame.centreCm + z * 100), heading, anim: 0, flags: 0 })),
-      at: () => ({ x: toM(hello!.x), z: toM(hello!.z) }),
+      seen: () => latest.map((e) => ({ id: e.id, x: toX(e.x), z: toZ(e.z), heading: e.heading, anim: e.anim, flags: e.flags })),
+      pose: (x, z, heading = 0) => ws.send(encodeUp({ x: Math.round(PRESENCE.frame.centreCm + (x + PRESENCE.spawn.x) * 100), z: Math.round(PRESENCE.frame.centreCm + (z + PRESENCE.spawn.z) * 100), heading, anim: 0, flags: 0 })),
+      at: () => ({ x: toX(hello!.x), z: toZ(hello!.z) }),
       raw: (data) => ws.send(data),
       closeCode: () => closed,
       close: () => ws.close(),

@@ -134,7 +134,7 @@ test('a player with no known position starts at the spawn, and its first pose is
 function walk(cmS, every, count, arrive) {
   const w = new World(), p = w.join(key(1), 0), out = [];
   const packets = Array.from({ length: count }, (_, k) => ({ k, sentAt: (k + 1) * every })).map((q) => ({ ...q, at: arrive(q.k, q.sentAt) })).sort((a, b) => a.at - b.at || a.k - b.k);
-  for (const q of packets) out.push(w.move(p, { x: SPAWN.x + Math.round((cmS * q.sentAt) / 1000), z: SPAWN.z, heading: 0, anim: 0, flags: 0 }, q.at));
+  for (const q of packets) out.push(w.move(p, { x: SPAWN.x - Math.round((cmS * q.sentAt) / 1000), z: SPAWN.z, heading: 0, anim: 0, flags: 0 }, q.at));
   return out;
 }
 test('an honest sprinter whose packets bunch once is never struck, and one hiccup does not snowball into a drop', () => {
