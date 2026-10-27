@@ -38,6 +38,55 @@ jobs:
       - name: No 65 file in dist/
         run: DIST_REQUIRED=1 node --test test/rig-bones.test.mjs
 
+  # The zone server SQL (supabase/migrations/20261027000001_zone_server.sql) EXECUTED against a real Postgres and compared with the JS model (test/sql/zone-sql.test.mjs).
+  # A separate job: the `test` job stays fast and does not wait for it, and `deploy` does not need it. The database is a throwaway service container, the password below is a
+  # throwaway value for that container only (not a secret), and nothing here touches Supabase or any real database. The Supabase-specific roles are plain NOLOGIN roles (test/sql/bootstrap.sql).
+  zone-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: zone-sql-throwaway
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: zone-sql-throwaway
+      PGDATABASE: postgres
+      ZONE_SQL_URL: postgres://postgres:zone-sql-throwaway@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: psql client
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client)
+      - name: Server version
+        run: psql -Atc "select version()"
+      - name: Bootstrap (plain roles standing in for Supabase's, the test clock)
+        run: psql -v ON_ERROR_STOP=1 -q -f test/sql/bootstrap.sql
+      - name: Apply the migration
+        run: psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/20261027000001_zone_server.sql
+      - name: DOWN migration, then apply again (round trip)
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -f supabase/down/20261027000001_zone_server_down.sql
+          psql -tAc "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and proname like 'zone\_%'" | grep -qx 0
+          psql -tAc "select count(*) from pg_class where relname like 'zone\_%' and relkind = 'r'" | grep -qx 0
+          psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/20261027000001_zone_server.sql
+      - name: Run the SQL against the JS model
+        run: node --test --test-reporter=spec test/sql/zone-sql.test.mjs
+
   # Every green main goes live at https://v3.frankendom.com (site root, no prefix), once the deploy secrets exist.
   # The key is locked by rrsync to the site folder on the VPS, so the remote path is "./".
   deploy:
