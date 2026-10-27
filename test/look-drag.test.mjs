@@ -8,7 +8,6 @@ import { createInput } from '../src/fight/input.ts';
 import { createCameraRig } from '../src/fight/camera.ts';
 import { initialPractice } from '../src/fight/combat.ts';
 import { roamStep } from '../src/fight/zone-loop.ts';
-import { initialState } from '../src/fight/sim.ts';
 import { validateFile } from '../src/sim/validate.js';
 import * as THREE from 'three';
 
@@ -174,7 +173,8 @@ test('two thumbs: the stick walks while the look turns, in either order, and nei
   const k = hands();
   k.canvas.fire('pointerdown', { pointerId: 5, clientX: 320, pointerType: 'touch', timeStamp: 0 });
   k.stick.fire('pointerdown', { pointerId: 6, clientX: 42, clientY: 42 + 34, pointerType: 'touch' });
-  k.canvas.fire('pointermove', { pointerId: 5, clientX: 360, pointerType: 'touch', timeStamp: 16 });
+  k.canvas.fire('pointermove', { pointerId: 5, clientX: 340, pointerType: 'touch', timeStamp: 16 });
+  k.canvas.fire('pointermove', { pointerId: 5, clientX: 360, pointerType: 'touch', timeStamp: 32 });
   assert.ok(k.controls.intent().z > 0, 'the stick answers');
   assert.ok(k.turned() > 0, 'and the look turns');
   k.stick.fire('pointerup', { pointerId: 6 });
@@ -182,9 +182,9 @@ test('two thumbs: the stick walks while the look turns, in either order, and nei
 });
 
 test('the stick stays camera-relative: the same push walks a different way once the view has turned', () => {
-  const walk = (yaw) => { const s = roamStep(initialState(), { x: 0, z: -1, yaw, run: false }, { x: 0, z: -50 }, 100); const b = initialState(); return Math.atan2(s.x - b.x, s.z - b.z); };
-  const a = walk(0), b = walk(Math.PI / 2);
-  assert.ok(Math.abs(Math.abs(a - b) - Math.PI / 2) < 1e-6, 'a quarter turn of the view is a quarter turn of the walk');
+  const walk = (yaw) => { const s = roamStep({ x: 0, z: 0, heading: 0, distance: 0 }, { x: 0, z: -1, yaw, run: false }, { x: 0, z: -50 }, 100); return Math.atan2(s.x, s.z); };
+  const a = walk(0), b = walk(Math.PI / 2), wrapped = Math.atan2(Math.sin(a - b), Math.cos(a - b));
+  assert.ok(Math.abs(Math.abs(wrapped) - Math.PI / 2) < 1e-6, 'a quarter turn of the view is a quarter turn of the walk');
   // and the camera rig reports the yaw the page hands the walk
   const rig = createCameraRig(new THREE.PerspectiveCamera());
   const y0 = rig.yaw;
@@ -212,7 +212,7 @@ test('the page wires the look thumb: its own pointer id, the free camera gate, t
     assert.doesNotMatch(text.replace(re, ''), re, `${what} (once)`);
   }
   const main = code('../src/client/main.ts');
-  assert.equal(main.match(/move: \{ x: intent\.x, z: intent\.z, yaw: view\.yaw, run: intent\.run \}/g)?.length, 2, 'both the duel move and the free walk read the view yaw: the stick is camera-relative');
+  assert.equal(main.match(/\{ x: intent\.x, z: intent\.z, yaw: view\.yaw, run: intent\.run \}/g)?.length, 2, 'both the duel move and the free walk read the view yaw: the stick is camera-relative');
 });
 test('each pin bites: without its wiring the text no longer matches', () => {
   for (const [file, what, re] of PINS) assert.doesNotMatch(code(file).replace(re, ''), re, what);
