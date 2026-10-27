@@ -316,7 +316,7 @@ export function validateFile(name, json) {
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
 export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'plate', 'views', 'fold'];
-export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'orderOffset', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky'];
+export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'orderOffset', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky', 'anim'];
 // data/stage.json `skyline.plate` (src/fight/skyplate.ts): the far backdrop arc. A plain file name, a face inside the picture, fractions in range, colours as #rrggbb, and the rim (the arc at its tallest, the sky cylinder) inside the far plane.
 function checkSkyPlate(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.plate.${p}: ${m}`), p = s.plate;
@@ -345,9 +345,48 @@ function checkSkyPlate(s) {
     const h = (s.radius * p.spanDegrees * Math.PI / 180) / p.cropAspect, top = s.radius * Math.tan(p.faceElevationDegrees * Math.PI / 180) + (1 - p.face.v) * h, bottom = top - h;
     if (Math.hypot(s.radius, Math.max(Math.abs(top), Math.abs(bottom))) > SKYLINE_RIM_LIMIT) at('spanDegrees', 'the arc, at the shape cropAspect gives it, must stay inside the camera far plane (180 m)');
   }
+  e.push(...checkSkyAnim(p.anim, p.query));
   return e;
 }
-/** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
+// data/stage.json `skyline.plate.anim` (src/fight/skyanim.ts): the small coded motion. Fractions in range, a plain word for the off switch, '' or a plain .webp name per layer file, positive periods, #rrggbb colours.
+function checkSkyAnim(a, plateQuery) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.plate.anim.${p}: ${m}`);
+  if (a === null || typeof a !== 'object' || Array.isArray(a)) return ['stage.skyline.plate.anim: must be an object'];
+  const keys = (o, allowed, path) => { if (o === null || typeof o !== 'object' || Array.isArray(o)) { at(path, 'must be an object'); return false; } for (const k of Object.keys(o)) if (!allowed.includes(k)) at(`${path ? `${path}.` : ''}${k}`, 'unknown key'); for (const k of allowed) if (!(k in o)) at(`${path ? `${path}.` : ''}${k}`, 'missing'); return true; };
+  const rng = (o, k, lo, hi, path) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi) at(`${path}.${k}`, `must be a finite number in ${lo}..${hi}`); };
+  const col = (o, k, path) => { if (typeof o[k] !== 'string' || !/^#[0-9a-f]{6}$/i.test(o[k])) at(`${path}.${k}`, 'must be a #rrggbb colour'); };
+  const file = (o, k, path) => { if (typeof o[k] !== 'string' || !(o[k] === '' || /^[a-z0-9][a-z0-9._-]*\.webp$/i.test(o[k]))) at(`${path}.${k}`, "must be '' (made from the flattened plate) or a plain .webp file name in src/assets/skyline/"); };
+  const centre = (o, path) => { if (keys(o.centre, ['u', 'v'], `${path}.centre`)) { rng(o.centre, 'u', 0, 1, `${path}.centre`); rng(o.centre, 'v', 0, 1, `${path}.centre`); } };
+  keys(a, ['about', 'on', 'query', 'off', 'respectReducedMotion', 'light', 'globe', 'planet', 'glisten'], '');
+  if (typeof a.about !== 'string' || a.about.length < 200) at('about', 'must explain the rows (at least 200 characters)');
+  for (const k of ['on', 'respectReducedMotion']) if (typeof a[k] !== 'boolean') at(k, 'must be true or false');
+  for (const k of ['query', 'off']) if (typeof a[k] !== 'string' || !/^[a-z0-9]+$/i.test(a[k])) at(k, 'must be a plain word');
+  if (a.query === plateQuery) at('query', 'must differ from the plate query word');
+  if (keys(a.light, ['x', 'y', 'z'], 'light')) { for (const k of ['x', 'y', 'z']) rng(a.light, k, -1, 1, 'light'); if (!(Math.hypot(a.light.x, a.light.y, a.light.z) > 0.1)) at('light', 'must not be a zero vector'); }
+  const body = (o, path, extra) => {
+    if (!keys(o, ['file', 'centre', 'radius', 'secondsPerTurn', 'swingDegrees', 'mapLit', ...extra], path)) return;
+    file(o, 'file', path); centre(o, path); rng(o, 'radius', 0.001, 0.2, path); rng(o, 'secondsPerTurn', 1, 3600, path); rng(o, 'swingDegrees', 0, 90, path); rng(o, 'mapLit', 0, 1, path);
+  };
+  body(a.globe, 'globe', ['highlight']);
+  if (a.globe && typeof a.globe === 'object' && keys(a.globe.highlight, ['strength', 'size', 'orbit', 'lift', 'orbitSeconds'], 'globe.highlight')) {
+    const h = a.globe.highlight; rng(h, 'strength', 0, 1, 'globe.highlight'); rng(h, 'size', 0.05, 2, 'globe.highlight'); rng(h, 'orbit', 0, 1, 'globe.highlight'); rng(h, 'lift', -1, 1, 'globe.highlight'); rng(h, 'orbitSeconds', 1, 600, 'globe.highlight');
+  }
+  body(a.planet, 'planet', ['lowerFadeFrom', 'glow']);
+  if (a.planet && typeof a.planet === 'object') {
+    rng(a.planet, 'lowerFadeFrom', -1, 1, 'planet');
+    if (keys(a.planet.glow, ['color', 'strength', 'pulseSeconds'], 'planet.glow')) { col(a.planet.glow, 'color', 'planet.glow'); rng(a.planet.glow, 'strength', 0, 1, 'planet.glow'); rng(a.planet.glow, 'pulseSeconds', 0.5, 600, 'planet.glow'); }
+  }
+  const l = a.glisten;
+  if (keys(l, ['file', 'box', 'periodSeconds', 'sweepSeconds', 'width', 'slant', 'strength', 'color', 'edgeLo', 'edgeHi', 'lumaFrom'], 'glisten')) {
+    file(l, 'file', 'glisten'); col(l, 'color', 'glisten'); rng(l, 'periodSeconds', 1, 600, 'glisten'); rng(l, 'sweepSeconds', 0.2, 600, 'glisten'); rng(l, 'width', 0.002, 0.3, 'glisten'); rng(l, 'slant', -2, 2, 'glisten'); rng(l, 'strength', 0, 1.5, 'glisten');
+    rng(l, 'edgeLo', 0, 1, 'glisten'); rng(l, 'edgeHi', 0, 1, 'glisten'); rng(l, 'lumaFrom', 0, 1, 'glisten');
+    if (Number.isFinite(l.periodSeconds) && Number.isFinite(l.sweepSeconds) && l.sweepSeconds > l.periodSeconds) at('glisten.sweepSeconds', 'must not exceed periodSeconds');
+    if (Number.isFinite(l.edgeLo) && Number.isFinite(l.edgeHi) && !(l.edgeHi > l.edgeLo)) at('glisten.edgeHi', 'must be above edgeLo');
+    if (keys(l.box, ['u0', 'u1', 'v0', 'v1'], 'glisten.box')) { for (const k of ['u0', 'u1', 'v0', 'v1']) rng(l.box, k, 0, 1, 'glisten.box'); if (!(l.box.u1 > l.box.u0 + 0.05) || !(l.box.v1 > l.box.v0 + 0.1)) at('glisten.box', 'must be a real box (u1 above u0, v1 above v0)'); }
+  }
+  return e;
+}
+/** data/fight.json camera.wide(src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
 function checkWideLens(w, name) {
   const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
   if (!w || typeof w !== 'object') return [`${name}.camera.wide: the wide-screen lens row is required`];

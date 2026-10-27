@@ -51,6 +51,46 @@
         "hazeColor": "#936877",
         "halfHeightMetres": 85,
         "rings": 24
+      },
+      "anim": {
+        "about": "SMALL CODED MOTION on the plate (src/fight/skyanim.ts; Dom 2026-10-27 'small motion on the static image', lean: no video, 0 extra bytes today). Presentation only: the plate material gets a few shader lines and uniforms (clock, shifts, band), so a frame costs one clock tick and a few uniform writes. Positions are fractions across (u) and down (v, y down) the PLATE picture, radii are fractions of the picture's WIDTH (the circle stays round whatever the aspect). `on`/`query`/`off`: ?skyanim=off turns it all off (the plain plate); `respectReducedMotion` true = prefers-reduced-motion also turns it off; the clock stops while the tab is hidden. `light` is the sun direction (x right, y up, z toward the viewer), used only when a designer surface map is lit. GLOBE (the small world in the titan's raised hand): `centre`, `radius`; `secondsPerTurn` is one full turn of the fake spin (the sphere's own pixels re-mapped under a circle mask, longitude shifted and mirror-folded so it never seams), `swingDegrees` 0 = a continuous turn, above 0 = a swing of that many degrees each way instead; `highlight` is a soft moving glint (`strength`, `size` and `orbit` in disc radii, `lift` raises its path, `orbitSeconds` per lap). PLANET (the red-pink planet): `centre`, `radius`, `secondsPerTurn` with `swingDegrees` (a slow swing, since its terminator is baked into the picture), `lowerFadeFrom` (disc-radius y below which the swing fades out, where the cloud sea crosses the disc), `glow` (rim glow `color`, `strength`, `pulseSeconds`). GLISTEN (a soft additive sweep over the ring technology): a mask derived in the shader from bright (`lumaFrom`) high-contrast (`edgeLo`..`edgeHi`) edge pixels inside `box` (u0,u1,v0,v1); a band `width` wide (fraction), tilted by `slant`, `color`, `strength`, sweeps the box in `sweepSeconds` every `periodSeconds`. DESIGNER LAYERS (docs/SKY-LAYERS.md): each `file` is '' (made from the flattened plate, today) or a .webp in src/assets/skyline/: globe.file = an equirectangular surface map (2:1, 256x128 or 512x256, sRGB, alpha ok) that then spins for real and is lit by `light` (`mapLit` 0..1); planet.file = the same for the planet (1024x512, with alpha); glisten.file = a greyscale mask (red channel = where it glistens; the plate's size or smaller, 1254x314 is plenty). plate.file swaps in the clean plate (no globe or planet baked in) at the same row shape. A new layer is one row change; the shader, rows and tests stay.",
+        "on": true,
+        "query": "skyanim",
+        "off": "off",
+        "respectReducedMotion": true,
+        "light": { "x": 0.7, "y": 0.3, "z": 0.65 },
+        "globe": {
+          "file": "",
+          "centre": { "u": 0.68, "v": 0.67 },
+          "radius": 0.0078,
+          "secondsPerTurn": 36,
+          "swingDegrees": 0,
+          "mapLit": 0.6,
+          "highlight": { "strength": 0.35, "size": 0.45, "orbit": 0.45, "lift": 0.15, "orbitSeconds": 14 }
+        },
+        "planet": {
+          "file": "",
+          "centre": { "u": 0.336, "v": 0.722 },
+          "radius": 0.057,
+          "secondsPerTurn": 60,
+          "swingDegrees": 9,
+          "lowerFadeFrom": 0.35,
+          "mapLit": 0.6,
+          "glow": { "color": "#ff7aa8", "strength": 0.22, "pulseSeconds": 7 }
+        },
+        "glisten": {
+          "file": "",
+          "box": { "u0": 0.43, "u1": 0.73, "v0": 0.38, "v1": 0.76 },
+          "periodSeconds": 9,
+          "sweepSeconds": 2.6,
+          "width": 0.018,
+          "slant": 0.35,
+          "strength": 0.55,
+          "color": "#d8ecff",
+          "edgeLo": 0.05,
+          "edgeHi": 0.2,
+          "lumaFrom": 0.35
+        }
       }
     },
     "views": {
