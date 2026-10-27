@@ -20,7 +20,6 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
-import { heroPreview } from '../hero-preview.ts';
 import { bakeSafeFinisher, lookBakeOffFrom, lookBakes, rankLookFlag, runThroughForced, rankLookFor, rankLookStream, SHIPPING_LOOKS } from './rank-look.ts';
 import { kitWorn, levelOf, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/loot.ts
 import { standoffClock, standoffFlag, standoffPose } from './standoff.ts';
@@ -252,9 +251,6 @@ export function createScene(
   let builtFoeWeapon: WeaponId | undefined;
   // Every roster body except the held ones (roster.ts `hold`): glob patterns must be literals, so the exclusions are spelled out here —
   // tests/roster.test.ts checks the two lists agree. Held GLBs stay in src/assets for their lanes; they are just not in the beta bundle.
-  // Hero preview (hero-preview.ts): a fitted set under /herolook/ stands in for the player's rig. It wears its armour on the rig itself, so
-  // the player's loot pieces are never layered over it (the opponent still wears his kit); a file that fails to load falls back to the hero's 106 body.
-  const heroUrl = heroPreview(typeof location === 'undefined' ? '' : location.search);
   // 106 ONLY (Dom 2026-10-26: "no risk of going back to the old 65 rig"; docs/PLAN.md section 10). The loader table holds the 106-joint
   // Psyche and Minotaur and nothing else: no 65 body (psyche.glb, minotaur.glb, warrior.glb, veteran.glb) is addressable, so none is
   // built into dist/ (data/build.json notShipped; test/rig-bones.test.mjs is the lock). No query picks a body.
@@ -377,7 +373,7 @@ export function createScene(
       const hero = fighterUrls[`../assets/${heroRigFile(heroBodyFile())}.glb`];
       const loadBody = () => (hero && foe ? load(hero) : Promise.reject(new Error(`no 106 body in the loader table for ${hero ? opponentId : heroBodyFile()}`)))
         .catch((error: unknown) => { throw new RigLoadError([hero, foe], error); });
-      return heroUrl ? load(heroUrl).catch(() => loadBody()) : loadBody();   // a /herolook/ preview that fails falls back to the hero's 106 body
+      return loadBody();
     }),
     arena.ready,
     carrierUrl && !lateKit ? loadKit() : null,

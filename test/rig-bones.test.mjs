@@ -8,6 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { clip106Path, clip106Paths, bone, boneAs65, boneName, rigsDrawn, drawnSword, foeRigFile, gapFillFor, heldWeapon, heroRigFile, isHeldWeaponName, rigFile, rigOf, sanitizeNodeName, trackAs65, trackOn } from '../src/fight/rig-bones.ts';
 
 const RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
+
+test('no query or URL can swap the hero body: the ?hero=/herolook/ preview flag is gone (Dom 2026-10-27, 106 only)', () => {
+  assert.equal(existsSync(new URL('../src/hero-preview.ts', import.meta.url)), false);
+  assert.doesNotMatch(readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8'), /heroPreview|hero-preview|herolook/);
+});
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 const glb = (path) => { const bytes = readFileSync(new URL(path, import.meta.url)), n = bytes.readUInt32LE(12); return JSON.parse(bytes.subarray(20, 20 + n)); };
 const joints = (j) => j.skins[0].joints.map((i) => j.nodes[i].name);
