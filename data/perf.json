@@ -1,0 +1,10 @@
+{
+  "about": "Open-world performance budget (Physics Dev, 2026-10-27; Strategy's brief: the zone never stutters on a slow phone). PRESENTATION ONLY: nothing here touches the sim or Gate 0. DATA ROWS FOR V3 DEV TO WIRE: no runtime reads this file yet (proposal in docs/proposals/perf-open-world-2026-10-27.md). Per tier, a ceiling for what one frame may cost and the cap of each lever; `ladder` is the order the levers are pulled when the page's frame time stays over `frameMsP95` (same window shape as src/fight/governor.ts: windowFrames samples, overWindows windows in a row; one way only, no step back up, so it never flaps). `corpsesMax` is clamped by data/physics.json corpse.max (the lower wins), `cutPiecesMax` is the live cut-piece meshes kept across all corpses (the oldest corpse's pieces hide first, as pieceSeconds does now), `reactionBlendOff` turns ?feel=hitreact's pose blend off (the impulse and the sim stay), `feelOff` drops the rest of the M7 presentation (clash sparks, limb gait). FIRST PASS, UNMEASURED CAPS: corpsesMax, cutPiecesMax and jsMsBudget are starting values, NOT measured limits. The only usable receipt (PR, 0 corpses, scripts/perf-open-world.mjs on the HF CPU box) shows the JS-side cost per frame: live ragdoll about 2-3 ms, limbs 0.3-0.9, clash 0.03-0.12, a standing corpse 0.01-0.03; the 2- and 4-corpse and cut-piece runs have no usable N (the host was overloaded), so no cap was derived from them. Dom and V3 Dev tune them on the iPhone.",
+  "tiers": {
+    "phone": { "frameMsP95": 33.4, "jsMsBudget": 6, "corpsesMax": 2, "cutPiecesMax": 6, "reactionBlendOff": true, "feelOff": true },
+    "full": { "frameMsP95": 16.7, "jsMsBudget": 6, "corpsesMax": 4, "cutPiecesMax": 12, "reactionBlendOff": true, "feelOff": true }
+  },
+  "ladder": ["cutPieces", "reactionBlend", "corpses", "feel"],
+  "windowFrames": 120,
+  "overWindows": 3
+}

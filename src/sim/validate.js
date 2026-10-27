@@ -42,6 +42,8 @@ export const SCHEMA = {
   'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], cue: ['about', 'on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
     finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
+  // The open-world performance budget (data/perf.json, docs/proposals/perf-open-world-2026-10-27.md): per tier a frame ceiling and the caps of the levers
+  'perf': { keys: ['about', 'tiers', 'ladder', 'windowFrames', 'overWindows'], maps: { tiers: ['phone', 'full'] } },
   // The M7 feel modules that are on without a query (src/fight/feel-defaults.ts), each with its own ?x=v1 revert; test/feel-defaults.test.mjs pins the names against the registry
   'feel-defaults': { keys: ['about', 'query', 'off', 'modules', 'revert'] },
   // The SIM knockdown + finish window (src/fight/knock-sim.ts, step in duel.ts), on with the kick module (data/feel-defaults.json): whole seconds / per-mille rows; checkFeelSim below checks the values
@@ -240,6 +242,19 @@ export function validateFile(name, json) {
   }
   if (name === 'sound') errors.push(...checkSoundZone(json.zone));
   if (name === 'stage') errors.push(...checkSkyline(json.skyline));
+  if (name === 'perf') {   // each tier: positive frame ceilings, whole-number caps (0 = the lever is pulled from the start), flags a boolean; the ladder names known levers once each
+    const KEYS = ['frameMsP95', 'jsMsBudget', 'corpsesMax', 'cutPiecesMax', 'reactionBlendOff', 'feelOff'], LEVERS = ['cutPieces', 'reactionBlend', 'corpses', 'feel'];
+    for (const [tier, row] of Object.entries(json.tiers ?? {})) {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) { errors.push(`${name}.tiers.${tier}: must be an object`); continue; }
+      for (const k of Object.keys(row)) if (!KEYS.includes(k)) errors.push(`${name}.tiers.${tier}.${k}: unknown key`);
+      for (const k of ['frameMsP95', 'jsMsBudget']) if (!Number.isFinite(row[k]) || row[k] <= 0) errors.push(`${name}.tiers.${tier}.${k}: must be a finite number > 0`);
+      for (const k of ['corpsesMax', 'cutPiecesMax']) if (!Number.isInteger(row[k]) || row[k] < 0) errors.push(`${name}.tiers.${tier}.${k}: must be an integer >= 0`);
+      for (const k of ['reactionBlendOff', 'feelOff']) if (typeof row[k] !== 'boolean') errors.push(`${name}.tiers.${tier}.${k}: must be true or false`);
+    }
+    for (const t of ['phone', 'full']) if (!json.tiers?.[t]) errors.push(`${name}.tiers.${t}: a tier row is required`);
+    if (!Array.isArray(json.ladder) || json.ladder.length !== LEVERS.length || new Set(json.ladder).size !== json.ladder.length || json.ladder.some((l) => !LEVERS.includes(l))) errors.push(`${name}.ladder: must list each of ${LEVERS.join(', ')} exactly once`);
+    for (const k of ['windowFrames', 'overWindows']) if (!Number.isInteger(json[k]) || json[k] < 1) errors.push(`${name}.${k}: must be an integer >= 1`);
+  }
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
