@@ -181,7 +181,12 @@ test('source pins: dropCorpse frees what the corpse owns, leaveCorpse hands the 
   assert.match(SRC, /freeSlot\(corpses\.filter\(\(c\) => c\.rd\)\.map\(\(c\) => c\.slot\), count\)/, 'a new ragdoll takes the first lane no corpse holds');
   assert.match(bodyOf('armCorpse'), /makeCorpseRig\(chunk, real, group, c\.root, partBones, rigged\.anchor, bindOpts, spawnHips, manifest\)/);
   const cut = bodyOf('cutCorpse');
-  for (const need of ['rulesOn', 'disabled', '!gore', 'c.rd.state !== row.needs', 'c.done.has(unit)', 'c.rd.cut(unit', 'c.cutRig.update()', 'announce(event, c.id)']) assert.ok(cut.includes(need), `cutCorpse: ${need}`);
+  // Defaults-on (Dom 2026-10-27, he cuts bodies live): the M4 rules govern the LIVE opponent's hit cuts only; post-kill body cuts (the tap, the cue buttons, a corpse's own cut) stay on under the default ?rules=m4 and are the same under ?rules=v1
+  assert.doesNotMatch(cut, /rulesOn/, 'cutCorpse is not gated on the rules');
+  for (const fn of ['cutCue', 'cutUnitByTap', 'cutByTap']) if (new RegExp(`function ${fn}\\b`).test(SRC)) assert.doesNotMatch(bodyOf(fn), /rulesOn/, `${fn} is not gated on the rules`);
+  assert.doesNotMatch(SRC, /gore && !rulesOn/, 'no cue button is hidden by the rules');
+  assert.doesNotMatch(SRC, /(?:if \(|\|\| )rulesOn \|\| disabled/, 'no tap or cue is refused by the rules');
+  for (const need of ['disabled', '!gore', 'c.rd.state !== row.needs', 'c.done.has(unit)', 'c.rd.cut(unit', 'c.cutRig.update()', 'announce(event, c.id)']) assert.ok(cut.includes(need), `cutCorpse: ${need}`);
   const tap = bodyOf('tapCorpses');
   assert.match(tap, /for \(let i = corpses\.length - 1; i >= 0; i--\)/, 'newest first'); assert.match(tap, /c\.rd\.state !== row\.needs/); assert.match(tap, /cutCorpse\(/);
   assert.match(bodyOf('updateCues'), /cueOnScreen\(p\)/);

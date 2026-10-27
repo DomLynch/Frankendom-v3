@@ -4,6 +4,7 @@
 // per-mille integers once, and the step reads only those. Integers and IEEE basic maths only: no pow, sqrt or transcendental in the sim.
 // REAL TIME, per fighter: the timers are ticks on the fighter that owns them (Fighter.down; the attacker's Fighter.critical for the window), counted once per tick of his own duel, so one boss
 // going down never slows, locks or dilates anyone else's fight (Dom: a live MMO, others can attack at any time).
+import { type FeelDefaultRows, feelsOn } from './feel-defaults.ts';
 import { STEP } from './sim.ts';
 export type KnockStance = 'open' | 'guarding' | 'midSwing' | 'recovering';
 export type KnockRows = {
@@ -29,9 +30,10 @@ export function setKnockSim(rows: KnockSim | null): void { KNOCK_SIM = rows; }
 export const KNOCK_TICK_HZ = Math.round(1 / STEP);
 
 /** Rows -> the step's integers, or null when the page did not ask (`?feel=kick` among the comma separated ?feel= values). A bad row throws: a silent default would change a fight's outcome. */
-export function knockSimFor(rows: KnockRows | undefined, search = ''): KnockSim | null {
+export function knockSimFor(rows: KnockRows | undefined, search = '', defaults?: FeelDefaultRows): KnockSim | null {
   if (!rows) return null;
-  const asked = (new URLSearchParams(search).get(rows.flag.query) ?? '').split(',').map((s) => s.trim()).includes(rows.flag.value);
+  // `defaults` (data/feel-defaults.json, passed by src/client/main.ts only): the same answer the presentation registry gets, so ?kick=v1 / ?feel=v1 turn the sim knockdown off with the kick. Absent = the old opt-in grammar.
+  const asked = defaults ? rows.flag.query === defaults.query && feelsOn(defaults, search).includes(rows.flag.value) : (new URLSearchParams(search).get(rows.flag.query) ?? '').split(',').map((s) => s.trim()).includes(rows.flag.value);
   if (!asked) return null;
   if (rows.tickHz !== KNOCK_TICK_HZ) throw new Error(`feel-sim tickHz ${rows.tickHz} is not the sim's ${KNOCK_TICK_HZ} (sim.ts STEP)`);
   const ticks = (name: string, s: number): number => { const t = Math.round(s * rows.tickHz); if (!(Number.isFinite(s) && t >= 1)) throw new Error(`feel-sim ${name} ${s} s is under one tick`); return t; };
