@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { zoneFor } from '../src/zone/zone-rows.ts';
-import { OPENERS, inAggro, kill, openerOn, openerReach, spotsFor, tick, validateOpeners } from '../src/zone/spawns.ts';
+import { OPENERS, inAggro, kill, leashed, openerOn, openerReach, spotsFor, tick, validateOpeners } from '../src/zone/spawns.ts';
 import { initialState } from '../src/fight/sim.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -13,7 +13,7 @@ const spawns = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const hero = () => initialState();   // the pit's mark: where a newcomer stands
 
 test('the default is pinned: on, 5 s, one spawn (the yard Pitborn), ?opener=off; every number in range', () => {
-  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
+  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, reachMetres: 2, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
   assert.doesNotThrow(() => validateOpeners(OPENERS, spotsFor(ZONE)));
   assert.ok(OPENERS.delaySeconds >= ROWS.limits.delaySeconds[0] && OPENERS.delaySeconds <= ROWS.limits.delaySeconds[1]);
   assert.equal(openerOn(''), true); assert.equal(openerOn('?x=1'), true);
@@ -29,9 +29,11 @@ test('bad opener rows are refused: delay or count out of range, no spawn, a spaw
   assert.throws(bad({ spawns: [] }), /no spawn/); assert.throws(bad({ spawns: ['nobody'] }), /no spawn of the zone/);
 });
 
-test('the opener spawn can reach a newcomer at the mark: inside its leash (so it does not reset him at once)', () => {
-  const s = spawns().find((x) => x.id === OPENERS.spawns[0]);
-  assert.ok(Math.hypot(s.x - hero().x, s.z - hero().z) <= s.leash);
+test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is just beyond the plain 6 m leash)', () => {
+  const s = spawns().find((x) => x.id === OPENERS.spawns[0]), d = Math.hypot(s.x - hero().x, s.z - hero().z);
+  assert.ok(d > s.leash, 'beyond the plain leash: why the fight\'s leash is lifted');
+  assert.ok(d <= s.leash + OPENERS.reachMetres);
+  assert.equal(leashed(s, hero()), true); assert.equal(leashed(s, hero(), OPENERS.reachMetres), false);
 });
 
 test('before N nobody is in aggro; at N the opener spawn (only it) reaches him; the other two wait', () => {
@@ -45,7 +47,7 @@ test('before N nobody is in aggro; at N the opener spawn (only it) reaches him; 
 });
 
 test('the reach stops at the leash: a hero who wandered beyond it is left alone; count caps how many open', () => {
-  const s = spawns(), far = { x: s[0].x + s[0].leash + 1, z: s[0].z };
+  const s = spawns(), far = { x: s[0].x + s[0].leash + OPENERS.reachMetres + 1, z: s[0].z };
   assert.equal(inAggro(openerReach(s, OPENERS, 99, far), far), -1);
   const two = openerReach(s, { ...OPENERS, count: 1, spawns: ['pit-pitborn-east', 'yard-pitborn'] }, 99, hero());
   assert.equal(two.filter((x, i) => x.aggro !== s[i].aggro).length, 1, 'count 1: only the first listed');
@@ -65,6 +67,7 @@ test('the page wires it once: the clock runs when the assets are ready, any enga
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
   assert.match(main, /openerSpent = !ZONE \|\| !openerOn\(search\)/);
   assert.match(main, /if \(engaged\) openerSpent = true;/);
+  assert.match(main, /leashed\(spawns\[current\]!, hero, openerLift\)/);
   assert.match(main, /if \(practice\.finish\) openerSpent = true;/);
   assert.match(main, /if \(!openerSpent && assetsReady\) openerIdle \+= dt;/);
   assert.match(main, /inAggro\(openerSpent \? spawns : openerReach\(spawns, OPENERS, openerIdle, hero\), hero\)/);

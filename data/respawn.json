@@ -22,10 +22,11 @@
     "fallSeconds": 1.4
   },
   "openers": {
-    "about": "V1's openers (origins/zone-rows/zone1.row.json spawns.openers; world-rules firstFightSeconds 10): a zone that is not safe opens with a fight soon after the newcomer arrives. Strategy ruling 2026-10-27: auto-start stays OFF in the live zone (walk in or STRIKE); this is the gentle on-ramp. delaySeconds after the page is ready (assets loaded, the hero in control) with nobody engaged, the first `count` standing spawns of `spawns` (ids in the zone row) aggro the hero as if he had walked into their aggro: their aggro range grows to reach him (never past their own leash, so a hero who has wandered off is left alone) and the ordinary engagement starts (auto-draw, the boss walks up). The clock runs once per visit: any engagement, a kill or a death spends it (a hero who has fought is no newcomer; it does not re-arm after a kill or respawn). The other spawns wait for the hero's aggro as before. on:false or the link query `query`=`off` turns it off (#91: nothing until you walk). ?postkill=v1 has no zone, so no opener.",
+    "about": "V1's openers (origins/zone-rows/zone1.row.json spawns.openers; world-rules firstFightSeconds 10): a zone that is not safe opens with a fight soon after the newcomer arrives. Strategy ruling 2026-10-27: auto-start stays OFF in the live zone (walk in or STRIKE); this is the gentle on-ramp. delaySeconds after the page is ready (assets loaded, the hero in control) with nobody engaged, the first `count` standing spawns of `spawns` (ids in the zone row) aggro the hero as if he had walked into their aggro: their aggro range grows to reach him (never past their own leash plus reachMetres, 2 m: the newcomer at the pit's mark stands 6.4 m from the yard Pitborn, just beyond its 6 m leash, and that fight's leash is lifted by the same 2 m; a hero who has wandered further off is left alone) and the ordinary engagement starts (auto-draw, the boss walks up). The clock runs once per visit: any engagement, a kill or a death spends it (a hero who has fought is no newcomer; it does not re-arm after a kill or respawn). The other spawns wait for the hero's aggro as before. on:false or the link query `query`=`off` turns it off (#91: nothing until you walk). ?postkill=v1 has no zone, so no opener.",
     "on": true,
     "delaySeconds": 5,
     "count": 1,
+    "reachMetres": 2,
     "spawns": ["yard-pitborn"],
     "query": "opener",
     "off": "off"
@@ -34,6 +35,7 @@
     "about": "Validation ranges for the rows above.",
     "delaySeconds": [1, 60],
     "count": [1, 3],
+    "reachMetres": [0, 10],
     "fallSeconds": [0.1, 10],
     "startAfterSeconds": [0, 30],
     "minDistance": [0.5, 20],

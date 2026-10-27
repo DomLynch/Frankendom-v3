@@ -189,7 +189,7 @@ const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 
 const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
 if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
-let openerIdle = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
+let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
 let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, engaged = false, killMarked = false;
 const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
@@ -209,7 +209,7 @@ const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(in
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
   spawns = timers.spawns;
-  if (practice.finish) openerSpent = true;   // opener: a kill or a death spends it (no re-arm)
+  if (practice.finish) { openerSpent = true; openerLift = 0; }   // opener: a kill or a death spends it (no re-arm)
   if (heroStands() && !killMarked) { killMarked = true; engaged = false; spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
     const near = inAggro(spawns, hero), next = near >= 0 ? near : timers.due.includes(current) ? nearestStanding(spawns, hero) : -1;
@@ -220,7 +220,8 @@ function zoneStep(dt: number) {
     if (engaged) openerSpent = true;   // opener: any engagement spends it
     if (!openerSpent && assetsReady) openerIdle += dt;   // the newcomer's idle clock; its due spawn's aggro reaches him (spawns.ts openerReach)
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
-    if (engaged) { if (leashed(spawns[current]!, hero)) hand(current, hero); }   // beyond the leash he resets at his spot at full health
+    if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = OPENERS.reachMetres;   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
+    if (engaged) { if (leashed(spawns[current]!, hero, openerLift)) hand(current, hero); }   // beyond the leash he resets at his spot at full health
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
     else { const at = held(spawns, current, hero, WORLD.retargetMargin); if (at >= 0 && at !== current) hand(at, hero); }   // nobody engaged: the sim holds the nearest
   }
