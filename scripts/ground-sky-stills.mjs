@@ -17,7 +17,7 @@ await page.waitForTimeout(WAIT);   // the strip is fetched after the first frame
 await page.evaluate(() => { globalThis.__pin = { x: 0, z: 0 }; setInterval(() => { const h = globalThis.__v3Fight?.fighter, p = globalThis.__pin; if (h) { h.x = p.x; h.z = p.z; } }, 4); });
 for (const z of AT) {
   await page.evaluate((p) => { globalThis.__pin = p; }, { x: 0, z });
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(Number(process.env.PLACE_MS ?? 20000));   // the follow camera eases to a teleported hero: wait until it has arrived
   await page.screenshot({ path: `${out}/${tag}-${z}.jpg`, type: 'jpeg', quality: 85 });
   console.log(`${tag} at ${z}`, JSON.stringify(await page.evaluate(() => ({ x: globalThis.__v3Fight?.fighter.x, z: globalThis.__v3Fight?.fighter.z }))));
 }
