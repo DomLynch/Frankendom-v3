@@ -4,7 +4,7 @@
 # and prints the result tarball base64 between LIMBS-TAR markers (a job has no other way out):  sed -n '/LIMBS-TAR-BEGIN/,/LIMBS-TAR-END/p' log | sed '1d;$d' | base64 -d | tar xz
 set -uo pipefail
 PORT=8761; OUT=/tmp/limbs-out; mkdir -p "$OUT"
-node scripts/build.mjs >/dev/null 2>&1 || { echo "build failed"; exit 1; }
+node scripts/build.mjs >/tmp/build.log 2>&1 || { echo "build failed"; tail -15 /tmp/build.log; exit 1; }
 (node scripts/serve.mjs $PORT >/tmp/serve.log 2>&1 &); sleep 3
 npm i --no-save playwright@1.62.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1 || { echo "playwright install failed"; exit 1; }
 export DPR=1 FMT=jpg EVERY=6 LIMB=leg QUIET=150 AT=480 SECONDS=3
