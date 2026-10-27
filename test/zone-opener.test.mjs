@@ -10,12 +10,12 @@ import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ZONE = zoneFor(''), ROWS = read('../data/respawn.json'), FIGHT = read('../data/fight.json');
-setPlayScale(playScaleFor(FIGHT.opponent, Infinity));   // the circle the page fights in (main.ts fresh()): the newcomer's mark is z 2, not the full-size 4
+setPlayScale(ROWS.world.pitScale);   // the circle the zone fights in (main.ts fresh(): data/respawn.json world.pitScale): the newcomer's mark is z 2.6
 const spawns = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const hero = () => initialState();   // the pit's mark: where a newcomer stands
 
 test('the default is pinned: on, 5 s, one spawn (the yard Pitborn), ?opener=off; every number in range', () => {
-  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, reachMetres: 2, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
+  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, reachMetres: 5, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
   assert.doesNotThrow(() => validateOpeners(OPENERS, spotsFor(ZONE)));
   assert.ok(OPENERS.delaySeconds >= ROWS.limits.delaySeconds[0] && OPENERS.delaySeconds <= ROWS.limits.delaySeconds[1]);
   assert.equal(openerOn(''), true); assert.equal(openerOn('?x=1'), true);
@@ -34,7 +34,7 @@ test('bad opener rows are refused: delay or count out of range, no spawn, a spaw
 test('the opener spawn can reach a newcomer at the mark: inside its leash plus the reach (the mark is 6 m from the north Pitborn, just beyond the plain 5 m leash)', () => {
   const s = spawns().find((x) => x.id === OPENERS.spawns[0]), d = Math.hypot(s.x - hero().x, s.z - hero().z);
   assert.ok(d > s.leash, 'beyond the plain leash: why the fight\'s leash is lifted');
-  assert.ok(d <= s.leash + OPENERS.reachMetres);
+  assert.ok(d <= s.leash + OPENERS.reachMetres - 1, `the mark is ${d.toFixed(2)} m from the yard Pitborn: at least 1 m inside leash ${s.leash} + reach ${OPENERS.reachMetres}`);
   assert.equal(leashed(s, hero()), true); assert.equal(leashed(s, hero(), OPENERS.reachMetres), false);
 });
 

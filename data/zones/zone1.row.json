@@ -11,8 +11,8 @@
     { "id": "duel-pit", "name": "The Duel pit", "shape": "rect", "min": [217, 38], "max": [235, 56], "pvp": "on", "spawnsAllowed": true }
   ],
   "spawns": [
-    { "id": "yard-pitborn", "kind": "pitborn", "position": { "x": 226, "z": 43 }, "respawnSeconds": 40, "roster": true, "behaviour": { "aggro": 2.5, "leash": 5, "roam": 2.6, "campSize": [1, 1] } },
-    { "id": "pit-pitborn-east", "kind": "pitborn", "position": { "x": 229.46, "z": 49 }, "respawnSeconds": 60, "roster": true, "behaviour": { "aggro": 2.5, "leash": 5, "roam": 2.6, "campSize": [1, 1] } },
-    { "id": "pit-pitborn-west", "kind": "pitborn", "position": { "x": 222.54, "z": 49 }, "respawnSeconds": 90, "roster": true, "behaviour": { "aggro": 2.5, "leash": 5, "roam": 2.6, "campSize": [1, 1] } }
+    { "id": "yard-pitborn", "kind": "pitborn", "position": { "x": 226, "z": 40.83 }, "respawnSeconds": 40, "roster": true, "behaviour": { "aggro": 2.5, "leash": 5, "roam": 2.6, "campSize": [1, 1] } },
+    { "id": "pit-pitborn-east", "kind": "pitborn", "position": { "x": 231.34, "z": 50.09 }, "respawnSeconds": 60, "roster": true, "behaviour": { "aggro": 2.5, "leash": 5, "roam": 2.6, "campSize": [1, 1] } },
+    { "id": "pit-pitborn-west", "kind": "pitborn", "position": { "x": 220.66, "z": 50.09 }, "respawnSeconds": 90, "roster": true, "behaviour": { "aggro": 2.5, "leash": 5, "roam": 2.6, "campSize": [1, 1] } }
   ]
 }

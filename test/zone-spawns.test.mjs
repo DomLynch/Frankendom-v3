@@ -15,15 +15,15 @@ import { WORLD, held, idleOnes, inAggro, isStanding, kill, leashed, nearestStand
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const ZONE = zoneFor(''), FIGHT = read('../data/fight.json'), ROWS = read('../data/respawn.json');
-setPlayScale(playScaleFor(FIGHT.opponent, Infinity));   // the circle the page fights in (main.ts fresh())
+setPlayScale(ROWS.world.pitScale);   // the circle the zone fights in (main.ts fresh(): data/respawn.json world.pitScale; the single fight keeps playScaleFor)
 const wall = () => play.RADIUS;
 const start = () => initialState();
 const list = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 6.5 });
-  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, pitScale: 0.65 });
+  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
 
@@ -36,10 +36,10 @@ test('the shipped zone row: three spots inside the pit circle, none in the hero\
     assert.ok(dist(s, start()) > s.aggro, `${s.id}: the page does not open on a fight`);
     assert.ok(s.leash > s.aggro);
   }
-  assert.deepEqual(spots.map((s) => [s.x, s.z]).map(([x, z]) => [Math.round(x * 100) / 100, Math.round(z * 100) / 100]), [[0, -4], [3.46, 2], [-3.46, 2]]);
+  assert.deepEqual(spots.map((s) => [s.x, s.z]).map(([x, z]) => [Math.round(x * 100) / 100, Math.round(z * 100) / 100]), [[0, -6.17], [5.34, 3.09], [-5.34, 3.09]]);
   // Dom 2026-10-27 'space them about two times apart' (they stood 3.5 m from their neighbour): every pair is a row's distance apart or more, about 7 m
   for (const a of spots) for (const b of spots) if (a !== b) assert.ok(dist(a, b) >= WORLD.minSpacing, `${a.id} and ${b.id} are ${dist(a, b).toFixed(2)} m apart`);
-  assert.ok(Math.min(...spots.flatMap((a) => spots.filter((b) => b !== a).map((b) => dist(a, b)))) >= 6.9, 'about 7 m between neighbours, twice the old 3.5 m');
+  assert.ok(Math.min(...spots.flatMap((a) => spots.filter((b) => b !== a).map((b) => dist(a, b)))) >= 10.5, 'more than 10 m between neighbours (Dom: still too close at 6.9 m)');
   for (const s of spots) for (const t of spots) if (t !== s) assert.ok(s.leash < dist(s, t), `${s.id}: its leash (${s.leash} m) is shorter than the way to ${t.id}`);
   assert.equal(new Set(spots.map((s) => s.respawnSeconds)).size, 3, 'each has its own timer');
 });
@@ -51,7 +51,7 @@ test('bad spots are refused: outside the wall, on the hero\'s start, inside each
   assert.throws(() => validateSpots(edit((s) => { s[1].x = s[0].x + 1; s[1].z = s[0].z; }), start(), wall()), /inside each other's aggro/);
   assert.throws(() => validateSpots(ok, start(), wall(), WORLD, 'nobody'), /one foe rig/);
   assert.throws(() => validateSpots(edit((s) => { s[1].id = s[0].id; }), start(), wall()), /share an id|aggro/);
-  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -2; s[1].x = 3; s[1].z = -2; }), start(), wall()), /closer than 6\.5 m/);   // outside each other's 2.5 m aggro, inside the spacing row
+  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -2; s[1].x = 3; s[1].z = -2; }), start(), wall()), /closer than 10 m/);   // outside each other's 2.5 m aggro, inside the spacing row
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, minSpacing: 99 }), /minSpacing/);
   assert.throws(() => validateSpots([], start(), wall()), /no spawn spots/);
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, retargetMargin: 99 }), /retargetMargin/);
@@ -144,6 +144,10 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   assert.match(main, /startAction\(autoStart && \(!ZONE \|\| engaged\), practice, intent\.action\)/);
   assert.match(main, /view\.idleFoes\(idleOnes\(spawns, current\)/);
   assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, ZONE\.spawn\.kind\)/);
+  assert.match(main, /setPlayScale\(ZONE \? WORLD\.pitScale : playScaleFor\(opponentId, Infinity\)\)/, 'the zone fights in the wider pit; the single fight (ZONE null, ?postkill=v1) keeps playScaleFor, Gate 0 untouched');
+  assert.ok(ROWS.world.pitScale * 11.7 - 0.425 - ROWS.world.edgeMetres > 0 && 0.65 * 11.7 - 0.425 - 1 >= 6.1, 'the zone wall holds spots a ring of 6.1 m or more');
+  const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');   // code with the trailing // comments stripped
+  assert.match(live, /setPlayScale\([^;]*\); setLateNotice\(true\); setStab\(true\); setStanceRows\(true\);/, 'the era flags are live code in fresh(), not swallowed by a comment');
   assert.match(main, /spawns = kill\(spawns, current\)/);
   assert.match(main, /leashed\(spawns\[current\]!, hero(, openerLift)?\)/);
   assert.doesNotMatch(main, /respawnDue|sinceKill/);

@@ -9,8 +9,8 @@ import { M } from '../fight/detmath.ts';
 import { respawnPose } from '../fight/zone-loop.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number };
-type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number] };
+export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; pitScale: number };
+type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; pitScale: [number, number] };
 export const WORLD = ROWS.world as WorldRows;
 const LIMITS = ROWS.limits as unknown as Limits;
 
@@ -41,7 +41,7 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
  * one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
  */
 export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kind?: string, limits: Limits = LIMITS): void {
-  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing'] as const) {
+  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'pitScale'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
