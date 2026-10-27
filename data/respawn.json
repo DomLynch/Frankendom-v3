@@ -31,6 +31,19 @@
     "flingWindowMs": 80,
     "flingSmoothing": 0.5
   },
+  "lockBreak": {
+    "about": "Dom 2026-10-28, on his phone: 'free looking: change your direction and RUN in any direction ... I can only BACKSTEP; I can't turn 360 and run back to where I came from.' Ruling: keep the lock-on in combat but make it SOFT: breakable, not too easy. The lock (pair camera; the hero faces the foe and strafes or backsteps) holds by default. It breaks when the stick points more than breakAngleDeg from the foe (180 = straight away), at least minPush hard, and is held commitSeconds (a tap or drift resets), or a roll is pointed away beyond the same angle. Refused while the hero is hurt, knocked down or dead, while the foe's attack is live (its phase is attack), before minEngageSeconds of the fight, or with less than staminaCost stamina; a break costs staminaCost. A broken lock gives the camera to the player (look any way, 360, it stays) and the hero turns to face the way he runs. It locks on again on an attack press, or when the stick points within relockAngleDeg of the foe for relockSeconds. When the target dies or goes past its leash the lock is simply gone and the next fight starts locked. The boss keeps its leash and walk-back; the duel sim is untouched (the page passes lock:false to it, its own free facing). ?lock=v1 and ?postkill=v1 = the old hard lock.",
+    "on": true,
+    "query": "lock",
+    "off": "v1",
+    "breakAngleDeg": 120,
+    "minPush": 0.5,
+    "commitSeconds": 0.35,
+    "staminaCost": 15,
+    "minEngageSeconds": 1,
+    "relockAngleDeg": 60,
+    "relockSeconds": 0.5
+  },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
     "minDistance": 3.25
@@ -120,6 +133,15 @@
     "leashMargin": [0, 50],
     "pitScale": [0.3, 1],
     "spreadRadiusMetres": [6, 200],
-    "centre": [0, 1]
+    "centre": [0, 1],
+    "lockBreak": {
+      "breakAngleDeg": [60, 180],
+      "minPush": [0.1, 1],
+      "commitSeconds": [0, 3],
+      "staminaCost": [0, 100],
+      "minEngageSeconds": [0, 30],
+      "relockAngleDeg": [0, 120],
+      "relockSeconds": [0, 5]
+    }
   }
 }

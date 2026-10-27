@@ -40,13 +40,13 @@ export function freeCameraFor(zone: boolean, search = '', rows: Shipped = SHIPPE
 }
 
 /** What the page knows this frame. `ceremonyOver`: the kill's finisher has finished playing, or startAfterSeconds is up. `engaged`: a boss is fighting him. */
-export type CameraWorld = { finished: boolean; heroStands: boolean; ceremonyOver: boolean; roaming: boolean; engaged: boolean };
+export type CameraWorld = { finished: boolean; heroStands: boolean; ceremonyOver: boolean; roaming: boolean; engaged: boolean; broken?: boolean };   // broken: the soft lock was broken (src/fight/lock-break.ts): the player runs free, the camera is his even in a fight
 
 /** Whether the camera follows the hero freely this frame: after a kill once he walks or the ceremony is over, and while nobody fights him. Never while his own death plays. A fight is framed by the lock unless the row says `follow`. */
 export const wantsFreeCamera = (rows: FreeCameraRows | null, w: CameraWorld): boolean => {
   if (!rows) return false;
   if (w.finished) return w.heroStands && (w.roaming || w.ceremonyOver);
-  return rows.fight === 'follow' || !w.engaged;
+  return rows.fight === 'follow' || !w.engaged || !!w.broken;
 };
 
 /** Whether the stick takes the hero's body now: after the kill the ceremony hands him over (finished, or startAfterSeconds), or any stick input does when the row says so. */
