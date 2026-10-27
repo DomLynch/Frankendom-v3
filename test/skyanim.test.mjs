@@ -220,6 +220,7 @@ test('planet sphere: the turn wraps once per secondsPerTurn, ?skyanim=off holds 
   let eyes = 0; for (let i = 0; i < 2400; i++) { live.a.update(0.05); if (live.u.uEyeAmt.value > 0) eyes++; } assert.ok(eyes > 0, 'the eyes fire within two minutes');
   const noEyes = structuredClone(A); noEyes.eyes.on = false; const ne = mk('', noEyes); for (let i = 0; i < 2400; i++) { ne.a.update(0.05); assert.equal(ne.u.uEyeAmt.value, 0); }
   const off = mk('?skyanim=off', A), o0 = off.u.uPlanetTurn.value; for (let i = 0; i < 2400; i++) off.a.update(0.05); assert.equal(off.u.uPlanetTurn.value, o0, '?skyanim=off holds the planet still'); assert.equal(off.u.uEyeAmt.value, 0); assert.equal(off.u.uDropA.value, 0);
+  assert.equal(S.on, false, 'the sphere ships OFF (flatter than the painted cut-out); the code stays behind its row for a better texture');
   const noSphere = structuredClone(A); noSphere.planet.sphere.on = false; assert.equal(mk('', noSphere).u.uSphereOn.value, 0, 'rollback row: sphere.on false keeps the flat cut-out');
   const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
   for (const k of ['secondsPerTurn', 'startTurns', 'discFraction', 'featherPx', 'holdMinSeconds', 'everyEvents', 'spawnMinSeconds', 'fallDistancePx', 'accelPx', 'stretchFromSpeedPx', 'fadeOutPx', 'waves']) assert.match(src, new RegExp(`\\b${k}\\b`), k);

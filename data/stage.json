@@ -84,7 +84,7 @@
             "lowerFadeFrom": 0.35
           },
           "sphere": {
-            "on": true,
+            "on": false,
             "file": "11_planet_surface.webp",
             "loadScale": 0.5,
             "secondsPerTurn": 90,
@@ -397,7 +397,7 @@
             "fallDistancePx": 150,
             "fadeInSeconds": 0.4,
             "fadeOutPx": 45,
-            "strength": 0.9,
+            "strength": 0.7,
             "stretchFromSpeedPx": 80,
             "seed": 1027
           }
