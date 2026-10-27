@@ -7,6 +7,12 @@
   "cameraFarMetres": 420,
   "cameraOffsetMetres": 20,
   "groundFollow": { "on": true, "snapMetres": 1.3 },
+  "floorDepthPush": {
+    "about": "Sand quality (Dom 2026-10-27: 'glassy, wavy bands'). The grid lies on the floor in the same plane. Out past a few tens of metres the depth buffer cannot tell the two apart (the far plane is 420 m), so the floor and the grid lines fought for each pixel and drew wavy, scalloped rings over the distance. The floor has no texture and no reflection in play (flat colour, roughness 1): nothing else was wrong. This pushes the floor's depth back a hair (three.js polygonOffset, measured in the depth buffer's own steps, so the push grows with distance) so the grid always wins: the floor's colour, lighting and fog are untouched. Zone only (drawOpenGround); ?sand=v1 = the zone's floor without the push; ?ground=v1 and ?postkill=v1 never build it.",
+    "flag": { "query": "sand", "off": "v1" },
+    "factor": 1,
+    "units": 4
+  },
   "limits": {
     "about": "Validation ranges for the rows above.",
     "groundRadiusMetres": [30, 1000],
@@ -14,6 +20,8 @@
     "edgeVisibility": [0.001, 0.5],
     "cameraFarMetres": [50, 1000],
     "cameraOffsetMetres": [0, 100],
-    "snapMetres": [0.1, 50]
+    "snapMetres": [0.1, 50],
+    "depthFactor": [0, 10],
+    "depthUnits": [0, 100]
   }
 }
