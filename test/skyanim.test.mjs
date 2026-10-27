@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
 import { createSkyline, SKYLINE } from '../src/fight/skyline.ts';
 import { plateFile, plateFlat } from '../src/fight/skyplate.ts';
-import { animOn, spinShift, bandCentre, spriteFrame, createSkyAnim, SKY_ANIM } from '../src/fight/skyanim.ts';
+import { animOn, spinShift, bandCentre, spriteFrame, createSkyAnim, SKY_ANIM, seededRandom, sparkleEnvelope, createSparkler, breathWindow, sineOffsetPx } from '../src/fight/skyanim.ts';
 
 const STAGE = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8'));
 const bad = (mut) => { const s = structuredClone(STAGE); mut(s.skyline.plate.anim); return validateFile('stage', s); };
@@ -100,6 +100,56 @@ test('it patches the plate material in place: the shader gains the layer lines, 
 test('?skyflat=1 loads the flattened plate and none of the layers; the default loads the clean plate; ?skyplate=v1 still draws the old strip', () => {
   assert.equal(plateFile('', P), P.file); assert.equal(plateFile('?skyflat=1', P), P.flatFile); assert.equal(plateFlat('?skyflat=1', P), true); assert.equal(plateFlat('', P), false);
   const old = createSkyline(new THREE.Scene(), '?skyplate=v1', SKYLINE, () => new Promise(() => {})); assert.equal(old.mesh.geometry.parameters.thetaLength, Math.PI * 2); old.dispose();
+});
+
+test('sky life rows: sparkle, crown glow, breathing and the globe bob validate, each has its own on, bad rows are refused', () => {
+  for (const k of ['sparkle', 'crownGlow', 'breathing']) assert.equal(typeof A[k].on, 'boolean', k);
+  assert.equal(typeof A.globe.bob.on, 'boolean');
+  const cases = [(a) => { delete a.sparkle; }, (a) => { delete a.breathing; }, (a) => { delete a.crownGlow; }, (a) => { delete a.globe.bob; }, (a) => { a.sparkle.extra = 1; }, (a) => { a.sparkle.color = 'white'; },
+    (a) => { a.sparkle.maxGapSeconds = 0.2; }, (a) => { a.sparkle.minGapSeconds = 0.1; a.sparkle.durationSeconds = 1; }, (a) => { a.sparkle.anchors = [a.sparkle.anchors[0]]; }, (a) => { a.sparkle.anchors[0].u = 2; },
+    (a) => { delete a.sparkle.anchors[1].scale; }, (a) => { a.sparkle.size = 0; }, (a) => { a.sparkle.seed = 1.5; }, (a) => { a.crownGlow.pulseSeconds = 0; }, (a) => { a.crownGlow.centre.v = -1; },
+    (a) => { a.breathing.rect.u1 = a.breathing.rect.u0; }, (a) => { a.breathing.featherFraction = 0; }, (a) => { a.breathing.amplitudePx = 99; }, (a) => { a.breathing.on = 1; }, (a) => { a.globe.bob.amplitudePx = -1; }, (a) => { a.globe.bob.periodSeconds = 0; }, (a) => { a.globe.bob.phase = 2; }];
+  for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad sky-life row #${i} is refused`);
+});
+
+test('sparkle: the seeded schedule is the same every visit, one glint at a time, gaps within min..max, never the same anchor twice running, every anchor lands on the titan', () => {
+  const S = A.sparkle, r1 = seededRandom(S.seed), r2 = seededRandom(S.seed); for (let i = 0; i < 20; i++) assert.equal(r1(), r2());
+  assert.equal(sparkleEnvelope(0), 0); assert.equal(sparkleEnvelope(1), 0); assert.ok(sparkleEnvelope(0.2) > 0.99); assert.ok(sparkleEnvelope(0.1) < sparkleEnvelope(0.2) && sparkleEnvelope(0.6) < sparkleEnvelope(0.2));
+  const sp = createSparkler(S), starts = [], anchors = []; let was = 0;
+  for (let t = 0; t < 600; t += 0.02) { const s = sp.at(t); if (s.intensity > 0 && was === 0) { starts.push(t); anchors.push(s.anchor); } was = s.intensity; }
+  assert.ok(starts.length > 60, `sparkles keep firing (${starts.length})`); assert.ok(starts[0] >= S.firstDelaySeconds - 1e-9 && starts[0] < S.firstDelaySeconds + 0.1);
+  for (let i = 1; i < starts.length; i++) { const gap = starts[i] - starts[i - 1] - S.durationSeconds; assert.ok(gap >= S.minGapSeconds - 0.1 && gap <= S.maxGapSeconds + 0.1, `gap ${gap}`); assert.notEqual(anchors[i], anchors[i - 1]); }
+  assert.equal(new Set(anchors).size, S.anchors.length, 'every anchor gets a turn');
+  for (const a of S.anchors) assert.ok(a.u > 0.5 && a.u < 0.62 && a.v > 0.5 && a.v < 0.7, `${a.name} sits on the face and crown`);
+  assert.ok(S.anchors.some((a) => a.name === 'teeth') && S.anchors.filter((a) => a.name.startsWith('crown')).length >= 2);
+});
+
+test('breathing and bob: a feathered window (zero at the rect edge and outside, one in the middle), a sine in plate pixels, the horizon and the sides stay still', () => {
+  const B = A.breathing, r = B.rect, mid = [(r.u0 + r.u1) / 2, (r.v0 + r.v1) / 2];
+  assert.equal(breathWindow(B, ...mid), 1); assert.equal(breathWindow(B, r.u0, mid[1]), 0); assert.equal(breathWindow(B, mid[0], r.v1), 0); assert.equal(breathWindow(B, 0.1, 0.6), 0);
+  assert.equal(breathWindow(B, mid[0], SKYLINE.plate.horizonFraction), 0, 'the horizon row stays still'); assert.ok(r.v1 <= SKYLINE.plate.horizonFraction);
+  assert.ok(breathWindow(B, r.u0 + 0.01, mid[1]) < 1);
+  assert.ok(B.amplitudePx <= 6, 'a few plate pixels'); assert.ok(r.u1 <= A.globe.centre.u - A.globe.radius, 'the globe and its fingertip are outside the lift (the window is 0 at the rect edge)');
+  assert.ok(Math.abs(sineOffsetPx(4, 6, 0, 1.5) - 4) < 1e-9); assert.ok(Math.abs(sineOffsetPx(4, 6, 0, 3)) < 1e-9); assert.ok(Math.abs(sineOffsetPx(3, 4, 0.25, 0) - 3) < 1e-9);
+  assert.ok(A.globe.bob.amplitudePx <= 4);
+  const face = P.face; assert.ok(face.u > r.u0 && face.u < r.u1 && face.v > r.v0 && face.v < r.v1, 'the face is inside the breath');
+});
+
+test('sky life is presentation only and costs a clock: the shader gains the lines, ?skyanim=off stills all four, each effect row off stills just that one', () => {
+  const mk = (search, row) => { const a = createSkyAnim(search, 4096, 1024, row), m = new THREE.MeshBasicMaterial(); a.apply(m); const sh = { uniforms: {}, fragmentShader: '#include <common>\nvoid main(){\n#include <map_fragment>\n}' }; m.onBeforeCompile(sh, null); return { a, u: sh.uniforms, sh }; };
+  const live = mk('', A); assert.match(live.sh.fragmentShader, /uBreathLift/); assert.match(live.sh.fragmentShader, /uSparkI/); assert.match(live.sh.fragmentShader, /uBob/); assert.match(live.sh.fragmentShader, /uCrownI/);
+  for (let i = 0; i < 400; i++) live.a.update(0.05);
+  assert.notEqual(live.u.uBreathLift.value, 0); assert.notEqual(live.u.uBob.value, 0); assert.ok(live.u.uCrownI.value > 0);
+  const off = mk('?skyanim=off', A); for (let i = 0; i < 400; i++) off.a.update(0.05);
+  for (const k of ['uBreathLift', 'uBob', 'uSparkI', 'uCrownI']) assert.equal(off.u[k].value, 0, `${k} still under ?skyanim=off`);
+  const only = (mut) => { const row = structuredClone(A); mut(row); return mk('', row); };
+  const noB = only((r) => { r.breathing.on = false; }), noG = only((r) => { r.globe.bob.on = false; }), noS = only((r) => { r.sparkle.on = false; }), noC = only((r) => { r.crownGlow.on = false; });
+  for (const x of [noB, noG, noS, noC]) for (let i = 0; i < 400; i++) x.a.update(0.05);
+  assert.equal(noB.u.uBreathLift.value, 0); assert.notEqual(noB.u.uBob.value, 0); assert.equal(noG.u.uBob.value, 0); assert.notEqual(noG.u.uBreathLift.value, 0);
+  assert.equal(noC.u.uCrownI.value, 0); assert.equal(noS.u.uSparkI.value, 0);
+  let seen = 0; const live2 = mk('', A); for (let i = 0; i < 1200; i++) { live2.a.update(0.05); if (live2.u.uSparkI.value > 0) seen++; } assert.ok(seen > 0, 'a sparkle fires within a minute');
+  const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
+  for (const k of ['featherFraction', 'amplitudePx', 'durationSeconds', 'minGapSeconds', 'maxGapSeconds', 'firstDelaySeconds', 'anchors', 'radiusU']) assert.match(src, new RegExp(`\\b${k}\\b`), k);
 });
 
 test('the skyline plate shows once its layers are in, carries the patched material, and the follow/fade path still runs', async () => {
