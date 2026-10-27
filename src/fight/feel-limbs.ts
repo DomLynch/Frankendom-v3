@@ -4,7 +4,7 @@
 //   sword arm -> the arm hangs (the guard drops) and, after `drop.afterS`, the weapon leaves his hand and falls, bounces and lies on the floor;
 //   off arm, torso, head -> the arm hangs, the spine hunches, the head lolls.
 // INPUT: the sim's per-part budget fractions (ctx.limbs(): 1 whole .. 0 gone; keys leg_left, leg_right, arm_left, arm_right, head, torso; V3 Dev's ruling, never a Jolt value). With none handed yet
-// (the sim side is not wired) the evaluator's own part HP is the input on a local host, for the stills and tests only (?rules=m4: window.__v3Rules.fighter()).
+// (the sim side is not wired) the evaluator's own part HP is the input (?rules=m4: window.__v3Rules.fighter(), read only; the stills set a part through its local-host-only debug.setPartHp).
 // OUTPUT: ctx.emit('feel:limp', {part, level}), ('feel:guard_drop', {side}), ('feel:weapon_drop', {}) (names in the rows) as the presentation of the same facts; the numbers the sim should use
 // are the rows' `sim` blocks. PRESENTATION ONLY here: speed, guard and swing changes are the sim's (Strategy's ruling 2026-10-27); this file never imports duel.ts.
 // Pure core (levels, gait, stumble, the plan of motor strengths and bone shares, the drop's fall) first, then the part that touches three and the ragdoll.
@@ -157,6 +157,7 @@ export type Env = {
 
 export function createLimbs(rows: LimbRows, env: Env) {
   const P = rowsOf(rows), levels = new Map<string, number>(), stepOf = (l: number) => Math.floor(l / rows.levelStep + 1e-9);
+  let touched: string[] = [];   // the ragdoll parts whose motor strength this module set last frame
   let t = 0, sinceStumble = 1e9, stumbleAge = -1, armZeroFor = -1, dropped = false, clone: THREE.Object3D | undefined, hidden: THREE.Object3D | undefined, fall: Fall | undefined;
   const spin = new THREE.Vector3(), flat = new THREE.Quaternion(), from = new THREE.Quaternion(), tmpQ = new THREE.Quaternion();
   const cost = { frames: 0, totalMs: 0, maxMs: 0, stumbles: 0, last: null as null | { strength: Record<string, number>; share: Record<string, number> } };
@@ -165,6 +166,7 @@ export function createLimbs(rows: LimbRows, env: Env) {
     get dropped() { return dropped; },
     /** A heavy or light Hit landed on him. Starts a stumble when the rows say. */
     hit(e: CombatEvent) {
+      if (!rows.on) return;
       const f = env.fighter();
       if (f && env.active() && stumbles(rows, f, heavyHit(e), sinceStumble)) { stumbleAge = 0; sinceStumble = 0; cost.stumbles++; }
     },
@@ -173,19 +175,29 @@ export function createLimbs(rows: LimbRows, env: Env) {
       levels.clear(); stumbleAge = -1; sinceStumble = 1e9; armZeroFor = -1; dropped = false; fall = undefined;
       if (clone) { clone.removeFromParent(); clone = undefined; }
       if (hidden) { hidden.visible = true; hidden = undefined; }
-      env.rd()?.setMotorStrength(1);
+      if (touched.length) env.rd()?.setMotorStrength(Object.fromEntries(touched.map((p) => [p, 1])));   // only the parts this module dipped: another module's dips (clash, hitreact) are theirs to end
+      touched = [];
     },
+    /** Frames he is not alive: the dropped weapon keeps falling and lies where it lands (nothing else moves, no events). */
+    settle(dt: number) { if (rows.on && clone && fall) weapon(undefined, dt, []); },
     /** Every frame he is alive. dt: the frame's presentation seconds. */
     frame(dt: number) {
+      if (!rows.on) return;
       const f = env.fighter(), rd = env.rd();
       if (!f || !rd) return;
       const start = performance.now(), sword = f.parts[`arm_${f.sword_side}`];
       if (dropped && sword && sword.hp / sword.max > 0) api.reset();   // renewed: he is whole again
       t += dt; sinceStumble += dt; if (stumbleAge >= 0) stumbleAge += dt;
-      const plan = planOf(rows, f, t, stumbleAge);
-      if (stumbleAge >= 0 && !(P.leg.stumble && stumbleDepth(P.leg.stumble, stumbleAge) > 0)) stumbleAge = -1;
+      const plan = planOf(rows, f, t, stumbleAge), st = P.leg.stumble;
+      if (stumbleAge >= 0 && !(st && stumbleAge < st.inS + st.holdS + st.upS)) stumbleAge = -1;   // over when its time is up (a frame of dt 0 right after the blow, a hit-stop, must not end it)
       announce(plan.hurt);
-      if (env.active()) { rd.setMotorStrength({ all: 1, ...plan.strength }); env.blend(plan.share); env.hips(plan.hips); }
+      // Whole (nothing hurt, no stumble, nothing dipped last frame): no motor, bone or pelvis call at all. Otherwise only the parts this module asks for are set, and the ones it dipped
+      // last frame and no longer asks for go back to 1 (never `all`: that would undo clash's and hitreact's dips every frame).
+      const showing = plan.hurt.length > 0 || stumbleAge >= 0;
+      if (env.active()) {
+        if (showing || touched.length) { rd.setMotorStrength({ ...Object.fromEntries(touched.map((p) => [p, 1])), ...plan.strength }); touched = Object.keys(plan.strength); }
+        if (showing) { env.blend(plan.share); env.hips(plan.hips); }
+      }
       weapon(f, dt, plan.hurt);
       const ms = performance.now() - start;
       cost.frames++; cost.totalMs += ms; cost.maxMs = Math.max(cost.maxMs, ms); cost.last = { strength: plan.strength, share: plan.share };
@@ -194,17 +206,18 @@ export function createLimbs(rows: LimbRows, env: Env) {
 
   // The events: a leg's level moves up a `levelStep` bucket -> limp; an arm reaches level 1 -> guard_drop (once).
   function announce(hurt: Hurt[]) {
+    for (const id of levels.keys()) if (!hurt.some((h) => h.id === id)) levels.delete(id);   // a part that is whole again (a renewal) can announce its next injury
     for (const h of hurt) {
       const prev = levels.get(h.id) ?? 0;
-      if (h.level <= prev) continue;
       levels.set(h.id, h.level);
+      if (h.level <= prev) continue;
       if (h.key === 'leg' && stepOf(h.level) > stepOf(prev)) env.emit(rows.events.limp, { part: h.id, level: Math.round(h.level * 1000) / 1000 });
       if ((h.key === 'arm_sword' || h.key === 'arm_off') && h.level >= 1 && prev < 1) env.emit(rows.events.guardDrop, { side: h.side });
     }
   }
 
   // The weapon: the sword arm at level 1 for `drop.afterS` seconds -> the weapon leaves his hand (a copy falls in the world; the original is hidden while he is without it).
-  function weapon(f: Fighter, dt: number, hurt: Hurt[]) {
+  function weapon(f: Fighter | undefined, dt: number, hurt: Hurt[]) {
     const arm = hurt.find((h) => h.key === 'arm_sword'), d = P.arm_sword.drop!;
     if (clone && fall) {
       stepFall(d, fall, dt);
@@ -251,10 +264,10 @@ export function flatQuaternion(node: THREE.Object3D, worldQuat: THREE.Quaternion
 }
 
 // ---- the registry ------------------------------------------------------------------------------------------------------------------------------------
-// The evaluator's part HP as a fighter (the stills' and tests' fallback while the sim hands no fractions): window.__v3Rules.fighter() under ?rules=m4, local hosts only.
+// The evaluator's part HP as a fighter (the fallback while the sim hands no fractions): window.__v3Rules.fighter() under ?rules=m4, on any host (it is his real part HP in a real fight, read only,
+// so a phone sees the limp when a leg really reaches 0). The hook that WRITES a part's HP (debug.setPartHp, the stills') is the local-host one (rules-eval.ts).
 function harnessFractions(): Record<string, number> {
-  const local = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-  const fighter = local ? (globalThis as { __v3Rules?: { fighter?: () => { parts: Record<string, { hp: number; max: number }> } } }).__v3Rules?.fighter?.() : undefined;
+  const fighter = (globalThis as { __v3Rules?: { fighter?: () => { parts: Record<string, { hp: number; max: number }> } } }).__v3Rules?.fighter?.();
   return fighter ? Object.fromEntries(Object.entries(fighter.parts).map(([id, p]) => [id, p.max > 0 ? p.hp / p.max : 1])) : {};
 }
 
@@ -294,7 +307,7 @@ export const feelHooks: FeelHooks = {
     ctxNow = ctx as typeof ctxNow;
     if (lastMode === 'dead' && ctx.mode === 'alive') live?.reset();   // the rematch (ragdoll.ts build(): a fresh or reset ragdoll, alive again)
     lastMode = ctx.mode;
-    if (ctx.mode === 'alive') limbs().frame(dt);
+    if (ctx.mode === 'alive') limbs().frame(dt); else live?.settle(dt);   // a weapon in the air when he dies lands and lies
   },
   kill() { lastMode = 'dead'; },
 };

@@ -14,7 +14,7 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const TICK = 1000 / 60, LIMB = process.env.LIMB ?? 'leg', PART = { leg: 'leg_left', arm: 'arm_right' }[LIMB];
 const QUIET = Number(process.env.QUIET ?? 0), AT = Number(process.env.AT ?? 240), SECONDS = Number(process.env.SECONDS ?? 3), EVERY = Number(process.env.EVERY ?? 3), GAP = Number(process.env.GAP ?? 45);
-const EXT = process.env.FMT === 'jpg' ? 'jpg' : 'png', SHOT = EXT === 'jpg' ? { type: 'jpeg', quality: 70 } : {};
+const FROM = Number(process.env.FROM ?? 0), EXT = process.env.FMT === 'jpg' ? 'jpg' : 'png', SHOT = { timeout: 180000, ...(EXT === 'jpg' ? { type: 'jpeg', quality: 70 } : {}) };   // software GL on a job can take over the 30 s default for one shot
 const MIX =[['KeyF'], ['KeyG'], ['KeyD', 'KeyF'], ['KeyG'], ['KeyA', 'KeyF'], ['KeyF']];
 const open = async () => {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DPR ?? 2), isMobile: true, hasTouch: true });
@@ -79,10 +79,11 @@ for (const query of queries.length ? queries : ['rules=m4', 'rules=m4&feel=limbs
     if (n === AT) { const ok = await page.evaluate((p) => globalThis.__v3Rules?.setPartHp?.(p, 0), PART); console.log(`${tag}: ${PART} to 0 at tick ${n}: ${ok}`); }
     await run(1); await keep(page);
     if (n >= AT - 30 && (n - (AT - 30)) % EVERY === 0) {
-      const id = String(frame++).padStart(3, '0');
-      await page.screenshot({ path: `${out}/${tag}-${id}.${EXT}`, ...SHOT });   // FMT=jpg: small files (a job that can only print its results to a log)
+      const idx = frame++, id = String(idx).padStart(3, '0');
+      const skip = idx < FROM;   // FROM=<frame index>: the frames before it are counted but not shot (a slow software-GL job takes only the moments it needs)
+      if (!skip) await page.screenshot({ path: `${out}/${tag}-${id}.${EXT}`, ...SHOT });   // FMT=jpg: small files (a job that can only print its results to a log)
       // the foe is small at the fight camera: a second shot of the 110 x 150 CSS px around his hips (a crop of the same frame, the camera and the sim untouched), for a close look
-      const at = await page.evaluate(() => globalThis.__ragdoll?.screenOf?.('hips'));
+      const at = skip ? null : await page.evaluate(() => globalThis.__ragdoll?.screenOf?.('hips'));
       if (at) await page.screenshot({ path: `${out}/${tag}-crop-${id}.${EXT}`, ...SHOT, clip: { x: Math.min(265, Math.max(0, at[0] - 55)), y: Math.min(662, Math.max(0, at[1] - 60)), width: 110, height: 150 } });
     }
     if (n >= AT && n % 3 === 0) trace.push(await page.evaluate(() => { const r = globalThis.__ragdoll, p = globalThis.__v3Fight, at = (b) => r?.screenOf?.(b)?.map((v) => +v.toFixed(1)); return { n: 0, state: r?.state, foePhase: p.duel.fighters[1].phase, hits: globalThis.__v3Rules?.hits, thighMotor: globalThis.__feelLimbs?.last?.strength?.thighLeft ?? null, footL: at('footLeft'), shinL: at('shinLeft'), footR: at('footRight') }; }));

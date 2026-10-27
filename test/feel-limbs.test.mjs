@@ -147,7 +147,7 @@ test('flatQuaternion lays a tilted long weapon flat, keeping its heading', () =>
 });
 
 // ---- the live part: a fake ragdoll, the events and the weapon ---------------------------------------------------------------------------------------
-function rig(limbs) {
+function rig(limbs, rows = ROWS) {
   const scene = new THREE.Scene(), group = new THREE.Group(), weapon = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.2, 0.05)), events = [], motors = [], blends = [], hipsCalls = [];
   weapon.name = 'WeaponDrawn'; group.add(weapon); scene.add(group); group.position.set(2, 0, 3);
   const state = { alive: true }, fractions = { ...limbs };
@@ -155,12 +155,12 @@ function rig(limbs) {
     fighter: () => fighterOf(fractions, 'right'), active: () => state.alive, rd: () => ({ setMotorStrength: (r) => motors.push(r) }), blend: (s) => blends.push(s), hips: (h) => hipsCalls.push(h),
     weapon: () => weapon, group: () => group, emit: (n, p) => events.push([n, p]),
   };
-  return { scene, group, weapon, events, motors, blends, hipsCalls, fractions, state, limbs: createLimbs(ROWS, env) };
+  return { scene, group, weapon, events, motors, blends, hipsCalls, fractions, state, limbs: createLimbs(rows, env) };
 }
 
 test('a leg walking down to 0 says feel:limp at each step; every frame sets the motors and asks for the bone blend', () => {
   const r = rig({ leg_left: 1 });
-  r.limbs.frame(1 / 60); assert.equal(r.events.length, 0); assert.equal(r.blends.length, 1);
+  r.limbs.frame(1 / 60); assert.equal(r.events.length, 0); assert.equal(r.blends.length, 0, 'whole: no bone work'); assert.equal(r.motors.length, 0, 'whole: no motor call'); assert.equal(r.hipsCalls.length, 0);
   r.fractions.leg_left = 0.3; r.limbs.frame(1 / 60);
   r.fractions.leg_left = 0.1; r.limbs.frame(1 / 60);
   r.fractions.leg_left = 0; r.limbs.frame(1 / 60); r.limbs.frame(1 / 60);
@@ -169,7 +169,7 @@ test('a leg walking down to 0 says feel:limp at each step; every frame sets the 
   assert.equal(limps.at(-1)[1].level, 1);
   assert.deepEqual(limps.map(([, p]) => p.level), [...limps.map(([, p]) => p.level)].sort((a, b) => a - b), 'the level only goes up');
   assert.equal(r.events.filter(([n]) => n === 'feel:guard_drop').length, 0);
-  assert.equal(r.motors.at(-1).all, 1);
+  assert.ok(r.motors.every((m) => !('all' in m)), 'never every part: clash\'s and hitreact\'s dips are not undone each frame');
   assert.ok(r.motors.at(-1).thighLeft < 0.31);
   assert.equal(r.hipsCalls.at(-1).side, 'left'); assert.ok(r.hipsCalls.at(-1).drop > 0);
 });
@@ -198,6 +198,61 @@ test('not alive (down, dead): the motors and the bones are left to the ragdoll',
   const r = rig({ leg_left: 0 });
   r.state.alive = false; r.limbs.frame(1 / 60);
   assert.equal(r.motors.length, 0); assert.equal(r.blends.length, 0); assert.equal(r.hipsCalls.length, 0);
+});
+
+test('whole again: the parts it dipped go back to 1 once, then nothing is called; never `all`', () => {
+  const r = rig({ leg_left: 0 });
+  r.limbs.frame(1 / 60);
+  const dipped = Object.keys(r.motors.at(-1)); assert.ok(dipped.length > 0);
+  r.fractions.leg_left = 1; r.limbs.frame(1 / 60);
+  for (const p of dipped) assert.equal(r.motors.at(-1)[p], 1, `${p} back to 1`);
+  const n = r.motors.length, b = r.blends.length;
+  r.limbs.frame(1 / 60); r.limbs.frame(1 / 60);
+  assert.equal(r.motors.length, n); assert.equal(r.blends.length, b);
+  assert.ok(r.motors.every((m) => !('all' in m)));
+});
+
+test('rows off (`on: false`) is today\'s fight: no motor, bone or pelvis call, no event, the weapon stays', () => {
+  const r = rig({ leg_left: 0, arm_right: 0 }, { ...ROWS, on: false });
+  for (let i = 0; i < 120; i++) r.limbs.frame(1 / 60);
+  r.limbs.hit({ charged: true }); r.limbs.settle(1 / 60);
+  assert.equal(r.motors.length + r.blends.length + r.hipsCalls.length + r.events.length, 0); assert.equal(r.weapon.visible, true); assert.equal(r.limbs.cost.stumbles, 0);
+});
+
+test('a heavy blow on the bad leg starts a stumble, and a frame of dt 0 right after it (a hit-stop) does not end it', () => {
+  const r = rig({ leg_left: 0 });
+  r.limbs.frame(1 / 60);
+  r.limbs.hit({ charged: true });
+  assert.equal(r.limbs.cost.stumbles, 1);
+  r.limbs.frame(0);
+  r.limbs.frame(ROWS.limbs.parts.leg.stumble.inS);
+  assert.ok(r.motors.at(-1).thighRight < 0.5, 'the good leg gives too (the gait alone never takes it below goodDipTo): the stumble is on');
+});
+
+test('a leg that is whole again (a renewal) announces its next injury', () => {
+  const r = rig({ leg_left: 1 });
+  r.fractions.leg_left = 0; r.limbs.frame(1 / 60);
+  const first = r.events.filter(([n]) => n === 'feel:limp').length; assert.ok(first >= 1);
+  r.fractions.leg_left = 1; r.limbs.frame(1 / 60);
+  r.fractions.leg_left = 0; r.limbs.frame(1 / 60);
+  assert.ok(r.events.filter(([n]) => n === 'feel:limp').length > first, 'limp again');
+});
+
+test('he dies with the weapon in the air: settle() lets it land and lie, and emits nothing', () => {
+  const r = rig({ arm_right: 0 });
+  for (let i = 0; i < 20; i++) r.limbs.frame(1 / 60);   // past drop.afterS: the weapon is in the air
+  assert.equal(r.limbs.dropped, true);
+  const lying = r.scene.children.find((o) => o !== r.group);
+  r.state.alive = false; const n = r.events.length;
+  for (let i = 0; i < 300; i++) r.limbs.settle(1 / 60);
+  assert.ok(lying.position.y >= 0 && lying.position.y < 0.1, 'on the floor'); assert.equal(r.events.length, n);
+  const at = lying.position.clone(); r.limbs.settle(1 / 60); assert.ok(lying.position.distanceTo(at) < 1e-9, 'and still');
+});
+
+test('the rows tie `sided` to the part: legs and arms are sided, head and torso are not', () => {
+  const bad = (f) => { const c = structuredClone(ROWS); f(c); return validateFile('feel-limbs', c); };
+  assert.ok(bad((c) => { c.limbs.parts.leg.sided = false; }).some((e) => e.includes('leg.sided')));
+  assert.ok(bad((c) => { c.limbs.parts.torso.sided = true; }).some((e) => e.includes('torso.sided')));
 });
 
 test('the evaluator\'s setPartHp hook (the stills): a sword arm at 0 is the dropped weapon, a leg at 0 the limp, as a landed blow would leave them', () => {

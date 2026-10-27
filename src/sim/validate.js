@@ -91,6 +91,7 @@ function checkFeelLimbs(json, errors) {
     const at = `limbs.parts.${id}`;
     num(`${at}.startFrac`, p.startFrac, 0.01, 1);
     if (typeof p.sided !== 'boolean') errors.push(`${n}.${at}.sided: must be a boolean`);
+    else if (p.sided !== (id !== 'head' && id !== 'torso')) errors.push(`${n}.${at}.sided: must be ${id !== 'head' && id !== 'torso'} (legs and arms take their side from the part id; head and torso have none)`);
     for (const [map, lo] of [['motor', 0.01], ['blend', 0]]) {
       if (!p[map] || !Object.keys(p[map]).length) errors.push(`${n}.${at}.${map}: needs at least one role`);
       for (const [role, v] of Object.entries(p[map] ?? {})) { if (!FEEL_ROLES.includes(role)) errors.push(`${n}.${at}.${map}.${role}: unknown role`); num(`${at}.${map}.${role}`, v, lo, 1); }

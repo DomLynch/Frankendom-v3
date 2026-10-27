@@ -265,3 +265,14 @@ test('without ?rules=m4 nothing changes: the pick is the rotation\'s (null) what
     assert.equal(ragdollFinisher(kill), null, search || '(default)');
   }
 });
+
+test('debug.setPartHp (the stills\' WRITE of a part\'s HP) exists on local hosts and in node, not on a live host; the read (debug.fighter) stays', () => {
+  const had = Object.getOwnPropertyDescriptor(globalThis, 'location');
+  try {
+    globalThis.location = { hostname: 'www.example.com' };
+    const live = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0);
+    assert.equal(live.debug.setPartHp, undefined); assert.equal(typeof live.debug.fighter, 'function');
+    globalThis.location = { hostname: 'localhost' };
+    assert.equal(typeof createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).debug.setPartHp, 'function');
+  } finally { if (had) Object.defineProperty(globalThis, 'location', had); else delete globalThis.location; }
+});

@@ -135,8 +135,10 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
   let state = fresh();
   const debug: RulesDebug = { on: true, hits: 0, skipped: 0, byOutcome: {}, deferredKills: 0, renewals: 0, cuts: [], last: [], cost: { calls: 0, totalMs: 0, maxMs: 0 } };
   // ?feel=limbs (feel-limbs.ts) reads his per-part HP and flags from here; setPartHp is the stills' hook (a part's HP to a value, with the evaluator's own consequences of 0)
-  debug.fighter = () => state as FighterView;
-  debug.setPartHp = (part, hp) => setPartHp(state as FighterView, part, hp, (ev.rules as { locational?: { arm_gone_damage_mult?: number } }).locational?.arm_gone_damage_mult ?? 1);
+  debug.fighter = () => state as FighterView;   // read only: his real part HP
+  // the WRITE is for local hosts (and node, where there is no location): a console on a live page cannot change a fight's verdicts through it
+  const local = typeof location === 'undefined' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if (local) debug.setPartHp = (part, hp) => setPartHp(state as FighterView, part, hp, (ev.rules as { locational?: { arm_gone_damage_mult?: number } }).locational?.arm_gone_damage_mult ?? 1);
   const g = globalThis as { __v3Rules?: RulesDebug; __v3Fight?: { rules?: RulesDebug } };
   g.__v3Rules = debug;
   const publish = () => { if (g.__v3Fight) g.__v3Fight.rules = debug; };
