@@ -26,7 +26,7 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
-import { setLockFrame } from '../fight/camera.ts';
+import { setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { cameraZoom } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
@@ -57,7 +57,7 @@ import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
-import { zoneLoopFor, roamStep } from '../fight/zone-loop.ts';
+import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
@@ -205,6 +205,7 @@ const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw &&
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
 const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
 if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
+if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
 if (ZONE) { const bad = spotBodyProblems(SPOTS); if (bad.length) throw new Error(`zone row bodies: ${bad.join('; ')}`); }   // a spawn's own body (zone row spawns[].body) is a usable boss body; none in the shipped zone
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
@@ -356,7 +357,7 @@ function frame(now: number) {
       if (heroStands()) {   // the zone loop: the sim is over, the hero walks (presentation only) once the kill's ceremony lets him go
         const phase = view.finishPhase();
         if (!roam && (intent.x || intent.z) && (phase.complete || phase.age >= ZONE!.startAfterSeconds)) roam = { ...practice.fighter };
-        if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, RADIUS);
+        if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, ZONE!.walkRadius);   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
@@ -364,6 +365,7 @@ function frame(now: number) {
       if (stop) { hitStop = stop; accumulator = 0; previous = state; }
     }
   } else { accumulator = 0; previous = state; }
+  if (ZONE) setWalkClamp(roam ? ZONE.walkRadius + ZONE.cameraMetres : 0);   // the follow camera stands behind a hero who walked beyond the pit (data/respawn.json postKill.cameraMetres); the fight camera is unchanged
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
