@@ -59,6 +59,12 @@
       "easeSeconds": 0.5
     }
   },
+  "input": {
+    "about": "Dom 2026-10-27 (found by the right-thumb look agent): in the endless world the sim hands from one boss to the next as the hero walks past them, and the old hand-over cleared the controls, so a left thumb still on the stick lost the walk until it was lifted and pressed again. keepOnHandOver true: a hand-over while nobody fights him (the hero free-walking) leaves the stick and held buttons exactly as they are. Death and respawn, a page blur, the Respawn button and a fight that starts on a hero who was not walking still clear. ?input=v1 = the old clear on every hand-over.",
+    "keepOnHandOver": true,
+    "query": "input",
+    "off": "v1"
+  },
   "limits": {
     "about": "Validation ranges for the rows above.",
     "delaySeconds": [1, 60],

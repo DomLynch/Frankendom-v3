@@ -29,6 +29,7 @@ import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';
+import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { pitchChoice } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
@@ -185,6 +186,12 @@ const controls = createInput({   // :832
   quiet: () => feedback.quiet(),
 });
 function clearInput() { controls.clear(); hitStop = 0; accumulator = 0; }   // :713
+const KEEP_INPUT = !!ZONE && keepsInput(search);   // data/respawn.json input: a hand-over while he free-walks leaves the stick alone (?input=v1 = clear as before)
+/** A sim reset: clears the controls unless it is a hand-over of a walking hero (hand-over-input.ts); the frame clock restarts either way (a fresh sim). */
+function resetInput(handOver: boolean) {
+  if (dropsInput(KEEP_INPUT, handOver)) clearInput();
+  else { hitStop = 0; accumulator = 0; }
+}
 window.addEventListener('blur', clearInput);
 document.addEventListener('visibilitychange', clearInput);
 // Back on the page (app switch, a call, the lock screen): clearInput hushed the sound and the context is suspended or interrupted; ask
@@ -237,17 +244,17 @@ const heroStart = initialState();   // where the hero stands at a first load and
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, OPEN_RADIUS, ZONE!.minDistance, heroStart);
 if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
-function rematch(pose?: DuelPose, index = current, restart = true) {
+function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
   roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false;
   attackers = attackers.filter((a) => a.dead); killedBy = null;   // every live attacker lets go and stands again at full health at its spot; a killed one keeps lying until its own timer is up
-  clearInput(); state = previous = practice.fighter;
+  resetInput(handOver); state = previous = practice.fighter;
   if (restart) view.restartStandoff();
   updateHud();
 }
 /** The sim hands over to spawn `index` with the hero where he stands (no draw-in replayed: both rigs already stand armed). */
-const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false);
+const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false, true);
 /**
  * A boss past its leash resets ONLY that boss (MMO style): it stands again at its spot at full health; the hero's health and body, the other attackers and their fights are untouched, nothing is
  * `fresh()`ed. With another boss already on him that boss's fight becomes the sim's (as when the first boss dies, `adoptAttacker`); alone, the same boss is rebuilt at its spot and the hero carries on, not engaged.
@@ -265,11 +272,12 @@ const poseOfAttacker = (index: number, at: { x: number; z: number }): DuelPose =
 /** The kill's ceremony is over and another boss is on him: that boss's fight becomes the sim's fight, the hero's health as it is now (the first boss's corpse is left lying, as at every hand-over). */
 function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number }) {
   view.respawnFoe();
+  const walking = roam !== null;   // read before the reset below: a hero free-walking keeps his stick when another boss takes the sim
   const mine = practice.duel.fighters[0], hero: Fighter = { ...mine, body: { ...mine.body, x: at.x, z: at.z, heading: at.heading } };   // the hero stays where he stands: the ground is unbounded and a zone duel has no wall to draw him to
   epoch++; seed = nextSeed(seed); practice = adopt(a, hero); frameEvents = []; openerLift = 0;
   roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = a.index; engaged = true; killMarked = false; killedBy = null;
   attackers = attackers.filter((x) => x !== a);
-  clearInput(); state = previous = practice.fighter;
+  resetInput(walking); state = previous = practice.fighter;
   updateHud();
 }
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
