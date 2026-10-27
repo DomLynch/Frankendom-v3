@@ -1,0 +1,44 @@
+{
+  "about": "M7 deliverable 1, HIT REACTIONS BY ZONE AND DIRECTION (Strategy, 2026-10-27). OPT-IN: ?feel=hitreact (src/fight/feel-hitreact.ts); without it nothing here is read and today's single stagger dip is the whole hit reaction. PRESENTATION ONLY: the sim (duel.ts) and Gate 0 never see it. Today every landed blow is one generic stagger (data/physics.json hit + states.stagger); these rows add, per zone of the blow and per side it came from, which parts' motors dip (strength 0..1, lower = limper), how deep and for how long, how the impulse is split across parts, and how the bones blend back into the clip. Design references (public behaviour only, no code read): Exanima, Half Sword and Hellish Quart, where a blow moves the body part it lands on and the body follows through the joints, not one canned flinch. The flag is the shared feel registry's (src/fight/feel.ts): ?feel=hitreact, alone or in a comma list (armfeel's high|low|off share the key).`frontCos`: the blow's direction, in his own frame, is a front blow when it travels into his chest (its component along his facing is at or beyond -frontCos), a back blow when at or beyond +frontCos, else a side blow (left or right of HIM). `defaultSide`: the side an arm/leg row's `$near` takes on a front or back blow (Left or Right). `zones`: the sim's hit location (head, torso, legs) or `arms` (a blow the rules package puts on an arm) -> a row. A zone row: `dips` part -> the strength that part's motor falls to at the deepest (a part id of the physics package; `$near` = the Left/Right on the side the blow came from); `timing` easeInS / holdS / backS (backS is the blend-back time, the dip's way back up to full strength and the bones' way back to the clip); `blend` part -> the share of the ragdoll's pose shown on that part's bone at the deepest (the clip alone at 0); `impulse` total N s along the blow (before the direction scale and the hit's strength), `lift` N s up, `split` part -> its signed share of the total (positive = pushed along the blow, negative = pulled the other way, so a stomach blow pushes the belly back and tips head and chest forward over it: the fold); `twist` N s of couple for a side blow (the chest one way, the belly the other); `dirs`: front, back, left, right -> `impulse` and `dip` multipliers (dip scales how far below 1 the strength falls) and `twist` multiplier.",
+  "frontCos": 0.7071,
+  "knockdownQuietS": 0.6,
+  "defaultSide": "Right",
+  "zones": {
+    "head": {
+      "dips": { "neck": 0.1, "head": 0.06, "spine2": 0.45, "spine1": 0.7 },
+      "timing": { "easeInS": 0.04, "holdS": 0.2, "backS": 0.5 },
+      "blend": { "neck": 1, "head": 1, "spine2": 0.7, "spine1": 0.35 },
+      "impulse": 45, "lift": 3,
+      "split": { "head": 1, "neck": 0.3, "spine2": 0.25 },
+      "twist": 6,
+      "dirs": { "front": { "impulse": 1, "dip": 1, "twist": 0 }, "back": { "impulse": 0.9, "dip": 1, "twist": 0 }, "left": { "impulse": 0.9, "dip": 1, "twist": 1 }, "right": { "impulse": 0.9, "dip": 1, "twist": 1 } }
+    },
+    "torso": {
+      "dips": { "spine": 0.12, "spine1": 0.12, "spine2": 0.2, "neck": 0.35, "head": 0.35, "arm$near": 0.5 },
+      "timing": { "easeInS": 0.06, "holdS": 0.3, "backS": 0.6 },
+      "blend": { "spine": 1, "spine1": 1, "spine2": 1, "neck": 0.8, "head": 0.8, "arm$near": 0.4 },
+      "impulse": 46, "lift": 3,
+      "split": { "spine": 1, "spine1": 0.5, "spine2": -0.55, "head": -0.8 },
+      "twist": 24,
+      "dirs": { "front": { "impulse": 1, "dip": 1, "twist": 0 }, "back": { "impulse": 0.85, "dip": 0.9, "twist": 0 }, "left": { "impulse": 1.1, "dip": 1, "twist": 1 }, "right": { "impulse": 1.1, "dip": 1, "twist": 1 } }
+    },
+    "arms": {
+      "dips": { "arm$near": 0.08, "forearm$near": 0.1, "hand$near": 0.05, "spine2": 0.6 },
+      "timing": { "easeInS": 0.04, "holdS": 0.2, "backS": 0.45 },
+      "blend": { "arm$near": 1, "forearm$near": 1, "hand$near": 1, "spine2": 0.4 },
+      "impulse": 20, "lift": 0,
+      "split": { "arm$near": 1, "forearm$near": 0.5, "spine2": 0.3 },
+      "twist": 6,
+      "dirs": { "front": { "impulse": 1, "dip": 1, "twist": 0 }, "back": { "impulse": 1, "dip": 1, "twist": 0 }, "left": { "impulse": 1, "dip": 1, "twist": 1 }, "right": { "impulse": 1, "dip": 1, "twist": 1 } }
+    },
+    "legs": {
+      "dips": { "thigh$near": 0.12, "shin$near": 0.12, "foot$near": 0.3, "spine": 0.55, "spine1": 0.6 },
+      "timing": { "easeInS": 0.05, "holdS": 0.3, "backS": 0.6 },
+      "blend": { "thigh$near": 1, "shin$near": 1, "foot$near": 1, "spine": 0.5, "spine1": 0.4 },
+      "impulse": 30, "lift": 0,
+      "split": { "thigh$near": 1, "shin$near": 0.5, "spine2": -0.35 },
+      "twist": 8,
+      "dirs": { "front": { "impulse": 1, "dip": 1, "twist": 0 }, "back": { "impulse": 1, "dip": 1, "twist": 0 }, "left": { "impulse": 1, "dip": 1, "twist": 1 }, "right": { "impulse": 1, "dip": 1, "twist": 1 } }
+    }
+  }
+}

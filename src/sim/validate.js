@@ -41,6 +41,7 @@ export const SCHEMA = {
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], cue: ['about', 'on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
     finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
+  'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
     maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
       hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
@@ -142,6 +143,7 @@ export function validateFile(name, json) {
     if (Number.isFinite(c.keepSeconds) && Number.isFinite(c.pieceSeconds) && c.pieceSeconds > c.keepSeconds) errors.push(`${name}.corpse.pieceSeconds: must be <= keepSeconds`);
   }
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
+  if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
   if (name === 'fight' && json.camera) {   // the lens zoom (src/fight/camera-zoom.ts): a finite number in 0.5..2 (1 = the camera as before); an absent one would reach the page as NaN
     const z = json.camera.zoom;
     if (!Number.isFinite(z) || z < 0.5 || z > 2) errors.push(`${name}.camera.zoom: must be a finite number in 0.5..2`);
@@ -342,6 +344,40 @@ export function checkBodies(profiles, rig, heroBody) {
     seen.set(p.opponent, body);
   }
   return errors;
+}
+
+// data/feel-hitreact.json (src/fight/feel-hitreact.ts): closed keys per zone row, parts the package knows, and every number finite and in range (a bad one would reach the page as NaN).
+const HIT_ZONES = ['head', 'torso', 'arms', 'legs'], HIT_SECTORS = ['front', 'back', 'left', 'right'];
+const HIT_BASES = ['spine', 'spine1', 'spine2', 'neck', 'head', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot', 'toe'], HIT_SIDED = ['arm', 'forearm', 'hand', 'thigh', 'shin', 'foot', 'toe'];
+export function checkHitreact(json) {
+  const e = [], at = (p, m) => e.push(`feel-hitreact.${p}: ${m}`), num = (p, v, ok, want) => { if (!Number.isFinite(v) || !ok(v)) at(p, `must be ${want}`); };
+  const keys = (p, obj, allowed) => { if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { at(p, 'must be an object'); return false; } for (const k of Object.keys(obj)) if (!allowed.includes(k)) at(`${p}.${k}`, 'unknown key'); for (const k of allowed) if (!(k in obj)) at(`${p}.${k}`, 'missing'); return true; };
+  num('frontCos', json.frontCos, (v) => v > 0 && v < 1, 'a finite number in (0, 1)');
+  num('knockdownQuietS', json.knockdownQuietS, (v) => v >= 0 && v <= 5, 'a finite number in [0, 5]');
+  if (!['Left', 'Right'].includes(json.defaultSide)) at('defaultSide', "must be 'Left' or 'Right'");
+  if (!json.zones || typeof json.zones !== 'object') return [...e, 'feel-hitreact.zones: must be an object'];
+  for (const z of Object.keys(json.zones)) if (!HIT_ZONES.includes(z)) at(`zones.${z}`, 'unknown zone (head, torso, arms, legs)');
+  for (const z of HIT_ZONES) {
+    const row = json.zones[z], p = `zones.${z}`;
+    if (!row) { at(p, 'missing'); continue; }
+    if (!keys(p, row, ['dips', 'timing', 'blend', 'impulse', 'lift', 'split', 'twist', 'dirs'])) continue;
+    const part = (path, k) => { const base = k.replace('$near', ''); if (!HIT_BASES.includes(base)) at(`${path}.${k}`, 'unknown part'); else if (k.endsWith('$near') && !HIT_SIDED.includes(base)) at(`${path}.${k}`, '$near only on a limb part'); else if (!k.endsWith('$near') && HIT_SIDED.includes(base)) at(`${path}.${k}`, 'a limb part needs $near (the side the blow came from)'); };
+    for (const [k, v] of Object.entries(row.dips ?? {})) { part(`${p}.dips`, k); num(`${p}.dips.${k}`, v, (x) => x >= 0 && x <= 1, 'a finite number in [0, 1]'); }
+    for (const [k, v] of Object.entries(row.blend ?? {})) { part(`${p}.blend`, k); num(`${p}.blend.${k}`, v, (x) => x >= 0 && x <= 1, 'a finite number in [0, 1]'); }
+    for (const [k, v] of Object.entries(row.split ?? {})) { part(`${p}.split`, k); num(`${p}.split.${k}`, v, (x) => x >= -2 && x <= 2, 'a finite number in [-2, 2]'); }
+    if (!Object.keys(row.dips ?? {}).length) at(`${p}.dips`, 'needs at least one part');
+    if (!Object.keys(row.split ?? {}).length) at(`${p}.split`, 'needs at least one part');
+    if (keys(`${p}.timing`, row.timing, ['easeInS', 'holdS', 'backS'])) {
+      num(`${p}.timing.easeInS`, row.timing.easeInS, (x) => x > 0 && x <= 1, 'a finite number in (0, 1]');
+      num(`${p}.timing.holdS`, row.timing.holdS, (x) => x >= 0 && x <= 3, 'a finite number in [0, 3]');
+      num(`${p}.timing.backS`, row.timing.backS, (x) => x > 0 && x <= 3, 'a finite number in (0, 3]');
+    }
+    num(`${p}.impulse`, row.impulse, (x) => x >= 0 && x <= 150, 'a finite number in [0, 150]');
+    num(`${p}.lift`, row.lift, (x) => x >= 0 && x <= 50, 'a finite number in [0, 50]');
+    num(`${p}.twist`, row.twist, (x) => x >= 0 && x <= 50, 'a finite number in [0, 50]');
+    if (keys(`${p}.dirs`, row.dirs, HIT_SECTORS)) for (const s of HIT_SECTORS) if (keys(`${p}.dirs.${s}`, row.dirs[s], ['impulse', 'dip', 'twist'])) for (const k of ['impulse', 'dip', 'twist']) num(`${p}.dirs.${s}.${k}`, row.dirs[s][k], (x) => x >= 0 && x <= 3, 'a finite number in [0, 3]');
+  }
+  return e;
 }
 
 // all files together

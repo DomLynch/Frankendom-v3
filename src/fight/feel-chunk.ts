@@ -4,3 +4,4 @@
 // and in FEEL_NAMES (feel-modules.ts), one line each.
 export { feelHooks as clash } from './feel-clash.ts';
 export { feelHooks as kick } from './feel-kick.ts';
+export { feelHooks as hitreact } from './feel-hitreact.ts';
