@@ -70,6 +70,7 @@ export function createSkyline(
   const mesh = new THREE.Mesh(plate ? plateGeometry(plate, row.radius, plate.cropAspect * 100, 100) : new THREE.CylinderGeometry(row.radius, row.radius, height, 96, 1, true), material);
   mesh.name = 'skyline';
   mesh.renderOrder = SKYLINE_ORDER;   // first among the transparent draws, so every particle and trail composites over it
+  if (plate) mesh.renderOrder = SKYLINE_ORDER + plate.orderOffset;   // the arc draws over the folded floor and under the sand; its sky gradient (a child) stays first of all
   mesh.frustumCulled = false;
   const fixedYaw = plate ? plateAhead(plate) : THREE.MathUtils.degToRad(row.yawDegrees);   // ?skyfollow=v1: the strip stays at yawDegrees, the plate with its face dead ahead of the first heading (the camp)
   mesh.rotation.y = fixedYaw;

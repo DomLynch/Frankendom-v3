@@ -29,13 +29,13 @@ for (const spec of specs.length ? specs : ['default=']) {
   await page.waitForTimeout(5000);   // the skyline lands after the first frame and fades in over about a second
   await page.screenshot({ path: `${out}/${name}-ready-375.png` });
   await page.addStyleTag({ content: '* { visibility: hidden !important } canvas { visibility: visible !important }' });
-  await page.evaluate(() => { for (const n of ['skyline', 'skyfold']) { const o = globalThis.__v3Scene.getObjectByName(n); if (o) o.visible = false; } });   // the sand's own reach: the flat sky colour behind it, no backdrop, no cloud floor
+  await page.evaluate(() => { for (const n of ['skyline', 'skyfold']) { const o = globalThis.__v3Scene.getObjectByName(n); if (o) o.visible = false; } const bg = globalThis.__v3Scene.background; globalThis.__bg = bg.getHex(); bg.set(0xff00ff); });   // the sand's own reach (against magenta): the flat sky colour behind it, no backdrop, no cloud floor
   await page.waitForTimeout(300);
   const on =(await page.screenshot({ type: 'png' })).toString('base64');
   await page.evaluate(() => { globalThis.__v3Scene.traverse((o) => { if (o.type === 'Group' && o.getObjectByName('floor') && o.children.length <= 3) { o.visible = false; globalThis.__hidden = o; } }); });
   await page.waitForTimeout(500);
   const off = (await page.screenshot({ type: 'png' })).toString('base64');
-  await page.evaluate(() => { if (globalThis.__hidden) globalThis.__hidden.visible = true; for (const n of ['skyline', 'skyfold']) { const o = globalThis.__v3Scene.getObjectByName(n); if (o) o.visible = true; } });
+  await page.evaluate(() => { if (globalThis.__hidden) globalThis.__hidden.visible = true; for (const n of ['skyline', 'skyfold']) { const o = globalThis.__v3Scene.getObjectByName(n); if (o) o.visible = true; } globalThis.__v3Scene.background.set(globalThis.__bg); });
   const cam = await page.evaluate(() => { const c = globalThis.__v3Scene.userData.camera, d = c.getWorldDirection(new c.position.constructor()); return { y: +c.position.y.toFixed(2), pitchDeg: +(Math.asin(d.y) * 180 / Math.PI).toFixed(1) }; });
   results[name] = { query, skyPct: +(100 * await sandStart(on, off)).toFixed(1), ...cam };
   console.log(name, JSON.stringify(results[name]));

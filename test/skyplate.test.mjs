@@ -21,7 +21,7 @@ test('the shipped plate row validates; bad rows are refused', () => {
   const cases = [(p) => { p.extra = 1; }, (p) => { p.on = 'yes'; }, (p) => { p.query = 'sky'; }, (p) => { p.query = 'skyfold'; }, (p) => { p.file = '../x.webp'; }, (p) => { p.spanDegrees = 5; }, (p) => { p.spanDegrees = 300; },
     (p) => { p.cropAspect = 0.5; }, (p) => { p.cropAspect = NaN; }, (p) => { p.face.u = 2; }, (p) => { p.face = null; }, (p) => { p.horizonFraction = 0.1; }, (p) => { p.edgeFadeFraction = 0.9; },
     (p) => { p.segments = 3; }, (p) => { p.segments = 12.5; }, (p) => { p.sky.topColor = 'blue'; }, (p) => { p.sky.halfHeightMetres = 400; }, (p) => { p.sky = null; }, (p) => { p.spanDegrees = 180; p.cropAspect = 1.2; },
-    (p) => { delete p.turnDegrees; }];
+    (p) => { delete p.turnDegrees; }, (p) => { p.orderOffset = 40; }, (p) => { p.orderOffset = 100; }, (p) => { p.orderOffset = 60.5; }];
   for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad plate row #${i} is refused`);
   const none = structuredClone(STAGE); delete none.skyline.plate;
   assert.ok(validateFile('stage', none).length >= 1);

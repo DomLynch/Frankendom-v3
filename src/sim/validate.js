@@ -316,7 +316,7 @@ export function validateFile(name, json) {
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
 export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'plate', 'views', 'fold'];
-export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky'];
+export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'orderOffset', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky'];
 // data/stage.json `skyline.plate` (src/fight/skyplate.ts): the far backdrop arc. A plain file name, a face inside the picture, fractions in range, colours as #rrggbb, and the rim (the arc at its tallest, the sky cylinder) inside the far plane.
 function checkSkyPlate(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.plate.${p}: ${m}`), p = s.plate;
@@ -329,6 +329,7 @@ function checkSkyPlate(s) {
   if (typeof p.file !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(p.file)) at('file', 'must be a plain .webp file name in src/assets/skyline/');
   const rng = (o, k, lo, hi, int, path = k) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi || (int && !Number.isInteger(o[k]))) at(path, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
   rng(p, 'spanDegrees', 20, 180); rng(p, 'cropAspect', 1, 12); rng(p, 'horizonFraction', 0.3, 1); rng(p, 'faceElevationDegrees', -30, 30); rng(p, 'turnDegrees', -360, 360);
+  rng(p, 'orderOffset', 1, 99, true); if (Number.isInteger(p.orderOffset) && s.fold && Number.isInteger(s.fold.orderOffset) && !(p.orderOffset > s.fold.orderOffset)) at('orderOffset', 'must draw after the folded floor (above fold.orderOffset) and before the sand (under 100)');
   rng(p, 'edgeFadeFraction', 0, 0.5); rng(p, 'topFadeFraction', 0, 0.5); rng(p, 'bottomFadeFraction', 0, 0.5); rng(p, 'segments', 8, 256, true);
   if (p.face === null || typeof p.face !== 'object' || Array.isArray(p.face)) at('face', 'must be an object {u, v}: the face centre as a fraction across and down the picture');
   else { for (const k of Object.keys(p.face)) if (!['u', 'v'].includes(k)) at(`face.${k}`, 'unknown key'); for (const k of ['u', 'v']) rng(p.face, k, 0, 1, false, `face.${k}`); }
