@@ -25,6 +25,7 @@ import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-rea
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setLockFrame } from '../fight/camera.ts';
+import { cameraZoom } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { heroSpecialFxFor, setHeroSpecialFx } from '../fight/hero-special-fx.ts';
@@ -146,6 +147,7 @@ const view = createScene(
   },
   opponentId, undefined, FIGHT.weapon as WeaponId, () => {}, level, gfxPost,
 );
+view.setZoom(cameraZoom(FIGHT.camera.zoom, search));   // the lens zoom (data/fight.json camera.zoom 1.1); ?zoom=1 = the camera as it was
 view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 marks): a guest's rung, and the Centurion met at it
 
 const controls = createInput({   // :832

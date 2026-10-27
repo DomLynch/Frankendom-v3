@@ -65,6 +65,7 @@ import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
+import { fovForZoom } from './camera-zoom.ts';
 import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -572,6 +573,8 @@ export function createScene(
   return {
     // V3: only the members src/client/main.ts calls. V1's journal, zone, gear-room, loot and test-probe hooks are gone (docs/V3-OWED-2026-10-26.md §3, PR 1).
     renderer,
+    /** The lens zoom (data/fight.json camera.zoom, camera-zoom.ts): 1 = the 51 degree lens as it was. Presentation only. */
+    setZoom(zoom: number): void { camera.fov = fovForZoom(zoom); camera.updateProjectionMatrix(); },
     // --- other players (presence wiring, src/presence/draw.ts; called only with ?presence=) --------------------------------------------------------------------------------------------------
     // One more body of the hero's own rig, cloned from the asset the hero was built from (buildWarriors clones: no fetch, no parse, the hero's materials and programs), hung in the scene on its own group.
     // Null until the hero's rig is built. No collider, no sim: the caller poses it. Not in the fight: nothing else in this file knows it exists.
