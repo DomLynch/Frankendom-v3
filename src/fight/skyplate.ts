@@ -61,14 +61,14 @@ export function plateAlphaMap(row: PlateRow, w = 128, h = 64): THREE.DataTexture
   return t;
 }
 
-/** The plain sky: a cylinder of the plate's radius, `halfHeightMetres` either side of the eye, vertex-coloured haze at the bottom, horizon colour at the picture's horizon row (`horizonY`, relative to the eye), top colour at the top. */
-export function skyGradient(row: PlateRow, radius: number, horizonY: number): THREE.CylinderGeometry {
+/** The plain sky: a cylinder of the plate's radius, `halfHeightMetres` either side of the eye, vertex-coloured haze at the bottom, horizon colour at the picture's horizon row (`horizonY`, relative to the eye), top colour from `topY` (the plate's top edge) up. */
+export function skyGradient(row: PlateRow, radius: number, horizonY: number, topY: number = row.sky.halfHeightMetres): THREE.CylinderGeometry {
   const s = row.sky, half = s.halfHeightMetres, g = new THREE.CylinderGeometry(radius, radius, half * 2, 48, s.rings, true);
   const haze = new THREE.Color(s.hazeColor), mid = new THREE.Color(s.horizonColor), top = new THREE.Color(s.topColor), pos = g.getAttribute('position'), col = new Float32Array(pos.count * 3), c = new THREE.Color();
   const hy = Math.min(half - 1, Math.max(-half + 1, horizonY));
   for (let i = 0; i < pos.count; i++) {
     const y = pos.getY(i);
-    if (y <= hy) c.copy(haze).lerp(mid, smooth(-half, hy, y)); else c.copy(mid).lerp(top, smooth(hy, half, y));
+    if (y <= hy) c.copy(haze).lerp(mid, smooth(-half, hy, y)); else c.copy(mid).lerp(top, smooth(hy, Math.max(hy + 1, Math.min(half, topY)), y));   // the top colour is reached at `topY` (the plate's top edge, whose picture ends in that same blue) and holds above it
     col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));

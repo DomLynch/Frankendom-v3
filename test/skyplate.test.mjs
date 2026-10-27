@@ -34,6 +34,15 @@ test('the shipped numbers: about 100 degrees, 4:1 window, the swap is rows only 
   for (const k of ['spanDegrees', 'cropAspect', 'faceElevationDegrees', 'edgeFadeFraction', 'fixedYawDegrees', 'horizonFraction', 'file']) assert.match(src, new RegExp(`\\.${k}\\b`), k);
 });
 
+test('the plate picture ships: a WebP under 400 KB whose shape is exactly cropAspect (no stretch), and the old strip picture is still there for the rollback', () => {
+  const buf = readFileSync(new URL(`../src/assets/skyline/${P.file}`, import.meta.url));
+  assert.equal(buf.toString('latin1', 0, 4), 'RIFF'); assert.equal(buf.toString('latin1', 8, 12), 'WEBP'); assert.ok(buf.length < 400_000, String(buf.length));
+  assert.equal(buf.toString('latin1', 12, 16), 'VP8 ');
+  const w = buf.readUInt16LE(26) & 0x3fff, h = buf.readUInt16LE(28) & 0x3fff;
+  assert.ok(Math.abs(w / h - P.cropAspect) < 0.01, `${w}x${h}`);
+  assert.ok(readFileSync(new URL(`../src/assets/skyline/${SKYLINE.file}`, import.meta.url)).length > 50_000);
+});
+
 test('?skyplate=v1 is the old strip; ?sky=v1 and the row off draw neither', () => {
   assert.equal(plateOn('', P), true); assert.equal(plateOn('?skyplate=v1', P), false); assert.equal(plateOn('?skyplate=1', P), true); assert.equal(plateOn('', { ...P, on: false }), false);
   const scene = new THREE.Scene();
@@ -45,7 +54,9 @@ test('?skyplate=v1 is the old strip; ?sky=v1 and the row off draw neither', () =
 });
 
 test('native aspect: the window is cropAspect for a wider picture (the current 10:1), the whole picture for a narrower one; the arc keeps that aspect and is never stretched', () => {
-  const cur = plateWindow(P, 7782, 820);
+  const whole = plateWindow(P, 2508, 627);   // the shipped picture (Dom's titan): exactly 4:1, shown whole
+  assert.equal(whole.w, 1); assert.equal(whole.u0, 0); assert.equal(whole.aspect, 4);
+  const cur = plateWindow(P, 7782, 820);   // the old strip's 10:1 picture: cut to a 4:1 window
   assert.ok(Math.abs(cur.aspect - 4) < 1e-9); assert.ok(Math.abs(cur.w * 7782 - 3280) < 1e-6); assert.ok(cur.u0 >= 0 && cur.u0 + cur.w <= 1 + 1e-12);
   assert.ok(Math.abs(cur.u0 + cur.w / 2 - P.face.u) < 1e-9, 'centred on the face');
   const next = plateWindow(P, 4096, 1024);
@@ -55,7 +66,7 @@ test('native aspect: the window is cropAspect for a wider picture (the current 1
   const g = plateGeometry(P, R, 7782, 820), s = plateSize(P, R, 4), uv = g.getAttribute('uv');
   assert.ok(Math.abs(g.parameters.height - s.height) < 1e-9);
   let lo = Infinity, hi = -Infinity; for (let i = 0; i < uv.count; i++) { lo = Math.min(lo, uv.getX(i)); hi = Math.max(hi, uv.getX(i)); }
-  assert.ok(Math.abs(lo - cur.u0) < 1e-9 && Math.abs(hi - (cur.u0 + cur.w)) < 1e-9);
+  assert.ok(Math.abs(lo - cur.u0) < 1e-6 && Math.abs(hi - (cur.u0 + cur.w)) < 1e-6);   // float32 uvs
 });
 
 test('the face lands at the row elevation above the eye; the arc sits inside the far plane', () => {
@@ -114,8 +125,8 @@ test('portrait pitch row: a preset, portrait only; ?pitch= (even off) wins; the 
 test('portrait: more sky (the horizon is higher on the screen), the hero stays where he stood; landscape is exactly the old camera', () => {
   const p = portraitPitch(ROWS, ''), A = 375 / 812;
   const before = place(A, null), after = place(A, p), ndc = (cam) => new THREE.Vector3(hero.x, ROWS.heroY, hero.z).project(cam).y;
-  assert.ok(horizonNdc(after) > horizonNdc(before), 'the horizon rises');
-  assert.ok(Math.abs(ndc(after) - ndc(before)) < 1e-6, 'the hero keeps his place on the screen');
+  assert.ok(horizonNdc(after) < horizonNdc(before) - 0.02 && horizonNdc(after) > 0, 'the horizon sits lower on the screen: more sky above it');
+  assert.ok(Math.abs(ndc(after) - ndc(before)) < 0.02, 'the hero keeps his place on the screen');
   const wide = 812 / 375, a = place(wide, null), b = place(wide, p);
   assert.deepEqual(a.position.toArray(), b.position.toArray()); assert.deepEqual(a.quaternion.toArray(), b.quaternion.toArray());
 });

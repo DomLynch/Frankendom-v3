@@ -26,18 +26,18 @@
     "fadeSeconds": 1.2,
     "loadAfterFirstFrameMs": 300,
     "plate": {
-      "about": "The skyline as a far backdrop PLATE (src/fight/skyplate.ts; Dom 2026-10-27, portrait phone: the 360-degree strip showed a tenth of a 10:1 picture blown up to a pink blur and the alien face could never fit). The plate is a `spanDegrees` arc of the strip's far cylinder (`radius`), facing the camp (it follows the camera's heading with the strip's follow rows, ?skyfollow=v1 pins it at `fixedYawDegrees`), showing the picture `file` (src/assets/skyline/) at its NATIVE aspect, never stretched: a window of the picture `cropAspect` wide to tall is cut around `face` (u, v: the alien face centre as a fraction across and down the picture; the whole picture when it is no wider than that), and the arc is as tall as that window needs at its width. `horizonFraction` is the picture's horizon row, a fraction down it. `faceElevationDegrees` puts the face that many degrees above the eye's level (so the pitched-up phone camera has it in view; the picture's own horizon then sits below the eye, where the cloud sea meets the melted sand). The edges fade to nothing (`edgeFadeFraction` each side, `topFadeFraction`, `bottomFadeFraction`, fractions of the plate) into a plain sky gradient (`sky`: `hazeColor` at the bottom, `horizonColor` at the picture's horizon row, `topColor` at the top, a cylinder `halfHeightMetres` either side of the eye, `rings` rows) that is the sky everywhere else. FOR THE COMING IMAGE (4:1, 4096x1024, horizon 75% down, face and moon in the middle half, edges fade to the sky colour): set `file`, `cropAspect` 4, `horizonFraction` 0.75 and `face` to its face centre; nothing else changes. The current 10:1 picture (7782x820) is cropped to a 4:1 window (3280 x 820 px, native pixels) around the face. ?skyplate=v1 (`query` = `v1`) draws the old whole 360-degree strip. ?sky=v1, ?skyfollow=v1 and ?skyfold=v1 keep their meaning.",
+      "about": "The skyline as a far backdrop PLATE (src/fight/skyplate.ts; Dom 2026-10-27, portrait phone: the 360-degree strip showed a tenth of a 10:1 picture blown up to a pink blur and the alien face could never fit). The plate is a `spanDegrees` arc of the strip's far cylinder (`radius`), facing the camp (it follows the camera's heading with the strip's follow rows, ?skyfollow=v1 pins it at `fixedYawDegrees`), showing the picture `file` (src/assets/skyline/) at its NATIVE aspect, never stretched: a window of the picture `cropAspect` wide to tall is cut around `face` (u, v: the alien face centre as a fraction across and down the picture; the whole picture when it is no wider than that), and the arc is as tall as that window needs at its width. `horizonFraction` is the picture's horizon row, a fraction down it. `faceElevationDegrees` puts the face that many degrees above the eye's level (so the pitched-up phone camera has it in view; the picture's own horizon then sits below the eye, where the cloud sea meets the melted sand). The edges fade to nothing (`edgeFadeFraction` each side, `topFadeFraction`, `bottomFadeFraction`, fractions of the plate) into a plain sky gradient (`sky`: `hazeColor` at the bottom, `horizonColor` at the picture's horizon row, `topColor` at the top, a cylinder `halfHeightMetres` either side of the eye, `rings` rows) that is the sky everywhere else. THE PICTURE (Dom's Smiling Cosmic Titan Over Cloudsea, 2508x627 = exactly 4:1, shown whole at native proportions, WebP q88, 121 KB; horizon 80% down, face centre at 58.5% across and 63% down, moon and face in the middle half, edges fade to the sky colour, the top 40% plain blue): swapping the picture again is `file`, `cropAspect`, `horizonFraction` and `face`; nothing else changes (a picture wider than `cropAspect` is cut to that window around `face`, a narrower one is shown whole). The old 360-degree strip's picture (`skyline.file`, 7782x820) stays for the rollback: ?skyplate=v1. ?skyplate=v1 (`query` = `v1`) draws the old whole 360-degree strip. ?sky=v1, ?skyfollow=v1 and ?skyfold=v1 keep their meaning.",
       "on": true,
       "query": "skyplate",
       "v1": "v1",
-      "file": "skyline-alien.webp",
+      "file": "skyline-titan.webp",
       "spanDegrees": 100,
       "cropAspect": 4,
       "face": {
-        "u": 0.747,
-        "v": 0.36
+        "u": 0.585,
+        "v": 0.63
       },
-      "horizonFraction": 0.88,
+      "horizonFraction": 0.8,
       "faceElevationDegrees": 0,
       "fixedYawDegrees": -90,
       "edgeFadeFraction": 0.12,
@@ -45,8 +45,8 @@
       "bottomFadeFraction": 0.1,
       "segments": 48,
       "sky": {
-        "topColor": "#3d68a8",
-        "horizonColor": "#e0928a",
+        "topColor": "#2a5a9e",
+        "horizonColor": "#f5a68e",
         "hazeColor": "#936877",
         "halfHeightMetres": 85,
         "rings": 24
