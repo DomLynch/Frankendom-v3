@@ -23,8 +23,11 @@ export type RulesPackage = {
   createFighterState(rules: PkgRules, body: unknown, opts?: { sword_side?: string; leg_hp?: number; hp_scale?: number; budgets?: Record<string, number> }): unknown;
 };
 
-/** ?rules=m4 (data/rules.json `query`, `m4`): the evaluator on. Anything else, including ?rules=v1 and no query, is V1's rules (the default). */
-export function rulesOnFor(rows: RuleRows, search: string): boolean { return rows.on && new URLSearchParams(search).get(rows.query) === rows.m4; }
+/** M4 is the default (data/rules.json `default`, Dom 2026-10-27): ?rules=v1 (`query`, `v1`) is V1's rules; ?rules=m4 is M4; no query or an unknown value is the `default` row. `on` false = the evaluator is off whatever the query. */
+export function rulesOnFor(rows: RuleRows, search: string): boolean {
+  const q = new URLSearchParams(search).get(rows.query);
+  return rows.on && (q === rows.v1 ? rows.v1 : q === rows.m4 ? rows.m4 : rows.default) === rows.m4;
+}
 
 /** Per-hit hand speed. `measured`: the attacker's animated hand-bone world speed at the hit (m/s), or null (none sampled: the page's clock was stopped, no hand bone).
  *  The package's `hand_speed_ref_m_s` numbers are a LIGHT swing's hand speed (measured on the Minotaur's clips) and `swing.heavy_mult` stands for the charge. The hero's clip speed goes in
