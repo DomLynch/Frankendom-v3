@@ -293,12 +293,12 @@ test('a kill is settled ONCE: replaying a kill (a second hit on the dead life, a
   await admin.query('select public.zone_settle_kill($1,$2,$3)', [inst, 1, 0]);
   assert.deepEqual((await admin.query('select * from public.zone_kill_credit')).rows, before);
   // the same batch id resent after a kill: replayed, nothing applied
-  const w = new Pair();
-  await w.engage(B, 0, { instance: 'z1:other' });
+  const w = p;
+  await w.engage(B, 2000, { instance: 'z1:other' });
   const rows = [{ account: B, token: tok(B), weapon: 'gladius', claimed: 100, hits: 3, layer: 1 }];
-  const b1 = await w.batch('kill-batch-0001', rows, 0);
+  const b1 = await w.batch('kill-batch-0001', rows, 2000);
   assert.equal(b1.results[0].killed, true);
-  const b2 = await w.batch('kill-batch-0001', rows, 5000);
+  const b2 = await w.batch('kill-batch-0001', rows, 7000);
   assert.equal(b2.replayed, true);
   assert.deepEqual(noTs(b2.results), noTs(b1.results));
   assert.equal((await admin.query('select count(*)::int as n from public.zone_kill_credit where account = $1', [B])).rows[0].n, 1, 'paid once');
@@ -462,6 +462,33 @@ test('KILL CAPS: seven same-instant kills of one account pay exactly killsPerMin
   await h.state();
 });
 
+test('the VERIFIER role runs the whole path too (engage, hit, kill, report), equal to the model; a no-damage engager gets an unpaid report; an expired token is replaced by a new one; a duplicate token is refused by the database', { skip }, async () => {
+  await reset();
+  const p = new Pair();
+  const asV = async (t, text, params) => { const r = await p.sql(t, text, params, VERIFIER); assert.equal(r.err, undefined, r.message); return r.ok; };
+  // A engages through the VERIFIER role (the model gets the same engage by hand), B through the writer via the pair
+  const mine = engage(p.w, { account: A, character: 'c', token: tok(A), instance: inst, layer: 1, kind: 'minotaur', maxHp: 100, respawnS: 300 }, 0);
+  const e = await asV(0, 'public.zone_spawn_engage($1,$2,$3,$4,$5,$6,$7,$8)', [A, 'c', tok(A), inst, 1, 'minotaur', 100, 300]);
+  assert.deepEqual([e.token, e.hp, e.generation], [mine.token, mine.hp, mine.generation]);
+  await p.engage(B, 0);
+  const k = await p.hit(B, 100, 3, 0);
+  assert.equal(k.killed, true);
+  assert.deepEqual(k.credits.map((c) => c.account), [B], 'A dealt nothing, so there is no credit row for A');
+  assert.deepEqual(await p.killReport(A, tok(A), 10), { state: 'unpaid', reason: 'killed' });
+  assert.deepEqual((await p.killReport(B, tok(B), 10)).state, 'settled');
+  // an expired token is swept by the next engage and a NEW token is minted
+  await reset();
+  const q = new Pair();
+  const first = await q.engage(A, 0, { maxHp: 200 });
+  const second = await q.engage(A, R.engage.ttlS * 1000 + 1, { maxHp: 200, n: 1 });
+  assert.notEqual(first.token, second.token);
+  assert.equal((await admin.query('select result from public.zone_spawn_engages where token = $1', [first.token])).rows[0].result, 'expired');
+  await q.state();
+  // a token string minted twice for two accounts: the primary key refuses (the model overwrites silently; the writer mints random tokens, so this is a belt-and-braces refusal)
+  const dup = await q.sql(R.engage.ttlS * 1000 + 10,'public.zone_spawn_engage($1,$2,$3,$4,$5,$6,$7,$8)', [B, 'c', second.token, inst, 1, 'minotaur', 200, 300]);   // (t is the virtual ms; the pair is already at ttl+1, so go a little later)
+  assert.equal(dup.err, '23505');
+});
+
 test('prune drops old hit rows, closed tokens and spent batch ids, never the credit rows', { skip }, async () => {
   await reset();
   const p = new Pair();
@@ -594,4 +621,43 @@ test('CONCURRENCY 5 (KNOWN HAZARD, MEASURED): a batch that kills on spawn C (tak
   for (const c of [t1, t2]) await c.end();
   const rows = (await admin.query('select reason from public.zone_kill_credit where account = $1 order by reason', [X])).rows;
   console.log(`# MEASURED credits for X after the hazard: ${JSON.stringify(rows.map((r) => r.reason))}`);
+});
+
+test('CONCURRENCY 6: the SAME batch id sent twice at once: the second waits on the id, then returns the first\'s receipt and applies nothing', { skip }, async () => {
+  await reset();
+  await seed('z1:dup', [A]);
+  const one = "public.zone_spawn_hit_batch('dup-batch-0001', $1::jsonb)";
+  const rows = JSON.stringify([{ account: A, token: tk(A, 'z1:dup'), weapon: 'gladius', claimed: 30, hits: 1, layer: 1 }]);
+  const a = await session(), b = await session();
+  const ra = await call(a, one, [rows]);
+  assert.deepEqual([ra.replayed, ra.results[0].hp], [false, 70]);
+  const pb = settled(call(b, one, [rows]));
+  assert.ok(await waiting(b.pid), 'B waits on the unique batch id held by A');
+  await a.query('commit');
+  const rb = await pb;
+  assert.equal(rb.e, undefined, rb.e?.message);
+  assert.equal(rb.v.replayed, true);
+  assert.equal(rb.v.results[0].hp, 70, 'the stored receipt, not a second application');
+  await b.query('commit'); await a.end(); await b.end();
+  assert.equal(Number((await admin.query('select hp from public.zone_spawns')).rows[0].hp), 70, 'applied once');
+});
+
+test('CONCURRENCY 7: two kills on two spawns whose contributors are the SAME two accounts take the account locks in ascending order: the second waits, no deadlock, both settle', { skip }, async () => {
+  await reset();
+  const X = uid(0x601), Y = uid(0x602);   // X < Y
+  for (const sp of ['z1:p', 'z1:q']) {
+    await seed(sp, [X, Y], { maxHp: 40 });
+    const c = await session(); await call(c, hitSql, [X, tk(X, sp), 'gladius', 20, 1, 1]); await c.query('commit'); await c.end();   // X contributes 20 on each
+  }
+  const a = await session(), b = await session();
+  const ka = await call(a, hitSql, [Y, tk(Y, 'z1:p'), 'gladius', 20, 1, 1]);   // Y's blow kills p: locks adv(X) then adv(Y)
+  assert.deepEqual(ka.credits.map((c) => c.account), [X, Y]);
+  const pb = settled(call(b, hitSql, [Y, tk(Y, 'z1:q'), 'gladius', 20, 1, 1]));
+  assert.ok(await waiting(b.pid), 'B waits for adv(X), the FIRST lock in the order');
+  await a.query('commit');
+  const rb = await pb;
+  assert.equal(rb.e, undefined, rb.e?.message);
+  assert.deepEqual(rb.v.credits.map((c) => c.paid), [true, true]);
+  await b.query('commit'); await a.end(); await b.end();
+  assert.equal((await admin.query('select count(*)::int as n from public.zone_kill_credit where paid')).rows[0].n, 4);
 });
