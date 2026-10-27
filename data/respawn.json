@@ -38,8 +38,8 @@
     "off": "v1",
     "camera": {
       "about": "Strategy 2026-10-27: a second attacker must never leave the frame. The lock camera frames the hero and the first boss (it looks at the point half way between them). When another boss is live further than widenAtMetres from that point, the lock backs off (and up) by distance / widenAtMetres, at most maxWiden times the one-boss frame, eased in over easeSeconds; with one boss live the factor is exactly 1 and the camera is the one it always was.",
-      "widenAtMetres": 2.5,
-      "maxWiden": 1.6,
+      "widenAtMetres": 2,
+      "maxWiden": 1.8,
       "easeSeconds": 0.5
     }
   },

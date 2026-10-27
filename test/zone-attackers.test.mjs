@@ -20,7 +20,7 @@ const poseOf = (hero, spot) => ({ hero, foe: spot, heroFacing: Math.atan2(spot.x
 const intentOf = (practice, action = null) => ({ ...idleIntent(), action: practice.phase === 'sheathed' && !practice.finish && action === null ? 'light' : action });
 
 test('the default is pinned: on, ?aggro=v1 turns it off, the cap is the V1 row (3, the first boss included)', () => {
-  assert.deepEqual({ ...ATTACKERS, about: undefined, camera: { ...ATTACKERS.camera, about: undefined } }, { about: undefined, on: true, query: 'aggro', off: 'v1', camera: { about: undefined, widenAtMetres: 2.5, maxWiden: 1.6, easeSeconds: 0.5 } });
+  assert.deepEqual({ ...ATTACKERS, about: undefined, camera: { ...ATTACKERS.camera, about: undefined } }, { about: undefined, on: true, query: 'aggro', off: 'v1', camera: { about: undefined, widenAtMetres: 2, maxWiden: 1.8, easeSeconds: 0.5 } });
   assert.equal(attackersOn(''), true); assert.equal(attackersOn('?aggro=v1'), false); assert.equal(attackersOn('?aggro=1'), true);
   assert.equal(attackersOn('', { ...ATTACKERS, on: false }), false, 'the row off');
   assert.equal(MAX_ATTACKERS, JSON.parse(read('../src/fight/world-rules-defs.json')).rules.find((r) => r.id === 'maxAttackers').value);
@@ -67,7 +67,7 @@ test('the camera composes with the lens zoom: one boss is byte-identical to main
   const inFrame = (zoom, widen, p) => {
     const cam = new THREE.PerspectiveCamera(fovForZoom(zoom), 375 / 812, 0.1, 100), pose = cameraPose(hero, yaw, 0, true, A, 1, 0, 0, BACK * widen);
     cam.position.set(pose.x, pose.y, pose.z); cam.lookAt(pose.lookX, 0.8, pose.lookZ); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
-    return [0, 1.8].every((y) => { const v = new THREE.Vector3(p.x, y, p.z).project(cam); return Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && v.z < 1; });
+    return [0, 1.8].every((y) => { const v = new THREE.Vector3(p.x, y, p.z).project(cam); return Math.abs(v.x) <= 0.85 && Math.abs(v.y) <= 0.85 && v.z < 1; });
   };
   for (const zoom of [1, FIGHT.camera.zoom]) {
     assert.equal(framingWiden(centre, [], rows, zoom), 1, 'one boss live: exactly 1 at every zoom, so the camera is main\'s');
