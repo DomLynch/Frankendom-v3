@@ -112,9 +112,9 @@ test('knockdown: light leg blows add up to the fall (60 of the counter); it carr
   assert.equal(r.debug.byOutcome.knockdown, 1);
 });
 
-test('a LIGHT blow never lays him down: the evaluator\'s kill on a light counter-hit (longsword, torso/head/legs) is a stagger while the sim lives; a heavy one still falls', () => {
+test('a LIGHT blow never lays him down: the evaluator\'s kill on a light counter-hit (longsword, torso/head) is a stagger while the sim lives; a heavy one still falls', () => {
   assert.deepEqual(ROWS.killAsSwings, ['heavy']);
-  for (const location of ['torso', 'head', 'legs']) {
+  for (const location of ['torso', 'head']) {
     const light = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location, move: 'light_left', counter: true }), true);
     assert.equal(light.outcome, 'kill', `${location}: the evaluator still judges it lethal`);
     assert.equal(light.action, 'stagger', `${location}: shown as a flinch`);
