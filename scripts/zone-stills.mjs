@@ -14,7 +14,8 @@ if (!base || !out || !tag) { console.error('usage: node scripts/zone-stills.mjs 
 mkdirSync(out, { recursive: true });
 const WALK_KEY = process.env.WALK_KEY ?? 'KeyW';
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const [VW, VH] = (process.env.VIEW ?? '375x812').split('x').map(Number);   // VIEW=812x375: the phone on its side, a wider look at the bosses (the 375-wide frame holds the hero and one boss)
+const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
 const shot = async (n) => { await page.screenshot({ path: `${out}/${tag}-${n}.png` }); };
@@ -31,6 +32,7 @@ await shot('1-standing'); console.log(`${tag} standing`, JSON.stringify(await zo
 // the cost: mean frame time and the renderer's counts over 3 s of the standing scene
 const cost = await page.evaluate(() => new Promise((done) => { let n = 0; const t0 = performance.now(); const tick = () => { n++; if (performance.now() - t0 >= 3000) done({ frames: n, meanMs: +((performance.now() - t0) / n).toFixed(2), zone: globalThis.__v3Zone ?? null }); else requestAnimationFrame(tick); }; requestAnimationFrame(tick); }));
 console.log(`${tag} cost`, JSON.stringify(cost));
+if (process.env.STOP === 'standing') { await browser.close(); process.exit(0); }   // STOP=standing: only the first shot and the cost (a wider look: query cam=v1)
 if (!(await zone()).zone) { console.log(`${tag} no zone state (the old single fight): done`); await browser.close(); process.exit(0); }
 await key(WALK_KEY, 'keydown'); await page.waitForTimeout(700);
 await shot('2-walking'); console.log(`${tag} walking`, JSON.stringify(await zone()));

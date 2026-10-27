@@ -64,7 +64,7 @@ import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
-import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig } from './ragdoll.ts';
+import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
   readonly files: string[];
@@ -527,10 +527,11 @@ export function createScene(
   const idleCopies: THREE.Group[] = [];
   function syncIdleFoes(practice: Practice) {
     const rest = standoffOn ? standoff.age >= STANDOFF_MS : standoff.age >= 0, foe = practice.duel.fighters[1];
-    if (warriors && opponent.visible && rest && !practice.finish && foe.health === foe.maxHealth && (foe.phase === 'sheathed' || foe.phase === 'ready') && foe.age >= 0)
+    if (warriors && opponent.visible && rest && (!ragdoll || ragdoll.state === 'alive') && !practice.finish && foe.health === foe.maxHealth && (foe.phase === 'sheathed' || foe.phase === 'ready') && foe.age >= 0)
       while (idleCopies.length < idleList.length) {
         const holder = new THREE.Group(), { copy } = snapshotRig(opponent, false);
         copy.position.set(0, 0, 0); copy.rotation.set(0, 0, 0);   // the live foe's own place and heading: the holder carries the copy's now
+        copy.traverse((o) => { if (o !== copy && o.scale.x <= WARM_SCALE) o.visible = false; });   // the cut caps' warm-up specks (ragdoll.ts prepareCutArt) are the live rig's to hide, not a copy's to carry
         holder.add(copy); scene.add(holder); idleCopies.push(holder);
       }
     idleCopies.forEach((holder, i) => {
