@@ -33,6 +33,8 @@ import { HAMSTRUNG_BEATS, HAMSTRUNG_SOURCE_PELVIS, HAMSTRUNG_VICTIMS, hamstrungP
 import { EXECUTION_BEATS, EXECUTION_FLOOR_MARKS, EXECUTION_SOURCE_PELVIS, executionPick, poseOf, resolveExecution } from './execution.ts';
 import { createHamstrungAssets } from './hamstrung-assets.ts';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
+import { drawOpenGround } from '../zone/ground-draw.ts';
+import { anchorInto, type Sizing as GroundSizing } from '../zone/ground.ts';
 import { arenaFor, buildArena } from '../stubs.ts';   // V3: arena.ts, arena-themes.ts (V2's flat stage)
 import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
@@ -225,6 +227,7 @@ export function createScene(
     impactFx = createImpactFx(scene),   // a flash + ground ring per contact row (hit-stop-defs.json flash/ring/tint columns; a row without them draws nothing)
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
+  let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
   arena.ready.then(() => { if ((arena.sky.image as { width: number }).width > 2) { arenaSky = arena.sky; rebuildEnvironment(); } }).catch(() => {});
   function capsule(x: number, z: number, material: THREE.Material) {
@@ -708,6 +711,8 @@ export function createScene(
     liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef }[]) { liveList = list; },
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
+    openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; if (groundSnap > 0) scene.add(sun.target); },
+    get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
       rig.stopTour();
@@ -744,6 +749,7 @@ export function createScene(
       freeCamera = false,   // the zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts): no finisher camera, no lock on the corpse; the hero keeps whatever pose he holds until `roamed`
     ) {
       if (arena.group.scale.x !== PLAY_SCALE) { arena.group.scale.setScalar(PLAY_SCALE); const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // the painted boundary ring is the full arena's circle: in a smaller one the wall is the edge   // the floor, ring, backdrop and props come inward with the play circle of the fight on screen (play-radius.ts; Match sets it)
+      if (groundSnap > 0) { anchorInto(groundAt, state.x, state.z, groundSnap); arena.group.position.set(groundAt.x, 0, groundAt.z); sun.position.set(sunHome.x + groundAt.x, sunHome.y, sunHome.z + groundAt.z); sun.target.position.set(groundAt.x, 0, groundAt.z); }   // the zone's endless ground (data/zone-ground.json groundFollow): the floor, its grid and the sun's shadow frustum stand on the hero, in whole grid cells
       if (specialId && (previewEpoch !== specialEpoch || practice.duel.tick < previewTick)) {
         previewGeneration++; specialFx?.clear(); previewBlocked = false; if (!specialFx) { specialFxLoading = false; if (previewGroup) disposeSpecialGroup(previewGroup); }
       }
@@ -833,7 +839,7 @@ export function createScene(
       if (theme.light?.flicker) {   // firelight: the key light breathes and sways a little, so the long shadows move
         const t = performance.now() / 1000, f = theme.light.flicker;
         sun.intensity = sunPower * (look?.key ?? 1) * (1 + f * (0.6 * Math.sin(t * 7.3) + 0.4 * Math.sin(t * 13.1 + 1.3)));
-        sun.position.set(sunHome.x + 0.7 * Math.sin(t * 1.7), sunHome.y + 0.3 * Math.sin(t * 2.9), sunHome.z + 0.7 * Math.cos(t * 1.3));
+        sun.position.set(groundAt.x + sunHome.x + 0.7 * Math.sin(t * 1.7), sunHome.y + 0.3 * Math.sin(t * 2.9), groundAt.z + sunHome.z + 0.7 * Math.cos(t * 1.3));
       }
       arena.update(animationDt, events, rig.started ? camera : undefined, { tick: practice.duel.tick, fighters: [state, practice.enemy] });   // the crowd culls against the settled camera; the first frame draws everyone; the lorarii pace on the sim tick and watch the fighters
       const dx = state.x - player.position.x,
