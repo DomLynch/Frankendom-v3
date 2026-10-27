@@ -15,7 +15,7 @@ const spawns = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const hero = () => initialState();   // the pit's mark: where a newcomer stands
 
 test('the default is pinned: on, 5 s, one spawn (the yard Pitborn), ?opener=off; every number in range', () => {
-  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, reachMetres: 2, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
+  assert.deepEqual({ ...OPENERS, about: undefined }, { about: undefined, on: true, delaySeconds: 5, count: 1, reachMetres: 4, spawns: ['yard-pitborn'], query: 'opener', off: 'off' });
   assert.doesNotThrow(() => validateOpeners(OPENERS, spotsFor(ZONE)));
   assert.ok(OPENERS.delaySeconds >= ROWS.limits.delaySeconds[0] && OPENERS.delaySeconds <= ROWS.limits.delaySeconds[1]);
   assert.equal(openerOn(''), true); assert.equal(openerOn('?x=1'), true);

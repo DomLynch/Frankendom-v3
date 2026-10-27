@@ -89,10 +89,11 @@ const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.ready
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
+const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));   // the live zone (null under ?postkill=v1: the single fight, whose pit is exactly as before)
 let seed = FIGHT.seed, epoch = 0;
 const nextSeed = (s: number): number => (Math.imul(s, 1664525) + 1013904223) >>> 0;   // match.ts:75
 function fresh(pose?: DuelPose): Practice {
-  setPlayScale(playScaleFor(opponentId, Infinity)); setLateNotice(true); setStab(true); setStanceRows(true);
+  setPlayScale(ZONE ? WORLD.pitScale : playScaleFor(opponentId, Infinity)); setLateNotice(true);   // the zone's pit is a wider circle (data/respawn.json world.pitScale) so the bosses stand further apart; the single fight keeps the Arena 1 circle setStab(true); setStanceRows(true);
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   setFoeSpecialReach(foeSpecialReachFor(FIGHT.foeSpecialReach, search));   // V3: an opponent's melee special starts inside 2.2 m and fizzles past 2.6 m (data/fight.json foeSpecialReach); ?special=v1 = V1's 3.0 m, no release check
@@ -194,7 +195,6 @@ function nameOpponent() {   // :397 without the legend
 // the spawn the hero is nearest to (`current`, the live rig); the others stand as frozen copies at their spots (view.idleFoes); the fight starts when the hero walks into the held one's aggro
 // (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
-const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
