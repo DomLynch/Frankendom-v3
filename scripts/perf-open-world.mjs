@@ -54,11 +54,15 @@ async function one(query) {
   const t0 = Date.now(); let n = 0, damaged = false;
   while (Date.now() - t0 < SECS * 1000) {
     await press(page, MIX[n++ % MIX.length]); await keep(page);
-    if (n % 3 === 0) await page.evaluate(() => {   // the forced swing: the foe in front of the hero, mid-attack (as clash-stills COST), so a clash / hit lands every few seconds
-      const [h, f] = globalThis.__v3Fight.duel.fighters, hh = h.body.heading;
-      f.body = { ...f.body, x: h.body.x + Math.sin(hh) * 1.3, z: h.body.z + Math.cos(hh) * 1.3, heading: hh + Math.PI };
-      Object.assign(f, { phase: 'attack', move: 'overhead', age: 0, stall: 0, stun: 0, buffer: null, landed: false, chained: false, charge: 0, charged: false, stamina: f.maxStamina, attackFrom: null });
-    });
+    if (n % 3 === 0) {   // the forced swing, as clash-stills COST: the hero guards (ArrowLeft + Q), the foe in front of him mid light_right, so a clash lands every few seconds
+      await page.keyboard.down('ArrowLeft'); await page.keyboard.down('KeyQ'); await page.waitForTimeout(150);
+      await page.evaluate(() => {
+        const [h, f] = globalThis.__v3Fight.duel.fighters, hh = h.body.heading;
+        f.body = { ...f.body, x: h.body.x + Math.sin(hh) * 1.3, z: h.body.z + Math.cos(hh) * 1.3, heading: hh + Math.PI };
+        Object.assign(f, { phase: 'attack', move: 'light_right', age: 0, stall: 0, stun: 0, buffer: null, landed: false, chained: false, charge: 0, charged: false, stamina: f.maxStamina, attackFrom: null });
+      });
+      await page.waitForTimeout(700); await page.keyboard.up('KeyQ'); await page.keyboard.up('ArrowLeft');
+    }
     if (!damaged && Date.now() - t0 > SECS * 400) damaged = await page.evaluate(() => globalThis.__v3Rules?.setPartHp?.('leg_left', 0) ?? false);   // limbs: a leg to 0 mid-run
     await page.waitForTimeout(500);
   }
