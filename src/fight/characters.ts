@@ -190,7 +190,7 @@ export { MissingTextures, retryTransient, transientLoadError } from '../retry.ts
 // The skin map a parsed fighter lacks ('' when it has them all): a creature's body needs map + roughnessMap, a warrior's Steel map + normalMap.
 function missingMap(scene: Group): string {
   const creature = scene.getObjectByName('CreatureBody');
-  let mesh = creature ?? scene.getObjectByName('Steel');
+  let mesh = creature ?? scene.getObjectByName('Steel') ?? scene.getObjectByName('piece_root');   // piece_root: the physics cut GLB (docs/CUT-CONTRACT.md) has its body in seven piece_* meshes with the same skin materials
   // A 106 body's Steel may be two primitives, which three.js loads as a Group of meshes (ch25): its first mesh is the skin. A 65 body: as it was.
   if (!creature && mesh && !(mesh instanceof Mesh) && rigOf(scene) === '106') { let first: Mesh | undefined; mesh.traverse(o => { if (!first && o instanceof Mesh) first = o; }); mesh = first ?? mesh; }
   const name = creature ? 'CreatureBody' : 'Steel';

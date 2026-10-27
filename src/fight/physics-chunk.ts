@@ -3,3 +3,5 @@
 export { createPhysics } from '@frankendom/physics';
 export { createThreeRig } from '@frankendom/physics/three-rig';
 export { createEvaluator, createFighterState, loadRules } from '@frankendom/physics';   // the M4 rules evaluator (src/fight/rules-eval.ts, ?rules=m4); the package's rows are bundled with it
+export { createCutRig } from '@frankendom/physics/three-cuts';   // the cut-piece meshes' rig (physics docs/CUT-CONTRACT.md): the body GLB is the physics cut GLB, its caps show with the ragdoll's cuts
+export { default as minotaurCutManifest } from '../assets/minotaur-106.cut.manifest.json' with { type: 'json' };   // the manifest beside the Minotaur's cut GLB (src/assets/minotaur-106.glb is that file)
