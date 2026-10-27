@@ -7,6 +7,7 @@ export type CutCamRow = { from: number; over: number; bone: string; mix: number;
 export type CutFocus = { x: number; y: number; z: number };
 export type CutCamPose = { x: number; y: number; z: number; lookX: number; lookY: number; lookZ: number };
 export const MIN_EYE: number = ROWS.minEye;   // metres: the lens never stands lower than this over a lying foe
+export const STICK_FIRST_FRAME = 0.25;         // seconds: the stick beat before the scene has seen the finish (the killing frame), until its own row's beat is known
 export const MIDDLE_BONE = 'pelvis';           // the bone `mix` pulls the aim toward
 
 /** Off for ?finishercam=v1 (any other value keeps the default, ON). */

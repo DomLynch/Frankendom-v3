@@ -115,5 +115,7 @@ test('wired: the camera, the blood and the stick rule read the rows; no sim file
   assert.match(read('../src/fight/scene.ts'), /focus: cutBone \? cutFocus : null/);
   assert.match(read('../src/fight/scene.ts'), /cutRigKey !== rigNow/);
   assert.match(read('../src/client/main.ts'), /phase\.stickBeat/);
+  assert.match(read('../src/fight/scene.ts'), /: STICK_FIRST_FRAME;/, 'the killing frame holds a stick still down');
+  for (const [id, r] of Object.entries(ROWS)) assert.ok(r.from + r.over <= 0.3 + 1e-9, `${id}: the close view is in place by kill+1 s (clock 0.3), so kill+1.5 s reads`);
   for (const f of ['../src/fight/sim.ts', '../src/sim/validate.js']) assert.doesNotMatch(read(f), /finisher-cam|finishercam/);
 });
