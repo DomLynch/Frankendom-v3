@@ -27,7 +27,8 @@ export const SCHEMA = {
     rowMaps: { 'finisherCuts.rows': ['unit', 'atS', 'push', 'kill', 'plane'] },
     finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'] } },
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
-  'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'] },
+  'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
+    maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
@@ -68,6 +69,12 @@ export function validateFile(name, json) {
   for (const [path, keys] of Object.entries(s.finite || {})) {   // numeric rows: each key must be present and a finite number (a missing one would reach the page as NaN)
     const obj = path.split('.').reduce((o, p) => o?.[p], json);
     for (const k of keys) if (!Number.isFinite(obj?.[k])) errors.push(`${name}.${path}.${k}: must be a finite number`);
+  }
+  if (name === 'rules') {   // the hand-speed rows (rules-eval.ts handSpeedOf): finite, scale in (0, 1], divisor at least 1, span and window positive (an absent or bad one would reach the page as NaN)
+    const num = (k, ok, want) => { if (!Number.isFinite(json[k]) || !ok(json[k])) errors.push(`${name}.${k}: must be ${want}`); };
+    num('speedScale', (v) => v > 0 && v <= 1, 'a finite number in (0, 1]'); num('heavyDivisor', (v) => v >= 1, 'a finite number >= 1');
+    num('speedSpanS', (v) => v > 0, 'a finite number > 0'); num('speedWindow', (v) => v >= 1 && Number.isInteger(v), 'an integer >= 1');
+    num('speedMin', (v) => v > 0, 'a finite number > 0'); num('snapOver', (v) => v > 0, 'a finite number > 0');
   }
   if (name === 'physics' && json.cut?.cue) {   // the cue's units are the package's severable ids, every unit has a label, and the colour is pasted into CSS: a plain #rrggbb only
     const cue = json.cut.cue, UNITS = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'];

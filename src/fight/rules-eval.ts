@@ -16,27 +16,64 @@ type EvalResult = {
   knockdown: { fallSeconds: number; downSeconds: number; cause: 'damage' | 'push' } | null; cut: { unit: string } | null; bleed: boolean; events: { type: string }[];
   tipSpeed: number; swing: string; counterHit: boolean;
 };
-type PkgRules = { swing: { hand_speed_ref_m_s: Record<string, number> }; strength_scale: Record<string, number>; knockdown: { fall_seconds: Record<string, number> }; weapons: Record<string, unknown> };
+type PkgRules = { swing: { hand_speed_ref_m_s: Record<string, number>; heavy_mult: number }; strength_scale: Record<string, number>; knockdown: { fall_seconds: Record<string, number> }; weapons: Record<string, unknown> };
 /** What the physics chunk exports (physics-chunk.ts): the evaluator and its state factory. */
 export type RulesPackage = {
   loadRules(): PkgRules; createEvaluator(rules: PkgRules): { rules: PkgRules; evaluateHit(hit: EvalHit, state: unknown): EvalResult };
-  createFighterState(rules: PkgRules, body: unknown, opts?: { sword_side?: string; leg_hp?: number }): unknown;
+  createFighterState(rules: PkgRules, body: unknown, opts?: { sword_side?: string; leg_hp?: number; hp_scale?: number; budgets?: Record<string, number> }): unknown;
 };
 
 /** ?rules=m4 (data/rules.json `query`, `m4`): the evaluator on. Anything else, including ?rules=v1 and no query, is V1's rules (the default). */
 export function rulesOnFor(rows: RuleRows, search: string): boolean { return rows.on && new URLSearchParams(search).get(rows.query) === rows.m4; }
 
-/** One sim Hit event -> the evaluator's input, or null (not a blow on his body: a missile, no location, a weapon with no row). `rules`: the package's rows (the speed reference). */
-export function hitInput(rows: RuleRows, rules: Pick<PkgRules, 'swing'>, e: CombatEvent, opponentId: string): EvalHit | null {
+/** Per-hit hand speed. `measured`: the attacker's animated hand-bone world speed at the hit (m/s), or null (none sampled: the page's clock was stopped, no hand bone).
+ *  The package's `hand_speed_ref_m_s` numbers are a LIGHT swing's hand speed (measured on the Minotaur's clips) and `swing.heavy_mult` stands for the charge. The hero's clip speed goes in
+ *  times rows.speedScale (median-to-median onto the package's units), and a heavy's over rows.heavyDivisor (1 when the heavy clips carry no charge in their speed: the evaluator applies heavy_mult once).
+ *  The light-equivalent is clamped to the package's measured range (rows speedMin, the package's hand p10, and speedMaxRef, its full-speed light swing); no measure = the reference row (`handSpeedRef`, light_p50). */
+export function handSpeedOf(rows: RuleRows, rules: Pick<PkgRules, 'swing'>, measured: number | null | undefined, heavy: boolean): { speed: number; source: 'measured' | 'ref' } | null {
+  const ref = rules.swing.hand_speed_ref_m_s[rows.handSpeedRef];
+  if (typeof ref !== 'number') return null;
+  if (typeof measured !== 'number' || !Number.isFinite(measured) || measured <= 0) return { speed: ref, source: 'ref' };
+  // an absent or non-finite row is the identity (scale 1, divisor 1), never NaN; the validator rejects the file itself (src/sim/validate.js)
+  const scale = Number.isFinite(rows.speedScale) && rows.speedScale > 0 ? rows.speedScale : 1, divisor = Number.isFinite(rows.heavyDivisor) && rows.heavyDivisor >= 1 ? rows.heavyDivisor : 1;
+  const lightEquivalent = measured * scale / (heavy ? divisor : 1);
+  const hi = rules.swing.hand_speed_ref_m_s[rows.speedMaxRef] ?? ref;
+  return { speed: Math.min(hi, Math.max(rows.speedMin, lightEquivalent)), source: 'measured' };
+}
+
+/** One sim Hit event -> the evaluator's input, or null (not a blow on his body: a missile, no location, a weapon with no row). `rules`: the package's rows (the speed reference and heavy_mult). `measured`: the attacker's hand speed at the hit (handSpeedOf). */
+export function hitInput(rows: RuleRows, rules: Pick<PkgRules, 'swing'>, e: CombatEvent, opponentId: string, measured?: number | null): EvalHit | null {
   if (e.type !== 'Hit' || e.missile || !e.location || !e.weapon) return null;
   const w = (rows.weapons as Record<string, { rule: string; blunt?: boolean } | undefined>)[e.weapon];
-  const speed = rules.swing.hand_speed_ref_m_s[rows.handSpeedRef];
-  if (!w || typeof speed !== 'number') return null;
   const armour = (rows.armour as Record<string, string | undefined>)[opponentId] ?? rows.armour.default;
   const heavy = e.charged === true || isHeavyMove(e.move) || (e.move !== undefined && rows.heavyMoves.includes(e.move));
+  const speed = handSpeedOf(rows, rules, measured, heavy);
+  if (!w || !speed) return null;
   return {
     weapon: w.rule, kind: w.blunt ? 'blunt' : isStabMove(e.move) ? 'stab' : 'slash', zone: e.location as Zone,
-    ...(e.location === 'legs' ? { side: rows.legSide as 'left' | 'right' } : {}), armour, handSpeed: speed, swing: heavy ? 'heavy' : 'light', counterHit: e.counter === true, t: e.tick / rows.tickHz,
+    ...(e.location === 'legs' ? { side: rows.legSide as 'left' | 'right' } : {}), armour, handSpeed: speed.speed, swing: heavy ? 'heavy' : 'light', counterHit: e.counter === true, t: e.tick / rows.tickHz,
+  };
+}
+
+/** The attacker's hand speed from his animated hand bone: one world position a frame (`push`), the speed of each step; `speed()` is the fastest of the last `speedWindow` steps
+ *  (a swing's peak is a frame or two before the contact the sim reports), or null with no usable step. A step over `snapOver` m/s is a pose snap (a teleport), not a swing: dropped. Pure: no three, no clock. */
+export function createHandSpeed(rows: Pick<RuleRows, 'speedWindow' | 'snapOver' | 'speedSpanS'>) {
+  // The package measured a backward difference over 3 ticks (0.05 s) because V3's clips step at 20 fps: a one-frame difference on a 60 Hz page reads 0 for two frames and 3x the speed on the third.
+  // So each speed here is the displacement over the last `speedSpanS` seconds / those seconds, and the caller passes the hand RELATIVE to its shoulder (no root motion, no lunge, in the body's own metres).
+  let t = 0; let hist: { t: number; p: [number, number, number] }[] = []; const speeds: number[] = [];
+  return {
+    push(x: number, y: number, z: number, dt: number) {
+      if (!(dt > 0)) return;   // a stopped clock (stills): no step, the last speeds stand
+      t += dt; hist.push({ t, p: [x, y, z] });
+      let k = -1; for (let i = hist.length - 2; i >= 0; i--) if (t - hist[i].t >= rows.speedSpanS - 1e-9) { k = i; break; }
+      if (k < 0) return;   // not a full span yet
+      hist = hist.slice(k);
+      const a = hist[0], span = t - a.t, v = Math.hypot(x - a.p[0], y - a.p[1], z - a.p[2]) / span;
+      if (v > rows.snapOver) return;
+      speeds.push(v); if (speeds.length > rows.speedWindow) speeds.shift();
+    },
+    speed(): number | null { return speeds.length ? Math.max(...speeds) : null; },
+    reset() { t = 0; hist = []; speeds.length = 0; },
   };
 }
 
@@ -59,13 +96,14 @@ export function present(rows: RuleRows, rules: Pick<PkgRules, 'strength_scale' |
 /** The page's rules (globalThis.__v3Rules and window.__v3Fight.rules): the totals, the last results, the cuts, the per-hit cost. */
 export type RulesDebug = {
   on: true; hits: number; skipped: number; byOutcome: Record<string, number>; deferredKills: number; renewals: number; cuts: { unit: string; tick: number; weapon: string }[];
-  last: { input: EvalHit; result: Omit<EvalResult, 'events'> & { events: string[] }; presentation: Presentation }[]; cost: { calls: number; totalMs: number; maxMs: number };
+  last: { input: EvalHit; measured: number | null; source: 'measured' | 'ref'; result: Omit<EvalResult, 'events'> & { events: string[] }; presentation: Presentation }[]; cost: { calls: number; totalMs: number; maxMs: number };
 };
 
 /** One page's evaluator for one opponent. `body`: the ragdoll's measure row (its parts). `pkg`: the chunk's exports. */
-export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown, opponentId: string, clock: () => number = () => performance.now()) {
+export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown, opponentId: string, clock: () => number = () => performance.now(), hp: { foe: number; man: number } = { foe: 1, man: 1 }) {
   const ev = pkg.createEvaluator(pkg.loadRules());
-  const fresh = () => pkg.createFighterState(ev.rules, body, { sword_side: rows.swordSide, leg_hp: rows.legHp });
+  // his budgets: the package's rows (a man's) scaled by his sim health over a man's (`hp`: the sim's pools, passed in; moves.ts health, RULES.health), then `budgets` (absolute, per part, data/rules.json) over that
+  const fresh = () => pkg.createFighterState(ev.rules, body, { sword_side: rows.swordSide, leg_hp: rows.legHp, hp_scale: hp.foe / hp.man, budgets: rows.budgets });
   let state = fresh();
   const debug: RulesDebug = { on: true, hits: 0, skipped: 0, byOutcome: {}, deferredKills: 0, renewals: 0, cuts: [], last: [], cost: { calls: 0, totalMs: 0, maxMs: 0 } };
   const g = globalThis as { __v3Rules?: RulesDebug; __v3Fight?: { rules?: RulesDebug } };
@@ -75,8 +113,8 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
   return {
     debug,
     /** One sim Hit on his body. `simAlive`: false on the killing blow's batch (the sim's Killed decides: the evaluator's kill is then simply the kill). Null: nothing to evaluate. */
-    hit(e: CombatEvent, simAlive: boolean): Presentation | null {
-      const input = hitInput(rows, ev.rules, e, opponentId);
+    hit(e: CombatEvent, simAlive: boolean, measured: number | null = null): Presentation | null {
+      const input = hitInput(rows, ev.rules, e, opponentId, measured);
       if (!input) { debug.skipped++; return null; }
       const start = clock();
       const r = ev.evaluateHit(input, state);
@@ -85,7 +123,7 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
       debug.hits++; debug.byOutcome[r.outcome] = (debug.byOutcome[r.outcome] ?? 0) + 1;
       if (p.deferredKill) { debug.deferredKills++; if (rows.renewOnKill) { state = fresh(); debug.renewals++; } }
       if (p.cut) debug.cuts.push({ unit: p.cut, tick: e.tick, weapon: input.weapon });
-      debug.last.push({ input, result: { ...r, events: r.events.map((x) => x.type) }, presentation: p });
+      debug.last.push({ input, measured: measured ?? null, source: measured ? 'measured' : 'ref', result: { ...r, events: r.events.map((x) => x.type) }, presentation: p });
       if (debug.last.length > rows.log) debug.last.shift();
       debug.cost.calls++; debug.cost.totalMs += ms; debug.cost.maxMs = Math.max(debug.cost.maxMs, ms);
       publish();

@@ -1,0 +1,17 @@
+{
+  "query": "",
+  "attacks": 6,
+  "killed": 25,
+  "rules": null,
+  "rows": [],
+  "ragdoll": {
+    "state": "frozen",
+    "cuts": []
+  },
+  "finish": {
+    "victim": 1,
+    "location": "torso",
+    "move": "kick",
+    "heading": 2.615646248824114
+  }
+}
