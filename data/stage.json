@@ -330,7 +330,7 @@
         },
         "breathing": {
           "on": true,
-          "rect": { "u0": 0.43, "v0": 0.5, "u1": 0.7, "v1": 0.79 },
+          "rect": { "u0": 0.43, "v0": 0.5, "u1": 0.67, "v1": 0.79 },
           "featherFraction": 0.3,
           "amplitudePx": 4,
           "periodSeconds": 6.5,

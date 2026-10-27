@@ -129,7 +129,7 @@ test('breathing and bob: a feathered window (zero at the rect edge and outside, 
   assert.equal(breathWindow(B, ...mid), 1); assert.equal(breathWindow(B, r.u0, mid[1]), 0); assert.equal(breathWindow(B, mid[0], r.v1), 0); assert.equal(breathWindow(B, 0.1, 0.6), 0);
   assert.equal(breathWindow(B, mid[0], SKYLINE.plate.horizonFraction), 0, 'the horizon row stays still'); assert.ok(r.v1 <= SKYLINE.plate.horizonFraction);
   assert.ok(breathWindow(B, r.u0 + 0.01, mid[1]) < 1);
-  assert.ok(B.amplitudePx <= 6, 'a few plate pixels'); assert.ok(r.u1 <= A.globe.centre.u - A.globe.radius, 'the globe and its finger are outside the lift');
+  assert.ok(B.amplitudePx <= 6, 'a few plate pixels'); assert.ok(r.u1 <= A.globe.centre.u - A.globe.radius, 'the globe and its fingertip are outside the lift (the window is 0 at the rect edge)');
   assert.ok(Math.abs(sineOffsetPx(4, 6, 0, 1.5) - 4) < 1e-9); assert.ok(Math.abs(sineOffsetPx(4, 6, 0, 3)) < 1e-9); assert.ok(Math.abs(sineOffsetPx(3, 4, 0.25, 0) - 3) < 1e-9);
   assert.ok(A.globe.bob.amplitudePx <= 4);
   const face = P.face; assert.ok(face.u > r.u0 && face.u < r.u1 && face.v > r.v0 && face.v < r.v1, 'the face is inside the breath');
