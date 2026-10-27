@@ -166,7 +166,7 @@ export function createFinisherBlood(map: Texture) {
           p.life=2;p.size=(serial%11===0 ? .022 : .004+(serial%4)*.002)*Math.sqrt(s.strength);emitted++;
         }
         // Once the wound is near the floor, seep directly underneath it as well as landing droplets.
-        if(s.position.y<.65)stain(s.position,dt*.08*s.strength*boost.burst,s.site);
+        if(s.position.y<.65)stain(s.position,dt*.08*s.strength,s.site);
       });
       let count=0;
       for(const p of particles) {

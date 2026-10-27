@@ -83,9 +83,9 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
     if (killedAt < 0) {
       const gap = await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); return Math.hypot(h.body.x - f.body.x, h.body.z - f.body.z); });
       // He lets go of the stick once he is in reach: in the game a stick held at the killing blow ends the ceremony at once (data/respawn.json freeCamera.stickEndsCeremony), so a player who watches the finisher is not holding it
-      if (!stickUp && gap < (Number(process.env.REACH ?? 1.6))) { stickUp = true; await page.keyboard.up('KeyW'); }
+      if (!process.env.HOLD && !stickUp && gap < (Number(process.env.REACH ?? 1.6))) { stickUp = true; await page.keyboard.up('KeyW'); }
     }
-    if (killedAt < 0 && s.victim === 1) { killedAt = n; await page.keyboard.up('KeyW'); }
+    if (killedAt < 0 && s.victim === 1) { killedAt = n; if (!process.env.HOLD) await page.keyboard.up('KeyW'); }   // HOLD=1: the phone case, the stick still held at the killing blow and after it
     if (killedAt >= 0) { const k = n - killedAt; if (AFTER.includes(k)) await shoot(`k${String(k).padStart(3, '0')}`); if (k >= Math.max(...AFTER)) break; }
   }
   if (CAM) console.log(`${tag} caps shown: ${await page.evaluate(() => { const o = []; globalThis.__v3Scene?.traverse((m) => { if (/^cap_(belly|split)/.test(m.name) && m.visible) { const kids = []; m.traverse((c) => { if (c.isMesh) { const bb = c.geometry.boundingBox ?? (c.geometry.computeBoundingBox(), c.geometry.boundingBox), cen = bb.getCenter(c.position.clone()); c.localToWorld(cen); kids.push(`${c.type} vis${c.visible} verts${c.geometry.attributes.position.count} col${c.material?.color?.getHexString?.()} op${c.material?.opacity} dw${c.material?.depthWrite} at ${cen.toArray().map((v) => v.toFixed(2))} scale ${c.scale.x.toFixed(2)}`); } }); o.push(`${m.name} ${kids.join(' | ') || m.material?.color?.getHexString?.()}`); } }); return o.join('; ') || 'none'; })}`);

@@ -48,7 +48,7 @@ import { createWoundNotice } from './wound-notice.ts';
 import { shardCapacity } from './special-shards-rows.ts';
 import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
-import { cutCamRows } from './finisher-cam.ts';
+import { cutAim, cutCamRows, MIDDLE_BONE, stickBeat } from './finisher-cam.ts';
 const CUT_BLOOD = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json blood boosts by finisher id; null = ?finishercam=v1 (the blood as it was)
 import { phoneTier, pixelCap } from './quality.ts';
 import { FOE_TUNE } from './fatigue-tune.ts';
@@ -529,8 +529,8 @@ export function createScene(
     if (!fallSeconds || !dead) { fallAge = 0; return p; }
     fallAge += dt; return { ...p, pose: 'death', progress: Math.min(1, fallAge / fallSeconds) };
   };
-  let cutBone: THREE.Object3D | null = null, cutBoneKey: string | null = null;   // finisher-cam.json: the foe's bone the cut is at, found once per finish, then read each frame (no allocation)
-  const cutFocus = { x: 0, y: 0, z: 0 }, cutAt = new THREE.Vector3();
+  let cutBone: THREE.Object3D | null = null, cutMid: THREE.Object3D | null = null, cutBoneKey: string | null = null, cutRigKey: unknown = null, stickBeatNow = 0;   // finisher-cam.json: the foe's bones the cut and his middle are at, found once per finish and per foe rig, then read each frame (no allocation)
+  const cutFocus = { x: 0, y: 0, z: 0 }, cutRaw = { x: 0, y: 0, z: 0 }, cutMidAt = { x: 0, y: 0, z: 0 }, cutAt = new THREE.Vector3();
   let finishClock = -1;// the finisher corpse animates at 0.75× on a presentation clock (owner 2026-09-18: savour it) — the sim window stays 144 ticks
   // Finisher complete (Lead brief 2026-09-22, for Web's loot panel): has the ceremony FINISHED PLAYING, and at what finish
   // age did it first say so. Latched from the scene's own state in the frame loop below, never from a delay; cleared with
@@ -820,8 +820,8 @@ export function createScene(
     // finish began, 0 outside a finish. Poll it in the frame loop; the rig owns the clocks.
     // `complete` is the finisher-complete event Web's loot panel keys on: the ceremony has finished playing (see the latch in
     // the frame loop). `completeAt` is the finish age in seconds when it first latched — 0 until then.
-    finishPhase(): { settled: boolean; touring: boolean; age: number; complete: boolean; completeAt: number } {
-      return { settled: rig.settled, touring: rig.touring, age: rig.finishAge, complete: finishComplete, completeAt: finishCompleteAt };
+    finishPhase(): { settled: boolean; touring: boolean; age: number; complete: boolean; completeAt: number; stickBeat: number } {
+      return { settled: rig.settled, touring: rig.touring, age: rig.finishAge, complete: finishComplete, completeAt: finishCompleteAt, stickBeat: stickBeatNow };
     },
     // Effects consume the simulation's events for the frame; they never infer contact from animation.
     // `frozen`: the frame loop is in a hit-stop. Effects (sparks, blood, camera kick) keep running on dt; the rigs evaluate their pose for the
@@ -1240,10 +1240,16 @@ export function createScene(
       } else if (!practice.finish) openedReach = 0;
       // The cut's place for the finisher camera (finisher-cam.json): the row's bone on the foe, followed live as the ragdoll falls.
       const cutRow = CUT_BLOOD && finisher !== null && practice.finish?.victim === 1 ? CUT_BLOOD[finisher] : undefined;
-      if (!cutRow) { cutBone = null; cutBoneKey = null; }
+      stickBeatNow = CUT_BLOOD && practice.finish?.victim === 1 ? stickBeat(CUT_BLOOD, finisher) : 0;   // finishPhase().stickBeat: main.ts's stick rule
+      if (!cutRow) { cutBone = null; cutMid = null; cutBoneKey = null; cutRigKey = null; }
       else {
-        if (cutBoneKey !== finisher) { cutBoneKey = finisher; cutBone = boneOf(opponent, cutRow.bone) ?? null; }
-        if (cutBone) { cutBone.getWorldPosition(cutAt); cutFocus.x = cutAt.x; cutFocus.y = cutAt.y; cutFocus.z = cutAt.z; }
+        const rigNow = warriors?.opponent ?? null;   // a foe swap (the held body of another spawn) makes the bones stale: look them up again
+        if (cutBoneKey !== finisher || cutRigKey !== rigNow) { cutBoneKey = finisher; cutRigKey = rigNow; cutBone = boneOf(opponent, cutRow.bone) ?? null; cutMid = boneOf(opponent, MIDDLE_BONE) ?? null; }
+        if (cutBone) {
+          cutBone.getWorldPosition(cutAt); cutRaw.x = cutAt.x; cutRaw.y = cutAt.y; cutRaw.z = cutAt.z;
+          if (cutMid) { cutMid.getWorldPosition(cutAt); cutMidAt.x = cutAt.x; cutMidAt.y = cutAt.y; cutMidAt.z = cutAt.z; }
+          cutAim(cutRow, cutRaw, cutMid ? cutMidAt : null, cutFocus);
+        }
       }
       // roamed or free: no finisher camera, the follow lock on the walking hero
       rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed && !freeCamera ? {

@@ -396,11 +396,11 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       // The finisher camera for the cut (src/fight/finisher-cam.json): late in the ceremony the lens comes in close to the foe's cut from the side, so on a phone
       // the head, belly or knee fills the frame and the hero's shoulder is not in front of it. On top of the row's push-in and side view, under the arena cam.
       const cutRow = CUT_CAM && finish && finish.finisher !== null ? CUT_CAM[finish.finisher] : undefined;
-      if (cutRow && locked && !still && finish!.victim === 1 && !finish!.draw) {
+      if (cutRow && finish!.focus && locked && !still && finish!.victim === 1 && !finish!.draw) {   // no bone to follow: the row's push-in and side view stay as they were
         const k = cutCamShare(cutRow, finish!.clock);
         if (k > 0) {
           const tanHalfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect;
-          cutCamPose(cutRow, state, enemy, foeScale, tanHalfH, finish!.focus ?? null, cutPose);
+          cutCamPose(cutRow, state, finish!.focus, foeScale, tanHalfH, cutPose);
           const r = Math.hypot(cutPose.x, cutPose.z);
           if (r > ARENA_CLAMP) { cutPose.x *= ARENA_CLAMP / r; cutPose.z *= ARENA_CLAMP / r; }
           desired.lerp(eyeTarget.set(cutPose.x, cutPose.y, cutPose.z), k);
