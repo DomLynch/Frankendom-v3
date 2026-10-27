@@ -18,7 +18,7 @@ const TICK = 1000 / 60, KICK_EVERY = Number(process.env.KICK_EVERY ?? 40), CUT_E
 const AFTER = (process.env.AFTER ?? '0,4,10,20,40,90,200').split(',').map(Number), TAP = process.env.TAP, HEAD = !!process.env.HEAD;
 const report = {};
 const open = async (query, tune) => {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 2), isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
   if (process.env.CUTDEBUG) await page.addInitScript((v) => { globalThis.__cutDebug = v; }, process.env.CUTDEBUG);

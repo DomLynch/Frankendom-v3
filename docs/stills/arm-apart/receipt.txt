@@ -1,0 +1,5 @@
+Run: Mac (Metal), sha ccbe6d0 + stills only. DSF=3 ORBIT=100 AFTER=1,40 TAP=armRight ASIDE=3 node docs/stills/arm-apart/cut-stills-nocue.mjs http://localhost:PORT out "zoom=0.8"
+Harness report (cut-report.json): cuts [{"unit":"arm_right","source":"tap"}], pieces ["arm_right:cut-glb"] -> the arm is its own cut-GLB piece (piece_arm_right).
+Flesh-cap meshes in src/assets/minotaur-106.glb (strings of the GLB JSON): cap_shoulder_right_arm (on the arm piece), cap_shoulder_right_torso (on the stump).
+Both use material cap_flesh: baseColorFactor [0.55, 0.10, 0.09, 1], roughness 0.55 -> the wound-red seen in the stills IS the flesh cap material, not a debug colour.
+Not read from the live scene graph: the mesh names above are from the GLB file, the harness has no scene hook.
