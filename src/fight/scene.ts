@@ -56,7 +56,7 @@ import { readyOffset, slouchFrom } from './upright-ready.ts';
 import { armfeelFrom, Flinch } from './armfeel.ts';
 import { createBurstPool } from './armfeel-fx.ts';
 import { createBloodEdge } from './blood-edge.ts';
-import { createCameraRig, framingLow, framingTall } from './camera.ts';
+import { createCameraRig, framingLow, framingTall, setLensBoost } from './camera.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
 import { createFightFx, impactTexture } from './fx.ts';
 import { createSignatures } from './signature.ts';
@@ -67,7 +67,7 @@ import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, spawnBodyFile } from './foe-body.ts';
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
-import { fovForZoom } from './camera-zoom.ts';
+import { fovForZoom, wideBoost, type WideRow } from './camera-zoom.ts';
 import { createSkyline } from './skyline.ts';
 import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
@@ -641,10 +641,17 @@ export function createScene(
   // way (live on a50f22f, 2026-09-23; scripts/viewport-check.mjs). The stylesheet owns the box (#world: fixed, inset 0, 100 %); the
   // renderer only sizes its drawing buffer to match, writing no inline style. The two screen projections below use the same numbers.
   let width = 1, height = 1;
+  let lensZoom = 1, lensWide: WideRow | null = null, lensBoost = 1;   // the page's lens zoom (setZoom), the wide-screen row (setWide, null = none) and the boost the screen's shape gets from it (camera-zoom.ts wideBoost: exactly 1 on a portrait screen)
+  const applyLens = () => {
+    lensBoost = lensWide ? wideBoost(camera.aspect, lensZoom, lensWide) : 1;
+    camera.fov = fovForZoom(lensBoost === 1 ? lensZoom : lensZoom * lensBoost);
+    setLensBoost(lensBoost);
+    camera.updateProjectionMatrix();
+  };
   const resize = () => {
     width = document.documentElement.clientWidth || innerWidth; height = document.documentElement.clientHeight || innerHeight;
     camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+    applyLens();
     renderer.setSize(width, height, false);
     look?.setSize(width, height, renderer.getPixelRatio());
     gfx?.setSize(width, height);
@@ -655,7 +662,10 @@ export function createScene(
     // V3: only the members src/client/main.ts calls. V1's journal, zone, gear-room, loot and test-probe hooks are gone (docs/V3-OWED-2026-10-26.md §3, PR 1).
     renderer,
     /** The lens zoom (data/fight.json camera.zoom, camera-zoom.ts): 1 = the 51 degree lens as it was. Presentation only. */
-    setZoom(zoom: number): void { camera.fov = fovForZoom(zoom); camera.updateProjectionMatrix(); },
+    setZoom(zoom: number): void { lensZoom = zoom; applyLens(); },
+    /** The wide-screen lens row (data/fight.json camera.wide, camera-zoom.ts): extra zoom on a landscape or desktop screen, none on a portrait one. The zone's attacker back-off reads `lensBoost`. */
+    setWide(row: WideRow | null): void { lensWide = row; applyLens(); },
+    get lensBoost(): number { return lensBoost; },
     // --- other players (presence wiring, src/presence/draw.ts; called only with ?presence=) --------------------------------------------------------------------------------------------------
     // One more body of the hero's own rig, cloned from the asset the hero was built from (buildWarriors clones: no fetch, no parse, the hero's materials and programs), hung in the scene on its own group.
     // Null until the hero's rig is built. No collider, no sim: the caller poses it. Not in the fight: nothing else in this file knows it exists.
