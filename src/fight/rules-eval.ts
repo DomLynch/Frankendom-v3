@@ -33,13 +33,13 @@ export function rulesOnFor(rows: RuleRows, search: string): boolean {
 /** ?rules=<name> where <name> is a row of data/rules.json `variants` (m4b = the wider-sample rungs, for an A/B on a phone): that name, else null (m4, v1, no query or an unknown value are not variants). */
 export function variantFor(rows: RuleRows, search: string): string | null {
   const q = new URLSearchParams(search).get(rows.query);
-  return q !== null && Object.prototype.hasOwnProperty.call(rows.variants, q) ? q : null;
+  return q !== null && Object.prototype.hasOwnProperty.call(rows.variants ?? {}, q) ? q : null;
 }
 
 /** The package's rules with a variant's rows laid over them (a copy: the package's own object is never touched). Only the `strength_scale` and `melee_speed_gate` keys the variant names are replaced. */
 export function applyVariant(rules: PkgRules, rows: RuleRows, name: string | null): PkgRules {
   if (!name) return rules;
-  const v = (rows.variants as Record<string, { strength_scale?: Record<string, number>; melee_speed_gate?: Record<string, number> }>)[name];
+  const v = (rows.variants as Record<string, { strength_scale?: Record<string, number>; melee_speed_gate?: Record<string, number> }>)?.[name];
   const copy = JSON.parse(JSON.stringify(rules)) as PkgRules & { melee_speed_gate: Record<string, unknown> };
   copy.strength_scale = { ...copy.strength_scale, ...(v?.strength_scale ?? {}) };
   copy.melee_speed_gate = { ...copy.melee_speed_gate, ...(v?.melee_speed_gate ?? {}) };
@@ -150,8 +150,8 @@ export type RulesDebug = {
 };
 
 /** One page's evaluator for one opponent. `body`: the ragdoll's measure row (its parts). `pkg`: the chunk's exports. */
-export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown, opponentId: string, clock: () => number = () => performance.now(), hp: { foe: number; man: number } = { foe: 1, man: 1 }) {
-  const ev = pkg.createEvaluator(applyVariant(pkg.loadRules(), rows, variantFor(rows, typeof location === 'undefined' ? '' : location.search)));
+export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown, opponentId: string, clock: () => number = () => performance.now(), hp: { foe: number; man: number } = { foe: 1, man: 1 }, search: string = typeof location === 'undefined' ? '' : location.search) {
+  const ev = pkg.createEvaluator(applyVariant(pkg.loadRules(), rows, variantFor(rows, search)));   // `search`: the same string rulesOnFor read (ragdoll.ts passes it in), so the on/off check and the variant pick cannot disagree
   // his budgets: the package's rows (a man's) scaled by his sim health over a man's (`hp`: the sim's pools, passed in; moves.ts health, RULES.health), then `budgets` (absolute, per part, data/rules.json) over that
   const fresh = () => pkg.createFighterState(ev.rules, body, { sword_side: rows.swordSide, leg_hp: rows.legHp, hp_scale: hp.foe / hp.man, budgets: rows.budgets });
   let state = fresh();
@@ -169,6 +169,8 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
   publish();
   return {
     debug,
+    /** The rules this evaluator runs on (the package's with any ?rules=<variant> laid over): the tests read the picked rungs here. */
+    rules: ev.rules,
     /** One sim Hit on his body. `simAlive`: false on the killing blow's batch (the sim's Killed decides: the evaluator's kill is then simply the kill). Null: nothing to evaluate. */
     hit(e: CombatEvent, simAlive: boolean, measured: number | null = null): Presentation | null {
       const input = hitInput(rows, ev.rules, e, opponentId, measured);

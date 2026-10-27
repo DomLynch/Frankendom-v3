@@ -56,10 +56,55 @@ test('?rules=m4b is M4 with only the wider-sample rungs (Strategy 2026-10-27); m
   assert.equal(rest(b), rest(pkgRules));
   // limbs reads the evaluator's part HP from window.__v3Rules whatever the rules query says, so m4b (an evaluator is built) feeds it like m4
   const limbsSrc = readFileSync(new URL('../src/fight/feel-limbs.ts', import.meta.url), 'utf8');
-  const harness = limbsSrc.slice(limbsSrc.indexOf('function harnessFractions'), limbsSrc.indexOf('const hv = '));
+  const from = limbsSrc.indexOf('function harnessFractions'), to = limbsSrc.indexOf('const hv = ');
+  assert.ok(from >= 0 && to > from, 'both source markers are found (harnessFractions, then const hv)');
+  const harness = limbsSrc.slice(from, to);
   assert.ok(harness.includes('__v3Rules') && !harness.includes('URLSearchParams') && !harness.includes('location'), 'harnessFractions does not look at the rules query');
   assert.deepEqual([pkgRules.strength_scale.rung_hit, pkgRules.strength_scale.rung_stick, pkgRules.strength_scale.rung_cut], [8.0, 16.5, 24.3], 'm4 keeps the pins');
   assert.ok(b.strength_scale.rung_hit < b.strength_scale.rung_stick && b.strength_scale.rung_stick < b.strength_scale.rung_cut);
+});
+
+test('createRulesEval picks the variant from the `search` it is given (the same string rulesOnFor read), not from a global', () => {
+  const rung = (search) => createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0, undefined, search).rules.strength_scale.rung_hit;
+  assert.equal(rung('?rules=m4b'), 7.7, 'the real entry point lays m4b over the package');
+  for (const q of ['?rules=m4', '?rules=v1', '']) assert.equal(rung(q), 8.0, `${q || 'no query'} keeps the pin`);
+  assert.equal(rulesOnFor(ROWS, '?rules=m4b'), true);
+});
+
+test('rows without a `variants` map (an old or hand-built row set) are no variants, not a crash', () => {
+  const { variants, ...bare } = ROWS;
+  assert.equal(variantFor(bare, '?rules=m4b'), null);
+  assert.equal(rulesOnFor(bare, '?rules=m4'), true);
+  assert.equal(createRulesEval(bare, pkg, BODY, 'pitborn', () => 0, undefined, '?rules=m4b').rules.strength_scale.rung_hit, 8.0);
+});
+
+test('the m4b about-text says it also scales impulses (impulseAt = rung_stick: ~14% stronger shoves), so the A/B is not read as hit rules alone', () => {
+  assert.equal(ROWS.impulseAt, 'rung_stick');
+  assert.match(ROWS.variants.m4b.about, /impulseAt/);
+  assert.match(ROWS.variants.m4b.about, /14%/);
+});
+
+test('validate: variants rows take only known keys, finite rungs, and names that are not the v1 / m4 rows (a typo must fail, not be a dead key)', () => {
+  const withVariant = (v, name = 'm4b') => ({ ...ROWS, variants: { [name]: v } });
+  const ok = ROWS.variants.m4b;
+  assert.deepEqual(validateFile('rules', withVariant(ok)), []);
+  assert.ok(validateFile('rules', withVariant({ ...ok, strength_scale: { ...ok.strength_scale, rung_stik: 14.5 } })).length > 0, 'rung_stik');
+  assert.ok(validateFile('rules', withVariant({ ...ok, strenth_scale: ok.strength_scale })).length > 0, 'strenth_scale');
+  assert.ok(validateFile('rules', withVariant({ ...ok, melee_speed_gate: { min_speed: 7.7 } })).length > 0, 'melee_speed_gate key');
+  assert.ok(validateFile('rules', withVariant({ ...ok, strength_scale: { rung_hit: '7.7' } })).length > 0, 'a string rung');
+  assert.ok(validateFile('rules', withVariant({ ...ok, melee_speed_gate: { min_speed_m_s: NaN } })).length > 0, 'NaN gate');
+  assert.ok(validateFile('rules', withVariant(ok, 'm4')).length > 0, 'a variant named m4 would shadow the m4 row');
+  assert.ok(validateFile('rules', withVariant(ok, 'v1')).length > 0, 'a variant named v1 would shadow the v1 row');
+  assert.ok(validateFile('rules', { ...ROWS, variants: [] }).length > 0, 'variants must be an object');
+  // Object.prototype names are unknown keys, reported (not a TypeError from the prototype's own toString / constructor)
+  for (const k of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+    const bad = JSON.parse(`{"${k}": {"rung_hit": 7.7}}`);
+    let errs; assert.doesNotThrow(() => { errs = validateFile('rules', withVariant({ ...ok, ...bad })); }, k);
+    assert.ok(errs.some((e) => e.includes('unknown key')), `${k} is reported as an unknown key`);
+  }
+  // every key the validator allows is a real package row
+  for (const k of Object.keys(ok.strength_scale)) assert.ok(k in rules.strength_scale, `${k} is a package strength_scale row`);
+  for (const k of Object.keys(ok.melee_speed_gate)) assert.ok(k in rules.melee_speed_gate, `${k} is a package melee_speed_gate row`);
 });
 
 test('M4 is the default again (data/rules.json default m4, the light-hit fall fixed in #149); ?rules=v1 is the way back to V1\'s rules', () => {
