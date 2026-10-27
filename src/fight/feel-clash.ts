@@ -15,7 +15,7 @@ import ROWS from '../../data/feel-clash.json' with { type: 'json' };
 import RULES from '../../data/rules.json' with { type: 'json' };
 import { isHeavyMove } from './move-rows.ts';
 import { bone } from './rig-bones.ts';
-import { registerFeel } from './feel.ts';
+import type { FeelHooks } from './feel.ts';   // type only: this module ships in the feel chunk (feel-chunk.ts), which must not carry a second copy of the registry
 import type { CombatEvent } from './duel.ts';
 
 export type ClashRows = typeof ROWS;
@@ -205,7 +205,7 @@ export const FEEL_CLASH_ROWS = ROWS;
 // The registry's plug (feel.ts, ragdoll.ts calls frame every frame the ragdoll steps, with the sim's events). A block or a parry is not a Hit on him, so only `frame` is used.
 // The registry's ctx has the foe only: the hero's rig is found as the sibling of his group that holds the hero's spine bone (scene.ts adds both to the one scene), once.
 let runtime: ReturnType<typeof createClash> | undefined, hero: THREE.Object3D | null | undefined;
-registerFeel(ROWS.value, {
+export const feelHooks: FeelHooks = {
   frame(dt, events, ctx) {
     if (!ROWS.on) return;
     runtime ??= createClash(ROWS);
@@ -213,4 +213,4 @@ registerFeel(ROWS.value, {
     if (hero === undefined || (hero === null && parent)) hero = parent ? parent.children.find((c) => c !== ctx.group && !!bone(c, ROWS.hero.bones.spine)) ?? null : null;
     runtime.frame(dt, events, { rd: ctx.mode === 'alive' ? (ctx.rd as unknown as Rd) : undefined, foeHand: ctx.partBones[ROWS.spark.handBones.foe], hero: hero ? { anchor: hero } : undefined, parent, emit: ctx.emit });
   },
-});
+};

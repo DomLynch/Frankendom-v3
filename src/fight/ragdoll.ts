@@ -20,7 +20,6 @@ import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 import { activeFeels, emitFeel, feel, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
-import './feel-modules.ts';
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
 import { createLateCuts, finisherCutRow, finisherPush, PHYSICS_MODE } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
 
