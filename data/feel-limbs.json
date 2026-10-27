@@ -1,0 +1,51 @@
+{
+  "about": "M7 deliverable 2 (Strategy, 2026-10-27): LIMB DAMAGE THAT CHANGES THE FIGHT. The M4 rules evaluator (data/rules.json, src/fight/rules-eval.ts, opt-in ?rules=m4) tracks per-part HP on the opponent; this file says what each part at low or zero HP DOES to him in the fight, as rows. Opt-in `?feel=limbs` AND `?rules=m4` (the part HP exists only under the evaluator; ?feel=limbs alone does nothing). Design references (public behaviour only, no code read): Exanima's and Mordhau's limb injury consequences (a crippled leg is a limp and a stumble under a heavy blow; a ruined sword arm drops the guard and the weapon). src/fight/feel-limbs.ts reads every number and name here. WHAT IS PRESENTATION (done in this module): the gait (a periodic dip of the bad leg's physics motors, the good leg dipping a little in antiphase), the sag of a hurt arm, the stumble (both legs give for a moment on a heavy blow), the hunched torso, the lolling head, and the dropped weapon (hidden in his hand, a copy that falls, bounces and lies on the ground). WHAT IS SIM (NOT done here, Strategy's ruling 2026-10-27: it changes the outcome of the fight, so duel.ts and Gate 0 are V3 Dev's): `sim` under each part is the proposal for the numbers the sim should consume (walking pace, turn rate, swing speed, guard arc, damage); this module only EMITS the events named in `events` (through the feel registry, src/fight/feel.ts: ctx.emit, kept on globalThis.__feelEvents) and validates the numbers. INPUT: the sim's per-part budget fractions (feel.setLimbState, read by ctx.limbs(): 1 whole .. 0 gone; keys leg_left, leg_right, arm_left, arm_right, head, torso); when the sim has not handed any (not wired yet) the evaluator's own part HP is the input on a local host, for the stills only. `limbs.parts.<key>`: `startFrac` the part's HP fraction at which its effect begins (level 0), growing to level 1 at 0 HP (the effect row is scaled by level); `sided` the motor and blend keys are the package's role names and take the part's side (thigh -> thighLeft); `motor` the target motor strength at level 1 per role (1 full, 0.01 limp, docs/API.md setMotorStrength); `blend` how much of the ragdoll's pose replaces the clip's on that bone at level 1 (the motors only show where the bones follow the ragdoll); `gait` (leg): the bad leg's motors dip to `dipTo` for `dipFrac` of each `periodS` (smooth), the good leg dips to `goodDipTo` in antiphase; `hipsDropM` and `hipsTiltRad` the pelvis sinks (metres) and rolls toward the bad leg (radians) at level 1, `hipsBaseFrac` of it held all the time and the rest on each dip (the motors alone barely move a standing body: the hips are the limp you see); `stumble` (leg): a heavy blow (`heavyOnly`: a charged or heavy move, the evaluator's own test) while the leg is at level `level` or more drops both legs to `dipTo` (ease-in `inS`, hold `holdS`, up `upS`) and the pelvis sinks `hipsDropM` and rolls `hipsTiltRad` more, at most once per `cooldownS`; `drop` (sword arm): `afterS` seconds after the arm reaches 0 HP the weapon leaves the hand with `velocity` (m/s, in the ragdoll's frame: x right, y up, z forward) and `spin` (rad/s); it falls under `gravity` (m/s2), bounces `bounces` times at `restitution`, lies `restHeightM` above his floor and turns flat over `lieS`; the fall is worked out in the world (an analytic prop, not a Jolt body), so it stays where it fell when he walks on.",
+  "on": true,
+  "query": "feel",
+  "value": "limbs",
+  "needs": { "query": "rules", "value": "m4" },
+  "events": { "limp": "feel:limp", "guardDrop": "feel:guard_drop", "weaponDrop": "feel:weapon_drop" },
+  "levelStep": 0.25,
+  "limbs": {
+    "parts": {
+      "leg": {
+        "startFrac": 0.5,
+        "sided": true,
+        "motor": { "thigh": 0.12, "shin": 0.1, "foot": 0.2, "toe": 0.3 },
+        "blend": { "thigh": 0.9, "shin": 1, "foot": 0.9, "toe": 0.9 },
+        "gait": { "periodS": 0.85, "dipTo": 0.02, "dipFrac": 0.5, "goodDipTo": 0.5, "hipsDropM": 0.09, "hipsTiltRad": 0.16, "hipsBaseFrac": 0.45 },
+        "stumble": { "heavyOnly": true, "level": 1, "dipTo": 0.02, "inS": 0.08, "holdS": 0.3, "upS": 0.3, "cooldownS": 1.5, "blend": 1, "hipsDropM": 0.2, "hipsTiltRad": 0.3 },
+        "sim": { "speedMult": 0.55, "turnMult": 0.7, "stumbleOnHeavy": true, "stumbleStunTicks": 30 }
+      },
+      "arm_sword": {
+        "startFrac": 0.5,
+        "sided": true,
+        "motor": { "arm": 0.06, "forearm": 0.05, "hand": 0.03 },
+        "blend": { "arm": 1, "forearm": 1, "hand": 1 },
+        "drop": { "afterS": 0.25, "velocity": [0.4, 1.2, 0.9], "spin": [3, 1, 6], "gravity": 9.8, "restitution": 0.3, "bounces": 2, "restHeightM": 0.03, "lieS": 0.6 },
+        "sim": { "guardArcMult": 0, "swingSpeedMult": 0.6, "swingsStopAfterDrop": true, "damageMult": 0.5 }
+      },
+      "arm_off": {
+        "startFrac": 0.5,
+        "sided": true,
+        "motor": { "arm": 0.08, "forearm": 0.07, "hand": 0.05 },
+        "blend": { "arm": 1, "forearm": 1, "hand": 1 },
+        "sim": { "guardArcMult": 0.6, "postureTakenMult": 1.3 }
+      },
+      "torso": {
+        "startFrac": 0.4,
+        "sided": false,
+        "motor": { "spine": 0.5, "spine1": 0.45, "spine2": 0.4 },
+        "blend": { "spine": 0.35, "spine1": 0.4, "spine2": 0.4 },
+        "sim": { "staminaRegenMult": 0.6, "speedMult": 0.85 }
+      },
+      "head": {
+        "startFrac": 0.4,
+        "sided": false,
+        "motor": { "neck": 0.15, "head": 0.1 },
+        "blend": { "neck": 0.7, "head": 0.8 },
+        "sim": { "reactionMult": 1.5 }
+      }
+    }
+  }
+}
