@@ -1,7 +1,7 @@
 // The ?rules=m4 evidence harness (PR "M4 tuning"; playwright is not a repo dependency, install it beside the script): a headless ?rules=m4 (or default) fight at 375 wide on the paused fake clock, one rAF = one 60 Hz tick.
 // Plays a mix of strikes (light, directional, heavy, thrust), keeps both fighters alive, lists every hit the evaluator saw (speed, outcome), then kills with a kick,
 // moves the corpse aside (ASIDE metres, as scripts/cut-stills.mjs on #71) and shoots stills.
-//   node m4-fight.mjs <base> <out> <query> [attacks]     env: ASIDE (m, default 3), AFTER (ticks after the freeze, default 0,10,40,120), GAP (ticks between attacks), MIXJSON (the key combos)
+//   node m4-fight.mjs <base> <out> <query> [attacks]     env: ZONE (head|torso|legs: force the hit location of the finishing blow, see below), ASIDE (m, default 3), AFTER (ticks after the freeze, default 0,10,40,120), GAP (ticks between attacks), MIXJSON (the key combos)
 // The table's `anim_m_s` is the hero's measured hand speed, `used_m_s` what the evaluator took (light-equivalent, clamped); `outcome` kill = a deferred kill (shown as a knockdown).
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -14,6 +14,9 @@ const page = await browser.newPage({ viewport: { width: 375, height: 812 }, devi
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
 await page.clock.install();
+// ZONE=head|torso|legs: the harness cannot aim (the sim's hit location is the blade's geometry against his body, bladeImpact), so it rewrites the location of every Hit / Killed event aimed at the
+// opponent as the events are queued for the scene (presentation only; the sim's own finish record is untouched). Without ZONE nothing is patched.
+if (process.env.ZONE) await page.addInitScript((zone) => { const push = Array.prototype.push; Array.prototype.push = function (...a) { for (const e of a) if (e && typeof e === 'object' && (e.type === 'Hit' || e.type === 'Killed') && e.target === 1 && e.location && !e.missile && globalThis.__zoneOn) e.location = zone; return push.apply(this, a); }; }, process.env.ZONE);   // armed only for the finishing blow (below)
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
 await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
 await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20);
@@ -38,7 +41,7 @@ for (let n = 0; n < Number(process.env.SETTLE ?? 60); n++) { await run(1); await
 const rules = await page.evaluate(() => globalThis.__v3Rules ?? null);
 // kill: the foe at 1 health and one more blow. KILL (default KeyC, a kick: a plain death) = the keys of the finishing blow, e.g. KILL=KeyG for a heavy overhead (the killing blow's evaluator cut then stands and comes off the corpse); KILLGAP ticks between tries (default 30)
 const KILL = (process.env.KILL ?? 'KeyC').split(','), KILLGAP = Number(process.env.KILLGAP ?? 30);
-await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; f.health = 1; });
+await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; f.health = 1; globalThis.__zoneOn = true; });
 let killed = -1;
 for (let n = 0; n < 900 && killed < 0; n++) { if (n % KILLGAP === 0) { for (const c of KILL) await page.keyboard.down(c); for (const c of KILL.slice().reverse()) await page.keyboard.up(c); } await run(1); await page.evaluate(() => { const [h] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; }); if ((await read()).foeDead) killed = n; }
 await page.keyboard.up('KeyW');

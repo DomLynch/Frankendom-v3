@@ -207,7 +207,7 @@ function frame(now: number) {
       frameEvents.push(...practice.events);
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
-      const pick = executionPick(hamstrungPick(ragdollFinisher(), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)
+      const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)
       const deathAudio = practice.finish && practice.events.some((e) => e.type === 'Killed')
         ? { finish: practice.finish, weapons, gore: true, override: resolveExecution(opponentId, practice.finish, weapons, pick, view.previousFinisher(),
           resolveHamstrung(opponentId, practice.finish, weapons, pick, view.previousFinisher(), resolveFinisher(opponentId, practice.finish, weapons, isTemplate(pick, 'execute') ? null : pick, view.previousFinisher()))) ?? PLAIN_DEATH }
