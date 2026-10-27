@@ -2,9 +2,11 @@
   "about": "What the zone loop adds to the zone row (data/zones/zone1.row.json, read by src/zone/zone-rows.ts zoneFor; the row owns the spawn rows, respawnSeconds, behaviour and the hero's respawn point with downSeconds and the died line). Dom 2026-10-27 (live build, on his phone): 'once the game ends you're frozen ... it's a real-time zone like Dungeon 1, not an instant game; we are making an MMO ... with spawns and respawns.' Strategy brief docs/V3-LIVE-ZONE-BRIEF-2026-10-27.md phase 1. Open loop: nothing freezes after the kill; the hero walks on (`postKill`), the corpse lies where it fell (tappable for cuts) until the zone row's spawn stands a fresh opponent `respawnSeconds` after the kill, where the hero stands, and ragdoll.leaveCorpse() leaves the dead body beside the new one for data/physics.json corpse.keepSeconds (Physics Dev's row; no second corpse timer here). A dead hero is down for the row's `respawn.downSeconds`, then stands at the pit's mark at full health. Rematch is gone in the zone; the `flag` query turns the loop off (?postkill=v1 = the frozen end screen with Rematch). The zone row's positions are in the zone's own frame (the yard and pit are around x 190 to 235); the duel sim's arena is the pit itself, so a spawn and a respawn stand at the pit's marks (src/fight/zone-loop.ts respawnPose) until the open world draws the zone. Donors: V1 Dungeon 1 / Zone 1 (respawnSeconds per spawn row), V1 open fight (kill = toast, hero death = 2 s then a warp), Armagedom Web/src/combat.js death() (corpse kept, player keeps control).",
   "flag": { "query": "postkill", "off": "v1" },
   "postKill": {
-    "about": "roam: after the opponent dies the hero is controllable (stick, camera) and the fight camera follows him; the duel sim is stopped at the kill, the hero's walk is presentation-only. startAfterSeconds: the longest the killing blow's ceremony holds him before the stick takes over (he takes over sooner when the finisher has finished playing).",
+    "about": "roam: after the opponent dies the hero is controllable (stick, camera) and the fight camera follows him; the duel sim is stopped at the kill, the hero's walk is presentation-only. startAfterSeconds: the longest the killing blow's ceremony holds him before the stick takes over (he takes over sooner when the finisher has finished playing). walkRadiusMetres (Dom 2026-10-27: 'after the kill I can move ... it should be free roaming, MMO style'): in the zone only, how far from the pit's centre the hero may walk after a kill, past the pit's wall (the duel sim's circle, world.pitScale, is untouched; a fight that starts with him beyond the wall starts on the wall's edge, in line with where he stood); never smaller than the pit's wall. ?postkill=v1 keeps the pit wall. cameraMetres: how far beyond walkRadiusMetres the follow camera may stand (the walking camera is 7.5 m behind him), so it never folds in front of a hero at the edge.",
     "roam": true,
-    "startAfterSeconds": 4
+    "startAfterSeconds": 4,
+    "walkRadiusMetres": 12,
+    "cameraMetres": 8
   },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
@@ -52,6 +54,8 @@
     "reachMetres": [0, 10],
     "fallSeconds": [0.1, 10],
     "startAfterSeconds": [0, 30],
+    "walkRadiusMetres": [1, 60],
+    "cameraMetres": [0, 20],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],
     "edgeMetres": [0, 4],

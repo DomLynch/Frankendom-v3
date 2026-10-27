@@ -6,7 +6,7 @@
 // No string or number literal lives here: scripts/as-data/check.mjs scans src/zone/ at zero.
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { M } from '../fight/detmath.ts';
-import { respawnPose } from '../fight/zone-loop.ts';
+import { respawnPose, intoPit } from '../fight/zone-loop.ts';
 import type { ZoneRow } from '../stubs.ts';
 
 export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; pitScale: number };
@@ -103,7 +103,8 @@ export function tick(spawns: readonly Spawn[], dt: number): { spawns: Spawn[]; d
 export const idleOnes = (spawns: readonly Spawn[], current: number): Spawn[] => spawns.filter((s, i) => isStanding(s) && i !== current);
 
 /** The duel pose of a spawn engaging the hero where he stands (never closer than `minDistance`: he is stepped back, zone-loop.ts respawnPose); outside the wall, the hero's start mark. */
-export function poseAt(hero: At, spot: At, wall: number, minDistance: number, start: At): NonNullable<ReturnType<typeof respawnPose>> {
+export function poseAt(walker: At, spot: At, wall: number, minDistance: number, start: At): NonNullable<ReturnType<typeof respawnPose>> {
+  const hero = intoPit(walker, wall);   // the zone's free walk (postKill.walkRadiusMetres) can leave him beyond the pit's wall: a duel starts on the wall's edge, in line with where he stood
   return respawnPose(hero, spot, wall, minDistance) ?? respawnPose(start, spot, wall, minDistance) ?? { hero: { x: start.x, z: start.z }, foe: { x: spot.x, z: spot.z }, heroFacing: M.atan2(spot.x - start.x, spot.z - start.z) };
 }
 

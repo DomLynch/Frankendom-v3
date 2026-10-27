@@ -13,6 +13,9 @@ const LOCK_BACK_FLOOR = cameraRule('lockBackFloor'), LOCK_LIFT_FLOOR = cameraRul
 let FIGHT_BACK = cameraRule('fightBackDefault');   // how much further back and up the lock camera stands (a zone's `camera.fightBack`, set by the page; the row's 1 = the duel as it always was)
 /** The page sets the zone's fight-back scale (1 = the lock camera as it was). Only the duel's lock camera uses it; the walking camera never does. */
 export const setFightBack = (scale: number): void => { FIGHT_BACK = scale; };
+let WALK_CLAMP = 0;
+/** The zone's free walk (data/respawn.json postKill): while the hero walks beyond the pit the follow camera may stand this far from the centre (the walking radius plus its back-off), so it never folds in front of him. 0 = the colonnade ring alone, as before. */
+export const setWalkClamp = (radius: number): void => { WALK_CLAMP = radius; };
 // V3: the lock camera's height scale and its step over the player's right shoulder (m), set by the page from data/fight.json (V2's lower,
 // over-the-shoulder framing). 1 and 0 are V1's lock exactly; a finish eases both back to that, as it does the fight-back scale.
 let LOCK_LIFT = 1, LOCK_SIDE = 0;
@@ -74,10 +77,10 @@ export function cameraPose(
     z += Math.sin(yaw) * side;
   }
   // Camera stays inside the colonnade even when the fighter reaches the arena edge.
-  const radius = Math.hypot(x, z);
-  if (radius > ARENA_CLAMP) {
-    x *= ARENA_CLAMP / radius;
-    z *= ARENA_CLAMP / radius;
+  const radius = Math.hypot(x, z), clamp = Math.max(ARENA_CLAMP, WALK_CLAMP);   // WALK_CLAMP: the zone's free walk (setWalkClamp), 0 = the colonnade ring alone
+  if (radius > clamp) {
+    x *= clamp / radius;
+    z *= clamp / radius;
   }
   y += low * LOW_LIFT;
   // ...and lift it until the same share of him clears the shoulders as would of a man at this gap.

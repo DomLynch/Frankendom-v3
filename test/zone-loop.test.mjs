@@ -7,8 +7,9 @@ import { readFileSync } from 'node:fs';
 import { OPPONENTS } from '../src/fight/moves.ts';
 import { initialPractice, stepPractice } from '../src/fight/combat.ts';
 import { initialTarget, initialState } from '../src/fight/sim.ts';
-import { RADIUS } from '../src/fight/play-radius.ts';
-import { respawnDue, zoneLoopFor, respawnPose, roamStep, validateLoop } from '../src/fight/zone-loop.ts';
+import { RADIUS, setPlayScale } from '../src/fight/play-radius.ts';
+import { respawnDue, zoneLoopFor, respawnPose, roamStep, validateLoop, validateWalk, intoPit } from '../src/fight/zone-loop.ts';
+import { poseAt } from '../src/zone/spawns.ts';
 import { zoneFor } from '../src/zone/zone-rows.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -25,7 +26,7 @@ test('the rows are pinned: roam on, hand-over 4 s, the zone row\'s spawn (Pitbor
   for (const dup of ['spawns', 'respawn', 'corpse']) assert.equal(ROWS[dup], undefined, `${dup} is the zone row's / Physics Dev's row, not repeated here`);
   assert.ok(read('../data/physics.json').corpse.keepSeconds > 0, 'one corpse timer: data/physics.json corpse.keepSeconds (ragdoll.leaveCorpse)');
   const z = zoneLoopFor(ZONE, '', ids);
-  assert.deepEqual(z, { startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, fallSeconds: 1.4, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'pitborn', respawnSeconds: 40 } });
+  assert.deepEqual(z, { walkRadius: 12, cameraMetres: 8, startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, fallSeconds: 1.4, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'pitborn', respawnSeconds: 40 } });
 });
 
 test('bad rows are refused', () => {
@@ -55,6 +56,59 @@ test('roamStep: the hero walks on the sim\'s own movement, is stopped by the cor
   assert.ok(Math.hypot(b.x, b.z) <= RADIUS + 1e-9, 'the wall holds him');
   let c = { ...hero, z: corpse.z - 3, x: corpse.x }; for (let i = 0; i < 600; i++) c = roamStep(c, { x: 0, z: -1, yaw: 0, run: true }, corpse, RADIUS);
   assert.ok(Math.hypot(c.x - corpse.x, c.z - corpse.z) > 0.3, 'the corpse blocks him');
+});
+
+test('the free walk (Dom 2026-10-27, MMO style): the zone row\'s walking radius is a validated row; the hero walks past the pit wall out to it, the corpse still blocks him', () => {
+  const walk = ROWS.postKill.walkRadiusMetres, [lo, hi] = ROWS.limits.walkRadiusMetres;
+  assert.ok(walk >= lo && walk <= hi);
+  setPlayScale(ROWS.world.pitScale);
+  try {
+    assert.ok(walk > RADIUS + 2, 'the walk reaches well past the pit wall');
+    validateWalk(walk, RADIUS);
+    assert.throws(() => validateWalk(RADIUS - 0.5, RADIUS), /smaller than the pit's wall/);
+    const corpse = initialTarget();
+    let b = initialState();
+    for (let i = 0; i < 4000; i++) b = roamStep(b, { x: 1, z: 0, yaw: 0, run: true }, corpse, walk);
+    assert.ok(Math.hypot(b.x, b.z) > RADIUS + 2, 'he is beyond the pit wall');
+    assert.ok(Math.hypot(b.x, b.z) <= walk + 1e-9, 'the walking radius holds him');
+    let c = initialState();
+    for (let i = 0; i < 4000; i++) c = roamStep(c, { x: 1, z: 0, yaw: 0, run: true }, corpse, RADIUS);
+    assert.ok(Math.hypot(c.x, c.z) <= RADIUS + 1e-9, 'the pit wall is the same wall for the flag path');
+    let d = { ...b, x: corpse.x, z: corpse.z - 3 }; for (let i = 0; i < 600; i++) d = roamStep(d, { x: 0, z: -1, yaw: 0, run: true }, corpse, walk);
+    assert.ok(Math.hypot(d.x - corpse.x, d.z - corpse.z) > 0.3, 'the corpse blocks him out here too');
+    for (const key of ['walkRadiusMetres', 'cameraMetres']) assert.throws(() => validateLoop(loop((d2) => { d2.postKill[key] = 1e6; }), ZONE, ids), new RegExp(key));
+  } finally { setPlayScale(1); }
+});
+
+test('a hero beyond the pit wall enters a duel on the wall\'s edge, in line with where he stood; a respawn or a hand-over never throws him to the start mark', () => {
+  setPlayScale(ROWS.world.pitScale);
+  try {
+    for (let a = 0; a < 360; a += 7) {
+      const rad = a * Math.PI / 180, out = { x: Math.sin(rad) * 11, z: Math.cos(rad) * 11 };
+      const at = intoPit(out, RADIUS);
+      assert.ok(Math.hypot(at.x, at.z) <= RADIUS, 'on or inside the wall');
+      assert.ok(Math.hypot(at.x, at.z) > RADIUS - 1e-6, 'on the edge');
+      assert.ok(Math.abs(at.x * out.z - at.z * out.x) < 1e-9, 'in line with where he stood');
+    }
+    const inside = { x: 1, z: 2 };
+    assert.deepEqual(intoPit(inside, RADIUS), inside, 'inside the wall: untouched');
+    const spot = { x: 4, z: 1 }, start = initialState();
+    const pose = poseAt({ x: 11, z: 0 }, spot, RADIUS, ROWS.spawn.minDistance, start);
+    assert.ok(Math.abs(pose.hero.x - RADIUS) < 1e-6 && Math.abs(pose.hero.z) < 1e-6, 'he starts on the wall at his bearing');
+    const from = { x: 0, z: -10 };
+    const far = poseAt(from, { x: 0, z: -4 }, RADIUS, ROWS.spawn.minDistance, start);
+    assert.notDeepEqual(far.hero, { x: start.x, z: start.z }, 'not the start mark');
+  } finally { setPlayScale(1); }
+});
+
+test('the page wires the free walk: the zone path passes the data row radius to roamStep and the follow camera; the flag path (ZONE null) has no roam and the pit wall', () => {
+  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
+  assert.match(main, /roamStep\(roam, \{[^}]*\}, practice\.enemy, ZONE!\.walkRadius\)/);
+  assert.doesNotMatch(main, /roamStep\([^\n]*RADIUS\)/);
+  assert.match(main, /if \(ZONE\) validateWalk\(ZONE\.walkRadius, RADIUS\)/);
+  assert.match(main, /if \(ZONE\) setWalkClamp\(roam \? ZONE\.walkRadius \+ ZONE\.cameraMetres : 0\)/);
+  assert.equal(zoneLoopFor(ZONE, '?postkill=v1', ids), null, '?postkill=v1: no ZONE, so no roam, no radius, no clamp');
+  assert.match(main, /heroStands\(\)\) \{[^]*?roam = \{ \.\.\.practice\.fighter \}/, 'roam only exists inside heroStands (the zone)');
 });
 
 test('the duel sim stays stopped after the kill: bodies do not step, so the walk is presentation-only', () => {

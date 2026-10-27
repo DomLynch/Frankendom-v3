@@ -9,16 +9,20 @@ import { M } from './detmath.ts';
 import { advance, type State } from './sim.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number }; spawn: { minDistance: number }; heroDeath: { fallSeconds: number }; limits: { startAfterSeconds: [number, number]; minDistance: [number, number]; fallSeconds: [number, number] } };
+type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number; walkRadiusMetres: number; cameraMetres: number }; spawn: { minDistance: number }; heroDeath: { fallSeconds: number }; limits: { walkRadiusMetres: [number, number]; cameraMetres: [number, number]; startAfterSeconds: [number, number]; minDistance: [number, number]; fallSeconds: [number, number] } };
 const LOOP = ROWS as unknown as Rows;
 
 /** What the page plays: the zone's first spawn, the hero's down time, the roam hand-over. */
-export type Respawn = { readonly startAfterSeconds: number; readonly minDistance: number; readonly diedSeconds: number; readonly fallSeconds: number; readonly zone: string; readonly spawn: { readonly id: string; readonly kind: string; readonly respawnSeconds: number } };
+export type Respawn = { readonly walkRadius: number; readonly cameraMetres: number; readonly startAfterSeconds: number; readonly minDistance: number; readonly diedSeconds: number; readonly fallSeconds: number; readonly zone: string; readonly spawn: { readonly id: string; readonly kind: string; readonly respawnSeconds: number } };
 
 /** Throws on a bad roam row, or a first spawn whose `kind` is no opponent (`opponents`, optional). */
 export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly string[]): void {
   const [lo, hi] = rows.limits.startAfterSeconds, at = rows.postKill.startAfterSeconds;
   if (!(Number.isFinite(at) && at >= lo && at <= hi)) throw new Error(`respawn.json postKill.startAfterSeconds ${at} is not in ${lo}..${hi}`);
+  const [walkLo, walkHi] = rows.limits.walkRadiusMetres, walk = rows.postKill.walkRadiusMetres;
+  if (!(Number.isFinite(walk) && walk >= walkLo && walk <= walkHi)) throw new Error(`respawn.json postKill.walkRadiusMetres ${walk} is not in ${walkLo}..${walkHi}`);
+  const [camLo, camHi] = rows.limits.cameraMetres, cam = rows.postKill.cameraMetres;
+  if (!(Number.isFinite(cam) && cam >= camLo && cam <= camHi)) throw new Error(`respawn.json postKill.cameraMetres ${cam} is not in ${camLo}..${camHi}`);
   const [near, far] = rows.limits.minDistance, gap = rows.spawn.minDistance;
   if (!(Number.isFinite(gap) && gap >= near && gap <= far)) throw new Error(`respawn.json spawn.minDistance ${gap} is not in ${near}..${far}`);
   const [short, long] = rows.limits.fallSeconds, fall = rows.heroDeath.fallSeconds;
@@ -33,13 +37,24 @@ export function zoneLoopFor(zone: ZoneRow, search = '', opponents?: readonly str
   validateLoop(rows, zone, opponents);
   if (new URLSearchParams(search).get(rows.flag.query) === rows.flag.off || !rows.postKill.roam) return null;
   const s = zone.spawns[0]!;
-  return { startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, fallSeconds: rows.heroDeath.fallSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };   // `spawn`: the first row; the page plays every row (src/zone/spawns.ts)
+  return { walkRadius: rows.postKill.walkRadiusMetres, cameraMetres: rows.postKill.cameraMetres, startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, fallSeconds: rows.heroDeath.fallSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };   // `spawn`: the first row; the page plays every row (src/zone/spawns.ts)
 }
 
 /** Whether a spawn's new opponent stands `since` seconds after its kill. */
 export const respawnDue = (spawn: { respawnSeconds: number }, since: number): boolean => since >= spawn.respawnSeconds;
 
-/** One tick of the hero's walk after the kill: the sim's own movement (sim.ts advance), stopped by the corpse and the wall. */
+/** Throws when the zone's walking radius is smaller than the pit's wall (the hero could not even stand where the fight left him). */
+export function validateWalk(walkRadius: number, pitWall: number): void {
+  if (!(walkRadius >= pitWall)) throw new Error(`respawn.json postKill.walkRadiusMetres ${walkRadius} is smaller than the pit's wall ${pitWall}`);
+}
+
+/** A hero beyond the pit's wall (the zone's free walk) enters a duel on the wall's edge, in line with where he stood: the sim's circle is the pit. */
+export function intoPit(at: { x: number; z: number }, wall: number): { x: number; z: number } {
+  const r = M.hypot(at.x, at.z);
+  return r > wall ? { x: at.x * wall / r, z: at.z * wall / r } : { x: at.x, z: at.z };
+}
+
+/** One tick of the hero's walk after the kill: the sim's own movement (sim.ts advance), stopped by the corpse and `wall` (the pit's wall, or the zone's walking radius, data/respawn.json postKill.walkRadiusMetres). */
 export const roamStep = (body: State, move: { x: number; z: number; yaw: number; run: boolean }, corpse: { x: number; z: number }, wall: number): State =>
   advance(body, move, corpse, 1, wall);
 
