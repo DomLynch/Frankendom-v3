@@ -1,4 +1,4 @@
-// The ?rules=m4 evidence harness (PR "M4 tuning"; playwright is not a repo dependency, install it beside the script): a headless ?rules=m4 (or default) fight at 375 wide on the paused fake clock, one rAF = one 60 Hz tick.
+// The ?rules=m4 evidence harness (PR "M4 tuning"; playwright is not a repo dependency, install it beside the script): a headless ?rules=m4 fight (pass the query rules=m4: an empty query plays data/rules.json `default`, which is v1 for now, so no evaluator hits to list) at 375 wide on the paused fake clock, one rAF = one 60 Hz tick.
 // Plays a mix of strikes (light, directional, heavy, thrust), keeps both fighters alive, lists every hit the evaluator saw (speed, outcome), then kills with a kick,
 // moves the corpse aside (ASIDE metres, as scripts/cut-stills.mjs on #71) and shoots stills.
 //   node m4-fight.mjs <base> <out> <query> [attacks]     env: ZONE (head|torso|legs: force the hit location of the finishing blow, see below), ASIDE (m, default 3), AFTER (ticks after the freeze, default 0,10,40,120), GAP (ticks between attacks), MIXJSON (the key combos)
