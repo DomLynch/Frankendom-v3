@@ -14,7 +14,7 @@ page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 240000 });
 await page.waitForTimeout(WAIT);   // the strip is fetched after the first frame and fades in over about a second and a half
-await page.evaluate(() => { globalThis.__pin = { x: 0, z: 0 }; setInterval(() => { const h = globalThis.__v3Fight?.fighter, p = globalThis.__pin; if (h) { h.x = p.x; h.z = p.z; } }, 4); });
+await page.evaluate(() => { globalThis.__pin = { x: 0, z: 0 }; setInterval(() => { const f = globalThis.__v3Fight, p = globalThis.__pin; if (f?.fighter) { f.fighter.x = p.x; f.fighter.z = p.z; } if (f?.enemy) { f.enemy.x = p.x; f.enemy.z = p.z - 3.25; } }, 4); });   // the boss stands with him (the lock camera frames the two of them)
 for (const z of AT) {
   await page.evaluate((p) => { globalThis.__pin = p; }, { x: 0, z });
   await page.waitForTimeout(Number(process.env.PLACE_MS ?? 20000));   // the follow camera eases to a teleported hero: wait until it has arrived
