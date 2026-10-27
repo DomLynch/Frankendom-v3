@@ -2,6 +2,7 @@
 # Run on a Hugging Face CPU job: hfjob -- bash docs/stills/arm-apart/arm-job.sh
 # Renders scripts/cut-stills.mjs (ASIDE / ORBIT / LEAVE framings, TAP=armRight, 375 wide) and prints the key shots as base64 JPEG in the log.
 set -uo pipefail
+(apt-get update -qq && apt-get install -y -qq libjpeg-turbo-progs) >/dev/null 2>&1 || echo "apt jpegtran failed"
 npm i --no-save --no-audit --no-fund playwright@1.62.1 >/dev/null 2>&1
 npx playwright install --with-deps chromium >/dev/null 2>&1
 node scripts/build.mjs | tail -1
