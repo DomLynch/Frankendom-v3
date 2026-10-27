@@ -41,8 +41,8 @@ export function validateFraming(rows: FramingRows = ATTACKERS.camera): void {
 }
 
 /** How far the lock camera backs off so every live attacker stays in frame: the frame is centred on `centre` (half way between the hero and the first boss); an attacker further than widenAtMetres from it widens by distance / widenAtMetres, capped at maxWiden. No attacker: exactly 1. */
-export function framingWiden(centre: At, others: readonly At[], rows: FramingRows = ATTACKERS.camera): number {
+export function framingWiden(centre: At, others: readonly At[], rows: FramingRows = ATTACKERS.camera, zoom = 1): number {   // zoom: the lens zoom (camera-zoom.ts); a zoomed lens sees 1 / zoom as much, so the same attacker needs `zoom` times the back-off; zoom 1 = the rows as written
   let widen = 1;
-  for (const o of others) widen = Math.max(widen, Math.min(rows.maxWiden, dist(o, centre) / rows.widenAtMetres));
+  for (const o of others) widen = Math.max(widen, Math.min(rows.maxWiden, dist(o, centre) * zoom / rows.widenAtMetres));
   return widen;
 }
