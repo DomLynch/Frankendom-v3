@@ -45,8 +45,8 @@ export const SCHEMA = {
   // The M7 feel modules that are on without a query (src/fight/feel-defaults.ts), each with its own ?x=v1 revert; test/feel-defaults.test.mjs pins the names against the registry
   'feel-defaults': { keys: ['about', 'query', 'off', 'modules', 'revert'] },
   // The SIM knockdown + finish window (src/fight/knock-sim.ts, step in duel.ts), on with the kick module (data/feel-defaults.json): whole seconds / per-mille rows; checkFeelSim below checks the values
-  'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
-    maps: { flag: ['query', 'value'], knockdown: ['seconds'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
+  'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'kick', 'kickOnInjuredLeg', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
+    maps: { flag: ['query', 'value'], knockdown: ['seconds', 'minSecondsBetween'], kick: ['interruptSeconds', 'resistanceSeconds', 'cooldownSeconds'], kickOnInjuredLeg: ['hits', 'windowS'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
@@ -307,6 +307,11 @@ function checkFeelSim(j) {
   if (j.tickHz !== 60) at('tickHz', 'must be 60 (the sim step, src/fight/sim.ts STEP)');
   const hz = Number.isFinite(j.tickHz) && j.tickHz > 0 ? j.tickHz : 60;
   for (const k of ['knockdown', 'getUp', 'finishWindow']) secs(`${k}.seconds`, j[k]?.seconds, hz);
+  const sec0 = (p, v, lo) => { if (!Number.isFinite(v) || v < 0 || v > 60 || Math.round(v * hz) < lo) at(p, `must be a number of seconds in ${lo ? '(0' : '[0'}, 60]${lo ? ', at least one tick' : ''}`); };
+  sec0('knockdown.minSecondsBetween', j.knockdown?.minSecondsBetween, 0); sec0('kick.interruptSeconds', j.kick?.interruptSeconds, 1); sec0('kick.resistanceSeconds', j.kick?.resistanceSeconds, 0); sec0('kick.cooldownSeconds', j.kick?.cooldownSeconds, 0);
+  if (!Number.isInteger(j.kickOnInjuredLeg?.hits) || j.kickOnInjuredLeg.hits < 1 || j.kickOnInjuredLeg.hits > 100) at('kickOnInjuredLeg.hits', 'must be a whole number in 1..100');
+  if (!Number.isFinite(j.kickOnInjuredLeg?.windowS) || j.kickOnInjuredLeg.windowS <= 0 || j.kickOnInjuredLeg.windowS > 120 || Math.round(j.kickOnInjuredLeg.windowS * hz) < 1) at('kickOnInjuredLeg.windowS', 'must be seconds in (0, 120], at least one tick');
+  if (j.moves?.kick?.perMille !== 0) at('moves.kick.perMille', 'must be 0: a kick interrupts, it never knocks down by force');
   if (Number.isFinite(j.finishWindow?.seconds) && Number.isFinite(j.knockdown?.seconds) && Math.round(j.finishWindow.seconds * hz) > Math.round(j.knockdown.seconds * hz)) at('finishWindow.seconds', 'must be <= knockdown.seconds (the window closes before he starts to rise)');
   if (!Array.isArray(j.targets) || !j.targets.length || j.targets.some((t) => t !== 'hero' && t !== 'foe') || new Set(j.targets).size !== j.targets.length) at('targets', "must be a non-empty list of 'hero' and / or 'foe'");
   pm('knockdownAtPerMille', j.knockdownAtPerMille);
@@ -325,7 +330,7 @@ function checkFeelSim(j) {
   if (!obj(j.moves) || !Object.keys(j.moves).length) at('moves', 'must be a non-empty object of move id -> { perMille }');
   else for (const [m, r] of Object.entries(j.moves)) {
     for (const k of Object.keys(r ?? {})) if (k !== 'perMille') at(`moves.${m}.${k}`, 'unknown key');
-    pm(`moves.${m}.perMille`, r?.perMille);
+    pm(`moves.${m}.perMille`, r?.perMille, 0);
   }
   return e;
 }

@@ -9,7 +9,7 @@ import { LADDER, flinchTicks, poiseTier } from './poise-ladder.ts';
 import { OPPONENTS, RULES, SKILL_MOVE, total, weaponOf, DEFAULT_WEAPON, isInterruptible, DAY_ONE_SKILL, isDirectionalHeavy, isStabMove, type Direction, type GuardProfile, type Material, type MoveDef, type MoveId, type Opponent, type RigId, type SkillId, type SpecialName, type Timing, type WeaponId } from './moves.ts';
 import { advance, initialState, initialTarget, RADIUS, wrapAngle, type Input, type State } from './sim.ts';
 import { M } from './detmath.ts';
-import { KNOCK_SIM, knockStance, knockdownOf } from './knock-sim.ts';   // V3: the sim knockdown + finish window (data/feel-sim.json), off unless ?feel=kick, so Gate 0 steps today's numbers
+import { KNOCK_SIM, knockStance, knockdownOf, legCount, legHitsAfter } from './knock-sim.ts';   // V3: the sim knockdown + finish window (data/feel-sim.json), off unless ?feel=kick, so Gate 0 steps today's numbers
 import { poolsOf, type PoolValues } from './pools.ts';
 import { crowdPercent, percentOf, rolledDamage, rollUnit, swarmBand, type CrowdKind } from './roll.ts';
 import { GAMBIT_ODDS, gambitUnit, resolveGambit } from './gambit.ts';
@@ -50,6 +50,7 @@ export type Fighter = {
   posture: number; critical: number;   // posture 0..RULES.posture.max; critical = ticks left in which Heavy is the critical on a broken opponent
   guardDirection: Direction | null; parrying: boolean; exposed: number; evaded: number; counterWindow: number; charge: number; charged: boolean; buffer: { action: Action; ttl: number } | null;
   guardProfile?: Partial<GuardProfile>;   // shield/loadout overrides; absent = the longsword defaults in RULES
+  legHits?: number[]; kickCd?: number; interruptCd?: number; downCd?: number;   // ?feel=kick (knock-sim.ts): leg-hit ticks inside the window; the kicker's cooldown; the target's interrupt resistance; the no-chain guard after a knockdown (ticks left; absent = none, and always absent with the flag off)
   down?: number;   // ?feel=kick (knock-sim.ts): ticks left lying and rising after a sim knockdown; absent = on his feet (and always absent with the flag off)
   postureRest: number;   // ticks left before posture drains again (a gain pauses the drain)
   phases?: readonly string[];   // sandbox-mech boss phases reached this fight (boss-phase-defs.json ids)
@@ -124,10 +125,10 @@ export const withPerk = (f: Fighter, perk: Perk | undefined): Fighter => {
 
 export type Side = 0 | 1;
 export type Finish = { victim: Side; location: HitLocation; move: MoveId; heading: number; draw?: boolean };   // draw: both fell on the same tick (victim is then the first processed)
-type EventType = 'MissileLaunched' | 'SpecialStarted' | 'SpecialRefused' | 'SpecialLanded' | 'SpecialFizzled' | 'SpecialInterrupted' | 'PhaseChanged' | 'ActionStarted' | 'AttackStarted' | 'Charging' | 'Charged' | 'AttackActive' | 'AttackMissed' | 'Hit' | 'Blocked' | 'Parried' | 'GuardBroken' | 'PostureBroken' | 'Dodged' | 'Staggered' | 'StaminaExhausted' | 'Killed' | 'SharedHit' | 'Whipped' | 'WhipRaised' | 'GambitArmed' | 'GambitFailed' | 'KnockedDown';
+type EventType = 'MissileLaunched' | 'SpecialStarted' | 'SpecialRefused' | 'SpecialLanded' | 'SpecialFizzled' | 'SpecialInterrupted' | 'PhaseChanged' | 'ActionStarted' | 'AttackStarted' | 'Charging' | 'Charged' | 'AttackActive' | 'AttackMissed' | 'Hit' | 'Blocked' | 'Parried' | 'GuardBroken' | 'PostureBroken' | 'Dodged' | 'Staggered' | 'StaminaExhausted' | 'Killed' | 'SharedHit' | 'Whipped' | 'WhipRaised' | 'GambitArmed' | 'GambitFailed' | 'KnockedDown' | 'KickInterrupted' | 'LegInjured';
 // Event sides: a blow that lands (Hit, GuardBroken, Killed) names the attacker as `actor` and the one struck as `target`; a defence that
 // succeeds (Blocked, Parried, Dodged) names the defender as `actor` and the attacker as `target`.
-export type CombatEvent = { cue?: string; heal?: number; missile?: boolean; lane?: number; glance?: boolean; pulse?: number; cone?: boolean; damageKind?: string; tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; window?: number; force?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
+export type CombatEvent = { cue?: string; heal?: number; missile?: boolean; lane?: number; glance?: boolean; pulse?: number; cone?: boolean; damageKind?: string; tick: number; type: EventType; actor: Side; target?: Side; move?: MoveId; direction?: Direction; action?: 'draw' | 'roll' | 'backstep' | 'guard' | 'parry' | 'feint'; damage?: number; roll?: number; stamina?: number; perfect?: boolean; counter?: boolean; rear?: boolean; charged?: boolean; stop?: boolean; trip?: boolean; walled?: boolean; guarded?: boolean; weapon?: WeaponId; material?: Material; location?: HitLocation; heading?: number; ticks?: number; window?: number; windowS?: number; count?: number; injured?: boolean; force?: number; posture?: number; x?: number; z?: number; lead?: number; guard?: number; name?: SpecialName; gambit?: boolean; beaten?: boolean; spell?: string; outcome?: CastOutcome };   // spell, outcome: SpecialStarted / SpecialLanded / SpecialFizzled of a spell cast (spell-cast.ts); outcome is critfail, fail, partial, success or crit   // gambit: a Hit that was a landed Gambit (src/fight/gambit.ts). name: SpecialStarted / SpecialLanded of a named special (moves.ts specialOf). Whipped: actor = target = the whipped fighter; x, z = where the lash landed (before the shove)
 // WhipRaised: the lorarius lifts his whip, `lead` ticks before the lash that follows (RULES.wall.loiter.raise, or raiseAgain for a repeat) —
 // presentation scales its raise animation by `lead` rather than assuming one. Both whip events carry `guard`: which sixth of the wall the
 // lorarius stands in, floor(angle / 60°) from the fighter's position, so the world and audio lanes draw and sound the same guard the sim means.
@@ -297,7 +298,7 @@ export function legal(f: Fighter, action: Action): boolean {
   const stepping = f.phase === 'backstep', stepTail = stepping && f.age >= RULES.backstep.cancelFrom;   // a backstep's tail cancels into a swing
   if (isLight(action)) return f.phase === 'sheathed' || ((standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina);
   if (isHeavy(action) || action === 'thrust') return (standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina;
-  if (action === 'kick') return standing && f.stamina >= movesOf(f).kick.stamina;
+  if (action === 'kick') return standing && !f.kickCd && f.stamina >= movesOf(f).kick.stamina;
   if (action === 'skill' && f.specialShare !== undefined) return !f.skillCooldown && (standing || stepTail) && !healSpent(f, f.spell) && (!f.spell || (paysManaFor(f.spell.id) ? (f.mana ?? 0) >= manaCost(f.spell.cost) : f.stamina >= f.spell.cost));   // a special: no stamina, any class; a SPELL costs its stamina and is refused short of it
   if (action === 'skill2' && f.skill2 !== undefined) return !f.skillCooldown2 && (standing || stepTail) && f.stamina >= termStamina(f, movesOf(f)[SKILL_MOVE[f.skill2]!].stamina);   // V3 special-terms.ts: the hero's gate is the row's (0) while on   // slot b as a melee special: its own cooldown, the move row's stamina (the shared bar), no Special Moves needed
   if (action === 'skill2') return f.specialShare !== undefined && !!f.spell2 && !f.skillCooldown2 && (standing || stepTail) && !healSpent(f, f.spell2) && (paysManaFor(f.spell2.id) ? (f.mana ?? 0) >= manaCost(f.spell2.cost) : f.stamina >= f.spell2.cost);   // slot b: its own cooldown, the shared stamina bar; an empty slot is inert
@@ -324,6 +325,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   for (const f of fighters) if (f.poiseRest) { if (f.poiseRest > 1) f.poiseRest--; else delete f.poiseRest; }
   for (const f of fighters) if (f.specialRecover) f.specialRecover--;
   for (const f of fighters) if (f.down) { f.down--; if (f.phase === 'hurt') f.stun = Math.max(f.stun, f.age + f.down); if (!f.down) delete f.down; }   // a knocked-down man lies for his whole count: a later stagger on him (a blow, a missile) cannot stand him up early; his own clock, one tick per tick
+  for (const f of fighters) for (const key of ['kickCd', 'interruptCd', 'downCd'] as const) if (f[key]) { f[key]!--; if (!f[key]) delete f[key]; }   // ?feel=kick timers, each on its owner's own clock
   for (const f of fighters) if (f.feintEdge) { f.feintEdge--; if (!f.feintEdge) delete f.feintEdge; }
   for (const i of [0, 1] as const) {   // sandbox-mech bindAndDisarm: a kick breaks the bind; an unbroken bind becomes a disarm; a disarm runs down
     const f = fighters[i]!;
@@ -392,7 +394,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         events.push({ tick, type: 'SpecialStarted', actor: i, ...(me.skill ? { move: SKILL_MOVE[me.skill] } : {}), ...(me.specialName ? { name: me.specialName } : {}), ...(cast ? { spell: cast.id } : {}) });
       }
     } else if (action === 'kick') {
-      beginAttack(next, 'kick', false, foe.body); spend(i, perked(me, 'thrift', movesOf(next).kick.stamina));
+      beginAttack(next, 'kick', false, foe.body); if (KNOCK_SIM?.kickCd) next.kickCd = KNOCK_SIM.kickCd; spend(i, perked(me, 'thrift', movesOf(next).kick.stamina));
       if (intent.lock) next.body = { ...me.body, heading: aim(me.body, foe.body) };
       events.push({ tick, type: 'AttackStarted', actor: i, move: 'kick' });
     } else if (isLight(action) || isHeavy(action) || action === 'thrust' || action === 'skill' || (action === 'skill2' && me.skill2 !== undefined)) {
@@ -652,10 +654,17 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         const tier = POISE_LADDER_ON && !g && !poised && d.poise > 0 && !counter && !stop && !rear && !charged ? poiseTier(dealt, d.poise, !!d.poiseRest) : null;
         const shrugged = !g && (poised || (tier ? tier === 'shrug' : dealt < d.poise && !counter && !stop && !rear && !charged));
         const hit = rolled(dealt, i, j, pen); if (kind?.drain) spend(j, Math.round(hit * kind.drain)); const bandPM = duel.bands && a.attackFrom ? bandFactor(a.weapon, a.attackFrom.gap) : 1; wound(hit, shrugged ? 0 : def.knockback * bandPM); events.push({ tick, type: 'Hit', actor: i, target: j, move: a.move, damage: hit, ...rollTag(), location, heading: a.body.heading, counter: counter || stop, rear, charged, ...(bandPM < 1 ? { glance: true } : {}), ...(g ? { gambit: true } : {}), ...(beaten ? { beaten: true } : {}), ...(raised ? { guarded: true } : {}), weapon: weapon.id, material: weapon.material, ...(stop ? { stop: true } : {}), ...(trip ? { trip: true } : {}) });
-        if (!shrugged || !D.health) stagger(tier === 'flinch' ? flinchTicks(stun) : stun);
-        if (KNOCK_SIM && !shrugged && D.health && !g) {   // V3 ?feel=kick: a kick or a heavy that lands clean may knock him down (knock-sim.ts, data/feel-sim.json); from the sim's own phase and masses, never a Jolt value
-          const k = knockdownOf(KNOCK_SIM, { move: a.move, attackerId: i === 0 ? 'hero' : (a.oid ?? 'default'), targetId: j === 0 ? 'hero' : (d.oid ?? 'default'), stance: knockStance(d.phase, raised), targetIsHero: j === 0, rising: !!d.down });
-          if (k) { D.phase = 'hurt'; D.age = 0; D.stun = Math.max(D.stun, k.ticks); D.down = k.ticks; D.buffer = null; D.counterWindow = 0; D.charge = 0; D.charged = false; fighters[i].critical = Math.max(fighters[i].critical, k.window); events.push({ tick, type: 'KnockedDown', actor: i, target: j, move: a.move!, ticks: k.ticks, window: k.window, force: k.force }); }
+        // V3 ?feel=kick: a KICK is an interrupt only (data/feel-sim.json kick rows): a short stagger that cancels his windup, then he resists the next interrupt for a while (the blow still lands, no stagger).
+        const kickRows = KNOCK_SIM && a.move === 'kick' && D.health ? KNOCK_SIM : null, resisted = !!kickRows && !!D.interruptCd;
+        if (!shrugged || !D.health) {
+          if (kickRows && !resisted) { stagger(kickRows.interrupt); D.interruptCd = kickRows.resist || undefined; if (!D.interruptCd) delete D.interruptCd; events.push({ tick, type: 'KickInterrupted', actor: i, target: j, move: 'kick', ticks: D.stun }); }
+          else if (!resisted) stagger(tier === 'flinch' ? flinchTicks(stun) : stun);
+        }
+        if (KNOCK_SIM && D.health && !g) {   // V3 ?feel=kick: a clean heavy, or ANY blow on an injured leg, may knock him down (knock-sim.ts, data/feel-sim.json); from the sim's own phase, masses and leg count, never a Jolt value
+          const K = KNOCK_SIM, injured = legCount(D.legHits, tick, K.legWin) >= K.legHits;   // the leg was already injured BEFORE this blow: the K-th leg hit injures it, the next blow drops him
+          if (location === 'legs') { D.legHits = legHitsAfter(D.legHits, tick, K.legWin); events.push({ tick, type: 'LegInjured', actor: i, target: j, count: D.legHits.length, windowS: K.legWindowS }); }
+          const k = !shrugged || injured ? knockdownOf(K, { move: a.move, attackerId: i === 0 ? 'hero' : (a.oid ?? 'default'), targetId: j === 0 ? 'hero' : (d.oid ?? 'default'), stance: knockStance(d.phase, raised), targetIsHero: j === 0, rising: !!d.down, cooling: !!D.downCd, injured }) : null;
+          if (k) { D.phase = 'hurt'; D.age = 0; D.stun = Math.max(D.stun, k.ticks); D.down = k.ticks; D.buffer = null; D.counterWindow = 0; D.charge = 0; D.charged = false; if (K.gap) D.downCd = K.gap; if (k.leg) delete D.legHits; fighters[i].critical = Math.max(fighters[i].critical, k.window); events.push({ tick, type: 'KnockedDown', actor: i, target: j, move: a.move!, ticks: k.ticks, window: k.window, force: k.force, ...(k.leg ? { injured: true } : {}) }); }
         }
         if (tier === 'stagger' && D.health && LADDER.immunity) D.poiseRest = LADDER.immunity;
         shake(j, dealtPosture(def.posture * (counter ? R.counter.damage : 1) * (rear ? R.rear.posture : 1) * (side ? FLANK_POSTURE / 1000 : 1) * (g ? GAMBIT_ODDS.multiplier : 1)));
