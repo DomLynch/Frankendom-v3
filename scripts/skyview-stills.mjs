@@ -9,10 +9,10 @@ import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 const [base, out, ...ids] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/skyview-stills.mjs <base url> <out dir> [variants ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const IDS = ids.length ? ids : ['default', 'b', 'a', 'c'];
-const WORDS = { default: "today's look", a: 'A: fog only', b: 'B: fade + lowered strip', c: 'C: lowered strip only' };
+const IDS = ids.length ? ids : ['default', 'v1'];   // 'default' = no link (B since Dom's pick); 'v1' = ?skyview=v1, the look before; a, b, c = ?skyview=<id>
+const WORDS = { default: 'no link (B)', v1: 'before (?skyview=v1)', a: 'A: fog only', b: 'B: melt + lowered strip', c: 'C: lowered strip only' };
 const STRIP = [0.02, 0.12];   // x range (fraction of the width) the sand test reads: beside the fighters, clear of the HUD's middle
-const THRESHOLD = 12;   // mean 0..255 difference a row must show, floor shown against floor hidden, to count as sand
+const THRESHOLD = Number(process.env.THRESHOLD ?? 25);   // mean 0..255 difference a row must show, floor shown against floor hidden, to count as sand (about half melted)
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const calc = await browser.newPage();   // decodes two PNGs and reads the rows
 const rows = (a, b, from, to, threshold) => calc.evaluate(async ([a, b, from, to, threshold]) => {
@@ -47,7 +47,7 @@ for (const id of IDS) {
   const query = id === 'default' ? '' : `skyview=${id}`;
   results[id] = {};
   // phone portrait: the fight, then the free walk after a kill
-  let page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  let page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => console.error(`${id}: pageerror ${e.message}`));
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });

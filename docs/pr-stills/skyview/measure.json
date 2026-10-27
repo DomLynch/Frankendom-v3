@@ -1,81 +1,41 @@
 {
-  "b": {
-    "fight375": {
-      "shot": "b-fight-375.png",
-      "backdropPct": 28.1,
-      "sandPct": 71.9,
-      "rows": 812
-    },
-    "walk375": {
-      "shot": "b-walk-375.png",
-      "backdropPct": 26,
-      "sandPct": 74,
-      "rows": 812
-    },
-    "fight812": {
-      "shot": "b-fight-812.png",
-      "backdropPct": 32.3,
-      "sandPct": 67.7,
-      "rows": 375
-    }
-  },
   "default": {
     "fight375": {
       "shot": "default-fight-375.png",
-      "backdropPct": 0,
-      "sandPct": 100,
+      "backdropPct": 11.1,
+      "sandPct": 88.9,
       "rows": 812
     },
     "walk375": {
       "shot": "default-walk-375.png",
-      "backdropPct": 0,
-      "sandPct": 100,
+      "backdropPct": 33.9,
+      "sandPct": 66.1,
       "rows": 812
     },
     "fight812": {
       "shot": "default-fight-812.png",
-      "backdropPct": 0,
-      "sandPct": 100,
+      "backdropPct": 12.8,
+      "sandPct": 87.2,
       "rows": 375
     }
   },
-  "a": {
+  "v1": {
     "fight375": {
-      "shot": "a-fight-375.png",
-      "backdropPct": 11.3,
-      "sandPct": 88.7,
-      "rows": 812
-    },
-    "walk375": {
-      "shot": "a-walk-375.png",
-      "backdropPct": 11,
-      "sandPct": 89,
-      "rows": 812
-    },
-    "fight812": {
-      "shot": "a-fight-812.png",
-      "backdropPct": 12.3,
-      "sandPct": 87.7,
-      "rows": 375
-    }
-  },
-  "c": {
-    "fight375": {
-      "shot": "c-fight-375.png",
+      "shot": "v1-fight-375.png",
       "backdropPct": 0,
       "sandPct": 100,
       "rows": 812
     },
     "walk375": {
-      "shot": "c-walk-375.png",
-      "backdropPct": 0,
-      "sandPct": 100,
+      "shot": "v1-walk-375.png",
+      "backdropPct": 12.8,
+      "sandPct": 87.2,
       "rows": 812
     },
     "fight812": {
-      "shot": "c-fight-812.png",
-      "backdropPct": 0,
-      "sandPct": 100,
+      "shot": "v1-fight-812.png",
+      "backdropPct": 0.3,
+      "sandPct": 99.7,
       "rows": 375
     }
   }

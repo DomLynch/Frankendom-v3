@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
-import { validateFile } from '../src/sim/validate.js';
-import { SKYLINE, centreOffsetY, createSkyline } from '../src/fight/skyline.ts';
-import { SKYVIEWS, skyViewFor, applyFog, fadeAlpha, fadeFloor } from '../src/fight/skyview.ts';
+import { validateFile, SKYLINE_RIM_LIMIT } from '../src/sim/validate.js';
+import { SKYLINE, SKYLINE_ORDER, skylineOn, centreOffsetY, createSkyline } from '../src/fight/skyline.ts';
+import { SKYVIEWS, FLOOR_ORDER, skyViewFor, applyFog, fadeAlpha, fadeFloor } from '../src/fight/skyview.ts';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const STAGE = JSON.parse(read('../data/stage.json'));
@@ -30,20 +30,58 @@ test('the validator refuses bad view rows', () => {
   assert.match(bad({ extra: 1 }), /extra: unknown key/);
   const none = structuredClone(STAGE); delete none.skyline.views.variants.a.brightness;
   assert.match(validateFile('stage', none).join('\n'), /variants\.a\.brightness/);
+  const nodef = structuredClone(STAGE); nodef.skyline.views.default = 'zzz';
+  assert.match(validateFile('stage', nodef).join('\n'), /views\.default/);
+  const clash = structuredClone(STAGE); clash.skyline.views.v1 = 'a';
+  assert.match(validateFile('stage', clash).join('\n'), /views\.v1/);
+  const v1def = structuredClone(STAGE); v1def.skyline.views.default = 'v1';
+  assert.deepEqual(validateFile('stage', v1def), []);   // defaulting to the look before is a legal row
   const same = structuredClone(STAGE); same.skyline.views.query = 'sky';
   assert.match(validateFile('stage', same).join('\n'), /views\.query/);
 });
 
-test('the default is today: no link, an unknown word, or ?sky=v1 builds no variant', () => {
-  assert.equal(skyViewFor(''), null);
-  assert.equal(skyViewFor('?skyview=z'), null);
-  assert.equal(skyViewFor('?skyview=constructor'), null);
-  assert.equal(skyViewFor('?skyview=toString'), null);
+test('DEFAULT = B (Dom picked it): no link or an unknown word draws B; ?skyview=v1 is the look before; a|c still selectable; ?sky=v1 still the flat sky', () => {
+  assert.equal(SKYVIEWS.default, 'b');   // the row names it, nothing in TS does
+  assert.equal(skyViewFor(''), SKYVIEWS.variants.b);
+  assert.equal(skyViewFor('?foo=1'), SKYVIEWS.variants.b);
+  assert.equal(skyViewFor('?skyview=z'), SKYVIEWS.variants.b);
+  assert.equal(skyViewFor('?skyview=constructor'), SKYVIEWS.variants.b);
+  assert.equal(skyViewFor('?skyview=toString'), SKYVIEWS.variants.b);
+  assert.equal(skyViewFor('?skyview=v1'), null);   // today's look: no melt, no lowering, no haze
+  assert.equal(skyViewFor('?foo=1&skyview=v1'), null);
   assert.equal(skyViewFor('?skyview=b'), SKYVIEWS.variants.b);
   assert.equal(skyViewFor('?foo=1&skyview=a'), SKYVIEWS.variants.a);
+  assert.equal(skyViewFor('?skyview=c'), SKYVIEWS.variants.c);
+  assert.equal(SKYVIEWS.v1, 'v1');
+  assert.equal(skyViewFor('', { ...SKYVIEWS, default: 'v1' }), null);   // a row that defaults to the look before
+  assert.equal(skylineOn('?sky=v1'), false);   // the scene only asks skyViewFor when the strip is on, so ?sky=v1 builds none of it
+  assert.match(read('../src/fight/scene.ts'), /const skyView = skylineOn\(pageSearch\) \? skyViewFor\(pageSearch\) : null;/);
 });
 
-test('the default equals today: no view = the row as it was (centre, height, brightness, fog, floor)', () => {
+test('B as shipped: melt by angle, lowered and taller strip, haze fog, a dimmer strip for the HUD', () => {
+  const b = SKYVIEWS.variants.b;
+  assert.ok(b.fadeStartDegrees > b.fadeEndDegrees && b.fadeEndDegrees > 0);
+  assert.ok(b.dropMetres > 0 && b.heightMetres >= SKYLINE.heightMetres);
+  assert.ok(b.brightness < SKYLINE.brightness);   // HUD readability over the cloud band
+  assert.match(b.fogColor, /^#[0-9a-f]{6}$/i);
+  // the strip's bottom edge, seen from the eye, sits no higher than where the sand is solid again: no flat-sky gap between the melt and the picture
+  const bottom = Math.atan(((1 - SKYLINE.horizonFraction) * b.heightMetres + b.dropMetres) / SKYLINE.radius) * 180 / Math.PI;
+  assert.ok(bottom >= b.fadeEndDegrees - 1 && bottom <= b.fadeStartDegrees + 1, String(bottom));
+});
+
+test('the strip rim stays inside the camera: the base far plane (scene.ts) and the zone\'s longer one (zone-ground.json)', () => {
+  const base = Number(/new THREE\.PerspectiveCamera\(\d+, 1, [\d.]+, (\d+)\)/.exec(read('../src/fight/scene.ts'))[1]);
+  const zone = JSON.parse(read('../data/zone-ground.json')).cameraFarMetres;
+  assert.equal(base, 180); assert.ok(zone >= base);   // the zone only lengthens the far plane (drawOpenGround)
+  assert.ok(SKYLINE_RIM_LIMIT < base);
+  for (const [id, w] of Object.entries(SKYVIEWS.variants)) {
+    const h = w.heightMetres > 0 ? w.heightMetres : SKYLINE.heightMetres;
+    const rim = Math.hypot(SKYLINE.radius, Math.max(Math.abs(SKYLINE.horizonFraction * h - w.dropMetres), Math.abs((1 - SKYLINE.horizonFraction) * h + w.dropMetres)));
+    assert.ok(rim <= SKYLINE_RIM_LIMIT, `${id}: ${rim}`);
+  }
+});
+
+test('?skyview=v1 equals the look before: no view = the row as it was (centre, height, brightness, fog, floor)', () => {
   assert.equal(centreOffsetY(SKYLINE), 100 / 2 - (1 - 0.88) * 100);   // today's 38 m
   assert.equal(centreOffsetY(SKYLINE, null), centreOffsetY(SKYLINE));
   const scene = new THREE.Scene();
@@ -59,8 +97,9 @@ test('the default equals today: no view = the row as it was (centre, height, bri
   const scene2 = read('../src/fight/scene.ts');
   assert.match(scene2, /const skyView = skylineOn\(pageSearch\) \? skyViewFor\(pageSearch\) : null;/);   // no link: null, and every use below is gated on it
   assert.match(scene2, /if \(skyView\) applyFog\(scene, skyView\);/);
-  assert.match(scene2, /const floorFade = skyView \? fadeFloor\(arena\.group, skyView, -900\) : null;/);
-  assert.match(scene2, /\n\s*floorFade\?\.\(camera\.position\);\n/);
+  assert.match(scene2, /const floorFade = skyView \? fadeFloor\(arena\.group, skyView\) : null;/);
+  assert.match(scene2, /\n\s*floorFade\?\.move\(camera\.position\);\n/);
+  assert.match(scene2, /drawOpenGround\(arena\.group, camera, sizing\); groundSnap = sizing\.snap; floorFade\?\.adopt\(arena\.group\);/);   // the zone swaps in a longer grid: it melts too
 });
 
 test('a lowered strip sits dropMetres lower; a view sets its own brightness and height', () => {
@@ -89,17 +128,24 @@ test('the fade is by angle below the horizon: solid when steep, gone when shallo
   assert.equal(fadeAlpha(40, 25.5, 20.5), 1); assert.equal(fadeAlpha(5, 25.5, 20.5), 0);
   assert.equal(fadeAlpha(23, 25.5, 20.5), 0.5);
   assert.equal(fadeAlpha(5, 0, 0), 1);
-  assert.equal(fadeFloor(new THREE.Group(), SKYVIEWS.variants.a, -900), null);
-  assert.equal(fadeFloor(new THREE.Group(), SKYVIEWS.variants.c, -900), null);
+  assert.equal(fadeFloor(new THREE.Group(), SKYVIEWS.variants.a), null);
+  assert.equal(fadeFloor(new THREE.Group(), SKYVIEWS.variants.c), null);
   const group = new THREE.Group(), floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial());
   group.add(floor);
-  const move = fadeFloor(group, SKYVIEWS.variants.b, -900);
-  assert.equal(typeof move, 'function'); assert.equal(floor.material.transparent, true); assert.equal(floor.renderOrder, -900);
+  const fade = fadeFloor(group, SKYVIEWS.variants.b);
+  assert.equal(floor.material.transparent, true);
+  assert.equal(floor.renderOrder, FLOOR_ORDER); assert.equal(FLOOR_ORDER, SKYLINE_ORDER + 100);   // just after the strip, tied to it, not a second number
   const shader = { uniforms: {}, vertexShader: 'void main() {\n#include <project_vertex>\n}', fragmentShader: 'void main() {\n#include <opaque_fragment>\n}' };
   floor.material.onBeforeCompile(shader, {});
   assert.match(shader.fragmentShader, /smoothstep\(fadeBand\.y, fadeBand\.x, fadeDepression/); assert.match(shader.vertexShader, /vFadeWorld = /);
-  move(new THREE.Vector3(1, 2, 3)); assert.equal(shader.uniforms.fadeEye.value.z, 3);
+  fade.move(new THREE.Vector3(1, 2, 3)); assert.equal(shader.uniforms.fadeEye.value.z, 3);
   assert.deepEqual(shader.uniforms.fadeBand.value.toArray(), [SKYVIEWS.variants.b.fadeStartDegrees, SKYVIEWS.variants.b.fadeEndDegrees]);
+  // the zone's open ground swaps in a new grid after the scene is built: adopt melts it too, and a part already melted is not wrapped twice
+  const grid = new THREE.GridHelper(10, 10); group.add(grid);
+  assert.equal(grid.material.transparent, false);
+  fade.adopt(group);
+  assert.equal(grid.material.transparent, true); assert.equal(grid.renderOrder, FLOOR_ORDER);
+  const hook = floor.material.onBeforeCompile; fade.adopt(group); assert.equal(floor.material.onBeforeCompile, hook);
 });
 
 test('no literals: skyview.ts reads its numbers from the row', () => {

@@ -141,7 +141,7 @@ export function createScene(
   scene.background = new THREE.Color(theme.fog);
   scene.fog = new THREE.FogExp2(theme.fog, theme.fogDensity);
   const pageSearch = typeof location === 'undefined' ? '' : location.search;
-  const skyView = skylineOn(pageSearch) ? skyViewFor(pageSearch) : null;   // ?skyview=a|b|c (data/stage.json skyline.views); none = today's look, nothing below runs
+  const skyView = skylineOn(pageSearch) ? skyViewFor(pageSearch) : null;   // data/stage.json skyline.views: no link = its `default` (B); ?skyview=a|c; ?skyview=v1 = the look before it, nothing below runs; ?sky=v1 = the flat sky
   if (skyView) applyFog(scene, skyView);
   const skyline = createSkyline(scene, pageSearch, SKYLINE, undefined, skyView);   // data/stage.json skyline: the 360-degree sunset strip, fetched after the first frame; ?sky=v1 = the flat sky above, nothing built
   let environmentTarget: THREE.WebGLRenderTarget | undefined;
@@ -231,7 +231,7 @@ export function createScene(
     missileFx = createMissileFx(scene),   // sandbox-mech missiles: the bolt in flight, nothing while none flies
     impactFx = createImpactFx(scene),   // a flash + ground ring per contact row (hit-stop-defs.json flash/ring/tint columns; a row without them draws nothing)
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
-  const floorFade = skyView ? fadeFloor(arena.group, skyView, -900) : null;   // ?skyview=b: the far sand melts to nothing (skyview.ts); null = the floor as it was
+  const floorFade = skyView ? fadeFloor(arena.group, skyView) : null;   // B: the far sand and grid melt to nothing by angle (skyview.ts); null = the floor as it was
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
@@ -717,7 +717,7 @@ export function createScene(
     liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef }[]) { liveList = list; },
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
-    openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; if (groundSnap > 0) scene.add(sun.target); },
+    openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
@@ -1175,7 +1175,7 @@ export function createScene(
       const specialDim = runtimeSpecial?.exposure ?? (specialFx as ModeFx | undefined)?.exposure ?? 1;   // Nyx's Nightfall drain
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
-      floorFade?.(camera.position);
+      floorFade?.move(camera.position);
       skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts); the camera was placed by rig.update above
       syncIdleFoes(practice, dt);
       syncLiveFoes(dt);

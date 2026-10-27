@@ -7,6 +7,8 @@ import STAGE from '../../data/stage.json' with { type: 'json' };
 import { afterFirstFrame } from '../late-art.ts';
 import type { SkyView } from './skyview.ts';
 
+/** The strip draws first of all the transparents (skyview.ts FLOOR_ORDER sits just after it). */
+export const SKYLINE_ORDER = -1000;
 export type SkylineRow = typeof STAGE.skyline;
 export const SKYLINE: SkylineRow = STAGE.skyline;
 
@@ -44,7 +46,7 @@ export function createSkyline(
   });
   const mesh = new THREE.Mesh(new THREE.CylinderGeometry(row.radius, row.radius, height, 96, 1, true), material);
   mesh.name = 'skyline';
-  mesh.renderOrder = -1000;   // first among the transparent draws, so every particle and trail composites over it
+  mesh.renderOrder = SKYLINE_ORDER;   // first among the transparent draws, so every particle and trail composites over it
   mesh.frustumCulled = false;
   mesh.rotation.y = THREE.MathUtils.degToRad(row.yawDegrees);
   mesh.visible = false;
