@@ -23,7 +23,7 @@ export type RulesPackage = {
   createFighterState(rules: PkgRules, body: unknown, opts?: { sword_side?: string; leg_hp?: number; hp_scale?: number; budgets?: Record<string, number> }): unknown;
 };
 
-/** M4 is the default (data/rules.json `default`, Dom 2026-10-27): ?rules=v1 (`query`, `v1`) is V1's rules; ?rules=m4 is M4; no query or an unknown value is the `default` row. `on` false = the evaluator is off whatever the query. */
+/** The `default` row of data/rules.json picks the ruleset for a bare link (v1 for now, an interim; m4 once Physics' row fix is proven): ?rules=v1 (`query`, `v1`) is V1's rules; ?rules=m4 is M4; no query or an unknown value is the `default` row. `on` false = the evaluator is off whatever the query. */
 export function rulesOnFor(rows: RuleRows, search: string): boolean {
   const q = new URLSearchParams(search).get(rows.query);
   if (variantFor(rows, search)) return rows.on;

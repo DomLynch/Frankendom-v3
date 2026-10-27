@@ -323,7 +323,8 @@ if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger d
       try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
     });
     canvas.addEventListener('pointermove', (e) => { view.lookYaw(-look.move(e.pointerId, e.clientX, e.timeStamp)); });
-    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, (e) => { look.up((e as PointerEvent).pointerId, (e as PointerEvent).timeStamp); });
+    for (const name of ['pointerup', 'lostpointercapture']) canvas.addEventListener(name, (e) => { look.up((e as PointerEvent).pointerId, (e as PointerEvent).timeStamp); });
+    canvas.addEventListener('pointercancel', (e) => { look.abort((e as PointerEvent).pointerId); });
   } else {
     // ?look=off: the plain one-finger drag the free camera shipped with
     let drag: { id: number; x: number } | null = null;

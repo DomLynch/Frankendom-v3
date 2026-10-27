@@ -10,27 +10,31 @@ export type FreeCameraRows = {
   on: boolean; query: string; off: string;
   gapMetres: number;           // how far ahead of the hero the camera's virtual foe stands: the pit's own start gap, so the frame is the fight camera's at the start of a fight
   handOverSeconds: number;     // the swing between the lock / finisher camera and this one, in either direction
+  swingTailSeconds: number;    // seconds the hand-over swing goes on after the share stops moving, so the camera arrives
+  swingRate: number;           // the swing's pull: the camera closes 1 - exp(-dt * swingRate / handOverSeconds) of the way to its place each frame
   stickEndsCeremony: boolean;  // any stick input after the kill hands him control at once (the ceremony no longer holds him for startAfterSeconds)
   fight: 'pair' | 'follow';    // pair: a fight frames the hero and the boss from behind the hero (the lock, anchored on him); follow: the free camera even in a fight
 };
-export type FreeCameraLimits = { gapMetres: [number, number]; handOverSeconds: [number, number] };
+export type FreeCameraLimits = { gapMetres: [number, number]; handOverSeconds: [number, number]; swingTailSeconds: [number, number]; swingRate: [number, number] };
 
 /** Throws on a bad free-camera row. */
 export function validateFreeCamera(rows: FreeCameraRows, limits: FreeCameraLimits): void {
   const inside = (name: string, v: number, [lo, hi]: [number, number]) => { if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json freeCamera.${name} ${v} is not in ${lo}..${hi}`); };
   inside('gapMetres', rows.gapMetres, limits.gapMetres);
   inside('handOverSeconds', rows.handOverSeconds, limits.handOverSeconds);
+  inside('swingTailSeconds', rows.swingTailSeconds, limits.swingTailSeconds);
+  inside('swingRate', rows.swingRate, limits.swingRate);
   if (typeof rows.on !== 'boolean' || typeof rows.stickEndsCeremony !== 'boolean') throw new Error('respawn.json freeCamera.on and stickEndsCeremony are true or false');
   if (rows.fight !== 'pair' && rows.fight !== 'follow') throw new Error(`respawn.json freeCamera.fight "${rows.fight}" is "pair" or "follow"`);
   if (!rows.query || !rows.off) throw new Error('respawn.json freeCamera.query and off are words');
 }
 
-type Shipped = { freeCamera: FreeCameraRows; limits: { freeCamGapMetres: [number, number]; handOverSeconds: [number, number] } };
+type Shipped = { freeCamera: FreeCameraRows; limits: { freeCamGapMetres: [number, number]; handOverSeconds: [number, number]; swingTailSeconds: [number, number]; swingRate: [number, number] } };
 const SHIPPED = ROWS as unknown as Shipped;
 
 /** The rows this page plays: null when the zone loop is off (`zone` false: ?postkill=v1), the row is off, or the link says `?freecam=v1`. Throws on a bad row. */
 export function freeCameraFor(zone: boolean, search = '', rows: Shipped = SHIPPED): FreeCameraRows | null {
-  validateFreeCamera(rows.freeCamera, { gapMetres: rows.limits.freeCamGapMetres, handOverSeconds: rows.limits.handOverSeconds });
+  validateFreeCamera(rows.freeCamera, { gapMetres: rows.limits.freeCamGapMetres, handOverSeconds: rows.limits.handOverSeconds, swingTailSeconds: rows.limits.swingTailSeconds, swingRate: rows.limits.swingRate });
   if (!zone || !rows.freeCamera.on || new URLSearchParams(search).get(rows.freeCamera.query) === rows.freeCamera.off) return null;
   return rows.freeCamera;
 }
