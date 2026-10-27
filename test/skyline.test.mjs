@@ -74,7 +74,7 @@ test('the fetch waits for the first frame and never blocks first paint (source p
   assert.match(scene, /createSkyline\(scene, /);
   assert.match(scene, /skyline\?\.update\(camera\.position, dt\)/);
   assert.doesNotMatch(scene, /await[^\n]*skyline/);
-  assert.match(scene, /skyline\?\.update\(camera\.position, dt\);[^\n]*\n\s*syncIdleFoes\(practice, dt\);/);   // after rig.update placed the camera, before the draw, and on its own line: a trailing // comment must never swallow the next statement (the #119 bug class)
+  assert.match(scene, /skyline\?\.update\(camera\.position, dt\);[^\n]*\n(\s*skyfold\?\.update\(camera\.position, dt, skyline\);[^\n]*\n)?\s*syncIdleFoes\(practice, dt\);/);   // after rig.update placed the camera, before the draw, and on its own line: a trailing // comment must never swallow the next statement (the #119 bug class)
   assert.ok(scene.indexOf('rig.update(dt, state') < scene.indexOf('skyline?.update('));
   assert.match(src, /depthWrite: false/); assert.match(src, /fog: false/); assert.match(src, /renderOrder = SKYLINE_ORDER/); assert.match(src, /SKYLINE_ORDER = -1000/);
 });
