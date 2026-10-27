@@ -1,8 +1,8 @@
 {
   "query": "",
-  "hitTick": 302,
+  "hitTick": 389,
   "death": {
-    "tick": 50,
+    "tick": 24,
     "states": [
       {
         "k": 0,
@@ -32,5 +32,10 @@
   },
   "log": [],
   "state": null,
-  "cost": null
+  "cost": null,
+  "seen": {
+    "seen": null,
+    "hitsSeen": null,
+    "feelHooks": null
+  }
 }

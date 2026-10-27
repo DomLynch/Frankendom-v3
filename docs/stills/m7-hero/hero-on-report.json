@@ -1,8 +1,8 @@
 {
   "query": "feel=hero",
-  "hitTick": 302,
+  "hitTick": 389,
   "death": {
-    "tick": 50,
+    "tick": 24,
     "states": [
       {
         "k": 0,
@@ -30,11 +30,32 @@
       }
     ]
   },
-  "log": [],
+  "log": [
+    {
+      "tick": 763,
+      "zone": "torso",
+      "sector": "front",
+      "side": "Right"
+    }
+  ],
   "state": "dying",
   "cost": {
-    "frames": 771,
+    "frames": 845,
     "totalMs": 0,
     "maxMs": 0
+  },
+  "seen": {
+    "seen": {
+      "hits": 1,
+      "last": {
+        "target": 0,
+        "location": "torso",
+        "heading": -1.224646799147353e-16,
+        "state": "alive",
+        "quietS": 0
+      }
+    },
+    "hitsSeen": 1,
+    "feelHooks": 1
   }
 }
