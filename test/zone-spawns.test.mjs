@@ -35,7 +35,7 @@ test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from t
 test('the shipped zone row: three spots across the zone\'s ground (leash circle on it), none on the pit wall, none in the hero\'s start aggro, none inside another\'s, one rig kind', () => {
   const spots = spotsFor(ZONE);
   assert.equal(spots.length, 3);
-  assert.doesNotThrow(() => validateSpots(spots, start(), wall(), WORLD, FIGHT.opponent));
+  assert.doesNotThrow(() => validateSpots(spots, start(), wall(), WORLD, [FIGHT.opponent]));
   for (const s of spots) {
     assert.ok(Math.hypot(s.x, s.z) + Math.max(s.leash, wall()) <= WORLD.spreadRadiusMetres, `${s.id}: its fight arena lies inside the spawn extent`);
     assert.ok(dist(s, start()) > s.aggro, `${s.id}: the page does not open on a fight`);
@@ -59,7 +59,7 @@ test('bad spots are refused: off the zone\'s ground, in the pit wall, on the her
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, spreadRadiusMetres: 999 }), /spreadRadiusMetres/);
   assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = 1; }), start(), wall()), /inside its own aggro of the hero's start/);
   assert.throws(() => validateSpots(edit((s) => { s[1].x = s[0].x + 1; s[1].z = s[0].z; }), start(), wall()), /inside each other's aggro/);
-  assert.throws(() => validateSpots(ok, start(), wall(), WORLD, 'nobody'), /one foe rig/);
+  assert.throws(() => validateSpots(ok, start(), wall(), WORLD, ['nobody']), /names kind "pitborn", which is no profile row/);
   assert.throws(() => validateSpots(edit((s) => { s[1].id = s[0].id; }), start(), wall()), /share an id|aggro/);
   assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -2; s[1].x = 3; s[1].z = -2; }), start(), wall()), /closer than 30 m/);   // outside each other's 2.5 m aggro, inside the spacing row
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, minSpacing: 99 }), /minSpacing/);
@@ -206,10 +206,10 @@ test('validateSpots refuses a leash shorter than the aggro plus the margin', () 
 
 test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for the aggro, the others drawn as copies, the old single-spawn timer is gone', () => {
   const main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts');
-  assert.match(main, /if \(ZONE\) zoneStep\(dt\)/);
+  assert.match(main, /if \(ZONE\) \{ zoneStep\(dt\); syncSweeps\(\); \}/);
   assert.match(main, /startAction\(autoStart && \(!ZONE \|\| engaged\), practice, intent\.action\)/);
   assert.match(main, /view\.idleFoes\(idleOnes\(spawns, current\)/);
-  assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, ZONE\.spawn\.kind\)/);
+  assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, kindIds\(KIND_CTX\.profiles\)\)/, 'every spawn kind is checked against the profile rows, not one page-wide kind');
   assert.match(main, /setPlayScale\(ZONE \? WORLD\.pitScale : playScaleFor\(opponentId, Infinity\)\)/, 'the zone fights in the wider pit; the single fight (ZONE null, ?postkill=v1) keeps playScaleFor, Gate 0 untouched');
   assert.ok(ROWS.world.pitScale * 11.7 - 0.425 - ROWS.world.edgeMetres > 0 && 0.65 * 11.7 - 0.425 - 1 >= 6.1, 'the zone wall holds spots a ring of 6.1 m or more');
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');   // code with the trailing // comments stripped

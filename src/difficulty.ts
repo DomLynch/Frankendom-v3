@@ -9,7 +9,7 @@ import { brainProfile, type BrainRow } from './brain.ts';
 export const KNOBS = ['reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] as const;
 export type Knobs = Pick<AiProfile, (typeof KNOBS)[number]>;
 export type DifficultyRow = { id: string | number } & Knobs & { foeHealthScale: number; foeDamageScale: number; about?: string };
-export type ProfileRow = { id: string; opponent: string; brain: string | null; foeHealthScale: number; foeDamageScale: number; about?: string };
+export type ProfileRow = { id: string; opponent: string; brain: string | null; foeHealthScale: number; foeDamageScale: number; knobs?: Partial<Knobs>; body?: string; about?: string };   // knobs: this kind's own brain knobs, laid over the difficulty row's (a zone spawn `kind` is a profile id: src/fight/spawn-kind.ts)
 export type DifficultyFile = { default: number; rows: DifficultyRow[]; named: DifficultyRow[] };
 export type FightPick = { profile: string; difficulty: string | number };
 
@@ -36,6 +36,7 @@ export function resolveFight(pick: FightPick, profiles: readonly ProfileRow[], d
   const knobs: Record<string, unknown> = { ...base };
   delete knobs.id;
   for (const k of KNOBS) knobs[k] = d[k];
+  if (p.knobs) Object.assign(knobs, p.knobs);   // the kind's own knobs over the difficulty row's (a goblin that dodges and weaves whatever the ladder says); no `knobs` = the difficulty row as before
   return { opponent: p.opponent, brain: { id: `${p.id}/${String(d.id)}`, ...knobs } as BrainRow, foeHealthScale: p.foeHealthScale * d.foeHealthScale, foeDamageScale: p.foeDamageScale * d.foeDamageScale };
 }
 
