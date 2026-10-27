@@ -4,31 +4,31 @@
    "shot": "ready",
    "headingDeg": 7.7,
    "pitchDeg": -21.1,
-   "stripYawDeg": -83.1
+   "stripYawDeg": -82.5
   },
   {
    "shot": "turn1",
-   "headingDeg": 16.6,
-   "pitchDeg": -23.8,
-   "stripYawDeg": -77.5
+   "headingDeg": 16.4,
+   "pitchDeg": -24.4,
+   "stripYawDeg": -76.7
   },
   {
    "shot": "turn2",
-   "headingDeg": 103.8,
+   "headingDeg": 103.6,
    "pitchDeg": -19.1,
-   "stripYawDeg": -6.2
+   "stripYawDeg": -0.7
   },
   {
    "shot": "turn3",
-   "headingDeg": -117.4,
-   "pitchDeg": -19.5,
-   "stripYawDeg": 123.6
+   "headingDeg": -96.5,
+   "pitchDeg": -18.9,
+   "stripYawDeg": 144.9
   },
   {
    "shot": "heavy",
-   "headingDeg": -118.8,
-   "pitchDeg": -19.9,
-   "stripYawDeg": 124.7
+   "headingDeg": -96,
+   "pitchDeg": -19.6,
+   "stripYawDeg": 151.5
   }
  ],
  "skyfollow-v1": [
@@ -40,26 +40,26 @@
   },
   {
    "shot": "turn1",
-   "headingDeg": 16.1,
-   "pitchDeg": -25.2,
+   "headingDeg": 16.3,
+   "pitchDeg": -24.5,
    "stripYawDeg": 0
   },
   {
    "shot": "turn2",
-   "headingDeg": 97.8,
-   "pitchDeg": -18.8,
+   "headingDeg": 103.4,
+   "pitchDeg": -19,
    "stripYawDeg": 0
   },
   {
    "shot": "turn3",
-   "headingDeg": -96.3,
-   "pitchDeg": -19.7,
+   "headingDeg": -120.1,
+   "pitchDeg": -19.1,
    "stripYawDeg": 0
   },
   {
    "shot": "heavy",
-   "headingDeg": -96.2,
-   "pitchDeg": -19.9,
+   "headingDeg": -120.4,
+   "pitchDeg": -18.6,
    "stripYawDeg": 0
   }
  ]

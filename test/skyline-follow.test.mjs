@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
-import { createSkyline, skyFollowOn, headingOf, unwrapYaw, stripYaw, SKYLINE } from '../src/fight/skyline.ts';
+import { createSkyline, skyFollowOn, headingOf, shortestTurn, stripYaw, SKYLINE } from '../src/fight/skyline.ts';
 
 const STAGE = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8'));
 const never = () => new Promise(() => {});   // the texture never lands: only the rotation is under test
@@ -41,19 +41,13 @@ test('the heading of a camera is its rotation about the vertical', () => {
   }
 });
 
-test('unwrapYaw takes the shortest turn, so crossing +-pi never jumps', () => {
+test('shortestTurn folds a difference into -pi..pi (the wrap-around from +pi to -pi is a small turn, not a lap)', () => {
   const near = (a, b) => Math.abs(a - b) < 1e-9;
-  assert.ok(near(unwrapYaw(3.1, -3.1), 2 * Math.PI - 3.1));   // +pi side to -pi side: keeps counting up
-  assert.ok(near(unwrapYaw(-3.1, 3.1), 3.1 - 2 * Math.PI));
-  assert.ok(near(unwrapYaw(0.2, 0.3), 0.3));
-  let run = 0, prev = 0;
-  for (let i = 1; i <= 400; i++) {   // two and a bit full turns
-    const h = Math.atan2(Math.sin(i * 0.05), Math.cos(i * 0.05));   // wrapped heading, as the camera reports it
-    run = unwrapYaw(run, h);
-    assert.ok(Math.abs(run - prev) < 0.06, `step ${i}`);
-    prev = run;
-  }
-  assert.ok(Math.abs(run - 400 * 0.05) < 1e-9);
+  assert.ok(near(shortestTurn(-3.1 - 3.1), 2 * Math.PI - 6.2));   // +3.1 -> -3.1 is 0.083 round the back, not -6.2
+  assert.ok(near(shortestTurn(3.1 + 3.1), 6.2 - 2 * Math.PI));
+  assert.ok(near(shortestTurn(0.3), 0.3)); assert.ok(near(shortestTurn(-0.3), -0.3));
+  assert.ok(near(shortestTurn(4 * Math.PI + 0.2), 0.2));
+  assert.ok(Math.abs(shortestTurn(Math.PI)) <= Math.PI + 1e-12);
 });
 
 test('stripYaw is the fixed yaw plus yawFollow x the camera yaw', () => {
@@ -64,17 +58,20 @@ test('stripYaw is the fixed yaw plus yawFollow x the camera yaw', () => {
   assert.equal(SKYLINE.yawDegrees, 0);   // ?skyfollow=v1 is the look before: fixed at 0
 });
 
-test('the strip turns after the camera, with no jump when the camera wraps through +-pi', () => {
-  const row = { ...SKYLINE, yawDegrees: 0, followOffsetDegrees: 0, yawFollow: 0.9, yawFollowSeconds: 0 };   // no ease: the rotation is the exact follow
+test('the strip turns after the camera, smoothly through +-pi, and never builds up an offset from lapping', () => {
+  const F = 0.97, row = { ...SKYLINE, yawDegrees: 0, followOffsetDegrees: 0, yawFollow: F, yawFollowSeconds: 0.3 };
   const sky = createSkyline(new THREE.Scene(), '', row, never);
   let last = 0;
-  for (let i = 0; i <= 300; i++) {
-    const yaw = i * 0.03;   // spinning past +pi (the camera's own Euler wraps; the direction does)
-    sky.heading(camAt(yaw)); sky.update(new THREE.Vector3(), 1 / 60);
-    if (i > 0) assert.ok(Math.abs(sky.mesh.rotation.y - last) < 0.03 * 0.9 + 1e-9, `frame ${i}`);
+  for (let i = 0; i <= 600; i++) {   // three lots of a full turn, the camera's heading wrapping at +-pi each lap
+    sky.heading(camAt(i * 0.03)); sky.update(new THREE.Vector3(), 1 / 60);
+    if (i > 0) assert.ok(Math.abs(sky.mesh.rotation.y - last) < 0.03 + 0.02, `frame ${i}: ${Math.abs(sky.mesh.rotation.y - last)}`);   // no jump at the wrap: the 0.03 x 2pi step is eased
     last = sky.mesh.rotation.y;
   }
-  assert.ok(Math.abs(last - 0.9 * 300 * 0.03) < 1e-9);   // 0.9 of 9 radians, not folded back into -pi..pi
+  const hold = camAt(600 * 0.03);   // stopped, 18 rad (about 2.9 laps) on
+  for (let i = 0; i < 1200; i++) { sky.heading(hold); sky.update(new THREE.Vector3(), 1 / 60); }
+  const d = hold.getWorldDirection(new THREE.Vector3()), h = headingOf(d.x, d.z);
+  assert.ok(Math.abs(shortestTurn(sky.mesh.rotation.y - h)) <= (1 - F) * Math.PI + 1e-6, 'at most (1 - yawFollow) x 180 degrees off the view, however many laps');
+  assert.ok(Math.abs(sky.yaw - sky.mesh.rotation.y) < 1e-12);
 });
 
 test('the follow starts on target and then eases (yawFollowSeconds), never snapping', () => {

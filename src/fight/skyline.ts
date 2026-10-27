@@ -31,8 +31,8 @@ export function skyFollowOn(search: string, row: SkylineRow = SKYLINE): boolean 
 const TAU = Math.PI * 2;
 /** The camera's heading as a rotation about the vertical (0 = looking down -Z, the turn Object3D.rotation.y makes), from its world direction. */
 export function headingOf(dirX: number, dirZ: number): number { return Math.atan2(-dirX, -dirZ); }
-/** Carries a running (unwrapped) yaw on to a new heading by the shortest turn from the last, so the follow never jumps at +-pi. */
-export function unwrapYaw(running: number, heading: number): number { return heading + TAU * Math.round((running - heading) / TAU); }
+/** An angle difference folded into -pi..pi: the shortest way round (the strip is a cylinder, so a whole turn is the same picture). */
+export function shortestTurn(delta: number): number { return delta - TAU * Math.round(delta / TAU); }
 /** The strip's turn about the vertical for an unwrapped camera yaw: the row's fixed yaw, plus `followOffsetDegrees` (the follow only: it puts the alien ahead), plus `yawFollow` x the camera's. */
 export function stripYaw(row: SkylineRow, cameraYaw: number): number { return THREE.MathUtils.degToRad(row.yawDegrees + row.followOffsetDegrees) + row.yawFollow * cameraYaw; }
 
@@ -69,7 +69,7 @@ export function createSkyline(
   mesh.visible = false;
   scene.add(mesh);
   const follow = skyFollowOn(search, row), dir = new THREE.Vector3();
-  let running = 0, started = false, target = 0, turn = THREE.MathUtils.degToRad(row.yawDegrees);   // running = the camera's unwrapped yaw; turn = the strip's, eased toward target
+  let started = false, target = 0, turn = THREE.MathUtils.degToRad(row.yawDegrees);   // turn = the strip's yaw, eased toward target by the shortest way (so winding never builds up: the alien is at most (1 - yawFollow) x 180 degrees off)
   let state: Skyline['state'] = 'idle', opacity = 0, texture: THREE.Texture | undefined, disposed = false;
   afterFirstFrame()
     .then(() => { state = 'loading'; return new Promise<void>((done) => setTimeout(done, row.loadAfterFirstFrameMs)); })
@@ -91,14 +91,13 @@ export function createSkyline(
       camera.getWorldDirection(dir);
       if (Math.hypot(dir.x, dir.z) < 1e-4) return;   // looking straight up or down: no heading, keep the last
       const h = headingOf(dir.x, dir.z);
-      running = started ? unwrapYaw(running, h) : h;
-      if (!started) { started = true; turn = stripYaw(row, running); }   // the first frame starts on target: no spin-up
-      target = stripYaw(row, running);
+      target = stripYaw(row, h);   // the camera's heading folded into -pi..pi: the offset from the view never grows with how many times he has turned
+      if (!started) { started = true; turn = target; }   // the first frame starts on target: no spin-up
     },
     get yaw() { return turn; },
     update(camera, dt) {
       if (follow) {
-        turn += (target - turn) * (row.yawFollowSeconds > 0 ? 1 - Math.exp(-dt / row.yawFollowSeconds) : 1);   // a slow ease: the far backdrop drifts after the turn
+        turn += shortestTurn(target - turn) * (row.yawFollowSeconds > 0 ? 1 - Math.exp(-dt / row.yawFollowSeconds) : 1);   // a slow ease: the far backdrop drifts after the turn
         mesh.rotation.y = turn;
       }
       mesh.position.set(camera.x, camera.y + centreOffsetY(row, view), camera.z);
