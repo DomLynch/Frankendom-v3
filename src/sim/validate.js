@@ -29,10 +29,10 @@ export const SCHEMA = {
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
   'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
     maps: { bones: ['hips', 'spine', 'spine1', 'spine2', 'neck', 'head', 'armLeft', 'forearmLeft', 'handLeft', 'armRight', 'forearmRight', 'handRight', 'thighLeft', 'shinLeft', 'footLeft', 'toeLeft', 'thighRight', 'shinRight', 'footRight', 'toeRight'],
-      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'cue', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows', 'halves'] },
+      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'cue', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max', 'cuttable', 'slotSpacingM', 'event'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows', 'halves'] },
     // an object of rows keyed by id: path -> the keys each row may carry
     rowMaps: { 'finisherCuts.rows': ['unit', 'also', 'fallback', 'atS', 'push', 'kill', 'plane'] },
-    finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
+    finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
@@ -206,6 +206,9 @@ export function validateFile(name, json) {
     const c = json.corpse;
     if (!Number.isInteger(c.max) || c.max < 0) errors.push(`${name}.corpse.max: must be an integer >= 0`);
     if (Number.isFinite(c.keepSeconds) && Number.isFinite(c.pieceSeconds) && c.pieceSeconds > c.keepSeconds) errors.push(`${name}.corpse.pieceSeconds: must be <= keepSeconds`);
+    if (typeof c.cuttable !== 'boolean') errors.push(`${name}.corpse.cuttable: must be true or false`);
+    if (!(c.slotSpacingM >= 4)) errors.push(`${name}.corpse.slotSpacingM: must be >= 4 (each ragdoll in the one world has its own lane, wider than a lying body)`);
+    if (typeof c.event !== 'string' || !c.event.trim()) errors.push(`${name}.corpse.event: must be the bus event name`);
   }
   if (name === 'sound') errors.push(...checkSoundZone(json.zone));
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
