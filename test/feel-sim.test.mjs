@@ -111,18 +111,43 @@ const runBlow = (intent, max = 200, foeId = 'veteran') => {   // step until the 
   throw new Error('the blow never landed');
 };
 
-test('flag ON (c): a kick on an open foe INTERRUPTS him (KickInterrupted, the row\'s stagger) and never knocks him down', () => {
+test('flag ON (c0): a kick on an open foe (not attacking) is at most a flinch: the row\'s flinch stagger, NO KickInterrupted, no resistance started, no fall', () => {
   setKnockSim(ON());
-  const { d, seen } = runKick(), ev = seen.find((e) => e.type === 'KickInterrupted');
-  assert.ok(ev, 'a KickInterrupted event'); assert.deepEqual([ev.actor, ev.target, ev.move, ev.ticks], [0, 1, 'kick', TICKS(ROWS.kick.interruptSeconds)]);
+  const { d, seen } = runKick();
+  assert.ok(!seen.some((e) => e.type === 'KickInterrupted'), 'nothing to interrupt: no event');
   assert.ok(!seen.some((e) => e.type === 'KnockedDown'), 'no fall'); assert.equal(d.fighters[1].down, undefined); assert.equal(d.fighters[0].critical, 0, 'no finish window');
-  assert.equal(d.fighters[1].phase, 'hurt'); assert.equal(d.fighters[1].interruptCd, TICKS(ROWS.kick.resistanceSeconds));
+  assert.equal(d.fighters[1].phase, 'hurt'); assert.equal(d.fighters[1].stun, TICKS(ROWS.kick.flinchSeconds)); assert.equal(d.fighters[1].interruptCd, undefined, 'a flinch does not start the interrupt resistance');
+  const off = { ...ROWS, kick: { ...ROWS.kick, flinchSeconds: 0 } }; setKnockSim(knockSimFor(off, '?feel=kick'));
+  assert.equal(runKick().d.fighters[1].phase, 'ready', 'flinchSeconds 0 (a data row): the kick does nothing to an idle foe');
+});
+
+// The foe starts a heavy on tick 0 (long windup); the hero kicks on tick 0 too. Returns the duel at the kick's Hit, the events and whether the foe was in his windup then.
+const runKickOnWindup = (foeId = 'veteran', max = 160) => {
+  let d = duelOf(foeId), seen = [];
+  for (let t = 0; t < max; t++) {
+    const before = d.fighters[1]; d = stepDuel(d, [t === 0 ? KICK : idleIntent(), t === 0 ? HEAVY : idleIntent()]); seen = seen.concat(d.events);
+    if (d.events.some((e) => e.type === 'Hit' && e.target === 1 && e.move === 'kick')) return { d, seen, t, before };
+  }
+  throw new Error('the kick never landed');
+};
+test('flag ON (c): a kick on a foe in his attack WINDUP INTERRUPTS him (KickInterrupted, the row\'s stagger, resistance starts), even a poised brute, and never knocks him down', () => {
+  setKnockSim(ON());
+  for (const foe of ['veteran', 'pitborn']) {
+    const { d, seen, before } = runKickOnWindup(foe), ev = seen.find((e) => e.type === 'KickInterrupted');
+    assert.equal(before.phase, 'attack', `${foe} was mid-attack when the kick landed`);
+    assert.ok(ev, `${foe}: a KickInterrupted event`); assert.deepEqual([ev.actor, ev.target, ev.move, ev.ticks], [0, 1, 'kick', TICKS(ROWS.kick.interruptSeconds)]);
+    assert.ok(!seen.some((e) => e.type === 'KnockedDown'), 'no fall'); assert.equal(d.fighters[1].down, undefined); assert.equal(d.fighters[0].critical, 0, 'no finish window');
+    assert.equal(d.fighters[1].phase, 'hurt'); assert.equal(d.fighters[1].interruptCd, TICKS(ROWS.kick.resistanceSeconds));
+    assert.ok(!seen.some((e) => e.type === 'AttackActive' && e.actor === 1), 'his windup was cancelled: the strike never became active');
+  }
+  setKnockSim(knockSimFor({ ...ROWS, kick: { ...ROWS.kick, interruptThroughPoise: false } }, '?feel=kick'));
+  const poised = runKickOnWindup('pitborn'); assert.ok(poised.seen.some((e) => e.type === 'Hit' && e.move === 'kick'));
 });
 
 test('flag ON (d)(e): he resists the next interrupt for resistanceSeconds (the kick still hits, no stagger); the kicker waits cooldownSeconds for his next kick', () => {
   setKnockSim(ON());
   const kicks = []; let d = duelOf(), seen = [];   // spam a kick every tick; the sim refuses it while the kicker cools down or is busy
-  for (let t = 0; t < TICKS(6); t++) { d = stepDuel(d, [KICK, idleIntent()]); for (const e of d.events) { seen.push(e); if (e.type === 'AttackStarted' && e.move === 'kick') kicks.push(e.tick); } }
+  for (let t = 0; t < TICKS(6); t++) { d = stepDuel(d, [KICK, HEAVY]); for (const e of d.events) { seen.push(e); if (e.type === 'AttackStarted' && e.move === 'kick') kicks.push(e.tick); } }
   const interrupts = seen.filter((e) => e.type === 'KickInterrupted').map((e) => e.tick), hits = seen.filter((e) => e.type === 'Hit' && e.move === 'kick');
   assert.ok(kicks.length >= 3, 'the kicker kicked again and again'); for (let i = 1; i < kicks.length; i++) assert.ok(kicks[i] - kicks[i - 1] >= TICKS(ROWS.kick.cooldownSeconds), `(e) kicks ${kicks[i - 1]} and ${kicks[i]} are at least cooldownSeconds apart`);
   assert.ok(hits.length > interrupts.length, '(d) more kicks landed than interrupted: the rest were resisted');

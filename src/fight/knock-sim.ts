@@ -9,7 +9,7 @@ import { STEP } from './sim.ts';
 export type KnockStance = 'open' | 'guarding' | 'midSwing' | 'recovering';
 export type KnockRows = {
   flag: { query: string; value: string }; tickHz: number;
-  knockdown: { seconds: number; minSecondsBetween: number }; kick: { interruptSeconds: number; resistanceSeconds: number; cooldownSeconds: number }; kickOnInjuredLeg: { hits: number; windowS: number }; getUp: { seconds: number }; finishWindow: { seconds: number };
+  knockdown: { seconds: number; minSecondsBetween: number }; kick: { interruptSeconds: number; flinchSeconds: number; interruptThroughPoise: boolean; resistanceSeconds: number; cooldownSeconds: number }; kickOnInjuredLeg: { hits: number; windowS: number }; getUp: { seconds: number }; finishWindow: { seconds: number };
   targets: readonly ('hero' | 'foe')[]; knockdownAtPerMille: number;
   massKg: Readonly<Record<string, number>> & { default: number };
   massBands: readonly { minRatioPct: number; perMille: number }[];
@@ -20,7 +20,7 @@ export type KnockRows = {
 export type KnockSim = {
   readonly down: number; readonly getUp: number; readonly window: number; readonly at: number;
   readonly gap: number;   // knockdown.minSecondsBetween in ticks: no second knockdown of the same man inside it, whatever the cause
-  readonly interrupt: number; readonly resist: number; readonly kickCd: number;   // kick: the interrupt stagger, the target's interrupt resistance, the attacker's own kick cooldown (all ticks; 0 = none)
+  readonly interrupt: number; readonly flinch: number; readonly throughPoise: boolean; readonly resist: number; readonly kickCd: number;   // kick: the interrupt stagger, the target's interrupt resistance, the attacker's own kick cooldown (all ticks; 0 = none)
   readonly legHits: number; readonly legWin: number; readonly legWindowS: number;   // kickOnInjuredLeg: leg hits that injure the leg, the window in ticks, and in seconds (for the LegInjured event)
   readonly foe: boolean; readonly hero: boolean;
   readonly kg: Readonly<Record<string, number>>; readonly bands: readonly { minRatioPct: number; perMille: number }[];
@@ -44,10 +44,10 @@ export function knockSimFor(rows: KnockRows | undefined, search = '', defaults?:
   if (window > down) throw new Error('feel-sim finishWindow.seconds is longer than knockdown.seconds (the window must close before he rises)');
   if (!rows.massBands.length || rows.massBands[0]!.minRatioPct !== 0) throw new Error('feel-sim massBands must start at minRatioPct 0');
   const whole = (name: string, s: number, min: number): number => { const t = Math.round(s * rows.tickHz); if (!(Number.isFinite(s) && s >= 0 && t >= min)) throw new Error(`feel-sim ${name} ${s} s is under ${min} tick${min === 1 ? '' : 's'}`); return t; };
-  const gap = whole('knockdown.minSecondsBetween', rows.knockdown.minSecondsBetween, 0), interrupt = whole('kick.interruptSeconds', rows.kick.interruptSeconds, 1), resist = whole('kick.resistanceSeconds', rows.kick.resistanceSeconds, 0), kickCd = whole('kick.cooldownSeconds', rows.kick.cooldownSeconds, 0);
+  const gap = whole('knockdown.minSecondsBetween', rows.knockdown.minSecondsBetween, 0), interrupt = whole('kick.interruptSeconds', rows.kick.interruptSeconds, 1), flinch = whole('kick.flinchSeconds', rows.kick.flinchSeconds, 0), resist = whole('kick.resistanceSeconds', rows.kick.resistanceSeconds, 0), kickCd = whole('kick.cooldownSeconds', rows.kick.cooldownSeconds, 0);
   const { hits: legHits, windowS: legWindowS } = rows.kickOnInjuredLeg, legWin = Math.round(legWindowS * rows.tickHz);
   if (!(Number.isInteger(legHits) && legHits >= 1 && Number.isFinite(legWindowS) && legWin >= 1)) throw new Error('feel-sim kickOnInjuredLeg needs hits (whole, >= 1) and windowS (> 0)');
-  return { down, getUp, window, at: rows.knockdownAtPerMille, gap, interrupt, resist, kickCd, legHits, legWin, legWindowS, foe: rows.targets.includes('foe'), hero: rows.targets.includes('hero'), kg: rows.massKg, bands: rows.massBands, stance: rows.stance, moves: Object.fromEntries(Object.entries(rows.moves).map(([k, v]) => [k, v.perMille])) };
+  return { down, getUp, window, at: rows.knockdownAtPerMille, gap, interrupt, flinch, throughPoise: rows.kick.interruptThroughPoise === true, resist, kickCd, legHits, legWin, legWindowS, foe: rows.targets.includes('foe'), hero: rows.targets.includes('hero'), kg: rows.massKg, bands: rows.massBands, stance: rows.stance, moves: Object.fromEntries(Object.entries(rows.moves).map(([k, v]) => [k, v.perMille])) };
 }
 
 /** The target's stance from the sim's own phase when the blow landed (`raised`: his guard was up and faced the blow). Guard up = guarding; mid-attack = midSwing; hurt, rolling, backstepping = recovering; else open. */

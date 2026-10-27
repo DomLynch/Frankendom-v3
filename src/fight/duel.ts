@@ -656,9 +656,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         const hit = rolled(dealt, i, j, pen); if (kind?.drain) spend(j, Math.round(hit * kind.drain)); const bandPM = duel.bands && a.attackFrom ? bandFactor(a.weapon, a.attackFrom.gap) : 1; wound(hit, shrugged ? 0 : def.knockback * bandPM); events.push({ tick, type: 'Hit', actor: i, target: j, move: a.move, damage: hit, ...rollTag(), location, heading: a.body.heading, counter: counter || stop, rear, charged, ...(bandPM < 1 ? { glance: true } : {}), ...(g ? { gambit: true } : {}), ...(beaten ? { beaten: true } : {}), ...(raised ? { guarded: true } : {}), weapon: weapon.id, material: weapon.material, ...(stop ? { stop: true } : {}), ...(trip ? { trip: true } : {}) });
         // V3 ?feel=kick: a KICK is an interrupt only (data/feel-sim.json kick rows): a short stagger that cancels his windup, then he resists the next interrupt for a while (the blow still lands, no stagger).
         const kickRows = KNOCK_SIM && a.move === 'kick' && D.health ? KNOCK_SIM : null, resisted = !!kickRows && !!D.interruptCd;
-        if (!shrugged || !D.health) {
-          if (kickRows && !resisted) { stagger(kickRows.interrupt); D.interruptCd = kickRows.resist || undefined; if (!D.interruptCd) delete D.interruptCd; events.push({ tick, type: 'KickInterrupted', actor: i, target: j, move: 'kick', ticks: D.stun }); }
-          else if (!resisted) stagger(tier === 'flinch' ? flinchTicks(stun) : stun);
+        const windup = !!kickRows && d.phase === 'attack' && d.move !== null && d.age < timing(d).windup;   // a kick INTERRUPTS only a foe in his attack windup (before the strike is active); any other foe gets at most a flinch, never an event or a fall
+        if (kickRows) {
+          if (!resisted && windup && (!shrugged || kickRows.throughPoise)) { stagger(kickRows.interrupt); D.interruptCd = kickRows.resist || undefined; if (!D.interruptCd) delete D.interruptCd; events.push({ tick, type: 'KickInterrupted', actor: i, target: j, move: 'kick', ticks: D.stun }); }
+          else if (!resisted && !windup && !shrugged && kickRows.flinch) stagger(kickRows.flinch);
+        } else if (!shrugged || !D.health) {
+          stagger(tier === 'flinch' ? flinchTicks(stun) : stun);
         }
         if (KNOCK_SIM && D.health && !g) {   // V3 ?feel=kick: a clean heavy, or ANY blow on an injured leg, may knock him down (knock-sim.ts, data/feel-sim.json); from the sim's own phase, masses and leg count, never a Jolt value
           const K = KNOCK_SIM, injured = legCount(D.legHits, tick, K.legWin) >= K.legHits;   // the leg was already injured BEFORE this blow: the K-th leg hit injures it, the next blow drops him

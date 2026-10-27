@@ -46,7 +46,7 @@ export const SCHEMA = {
   'feel-defaults': { keys: ['about', 'query', 'off', 'modules', 'revert'] },
   // The SIM knockdown + finish window (src/fight/knock-sim.ts, step in duel.ts), on with the kick module (data/feel-defaults.json): whole seconds / per-mille rows; checkFeelSim below checks the values
   'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'kick', 'kickOnInjuredLeg', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
-    maps: { flag: ['query', 'value'], knockdown: ['seconds', 'minSecondsBetween'], kick: ['interruptSeconds', 'resistanceSeconds', 'cooldownSeconds'], kickOnInjuredLeg: ['hits', 'windowS'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
+    maps: { flag: ['query', 'value'], knockdown: ['seconds', 'minSecondsBetween'], kick: ['interruptSeconds', 'flinchSeconds', 'interruptThroughPoise', 'resistanceSeconds', 'cooldownSeconds'], kickOnInjuredLeg: ['hits', 'windowS'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
@@ -308,7 +308,7 @@ function checkFeelSim(j) {
   const hz = Number.isFinite(j.tickHz) && j.tickHz > 0 ? j.tickHz : 60;
   for (const k of ['knockdown', 'getUp', 'finishWindow']) secs(`${k}.seconds`, j[k]?.seconds, hz);
   const sec0 = (p, v, lo) => { if (!Number.isFinite(v) || v < 0 || v > 60 || Math.round(v * hz) < lo) at(p, `must be a number of seconds in ${lo ? '(0' : '[0'}, 60]${lo ? ', at least one tick' : ''}`); };
-  sec0('knockdown.minSecondsBetween', j.knockdown?.minSecondsBetween, 0); sec0('kick.interruptSeconds', j.kick?.interruptSeconds, 1); sec0('kick.resistanceSeconds', j.kick?.resistanceSeconds, 0); sec0('kick.cooldownSeconds', j.kick?.cooldownSeconds, 0);
+  sec0('knockdown.minSecondsBetween', j.knockdown?.minSecondsBetween, 0); sec0('kick.interruptSeconds', j.kick?.interruptSeconds, 1); sec0('kick.flinchSeconds', j.kick?.flinchSeconds, 0); if (typeof j.kick?.interruptThroughPoise !== 'boolean') at('kick.interruptThroughPoise', 'must be true or false'); sec0('kick.resistanceSeconds', j.kick?.resistanceSeconds, 0); sec0('kick.cooldownSeconds', j.kick?.cooldownSeconds, 0);
   if (!Number.isInteger(j.kickOnInjuredLeg?.hits) || j.kickOnInjuredLeg.hits < 1 || j.kickOnInjuredLeg.hits > 100) at('kickOnInjuredLeg.hits', 'must be a whole number in 1..100');
   if (!Number.isFinite(j.kickOnInjuredLeg?.windowS) || j.kickOnInjuredLeg.windowS <= 0 || j.kickOnInjuredLeg.windowS > 120 || Math.round(j.kickOnInjuredLeg.windowS * hz) < 1) at('kickOnInjuredLeg.windowS', 'must be seconds in (0, 120], at least one tick');
   if (j.moves?.kick?.perMille !== 0) at('moves.kick.perMille', 'must be 0: a kick interrupts, it never knocks down by force');
