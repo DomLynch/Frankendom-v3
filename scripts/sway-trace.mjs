@@ -68,7 +68,9 @@ async function run(blows) {
 
 const blows = CASES.map((c, i) => ({ ...c, at: 40 + i * GAP, shots: c.name.endsWith('torso-front') ? [0, 4, 8, 14, 22, 34] : [] }));
 const control = await run([]);
-const live = await run(blows);
+const REPEATS = Number(process.env.REPEATS ?? 1), runs = [];   // REPEATS=3: three live runs against the one control; the table is mean (+- sd) of the runs
+for (let r = 0; r < REPEATS; r++) runs.push(await run(blows));
+const analyze = (live) => {
 const result = {};
 for (const b of blows) {
   const row = {};
@@ -87,7 +89,13 @@ for (const b of blows) {
   row.rdStates = [...new Set(live.slice(b.at, b.at + GAP).map((s) => s.rd))];
   result[b.name] = row;
 }
-writeFileSync(`${out}/sway-${(query || 'default').replace(/[^a-z0-9]+/gi, '-')}.json`, JSON.stringify(result, null, 2));
-console.log(`query "${query}"`);
-for (const [k, v] of Object.entries(result)) console.log(k.padEnd(20), 'head', JSON.stringify(v.head), 'chest', JSON.stringify(v.chest), v.rdStates.join('/'));
+return result;
+};
+const all = runs.map(analyze), stat = (xs) => { const m = xs.reduce((a, x) => a + x, 0) / xs.length, sd = Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / xs.length); return `${m.toFixed(1)}+-${sd.toFixed(1)}`; };
+writeFileSync(`${out}/sway-${(query || 'default').replace(/[^a-z0-9]+/gi, '-')}.json`, JSON.stringify(all, null, 2));
+console.log(`query "${query}" repeats ${REPEATS}`);
+for (const name of Object.keys(all[0])) for (const bone of ['head', 'chest']) {
+  const pick = (k) => all.map((r) => r[name][bone][k]);
+  console.log(`${name.padEnd(20)} ${bone.padEnd(5)} peakLat ${stat(pick('peakLatPx'))} px  swings ${stat(pick('swings'))}  settle ${stat(pick('settleS'))} s  ${all[0][name].rdStates.join('/')}`);
+}
 await browser.close();
