@@ -577,6 +577,9 @@ export function createScene(
       if (!warriors) return null;
       const actor = buildWarriors(warriors.asset, undefined, [warriors.playerWeapon, warriors.playerWeapon], true).player, group = new THREE.Group();
       group.visible = false; group.add(actor.anchor); actor.setUpright(readyOffset('hero')); scene.add(group);
+      // His sword: the hero's own painted shape, from the load the hero already made (`shapes` is keyed by file: no new fetch; a shape not landed yet leaves the rig's own part). Hung on the same weapon node, so the same hand and held transform. The mesh is shared, never disposed with the pooled body.
+      const shape = shapes.get(shapesFor({ player: warriors.playerWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: 1 }, shapeTable).player ?? '');
+      void shape?.then((mesh) => { if (mesh) actor.reshape(mesh); });
       return { group, update: (speed: number, dt: number, contact: number) => { actor.update(speed, dt, 'ready', 0, 'light', contact, 0); } };
     },
     // --- end other players ------------------------------------------------------------------------------------------------------------------------------------------------------------------
