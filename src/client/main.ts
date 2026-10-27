@@ -5,6 +5,7 @@
 import FIGHT from '../../data/fight.json' with { type: 'json' };
 import BRAINS from '../../data/brains.json' with { type: 'json' };
 import FEEL_SIM from '../../data/feel-sim.json' with { type: 'json' };
+import FEEL_DEFAULTS from '../../data/feel-defaults.json' with { type: 'json' };
 import { knockSimFor, setKnockSim, type KnockRows } from '../fight/knock-sim.ts';
 import { brainFor, brainProfile } from '../brain.ts';
 import DIFFICULTY from '../../data/difficulty.json' with { type: 'json' };
@@ -26,7 +27,8 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
-import { setArenaClamp, setLockFrame, setWalkClamp } from '../fight/camera.ts';
+import { setArenaClamp, setCameraPitch, setLockFrame, setWalkClamp } from '../fight/camera.ts';
+import { pitchChoice } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
@@ -59,9 +61,10 @@ import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
-import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
+import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
+import { groundFor, groundOn } from '../zone/ground.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
@@ -101,7 +104,7 @@ function fresh(pose?: DuelPose): Practice {
   setSpecialPace(specialPaceFor(FIGHT.specialPace, search));   // V3: the Skull Crack ×0.75 (data/fight.json specialPace); ?skull=v1 = today's timing
   setSpecialTerms(specialTermsFor(FIGHT.specialTerms, search));   // V3: the hero's specials every 9 s, no stamina (data/fight.json specialTerms); ?spec=v1 = V1's cooldowns and stamina
   setFoeSpecialReach(foeSpecialReachFor(FIGHT.foeSpecialReach, search));   // V3: an opponent's melee special starts inside 2.2 m and fizzles past 2.6 m (data/fight.json foeSpecialReach); ?special=v1 = V1's 3.0 m, no release check
-  setKnockSim(knockSimFor(FEEL_SIM as KnockRows, search));   // V3: the sim knockdown + finish window (data/feel-sim.json), only under ?feel=kick; absent = the fight as before, byte for byte
+  setKnockSim(knockSimFor(FEEL_SIM as KnockRows, search, FEEL_DEFAULTS));   // V3: the sim knockdown + finish window (data/feel-sim.json) rides the kick module: on by default (data/feel-defaults.json), ?kick=v1 or ?feel=v1 = the fight as before; a headless run (Gate 0) never calls this, so it steps as before, byte for byte
   epoch++;
   return make(seed, pose);
 }
@@ -131,6 +134,8 @@ const paused = () => !assetsReady || graphicsLost || document.hidden;   // :823 
 
 // The lock camera: V2's lower, over-the-shoulder framing (data/fight.json camera); ?cam=v1 keeps V1's lock exactly.
 if (!/[?&]cam=v1\b/.test(search)) setLockFrame(FIGHT.camera.lift, FIGHT.camera.side);
+// The zone follow camera's pitch (data/fight.json camera.pitch): off by default (the lock exactly as it was); ?pitch=low (flat, soft, or degrees) flattens it to show a band of horizon. Zone only; ?cam=v1 and ?postkill=v1 never read it.
+if (ZONE && !/[?&]cam=v1\b/.test(search)) setCameraPitch(pitchChoice(FIGHT.camera.pitch, search), FIGHT.camera.pitch);
 // Legs keep walking under a held guard (data/fight.json guardWalk); ?guard=v1 keeps V1's whole-body Guard. Set before the rigs are built.
 setGuardWalk(/[?&]guard=v1\b/.test(search) ? null : FIGHT.guardWalk.lowerBones);
 // The swing trail softer (data/fight.json trail: cuts at half, the stab 30% less, both fighters); ?trail=v1 = today's trail.
@@ -202,6 +207,8 @@ function nameOpponent() {   // :397 without the legend
 // the spawn the hero is nearest to (`current`, the live rig); the others stand as frozen copies at their spots (view.idleFoes); the fight starts when the hero walks into the held one's aggro
 // (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
+if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
+if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
@@ -234,6 +241,18 @@ function rematch(pose?: DuelPose, index = current, restart = true) {
 }
 /** The sim hands over to spawn `index` with the hero where he stands (no draw-in replayed: both rigs already stand armed). */
 const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false);
+/**
+ * A boss past its leash resets ONLY that boss (MMO style): it stands again at its spot at full health; the hero's health and body, the other attackers and their fights are untouched, nothing is
+ * `fresh()`ed. With another boss already on him that boss's fight becomes the sim's (as when the first boss dies, `adoptAttacker`); alone, the same boss is rebuilt at its spot and the hero carries on, not engaged.
+ */
+function leashReset(index: number, at: { x: number; z: number }) {
+  view.respawnFoe();
+  epoch++; seed = nextSeed(seed); frameEvents = []; openerLift = 0;
+  const out = resetHeld(practice, attackers, index, () => make(seed, poseFor(index, at)));
+  practice = out.practice; attackers = out.list; current = out.index; engaged = out.engaged;
+  state = previous = practice.fighter;
+  updateHud();
+}
 /** The opening pose of attacker `index`: its boss at its own spot, the hero where he stands (he is never moved: the sim reads his real body every tick). */
 const poseOfAttacker = (index: number, at: { x: number; z: number }): DuelPose => ({ hero: { x: at.x, z: at.z }, foe: { x: spawns[index]!.x, z: spawns[index]!.z }, heroFacing: Math.atan2(spawns[index]!.x - at.x, spawns[index]!.z - at.z) });
 /** The kill's ceremony is over and another boss is on him: that boss's fight becomes the sim's fight, the hero's health as it is now (the first boss's corpse is left lying, as at every hand-over). */
@@ -271,7 +290,7 @@ function zoneStep(dt: number) {
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
     if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = openerLeashLift(spawns[near]);   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
     if (engaged) {
-      if (leashed(spawns[current]!, practice.enemy, openerLift)) hand(current, hero);   // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health
+      if (leashed(spawns[current]!, practice.enemy, openerLift)) leashReset(current, hero);   // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health; only that boss resets
       else if (multi) {   // real-time aggro: any other standing boss whose aggro he is inside attacks him now, whatever he is fighting; one beyond its own leash lets go
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);

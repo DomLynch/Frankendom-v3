@@ -16,7 +16,7 @@ const ROW = FIGHT.camera.wide, ZOOM = FIGHT.camera.zoom;
 const PORTRAITS = [0.46, 0.5, 0.56, 0.6, 0.66, 0.7, 0.75], WIDES = [['landscape phone', 812 / 375], ['desktop', 1440 / 900], ['ultra-wide', 3440 / 1440]];
 
 test('the shipped row is pinned and validates', () => {
-  assert.deepEqual(ROW, { about: ROW.about, fromAspect: 1, toAspect: 1.5, zoom: 1.5, maxHfovDeg: 80 });
+  assert.deepEqual(ROW, { about: ROW.about, fromAspect: 1, toAspect: 1.5, zoom: 1.25, maxHfovDeg: 80 });
   assert.deepEqual(validateFile('fight', FIGHT), []);
 });
 
@@ -44,7 +44,7 @@ test('the lock pose has no aspect in it, so the framing is one distance and pitc
   assert.ok(base > 0.25 && base < 0.5, `engaged hero fraction ${base}`);
   for (const [name, a] of WIDES.slice(0, 2)) {
     const f = frac(fovForZoom(ZOOM * wideBoost(a, ZOOM, ROW)), a);
-    assert.ok(f > base * 1.3 && f < base * (ROW.zoom + 0.1), `${name}: boosted fraction ${f.toFixed(3)} vs portrait ${base.toFixed(3)}`);
+    assert.ok(f > base * 1.15 && f < base * (ROW.zoom + 0.1), `${name}: boosted fraction ${f.toFixed(3)} vs portrait ${base.toFixed(3)}`);
   }
 });
 

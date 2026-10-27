@@ -127,9 +127,9 @@ export function zoneDuel<D extends Duel>(duel: D, pose?: DuelPose, open: number 
 }
 
 /**
- * The duel pose of a spawn engaging the hero where he stands, anywhere on the zone's ground (`wall` is the ground's radius, world.spreadRadiusMetres, not the pit's wall: the pose is
- * placed relative to the SPOT, never the pit's marks): never closer than `minDistance` (he is stepped back along the line from the spot, zone-loop.ts respawnPose). A hero beyond the
- * ground (no boss can have him in aggro or leash there) is drawn in to its edge (zone-loop.ts intoPit, PR A), so with the ground as the wall the hero is never moved on the way into a fight.
+ * The duel pose of a spawn engaging the hero where he stands, anywhere in the world: placed relative to the SPOT, never to a fixed start (`wall` is the page's open radius, play-radius.ts
+ * OPEN_RADIUS, so nothing is out of reach); never closer than `minDistance` (he is stepped back along the line from the spot, zone-loop.ts respawnPose). With the open radius the hero is
+ * never drawn anywhere on the way into a fight (zone-loop.ts intoPit only acts beyond a finite `wall`).
  */
 export function poseAt(walker: At, spot: At, wall: number, minDistance: number, start: At): NonNullable<ReturnType<typeof respawnPose>> {
   const hero = intoPit(walker, wall);
@@ -138,20 +138,21 @@ export function poseAt(walker: At, spot: At, wall: number, minDistance: number, 
 
 // The opener (V1's `openers`, data/respawn.json openers): a newcomer who stands still still gets a fight. Choice (smallest correct): the opener spawn's AGGRO RANGE grows to reach the
 // hero once the idle clock is due, so the page's existing engagement (inAggro -> engaged / hand, auto-draw, the boss walks up in the sim) runs unchanged; no new fight code, no walking
-// rule of its own. The reach stops at the spawn's leash plus `reachMetres` (the newcomer at the pit's mark stands just beyond the plain leash, 6.4 m from the yard Pitborn); the page lifts the leash by the same metres for that fight. A hero who has wandered further is left alone.
-export type OpenerRows = { on: boolean; delaySeconds: number; count: number; reachMetres: number; spawns: string[]; query: string; off: string };
-type OpenerLimits = { delaySeconds: [number, number]; count: [number, number]; reachMetres: [number, number] };
+// rule of its own. The reach stops at `withinMetres` from the opener spawn (a row, validated: at least that spawn's aggro; the newcomer at the mark stands about 8.8 m from the yard Pitborn), so an idle hero further off is left alone (the 20 m leash plus reachMetres would have pulled a newcomer from 25 m). The page still lifts the leash by `reachMetres` for that fight.
+export type OpenerRows = { on: boolean; delaySeconds: number; count: number; reachMetres: number; withinMetres: number; spawns: string[]; query: string; off: string };
+type OpenerLimits = { delaySeconds: [number, number]; count: [number, number]; reachMetres: [number, number]; withinMetres: [number, number] };
 export const OPENERS = ROWS.openers as OpenerRows;
 const OPENER_LIMITS = ROWS.limits as unknown as OpenerLimits;
 
 /** Throws on a bad openers row: delay or count out of range, no spawn ids, or an id that is no spawn of the zone. */
 export function validateOpeners(rows: OpenerRows, spots: readonly Spot[], limits: OpenerLimits = OPENER_LIMITS): void {
-  for (const key of ['delaySeconds', 'count', 'reachMetres'] as const) {
+  for (const key of ['delaySeconds', 'count', 'reachMetres', 'withinMetres'] as const) {
     const [lo, hi] = limits[key], v = rows[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json openers.${key} ${v} is not in ${lo}..${hi}`);
   }
   if (!Array.isArray(rows.spawns) || !rows.spawns.length) throw new Error('respawn.json openers.spawns names no spawn');
   for (const id of rows.spawns) if (!spots.some((s) => s.id === id)) throw new Error(`respawn.json openers.spawns names "${id}", which is no spawn of the zone`);
+  for (const id of rows.spawns) { const s = spots.find((t) => t.id === id); if (s && rows.withinMetres < s.aggro) throw new Error(`respawn.json openers.withinMetres ${rows.withinMetres} is shorter than ${id}'s aggro ${s.aggro}`); }
 }
 
 /** The openers are on: the row says so and the link does not carry the off switch. */
@@ -160,9 +161,9 @@ export const openerOn = (search: string, rows: OpenerRows = OPENERS): boolean =>
 /** The leash lift of a fight with `spawn` while the opener is due: `reachMetres` for an opener spawn (rows.spawns), 0 for any other boss. */
 export const openerLeashLift = (spawn: Spawn | undefined, rows: OpenerRows = OPENERS): number => (spawn && rows.spawns.includes(spawn.id) ? rows.reachMetres : 0);
 
-/** The spawns as the engagement sees them after `idle` seconds with nobody engaged: once `delaySeconds` is up, the first `count` standing opener spawns reach the hero (aggro = his distance, at most their leash plus reachMetres). */
+/** The spawns as the engagement sees them after `idle` seconds with nobody engaged: once `delaySeconds` is up, the first `count` standing opener spawns reach the hero (aggro = his distance, at most withinMetres). */
 export function openerReach(spawns: readonly Spawn[], rows: OpenerRows, idle: number, at: At): Spawn[] {
   if (!(idle >= rows.delaySeconds)) return spawns.slice();
   const open = new Set(rows.spawns.map((id) => spawns.find((s) => s.id === id)).filter((s): s is Spawn => !!s && isStanding(s)).slice(0, rows.count));
-  return spawns.map((s) => (open.has(s) ? { ...s, aggro: Math.max(s.aggro, Math.min(dist(s, at), s.leash + rows.reachMetres)) } : s));
+  return spawns.map((s) => (open.has(s) ? { ...s, aggro: Math.max(s.aggro, Math.min(dist(s, at), rows.withinMetres)) } : s));
 }
