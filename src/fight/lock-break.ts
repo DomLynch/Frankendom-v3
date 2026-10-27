@@ -1,9 +1,9 @@
-// The soft lock (Dom 2026-10-28, on his phone: "free looking: change your direction and RUN in any direction ... I can only BACKSTEP"; ruling: keep the lock-on in combat, but a SOFT one, breakable, not too easy).
-// The lock (the pair camera, the hero facing the foe and strafing / backstepping, duel.ts `lock`) holds by default. It BREAKS when the stick is pushed away from the foe beyond breakAngleDeg and held for commitSeconds
-// (a tap or a drift does not), or a roll is pointed away beyond the same angle; it also lets go when nobody is fighting him (the target died, or went past its leash). A break costs stamina and is refused while the
-// hero is hurt or knocked down, while the foe's attack is live, before minEngageSeconds, or with too little stamina. A broken lock gives the camera to the player (look any way) and the hero turns to face the way he runs
-// (the sim is asked for lock:false, which is its own existing free-facing). It re-locks on an attack press, or when the stick runs back toward the foe (relockAngleDeg, relockSeconds). Input, camera and the hero's
-// facing only: the duel sim is untouched. ?lock=v1 = the old hard lock. Every number is a row (data/respawn.json lockBreak). Target switching (a tap on another boss) is a hook, not wired: see switchTarget below.
+// The lock is a camera (Dom 2026-10-28, on his phone: "free looking: change your direction and RUN in any direction ... I can only BACKSTEP"; "in real life, if somebody is going to hit you, you can walk away": no artificial gates).
+// The lock (the pair camera, the hero facing the foe and strafing / backstepping, duel.ts `lock`) holds by default. It BREAKS when the stick is pushed away from the foe beyond breakAngleDeg and held for the short
+// input debounce commitSeconds (only so stick jitter does not drop it), or a roll is pointed away beyond the same angle; it also lets go when nobody is fighting him (the target died, or went past its leash). Nothing else
+// gates it: the hero's own body limits (staggered, knocked down, mid-attack, mid-roll) are the sim's and stay exactly as it enforces them; the lock only follows whether he is moving away. A broken lock gives the camera to the
+// player (look any way) and the hero turns to face the way he runs (the sim is asked for lock:false, its own existing free-facing). It re-locks on an attack press, or when the stick runs back toward the foe (relockAngleDeg,
+// relockSeconds). Input, camera and the hero's facing only: the duel sim is untouched. ?lock=v1 = the old hard lock. Every number is a row (data/respawn.json lockBreak). Target switching: see switchTarget below.
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { wrapAngle } from './sim.ts';
 
@@ -11,9 +11,7 @@ export type LockBreakRows = {
   on: boolean; query: string; off: string;
   breakAngleDeg: number;       // the stick must point this far from the foe (0 = at him, 180 = straight away) to break the lock
   minPush: number;             // the stick must be pushed at least this far (0..1) to count
-  commitSeconds: number;       // ... and held this long; a tap or drift resets
-  staminaCost: number;         // spent when the lock breaks (the sim's stamina points; a roll costs 30)
-  minEngageSeconds: number;    // no break before the fight is this old
+  commitSeconds: number;       // ... and held this long: an input debounce so stick jitter does not drop the lock
   relockAngleDeg: number;      // a stick pointing within this of the foe ...
   relockSeconds: number;       // ... for this long locks on again
 };
@@ -60,36 +58,25 @@ export const freshLock = (): LockState => ({ broken: false, engagedFor: 0, away:
 export type LockFrame = {
   dt: number; fighting: boolean;                      // fighting: a boss (or an attacker) is engaged with him
   stick: { x: number; z: number }; yaw: number; hero: { x: number; z: number }; foe: { x: number; z: number };
-  action: string | null; heroPhase: string; heroDown: boolean; foePhase: string; stamina: number;
+  action: string | null;
 };
 const ATTACKS = new Set(['light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'heavy_right', 'heavy_left', 'heavy_thrust', 'skill', 'skill2']);
 
-/** Whether a break may happen now: not hurt or knocked down, not under the foe's live attack, engaged long enough, and enough stamina. */
-export const mayBreak = (rows: LockBreakRows, s: LockState, f: LockFrame): boolean =>
-  f.fighting && s.engagedFor >= rows.minEngageSeconds && f.heroPhase !== 'hurt' && f.heroPhase !== 'dead' && !f.heroDown && f.foePhase !== 'attack' && f.stamina >= rows.staminaCost;
-
-/** One sim tick of the soft lock. `cost` is the stamina to take this tick (0 unless the lock just broke). Pure: returns the next state. */
-export function stepLock(rows: LockBreakRows, s: LockState, f: LockFrame): { state: LockState; cost: number } {
-  if (!f.fighting) return { state: freshLock(), cost: 0 };   // the target died or went past its leash (or nobody engaged): the next fight starts locked
+/** One sim tick of the lock. Pure: returns the next state. */
+export function stepLock(rows: LockBreakRows, s: LockState, f: LockFrame): { state: LockState } {
+  if (!f.fighting) return { state: freshLock() };   // the target died or went past its leash (or nobody engaged): the next fight starts locked
   const next: LockState = { ...s, engagedFor: s.engagedFor + f.dt };
   const dir = stickWorld(f.stick, f.yaw), angle = dir ? awayAngleDeg(dir, f.hero, f.foe) : 0, pushed = !!dir && dir.length >= rows.minPush;
   if (s.broken) {
     next.toward = pushed && angle <= rows.relockAngleDeg ? s.toward + f.dt : 0;
-    if ((f.action && ATTACKS.has(f.action)) || next.toward >= rows.relockSeconds) return { state: { ...next, broken: false, away: 0, toward: 0 }, cost: 0 };
-    return { state: next, cost: 0 };
+    if ((f.action && ATTACKS.has(f.action)) || next.toward + 1e-9 >= rows.relockSeconds) return { state: { ...next, broken: false, away: 0, toward: 0 } };
+    return { state: next };
   }
   const rollAway = f.action === 'dodge' && !!dir && angle >= rows.breakAngleDeg;
   next.away = pushed && angle >= rows.breakAngleDeg ? s.away + f.dt : 0;
-  if ((rollAway || next.away >= rows.commitSeconds) && mayBreak(rows, next, f)) return { state: { ...next, broken: true, away: 0, toward: 0 }, cost: rows.staminaCost };
-  return { state: next, cost: 0 };
+  if (rollAway || next.away + 1e-9 >= rows.commitSeconds) return { state: { ...next, broken: true, away: 0, toward: 0 } };
+  return { state: next };
 }
 
-/** The practice with `cost` taken off the hero's stamina (input side only, the sim's rules are untouched); the same object when there is nothing to take. */
-export function spendStamina<P extends { duel: { fighters: readonly [{ stamina: number }, { stamina: number }] } }>(practice: P, cost: number): P {
-  if (!(cost > 0)) return practice;
-  const [hero, foe] = practice.duel.fighters;
-  return { ...practice, duel: { ...practice.duel, fighters: [{ ...hero, stamina: Math.max(0, hero.stamina - cost) }, foe] } };
-}
-
-/** HOOK, not wired: a tap on another standing boss would lock onto him. The zone page holds one foe in the duel sim at a time (main.ts hand()), so a switch is hand(index, hero) for the tapped spawn; a tap picker is the missing part. */
+/** HOOK, not wired: a tap on another attacker would lock onto him. The zone page holds one foe in the duel sim at a time (main.ts hand()), so a switch is hand(index, hero) for the tapped spawn; a tap picker (screen point to spawn) is the missing part, so it is left as a documented hook rather than a guess. */
 export const switchTarget = null;

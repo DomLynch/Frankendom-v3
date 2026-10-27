@@ -30,7 +30,7 @@ import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
-import { freshLock, lockBreakFor, spendStamina, stepLock } from '../fight/lock-break.ts';
+import { freshLock, lockBreakFor, stepLock } from '../fight/lock-break.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
@@ -410,10 +410,8 @@ function frame(now: number) {
       // the fight starts by itself: a sheathed hero with no press of his own steps with V1's draw press (src/auto-start.ts)
       let lockOn: boolean = locked;   // the soft lock (data/respawn.json lockBreak): held in a fight until the stick breaks it; free facing (lock:false, the sim's own) when broken or when nobody fights him
       if (LOCK_ROWS) {
-        const fighting = engaged || attackers.some((a) => !a.dead), me = practice.duel.fighters[0], him = practice.duel.fighters[1];
-        const stepped = stepLock(LOCK_ROWS, lockState, { dt: step(), fighting, stick: { x: intent.x, z: intent.z }, yaw: view.yaw, hero: state, foe: practice.enemy, action: intent.action,
-          heroPhase: me.phase, heroDown: !!me.down, foePhase: [him, ...attackers.filter((a) => !a.dead).map((a) => a.practice.duel.fighters[1])].some((f) => f.phase === 'attack') ? 'attack' : him.phase, stamina: me.stamina });
-        lockState = stepped.state; if (stepped.cost) practice = spendStamina(practice, stepped.cost);
+        const fighting = engaged || attackers.some((a) => !a.dead);
+        lockState = stepLock(LOCK_ROWS, lockState, { dt: step(), fighting, stick: { x: intent.x, z: intent.z }, yaw: view.yaw, hero: state, foe: practice.enemy, action: intent.action }).state;
         lockOn = locked && fighting && !lockState.broken;
       }
       const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
