@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { activeFeels, emitFeel, feel, feelNames, registerFeel } from '../src/fight/feel.ts';
+import { activeFeels, emitFeel, FEEL_LOG_MAX, feel, feelNames, registerFeel } from '../src/fight/feel.ts';
 
 test('?feel= lists module names, comma separated; absent or empty means none', () => {
   assert.deepEqual(feelNames(''), []);
@@ -30,6 +30,14 @@ test('feel events reach the named subscriber and the "*" one, are readable on gl
   off1(); off2();
   emitFeel('feel:limp', {});
   assert.equal(seen.length, 3, 'no subscriber left');
+});
+
+test('the event log is a ring: it keeps the latest FEEL_LOG_MAX, oldest dropped, so a long fight never grows it', () => {
+  globalThis.__feelEvents = [];
+  for (let i = 0; i < FEEL_LOG_MAX + 50; i++) emitFeel('feel:limp', { i });
+  assert.equal(globalThis.__feelEvents.length, FEEL_LOG_MAX);
+  assert.equal(globalThis.__feelEvents[0].payload.i, 50);
+  assert.equal(globalThis.__feelEvents.at(-1).payload.i, FEEL_LOG_MAX + 49);
 });
 
 test('limb state comes from the sim: feel.setLimbState hands the budget fractions to the hooks, none by default', () => {

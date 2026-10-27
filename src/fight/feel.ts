@@ -30,6 +30,8 @@ export const feelNames = (search: string): string[] => (new URLSearchParams(sear
 /** The registered hooks the page asked for, in the order it listed them; a name nothing registered is ignored. */
 export const activeFeels = (search: string): FeelHooks[] => feelNames(search).flatMap((n) => { const h = registry.get(n); return h ? [h] : []; });
 
+/** How many of the latest events `globalThis.__feelEvents` keeps. */
+export const FEEL_LOG_MAX = 200;
 export type FeelSink = (name: string, payload?: unknown) => void;
 const listeners = new Map<string, Set<FeelSink>>();
 let limbState: (() => Record<string, number>) | undefined;
@@ -48,6 +50,8 @@ export const feel = {
 };
 /** A hook reports an event by name. Kept on `globalThis.__feelEvents` too, so a harness or a test can read what was emitted. */
 export function emitFeel(name: string, payload?: unknown): void {
-  ((globalThis as { __feelEvents?: { name: string; payload?: unknown }[] }).__feelEvents ??= []).push({ name, payload });
+  const log = ((globalThis as { __feelEvents?: { name: string; payload?: unknown }[] }).__feelEvents ??= []);
+  log.push({ name, payload });
+  if (log.length > FEEL_LOG_MAX) log.splice(0, log.length - FEEL_LOG_MAX);   // a ring: the harness reads the latest, a long fight never grows it
   for (const key of [name, '*']) for (const fn of listeners.get(key) ?? []) fn(name, payload);
 }
