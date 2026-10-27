@@ -197,7 +197,9 @@ test('a LIGHT blow never lays him down: the evaluator\'s kill on a light counter
   assert.deepEqual(ROWS.killAsSwings, ['heavy']);
   for (const location of ['torso', 'head']) {
     const light = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location, move: 'light_left', counter: true }), true);
-    assert.equal(light.outcome, 'kill', `${location}: the evaluator still judges it lethal`);
+    // physics evaluator.kill.light_floor_pct (DomLynch/physics#49): a light swing never takes an undamaged head or torso to zero, so the evaluator itself no longer judges it lethal (before: kill, shown as a stagger only by killAsSwings)
+    assert.notEqual(light.outcome, 'kill', `${location}: the evaluator no longer judges a light counter-hit lethal on a bare Minotaur`);
+    assert.equal(light.deferredKill, false);
     assert.equal(light.action, 'stagger', `${location}: shown as a flinch`);
     const heavy = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', location, move: 'heavy_overhead', counter: true }), true);
     assert.equal(heavy.action, 'knockdown', `${location}: a heavy kill still falls`);
