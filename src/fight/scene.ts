@@ -48,6 +48,8 @@ import { createWoundNotice } from './wound-notice.ts';
 import { shardCapacity } from './special-shards-rows.ts';
 import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
+import { cutAim, cutCamRows, MIDDLE_BONE, STICK_FIRST_FRAME, stickBeat } from './finisher-cam.ts';
+const CUT_BLOOD = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json blood boosts by finisher id; null = ?finishercam=v1 (the blood as it was)
 import { phoneTier, pixelCap } from './quality.ts';
 import { FOE_TUNE } from './fatigue-tune.ts';
 import { fatigueReadFrom } from './fatigue-read.ts';
@@ -527,7 +529,9 @@ export function createScene(
     if (!fallSeconds || !dead) { fallAge = 0; return p; }
     fallAge += dt; return { ...p, pose: 'death', progress: Math.min(1, fallAge / fallSeconds) };
   };
-  let finishClock = -1; // the finisher corpse animates at 0.75× on a presentation clock (owner 2026-09-18: savour it) — the sim window stays 144 ticks
+  let cutBone: THREE.Object3D | null = null, cutMid: THREE.Object3D | null = null, cutBoneKey: string | null = null, cutRigKey: unknown = null, stickBeatNow = 0;   // finisher-cam.json: the foe's bones the cut and his middle are at, found once per finish and per foe rig, then read each frame (no allocation)
+  const cutFocus = { x: 0, y: 0, z: 0 }, cutRaw = { x: 0, y: 0, z: 0 }, cutMidAt = { x: 0, y: 0, z: 0 }, cutAt = new THREE.Vector3();
+  let finishClock = -1;// the finisher corpse animates at 0.75× on a presentation clock (owner 2026-09-18: savour it) — the sim window stays 144 ticks
   // Finisher complete (Lead brief 2026-09-22, for Web's loot panel): has the ceremony FINISHED PLAYING, and at what finish
   // age did it first say so. Latched from the scene's own state in the frame loop below, never from a delay; cleared with
   // the finish. `finishCompleteAt` is the number the FINISHER_SECONDS table in src/fight/finishers.ts was measured from.
@@ -816,8 +820,8 @@ export function createScene(
     // finish began, 0 outside a finish. Poll it in the frame loop; the rig owns the clocks.
     // `complete` is the finisher-complete event Web's loot panel keys on: the ceremony has finished playing (see the latch in
     // the frame loop). `completeAt` is the finish age in seconds when it first latched — 0 until then.
-    finishPhase(): { settled: boolean; touring: boolean; age: number; complete: boolean; completeAt: number } {
-      return { settled: rig.settled, touring: rig.touring, age: rig.finishAge, complete: finishComplete, completeAt: finishCompleteAt };
+    finishPhase(): { settled: boolean; touring: boolean; age: number; complete: boolean; completeAt: number; stickBeat: number } {
+      return { settled: rig.settled, touring: rig.touring, age: rig.finishAge, complete: finishComplete, completeAt: finishCompleteAt, stickBeat: stickBeatNow };
     },
     // Effects consume the simulation's events for the frame; they never infer contact from animation.
     // `frozen`: the frame loop is in a hit-stop. Effects (sparks, blood, camera kick) keep running on dt; the rigs evaluate their pose for the
@@ -1195,7 +1199,7 @@ export function createScene(
         detailedBlood && warriors
           ? finisherBloodSources(finisher!, opponent, severHead?.group ?? null, practice.finish?.location)
           : [];
-      finisherBlood.update(dt, detailedBlood ? finisher : null, victimProgress, bloodSources, bloodMode);
+      finisherBlood.update(dt, detailedBlood ? finisher : null, victimProgress, bloodSources, bloodMode, (finisher !== null && CUT_BLOOD?.[finisher]?.blood) || undefined);
       // Read feet after the rigs and headings settle; only grounded locomotion kicks up sand.
       const canScuff = (pose: string, speed: number) =>
         ['sheathed', 'ready', 'guard'].includes(pose) && speed > 0.25 && speed < 6;
@@ -1234,12 +1238,27 @@ export function createScene(
         for (const name of ['Head', 'hand_l', 'hand_r', 'foot_l', 'foot_r']) { const p = warriors.opponent.boneWorld(name); if (p) measured = Math.max(measured, Math.hypot(p.x - origin.x, p.z - origin.z)); }
         openedReach = Math.min(Math.max(openedReach, measured), openedReach + 0.015);
       } else if (!practice.finish) openedReach = 0;
+      // The cut's place for the finisher camera (finisher-cam.json): the row's bone on the foe, followed live as the ragdoll falls.
+      const cutRow = CUT_BLOOD && finisher !== null && practice.finish?.victim === 1 ? CUT_BLOOD[finisher] : undefined;
+      // finishPhase().stickBeat: main.ts's stick rule. Between fights it stands at STICK_FIRST_FRAME, so the frame the kill lands in (main.ts steps the sim before this render has seen the finish) holds a stick that is still down.
+      stickBeatNow = !CUT_BLOOD ? 0 : practice.finish?.victim === 1 ? stickBeat(CUT_BLOOD, finisher) : STICK_FIRST_FRAME;
+      if (!cutRow) { cutBone = null; cutMid = null; cutBoneKey = null; cutRigKey = null; }
+      else {
+        const rigNow = warriors?.opponent ?? null;   // a foe swap (the held body of another spawn) makes the bones stale: look them up again
+        if (cutBoneKey !== finisher || cutRigKey !== rigNow) { cutBoneKey = finisher; cutRigKey = rigNow; cutBone = boneOf(opponent, cutRow.bone) ?? null; cutMid = boneOf(opponent, MIDDLE_BONE) ?? null; }
+        if (cutBone) {
+          cutBone.getWorldPosition(cutAt); cutRaw.x = cutAt.x; cutRaw.y = cutAt.y; cutRaw.z = cutAt.z;
+          if (cutMid) { cutMid.getWorldPosition(cutAt); cutMidAt.x = cutAt.x; cutMidAt.y = cutAt.y; cutMidAt.z = cutAt.z; }
+          cutAim(cutRow, cutRaw, cutMid ? cutMidAt : null, cutFocus);
+        }
+      }
       // roamed or free: no finisher camera, the follow lock on the walking hero
       rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed && !freeCamera ? {
         finisher, posed: !!finisherPose, draw: !!practice.finish.draw, victim: practice.finish.victim, clock: finishClock,
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
+        focus: cutBone ? cutFocus : null,
       } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden, freeCamera);
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock

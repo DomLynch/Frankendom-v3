@@ -28,8 +28,7 @@ import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-rea
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
-import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';
-import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
+import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
@@ -443,7 +442,7 @@ function frame(now: number) {
       if (heroStands()) {   // the zone loop: the sim is over, the hero walks (presentation only) once the kill's ceremony lets him go
         const phase = view.finishPhase();
         // the ceremony is over, or (freeCamera.stickEndsCeremony) any stick input ends it
-        if (!roam && handsOver(FREE, freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds, !!(intent.x || intent.z))) { roam = { ...practice.fighter }; view.stopTour(); }
+        if (!roam && handsOver(FREE, freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds, !!(intent.x || intent.z), killAge, phase.stickBeat)) { roam = { ...practice.fighter }; view.stopTour(); }   // finisher-cam.json stickBeatS: a held stick does not end a finisher the camera frames until its whole length has played (0 = at once: ?finishercam=v1, a plain death)
         if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, ZONE!.walkRadius);   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
       accumulator -= step();

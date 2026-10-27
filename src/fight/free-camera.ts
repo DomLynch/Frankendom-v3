@@ -50,7 +50,8 @@ export const wantsFreeCamera = (rows: FreeCameraRows | null, w: CameraWorld): bo
 };
 
 /** Whether the stick takes the hero's body now: after the kill the ceremony hands him over (finished, or startAfterSeconds), or any stick input does when the row says so. */
-export const handsOver = (rows: FreeCameraRows | null, ceremonyOver: boolean, stick: boolean): boolean => stick && (ceremonyOver || !!rows?.stickEndsCeremony);
+export const handsOver = (rows: FreeCameraRows | null, ceremonyOver: boolean, stick: boolean, sinceKill = Infinity, minBeat = 0): boolean => stick && (ceremonyOver || (!!rows?.stickEndsCeremony && sinceKill >= minBeat));
+// `sinceKill` / `minBeat` (finisher-cam.json stickEndsCeremonyAfterS, 0 for ?finishercam=v1): a stick held in the first `minBeat` seconds after the kill does not end the ceremony, so the finisher camera plays for a player who was still holding the stick at the killing blow; the ceremony's own end still hands him over.
 
 /** The share of the free camera (0 = the lock, 1 = free), moved toward its target over `seconds`. `first` snaps (the first frame has nothing to swing from). */
 export const stepShare = (share: number, target: boolean, dt: number, seconds: number, first: boolean): number =>
