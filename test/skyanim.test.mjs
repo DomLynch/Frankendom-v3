@@ -174,7 +174,10 @@ test('pack 2 rows: eyes, drool and the planet sphere validate, each effect has i
     (a) => { a.eyes.blink.holdMaxSeconds = 0.03; }, (a) => { a.eyes.wink.everyEvents = 1; }, (a) => { a.eyes.wink.everyJitter = 3; }, (a) => { a.eyes.featherPx = 99; }, (a) => { a.eyes.seed = 1.5; }, (a) => { delete a.eyes.wink.everyEvents; },
     (a) => { a.drool.shimmer.color = 'pink'; }, (a) => { a.drool.shimmer.periodSeconds = 0; }, (a) => { delete a.drool.drop; }, (a) => { a.drool.drop.spawnMaxSeconds = 1; }, (a) => { a.drool.drop.fallDistancePx = 0; }, (a) => { a.drool.drop.fadeOutPx = 9999; },
     (a) => { a.drool.drop.startSpeedPx = 0; a.drool.drop.accelPx = 0; }, (a) => { a.drool.drop.strength = 2; }, (a) => { a.drool.drop.spawnPx.x = -1; }, (a) => { a.drool.drop.stretchedFile = '../x.png'; }, (a) => { a.planet.sphere.secondsPerTurn = 0; },
-    (a) => { a.planet.sphere.loadScale = 0; }, (a) => { a.planet.sphere.shading.discFraction = 2; }, (a) => { delete a.planet.sphere.shading; }, (a) => { a.planet.sphere.on = 1; }];
+    (a) => { a.planet.sphere.loadScale = 0; }, (a) => { a.planet.sphere.shading.discFraction = 2; }, (a) => { delete a.planet.sphere.shading; }, (a) => { a.planet.sphere.on = 1; },
+    (a) => { a.sparkle.armWeight = 9; }, (a) => { delete a.sparkle.coreSize; }, (a) => { a.sparkle.armThickness = 0; }];
+  assert.ok(A.sparkle.anchors.find((x) => x.name === 'crown-top').scale <= 0.7, 'the crown-top glint is short (no long spike to the HUD)');
+  assert.doesNotMatch(readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8'), /\* 0\.85 \*|ss \* 0\.12|ss \* 0\.1\)/, 'the glint shape is rows, not literals');
   for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad pack-2 row #${i} is refused`);
 });
 

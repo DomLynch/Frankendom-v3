@@ -96,7 +96,7 @@ export function createSkyline(
         mesh.geometry.dispose(); mesh.geometry = plateGeometry(plate, row.radius, iw, ih);
         plateY = plateCentreY(plate, row.radius, size.height);
         material.alphaMap = plateAlphaMap(plate);
-        anim = createSkyAnim(search, iw, ih, plate.anim, plateFlat(search, plate)); anim?.apply(material);   // the small coded motion (skyanim.ts): shader lines on this same material, null under ?skyanim=off / reduced motion
+        anim = createSkyAnim(search, iw, ih, plate.anim, plateFlat(search, plate)); anim?.apply(material); mesh.userData.skyAnim = anim;   // (stills read the clock through userData) // the small coded motion (skyanim.ts): shader lines on this same material, null under ?skyanim=off / reduced motion
         dome = new THREE.Mesh(skyGradient(plate, row.radius, plateHorizonY(plate, plateY, size.height), plateY + size.height / 2), new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, toneMapped: false, transparent: true, opacity: 0, depthWrite: false, vertexColors: true, color: new THREE.Color(shade, shade, shade) }));
         dome.name = 'skyplate-sky'; dome.renderOrder = SKYLINE_ORDER - 1; dome.frustumCulled = false;
         mesh.add(dome);

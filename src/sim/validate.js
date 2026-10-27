@@ -411,8 +411,8 @@ function checkSkyAnim(a, plateQuery) {
   }
   // Sky life: a procedural star glint on a list of anchors, a slow crown glow pulse, a body breath (a feathered sine lift) over a rect.
   const sk = a.sparkle;
-  if (keys(sk, ['on', 'color', 'strength', 'size', 'durationSeconds', 'minGapSeconds', 'maxGapSeconds', 'firstDelaySeconds', 'seed', 'anchors'], 'sparkle')) {
-    bool(sk, 'on', 'sparkle'); col(sk, 'color', 'sparkle'); rng(sk, 'strength', 0, 3, 'sparkle'); rng(sk, 'size', 0.0005, 0.05, 'sparkle'); rng(sk, 'durationSeconds', 0.05, 5, 'sparkle');
+  if (keys(sk, ['on', 'color', 'strength', 'size', 'coreSize', 'armWeight', 'armThickness', 'durationSeconds', 'minGapSeconds', 'maxGapSeconds', 'firstDelaySeconds', 'seed', 'anchors'], 'sparkle')) {
+    bool(sk, 'on', 'sparkle'); col(sk, 'color', 'sparkle'); rng(sk, 'strength', 0, 3, 'sparkle'); rng(sk, 'size', 0.0005, 0.05, 'sparkle'); rng(sk, 'coreSize', 0.01, 2, 'sparkle'); rng(sk, 'armWeight', 0, 3, 'sparkle'); rng(sk, 'armThickness', 0.01, 1, 'sparkle'); rng(sk, 'durationSeconds', 0.05, 5, 'sparkle');
     rng(sk, 'minGapSeconds', 0.1, 600, 'sparkle'); rng(sk, 'maxGapSeconds', 0.1, 600, 'sparkle'); rng(sk, 'firstDelaySeconds', 0, 600, 'sparkle'); rng(sk, 'seed', 0, 4294967295, 'sparkle', true);
     if (Number.isFinite(sk.minGapSeconds) && Number.isFinite(sk.maxGapSeconds) && sk.maxGapSeconds < sk.minGapSeconds) at('sparkle.maxGapSeconds', 'must not be below minGapSeconds');
     if (Number.isFinite(sk.minGapSeconds) && Number.isFinite(sk.durationSeconds) && sk.minGapSeconds < sk.durationSeconds) at('sparkle.minGapSeconds', 'must not be below durationSeconds (one glint at a time)');

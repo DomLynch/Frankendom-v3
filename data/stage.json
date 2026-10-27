@@ -319,6 +319,9 @@
           "color": "#fff4d6",
           "strength": 0.95,
           "size": 0.0065,
+          "coreSize": 0.12,
+          "armWeight": 0.85,
+          "armThickness": 0.1,
           "durationSeconds": 0.45,
           "minGapSeconds": 2.2,
           "maxGapSeconds": 5.5,
@@ -327,7 +330,7 @@
           "anchors": [
             { "name": "teeth", "u": 0.5786, "v": 0.666, "scale": 0.8 },
             { "name": "crown-left", "u": 0.5518, "v": 0.5615, "scale": 1 },
-            { "name": "crown-top", "u": 0.5676, "v": 0.542, "scale": 1.15 },
+            { "name": "crown-top", "u": 0.5676, "v": 0.542, "scale": 0.6 },
             { "name": "crown-right", "u": 0.5945, "v": 0.5615, "scale": 1 }
           ]
         },

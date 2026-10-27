@@ -114,7 +114,7 @@ export function createDrooler(row: AnimRow['drool']['drop'], rand: () => number 
 export function planetTurn(startTurns: number, secondsPerTurn: number, t: number): number { const x = (startTurns - t / secondsPerTurn) % 1; return x < 0 ? x + 1 : x; }
 
 const HEAD = /* glsl */ `
-uniform vec4 uBreathRect; uniform vec2 uBreathFeather, uSparkPos, uCrownC, uCrownR; uniform float uBreathLift, uBob, uSparkI, uSparkSize, uCrownI; uniform vec3 uSparkCol, uCrownCol;
+uniform vec4 uBreathRect; uniform vec2 uBreathFeather, uSparkPos, uCrownC, uCrownR; uniform float uBreathLift, uBob, uSparkI, uSparkSize, uCrownI; uniform vec3 uSparkCol, uCrownCol, uSparkShape;
 uniform float uAspect, uPlanetOn, uGlobeOn, uSpriteOn, uGlisOn;
 uniform sampler2D uPlanetTex, uGlobeTex, uSpriteTex, uMaskTex;
 uniform vec4 uPlanetRect, uGlobeRect, uMaskRect;
@@ -205,7 +205,7 @@ if (uCrownI > 0.0) {   // a soft slow pulse over the crown's ring-tech
 }
 if (uSparkI > 0.0) {   // a 4-point star glint: a bright core and four thin arms, in the body's picture space so it rides the breath
   vec2 sd = vec2(skyB.x - uSparkPos.x, (skyB.y - uSparkPos.y) / uAspect); float ss = uSparkSize;
-  float star = exp(-dot(sd, sd) / (ss * ss * 0.12)) + 0.85 * (exp(-abs(sd.y) / (ss * 0.1) - abs(sd.x) / ss) + exp(-abs(sd.x) / (ss * 0.1) - abs(sd.y) / ss));
+  float star = exp(-dot(sd, sd) / (ss * ss * uSparkShape.x)) + uSparkShape.y * (exp(-abs(sd.y) / (ss * uSparkShape.z) - abs(sd.x) / ss) + exp(-abs(sd.x) / (ss * uSparkShape.z) - abs(sd.y) / ss));   // core size, arm weight and arm thickness are rows (sparkle.coreSize, armWeight, armThickness)
   sampledDiffuseColor.rgb += uSparkCol * uSparkI * star;
 }
 diffuseColor *= sampledDiffuseColor;
@@ -260,7 +260,7 @@ export function createSkyAnim(search: string, imgW: number, imgH: number, row: A
     uBand: { value: -9 }, uBandW: { value: l.width }, uBandStr: { value: l.strength }, uSlant: { value: l.slant }, uTime: { value: 0 }, uTwinkleSec: { value: l.twinkle.periodSeconds }, uTwinkleCells: { value: l.twinkle.cells }, uTwinkleAmt: { value: l.twinkle.amount },
     uBase: { value: l.baseGlow }, uSpread: { value: l.spreadTexels }, uBandCol: { value: new THREE.Color(l.color) },
     uBreathRect: { value: rectVec(br.rect) }, uBreathFeather: { value: new THREE.Vector2(br.featherFraction * (br.rect.u1 - br.rect.u0), br.featherFraction * (br.rect.v1 - br.rect.v0)) }, uBreathLift: { value: 0 }, uBob: { value: 0 },
-    uSparkPos: { value: new THREE.Vector2() }, uSparkI: { value: 0 }, uSparkSize: { value: sk.size }, uSparkCol: { value: new THREE.Color(sk.color).multiplyScalar(sk.strength) },
+    uSparkPos: { value: new THREE.Vector2() }, uSparkI: { value: 0 }, uSparkSize: { value: sk.size }, uSparkCol: { value: new THREE.Color(sk.color).multiplyScalar(sk.strength) }, uSparkShape: { value: new THREE.Vector3(sk.coreSize, sk.armWeight, sk.armThickness) },
     uEyeTexA: { value: dummy as THREE.Texture }, uEyeTexB: { value: dummy as THREE.Texture }, uDroolTex: { value: dummy as THREE.Texture }, uDropTexA: { value: dummy as THREE.Texture }, uDropTexB: { value: dummy as THREE.Texture }, uSurfTex: { value: dummy as THREE.Texture }, uShadeTex: { value: dummy as THREE.Texture },
     uEyeRect: { value: pxRect(ey.rectPx, imgW, imgH) }, uEyeFeather: { value: new THREE.Vector2(Math.max(1e-4, ey.featherPx / ey.rectPx.w), Math.max(1e-4, ey.featherPx / ey.rectPx.h)) }, uEyeAmt: { value: 0 }, uEyeKind: { value: 1 },
     uDroolRect: { value: pxRect(ds.rectPx, imgW, imgH) }, uDroolTexel: { value: new THREE.Vector2(1, 1) }, uDroolCol: { value: new THREE.Color(ds.color).multiplyScalar(ds.strength) }, uDroolI: { value: 0 }, uDroolPhase: { value: 0 }, uDroolWaves: { value: ds.waves }, uDroolSpread: { value: ds.spreadTexels },
