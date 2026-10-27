@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
 import { createSkyline, SKYLINE } from '../src/fight/skyline.ts';
-import { plateOn, plateWindow, plateSize, plateCentreY, plateGeometry, plateAlpha, skyGradient } from '../src/fight/skyplate.ts';
+import { plateAhead, plateOn, plateWindow, plateSize, plateCentreY, plateGeometry, plateAlpha, skyGradient } from '../src/fight/skyplate.ts';
 import { pitchChoice, portraitPitch } from '../src/fight/camera-pitch.ts';
 import { createCameraRig, setCameraPitch, setLockFrame } from '../src/fight/camera.ts';
 import { fovForZoom } from '../src/fight/camera-zoom.ts';
@@ -21,7 +21,7 @@ test('the shipped plate row validates; bad rows are refused', () => {
   const cases = [(p) => { p.extra = 1; }, (p) => { p.on = 'yes'; }, (p) => { p.query = 'sky'; }, (p) => { p.query = 'skyfold'; }, (p) => { p.file = '../x.webp'; }, (p) => { p.spanDegrees = 5; }, (p) => { p.spanDegrees = 300; },
     (p) => { p.cropAspect = 0.5; }, (p) => { p.cropAspect = NaN; }, (p) => { p.face.u = 2; }, (p) => { p.face = null; }, (p) => { p.horizonFraction = 0.1; }, (p) => { p.edgeFadeFraction = 0.9; },
     (p) => { p.segments = 3; }, (p) => { p.segments = 12.5; }, (p) => { p.sky.topColor = 'blue'; }, (p) => { p.sky.halfHeightMetres = 400; }, (p) => { p.sky = null; }, (p) => { p.spanDegrees = 180; p.cropAspect = 1.2; },
-    (p) => { delete p.fixedYawDegrees; }];
+    (p) => { delete p.turnDegrees; }];
   for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad plate row #${i} is refused`);
   const none = structuredClone(STAGE); delete none.skyline.plate;
   assert.ok(validateFile('stage', none).length >= 1);
@@ -31,7 +31,7 @@ test('the shipped numbers: about 100 degrees, 4:1 window, the swap is rows only 
   assert.equal(P.on, true); assert.equal(P.spanDegrees, 100); assert.equal(P.cropAspect, 4); assert.equal(P.query, 'skyplate'); assert.equal(P.v1, 'v1');
   assert.match(P.file, /\.webp$/);
   const src = readFileSync(new URL('../src/fight/skyplate.ts', import.meta.url), 'utf8') + readFileSync(new URL('../src/fight/skyline.ts', import.meta.url), 'utf8');
-  for (const k of ['spanDegrees', 'cropAspect', 'faceElevationDegrees', 'edgeFadeFraction', 'fixedYawDegrees', 'horizonFraction', 'file']) assert.match(src, new RegExp(`\\.${k}\\b`), k);
+  for (const k of ['spanDegrees', 'cropAspect', 'faceElevationDegrees', 'edgeFadeFraction', 'turnDegrees', 'horizonFraction', 'file']) assert.match(src, new RegExp(`\\.${k}\\b`), k);
 });
 
 test('the plate picture ships: a WebP under 400 KB whose shape is exactly cropAspect (no stretch), and the old strip picture is still there for the rollback', () => {
@@ -67,6 +67,16 @@ test('native aspect: the window is cropAspect for a wider picture (the current 1
   assert.ok(Math.abs(g.parameters.height - s.height) < 1e-9);
   let lo = Infinity, hi = -Infinity; for (let i = 0; i < uv.count; i++) { lo = Math.min(lo, uv.getX(i)); hi = Math.max(hi, uv.getX(i)); }
   assert.ok(Math.abs(lo - cur.u0) < 1e-6 && Math.abs(hi - (cur.u0 + cur.w)) < 1e-6);   // float32 uvs
+});
+
+test('the face is dead ahead of the camera: the plate turn puts the face direction on the heading, for any face.u (follow and ?skyfollow=v1 alike)', () => {
+  const w = (a) => a - 2 * Math.PI * Math.round(a / (2 * Math.PI));
+  for (const u of [0.25, 0.585, 0.747, 0.9]) assert.ok(Math.abs(w(2 * Math.PI * u + plateAhead({ ...P, face: { ...P.face, u } }) - Math.PI)) < 1e-9, `u ${u}`);
+  const sky = createSkyline(new THREE.Scene(), '', SKYLINE, () => new Promise(() => {}));
+  const cam = new THREE.Object3D(); cam.rotation.y = 0.3; cam.updateMatrixWorld();   // heading 0.3 rad (turned left)
+  sky.heading(cam); sky.update(new THREE.Vector3(), 100);   // a long step: the ease has landed
+  const face = 2 * Math.PI * P.face.u + sky.yaw, ahead = Math.PI + 0.3 * SKYLINE.yawFollow;   // the follow keeps yawFollow of the turn: the face stays within (1 - yawFollow) x the turn of dead ahead
+  assert.ok(Math.abs(w(face - ahead)) < 1e-6, `${face} vs ${ahead}`);
 });
 
 test('the face lands at the row elevation above the eye; the arc sits inside the far plane', () => {

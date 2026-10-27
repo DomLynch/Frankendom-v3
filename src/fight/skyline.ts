@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import STAGE from '../../data/stage.json' with { type: 'json' };
 import { afterFirstFrame } from '../late-art.ts';
 import type { SkyView } from './skyview.ts';
-import { plateOn, plateGeometry, plateAlphaMap, plateCentreY, plateHorizonY, plateSize, plateWindow, skyGradient } from './skyplate.ts';
+import { plateAhead, plateOn,plateGeometry, plateAlphaMap, plateCentreY, plateHorizonY, plateSize, plateWindow, skyGradient } from './skyplate.ts';
 
 /** The strip draws first of all the transparents (skyview.ts FLOOR_ORDER sits just after it). */
 export const SKYLINE_ORDER = -1000;
@@ -71,7 +71,7 @@ export function createSkyline(
   mesh.name = 'skyline';
   mesh.renderOrder = SKYLINE_ORDER;   // first among the transparent draws, so every particle and trail composites over it
   mesh.frustumCulled = false;
-  const fixedYaw = THREE.MathUtils.degToRad(plate ? plate.fixedYawDegrees : row.yawDegrees);   // ?skyfollow=v1: the strip stays at yawDegrees, the plate at fixedYawDegrees (its face toward the camp)
+  const fixedYaw = plate ? plateAhead(plate) : THREE.MathUtils.degToRad(row.yawDegrees);   // ?skyfollow=v1: the strip stays at yawDegrees, the plate with its face dead ahead of the first heading (the camp)
   mesh.rotation.y = fixedYaw;
   mesh.visible = false;
   scene.add(mesh);
@@ -108,7 +108,7 @@ export function createSkyline(
       camera.getWorldDirection(dir);
       if (Math.hypot(dir.x, dir.z) < 1e-4) return;   // looking straight up or down: no heading, keep the last
       const h = headingOf(dir.x, dir.z);
-      target = stripYaw(row, h);   // the camera's heading folded into -pi..pi: the offset from the view never grows with how many times he has turned
+      target = plate ? fixedYaw + row.yawFollow * h : stripYaw(row, h);   // the camera's heading folded into -pi..pi: the offset from the view never grows with how many times he has turned
       if (!started) { started = true; turn = target; }   // the first frame starts on target: no spin-up
     },
     get yaw() { return turn; },
