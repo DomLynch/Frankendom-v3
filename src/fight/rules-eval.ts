@@ -167,6 +167,8 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
   publish();
   return {
     debug,
+    /** The rules this evaluator runs on (the package's with any ?rules=<variant> laid over): the tests read the picked rungs here. */
+    rules: ev.rules,
     /** One sim Hit on his body. `simAlive`: false on the killing blow's batch (the sim's Killed decides: the evaluator's kill is then simply the kill). Null: nothing to evaluate. */
     hit(e: CombatEvent, simAlive: boolean, measured: number | null = null): Presentation | null {
       const input = hitInput(rows, ev.rules, e, opponentId, measured);
