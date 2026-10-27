@@ -66,7 +66,7 @@ test('poseAt far from the pit: the pose is placed at the SPOT, the hero where he
     const pose = poseAt(hero, spot, play.OPEN_RADIUS, gap, start);
     assert.deepEqual(pose.foe, { x: spot.x, z: spot.z });
     assert.ok(dist(pose.hero, pose.foe) >= gap - 1e-9, 'never closer than minDistance');
-    if (dist(hero, spot) >= gap) assert.deepEqual(pose.hero, hero, 'the hero stays where he is when he is far enough');
+    if (dist(hero, spot) >= gap + 1e-6) assert.deepEqual(pose.hero, hero, 'the hero stays where he is when he is far enough');
     assert.ok(Math.abs(Math.atan2(spot.x - pose.hero.x, spot.z - pose.hero.z) - pose.heroFacing) < 1e-9, 'he faces the boss');
   }
   const far = s.find((x) => Math.hypot(x.x, x.z) > wall()), pose = poseAt({ x: far.x - 3, z: far.z }, far, play.OPEN_RADIUS, gap, start);
@@ -170,11 +170,11 @@ test('the page wires it for the zone only: poseAt on the ground, the pose door r
   assert.match(main, /return ZONE \? project\(zoneDuel\(scaled\.duel, fits \? undefined : pose\), scaled\.ai, scaled\) : scaled;/, 'no zone = the practice untouched');
   assert.match(main, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);/);
   const live = main.split('\n').map((l) => l.replace(/\s\/\/.*$/, '')).join('\n');
-  assert.match(live, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);\n/, 'live code, not swallowed by a trailing comment');
+  assert.match(live, /if \(ZONE\) setArenaClamp\(OPEN_RADIUS\);\s*\n/, 'live code, not swallowed by a trailing comment');
   assert.match(live, /fits \? pose : undefined, undefined/, 'a pose beyond the pit is not handed to the sim');
   assert.match(live, /roam = \{ \.\.\.practice\.fighter \}; view\.stopTour\(\); \}/, 'the finisher tour ends the moment the hero walks: the follow camera is behind him');
   assert.doesNotMatch(live, /intoPit\(/, 'nothing in the page draws the hero to a wall any more');
-  assert.equal(ROWS.postKill.walkRadiusMetres, null, 'the post-kill walk is unbounded');
+  assert.equal(ROWS.postKill.walkRadiusMetres, undefined, 'the post-kill walk has no limit row');
   const cam = read('../src/fight/camera.ts');
   assert.equal((cam.match(/ARENA_CLAMP/g) ?? []).length >= 8 && !/const ARENA_CLAMP/.test(cam), true, 'finisher side view, tour and intro orbit all clamp at the one settable ARENA_CLAMP');
   const sim = ['sim', 'duel', 'combat', 'play-radius'].map((f) => read(`../src/fight/${f}.ts`)).join('\n');

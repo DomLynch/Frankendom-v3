@@ -60,7 +60,7 @@ test('roamStep: the hero walks on the sim\'s own movement, is stopped by the cor
 
 test('the free walk (Dom 2026-10-27, MMO style): the zone row\'s walking radius is a validated row; the hero walks past the pit wall out to it, the corpse still blocks him', () => {
   const [lo, hi] = ROWS.limits.walkRadiusMetres;
-  assert.equal(ROWS.postKill.walkRadiusMetres, null, 'Dom 2026-10-27: endless open ground, the zone\'s walk has no radius (null = unbounded)');
+  assert.equal(ROWS.postKill.walkRadiusMetres, undefined, 'Dom 2026-10-27: one endless open world, the zone\'s walk has no limit row');
   const walk = zoneLoopFor(ZONE, '', ids).walkRadius;
   assert.equal(walk, OPEN_RADIUS);
   assert.doesNotThrow(() => validateLoop(loop((d2) => { d2.postKill.walkRadiusMetres = lo; }), ZONE, ids));

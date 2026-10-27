@@ -10,7 +10,7 @@ import { advance, type State } from './sim.ts';
 import { OPEN_RADIUS } from './play-radius.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number; walkRadiusMetres: number | null; cameraMetres: number }; spawn: { minDistance: number }; heroDeath: { fallSeconds: number }; limits: { walkRadiusMetres: [number, number]; cameraMetres: [number, number]; startAfterSeconds: [number, number]; minDistance: [number, number]; fallSeconds: [number, number] } };
+type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number; walkRadiusMetres?: number | null; cameraMetres: number }; spawn: { minDistance: number }; heroDeath: { fallSeconds: number }; limits: { walkRadiusMetres: [number, number]; cameraMetres: [number, number]; startAfterSeconds: [number, number]; minDistance: [number, number]; fallSeconds: [number, number] } };
 const LOOP = ROWS as unknown as Rows;
 
 /** What the page plays: the zone's first spawn, the hero's down time, the roam hand-over. */
@@ -21,7 +21,7 @@ export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly str
   const [lo, hi] = rows.limits.startAfterSeconds, at = rows.postKill.startAfterSeconds;
   if (!(Number.isFinite(at) && at >= lo && at <= hi)) throw new Error(`respawn.json postKill.startAfterSeconds ${at} is not in ${lo}..${hi}`);
   const [walkLo, walkHi] = rows.limits.walkRadiusMetres, walk = rows.postKill.walkRadiusMetres;
-  if (walk !== null && !(Number.isFinite(walk) && walk >= walkLo && walk <= walkHi)) throw new Error(`respawn.json postKill.walkRadiusMetres ${walk} is not in ${walkLo}..${walkHi}`);
+  if (walk != null && !(Number.isFinite(walk) && walk >= walkLo && walk <= walkHi)) throw new Error(`respawn.json postKill.walkRadiusMetres ${walk} is not in ${walkLo}..${walkHi}`);
   const [camLo, camHi] = rows.limits.cameraMetres, cam = rows.postKill.cameraMetres;
   if (!(Number.isFinite(cam) && cam >= camLo && cam <= camHi)) throw new Error(`respawn.json postKill.cameraMetres ${cam} is not in ${camLo}..${camHi}`);
   const [near, far] = rows.limits.minDistance, gap = rows.spawn.minDistance;
