@@ -44,8 +44,8 @@ for (let b = 0; b < Number(BLOWS); b++) {
       // STILLS=<n>: shoot the first n landed hits at +0, +12, +30 ticks (the flinch, then the recovery), named by hit number and the evaluator's verdict
       if (process.env.STILLS && stills < Number(process.env.STILLS)) {
         const tag = `${out}/hit${stills}-${s.ev?.out ?? 'none'}-${s.ev?.act ?? 'none'}`;
-        await page.screenshot({ path: `${tag}-t0.png` });
-        for (const [t, d] of [[12, 12], [30, 18]]) { for (let i = 0; i < d; i++) { await run(1); await keep(); } await page.screenshot({ path: `${tag}-t${t}.png` }); }
+        await page.screenshot({ path: `${tag}-t0.png`, timeout: 300000 });
+        for (const [t, d] of [[12, 12], [30, 18]]) { for (let i = 0; i < d; i++) { await run(1); await keep(); } await page.screenshot({ path: `${tag}-t${t}.png`, timeout: 300000 }); }
         stills++; n += 30;
       }
     }
