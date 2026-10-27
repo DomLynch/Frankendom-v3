@@ -79,7 +79,7 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
   // Gore on every kill (Dom 2026-10-27), default on; ?gore=v1 reverts to the roster's gate and the 5-way rotation with the plain death. Only while this page's ragdoll plays finishers.
   const gore = !!foe && finisherModeFor(PHYSICS, search) === PHYSICS_MODE && new URLSearchParams(search).get('gore') !== 'v1';
   const cutIds = Object.keys(PHYSICS.finisherCuts.rows);   // once, not per call
-  setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? cutIds : NO_FINISHERS) : null);
+  goreOn = gore; setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? cutIds : NO_FINISHERS) : null);
   page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
@@ -89,6 +89,7 @@ export function heldRagdollFor(search: string, opponentId: string, body: string)
   const foe = ragdollRowFor(PHYSICS, search, opponentId, body);
   return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
 }
+let goreOn = false;   // ?gore=v1 off (foeRagdollFor)
 let heldPlainOnly = false;   // the live foe wears a body other than the page's own: the baked finishers (Opened, Hamstrung, Execution, sever) are prepared on the first body alone, so every kill is the plain death
 /** scene.ts, at a swap of the live foe's body (held-body.ts): the finisher pick (ragdollBody, ragdollFinisher) now reads `ragdoll` (null: that body has none), and `plainOnly` forces the plain death for a body the baked finishers are not prepared on. */
 export function setHeldRagdoll(ragdoll: FoeRagdoll | null, plainOnly: boolean): void { page = ragdoll; heldPlainOnly = plainOnly; }
@@ -109,7 +110,8 @@ export function ragdollFinisher(events?: readonly CombatEvent[]): FinisherId | n
   const local = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   const forced = local ? (globalThis as { __finisherPick?: string }).__finisherPick : undefined;
   // ?rules=m4 cut.precedence: a head-zone killing blow the evaluator cuts is the plain ragdoll death (its cut is the head), not the rotation's finisher; `events` is the frame's (scene.ts) or the step's (main.ts)
-  return forced ?? (heldPlainOnly || page?.skipsFinishers() || (events && page?.takesKill(events)) ? PLAIN_DEATH : null);
+  // Gore on every kill (Dom 2026-10-27): a held body whose ragdoll takes finishers cuts its own body, so the baked finishers' home-body-only gate (heldPlainOnly) does not make it a plain death (?gore=v1 keeps the gate).
+  return forced ?? ((heldPlainOnly && !(goreOn && page?.takesFinisher())) || page?.skipsFinishers() || (events && page?.takesKill(events)) ? PLAIN_DEATH : null);
 }
 
 /** The part a blow at `location` lands on, and its impulse in the ragdoll's frame (the attacker's facing, `heading`, turned into `frame`). */
