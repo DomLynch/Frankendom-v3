@@ -1,5 +1,5 @@
 {
-  "about": "Phase 2 of the live zone (docs/V3-LIVE-ZONE-BRIEF-2026-10-27.md in the strategy repo): other players on screen. The presence service (server/presence/, node, NOT in the game bundle) holds who is where in memory and sends each client the nearby others; it decides nothing that pays, and others have no collider and play no part in the fight. Lifted from V1 (frankendom-main origins/presence/presence-rules-defs.json, interest.ts, server.ts; origins/preview/presence-client.ts, remote-track.ts): the rules below are V1's rows with the same ids and values, minus the account, save, worn, warp, town and writer rows V3 has no use for, plus walkHalfCm, giveUp, retryBaseMs, retryMaxMs, sweepEveryMs, remoteSnap, remoteExpire. `query`: ?presence=<ws or wss URL> opens the client (a dynamically imported chunk, default OFF: with no ?presence= nothing is fetched); ?presence=1 means this page's own host at `path`. `frame`: world (0,0) sits at centreCm of a u16 centimetre frame, sizeCm wide. walkHalfCm: a pose farther than this from the centre on either axis is refused as a jump. `poseGlobal`: the name of the function on globalThis that returns the hero's { x, z, heading } in metres (the seam scene.ts fills in the wiring step). `protocol`: the WebSocket subprotocol name both sides speak. `softCap`/`hardCap` are yard-sized (20/24) for the shared-VPS deploy (deploy/presence/); V1 used 80/100. `host`: the address the service binds (loopback; the one env override is PRESENCE_HOST). maxWriteBytes: a socket with more than this queued unsent is closed (4010), and a ping counts against perSecond like any frame.",
+  "about": "Phase 2 of the live zone (docs/V3-LIVE-ZONE-BRIEF-2026-10-27.md in the strategy repo): other players on screen. The presence service (server/presence/, node, NOT in the game bundle) holds who is where in memory and sends each client the nearby others; it decides nothing that pays, and others have no collider and play no part in the fight. Lifted from V1 (frankendom-main origins/presence/presence-rules-defs.json, interest.ts, server.ts; origins/preview/presence-client.ts, remote-track.ts): the rules below are V1's rows with the same ids and values, minus the account, save, worn, warp, town and writer rows V3 has no use for, plus walkHalfCm, giveUp, retryBaseMs, retryMaxMs, sweepEveryMs, remoteSnap, remoteExpire, and the drawing rows (src/presence/draw.ts): drawMax (most other players drawn at once, nearest first), drawIdle (a remote slower than this stands), drawSmooth (the gait speed easing, per second), animIdle/animWalk/animRun (the anim byte the hero sends: 1 stands, 2 walks, 3 runs) with animRunMps (the hero speed from which he runs), poseMinDtMs (the shortest gap the hero speed is measured over), drawDtMaxS (the longest frame step the draw loop takes), drawContact (the ready pose's contact argument for a drawn body). `query`: ?presence=<ws or wss URL> opens the client (a dynamically imported chunk, default OFF: with no ?presence= nothing is fetched); ?presence=1 means this page's own host at `path`. `frame`: world (0,0) sits at centreCm of a u16 centimetre frame, sizeCm wide. walkHalfCm: a pose farther than this from the centre on either axis is refused as a jump. `poseGlobal`: the name of the function on globalThis that returns the hero's { x, z, heading, anim } in metres (the seam src/presence/draw.ts installs, only with ?presence=). `protocol`: the WebSocket subprotocol name both sides speak. `softCap`/`hardCap` are yard-sized (20/24) for the shared-VPS deploy (deploy/presence/); V1 used 80/100. `host`: the address the service binds (loopback; the one env override is PRESENCE_HOST). maxWriteBytes: a socket with more than this queued unsent is closed (4010), and a ping counts against perSecond like any frame.",
   "query": "presence",
   "path": "/presence",
   "host": "127.0.0.1",
@@ -45,6 +45,16 @@
     { "id": "retryBaseMs", "value": 1000, "unit": "ms" },
     { "id": "retryMaxMs", "value": 30000, "unit": "ms" },
     { "id": "remoteSnap", "value": 6, "unit": "m" },
-    { "id": "remoteExpire", "value": 1500, "unit": "ms" }
+    { "id": "remoteExpire", "value": 1500, "unit": "ms" },
+    { "id": "drawMax", "value": 8, "unit": "players" },
+    { "id": "drawIdle", "value": 0.3, "unit": "m/s" },
+    { "id": "drawSmooth", "value": 14, "unit": "per s" },
+    { "id": "animIdle", "value": 1, "unit": "id" },
+    { "id": "animWalk", "value": 2, "unit": "id" },
+    { "id": "animRun", "value": 3, "unit": "id" },
+    { "id": "animRunMps", "value": 4.5, "unit": "m/s" },
+    { "id": "poseMinDtMs", "value": 250, "unit": "ms" },
+    { "id": "drawDtMaxS", "value": 0.1, "unit": "s" },
+    { "id": "drawContact", "value": 0.35, "unit": "ratio" }
   ]
 }
