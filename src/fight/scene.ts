@@ -66,6 +66,7 @@ import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, spawnBodyFile 
 import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { fovForZoom } from './camera-zoom.ts';
+import { createSkyline } from './skyline.ts';
 import { foeRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -135,6 +136,7 @@ export function createScene(
   const specialStruck = [-Infinity, -Infinity];
   scene.background = new THREE.Color(theme.fog);
   scene.fog = new THREE.FogExp2(theme.fog, theme.fogDensity);
+  const skyline = createSkyline(scene, typeof location === 'undefined' ? '' : location.search);   // data/stage.json skyline: the 360-degree sunset strip, fetched after the first frame; ?sky=v1 = the flat sky above, nothing built
   let environmentTarget: THREE.WebGLRenderTarget | undefined;
   // The environment map: the arena's own ash sky (an equirect the world lane paints, warm sand below the horizon) once it has landed,
   // so bronze and iron reflect this place; the studio RoomEnvironment only until then (audit 2026-09-20).
@@ -1155,6 +1157,7 @@ export function createScene(
       if (specialId) previewLighting.apply(specialDim);
       syncIdleFoes(practice, dt);
       syncLiveFoes(dt);
+      skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts)
       if (!look?.render()) { if (gfx) gfx.render(); else renderer.render(scene, camera); }
       renderer.toneMappingExposure = exposure;
       if (dip > 0 && dt > 0) dip--;

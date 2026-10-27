@@ -7,7 +7,7 @@
 
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
-  'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
+  'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'skyline', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
   'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx'], maps: { specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
@@ -148,6 +148,7 @@ export function validateFile(name, json) {
     if (Number.isFinite(c.keepSeconds) && Number.isFinite(c.pieceSeconds) && c.pieceSeconds > c.keepSeconds) errors.push(`${name}.corpse.pieceSeconds: must be <= keepSeconds`);
   }
   if (name === 'sound') errors.push(...checkSoundZone(json.zone));
+  if (name === 'stage') errors.push(...checkSkyline(json.skyline));
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
@@ -157,6 +158,22 @@ export function validateFile(name, json) {
   }
   banned(json, name, errors);
   return errors;
+}
+
+// data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's far plane (180 m) and the file a plain asset name.
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs'];
+function checkSkyline(s) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.${p}: ${m}`);
+  if (s === null || typeof s !== 'object' || Array.isArray(s)) return ['stage.skyline: must be an object'];
+  for (const k of Object.keys(s)) if (!SKYLINE_KEYS.includes(k)) at(k, 'unknown key');
+  if (typeof s.on !== 'boolean') at('on', 'must be true or false');
+  for (const k of ['query', 'v1']) if (typeof s[k] !== 'string' || !/^[a-z0-9]+$/i.test(s[k])) at(k, 'must be a plain word');
+  if (typeof s.file !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(s.file)) at('file', 'must be a plain .webp file name in src/assets/skyline/');
+  const rng = (k, lo, hi, int) => { if (!Number.isFinite(s[k]) || s[k] < lo || s[k] > hi || (int && !Number.isInteger(s[k]))) at(k, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
+  rng('seamOverlapPx', 0, 2000, true); rng('quality', 40, 100, true); rng('radius', 20, 160); rng('heightMetres', 5, 400); rng('horizonFraction', 0.5, 1);
+  rng('yawDegrees', -360, 360); rng('brightness', 0.1, 1.5); rng('fadeSeconds', 0, 10); rng('loadAfterFirstFrameMs', 0, 10000, true);
+  if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > 175) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
+  return e;
 }
 
 // data/sound.json `zone` (src/audio/zone-cues.ts): the gateable cue ids (all required, none unknown), each 'on' | 'off' | 'once', and a toast time in 0.5..30 s.
