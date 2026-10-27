@@ -95,10 +95,26 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
     ctx.emit(rows.event.name, ev);
     return presentationOf(rows, r);
   }
+  // The fall on screen: a knockdown's bones follow the ragdoll (ctx.blendToward, feel.ts) while the package says `knockdown`, then ease back to the clip over rows getUpS.
+  let down = false, getUp = -1;
+  const lying = (ctx: Pick<FeelCtx, 'partBones' | 'blendToward'> | undefined, w: number) => { if (ctx?.blendToward) ctx.blendToward(Object.fromEntries(Object.keys(ctx.partBones).map((p) => [p, w]))); };
   return {
     debug,
     react,
-    frame(dt: number, events: readonly CombatEvent[] = []) {
+    /** The registry's hit hook: react, then give the ragdoll the push (rd.knockdown('push') or rd.stagger) in its own frame (the Hit's heading turned by the group's yaw). */
+    hit(e: CombatEvent, ctx: FeelCtx): Presentation | null {
+      const p = react(e, { emit: ctx.emit, foeId: FOE });
+      if (!p || e.heading === undefined) return p;
+      const yaw = e.heading - ctx.group.rotation.y, mag = p.scale * rows.push.refImpulse, push = { part: rows.push.part, impulse: [Math.sin(yaw) * mag, rows.push.lift[p.action as Outcome], Math.cos(yaw) * mag] as [number, number, number] };
+      if (p.action === 'knockdown') { ctx.rd.knockdown('push', push); down = true; getUp = -1; } else ctx.rd.stagger(push);
+      return p;
+    },
+    frame(dt: number, events: readonly CombatEvent[] = [], ctx?: FeelCtx) {
+      if (down && ctx) {
+        if (ctx.rd.state === 'knockdown') lying(ctx, 1);
+        else { down = false; getUp = rows.getUpS; }
+      }
+      if (!down && getUp > 0 && ctx) { getUp -= dt; lying(ctx, Math.max(0, getUp / rows.getUpS)); }
       track.swing = Math.max(0, track.swing - dt); track.recover = Math.max(0, track.recover - dt);
       for (const e of events) {   // after this frame's hits were read: the stance for the NEXT kick
         if (e.type === 'AttackStarted' && e.actor === 1) track.swing = rows.track.swingS;
@@ -112,15 +128,16 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
       if (debug.windowOpen) debug.cueFrames++;
       cue(rows.cue.on && debug.windowOpen);
     },
-    kill() { since = -1; win = null; debug.windowOpen = false; cue(false); },
+    kill() { since = -1; win = null; debug.windowOpen = false; down = false; getUp = -1; cue(false); },
   };
 }
+const FOE = 'pitborn';   // the one opponent with a ragdoll (data/physics.json opponents); the hook's ctx does not carry his id
 
-// The registry hooks (feel.ts): one controller for the page. `hit` returns the Presentation for the ragdoll's own reaction (ragdoll.ts react(): knockdown by push, or a stagger scaled by the push);
-// see the PR: until that call site uses a hook's return, the picture is the event and the cue, and the V1 stagger.
+// The registry hooks (feel.ts): one controller for the page. The hit hook drives the ragdoll itself (knockdown by push, or a stagger) BEFORE ragdoll.ts's own V1 stagger, which the package ignores
+// once he is down; the frame hook makes the bones follow the ragdoll while he lies (ctx.blendToward, feel.ts PR #100) and eases him back to the clip.
 const controller = createFeelKick();
 registerFeel('kick', {
-  hit: (e: CombatEvent, ctx: FeelCtx) => controller.react(e, { emit: ctx.emit, foeId: 'pitborn' }),
-  frame: (dt: number, events: readonly CombatEvent[]) => controller.frame(dt, events),
+  hit: (e: CombatEvent, ctx: FeelCtx) => { controller.hit(e, ctx); },
+  frame: (dt: number, events: readonly CombatEvent[], ctx: FeelCtx) => controller.frame(dt, events, ctx),
   kill: () => controller.kill(),
-} as unknown as FeelHooks);
+} satisfies FeelHooks);

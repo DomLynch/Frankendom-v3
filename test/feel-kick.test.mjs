@@ -140,3 +140,29 @@ test('the controller: the event list keeps the newest rows.event.keep; a kill en
   ctl.frame(ROWS.window.knockdown.startS + 0.1); ctl.kill(); assert.deepEqual(shown, [true, false]);
   assert.equal(createFeelKick({ ...ROWS, on: false }).react(hit(), ctx), null);
 });
+
+function fakeCtx(state = 'alive') {
+  const calls = [], blends = [], c = { rd: { state, knockdown: (k, h) => calls.push(['knockdown', k, h]), stagger: (h) => calls.push(['stagger', h]) }, group: { rotation: { y: 0 } }, partBones: { hips: {}, head: {} }, emit() {}, blendToward: (s) => blends.push(s) };
+  return { calls, blends, c };
+}
+
+test('the hit hook drives the ragdoll: a knockdown by push along his facing (turned by the group\'s yaw), a stagger into a guard', () => {
+  const { calls, c } = fakeCtx(), ctl = createFeelKick(ROWS, { cueHost: { show() {} } });
+  ctl.hit(hit({ heading: Math.PI / 2 }), { ...c, group: { rotation: { y: Math.PI / 2 } } });
+  assert.deepEqual(calls[0].slice(0, 2), ['knockdown', 'push']); assert.equal(calls[0][2].part, 'spine2');
+  assert.ok(Math.abs(calls[0][2].impulse[0]) < 1e-9 && calls[0][2].impulse[2] > 0 && calls[0][2].impulse[1] === ROWS.push.lift.knockdown);
+  ctl.hit(hit({ guarded: true }), c); assert.equal(calls[1][0], 'stagger');
+  const n = calls.length; ctl.hit(hit({ move: 'light_right' }), c); ctl.hit(hit({ heading: undefined }), c); assert.equal(calls.length, n, 'only kicks and shoves reach the ragdoll');
+  assert.equal(calls.filter((x) => x[0] === 'knockdown').length, 1);
+});
+
+test('the frame hook: bones follow the ragdoll every frame he is knocked down, then ease back to the clip over getUpS', () => {
+  const ctl = createFeelKick(ROWS, { cueHost: { show() {} } }), down = fakeCtx('knockdown'), up = fakeCtx('alive');
+  ctl.hit(hit(), down.c);
+  ctl.frame(0.016, [], down.c); ctl.frame(0.016, [], down.c);
+  assert.equal(down.blends.length, 2); assert.deepEqual(down.blends[0], { hips: 1, head: 1 });
+  ctl.frame(ROWS.getUpS / 2, [], up.c); ctl.frame(ROWS.getUpS, [], up.c);
+  assert.equal(up.blends.length, 2); assert.ok(up.blends[0].hips < 1 && up.blends[0].hips > 0, 'easing'); assert.equal(up.blends[1].hips, 0);
+  ctl.frame(0.016, [], up.c); assert.equal(up.blends.length, 2, 'then the clip alone');
+  const { c } = fakeCtx(); ctl.hit(hit(), c); ctl.kill(); const k = fakeCtx('knockdown'); ctl.frame(0.016, [], k.c); assert.equal(k.blends.length, 0, 'a kill ends it');
+});

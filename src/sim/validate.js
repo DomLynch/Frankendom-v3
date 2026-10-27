@@ -37,7 +37,7 @@ export const SCHEMA = {
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
-  'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
+  'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['stagger', 'knockdown'], cue: ['on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
     finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
@@ -100,7 +100,7 @@ export function validateFile(name, json) {
     pair('massClamp', json.massClamp, 0.01); pair('push.impulseClamp', json.push?.impulseClamp, 0);
     for (const [k, v] of Object.entries(json.massKg ?? {})) pos(`massKg.${k}`, v);
     if (!json.massKg || !('default' in json.massKg)) errors.push(`${name}.massKg.default: a default mass is required`);
-    for (const k of ['massExp', 'knockdownAt']) pos(k, json[k]);
+    for (const k of ['massExp', 'knockdownAt', 'getUpS']) pos(k, json[k]);
     for (const k of ['open', 'guarding', 'midSwing', 'recovering']) pos(`stance.${k}`, json.stance?.[k]);
     pos('push.impulsePerForce', json.push?.impulsePerForce); pos('push.pushS', json.push?.pushS);
     for (const o of ['stagger', 'knockdown']) {

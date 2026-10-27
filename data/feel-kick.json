@@ -12,6 +12,7 @@
     "midSwing": 1.25,
     "recovering": 1.35
   },
+  "getUpS": 0.4,
   "track": { "about": "the hook sees only the sim's events, so the stance comes from them: an AttackStarted by him is midSwing for swingS (ended by his AttackMissed / Hit), a Staggered or Parried on him is recovering for recoverS, a kick's own Hit flagged guarded is guarding; else open.", "swingS": 0.9, "recoverS": 0.7 },
   "fall": { "about": "the package's knockdown fall seconds (data/rules.json's package rows: knockdown.fall_seconds.push and .down), mirrored here for the presentation and pinned against the package by test/feel-kick.test.mjs", "push": 0.5, "down": 2 },
   "knockdownAt": 1.0,
