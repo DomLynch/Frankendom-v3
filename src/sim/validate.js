@@ -187,7 +187,7 @@ export function validateFile(name, json) {
         if (!isObj(v)) { errors.push(`${name}.variants.${vn}: must be an object`); continue; }
         const known = { about: null, strength_scale: ['rung_hit', 'rung_stick', 'rung_cut'], melee_speed_gate: ['min_speed_m_s'] };
         for (const [k, val] of Object.entries(v)) {
-          if (!(k in known)) { errors.push(`${name}.variants.${vn}.${k}: unknown key (about, strength_scale, melee_speed_gate)`); continue; }
+          if (!Object.hasOwn(known, k)) { errors.push(`${name}.variants.${vn}.${k}: unknown key (about, strength_scale, melee_speed_gate)`); continue; }
           if (k === 'about') { if (typeof val !== 'string') errors.push(`${name}.variants.${vn}.about: must be a string`); continue; }
           if (!isObj(val)) { errors.push(`${name}.variants.${vn}.${k}: must be an object`); continue; }
           for (const [rk, rv] of Object.entries(val)) {
