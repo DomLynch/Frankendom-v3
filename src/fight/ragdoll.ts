@@ -260,11 +260,11 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     if (!cue.on || !canvas.parentElement) return;
     cueCamera = camera; cueCanvas = canvas;
     const style = document.createElement('style');
-    style.textContent = `.cut-cue{position:fixed;z-index:30;width:${cue.sizePx}px;height:${cue.sizePx}px;margin:${-cue.sizePx / 2}px 0 0 ${-cue.sizePx / 2}px;border-radius:50%;border:2px solid ${cue.color};background:${cue.color}33;color:${cue.color};font:700 10px/1 sans-serif;text-transform:uppercase;padding:0;display:none;animation:cut-cue-pulse ${cue.pulseS}s ease-in-out infinite;touch-action:manipulation}@keyframes cut-cue-pulse{0%,100%{transform:scale(1);opacity:.95}50%{transform:scale(1.25);opacity:.6}}`;
+    style.textContent = `.cut-cue{position:fixed;z-index:30;width:${cue.sizePx}px;height:${cue.sizePx}px;margin:${-cue.sizePx / 2}px 0 0 ${-cue.sizePx / 2}px;border-radius:50%;border:2px solid ${cue.color};background:${cue.color}33;color:${cue.color};font:700 10px/1 sans-serif;text-transform:uppercase;padding:0;display:none;animation:cut-cue-pulse ${cue.pulseS}s ease-in-out infinite;touch-action:manipulation}@keyframes cut-cue-pulse{0%,100%{box-shadow:0 0 0 0 ${cue.color}aa;opacity:.95}50%{box-shadow:0 0 0 9px ${cue.color}00;opacity:.7}}`;   // a glow, not a scale: the target a thumb aims at does not move
     document.head.appendChild(style);
     cueEls = cue.units.map((unit) => {
       const el = document.createElement('button');
-      el.className = 'cut-cue'; el.type = 'button'; el.textContent = cue.label; el.setAttribute('aria-label', `Cut ${unit.replace('_', ' ')}`);
+      el.className = 'cut-cue'; el.type = 'button'; el.textContent = cue.labels[unit as keyof typeof cue.labels] ?? 'cut'; el.setAttribute('aria-label', `Cut ${unit.replace('_', ' ')}`);
       el.addEventListener('pointerdown', (e) => e.stopPropagation());
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -286,15 +286,22 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   function updateCues() {
     if (!cueEls.length || !cueCamera || !cueCanvas) return;
     const live = !disabled && gore && !rulesOn && mode === 'dead' && !!rd && rd.state === cutRows.tap.needs && cueDelay >= cutRows.cue.delayS;
-    const r = cueCanvas.getBoundingClientRect();
+    const r = cueCanvas.getBoundingClientRect(), shown: { el: HTMLButtonElement; x: number; y: number }[] = [];
     for (const { unit, el } of cueEls) {
       const bone = live && !done.has(unit) ? partBones[rd!.row.severable.find((s) => s.id === unit)?.cut_role ?? ''] : undefined;
-      if (!bone) { el.style.display = 'none'; continue; }
-      const p = bone.getWorldPosition(tmpV2).project(cueCamera);
-      if (p.z > 1) { el.style.display = 'none'; continue; }
-      el.style.display = 'block';
-      el.style.left = `${r.left + ((p.x + 1) / 2) * r.width}px`; el.style.top = `${r.top + ((1 - p.y) / 2) * r.height}px`;
+      const p = bone ? bone.getWorldPosition(tmpV2).project(cueCamera) : null;
+      if (!p || p.z > 1) { el.style.display = 'none'; continue; }
+      shown.push({ el, x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height });
     }
+    // a small corpse on screen (seen over the hero's shoulder) puts every bone within a thumb: push the buttons apart until none touches another (a few relaxation passes), so each can be hit
+    const gap = cutRows.cue.sizePx + 4;
+    for (let pass = 0; pass < 12; pass++) for (let i = 0; i < shown.length; i++) for (let j = i + 1; j < shown.length; j++) {
+      const a = shown[i]!, b = shown[j]!, dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+      if (d >= gap) continue;
+      const nx = d > 1e-3 ? dx / d : (j % 2 ? 1 : -1), ny = d > 1e-3 ? dy / d : 0.3, push = (gap - d) / 2;
+      a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
+    }
+    for (const s of shown) { s.el.style.display = 'block'; s.el.style.left = `${s.x}px`; s.el.style.top = `${s.y}px`; }
   }
   const tmpV2 = new THREE.Vector3();
   let cueDelay = 0;   // seconds the corpse has been frozen (the cue waits cutRows.cue.delayS so the fall is watched first)
