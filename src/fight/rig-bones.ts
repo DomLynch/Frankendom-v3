@@ -97,5 +97,7 @@ export const rigFile = (stem: string, rig: Rig): string => (rig === '106' && FIL
 /** The hero's / the opponent's file stem for the 65 body stem the body rows picked (hero-body-rows.ts, foe-body.ts). */
 export const heroRigFile = (stem: string): string => rigFile(stem, heroRig);
 export const foeRigFile = (stem: string): string => rigFile(stem, foeRig);
+/** The data/rig.json `files` stem (the 65 body stem the physics rows are keyed by) whose 106 file is `file`, or `file` itself when no row maps to it. */
+export const rigStemOf = (file: string): string => Object.entries(FILES).find(([, f]) => f === file)?.[0] ?? file;
 /** Every 106 file stem the map can name (the loader's URL table keeps them addressable; test/rig-bones.test.mjs checks it does). */
 export const rigFiles = (): readonly string[] => Object.values(FILES);

@@ -41,16 +41,16 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
  * Throws on a bad row or a spot the page cannot stand a boss at: world rows out of range, a spot whose reach is past the spawn extent (its distance from the pit area's centre plus the larger of
  * its leash and `wall`, the drawn floor's play radius, is over `spreadRadiusMetres`: the ground itself is unbounded, this is only how far out spots go), a leash shorter than the aggro plus
  * `leashMargin`, the hero's start inside a spot's aggro (the page would open with a fight), two spots inside each other's aggro (an engage would be
- * ambiguous) or closer than `minSpacing`, or a spawn kind that is not the one foe rig the page loads (`kind`, optional: one rig is built, so every spawn is that opponent today).
+ * ambiguous) or closer than `minSpacing`, or a spawn kind that is no profile row (`kinds`, optional: the data/profiles.json ids; every spawn fights as its own kind, src/fight/spawn-kind.ts).
  */
-export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kind?: string, limits: Limits = LIMITS): void {
+export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kinds?: readonly string[], limits: Limits = LIMITS): void {
   for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
   if (!spots.length) throw new Error('the zone has no spawn spots');
   for (const s of spots) {
-    if (kind !== undefined && s.kind !== kind) throw new Error(`spawn ${s.id} names kind "${s.kind}": the page builds one foe rig, "${kind}"`);
+    if (kinds !== undefined && !kinds.includes(s.kind)) throw new Error(`spawn ${s.id} names kind "${s.kind}", which is no profile row (data/profiles.json: ${kinds.join(', ')})`);
     if (!(Number.isFinite(s.x) && Number.isFinite(s.z))) throw new Error(`spawn ${s.id} has no place`);
     const reach = M.hypot(s.x, s.z) + Math.max(s.leash, wall);
     if (reach > world.spreadRadiusMetres) throw new Error(`spawn ${s.id} stands outside the zone's spawn extent (its reach is ${reach} m, respawn.json world.spreadRadiusMetres ${world.spreadRadiusMetres} m)`);

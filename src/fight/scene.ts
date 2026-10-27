@@ -65,14 +65,15 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
 import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, spawnBodyFile } from './foe-body.ts';
-import { bone as boneOf, heroRigFile, CLIP_LOAD } from './rig-bones.ts';
+import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
+import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { fovForZoom, wideBoost, type WideRow } from './camera-zoom.ts';
 import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
 import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
-import { foeRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, snapshotRig, WARM_SCALE } from './ragdoll.ts';
+import { foeRagdollFor, heldRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, setHeldRagdoll, snapshotRig, WARM_SCALE, type FoeRagdoll } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
   readonly files: string[];
@@ -262,6 +263,8 @@ export function createScene(
   // load (main.ts shows the card only once its image arrives), so every opponent switch flashed two blocks in the arena.
   player.visible = opponent.visible = false;
   let warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
+  let homeActor: NonNullable<typeof warriors>['opponent'] | undefined;   // the page's own foe rig (its body: liveBody). `warriors.opponent` is the LIVE rig, which a held spawn in another body swaps (heldBodies); the baked finishers, the kit and the rank look are the home rig's alone
+  const atHome = (): boolean => !heldCtl || heldCtl.atHome;
   const dustFeet: (THREE.Object3D | null)[] = [],
     dustPositions = Array.from({ length: 4 }, () => new THREE.Vector3());
   // The player, and the chosen opponent; each rig plays the clips of the weapon the simulation gives that side (moves.ts OPPONENTS, duel.ts initialDuel).
@@ -325,13 +328,13 @@ export function createScene(
   const shieldsOn = SHIPPING_SHIELDS.has(opponentId), shields = new Map<string, THREE.SkinnedMesh>(), shieldLoads = new Set<string>();
   function dress() {
     if (!warriors) return;
-    warriors.opponent.grade(tier);   // his weapon wears the rung he is met at, like his kit
+    (homeActor ?? warriors.opponent).grade(tier);   // his weapon wears the rung he is met at, like his kit
     reshape();
     if (carried) {
       const kit = kitWorn(opponentId, twoHanded, tier), url = shieldFor(opponentId, levelOf(tier ?? 'Recruit'), shieldsOn), painted = url ? shields.get(url) : undefined;
       // The painted shield (shields.ts) in place of his own board once its file is in; until then, or if it never loads, he wears the board he has.
       const pieces = carried.filter((piece) => lootWorn(piece, kit)).filter((piece) => !painted || piece.userData.slot !== 'Shield');
-      warriors.opponent.wear(painted ? [...pieces, painted] : pieces, (id, error) => captureException(error, { tags: { loot: id } }), () => tier);
+      (homeActor ?? warriors.opponent).wear(painted ? [...pieces, painted] : pieces, (id, error) => captureException(error, { tags: { loot: id } }), () => tier);
       if (url && !painted && !shieldLoads.has(url)) { shieldLoads.add(url); loadShield(url).then((piece) => { shields.set(url, piece); dress(); }).catch((error: unknown) => captureException(error, { tags: { shield: url } })); }
     }
   }
@@ -373,7 +376,7 @@ export function createScene(
     return look;
   }) : undefined; }, (look) => { const swapped = warriors?.opponent.wearLook(look); if (swapped) (globalThis as { __rankLookOn?: typeof swapped }).__rankLookOn = swapped; }, captureException) : undefined;
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
-  const ragdoll = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one
+  let ragdoll: FoeRagdoll | null = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one   // let: a held spawn in another body swaps it (heldBodies below)
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
   const heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created
   let loading: Promise<void> | null = null;
@@ -401,7 +404,7 @@ export function createScene(
     carrierUrl && lateKit && !carried ? void fetchKit() : null,   // started, never awaited here
   ])
     .then(async ([loaded]) => {
-      warriors = loaded;
+      warriors = loaded; homeActor = loaded.opponent;
       // Which body file each side drew, so each 106 body takes its own baked clips (data/rig.json clips106).
       loaded.player.useClips106(heroRigFile(heroBodyFile())); loaded.opponent.useClips106(foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body));
       loaded.player.prefetchClips(CLIP_LOAD.hero);   // the hero's special clips first (data/rig.json clipLoad), before the opponent's finisher set and the first frame
@@ -487,33 +490,33 @@ export function createScene(
   // Fetched on demand (src/fight/hamstrung-assets.ts), never in loadFighters: the killer's clip, the victim's clip and his weapon-drop bake.
   const hamstrungAssets = createHamstrungAssets(
     // Each body its own data/rig.json clips106 file (characters.ts clipLoader; the killer is the player, the victim the opponent). No 65 clip JSON is shipped: a body without its file rejects (the plain death).
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Hamstrung') ?? noClip('Fin_Hamstrung'))(), (warriors?.opponent.clipLoader('Death_Hamstrung') ?? noClip('Death_Hamstrung'))()]); return { killer, victim }; },
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Hamstrung') ?? noClip('Fin_Hamstrung'))(), ((homeActor ?? warriors?.opponent)?.clipLoader('Death_Hamstrung') ?? noClip('Death_Hamstrung'))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Hamstrung', parse(killer));
-      loaded.opponent.adoptClip('Death_Hamstrung', parse(victim), HAMSTRUNG_SOURCE_PELVIS);
-      loaded.opponent.prepareHamstrung();
+      (homeActor ?? loaded.opponent).adoptClip('Death_Hamstrung', parse(victim), HAMSTRUNG_SOURCE_PELVIS);   // the home rig's, whichever body the live foe wears now
+      (homeActor ?? loaded.opponent).prepareHamstrung();
     },
     (error) => { captureException(error); },
   );
-  const hamstrungOk = () => hamstrungAssets.ready(warriors);
+  const hamstrungOk = () => atHome() && hamstrungAssets.ready(warriors);   // a live foe in another body has no Hamstrung (its clips are the home body's): the plain death
   let hamstrungLatch: boolean | null = null;   // hamstrungOk() as it stood on the first frame of this finish: the picture and the audio keep one answer for the whole kill
   // The kill picks its finisher (once Hamstrung is in the rotation), so the clips are fetched in the background once the fight is ready, on idle. Silent on failure: hamstrungPick keeps the plain death.
   const prefetchHamstrung = () => { const start = () => { wantHamstrung(true); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 4000 }); else setTimeout(start, 1500); };
   // A 106 body without a clips106 file for its side of the scene (data/rig.json) fetches nothing: the kill is the plain death.
-  const wantHamstrung = (prefetch = false) => { if (((prefetch && CLIP_LOAD.afterFirstFrame.includes('Fin_Hamstrung')) || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId) && warriors.player.takesBaked('Fin_Hamstrung') && warriors.opponent.takesBaked('Death_Hamstrung')) void hamstrungAssets.request(warriors); };
+  const wantHamstrung = (prefetch = false) => { if (((prefetch && CLIP_LOAD.afterFirstFrame.includes('Fin_Hamstrung')) || isTemplate(finisherOverride, 'hamstring')) && warriors && HAMSTRUNG_VICTIMS.includes(opponentId) && warriors.player.takesBaked('Fin_Hamstrung') && (homeActor ?? warriors.opponent).takesBaked('Death_Hamstrung')) void hamstrungAssets.request(warriors); };
   // Execution (src/fight/execution.ts) loads on the picker's choice only (no idle prefetch: it re-skins 12 poses), never as part of ready, and a failure is the plain death.
   const executionAssets = createHamstrungAssets(
-    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Execution') ?? noClip('Fin_Execution'))(), (warriors?.opponent.clipLoader('Death_Execution') ?? noClip('Death_Execution'))()]); return { killer, victim }; },
+    async () => { const [{ default: killer }, { default: victim }] = await Promise.all([(warriors?.player.clipLoader('Fin_Execution') ?? noClip('Fin_Execution'))(), ((homeActor ?? warriors?.opponent)?.clipLoader('Death_Execution') ?? noClip('Death_Execution'))()]); return { killer, victim }; },
     (loaded: NonNullable<typeof warriors>, { killer, victim }) => {
       const parse = (clip: unknown) => THREE.AnimationClip.parse(clip as Parameters<typeof THREE.AnimationClip.parse>[0]);
       loaded.player.adoptClip('Fin_Execution', parse(killer));
-      loaded.opponent.adoptClip('Death_Execution', parse(victim), EXECUTION_SOURCE_PELVIS, EXECUTION_FLOOR_MARKS);
-      loaded.opponent.prepareExecution();
+      (homeActor ?? loaded.opponent).adoptClip('Death_Execution', parse(victim), EXECUTION_SOURCE_PELVIS, EXECUTION_FLOOR_MARKS);
+      (homeActor ?? loaded.opponent).prepareExecution();
     },
     (error) => { captureException(error); },
   );
-  const executionOk = () => executionAssets.ready(warriors);
+  const executionOk = () => atHome() && executionAssets.ready(warriors);
   let executionLatch: boolean | null = null;   // executionOk() as it stood on the first frame of this finish (one answer for picture and audio)
   let executionSteps: THREE.Vector3 | null = null; // where the killer's anchor stands for the cut, solved once per finish
   let finishHold = 0; // Hamstrung: seconds left of the hit-stop a blow holds the scene for (the clock and both rigs stand still, the camera and the blood run on)
@@ -557,16 +560,17 @@ export function createScene(
   const liveBody = foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body);
   type SpawnRef = { kind: string; body?: string };
   const bodyOfSpawn = (s: SpawnRef): string => spawnBodyFile(s.kind, ROSTER[s.kind as OpponentId]?.body ?? ROSTER[opponentId as OpponentId].body, s.body);
-  const bodyAssets = new Map<string, { asset?: Awaited<ReturnType<typeof loadFoeBody>>; failed?: boolean }>();
+  type BodyAsset = Awaited<ReturnType<typeof loadFoeBody>>;
+  const bodyAssets = new Map<string, { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> }>();   // `loaded`: the held foe's swap (heldBodies) awaits the same fetch a standing or attacking spawn started, one file once
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
   function bodyRig(file: string) {
     let entry = bodyAssets.get(file);
     if (!entry) {
-      const row: { asset?: Awaited<ReturnType<typeof loadFoeBody>>; failed?: boolean } = entry = {}; bodyAssets.set(file, row);
+      const row: { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> } = entry = {}; bodyAssets.set(file, row);
       const url = fighterUrls[`../assets/${file}.glb`], weapon = builtFoeWeapon;
       if (!url || !weapon) row.failed = true;
-      else void loadFoeBody(url, weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId))
-        .then((asset) => { row.asset = asset; }, (error: unknown) => { row.failed = true; captureException(error); });
+      else row.loaded = loadFoeBody(url, weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId))
+        .then((asset) => { row.asset = asset; return asset; }, (error: unknown) => { row.failed = true; captureException(error); return undefined; });
     }
     return entry.asset;
   }
@@ -580,6 +584,47 @@ export function createScene(
     actor.useClips106(file);   // this body's own baked clips (data/rig.json clips106)
     return actor;
   }
+  // The HELD foe wears its own body (src/fight/held-body.ts, docs/BOSS-BODIES.md; PR 2 of "10 bosses"): main.ts says each frame which spawn the sim holds (`holdBody`); when that spawn's body is not the
+  // live rig's, the live rig is swapped for that body's (built the first time it is held from the same lazy file fetch, cached, the first body's kept; swapped back on the hand-back). The ragdoll, its cuts and corpses,
+  // the hit reactions and the fade are re-attached to the new rig; the baked finishers are the home body's alone, so another body dies the plain way (ragdoll.ts setHeldRagdoll). Never built at the default.
+  type FoeActor = NonNullable<typeof warriors>['opponent'];
+  type HeldCtl = ReturnType<typeof createHeldBodies<FoeActor, FoeRagdoll>>;
+  let heldCtl: HeldCtl | null = null;
+  const activeBody = (): string => heldCtl?.active.body ?? liveBody;
+  function heldBodies(): HeldCtl | null {
+    const w = warriors;
+    if (heldCtl || !w || !w.opponent || !builtFoeWeapon) return heldCtl;
+    heldCtl = createHeldBodies<FoeActor, FoeRagdoll>({
+      home: { body: liveBody, rig: homeActor ?? w.opponent, ragdoll, plainOnly: false },
+      build: async (file) => {
+        bodyRig(file);   // starts the fetch if no standing/attacking spawn of this body did
+        const asset = await bodyAssets.get(file)?.loaded;
+        if (!asset || !builtFoeWeapon) return null;
+        const rig = w.spawnBody(asset, builtFoeWeapon);
+        rig.useClips106(file);   // this body's own baked clips (data/rig.json clips106)
+        sizeBeast({ opponent: rig }, opponentId);
+        let rd: FoeRagdoll | null = null;
+        try { rd = typeof location === 'undefined' ? null : heldRagdollFor(location.search, opponentId, rigStemOf(file)); rd?.listenTaps(canvas, camera); } catch (error) { captureException(error); rd = null; }   // no physics row for this body (or it throws): the plain death
+        return { rig, ragdoll: rd };
+      },
+      mount: (next, prev, first) => {
+        const holder = prev.rig.anchor.parent ?? (flinches ? pivots[1] : opponent);
+        holder.remove(prev.rig.anchor); holder.add(next.rig.anchor);
+        w.opponent = next.rig;   // every reader of the live rig (the per-frame posing, the blood, the fx) reads it from here
+        ragdoll = next.ragdoll;
+        if (first) next.ragdoll?.attach(opponent, next.rig, w.player).catch(captureException);   // its chunk (cached by now) and its measure row load; a body with neither row degrades inside attach
+        setHeldRagdoll(next.ragdoll, next.plainOnly);   // the finisher pick reads this body's ragdoll; a body without the baked finishers dies the plain way
+        for (const [i, name] of ['foot_l', 'foot_r'].entries()) dustFeet[2 + i] = boneOf(next.rig.anchor, name) ?? null;
+        for (const holderCopy of idleCopies) { holderCopy.removeFromParent(); holderCopy.traverse((o) => { if (o instanceof THREE.SkinnedMesh) o.skeleton.dispose(); }); }
+        idleCopies.length = 0;   // the frozen copies were snapshots of the previous body: made again, from this one, the next time it stands at rest
+        foeFade?.adopt(opponent);
+      },
+      canSwap: () => !heldFinishing && !ragdoll?.busy,
+      onError: (error) => captureException(error),
+    });
+    return heldCtl;
+  }
+  let heldFinishing = false;   // render(): a finish is playing (the live rig is mid-kill): a swap waits for it
   let idleList: readonly { x: number; z: number; heading: number }[] = [];
   let idleOther: readonly { id: string; x: number; z: number; heading: number; file: string }[] = [];   // the standing spawns in another body than the live rig
   const idleOtherActors = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; pose: ReturnType<typeof actorPose>; guard: Practice['duel']['fighters'][1]['guardDirection']; holding: boolean }>();
@@ -733,9 +778,18 @@ export function createScene(
     respawnFoe(): boolean { return ragdoll?.leaveCorpse() ?? false; },
     // The zone's other standing bosses (main.ts, every frame): where each stands (the pit's frame) and which way it faces. Drawn as frozen copies of the live foe at rest (syncIdleFoes).
     // `spawn` (optional, the spawn's kind and its zone row's `body`): a spawn in another body than the live rig is drawn from that body's own rig (bodyRig); absent or the live body: the frozen copies as before.
+    /** main.ts, every frame, with the spawn the sim HOLDS: when its body is not the one the live rig wears, the live rig is swapped for that body's (held-body.ts). 'same' at the default (every spawn the Minotaur): nothing is built. */
+    holdBody(spawn: SpawnRef | null | undefined): string {
+      if (!spawn || !warriors) return 'same';
+      const body = bodyOfSpawn(spawn);
+      if (body === activeBody() && !heldCtl) return 'same';   // the default: no controller is made
+      return heldBodies()?.hold(body) ?? 'same';
+    },
+    get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef }[]) {
-      idleList = list.every((e) => !e.spawn || bodyOfSpawn(e.spawn) === liveBody) ? list : list.filter((e) => !e.spawn || bodyOfSpawn(e.spawn) === liveBody);
-      idleOther = list.flatMap((e) => (e.spawn && e.id !== undefined && bodyOfSpawn(e.spawn) !== liveBody ? [{ id: e.id, x: e.x, z: e.z, heading: e.heading, file: bodyOfSpawn(e.spawn) }] : []));
+      const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
+      idleList = list.every((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears) ? list : list.filter((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears);
+      idleOther = list.flatMap((e) => (e.spawn && e.id !== undefined && bodyOfSpawn(e.spawn) !== wears ? [{ id: e.id, x: e.x, z: e.z, heading: e.heading, file: bodyOfSpawn(e.spawn) }] : []));
     },
     get idleFoeCount() { return idleCopies.filter((c) => c.visible).length + [...idleOtherActors.values()].filter((e) => e.group.visible).length; },   // the stills and the cost table read how many copies are on screen
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
@@ -855,7 +909,7 @@ export function createScene(
         }
         warriors?.player.unsever();
         warriors?.opponent.unsever();
-        if (anyOfTemplate('bisect', (f) => supportsFinishers(opponentId, f)) && !lookForced) warriors?.opponent.prepareOpened();
+        if (atHome() && anyOfTemplate('bisect', (f) => supportsFinishers(opponentId, f)) && !lookForced) warriors?.opponent.prepareOpened();   // the baked finishers are prepared on the home body alone (held-body.ts: another body dies the plain way)
         if (hamstrungOk()) warriors?.opponent.prepareHamstrung();
         if (executionOk()) warriors?.opponent.prepareExecution();
       } // a fresh match: both bars full again
@@ -994,6 +1048,8 @@ export function createScene(
       }
       if (isTemplate(finisher, 'cleave') && practice.finish?.victim === 1 && !ragBody)
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
+      heldFinishing = !!practice.finish;
+      if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
       heroRagdoll?.frame(animationDt, events, practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt

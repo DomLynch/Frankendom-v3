@@ -20,6 +20,8 @@ export const sourceOf = (r: Row): number => r.contact === undefined ? 1 : (r.con
 export function applyHeroClips(search: string, foeSweeps: SweepTable | null = null): boolean {
   const on = heroClipsAsked(search);
   setHeroClips(on ? { weapon: ROWS.weapon as WeaponId, picks: (ROWS.clips as (Row & { pullback: number })[]).map((r) => ({ role: r.role as Role, clip: r.clip, source: sourceOf(r), pullback: pullbackFor(search, r), ...(r.hold ? { hold: r.hold } : {}) })) } : null);
-  setSweepOverride(mergeSweeps(sweepTableFor(search), foeSweeps));
+  applyFoeSweeps(search, foeSweeps);
   return on;
 }
+/** The sweep override alone (the hero's table with the opponent's laid over it): the zone re-lays it when the sim is handed to a spawn of another kind (src/client/main.ts). */
+export const applyFoeSweeps = (search: string, foeSweeps: SweepTable | null): void => setSweepOverride(mergeSweeps(sweepTableFor(search), foeSweeps));
