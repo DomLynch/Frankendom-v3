@@ -125,8 +125,10 @@ test('hero ragdoll: no cuts, no corpse, no finisher, no rules path; her kill is 
 });
 
 test('hero blow classes: a light on her is softened (smaller push, ctx.soften set) like the Minotaur\'s; a heavy is the full reaction; ?sway=v1 gives the light the full reaction back', () => {
+  HERO.kill();   // the hero module's get-up quiet window is module state: an earlier test's knockdown left it open, and a hit inside it plans nothing (that made this test pass its push check on -Infinity)
   const run = (e) => { const f = fixture(0), soften = { impulse: 1, blend: 1, time: 1 }; f.ctx.soften = soften; HERO.hit({ ...HIT, ...e }, f.ctx); HERO.kill(); return { push: Math.max(...f.log.impulses.map(([, v]) => Math.hypot(...v))), soften }; };
   const light = run({ move: 'light_left' }), heavy = run({ move: 'heavy_overhead', charged: true });
+  assert.ok(Number.isFinite(light.push) && Number.isFinite(heavy.push), 'both blows planned a reaction');
   assert.ok(light.push < heavy.push * 0.4, `${light.push} vs ${heavy.push}`);
   assert.ok(light.soften.impulse < 1 && light.soften.blend < 1 && light.soften.time > 1, 'the package\'s own stagger is softened for a light');
   assert.deepEqual(heavy.soften, { impulse: 1, blend: 1, time: 1 });
