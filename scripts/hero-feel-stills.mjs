@@ -13,7 +13,7 @@ if (!base || !out) { console.error('usage: node scripts/hero-feel-stills.mjs <ba
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const TICK = 1000 / 60, SHOTS = (process.env.SHOTS ?? '0,4,8,14,22,34').split(',').map(Number), MAXWAIT = Number(process.env.MAXWAIT ?? 2400);
-const EXT = process.env.FMT === 'jpg' ? 'jpg' : 'png', SHOT = { timeout: 180000, ...(EXT === 'jpg' ? { type: 'jpeg', quality: 70 } : {}) };
+const EXT = process.env.FMT === 'jpg' ? 'jpg' : 'png', SHOT = { timeout: 600000, ...(EXT === 'jpg' ? { type: 'jpeg', quality: 70 } : {}) };
 const open = async () => {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DPR ?? 2), isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
