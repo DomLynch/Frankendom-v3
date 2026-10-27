@@ -11,7 +11,7 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-const shot = (n) => page.screenshot({ path: `${out}/${tag}-${n}.png` });
+const shot = (n) => page.screenshot({ path: `${out}/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 });
 const key = (code, type) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [code, type]);
 const press = async (code, ms) => { await key(code, 'keydown'); await page.waitForTimeout(ms); await key(code, 'keyup'); await page.waitForTimeout(40); };
 const read = () => page.evaluate(() => { const z = globalThis.__v3Zone, f = globalThis.__v3Fight; return { z, hero: { x: f.fighter.x, z: f.fighter.z }, foe: { x: f.enemy.x, z: f.enemy.z }, heroHealth: f.playerHealth }; });
