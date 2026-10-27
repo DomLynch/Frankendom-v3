@@ -316,6 +316,28 @@ test('budgets: hp_scale from his sim health, a head budget that no non-cut blow 
   assert.ok(ROWS.handBone in rig.bones, 'handBone is a data/rig.json bones key');
 });
 
+test('torso budget (Dom 2026-10-27): a heavy on a torso under ~60% lays him down; a heavy on a full torso only staggers; twenty lights never fall', () => {
+  assert.deepEqual(validateFile('rules', ROWS), []);
+  assert.equal(typeof ROWS.budgets.torso, 'number');
+  const mk = () => createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0, { foe: 76, man: 60 });
+  const torsoFrac = (r) => { const t = r.debug.fighter().parts.torso; return t.hp / t.max; };
+  // one measured heavy (hero heavy clips read ~8 m/s of hand speed, x speedScale = the 4.01 floor): the live 13.6-damage heavy
+  const heavy = (r, tick) => r.hit(hit({ weapon: 'longsword', move: 'heavy_overhead', tick }), true, 8);   // the hero's longsword (data/fight.json)
+  const full = mk(), f = heavy(full, 60);
+  assert.equal(f.action, 'stagger', 'a first heavy on a FULL torso is a stagger');
+  assert.ok(torsoFrac(full) > 0.3, 'and leaves him standing');
+  // lights stage the torso under 60% (never more than a few); the next heavy lays him down
+  let staged = 0;
+  const r = mk(), lightActs = [];
+  for (let i = 0; i < 20 && torsoFrac(r) >= 0.6; i++) { lightActs.push(r.hit(hit({ weapon: 'longsword', move: 'light_right', tick: 90 * (i + 1) }), true, 13)?.action); staged++; }
+  assert.ok(staged >= 1 && staged <= 4 && torsoFrac(r) < 0.6, `staged under 60% in ${staged} lights`);
+  assert.equal(heavy(r, 90 * (staged + 1))?.action, 'knockdown', 'a heavy on a torso under 60% knocks him down');
+  assert.equal(lightActs.filter((a) => a === 'knockdown').length, 0);
+  const twenty = mk(), acts = [];
+  for (let i = 0; i < 20; i++) acts.push(twenty.hit(hit({ weapon: 'longsword', move: 'light_right', tick: 90 * (i + 1) }), true, 13)?.action);
+  assert.equal(acts.filter((a) => a === 'knockdown').length, 0, `20 lights = 0 falls: ${JSON.stringify(acts)}`);
+});
+
 // ---- cut.precedence (Strategy's ruling (b)): who wins a KILLING blow, the evaluator's cut or the sim's finisher rotation ----
 const killingBlow = (rows, o) => { const p = createRulesEval(rows, pkg, BODY, 'pitborn', () => 0).hit(hit({ weapon: 'longsword', move: 'heavy_overhead', ...o }), false); return { p, takes: evaluatorTakesKill(rows, o?.location ?? 'torso', [p]) }; };
 
