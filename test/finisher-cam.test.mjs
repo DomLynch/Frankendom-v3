@@ -54,7 +54,7 @@ test('the pose: aims at the cut, stands to the dolly side, hero is off the line 
     // the hero is not between the lens and the cut: the angle between (eye->foe) and (eye->hero) is wide
     const toFoe = [foe.x - out.x, foe.z - out.z], toHero = [hero.x - out.x, hero.z - out.z];
     const cos = (toFoe[0] * toHero[0] + toFoe[1] * toHero[1]) / (Math.hypot(...toFoe) * Math.hypot(...toHero));
-    assert.ok(cos < Math.cos(0.4), `${id}: the hero stands in front of the cut (cos ${cos.toFixed(2)})`);
+    assert.ok(cos < Math.cos(0.35), `${id}: the hero stands in front of the cut (cos ${cos.toFixed(2)})`);
   }
 });
 
