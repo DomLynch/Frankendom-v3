@@ -88,7 +88,7 @@ const foeBlows = (r, ticks) => {
   let p = start(r); const profile = profileFor(profileAt(OPPONENTS.pitborn, FIGHT.level), r, false), hits = [], specials = [];
   for (let t = 0; t < ticks; t++) {
     p = stepPractice(p, t === 0 ? { ...idle, action: 'light' } : t < 60 ? idle : { ...idle, move: { x: 0, z: 1, yaw: 0, run: false } }, profile);
-    for (const e of p.duel.events) { if (e.type === 'Hit' && e.actor === 1) hits.push(e.damage); if (e.type === 'SpecialLanded' && e.actor === 1) specials.push(e.damage); }
+    for (const e of p.duel.events) { if (e.type === 'Hit' && e.actor === 1) hits.push({ move: e.move, damage: e.damage }); if (e.type === 'SpecialLanded' && e.actor === 1) specials.push({ move: e.move, damage: e.damage }); }
     if (p.duel.finish) break;
   }
   return { hits, specials, p };
@@ -105,9 +105,12 @@ test('the scales reach the body: health, every blow and the special; scale 1 is 
   assert.equal(JSON.stringify(p1.duel), JSON.stringify(p2.duel), 'scale 1 builds exactly the unscaled fight');
   const a = foeBlows(one, 2400), b = foeBlows(half, 2400);
   assert.ok(a.hits.length > 0 && b.hits.length > 0, 'the foe lands blows on a hero who walks in');
-  const mean = (xs) => xs.reduce((s, x) => s + x, 0) / xs.length;
-  assert.ok(mean(b.hits) < mean(a.hits) * 0.65, `blows halve (${mean(a.hits).toFixed(1)} -> ${mean(b.hits).toFixed(1)})`);
-  if (a.specials.length && b.specials.length) assert.ok(b.specials[0] <= Math.ceil(a.specials[0] * 0.55), `the special halves (${a.specials[0]} -> ${b.specials[0]})`);
+  // the same move lands for half the damage (the two fights drift apart, so compare per move: the first landing of each move both fights share)
+  const pairs = (xs, ys) => [...new Set(xs.map((x) => x.move))].flatMap((move) => { const x = xs.find((e) => e.move === move), y = ys.find((e) => e.move === move); return y && x.damage > 4 ? [[move, x.damage, y.damage]] : []; });
+  const blows = pairs(a.hits, b.hits), specials = pairs(a.specials, b.specials);
+  assert.ok(blows.length >= 2, 'at least two moves land in both fights');
+  for (const [move, full, scaled] of [...blows, ...specials]) assert.ok(Math.abs(scaled - full / 2) <= 1, `${move} halves (${full} -> ${scaled})`);
+  assert.ok(specials.length >= 1, 'the special lands in both fights');
 });
 
 test('the same pick is the same fight: deterministic, state for state', () => {
