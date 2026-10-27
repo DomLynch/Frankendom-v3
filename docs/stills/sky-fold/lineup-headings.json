@@ -1,0 +1,46 @@
+{
+ "default": [
+  {
+   "shot": "ready",
+   "headingDeg": 7.7,
+   "pitchDeg": -21.1,
+   "stripYawDeg": -82.5,
+   "foldYawDeg": -82.5
+  },
+  {
+   "shot": "turn1",
+   "headingDeg": 16.5,
+   "pitchDeg": -25,
+   "stripYawDeg": -74.4,
+   "foldYawDeg": -74.4
+  },
+  {
+   "shot": "moving (mid-strafe, no settle)",
+   "headingDeg": 60,
+   "pitchDeg": -18.9,
+   "stripYawDeg": -46.2,
+   "foldYawDeg": -46.2
+  },
+  {
+   "shot": "turn2",
+   "headingDeg": 105.7,
+   "pitchDeg": -19,
+   "stripYawDeg": 12.2,
+   "foldYawDeg": 12.2
+  },
+  {
+   "shot": "turn3",
+   "headingDeg": -75.1,
+   "pitchDeg": -19,
+   "stripYawDeg": 197.3,
+   "foldYawDeg": 197.3
+  },
+  {
+   "shot": "heavy",
+   "headingDeg": -74.7,
+   "pitchDeg": -19.8,
+   "stripYawDeg": 197.4,
+   "foldYawDeg": 197.4
+  }
+ ]
+}
