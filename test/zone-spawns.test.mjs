@@ -27,8 +27,8 @@ const list = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 40 });
-  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 30, startClearance: 25, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 60 });
+  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
 
@@ -41,7 +41,7 @@ test('the shipped zone row: three spots across the zone\'s ground (leash circle 
     assert.ok(dist(s, start()) > s.aggro, `${s.id}: the page does not open on a fight`);
     assert.ok(s.leash > s.aggro);
   }
-  assert.deepEqual(spots.map((s) => [s.x, s.z]).map(([x, z]) => [Math.round(x * 100) / 100, Math.round(z * 100) / 100]), [[0, -6.17], [14, 2], [-8, 11]]);
+  assert.deepEqual(spots.map((s) => [s.x, s.z]).map(([x, z]) => [Math.round(x * 100) / 100, Math.round(z * 100) / 100]), [[0, -6.17], [28, 12], [-14, 31]]);
   assert.ok(spots.some((s) => Math.hypot(s.x, s.z) > wall()), 'spawns stand beyond the pit\'s wall (PR B2)');
   // Dom 2026-10-27 'space them about two times apart' (they stood 3.5 m from their neighbour): every pair is a row's distance apart or more, about 7 m
   for (const a of spots) for (const b of spots) if (a !== b) assert.ok(dist(a, b) >= WORLD.minSpacing, `${a.id} and ${b.id} are ${dist(a, b).toFixed(2)} m apart`);
@@ -61,7 +61,7 @@ test('bad spots are refused: off the zone\'s ground, in the pit wall, on the her
   assert.throws(() => validateSpots(edit((s) => { s[1].x = s[0].x + 1; s[1].z = s[0].z; }), start(), wall()), /inside each other's aggro/);
   assert.throws(() => validateSpots(ok, start(), wall(), WORLD, 'nobody'), /one foe rig/);
   assert.throws(() => validateSpots(edit((s) => { s[1].id = s[0].id; }), start(), wall()), /share an id|aggro/);
-  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -2; s[1].x = 3; s[1].z = -2; }), start(), wall()), /closer than 10 m/);   // outside each other's 2.5 m aggro, inside the spacing row
+  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -2; s[1].x = 3; s[1].z = -2; }), start(), wall()), /closer than 30 m/);   // outside each other's 2.5 m aggro, inside the spacing row
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, minSpacing: 99 }), /minSpacing/);
   assert.throws(() => validateSpots([], start(), wall()), /no spawn spots/);
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, retargetMargin: 99 }), /retargetMargin/);
@@ -101,7 +101,9 @@ test('standing at a spot: the nearest is held, the other two stand as copies; wa
 
 test('the sim\'s held spawn does not flicker half-way between two: it moves only when another is nearer by the margin', () => {
   const spawns = list(), m = WORLD.retargetMargin;
-  const mid = { x: (spawns[1].x + spawns[2].x) / 2, z: (spawns[1].z + spawns[2].z) / 2 };   // equidistant from the east and west spots, the north one further
+  const [A, B, C] = spawns, D = 2 * (A.x * (B.z - C.z) + B.x * (C.z - A.z) + C.x * (A.z - B.z));
+  const circ = { x: ((A.x ** 2 + A.z ** 2) * (B.z - C.z) + (B.x ** 2 + B.z ** 2) * (C.z - A.z) + (C.x ** 2 + C.z ** 2) * (A.z - B.z)) / D, z: ((A.x ** 2 + A.z ** 2) * (C.x - B.x) + (B.x ** 2 + B.z ** 2) * (A.x - C.x) + (C.x ** 2 + C.z ** 2) * (B.x - A.x)) / D };   // equidistant from all three spots (spots are 30 m+ apart now)
+  const away = Math.hypot(circ.x - A.x, circ.z - A.z), mid = { x: circ.x + (circ.x - A.x) / away * 0.5, z: circ.z + (circ.z - A.z) / away * 0.5 };   // a hair further from the north one: equidistant from the east and west spots, the north one further by under the margin
   const toNorth = Math.hypot(spawns[0].x - mid.x, spawns[0].z - mid.z), toEast = Math.hypot(spawns[1].x - mid.x, spawns[1].z - mid.z);
   assert.ok(toNorth - toEast > 0 && toNorth - toEast < m, 'the north spot is further than the other two, by less than the margin');
   assert.equal(held(spawns, 1, mid, m), 1); assert.equal(held(spawns, 2, mid, m), 2, 'held stays on a tie');
