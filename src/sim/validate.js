@@ -29,10 +29,10 @@ export const SCHEMA = {
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'] },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
-  'zone-server-rules': { keys: ['about', 'writerRoles', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
+  'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
     maps: { ids: ['instancePattern', 'tokenPattern', 'batchIdPattern', 'weaponPattern', 'note'], engage: ['tokenBytes', 'ttlS', 'maxOpenPerAccount', 'note'], hit: ['maxBatchRows', 'maxHitsPerRow', 'firstHitAllowanceS', 'maxElapsedS', 'dpsSlack', 'retryFailedBatch', 'note'],
-      progression: ['maxDamageMult', 'note'], share: ['minSharePct', 'renormalise', 'hitExpiryS', 'note'], caps: ['killsPerMin', 'killsPerHour', 'cooldownAcrossLayers', 'note'], respawn: ['minS', 'maxS', 'defaultS', 'note'], log: ['keepS', 'note'] } },
+      progression: ['maxDamageMult', 'note'], share: ['minSharePct', 'floorEqualShareFraction', 'renormalise', 'hitExpiryS', 'note'], caps: ['killsPerMin', 'killsPerHour', 'cooldownAcrossLayers', 'note'], respawn: ['minS', 'maxS', 'defaultS', 'note'], log: ['keepS', 'note'] } },
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;

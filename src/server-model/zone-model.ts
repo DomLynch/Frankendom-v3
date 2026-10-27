@@ -5,12 +5,13 @@
 
 export type Rules = {
   writerRoles: string[];
+  adminOnlyFunctions: string[];
   ids: { instancePattern: string; tokenPattern: string; batchIdPattern: string; weaponPattern: string };
   engage: { tokenBytes: number; ttlS: number; maxOpenPerAccount: number };
   hit: { maxBatchRows: number; maxHitsPerRow: number; firstHitAllowanceS: number; maxElapsedS: number; dpsSlack: number; retryFailedBatch: boolean };
   progression: { maxDamageMult: number };
   weapons: { id: string; maxDamagePerHit: number; maxHitsPerS: number }[];
-  share: { minSharePct: number; renormalise: boolean; hitExpiryS: number };
+  share: { minSharePct: number; floorEqualShareFraction: number; renormalise: boolean; hitExpiryS: number };
   caps: { killsPerMin: number; killsPerHour: number; cooldownAcrossLayers: boolean };
   respawn: { minS: number; maxS: number; defaultS: number };
   log: { keepS: number };
@@ -35,7 +36,8 @@ export function parseRules(json: unknown): Rules {
   if (!Array.isArray(r.weapons) || r.weapons.length < 1) errs.push('weapons: at least one row');
   else for (const w of r.weapons) { if (!new RegExp(r.ids?.weaponPattern ?? '').test(w.id)) errs.push(`weapons.${w.id}: id fails ids.weaponPattern`); num(errs, `weapons.${w.id}.maxDamagePerHit`, w.maxDamagePerHit, 1e-6, 1e9); num(errs, `weapons.${w.id}.maxHitsPerS`, w.maxHitsPerS, 1e-6, 1e3); }
   if (new Set((r.weapons ?? []).map((w) => w.id)).size !== (r.weapons ?? []).length) errs.push('weapons: duplicate id');
-  num(errs, 'share.minSharePct', r.share?.minSharePct, 0, 100); num(errs, 'share.hitExpiryS', r.share?.hitExpiryS, 1, 3600);
+  if (!Array.isArray(r.adminOnlyFunctions) || r.adminOnlyFunctions.some((x) => typeof x !== 'string' || !/^[a-z_][a-z0-9_]{0,62}$/.test(x))) errs.push('adminOnlyFunctions: a list of function names');
+  num(errs, 'share.minSharePct', r.share?.minSharePct, 0, 100); num(errs, 'share.floorEqualShareFraction', r.share?.floorEqualShareFraction, 0, 1); num(errs, 'share.hitExpiryS', r.share?.hitExpiryS, 1, 3600);
   if (typeof r.share?.renormalise !== 'boolean') errs.push('share.renormalise: a boolean');
   num(errs, 'caps.killsPerMin', r.caps?.killsPerMin, 1, 60); num(errs, 'caps.killsPerHour', r.caps?.killsPerHour, 1, 3600);
   if (typeof r.caps?.cooldownAcrossLayers !== 'boolean') errs.push('caps.cooldownAcrossLayers: a boolean');
@@ -103,12 +105,14 @@ export function engage(w: World, q: EngageReq, nowMs: number): Record<string, un
   if (s.kind !== q.kind || s.maxHp !== q.maxHp || s.respawnS !== respawnS) return refuse(w, 'mismatch');
   if (!s.alive && s.respawnAtMs! > nowMs) return refuse(w, 'dead', { respawnAtMs: s.respawnAtMs });
   if (!s.alive) Object.assign(s, { alive: true, hp: s.maxHp, generation: s.generation + 1, respawnAtMs: null, killedAtMs: null });
-  for (const e of w.engages.values()) if (e.account === q.account && !e.used && e.expiresAtMs <= nowMs) { e.used = true; e.result = 'expired'; }
+  // LOCK ORDER (global): spawn row first, then engage rows OF THAT SPAWN only. The expiry sweep therefore touches only this spawn's tokens (another spawn's expired tokens are not locked here;
+  // they are not counted against maxOpenPerAccount below, and zone_hit_log_prune removes them).
+  for (const e of w.engages.values()) if (e.account === q.account && e.instance === q.instance && e.layer === q.layer && !e.used && e.expiresAtMs <= nowMs) { e.used = true; e.result = 'expired'; }
   let e = [...w.engages.values()].find((x) => x.account === q.account && x.instance === q.instance && x.layer === q.layer && !x.used);
   if (e && e.generation === s.generation) e.expiresAtMs = nowMs + R.engage.ttlS * 1000;
   else {
     if (e) { e.used = true; e.result = 'dead'; }
-    if ([...w.engages.values()].filter((x) => x.account === q.account && !x.used).length >= R.engage.maxOpenPerAccount) return refuse(w, 'too-many');
+    if ([...w.engages.values()].filter((x) => x.account === q.account && !x.used && x.expiresAtMs > nowMs).length >= R.engage.maxOpenPerAccount) return refuse(w, 'too-many');
     e = { token: q.token, account: q.account, character: q.character, instance: q.instance, layer: q.layer, generation: s.generation, lastHitAtMs: null, expiresAtMs: nowMs + R.engage.ttlS * 1000, used: false, result: null };
     w.engages.set(e.token, e);
   }
@@ -159,8 +163,10 @@ export function settle(w: World, s: Spawn, nowMs: number): Credit[] {
     const c = by.get(h.account) ?? { character: h.character, damage: 0 };
     c.damage += h.applied; by.set(h.account, c);
   }
-  const total = [...by.values()].reduce((n, c) => n + c.damage, 0);
-  const qualifies = (d: number): boolean => total > 0 && d * 100 >= R.share.minSharePct * total;
+  const total = [...by.values()].reduce((n, c) => n + c.damage, 0), n = by.size;
+  // The EFFECTIVE floor = min(minSharePct, floorEqualShareFraction x 100 / N) percent of the counted total, N = contributors with counted damage. Written cross-multiplied (no division) as an OR,
+  // which is the same as d >= min(...): the SQL zone_settle_kill uses the identical two comparisons. floorEqualShareFraction <= 1 means an equal share (1/N) always clears it.
+  const qualifies = (d: number): boolean => total > 0 && (d * 100 >= R.share.minSharePct * total || d * 100 * n >= R.share.floorEqualShareFraction * 100 * total);
   const qualifiedTotal = [...by.values()].filter((c) => qualifies(c.damage)).reduce((n, c) => n + c.damage, 0);
   const out: Credit[] = [];
   for (const [account, c] of [...by].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
