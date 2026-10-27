@@ -37,6 +37,7 @@ export function bloodiesMaterial(name: string, twoHanded: boolean): boolean {
   return twoHanded ? !HANDLE_MATERIAL.test(name) : name === 'Blade' || (RECONSTRUCTED_HEAD.test(name) && !HANDLE_MATERIAL.test(name));
 }
 type Mode = BloodMode;
+const NO_BOOST = { burst: 1, pool: 1 } as const;
 
 // Read after posing, separation and final actor headings. Every position is world space.
 // Each template wounds its own way (the waist halves, the knee and the back, the nape, the neck stump and the severed head, the skull seam, the
@@ -122,7 +123,7 @@ export function createFinisherBlood(map: Texture) {
   const stains = Array.from({length:80},()=>({position:new Vector3(),radius:0,target:0,angle:0,site:'',shape:0}));
   const velocityDirection = new Vector3(), turn = new Quaternion(), zAxis = new Vector3(0,0,1);
   const dummy = new Object3D(), yAxis = new Vector3(0,1,0), flat = new Quaternion().setFromAxisAngle(new Vector3(1,0,0),-Math.PI/2), tone = new Color();
-  let active: FinisherId | null = null, elapsed = 0, cursor = 0, stainCursor = 0, serial = 0;
+  let poolK = 1, active: FinisherId | null = null, elapsed = 0, cursor = 0, stainCursor = 0, serial = 0;
   let pending: number[] = [], seeded: boolean[] = [], emitted = 0, landed = 0, lateSeeded = false;
   function reset() {
     for (const p of particles) p.life=0;
@@ -138,7 +139,9 @@ export function createFinisherBlood(map: Texture) {
   reset();
   return {
     group,
-    update(dt: number, kind: FinisherId | null, progress: number, sources: readonly BloodSource[], mode: Mode) {
+    /** `boost` (finisher-cam.json blood): the cut bleeds `burst` times harder and its floor stain draws `pool` times as wide, so it reads at phone size; 1 / 1 = as it was (?finishercam=v1). */
+    update(dt: number, kind: FinisherId | null, progress: number, sources: readonly BloodSource[], mode: Mode, boost: { burst: number; pool: number } = NO_BOOST) {
+      poolK = boost.pool;
       if (!kind) { if(active)reset(); return; }
       if(active!==kind) {reset();active=kind;}
       group.visible=!bloodHidden(mode);
@@ -153,7 +156,7 @@ export function createFinisherBlood(map: Texture) {
       if(progress>=start && elapsed<7) sources.forEach((s,i)=>{
         if(elapsed<(s.delay??0))return;
         if(!seeded[i]) { seeded[i]=true; pending[i]=(pending[i]??0)+(s.seed??0); }   // the drops of the blow itself, thrown the frame the wound opens
-        const age=elapsed-(s.delay??0), burst=age<1.7, rate=(burst ? 78 : age<3.5 ? 32 : 14)*s.strength;
+        const age=elapsed-(s.delay??0), burst=age<1.7, rate=(burst ? 78 : age<3.5 ? 32 : 14)*s.strength*boost.burst;
         pending[i]=(pending[i]??0)+rate*dt;
         while(pending[i]>=1) {
           pending[i]--; const p=particles[cursor++%particles.length], a=++serial*2.399963;
@@ -163,7 +166,7 @@ export function createFinisherBlood(map: Texture) {
           p.life=2;p.size=(serial%11===0 ? .022 : .004+(serial%4)*.002)*Math.sqrt(s.strength);emitted++;
         }
         // Once the wound is near the floor, seep directly underneath it as well as landing droplets.
-        if(s.position.y<.65)stain(s.position,dt*.08*s.strength,s.site);
+        if(s.position.y<.65)stain(s.position,dt*.08*s.strength*boost.burst,s.site);
       });
       let count=0;
       for(const p of particles) {
@@ -182,7 +185,7 @@ export function createFinisherBlood(map: Texture) {
         const mesh=pools[s.shape];
         dummy.position.copy(s.position);dummy.position.y+=layer++*.00004;
         dummy.quaternion.copy(flat).multiply(turn.setFromAxisAngle(zAxis,s.angle));
-        dummy.scale.set(s.radius,s.radius*(.7+.2*Math.sin(s.angle)**2),1);dummy.updateMatrix();mesh.setMatrixAt(mesh.count,dummy.matrix);
+        dummy.scale.set(s.radius*poolK,s.radius*poolK*(.7+.2*Math.sin(s.angle)**2),1);dummy.updateMatrix();mesh.setMatrixAt(mesh.count,dummy.matrix);
         tone.setScalar(.75+.25*Math.min(1,s.radius/.2));mesh.setColorAt(mesh.count++,tone);
       }
       for(const m of pools){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;}

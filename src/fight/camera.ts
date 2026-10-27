@@ -8,6 +8,8 @@ import type { Shove } from './camera-kick.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { stepShare, swingAround, virtualFoe, yawBehind, type FreeCameraRows } from './free-camera.ts';
 import { repitch, type PitchRows } from './camera-pitch.ts';
+import { cutCamPose, cutCamRows, cutCamShare, type CutCamPose } from './finisher-cam.ts';
+const CUT_CAM = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json: the late close view of the cut; null for ?finishercam=v1
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
@@ -244,7 +246,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
   // The roll tumble (hit-impact.ts ROLL_TUMBLE): a roll about the view axis plus a shift along the camera's right and a dip, all on one
   // up-and-back envelope over `tiltFor` seconds. lookAt resets the rotation every frame and the shift comes off before the settle: nothing compounds.
   let tiltAngle = 0, tiltFor = 0, tiltAge = 0, swayRight = 0, swayDrop = 0;
-  const swayApplied = new THREE.Vector3();
+  const swayApplied = new THREE.Vector3(), cutPose: CutCamPose = { x: 0, y: 0, z: 0, lookX: 0, lookY: 0, lookZ: 0 };   // scratch, reused every frame
   return {
     camera,
     get yaw() {
@@ -388,6 +390,20 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         if (radius > ARENA_CLAMP) {
           desired.x *= ARENA_CLAMP / radius;
           desired.z *= ARENA_CLAMP / radius;
+        }
+      }
+      // The finisher camera for the cut (src/fight/finisher-cam.json): late in the ceremony the lens comes in close to the foe's cut from the side, so on a phone
+      // the head, belly or knee fills the frame and the hero's shoulder is not in front of it. On top of the row's push-in and side view, under the arena cam.
+      const cutRow = CUT_CAM && finish && finish.finisher !== null ? CUT_CAM[finish.finisher] : undefined;
+      if (cutRow && locked && !still && finish!.victim === 1 && !finish!.draw) {
+        const k = cutCamShare(cutRow, finish!.clock);
+        if (k > 0) {
+          const tanHalfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect;
+          cutCamPose(cutRow, state, enemy, foeScale, tanHalfH, cutPose);
+          const r = Math.hypot(cutPose.x, cutPose.z);
+          if (r > ARENA_CLAMP) { cutPose.x *= ARENA_CLAMP / r; cutPose.z *= ARENA_CLAMP / r; }
+          desired.lerp(eyeTarget.set(cutPose.x, cutPose.y, cutPose.z), k);
+          look.lerp(lookTarget.set(cutPose.lookX, cutPose.lookY, cutPose.lookZ), k);
         }
       }
       // The arena cam, on top of whatever the finisher's own moves settled on: TOUR.afterSettle seconds after the settle

@@ -48,6 +48,8 @@ import { createWoundNotice } from './wound-notice.ts';
 import { shardCapacity } from './special-shards-rows.ts';
 import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
+import { cutCamRows } from './finisher-cam.ts';
+const CUT_BLOOD = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json blood boosts by finisher id; null = ?finishercam=v1 (the blood as it was)
 import { phoneTier, pixelCap } from './quality.ts';
 import { FOE_TUNE } from './fatigue-tune.ts';
 import { fatigueReadFrom } from './fatigue-read.ts';
@@ -1195,7 +1197,7 @@ export function createScene(
         detailedBlood && warriors
           ? finisherBloodSources(finisher!, opponent, severHead?.group ?? null, practice.finish?.location)
           : [];
-      finisherBlood.update(dt, detailedBlood ? finisher : null, victimProgress, bloodSources, bloodMode);
+      finisherBlood.update(dt, detailedBlood ? finisher : null, victimProgress, bloodSources, bloodMode, (finisher !== null && CUT_BLOOD?.[finisher]?.blood) || undefined);
       // Read feet after the rigs and headings settle; only grounded locomotion kicks up sand.
       const canScuff = (pose: string, speed: number) =>
         ['sheathed', 'ready', 'guard'].includes(pose) && speed > 0.25 && speed < 6;
