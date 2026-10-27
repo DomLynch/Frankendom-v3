@@ -46,12 +46,12 @@ test('the ladder is monotonic: every knob moves one way as the row rises', () =>
   assert.ok(DIFF.rows[0].foeHealthScale < 1 && DIFF.rows[0].reaction > DIFF.rows[9].reaction, 'row 1 is forgiving');
 });
 
-test('the default row is pinned (row 4) and an easier fight than the one before this setting', () => {
-  assert.equal(DIFF.default, 4);
+test('the default row is pinned (row 5) and an easier fight than the one before this setting', () => {
+  assert.equal(DIFF.default, 5);
   assert.equal(PROFILES.default, 'pitborn');
   assert.equal(FIGHT.profile, 'pitborn');
-  const d = DIFF.rows[3], legacy = DIFF.named[0];
-  assert.equal(d.id, 4);
+  const d = DIFF.rows[4], legacy = DIFF.named[0];
+  assert.equal(d.id, 5);
   assert.ok(d.foeHealthScale < 1 && d.foeDamageScale < 1 && d.reaction > legacy.reaction - 1);
 });
 
@@ -69,12 +69,12 @@ test('row 10 is V1\'s level-18 Pitborn untouched; legacy is the novice brain wit
 
 test('?difficulty= picks a row; anything else is the default with a warning, never a throw', () => {
   const seen = []; const warn = (m) => seen.push(m);
-  assert.equal(difficultyPick(DIFF, '', warn), 4);
-  assert.equal(difficultyPick(DIFF, '?x=1', warn), 4);
+  assert.equal(difficultyPick(DIFF, '', warn), 5);
+  assert.equal(difficultyPick(DIFF, '?x=1', warn), 5);
   for (let n = 1; n <= 10; n++) assert.equal(difficultyPick(DIFF, `?difficulty=${n}`, warn), n);
   assert.equal(difficultyPick(DIFF, '?difficulty=legacy', warn), 'legacy');
   assert.equal(seen.length, 0);
-  for (const bad of ['0', '11', '-1', '4.5', 'abc', '', '1e1', '99999999999999999999', 'LEGACY']) assert.equal(difficultyPick(DIFF, `?difficulty=${bad}`, warn), 4, bad);
+  for (const bad of ['0', '11', '-1', '4.5', 'abc', '', '1e1', '99999999999999999999', 'LEGACY']) assert.equal(difficultyPick(DIFF, `?difficulty=${bad}`, warn), 5, bad);
   assert.equal(seen.length, 9);
   assert.match(seen[0], /\?difficulty=0 is not a difficulty row/);
 });
