@@ -39,7 +39,7 @@ test('the shipped row pinned: id, band, respawn, areas, the spawn', () => {
   assert.deepEqual(ROW.band, [1, 10]);
   assert.equal(ROW.pvp, 'on');
   assert.deepEqual(ROW.respawn, { x: 200, z: 54, facing: 3.142, downSeconds: 2, died: 'You died' });
-  assert.deepEqual(ROW.areas.map((a) => [a.id, a.pvp, a.spawnsAllowed]), [['yard', 'off', false], ['duel-pit', 'on', true]]);
+  assert.deepEqual(ROW.areas.map((a) => [a.id, a.pvp, a.spawnsAllowed]), [['yard', 'off', false], ['duel-pit', 'on', true], ['field', 'on', true]]);
   assert.deepEqual(ROW.spawns.map((x) => [x.id, x.respawnSeconds]), [['yard-pitborn', 40], ['pit-pitborn-east', 60], ['pit-pitborn-west', 90]], 'three bosses, each its own timer (live-zone phase 1b)');
   for (const x of ROW.spawns) {
     assert.equal(x.kind, FIGHT.opponent, "today's spawns are the opponent data/fight.json names (one foe rig is built)");
