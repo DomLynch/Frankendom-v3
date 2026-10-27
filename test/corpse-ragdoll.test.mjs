@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { createPhysics } from '@frankendom/physics';
 import { createThreeRig } from '@frankendom/physics/three-rig';
-import { counterparts, freeSlot, piecesOfUnit, slotPosition } from '../src/fight/ragdoll.ts';
+import { counterparts, cueOnScreen, freeSlot, piecesOfUnit, slotPosition } from '../src/fight/ragdoll.ts';
 import { emitFeel, feel } from '../src/fight/feel.ts';
 import { validateFile } from '../src/sim/validate.js';
 
@@ -134,4 +134,15 @@ test('the bus: a cut is announced under the row\'s name with the corpseId, to a 
   assert.deepEqual(got, [['corpse:cut', { unit: 'arm_left', gear: [], source: 'tap', corpseId: 'pitborn#2' }]]);
   assert.deepEqual(all, ['corpse:cut']);
   assert.deepEqual(globalThis.__feelEvents.at(-1), { name: 'corpse:cut', payload: { unit: 'arm_left', gear: [], source: 'tap', corpseId: 'pitborn#2' } });
+});
+
+// the cue button's visibility (a bone in NDC): shown on screen and a little past the edge (the button is a thumb wide), hidden when the corpse is turned out of frame (the camera follows the respawned foe:
+// LEAVE=2 put a left corpse's head at x=-1.94) or is behind the camera
+test('cue buttons: an on-screen corpse has them, one out of frame or behind the camera has none', () => {
+  assert.equal(cueOnScreen({ x: 0.37, y: 0.28, z: 0.97 }), true);   // LEAVE=0
+  assert.equal(cueOnScreen({ x: -0.72, y: 0.22, z: 0.97 }), true);   // a left corpse, 0.6 m aside
+  assert.equal(cueOnScreen({ x: -1.08, y: 0, z: 0.9 }), true);   // the centre just past the edge
+  assert.equal(cueOnScreen({ x: -1.94, y: -0.14, z: 0.97 }), false);   // LEAVE=2: turned out of frame
+  assert.equal(cueOnScreen({ x: 0, y: 1.2, z: 0.9 }), false);
+  assert.equal(cueOnScreen({ x: 0, y: 0, z: 1.2 }), false);   // behind the camera
 });

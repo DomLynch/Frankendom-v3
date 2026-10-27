@@ -160,6 +160,9 @@ export function counterparts(root: THREE.Object3D, copy: THREE.Object3D): Map<TH
   a.forEach((o, i) => out.set(o, b[i]!));
   return out;
 }
+/** Whether a cue button shows for a bone at `p` (normalised device coords): on the screen or a little past its edge (the button is a thumb wide), not behind the camera. A corpse the camera has turned away
+ *  from (it follows the respawned foe) has none. */
+export const cueOnScreen = (p: { x: number; y: number; z: number }): boolean => p.z <= 1 && Math.abs(p.x) <= 1.1 && Math.abs(p.y) <= 1.1;
 /** The corpse's piece for a cut unit, per the cut GLB's manifest: the meshes of the regions that unit detaches. */
 export const piecesOfUnit = (manifest: { regions?: { id: string; detached_by?: string }[] } | undefined, unit: string): string[] => (manifest?.regions ?? []).filter((r) => r.detached_by === unit).map((r) => r.id);
 
@@ -482,8 +485,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         if (el.dataset.corpse !== id) el.dataset.corpse = id;
         const bone = live && !set.isDone(unit) ? set.boneOf(unit) : undefined;
         const p = bone ? bone.getWorldPosition(tmpV2).project(cueCamera) : null;
-        if (unit === 'head') cost.cueState += ` | ${id} head ndc ${p ? [p.x, p.y, p.z].map((v) => v.toFixed(2)).join(',') : 'no bone'} world ${bone ? bone.getWorldPosition(new THREE.Vector3()).toArray().map((v) => v.toFixed(2)).join(',') : '-'} bone.parent ${bone?.parent?.name} root ${group ? group.getWorldPosition(new THREE.Vector3()).toArray().map((v) => v.toFixed(2)).join(',') : '-'}`;   // debug (M8 WIP: the corpse's cue is off screen)
-        if (!p || p.z > 1 || Math.abs(p.x) > 1.1 || Math.abs(p.y) > 1.1) { el.style.display = 'none'; continue; }   // (a corpse further off than the screen has no button on it)
+        if (unit === 'head') cost.cueState += ` | ${id} head ndc ${p ? [p.x, p.y, p.z].map((v) => v.toFixed(2)).join(',') : 'no bone'}`;   // the stills read each corpse's head in NDC (a corpse the camera has turned from is outside -1..1: no buttons, cueOnScreen)
+        if (!p || !cueOnScreen(p)) { el.style.display = 'none'; continue; }   // (a corpse further off than the screen has no button on it)
         shown.push({ el, x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height });
       }
     }
