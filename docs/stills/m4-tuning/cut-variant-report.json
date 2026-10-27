@@ -1,0 +1,194 @@
+{
+  "query": "rules=m4",
+  "attacks": 10,
+  "killed": 48,
+  "rules": {
+    "hits": 9,
+    "skipped": 0,
+    "byOutcome": {
+      "kill": 8,
+      "cut": 1
+    },
+    "deferredKills": 7,
+    "cuts": [
+      {
+        "unit": "leg_left",
+        "tick": 928,
+        "weapon": "gm_katana"
+      },
+      {
+        "unit": "torso_waist",
+        "tick": 1109,
+        "weapon": "gm_katana"
+      }
+    ],
+    "cost": {
+      "calls": 9,
+      "totalMs": 0,
+      "maxMs": 0
+    }
+  },
+  "rows": [
+    {
+      "i": 0,
+      "tick": 3.6333333333333333,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 5.03,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 50.9,
+      "part": "torso",
+      "cut": null
+    },
+    {
+      "i": 1,
+      "tick": 5.066666666666666,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 5.19,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 50.9,
+      "part": "torso",
+      "cut": null
+    },
+    {
+      "i": 2,
+      "tick": 6.733333333333333,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 4.29,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 50.9,
+      "part": "torso",
+      "cut": null
+    },
+    {
+      "i": 3,
+      "tick": 9.65,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 5.19,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 50.9,
+      "part": "torso",
+      "cut": null
+    },
+    {
+      "i": 4,
+      "tick": 12.716666666666667,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 4.26,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 50.9,
+      "part": "torso",
+      "cut": null
+    },
+    {
+      "i": 5,
+      "tick": 14.15,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 5.19,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 50.9,
+      "part": "torso",
+      "cut": null
+    },
+    {
+      "i": 6,
+      "tick": 15.466666666666667,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "legs",
+      "counter": false,
+      "anim_m_s": 9.9,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "cut",
+      "strength": 50.9,
+      "part": "leg_left",
+      "cut": "leg_left"
+    },
+    {
+      "i": 7,
+      "tick": 17.2,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "heavy",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 4.89,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 50.9,
+      "part": "torso",
+      "cut": null
+    },
+    {
+      "i": 8,
+      "tick": 18.483333333333334,
+      "weapon": "gm_katana",
+      "kind": "slash",
+      "swing": "light",
+      "zone": "torso",
+      "counter": false,
+      "anim_m_s": 5.7,
+      "used_m_s": 9.74,
+      "source": "measured",
+      "outcome": "kill",
+      "strength": 26.5,
+      "part": "torso",
+      "cut": "torso_waist"
+    }
+  ],
+  "ragdoll": {
+    "state": "frozen",
+    "cuts": [
+      {
+        "type": "cut",
+        "unit": "leg_left",
+        "gear": [],
+        "source": "rules"
+      },
+      {
+        "type": "cut",
+        "unit": "torso_waist",
+        "gear": [],
+        "source": "rules"
+      }
+    ]
+  }
+}
