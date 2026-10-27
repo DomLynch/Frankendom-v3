@@ -13,7 +13,7 @@ if (!base || !out) { console.error('usage: node scripts/limbs-stills.mjs <base u
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const TICK = 1000 / 60, LIMB = process.env.LIMB ?? 'leg', PART = { leg: 'leg_left', arm: 'arm_right' }[LIMB];
-const QUIET = Number(process.env.QUIET ?? 0), AT = Number(process.env.AT ?? 240), SECONDS = Number(process.env.SECONDS ?? 3), EVERY = Number(process.env.EVERY ?? 3), GAP = Number(process.env.GAP ?? 45);
+const QUIET = Number(process.env.QUIET ?? 0), AT = Number(process.env.AT ?? 240), SECONDS = Number(process.env.SECS ?? process.env.SECONDS ?? 3)   /* SECS from a bash script: SECONDS is bash's own clock (and an integer: `export SECONDS=2.5` is an error there) */, EVERY = Number(process.env.EVERY ?? 3), GAP = Number(process.env.GAP ?? 45);
 const FROM = Number(process.env.FROM ?? 0), EXT = process.env.FMT === 'jpg' ? 'jpg' : 'png', SHOT = { timeout: 180000, ...(EXT === 'jpg' ? { type: 'jpeg', quality: 70 } : {}) };   // software GL on a job can take over the 30 s default for one shot
 const MIX =[['KeyF'], ['KeyG'], ['KeyD', 'KeyF'], ['KeyG'], ['KeyA', 'KeyF'], ['KeyF']];
 const open = async () => {

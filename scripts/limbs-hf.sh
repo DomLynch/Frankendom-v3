@@ -9,11 +9,11 @@ command -v jpegtran >/dev/null || { apt-get update -qq >/dev/null 2>&1; apt-get 
 node scripts/build.mjs >/tmp/build.log 2>&1 || { echo "build failed"; tail -15 /tmp/build.log; exit 1; }
 (node scripts/serve.mjs $PORT >/tmp/serve.log 2>&1 &); sleep 3
 npm i --no-save playwright@1.62.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1 || { echo "playwright install failed"; exit 1; }
-export DPR=1 FMT=jpg EVERY=6 LIMB=leg QUIET=150 AT=480 SECONDS=3
+export DPR=1 FMT=jpg EVERY=6 LIMB=leg QUIET=150 AT=480 SECS=3   # SECS, not SECONDS: that one is bash's own clock
 best=""; bestn=-1
 # FIXED mode (bash scripts/limbs-hf.sh <away> <heavy> [aside]): no sweep, the one rerun that was chosen on the Mac (AWAY=2.5 ASIDE=1.0 HEAVY=60), few frames out
 if [ $# -ge 2 ]; then
-  export AWAY=$1 HEAVY=$2 EVERY=3 SECONDS=2.5 FROM=19; [ -n "${3:-}" ] && export ASIDE=$3   # frames 19..60 only (the heavy lands near 41), the rest are counted, not shot
+  export AWAY=$1 HEAVY=$2 EVERY=3 SECS=2.5 FROM=19; [ -n "${3:-}" ] && export ASIDE=$3   # frames 19..60 only (the heavy lands near 41), the rest are counted, not shot
   node scripts/limbs-stills.mjs http://localhost:$PORT "$OUT/final" 2>&1 | grep -v 'Failed to load'
   cd "$OUT/final" || { echo "the run left no output: nothing to send"; exit 1; }   # (never tar the checkout into the log)
   for f in leg-*-[0-9][0-9][0-9].jpg; do n=$((10#$(basename "${f%.jpg}" | sed 's/.*-//'))); case "$f" in *crop*) { [ $n -ge 20 ] && [ $n -le 56 ] && [ $((n % 3)) -eq 2 ]; } || rm -f "$f" ;; *) case $n in 41|47|53) ;; *) rm -f "$f" ;; esac ;; esac; done
