@@ -42,7 +42,7 @@
       },
       "farMetres": 160,
       "nearMetres": 12,
-      "featherFraction": 0.3,
+      "featherFraction": 0.04,
       "groundY": 0,
       "orderOffset": 50,
       "around": 128,
