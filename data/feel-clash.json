@@ -1,0 +1,41 @@
+{
+  "about": "M7 deliverable 4 (Strategy/Dom 2026-10-27): WEAPON CLASH on a parry or a block. When a blow is blocked or parried both fighters recoil physically, no canned clip: the attacker's weapon arm is knocked back, the defender's guard arm absorbs, a heavy blow lands harder, a spark flies at the blades. PRESENTATION ONLY (src/fight/feel-clash.ts reads the sim's Blocked / Parried / GuardBroken events and writes the foe's ragdoll motors and impulses and the hero's bones; duel.ts and Gate 0 never see it). OFF unless the URL carries ?feel=clash (`query`, `value`). THE OPPONENT (the Minotaur's package ragdoll): applyImpulse on the part named in `parts` for the side that struck (the weapon arm, rules.json swordSide) and on the defender's guard arm, plus motor dips (setMotorStrength: the package takes the lower of this and its own stagger) that ease in, hold and recover (`timing`). THE HERO (a clip-driven rig, no ragdoll): a presentation-only bone lean (`hero`): the weapon arm and the spine are rotated a few degrees after the clip is posed, decaying on the same timing; nothing is simulated and nothing the sim reads is moved. WHAT EACH NUMBER MEANS. weaponKg: the attacker's weapon weight class in kg (a row per weapon id in data/rules.json `weapons`; test pins the key set), the recoil scales with weight over `refKg`. swing: the blow's strength, `heavy` = the package's heavy_mult (1.92, rules.json about) applied to a heavy move (move-rows isHeavyMove, rules.json heavyMoves) or a charged blow. kinds (blocked, perfect, parried, broken = the sim's Blocked, a perfect Blocked, Parried, GuardBroken; the keys avoid the word block, which the validator bans in armour rows):`recoil` the attacker's impulse multiplier (a parry throws the attacker open, a block only checks him), `absorbed` the fraction of the blow's impulse the defender's guard arm takes (a block is a wall: 0.7; a parry deflects: 0.25; a perfect block 0.85; a broken guard 1 and it staggers), `dip` the motor strength the weapon arm / forearm / hand and the spine go DOWN to on the struck side at full strength (1 = no dip). parts: the package part ids; attacker.weapon is the arm that struck (rules.json swordSide), defender.guard the arm that took it. timing: easeInS / holdS / upS, in seconds, scaled by the blow's strength (a light clash is shorter). pushback: the sim-facing numbers for a blocking opponent pushed back by a heavy blow (metres by kind, x swing strength): NOT applied by this module (a position change is the sim's; Strategy ruled 2026-10-27): it rides the `feel:clash` event (`event`) for the sim lane to adopt. spark: a point on the line between the two fighters' weapon hands (`handBones` of each rig, `at` 0.5 = midway), lifted `liftM`, `count` particles scaled by strength, thrown out at `speedMps`, living `lifeS`; the sim gives no contact point, so this is the hands' midpoint, not the blades'. perf: the budget the harness number is read against.",
+  "on": true,
+  "query": "feel",
+  "value": "clash",
+  "tickHz": 60,
+  "refKg": 1.2,
+  "weaponKg": {
+    "longsword": 1.4, "trident": 2.2, "cleaver": 1.6, "estoc": 1.1, "knife": 0.4, "gladius": 0.9,
+    "scythe": 2.6, "maul": 5.5, "reaper": 3.2, "warhammer": 2.8, "bow": 0.8, "staff": 1.5, "bite": 0.6
+  },
+  "swing": { "light": 1.0, "heavy": 1.92, "charged": 1.5 },
+  "impulse": { "base": 7.0, "lift": 0.8, "min": 1.0, "max": 24.0 },
+  "kinds": {
+    "blocked": { "recoil": 0.6, "absorbed": 0.7, "dip": 0.5, "stagger": false },
+    "perfect": { "recoil": 0.9, "absorbed": 0.85, "dip": 0.6, "stagger": false },
+    "parried": { "recoil": 1.5, "absorbed": 0.25, "dip": 0.15, "stagger": true },
+    "broken": { "recoil": 0.4, "absorbed": 1.0, "dip": 0.2, "stagger": true }
+  },
+  "parts": {
+    "attacker": { "weapon": ["armRight", "forearmRight", "handRight"], "spine": ["spine2"] },
+    "defender": { "guard": ["armLeft", "forearmLeft", "handLeft"], "spine": ["spine2"] }
+  },
+  "dipParts": { "arm": 1.0, "forearm": 1.0, "hand": 1.0, "spine": 0.6 },
+  "timing": { "easeInS": 0.04, "holdS": 0.12, "upS": 0.3, "lightScale": 0.7 },
+  "pushback": { "metres": { "blocked": 0.25, "perfect": 0.1, "parried": 0.0, "broken": 0.6 }, "heavyOnly": false },
+  "event": { "type": "feel:clash", "log": "__feelClash" },
+  "hero": {
+    "about": "bone lean, radians at full strength, applied after the clip: the struck weapon arm swings back, the spine rocks away from the blow",
+    "bones": { "weaponArm": "upperarm_r", "guardArm": "upperarm_l", "spine": "spine_02" },
+    "weaponArmRad": [-0.5, 0.0, 0.25],
+    "guardArmRad": [-0.2, 0.0, 0.0],
+    "spineRad": [-0.1, 0.0, 0.0],
+    "maxStrength": 1.92
+  },
+  "spark": {
+    "on": true, "at": 0.5, "liftM": 0.05, "count": 10, "countHeavy": 18, "speedMps": 3.2, "lifeS": 0.22, "sizePx": 5,
+    "color": "#ffd9a0", "handBones": { "hero": "hand_r", "foe": "handRight" }, "max": 24
+  },
+  "perf": { "frameBudgetMs": 0.25 }
+}
