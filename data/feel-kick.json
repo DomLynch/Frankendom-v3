@@ -1,0 +1,47 @@
+{
+  "about": "M7 deliverable 3, KNOCKBACK, SHOVE AND KICK (Dom/Strategy 2026-10-27: 'best-in-class world leading combat for 2027, the wow in the fight itself'). PRESENTATION ONLY and opt-in: ?feel=kick (query/value below). The sim (duel.ts) already resolves a kick (move 'kick', a short cone, def.knockback steps, stagger ticks, vsGuard against a raised guard); this file says how the foe's RAGDOLL shows it: a kick is a short physical push by the kicker's mass and the target's stance that staggers or knocks down (rd.stagger / rd.knockdown('push') from @frankendom/physics, whose TABG-derived fall seconds are data/rules.json's package rows: push over 80 falls 0.5 s, down 2 s), and it opens a finisher window. Design references (public behaviour only): Chivalry 2 and Mordhau's kick (a short shove that staggers a guarding man and drops one caught open or mid-swing); TABG's push-versus-damage knockdown counter already in the package rows. FORCE: force = massRatio^massExp x stance multiplier; massRatio = kicker mass / target mass (massKg, clamped to massClamp). OUTCOME: force < knockdownAt = stagger, else knockdown (rd.knockdown('push')). PUSH: the impulse into the ragdoll's chest is impulsePerForce x force (clamped to impulseClamp), the shown push distance is distanceM[outcome] x force over pushS (velocity = distance / pushS). FINISHER WINDOW: after the outcome, the 'finish now' cue shows for window[outcome].lengthS starting window[outcome].startS after the kick (a knockdown's starts when he has fallen). WHAT THE SIM WOULD NEED (Strategy's ruling 2026-10-27: the stagger/knockdown and the window change the fight's outcome, so they are SIM, V3 Dev's): this module emits the event named `event.name` with outcome and finisherWindowS and pushes it on the page list `event.log`; it never writes the sim. SHOVE rows: a non-kick shove (the pommel strike) is a smaller push that never knocks down.",
+  "on": true,
+  "query": "feel",
+  "value": "kick",
+  "moves": ["kick"],
+  "massKg": { "default": 80, "hero": 85, "pitborn": 120 },
+  "massClamp": [0.4, 2.5],
+  "massExp": 0.5,
+  "stance": {
+    "about": "the target's multiplier on the force, by what he is doing when the kick lands (duel.ts Phase: guard = guarding, attack = midSwing, hurt / roll / backstep = recovering, anything else = open). A kick into a raised guard is braced.",
+    "open": 1.4,
+    "guarding": 0.6,
+    "midSwing": 1.25,
+    "recovering": 1.35
+  },
+  "phase": { "guard": "guarding", "attack": "midSwing", "hurt": "recovering", "roll": "recovering", "backstep": "recovering", "default": "open" },
+  "knockdownAt": 1.0,
+  "push": {
+    "impulsePerForce": 60,
+    "impulseClamp": [15, 120],
+    "lift": { "stagger": 0, "knockdown": 5 },
+    "distanceM": { "stagger": 0.45, "knockdown": 1.1 },
+    "pushS": 0.25,
+    "part": "spine2"
+  },
+  "window": {
+    "stagger": { "startS": 0.0, "lengthS": 0.6 },
+    "knockdown": { "startS": 0.5, "lengthS": 1.4 }
+  },
+  "cue": {
+    "on": true,
+    "text": "FINISH NOW",
+    "color": "#ffb21f",
+    "sizePx": 22,
+    "pulseS": 0.45,
+    "anchorBone": "spine2",
+    "liftPx": 70
+  },
+  "shove": {
+    "about": "a non-kick shove, by sim move id: forceMult scales the kicker's force, canKnockdown false = it staggers at most. Opt-in under the same ?feel=kick.",
+    "moves": {
+      "skill_pommel": { "forceMult": 0.55, "canKnockdown": false }
+    }
+  },
+  "event": { "name": "feel:kick_result", "log": "__v3FeelKick", "keep": 40 }
+}

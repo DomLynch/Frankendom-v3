@@ -36,6 +36,10 @@ export const SCHEMA = {
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
+  // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
+  'feel-kick': { keys: ['about', 'on', 'query', 'value', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'phase', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
+    maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], push: ['impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['stagger', 'knockdown'], cue: ['on', 'text', 'color', 'sizePx', 'pulseS', 'anchorBone', 'liftPx'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
+    finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'push': ['impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'liftPx'], 'event': ['keep'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
     rows: { weapons: ['id', 'maxDamagePerHit', 'maxHitsPerS'], refusals: ['id', 'status', 'text'], payReasons: ['id', 'text'] },
@@ -89,6 +93,33 @@ export function validateFile(name, json) {
       if (!['head', 'torso', 'legs'].includes(zone)) errors.push(`${name}.cut.precedence.${zone}: unknown zone (head, torso, legs)`);
       if (who !== 'evaluator' && who !== 'finisher') errors.push(`${name}.cut.precedence.${zone}: must be 'evaluator' or 'finisher'`);
     }
+  }
+  if (name === 'feel-kick') {   // ranges: positive forces and times, ordered clamps, known stances and outcomes, a plain #rrggbb (pasted into CSS), a moves list the sim knows
+    const pos = (path, v) => { if (!Number.isFinite(v) || v <= 0) errors.push(`${name}.${path}: must be a finite number > 0`); };
+    const pair = (path, v, lo) => { if (!Array.isArray(v) || v.length !== 2 || !v.every(Number.isFinite) || v[0] < lo || v[0] > v[1]) errors.push(`${name}.${path}: must be [min, max] with ${lo} <= min <= max`); };
+    pair('massClamp', json.massClamp, 0.01); pair('push.impulseClamp', json.push?.impulseClamp, 0);
+    for (const [k, v] of Object.entries(json.massKg ?? {})) pos(`massKg.${k}`, v);
+    if (!json.massKg || !('default' in json.massKg)) errors.push(`${name}.massKg.default: a default mass is required`);
+    for (const k of ['massExp', 'knockdownAt']) pos(k, json[k]);
+    for (const k of ['open', 'guarding', 'midSwing', 'recovering']) pos(`stance.${k}`, json.stance?.[k]);
+    pos('push.impulsePerForce', json.push?.impulsePerForce); pos('push.pushS', json.push?.pushS);
+    for (const o of ['stagger', 'knockdown']) {
+      pos(`push.distanceM.${o}`, json.push?.distanceM?.[o]); pos(`window.${o}.lengthS`, json.window?.[o]?.lengthS);
+      if (!(json.window?.[o]?.startS >= 0)) errors.push(`${name}.window.${o}.startS: must be a finite number >= 0`);
+    }
+    const stances = Object.keys(json.stance ?? {}).filter((k) => k !== 'about');
+    for (const [ph, st] of Object.entries(json.phase ?? {})) if (!stances.includes(st)) errors.push(`${name}.phase.${ph}: unknown stance ${st}`);
+    if (!('default' in (json.phase ?? {}))) errors.push(`${name}.phase.default: a default stance is required`);
+    if (!Array.isArray(json.moves) || !json.moves.length || json.moves.some((m) => typeof m !== 'string')) errors.push(`${name}.moves: must be a non-empty list of move ids`);
+    for (const [m, r] of Object.entries(json.shove?.moves ?? {})) {
+      pos(`shove.moves.${m}.forceMult`, r.forceMult); if (typeof r.canKnockdown !== 'boolean') errors.push(`${name}.shove.moves.${m}.canKnockdown: must be a boolean`);
+      for (const k of Object.keys(r)) if (!['forceMult', 'canKnockdown'].includes(k)) errors.push(`${name}.shove.moves.${m}.${k}: unknown key`);
+      if ((json.moves ?? []).includes(m)) errors.push(`${name}.shove.moves.${m}: a move is a kick or a shove, not both`);
+    }
+    if (!/^#[0-9a-fA-F]{6}$/.test(json.cue?.color ?? '')) errors.push(`${name}.cue.color: must be #rrggbb`);
+    if (typeof json.cue?.text !== 'string' || !json.cue.text.trim()) errors.push(`${name}.cue.text: must be a non-empty string`);
+    if (!Number.isInteger(json.event?.keep) || json.event.keep < 1) errors.push(`${name}.event.keep: must be an integer >= 1`);
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(json.event?.log ?? '')) errors.push(`${name}.event.log: must be an identifier (a globalThis name)`);
   }
   if (name === 'physics' && json.cut?.cue) {   // the cue's units are the package's severable ids, every unit has a label, and the colour is pasted into CSS: a plain #rrggbb only
     const cue = json.cut.cue, UNITS = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'];
