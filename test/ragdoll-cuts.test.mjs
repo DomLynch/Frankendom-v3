@@ -39,6 +39,7 @@ test('the cut rows name the package\'s units, parts and gear slots, and the vali
   assert.ok(C.tap.maxMovePx > 0 && C.tap.maxMs > 0 && C.tap.needs === 'frozen');
   // the cue (a "cut" button on each cuttable part of the frozen corpse): every unit it lists is one the tap can cut, and its numbers are real
   assert.ok(C.cue.on && C.cue.units.length === C.tap.order.length && C.cue.units.every((u) => C.tap.order.includes(u)), 'the cue covers every tap unit, the head included');
+  assert.ok(C.cue.units.every((u) => typeof C.cue.labels[u] === 'string' && C.cue.labels[u]) && /^#[0-9a-f]{6}$/i.test(C.cue.color), 'every cue unit has a label and the colour is #rrggbb');
   assert.ok(C.cue.units.includes('head') && C.cue.sizePx >= 32 && C.cue.pulseS > 0 && C.cue.delayS >= 0, 'a thumb-sized cue, on the head too');
   // Strategy 2026-10-27: a tapped limb piece flies sideways or toward the camera, never away from it (the player must see the flight): awayMult <= 0, sideMult > 0
   assert.ok(C.tap.awayMult <= 0 && C.tap.sideMult > 0 && C.tap.impulse > 0 && C.tap.lift >= 0, 'tap push rows: toward or sideways, not away from the camera');

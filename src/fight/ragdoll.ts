@@ -256,8 +256,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // Built by listenTaps; moved to its bone each frame by updateCues; a tap on it cuts that unit (cutCue). Hidden whenever the corpse is not frozen, the unit is done, or the bone is behind the camera.
   let cueEls: { unit: string; el: HTMLButtonElement }[] = [], cueCamera: THREE.Camera | undefined, cueCanvas: HTMLElement | undefined;
   function makeCues(canvas: HTMLElement, camera: THREE.Camera) {
-    const cue = cutRows.cue;
-    if (!cue.on || !canvas.parentElement) return;
+    const cue = cutRows.cue as typeof cutRows.cue | undefined;   // a physics.json without the row simply has no cue (the plain tap still works)
+    if (!cue?.on || !canvas.parentElement) return;
     cueCamera = camera; cueCanvas = canvas;
     const style = document.createElement('style');
     style.textContent = `.cut-cue{position:fixed;z-index:30;width:${cue.sizePx}px;height:${cue.sizePx}px;margin:${-cue.sizePx / 2}px 0 0 ${-cue.sizePx / 2}px;border-radius:50%;border:2px solid ${cue.color};background:${cue.color}33;color:${cue.color};font:700 10px/1 sans-serif;text-transform:uppercase;padding:0;display:none;animation:cut-cue-pulse ${cue.pulseS}s ease-in-out infinite;touch-action:manipulation}@keyframes cut-cue-pulse{0%,100%{box-shadow:0 0 0 0 ${cue.color}aa;opacity:.95}50%{box-shadow:0 0 0 9px ${cue.color}00;opacity:.7}}`;   // a glow, not a scale: the target a thumb aims at does not move

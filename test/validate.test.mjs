@@ -36,6 +36,16 @@ test('cut.tap numeric rows must be present and finite (a missing one would be a 
   assert.deepEqual(validateFile('physics', files.physics), [], 'the shipped row validates');
 });
 
+test('cut.cue: known units, a label for every unit, and a plain #rrggbb colour (it is pasted into CSS)', () => {
+  const unit = clone(files.physics); unit.cut.cue.units.push('tail');
+  assert.match(validateFile('physics', unit).join('\n'), /physics\.cut\.cue\.units: unknown unit tail/);
+  const label = clone(files.physics); delete label.cut.cue.labels.head;
+  assert.match(validateFile('physics', label).join('\n'), /physics\.cut\.cue\.labels\.head: a unit needs a label/);
+  const color = clone(files.physics); color.cut.cue.color = 'red;}body{display:none';
+  assert.match(validateFile('physics', color).join('\n'), /physics\.cut\.cue\.color: must be #rrggbb/);
+  assert.deepEqual(validateFile('physics', files.physics), []);
+});
+
 test('a file with no schema is rejected', () => {
   assert.match(validateFile('nope', {}).join('\n'), /nope: no schema/);
 });
