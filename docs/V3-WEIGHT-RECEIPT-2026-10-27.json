@@ -1,0 +1,342 @@
+{
+ "url": "https://v3.frankendom.com/",
+ "playableMs": 4086,
+ "files": 37,
+ "wire": 5333274,
+ "raw": 11692483,
+ "rows": [
+  {
+   "url": "https://v3.frankendom.com/src/assets/psyche-106.11c8e72d.glb",
+   "raw": 1601388,
+   "wire": 1012264,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/vendor/physics.0c76372b.js",
+   "raw": 3648097,
+   "wire": 969212,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/minotaur-106.214eaa44.glb",
+   "raw": 1154824,
+   "wire": 724511,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/audio/sprite.40e6abe7.ogg",
+   "raw": 467546,
+   "wire": 467945,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "audio/ogg"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/client/main.js",
+   "raw": 973369,
+   "wire": 346805,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/weapons/shapes/longsword-plain.a3defee2.glb",
+   "raw": 238288,
+   "wire": 202148,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/vendor/three.050bbc6d.js",
+   "raw": 719079,
+   "wire": 184714,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/weapons/foe/cleaver.9a60033a.glb",
+   "raw": 233820,
+   "wire": 171796,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "https://v3.frankendom.com/weapons/shapes/cleaver-plain.b530612c.glb",
+   "raw": 170700,
+   "wire": 158458,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "model/gltf-binary"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/minotaur/special-groundslam.json.js",
+   "raw": 285511,
+   "wire": 96849,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/psyche/special-groundslam.json.js",
+   "raw": 286311,
+   "wire": 96640,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/minotaur/special-whirlwind.json.js",
+   "raw": 247173,
+   "wire": 83659,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/psyche/special-whirlwind.json.js",
+   "raw": 247697,
+   "wire": 83194,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/floor-pool.da340a7b.png",
+   "raw": 71591,
+   "wire": 71989,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/floor-pool-b.099f83ab.png",
+   "raw": 71038,
+   "wire": 71436,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/minotaur/special-lunge.json.js",
+   "raw": 192265,
+   "wire": 64874,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/psyche/special-lunge.json.js",
+   "raw": 192651,
+   "wire": 64789,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/minotaur/special-skullcrack.json.js",
+   "raw": 178968,
+   "wire": 60756,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/psyche/special-skullcrack.json.js",
+   "raw": 179322,
+   "wire": 60482,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/style.css",
+   "raw": 159316,
+   "wire": 40466,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "text/css"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-drip.23f262fe.png",
+   "raw": 33327,
+   "wire": 33724,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-drip-normal.a72a8798.png",
+   "raw": 31764,
+   "wire": 32161,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-wound-c.974caec8.png",
+   "raw": 28390,
+   "wire": 28787,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-wound-d-normal.6508b3c4.png",
+   "raw": 28381,
+   "wire": 28778,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-wound-b.b6accf65.png",
+   "raw": 26046,
+   "wire": 26443,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/psyche/hamstrung-killer.json.js",
+   "raw": 75068,
+   "wire": 24124,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-wound-c-normal.6faf31b0.png",
+   "raw": 23082,
+   "wire": 23479,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-wound-b-normal.0f95468a.png",
+   "raw": 19932,
+   "wire": 20329,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/blood-wound-d.1027afa2.png",
+   "raw": 15508,
+   "wire": 15905,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/floor-splash-d.dbf7a47b.png",
+   "raw": 14877,
+   "wire": 15274,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/floor-splash-c.ac1d8db6.png",
+   "raw": 13317,
+   "wire": 13714,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/floor-splash-b.7b733b84.png",
+   "raw": 12634,
+   "wire": 13031,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/src/assets/blood/floor-splash.d3c9aa25.png",
+   "raw": 10128,
+   "wire": 10525,
+   "status": 200,
+   "enc": "none",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "image/png"
+  },
+  {
+   "url": "https://v3.frankendom.com/b/dc8425b7e53f1fbde7f4c76e136ba724de258b53/src/assets/106/minotaur/hamstrung-victim-hero.json.js",
+   "raw": 33569,
+   "wire": 10093,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "public, max-age=31536000, immutable",
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://v3.frankendom.com/",
+   "raw": 5828,
+   "wire": 2488,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "no-cache",
+   "type": "text/html"
+  },
+  {
+   "url": "https://v3.frankendom.com/physics/bodies/minotaur-106.measure.json",
+   "raw": 1638,
+   "wire": 1026,
+   "status": 200,
+   "enc": "gzip",
+   "cache": "",
+   "type": "application/json"
+  },
+  {
+   "url": "https://v3.frankendom.com/build.txt?v=1793080016072",
+   "raw": 40,
+   "wire": 406,
+   "status": 200,
+   "enc": "none",
+   "cache": "no-cache",
+   "type": "text/plain"
+  }
+ ]
+}
