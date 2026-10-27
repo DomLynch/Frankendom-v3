@@ -482,7 +482,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         if (el.dataset.corpse !== id) el.dataset.corpse = id;
         const bone = live && !set.isDone(unit) ? set.boneOf(unit) : undefined;
         const p = bone ? bone.getWorldPosition(tmpV2).project(cueCamera) : null;
-        if (unit === 'head') cost.cueState += ` | ${id} head ${p ? [p.x, p.y, p.z].map((v) => v.toFixed(2)).join(',') : 'no bone'}`;
+        if (unit === 'head') cost.cueState += ` | ${id} head ndc ${p ? [p.x, p.y, p.z].map((v) => v.toFixed(2)).join(',') : 'no bone'} world ${bone ? bone.getWorldPosition(new THREE.Vector3()).toArray().map((v) => v.toFixed(2)).join(',') : '-'} bone.parent ${bone?.parent?.name} root ${group ? group.getWorldPosition(new THREE.Vector3()).toArray().map((v) => v.toFixed(2)).join(',') : '-'}`;   // debug (M8 WIP: the corpse's cue is off screen)
         if (!p || p.z > 1 || Math.abs(p.x) > 1.1 || Math.abs(p.y) > 1.1) { el.style.display = 'none'; continue; }   // (a corpse further off than the screen has no button on it)
         shown.push({ el, x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height });
       }
