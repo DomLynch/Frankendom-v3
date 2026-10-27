@@ -6,9 +6,11 @@ import { readFileSync } from 'node:fs';
 import { zoneFor } from '../src/zone/zone-rows.ts';
 import { OPENERS, inAggro, kill, leashed, openerLeashLift, openerOn, openerReach, spotsFor, tick, validateOpeners } from '../src/zone/spawns.ts';
 import { initialState } from '../src/fight/sim.ts';
+import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
-const ZONE = zoneFor(''), ROWS = read('../data/respawn.json');
+const ZONE = zoneFor(''), ROWS = read('../data/respawn.json'), FIGHT = read('../data/fight.json');
+setPlayScale(playScaleFor(FIGHT.opponent, Infinity));   // the circle the page fights in (main.ts fresh()): the newcomer's mark is z 2, not the full-size 4
 const spawns = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const hero = () => initialState();   // the pit's mark: where a newcomer stands
 
