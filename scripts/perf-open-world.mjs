@@ -27,6 +27,7 @@ const q = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.le
 async function one(query) {
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
+  page.on('console', (m) => { if (m.text().startsWith('dbg ')) console.error(m.text()); });
   await page.addInitScript(() => {
     const raf = window.requestAnimationFrame.bind(window), frames = globalThis.__cb = []; let on = false; globalThis.__cbOn = (v) => { on = v; };
     window.requestAnimationFrame = (cb) => raf((t) => { const s = performance.now(); cb(t); if (on) frames.push(performance.now() - s); });
@@ -43,7 +44,8 @@ async function one(query) {
       const fire = (code, type) => window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
       const id = setInterval(() => { const [h, f] = globalThis.__v3Fight.duel.fighters, hh = h.body.heading; h.health = h.maxHealth; f.health = Math.min(f.health, 1);
         f.body = { ...f.body, x: h.body.x + Math.sin(hh) * 1.0, z: h.body.z + Math.cos(hh) * 1.0, heading: hh + Math.PI };   /* a respawned foe stands at his spot, not engaged: bring him to the hero for the kick */ fire('KeyC', 'keydown'); fire('KeyC', 'keyup'); if (globalThis.__ragdoll.state === 'frozen') { clearInterval(id); setTimeout(() => done(true), 1500); } }, 250);
-      setTimeout(() => { clearInterval(id); done(false); }, 90000);   // a kill that never froze: go on with what stands, and say so
+      let beat = 0; const dbg = setInterval(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; console.log(`dbg kill ${++beat * 10}s: ragdoll ${globalThis.__ragdoll.state}, foe ${f.phase} hp ${f.health} dead ${f.dead ?? ''} at ${f.body.x.toFixed(1)},${f.body.z.toFixed(1)}, hero ${h.phase} hp ${h.health}, zone ${JSON.stringify(globalThis.__v3Zone ?? null).slice(0, 160)}`); }, 10000);
+      setTimeout(() => { clearInterval(id); clearInterval(dbg); done(false); }, 90000);   // a kill that never froze: go on with what stands, and say so
     })).then((froze) => { if (!froze) console.error(`corpse ${i + 1}: the body did not freeze in 90 s`); });
     left = await page.evaluate(() => globalThis.__ragdoll.leave?.() ?? null);
     console.error(`corpse ${i + 1}/${CORPSES} left: ${left}`);
