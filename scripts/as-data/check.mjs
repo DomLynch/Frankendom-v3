@@ -44,7 +44,7 @@ export function scan(source, dataIds = new Set()) {
       if (c === '\n') line++;
       if (q === '`' && c === '$' && source[i + 1] === '{') {
         i += 2; let d = 1;
-        const start = i;
+        const start = i, exprLine = line;
         while (i < n && d > 0) {       // find the matching brace (nested strings/templates inside are scanned by the recursive call below)
           const ch = source[i];
           if (ch === '{') d++; else if (ch === '}') { d--; if (d === 0) break; }
@@ -53,7 +53,7 @@ export function scan(source, dataIds = new Set()) {
           i++;
         }
         const inner = source.slice(start, i);
-        for (const f of scan(inner, dataIds)) out.push({ ...f, line: f.line + at - 1 });
+        for (const f of scan(inner, dataIds)) out.push({ ...f, line: f.line + exprLine - 1 });
         i++; text += ' '; continue;
       }
       if (c === q) { i++; break; }

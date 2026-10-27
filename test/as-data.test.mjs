@@ -22,7 +22,7 @@ test('a number past 0 and 1 is a finding: timers, caps, radii, fractions, hex', 
 test('named exemptions are counted, never failures: Math.PI geometry and ms<->s', () => {
   const f = scan('a = Math.PI * 2; b = Math.PI / 2; c = 2 * Math.PI; d = ms / 1000; e = s * 1000;');
   assert.deepEqual(f.map((h) => h.kind), ['exempt', 'exempt', 'exempt', 'exempt', 'exempt']);
-  assert.deepEqual(kinds('x = 2; y = a * 1000 + 60;'), ['number:2', 'number:60'], 'a bare 2 and 60 still count');
+  assert.deepEqual(kinds('x = 2; y = a * 1000 + 60;'), ['number:2', 'exempt:1000 ms<->s', 'number:60'], 'a bare 2 and 60 still count');
 });
 
 test('a label is a finding; diagnostics, imports and typeof are not', () => {
