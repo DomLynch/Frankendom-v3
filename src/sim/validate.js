@@ -40,6 +40,9 @@ export const SCHEMA = {
   'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], cue: ['about', 'on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
     finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
+  // The SIM knockdown + finish window (src/fight/knock-sim.ts, step in duel.ts), behind ?feel=kick: whole seconds / per-mille rows; checkFeelSim below checks the values
+  'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
+    maps: { flag: ['query', 'value'], knockdown: ['seconds'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
@@ -142,6 +145,7 @@ export function validateFile(name, json) {
     if (!Number.isInteger(c.max) || c.max < 0) errors.push(`${name}.corpse.max: must be an integer >= 0`);
     if (Number.isFinite(c.keepSeconds) && Number.isFinite(c.pieceSeconds) && c.pieceSeconds > c.keepSeconds) errors.push(`${name}.corpse.pieceSeconds: must be <= keepSeconds`);
   }
+  if (name === 'feel-sim') errors.push(...checkFeelSim(json));
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
   if (name === 'fight' && json.camera) {   // the lens zoom (src/fight/camera-zoom.ts): a finite number in 0.5..2 (1 = the camera as before); an absent one would reach the page as NaN
@@ -150,6 +154,39 @@ export function validateFile(name, json) {
   }
   banned(json, name, errors);
   return errors;
+}
+
+// data/feel-sim.json values (src/fight/knock-sim.ts): every timer at least one tick, whole per-mille integers, ordered mass bands from 0, the finish window inside the time he is down.
+// A bad row would change a fight's outcome, so each is refused here and again when the page parses the rows. Move ids are checked against the sim's own list in test/feel-sim.test.mjs.
+function checkFeelSim(j) {
+  const e = [], at = (p, m) => e.push(`feel-sim.${p}: ${m}`), obj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const secs = (p, v, hz) => { if (!Number.isFinite(v) || v <= 0 || v > 60 || Math.round(v * hz) < 1) at(p, 'must be a number of seconds in (0, 60], at least one tick'); };
+  const pm = (p, v, lo = 1, hi = 5000) => { if (!Number.isInteger(v) || v < lo || v > hi) at(p, `must be a whole per-mille in ${lo}..${hi}`); };
+  if (typeof j.flag?.query !== 'string' || !/^[a-z]+$/.test(j.flag.query) || typeof j.flag?.value !== 'string' || !/^[a-z]+$/.test(j.flag.value)) at('flag', 'query and value must be lowercase words');
+  if (j.tickHz !== 60) at('tickHz', 'must be 60 (the sim step, src/fight/sim.ts STEP)');
+  const hz = Number.isFinite(j.tickHz) && j.tickHz > 0 ? j.tickHz : 60;
+  for (const k of ['knockdown', 'getUp', 'finishWindow']) secs(`${k}.seconds`, j[k]?.seconds, hz);
+  if (Number.isFinite(j.finishWindow?.seconds) && Number.isFinite(j.knockdown?.seconds) && Math.round(j.finishWindow.seconds * hz) > Math.round(j.knockdown.seconds * hz)) at('finishWindow.seconds', 'must be <= knockdown.seconds (the window closes before he starts to rise)');
+  if (!Array.isArray(j.targets) || !j.targets.length || j.targets.some((t) => t !== 'hero' && t !== 'foe') || new Set(j.targets).size !== j.targets.length) at('targets', "must be a non-empty list of 'hero' and / or 'foe'");
+  pm('knockdownAtPerMille', j.knockdownAtPerMille);
+  if (!obj(j.massKg) || !('default' in j.massKg)) at('massKg.default', 'a default mass is required');
+  else for (const [k, v] of Object.entries(j.massKg)) if (!Number.isFinite(v) || v <= 0 || v > 100000) at(`massKg.${k}`, 'must be a finite kg > 0');
+  if (!Array.isArray(j.massBands) || !j.massBands.length) at('massBands', 'must be a non-empty list');
+  else {
+    j.massBands.forEach((b, i) => {
+      for (const k of Object.keys(b ?? {})) if (!['minRatioPct', 'perMille'].includes(k)) at(`massBands[${i}].${k}`, 'unknown key');
+      if (!Number.isInteger(b?.minRatioPct) || b.minRatioPct < 0 || (i > 0 && !(b.minRatioPct > j.massBands[i - 1].minRatioPct))) at(`massBands[${i}].minRatioPct`, 'must be a whole percent, strictly rising');
+      pm(`massBands[${i}].perMille`, b?.perMille);
+    });
+    if (j.massBands[0]?.minRatioPct !== 0) at('massBands[0].minRatioPct', 'the first band must start at 0');
+  }
+  for (const k of ['open', 'guarding', 'midSwing', 'recovering']) pm(`stance.${k}`, j.stance?.[k]);
+  if (!obj(j.moves) || !Object.keys(j.moves).length) at('moves', 'must be a non-empty object of move id -> { perMille }');
+  else for (const [m, r] of Object.entries(j.moves)) {
+    for (const k of Object.keys(r ?? {})) if (k !== 'perMille') at(`moves.${m}.${k}`, 'unknown key');
+    pm(`moves.${m}.perMille`, r?.perMille);
+  }
+  return e;
 }
 
 // data/feel-clash.json values (src/fight/feel-clash.ts): every number finite and in range, every weight a positive kg, every fraction in [0, 1]. A bad row would reach the page as NaN in a motor or an impulse.
