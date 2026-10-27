@@ -72,6 +72,16 @@ test('the zone-frame guard: presence starts only when the page\'s pit origin IS 
   assert.equal(zoneFrameOk(pitOrigin(JSON.parse(readFileSync(new URL('zone1.row.json', dir), 'utf8')), WORLD)), true, 'the shipped default zone starts presence');
 });
 
+test('main.ts keeps the guard: on the presence path, zoneFrameOk(origin) returns early BEFORE startZonePresence is called (deleting it must fail here)', () => {
+  const main = readFileSync(new URL('../../src/client/main.ts', import.meta.url), 'utf8').replace(/\s\/\/.*$/gm, '');
+  const line = main.split('\n').find((l) => /import\('\.\.\/presence\/chunk\.ts'\)/.test(l));
+  assert.ok(line, 'the presence import line exists');
+  assert.match(line, /zoneFrameOk\(origin\)\)\s*return[^;]*;[^]*startZonePresence\(/, 'the guard returns before startZonePresence');
+  assert.ok(line.indexOf('zoneFrameOk(origin)') < line.indexOf('startZonePresence('), 'guard first');
+  const without = line.replace(/if \(!m\.zoneFrameOk\(origin\)\) return[^;]*;/, '');
+  assert.doesNotMatch(without, /zoneFrameOk\(origin\)\)\s*return/, 'the same check bites when the guard is removed');
+});
+
 test('src/presence (the page side) imports nothing from server/, and nothing in it touches node: it can only ever be bundled for the browser', () => {
   const dir = new URL('../../src/presence/', import.meta.url);
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.ts'))) {
