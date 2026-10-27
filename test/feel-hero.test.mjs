@@ -96,6 +96,26 @@ test('data: the hero row exists, validates, names Psyche\'s 106 body and a measu
   if (existsSync(pkg)) { const row = JSON.parse(readFileSync(pkg, 'utf8')); assert.ok(row && typeof row === 'object'); }
 });
 
+test('validator: the hero row is checked (unknown key, missing 106 measure, a 65 row, helmet, gear, an opponent\'s id, a bad path)', () => {
+  const t = (mut, re) => { const b = JSON.parse(JSON.stringify(PHYSICS)); mut(b); assert.match(validateFile('physics', b).join('\n'), re); };
+  t((b) => { b.hero.zoom = 1; }, /physics\.hero\.zoom: unknown key/);
+  t((b) => { b.hero.measure = {}; }, /physics\.hero\.measure\.106: missing/);
+  t((b) => { b.hero.measure['65'] = 'physics/bodies/psyche.measure.json'; }, /physics\.hero\.measure\.65: only the 106 rig/);
+  t((b) => { b.hero.measure['106'] = '../secret.json'; }, /physics\.hero\.measure\.106: only the 106 rig/);
+  t((b) => { b.hero.helmet = true; }, /physics\.hero\.helmet: must be false/);
+  t((b) => { b.hero.gear = { head: ['x'] }; }, /physics\.hero\.gear: must be an empty object/);
+  t((b) => { b.hero.id = b.opponents[0].id; }, /is an opponent's id/);
+  t((b) => { b.hero = []; }, /physics\.hero: must be an object/);
+});
+
+test('hero death: she is the killed fighter 0, the ragdoll runs after the clip is posed, and a finish (victim 0) keeps her down', () => {
+  const scene = src('src/fight/scene.ts'), ragdoll = src('src/fight/ragdoll.ts');
+  const frame = scene.indexOf('heroRagdoll?.frame('), pose = scene.indexOf('heroFalls(stand(');
+  assert.ok(pose > 0 && frame > pose, 'the hero ragdoll frame comes after the Death clip pose, so its bones win each frame');
+  assert.match(scene, /heroRagdoll\?\.frame\(animationDt, events, practice\.finish\?\.victim === 0 \|\| practice\.duel\.fighters\[0\]\.health <= 0 \? \{ victim: 0 \} : null/);
+  assert.match(ragdoll, /e\.type === 'Killed' && e\.target === side/);
+});
+
 test('hero ragdoll: no cuts, no corpse, no finisher, no rules path; her kill is the existing death fall', () => {
   const s = src('src/fight/ragdoll.ts'); const i = s.indexOf('export function heroRagdollFor');
   const body = s.slice(i, s.indexOf('/** scene.ts: does the ragdoll play', i));

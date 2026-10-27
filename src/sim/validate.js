@@ -222,6 +222,22 @@ export function validateFile(name, json) {
     for (const u of cue.units ?? []) if (typeof cue.labels?.[u] !== 'string' || !cue.labels[u].trim()) errors.push(`${name}.cut.cue.labels.${u}: a unit needs a label`);
     if (!/^#[0-9a-fA-F]{6}$/.test(cue.color ?? '')) errors.push(`${name}.cut.cue.color: must be #rrggbb`);
   }
+  if (name === 'physics' && json.hero !== undefined) {   // the hero's ragdoll row (?feel=hero): an opponent-shaped row, no helmet, no gear, a 106-rig measure file the package ships, and not an opponent's id
+    const h = json.hero, at = `${name}.hero`;
+    if (!h || typeof h !== 'object' || Array.isArray(h)) errors.push(`${at}: must be an object`);
+    else {
+      for (const k of Object.keys(h)) if (!['id', 'body', 'measure', 'helmet', 'gear'].includes(k)) errors.push(`${at}.${k}: unknown key`);
+      for (const k of ['id', 'body']) if (typeof h[k] !== 'string' || !h[k]) errors.push(`${at}.${k}: must be a non-empty string`);
+      if (h.helmet !== false) errors.push(`${at}.helmet: must be false`);
+      if (!h.gear || typeof h.gear !== 'object' || Array.isArray(h.gear) || Object.keys(h.gear).length) errors.push(`${at}.gear: must be an empty object`);
+      if (!h.measure || typeof h.measure !== 'object' || Array.isArray(h.measure)) errors.push(`${at}.measure: must be an object of rig -> path`);
+      else {
+        for (const [rig, p] of Object.entries(h.measure)) if (rig !== '106' || typeof p !== 'string' || !/^physics\/bodies\/[a-z0-9-]+\.measure\.json$/.test(p)) errors.push(`${at}.measure.${rig}: only the 106 rig, a physics/bodies/<body>.measure.json path`);
+        if (!h.measure['106']) errors.push(`${at}.measure.106: missing`);
+      }
+      if ((json.opponents ?? []).some((o) => o.id === h.id)) errors.push(`${at}.id: '${h.id}' is an opponent's id`);
+    }
+  }
   if (name === 'physics' && json.finisherCuts?.rows) {   // a finisher row's units are the package's severable ids: the six real cuts and the two visual-only ones (physics 9056ef7); the fallback stand-in must be a real cut (a body without the visual unit gets it), and `also` holds no duplicate of `unit`
     const REAL = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'], VISUAL = ['head_split', 'belly_open'];
     for (const [id, row] of Object.entries(json.finisherCuts.rows)) {
