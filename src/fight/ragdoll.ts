@@ -71,13 +71,15 @@ export function finisherModeFor(rows: PhysicsRows, search: string): string {
   return (v !== null && f.values[v]) || f.default;
 }
 
+const NO_FINISHERS: readonly string[] = [];
 let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page), for the finisher pick below
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
   // Gore on every kill (Dom 2026-10-27), default on; ?gore=v1 reverts to the roster's gate and the 5-way rotation with the plain death. Only while this page's ragdoll plays finishers.
   const gore = !!foe && finisherModeFor(PHYSICS, search) === PHYSICS_MODE && new URLSearchParams(search).get('gore') !== 'v1';
-  setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? Object.keys(PHYSICS.finisherCuts.rows) : []) : null);
+  const cutIds = Object.keys(PHYSICS.finisherCuts.rows);   // once, not per call
+  setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? cutIds : NO_FINISHERS) : null);
   page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
