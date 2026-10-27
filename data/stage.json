@@ -5,7 +5,7 @@
   "ground": { "size": 400, "color": "#6b655f" },
   "grid": { "size": 80, "divisions": 80, "center": "#857d75", "lines": "#7a736c" },
   "skyline": {
-    "about": "The 360-degree sunset skyline behind the fight (src/fight/skyline.ts): a 10:1 strip (src/assets/skyline/, baked by scripts/skyline-bake.mjs with its two ends cross-faded over seamOverlapPx so the wrap has no seam) on a cylinder of `radius` m and `heightMetres` m that follows the camera, its horizon (`horizonFraction` down the strip) at the camera's eye level, unlit, unfogged, drawn first with no depth write; the sand floor, its colour, grid and fog are untouched and draw over it. The flat `sky` colour shows until the strip lands (fetched after the first frame, `loadAfterFirstFrameMs` later), then it fades in over `fadeSeconds`. `brightness` multiplies the strip (1 = as painted) so the hero and boss stay readable; `yawDegrees` turns the strip about the vertical. ?sky=v1 (`query` = `v1`) draws today's flat sky and fetches nothing. 8192 wide WebP q82: Dom's quality-first pick, see the PR's size table.",
+    "about": "The 360-degree sunset skyline behind the fight (src/fight/skyline.ts): a 10:1 strip (src/assets/skyline/, baked by scripts/skyline-bake.mjs with its two ends cross-faded over seamOverlapPx so the wrap has no seam) on a cylinder of `radius` m and `heightMetres` m that follows the camera, its horizon (`horizonFraction` down the strip) at the camera's eye level, unlit, unfogged, drawn first with no depth write; the sand floor, its colour, grid and fog are untouched and draw over it. The flat `sky` colour shows until the strip lands (fetched after the first frame, `loadAfterFirstFrameMs` later), then it fades in over `fadeSeconds`. `brightness` multiplies the strip (1 = as painted) so the hero and boss stay readable; `yawDegrees` turns the strip about the vertical. ?sky=v1 (`query` = `v1`) draws today's flat sky and fetches nothing. 8192 wide WebP q82: Dom's quality-first pick, see the PR's size table. YAW FOLLOW (Dom 2026-10-27: the alien was rarely seen): the strip turns by `yawDegrees` + `yawFollow` x the camera's yaw (0 = fixed in world yaw, 1 = glued to the view), eased over `yawFollowSeconds` so it drifts after a turn like a far backdrop; `yawDegrees` -90 puts the alien dead ahead at the page's first heading (about 8 degrees). `face` is the alien face centre in the picture (fraction across, down; the test reads it to keep the face in the clear sky band above the HUD at 375 wide). ?skyfollow=v1 (`followQuery`, `followV1`) = fixed in world yaw, as before (with `yawDegrees` as set).",
     "on": true,
     "query": "sky",
     "v1": "v1",
@@ -15,7 +15,8 @@
     "radius": 150,
     "heightMetres": 100,
     "horizonFraction": 0.88,
-    "yawDegrees": 0,
+    "yawDegrees": -90,
+    "face": { "u": 0.747, "v": 0.36 },
     "yawFollow": 0.9,
     "yawFollowSeconds": 1.5,
     "followQuery": "skyfollow",
@@ -30,7 +31,7 @@
       "default": "b",
       "variants": {
         "a": { "fogColor": "#936877", "fogDensity": 0.014, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 0, "heightMetres": 0, "brightness": 0.9 },
-        "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartDegrees": 14, "fadeEndDegrees": 9, "dropMetres": 23, "heightMetres": 120, "brightness": 0.85 },
+        "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartDegrees": 14, "fadeEndDegrees": 9, "dropMetres": 72, "heightMetres": 100, "brightness": 0.85 },
         "c": { "fogColor": "", "fogDensity": 0, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 23, "heightMetres": 120, "brightness": 0.9 }
       }
     }

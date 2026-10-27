@@ -98,3 +98,15 @@ test('scene.ts feeds the camera heading before the strip update, on its own line
   const scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
   assert.match(scene, /skyline\?\.heading\(camera\);\n\s*skyline\?\.update\(camera\.position, dt\);/);
 });
+
+test('the face row validates, and under B the face centre sits in the clear sky band above the HUD at 375 (stills: screen top +4.3 deg, HUD to -4, sand melt from -9 deg)', () => {
+  const bad = (patch) => { const s = structuredClone(STAGE); Object.assign(s.skyline.face, patch); return validateFile('stage', s).join('\n'); };
+  assert.match(bad({ u: 1.5 }), /face\.u/); assert.match(bad({ v: -0.1 }), /face\.v/); assert.match(bad({ w: 1 }), /face\.w: unknown key/);
+  const none = structuredClone(STAGE); delete none.skyline.face;
+  assert.match(validateFile('stage', none).join('\n'), /skyline\.face/);
+  const b = STAGE.skyline.views.variants.b, h = b.heightMetres > 0 ? b.heightMetres : SKYLINE.heightMetres;
+  const deg = (m) => Math.atan(m / SKYLINE.radius) * 180 / Math.PI;
+  const face = deg((SKYLINE.horizonFraction - SKYLINE.face.v) * h - b.dropMetres);   // elevation of the face centre from the eye
+  assert.ok(face <= -4 && face >= -9, `face centre at ${face.toFixed(1)} deg`);
+  assert.ok(deg(SKYLINE.horizonFraction * h - b.dropMetres) >= 5, 'the strip top stays above the top of the phone screen (no flat-sky edge behind the bars)');
+});
