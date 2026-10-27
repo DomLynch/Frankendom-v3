@@ -28,7 +28,8 @@ function stubHost() {
     createConvolver: () => node(), createBiquadFilter: () => node(), createOscillator: () => node(),
   };
   const clock = { t: 0 };
-  return { host: { context, now: () => clock.t, seed: 7, sprite: buffer(1, 48000, 48000) }, clock, bells: () => started.filter((s) => s.buffer?.rate === BELL_RATE).length };
+  // The sprite's rate is not the bell's, so the bell's sources are told apart from the sprite's.
+  return { host: { context, now: () => clock.t, seed: 7, sprite: buffer(1, 44100, 44100) }, clock, bells: () => started.filter((s) => s.buffer?.rate === BELL_RATE).length };
 }
 // A feedback on the stub host with the zone rows (null = no gate, the single fight). `tick` rises so every call is a new frame.
 function rig(rows) {
