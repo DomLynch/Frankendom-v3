@@ -1,6 +1,16 @@
 # Presence server on the VPS (v3.frankendom.com/presence): deploy files and apply runbook
 
-Nothing here has been applied. These files are the reviewable half; the apply step changes the live production VPS and needs an explicit go from Dom or Strategy.
+## Status (2026-10-27)
+
+Deployed. The service `frankendom-v3-presence` runs on the VPS at release `370ab65` (origin/main at the time), listening on `127.0.0.1:8794`, behind nginx wss at `/presence`.
+
+Verified: two wss clients through nginx, and the real page with `?presence=1` (the remote player is drawn at spawn).
+
+NOT yet run (do not read this README as saying they pass): the guard checks in "Smoke test from outside" below, that is the 10-socket check (429 past 8 from one address), the plain-curl check (`curl -si https://v3.frankendom.com/presence` without Upgrade answering 404), and the `/presence/health` fall-through check (it must reach the site, not the service). Until someone runs them and records the output here, treat the guards as unverified.
+
+Rollback, as deployed: point the `current` symlink at the previous release dir under `/opt/frankendom-v3-presence/releases/`, restore the unit from its backup `.bak-20261027`, then `systemctl daemon-reload` and `systemctl restart frankendom-v3-presence`. The generic rollback options A to D are further down.
+
+The rest of this file is the runbook the deploy followed; the apply step changes the live production VPS and needs an explicit go from Dom or Strategy.
 
 Shape (Strategy's ruling, 2026-10-27): the same VPS as V1, mirroring V1's nginx include + systemd unit, under `v3.frankendom.com`, with yard-sized caps (layers soft 20 / hard 24, rows in `data/presence.json`, V1 used 80/100).
 
@@ -82,7 +92,7 @@ Expect `OK: first message {"t":"hello","id":1,"layer":1,...}` (this exact client
 
 ## Expected resource use
 
-A guard, not a measurement (nothing has run on this box yet). One node process, about 40-80 MB resident idle (V1's same service is about 75 MB on this box), 10 ticks a second, one binary packet per player per due tick (a packet is 4 + 11 per other player, at most 40 others). At 24 players: well under 1% of a core and tens of kB/s out. Hard limits in the unit: `MemoryMax=256M` (kernel kill, then `Restart=on-failure` after 3 s), `MemoryHigh=192M`, `CPUQuota=50%`, `TasksMax=64`, at most 5 restarts per minute. Layers: 20 layers x 24 is the ceiling of the `maxLayers` row (480 players); a yard-sized trial will sit in one.
+A guard, not a measurement (the service is deployed now, but no resource figures have been recorded yet). One node process, about 40-80 MB resident idle (V1's same service is about 75 MB on this box), 10 ticks a second, one binary packet per player per due tick (a packet is 4 + 11 per other player, at most 40 others). At 24 players: well under 1% of a core and tens of kB/s out. Hard limits in the unit: `MemoryMax=256M` (kernel kill, then `Restart=on-failure` after 3 s), `MemoryHigh=192M`, `CPUQuota=50%`, `TasksMax=64`, at most 5 restarts per minute. Layers: 20 layers x 24 is the ceiling of the `maxLayers` row (480 players); a yard-sized trial will sit in one.
 
 ## What to watch (first hour, then daily)
 
