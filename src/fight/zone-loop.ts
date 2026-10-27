@@ -1,0 +1,54 @@
+// V3 zone loop, phase 1 (Dom 2026-10-27: "once the game ends you're frozen ... it's a real-time zone like Dungeon 1"): what a page does after a
+// kill, read from the zone row (data/zones/zone1.row.json via src/zone/zone-rows.ts: spawn rows, respawnSeconds, the hero's respawn point and
+// downSeconds) and data/respawn.json (the roam rows and the way-back flag). Pure rules; the sim is untouched: this file is presentation timing and
+// the hero's post-kill walk. No timing, label or id literal lives here, every one is a row (scripts/as-data/check.mjs scans this file at zero).
+// How long a corpse stays is Physics Dev's row (data/physics.json corpse.keepSeconds, ragdoll.leaveCorpse at the respawn), not one here.
+// A zone holds a LIST of spawn rows; the page plays the first (one opponent alive), so more spawns, players and shared boss health are rows later.
+import ROWS from '../../data/respawn.json' with { type: 'json' };
+import { M } from './detmath.ts';
+import { advance, type State } from './sim.ts';
+import type { ZoneRow } from '../stubs.ts';
+
+type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; startAfterSeconds: number }; spawn: { minDistance: number }; limits: { startAfterSeconds: [number, number]; minDistance: [number, number] } };
+const LOOP = ROWS as unknown as Rows;
+
+/** What the page plays: the zone's first spawn, the hero's down time, the roam hand-over. */
+export type Respawn = { readonly startAfterSeconds: number; readonly minDistance: number; readonly diedSeconds: number; readonly zone: string; readonly spawn: { readonly id: string; readonly kind: string; readonly respawnSeconds: number } };
+
+/** Throws on a bad roam row, or a first spawn whose `kind` is no opponent (`opponents`, optional). */
+export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly string[]): void {
+  const [lo, hi] = rows.limits.startAfterSeconds, at = rows.postKill.startAfterSeconds;
+  if (!(Number.isFinite(at) && at >= lo && at <= hi)) throw new Error(`respawn.json postKill.startAfterSeconds ${at} is not in ${lo}..${hi}`);
+  const [near, far] = rows.limits.minDistance, gap = rows.spawn.minDistance;
+  if (!(Number.isFinite(gap) && gap >= near && gap <= far)) throw new Error(`respawn.json spawn.minDistance ${gap} is not in ${near}..${far}`);
+  const spawn = zone.spawns[0];
+  if (!spawn) throw new Error(`zone ${zone.id} has no spawn row`);
+  if (opponents && !opponents.includes(spawn.kind)) throw new Error(`zone ${zone.id} spawn ${spawn.id} names unknown kind "${spawn.kind}"`);
+}
+
+/** The zone loop a page plays: the flag (`?postkill=v1`) or roam off is the frozen end screen (null); otherwise the zone row's first spawn. */
+export function zoneLoopFor(zone: ZoneRow, search = '', opponents?: readonly string[], rows: Rows = LOOP): Respawn | null {
+  validateLoop(rows, zone, opponents);
+  if (new URLSearchParams(search).get(rows.flag.query) === rows.flag.off || !rows.postKill.roam) return null;
+  const s = zone.spawns[0]!;
+  return { startAfterSeconds: rows.postKill.startAfterSeconds, minDistance: rows.spawn.minDistance, diedSeconds: zone.respawn.downSeconds, zone: zone.id, spawn: { id: s.id, kind: s.kind, respawnSeconds: s.respawnSeconds } };
+}
+
+/** Whether a spawn's new opponent stands `since` seconds after its kill. */
+export const respawnDue = (spawn: { respawnSeconds: number }, since: number): boolean => since >= spawn.respawnSeconds;
+
+/** One tick of the hero's walk after the kill: the sim's own movement (sim.ts advance), stopped by the corpse and the wall. */
+export const roamStep = (body: State, move: { x: number; z: number; yaw: number; run: boolean }, corpse: { x: number; z: number }, wall: number): State =>
+  advance(body, move, corpse, 1, wall);
+
+/**
+ * The duel pose of a respawn: the opponent at the pit's mark, the hero where he stands, but never closer than `minDistance` (data/respawn.json spawn):
+ * a hero who walked up to the corpse is stepped straight back from the mark to that distance. Null (the pit's marks for both) when the mark or the
+ * stepped-back place is outside the wall.
+ */
+export function respawnPose(hero: { x: number; z: number }, mark: { x: number; z: number }, wall: number, minDistance: number): { hero: { x: number; z: number }; foe: { x: number; z: number }; heroFacing: number } | null {
+  const dx = hero.x - mark.x, dz = hero.z - mark.z, gap = M.hypot(dx, dz);
+  const at = gap >= minDistance ? hero : { x: mark.x + (gap ? dx / gap : 0) * minDistance, z: mark.z + (gap ? dz / gap : 1) * minDistance };
+  if (M.hypot(mark.x, mark.z) > wall || M.hypot(at.x, at.z) > wall) return null;
+  return { hero: { x: at.x, z: at.z }, foe: { x: mark.x, z: mark.z }, heroFacing: M.atan2(mark.x - at.x, mark.z - at.z) };
+}

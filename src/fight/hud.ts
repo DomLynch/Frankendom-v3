@@ -18,7 +18,7 @@ export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', '
 // Lit = a kick pressed from here lands on a guard-raised foe. Measured 2026-10-07 (tests/hud.test.ts): the true far edge is 1.585 m (the 1.2 m cone plus the kick's .55 stride), so 1.5 keeps a margin for the foe's step.
 export const KICK_LANDS = fxNum('hud.kick-light-m');   // a HUD margin under the true edge (tests/hud.test.ts ties it to the live sim: 0 <= edge - this <= 0.15)
 
-export type HudView = { slotB?: boolean; slotBName?: string; slotAName?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; autoStart?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number };   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
+export type HudView = { slotB?: boolean; slotBName?: string; slotAName?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; autoStart?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number; zone?: boolean };   // zone: the fight ended in the live zone (data/respawn.json): the kill is a toast ("Pitborn defeated."), a death reads "You died."; no rematch prompt, no Rematch button; the foe comes back by itself   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
 // The one bar drawing: a meter's max, its value and the --fill custom property the style sheets draw it from (a <meter>'s own pseudo bars differ per engine).
 export function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
 export function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
@@ -95,7 +95,7 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
     update(practice: Practice, view: HudView) {
       // The sparring dummy never attacks (src/sparring.ts), so the sheathed line's "will counterattack" is false there (Strategy 2026-09-26).
       const foe = foeDisplayName(view.opponentId), nameOfSpecial = (skill: string) => specialName(practice.duel.fighters[0].weapon, skill, SKILL_ROWS[skill as keyof typeof SKILL_ROWS]?.name ?? '') || undefined, line = view.headline ? practiceHint(practice, foe, view.legend, nameOfSpecial).replace(' Ready for a rematch?', ` ${view.headline} Ready for a rematch?`) : practiceHint(practice, foe, view.legend, nameOfSpecial),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
-        hint = view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.autoStart && practice.phase === 'sheathed' ? '' : view.dummy ? line.replace(counterLine(foe, view.legend), 'The dummy never attacks.') : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
+        hint = view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.autoStart && practice.phase === 'sheathed' ? '' : view.dummy ? line.replace(counterLine(foe, view.legend), 'The dummy never attacks.') : view.zone ? line.replace(' Ready for a rematch?', '').replace('You fell. Rematch?', 'You died.').replace('You both fell. Rematch?', 'You died.') : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
         controlsReady = view.controlsReady;
       const ok = (['light', 'heavy', 'kick', 'backstep', 'parry'] as const).map(
         (a) => accepts(practice, a) || (a === 'backstep' && accepts(practice, 'dodge')),
@@ -204,7 +204,7 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
       heavyButton.setAttribute('aria-disabled', String(!controlsReady || !ok[1]));
       attackButton.hidden = ended;
       // A stalled viewer page (record ran out, or the link never decoded) shows the button over the frozen frame: it is the only way on.
-      resetButton.hidden = !ended && !view.stalled;
+      resetButton.hidden = !!view.zone || (!ended && !view.stalled);   // zone: no Rematch, the zone respawns the foe itself
       const next = ended && !view.practiceOnly && !view.replay && won(practice.finish) ? view.next : undefined;   // the page's own pick (match.ts nextRung): label and button agree
       // "PLAY NOW" on a shared link, not "Avenge him" (owner 2026-09-22): a stranger does not know whose death they are avenging.
       resetButton.textContent = view.replay || view.stalled ? 'PLAY NOW' : view.lessonFight ? LESSON_NEXT : next ? 'Next fight' : 'Rematch';
