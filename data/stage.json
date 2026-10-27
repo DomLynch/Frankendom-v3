@@ -286,7 +286,7 @@
           "sweepSeconds": 2.6,
           "width": 0.03,
           "slant": 0.35,
-          "strength": 0.9,
+          "strength": 1.4,
           "color": "#d8ecff",
           "baseGlow": 0.25,
           "twinkle": {
