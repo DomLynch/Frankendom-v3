@@ -59,7 +59,7 @@ import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
-import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
+import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import type { DuelPose } from '../fight/duel.ts';
@@ -233,6 +233,18 @@ function rematch(pose?: DuelPose, index = current, restart = true) {
 }
 /** The sim hands over to spawn `index` with the hero where he stands (no draw-in replayed: both rigs already stand armed). */
 const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false);
+/**
+ * A boss past its leash resets ONLY that boss (MMO style): it stands again at its spot at full health; the hero's health and body, the other attackers and their fights are untouched, nothing is
+ * `fresh()`ed. With another boss already on him that boss's fight becomes the sim's (as when the first boss dies, `adoptAttacker`); alone, the same boss is rebuilt at its spot and the hero carries on, not engaged.
+ */
+function leashReset(index: number, at: { x: number; z: number }) {
+  view.respawnFoe();
+  epoch++; seed = nextSeed(seed); frameEvents = []; openerLift = 0;
+  const out = resetHeld(practice, attackers, index, () => make(seed, poseFor(index, at)));
+  practice = out.practice; attackers = out.list; current = out.index; engaged = out.engaged;
+  state = previous = practice.fighter;
+  updateHud();
+}
 /** The opening pose of attacker `index`: its boss at its own spot, the hero where he stands (he is never moved: the sim reads his real body every tick). */
 const poseOfAttacker = (index: number, at: { x: number; z: number }): DuelPose => ({ hero: { x: at.x, z: at.z }, foe: { x: spawns[index]!.x, z: spawns[index]!.z }, heroFacing: Math.atan2(spawns[index]!.x - at.x, spawns[index]!.z - at.z) });
 /** The kill's ceremony is over and another boss is on him: that boss's fight becomes the sim's fight, the hero's health as it is now (the first boss's corpse is left lying, as at every hand-over). */
@@ -270,7 +282,7 @@ function zoneStep(dt: number) {
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
     if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = openerLeashLift(spawns[near]);   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
     if (engaged) {
-      if (leashed(spawns[current]!, practice.enemy, openerLift)) hand(current, hero);   // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health
+      if (leashed(spawns[current]!, practice.enemy, openerLift)) leashReset(current, hero);   // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health; only that boss resets
       else if (multi) {   // real-time aggro: any other standing boss whose aggro he is inside attacks him now, whatever he is fighting; one beyond its own leash lets go
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);

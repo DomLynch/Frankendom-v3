@@ -127,9 +127,9 @@ export function zoneDuel<D extends Duel>(duel: D, pose?: DuelPose, open: number 
 }
 
 /**
- * The duel pose of a spawn engaging the hero where he stands, anywhere on the zone's ground (`wall` is the ground's radius, world.spreadRadiusMetres, not the pit's wall: the pose is
- * placed relative to the SPOT, never the pit's marks): never closer than `minDistance` (he is stepped back along the line from the spot, zone-loop.ts respawnPose). A hero beyond the
- * ground (no boss can have him in aggro or leash there) is drawn in to its edge (zone-loop.ts intoPit, PR A), so with the ground as the wall the hero is never moved on the way into a fight.
+ * The duel pose of a spawn engaging the hero where he stands, anywhere in the world: placed relative to the SPOT, never to a fixed start (`wall` is the page's open radius, play-radius.ts
+ * OPEN_RADIUS, so nothing is out of reach); never closer than `minDistance` (he is stepped back along the line from the spot, zone-loop.ts respawnPose). With the open radius the hero is
+ * never drawn anywhere on the way into a fight (zone-loop.ts intoPit only acts beyond a finite `wall`).
  */
 export function poseAt(walker: At, spot: At, wall: number, minDistance: number, start: At): NonNullable<ReturnType<typeof respawnPose>> {
   const hero = intoPit(walker, wall);

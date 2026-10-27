@@ -1,5 +1,5 @@
 // Spawn spread (PR B2, Strategy: spawns across the zone frame, ONE held sim near the hero, the others standing for real): the zone's bosses stand well beyond the pit, 10 m or more apart,
-// each with its aggro 2.5 m / leash 5 m intact; a fight begun far from the pit is placed where the pair stand and has no ring wall; the held-sim retarget and the camera work from there.
+// each with its aggro 2.5 m / leash 20 m intact; a fight begun far from the pit is placed where the pair stand and has no ring wall; the held-sim retarget and the camera work from there.
 // Spot coordinates and every distance are read from the rows (data/zones/zone1.row.json, data/respawn.json), never written here. The single fight (ZONE null, ?postkill=v1, Gate 0) never reaches
 // this code: pinned at the end by reading main.ts and by a duel built the old way keeping `radius` absent.
 import { test } from 'node:test';
@@ -24,7 +24,7 @@ const foe = OPPONENTS[FIGHT.opponent], body = opponentAt(foe, FIGHT.level), prof
 const fresh = (pose) => initialPractice(7, body, FIGHT.weapon, FIGHT.skill, undefined, undefined, undefined, pose);
 const walk = (p, move, ticks) => { for (let t = 0; t < ticks; t++) p = stepPractice(p, { ...idleIntent(), move }, profile); return p; };
 
-test('the shipped spread: bosses stand beyond the pit, 10 m or more apart, aggro 2.5 / leash 5 intact, every leash circle on the zone\'s ground', () => {
+test('the shipped spread: bosses stand beyond the drawn floor, 10 m or more apart, aggro 2.5 / leash 20 intact, every spot\'s reach inside the spawn extent', () => {
   const s = spots();
   assert.doesNotThrow(() => validateSpots(s, initialState(), wall(), WORLD, FIGHT.opponent));
   assert.ok(s.filter((x) => Math.hypot(x.x, x.z) > wall()).length >= 2, 'at least two bosses stand outside the drawn pit');
@@ -60,7 +60,7 @@ test('coverage: no hero position is inside two bosses\' aggro; leashes of far ca
   for (const a of s) for (const b of s) if (a !== b) assert.ok(dist(a, b) > a.aggro + b.aggro, 'aggro ranges never overlap');
 });
 
-test('poseAt far from the pit: the pose is placed at the SPOT, the hero where he stands (stepped back to minDistance), never the pit\'s marks; beyond the ground it falls back to his start', () => {
+test('poseAt far from the start: the pose is placed at the SPOT, the hero where he stands (stepped back to minDistance), never moved to a start mark however far he is', () => {
   const s = spots(), start = initialState(), gap = ROWS.spawn.minDistance;
   for (const spot of s) for (let a = 0; a < 12; a++) for (const r of [gap, 3, 5, 9]) {
     const hero = { x: spot.x + r * Math.cos(a / 12 * 2 * Math.PI), z: spot.z + r * Math.sin(a / 12 * 2 * Math.PI) };
