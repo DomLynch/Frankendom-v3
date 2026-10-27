@@ -48,8 +48,8 @@ test('?skyfold=v1, the row off, ?sky=v1 and the look before the melt (no view) e
   assert.equal(foldFor('?skyfold=a'), FOLD.variants.a);
   assert.equal(foldFor('?skyfold=b'), FOLD.variants.b);
   assert.equal(foldFor('?foo=1&skyfold=b'), FOLD.variants.b);
-  assert.equal(foldFor('?skyfold=zzz'), FOLD.variants.a);
-  assert.equal(foldFor('?skyfold=constructor'), FOLD.variants.a);
+  assert.equal(foldFor('?skyfold=zzz'), FOLD.variants.b);
+  assert.equal(foldFor('?skyfold=constructor'), FOLD.variants.b);
   assert.equal(foldFor('?skyfold=v1'), null);
   assert.equal(foldFor('?sky=v1'), null);
   assert.equal(foldFor('', { ...FOLD, on: false }), null);
@@ -117,6 +117,28 @@ test('A downloads nothing: it takes the strip\'s own picture when that lands, an
   assert.equal(fold.mesh.material.map, tex); assert.equal(fold.mesh.visible, true); assert.equal(fold.mesh.material.opacity, 0.5);
   fold.dispose();
   assert.equal(fetched, 0);
+});
+
+test('the fold turns with the strip\'s CURRENT yaw (follow, offset, ease), across the +-180 seam, not the fixed yawDegrees', () => {
+  const never = () => new Promise(() => {});
+  const cam = (yaw) => { const c = new THREE.PerspectiveCamera(); c.rotation.y = yaw; c.updateMatrixWorld(true); return c; };
+  const row = { ...SKYLINE, yawFollow: 0.5, followOffsetDegrees: 20, yawFollowSeconds: 0.4, yawDegrees: 10 };
+  const scene = new THREE.Scene();
+  const strip = createSkyline(scene, '', row, never), fold = createSkyfold(scene, '?skyfold=a', VIEW, FOLD, row, never);
+  const eye = new THREE.Vector3(1, 2, 3);
+  let moved = false;
+  for (let i = 0; i < 400; i++) {   // the camera sweeps through +-pi twice, easing mid-turn
+    strip.heading(cam(i * 0.05)); strip.update(eye, 1 / 60); fold.update(eye, 1 / 60, strip);
+    assert.ok(Math.abs(fold.mesh.rotation.y - strip.yaw) < 1e-12, `frame ${i}`);
+    if (Math.abs(strip.yaw - THREE.MathUtils.degToRad(row.yawDegrees)) > 0.1) moved = true;
+  }
+  assert.ok(moved, 'the strip really turned, so the fixed yawDegrees would be wrong');
+  strip.heading(cam(Math.PI - 0.01)); strip.update(eye, 1 / 60); fold.update(eye, 1 / 60, strip);
+  const before = strip.yaw;
+  strip.heading(cam(-Math.PI + 0.01)); strip.update(eye, 1 / 60); fold.update(eye, 1 / 60, strip);
+  assert.ok(Math.abs(fold.mesh.rotation.y - strip.yaw) < 1e-12);
+  assert.ok(Math.abs(strip.yaw - before) < 0.1, 'no spin across the seam');
+  fold.dispose(); strip.dispose();
 });
 
 test('B (the default) is a small baked WebP and the first visit still fits the weight budget', () => {

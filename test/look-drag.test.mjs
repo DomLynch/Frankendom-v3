@@ -13,12 +13,12 @@ import * as THREE from 'three';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const ROWS = JSON.parse(read('../data/respawn.json')), LOOK = ROWS.look, L = ROWS.limits;
-const LIMITS = { sensitivityDegPerPx: L.lookSensitivityDegPerPx, deadzonePx: L.lookDeadzonePx, minXShare: L.lookMinXShare, inertiaSeconds: L.lookInertiaSeconds, flingWindowMs: L.lookFlingWindowMs };
+const LIMITS = { sensitivityDegPerPx: L.lookSensitivityDegPerPx, deadzonePx: L.lookDeadzonePx, minXShare: L.lookMinXShare, inertiaSeconds: L.lookInertiaSeconds, flingWindowMs: L.lookFlingWindowMs, flingSmoothing: L.lookFlingSmoothing };
 const patch = (f) => { const d = structuredClone(ROWS); f(d.look); return d; };
 const W = 400;   // a phone-wide screen
 
 test('the row is pinned: on, 0.3 deg a pixel (the old drag), a 6 px dead zone, touch right of 40%, a quarter-second glide; the schema knows it', () => {
-  assert.deepEqual({ ...LOOK, about: undefined }, { about: undefined, on: true, query: 'look', off: 'off', sensitivityDegPerPx: 0.3, deadzonePx: 6, minXShare: 0.4, inertiaSeconds: 0.25, flingWindowMs: 80 });
+  assert.deepEqual({ ...LOOK, about: undefined }, { about: undefined, on: true, query: 'look', off: 'off', sensitivityDegPerPx: 0.3, deadzonePx: 6, minXShare: 0.4, inertiaSeconds: 0.25, flingWindowMs: 80, flingSmoothing: 0.5 });
   assert.deepEqual(validateFile('respawn', ROWS), [], 'the respawn schema accepts the row and its limits');
   assert.ok(validateFile('respawn', { ...ROWS, look: { ...LOOK, extra: 1 } }).length > 0, 'a stray key in the row is refused');
   const old = 0.005 * 180 / Math.PI;
@@ -32,6 +32,7 @@ test('bad rows are refused', () => {
     ['minXShare 1', (r) => { r.minXShare = 1; }, /minXShare/], ['minXShare -0.1', (r) => { r.minXShare = -0.1; }, /minXShare/],
     ['inertia 60', (r) => { r.inertiaSeconds = 60; }, /inertiaSeconds/], ['inertia "x"', (r) => { r.inertiaSeconds = 'x'; }, /inertiaSeconds/],
     ['fling window 9999', (r) => { r.flingWindowMs = 9999; }, /flingWindowMs/],
+    ['smoothing 0', (r) => { r.flingSmoothing = 0; }, /flingSmoothing/], ['smoothing 2', (r) => { r.flingSmoothing = 2; }, /flingSmoothing/],
     ['on "yes"', (r) => { r.on = 'yes'; }, /true or false/], ['no query', (r) => { r.query = ''; }, /words/],
   ]) assert.throws(() => lookFor(true, '', patch(f)), re, what);
   assert.doesNotThrow(() => validateLook(LOOK, LIMITS));
@@ -125,6 +126,41 @@ test('the combat gate: cancel drops the finger and the glide at once; later move
   assert.equal(g.gliding, false, 'a glide in progress is dropped when a fight starts');
 });
 
+test('pointercancel (abort) ends the look with no glide, where a lift flings; another pointer\'s cancel is ignored', () => {
+  const fling = (end) => {
+    const l = createLook({ ...LOOK, deadzonePx: 0 });
+    l.down(1, 300, W, 'touch', 0); l.move(1, 320, 10); l.move(1, 340, 26); l.move(1, 360, 42);
+    end(l);
+    return l;
+  };
+  assert.equal(fling((l) => l.up(1, 50)).gliding, true, 'a lift flings');
+  const c = fling((l) => l.abort(1));
+  assert.equal(c.gliding, false, 'a cancel does not');
+  assert.equal(c.active, null);
+  assert.equal(c.step(0.016), 0);
+  assert.equal(fling((l) => l.abort(9)).active, 1, 'the stick thumb\'s cancel leaves the look finger');
+});
+
+test('the glide rate is smoothed: one jittery short frame cannot set the fling; smoothing 1 is the last move alone', () => {
+  const rate = (smoothing) => {
+    const l = createLook({ ...LOOK, deadzonePx: 0, flingSmoothing: smoothing });
+    l.down(1, 300, W, 'touch', 0); l.move(1, 310, 16); l.move(1, 320, 32); l.move(1, 330, 48);
+    l.move(1, 350, 49);   // a 1 ms frame with a 20 px step: 16x the rate of the moves before it
+    l.up(1, 55);
+    return l.step(1e-3);
+  };
+  assert.ok(rate(0.5) < rate(1) * 0.7, 'the smoothed rate is well under the last-move-only rate');
+  assert.ok(rate(0.5) > 0);
+});
+
+test('lookYaw never leaves a negative zero in the yaw', () => {
+  const rig = createCameraRig(new THREE.PerspectiveCamera());
+  rig.lookYaw(-0);
+  assert.ok(!Object.is(rig.yaw, -0), 'a -0 turn keeps +0');
+  rig.lookYaw(0.3); rig.lookYaw(-0.3);
+  assert.ok(!Object.is(rig.yaw, -0), 'turning there and back lands on +0');
+});
+
 // Two thumbs at once, through the real stick code: the left thumb holds the stick (pointer 1) while the right thumb drags the look (pointer 2) and a third press hits a button.
 function fake() {
   const handlers = {};
@@ -201,6 +237,7 @@ const PINS = [
   ['../src/client/main.ts', 'a press starts the look only while the camera is free, on its own pointer id', /if \(e\.button !== 0 \|\| paused\(\) \|\| !freeNow \|\| !look\.down\(e\.pointerId, e\.clientX, window\.innerWidth, e\.pointerType, e\.timeStamp\)\) return;/],
   ['../src/client/main.ts', 'a move turns the view by the drag', /view\.lookYaw\(-look\.move\(e\.pointerId, e\.clientX, e\.timeStamp\)\);/],
   ['../src/client/main.ts', 'a lift ends it', /look\.up\(\(e as PointerEvent\)\.pointerId, \(e as PointerEvent\)\.timeStamp\);/],
+  ['../src/client/main.ts', 'a cancelled pointer aborts the look (no glide)', /canvas\.addEventListener\('pointercancel', \(e\) => \{ look\.abort\(\(e as PointerEvent\)\.pointerId\); \}\);/],
   ['../src/client/main.ts', 'every frame: the glide while free, the cancel the moment a fight (or a pause) takes the camera', /if \(look\) \{ if \(freeNow && !paused\(\)\) view\.lookYaw\(-look\.step\(dt\)\); else look\.cancel\(\); \}/],
   ['../src/client/main.ts', '?look=off keeps the plain drag', /if \(freeNow\) view\.lookRound\(e\.clientX - drag\.x\);/],
   ['../src/fight/scene.ts', 'the scene turns the rig (#136\'s hook)', /lookYaw\(radians: number\) \{ rig\.lookYaw\(radians\); \}/],

@@ -110,6 +110,7 @@ export function createSkyfold(
     mesh, variant,
     update(camera, _dt, skyline) {
       mesh.position.set(camera.x, row.groundY, camera.z);
+      if (skyline) mesh.rotation.y = skyline.yaw;   // the strip's CURRENT turn (yawFollow, followOffsetDegrees and the ease included), so the floor lines up with the sky above while the camera turns
       if (!variant.file && !material.map && skyline?.texture) { material.map = skyline.texture; material.needsUpdate = true; mesh.visible = true; }   // A: the strip's own picture, shared
       opacity = skyline ? skyline.opacity : opacity;   // arrives with the strip
       material.opacity = opacity;

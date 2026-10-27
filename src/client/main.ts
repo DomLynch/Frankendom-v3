@@ -29,6 +29,7 @@ import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';
+import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
 import { pitchChoice } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
@@ -63,6 +64,7 @@ import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
+import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
@@ -186,6 +188,12 @@ const controls = createInput({   // :832
   quiet: () => feedback.quiet(),
 });
 function clearInput() { controls.clear(); hitStop = 0; accumulator = 0; }   // :713
+const KEEP_INPUT = !!ZONE && keepsInput(search);   // data/respawn.json input: a hand-over while he free-walks leaves the stick alone (?input=v1 = clear as before)
+/** A sim reset: clears the controls unless it is a hand-over of a walking hero (hand-over-input.ts); the frame clock restarts either way (a fresh sim). */
+function resetInput(handOver: boolean) {
+  if (dropsInput(KEEP_INPUT, handOver)) clearInput();
+  else { hitStop = 0; accumulator = 0; }
+}
 window.addEventListener('blur', clearInput);
 document.addEventListener('visibilitychange', clearInput);
 // Back on the page (app switch, a call, the lock screen): clearInput hushed the sound and the context is suspended or interrupted; ask
@@ -234,30 +242,33 @@ let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, 
 // Real-time aggro (data/respawn.json attackers, src/zone/attackers.ts, src/fight/attacker-bout.ts): while the hero fights the held boss, every other standing spawn whose aggro he enters fights him too, in its own duel on his one health pool.
 // `attackers` holds them (a killed one stays, lying, until its own timer stands it again); `killedBy` is the attacker whose blow killed the hero (that boss starts again at full health). ?aggro=v1 / row off / ?postkill=v1: none, the others are frozen copies.
 const multi = !!ZONE && attackersOn(search);
+const walkBackEnabled = !!ZONE && walkBackOn(search);   // a leashed boss walks home regenerating (?leash=v1 / row off / ?postkill=v1: the instant reset as before)
+if (walkBackEnabled) validateWalkBack();
+let walkBack = false;   // the held boss is walking back to its spot: untouchable, harmless, engaged is false until it arrives or the hero re-aggros it
 let attackers: Attacker[] = [], killedBy: number | null = null, widen = 1;   // widen: the lock camera's back-off for the attackers on him (framingWiden, eased); exactly 1 while only one boss is live
 if (multi) validateFraming();
 const heroStart = initialState();   // where the hero stands at a first load and after a death: the pit's mark
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, OPEN_RADIUS, ZONE!.minDistance, heroStart);
 if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
-function rematch(pose?: DuelPose, index = current, restart = true) {
+function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
-  roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false;
+  roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false; walkBack = false;
   attackers = attackers.filter((a) => a.dead); killedBy = null;   // every live attacker lets go and stands again at full health at its spot; a killed one keeps lying until its own timer is up
-  clearInput(); state = previous = practice.fighter;
+  resetInput(handOver); state = previous = practice.fighter;
   if (restart) view.restartStandoff();
   updateHud();
 }
 /** The sim hands over to spawn `index` with the hero where he stands (no draw-in replayed: both rigs already stand armed). */
-const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false);
+const hand = (index: number, at: { x: number; z: number }) => rematch(poseFor(index, at), index, false, true);
 /**
  * A boss past its leash resets ONLY that boss (MMO style): it stands again at its spot at full health; the hero's health and body, the other attackers and their fights are untouched, nothing is
  * `fresh()`ed. With another boss already on him that boss's fight becomes the sim's (as when the first boss dies, `adoptAttacker`); alone, the same boss is rebuilt at its spot and the hero carries on, not engaged.
  */
 function leashReset(index: number, at: { x: number; z: number }) {
   view.respawnFoe();
-  epoch++; seed = nextSeed(seed); frameEvents = []; openerLift = 0;
+  epoch++; seed = nextSeed(seed); frameEvents = []; openerLift = 0; walkBack = false;
   const out = resetHeld(practice, attackers, index, () => make(seed, poseFor(index, at)));
   practice = out.practice; attackers = out.list; current = out.index; engaged = out.engaged;
   state = previous = practice.fighter;
@@ -268,11 +279,12 @@ const poseOfAttacker = (index: number, at: { x: number; z: number }): DuelPose =
 /** The kill's ceremony is over and another boss is on him: that boss's fight becomes the sim's fight, the hero's health as it is now (the first boss's corpse is left lying, as at every hand-over). */
 function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number }) {
   view.respawnFoe();
+  const walking = roam !== null;   // read before the reset below: a hero free-walking keeps his stick when another boss takes the sim
   const mine = practice.duel.fighters[0], hero: Fighter = { ...mine, body: { ...mine.body, x: at.x, z: at.z, heading: at.heading } };   // the hero stays where he stands: the ground is unbounded and a zone duel has no wall to draw him to
   epoch++; seed = nextSeed(seed); practice = adopt(a, hero); frameEvents = []; openerLift = 0;
-  roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = a.index; engaged = true; killMarked = false; killedBy = null;
+  roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = a.index; engaged = true; killMarked = false; killedBy = null; walkBack = false;
   attackers = attackers.filter((x) => x !== a);
-  clearInput(); state = previous = practice.fighter;
+  resetInput(walking); state = previous = practice.fighter;
   updateHud();
 }
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
@@ -294,13 +306,19 @@ function zoneStep(dt: number) {
     }
   } else if (heroDied()) {
     if ((sinceDeath += dt) >= ZONE!.diedSeconds) { const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
+  } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
+    const near = inAggro(spawns, hero);
+    if (near >= 0 && near !== current) hand(near, hero);
+    else if (reaggro(spawns[current]!, practice.enemy, hero)) { walkBack = false; engaged = true; }
+    else if (arrived(spawns[current]!, practice.enemy)) leashReset(current, hero);
   } else if (!practice.finish) {
     if (engaged) openerSpent = true;   // opener: any engagement spends it
     if (!openerSpent && assetsReady) openerIdle += dt;   // the newcomer's idle clock; its due spawn's aggro reaches him (spawns.ts openerReach)
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
     if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = openerLeashLift(spawns[near]);   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
     if (engaged) {
-      if (leashed(spawns[current]!, practice.enemy, openerLift)) leashReset(current, hero);   // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health; only that boss resets
+      if (leashed(spawns[current]!, practice.enemy, openerLift)) { if (walkBackEnabled && !attackers.some((a) => !a.dead)) { walkBack = true; engaged = false; } else leashReset(current, hero); }   // walk home (visible, regenerating, harmless) when it is the only boss on him; otherwise the instant reset
+      // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health; only that boss resets
       else if (multi) {   // real-time aggro: any other standing boss whose aggro he is inside attacks him now, whatever he is fighting; one beyond its own leash lets go
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
@@ -323,7 +341,8 @@ if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger d
       try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
     });
     canvas.addEventListener('pointermove', (e) => { view.lookYaw(-look.move(e.pointerId, e.clientX, e.timeStamp)); });
-    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, (e) => { look.up((e as PointerEvent).pointerId, (e as PointerEvent).timeStamp); });
+    for (const name of ['pointerup', 'lostpointercapture']) canvas.addEventListener(name, (e) => { look.up((e as PointerEvent).pointerId, (e as PointerEvent).timeStamp); });
+    canvas.addEventListener('pointercancel', (e) => { look.abort((e as PointerEvent).pointerId); });
   } else {
     // ?look=off: the plain one-finger drag the free camera shipped with
     let drag: { id: number; x: number } | null = null;
@@ -377,6 +396,7 @@ function frame(now: number) {
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel });
       const prior = practice;
       practice = stepPractice(prior, duelIntent, aiProfile);
+      if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;

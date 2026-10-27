@@ -1,0 +1,90 @@
+{
+ "default": [
+  {
+   "shot": "ready",
+   "headingDeg": 7.7,
+   "pitchDeg": -21.1,
+   "stripYawDeg": -82.5
+  },
+  {
+   "shot": "turn1",
+   "headingDeg": 16,
+   "pitchDeg": -25.3,
+   "stripYawDeg": -74.9
+  },
+  {
+   "shot": "moving (mid-strafe, no settle)",
+   "headingDeg": 58.5,
+   "pitchDeg": -19.4,
+   "stripYawDeg": -47.4
+  },
+  {
+   "shot": "turn2",
+   "headingDeg": 102.1,
+   "pitchDeg": -18.9,
+   "stripYawDeg": 8.8
+  },
+  {
+   "shot": "turn3",
+   "headingDeg": -91.4,
+   "pitchDeg": -19.7,
+   "stripYawDeg": 181.3
+  },
+  {
+   "shot": "turn4",
+   "headingDeg": 62.9,
+   "pitchDeg": -18.7,
+   "stripYawDeg": 330.9
+  },
+  {
+   "shot": "heavy",
+   "headingDeg": 63.5,
+   "pitchDeg": -19.9,
+   "stripYawDeg": 331.4
+  }
+ ],
+ "skyfollow-v1": [
+  {
+   "shot": "ready",
+   "headingDeg": 7.7,
+   "pitchDeg": -21.1,
+   "stripYawDeg": 0
+  },
+  {
+   "shot": "turn1",
+   "headingDeg": 16.4,
+   "pitchDeg": -25.3,
+   "stripYawDeg": 0
+  },
+  {
+   "shot": "moving (mid-strafe, no settle)",
+   "headingDeg": 59.7,
+   "pitchDeg": -19.3,
+   "stripYawDeg": 0
+  },
+  {
+   "shot": "turn2",
+   "headingDeg": 103.6,
+   "pitchDeg": -18.9,
+   "stripYawDeg": 0
+  },
+  {
+   "shot": "turn3",
+   "headingDeg": -95.4,
+   "pitchDeg": -18.6,
+   "stripYawDeg": 0
+  },
+  {
+   "shot": "turn4",
+   "headingDeg": 20.9,
+   "pitchDeg": -19.1,
+   "stripYawDeg": 0
+  },
+  {
+   "shot": "heavy",
+   "headingDeg": 5.4,
+   "pitchDeg": -19.9,
+   "stripYawDeg": 0
+  }
+ ]
+}

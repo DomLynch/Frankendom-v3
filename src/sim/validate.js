@@ -20,7 +20,7 @@ export const SCHEMA = {
   // `bones`, `files`, `weapons` and `gapFill` are keyed by names (bones, body stems, nodes, roles), so only their owners' keys are closed here.
   'rig': { keys: ['about', 'default', 'held', 'files', 'detect', 'bones', 'weapons', 'hide', 'gapFill', 'grip65', 'clips106', 'clipLoad'], maps: { default: ['hero', 'foe'], held: ['weapon', 'sword', 'sheath'], detect: ['65', '106'], grip65: ['hand', 'translation', 'rotation'], clips106: ['about', 'dir', 'files'], clipLoad: ['about', 'hero', 'afterFirstFrame'] } },
   // The zone loop's roam rows and way-back flag (src/fight/zone-loop.ts validateLoop checks the values); spawns, respawnSeconds and the hero's respawn are the zone row's
-  'respawn': { keys: ['about', 'flag', 'postKill', 'freeCamera', 'look', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres'], freeCamera: ['about', 'on', 'query', 'off', 'gapMetres', 'handOverSeconds', 'stickEndsCeremony', 'fight'], look: ['about', 'on', 'query', 'off', 'sensitivityDegPerPx', 'deadzonePx', 'minXShare', 'inertiaSeconds', 'flingWindowMs'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'withinMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], limits: ['about', 'delaySeconds', 'count', 'reachMetres', 'withinMetres','fallSeconds', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres', 'freeCamGapMetres', 'handOverSeconds', 'lookSensitivityDegPerPx', 'lookDeadzonePx', 'lookMinXShare', 'lookInertiaSeconds', 'lookFlingWindowMs', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] } },
+  'respawn': { keys: ['about', 'flag', 'postKill', 'freeCamera', 'look', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'walkBack', 'input', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres'], freeCamera: ['about', 'on', 'query', 'off', 'gapMetres', 'handOverSeconds', 'swingTailSeconds', 'swingRate', 'stickEndsCeremony', 'fight'], look: ['about', 'on', 'query', 'off', 'sensitivityDegPerPx', 'deadzonePx', 'minXShare', 'inertiaSeconds', 'flingWindowMs', 'flingSmoothing'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'withinMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], walkBack: ['about', 'on', 'query', 'off', 'speedMetresPerSecond', 'regenPerSecond', 'arriveMetres'], input: ['about', 'keepOnHandOver', 'query', 'off'], limits: ['about', 'walkSpeedMetresPerSecond', 'walkRegenPerSecond', 'walkArriveMetres','delaySeconds', 'count', 'reachMetres', 'withinMetres','fallSeconds', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres', 'freeCamGapMetres', 'handOverSeconds', 'swingTailSeconds', 'swingRate', 'lookSensitivityDegPerPx', 'lookDeadzonePx', 'lookMinXShare', 'lookInertiaSeconds', 'lookFlingWindowMs', 'lookFlingSmoothing', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] } },
   // The zone's endless open ground (src/zone/ground.ts checkGround checks the values against the fog)
   'zone-ground': { keys: ['about', 'flag', 'groundRadiusMetres', 'gridRadiusMetres', 'edgeVisibility', 'cameraFarMetres', 'cameraOffsetMetres', 'groundFollow', 'floorDepthPush', 'limits'], maps: { flag: ['query', 'off'], groundFollow: ['on', 'snapMetres'], floorDepthPush: ['about', 'flag', 'factor', 'units'], limits: ['about', 'groundRadiusMetres', 'gridRadiusMetres', 'edgeVisibility', 'cameraFarMetres', 'cameraOffsetMetres', 'snapMetres', 'depthFactor', 'depthUnits'] } },
   // What scripts/build.mjs never ships (106 only: the 65 bodies, kits and 65-keyed clip JSONs; test/rig-bones.test.mjs)
@@ -35,18 +35,20 @@ export const SCHEMA = {
     // an object of rows keyed by id: path -> the keys each row may carry
     rowMaps: { 'finisherCuts.rows': ['unit', 'also', 'fallback', 'atS', 'push', 'kill', 'plane'] },
     finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
-  // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
+  // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), played by ?rules=m4 (and by a bare link when `default` is m4; it is v1 for now); `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'default', 'query', 'v1', 'm4', 'variants', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
   'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'cue', 'shove', 'event'],
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], cue: ['about', 'on', 'text', 'color', 'sizePx', 'pulseS', 'xPct', 'yPct'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
     finite: { 'stance': ['open', 'guarding', 'midSwing', 'recovering'], 'track': ['swingS', 'recoverS'], 'fall': ['push', 'down'], 'push': ['refImpulse', 'impulsePerForce', 'pushS'], 'push.lift': ['stagger', 'knockdown'], 'push.distanceM': ['stagger', 'knockdown'], 'window.stagger': ['startS', 'lengthS'], 'window.knockdown': ['startS', 'lengthS'], 'cue': ['sizePx', 'pulseS', 'xPct', 'yPct'], 'event': ['keep'] } },
+  // The open-world performance budget (data/perf.json, docs/proposals/perf-open-world-2026-10-27.md): per tier a frame ceiling and the caps of the levers
+  'perf': { keys: ['about', 'tiers', 'ladder', 'windowFrames', 'overWindows'], maps: { tiers: ['phone', 'full'] } },
   // The M7 feel modules that are on without a query (src/fight/feel-defaults.ts), each with its own ?x=v1 revert; test/feel-defaults.test.mjs pins the names against the registry
   'feel-defaults': { keys: ['about', 'query', 'off', 'modules', 'revert'] },
   // The SIM knockdown + finish window (src/fight/knock-sim.ts, step in duel.ts), on with the kick module (data/feel-defaults.json): whole seconds / per-mille rows; checkFeelSim below checks the values
-  'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
-    maps: { flag: ['query', 'value'], knockdown: ['seconds'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
+  'feel-sim': { keys: ['about', 'flag', 'tickHz', 'knockdown', 'kick', 'kickOnInjuredLeg', 'getUp', 'finishWindow', 'targets', 'knockdownAtPerMille', 'massKg', 'massBands', 'stance', 'moves'],
+    maps: { flag: ['query', 'value'], knockdown: ['seconds', 'minSecondsBetween'], kick: ['interruptSeconds', 'flinchSeconds', 'interruptThroughPoise', 'resistanceSeconds', 'cooldownSeconds'], kickOnInjuredLeg: ['hits', 'windowS'], getUp: ['seconds'], finishWindow: ['seconds'], stance: ['open', 'guarding', 'midSwing', 'recovering'] } },
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
@@ -240,6 +242,19 @@ export function validateFile(name, json) {
   }
   if (name === 'sound') errors.push(...checkSoundZone(json.zone));
   if (name === 'stage') errors.push(...checkSkyline(json.skyline));
+  if (name === 'perf') {   // each tier: positive frame ceilings, whole-number caps (0 = the lever is pulled from the start), flags a boolean; the ladder names known levers once each
+    const KEYS = ['frameMsP95', 'jsMsBudget', 'corpsesMax', 'cutPiecesMax', 'reactionBlendOff', 'feelOff'], LEVERS = ['cutPieces', 'reactionBlend', 'corpses', 'feel'];
+    for (const [tier, row] of Object.entries(json.tiers ?? {})) {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) { errors.push(`${name}.tiers.${tier}: must be an object`); continue; }
+      for (const k of Object.keys(row)) if (!KEYS.includes(k)) errors.push(`${name}.tiers.${tier}.${k}: unknown key`);
+      for (const k of ['frameMsP95', 'jsMsBudget']) if (!Number.isFinite(row[k]) || row[k] <= 0) errors.push(`${name}.tiers.${tier}.${k}: must be a finite number > 0`);
+      for (const k of ['corpsesMax', 'cutPiecesMax']) if (!Number.isInteger(row[k]) || row[k] < 0) errors.push(`${name}.tiers.${tier}.${k}: must be an integer >= 0`);
+      for (const k of ['reactionBlendOff', 'feelOff']) if (typeof row[k] !== 'boolean') errors.push(`${name}.tiers.${tier}.${k}: must be true or false`);
+    }
+    for (const t of ['phone', 'full']) if (!json.tiers?.[t]) errors.push(`${name}.tiers.${t}: a tier row is required`);
+    if (!Array.isArray(json.ladder) || json.ladder.length !== LEVERS.length || new Set(json.ladder).size !== json.ladder.length || json.ladder.some((l) => !LEVERS.includes(l))) errors.push(`${name}.ladder: must list each of ${LEVERS.join(', ')} exactly once`);
+    for (const k of ['windowFrames', 'overWindows']) if (!Number.isInteger(json[k]) || json[k] < 1) errors.push(`${name}.${k}: must be an integer >= 1`);
+  }
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
@@ -256,7 +271,7 @@ export function validateFile(name, json) {
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
-export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views', 'fold'];
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views', 'fold'];
 /** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
 function checkWideLens(w, name) {
   const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
@@ -273,11 +288,17 @@ function checkSkyline(s) {
   if (s === null || typeof s !== 'object' || Array.isArray(s)) return ['stage.skyline: must be an object'];
   for (const k of Object.keys(s)) if (!SKYLINE_KEYS.includes(k)) at(k, 'unknown key');
   if (typeof s.on !== 'boolean') at('on', 'must be true or false');
-  for (const k of ['query', 'v1']) if (typeof s[k] !== 'string' || !/^[a-z0-9]+$/i.test(s[k])) at(k, 'must be a plain word');
+  for (const k of ['query', 'v1', 'followQuery', 'followV1']) if (typeof s[k] !== 'string' || !/^[a-z0-9]+$/i.test(s[k])) at(k, 'must be a plain word');
   if (typeof s.file !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.webp$/i.test(s.file)) at('file', 'must be a plain .webp file name in src/assets/skyline/');
   const rng = (k, lo, hi, int) => { if (!Number.isFinite(s[k]) || s[k] < lo || s[k] > hi || (int && !Number.isInteger(s[k]))) at(k, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
   rng('seamOverlapPx', 0, 2000, true); rng('quality', 40, 100, true); rng('radius', 20, 160); rng('heightMetres', 5, 400); rng('horizonFraction', 0.5, 1);
-  rng('yawDegrees', -360, 360); rng('brightness', 0.1, 1.5); rng('fadeSeconds', 0, 10); rng('loadAfterFirstFrameMs', 0, 10000, true);
+  if (s.face === null || typeof s.face !== 'object' || Array.isArray(s.face)) at('face', 'must be an object {u, v}: the alien face centre as a fraction across and down the picture');
+  else {
+    for (const k of Object.keys(s.face)) if (!['u', 'v'].includes(k)) at(`face.${k}`, 'unknown key');
+    for (const k of ['u', 'v']) if (!Number.isFinite(s.face[k]) || s.face[k] < 0 || s.face[k] > 1) at(`face.${k}`, 'must be a finite number in 0..1');
+  }
+  rng('yawDegrees', -360, 360); rng('followOffsetDegrees', -360, 360); rng('yawFollow', 0, 1); rng('yawFollowSeconds', 0, 20);
+  if (typeof s.followQuery === 'string' && (s.followQuery === s.query || s.followQuery === (s.views || {}).query)) at('followQuery', 'must be a plain word other than skyline.query and skyline.views.query'); rng('brightness', 0.1, 1.5); rng('fadeSeconds', 0, 10); rng('loadAfterFirstFrameMs', 0, 10000, true);
   if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > SKYLINE_RIM_LIMIT) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
   e.push(...checkSkyViews(s));
   e.push(...checkSkyFold(s));
@@ -312,7 +333,7 @@ function checkSkyFold(s) {
   return e;
 }
 
-// data/stage.json `skyline.views` (src/fight/skyview.ts): the ?skyview= looks. Every variant has every key; the band is both 0 (off) or start < end; the strip, lowered or resized, keeps its rim inside the far plane.
+// data/stage.json `skyline.views` (src/fight/skyview.ts): the ?skyview= looks. Every variant has every key; the band is both 0 (off) or start > end (degrees below the horizon: it fades from the start angle down to the end angle); the strip, lowered or resized, keeps its rim inside the far plane.
 export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fadeEndDegrees', 'dropMetres', 'heightMetres', 'brightness'];
 function checkSkyViews(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
@@ -331,7 +352,7 @@ function checkSkyViews(s) {
     for (const k of Object.keys(w)) if (!SKYVIEW_KEYS.includes(k)) bad(k, 'unknown key');
     if (typeof w.fogColor !== 'string' || !(w.fogColor === '' || /^#[0-9a-f]{6}$/i.test(w.fogColor))) bad('fogColor', "must be '' or a #rrggbb colour");
     const rng = (k, lo, hi) => { if (!Number.isFinite(w[k]) || w[k] < lo || w[k] > hi) bad(k, `must be a finite number in ${lo}..${hi}`); };
-    rng('fogDensity', 0, 0.1); rng('fadeStartDegrees', 0, 89); rng('fadeEndDegrees', 0, 89); rng('dropMetres', -60, 60); rng('brightness', 0.1, 1.5);
+    rng('fogDensity', 0, 0.1); rng('fadeStartDegrees', 0, 89); rng('fadeEndDegrees', 0, 89); rng('dropMetres', -120, 120); rng('brightness', 0.1, 1.5);
     if (!Number.isFinite(w.heightMetres) || (w.heightMetres !== 0 && (w.heightMetres < 5 || w.heightMetres > 400))) bad('heightMetres', 'must be 0 (the strip row\'s) or a number in 5..400');
     if (Number.isFinite(w.fadeStartDegrees) && Number.isFinite(w.fadeEndDegrees) && !(w.fadeStartDegrees === 0 && w.fadeEndDegrees === 0) && !(w.fadeStartDegrees > w.fadeEndDegrees)) bad('fadeStartDegrees', 'must be above fadeEndDegrees (or both 0 = off)');
     const h = w.heightMetres > 0 ? w.heightMetres : s.heightMetres;
@@ -367,6 +388,11 @@ function checkFeelSim(j) {
   if (j.tickHz !== 60) at('tickHz', 'must be 60 (the sim step, src/fight/sim.ts STEP)');
   const hz = Number.isFinite(j.tickHz) && j.tickHz > 0 ? j.tickHz : 60;
   for (const k of ['knockdown', 'getUp', 'finishWindow']) secs(`${k}.seconds`, j[k]?.seconds, hz);
+  const sec0 = (p, v, lo) => { if (!Number.isFinite(v) || v < 0 || v > 60 || Math.round(v * hz) < lo) at(p, `must be a number of seconds in ${lo ? '(0' : '[0'}, 60]${lo ? ', at least one tick' : ''}`); };
+  sec0('knockdown.minSecondsBetween', j.knockdown?.minSecondsBetween, 0); sec0('kick.interruptSeconds', j.kick?.interruptSeconds, 1); sec0('kick.flinchSeconds', j.kick?.flinchSeconds, 0); if (typeof j.kick?.interruptThroughPoise !== 'boolean') at('kick.interruptThroughPoise', 'must be true or false'); sec0('kick.resistanceSeconds', j.kick?.resistanceSeconds, 0); sec0('kick.cooldownSeconds', j.kick?.cooldownSeconds, 0);
+  if (!Number.isInteger(j.kickOnInjuredLeg?.hits) || j.kickOnInjuredLeg.hits < 1 || j.kickOnInjuredLeg.hits > 100) at('kickOnInjuredLeg.hits', 'must be a whole number in 1..100');
+  if (!Number.isFinite(j.kickOnInjuredLeg?.windowS) || j.kickOnInjuredLeg.windowS <= 0 || j.kickOnInjuredLeg.windowS > 120 || Math.round(j.kickOnInjuredLeg.windowS * hz) < 1) at('kickOnInjuredLeg.windowS', 'must be seconds in (0, 120], at least one tick');
+  if (j.moves?.kick?.perMille !== 0) at('moves.kick.perMille', 'must be 0: a kick interrupts, it never knocks down by force');
   if (Number.isFinite(j.finishWindow?.seconds) && Number.isFinite(j.knockdown?.seconds) && Math.round(j.finishWindow.seconds * hz) > Math.round(j.knockdown.seconds * hz)) at('finishWindow.seconds', 'must be <= knockdown.seconds (the window closes before he starts to rise)');
   if (!Array.isArray(j.targets) || !j.targets.length || j.targets.some((t) => t !== 'hero' && t !== 'foe') || new Set(j.targets).size !== j.targets.length) at('targets', "must be a non-empty list of 'hero' and / or 'foe'");
   pm('knockdownAtPerMille', j.knockdownAtPerMille);
@@ -385,7 +411,7 @@ function checkFeelSim(j) {
   if (!obj(j.moves) || !Object.keys(j.moves).length) at('moves', 'must be a non-empty object of move id -> { perMille }');
   else for (const [m, r] of Object.entries(j.moves)) {
     for (const k of Object.keys(r ?? {})) if (k !== 'perMille') at(`moves.${m}.${k}`, 'unknown key');
-    pm(`moves.${m}.perMille`, r?.perMille);
+    pm(`moves.${m}.perMille`, r?.perMille, 0);
   }
   return e;
 }

@@ -1,9 +1,9 @@
 // The M4 rules evaluator on the Minotaur's ragdoll (data/rules.json, src/fight/rules-eval.ts), 375 wide, tick-exact (Playwright's fake clock, paused;
 // one rAF frame = one 60 Hz tick, as scripts/ragdoll-stills.mjs). The hero closes in and throws a heavy (G) every HEAVY_EVERY ticks with his health held
 // full and the foe's held over half; each landed blow starts a sequence shot AT_TICKS after it: <tag>-<n>-<outcome>-<ticks>.png, where <outcome> is the
-// evaluator's (the default, M4: knockdown, cut, stick, hit; its deferred kills count as knockdown) or `v1` (?rules=v1: every blow is the same stagger).
+// evaluator's (?rules=m4: knockdown, cut, stick, hit; its deferred kills count as knockdown) or `v1` (?rules=v1: every blow is the same stagger).
 // Prints the rules' own record (globalThis.__v3Rules: totals, cuts, per-hit cost) and every console error.
-//   node scripts/rules-stills.mjs <base url> <out dir> [query ...]    (default queries: '' = M4, the default, and 'rules=v1' = V1's rules; on a Mac it uses Metal, elsewhere SwiftShader)
+//   node scripts/rules-stills.mjs <base url> <out dir> [query ...]    (default queries: 'rules=m4' = M4 and 'rules=v1' = V1's rules, so a bare run compares the two whatever data/rules.json `default` is; pass '' to shoot the bare link; on a Mac it uses Metal, elsewhere SwiftShader)
 //   SEQUENCES=3 HEAVY_EVERY=70 MAX_TICKS=3000 (env)
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -15,7 +15,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || un
 const TICK = 1000 / 60, EVERY = Number(process.env.HEAVY_EVERY ?? 70), MAX_TICKS = Number(process.env.MAX_TICKS ?? 3000), SEQ = Number(process.env.SEQUENCES ?? 3);
 const AT_TICKS = [0, 4, 10, 20, 35, 60, 100, 140, 200];
 const report = {};
-for (const query of queries.length ? queries : ['', 'rules=v1']) {
+for (const query of queries.length ? queries : ['rules=m4', 'rules=v1']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default', errors = [];
   const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));

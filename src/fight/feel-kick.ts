@@ -51,8 +51,14 @@ export function windowAt(w: { startS: number; lengthS: number }, t: number): boo
 /** The sim move a Hit belongs to: a kick (rows `moves`), a shove (rows shove.moves), or null (not ours). */
 export function kindOf(rows: Pick<FeelKickRows, 'moves' | 'shove'>, move: string | undefined): { forceMult: number; canKnockdown: boolean } | null {
   if (!move) return null;
-  if (rows.moves.includes(move)) return { forceMult: 1, canKnockdown: true };
+  if (rows.moves.includes(move)) return { forceMult: 1, canKnockdown: false };   // a kick is an interrupt: the picture is a stagger; a fall is shown only on the sim's KnockedDown (fallPush, below)
   return (rows.shove.moves as Record<string, { forceMult: number; canKnockdown: boolean } | undefined>)[move] ?? null;
+}
+
+/** The fall the sim ordered (its KnockedDown event, force in per-mille): the push into the ragdoll's chest and the seconds he lies. The ONLY path to a ragdoll knockdown in this module. */
+export function fallPush(rows: FeelKickRows, forcePerMille: number, yaw: number): { part: string; impulse: [number, number, number]; downS: number } {
+  const [il, ih] = rows.push.impulseClamp, mag = Math.min(ih!, Math.max(il!, rows.push.impulsePerForce * Math.max(1, forcePerMille / 1000)));
+  return { part: rows.push.part, impulse: [Math.sin(yaw) * mag, rows.push.lift.knockdown, Math.cos(yaw) * mag], downS: rows.fall.push + rows.fall.down };
 }
 
 /** The ragdoll's Presentation (rules-eval.ts) for a result: what `react()` in ragdoll.ts takes (the same shape ?rules=m4 returns). `scale`: the impulse over physics.json's hit.impulse (rows push.refImpulse). */
@@ -97,7 +103,7 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
     return presentationOf(rows, r);
   }
   // The fall on screen: a knockdown's bones follow the ragdoll (ctx.blendToward, feel.ts) while the package says `knockdown`, then ease back to the clip over rows getUpS.
-  let down = false, getUp = -1;
+  let down = false, getUp = -1, lastYaw = 0;
   const lying = (ctx: Pick<FeelCtx, 'partBones' | 'blendToward'> | undefined, w: number) => { if (ctx?.blendToward) ctx.blendToward(Object.fromEntries(Object.keys(ctx.partBones).map((p) => [p, w]))); };
   return {
     debug,
@@ -106,11 +112,18 @@ export function createFeelKick(rows: FeelKickRows = FEEL, opts: { cueHost?: { sh
     hit(e: CombatEvent, ctx: FeelCtx): Presentation | null {
       const p = react(e, { emit: ctx.emit, foeId: FIGHT.opponent });   // the hook's ctx does not carry his id: the fight config row's opponent (data/fight.json), the one fight with a ragdoll today
       if (!p || e.heading === undefined) return p;
-      const yaw = e.heading - ctx.group.rotation.y, mag = p.scale * rows.push.refImpulse, push = { part: rows.push.part, impulse: [Math.sin(yaw) * mag, rows.push.lift[p.action as Outcome], Math.cos(yaw) * mag] as [number, number, number] };
+      lastYaw = e.heading - ctx.group.rotation.y;
+      const yaw = lastYaw, mag = p.scale * rows.push.refImpulse, push = { part: rows.push.part, impulse: [Math.sin(yaw) * mag, rows.push.lift[p.action as Outcome], Math.cos(yaw) * mag] as [number, number, number] };
       if (p.action === 'knockdown') { ctx.rd.knockdown('push', push); down = true; getUp = -1; } else ctx.rd.stagger(push);
       return p;
     },
     frame(dt: number, events: readonly CombatEvent[] = [], ctx?: FeelCtx) {
+      if (ctx) for (const e of events) {   // the sim ordered a fall (a clean heavy, an injured leg): only now does the ragdoll go down
+        if (e.type === 'KnockedDown' && e.target === 1 && rows.on) {
+          const f = fallPush(rows, (e as { force?: number }).force ?? 0, lastYaw);
+          ctx.rd.knockdown('push', { part: f.part, impulse: f.impulse }); down = true; getUp = -1; since = 0; win = rows.window.knockdown; debug.windowOpen = false;
+        }
+      }
       if (down && ctx) {
         if (ctx.rd.state === 'knockdown') lying(ctx, 1);
         else { down = false; getUp = rows.getUpS; }

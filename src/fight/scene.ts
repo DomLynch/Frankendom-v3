@@ -1188,8 +1188,9 @@ export function createScene(
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
       floorFade?.move(camera.position);
-      skyfold?.update(camera.position, dt, skyline);   // the folded floor under the sand (skyfold.ts)
+      skyline?.heading(camera);
       skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts); the camera was placed by rig.update above
+      skyfold?.update(camera.position, dt, skyline);   // the folded floor under the sand (skyfold.ts), after the strip so it reads the strip's current yaw
       syncIdleFoes(practice, dt);
       syncLiveFoes(dt);
       if (!look?.render()) { if (gfx) gfx.render(); else renderer.render(scene, camera); }
