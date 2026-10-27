@@ -21,7 +21,8 @@ export const pitchChoice = (rows: PitchRows, search: string): number | null => {
     const n = v === '' ? NaN : Number(v);
     return Number.isFinite(n) && n >= rows.limits[0] && n <= rows.limits[1] ? n : undefined;
   };
-  return pick(q) ?? pick(rows.default) ?? null;
+  const asked = pick(q);   // null = asked for 'off' (stays off, even when the row's default is a preset); undefined = nothing usable asked
+  return asked !== undefined ? asked : (pick(rows.default) ?? null);
 };
 
 export type Pose = { x: number; y: number; z: number };

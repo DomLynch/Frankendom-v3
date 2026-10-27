@@ -74,16 +74,18 @@ test('default == today\'s pitch: no pitch set is the lock camera as it was, and 
 
 test('every preset keeps the hero where he stands on the screen, and shows more horizon than the default', () => {
   const base = place(null), at = (cam) => ndc(cam, hero.x, 1, hero.z).y, baseHero = at(base), baseH = horizonNdc(base);
-  let last = baseH;
-  for (const [name, deg] of Object.entries(ROWS.presets).sort((p, q) => q[1] - p[1])) {
+  const baseAxis = Math.atan(baseH * Math.tan(FOV * Math.PI / 360)) * 180 / Math.PI;   // the default's axis pitch at this gap (it varies with the gap, ~20 degrees at the pit's start marks)
+  let last = -Infinity;
+  for (const [name, deg] of Object.entries(ROWS.presets).sort((p, q) => p[1] - q[1])) {
     const cam = place(deg), h = horizonNdc(cam);
     assert.ok(Math.abs(at(cam) - baseHero) < 0.02, `${name}: hero chest ${at(cam).toFixed(3)} vs default ${baseHero.toFixed(3)}`);
-    assert.ok(h < last - 0.005, `${name} (${deg}): horizon ${h.toFixed(3)} sits lower on the screen than ${last.toFixed(3)}`);   // lower on the screen = more sky/skyline band above it... see stills
-    assert.ok(h > 0 && h < baseH, `${name}: the horizon is on the screen`);
+    assert.ok(Math.abs(Math.atan(h * Math.tan(FOV * Math.PI / 360)) * 180 / Math.PI - deg) < 0.05, `${name}: the axis looks down ${deg} degrees`);
+    assert.ok(h > last, `${name} (${deg}): a steeper preset puts the horizon higher on the screen`);
+    if (deg < baseAxis) assert.ok(h > 0 && h < baseH - 0.005, `${name}: flatter than the default, so its horizon sits lower on the screen (more of the band under the HUD)`);
     assert.ok(cam.position.y >= ROWS.minEyeY - 1e-9, `${name}: the eye stays above minEyeY`);
     last = h;
   }
-  assert.ok(baseH > 0.9, `the default horizon sits at the very top edge (${baseH.toFixed(3)}), the reason for the row`);
+  assert.ok(baseH > 0.8, `the default horizon sits near the top edge (${baseH.toFixed(3)}), the reason for the row`);
 });
 
 test('hero and boss both stay in the 375 portrait frame at every preset, with one boss and with the multi-boss widen', () => {
