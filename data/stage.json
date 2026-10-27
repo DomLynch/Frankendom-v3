@@ -87,9 +87,9 @@
           "slant": 0.35,
           "strength": 1,
           "color": "#d8ecff",
-          "edgeLo": 0.05,
-          "edgeHi": 0.2,
-          "lumaFrom": 0.35,
+          "edgeLo": 0.015,
+          "edgeHi": 0.08,
+          "lumaFrom": 0.08,
           "coolFrom": 0
         }
       }
