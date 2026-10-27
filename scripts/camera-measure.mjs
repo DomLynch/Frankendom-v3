@@ -20,7 +20,7 @@ for (const [shape, width, height] of SHAPES) {
   await page.addInitScript(() => { globalThis.__v3CamShot = (c) => { globalThis.__cam = c; }; });
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive' && globalThis.__cam, null, { timeout: 240000 });
-  await page.waitForTimeout(4000);
+  await page.waitForTimeout(Number(process.env.SETTLE_MS ?? 4000));   // SETTLE_MS: long enough for the lazy ground texture to load, so two runs compare like for like
   const read = (state) => page.evaluate(([name, heroM]) => {
     const c = globalThis.__cam, f = globalThis.__v3Fight, p = globalThis.__v3Roam ?? f.fighter, foe = f.enemy;
     const proj = (x, y, z) => { const v = c.position.clone().set(x, y, z).project(c); return [(v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight]; };
