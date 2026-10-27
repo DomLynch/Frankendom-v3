@@ -1,6 +1,7 @@
 {
   "about": "Phase 3 of the live zone (docs/ZONE-SERVER-DESIGN.md): the server's rules for shared boss health and damage-share credit. DESIGN ROWS ONLY: nothing in the game reads this file yet. Every number, cap, timer, pattern and label the server model (src/server-model/zone-model.ts) and the database (supabase/migrations/20261027000001_zone_server.sql, loaded through zone_rules_apply) use is a row here; the SQL carries no copy of a value, only sanity ranges. The weapon rows are design placeholders: the wiring PR derives them from the move table and the progression rows.",
   "writerRoles": ["frankendom_zone_writer", "frankendom_zone_verifier"],
+  "adminOnlyFunctions": ["zone_rules_apply"],
   "ids": {
     "instancePattern": "^z(0|[1-9][0-9]*):[a-z0-9._-]{1,64}$",
     "tokenPattern": "^[A-Za-z0-9_-]{16,128}$",
@@ -34,9 +35,10 @@
   ],
   "share": {
     "minSharePct": 5,
+    "floorEqualShareFraction": 0.5,
     "renormalise": true,
     "hitExpiryS": 120,
-    "note": "Credit per LIFE of a spawn (instance, layer, generation) from the APPLIED damage in the hit log. A hit older than hitExpiryS at the moment of the kill is not counted (it still took hp). A contributor with under minSharePct of the counted damage is not paid. The paid contributors split the reward in proportion to damage; renormalise makes their shares sum to 1. There is NO first-hit and NO last-hit bonus and no row for one."
+    "note": "Credit per LIFE of a spawn (instance, layer, generation) from the APPLIED damage in the hit log. A hit older than hitExpiryS at the moment of the kill is not counted (it still took hp). A contributor with under the EFFECTIVE floor of the counted damage is not paid, where the effective floor = min(minSharePct, floorEqualShareFraction x 100 / N) percent and N = the number of contributors with counted damage; so the floor never exceeds floorEqualShareFraction (at most 1) of an equal share and a crowd of N equal players is always paid, however large N is. The paid contributors split the reward in proportion to damage; renormalise makes their shares sum to 1. There is NO first-hit and NO last-hit bonus and no row for one."
   },
   "caps": {
     "killsPerMin": 6,

@@ -4,7 +4,10 @@ begin;
 -- Shared boss health + damage-share credit. Shape: Armagedom 20261024000002_arma_world.sql (the DATABASE holds the creature's hp, so every player sees one bar and one death; the phone only
 -- CLAIMS damage; credit is paid from the ledger of APPLIED damage in the same transaction as the death) with V1's zone-as-data keys (origins/server/world-spawns.ts: engage token, touch, layers).
 -- Every number is a row of data/zone-server-rules.json, loaded through zone_rules_apply(); this file carries SANITY RANGES only, never a value.
--- RLS on, no policy, no grant for any client role. EVERY function below is granted to EVERY writer role in the one grant at the end (test/zone-migration.test.mjs parses this file for it).
+-- RLS on, no policy, no grant for any client role. EVERY function below EXCEPT the admin-only ones (rows file adminOnlyFunctions = zone_rules_apply) is granted to EVERY writer role in the one grant
+-- at the end (test/zone-migration.test.mjs parses this file for it).
+-- LOCK ORDER (global, one rule, test-pinned): 1. the zone_spawns row (FOR UPDATE), 2. the zone_spawn_engages rows OF THAT SPAWN, 3. the per-account kill-cap advisory lock (zone_settle_kill, accounts in
+-- ascending order). Nothing locks an engage row before its spawn, and nothing takes a lock of a lower number while holding a higher one.
 
 -- The server roles. V1 created its own earlier; a fresh project needs these. NOLOGIN: the writer's connection role is granted membership out of band.
 do $$ begin
@@ -26,6 +29,7 @@ create table public.zone_config (
   dps_slack numeric not null check (dps_slack between 1 and 3),
   max_damage_mult numeric not null check (max_damage_mult between 1 and 100),
   min_share_pct numeric not null check (min_share_pct between 0 and 100),
+  floor_equal_share_fraction numeric not null check (floor_equal_share_fraction between 0 and 1),   -- the floor never exceeds this fraction of an equal share (1/N), so a crowd is always paid
   renormalise boolean not null,
   hit_expiry_s int not null check (hit_expiry_s between 1 and 3600),
   kills_per_min int not null check (kills_per_min between 1 and 60),
@@ -138,17 +142,18 @@ begin
   return cfg;
 end $$;
 
--- Load data/zone-server-rules.json (the writer calls this at boot with the file's parsed content): the ONE way a value reaches the database. Replaces the config and the weapon rows.
+-- Load data/zone-server-rules.json (the ADMIN / MIGRATION role calls this at deploy with the file's parsed content; NO writer or verifier role may: it rewrites every cap): the ONE way a value
+-- reaches the database. Replaces the config and the weapon rows. Its names are the rows file's adminOnlyFunctions; it has a revoke from every role and no grant at the end of this file.
 create function public.zone_rules_apply(p_rules jsonb) returns jsonb language plpgsql security definer set search_path = '' as $$
 declare n int;
 begin
   if coalesce((p_rules #>> '{hit,retryFailedBatch}')::boolean, true) then raise exception 'hit.retryFailedBatch must be false' using errcode = 'O0002'; end if;
   delete from public.zone_config;
   insert into public.zone_config (token_pattern, batch_id_pattern, engage_ttl_s, max_open, max_batch_rows, max_hits_per_row, first_hit_allowance_s, max_elapsed_s, dps_slack, max_damage_mult,
-      min_share_pct, renormalise, hit_expiry_s, kills_per_min, kills_per_hour, cooldown_across_layers, respawn_min_s, respawn_max_s, respawn_default_s, log_keep_s)
+      min_share_pct, floor_equal_share_fraction, renormalise, hit_expiry_s, kills_per_min, kills_per_hour, cooldown_across_layers, respawn_min_s, respawn_max_s, respawn_default_s, log_keep_s)
     values (p_rules #>> '{ids,tokenPattern}', p_rules #>> '{ids,batchIdPattern}', (p_rules #>> '{engage,ttlS}')::int, (p_rules #>> '{engage,maxOpenPerAccount}')::int,
       (p_rules #>> '{hit,maxBatchRows}')::int, (p_rules #>> '{hit,maxHitsPerRow}')::int, (p_rules #>> '{hit,firstHitAllowanceS}')::numeric, (p_rules #>> '{hit,maxElapsedS}')::numeric,
-      (p_rules #>> '{hit,dpsSlack}')::numeric, (p_rules #>> '{progression,maxDamageMult}')::numeric, (p_rules #>> '{share,minSharePct}')::numeric, (p_rules #>> '{share,renormalise}')::boolean,
+      (p_rules #>> '{hit,dpsSlack}')::numeric, (p_rules #>> '{progression,maxDamageMult}')::numeric, (p_rules #>> '{share,minSharePct}')::numeric, (p_rules #>> '{share,floorEqualShareFraction}')::numeric, (p_rules #>> '{share,renormalise}')::boolean,
       (p_rules #>> '{share,hitExpiryS}')::int, (p_rules #>> '{caps,killsPerMin}')::int, (p_rules #>> '{caps,killsPerHour}')::int, (p_rules #>> '{caps,cooldownAcrossLayers}')::boolean,
       (p_rules #>> '{respawn,minS}')::int, (p_rules #>> '{respawn,maxS}')::int, (p_rules #>> '{respawn,defaultS}')::int, (p_rules #>> '{log,keepS}')::int);
   delete from public.zone_weapon_rules;
@@ -185,13 +190,14 @@ begin
   if s.kind <> p_kind or s.max_hp <> p_max_hp or s.respawn_s <> rs then return jsonb_build_object('refused', 'mismatch'); end if;
   if not s.alive and s.respawn_at > now() then return jsonb_build_object('refused', 'dead', 'respawnAt', s.respawn_at); end if;
   if not s.alive then update public.zone_spawns set alive = true, hp = max_hp, generation = generation + 1, respawn_at = null, killed_at = null where instance = p_instance and layer = p_layer returning * into s; end if;
-  update public.zone_spawn_engages set used_at = now(), result = 'expired' where account = p_account and used_at is null and expires_at <= now();
+  -- lock order step 2: engage rows of THIS spawn only (the spawn row is already locked above); another spawn's tokens are never touched while this spawn is held
+  update public.zone_spawn_engages set used_at = now(), result = 'expired' where account = p_account and instance = p_instance and layer = p_layer and used_at is null and expires_at <= now();
   select * into e from public.zone_spawn_engages where account = p_account and instance = p_instance and layer = p_layer and used_at is null;
   if found and e.generation = s.generation then
     update public.zone_spawn_engages set expires_at = now() + make_interval(secs => cfg.engage_ttl_s) where token = e.token returning * into e;
   else
     if found then update public.zone_spawn_engages set used_at = now(), result = 'dead' where token = e.token; end if;
-    if (select count(*) from public.zone_spawn_engages where account = p_account and used_at is null) >= cfg.max_open then return jsonb_build_object('refused', 'too-many'); end if;
+    if (select count(*) from public.zone_spawn_engages where account = p_account and used_at is null and expires_at > now()) >= cfg.max_open then return jsonb_build_object('refused', 'too-many'); end if;
     insert into public.zone_spawn_engages (token, account, character, instance, layer, generation, expires_at) values (p_token, p_account, p_character, p_instance, p_layer, s.generation, now() + make_interval(secs => cfg.engage_ttl_s)) returning * into e;
   end if;
   return jsonb_build_object('token', e.token, 'instance', e.instance, 'layer', e.layer, 'generation', e.generation, 'hp', s.hp, 'maxHp', s.max_hp, 'expiresAt', e.expires_at);
@@ -208,23 +214,29 @@ begin
 end $$;
 
 -- Settle a death: credit per LIFE from the hit log, in the transaction of the death. Counted damage = hit-log rows newer than hit_expiry_s (expired hits took hp but earn nothing). A contributor
--- under min_share_pct of the counted damage is not paid ('floor'). The paid split the reward in proportion to damage; renormalise makes their shares sum to 1. No first-hit and no last-hit bonus:
+-- under the EFFECTIVE floor, min(min_share_pct, floor_equal_share_fraction x 100 / N contributors), of the counted damage is not paid ('floor'). The paid split the reward in proportion to damage; renormalise makes their shares sum to 1. No first-hit and no last-hit bonus:
 -- nothing here reads order, time of the last blow or who reported. Caps and the cross-layer cooldown record the contributor unpaid with the reason and change nobody else's share.
 create function public.zone_settle_kill(p_instance text, p_layer int, p_generation int) returns jsonb language plpgsql security definer set search_path = '' as $$
-declare cfg public.zone_config; s public.zone_spawns; total numeric; qtotal numeric; c record; share_pct numeric; pay numeric; why text; out jsonb := '[]'::jsonb;
+declare cfg public.zone_config; s public.zone_spawns; total numeric; n int; qtotal numeric; c record; share_pct numeric; pay numeric; why text; out jsonb := '[]'::jsonb;
 begin
   cfg := public.zone_cfg();
   select * into s from public.zone_spawns where instance = p_instance and layer = p_layer;
-  select coalesce(sum(applied), 0) into total from public.zone_spawn_hits
-    where instance = p_instance and layer = p_layer and generation = p_generation and at > now() - make_interval(secs => cfg.hit_expiry_s);
+  -- n = contributors with counted damage; total = their counted damage.
+  select count(*), coalesce(sum(d), 0) into n, total from (select sum(applied) as d from public.zone_spawn_hits
+    where instance = p_instance and layer = p_layer and generation = p_generation and at > now() - make_interval(secs => cfg.hit_expiry_s) group by account) y;
+  -- The EFFECTIVE floor = min(min_share_pct, floor_equal_share_fraction x 100 / n) percent of total. Two cross-multiplied comparisons joined by OR are the same as d >= min(..) with no division;
+  -- floor_equal_share_fraction <= 1 so an equal share (total / n) always clears it: 21 or 100 equal players are all paid. The model (zone-model.ts settle) uses the identical test.
   select coalesce(sum(d), 0) into qtotal from (select sum(applied) as d from public.zone_spawn_hits
     where instance = p_instance and layer = p_layer and generation = p_generation and at > now() - make_interval(secs => cfg.hit_expiry_s) group by account) x
-    where total > 0 and d * 100 >= cfg.min_share_pct * total;
+    where total > 0 and (d * 100 >= cfg.min_share_pct * total or d * 100 * n >= cfg.floor_equal_share_fraction * 100 * total);
   for c in select account, max(character) as character, sum(applied) as damage from public.zone_spawn_hits
       where instance = p_instance and layer = p_layer and generation = p_generation and at > now() - make_interval(secs => cfg.hit_expiry_s) group by account order by account loop
     share_pct := case when total > 0 then round(c.damage * 100 / total, 2) else 0 end;
     pay := 0;
-    if not (total > 0 and c.damage * 100 >= cfg.min_share_pct * total) then why := 'floor';
+    -- lock order step 3: one advisory lock per account, taken in ascending account order (the loop's order by), held to the end of the transaction, BEFORE this account's caps are counted. A second
+    -- kill of the same account on ANOTHER spawn, running at the same time, waits here, then counts with a fresh snapshot (read committed) that includes this kill's credit row: the caps cannot be overshot.
+    perform pg_advisory_xact_lock(hashtextextended('zone_kill_cap:' || c.account::text, 0));
+    if not (total > 0 and (c.damage * 100 >= cfg.min_share_pct * total or c.damage * 100 * n >= cfg.floor_equal_share_fraction * 100 * total)) then why := 'floor';
     elsif (select count(*) from public.zone_kill_credit where account = c.account and paid and at > now() - interval '1 minute') >= cfg.kills_per_min
        or (select count(*) from public.zone_kill_credit where account = c.account and paid and at > now() - interval '1 hour') >= cfg.kills_per_hour then why := 'cap';
     elsif cfg.cooldown_across_layers and exists (select 1 from public.zone_kill_credit where account = c.account and paid and instance = p_instance and layer <> p_layer and at > now() - make_interval(secs => s.respawn_s)) then why := 'cooldown';
@@ -248,10 +260,14 @@ begin
   cfg := public.zone_cfg();
   select * into w from public.zone_weapon_rules where weapon = p_weapon;
   if not found then return jsonb_build_object('refused', 'weapon'); end if;
-  select * into e from public.zone_spawn_engages where token = p_token and account = p_account and used_at is null and expires_at > now() for update;
+  -- LOCK ORDER (spawn first, then engage rows, the same as zone_spawn_engage): the token is only PEEKED here (no lock) to learn which spawn it belongs to; the spawn row is locked first, then the
+  -- token row is locked and read again, because it may have changed while this call waited for the spawn.
+  select * into e from public.zone_spawn_engages where token = p_token and account = p_account and used_at is null and expires_at > now();
   if not found then raise exception 'engage token unknown, used or expired' using errcode = 'O0009'; end if;
   if e.layer is distinct from p_layer then return jsonb_build_object('refused', 'moved'); end if;   -- writes nothing; the token stays open until it expires
   select * into s from public.zone_spawns where instance = e.instance and layer = e.layer for update;
+  select * into e from public.zone_spawn_engages where token = p_token and account = p_account and used_at is null and expires_at > now() for update;
+  if not found then raise exception 'engage token unknown, used or expired' using errcode = 'O0009'; end if;
   if not (s.alive and s.generation = e.generation) then
     update public.zone_spawn_engages set used_at = now(), result = 'dead' where token = p_token;
     return jsonb_build_object('refused', 'dead', 'respawnAt', s.respawn_at);
@@ -327,8 +343,11 @@ revoke all on function public.zone_cfg(), public.zone_rules_apply(jsonb), public
   public.zone_spawn_engage(uuid, text, text, text, int, text, numeric, int), public.zone_spawn_touch(uuid, text), public.zone_settle_kill(text, int, int),
   public.zone_spawn_hit(uuid, text, text, numeric, int, int), public.zone_spawn_hit_batch(text, jsonb), public.zone_kill_report(uuid, text), public.zone_hit_log_prune()
   from public, anon, authenticated;
+-- zone_rules_apply rewrites every cap and weapon limit: it is ADMIN / MIGRATION only. Revoked from the writer and the verifier explicitly and granted to nobody; the owner (the role that runs
+-- migrations) keeps execute as the function owner. The writer's boot does not load rows; the deploy step does.
+revoke all on function public.zone_rules_apply(jsonb) from frankendom_zone_writer, frankendom_zone_verifier;
 -- TRAP (both donors): every server role that calls a function gets it, in THIS migration. A function granted to one writer role and not the other fails only in production.
-grant execute on function public.zone_cfg(), public.zone_rules_apply(jsonb), public.zone_spawn_view(public.zone_spawns), public.zone_spawn_state(text[], int),
+grant execute on function public.zone_cfg(), public.zone_spawn_view(public.zone_spawns), public.zone_spawn_state(text[], int),
   public.zone_spawn_engage(uuid, text, text, text, int, text, numeric, int), public.zone_spawn_touch(uuid, text), public.zone_settle_kill(text, int, int),
   public.zone_spawn_hit(uuid, text, text, numeric, int, int), public.zone_spawn_hit_batch(text, jsonb), public.zone_kill_report(uuid, text), public.zone_hit_log_prune()
   to frankendom_zone_writer, frankendom_zone_verifier;

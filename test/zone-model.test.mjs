@@ -145,6 +145,90 @@ test('why 5% of the total and not 0.25 of the top: a whale does not erase a 20% 
   assert.ok(wRules.share.minSharePct === 5);
 });
 
+// CROWD FLOOR: the floor is min(minSharePct, floorEqualShareFraction x 100 / N) of the counted total, so it never exceeds an equal share.
+// `damages` = one entry per player, in the order they swing; the spawn has exactly their total as hp, so the last swing kills. Accounts and tokens are unique per player.
+const crowd = (rs, damages, over = {}) => {
+  const w = newWorld(rs), total = damages.reduce((a, b) => a + b, 0), who = damages.map((_, i) => `acct-${String(i).padStart(3, '0')}`);
+  who.forEach((a, i) => engage(w, { account: a, character: `c${i}`, token: `crowd-token-${String(i).padStart(3, '0')}-aaaa`, instance: 'z1:crowd', layer: 1, kind: 'minotaur', maxHp: total, respawnS: 300, ...over }, 0));
+  let out;
+  who.forEach((a, i) => { out = hit(w, { account: a, token: `crowd-token-${String(i).padStart(3, '0')}-aaaa`, weapon: 'gladius', claimed: damages[i], hits: Math.max(1, Math.ceil(damages[i] / 35)), layer: 1 }, 0); });   // 35 = gladius 14 x the 2.5 ceiling
+  assert.equal(out.killed, true, 'the last swing kills');
+  return out.credits;
+};
+const sumShares = (cs) => cs.reduce((n, c) => n + c.payShare, 0);
+
+test('CROWD FLOOR: the floor is a row, at most one equal share, and the effective floor is min(minSharePct, fraction x 100 / N)', () => {
+  assert.equal(R.share.minSharePct, 5);
+  assert.ok(R.share.floorEqualShareFraction > 0 && R.share.floorEqualShareFraction <= 1);
+  assert.throws(() => rules((r) => { r.share.floorEqualShareFraction = 1.01; }), /floorEqualShareFraction/, 'above one equal share would be able to pay nobody');
+  assert.throws(() => rules((r) => { delete r.share.floorEqualShareFraction; }), /floorEqualShareFraction/);
+});
+
+test('CROWD FLOOR: 60/30/10 pays 0.6/0.3/0.1 (the 5% row still binds a small group)', () => {
+  const cs = crowd(R, [60, 30, 10]);
+  assert.deepEqual(cs.map((c) => [c.reason, c.payShare]), [['paid', 0.6], ['paid', 0.3], ['paid', 0.1]]);
+  assert.ok(Math.abs(sumShares(cs) - 1) < 1e-12);
+});
+
+test('CROWD FLOOR: the whale case: a whale at 50 and five players at 10 each are all paid; a 1% tag-along is still floored', () => {
+  const cs = crowd(R, [50, 10, 10, 10, 10, 10]);
+  assert.deepEqual(cs.map((c) => c.reason), Array(6).fill('paid'));
+  assert.ok(Math.abs(sumShares(cs) - 1) < 1e-12);
+  const tag = crowd(R, [1, 99]);   // 1% of the total, N = 2: floor = min(5, 25) = 5
+  assert.deepEqual(tag.map((c) => [c.reason, c.paid]), [['floor', false], ['paid', true]]);
+});
+
+test('CROWD FLOOR: 21 equal players (each 4.76% < 5%) are ALL paid and the shares sum to 100%; before the fix nobody was paid', () => {
+  const cs = crowd(R, Array(21).fill(1));
+  assert.equal(cs.length, 21);
+  assert.deepEqual([...new Set(cs.map((c) => c.reason))], ['paid']);
+  assert.ok(Math.abs(sumShares(cs) - 1) < 1e-9, `shares sum to 1, got ${sumShares(cs)}`);
+  for (const c of cs) assert.ok(Math.abs(c.payShare - 1 / 21) < 1e-12);
+});
+
+test('CROWD FLOOR: 100 equal players (1% each) are all paid and the shares sum to 100%', () => {
+  const cs = crowd(R, Array(100).fill(1));
+  assert.deepEqual([...new Set(cs.map((c) => c.reason))], ['paid']);
+  assert.equal(cs.filter((c) => c.paid).length, 100);
+  assert.ok(Math.abs(sumShares(cs) - 1) < 1e-9);
+  const full = crowd(rules((r) => { r.share.floorEqualShareFraction = 1; }), Array(21).fill(1));
+  assert.deepEqual([...new Set(full.map((c) => c.reason))], ['paid'], 'even at fraction 1 an exactly equal share clears the floor');
+});
+
+test('CROWD FLOOR: a 1-player kill pays that player 100%', () => {
+  const cs = crowd(R, [40]);
+  assert.deepEqual(cs.map((c) => [c.reason, c.paid, c.payShare, c.sharePct]), [['paid', true, 1, 100]]);
+});
+
+test('CROWD FLOOR: inside a crowd a real freeloader is still floored (30 players at 3, one at 1 of 91: floor = min(5, 0.5 x 100 / 31) = 1.61%)', () => {
+  const cs = crowd(R, [1, ...Array(30).fill(3)]);
+  assert.deepEqual([cs[0].reason, cs[0].paid], ['floor', false]);
+  assert.deepEqual([...new Set(cs.slice(1).map((c) => c.reason))], ['paid']);
+  assert.ok(Math.abs(sumShares(cs) - 1) < 1e-9);
+});
+
+test('KILL CAP LOGIC: one account killing on seven spawns at the same instant is paid on exactly killsPerMin of them; each settle counts every earlier credit (what the SQL advisory lock guarantees)', () => {
+  const w = newWorld(rules((r) => { r.engage.maxOpenPerAccount = 16; }));
+  const reasons = [];
+  for (let i = 0; i < R.caps.killsPerMin + 1; i++) {
+    engage(w, { account: A, character: 'ca', token: tok(A, i), instance: `z1:cap${i}`, layer: 1, kind: 'minotaur', maxHp: 20, respawnS: 300 }, 5000);
+    reasons.push(hit(w, { account: A, token: tok(A, i), weapon: 'gladius', claimed: 20, hits: 1, layer: 1 }, 5000).credits[0].reason);
+  }
+  assert.deepEqual(reasons, [...Array(R.caps.killsPerMin).fill('paid'), 'cap']);
+  assert.equal(w.credits.filter((c) => c.account === A && c.paid).length, R.caps.killsPerMin, 'never overshot');
+});
+
+test('LOCK ORDER (model side): an expiry sweep on one spawn does not touch the same account\'s tokens on another spawn, and expired tokens do not count toward the open limit', () => {
+  const w = newWorld(R);
+  eng(w, A, 0, { instance: 'z1:a', n: 1 });
+  const t = R.engage.ttlS * 1000 + 1;
+  eng(w, A, t, { instance: 'z1:b', n: 2 });
+  assert.equal(w.engages.get(tok(A, 1)).used, false, 'the other spawn\'s expired token was not swept by this engage');
+  assert.equal(w.engages.get(tok(A, 1)).result, null);
+  for (let i = 0; i < R.engage.maxOpenPerAccount - 1; i++) assert.ok(eng(w, A, t, { instance: `z1:f${i}`, n: 10 + i }).token, 'the expired token is not counted: this fills the limit exactly');
+  assert.equal(eng(w, A, t, { instance: 'z1:over', n: 99 }).refused, 'too-many');
+});
+
 test('hit expiry: a hit older than hitExpiryS at the kill took hp but earns nothing; 119.9 s still counts', () => {
   const kill = (gapMs) => {
     const w = newWorld(R);
