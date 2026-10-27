@@ -30,8 +30,8 @@ export function joiners(spawns: readonly Spawn[], current: number, live: readonl
   return near.slice(0, room);
 }
 
-/** The attackers that let go: the hero is further from the attacker's own spot than its leash. */
-export const dropped = (spawns: readonly Spawn[], live: readonly number[], hero: At): number[] => live.filter((i) => leashed(spawns[i]!, hero));
+/** The attackers that let go: the attacker itself (`where(index)`, its position) is further from its own spot than its leash. */
+export const dropped = (spawns: readonly Spawn[], live: readonly number[], where: (index: number) => At): number[] => live.filter((i) => leashed(spawns[i]!, where(i)));
 
 /** Throws on a bad framing row: the distance and the ease must be positive, the widest the camera may back off at least the one-boss frame. */
 export function validateFraming(rows: FramingRows = ATTACKERS.camera): void {
