@@ -34,8 +34,10 @@ const LOW_SIDE = cameraRule('lowSide'),   // metres beside the hero's spine that
   TALL_LIFT = cameraRule('tallLift');   // ...and rises
 const SHOULDER = cameraRule('shoulder'),   // the player's shoulder height (m): what hides the opponent in the lock frame
   SIDE_CLEAR = cameraRule('sideClear'),   // metres beside the player's spine, per unit of opponent scale below 1, that the lock camera's line to him passes
-  SHORT_FADE = cameraRule('shortFade'),   // seconds for those short-opponent terms to ease out once a finish begins (inside SETTLE.min)
-  ARENA_CLAMP = cameraRule('arenaClamp');   // the camera never leaves this radius (the colonnade / scenery ring): one row for every clamp below
+  SHORT_FADE = cameraRule('shortFade');   // seconds for those short-opponent terms to ease out once a finish begins (inside SETTLE.min)
+let ARENA_CLAMP = cameraRule('arenaClamp');   // the camera never leaves this radius (the colonnade / scenery ring): one row for every clamp below
+/** The page sets the zone's camera radius (data/respawn.json world.cameraClampMetres): the zone's ground is wider than the pit's colonnade, and a camera clamped to the pit would not follow a hero walking to a far boss. Unset (the single fight) = the row above. */
+export const setArenaClamp = (radius: number): void => { ARENA_CLAMP = radius; };
 export function cameraPose(
   state: State,
   yaw: number,
@@ -404,6 +406,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       shoved = kick;
       camera.position.addScaledVector(kickOffset, shoved);
       if (swing && (swayRight || swayDrop)) { swayApplied.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(swayRight * swing); swayApplied.y -= swayDrop * swing; camera.position.add(swayApplied); }
+      (globalThis as { __v3CamShot?: (c: THREE.Camera) => void }).__v3CamShot?.(camera);   // the stills' own close-up (scripts/finisher-cuts-stills.mjs CAM=): placed last, never set in play
     },
     // After the draw: the kick holds, then settles.
     settle(dt: number) {

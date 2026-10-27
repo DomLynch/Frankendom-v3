@@ -75,11 +75,11 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
-  await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20);
+  await page.clock.pauseAt(await page.evaluate(() => Date.now()) + Number(process.env.PAUSE_MARGIN ?? 20));   // PAUSE_MARGIN=500 on a loaded or software-GL box (the evaluate can take longer than 20 ms: "Cannot fast-forward to the past")
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   await run(120);
   if (!v1) await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 60000 });
-  const shoot = async (name) => { await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };
+  const shoot = async (name) => { if (!process.env.NOSHOOT) await page.screenshot({ path: `${out}/${tag}-${name}.png`, timeout: 180000 }); };   // NOSHOOT=1: the printed reads only (a loaded software-GL box can take over 30 s for a shot under the paused clock)
   const read = () => page.evaluate(() => { const p = globalThis.__v3Fight, [h, f] = p.duel.fighters; return { hero: h.phase, foeHealth: f.health, foeDead: p.finish?.victim === 1, finish: p.finish && { ...p.finish } }; });
   const cost = () => page.evaluate(() => globalThis.__ragdoll ? { ...globalThis.__ragdoll, screenOf: undefined } : null);
   for (let i = 0; i < 240 && /sheathed|draw/.test((await read()).hero); i++) await run(1);
@@ -115,7 +115,7 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
       const left = await page.evaluate(() => globalThis.__ragdoll.leave?.());
       await page.evaluate((m) => { const [h, f] = globalThis.__v3Fight.duel.fighters, dx = f.body.x - h.body.x, dz = f.body.z - h.body.z, n = Math.hypot(dx, dz) || 1; f.body = { ...f.body, x: f.body.x - (dz / n) * m, z: f.body.z + (dx / n) * m }; }, Number(process.env.LEAVE));
       await run(30);
-      console.log(`${tag}: leaveCorpse -> ${left}; corpses standing ${await page.evaluate(() => globalThis.__ragdoll.corpses)}`);
+      console.log(`${tag}: leaveCorpse -> ${left}; corpses standing ${await page.evaluate(() => globalThis.__ragdoll.corpses)}; ragdoll state "${await page.evaluate(() => globalThis.__ragdoll.state)}"; corpse ${JSON.stringify(await page.evaluate(() => globalThis.__ragdoll.corpseInfo?.()))}`);
     }
     await shoot('tap--1');
     // TAP is a unit (arm_left ...: the first grid point of the screen a tap would cut that unit at) or a part (armLeft ...: that bone's own screen point)
@@ -124,15 +124,21 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
     if (process.env.CUE) {
       await run(40);   // past cue.delayS
       const cues = await page.evaluate(() => [...document.querySelectorAll('.cut-cue')].map((e) => ({ unit: e.getAttribute('aria-label'), shown: getComputedStyle(e).display !== 'none' })));
-      console.log(`${tag}: cue buttons ${JSON.stringify(cues)}`);
+      console.log(`${tag}: cue buttons ${JSON.stringify(cues)}; sets ${await page.evaluate(() => globalThis.__ragdoll.cueState)}`);
       await shoot('cue-shown');
-      await page.click(`.cut-cue[aria-label="Cut ${process.env.CUE.replace('_', ' ')}"]`);
+      await page.click(`.cut-cue[aria-label="Cut ${process.env.CUE.replace('_', ' ')}"]:visible`, { timeout: Number(process.env.CLICK_MS ?? 30000), force: true });   // force: the pulse animation never reaches "stable" under the paused fake clock   // :visible, so with LEAVE it is the left corpse's own button (the live foe's are hidden)
     } else if (at) { console.log(`${tag}: tapping ${TAP} at ${at.map((x) => x.toFixed(0))}`); await page.touchscreen.tap(at[0], at[1]); }
     // LIMB=<unit> (default: the tapped unit when it is one): print the metres from that unit's cut bone to the chest bone at each AFTER tick (the harness read, no picture needed)
     const unit = process.env.LIMB ?? (/_/.test(TAP) ? TAP : null), dist = [];
-    let k = 0; for (const t of AFTER) { await run(t - k); k = t; await shoot(`tap-${t}`); if (unit) dist.push(`${(t / 60).toFixed(2)}s ${(await page.evaluate((u) => globalThis.__ragdoll.limbDistance?.(u), unit))?.toFixed(3)} m`); }
+    let k = 0; for (const t of AFTER) { await run(t - k); k = t; await shoot(`tap-${t}`); if (unit) dist.push(`${(t / 60).toFixed(2)}s ${(await page.evaluate(([u, left]) => left ? globalThis.__ragdoll.corpseLimb?.(0, u) : globalThis.__ragdoll.limbDistance?.(u), [unit, !!process.env.LEAVE]))?.toFixed(3)} m`); }   // LEAVE: the left corpse's (index 0), not the live foe's
     if (unit) console.log(`${tag}: ${unit} bone to chest, by time after the tap: ${dist.join(' | ')}`);
-    if (process.env.LEAVE) { const s = await cost(); console.log(`${tag}: after ${(k / 60).toFixed(1)} s: corpses standing ${s?.corpses}, the live ragdoll is ${s?.state}`); }
+    if (process.env.LEAVE) {
+      const s = await cost();
+      console.log(`${tag}: after ${(k / 60).toFixed(1)} s: corpses standing ${s?.corpses}, the live ragdoll is ${s?.state}`);
+      console.log(`${tag}: corpse rows ${JSON.stringify(await page.evaluate(() => globalThis.__ragdoll.corpseInfo?.()))}`);
+      console.log(`${tag}: corpse:cut on the bus ${JSON.stringify(await page.evaluate(() => (globalThis.__feelEvents ?? []).filter((e) => e.name === 'corpse:cut')))}`);
+      console.log(`${tag}: per-frame cost by mode (ms) ${JSON.stringify(Object.fromEntries(Object.entries(s?.byMode ?? {}).map(([m, v]) => [m, { frames: v.frames, avg: +(v.totalMs / v.frames).toFixed(3), max: +v.maxMs.toFixed(3) }])))}`);
+    }
   }
   const state = await cost();
   report[tag] = { ticks: n, hitAt, killedAt, finish, ragdoll: state, pieces: await page.evaluate(() => globalThis.__ragdoll?.debug?.()) };

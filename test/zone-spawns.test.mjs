@@ -11,6 +11,9 @@ import { initialState } from '../src/fight/sim.ts';
 import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
 import * as play from '../src/fight/play-radius.ts';
 import { zoneFor } from '../src/zone/zone-rows.ts';
+import { OPEN_RADIUS } from '../src/fight/play-radius.ts';
+import { project } from '../src/fight/combat.ts';
+import { poseFits, zoneDuel } from '../src/zone/spawns.ts';
 import { WORLD, held, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, standing, tick, validateSpots } from '../src/zone/spawns.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -23,30 +26,36 @@ const list = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, leashMargin: 15, pitScale: 0.65 });
-  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 10, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 40 });
+  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'leashMargin', 'pitScale', 'spreadRadiusMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
 
-test('the shipped zone row: three spots inside the pit circle, none in the hero\'s start aggro, none inside another\'s, one rig kind', () => {
+test('the shipped zone row: three spots across the zone\'s ground (leash circle on it), none on the pit wall, none in the hero\'s start aggro, none inside another\'s, one rig kind', () => {
   const spots = spotsFor(ZONE);
   assert.equal(spots.length, 3);
   assert.doesNotThrow(() => validateSpots(spots, start(), wall(), WORLD, FIGHT.opponent));
   for (const s of spots) {
-    assert.ok(Math.hypot(s.x, s.z) <= wall() - WORLD.edgeMetres, `${s.id} stands inside the wall`);
+    assert.ok(Math.hypot(s.x, s.z) + Math.max(s.leash, wall()) <= WORLD.spreadRadiusMetres, `${s.id}: its fight arena lies inside the spawn extent`);
     assert.ok(dist(s, start()) > s.aggro, `${s.id}: the page does not open on a fight`);
     assert.ok(s.leash > s.aggro);
   }
-  assert.deepEqual(spots.map((s) => [s.x, s.z]).map(([x, z]) => [Math.round(x * 100) / 100, Math.round(z * 100) / 100]), [[0, -6.17], [5.34, 3.09], [-5.34, 3.09]]);
+  assert.deepEqual(spots.map((s) => [s.x, s.z]).map(([x, z]) => [Math.round(x * 100) / 100, Math.round(z * 100) / 100]), [[0, -6.17], [14, 2], [-8, 11]]);
+  assert.ok(spots.some((s) => Math.hypot(s.x, s.z) > wall()), 'spawns stand beyond the pit\'s wall (PR B2)');
   // Dom 2026-10-27 'space them about two times apart' (they stood 3.5 m from their neighbour): every pair is a row's distance apart or more, about 7 m
   for (const a of spots) for (const b of spots) if (a !== b) assert.ok(dist(a, b) >= WORLD.minSpacing, `${a.id} and ${b.id} are ${dist(a, b).toFixed(2)} m apart`);
   assert.ok(Math.min(...spots.flatMap((a) => spots.filter((b) => b !== a).map((b) => dist(a, b)))) >= 10.5, 'more than 10 m between neighbours (Dom: still too close at 6.9 m)');
   assert.equal(new Set(spots.map((s) => s.respawnSeconds)).size, 3, 'each has its own timer');
 });
 
-test('bad spots are refused: outside the wall, on the hero\'s start, inside each other\'s aggro, another kind, a bad world row', () => {
+test('bad spots are refused: off the zone\'s ground, in the pit wall, on the hero\'s start, inside each other\'s aggro, another kind, a bad world row', () => {
   const ok = spotsFor(ZONE), edit = (f) => { const s = structuredClone(ok); f(s); return s; };
-  assert.throws(() => validateSpots(edit((s) => { s[0].x = 40; }), start(), wall()), /outside the pit's wall/);
+  const arena = (s) => Math.max(s.leash, wall());
+  assert.throws(() => validateSpots(edit((s) => { s[0].x = 40; }), start(), wall()), /outside the zone's spawn extent/);
+  assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - arena(s[0]) + 0.1); }), start(), wall()), /outside the zone's spawn extent/, 'the fight arena must lie inside it, not only the spot');
+  assert.doesNotThrow(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - arena(s[0]) - 0.1); }), start(), wall()), 'a spot well beyond the pit is fine');
+  assert.doesNotThrow(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -wall(); }), start(), wall()), 'there is no pit wall to stand in any more: open ground');
+  assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, spreadRadiusMetres: 999 }), /spreadRadiusMetres/);
   assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = 1; }), start(), wall()), /inside its own aggro of the hero's start/);
   assert.throws(() => validateSpots(edit((s) => { s[1].x = s[0].x + 1; s[1].z = s[0].z; }), start(), wall()), /inside each other's aggro/);
   assert.throws(() => validateSpots(ok, start(), wall(), WORLD, 'nobody'), /one foe rig/);
@@ -62,11 +71,13 @@ test('bad spots are refused: outside the wall, on the hero\'s start, inside each
 test('every spot makes a valid duel pose for a hero anywhere he can walk: the sim starts, never throws', () => {
   const spawns = list();
   for (let i = 0; i < spawns.length; i++) {
-    for (let a = 0; a < 16; a++) for (const r of [0, 1, 2.5, 4.5]) {
+    for (let a = 0; a < 16; a++) for (const r of [0, 1, 2.5, 4.5, 12, 20, WORLD.spreadRadiusMetres]) {
       const hero = { x: r * Math.cos(a / 16 * 2 * Math.PI), z: r * Math.sin(a / 16 * 2 * Math.PI) };
-      const pose = poseAt(hero, spawns[i], wall(), ROWS.spawn.minDistance, start());
+      const pose = poseAt(hero, spawns[i], OPEN_RADIUS, ROWS.spawn.minDistance, start());
       assert.ok(dist(pose.hero, pose.foe) >= ROWS.spawn.minDistance - 1e-9 || dist(pose.hero, start()) < 1e-9, `${spawns[i].id} from ${JSON.stringify(hero)}`);
-      assert.doesNotThrow(() => initialPractice(731, OPPONENTS[FIGHT.opponent], undefined, null, undefined, undefined, undefined, pose));
+      assert.deepEqual(pose.foe, { x: spawns[i].x, z: spawns[i].z }, `${spawns[i].id}: the boss stands at its own spot, never at the pit's marks`);
+      if (dist(hero, spawns[i]) >= ROWS.spawn.minDistance) assert.deepEqual(pose.hero, hero, `${spawns[i].id}: a hero far enough is never moved (no wall edge to draw him to)`);
+      assert.doesNotThrow(() => { const made = initialPractice(731, OPPONENTS[FIGHT.opponent], undefined, null, undefined, undefined, undefined, poseFits(pose, wall()) ? pose : undefined); if (!poseFits(pose, wall())) project(zoneDuel(made.duel, pose), made.ai, made); });
     }
   }
 });
@@ -89,11 +100,13 @@ test('standing at a spot: the nearest is held, the other two stand as copies; wa
 
 test('the sim\'s held spawn does not flicker half-way between two: it moves only when another is nearer by the margin', () => {
   const spawns = list(), m = WORLD.retargetMargin;
-  const mid = { x: 0, z: 2 };   // the mark: equidistant (3.46 m) from east and west, the north one 6 m away
+  const mid = { x: (spawns[1].x + spawns[2].x) / 2, z: (spawns[1].z + spawns[2].z) / 2 };   // equidistant from the east and west spots, the north one further
+  const toNorth = Math.hypot(spawns[0].x - mid.x, spawns[0].z - mid.z), toEast = Math.hypot(spawns[1].x - mid.x, spawns[1].z - mid.z);
+  assert.ok(toNorth - toEast > 0 && toNorth - toEast < m, 'the north spot is further than the other two, by less than the margin');
   assert.equal(held(spawns, 1, mid, m), 1); assert.equal(held(spawns, 2, mid, m), 2, 'held stays on a tie');
-  assert.equal(held(spawns, 0, mid, m), 1, 'the north one is 2.5 m further than the east: past the margin, it moves');
+  assert.equal(held(spawns, 0, mid, m), 0, 'the east/west tie is nearer than the north one by less than the margin: the north one stays held');
   assert.equal(held(spawns, 1, { x: 0, z: -1.5 }, m), 0, 'well past the margin: it moves');
-  const slightly = { x: 0, z: 0.5 };   // the north one is 4.5 m away, the east one 3.77 m: 0.7 m, inside the margin
+  const slightly = { x: 0, z: 0.5 };   // the north one is 6.7 m away, the east one 14 m: the north is far nearer
   assert.equal(held(spawns, 0, slightly, m), 0);
   const dead = kill(spawns, 1);
   assert.equal(held(dead, 1, mid, m), 2, 'a dead held spawn is never kept: the nearest that stands');
