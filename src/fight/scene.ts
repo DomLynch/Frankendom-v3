@@ -234,6 +234,7 @@ export function createScene(
     miasmaMark = marksFlag(globalThis.location?.search ?? '') ? createMiasmaMark(scene) : null;   // ?look=marks (miasma-mark.ts)
   const floorFade = skyView ? fadeFloor(arena.group, skyView) : null;   // B: the far sand and grid melt to nothing by angle (skyview.ts); null = the floor as it was
   const foeFade = skyView && foeFadeOn(pageSearch, skyView) ? createFoeFade(skyView) : null;   // the far opponent melts into the clouds where the sand does (foefade.ts); ?foefade=v1 or no band: null, nothing below runs
+  scene.userData.foeFade = foeFade;   // read by the stills' probe only
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle

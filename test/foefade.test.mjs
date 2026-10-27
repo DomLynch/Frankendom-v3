@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
 import { SKYVIEWS, fadeAlpha, skyViewFor } from '../src/fight/skyview.ts';
-import { createFoeFade, depressionDegrees, foeFadeOn } from '../src/fight/foefade.ts';
+import { createFoeFade, depressionDegrees, foeFadeOn, foeFadeShader } from '../src/fight/foefade.ts';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const STAGE = JSON.parse(read('../data/stage.json'));
@@ -54,25 +54,29 @@ test('depression is measured to the FEET: a boss whose feet are on melted sand f
 });
 
 test('adopt: gear materials get the fade, the shader multiplies alpha, onBeforeRender feeds the feet alpha; the hero\'s materials are never touched', () => {
-  const fade = createFoeFade(B), hero = new THREE.Group(), heroMat = new THREE.MeshStandardMaterial(), sharedMat = new THREE.MeshStandardMaterial();
-  hero.add(new THREE.Mesh(new THREE.BoxGeometry(), heroMat)); hero.add(new THREE.Mesh(new THREE.BoxGeometry(), sharedMat));
-  const foe = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()), sword = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial()), borrowed = new THREE.Mesh(new THREE.BoxGeometry(), sharedMat);
-  foe.add(body); body.add(sword); foe.add(borrowed);
+  const fade = createFoeFade(B), hero = new THREE.Group(), heroMat = new THREE.MeshStandardMaterial(), shared = new THREE.MeshStandardMaterial();
+  hero.add(new THREE.Mesh(new THREE.BoxGeometry(), heroMat)); hero.add(new THREE.Mesh(new THREE.BoxGeometry(), shared));
+  const foe = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()), sword = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+  foe.add(body); body.add(sword); foe.add(new THREE.Mesh(new THREE.BoxGeometry(), shared));
   fade.protect(hero); fade.adopt(foe); fade.adopt(foe);   // twice is safe
-  assert.equal(body.material.transparent, true); assert.equal(sword.material.transparent, true);   // the gear fades too
-  assert.equal(heroMat.transparent, false); assert.equal(sharedMat.transparent, false); assert.equal(sharedMat.onBeforeCompile.toString().includes('foeFade'), false);
-  assert.equal(borrowed.onBeforeRender === THREE.Object3D.prototype.onBeforeRender, true);   // a mesh on the hero's material is left alone
-  const shader = { uniforms: {}, vertexShader: '', fragmentShader: 'void main() {\n#include <opaque_fragment>\n}' };
+  assert.ok(body.material.onBeforeCompile.toString().includes('foeFadeShader') || body.material.customProgramCacheKey().startsWith('foefade-'));   // the body and his gear are patched
+  assert.ok(sword.material.customProgramCacheKey().startsWith('foefade-'));
+  assert.equal(heroMat.customProgramCacheKey().startsWith('foefade-'), false);   // the hero's own material: untouched
+  assert.equal(shared.customProgramCacheKey().startsWith('foefade-'), false);   // a material shared with the hero: left whole
+  assert.equal(body.material.transparent, false);   // still opaque: draw order, depth and shadows are as they were
+  const shader = { vertexShader: 'void main() {\n#include <project_vertex>\n}', fragmentShader: 'void main() {\n#include <opaque_fragment>\n}' };
   body.material.onBeforeCompile(shader, {});
-  assert.match(shader.fragmentShader, /gl_FragColor\.a \*= foeFade;/); assert.ok(shader.uniforms.foeFade);
-  fade.move(new THREE.Vector3(0, 10, 0)); foe.position.set(0, 0, 200);
-  body.onBeforeRender(); assert.equal(shader.uniforms.foeFade.value, 0); assert.equal(body.material.uniformsNeedUpdate, true);
-  foe.position.set(0, 0, 4); sword.onBeforeRender(); assert.equal(shader.uniforms.foeFade.value, 1);
+  assert.match(shader.vertexShader, /vec3 foeFeet = vec3\(modelMatrix\[3\]\.x, 0\.0, modelMatrix\[3\]\.z\)/);   // the mesh origin on the ground = his feet, not a vertex
+  assert.match(shader.vertexShader, /cameraPosition/);
+  assert.match(shader.vertexShader, new RegExp(`smoothstep\\(${B.fadeEndDegrees.toFixed(4)}, ${B.fadeStartDegrees.toFixed(4)}, foeDepression\\)`));   // the sand's band, from the rows
+  assert.match(shader.fragmentShader, /if \(vFoeFade <= .*discard;/);
+  const custom = foeFadeShader('void main() { gl_Position = vec4(0.0); }', 'void main() { gl_FragColor = vec4(1.0); }', B);
+  assert.equal(custom.fragmentShader, 'void main() { gl_FragColor = vec4(1.0); }');   // a trail or sprite shader (no project_vertex) is not touched
 });
 
 test('wiring: the hero is protected and the foe, its idle copies, other bodies and live attackers are adopted; sand look untouched', () => {
   const scene = read('../src/fight/scene.ts');
-  assert.match(scene, /foeFade\?\.protect\(player\); foeFade\?\.adopt\(opponent\);/);
+  assert.match(scene, /foeFade\?\.protect\(player\); foeFade\?\.adopt\(opponent\);/); assert.doesNotMatch(scene, /foeFade\??\.adopt\(player\)/);
   assert.match(scene, /for \(const h of idleCopies\) foeFade\.adopt\(h\);/);
   assert.match(scene, /for \(const e of liveFoes\.values\(\)\) foeFade\.adopt\(e\.group\);/);
   assert.match(scene, /foeFade\.move\(camera\.position\)/);
