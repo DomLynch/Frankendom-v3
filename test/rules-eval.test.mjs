@@ -111,7 +111,7 @@ test('knockdown: light leg blows add up to the fall (60 of the counter); it carr
   assert.equal(r.debug.byOutcome.knockdown, 1);
   // the same leg blows with a HEAVY swing: the 8th lays him down, carrying the evaluator's fall + down seconds
   const h = createRulesEval(ROWS, pkg, BODY, 'pitborn', () => 0), hv = [];
-  for (let i = 0; i < 8; i++) hv.push(h.hit(hit({ weapon: 'longsword', location: 'legs', move: 'heavy_overhead', tick: 60 * (i + 1) }), true));
+  for (let i = 0; i < 8; i++) hv.push(h.hit(hit({ weapon: 'gladius', location: 'legs', move: 'heavy_overhead', tick: 60 * (i + 1) }), true));   // a gladius heavy sticks and adds up (a longsword heavy cuts the leg off at once)
   const k = hv.find((o) => o.outcome === 'knockdown');
   assert.ok(k, 'a heavy swing reaches the evaluator\'s fall'); assert.equal(k.action, 'knockdown'); assert.equal(k.cause, 'damage');
   assert.equal(k.downS, rules.knockdown.fall_seconds.damage + rules.knockdown.fall_seconds.down);
