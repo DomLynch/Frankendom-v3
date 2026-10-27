@@ -56,7 +56,7 @@
         "rings": 24
       },
       "anim": {
-        "about": "THE PLATE'S LAYERS AND SMALL CODED MOTION (src/fight/skyanim.ts; Dom 2026-10-27 'small motion on the static image'; the designer's registered layer set of the same day, 4096x1024, manifest.json). Presentation only: the plate material gets a few shader lines and uniforms, so a frame costs one clock tick and a few uniform writes (no texture re-upload, no extra draw). `plate.file` is the CLEAN plate (no globe, no planet); the planet and globe cut-outs are composited over it at their registered place, so they are part of the picture. Every layer file is named by its row (a .webp or .png in src/assets/skyline/): a re-delivery is a file swap. Positions are fractions across (u) and down (v, y down) the PLATE picture, radii are fractions of its WIDTH; a `rect` is the crop of the layer picture that is kept (u0,v0,u1,v1, fractions of the plate), so the GPU holds small textures, not full-size ones. `on`/`query`/`off`: ?skyanim=off stops the MOTION (the layers still composite: they are the picture); `respectReducedMotion` true = prefers-reduced-motion stops it too; the clock stops while the tab is hidden. `on` false draws no layers at all and is only right with a flattened plate (?skyflat=1 uses plate.flatFile, the old flattened picture, with none). `readyTimeoutSeconds`: the plate waits this long for the layer pictures so a layer never pops in. A layer with `on` false is not even fetched. PLANET: `file` = RGBA cut-out of the red planet (registered to the plate), `rect`, `centre`, `radius`; `glow` is a faint rim glow that pulses (`color`, `strength`, `pulseSeconds`, `lowerFadeFrom` = disc-radius y below which the glow fades out, where the cloud sea crosses the disc; `on` false = static planet). GLOBE: `file` = RGBA cut-out, `rect`, `centre`, `radius`; `spin` = a fake spin of the cut-out's own pixels (longitude shifted and mirror-folded so it never seams; `secondsPerTurn`, `swingDegrees` 0 = a continuous turn, above 0 = a swing of that many degrees each way); `highlight` = a soft moving glint (`strength`, `size` and `orbit` in disc radii, `lift`, `orbitSeconds`); `sprite` = the designer's 24-frame turn sheet (`file`, `columns`, `rows`, `frames`, `frameSeconds` per frame step, `cellPx` = a frame cell in the sheet, `ballRadiusPx` = the sphere's radius inside a cell, `sheetPx`, `loadScale` = the sheet is downscaled by this when it lands, `rects` = each frame's x,y,w,h in the sheet); sprite.on false by default because its frames read as a pink arch on a blue ball, not a clean world. GLISTEN: `file` = the designer's greyscale mask (white = may shimmer; the halo structure stays still), `rect` = the crop kept, `spreadTexels` = the speckles are a pixel or two so they are grown this many texels, `color`, `strength`, `baseGlow` = the always-on part of the shimmer, a sweep band `width` wide, tilted by `slant`, crossing the rect in `sweepSeconds` every `periodSeconds` adds to it, and `twinkle` (`periodSeconds`, `cells` across the plate, `amount` 0..1) shifts the highlights. SWAPPING: new plate = plate.file (same 4:1 shape; change cropAspect/face/horizonFraction only if the shape or face moves); new layer = its `file` (and rect/centre/radius if it moves); docs/SKY-LAYERS.md lists the files.",
+        "about": "THE PLATE'S LAYERS AND SMALL CODED MOTION (src/fight/skyanim.ts; Dom 2026-10-27 'small motion on the static image'; the designer's registered layer set of the same day, 4096x1024, manifest.json). Presentation only: the plate material gets a few shader lines and uniforms, so a frame costs one clock tick and a few uniform writes (no texture re-upload, no extra draw). `plate.file` is the CLEAN plate (no globe, no planet); the planet and globe cut-outs are composited over it at their registered place, so they are part of the picture. Every layer file is named by its row (a .webp or .png in src/assets/skyline/): a re-delivery is a file swap. Positions are fractions across (u) and down (v, y down) the PLATE picture, radii are fractions of its WIDTH; a `rect` is the crop of the layer picture that is kept (u0,v0,u1,v1, fractions of the plate), so the GPU holds small textures, not full-size ones. `on`/`query`/`off`: ?skyanim=off stops the MOTION (the layers still composite: they are the picture); `respectReducedMotion` true = prefers-reduced-motion stops it too; the clock stops while the tab is hidden. `on` false draws no layers at all and is only right with a flattened plate (?skyflat=1 uses plate.flatFile, the old flattened picture, with none). `readyTimeoutSeconds`: the plate waits this long for the layer pictures so a layer never pops in. A layer with `on` false is not even fetched. PLANET: `file` = RGBA cut-out of the red planet (registered to the plate), `rect`, `centre`, `radius`; `glow` is a faint rim glow that pulses (`color`, `strength`, `pulseSeconds`, `lowerFadeFrom` = disc-radius y below which the glow fades out, where the cloud sea crosses the disc; `on` false = static planet). GLOBE: `file` = RGBA cut-out, `rect`, `centre`, `radius`; `spin` = a fake spin of the cut-out's own pixels (longitude shifted and mirror-folded so it never seams; `secondsPerTurn`, `swingDegrees` 0 = a continuous turn, above 0 = a swing of that many degrees each way); `highlight` = a soft moving glint (`strength`, `size` and `orbit` in disc radii, `lift`, `orbitSeconds`); `sprite` = the designer's 24-frame turn sheet (`file`, `columns`, `rows`, `frames`, `frameSeconds` per frame step, `cellPx` = a frame cell in the sheet, `ballRadiusPx` = the sphere's radius inside a cell, `sheetPx`, `loadScale` = the sheet is downscaled by this when it lands, `rects` = each frame's x,y,w,h in the sheet); sprite.on false by default because its frames read as a pink arch on a blue ball, not a clean world. GLISTEN: `file` = the designer's greyscale mask (white = may shimmer; the halo structure stays still), `rect` = the crop kept, `spreadTexels` = the speckles are a pixel or two so they are grown this many texels, `color`, `strength`, `baseGlow` = the always-on part of the shimmer, a sweep band `width` wide, tilted by `slant`, crossing the rect in `sweepSeconds` every `periodSeconds` adds to it, and `twinkle` (`periodSeconds`, `cells` across the plate, `amount` 0..1) shifts the highlights. SWAPPING: new plate = plate.file (same 4:1 shape; change cropAspect/face/horizonFraction only if the shape or face moves); new layer = its `file` (and rect/centre/radius if it moves); docs/SKY-LAYERS.md lists the files. SKY LIFE (Dom 2026-10-27 'more life on the smiling titan'; no new art, every number a row, each effect its own `on`, all stopped by ?skyanim=off, reduced motion and a hidden tab): SPARKLE = a procedural 4-point star glint drawn in the shader (no texture): every `minGapSeconds`..`maxGapSeconds` (seeded by `seed`, never twice on the same anchor in a row, the first after `firstDelaySeconds`) one of `anchors` (u, v = a point of the plate picture as fractions across and down, on the grin's teeth and the crown jewels; `scale` multiplies `size`) flashes for `durationSeconds` (fast rise, slow fall) with arms `size` (a fraction of the plate's WIDTH), `strength` and `color`; it rides with the breathing body. CROWN GLOW = a soft slow pulse of additive light over the crown's ring-tech (`centre`, `radiusU` across and `radiusV` down, fractions of the plate width; `color`, `strength` 0..1, `pulseSeconds`). BREATHING = the body and belly rise and fall: the picture is sampled `amplitudePx` plate pixels up and down (a sine of `periodSeconds`, `phase` 0..1 of a turn) inside `rect` (plate fractions) and the lift fades to nothing over `featherFraction` of the rect's size at every edge, so the clouds, the horizon, the rings and the outer arms stay still and the face and crown move as one with the body; the glisten mask and the sparkles follow the lift. GLOBE BOB: `globe.bob` floats the globe cut-out (and its glint) `amplitudePx` plate pixels up and down over `periodSeconds` from `phase`.",
         "on": true,
         "query": "skyanim",
         "off": "off",
@@ -98,6 +98,12 @@
             "v": 0.66592
           },
           "radius": 0.00798,
+          "bob": {
+            "on": true,
+            "amplitudePx": 3,
+            "periodSeconds": 4.2,
+            "phase": 0.15
+          },
           "spin": {
             "on": true,
             "secondsPerTurn": 36,
@@ -295,6 +301,40 @@
             "amount": 0.8
           },
           "spreadTexels": 2
+        },
+        "sparkle": {
+          "on": true,
+          "color": "#fff4d6",
+          "strength": 0.95,
+          "size": 0.0065,
+          "durationSeconds": 0.45,
+          "minGapSeconds": 2.2,
+          "maxGapSeconds": 5.5,
+          "firstDelaySeconds": 1.2,
+          "seed": 20261027,
+          "anchors": [
+            { "name": "teeth", "u": 0.5786, "v": 0.666, "scale": 0.8 },
+            { "name": "crown-left", "u": 0.5518, "v": 0.5615, "scale": 1 },
+            { "name": "crown-top", "u": 0.5676, "v": 0.542, "scale": 1.15 },
+            { "name": "crown-right", "u": 0.5945, "v": 0.5615, "scale": 1 }
+          ]
+        },
+        "crownGlow": {
+          "on": true,
+          "centre": { "u": 0.5676, "v": 0.548 },
+          "radiusU": 0.034,
+          "radiusV": 0.02,
+          "color": "#9fd8ff",
+          "strength": 0.14,
+          "pulseSeconds": 8
+        },
+        "breathing": {
+          "on": true,
+          "rect": { "u0": 0.43, "v0": 0.5, "u1": 0.7, "v1": 0.79 },
+          "featherFraction": 0.3,
+          "amplitudePx": 4,
+          "periodSeconds": 6.5,
+          "phase": 0
         }
       }
     },

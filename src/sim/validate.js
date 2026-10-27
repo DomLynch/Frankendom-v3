@@ -364,7 +364,7 @@ function checkSkyAnim(a, plateQuery) {
   const centre = (o, path) => { if (keys(o.centre, ['u', 'v'], J(path, 'centre'))) { rng(o.centre, 'u', 0, 1, J(path, 'centre')); rng(o.centre, 'v', 0, 1, J(path, 'centre')); } };
   const rect = (o, path) => { if (keys(o.rect, ['u0', 'v0', 'u1', 'v1'], J(path, 'rect'))) { for (const k of ['u0', 'v0', 'u1', 'v1']) rng(o.rect, k, 0, 1, J(path, 'rect')); if (!(o.rect.u1 > o.rect.u0 + 0.005) || !(o.rect.v1 > o.rect.v0 + 0.005)) at(J(path, 'rect'), 'must be a real rect (u1 above u0, v1 above v0)'); } return o.rect; };
   const inside = (r, c, rad, path) => { if (r && c && Number.isFinite(c.u) && Number.isFinite(c.v) && Number.isFinite(rad) && !(c.u - rad >= r.u0 - 1e-9 && c.u + rad <= r.u1 + 1e-9 && c.v >= r.v0 && c.v <= r.v1)) at(J(path, 'rect'), 'must contain the layer (its centre and a radius either side)'); };
-  keys(a, ['about', 'on', 'query', 'off', 'respectReducedMotion', 'readyTimeoutSeconds', 'planet', 'globe', 'glisten'], '');
+  keys(a, ['about', 'on', 'query', 'off', 'respectReducedMotion', 'readyTimeoutSeconds', 'planet', 'globe', 'glisten', 'sparkle', 'crownGlow', 'breathing'], '');
   if (typeof a.about !== 'string' || a.about.length < 200) at('about', 'must explain the rows (at least 200 characters)');
   for (const k of ['on', 'respectReducedMotion']) bool(a, k, '');
   for (const k of ['query', 'off']) if (typeof a[k] !== 'string' || !/^[a-z0-9]+$/i.test(a[k])) at(k, 'must be a plain word');
@@ -376,7 +376,8 @@ function checkSkyAnim(a, plateQuery) {
     if (keys(p.glow, ['on', 'color', 'strength', 'pulseSeconds', 'lowerFadeFrom'], 'planet.glow')) { bool(p.glow, 'on', 'planet.glow'); col(p.glow, 'color', 'planet.glow'); rng(p.glow, 'strength', 0, 1, 'planet.glow'); rng(p.glow, 'pulseSeconds', 0.5, 600, 'planet.glow'); rng(p.glow, 'lowerFadeFrom', -1, 1, 'planet.glow'); }
   }
   const g = a.globe;
-  if (keys(g, ['on', 'file', 'rect', 'centre', 'radius', 'spin', 'highlight', 'sprite'], 'globe')) {
+  if (keys(g, ['on', 'file', 'rect', 'centre', 'radius', 'bob', 'spin', 'highlight', 'sprite'], 'globe')) {
+    if (keys(g.bob, ['on', 'amplitudePx', 'periodSeconds', 'phase'], 'globe.bob')) { bool(g.bob, 'on', 'globe.bob'); rng(g.bob, 'amplitudePx', 0, 12, 'globe.bob'); rng(g.bob, 'periodSeconds', 0.5, 600, 'globe.bob'); rng(g.bob, 'phase', 0, 1, 'globe.bob'); }
     bool(g, 'on', 'globe'); file(g, 'file', 'globe'); centre(g, 'globe'); rng(g, 'radius', 0.001, 0.1, 'globe'); const r = rect(g, 'globe'); inside(r, g.centre, Number.isFinite(g.radius) ? g.radius : 0, 'globe');
     if (keys(g.spin, ['on', 'secondsPerTurn', 'swingDegrees'], 'globe.spin')) { bool(g.spin, 'on', 'globe.spin'); rng(g.spin, 'secondsPerTurn', 1, 3600, 'globe.spin'); rng(g.spin, 'swingDegrees', 0, 90, 'globe.spin'); }
     if (keys(g.highlight, ['on', 'strength', 'size', 'orbit', 'lift', 'orbitSeconds'], 'globe.highlight')) { const h = g.highlight; bool(h, 'on', 'globe.highlight'); rng(h, 'strength', 0, 1, 'globe.highlight'); rng(h, 'size', 0.05, 2, 'globe.highlight'); rng(h, 'orbit', 0, 1, 'globe.highlight'); rng(h, 'lift', -1, 1, 'globe.highlight'); rng(h, 'orbitSeconds', 1, 600, 'globe.highlight'); }
@@ -403,6 +404,20 @@ function checkSkyAnim(a, plateQuery) {
     if (Number.isFinite(l.periodSeconds) && Number.isFinite(l.sweepSeconds) && l.sweepSeconds > l.periodSeconds) at('glisten.sweepSeconds', 'must not exceed periodSeconds');
     if (keys(l.twinkle, ['periodSeconds', 'cells', 'amount'], 'glisten.twinkle')) { rng(l.twinkle, 'periodSeconds', 0.2, 600, 'glisten.twinkle'); rng(l.twinkle, 'cells', 10, 8192, 'glisten.twinkle'); rng(l.twinkle, 'amount', 0, 1, 'glisten.twinkle'); }
   }
+  // Sky life: a procedural star glint on a list of anchors, a slow crown glow pulse, a body breath (a feathered sine lift) over a rect.
+  const sk = a.sparkle;
+  if (keys(sk, ['on', 'color', 'strength', 'size', 'durationSeconds', 'minGapSeconds', 'maxGapSeconds', 'firstDelaySeconds', 'seed', 'anchors'], 'sparkle')) {
+    bool(sk, 'on', 'sparkle'); col(sk, 'color', 'sparkle'); rng(sk, 'strength', 0, 3, 'sparkle'); rng(sk, 'size', 0.0005, 0.05, 'sparkle'); rng(sk, 'durationSeconds', 0.05, 5, 'sparkle');
+    rng(sk, 'minGapSeconds', 0.1, 600, 'sparkle'); rng(sk, 'maxGapSeconds', 0.1, 600, 'sparkle'); rng(sk, 'firstDelaySeconds', 0, 600, 'sparkle'); rng(sk, 'seed', 0, 4294967295, 'sparkle', true);
+    if (Number.isFinite(sk.minGapSeconds) && Number.isFinite(sk.maxGapSeconds) && sk.maxGapSeconds < sk.minGapSeconds) at('sparkle.maxGapSeconds', 'must not be below minGapSeconds');
+    if (Number.isFinite(sk.minGapSeconds) && Number.isFinite(sk.durationSeconds) && sk.minGapSeconds < sk.durationSeconds) at('sparkle.minGapSeconds', 'must not be below durationSeconds (one glint at a time)');
+    if (!Array.isArray(sk.anchors) || sk.anchors.length < 2 || sk.anchors.length > 16) at('sparkle.anchors', 'must be a list of 2 to 16 anchors (so it can avoid the same one twice running)');
+    else for (const [i, q] of sk.anchors.entries()) { const pth = `sparkle.anchors.${i}`; if (keys(q, ['name', 'u', 'v', 'scale'], pth)) { if (typeof q.name !== 'string' || !q.name) at(`${pth}.name`, 'must be a name'); rng(q, 'u', 0, 1, pth); rng(q, 'v', 0, 1, pth); rng(q, 'scale', 0.1, 4, pth); } }
+  }
+  const cg = a.crownGlow;
+  if (keys(cg, ['on', 'centre', 'radiusU', 'radiusV', 'color', 'strength', 'pulseSeconds'], 'crownGlow')) { bool(cg, 'on', 'crownGlow'); centre(cg, 'crownGlow'); rng(cg, 'radiusU', 0.001, 0.2, 'crownGlow'); rng(cg, 'radiusV', 0.001, 0.2, 'crownGlow'); col(cg, 'color', 'crownGlow'); rng(cg, 'strength', 0, 1, 'crownGlow'); rng(cg, 'pulseSeconds', 0.5, 600, 'crownGlow'); }
+  const br = a.breathing;
+  if (keys(br, ['on', 'rect', 'featherFraction', 'amplitudePx', 'periodSeconds', 'phase'], 'breathing')) { bool(br, 'on', 'breathing'); rect(br, 'breathing'); rng(br, 'featherFraction', 0.05, 0.5, 'breathing'); rng(br, 'amplitudePx', 0, 12, 'breathing'); rng(br, 'periodSeconds', 0.5, 600, 'breathing'); rng(br, 'phase', 0, 1, 'breathing'); }
   return e;
 }
 /** data/fight.json camera.wide(src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
