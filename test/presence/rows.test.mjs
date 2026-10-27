@@ -22,7 +22,8 @@ test('every presence rule equals V1\'s value (origins/presence/presence-rules-de
   assert.deepEqual(PRESENCE.frame, { centreCm: 32768, sizeCm: 65535 });
   assert.deepEqual([PRESENCE.query, PRESENCE.path, PRESENCE.protocol, PRESENCE.poseGlobal, PATH, PROTOCOL], ['presence', '/presence', 'frankendom.v3.presence.1', '__v3HeroPose', '/presence', 'frankendom.v3.presence.1']);
   assert.equal(PRESENCE.host, '127.0.0.1', 'the service binds loopback unless PRESENCE_HOST says otherwise');
-  assert.equal(PRESENCE.rules.length, 39);
+  assert.deepEqual(['drawMax', 'drawIdle', 'drawSmooth', 'animIdle', 'animWalk', 'animRun', 'animRunMps', 'poseMinDtMs', 'drawDtMaxS', 'drawContact'].map((id) => presenceRule(id)), [8, 0.3, 14, 1, 2, 3, 4.5, 250, 0.1, 0.35],'the drawing rows (src/presence/draw.ts)');
+  assert.equal(PRESENCE.rules.length, 49);
   assert.equal(PRESENCE.rules.length, NAMED.length, 'every row is read by name and every name has a row');
   assert.equal(MAX_ENTITIES, 255, 'the packet count is one byte');
 });
@@ -43,7 +44,7 @@ test('the loader refuses a missing named rule, a non-positive value, a duplicate
   assert.throws(() => loadPresence({ ...DEFS, rules: [...rows, rows[0]] }), /given twice/);
   assert.throws(() => loadPresence({ ...DEFS, frame: { centreCm: 32768, sizeCm: 70000 } }), /u16/);
   assert.throws(() => loadPresence({ ...DEFS, path: '' }), /"path"/);
-  assert.equal(loadPresence({ ...DEFS, rules: [...rows, { id: 'extra', value: 2, unit: 'm' }] }).rules.length, 40);
+  assert.equal(loadPresence({ ...DEFS, rules: [...rows, { id: 'extra', value: 2, unit: 'm' }] }).rules.length, 50);
   assert.throws(() => loadPresence({ ...DEFS, host: '' }), /"host"/);
 });
 

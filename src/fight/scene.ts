@@ -17,7 +17,7 @@ import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
+import { buildWarriors, specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { shapesFlag, shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { bakeSafeFinisher, lookBakeOffFrom, lookBakes, rankLookFlag, runThroughForced, rankLookFor, rankLookStream, SHIPPING_LOOKS } from './rank-look.ts';
@@ -544,6 +544,16 @@ export function createScene(
   return {
     // V3: only the members src/client/main.ts calls. V1's journal, zone, gear-room, loot and test-probe hooks are gone (docs/V3-OWED-2026-10-26.md §3, PR 1).
     renderer,
+    // --- other players (presence wiring, src/presence/draw.ts; called only with ?presence=) --------------------------------------------------------------------------------------------------
+    // One more body of the hero's own rig, cloned from the asset the hero was built from (buildWarriors clones: no fetch, no parse, the hero's materials and programs), hung in the scene on its own group.
+    // Null until the hero's rig is built. No collider, no sim: the caller poses it. Not in the fight: nothing else in this file knows it exists.
+    spawnRemote() {
+      if (!warriors) return null;
+      const actor = buildWarriors(warriors.asset, undefined, [warriors.playerWeapon, warriors.playerWeapon], true).player, group = new THREE.Group();
+      group.visible = false; group.add(actor.anchor); actor.setUpright(readyOffset('hero')); scene.add(group);
+      return { group, update: (speed: number, dt: number, contact: number) => { actor.update(speed, dt, 'ready', 0, 'light', contact, 0); } };
+    },
+    // --- end other players ------------------------------------------------------------------------------------------------------------------------------------------------------------------
     startStandoff() { standoff.start(); },   // main.ts, the moment the versus card lifts: idempotent (an art retry re-emits 'ready' mid-fight)
     restartStandoff() { standoff.restart(); },   // main.ts nextFight: the rematch plays the draw-in again (a no-op with ?standoff=0)
     // The rung the opponent is met at (grades.ts tierAt): at load and at each rematch, never mid-fight. A change re-dresses him and bakes the
