@@ -23,7 +23,7 @@
   "snapOver": 25,
   "speedMin": 4.01,
   "speedMaxRef": "light_p90",
-  "budgets": { "head": 40 },
+  "budgets": { "head": 40, "torso": 24 },
   "swordSide": "right",
   "legHp": 60,
   "legSide": "left",
