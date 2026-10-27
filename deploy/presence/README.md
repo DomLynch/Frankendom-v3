@@ -18,7 +18,7 @@ page ?presence=1 --wss--> nginx v3.frankendom.com :443  location = /presence  --
 
 Names differ from V1's on purpose. The VPS already runs V1's `frankendom-presence.service` (port 8793, `/opt/frankendom-presence`) and has `/etc/nginx/snippets/frankendom-presence.conf`; the `-v3-` names, port 8794 and the `v3_presence_*` zones cannot clash with them. Read-only look at the box on 2026-10-27: node v22.23.2 at `/usr/bin/node` (needs 22.18+), nginx 1.24.0, nothing listening on 8794, no `frankendom-v3-presence` user, 16 cores, load average about 3.5-4.8.
 
-The exact line to add to `/etc/nginx/sites-enabled/v3.frankendom.com`, once, inside the `server { listen 443 ssl; ... }` block (the second server block; the first is the :80 redirect), for example just above `location ^~ /b/ {`:
+The exact line to add to `/etc/nginx/sites-available/v3.frankendom.com` (the real file; `sites-enabled/v3.frankendom.com` is a symlink to it), once, inside the `server { listen 443 ssl; ... }` block (the second server block; the first is the :80 redirect), for example just above `location ^~ /b/ {`:
 
 ```
     include /etc/nginx/snippets/frankendom-v3-presence.conf;
@@ -30,7 +30,7 @@ Not proxied on purpose: `/presence/health`. Read it on the box: `curl -s http://
 
 1. Merge this PR and pick the commit to run. `SHA=<full 40-char sha of main>`. Everything below pins that sha.
 2. Keep the ssh key out of every file and log. All VPS commands: `ssh -o BatchMode=yes -i ~/.ssh/binance_futures_tool root@49.12.7.18`.
-3. Check the load first (`uptime`). The box is shared; if the 1-minute load is above 8, wait.
+3. Check the load first (`uptime`). The box is shared; apply only while the 1-minute load is under 20 (Strategy's gate); above that, wait.
 4. Do not touch `/var/www/frankendom`, `/srv/frankendom-v3/live` (the game's own deploy), V1's presence unit, or any other lane's service.
 
 ## Apply (in this order; each step is safe to stop after)
@@ -58,8 +58,10 @@ ssh VPS 'systemctl is-active frankendom-v3-presence; curl -s http://127.0.0.1:87
 # 5. nginx: the zones, the snippet, then the one include line. Back the site file up first.
 scp deploy/presence/frankendom-v3-presence-limits.conf VPS:/etc/nginx/conf.d/
 scp deploy/presence/frankendom-v3-presence.conf        VPS:/etc/nginx/snippets/
-ssh VPS 'cp -a /etc/nginx/sites-enabled/v3.frankendom.com /etc/nginx/sites-enabled/v3.frankendom.com.bak-presence'
-#   edit the :443 block of v3.frankendom.com: add the include line shown above (one line; do not leave the .bak inside sites-enabled once done: move it to /root)
+#    /etc/nginx/sites-enabled/v3.frankendom.com is a SYMLINK to /etc/nginx/sites-available/v3.frankendom.com (read 2026-10-27): back up and edit the REAL file there,
+#    as the V3 convention does (v3.frankendom.com.bak-20261026 sits beside it). Never put a copy in sites-enabled: nginx would load it as a second server block.
+ssh VPS 'cp -a /etc/nginx/sites-available/v3.frankendom.com /etc/nginx/sites-available/v3.frankendom.com.bak-YYYYMMDD'     # YYYYMMDD = the apply day
+#   edit /etc/nginx/sites-available/v3.frankendom.com: add the include line shown above, once, in the :443 block (the symlink picks it up)
 ssh VPS 'nginx -t'                                  # must say "syntax is ok" and "test is successful"; if not, go to Rollback step B and stop
 ssh VPS 'systemctl reload nginx'                    # reload, never restart: other sites share this nginx
 ```
@@ -94,7 +96,7 @@ A guard, not a measurement (nothing has run on this box yet). One node process, 
 
 A. Take presence out of service (keeps the files for later): `systemctl disable --now frankendom-v3-presence`. The page's `?presence=` client then fails to connect and gives up after its retries; the game is unaffected.
 
-B. Take the route out of nginx: remove the one `include .../frankendom-v3-presence.conf;` line from `/etc/nginx/sites-enabled/v3.frankendom.com` (or `cp -a` the `.bak-presence` copy back), `nginx -t`, `systemctl reload nginx`. Then remove `/etc/nginx/snippets/frankendom-v3-presence.conf` and `/etc/nginx/conf.d/frankendom-v3-presence-limits.conf` (leave the zone file if the include is still there: nginx would fail `nginx -t` on an unknown zone).
+B. Take the route out of nginx. Primary: remove the one `include .../frankendom-v3-presence.conf;` line from `/etc/nginx/sites-available/v3.frankendom.com` (the real file behind the sites-enabled symlink), `nginx -t`, `systemctl reload nginx`. Secondary, only if the edit left the file damaged: `cp -a /etc/nginx/sites-available/v3.frankendom.com.bak-YYYYMMDD /etc/nginx/sites-available/v3.frankendom.com` (the backup from apply step 5), then `nginx -t` and reload. Then remove `/etc/nginx/snippets/frankendom-v3-presence.conf` and `/etc/nginx/conf.d/frankendom-v3-presence-limits.conf` (leave the zone file if the include is still there: nginx would fail `nginx -t` on an unknown zone).
 
 C. Remove everything: A and B, then `rm /etc/systemd/system/frankendom-v3-presence.service && systemctl daemon-reload`, `rm -rf /opt/frankendom-v3-presence`, `userdel frankendom-v3-presence`.
 

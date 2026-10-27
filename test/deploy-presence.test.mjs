@@ -58,6 +58,10 @@ test('the README is the runbook: it names every file, the include line, nginx -t
   const md = read('README.md');
   for (const f of FILES.slice(0, 3)) assert.ok(md.includes(f), `README names ${f}`);
   for (const s of ['include /etc/nginx/snippets/frankendom-v3-presence.conf;', 'useradd', 'git archive', 'systemctl enable --now', 'nginx -t', 'systemctl reload nginx', 'new WebSocket(', '## Rollback', '## Expected resource use', '## What to watch']) assert.ok(md.includes(s), `README has ${s}`);
+  assert.match(md, /cp -a \/etc\/nginx\/sites-available\/v3\.frankendom\.com \/etc\/nginx\/sites-available\/v3\.frankendom\.com\.bak-YYYYMMDD/, 'the backup is a copy of the real file in sites-available');
+  assert.doesNotMatch(md, /cp -a \/etc\/nginx\/sites-enabled|sites-enabled\/v3\.frankendom\.com\.bak/, 'never copy the symlink or leave a .bak in sites-enabled (nginx would load it twice)');
+  assert.ok(md.indexOf('Primary: remove the one `include') > 0 && md.indexOf('Primary:') < md.indexOf('Secondary,'), 'rollback B: removing the include line is primary, the file restore secondary');
+  assert.match(md, /1-minute load is under 20/, 'the load gate is Strategy\'s: under 20');
   assert.doesNotMatch(md, /hf_[A-Za-z0-9]{10,}|BEGIN [A-Z ]*PRIVATE KEY|sk-[A-Za-z0-9]{20,}/, 'no token or key in the runbook');
   assert.ok(md.indexOf('useradd') < md.indexOf('git archive') && md.indexOf('git archive') < md.indexOf('systemctl enable --now') && md.indexOf('systemctl enable --now') < md.indexOf('nginx -t') && md.indexOf('nginx -t') < md.indexOf('systemctl reload nginx'), 'the steps are in order');
 });

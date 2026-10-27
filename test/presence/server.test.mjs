@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { connect } from 'node:net';
-import { LIMITS, PROTOCOL, PATH, createPresence, listenHost } from '../../server/presence/server.ts';
+import { readFileSync } from 'node:fs';
+import { LIMITS, PROTOCOL, PATH, createPresence, listenHost, trustsProxyHeader } from '../../server/presence/server.ts';
 import { PRESENCE } from '../../src/presence/rows.ts';
 import { RULES } from '../../server/presence/interest.ts';
 import { joinBot } from '../../server/presence/test-client.ts';
@@ -83,6 +84,38 @@ test('refusals: no subprotocol, another protocol, a wrong path; the world-full r
     assert.equal(p.stats().sockets, 1, 'a refused join holds no socket');
     a.close();
   } finally { await p.close(); }
+});
+
+// A raw client that sends X-Real-IP the way nginx would: resolves 'open' (and stays open until closed) or 'refused'.
+const openAs = (port, ip) => new Promise((resolve) => {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}${PATH}`, { protocols: [PROTOCOL], headers: { 'x-real-ip': ip } });
+  ws.onopen = () => resolve({ state: 'open', ws }); ws.onerror = () => resolve({ state: 'refused', ws });
+});
+
+test('X-Real-IP trust: with ipHeader on the per-IP cap keys on the header (two proxied players share the loopback socket address, not a cap); off, it keys on the socket address and the header is ignored', async () => {
+  const on = await start({ ipHeader: true, limits: { ...LIMITS, ipSockets: 1 } });
+  try {
+    const a = await openAs(on.port(), '203.0.113.1'), b = await openAs(on.port(), '203.0.113.2'), a2 = await openAs(on.port(), '203.0.113.1');
+    assert.deepEqual([a.state, b.state, a2.state], ['open', 'open', 'refused'], 'one socket per header address: .1 and .2 both in, a second .1 refused');
+    assert.equal(on.stats().refused['ip-sockets'], 1);
+    a.ws.close(); b.ws.close();
+  } finally { await on.close(); }
+  const off = await start({ ipHeader: false, limits: { ...LIMITS, ipSockets: 1 } });
+  try {
+    const a = await openAs(off.port(), '203.0.113.1'), b = await openAs(off.port(), '203.0.113.2');
+    assert.deepEqual([a.state, b.state], ['open', 'refused'], 'header ignored: both are 127.0.0.1, so the second is over the cap');
+    assert.equal(off.stats().refused['ip-sockets'], 1);
+    a.ws.close();
+  } finally { await off.close(); }
+});
+
+test('trustsProxyHeader: only a loopback bind (127.0.0.1 or ::1) trusts X-Real-IP, and main.ts passes exactly that', () => {
+  for (const h of ['127.0.0.1', '::1']) assert.equal(trustsProxyHeader(h), true, h);
+  for (const h of ['0.0.0.0', '::', '10.0.0.5', '49.12.7.18', 'localhost', '', '::ffff:127.0.0.1']) assert.equal(trustsProxyHeader(h), false, h || '(empty)');
+  assert.equal(trustsProxyHeader(listenHost({})), true, 'the default host row is loopback');
+  assert.equal(trustsProxyHeader(listenHost({ PRESENCE_HOST: '0.0.0.0' })), false, 'the env override to a public bind turns the trust off');
+  const main = readFileSync(new URL('../../server/presence/main.ts', import.meta.url), 'utf8');
+  assert.match(main, /createPresence\(\{ ipHeader: trustsProxyHeader\(host\) \}\)/, 'main.ts derives ipHeader from the bind address, never a literal true');
 });
 
 test('the per-IP socket cap and the join rate refuse the extra join, and a refused join does not keep a slot', async () => {
