@@ -30,8 +30,8 @@ export const SCHEMA = {
     // an object of rows keyed by id: path -> the keys each row may carry
     rowMaps: { 'finisherCuts.rows': ['unit', 'atS', 'push', 'kill', 'plane'] },
     finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'] } },
-  // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), opt-in ?rules=m4; `armour` and `weapons` are keyed by opponent / weapon ids
-  'rules': { keys: ['about', 'on', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
+  // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), the default (`default` = 'm4'), ?rules=v1 = V1's rules; `armour` and `weapons` are keyed by opponent / weapon ids
+  'rules': { keys: ['about', 'on', 'default', 'query', 'v1', 'm4', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'renewOnKill', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],

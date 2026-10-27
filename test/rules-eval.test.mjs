@@ -1,5 +1,5 @@
-// The physics package's M4 hit/cut rules evaluator on the opponent's ragdoll (data/rules.json, src/fight/rules-eval.ts), opt-in ?rules=m4.
-// Presentation only: these pin the rows against the package and the sim's own weapons, the query (V1's rules are the default), the mapping
+// The physics package's M4 hit/cut rules evaluator on the opponent's ragdoll (data/rules.json, src/fight/rules-eval.ts), the default (?rules=v1 = V1's rules).
+// Presentation only: these pin the rows against the package and the sim's own weapons, the query (M4 is the default), the mapping
 // from a sim Hit event to the evaluator's input (light/heavy, head/torso/legs, counter-hit, stab, blunt) and the outcome the package gives for it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,15 +37,20 @@ test('every weapon V3 fights with has a row, and each row names a package weapon
   assert.ok(ROWS.handSpeedRef in rules.swing.hand_speed_ref_m_s && ROWS.impulseAt in rules.strength_scale);
 });
 
-test('V1\'s rules are the default: only ?rules=m4 turns the evaluator on', () => {
+test('M4 is the default (Dom 2026-10-27, data/rules.json default row); ?rules=v1 is V1\'s rules', () => {
   assert.equal(ROWS.on, true);
-  assert.equal(rulesOnFor(ROWS, ''), false);
+  assert.equal(ROWS.default, ROWS.m4);
+  assert.equal(rulesOnFor(ROWS, ''), true);
   assert.equal(rulesOnFor(ROWS, '?rules=v1'), false);
-  assert.equal(rulesOnFor(ROWS, '?rules=sometimes'), false);
-  assert.equal(rulesOnFor(ROWS, '?physics=v1&foo=m4'), false);
+  assert.equal(rulesOnFor(ROWS, '?x=1&rules=v1'), false);
+  assert.equal(rulesOnFor(ROWS, '?rules=sometimes'), true);
+  assert.equal(rulesOnFor(ROWS, '?physics=v1&foo=m4'), true);
   assert.equal(rulesOnFor(ROWS, '?rules=m4'), true);
   assert.equal(rulesOnFor(ROWS, '?x=1&rules=m4'), true);
   assert.equal(rulesOnFor({ ...ROWS, on: false }, '?rules=m4'), false);
+  assert.equal(rulesOnFor({ ...ROWS, on: false }, ''), false);
+  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.v1 }, ''), false);   // the default is the row, not a constant in the code
+  assert.equal(rulesOnFor({ ...ROWS, default: ROWS.v1 }, '?rules=m4'), true);
 });
 
 test('hit event -> evaluator input: light and heavy, head / torso / legs, counter-hit, stab, blunt, time', () => {
