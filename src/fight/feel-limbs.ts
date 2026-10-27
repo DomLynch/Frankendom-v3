@@ -4,7 +4,7 @@
 //   sword arm -> the arm hangs (the guard drops) and, after `drop.afterS`, the weapon leaves his hand and falls, bounces and lies on the floor;
 //   off arm, torso, head -> the arm hangs, the spine hunches, the head lolls.
 // INPUT: the sim's per-part budget fractions (ctx.limbs(): 1 whole .. 0 gone; keys leg_left, leg_right, arm_left, arm_right, head, torso; V3 Dev's ruling, never a Jolt value). With none handed yet
-// (the sim side is not wired) the evaluator's own part HP is the input (?rules=m4: window.__v3Rules.fighter(), read only; the stills set a part through its local-host-only debug.setPartHp).
+// (the sim side is not wired) the evaluator's own part HP is the input (?rules=m4: window.__v3Rules.partFractions(), read only; the stills set a part through its local-host-only debug.setPartHp).
 // OUTPUT: ctx.emit('feel:limp', {part, level}), ('feel:guard_drop', {side}), ('feel:weapon_drop', {}) (names in the rows) as the presentation of the same facts; the numbers the sim should use
 // are the rows' `sim` blocks. PRESENTATION ONLY here: speed, guard and swing changes are the sim's (Strategy's ruling 2026-10-27); this file never imports duel.ts.
 // Pure core (levels, gait, stumble, the plan of motor strengths and bone shares, the drop's fall) first, then the part that touches three and the ragdoll.
@@ -21,7 +21,7 @@ export type LimbRows = typeof ROWS;
 export type Fighter = { sword_side: string; parts: Record<string, { hp: number; max: number }> };
 type PartRow = { startFrac: number; sided: boolean; motor: Record<string, number>; blend: Record<string, number>; gait?: { periodS: number; dipTo: number; dipFrac: number; goodDipTo: number; hipsDropM: number; hipsTiltRad: number; hipsBaseFrac: number };
   stumble?: { heavyOnly: boolean; level: number; dipTo: number; inS: number; holdS: number; upS: number; cooldownS: number; blend: number; hipsDropM: number; hipsTiltRad: number };
-  drop?: { afterS: number; velocity: number[]; spin: number[]; gravity: number; restitution: number; bounces: number; restHeightM: number; lieS: number } };
+  drop?: { afterS: number; velocity: number[]; spin: number[]; gravity: number; restitution: number; bounces: number; minBounceSpeed: number; bounceFriction: number; restHeightM: number; lieS: number } };
 export type RowKey = 'leg' | 'arm_sword' | 'arm_off' | 'torso' | 'head';
 
 /** ?feel=limbs asked for (the registry runs the module only then) . The part budgets come from the sim; ?rules=m4 is needed only by the stills' fallback. */
@@ -130,14 +130,14 @@ export const heavyHit = (e: Pick<CombatEvent, 'charged' | 'move'>): boolean => e
 
 /** The dropped weapon's fall, stepped by dt in the world (an analytic prop): gravity, bounces that lose speed, then lying. Mutates and returns the state it is given. */
 export type Fall = { p: [number, number, number]; v: [number, number, number]; floor: number; bounces: number; landedFor: number; landed: boolean };
-export function stepFall(d: Pick<NonNullable<PartRow['drop']>, 'gravity' | 'restitution' | 'bounces' | 'restHeightM'>, s: Fall, dt: number): Fall {
+export function stepFall(d: Pick<NonNullable<PartRow['drop']>, 'gravity' | 'restitution' | 'bounces' | 'minBounceSpeed' | 'bounceFriction' | 'restHeightM'>, s: Fall, dt: number): Fall {
   if (s.landed) { s.landedFor += dt; return s; }
   s.v[1] -= d.gravity * dt;
   s.p[0] += s.v[0] * dt; s.p[1] += s.v[1] * dt; s.p[2] += s.v[2] * dt;
   const y = s.floor + d.restHeightM;
   if (s.p[1] <= y && s.v[1] < 0) {
     s.p[1] = y;
-    if (s.bounces < d.bounces && -s.v[1] > 0.5) { s.v[1] = -s.v[1] * d.restitution; s.v[0] *= 0.6; s.v[2] *= 0.6; s.bounces++; }
+    if (s.bounces < d.bounces && -s.v[1] > d.minBounceSpeed) { s.v[1] = -s.v[1] * d.restitution; s.v[0] *= d.bounceFriction; s.v[2] *= d.bounceFriction; s.bounces++; }
     else { s.v = [0, 0, 0]; s.landed = true; }
   }
   return s;
@@ -188,15 +188,21 @@ export function createLimbs(rows: LimbRows, env: Env) {
       const start = performance.now(), sword = f.parts[`arm_${f.sword_side}`];
       if (dropped && sword && sword.hp / sword.max > 0) api.reset();   // renewed: he is whole again
       t += dt; sinceStumble += dt; if (stumbleAge >= 0) stumbleAge += dt;
-      const plan = planOf(rows, f, t, stumbleAge), st = P.leg.stumble;
-      if (stumbleAge >= 0 && !(st && stumbleAge < st.inS + st.holdS + st.upS)) stumbleAge = -1;   // over when its time is up (a frame of dt 0 right after the blow, a hit-stop, must not end it)
+      // a stumble is over when its time is up (a frame of dt 0 right after the blow, a hit-stop, must not end it) or when no leg is hurt any more (a renewed or rematch body, a finisher that
+      // sent no kill: it must not replay on a whole body)
+      const st = P.leg.stumble;
+      if (stumbleAge >= 0 && (!(st && stumbleAge < st.inS + st.holdS + st.upS) || !hurtParts(rows, f).some((h) => h.key === 'leg'))) stumbleAge = -1;
+      const plan = planOf(rows, f, t, stumbleAge);
       announce(plan.hurt);
-      // Whole (nothing hurt, no stumble, nothing dipped last frame): no motor, bone or pelvis call at all. Otherwise only the parts this module asks for are set, and the ones it dipped
-      // last frame and no longer asks for go back to 1 (never `all`: that would undo clash's and hitreact's dips every frame).
-      const showing = plan.hurt.length > 0 || stumbleAge >= 0;
+      // Whole (nothing hurt, no stumble, nothing dipped last frame): no motor, bone or pelvis call at all. Otherwise only the parts this module really dips (strength under 1) are set, and the ones
+      // it dipped last frame and no longer asks for go back to 1 once (never `all`, and never a rewritten 1.0 every frame: the engine keeps the last value written per part, so that would undo
+      // clash's, hitreact's and kick's dips on the parts they share with the good leg's antiphase).
+      const ask: Record<string, number> = {};
+      for (const [p, s] of Object.entries(plan.strength)) if (s < 0.999) ask[p] = s;
+      const showing = plan.hurt.length > 0 || stumbleAge >= 0, undip = touched.filter((p) => !(p in ask)), asked = Object.keys(ask);
       if (env.active()) {
-        if (showing || touched.length) { rd.setMotorStrength({ ...Object.fromEntries(touched.map((p) => [p, 1])), ...plan.strength }); touched = Object.keys(plan.strength); }
-        if (showing) { env.blend(plan.share); env.hips(plan.hips); }
+        if (undip.length || asked.length) { rd.setMotorStrength({ ...Object.fromEntries(undip.map((p) => [p, 1])), ...ask }); touched = asked; }
+        if (showing && dt > 0) { env.blend(plan.share); env.hips(plan.hips); }   // not on a frame of dt 0 (a hit-stop, a freeze): the animation does not rewrite the bones then, so the pelvis would sink again on top of itself
       }
       weapon(f, dt, plan.hurt);
       const ms = performance.now() - start;
@@ -264,11 +270,10 @@ export function flatQuaternion(node: THREE.Object3D, worldQuat: THREE.Quaternion
 }
 
 // ---- the registry ------------------------------------------------------------------------------------------------------------------------------------
-// The evaluator's part HP as a fighter (the fallback while the sim hands no fractions): window.__v3Rules.fighter() under ?rules=m4, on any host (it is his real part HP in a real fight, read only,
+// The evaluator's part HP as a fighter (the fallback while the sim hands no fractions): window.__v3Rules.partFractions() under ?rules=m4, on any host (it is his real part HP in a real fight, read only,
 // so a phone sees the limp when a leg really reaches 0). The hook that WRITES a part's HP (debug.setPartHp, the stills') is the local-host one (rules-eval.ts).
 function harnessFractions(): Record<string, number> {
-  const fighter = (globalThis as { __v3Rules?: { fighter?: () => { parts: Record<string, { hp: number; max: number }> } } }).__v3Rules?.fighter?.();
-  return fighter ? Object.fromEntries(Object.entries(fighter.parts).map(([id, p]) => [id, p.max > 0 ? p.hp / p.max : 1])) : {};
+  return (globalThis as { __v3Rules?: { partFractions?: () => Record<string, number> } }).__v3Rules?.partFractions?.() ?? {};
 }
 
 const hv = new THREE.Vector3(), hv2 = new THREE.Vector3(), hq = new THREE.Quaternion(), hq2 = new THREE.Quaternion(), fwd = new THREE.Vector3();

@@ -9,7 +9,7 @@ import { validateFile, FEEL_PARTS } from '../src/sim/validate.js';
 import { setPartHp } from '../src/fight/rules-eval.ts';
 import { FEEL_NAMES } from '../src/fight/feel-modules.ts';
 import * as chunk from '../src/fight/feel-chunk.ts';
-import { createLimbs, feelLimbsOn, fighterOf, flatQuaternion, gaitDepth, heavyHit, hurtParts, levelOf, partOf, planOf, rowOf, stepFall, stumbleDepth, stumbles } from '../src/fight/feel-limbs.ts';
+import { createLimbs, feelHooks, feelLimbsOn, fighterOf, flatQuaternion, gaitDepth, heavyHit, hurtParts, levelOf, partOf, planOf, rowOf, stepFall, stumbleDepth, stumbles } from '../src/fight/feel-limbs.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ROWS = read('../data/feel-limbs.json'), RULES = read('../data/rules.json');
@@ -249,8 +249,51 @@ test('he dies with the weapon in the air: settle() lets it land and lie, and emi
   const at = lying.position.clone(); r.limbs.settle(1 / 60); assert.ok(lying.position.distanceTo(at) < 1e-9, 'and still');
 });
 
+// ---- through feelHooks (the registry's own path: the module-level env, the real pelvis edit, the engine's last-writer-wins motor rows) ----
+function hookRig(fractions) {
+  const scene = new THREE.Scene(), group = new THREE.Group(), hips = new THREE.Bone(), thighL = new THREE.Bone(), thighR = new THREE.Bone();
+  group.add(hips); hips.add(thighL); hips.add(thighR); hips.position.set(0, 1, 0); thighL.position.set(0.1, -0.1, 0); thighR.position.set(-0.1, -0.1, 0); scene.add(group);
+  const base = {}, events = [], blends = [];
+  const rd = { state: 'alive', setMotorStrength: (r) => { for (const [k, v] of Object.entries(r)) base[k] = v; } };   // the engine keeps the last value written per part
+  const ctx = { rd, partBones: { hips, thighLeft: thighL, thighRight: thighR }, group, mode: 'alive', emit: (n, p) => events.push([n, p]), limbs: () => fractions, blendToward: (s) => blends.push(s) };
+  const done = () => { ctx.mode = 'dead'; feelHooks.frame(1 / 60, [], ctx); ctx.mode = 'alive'; feelHooks.frame(0, [], ctx); };   // the rematch: resets the module's singleton for the next test
+  return { ctx, hips, base, events, blends, fractions, done };
+}
+const legHurt = () => ({ leg_left: 0, leg_right: 1, arm_left: 1, arm_right: 1, head: 1, torso: 1 });
+
+test('the pelvis is sunk once per animated frame: frames of dt 0 (a hit-stop, a freeze) do not sink it again', () => {
+  const h = hookRig(legHurt());
+  feelHooks.frame(1 / 60, [], h.ctx);
+  const y1 = h.hips.position.y, q1 = h.hips.quaternion.clone(), n = h.blends.length;
+  assert.ok(y1 < 1, 'sunk on a frame of time');
+  for (let i = 0; i < 6; i++) feelHooks.frame(0, [], h.ctx);
+  assert.equal(h.hips.position.y, y1); assert.ok(h.hips.quaternion.equals(q1)); assert.equal(h.blends.length, n, 'and the bones are not blended again either');
+  h.done();
+});
+
+test('another module\'s dip on the good leg survives: the antiphase never rewrites a 1.0 over it', () => {
+  const h = hookRig(legHurt());
+  let kept = 0;
+  for (let i = 0; i < 120; i++) { h.base.thighRight = 0.12; feelHooks.frame(1 / 60, [], h.ctx); if (h.base.thighRight === 0.12) kept++; }   // (a hitreact buckle written just before this module's frame)
+  assert.ok(kept >= 30, `kept on ${kept} of 120 frames (the frames with no antiphase dip and no restore)`);
+  h.done();
+});
+
+test('a stumble in progress does not replay on a whole body (a renewal, a finisher that sent no kill)', () => {
+  const h = hookRig(legHurt());
+  feelHooks.frame(1 / 60, [], h.ctx);
+  feelHooks.hit({ charged: true }, h.ctx); feelHooks.frame(1 / 60, [], h.ctx); feelHooks.frame(ROWS.limbs.parts.leg.stumble.inS, [], h.ctx);
+  assert.ok(h.base.thighRight < 0.5, 'stumbling');
+  h.fractions.leg_left = 1; feelHooks.frame(1 / 60, [], h.ctx); feelHooks.frame(1 / 60, [], h.ctx);
+  assert.equal(h.base.thighRight, 1); assert.equal(h.base.thighLeft, 1);
+  const n = Object.keys(h.base).length; feelHooks.frame(1 / 60, [], h.ctx); assert.equal(Object.keys(h.base).length, n);
+  h.done();
+});
+
 test('the rows tie `sided` to the part: legs and arms are sided, head and torso are not', () => {
   const bad = (f) => { const c = structuredClone(ROWS); f(c); return validateFile('feel-limbs', c); };
+  assert.ok(bad((c) => { c.limbs.parts.arm_sword.drop.bounceFriction = 2; }).some((e) => e.includes('drop.bounceFriction')));
+  assert.ok(bad((c) => { delete c.limbs.parts.arm_sword.drop.minBounceSpeed; }).some((e) => e.includes('drop.minBounceSpeed')));
   assert.ok(bad((c) => { c.limbs.parts.leg.sided = false; }).some((e) => e.includes('leg.sided')));
   assert.ok(bad((c) => { c.limbs.parts.torso.sided = true; }).some((e) => e.includes('torso.sided')));
 });

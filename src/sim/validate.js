@@ -106,7 +106,7 @@ function checkFeelLimbs(json, errors) {
     }
     if (p.drop) {
       const d = p.drop;
-      num(`${at}.drop.afterS`, d.afterS, 0, 10); num(`${at}.drop.gravity`, d.gravity, 0.1, 50); num(`${at}.drop.restitution`, d.restitution, 0, 0.95); num(`${at}.drop.restHeightM`, d.restHeightM, 0, 1); num(`${at}.drop.lieS`, d.lieS, 0.05, 10);
+      num(`${at}.drop.afterS`, d.afterS, 0, 10); num(`${at}.drop.gravity`, d.gravity, 0.1, 50); num(`${at}.drop.restitution`, d.restitution, 0, 0.95); num(`${at}.drop.minBounceSpeed`, d.minBounceSpeed, 0, 10); num(`${at}.drop.bounceFriction`, d.bounceFriction, 0, 1); num(`${at}.drop.restHeightM`, d.restHeightM, 0, 1); num(`${at}.drop.lieS`, d.lieS, 0.05, 10);
       if (!Number.isInteger(d.bounces) || d.bounces < 0 || d.bounces > 6) errors.push(`${n}.${at}.drop.bounces: must be an integer in [0, 6]`);
       for (const k of ['velocity', 'spin']) if (!Array.isArray(d[k]) || d[k].length !== 3 || !d[k].every(fin)) errors.push(`${n}.${at}.drop.${k}: must be three finite numbers`);
     }

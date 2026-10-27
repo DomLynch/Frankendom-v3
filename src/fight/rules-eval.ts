@@ -122,7 +122,7 @@ export function setPartHp(state: FighterView, part: string, hp: number, armGoneM
 
 /** The page's rules (globalThis.__v3Rules and window.__v3Fight.rules): the totals, the last results, the cuts, the per-hit cost. */
 export type RulesDebug = {
-  fighter?: () => FighterView; setPartHp?: (part: string, hp: number) => boolean;
+  fighter?: () => FighterView; partFractions?: () => Record<string, number>; setPartHp?: (part: string, hp: number) => boolean;
   on: true; hits: number; skipped: number; byOutcome: Record<string, number>; deferredKills: number; renewals: number; cuts: { unit: string; tick: number; weapon: string }[];
   last: { input: EvalHit; measured: number | null; source: 'measured' | 'ref'; result: Omit<EvalResult, 'events'> & { events: string[] }; presentation: Presentation }[]; cost: { calls: number; totalMs: number; maxMs: number };
 };
@@ -135,7 +135,9 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
   let state = fresh();
   const debug: RulesDebug = { on: true, hits: 0, skipped: 0, byOutcome: {}, deferredKills: 0, renewals: 0, cuts: [], last: [], cost: { calls: 0, totalMs: 0, maxMs: 0 } };
   // ?feel=limbs (feel-limbs.ts) reads his per-part HP and flags from here; setPartHp is the stills' hook (a part's HP to a value, with the evaluator's own consequences of 0)
-  debug.fighter = () => state as FighterView;   // read only: his real part HP
+  // READ only, on any host: a COPY (a console cannot reach the live state through it), and the part fractions the module reads every frame (no copy, 1 whole .. 0 gone)
+  debug.fighter = () => JSON.parse(JSON.stringify(state)) as FighterView;
+  debug.partFractions = () => Object.fromEntries(Object.entries((state as FighterView).parts).map(([id, p]) => [id, p.max > 0 ? p.hp / p.max : 1]));
   // the WRITE is for local hosts (and node, where there is no location): a console on a live page cannot change a fight's verdicts through it
   const local = typeof location === 'undefined' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (local) debug.setPartHp = (part, hp) => setPartHp(state as FighterView, part, hp, (ev.rules as { locational?: { arm_gone_damage_mult?: number } }).locational?.arm_gone_damage_mult ?? 1);
