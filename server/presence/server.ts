@@ -21,6 +21,8 @@ export const PROTOCOL = PRESENCE.protocol;
 export const PATH = PRESENCE.path;
 /** The address the service binds: PRESENCE_HOST if set (the one env override), else the `host` row (loopback). */
 export const listenHost = (env: Record<string, string | undefined>): string => env.PRESENCE_HOST || PRESENCE.host;
+/** Whether the per-IP caps may read the reverse proxy's X-Real-IP: only while bound to loopback (127.0.0.1 or ::1), where nginx is the only way in and overwrites the header. Bound anywhere else a client could send it itself. */
+export const trustsProxyHeader = (host: string): boolean => host === '127.0.0.1' || host === '::1';
 export const HEALTH_PATH = `${PRESENCE.path}/health`;
 export const LIMITS = { maxMessage: presenceRule('maxMessage'), perSecond: presenceRule('perSecond'), idleMs: presenceRule('idleMs'), ipSockets: presenceRule('ipSockets'), ipJoinsPerMinute: presenceRule('ipJoinsPerMinute'), beatMs: presenceRule('beatMs'), maxWriteBytes: presenceRule('maxWriteBytes') };
 export type Limits = typeof LIMITS;
