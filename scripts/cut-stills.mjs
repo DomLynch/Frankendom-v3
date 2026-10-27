@@ -109,6 +109,14 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
     // ASIDE=m: the test hook: the hero and the corpse are moved apart sideways (the corpse's sim position shifted m metres across the line from the hero to him; the camera rides the hero), so the corpse is not behind the hero
     if (process.env.ASIDE) { await page.evaluate((m) => { const [h, f] = globalThis.__v3Fight.duel.fighters, dx = f.body.x - h.body.x, dz = f.body.z - h.body.z, n = Math.hypot(dx, dz) || 1; f.body = { ...f.body, x: f.body.x - (dz / n) * m, z: f.body.z + (dx / n) * m }; }, Number(process.env.ASIDE)); await run(20); }
     await run(30);
+    // LEAVE=m (the corpse rows, ragdoll.ts leaveCorpse): the dead foe is left where he lies, then his sim body is moved m metres across the line (as the zone's respawn will), so the stills show the corpse
+    // standing on its own and the live foe elsewhere; prints how many corpses stand now and after cut.corpse.keepSeconds
+    if (process.env.LEAVE) {
+      const left = await page.evaluate(() => globalThis.__ragdoll.leave?.());
+      await page.evaluate((m) => { const [h, f] = globalThis.__v3Fight.duel.fighters, dx = f.body.x - h.body.x, dz = f.body.z - h.body.z, n = Math.hypot(dx, dz) || 1; f.body = { ...f.body, x: f.body.x - (dz / n) * m, z: f.body.z + (dx / n) * m }; }, Number(process.env.LEAVE));
+      await run(30);
+      console.log(`${tag}: leaveCorpse -> ${left}; corpses standing ${await page.evaluate(() => globalThis.__ragdoll.corpses)}`);
+    }
     await shoot('tap--1');
     // TAP is a unit (arm_left ...: the first grid point of the screen a tap would cut that unit at) or a part (armLeft ...: that bone's own screen point)
     const at = v1 ? null : /_/.test(TAP) || TAP === 'head' ? await page.evaluate((u) => { for (let y = 120; y < 700; y += 5) for (let x = 20; x < 360; x += 5) if (globalThis.__ragdoll.probe?.(x, y) === u) return [x, y]; return null; }, TAP) : await page.evaluate((p) => globalThis.__ragdoll.screenOf?.(p), TAP);
