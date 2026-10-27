@@ -15,6 +15,7 @@ import { bone, rigOf } from './rig-bones.ts';
 import { foeBodyFile } from './foe-body.ts';
 import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
 import RULES from '../../data/rules.json' with { type: 'json' };
+import FEEL_DEFAULTS from '../../data/feel-defaults.json' with { type: 'json' };   // the M7 feel modules on without a query (Dom 2026-10-27)
 import { createHandSpeed, createRulesEval, cutPrecedence, evaluatorTakesKill, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
 import { OPPONENTS, RULES as SIM_RULES, type OpponentId } from './moves.ts';   // ?rules=m4: his health (the budgets' scale) and a man's, both the sim's rows
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
@@ -70,7 +71,7 @@ let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
-  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search)) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS)) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
