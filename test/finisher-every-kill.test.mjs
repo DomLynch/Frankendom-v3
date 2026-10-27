@@ -8,7 +8,7 @@ import { resolveFinisher, setRagdollPlays } from '../src/roster.ts';
 import { setGoreEvery, ROTATION } from '../src/fight/finishers.ts';
 
 const MOVES = ['light', 'light_left', 'light_right', 'heavy', 'thrust'], LOCS = ['head', 'torso', 'legs', 'arm_left'];
-const GORE = ['splitCrown', 'decapitation', 'runThrough', 'opened'];
+const GORE = ['splitCrown', 'decapitation', 'runThrough', 'opened', 'dismember', 'hamstringCut'];   // the six (Dom 2026-10-27)
 const run = (opp, n = 1000) => {
   let prev = null; const seq = [];
   for (let i = 0; i < n; i++) {
@@ -32,10 +32,16 @@ test('gore every kill on the Minotaur while the ragdoll takes finishers: a gore 
     const m = run('minotaur');
     assert.ok(m.every((x) => GORE.includes(x)), 'every kill: ' + [...new Set(m)]);
     for (let i = 1; i < m.length; i++) assert.notEqual(m[i], m[i - 1], `repeat at ${i}`);
-    assert.equal(new Set(m).size, 4);
+    assert.equal(new Set(m).size, 6, 'all six used');
+    for (const g of GORE) assert.ok(m.filter((x) => x === g).length > 100, g + ' is drawn about a sixth of the time');
     assert.deepEqual(run('minotaur'), m, 'replay-identical');
     assert.ok(!ROTATION.length || ROTATION.includes('plainDeath'), 'the rotation rows themselves are untouched');
   } finally { setRagdollPlays(null); setGoreEvery(false); }
+});
+
+test('with gore off (?gore=v1) the clipless cut rows (dismember, hamstringCut) are never picked: the 5-way rotation as before', () => {
+  setRagdollPlays(null); setGoreEvery(false);
+  const v = run('veteran'); assert.ok(!v.includes('dismember') && !v.includes('hamstringCut'));
 });
 
 test('a kick, a skill kill, the hero death and a draw keep their plain fall', () => {

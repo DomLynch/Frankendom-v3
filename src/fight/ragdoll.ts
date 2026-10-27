@@ -761,7 +761,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           const onKill = killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it
           const units = fc ? finisherUnits(fc, hasUnit) : rulesOn ? [] : onKill ? [onKill] : [];   // defaults-on (Dom 2026-10-27): the M4 rules and the physics finishers are both default, so a finisher row's cut (Split Crown, Opened ...) is made under the rules too; the head-zone onKill rule stays the evaluator's alone   // a finisher's row decides its own cut(s): its unit (or the fallback stand-in), then its `also` units this body carries
           const push = (u: string) => blowImpulse({ ...(fc?.kill ?? cutRows.kill), parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group!.rotation.y)?.impulse;   // the push is the row's, whatever the location
-          for (const unit of units) { if (!fc || fc.atS <= 0) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit)); else late.add(unit, fc.atS, 'finisher'); }
+          units.forEach((unit, i) => { const at = (fc?.atS ?? 0) + (i > 0 ? fc?.alsoAtS ?? 0 : 0); if (!fc || at <= 0) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit)); else late.add(unit, at, 'finisher'); });   // alsoAtS: the second blow of a dismemberment / hamstring
         }
       } else if (mode === 'alive') for (const e of events) {
         if (e.type !== 'Hit' || e.target !== side) continue;

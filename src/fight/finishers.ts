@@ -50,7 +50,8 @@ export function selectFinisher(finish: Finish, weapons: readonly [WeaponId, Weap
   // Beta rotation (owner 2026-09-20, simplifying for the freeze): five outcomes — Split Crown, Decapitation, Run Through,
   // Opened, plain death. The Quiet One is out of the automatic pick (too subtle to read on a phone); its clip, pose and
   // gore stay shipped and the dev picker can still force it. Never the previous fight's ceremony again.
-  const pool = ROTATION.filter((id) => id !== previous && !(goreEvery && id === PLAIN));
+  // The six (Dom 2026-10-27): Split Crown, Decapitation, Run Through, Opened, Dismemberment, Hamstrung. The `cut` rows (dismember, hamstringCut) have no clip, so they are in the pool only while gore is on (the ragdoll cuts them).
+  const pool = ROTATION.filter((id) => id !== previous && (goreEvery ? id !== PLAIN : FINISHERS.byId.get(id)?.template !== 'cut'));
   if (!pool.length) return null;
   return pool[Math.abs(hash % pool.length)];
 }

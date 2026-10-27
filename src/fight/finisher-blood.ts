@@ -91,6 +91,8 @@ export function finisherBloodSources(kind: FinisherId, victim: Object3D, head: O
       source('back-exit',chest.clone().addScaledVector(forward,-.13*size),forward.clone().negate(),.85),
     ],
   };
+  const sites = finisherRow(kind)?.blood.sites;   // a `cut` row names the bones that bleed (a leg, an arm): one burst each, stronger than a blade wound so it reads at phone size
+  if (template === 'cut' && sites?.length) return sites.flatMap((name, i) => { const p = at(name); return p ? [source(`cut-${name}`, p, up.clone().addScaledVector(forward, .5), 1.5 + .1 * (i % 2))] : []; });
   const wound = template === null ? undefined : wounds[template];
   if (wound) return wound();
   return [source('blade-wound',location === 'head' ? crown : location === 'legs' ? at('thigh_r') ?? chest : chest,forward,.9)];
