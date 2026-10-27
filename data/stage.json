@@ -4,6 +4,22 @@
   "fog": { "near": 40, "far": 120 },
   "ground": { "size": 400, "color": "#6b655f" },
   "grid": { "size": 80, "divisions": 80, "center": "#857d75", "lines": "#7a736c" },
+  "skyline": {
+    "about": "The 360-degree sunset skyline behind the fight (src/fight/skyline.ts): a 10:1 strip (src/assets/skyline/, baked by scripts/skyline-bake.mjs with its two ends cross-faded over seamOverlapPx so the wrap has no seam) on a cylinder of `radius` m and `heightMetres` m that follows the camera, its horizon (`horizonFraction` down the strip) at the camera's eye level, unlit, unfogged, drawn first with no depth write; the sand floor, its colour, grid and fog are untouched and draw over it. The flat `sky` colour shows until the strip lands (fetched after the first frame, `loadAfterFirstFrameMs` later), then it fades in over `fadeSeconds`. `brightness` multiplies the strip (1 = as painted) so the hero and boss stay readable; `yawDegrees` turns the strip about the vertical. ?sky=v1 (`query` = `v1`) draws today's flat sky and fetches nothing. 8192 wide WebP q82: Dom's quality-first pick, see the PR's size table.",
+    "on": true,
+    "query": "sky",
+    "v1": "v1",
+    "file": "skyline-alien.webp",
+    "seamOverlapPx": 410,
+    "quality": 82,
+    "radius": 150,
+    "heightMetres": 100,
+    "horizonFraction": 0.88,
+    "yawDegrees": 0,
+    "brightness": 0.9,
+    "fadeSeconds": 1.2,
+    "loadAfterFirstFrameMs": 300
+  },
   "ruler": { "show": false, "height": 1.8, "tick": 0.1, "color": "#ffd166", "x": -2.9 },
   "light": {
     "exposure": 1.25,
