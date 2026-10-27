@@ -14,7 +14,9 @@ import type { Ragdoll } from './ragdoll.ts';
 /** What a hook may use: the foe's ragdoll (the package's API: stagger, applyImpulse, ...), his bones by the package's part ids, his group, his mode, and the sim-event emitter. */
 export type FeelCtx = { /** The sim fighter this body is: 1 the opponent, 0 the hero (?feel=hero). */ target: number; rd: Ragdoll; partBones: Record<string, THREE.Object3D>; group: THREE.Object3D; mode: 'alive' | 'dead' | 'skip'; emit: (name: string, payload?: unknown) => void; limbs: () => Record<string, number>;
   /** Show the ragdoll's pose on these parts this frame (share: part id -> 0..1, the weight of the ragdoll against the clip; the ragdoll's poseToward(1, share)). Call it after the frame's own pose: the limp and a sagging arm need the bones to follow the ragdoll on those parts. */
-  blendToward: (share: Record<string, number>) => void };
+  blendToward: (share: Record<string, number>) => void;
+  /** The package's own stagger for the blow this `hit` hook is seeing: multipliers the ragdoll reads right after the hooks and puts back to 1 (impulse = the push, blend = how much of the ragdoll's pose shows, time = how much faster it plays out; 1 = as before). */
+  soften?: { impulse: number; blend: number; time: number } };
 export type FeelHooks = {
   /** A blow landed on him (sim event Hit, target 1), after the ragdoll's own reaction; only while he is alive. */
   hit?(e: CombatEvent, ctx: FeelCtx): void;

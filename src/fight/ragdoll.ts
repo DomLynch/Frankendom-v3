@@ -219,7 +219,8 @@ export type FoeRagdoll = ReturnType<typeof createFoeRagdoll>;
 
 // rows: data/physics.json; foe: the opponent's row (ragdollRowFor); load: the chunk's import (scene.ts hands `() => import('./physics-chunk.ts')`)
 export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () => Promise<Chunk>, skipFinishers = false, bodyFinishers = false, rulesOn = false, feels: readonly FeelHooks[] = [], search = '', side = 1, costKey = '__ragdoll') {   // side: the sim fighter this body is (1 the opponent; 0 the hero under ?feel=hero, heroRagdollFor); costKey: its cost record's name on globalThis
-  const feelCtx = (): FeelCtx => ({ target: side, rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs, blendToward: (share) => poseToward(1, share) });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
+  const soften = { impulse: 1, blend: 1, time: 1 }, staggerK = { blend: 1, time: 1 };   // ?feel=hitreact blow classes (data/feel-hitreact.json classes.*.stagger*): the hook sets `soften` for the blow it sees, the reaction below reads it and puts it back to 1; 1 everywhere = the stagger as before
+  const feelCtx = (): FeelCtx => ({ target: side, rd: rd!, partBones, group: group!, mode, emit: emitFeel, limbs: feel.limbs, blendToward: (share) => poseToward(1, share), soften });   // what an M7 hook may use (feel.ts); built only when a ?feel= module is on
   const tick = 1 / rows.tickHz, bones = rows.bones as Record<string, string>;
   let chunk: Chunk | undefined, physics: Physics | undefined, measure: unknown, rd: Ragdoll | undefined, rig: Rig | undefined;
   const cutManifestOf = (c: Chunk): unknown => c.cutManifests?.[foe.body] ?? (foe.body === 'minotaur' ? c.minotaurCutManifest : undefined);   // the cut GLB's manifest for this foe's body (physics-chunk.ts cutManifests: the Minotaur's only so far); a body without one has no cut data and dies the plain way
@@ -607,10 +608,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // ?rules=m4: one sim Hit on him through the evaluator: the stagger (impulse by strength), a knockdown (the bones follow the ragdoll while he is down), a cut (queued in ruleCuts, taken off the corpse at his death).
   function react(e: CombatEvent, p: Presentation) {
     if (p.cut && !ruleCuts.includes(p.cut)) ruleCuts.push(p.cut);
-    const blow = blowImpulse(rows.hit, e.location, e.heading, group!.rotation.y), scaled = blow ? { part: blow.part, impulse: blow.impulse.map((v) => v * p.scale) as Vec3 } : undefined;
+    const blow = blowImpulse(rows.hit, e.location, e.heading, group!.rotation.y), scaled = blow ? { part: blow.part, impulse: blow.impulse.map((v) => v * p.scale * soften.impulse) as Vec3 } : undefined;
     if (down > 0 || p.action === 'none') return;   // already down: the package ignores a stagger or a second fall
     if (p.action === 'knockdown') { rd!.knockdown(p.cause, scaled); down = p.downS; stagger = -1; }
-    else { rd!.stagger(scaled); stagger = 0; }
+    else { rd!.stagger(scaled); stagger = 0; staggerK.blend = soften.blend; staggerK.time = soften.time; }
   }
   // A tuning harness may set globalThis.__ragdollTune before the page loads (motorTuning, solveHinges, blend; settle for the trace): the rows' values otherwise.
   // onKill: a harness's own Killed.location -> unit (the stills' kick kill is a torso blow; { torso: 'head' } makes it the head-zone kill the sim rarely lands on cue).
@@ -770,9 +771,13 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         const p = rules?.hit(e, true, handSpeed.speed());   // ?rules=m4: the evaluator's reaction; null (a missile, a weapon with no row) falls to V1's stagger below
         cost.hitsSeen++; cost.feelHooks = feels.length;   // the stills read these: blows that reached this ragdoll, and how many ?feel= modules it holds
         for (const f of feels) f.hit?.(e, feelCtx());   // M7 (?feel=): a blow landed on him, whichever reaction follows (after the evaluator's verdict, before the reaction)
-        if (p) { react(e, p); continue; }
-        rd.stagger(blowImpulse(rows.hit, e.location, e.heading, group.rotation.y) ?? undefined);   // the package's dip (states.stagger) and the blow's impulse
-        stagger = 0;
+        if (p) react(e, p);
+        else {
+          const v1 = blowImpulse(rows.hit, e.location, e.heading, group.rotation.y);
+          rd.stagger(v1 ? { part: v1.part, impulse: v1.impulse.map((v) => v * soften.impulse) as Vec3 } : undefined);   // the package's dip (states.stagger) and the blow's impulse
+          stagger = 0; staggerK.blend = soften.blend; staggerK.time = soften.time;
+        }
+        soften.impulse = soften.blend = soften.time = 1;   // the hook's softening was for this blow only
       }
       if (mode === 'skip') { cost.lastMs = 0; return; }
       for (const due of late.tick(dt)) cutUnit(due.unit, due.source);   // a finisher row's cut made after the blow (atS)
@@ -786,7 +791,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         } else if (mode === 'alive') {
           rig.drive();
           if (snap) snap = !rd.snapToTarget();   // a new or reset ragdoll starts on the clip's pose
-          if (stagger >= 0) stagger = staggerDepth(rows.states.stagger, stagger + tick) < 0 ? -1 : stagger + tick;
+          if (stagger >= 0) stagger = staggerDepth(rows.states.stagger, (stagger + tick) * staggerK.time) < 0 ? -1 : stagger + tick;
         }
         if (rd.state !== 'frozen' || rd.awake || corpses.some((c) => c.rd?.awake)) physics.step(tick);   // the old rule for every state but a frozen corpse (alive, stagger and dying always step: never trusting Jolt's sleep for a ragdoll tracking a clip); the corpse steps only while a body of it is awake (a piece a cut wakes), and so does a corpse that kept its own ragdoll
         acc -= tick; ticks++;
@@ -814,7 +819,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         for (const b of Object.values(partBones)) (lying.get(b) ?? lying.set(b, new THREE.Quaternion()).get(b)!).copy(b.quaternion);
         lyingHips.copy(partBones.hips!.position);
       } else if (mode === 'alive' && getUp > 0) { getUp -= dt; fromLying(getUp > 0 ? 1 - getUp / RULES.getUpS : 1); if (getUp <= 0) getUp = -1;
-      } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger), blend);   // the stagger on screen, the most at the dip's deepest
+      } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger * staggerK.time) * staggerK.blend, blend);   // the stagger on screen, the most at the dip's deepest
       if (mode === 'dead' && follow.length + props.length) followCuts();
       if (cutRig && warm === 0) { cutRig.update(); slideHalves(dt); }   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
