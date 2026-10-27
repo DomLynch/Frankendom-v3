@@ -29,6 +29,24 @@
         "b": { "fogColor": "#936877", "fogDensity": 0.01, "fadeStartDegrees": 14, "fadeEndDegrees": 9, "dropMetres": 23, "heightMetres": 120, "brightness": 0.85 },
         "c": { "fogColor": "", "fogDensity": 0, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 23, "heightMetres": 120, "brightness": 0.9 }
       }
+    },
+    "fold": {
+      "about": "The folded floor (src/fight/skyfold.ts, Dom 2026-10-27: fold the image so the lower part becomes the floor). The strip's lower cloud band is laid flat on the ground under the sand: its horizon row (variant bandTopFraction, a fraction of the image height down from the top) is the far edge at farMetres, its bottom edge (bandBottomFraction) the near edge at nearMetres, the picture's x following the cylinder's yaw so the clouds under the horizon line up with the sky above. Rows are spaced the way a flat floor is seen (equal steps in 1/distance), so the clouds shrink toward the horizon. It follows the camera, sits at groundY, is unlit and unfogged, draws at SKYLINE_ORDER + orderOffset (after the strip, before the sand) with no depth write, and fades in with the strip; the far featherFraction of it fades to nothing so it melts into the sky behind. Only built when the sand melts (?skyview is not v1) and the strip is on. ?skyfold=v1 (`v1`) builds nothing; ?skyfold=a|b picks a variant, `default` is the no-link one. A reuses the strip's own texture (file empty, no download); B loads `file` (src/assets/skyline/, baked by scripts/skyfold-bake.mjs: the band softened and tileable) after the first frame. around / rings are the mesh's segment counts.",
+      "on": true,
+      "query": "skyfold",
+      "v1": "v1",
+      "default": "a",
+      "variants": {
+        "a": { "file": "", "bandTopFraction": 0.88, "bandBottomFraction": 1 },
+        "b": { "file": "skyfold-band.webp", "bandTopFraction": 0, "bandBottomFraction": 1 }
+      },
+      "farMetres": 160,
+      "nearMetres": 12,
+      "featherFraction": 0.3,
+      "groundY": 0,
+      "orderOffset": 50,
+      "around": 128,
+      "rings": 48
     }
   },
   "ruler": { "show": false, "height": 1.8, "tick": 0.1, "color": "#ffd166", "x": -2.9 },

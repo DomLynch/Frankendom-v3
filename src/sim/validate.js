@@ -256,7 +256,7 @@ export function validateFile(name, json) {
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
-export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views'];
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'views', 'fold'];
 /** data/fight.json camera.wide (src/fight/camera-zoom.ts WideRow): the extra lens zoom on a wide screen. fromAspect 0.75..2 (never below a portrait tablet: every portrait phone stays exactly as it was), toAspect above it, zoom 1..2, maxHfovDeg 40..120. */
 function checkWideLens(w, name) {
   const at = (key, why) => `${name}.camera.wide.${key}: ${why}`, errors = [];
@@ -280,6 +280,35 @@ function checkSkyline(s) {
   rng('yawDegrees', -360, 360); rng('brightness', 0.1, 1.5); rng('fadeSeconds', 0, 10); rng('loadAfterFirstFrameMs', 0, 10000, true);
   if (Number.isFinite(s.radius) && Number.isFinite(s.heightMetres) && Number.isFinite(s.horizonFraction) && Math.hypot(s.radius, Math.max(s.horizonFraction, 1 - s.horizonFraction) * s.heightMetres) > SKYLINE_RIM_LIMIT) at('radius', 'the cylinder rim must stay inside the camera far plane (180 m)');
   e.push(...checkSkyViews(s));
+  e.push(...checkSkyFold(s));
+  return e;
+}
+
+// data/stage.json `skyline.fold` (src/fight/skyfold.ts): the strip's lower band laid flat as a cloud floor under the sand. The far edge stays inside the far plane (SKYLINE_RIM_LIMIT), the near edge nearer than the far one, each variant's band a non-empty slice of its picture.
+export const SKYFOLD_KEYS = ['about', 'on', 'query', 'v1', 'default', 'variants', 'farMetres', 'nearMetres', 'featherFraction', 'groundY', 'orderOffset', 'around', 'rings'];
+function checkSkyFold(s) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.fold.${p}: ${m}`), f = s.fold;
+  if (f === null || typeof f !== 'object' || Array.isArray(f)) return ['stage.skyline.fold: must be an object'];
+  for (const k of Object.keys(f)) if (!SKYFOLD_KEYS.includes(k)) at(k, 'unknown key');
+  if (typeof f.on !== 'boolean') at('on', 'must be true or false');
+  for (const k of ['query', 'v1']) if (typeof f[k] !== 'string' || !/^[a-z0-9]+$/i.test(f[k])) at(k, 'must be a plain word');
+  if (typeof f.query === 'string' && (f.query === s.query || (s.views && f.query === s.views.query))) at('query', 'must differ from skyline.query and skyline.views.query');
+  const rng = (k, lo, hi, int) => { if (!Number.isFinite(f[k]) || f[k] < lo || f[k] > hi || (int && !Number.isInteger(f[k]))) at(k, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
+  rng('farMetres', 20, SKYLINE_RIM_LIMIT - 5); rng('nearMetres', 1, 100); rng('featherFraction', 0, 1); rng('groundY', -5, 5); rng('orderOffset', 1, 99, true); rng('around', 8, 512, true); rng('rings', 2, 256, true);
+  if (Number.isFinite(f.nearMetres) && Number.isFinite(f.farMetres) && !(f.nearMetres < f.farMetres)) at('nearMetres', 'must be nearer than farMetres');
+  const vs = f.variants;
+  if (vs === null || typeof vs !== 'object' || Array.isArray(vs)) return [...e, 'stage.skyline.fold.variants: must be an object'];
+  if (typeof f.default !== 'string' || !Object.prototype.hasOwnProperty.call(vs, f.default)) at('default', 'must be one of the variant ids');
+  if (typeof f.v1 === 'string' && Object.prototype.hasOwnProperty.call(vs, f.v1)) at('v1', 'must not also be a variant id');
+  for (const [id, w] of Object.entries(vs)) {
+    const p = `variants.${id}`;
+    if (!/^[a-z0-9]+$/i.test(id)) at(p, 'the id must be a plain word');
+    if (w === null || typeof w !== 'object' || Array.isArray(w)) { at(p, 'must be an object'); continue; }
+    for (const k of Object.keys(w)) if (!['file', 'bandTopFraction', 'bandBottomFraction'].includes(k)) at(`${p}.${k}`, 'unknown key');
+    if (typeof w.file !== 'string' || !(w.file === '' || /^[a-z0-9][a-z0-9._-]*\.webp$/i.test(w.file))) at(`${p}.file`, "must be '' (the strip's own picture) or a plain .webp file name in src/assets/skyline/");
+    for (const k of ['bandTopFraction', 'bandBottomFraction']) if (!Number.isFinite(w[k]) || w[k] < 0 || w[k] > 1) at(`${p}.${k}`, 'must be a finite number in 0..1');
+    if (Number.isFinite(w.bandTopFraction) && Number.isFinite(w.bandBottomFraction) && !(w.bandBottomFraction - w.bandTopFraction >= 0.02)) at(`${p}.bandBottomFraction`, 'must be at least 0.02 below bandTopFraction (a non-empty band)');
+  }
   return e;
 }
 
