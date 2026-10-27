@@ -2,21 +2,24 @@
   "about": "What the zone loop adds to the zone row (data/zones/zone1.row.json, read by src/zone/zone-rows.ts zoneFor; the row owns the spawn rows, respawnSeconds, behaviour and the hero's respawn point with downSeconds and the died line). Dom 2026-10-27 (live build, on his phone): 'once the game ends you're frozen ... it's a real-time zone like Dungeon 1, not an instant game; we are making an MMO ... with spawns and respawns.' Strategy brief docs/V3-LIVE-ZONE-BRIEF-2026-10-27.md phase 1. Open loop: nothing freezes after the kill; the hero walks on (`postKill`), the corpse lies where it fell (tappable for cuts) until the zone row's spawn stands a fresh opponent `respawnSeconds` after the kill, where the hero stands, and ragdoll.leaveCorpse() leaves the dead body beside the new one for data/physics.json corpse.keepSeconds (Physics Dev's row; no second corpse timer here). A dead hero is down for the row's `respawn.downSeconds`, then stands at the pit's mark at full health. Rematch is gone in the zone; the `flag` query turns the loop off (?postkill=v1 = the frozen end screen with Rematch). The zone row's positions are in the zone's own frame (the yard and pit are around x 190 to 235); the duel sim's arena is the pit itself, so a spawn and a respawn stand at the pit's marks (src/fight/zone-loop.ts respawnPose) until the open world draws the zone. Donors: V1 Dungeon 1 / Zone 1 (respawnSeconds per spawn row), V1 open fight (kill = toast, hero death = 2 s then a warp), Armagedom Web/src/combat.js death() (corpse kept, player keeps control).",
   "flag": { "query": "postkill", "off": "v1" },
   "postKill": {
-    "about": "roam: after the opponent dies the hero is controllable (stick, camera) and the fight camera follows him; the duel sim is stopped at the kill, the hero's walk is presentation-only. startAfterSeconds: the longest the killing blow's ceremony holds him before the stick takes over (he takes over sooner when the finisher has finished playing).",
+    "about": "roam: after the opponent dies the hero is controllable (stick, camera) and the fight camera follows him; the duel sim is stopped at the kill, the hero's walk is presentation-only. startAfterSeconds: the longest the killing blow's ceremony holds him before the stick takes over (he takes over sooner when the finisher has finished playing). walkRadiusMetres (Dom 2026-10-27: 'after the kill I can move ... it should be free roaming, MMO style'): in the zone only, how far from the pit's centre the hero may walk after a kill, past the pit's wall (the duel sim's circle, world.pitScale, is untouched; a fight that starts with him beyond the wall starts on the wall's edge, in line with where he stood); never smaller than the pit's wall. ?postkill=v1 keeps the pit wall. cameraMetres: how far beyond walkRadiusMetres the follow camera may stand (the walking camera is 7.5 m behind him), so it never folds in front of a hero at the edge.",
     "roam": true,
-    "startAfterSeconds": 4
+    "startAfterSeconds": 4,
+    "walkRadiusMetres": 12,
+    "cameraMetres": 8
   },
   "spawn": {
     "about": "minDistance: metres (3.25 is the gap the pit's own marks start a fight at: the hero at z 2, the opponent at z -1.25). A new opponent never stands closer to the hero than this: a hero who walked up to the corpse (it lies at the pit's mark, where the next one stands) is stepped straight back from the mark to this distance, or, if that is outside the wall, the fight starts from the pit's own marks. There is no separate grace timer: the fighters start sheathed and the opponent waits for the hero's draw (src/fight/ai.ts), the same beat as the first fight.",
     "minDistance": 3.25
   },
   "world": {
-    "about": "Live-zone phase 1b, several bosses at their spots (src/zone/spawns.ts, wired in src/client/main.ts). The page draws one place today, the Duel pit, so a spawn row's position (the zone's frame) is drawn at position minus the centre of the zone area `pitArea` (`centre`: how far across the area, 0 to 1, the sim's circle is centred; the result is the pit's own frame, where the sim's circle is). One duel sim runs at a time: it holds the spawn the hero is nearest to (the 'held' one, standing as the live rig); the other spawns stand as frozen copies of the standing rig at their spots (no sim, no ragdoll) until the hero walks into one's aggro, which hands the sim to it. retargetMargin: metres another spawn must be nearer than the held one before the sim moves to it while nobody has engaged (no flicker at the half-way line). edgeMetres: a spot stands at least this far inside the pit's wall (src/fight/sim.ts RADIUS). minSpacing: any two spots stand at least this many metres apart (Dom 2026-10-27 'space them about two times apart': they were 3.5 m, now 6.92 m; 6.5 leaves a little room; they were still too close: Dom 2026-10-27 'I was fighting one and I just ran into the other', the fight and the whole pit were inside one 5.05 m circle. pitScale: the zone's pit is a wider play circle, play-radius.ts setPlayScale(pitScale) in the zone loop only (the single fight, ?postkill=v1, keeps Arena 1's 0.468 and is unchanged): 0.65 = a 7.18 m wall, the drawn arena scales with it; the three spots at the wall less edgeMetres are 10.7 m apart, minSpacing 10). The fight starts when the hero is inside the held spawn's aggro (data/fight.json start.auto then draws for him); a hero beyond the held spawn's leash resets it to full health at its spot; a kill starts only that spawn's respawn timer (the zone row's respawnSeconds), the others are untouched.",
+    "about": "Live-zone phase 1b, several bosses at their spots (src/zone/spawns.ts, wired in src/client/main.ts). The page draws one place today, the Duel pit, so a spawn row's position (the zone's frame) is drawn at position minus the centre of the zone area `pitArea` (`centre`: how far across the area, 0 to 1, the sim's circle is centred; the result is the pit's own frame, where the sim's circle is). One duel sim runs at a time: it holds the spawn the hero is nearest to (the 'held' one, standing as the live rig); the other spawns stand as frozen copies of the standing rig at their spots (no sim, no ragdoll) until the hero walks into one's aggro, which hands the sim to it. retargetMargin: metres another spawn must be nearer than the held one before the sim moves to it while nobody has engaged (no flicker at the half-way line). edgeMetres: a spot stands at least this far inside the pit's wall (src/fight/sim.ts RADIUS). minSpacing: any two spots stand at least this many metres apart (Dom 2026-10-27 'space them about two times apart': they were 3.5 m, now 6.92 m; 6.5 leaves a little room; they were still too close: Dom 2026-10-27 'I was fighting one and I just ran into the other', the fight and the whole pit were inside one 5.05 m circle. pitScale: the zone's pit is a wider play circle, play-radius.ts setPlayScale(pitScale) in the zone loop only (the single fight, ?postkill=v1, keeps Arena 1's 0.468 and is unchanged): 0.65 = a 7.18 m wall, the drawn arena scales with it; the three spots at the wall less edgeMetres are 10.7 m apart, minSpacing 10). The fight starts when the hero is inside the held spawn's aggro (data/fight.json start.auto then draws for him); a boss dragged past its spawn's leash (measured from its own spot to the BOSS, not the hero; leashMargin: metres the leash must exceed the aggro, validated) lets go and resets to full health at its spot (walking back is the follow-up); a kill starts only that spawn's respawn timer (the zone row's respawnSeconds), the others are untouched.",
     "pitArea": "duel-pit",
     "centre": 0.5,
     "retargetMargin": 1.5,
     "edgeMetres": 1,
     "minSpacing": 10,
+    "leashMargin": 15,
     "pitScale": 0.65
   },
   "heroDeath": {
@@ -52,10 +55,13 @@
     "reachMetres": [0, 10],
     "fallSeconds": [0.1, 10],
     "startAfterSeconds": [0, 30],
+    "walkRadiusMetres": [1, 60],
+    "cameraMetres": [0, 20],
     "minDistance": [0.5, 20],
     "retargetMargin": [0, 10],
     "edgeMetres": [0, 4],
     "minSpacing": [0, 20],
+    "leashMargin": [0, 50],
     "pitScale": [0.3, 1],
     "centre": [0, 1]
   }

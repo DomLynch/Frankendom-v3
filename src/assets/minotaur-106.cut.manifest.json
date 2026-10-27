@@ -15,9 +15,16 @@
    "detached_by": "torso_waist"
   },
   {
-   "id": "head",
-   "mesh": "piece_head",
-   "detached_by": "head"
+   "id": "head_left",
+   "mesh": "piece_head_left",
+   "detached_by": "head",
+   "separated_by": "head_split"
+  },
+  {
+   "id": "head_right",
+   "mesh": "piece_head_right",
+   "detached_by": "head",
+   "separated_by": "head_split"
   },
   {
    "id": "arm_left",
@@ -41,12 +48,6 @@
   }
  ],
  "caps": [
-  {
-   "id": "cap_neck_head",
-   "mesh": "cap_neck_head",
-   "region": "head",
-   "shown_when_cut": "head"
-  },
   {
    "id": "cap_neck_torso",
    "mesh": "cap_neck_torso",
@@ -112,6 +113,37 @@
    "mesh": "cap_waist_root",
    "region": "root",
    "shown_when_cut": "torso_waist"
+  },
+  {
+   "id": "cap_neck_head_left",
+   "mesh": "cap_neck_head_left",
+   "region": "head_left",
+   "shown_when_cut": "head"
+  },
+  {
+   "id": "cap_neck_head_right",
+   "mesh": "cap_neck_head_right",
+   "region": "head_right",
+   "shown_when_cut": "head"
+  },
+  {
+   "id": "cap_split_head_left",
+   "mesh": "cap_split_head_left",
+   "region": "head_left",
+   "shown_when_cut": "head_split"
+  },
+  {
+   "id": "cap_split_head_right",
+   "mesh": "cap_split_head_right",
+   "region": "head_right",
+   "shown_when_cut": "head_split"
+  },
+  {
+   "id": "cap_belly_opening",
+   "mesh": "cap_belly_opening",
+   "region": "upper_torso",
+   "shown_when_cut": "belly_open",
+   "kind": "opening"
   }
  ],
  "planes": {
@@ -209,6 +241,118 @@
    "source": "internal: bisector of the two hip planes, separates the legs where both hip half-spaces overlap (no cap of its own)"
   }
  },
+ "optional_units": {
+  "head_split": {
+   "enabled": true,
+   "kind": "split",
+   "unit": "head_split",
+   "plane": "head_split",
+   "replaces": "piece_head",
+   "regions": [
+    "head_left",
+    "head_right"
+   ],
+   "caps": [
+    "cap_neck_head_left",
+    "cap_neck_head_right",
+    "cap_split_head_left",
+    "cap_split_head_right"
+   ],
+   "about": "piece_head is cut at a sagittal plane into piece_head_left (+ side of the plane) and piece_head_right; both are detached by the unit head and separated by the unit head_split. Hair cards go whole to the half they lie mostly in",
+   "stats": {
+    "head_triangles_in": 11650,
+    "left_triangles": 6024,
+    "right_triangles": 6082,
+    "hair_triangles": {
+     "head_left": 0,
+     "head_right": 0
+    }
+   }
+  },
+  "belly_open": {
+   "enabled": true,
+   "kind": "opening",
+   "unit": "belly_open",
+   "plane": "belly_open",
+   "cap": "cap_belly_opening",
+   "region": "upper_torso",
+   "removes_geometry": false,
+   "detaches": null,
+   "about": "a wound patch (flesh rim + cap_inner core) standing in front of the torso skin; the skin under it is not removed, so it reads as an opening only as a decal: hide or replace the skin under it at runtime for a true hole",
+   "frame": {
+    "centre": [
+     0.000091,
+     1.184716,
+     0.035752
+    ],
+    "forward": [
+     0.004622,
+     0,
+     0.999989
+    ],
+    "lateral": [
+     0.999989,
+     0,
+     -0.004622
+    ],
+    "up": [
+     0,
+     1,
+     0
+    ],
+    "half_width": 0.127139,
+    "half_height": 0.081924
+   },
+   "params": {
+    "rim_lift": 0.0015,
+    "bulge": 0.008,
+    "rings": 6,
+    "segments": 32,
+    "core_rings": 4
+   },
+   "materials": {
+    "rim": "cap_flesh",
+    "core": "cap_inner"
+   },
+   "stats": {
+    "vertices": 193,
+    "triangles": 352,
+    "area": 0.036534,
+    "ellipse_area": 0.032722,
+    "triangles_rewound": 0,
+    "waist_clearance": 0.04656,
+    "torso_triangles_seen": 786
+   }
+  }
+ },
+ "optional_planes": {
+  "head_split": {
+   "point": [
+    -0.00008,
+    1.5103,
+    -0.0014
+   ],
+   "normal": [
+    0.999989,
+    0,
+    -0.004622
+   ],
+   "source": "Neck to Head midline 0.5 of the way, moved onto the body's symmetry plane; normal = the left-right axis (Right to Left, from the arm and hip joints)"
+  },
+  "belly_open": {
+   "point": [
+    0.000091,
+    1.184716,
+    0.035752
+   ],
+   "normal": [
+    0.004622,
+    0,
+    0.999989
+   ],
+   "source": "ellipse centre 0.28 of the way from the waist plane point to the neck plane point on the symmetry plane; normal = the body's forward axis (Foot to ToeBase)"
+  }
+ },
  "plane_frame": {
   "about": "plane points are in the measure row's coordinates (floor-lifted bind pose, metres); add bind_offset to get the GLB's bind-pose world space; vertex_to_world is the identity in the cut GLB (written in metres); source_vertex_to_world is the matrix the source GLB's stored vertex space needed",
   "bind_offset": [
@@ -260,12 +404,12 @@
  },
  "stats": {
   "vertices_in": 24422,
-  "vertices_out": 26605,
-  "cap_vertices": 1444,
+  "vertices_out": 27071,
+  "cap_vertices": 2106,
   "triangles_in": 44278,
-  "triangles_out": 47088,
+  "triangles_out": 47544,
   "triangles_split": 1409,
-  "split_vertices_created": 1439,
+  "split_vertices_created": 1671,
   "watertight": false,
   "watertight_at_cuts": false,
   "open_edges": 10,
@@ -280,10 +424,10 @@
   "fragments": 45,
   "fragments_reassigned_by_bones": 6,
   "triangles_reassigned_by_bones": 2595,
-  "weights_rebound": 10102,
+  "weights_rebound": 10206,
   "weights_truncated_to_4": 12,
   "caps_missing": [],
-  "cap_loops": 12,
+  "cap_loops": 15,
   "cap_holes": 0,
   "cap_open_chains": 0,
   "cap_gaps_bridged": 2,
@@ -292,7 +436,7 @@
   "cap_nonplanar_loops": 2,
   "cap_forced_ears": 0,
   "cap_bridge_fallbacks": 0,
-  "cap_inward_triangles": 0,
+  "cap_inward_triangles": 1,
   "pieces": {
    "root": {
     "vertices": 1314,
@@ -302,9 +446,13 @@
     "vertices": 2465,
     "triangles": 4240
    },
-   "head": {
-    "vertices": 6530,
-    "triangles": 11650
+   "head_left": {
+    "vertices": 3479,
+    "triangles": 6024
+   },
+   "head_right": {
+    "vertices": 3517,
+    "triangles": 6082
    },
    "arm_left": {
     "vertices": 4058,
@@ -324,10 +472,6 @@
    }
   },
   "caps": {
-   "cap_neck_head": {
-    "vertices": 153,
-    "triangles": 151
-   },
    "cap_neck_torso": {
     "vertices": 153,
     "triangles": 151
@@ -371,6 +515,26 @@
    "cap_waist_root": {
     "vertices": 112,
     "triangles": 110
+   },
+   "cap_neck_head_left": {
+    "vertices": 83,
+    "triangles": 78
+   },
+   "cap_neck_head_right": {
+    "vertices": 79,
+    "triangles": 77
+   },
+   "cap_split_head_left": {
+    "vertices": 230,
+    "triangles": 228
+   },
+   "cap_split_head_right": {
+    "vertices": 230,
+    "triangles": 228
+   },
+   "cap_belly_opening": {
+    "vertices": 193,
+    "triangles": 352
    }
   },
   "watertight_by_region": {
@@ -401,7 +565,15 @@
      }
     ]
    },
-   "head": {
+   "head_left": {
+    "boundary_edges": 0,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 0,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "head_right": {
     "boundary_edges": 3,
     "open_edges_at_cuts": 1,
     "open_edges_native": 2,

@@ -26,7 +26,7 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
-import { setLockFrame } from '../fight/camera.ts';
+import { setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { cameraZoom } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
 import { setTrailOpacity } from '../fight/trail-opacity.ts';
@@ -42,6 +42,7 @@ import { createHud } from '../fight/hud.ts';
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
+import { toastOver, zoneSoundRows, type ZoneSoundRows } from '../audio/zone-cues.ts';
 import { createKeep } from '../audio/keep.ts';
 import { SPECIAL_CUE_OF } from '../fight/sound/special.ts';
 import { bossSpecialFor, bossSpecialId } from '../fight/special-identity.ts';
@@ -56,7 +57,7 @@ import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
-import { zoneLoopFor, roamStep } from '../fight/zone-loop.ts';
+import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { adopt, joinAttacker, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
@@ -91,6 +92,9 @@ mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
 const ZONE = zoneLoopFor(zoneFor(search), search, Object.keys(OPPONENTS));   // the live zone (null under ?postkill=v1: the single fight, whose pit is exactly as before)
+// The zone's sound rows (data/sound.json zone): which scene-change cues stay silent and when the kill toast clears. Null under ?postkill=v1: every cue plays, the line stays.
+const ZONE_SOUND: ZoneSoundRows | null = ZONE ? zoneSoundRows(SOUND.zone) : null;
+feedback.zoneCues(ZONE_SOUND);
 let seed = FIGHT.seed, epoch = 0;
 const nextSeed = (s: number): number => (Math.imul(s, 1664525) + 1013904223) >>> 0;   // match.ts:75
 function fresh(pose?: DuelPose): Practice {
@@ -204,6 +208,7 @@ const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw &&
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
 const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
 if (ZONE) validateSpots(SPOTS, initialState(), RADIUS, WORLD, ZONE.spawn.kind);
+if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
 if (ZONE) { const bad = spotBodyProblems(SPOTS); if (bad.length) throw new Error(`zone row bodies: ${bad.join('; ')}`); }   // a spawn's own body (zone row spawns[].body) is a usable boss body; none in the shipped zone
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
@@ -265,10 +270,10 @@ function zoneStep(dt: number) {
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
     if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = openerLeashLift(spawns[near]);   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
     if (engaged) {
-      if (leashed(spawns[current]!, hero, openerLift)) hand(current, hero);   // beyond the leash he resets at his spot at full health
+      if (leashed(spawns[current]!, practice.enemy, openerLift)) hand(current, hero);   // the BOSS chased past its leash from its spot (not the hero crossing a line): it gives up and resets at its spot at full health
       else if (multi) {   // real-time aggro: any other standing boss whose aggro he is inside attacks him now, whatever he is fighting; one beyond its own leash lets go
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
-        const gone = dropped(spawns, alive(), hero);
+        const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
         attackers = attackers.filter((a) => !gone.includes(a.index));
         for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero))));
       }
@@ -282,7 +287,7 @@ function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { curre
 element('reset-button').addEventListener('click', () => rematch());
 
 function updateHud() {   // :684, the career fight's view
-  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied() });
+  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, view.finishPhase().age) });
   const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null;   // a walking hero keeps the whole HUD (Respawn included) up
   document.documentElement.classList.toggle('endgame-fade', !!phase && !walking && (hushed || phase.touring));
   document.documentElement.classList.toggle('endgame-hush', !!phase && !walking && hushed);
@@ -355,7 +360,7 @@ function frame(now: number) {
       if (heroStands()) {   // the zone loop: the sim is over, the hero walks (presentation only) once the kill's ceremony lets him go
         const phase = view.finishPhase();
         if (!roam && (intent.x || intent.z) && (phase.complete || phase.age >= ZONE!.startAfterSeconds)) roam = { ...practice.fighter };
-        if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, RADIUS);
+        if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, ZONE!.walkRadius);   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
@@ -363,6 +368,7 @@ function frame(now: number) {
       if (stop) { hitStop = stop; accumulator = 0; previous = state; }
     }
   } else { accumulator = 0; previous = state; }
+  if (ZONE) setWalkClamp(roam ? ZONE.walkRadius + ZONE.cameraMetres : 0);   // the follow camera stands behind a hero who walked beyond the pit (data/respawn.json postKill.cameraMetres); the fight camera is unchanged
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();

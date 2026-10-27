@@ -1,0 +1,13 @@
+LAP checkout 5s
+LAP tags 6s
+LAP npm-ci 8s
+hfjob: running at 926ea2b: bash scripts/limbs-hf.sh 2.5 60 1.0 
+leg-default: leg_left to 0 at tick 480: true
+leg-default: 60 frames; rule hits 2; events []; stumbles n/a
+leg-limbs: leg_left to 0 at tick 480: true
+leg-limbs: 60 frames; rule hits 2; events ["feel:limp"]; stumbles 1
+36
+340K	.
+LIMBS-TAR-BEGIN
+AAAFAA==
+LIMBS-TAR-END

@@ -105,8 +105,24 @@ export function evaluatorTakesKill(rows: Pick<RuleRows, 'cut'>, location: string
   return cutPrecedence(rows, location) === 'evaluator' && presentations.some((p) => !!p?.cut);
 }
 
+/** The package's fighter state, the part of it ?feel=limbs reads (docs/API.md 'Rules evaluator': `parts[id] = { hp, max, gone }`, ids head, torso, arm_left, arm_right, leg_left, leg_right). */
+export type FighterView = { alive: boolean; sword_side: 'left' | 'right'; parts: Record<string, { hp: number; max: number; gone: boolean }>; limp: boolean; weapon_dropped: boolean; outgoing_damage_mult: number };
+
+/** Set one part's HP the way a landed blow would leave it: at 0 the part is gone, the sword arm's loss drops the weapon (outgoing damage x the package's row), a leg's loss is the limp. Pure on the state (the stills' hook). */
+export function setPartHp(state: FighterView, part: string, hp: number, armGoneMult = 1): boolean {
+  const p = state.parts[part];
+  if (!p || !Number.isFinite(hp)) return false;
+  p.hp = Math.min(p.max, Math.max(0, hp));
+  if (p.hp > 0) return true;
+  p.gone = true;
+  if (part === `arm_${state.sword_side}` && !state.weapon_dropped) { state.weapon_dropped = true; state.outgoing_damage_mult = armGoneMult; }
+  if (part.startsWith('leg_')) state.limp = true;
+  return true;
+}
+
 /** The page's rules (globalThis.__v3Rules and window.__v3Fight.rules): the totals, the last results, the cuts, the per-hit cost. */
 export type RulesDebug = {
+  fighter?: () => FighterView; partFractions?: () => Record<string, number>; setPartHp?: (part: string, hp: number) => boolean;
   on: true; hits: number; skipped: number; byOutcome: Record<string, number>; deferredKills: number; renewals: number; cuts: { unit: string; tick: number; weapon: string }[];
   last: { input: EvalHit; measured: number | null; source: 'measured' | 'ref'; result: Omit<EvalResult, 'events'> & { events: string[] }; presentation: Presentation }[]; cost: { calls: number; totalMs: number; maxMs: number };
 };
@@ -118,6 +134,13 @@ export function createRulesEval(rows: RuleRows, pkg: RulesPackage, body: unknown
   const fresh = () => pkg.createFighterState(ev.rules, body, { sword_side: rows.swordSide, leg_hp: rows.legHp, hp_scale: hp.foe / hp.man, budgets: rows.budgets });
   let state = fresh();
   const debug: RulesDebug = { on: true, hits: 0, skipped: 0, byOutcome: {}, deferredKills: 0, renewals: 0, cuts: [], last: [], cost: { calls: 0, totalMs: 0, maxMs: 0 } };
+  // ?feel=limbs (feel-limbs.ts) reads his per-part HP and flags from here; setPartHp is the stills' hook (a part's HP to a value, with the evaluator's own consequences of 0)
+  // READ only, on any host: a COPY (a console cannot reach the live state through it), and the part fractions the module reads every frame (no copy, 1 whole .. 0 gone)
+  debug.fighter = () => JSON.parse(JSON.stringify(state)) as FighterView;
+  debug.partFractions = () => Object.fromEntries(Object.entries((state as FighterView).parts).map(([id, p]) => [id, p.max > 0 ? p.hp / p.max : 1]));
+  // the WRITE is for local hosts (and node, where there is no location): a console on a live page cannot change a fight's verdicts through it
+  const local = typeof location === 'undefined' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if (local) debug.setPartHp = (part, hp) => setPartHp(state as FighterView, part, hp, (ev.rules as { locational?: { arm_gone_damage_mult?: number } }).locational?.arm_gone_damage_mult ?? 1);
   const g = globalThis as { __v3Rules?: RulesDebug; __v3Fight?: { rules?: RulesDebug } };
   g.__v3Rules = debug;
   const publish = () => { if (g.__v3Fight) g.__v3Fight.rules = debug; };

@@ -6,5 +6,17 @@
     "rate": 8000,
     "volume": 0.01
   },
-  "statusMs": 500
+  "statusMs": 500,
+  "zone": {
+    "about": "Dom 2026-10-27 (live, on his phone): 'I still see an instant fight scene, like a ding, which means it's not MMO free flow real time.' In the live zone an engagement or a kill is not a new bout, so the beats that read as a scene change are data rows (src/audio/zone-cues.ts, wired in src/fight/sound/feedback.ts). `cues`: each gateable cue id -> 'on' (plays as in the single fight), 'off' (silent in the zone), or 'once' (rings for the first engagement of the page visit only, never again across respawns, hand-overs and attackers). bell: the arena's opening bell (src/audio/arena.ts, which rang on every new seed: page load, each respawn, each hand-over). draw: the sword-draw sting on every engagement (cues.ts ActionStarted draw; also the no-sprite swing stand-in). crowd_cheer / crowd_gasp: the crowd's win cheer / double-fall gasp after a kill (cues.ts). kill / death_voice: the body falling and the dying voice: the diegetic part of a death, so they stay 'on'. Hit, clash, guard, parry, whoosh, footsteps and the special cues are not rows: they are never gated. toastSeconds: how long the kill toast ('Minotaur defeated.') shows before it clears, so it reads as a toast, not an end-of-match screen (src/fight/hud.ts; a death's 'You died.' stays until the hero stands). ?postkill=v1 (the single fight) ignores this whole row: every cue plays and the line stays, exactly as before.",
+    "cues": {
+      "bell": "off",
+      "draw": "off",
+      "crowd_cheer": "off",
+      "crowd_gasp": "off",
+      "kill": "on",
+      "death_voice": "on"
+    },
+    "toastSeconds": 3
+  }
 }
