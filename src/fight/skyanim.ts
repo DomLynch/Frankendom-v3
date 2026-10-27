@@ -125,6 +125,7 @@ uniform float uBand, uBandW, uBandStr, uSlant, uTime, uTwinkleSec, uTwinkleCells
 uniform vec3 uBandCol;
 uniform sampler2D uEyeTexA, uEyeTexB, uDroolTex, uDropTexA, uDropTexB, uSurfTex, uShadeTex;
 uniform vec4 uEyeRect, uDroolRect, uDropRect; uniform vec2 uEyeFeather, uDroolTexel; uniform vec3 uDroolCol;
+uniform vec4 uEyeE0, uEyeE1; uniform vec3 uEyeTrim; uniform vec2 uPlateSize;
 uniform float uEyeAmt, uEyeKind, uDropA, uDropUse, uDroolI, uDroolPhase, uDroolWaves, uDroolSpread, uSphereOn, uPlanetTurn, uShadeDisc, uShadeStr;
 float skyFold(float a) { float m = mod(a + 1.5707963, 6.2831853); if (m > 3.1415927) m = 6.2831853 - m; return m - 1.5707963; }
 float skyHash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
@@ -143,6 +144,12 @@ if (uEyeAmt > 0.0) {   // a blink or wink patch at native size, in the body's pi
   vec2 el = (skyB - uEyeRect.xy) / (uEyeRect.zw - uEyeRect.xy);
   if (el.x > 0.0 && el.y > 0.0 && el.x < 1.0 && el.y < 1.0) {
     vec2 ef = min(el, 1.0 - el) / uEyeFeather; float ew = clamp(min(ef.x, ef.y), 0.0, 1.0); ew = ew * ew * (3.0 - 2.0 * ew);
+    if (uEyeTrim.x > 0.5) {   // keep the patch only inside the two eye ellipses (the patches carry a thin dark hairline across the cheek and nose)
+      vec2 pp = skyB * uPlateSize;
+      float e0 = length((pp - uEyeE0.xy) / uEyeE0.zw), e1 = length((pp - uEyeE1.xy) / uEyeE1.zw);
+      float f = max(uEyeTrim.z, 0.01), m0 = 1.0 - smoothstep(1.0 - f, 1.0, e0), m1 = 1.0 - smoothstep(1.0 - f, 1.0, e1);
+      ew *= max(m0, m1);
+    }
     vec4 e = uEyeKind < 1.5 ? texture2D(uEyeTexA, vec2(el.x, 1.0 - el.y)) : texture2D(uEyeTexB, vec2(el.x, 1.0 - el.y));
     sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, e.rgb, e.a * ew * uEyeAmt);
   }
@@ -263,6 +270,8 @@ export function createSkyAnim(search: string, imgW: number, imgH: number, row: A
     uSparkPos: { value: new THREE.Vector2() }, uSparkI: { value: 0 }, uSparkSize: { value: sk.size }, uSparkCol: { value: new THREE.Color(sk.color).multiplyScalar(sk.strength) }, uSparkShape: { value: new THREE.Vector3(sk.coreSize, sk.armWeight, sk.armThickness) },
     uEyeTexA: { value: dummy as THREE.Texture }, uEyeTexB: { value: dummy as THREE.Texture }, uDroolTex: { value: dummy as THREE.Texture }, uDropTexA: { value: dummy as THREE.Texture }, uDropTexB: { value: dummy as THREE.Texture }, uSurfTex: { value: dummy as THREE.Texture }, uShadeTex: { value: dummy as THREE.Texture },
     uEyeRect: { value: pxRect(ey.rectPx, imgW, imgH) }, uEyeFeather: { value: new THREE.Vector2(Math.max(1e-4, ey.featherPx / ey.rectPx.w), Math.max(1e-4, ey.featherPx / ey.rectPx.h)) }, uEyeAmt: { value: 0 }, uEyeKind: { value: 1 },
+    uEyeE0: { value: new THREE.Vector4(ey.trim.ellipses[0].x, ey.trim.ellipses[0].y, ey.trim.ellipses[0].rx, ey.trim.ellipses[0].ry) }, uEyeE1: { value: new THREE.Vector4(ey.trim.ellipses[1].x, ey.trim.ellipses[1].y, ey.trim.ellipses[1].rx, ey.trim.ellipses[1].ry) },
+    uEyeTrim: { value: new THREE.Vector3(ey.trim.on ? 1 : 0, 0, ey.trim.featherFraction) }, uPlateSize: { value: new THREE.Vector2(imgW, imgH) },
     uDroolRect: { value: pxRect(ds.rectPx, imgW, imgH) }, uDroolTexel: { value: new THREE.Vector2(1, 1) }, uDroolCol: { value: new THREE.Color(ds.color).multiplyScalar(ds.strength) }, uDroolI: { value: 0 }, uDroolPhase: { value: 0 }, uDroolWaves: { value: ds.waves }, uDroolSpread: { value: ds.spreadTexels },
     uDropRect: { value: new THREE.Vector4() }, uDropA: { value: 0 }, uDropUse: { value: 0 },
     uSphereOn: { value: 0 }, uPlanetTurn: { value: planetTurn(sph.startTurns, sph.secondsPerTurn, 0) }, uShadeDisc: { value: sph.shading.discFraction }, uShadeStr: { value: sph.shading.strength },

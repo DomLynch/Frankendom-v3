@@ -427,7 +427,13 @@ function checkSkyAnim(a, plateQuery) {
   const pxRect = (o, k, path) => { if (keys(o[k], ['x', 'y', 'w', 'h'], J(path, k))) { for (const q of ['x', 'y']) rng(o[k], q, 0, 16384, J(path, k)); for (const q of ['w', 'h']) rng(o[k], q, 1, 16384, J(path, k)); } };
   const pxPt = (o, k, path) => { if (keys(o[k], ['x', 'y'], J(path, k))) { rng(o[k], 'x', 0, 16384, J(path, k)); rng(o[k], 'y', 0, 16384, J(path, k)); } };
   const ey = a.eyes;
-  if (keys(ey, ['on', 'blink', 'wink', 'rectPx', 'intervalMinSeconds', 'intervalMaxSeconds', 'firstDelaySeconds', 'seed', 'fadeSeconds', 'featherPx'], 'eyes')) {
+  if (keys(ey, ['on', 'blink', 'wink', 'rectPx', 'intervalMinSeconds', 'intervalMaxSeconds', 'firstDelaySeconds', 'seed', 'fadeSeconds', 'featherPx', 'trim'], 'eyes')) {
+    const tr = ey.trim;
+    if (keys(tr, ['on', 'ellipses', 'featherFraction'], 'eyes.trim')) {
+      bool(tr, 'on', 'eyes.trim'); rng(tr, 'featherFraction', 0.01, 1, 'eyes.trim');
+      if (!Array.isArray(tr.ellipses) || tr.ellipses.length !== 2) at('eyes.trim.ellipses', 'must be exactly two ellipses (one per eye)');
+      else for (const [i, q] of tr.ellipses.entries()) { const pth = `eyes.trim.ellipses.${i}`; if (keys(q, ['x', 'y', 'rx', 'ry'], pth)) { rng(q, 'x', 0, 16384, pth); rng(q, 'y', 0, 16384, pth); rng(q, 'rx', 1, 2000, pth); rng(q, 'ry', 1, 2000, pth); } }
+    }
     bool(ey, 'on', 'eyes'); pxRect(ey, 'rectPx', 'eyes'); rng(ey, 'intervalMinSeconds', 0.3, 600, 'eyes'); rng(ey, 'intervalMaxSeconds', 0.3, 600, 'eyes'); rng(ey, 'firstDelaySeconds', 0, 600, 'eyes'); rng(ey, 'seed', 0, 4294967295, 'eyes', true); rng(ey, 'fadeSeconds', 0, 1, 'eyes'); rng(ey, 'featherPx', 0, 40, 'eyes');
     if (Number.isFinite(ey.intervalMinSeconds) && Number.isFinite(ey.intervalMaxSeconds) && ey.intervalMaxSeconds < ey.intervalMinSeconds) at('eyes.intervalMaxSeconds', 'must not be below intervalMinSeconds');
     for (const k of ['blink', 'wink']) {
