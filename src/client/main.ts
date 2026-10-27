@@ -53,7 +53,7 @@ import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep } from '../fight/zone-loop.ts';
-import { OPENERS, WORLD, held, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
+import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, poseAt, spotsFor, tick, validateSpots, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
@@ -197,7 +197,7 @@ const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseA
 if (ZONE) { current = nearestStanding(spawns, heroStart); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true) {
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
-  seed = nextSeed(seed); practice = fresh(pose); frameEvents = [];
+  seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
   roam = null; sinceDeath = 0; current = index; engaged = false; killMarked = false;
   clearInput(); state = previous = practice.fighter;
   if (restart) view.restartStandoff();
@@ -220,7 +220,7 @@ function zoneStep(dt: number) {
     if (engaged) openerSpent = true;   // opener: any engagement spends it
     if (!openerSpent && assetsReady) openerIdle += dt;   // the newcomer's idle clock; its due spawn's aggro reaches him (spawns.ts openerReach)
     const near = inAggro(openerSpent ? spawns : openerReach(spawns, OPENERS, openerIdle, hero), hero);
-    if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = OPENERS.reachMetres;   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
+    if (near >= 0 && !openerSpent && openerIdle >= OPENERS.delaySeconds) openerLift = openerLeashLift(spawns[near]);   // the opener's fight keeps its leash lifted by the same reach (the newcomer stands beyond the plain leash)
     if (engaged) { if (leashed(spawns[current]!, hero, openerLift)) hand(current, hero); }   // beyond the leash he resets at his spot at full health
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
     else { const at = held(spawns, current, hero, WORLD.retargetMargin); if (at >= 0 && at !== current) hand(at, hero); }   // nobody engaged: the sim holds the nearest
