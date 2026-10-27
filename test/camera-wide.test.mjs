@@ -16,7 +16,7 @@ const ROW = FIGHT.camera.wide, ZOOM = FIGHT.camera.zoom;
 const PORTRAITS = [0.46, 0.5, 0.56, 0.6, 0.66, 0.7, 0.75], WIDES = [['landscape phone', 812 / 375], ['desktop', 1440 / 900], ['ultra-wide', 3440 / 1440]];
 
 test('the shipped row is pinned and validates', () => {
-  assert.deepEqual(ROW, { about: ROW.about, fromAspect: 1, toAspect: 1.5, zoom: 1.25, maxHfovDeg: 80 });
+  assert.deepEqual(ROW, { about: ROW.about, fromAspect: 1, toAspect: 1.5, zoom: 1.2, maxHfovDeg: 80 });
   assert.deepEqual(validateFile('fight', FIGHT), []);
 });
 
