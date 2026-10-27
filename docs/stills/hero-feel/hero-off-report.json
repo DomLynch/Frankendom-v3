@@ -1,0 +1,121 @@
+{
+  "query": "",
+  "hitTick": 388,
+  "death": {
+    "tick": 24,
+    "states": [
+      {
+        "k": 0,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 5,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 10,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 20,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 30,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 35,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 40,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 45,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 50,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 55,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 60,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 65,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      },
+      {
+        "k": 70,
+        "h": 0,
+        "finish": 0,
+        "rd": null
+      }
+    ],
+    "stand": [
+      {
+        "r": 5,
+        "h": 150,
+        "finish": null,
+        "rd": null
+      },
+      {
+        "r": 20,
+        "h": 150,
+        "finish": null,
+        "rd": null
+      },
+      {
+        "r": 40,
+        "h": 150,
+        "finish": null,
+        "rd": null
+      },
+      {
+        "r": 90,
+        "h": 150,
+        "finish": null,
+        "rd": null
+      }
+    ]
+  },
+  "log": [],
+  "state": null,
+  "cost": null,
+  "seen": {
+    "seen": null,
+    "hitsSeen": null,
+    "feelHooks": null
+  }
+}

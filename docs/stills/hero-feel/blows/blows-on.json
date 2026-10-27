@@ -1,0 +1,26 @@
+[
+  {
+    "n": 388,
+    "location": "torso",
+    "damage": 7,
+    "heading": -1.224646799147353e-16
+  },
+  {
+    "n": 448,
+    "location": "torso",
+    "damage": 2,
+    "heading": -1.224646799147353e-16
+  },
+  {
+    "n": 527,
+    "location": "torso",
+    "damage": 12,
+    "heading": -1.3535569885312858e-16
+  },
+  {
+    "n": 852,
+    "location": "torso",
+    "damage": 3,
+    "heading": -0.5325745959405319
+  }
+]
