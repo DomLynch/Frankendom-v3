@@ -1,0 +1,194 @@
+[
+ {
+  "tag": "splitCrown-ragdoll-finishers",
+  "finisher": "splitCrown",
+  "query": "ragdoll=finishers",
+  "killedAt": 295,
+  "ticks": 359,
+  "last": {
+   "hero": "attack",
+   "foeHealth": 0,
+   "victim": 1,
+   "move": "light_right",
+   "location": "torso",
+   "ragdoll": "dying"
+  },
+  "errors": [
+   "console Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "console Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "cuts": [
+   {
+    "type": "cut",
+    "unit": "head",
+    "gear": [],
+    "source": "finisher"
+   },
+   {
+    "type": "cut",
+    "unit": "head_split",
+    "gear": [],
+    "source": "finisher"
+   }
+  ],
+  "state": "dying",
+  "byMode": {
+   "alive": {
+    "frames": 599,
+    "totalMs": 52,
+    "maxMs": 4
+   },
+   "dead": {
+    "frames": 70,
+    "totalMs": 0,
+    "maxMs": 0
+   }
+  },
+  "pieces": [
+   "head:cut-glb",
+   "head:cut-glb",
+   "head_split:cut-glb"
+  ],
+  "finish": {
+   "victim": 1,
+   "location": "torso",
+   "move": "light_right",
+   "heading": 3.141592653589793
+  }
+ },
+ {
+  "tag": "decapitation-ragdoll-finishers",
+  "finisher": "decapitation",
+  "query": "ragdoll=finishers",
+  "killedAt": 294,
+  "ticks": 358,
+  "last": {
+   "hero": "attack",
+   "foeHealth": 0,
+   "victim": 1,
+   "move": "light_right",
+   "location": "torso",
+   "ragdoll": "dying"
+  },
+  "errors": [
+   "console Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "cuts": [
+   {
+    "type": "cut",
+    "unit": "head",
+    "gear": [],
+    "source": "finisher"
+   }
+  ],
+  "state": "dying",
+  "byMode": {
+   "alive": {
+    "frames": 599,
+    "totalMs": 49,
+    "maxMs": 4
+   },
+   "dead": {
+    "frames": 69,
+    "totalMs": 0,
+    "maxMs": 0
+   }
+  },
+  "pieces": [
+   "head:cut-glb"
+  ],
+  "finish": {
+   "victim": 1,
+   "location": "torso",
+   "move": "light_right",
+   "heading": 3.141592653589793
+  }
+ },
+ {
+  "tag": "runThrough-ragdoll-finishers",
+  "finisher": "runThrough",
+  "query": "ragdoll=finishers",
+  "killedAt": 295,
+  "ticks": 359,
+  "last": {
+   "hero": "attack",
+   "foeHealth": 0,
+   "victim": 1,
+   "move": "light_right",
+   "location": "torso",
+   "ragdoll": "dying"
+  },
+  "errors": [
+   "console Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "cuts": [],
+  "state": "dying",
+  "byMode": {
+   "alive": {
+    "frames": 599,
+    "totalMs": 41,
+    "maxMs": 4
+   },
+   "dead": {
+    "frames": 69,
+    "totalMs": 0,
+    "maxMs": 0
+   }
+  },
+  "pieces": [],
+  "finish": {
+   "victim": 1,
+   "location": "torso",
+   "move": "light_right",
+   "heading": 3.141592653589793
+  }
+ },
+ {
+  "tag": "opened-ragdoll-finishers",
+  "finisher": "opened",
+  "query": "ragdoll=finishers",
+  "killedAt": 295,
+  "ticks": 359,
+  "last": {
+   "hero": "attack",
+   "foeHealth": 0,
+   "victim": 1,
+   "move": "light_right",
+   "location": "torso",
+   "ragdoll": "dying"
+  },
+  "errors": [
+   "console Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "cuts": [
+   {
+    "type": "cut",
+    "unit": "belly_open",
+    "gear": [],
+    "source": "finisher"
+   }
+  ],
+  "state": "dying",
+  "byMode": {
+   "alive": {
+    "frames": 596,
+    "totalMs": 50,
+    "maxMs": 5
+   },
+   "dead": {
+    "frames": 69,
+    "totalMs": 0,
+    "maxMs": 0
+   }
+  },
+  "pieces": [
+   "belly_open:cut-glb"
+  ],
+  "finish": {
+   "victim": 1,
+   "location": "torso",
+   "move": "light_right",
+   "heading": 3.141592653589793
+  }
+ }
+]

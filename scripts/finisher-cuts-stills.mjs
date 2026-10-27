@@ -71,7 +71,9 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
   await run(30);
   await page.keyboard.down('KeyW');
   let killedAt = -1, n = 0, last = null;
+  const t0 = Date.now(); console.log(`${tag}: start`);
   for (; n < MAX_TICKS; n++) {
+    if (Date.now() - t0 > Number(process.env.CAP_MS ?? 90000)) { console.log(`${tag}: CAP hit at tick ${n} (killedAt ${killedAt})`); break; }   // per-run time cap
     if (n % CUT_EVERY === 0 && killedAt < 0) { await page.keyboard.down('KeyD'); await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF'); await page.keyboard.up('KeyD'); }
     await run(1);
     const s = await read(); last = s;

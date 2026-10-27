@@ -3,7 +3,7 @@
 //   node scripts/gore-kills.mjs <base url> <N> [query]     query "" = after (default), "gore=v1" = before
 import { chromium } from 'playwright';
 const [base, n = '10', query = ''] = process.argv.slice(2);
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const TICK = 1000 / 60, rows = [];
 for (let i = 0; i < Number(n); i++) {
   const errors = [], warns = [];
@@ -22,7 +22,8 @@ for (let i = 0; i < Number(n); i++) {
   const side = i % 2 ? 'KeyA' : 'KeyD', every = 40 + i * 9;
   await page.keyboard.down('KeyW');
   let killedAt = -1, s = null;
-  for (let t = 0; t < 3000; t++) {
+  const t0 = Date.now(); console.log(`kill ${i + 1} ${query || 'default'}: start`);
+  for (let t = 0; t < 3000 && Date.now() - t0 < 90000; t++) {   // 90 s cap per kill
     if (t % every === 0 && killedAt < 0) { await page.keyboard.down(side); await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF'); await page.keyboard.up(side); }
     await run(1); s = await read();
     if (killedAt < 0) await page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); });
