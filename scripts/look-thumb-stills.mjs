@@ -32,7 +32,7 @@ console.log(`${tag} stick pad`, JSON.stringify(pad), `element under the right th
 await shot('0-before'); const w0 = await where(); console.log(`${tag} before`, JSON.stringify(w0));
 const PUSH = (process.env.PUSH ?? '30,0').split(',').map(Number);   // where the left thumb pushes the stick from its centre (px): sideways by default, so the pit's wall is not met at once
 const left = [1, pad.x + PUSH[0], pad.y + PUSH[1]], R0 = [300, 420];   // the right thumb lands on empty ground
-const knob = () => page.evaluate(() => document.querySelector('#joystick > *')?.style.transform ?? null);
+const knob = () => page.evaluate(() => document.getElementById('joystick').outerHTML.slice(0, 260));
 await touch('touchStart', [left]);
 await page.waitForTimeout(300);
 await touch('touchStart', [left, [2, R0[0], R0[1]]]);
