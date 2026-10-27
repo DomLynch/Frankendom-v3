@@ -72,13 +72,16 @@ export function finisherModeFor(rows: PhysicsRows, search: string): string {
 let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page), for the finisher pick below
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
-  page = madeRagdoll(search, ragdollRowFor(PHYSICS, search, opponentId));
+  const foe = ragdollRowFor(PHYSICS, search, opponentId);
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
-const madeRagdoll = (search: string, foe: OpponentRow | null, costKey?: string): FoeRagdoll | null => foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, costKey) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
 /** held-body.ts: the ragdoll of a HELD spawn in another body than the page's own (`body`: the data/rig.json files stem the physics rows are keyed by). Null = no data/physics.json opponents row fitted to that id and body: that body dies the plain way. It is not the page's
  *  ragdoll until the scene mounts it (setHeldRagdoll). Its cost record is `__ragdoll:<body>`, so the page's own is never overwritten. */
-export function heldRagdollFor(search: string, opponentId: string, body: string): FoeRagdoll | null { return madeRagdoll(search, ragdollRowFor(PHYSICS, search, opponentId, body), `__ragdoll:${body}`); }
+export function heldRagdollFor(search: string, opponentId: string, body: string): FoeRagdoll | null {
+  const foe = ragdollRowFor(PHYSICS, search, opponentId, body);
+  return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
+}
 let heldPlainOnly = false;   // the live foe wears a body other than the page's own: the baked finishers (Opened, Hamstrung, Execution, sever) are prepared on the first body alone, so every kill is the plain death
 /** scene.ts, at a swap of the live foe's body (held-body.ts): the finisher pick (ragdollBody, ragdollFinisher) now reads `ragdoll` (null: that body has none), and `plainOnly` forces the plain death for a body the baked finishers are not prepared on. */
 export function setHeldRagdoll(ragdoll: FoeRagdoll | null, plainOnly: boolean): void { page = ragdoll; heldPlainOnly = plainOnly; }
