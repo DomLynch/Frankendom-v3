@@ -76,7 +76,7 @@
     "query": "leash",
     "off": "v1",
     "speedMetresPerSecond": 3,
-    "regenPerSecond": 0.2,
+    "regenPerSecond": 0.08,
     "arriveMetres": 0.25
   },
   "limits": {
