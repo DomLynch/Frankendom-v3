@@ -67,6 +67,9 @@ let physicsSpec = './physics-chunk.js';   // the probe bundle's stand-in; the re
 // content-hashed module, b/vendor/presence.<hash>.js, the same way: a first visit adds nothing to main.js and fetches nothing.
 const PRESENCE_CHUNK = join(root, 'src/presence/chunk.ts');
 let presenceSpec = './presence-chunk.js';   // the probe bundle's stand-in
+// The M7 fight-feel chunk (src/fight/feel-chunk.ts: every ?feel=<name> module's code and rows), fetched by feel.ts only when the link has ?feel=: its own content-hashed module, b/vendor/feel.<hash>.js.
+const FEEL_CHUNK = join(root, 'src/fight/feel-chunk.ts');
+let feelSpec = './feel-chunk.js';   // the probe bundle's stand-in
 const bundleMain = (minify, threeTo) => build({
   entryPoints: [join(root, ENTRY)], outdir: ENTRY_DIR, entryNames: '[name]', write: minify,
   bundle: true, splitting: false, format: 'esm', target: 'es2022', minify, keepNames: true, legalComments: 'none', metafile: true,
@@ -74,6 +77,7 @@ const bundleMain = (minify, threeTo) => build({
   plugins: [{ name: 'v3', setup(b) {
     b.onResolve({ filter: THREE }, (args) => ({ path: threeTo(args.path), external: true }));
     b.onResolve({ filter: /physics-chunk\.ts$/ }, (args) => (args.kind === 'dynamic-import' && resolve(args.resolveDir, args.path) === PHYSICS_CHUNK ? { path: physicsSpec, external: true } : undefined));
+    b.onResolve({ filter: /feel-chunk\.ts$/ }, (args) => (args.kind === 'dynamic-import' && resolve(args.resolveDir, args.path) === FEEL_CHUNK ? { path: feelSpec, external: true } : undefined));
     b.onResolve({ filter: /presence\/chunk\.ts$/ }, (args) => (args.kind === 'dynamic-import' && resolve(args.resolveDir, args.path) === PRESENCE_CHUNK ? { path: presenceSpec, external: true } : undefined));
     b.onResolve({ filter: /\.json$/ }, (args) => {
       if (args.kind !== 'dynamic-import') return undefined;
@@ -122,6 +126,10 @@ const presenceChunk = (await build({ entryPoints: [PRESENCE_CHUNK], write: false
 const presenceFile = join(out, 'b/vendor', `presence.${createHash('sha256').update(presenceChunk).digest('hex').slice(0, 8)}.js`);
 writeFileSync(presenceFile, presenceChunk);
 presenceSpec = relative(ENTRY_DIR, presenceFile).split('\\').join('/');
+const feelChunk = (await build({ entryPoints: [FEEL_CHUNK], write: false, bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true, legalComments: 'none', logLevel: 'warning', charset: 'utf8', plugins: [{ name: 'feel-three', setup(b) { b.onResolve({ filter: THREE }, () => ({ path: `./${vendorFile.split(/[\\/]/).pop()}`, external: true })); } }] })).outputFiles[0].contents;   // three stays the page's one copy: the vendor chunk beside this file, as for the main bundle
+const feelFile = join(out, 'b/vendor', `feel.${createHash('sha256').update(feelChunk).digest('hex').slice(0, 8)}.js`);
+writeFileSync(feelFile, feelChunk);
+feelSpec = relative(ENTRY_DIR, feelFile).split('\\').join('/');
 const result = await bundleMain(true, () => vendorSpec);
 // 106 only (Dom 2026-10-26; data/build.json notShipped): no 65 body, kit or 65-keyed clip JSON may be referenced by the bundle. A reference is a
 // loader that could fetch a 65 file in production, so the build fails rather than ship it (or a 404 in its place).
