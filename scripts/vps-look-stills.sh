@@ -14,5 +14,6 @@ trap 'kill $SRV' EXIT
 sleep 1
 for q in "free:free:opener=off" "combat:combat:" "off:free:look=off&opener=off"; do
   IFS=: read -r tag mode query <<<"$q"
+  [ "$mode" = combat ] && export PUSH=0,0 || unset PUSH
   MODE=$mode timeout 420 node scripts/look-thumb-stills.mjs "http://localhost:$PORT" "$OUT" "$tag" "$query" 2>&1 | grep -E "stick pad|before|held|turned|drag|after|RESULT|pageerror|console" || true
 done
