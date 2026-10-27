@@ -53,6 +53,7 @@
     "sever": "head",
     "kill": { "impulse": 14, "lift": 5 },
     "tap": { "on": true, "needs": "frozen", "order": ["head", "arm_left", "arm_right", "leg_left", "leg_right", "torso_waist"], "maxMovePx": 10, "maxMs": 500, "impulse": 9, "lift": 6, "awayMult": -0.6, "sideMult": 0.8 },
+    "cue": { "on": true, "about": "Dom 2026-10-27 (phone test: no head came off, he did not know where to tap): once the corpse is frozen (cut.tap.needs) for delayS seconds, a pulsing round button labelled by `labels` sits on each unit of `units` that is still on it (a unit's cut bone on screen); a tap on it cuts that unit (the same push as a corpse tap). Presentation only, nothing is sent to the sim.", "units": ["head", "arm_left", "arm_right", "leg_left", "leg_right", "torso_waist"], "labels": { "head": "head", "arm_left": "arm", "arm_right": "arm", "leg_left": "leg", "leg_right": "leg", "torso_waist": "waist" }, "color": "#ffd34a", "sizePx": 40, "pulseS": 1.1, "delayS": 0.6 },
     "seam": { "piece": 0.5, "bodyKeepBelow": 0.5 },
     "cap": { "color": "#8e1b16", "pieceColor": "#6b1511", "radiusMult": 0.95, "pieceRadiusMult": 0.85, "segments": [16, 12] },
     "helmet": { "color": "#5c5f66", "radiusM": 0.13 }

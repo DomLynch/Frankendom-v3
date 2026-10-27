@@ -245,6 +245,66 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     return event;
   }
   const hiddenCap = () => { const mesh = new THREE.Mesh(capGeometry ??= new THREE.SphereGeometry(1, cutRows.cap.segments[0], cutRows.cap.segments[1]), capMaterials[0]); mesh.castShadow = true; mesh.frustumCulled = false; group!.add(mesh); return mesh; };   // a pool run dry (never at the Minotaur's 6 units)
+  // A corpse tap's push in the ragdoll's frame: the world view direction times row `awayMult` (negative = toward the camera) plus its sideways (up x view) times `sideMult`,
+  // so a limb piece flies where the player can see it. A row missing either keeps the old push (the validator also refuses it, validate.js `finite`).
+  function tapPush(viewDir: THREE.Vector3): Vec3 {
+    const row = cutRows.tap, v = viewDir.clone().transformDirection(group!.matrixWorld.clone().invert()), side = new THREE.Vector3(0, 1, 0).cross(v).normalize();
+    const d = v.multiplyScalar(row.awayMult ?? 1).add(side.multiplyScalar(row.sideMult ?? 0));
+    return [d.x * row.impulse, d.y * row.impulse + row.lift, d.z * row.impulse];
+  }
+  // data/physics.json cut.cue: a pulsing "cut" dot on each part of the frozen corpse that can still be cut (a button over the canvas, so a thumb finds it without aiming at a bone).
+  // Built by listenTaps; moved to its bone each frame by updateCues; a tap on it cuts that unit (cutCue). Hidden whenever the corpse is not frozen, the unit is done, or the bone is behind the camera.
+  let cueEls: { unit: string; el: HTMLButtonElement }[] = [], cueCamera: THREE.Camera | undefined, cueCanvas: HTMLElement | undefined;
+  function makeCues(canvas: HTMLElement, camera: THREE.Camera) {
+    const cue = cutRows.cue as typeof cutRows.cue | undefined;   // a physics.json without the row simply has no cue (the plain tap still works)
+    if (!cue?.on || !canvas.parentElement) return;
+    cueCamera = camera; cueCanvas = canvas;
+    const style = document.createElement('style');
+    style.textContent = `.cut-cue{position:fixed;z-index:30;width:${cue.sizePx}px;height:${cue.sizePx}px;margin:${-cue.sizePx / 2}px 0 0 ${-cue.sizePx / 2}px;border-radius:50%;border:2px solid ${cue.color};background:${cue.color}33;color:${cue.color};font:700 10px/1 sans-serif;text-transform:uppercase;padding:0;display:none;animation:cut-cue-pulse ${cue.pulseS}s ease-in-out infinite;touch-action:manipulation}@keyframes cut-cue-pulse{0%,100%{box-shadow:0 0 0 0 ${cue.color}aa;opacity:.95}50%{box-shadow:0 0 0 9px ${cue.color}00;opacity:.7}}`;   // a glow, not a scale: the target a thumb aims at does not move
+    document.head.appendChild(style);
+    cueEls = cue.units.map((unit) => {
+      const el = document.createElement('button');
+      el.className = 'cut-cue'; el.type = 'button'; el.textContent = cue.labels[unit as keyof typeof cue.labels] ?? 'cut'; el.setAttribute('aria-label', `Cut ${unit.replace('_', ' ')}`);
+      el.addEventListener('pointerdown', (e) => e.stopPropagation());
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!cueCamera || !rd) return;
+        const bone = partBones[rd.row.severable.find((s) => s.id === unit)?.cut_role ?? ''];
+        const at = bone ? bone.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(), view = at.sub(cueCamera.getWorldPosition(new THREE.Vector3())).normalize();
+        cutCue(unit, view);
+      });
+      document.body.appendChild(el);
+      return { unit, el };
+    });
+  }
+  /** Cut `unit` of the frozen corpse directly (the cue's button), pushed along `view`, the camera's line to it. null when it is not cuttable now. */
+  function cutCue(unit: string, view: THREE.Vector3): CutEvent | null {
+    const row = cutRows.tap;
+    if (rulesOn || disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs || done.has(unit)) return null;
+    try { return cutUnit(unit, 'tap', tapPush(view)); } catch (error) { cost.state = `cue failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
+  }
+  function updateCues() {
+    if (!cueEls.length || !cueCamera || !cueCanvas) return;
+    const live = !disabled && gore && !rulesOn && mode === 'dead' && !!rd && rd.state === cutRows.tap.needs && cueDelay >= cutRows.cue.delayS;
+    const r = cueCanvas.getBoundingClientRect(), shown: { el: HTMLButtonElement; x: number; y: number }[] = [];
+    for (const { unit, el } of cueEls) {
+      const bone = live && !done.has(unit) ? partBones[rd!.row.severable.find((s) => s.id === unit)?.cut_role ?? ''] : undefined;
+      const p = bone ? bone.getWorldPosition(tmpV2).project(cueCamera) : null;
+      if (!p || p.z > 1) { el.style.display = 'none'; continue; }
+      shown.push({ el, x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height });
+    }
+    // a small corpse on screen (seen over the hero's shoulder) puts every bone within a thumb: push the buttons apart until none touches another (a few relaxation passes), so each can be hit
+    const gap = cutRows.cue.sizePx + 4;
+    for (let pass = 0; pass < 12; pass++) for (let i = 0; i < shown.length; i++) for (let j = i + 1; j < shown.length; j++) {
+      const a = shown[i]!, b = shown[j]!, dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+      if (d >= gap) continue;
+      const nx = d > 1e-3 ? dx / d : (j % 2 ? 1 : -1), ny = d > 1e-3 ? dy / d : 0.3, push = (gap - d) / 2;
+      a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
+    }
+    for (const s of shown) { s.el.style.display = 'block'; s.el.style.left = `${s.x}px`; s.el.style.top = `${s.y}px`; }
+  }
+  const tmpV2 = new THREE.Vector3();
+  let cueDelay = 0;   // seconds the corpse has been frozen (the cue waits cutRows.cue.delayS so the fall is watched first)
   const tmpQ = new THREE.Quaternion(), tmpV = new THREE.Vector3();
   const tmpR = new THREE.Quaternion(), tmpJ = new THREE.Vector3(), shift = new THREE.Vector3();
   // Where the hips' joint is in the ragdoll's own frame (three-rig's applyPose does the same sum): the capsule's pose carried back to its joint.
@@ -312,15 +372,15 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         cost.lastTap += ` | hit ${hit?.bone.name ?? 'nothing'}`;
         const unit = hit && unitOfBone(hit.bone, row.order, (u) => partBones[severable.find((s) => s.id === u)?.cut_role ?? '']);
         if (!unit || done.has(unit)) return null;
-        // the push is the tap's ray times row `awayMult` (negative = toward the camera) plus the ray's sideways (up x ray) times `sideMult`, so a limb piece flies where the player can see it
-        const ray3 = ray.ray.direction.clone().transformDirection(group.matrixWorld.clone().invert()), side = new THREE.Vector3(0, 1, 0).cross(ray3).normalize();
-        const direction = ray3.multiplyScalar(row.awayMult ?? 1).add(side.multiplyScalar(row.sideMult ?? 0));   // a row missing either keeps the old push (the validator also refuses it, validate.js `finite`)
-        return cutUnit(unit, 'tap', [direction.x * row.impulse, direction.y * row.impulse + row.lift, direction.z * row.impulse]);
+        return cutUnit(unit, 'tap', tapPush(ray.ray.direction));
       } catch (error) { cost.state = `tap failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
     },
+    /** The cue's button (data/physics.json cut.cue): cut `unit` of the frozen corpse directly, pushed along the camera's view of it. null when it is not cuttable now. */
+    cutCue,
     /** scene.ts: taps on the canvas are corpse taps. A press that stays within the row's px and ms (a drag is the camera's) casts a ray through the camera. */
     listenTaps(canvas: HTMLElement, camera: THREE.Camera) {
       const row = cutRows.tap, ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+      makeCues(canvas, camera);   // data/physics.json cut.cue: the "cut" dots on the frozen corpse
       let down: { x: number; y: number; t: number; id: number } | null = null, probed = -1;
       const aim = (x: number, y: number) => { const r = canvas.getBoundingClientRect(); ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1); camera.updateMatrixWorld(); ray.setFromCamera(ndc, camera); return ray; };
       canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: e.timeStamp, id: e.pointerId }; });
@@ -364,6 +424,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         if (cutRig) for (const mesh of Object.values(cutRig.caps)) { mesh.scale.setScalar(1); mesh.visible = false; }
       }
       gore = showGore;
+      cueDelay = mode === 'dead' && rd?.state === cutRows.tap.needs ? cueDelay + dt : 0;
+      updateCues();
       try { step(dt, events, finish, finisher); } catch (error) { disabled = true; armed = false; cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     },
   };
