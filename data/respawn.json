@@ -27,11 +27,12 @@
     "fallSeconds": 1.4
   },
   "openers": {
-    "about": "V1's openers (origins/zone-rows/zone1.row.json spawns.openers; world-rules firstFightSeconds 10): a zone that is not safe opens with a fight soon after the newcomer arrives. Strategy ruling 2026-10-27: auto-start stays OFF in the live zone (walk in or STRIKE); this is the gentle on-ramp. delaySeconds after the page is ready (assets loaded, the hero in control) with nobody engaged, the first `count` standing spawns of `spawns` (ids in the zone row) aggro the hero as if he had walked into their aggro: their aggro range grows to reach him (never past their own leash plus reachMetres: the newcomer at the start mark stands 6 m from the yard Pitborn, and that fight's leash is lifted by the same reachMetres; a hero who has wandered further off is left alone) and the ordinary engagement starts (auto-draw, the boss walks up). The clock runs once per visit: any engagement, a kill or a death spends it (a hero who has fought is no newcomer; it does not re-arm after a kill or respawn). The other spawns wait for the hero's aggro as before. on:false or the link query `query`=`off` turns it off (#91: nothing until you walk). ?postkill=v1 has no zone, so no opener.",
+    "about": "V1's openers (origins/zone-rows/zone1.row.json spawns.openers; world-rules firstFightSeconds 10): a zone that is not safe opens with a fight soon after the newcomer arrives. Strategy ruling 2026-10-27: auto-start stays OFF in the live zone (walk in or STRIKE); this is the gentle on-ramp. delaySeconds after the page is ready (assets loaded, the hero in control) with nobody engaged, the first `count` standing spawns of `spawns` (ids in the zone row) aggro the hero as if he had walked into their aggro: their aggro range grows to reach him (never past withinMetres, 12 m, from the opener spawn: the newcomer at the start mark stands about 8.8 m from the yard Pitborn (the field bosses stand about 14 m from the mark, so 12 m keeps the opener to the yard boss); a validated row, at least the spawn's aggro; a hero who has wandered further off is left alone; the fight's leash is also lifted by reachMetres, 5 m, which the 20 m boss-measured leash no longer needs) and the ordinary engagement starts (auto-draw, the boss walks up). The clock runs once per visit: any engagement, a kill or a death spends it (a hero who has fought is no newcomer; it does not re-arm after a kill or respawn). The other spawns wait for the hero's aggro as before. on:false or the link query `query`=`off` turns it off (#91: nothing until you walk). ?postkill=v1 has no zone, so no opener.",
     "on": true,
     "delaySeconds": 5,
     "count": 1,
     "reachMetres": 5,
+    "withinMetres": 12,
     "spawns": ["yard-pitborn"],
     "query": "opener",
     "off": "off"
@@ -53,6 +54,7 @@
     "delaySeconds": [1, 60],
     "count": [1, 3],
     "reachMetres": [0, 10],
+    "withinMetres": [1, 60],
     "fallSeconds": [0.1, 10],
     "startAfterSeconds": [0, 30],
     "walkRadiusMetres": [1, 60],

@@ -15,6 +15,7 @@ import { bone, rigOf } from './rig-bones.ts';
 import { foeBodyFile } from './foe-body.ts';
 import { createPieceCutter, isUnder, type PieceCutter } from './cut-pieces.ts';
 import RULES from '../../data/rules.json' with { type: 'json' };
+import FEEL_DEFAULTS from '../../data/feel-defaults.json' with { type: 'json' };   // the M7 feel modules on without a query (Dom 2026-10-27)
 import { createHandSpeed, createRulesEval, cutPrecedence, evaluatorTakesKill, rulesOnFor, type Presentation, type RulesPackage } from './rules-eval.ts';
 import { OPPONENTS, RULES as SIM_RULES, type OpponentId } from './moves.ts';   // ?rules=m4: his health (the budgets' scale) and a man's, both the sim's rows
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
@@ -70,7 +71,7 @@ let page: FoeRagdoll | null = null;   // this page's ragdoll (one fight per page
 /** scene.ts: this page's ragdoll for `opponentId` (data/physics.json), or null (off, ?physics=v1, or a foe without one). */
 export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId);
-  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search)) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS)) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
@@ -332,7 +333,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     const real = rd, { rig: rig2, cutRig: cut2, bones: bonesOf, anchor } = makeCorpseRig(chunk, real, group, c.root, partBones, rigged.anchor, bindOpts, spawnHips, manifest);
     c.rd = real; c.rig = rig2; c.cutRig = cut2; c.bones = bonesOf; c.anchor = anchor;
     rd = undefined; rig = undefined; cutRig = undefined;   // handed over: build() makes the live foe a new ragdoll in a lane of its own
-    c.cues = makeCueSet(() => c.id, (unit) => bonesOf[real.row.severable.find((s) => s.id === unit)?.cut_role ?? ''], () => !disabled && gore && !rulesOn && !!c.rd && c.rd.state === cutRows.tap.needs && c.frozenFor >= cutRows.cue.delayS, (unit) => c.done.has(unit), (unit, view2) => cutCorpse(c, unit, 'tap', view2));
+    c.cues = makeCueSet(() => c.id, (unit) => bonesOf[real.row.severable.find((s) => s.id === unit)?.cut_role ?? ''], () => !disabled && gore &&!!c.rd && c.rd.state === cutRows.tap.needs && c.frozenFor >= cutRows.cue.delayS, (unit) => c.done.has(unit), (unit, view2) => cutCorpse(c, unit, 'tap', view2));
   }
   /** Tell the bus (feel.on, data/physics.json corpse.event) a cut was made: read-only info for V3's loot and zone code, `corpseId` the same for the live foe's kill cut and every later cut of his corpse. */
   function announce(event: CutEvent, corpseId: string) {
@@ -343,7 +344,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   /** Cut `unit` of a corpse that kept its ragdoll (the cue button's view is the camera's line to the bone, a tap's the ray). The piece flies on the corpse's own bodies; null when it is not cuttable now. */
   function cutCorpse(c: Corpse, unit: string, source: string, view: THREE.Vector3): CutEvent | null {
     const row = cutRows.tap;
-    if (!c.rd || !c.cutRig || rulesOn || disabled || !row.on || !cutRows.on || !gore || c.rd.state !== row.needs || c.done.has(unit)) return null;
+    if (!c.rd || !c.cutRig || disabled || !row.on || !cutRows.on || !gore || c.rd.state !== row.needs || c.done.has(unit)) return null;
     try {
       const result = c.rd.cut(unit, { helmet: false, impulse: tapPush(view, c.root) });   // (a helmet prop is the live body's: a corpse's helmet stays on the piece's mesh)
       if (!result) return null;
@@ -361,7 +362,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   }
   function tapLive(ray: THREE.Raycaster): CutEvent | null {
     const row = cutRows.tap;
-    if (rulesOn || disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs) return null;
+    if (disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs) return null;
     try {
       cutter ??= createPieceCutter(rigged.anchor);
       const hit = cutter.pick(ray), severable = rd.row.severable;
@@ -502,13 +503,13 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     style.textContent = `.cut-cue{position:fixed;z-index:30;width:${cue.sizePx}px;height:${cue.sizePx}px;margin:${-cue.sizePx / 2}px 0 0 ${-cue.sizePx / 2}px;border-radius:50%;border:2px solid ${cue.color};background:${cue.color}33;color:${cue.color};font:700 10px/1 sans-serif;text-transform:uppercase;padding:0;display:none;animation:cut-cue-pulse ${cue.pulseS}s ease-in-out infinite;touch-action:manipulation}@keyframes cut-cue-pulse{0%,100%{box-shadow:0 0 0 0 ${cue.color}aa;opacity:.95}50%{box-shadow:0 0 0 9px ${cue.color}00;opacity:.7}}`;   // a glow, not a scale: the target a thumb aims at does not move
     document.head.appendChild(style);
     liveCues = makeCueSet(() => lifeId, (unit) => partBones[rd?.row.severable.find((s) => s.id === unit)?.cut_role ?? ''],
-      () => !disabled && gore && !rulesOn && mode === 'dead' && !!rd && rd.state === cutRows.tap.needs && cueDelay >= cutRows.cue.delayS, (unit) => done.has(unit), cutCue);
-    for (const c of corpses) if (c.rd && c.bones && !c.cues) { const bonesOf = c.bones, rdOf = c.rd; c.cues = makeCueSet(() => c.id, (unit) => bonesOf[rdOf.row.severable.find((s) => s.id === unit)?.cut_role ?? ''], () => !disabled && gore && !rulesOn && !!c.rd && c.rd.state === cutRows.tap.needs && c.frozenFor >= cutRows.cue.delayS, (unit) => c.done.has(unit), (unit, v) => cutCorpse(c, unit, 'tap', v)); }
+      () => !disabled && gore &&mode === 'dead' && !!rd && rd.state === cutRows.tap.needs && cueDelay >= cutRows.cue.delayS, (unit) => done.has(unit), cutCue);
+    for (const c of corpses) if (c.rd && c.bones && !c.cues) { const bonesOf = c.bones, rdOf = c.rd; c.cues = makeCueSet(() => c.id, (unit) => bonesOf[rdOf.row.severable.find((s) => s.id === unit)?.cut_role ?? ''], () => !disabled && gore &&!!c.rd && c.rd.state === cutRows.tap.needs && c.frozenFor >= cutRows.cue.delayS, (unit) => c.done.has(unit), (unit, v) => cutCorpse(c, unit, 'tap', v)); }
   }
   /** Cut `unit` of the frozen corpse directly (the cue's button), pushed along `view`, the camera's line to it. null when it is not cuttable now. */
   function cutCue(unit: string, view: THREE.Vector3): CutEvent | null {
     const row = cutRows.tap;
-    if (rulesOn || disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs || done.has(unit)) return null;
+    if (disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs || done.has(unit)) return null;
     try { return cutUnit(unit, 'tap', tapPush(view)); } catch (error) { cost.state = `cue failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
   }
   /** Every cut button off (the ragdoll was disabled by an error, or the page stops running it): updateCues does not run then, so a button the last frame left showing would stay on screen and do nothing. */
@@ -710,10 +711,10 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           down = -1; getUp = -1;
           rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
           for (const f of feels) f.kill?.(killed, feelCtx());   // M7 (?feel=): his killing blow
-          // ?rules=m4: the evaluator's cuts (this fight's, and the killing blow's) are the ONLY cut trigger: the head-zone rule, a finisher row's cut, the tap and the finisher's cut are off
+          // ?rules=m4: the evaluator's cuts (this fight's, and the killing blow's) are the only cut trigger of the LIVE opponent's blows (the head-zone rule and V1's baked finisher cut are off); a finisher row's cut and every post-kill cut (the tap, the cue buttons) stay on
           for (const u of rulesOn ? ruleCuts.splice(0) : []) cutUnit(u, 'rules', blowImpulse({ ...cutRows.kill, parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group.rotation.y)?.impulse);
           const onKill = killed.location ? ((tune?.onKill ?? cutRows.onKill) as Record<string, string | undefined>)[killed.location] : undefined;   // a head-zone killing blow takes the head with it
-          const units = rulesOn ? [] : fc ? finisherUnits(fc, hasUnit) : onKill ? [onKill] : [];   // a finisher's row decides its own cut(s): its unit (or the fallback stand-in), then its `also` units this body carries
+          const units = fc ? finisherUnits(fc, hasUnit) : rulesOn ? [] : onKill ? [onKill] : [];   // defaults-on (Dom 2026-10-27): the M4 rules and the physics finishers are both default, so a finisher row's cut (Split Crown, Opened ...) is made under the rules too; the head-zone onKill rule stays the evaluator's alone   // a finisher's row decides its own cut(s): its unit (or the fallback stand-in), then its `also` units this body carries
           const push = (u: string) => blowImpulse({ ...(fc?.kill ?? cutRows.kill), parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group!.rotation.y)?.impulse;   // the push is the row's, whatever the location
           for (const unit of units) { if (!fc || fc.atS <= 0) cutUnit(unit, fc ? 'finisher' : 'kill', push(unit)); else late.add(unit, fc.atS, 'finisher'); }
         }

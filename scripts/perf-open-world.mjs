@@ -4,7 +4,7 @@
 // are read too. A module's cost is its row minus the no-feel row of the same run set (--delta below), because kick and hitreact keep no counter of their own.
 //   node scripts/perf-open-world.mjs <base url> <out dir> [query ...]
 //   env: RUNS=3 (best of three by p95, like the M8 row), SECS=20 (measured seconds per run), CORPSES=2 (bodies left before measuring, 0..data/physics.json corpse.max), LOAD=1 (print uptime load)
-//   default queries: "" , "feel=clash", "feel=kick", "feel=hitreact", "feel=limbs&rules=m4", "feel=clash,kick,hitreact,limbs&rules=m4"
+//   default queries (the modules are default-on, data/feel-defaults.json): "feel=v1&rules=m4" (none: the baseline), "feel=v1,<name>&rules=m4" for clash / kick / hitreact / limbs alone, "rules=m4" (all four)
 // Writes <out>/perf-<n>.json (every run, every number) and prints the table. Playwright is not a repo dependency: npm i --no-save playwright@1.62.1
 // On a job: hfjob -- bash scripts/perf-open-world-job.sh   (builds, serves dist/, runs this, prints the table to the job log)
 import { chromium } from 'playwright';
@@ -15,7 +15,9 @@ const [base, out, ...argQueries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/perf-open-world.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const RUNS = Number(process.env.RUNS ?? 3), SECS = Number(process.env.SECS ?? 20), CORPSES = Number(process.env.CORPSES ?? 2), TAG = process.env.TAG ?? `c${CORPSES}`;
-const QUERIES = argQueries.length ? argQueries : ['', 'feel=clash', 'feel=kick', 'feel=hitreact', 'feel=limbs&rules=m4', 'feel=clash,kick,hitreact,limbs&rules=m4'];
+// The M7 modules are default-on since #135 (data/feel-defaults.json): ?feel=v1 is none of them, ?feel=v1,<name> is that one alone, no query is all four.
+const BASE = 'feel=v1&rules=m4';
+const QUERIES = argQueries.length ? argQueries : [BASE, `feel=v1,clash&rules=m4`, `feel=v1,kick&rules=m4`, `feel=v1,hitreact&rules=m4`, `feel=v1,limbs&rules=m4`, 'rules=m4'];
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
 const MIX = [['KeyF'], ['KeyG'], ['KeyD', 'KeyF'], ['KeyG'], ['KeyA', 'KeyF'], ['KeyF']];
 const press = async (page, codes) => { for (const c of codes) await page.keyboard.down(c); for (const c of codes.slice().reverse()) await page.keyboard.up(c); };
@@ -39,9 +41,11 @@ async function one(query) {
     await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 120000 });
     await page.evaluate(() => new Promise((done) => {
       const fire = (code, type) => window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
-      const id = setInterval(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); fire('KeyC', 'keydown'); fire('KeyC', 'keyup'); if (globalThis.__ragdoll.state === 'frozen') { clearInterval(id); setTimeout(done, 1500); } }, 250);
-    }));
+      const id = setInterval(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; f.health = Math.min(f.health, 1); fire('KeyC', 'keydown'); fire('KeyC', 'keyup'); if (globalThis.__ragdoll.state === 'frozen') { clearInterval(id); setTimeout(() => done(true), 1500); } }, 250);
+      setTimeout(() => { clearInterval(id); done(false); }, 90000);   // a kill that never froze: go on with what stands, and say so
+    })).then((froze) => { if (!froze) console.error(`corpse ${i + 1}: the body did not freeze in 90 s`); });
     left = await page.evaluate(() => globalThis.__ragdoll.leave?.() ?? null);
+    console.error(`corpse ${i + 1}/${CORPSES} left: ${left}`);
     await page.waitForTimeout(1500);
   }
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 120000 }).catch(() => {});
@@ -78,11 +82,12 @@ async function one(query) {
 const all = [];
 for (const query of QUERIES) {
   const runs = [];
-  for (let i = 0; i < RUNS; i++) { const r = await one(query); runs.push(r); console.log(`run ${i + 1}/${RUNS} ${query || 'default'} [${TAG}] n=${r.n} avg ${r.avgMs} median ${r.medianMs} p95 ${r.p95Ms} p99 ${r.p99Ms} max ${r.maxMs} ms; corpses ${r.corpses}; load ${r.loadBefore}/${r.cores}`); }
+  for (let i = 0; i < RUNS; i++) { const r = await one(query).catch((e) => { console.error(`run ${i + 1} ${query}: ${e.message.split('\n')[0]}`); return null; }); if (!r) continue; runs.push(r); console.log(`run ${i + 1}/${RUNS} ${query || 'default'} [${TAG}] n=${r.n} avg ${r.avgMs} median ${r.medianMs} p95 ${r.p95Ms} p99 ${r.p99Ms} max ${r.maxMs} ms; corpses ${r.corpses}; load ${r.loadBefore}/${r.cores}`); }
+  if (!runs.length) continue;
   const best = runs.reduce((a, b) => (b.p95Ms < a.p95Ms ? b : a));   // best of three by p95, as the M8 row
   all.push({ query, best, runs });
 }
-const base0 = all.find((a) => a.query === '')?.best;
+const base0 = all.find((a) => a.query === BASE)?.best;
 console.log(`\n| query | N | avg ms | median | p95 | p99 | max | d avg vs default | d p95 vs default | module counter |\n|---|---|---|---|---|---|---|---|---|---|`);
 for (const { query, best: b } of all) {
   const mod = b.clashModule ? `clash ${b.clashModule.avgMs} ms/frame (${b.clashes} clashes)` : b.limbsModule ? `limbs ${b.limbsModule.avgMs} ms/frame` : '';
