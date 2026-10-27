@@ -16,17 +16,18 @@ This is the path, what is drop-in today, and what is not. Checked against `main`
 - `body` is a key of `data/rig.json` `files` (a 65 body stem, `psyche` or `minotaur` today). A row without one gets `defaultBody`.
 - `src/sim/validate.js` `checkBodies` rejects a body that is not a `rig.json files` row, a body whose 106 file has no `rig.json clips106.dir` folder (its specials and finishers would not play), a bad `bodyQuery`, and two profiles drawing one `opponent` in two bodies. `src/fight/foe-body.ts` runs the same check when the page loads and throws on a bad row.
 - `?boss=<body>` (the `bodyQuery`) draws every boss in that body for one page view. A bad value is ignored with a console warning. This is a preview flag; the default row is unchanged and pinned by `test/boss-body.test.mjs`.
-- Switching the boss is one line: change `"body": "minotaur"` to `"body": "psyche"` on the profile.
+- Switching the boss is one line: change `"body": "minotaur"` to another `rig.json files` stem on the profile, once that body is in the repo (below).
+- A boss cannot be drawn in the hero's body (`src/fight/hero-body-rows.json`, Psyche): the check rejects it.
 
 ## What is drop-in today
 
 | body | file | in the repo | 106 rig | clips in the file | `clips106` set (specials, finishers) | cut mesh | physics measure row | drop-in as a boss |
 |---|---|---|---|---|---|---|---|---|
 | minotaur | `src/assets/minotaur-106.glb` (2.37 MB) | yes | yes (106 joints) | 26 | `106/minotaur/` (8 files) | yes: the file is the cut GLB (19 `piece_`/`cap_` nodes), manifest `minotaur-106.cut.manifest.json` | `physics/bodies/minotaur-106.measure.json` (data/physics.json) | yes, it is the boss today |
-| psyche | `src/assets/psyche-106.glb` (1.60 MB) | yes | yes (106 joints) | 32 (lacks `ArmedRun`; `rig.json gapFill` plays Run) | `106/psyche/` (8 files) | no: no cut nodes in the repo file | the package has `psyche-106.measure.json`, but `data/physics.json opponents` has no row for it | partly: she walks, fights, plays the specials and finishers. A kill is today's death (no ragdoll, no physics cut) and the HUD still says "Minotaur" |
+| psyche | `src/assets/psyche-106.glb` (1.60 MB) | yes | yes (106 joints) | 32 (lacks `ArmedRun`; `rig.json gapFill` plays Run) | `106/psyche/` (8 files) | no: no cut nodes in the repo file | the package has `psyche-106.measure.json`, but `data/physics.json opponents` has no row for it | no, she is the hero. Tried 2026-10-27 as `?boss=psyche` on a build of this branch (VPS, headless Chromium): the page stops at "The fighters (106-joint rig) could not load" with `Error: A shared rig carries one weapon` (characters.ts `loadWarriors` hands two actors of one file one shared rig, and the hero's longsword and the Pitborn's cleaver differ). The check now rejects a boss in the hero's body, in the row and in `?boss=` |
 | every other body | not in the repo | no | the library says 106 joints | Mixamo clips bound raw | none | none | none | no, needs work (below) |
 
-Psyche is already the hero's body, so a Psyche boss costs no extra bytes on the wire: the same URL is fetched once. Hero and boss both being Psyche is confusing to look at, so use `?boss=psyche` as a demo only.
+**So no second body is drop-in today.** The repo holds two 106 bodies, one is the hero, so the boss is the other. The row and the check are built and tested (with a synthetic third body in `test/boss-body.test.mjs`); the first real second boss is the work in the next section, and no demo still is shown because there is nothing to show. A hero and a boss on one body would also need `loadWarriors` to load the file twice (as `loadPeerWarriors` does with its `#peer` key), a `characters.ts` change this PR does not make.
 
 ### What a boss body has to be to work, today
 

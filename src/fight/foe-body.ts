@@ -15,19 +15,20 @@ import { foeRigFile } from './rig-bones.ts';   // data/rig.json (106 only): the 
 import PROFILES from '../../data/profiles.json' with { type: 'json' };
 import RIG from '../../data/rig.json' with { type: 'json' };
 import { bodyProblem, checkBodies } from '../sim/validate.js';
+import { heroBodyFile } from './hero-body-rows.ts';   // the hero's stem: a boss cannot share it (validate.js bodyProblem)
 type BodyRow = { body: string; kit: string | null };
-const rowErrors: string[] = checkBodies(PROFILES, RIG);
+const rowErrors: string[] = checkBodies(PROFILES, RIG, heroBodyFile());
 if (rowErrors.length) throw new Error(`data/profiles.json bodies: ${rowErrors.join('; ')}`);
 // opponent id -> body stem: the profile rows' (the veteran, ?pitborn=v1's Centurion, has no profile row: the default body)
 const PROFILE_BODY: Record<string, string> = { veteran: PROFILES.defaultBody, ...Object.fromEntries(PROFILES.profiles.map((p: { opponent: string; body?: string }) => [p.opponent, p.body ?? PROFILES.defaultBody])) };
 let override: string | null = null;   // ?boss=<body>
 const rowOf = (id: string): BodyRow | undefined => (id in PROFILE_BODY ? { body: override ?? PROFILE_BODY[id]!, kit: null } : undefined);
 /** ?boss=<body> (data/profiles.json bodyQuery): this page draws every boss in `body`, a data/rig.json files key with clips. A bad value is ignored with a console warning (never throws). Returns the body now in force, or null for the rows' own. */
-export function setBossBody(search: string, warn: (m: string) => void = (m) => console.warn(m)): string | null {
+export function setBossBody(search: string, warn: (m: string) => void = (m) => console.warn(m), rig: typeof RIG = RIG, hero: string = heroBodyFile()): string | null {   // rig, hero: the rows (tests pass others)
   const raw = new URLSearchParams(search).get(PROFILES.bodyQuery);
   override = null;
   if (raw === null) return null;
-  const why = bodyProblem(raw, RIG);
+  const why = bodyProblem(raw, rig, hero);
   if (why) warn(`?${PROFILES.bodyQuery}=${raw} ignored: ${why}`);
   else override = raw;
   return override;
