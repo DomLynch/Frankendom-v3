@@ -53,6 +53,8 @@ export const SCHEMA = {
   // The radar (src/fight/radar.ts validateRadar checks the values): a closed key set; presentation only
   'radar': { keys: ['about', 'on', 'query', 'off', 'corner', 'sizePx', 'marginPx', 'offsetPx', 'zIndex', 'rangeMetres', 'rimInset', 'dprMax', 'disc', 'rim', 'edgeAlpha', 'hero', 'classes', 'flash', 'kinds', 'defaultKind'],
     maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead', 'pile', 'golden', 'mob'] } },
+  // Boss signature mechanics (validateMechanics below checks the values; src/fight/mechanics/ reads the rows): a map, mechanic id -> row; each row's keys are checked by its type's checker
+  'mechanics': { keys: ['about', 'mechanics'] },
   // Trash mob swarms (src/sim/validate-mobs.js checks the values; src/zone/mobs.ts reads the rows)
   'mobs': { keys: ['about', 'on', 'cap', 'capMax', 'scanSeconds', 'activateMetres', 'despawnMetres', 'spawnMinMetres', 'startClearMetres', 'padMetres', 'swingMetres', 'lod', 'hitScale', 'turnRate', 'speedEase', 'pitArea', 'grid', 'pack', 'separation', 'attack', 'hero', 'states', 'fall', 'corpse', 'farm', 'rings', 'respawnSeconds', 'kinds', 'limits'],
     maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], corpse: ['nearMetres', 'graceSeconds', 'holdSeconds', 'max'], farm: ['decay'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
@@ -201,6 +203,51 @@ function checkFeelLimbs(json, errors) {
   if (!parts.leg?.gait) errors.push(`${n}.limbs.parts.leg.gait: missing`);
   if (!parts.leg?.stumble) errors.push(`${n}.limbs.parts.leg.stumble: missing`);
   if (!parts.arm_sword?.drop) errors.push(`${n}.limbs.parts.arm_sword.drop: missing`);
+}
+
+// ---- boss signature mechanics (data/mechanics.json; read by src/fight/mechanics/). A map, id -> row; each `type` has its own closed key set and ranges (MECHANIC_TYPES: one line per type). ----
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+const GOURD_KEYS = ['type', 'boss', 'about', 'engageMetres', 'firstSeconds', 'cooldownSeconds', 'stompSeconds', 'flightSeconds', 'fuseSeconds', 'burstSeconds', 'count', 'countLow', 'lowShare', 'radiusMetres', 'heroRadiusMetres', 'scatterMetres', 'launchHeightMetres', 'arcMetres', 'damageMove', 'damageShare', 'guardShare', 'knockbackMetres', 'shoveSeconds', 'waitWhileHeroHurt', 'lethal', 'floorHealth', 'pool', 'look'];
+const GOURD_LOOK = ['core', 'edge', 'fuse', 'gourd', 'gourdRadiusMetres', 'groundY', 'ringWidth', 'segments', 'alpha', 'markAlpha', 'stompColour', 'stompAlpha', 'pulseHz', 'burstScale'];
+/** Lord Gourd's PUMPKIN BOMBS row (type "gourd-bombs"). `moves`: the move ids of the weapon tables (damageMove must be one). Returns one string per problem. */
+export function checkGourdBombs(id, r, moves = []) {
+  const e = [], at = `mechanics.${id}`, within = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  for (const k of Object.keys(r)) if (!GOURD_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  const num = (k, lo, hi, int = false) => { if (!within(r[k], lo, hi) || (int && !Number.isInteger(r[k]))) e.push(`${at}.${k}: ${int ? 'a whole number' : 'a number'} from ${lo} to ${hi}`); };
+  num('engageMetres', 2, 60); num('firstSeconds', 0, 120); num('cooldownSeconds', 1, 120); num('stompSeconds', 0.2, 5); num('flightSeconds', 0.1, 3); num('fuseSeconds', 0.5, 5); num('burstSeconds', 0.1, 2);
+  num('count', 1, 6, true); num('countLow', 1, 6, true); num('lowShare', 0, 1); num('radiusMetres', 0.5, 6); num('heroRadiusMetres', 0, 2); num('scatterMetres', 0, 12);
+  num('launchHeightMetres', 0.5, 10); num('arcMetres', 0, 10); num('damageShare', 0.05, 1); num('guardShare', 0, 1); num('knockbackMetres', 0, 6); num('shoveSeconds', 0.05, 1); num('floorHealth', 0, 1000); num('pool', 1, 32, true);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.damageMove !== 'string' || (moves.length && !moves.includes(r.damageMove))) e.push(`${at}.damageMove: one of the weapon move rows (${moves.join(', ')})`);
+  if (typeof r.waitWhileHeroHurt !== 'boolean') e.push(`${at}.waitWhileHeroHurt: true or false`);
+  if (r.lethal !== false) e.push(`${at}.lethal: false (a bomb never ends a fight; the duel's own blows do)`);
+  if (within(r.count, 1, 6) && within(r.countLow, 1, 6) && r.countLow < r.count) e.push(`${at}.countLow: at least count (more gourds when he is low)`);
+  if (within(r.pool, 1, 32) && within(r.countLow, 1, 6) && r.pool < r.countLow * 2) e.push(`${at}.pool: room for two casts at once (twice countLow)`);
+  if (within(r.cooldownSeconds, 1, 120) && within(r.stompSeconds, 0.2, 5) && within(r.flightSeconds, 0.1, 3) && within(r.fuseSeconds, 0.5, 5) && r.cooldownSeconds <= r.stompSeconds + r.flightSeconds + r.fuseSeconds) e.push(`${at}.cooldownSeconds: longer than one cast from stomp to burst (no overlapping casts)`);
+  const L = r.look;
+  if (!L || typeof L !== 'object') return [...e, `${at}.look: missing`];
+  for (const k of Object.keys(L)) if (!GOURD_LOOK.includes(k)) e.push(`${at}.look.${k}: unknown key`);
+  for (const k of ['core', 'edge', 'fuse', 'gourd', 'stompColour']) if (typeof L[k] !== 'string' || !HEX6.test(L[k])) e.push(`${at}.look.${k}: a #rrggbb`);
+  const lnum = (k, lo, hi, int = false) => { if (!within(L[k], lo, hi) || (int && !Number.isInteger(L[k]))) e.push(`${at}.look.${k}: ${int ? 'a whole number' : 'a number'} from ${lo} to ${hi}`); };
+  lnum('gourdRadiusMetres', 0.05, 2); lnum('groundY', 0, 1); lnum('ringWidth', 0.02, 1); lnum('segments', 8, 128, true); lnum('alpha', 0, 1); lnum('markAlpha', 0, 1); lnum('stompAlpha', 0, 1); lnum('pulseHz', 0, 20); lnum('burstScale', 1, 4);
+  return e;
+}
+/** One checker per mechanic `type` (the registry of src/fight/mechanics/index.ts has the same ids). A new boss mechanic adds one line here. */
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs };
+/** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
+export function validateMechanics(json, kinds = [], moves = []) {
+  const e = [], map = json?.mechanics;
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return ['mechanics.mechanics: a map of id -> row'];
+  const seen = new Map();
+  for (const [id, r] of Object.entries(map)) {
+    if (!/^[a-z][a-z0-9-]*$/.test(id)) e.push(`mechanics.${id}: an id of lower-case letters, digits and dashes`);
+    const check = MECHANIC_TYPES[r?.type];
+    if (!check) { e.push(`mechanics.${id}.type: one of ${Object.keys(MECHANIC_TYPES).join(', ')}`); continue; }
+    if (kinds.length && !kinds.includes(r.boss)) e.push(`mechanics.${id}.boss: no data/profiles.json row "${String(r.boss)}"`);
+    if (seen.has(r.boss)) e.push(`mechanics.${id}.boss: "${String(r.boss)}" already has the row ${seen.get(r.boss)} (one signature move per boss)`); else seen.set(r.boss, id);
+    e.push(...check(id, r, moves));
+  }
+  return e;
 }
 
 // one file: returns a list of error strings (empty = valid)
