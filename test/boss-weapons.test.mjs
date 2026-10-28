@@ -60,7 +60,7 @@ test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden
   assert.equal(a.weapon, 'cleaver'); assert.equal(weaponOf('cleaver').grip, 'one-hand');   // V1's axe-skill one-hander
   assert.equal(a.offhand.kind, 'file'); assert.equal(a.offhand.file, 'shield'); assert.equal(a.offhand.hand, 'lowerarm_l');   // the left forearm, not the hand: a board on the hand sat in front of her face (Dom review 2026-10-28)
   assert.deepEqual([g.equip, a.equip], ['maul', 'axe'], 'Dom picked these three library props (2026-10-28): hammer-01, axe1h-208, shield-213');
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ["executioner", "shieldmaiden", "shieldmaiden"]);   // Gargantua, Arachne, and Sir Reginald (profile castle-guard)
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'pitborn', 'shieldmaiden', 'shieldmaiden']);   // Gargantua, Arachne, Sir Reginald (castle-guard), Ryo (pitborn, anime-boy-black)
   assert.equal(OPPONENTS.executioner.weapon, 'scythe', "V1's row for the executioner is untouched");
   assert.equal(OPPONENTS.shieldmaiden.weapon, 'gladius', "V1's row for the shieldmaiden is untouched");
   for (const r of BOSS_WEAPONS.rows) {
@@ -104,9 +104,9 @@ const withRows = (...extra) => ({ ...clone(RAW), rows: [...clone(RAW).rows.filte
 const profRow = (id, profile, opponent, over = {}) => ({ ...clone(RAW).rows[0], id, profile, opponent, weapon: 'cleaver', equip: 'axe', ...over });
 
 test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had', () => {
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe'], ['reginald-halberd', 'shieldmaiden', 'castle-guard', 'cleaver', 'halberd']]);
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe'], ['reginald-halberd', 'shieldmaiden', 'castle-guard', 'cleaver', 'halberd'], ['ryo-sword', 'pitborn', 'anime-boy-black', 'cleaver', 'sword']]);
   for (const p of PROFILES.profiles) {
-    if (BOSS_WEAPONS.rows.some((r) => r.profile === p.id)) continue;   // a profile with its own row (Sir Reginald) is pinned below
+    if (BOSS_WEAPONS.rows.some((r) => r.profile === p.id)) continue;   // a profile with its own row (Sir Reginald, Ryo) is pinned below
     const base = OPPONENTS[p.opponent];
     assert.equal(bossOpponent(base, '', undefined, p.id).weapon, bossOpponent(base, '').weapon, `${p.id}: naming the profile changes nothing while no row names it`);
     assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), bossWeaponFor(p.opponent, ''), `${p.id}: the archetype's row`);
@@ -117,12 +117,13 @@ test('the shipped rows are unchanged by the profile key: Gargantua and Arachne r
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'sporty-granny')?.id, 'arachne-axe-shield', 'any other shieldmaiden profile keeps the archetype row');
   assert.equal(bossWeaponFor('shieldmaiden', '')?.id, 'arachne-axe-shield', 'no profile = the archetype row, unchanged');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'castle-guard'), bossWeaponFor('pitborn', ''), 'the halberd is the castle-guard profile only');
-  assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black'), undefined, 'a pitborn profile with no row is on V1\'s weapon');
+  assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black')?.id, 'ryo-sword', 'Ryo has his own row');
+  for (const other of PROFILES.profiles.filter((q) => q.opponent === 'pitborn' && q.id !== 'anime-boy-black')) assert.equal(bossWeaponFor('pitborn', '', undefined, other.id), undefined, `${other.id}: a pitborn profile with no row is on V1's weapon (only Ryo gets the sword)`);
   assert.match(readFileSync(new URL('../src/fight/spawn-kind.ts', import.meta.url), 'utf8'), /bossOpponent\(base, ctx\.search, undefined, kind\)/, 'kindFightFor passes the spawn kind (the profile id)');
 });
 
 test('two profiles sharing one archetype can have different rows; a profile without a row falls back to the archetype row, else V1\'s weapon; unknown profiles are refused', () => {
-  const reg = profRow('reginald-gladius', 'castle-guard', 'shieldmaiden', { weapon: 'gladius', equip: 'cleaver' }), ryo = profRow('ryo-maul', 'anime-boy-black', 'pitborn', { weapon: 'maul', equip: 'maul' });
+  const reg = profRow('reginald-gladius', 'castle-guard', 'shieldmaiden', { weapon: 'gladius', equip: 'cleaver' }), ryo = profRow('blonde-maul', 'anime-girl-blonde', 'pitborn', { weapon: 'maul', equip: 'maul' });
   const f = withRows(reg, ryo);
   assert.deepEqual(validateBossWeapons(f), []);
   assert.deepEqual(validateFile('boss-weapons', f), []);
@@ -131,10 +132,11 @@ test('two profiles sharing one archetype can have different rows; a profile with
   assert.equal(w('shieldmaiden', 'arachne'), 'arachne-axe-shield', 'Arachne keeps the archetype row beside it');
   assert.equal(w('shieldmaiden', 'sporty-granny'), 'arachne-axe-shield', 'a profile with no row falls back to the archetype row');
   assert.equal(w('shieldmaiden'), 'arachne-axe-shield', 'no profile = the archetype row');
-  assert.equal(w('pitborn', 'anime-boy-black'), 'ryo-maul');
+  assert.equal(w('pitborn', 'anime-girl-blonde'), 'blonde-maul');
+  assert.equal(w('pitborn', 'anime-boy-black'), undefined, 'withRows leaves the shipped profile rows (Reginald, Ryo) out, so a fixture names its own');
   assert.equal(w('pitborn', 'kachujin'), undefined, 'no profile row and no archetype row: V1\'s weapon');
   assert.equal(bossOpponent(OPPONENTS.pitborn, '', f, 'kachujin'), OPPONENTS.pitborn, 'the very same object');
-  assert.equal(bossOpponent(OPPONENTS.pitborn, '', f, 'anime-boy-black').weapon, 'maul');
+  assert.equal(bossOpponent(OPPONENTS.pitborn, '', f, 'anime-girl-blonde').weapon, 'maul');
   assert.equal(bossOpponent(OPPONENTS.shieldmaiden, '', f, 'castle-guard').weapon, 'gladius');
   assert.equal(bossOpponent(OPPONENTS.shieldmaiden, '', f, 'arachne').weapon, 'cleaver');
   for (const q of ['?bossweapon=v1']) for (const [o, p] of [['shieldmaiden', 'castle-guard'], ['pitborn', 'anime-boy-black'], ['shieldmaiden', 'arachne']]) { assert.equal(bossWeaponFor(o, q, f, p), undefined, q); assert.equal(bossOpponent(OPPONENTS[o], q, f, p), OPPONENTS[o], q); }
@@ -259,4 +261,27 @@ test('the grip row moves the DRAWN part only; a material row restyles it; the se
   const s = moved.scene.getObjectByName('Grip106'), s0 = plain.scene.getObjectByName('Grip106');
   assert.ok(s.position.distanceTo(s0.position) < 1e-9 && s.quaternion.angleTo(s0.quaternion) < 1e-9, 'the seat the part hangs from is where it was: only the drawn part moved');
   void keep;
+});
+
+// ---- Ryo (profile anime-boy-black, pitborn): library sword1h-200 in his right hand; nobody else changes ----
+test('Ryo\'s row: his profile only, the plain sword, the sim\'s cleaver family untouched, and the other pitborn / shieldmaiden bosses unchanged', () => {
+  const r = BOSS_WEAPONS.rows.find((q) => q.profile === 'anime-boy-black');
+  assert.equal(r.id, 'ryo-sword'); assert.equal(r.opponent, 'pitborn'); assert.equal(r.equip, 'sword'); assert.equal(r.offhand, null);
+  assert.equal(r.weapon, OPPONENTS.pitborn.weapon, 'the sim keeps the pitborn\'s own weapon: Ryo fights exactly as before, only the drawing changes');
+  assert.equal(bossOpponent(OPPONENTS.pitborn, '', undefined, 'anime-boy-black'), OPPONENTS.pitborn, 'same weapon id: the very same object, nothing in the sim moves');
+  for (const p of PROFILES.profiles.filter((q) => q.id !== 'anime-boy-black' && q.opponent !== 'executioner' && q.opponent !== 'shieldmaiden')) assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), undefined, `${p.id}: no sword`);
+  for (const p of PROFILES.profiles.filter((q) => q.opponent === 'shieldmaiden')) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, p.id)?.id, p.id === 'castle-guard' ? 'reginald-halberd' : 'arachne-axe-shield', `${p.id}: Sir Reginald has his own row, every other shieldmaiden keeps Arachne's archetype row`);
+  assert.equal(bossWeaponFor('pitborn', '', undefined), undefined, 'the archetype itself (the Minotaur) has no row');
+  assert.equal(bossWeaponFor('pitborn', '?bossweapon=v1', undefined, 'anime-boy-black'), undefined, '?bossweapon=v1 puts V1 back on Ryo');
+  assert.equal(bossPreview('?bossweapon=anime-boy-black')?.id, 'ryo-sword', 'the stills flag draws his row on the page\'s own foe');
+  assert.match(r.placeholder.join(' '), /mesh: a library prop, .*sword1h-200/);
+});
+
+test('sword.glb holds a WeaponDrawn root with a contact segment and a sword-sized mesh; Ryo\'s body holds it in the right hand at the row\'s scale', async () => {
+  const w = (await loadGlb(FOE('sword'))).scene.getObjectByName(HELD.weapon);
+  assert.ok(w && w.userData.contact && w.userData.contact.from < w.userData.contact.to, 'WeaponDrawn with extras.contact');
+  const len = sizeOf(w).length(); assert.ok(len > 0.7 && len < 1.3, `a one-hand sword about 0.95 m, got ${len}`);
+  const r = BOSS_WEAPONS.rows.find((q) => q.profile === 'anime-boy-black'), a = await dressed(r), part = graftOf(a.scene);
+  assert.ok(part && sizeOf(part).length() > 0.7, 'the sword is in his hand');
+  assert.equal(boneOf(a.scene, 'lowerarm_l').getObjectByName(SHIELD_NAME), undefined, 'no off-hand part');
 });
