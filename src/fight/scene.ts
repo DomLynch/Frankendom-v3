@@ -640,20 +640,22 @@ export function createScene(
   let idleOther: readonly { id: string; x: number; z: number; heading: number; file: string }[] = [];   // the standing spawns in another body than the live rig
   const idleOtherActors = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; pose: ReturnType<typeof actorPose>; guard: Practice['duel']['fighters'][1]['guardDirection']; holding: boolean }>();
   const idleCopies: THREE.Group[] = [];
+  let restSnap: { pose: ReturnType<typeof actorPose>; guard: Practice['duel']['fighters'][1]['guardDirection']; holding: boolean } | null = null;   // the live foe's rest pose, kept from the first at-rest frame (the frozen copies of a far boss are made from it once the live foe is down)
   function syncIdleFoes(practice: Practice, dt: number) {
     const rest = standoffOn ? standoff.age >= STANDOFF_MS : standoff.age >= 0, foe = practice.duel.fighters[1];
     const atRest = !!warriors && opponent.visible && rest && (!ragdoll || ragdoll.state === 'alive') && !practice.finish && foe.health === foe.maxHealth && (foe.phase === 'sheathed' || foe.phase === 'ready') && foe.age >= 0;
+    if (atRest && !restSnap) restSnap = { pose: actorPose(practice, 1), guard: foe.guardDirection, holding: holdingCharge(foe) };
     if (idleOther.length || idleOtherActors.size) {
       const seen = new Set<string>();
       for (const at of idleOther) {
         seen.add(at.id);
         let entry = idleOtherActors.get(at.id);
-        if (!entry && atRest) {   // made the first frame the live foe stands at rest (as the copies are), and only if that body's rig has loaded
+        if (!entry && (atRest || restSnap)) {   // made the first frame the live foe stands at rest (as the copies are), and only if that body's rig has loaded; after the first kill (the live foe is down) the rest pose kept from the last at-rest frame is used, so a boss fetched late (respawn.json world.loadAfterKill) still stands at its spot
           const actor = actorOfBody(at.file);
           if (actor) {
-            const group = new THREE.Group(), pose = actorPose(practice, 1);
+            const group = new THREE.Group(), snap = atRest ? { pose: actorPose(practice, 1), guard: foe.guardDirection, holding: holdingCharge(foe) } : restSnap!, pose = snap.pose;
             group.add(actor.anchor); sizeBeast({ opponent: actor }, opponentId); actor.setUpright(readyOffset(opponentId)); scene.add(group);
-            entry = { group, actor, pose, guard: foe.guardDirection, holding: holdingCharge(foe) };
+            entry = { group, actor, pose, guard: snap.guard, holding: snap.holding };
             idleOtherActors.set(at.id, entry);
           }
         }
