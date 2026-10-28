@@ -1118,6 +1118,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         bone.scale.setScalar(.0001);   // no clip tracks bone scale, so the collapse holds; the neck-blend smear hides under the sever burst
         return { group, radius: Math.max(PROP_RADIUS_MIN, Math.min(PROP_RADIUS_MAX, Math.max(size.x, size.z) * .38)) };
       },
+      /** The node the weapon in this rig's hand hangs from (golden weapon tint, src/fight/golden-hud.ts), or undefined. */
+      heldWeaponNode: (): Object3D | undefined => boneOf(root, HELD.weapon) ?? boneOf(root, HELD.sword),
       // A fresh match (rematch): the rig grows its head back; the caller has already disposed the world-parented prop.
       unsever() {
         opened?.dispose(); opened = undefined; root.visible = true;
