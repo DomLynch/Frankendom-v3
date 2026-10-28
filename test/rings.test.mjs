@@ -49,7 +49,7 @@ test('rings 2 and 3 place the nine bodies by distance from the pit, in their ban
     assert.equal(s.kind, s.body, 'a ring boss\'s kind and body share the stem');
   }
   assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-2').map((s) => s.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard']);
-  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['big-vegas', 'parasite', 'the-boss', 'anime-girl-blonde', 'anime-boy-black']);
+  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['parasite', 'the-boss', 'anime-girl-blonde', 'anime-boy-black']);
   assert.deepEqual(ringSpawns(origin), added, 'the zone is the row plus the generated spawns, nothing else');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 90, stepDeg: 0, distance: 10 }, 0), { x: 10, z: 0 }, 'east is +x, north is -z');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 0, stepDeg: 90, distance: 10 }, 1), { x: 10, z: 0 }, 'instance i turns by stepDeg');

@@ -34,7 +34,6 @@
       "groundTint": "#a99ab8", "skyPlates": { "east": 0.8, "south": 1.2, "west": 0.8 },
       "health": 1.5, "damage": 1.3, "loadAfterKillMetres": 40,
       "spawns": [
-        { "kind": "big-vegas", "count": 1, "angleDeg": 0, "stepDeg": 0, "distance": 130 },
         { "kind": "parasite", "count": 1, "angleDeg": 72, "stepDeg": 0, "distance": 130 },
         { "kind": "the-boss", "count": 1, "angleDeg": 144, "stepDeg": 0, "distance": 130 },
         { "kind": "anime-girl-blonde", "count": 1, "angleDeg": 216, "stepDeg": 0, "distance": 130 },
