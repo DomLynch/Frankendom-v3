@@ -11,6 +11,8 @@ import type { BrainRow } from '../brain.ts';
 import { kindIds, kindPractice, kindTable, type KindCtx, type KindFight } from '../fight/spawn-kind.ts';   // a zone spawn's kind: its own opponent, stats, specials and brain
 import DIFFICULTY from '../../data/difficulty.json' with { type: 'json' };
 import PROFILES from '../../data/profiles.json' with { type: 'json' };
+import TUNE from '../../data/tune.json' with { type: 'json' };
+import { tuneFrom, type TuneFile } from '../tune.ts';
 import { difficultyPick, type DifficultyFile, type ProfileRow } from '../difficulty.ts';
 import { applyFoeSweeps, applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
@@ -83,7 +85,8 @@ const level = FIGHT.level;
 // (default row otherwise, a console warning for a bad value), ?difficulty=legacy the fight before this setting. Under ?pitborn=v1 (the Centurion, not this profile's opponent) it is off: V1's Centurion as before.
 // PER-SPAWN KIND (src/fight/spawn-kind.ts): every zone spawn's `kind` is a data/profiles.json row; KINDS(kind) is its opponent, stats, scales and AI profile. The four lets below are the opponent of the
 // spawn the sim HOLDS, reassigned by useKind when the sim is handed to a spawn of another kind (and back); nothing else on the page names an opponent. ?pitborn=v1 makes every kind the Centurion (override).
-const KIND_CTX: KindCtx = { profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
+const TUNED = tuneFrom(TUNE as TuneFile, search);   // ?tune=gargantua.health:1.2 (data/tune.json): empty with no ?tune=, and then nothing below changes
+const KIND_CTX: KindCtx = { tune: TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: FIGHT.weapon as WeaponId, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 const KINDS = kindTable(KIND_CTX);
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
@@ -351,7 +354,7 @@ function syncSweeps() {
   sweepOwner = owner; applyFoeSweeps(search, owner === null ? null : foeSweepsFor(FIGHT.foeReach, search, owner));
 }
 // The zone's stills and the cost table read this (scripts/zone-stills.mjs)
-function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
+function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), ...(Object.keys(TUNED).length ? { tune: TUNED } : {}), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
 element('reset-button').addEventListener('click', () => rematch());
 // Tap-to-switch the soft lock (data/respawn.json lockSwitch, src/fight/lock-switch.ts; ?lockswitch=v1 off): a tap on another boss that is on him swaps the held fight with that boss's. A press listener of its own: the look drag, the corpse cut tap and the buttons are not touched.
 const SWITCH = LOCK_ROWS && multi ? lockSwitchFor(true, search) : null;

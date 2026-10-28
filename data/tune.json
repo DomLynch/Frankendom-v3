@@ -1,0 +1,10 @@
+{
+  "about": "Boss tuning by URL (Strategy 2026-10-28: stop tuning bosses by PR; Gargantua health went 600 -> 300 -> 137 in three merges). ?tune=gargantua.health:1.2,arachne.damage:0.9 lays a MULTIPLIER over one boss's own rows for one page view; commit the final numbers once to data/profiles.json (foeHealthScale, foeDamageScale) or the archetype. No ?tune= = no override = the fight byte for byte as before. `query`: the URL parameter. `kinds`: the names a tune may use -> the data/profiles.json row id they tune (minotaur is the pitborn row). `keys`: the tunable numbers, each a multiplier on the boss's own value with a clamp [min, max]: health (the profile's foeHealthScale x the difficulty row's, so 1.2 = 20 % more hp), damage (foeDamageScale: every blow and special he lands), speed (the opponent's pace multiplier: walking, lunging, stepping). An unknown kind, an unknown key, or a value that is not a finite number is ignored with a console warning; a number outside [min, max] is clamped, with a warning. Reach is not a key: it is the weapon row's (src/fight/weapon-defs.json, shared by every wielder of that weapon), so a per-boss reach needs its own weapon row, not a multiplier.",
+  "query": "tune",
+  "kinds": { "gargantua": "gargantua", "arachne": "arachne", "minotaur": "pitborn" },
+  "keys": [
+    { "id": "health", "min": 0.25, "max": 4, "about": "multiplier on the boss's health (foeHealthScale)" },
+    { "id": "damage", "min": 0.25, "max": 4, "about": "multiplier on every blow and special he lands (foeDamageScale)" },
+    { "id": "speed", "min": 0.5, "max": 2, "about": "multiplier on his pace: walking, lunging, stepping (Opponent.speed)" }
+  ]
+}
