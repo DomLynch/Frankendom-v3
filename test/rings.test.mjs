@@ -25,7 +25,7 @@ const check = (rows = RINGS, zone = ZONE1) => validateRings(rows, zone, ringOrig
 test('the shipped rings validate against the profiles, the rig, the sky plates and the zone row', () => {
   assert.deepEqual(check(), []);
   assert.deepEqual(RINGS.rings.map((r) => r.id), ['ring-1', 'ring-2', 'ring-3']);
-  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard', 'parasite','anime-girl-blonde', 'anime-boy-black']);
+  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard', 'parasite', 'anime-boy-black']);
   assert.ok(RINGS.bosses.every((b) => b.mechanic === null), 'one signature mechanic each, later: the row is null today');
 });
 
@@ -39,9 +39,9 @@ test('ring 1 is the zone row\'s three bosses, byte for byte (the live ring-1 spa
   assert.equal(ZONES.default, '1');
 });
 
-test('rings 2 and 3 place the nine bodies by distance from the pit, in their bands, with their own body', () => {
+test('rings 2 and 3 place the spawned bodies by distance from the pit, in their bands, with their own body', () => {
   const live = zoneFor(''), added = live.spawns.slice(3);
-  assert.equal(added.length, 9);
+  assert.equal(added.length, RINGS.rings.reduce((n, r) => n + r.spawns.reduce((m, s) => m + s.count, 0), 0), 'one zone spawn per ring spawn instance');
   for (const s of added) {
     const ring = ringOfSpawn(s.id), d = Math.hypot(s.position.x - origin.x, s.position.z - origin.z);
     assert.ok(d >= ring.minDist - 0.01 && d <= ring.maxDist + 0.01, `${s.id} stands ${d} m from the pit, inside ${ring.id}`);
@@ -49,7 +49,7 @@ test('rings 2 and 3 place the nine bodies by distance from the pit, in their ban
     assert.equal(s.kind, s.body, 'a ring boss\'s kind and body share the stem');
   }
   assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-2').map((s) => s.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard']);
-  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['parasite', 'anime-girl-blonde', 'anime-boy-black']);
+  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['parasite', 'anime-boy-black']);
   assert.deepEqual(ringSpawns(origin), added, 'the zone is the row plus the generated spawns, nothing else');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 90, stepDeg: 0, distance: 10 }, 0), { x: 10, z: 0 }, 'east is +x, north is -z');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 0, stepDeg: 90, distance: 10 }, 1), { x: 10, z: 0 }, 'instance i turns by stepDeg');
