@@ -170,7 +170,7 @@ test('the bodies: each is in rig.json with its clips, drawn with its archetype\'
   }
   assert.ok(BOSSW.rows.some((r) => r.opponent === 'shieldmaiden'), 'the shieldmaiden clones take Arachne\'s axe and shield row');
   assert.equal(BOSSW.rows.some((r) => r.opponent === 'pitborn' && r.profile == null), false, 'the pitborn clones take the Minotaur\'s own cleaver, unless a profile row of their own says otherwise');
-  assert.deepEqual(BOSSW.rows.filter((r) => r.opponent === 'pitborn').map((r) => r.profile), ['anime-boy-black', 'pumpkinhulk'], 'only Ryo (the sword) and Lord Gourd (the mace) have a pitborn profile row; the other pitborn clones are unchanged');
+  assert.deepEqual(BOSSW.rows.filter((r) => r.opponent === 'pitborn').map((r) => r.profile), ['anime-boy-black', 'pumpkinhulk', 'kachujin'], 'only Ryo (the sword), Lord Gourd (the mace) and Kachujin (the katana) have a pitborn profile row; the other pitborn clones are unchanged');
 });
 
 test('wiring pins: the page lays the ring tune under the address\'s, mixes the look per frame, and scene arms ring bodies by their archetype', () => {

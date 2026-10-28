@@ -7,7 +7,7 @@
     "pitborn": { "body": "minotaur-106", "cutShaPinned": false, "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
     "pumpkinhulk": { "body": "pumpkinhulk-106", "row": "lord-gourd-mace", "rowProfile": "pumpkinhulk", "weapon": "maul", "equip": "mace", "offhand": null },
     "sporty-granny": { "body": "sporty-granny-106", "row": "arachne-axe-shield", "rowProfile": null, "weapon": "cleaver", "equip": "axe", "offhand": "shield" },
-    "kachujin": { "body": "kachujin-106", "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
+    "kachujin": { "body": "kachujin-106", "row": "kachujin-katana", "rowProfile": "kachujin", "weapon": "cleaver", "equip": "katana", "offhand": null },
     "castle-guard": { "body": "castle-guard-106", "row": "reginald-halberd", "rowProfile": "castle-guard", "weapon": "cleaver", "equip": "halberd", "offhand": null },
     "big-vegas": { "body": "big-vegas-106", "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
     "parasite": { "body": "parasite-106", "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
