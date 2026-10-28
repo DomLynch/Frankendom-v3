@@ -14,10 +14,10 @@ export function discShield(o: OffhandRow): Group {
   face.name = 'BossShield.face'; rim.name = 'BossShield.rim'; g.add(face, rim);
   return g;
 }
-/** The grafted part itself (the drawn weapon node equipWeapon cloned into the hand), not the socket bone: on a 106 body HELD.weapon resolves to OpenTrident's fk_socket_hand_r, whose own child is only the sim's contact segment (WeaponShape),
+/** The grafted part itself (the drawn weapon node equipWeapon cloned into the hand), not the socket bone: on a 106 body HELD.weapon resolves to OpenTrident's fk_socket_hand_r, an empty socket (no mesh hangs from it),
  *  so scaling `bone(HELD.weapon)` scaled that and left the drawn blade as it was (Gargantua's "maul" never grew). The part hangs under the Grip106 seat; on a 65 body it is the hand's own WeaponDrawn. */
 export const graftOf = (scene: Object3D): Object3D | undefined => scene.getObjectByName('Grip106')?.getObjectByName(HELD.weapon) ?? boneOf(scene, HELD.weapon);
-const CONTACT = 'WeaponShape';   // the sim's contact segment: never restyled
+const CONTACT = 'WeaponShape';   // a painted weapon-shape mesh (characters.ts shapeMeshOf, laid by reshape): it keeps the painter's material, never restyled. The sim's reach is V1's blade tables, no mesh feeds it.
 function restyle(part: Object3D, m: MaterialRow): void {
   part.traverse((o) => { if (o instanceof Mesh && o.name !== CONTACT) { const mat = new MeshStandardMaterial({ color: m.colour, metalness: m.metalness, roughness: m.roughness }); o.material = mat; } });
 }

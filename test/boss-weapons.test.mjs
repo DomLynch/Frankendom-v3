@@ -43,8 +43,8 @@ test('the rows validate; a bad row is refused with the rule it broke', () => {
   assert.match(bad((r) => { r.rows[1].material.roughness = 3; }), /material.roughness/);
   assert.match(bad((r) => { r.rows[1].id = r.rows[0].id; }), /id: duplicate/);
   assert.deepEqual(validateFile('boss-weapons', { ...RAW, extra: 1 }), ['boss-weapons.extra: unknown key']);
-  const unknownKey = clone(RAW); unknownKey.rows[0].grip = 'two-hand';
-  assert.deepEqual(validateFile('boss-weapons', unknownKey), ['boss-weapons.rows[0] (gargantua-maul).grip: unknown key']);
+  const unknownKey = clone(RAW); unknownKey.rows[0].handedness = 'two-hand';
+  assert.deepEqual(validateFile('boss-weapons', unknownKey), ['boss-weapons.rows[0] (gargantua-maul).handedness: unknown key']);
 });
 
 test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden) an axe in one hand and a shield in the other', () => {
@@ -133,8 +133,9 @@ test('the maul is the cleaver scaled about the grip; the axe is the cleaver as i
   assert.ok(len(plain) > 0, 'the cleaver is in his hand');
   assert.ok(Math.abs(len(maul) / len(plain) - row('executioner').scale) < 0.02, `maul ${len(maul)} vs cleaver ${len(plain)}`);
   assert.ok(Math.abs(len(axe) / len(plain) - 1) < 1e-6, 'the axe is unscaled');
-  const contact = (a) => sizeOf(boneOf(a.scene, HELD.weapon)).length();
-  assert.ok(Math.abs(contact(maul) - contact(plain)) < 1e-6, 'the sim\'s contact segment is not scaled with the drawing');
+  // The sim's reach and sweeps are V1's tables (data/fight.json bladeTables, pinned above) and no mesh feeds them: scaling the drawing cannot move them. What stays put is the seat the part hangs from.
+  const seat = (a) => a.scene.getObjectByName('Grip106');
+  assert.ok(seat(maul).scale.x === 1 && seat(maul).position.distanceTo(seat(plain).position) < 1e-9, 'the Grip106 seat is not scaled or moved; only the drawn part under it is');
   assert.equal(boneOf(maul.scene, 'hand_l').getObjectByName(SHIELD_NAME), undefined, 'the maul has no shield');
 });
 
@@ -158,7 +159,7 @@ test('the shield is strapped on the OUTER forearm: its face looks away from the 
   assert.ok(o.radius <= 0.3);
 });
 
-test('the grip row moves the DRAWN part only; a material row restyles it and leaves the contact segment alone', async () => {
+test('the grip row moves the DRAWN part only; a material row restyles it; the seat stays put', async () => {
   const r = { ...row('shieldmaiden'), offhand: null, grip: { offset: [0.02, 0.03, 0], rotationDeg: [0, 0, 90] }, material: { colour: '#808080', metalness: 0.5, roughness: 0.5 } };
   const plain = dressBossHand(await armed(), { ...r, grip: { offset: [0, 0, 0], rotationDeg: [0, 0, 0] }, material: null }), moved = dressBossHand(await armed(), r);
   const p = graftOf(plain.scene), m = graftOf(moved.scene);
@@ -167,7 +168,7 @@ test('the grip row moves the DRAWN part only; a material row restyles it and lea
   const mat = [], keep = [];
   m.traverse((o) => { if (o.isMesh && o.name !== 'WeaponShape') mat.push(o.material.color.getHexString()); });
   assert.ok(mat.length && mat.every((c) => c === '808080'), `the drawn meshes wear the row's colour: ${mat}`);
-  const c = boneOf(moved.scene, HELD.weapon), c0 = boneOf(plain.scene, HELD.weapon);
-  assert.ok(c.position.distanceTo(c0.position) < 1e-9 && c.quaternion.angleTo(c0.quaternion) < 1e-9, 'the socket (the contact segment) is where it was');
+  const s = moved.scene.getObjectByName('Grip106'), s0 = plain.scene.getObjectByName('Grip106');
+  assert.ok(s.position.distanceTo(s0.position) < 1e-9 && s.quaternion.angleTo(s0.quaternion) < 1e-9, 'the seat the part hangs from is where it was: only the drawn part moved');
   void keep;
 });
