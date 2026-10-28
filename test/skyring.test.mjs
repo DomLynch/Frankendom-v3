@@ -99,7 +99,7 @@ test('geometry: each arc spans spanDegrees centred on its bearing, native aspect
     assert.ok(Math.abs(uv.getX(0) - 1) < 1e-9 && Math.abs(uv.getX(n)) < 1e-9, `${p.id}: u runs against theta`);
     assert.equal(ringAlpha(p, R, 0.5, 0.5), 1);
   }
-  const s = plate('south'); assert.equal(ringAlpha(s, R, 0, 0.5), 0); assert.ok(ringAlpha(s, R, 0.05, 0.5) > 0 && ringAlpha(s, R, 0.05, 0.5) < 1); assert.equal(ringAlpha(s, R, 1, 0.5), 1);   // south ramps in on its left, not its right
+  const s = plate('south'); assert.equal(ringAlpha(s, R, 0, 0.5), 0); assert.ok(ringAlpha(s, R, 0.05, 0.5) > 0 && ringAlpha(s, R, 0.05, 0.5) < 1); assert.equal(ringAlpha(s, R, 1, 0.5), 0); assert.ok(ringAlpha(s, R, 0.97, 0.5) > 0 && ringAlpha(s, R, 0.97, 0.5) < 1);   // south ramps in on its left and (since the west sunset plate, whose bottom sits 24 m higher than south's) out on its right over 6 of the 10 overlap degrees: a hard right edge showed as a vertical line under west's bottom edge in the stills
   assert.equal(ringAlpha(plate('west'), R, 1, 0.5), 0); assert.equal(ringAlpha(s, R, 0.5, 0), 0); assert.equal(ringAlpha(s, R, 0.5, 1), 0);
 });
 
