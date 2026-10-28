@@ -9,7 +9,16 @@ export { createCutRig } from '@frankendom/physics/three-cuts';   // the cut-piec
 import minotaurManifest from '../assets/minotaur-106.cut.manifest.json' with { type: 'json' };
 import gargantuaManifest from '../assets/gargantua-106.cut.manifest.json' with { type: 'json' };   // the boss bodies' manifests (physics cut-batch rows gargantua-106 and arachne-106): not wired to a spawn yet
 import arachneManifest from '../assets/arachne-106.cut.manifest.json' with { type: 'json' };
+import pumpkinhulkManifest from '../assets/pumpkinhulk-106.cut.manifest.json' with { type: 'json' };   // the nine biome-ring bosses' manifests (data/rings.json; physics cut-batch rows, test/rings.test.mjs)
+import kachujinManifest from '../assets/kachujin-106.cut.manifest.json' with { type: 'json' };
+import castleGuardManifest from '../assets/castle-guard-106.cut.manifest.json' with { type: 'json' };
+import parasiteManifest from '../assets/parasite-106.cut.manifest.json' with { type: 'json' };
+import animeBoyBlackManifest from '../assets/anime-boy-black-106.cut.manifest.json' with { type: 'json' };
+import sportyGrannyManifest from '../assets/sporty-granny-106.cut.manifest.json' with { type: 'json' };
+import theBossManifest from '../assets/the-boss-106.cut.manifest.json' with { type: 'json' };
+import animeGirlBlondeManifest from '../assets/anime-girl-blonde-106.cut.manifest.json' with { type: 'json' };
+import bigVegasManifest from '../assets/big-vegas-106.cut.manifest.json' with { type: 'json' };
 export const minotaurCutManifest = minotaurManifest;
 /** body stem (data/rig.json files) -> the manifest beside that body's physics cut GLB. A held body (held-body.ts) with no entry has no cut data and dies the plain way; a new body adds its manifest import and one line here with its cut GLB. */
-export const cutManifests: Record<string, unknown> = { minotaur: minotaurManifest, gargantua: gargantuaManifest, arachne: arachneManifest };
+export const cutManifests: Record<string, unknown> = { minotaur: minotaurManifest, gargantua: gargantuaManifest, arachne: arachneManifest, pumpkinhulk: pumpkinhulkManifest, kachujin: kachujinManifest, 'castle-guard': castleGuardManifest, parasite: parasiteManifest, 'anime-boy-black': animeBoyBlackManifest, 'sporty-granny': sportyGrannyManifest, 'the-boss': theBossManifest, 'anime-girl-blonde': animeGirlBlondeManifest, 'big-vegas': bigVegasManifest };
    // the manifest beside the Minotaur's cut GLB (src/assets/minotaur-106.glb is that file)
