@@ -210,7 +210,8 @@ test('the row: always on (no URL flag), the three free presses, a bad row throws
   assert.deepEqual([...FREE_MOVES.actions], ['dodge', 'backstep', 'parry']);
   assert.equal(isFreeAction('dodge') && isFreeAction('backstep') && isFreeAction('parry'), true);
   assert.equal(isFreeAction('light') || isFreeAction('heavy') || isFreeAction('kick') || isFreeAction(null), false);
-  assert.equal('query' in ROWS.freeMoves || 'off' in ROWS.freeMoves, false, 'no new URL flag');
+  const row = JSON.parse(read('../data/free-moves.json'));
+  assert.equal('query' in row || 'off' in row, false, 'no new URL flag');
   assert.throws(() => validateFreeMoves({ actions: [] }), /non-empty/);
   assert.throws(() => validateFreeMoves({ actions: ['light'] }), /not one of/);
 });

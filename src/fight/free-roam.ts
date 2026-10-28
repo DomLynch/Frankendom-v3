@@ -2,21 +2,21 @@
 // Before the first aggro the sim itself lets the sword-away hero take them (duel.ts freeStep). After a kill the fight sim is over (stepDuel stops when a man is
 // down) and the hero's body is the stick's (zone-loop.ts roamStep); this keeps a hero-only duel beside that walk and steps the fight's OWN rules on it:
 // the same legal() gate (stamina cost, exhaustion), the same roll length, i-frames and travel, the same guard window and speed. Idle, the walk is exactly
-// roamStep; the duel only regenerates his stamina. The presses taken are the row data/respawn.json freeMoves.actions. Presentation of the corpse and the kill
+// roamStep; the duel only regenerates his stamina. The presses taken are the row data/free-moves.json actions. Presentation of the corpse and the kill
 // are untouched: the page shows this hero's pose in place of the finished fight's while he rolls, steps or guards.
-import ROWS from '../../data/respawn.json' with { type: 'json' };
+import ROWS from '../../data/free-moves.json' with { type: 'json' };
 import { legal, stepDuel, idleIntent, type Action, type Duel, type Fighter, type Intent } from './duel.ts';
 import type { State } from './sim.ts';
 import { roamStep } from './zone-loop.ts';
 
 export type FreeMovesRows = { actions: readonly Action[] };
-export const FREE_MOVES = ROWS.freeMoves as FreeMovesRows;
+export const FREE_MOVES = ROWS as FreeMovesRows;
 const ACTIONS: readonly Action[] = ['dodge', 'backstep', 'parry'];
 
 /** Throws on a bad row: `actions` must be a non-empty list drawn from the three free presses. */
 export function validateFreeMoves(rows: FreeMovesRows = FREE_MOVES): void {
-  if (!Array.isArray(rows.actions) || !rows.actions.length) throw new Error('respawn.json freeMoves.actions must be a non-empty list');
-  for (const a of rows.actions) if (!ACTIONS.includes(a)) throw new Error(`respawn.json freeMoves.actions "${a}" is not one of ${ACTIONS.join(', ')}`);
+  if (!Array.isArray(rows.actions) || !rows.actions.length) throw new Error('free-moves.json actions must be a non-empty list');
+  for (const a of rows.actions) if (!ACTIONS.includes(a)) throw new Error(`free-moves.json actions "${a}" is not one of ${ACTIONS.join(', ')}`);
 }
 validateFreeMoves();
 
