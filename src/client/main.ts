@@ -17,6 +17,7 @@ import { difficultyPick, type DifficultyFile, type ProfileRow } from '../difficu
 import { applyFoeSweeps, applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
 import { project, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
+import { mechanicOfKind } from '../fight/mechanics/registry.ts';
 import { RULES, weaponOf, isWeaponId, type AiProfile, type Opponent, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
@@ -324,6 +325,9 @@ const heroStart = initialState();   // where the hero stands at a first load and
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, OPEN_RADIUS, ZONE!.minDistance, heroStart);
 /** The kind spawn `index` fights as (its zone row's `kind`, a data/profiles.json row): the sim's opponent whenever it holds that spawn or that spawn joins as an attacker. */
 const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind, starById[spawns[index]!.id] ?? 0);
+// BOSS SIGNATURE MECHANICS (data/mechanics.json, src/fight/mechanics/registry.ts): the held boss may wear one (data/rings.json bosses[].mechanic). Its state lives for one fight: a new epoch (hand-over, respawn, leash reset) or another held kind starts it fresh.
+let mech: { epoch: number; kind: string; m: ReturnType<typeof mechanicOfKind>; state: unknown } = { epoch: -1, kind: '', m: undefined, state: undefined };
+const mechOf = (kind: string) => { if (mech.epoch !== epoch || mech.kind !== kind) { const m = mechanicOfKind(kind); mech = { epoch, kind, m, state: m?.create() }; } return mech; };
 // THE CORPSE RUN (data/corpse-run.json, src/corpse-run.ts; Dom 2026-10-28, Valheim style, no flag of its own): a boss kill pays coins the hero carries until he banks them at camp; when he dies his carried coins and the
 // weapon he carries leave him as ONE pile where he fell (a second death replaces it), he respawns at camp with no coins and the weapon withdrawn from his save (the rig built at load keeps the weapon already drawn until the next load), and walking over the pile gives them back. The boss that killed him lingers at the pile: its
 // spot moves there with the row's leash for the row's seconds (the existing aggro, leash and walk-home rules, no new AI). The pile lives in the progression save (so ?save=off and ?pitborn=v1 are the game as before).
@@ -601,7 +605,8 @@ function frame(now: number) {
       const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: lockOn, cancel: intent.cancel });
       const prior = practice;
-      practice = stepPractice(prior, duelIntent, aiProfile);
+      const mk = ZONE && engaged && !walkBack ? mechOf(spawns[current]!.kind) : null;   // the held boss's mechanic (also in the Daily Pit: it is the same boss)
+      practice = stepPractice(prior, duelIntent, aiProfile, undefined, mk?.m ? (d, w, run) => mk.m!.step(mk.state, d, w, run) : undefined);
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
@@ -663,6 +668,7 @@ function frame(now: number) {
   if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state, undefined, bossKilled));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
   if (ZONE) { const look = ringLook(Math.hypot(state.x, state.z)); view.ringLook(look.tintA, look.tintB, look.t, look.plates); }   // the biome ring's ground tint and sky-plate weights by the hero's distance from the pit (data/rings.json); ring 1 is today's look
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]!, star: starById[spawns[a.index]!.id] ?? 0 }))); }
+  if (ZONE) { const mk = mechOf(spawns[current]!.kind); view.mechanic(mk.m ?? null, mk.state); }   // the mechanic's effect (the dash line and afterimages), presentation only
   if (ZONE) view.liveStar(starById[spawns[current]!.id] ?? 0);   // the attackers' rigs (a killed one lies until its timer is up)
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go

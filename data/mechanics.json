@@ -1,0 +1,36 @@
+{
+  "about": "BOSS SIGNATURE MECHANICS (Dom 2026-10-28: each ring boss gets its own fighting identity). A MAP of mechanic id -> row; data/rings.json bosses[].mechanic names the id a boss wears (null = none), src/fight/mechanics/registry.ts maps the id to its code. Every number a mechanic uses is its row, validated in src/sim/validate.js (checkMechanics). Keep it a map: other bosses add their own id beside this one.",
+  "mechanics": {
+    "shadow-dash": {
+      "about": "KACHUJIN, ring 2. SHADOW DASH: the fast swordsman stops and an orange line draws on the sand from him to where you stand; the line LOCKS shortly before he goes, then he dashes along it (afterimages trail behind) and cuts. COUNTERS: step or roll OFF the line (the dash overshoots, no cut, he is open), or guard the cut. PUNISH: a recovery window after the dash, before his next move. A hit that staggers him cancels it. Distinct from the hero's Lunge special and from Nan's long polearm thrust: this is a body dash that stops at a cutting gap. Ticks are 60 Hz sim ticks, distances metres.",
+      "firstDelayTicks": 180,
+      "cooldownTicks": 420,
+      "triggerMinM": 3.4,
+      "triggerMaxM": 7.5,
+      "tellTicks": 42,
+      "lockBeforeTicks": 9,
+      "dashSpeedMps": 13,
+      "dashMaxTicks": 30,
+      "stopGapM": 1.35,
+      "slashReachM": 2.2,
+      "slashAction": "light",
+      "slashMaxTicks": 90,
+      "recoverTicks": 54,
+      "fx": {
+        "ghostCount": 3,
+        "ghostEveryTicks": 3,
+        "ghostLifeTicks": 16,
+        "ghostOpacity": 0.38,
+        "ghostTint": "#6fa8ff",
+        "lineColor": "#ff7a1f",
+        "lockColor": "#ffd24a",
+        "lineWidthM": 0.7,
+        "lineOpacity": 0.6,
+        "lineFadeTicks": 18,
+        "lineY": 0.04,
+        "pulseHz": 6,
+        "padRadiusM": 0.9
+      }
+    }
+  }
+}

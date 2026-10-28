@@ -14,6 +14,7 @@ import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
 import { firstFrameDrawn } from '../late-art.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
+import type { Mechanic, MechFx } from './mechanics/registry.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -665,6 +666,7 @@ export function createScene(
   }
   let heldFinishing = false;   // render(): a finish is playing (the live rig is mid-kill): a swap waits for it
   let idleList: readonly { x: number; z: number; heading: number; star?: number }[] = [];
+  let mechNow: Mechanic | null = null, mechState: unknown = null; const mechFx = new Map<string, MechFx>(), mechLoading = new Set<string>();   // boss signature mechanics' effects, by mechanic id
   let liveStarN = 0;   // data/stars.json: the star level the live rig wears (liveStar)
   let idleOther: readonly { id: string; x: number; z: number; heading: number; file: string; star: number }[] = [];   // the standing spawns in another body than the live rig
   const idleOtherActors = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; pose: ReturnType<typeof actorPose>; guard: Practice['duel']['fighters'][1]['guardDirection']; holding: boolean }>();
@@ -886,6 +888,7 @@ export function createScene(
       return heldBodies()?.hold(body) ?? 'same';
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
+    mechanic(m: Mechanic | null, state: unknown) { mechNow = m; mechState = state; },   // the held boss's signature mechanic and its state (src/fight/mechanics/registry.ts, main.ts every frame); its effect loads the first time one is on screen
     liveStar(star: number) { liveStarN = star; },   // data/stars.json: the star level of the spawn the live rig is (main.ts every frame); 0 = the body as built
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean; star?: number }[]) {
       const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
@@ -1063,6 +1066,8 @@ export function createScene(
           : 0;
       player.position.set(state.x, 0, state.z);
       opponent.position.set(practice.enemy.x, 0, practice.enemy.z); applyStar(opponent, liveStarN);   // data/stars.json: the live rig's star scale and glow
+      if (mechNow?.fx && !mechFx.has(mechNow.id) && !mechLoading.has(mechNow.id)) { const id = mechNow.id; mechLoading.add(id); void mechNow.fx().then((make) => { mechFx.set(id, make(scene)); }, () => {}); }
+      for (const [id, fx] of mechFx) fx.update(dt, mechNow?.id === id ? mechState : null, { tick: practice.duel.tick, finished: !!practice.finish, anchor: warriors?.opponent.anchor ?? null, boss: { x: practice.enemy.x, z: practice.enemy.z, heading: practice.enemy.heading }, hero: { x: state.x, z: state.z } });
       const playerDefence = defenceReaction(practice),
         enemyDefence = defenceReaction(practice, true);
       // Both actors present the same per-move combat state; the rig's clip and contact pose come from the simulation's data.

@@ -58,6 +58,8 @@ export const SCHEMA = {
     maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], corpse: ['nearMetres', 'graceSeconds', 'holdSeconds', 'max'], farm: ['decay'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
   // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
+  // Boss signature mechanics: a MAP of id -> row (checkMechanics dispatches to each id's own check; src/fight/mechanics/registry.ts runs them)
+  'mechanics': { keys: ['about', 'mechanics'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
   'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
   // Boss weapons (Dom + Strategy 2026-10-28, src/fight/boss-weapon.ts validateBossWeapons checks the values): one row per archetype a boss is built on; the weapon it fights with and is drawn with
@@ -220,6 +222,7 @@ export function validateFile(name, json) {
     for (const k of keys) if (!Number.isFinite(obj?.[k])) errors.push(`${name}.${path}.${k}: must be a finite number`);
   }
   if (name === 'daily-pit') errors.push(...checkDailyPit(json));
+  if (name === 'mechanics') errors.push(...checkMechanics(json));
   if (name === 'build' && !(Number.isInteger(json.clipDecimals) && json.clipDecimals >= 3 && json.clipDecimals <= 8)) errors.push('build.clipDecimals: must be an integer 3 to 8 (fewer than 3 decimals would be visible on positions in metres)');
   if (name === 'build' && !(Number.isInteger(json.firstVisitBytes) && json.firstVisitBytes > 0)) errors.push('build.firstVisitBytes: must be a positive integer (bytes on the wire at 375)');
   if (name === 'rules') {   // the hand-speed rows (rules-eval.ts handSpeedOf): finite, scale in (0, 1], divisor at least 1, span and window positive (an absent or bad one would reach the page as NaN)
@@ -1023,6 +1026,35 @@ export function checkHitreact(json) {
     num(`${p}.lift`, row.lift, (x) => x >= 0 && x <= 50, 'a finite number in [0, 50]');
     num(`${p}.twist`, row.twist, (x) => x >= 0 && x <= 50, 'a finite number in [0, 50]');
     if (keys(`${p}.dirs`, row.dirs, HIT_SECTORS)) for (const s of HIT_SECTORS) if (keys(`${p}.dirs.${s}`, row.dirs[s], ['impulse', 'dip', 'twist'])) for (const k of ['impulse', 'dip', 'twist']) num(`${p}.dirs.${s}.${k}`, row.dirs[s][k], (x) => x >= 0 && x <= 3, 'a finite number in [0, 3]');
+  }
+  return e;
+}
+
+// Boss signature mechanics (data/mechanics.json): a map id -> row. Each id has its own row check in MECHANIC_CHECKS (one line per mechanic); an id with no check is an error, so a row cannot ship unvalidated.
+const SHADOW_HEX = /^#[0-9a-fA-F]{6}$/;
+export function checkShadowDash(r) {
+  const e = [], at = 'mechanics.shadow-dash', num = (k, lo, hi, int) => { const v = r[k]; if (!Number.isFinite(v) || v < lo || v > hi || (int && !Number.isInteger(v))) e.push(`${at}.${k}: ${int ? 'an integer' : 'a number'} in ${lo}..${hi}`); };
+  for (const k of Object.keys(r)) if (!['about', 'firstDelayTicks', 'cooldownTicks', 'triggerMinM', 'triggerMaxM', 'tellTicks', 'lockBeforeTicks', 'dashSpeedMps', 'dashMaxTicks', 'stopGapM', 'slashReachM', 'slashAction', 'slashMaxTicks', 'recoverTicks', 'fx'].includes(k)) e.push(`${at}.${k}: unknown key`);
+  num('firstDelayTicks', 0, 3600, true); num('cooldownTicks', 60, 3600, true); num('triggerMinM', 1, 20); num('triggerMaxM', 1, 30); num('tellTicks', 18, 120, true); num('lockBeforeTicks', 0, 60, true);
+  num('dashSpeedMps', 4, 30); num('dashMaxTicks', 4, 90, true); num('stopGapM', 0.9, 4); num('slashReachM', 0.9, 6); num('slashMaxTicks', 10, 300, true); num('recoverTicks', 20, 240, true);
+  if (r.triggerMinM >= r.triggerMaxM) e.push(`${at}: triggerMinM must be below triggerMaxM`);
+  if (r.lockBeforeTicks >= r.tellTicks) e.push(`${at}: lockBeforeTicks must be below tellTicks (a tell is readable before it locks)`);
+  if (r.stopGapM > r.slashReachM) e.push(`${at}: stopGapM must not exceed slashReachM (he must stop inside his own cut)`);
+  if (r.dashSpeedMps * r.dashMaxTicks / 60 < r.triggerMaxM - r.stopGapM) e.push(`${at}: the dash (speed x max ticks) must cover triggerMaxM - stopGapM`);
+  if (!['light', 'thrust', 'heavy'].includes(r.slashAction)) e.push(`${at}.slashAction: light, thrust or heavy`);
+  const f = r.fx ?? {}, fe = (k, lo, hi, int) => { const v = f[k]; if (!Number.isFinite(v) || v < lo || v > hi || (int && !Number.isInteger(v))) e.push(`${at}.fx.${k}: ${int ? 'an integer' : 'a number'} in ${lo}..${hi}`); };
+  fe('ghostCount', 1, 6, true); fe('ghostEveryTicks', 1, 20, true); fe('ghostLifeTicks', 4, 60, true); fe('ghostOpacity', 0.05, 1); fe('lineWidthM', 0.1, 3); fe('lineOpacity', 0.1, 1); fe('lineFadeTicks', 1, 120, true); fe('lineY', 0, 0.5); fe('pulseHz', 0, 20); fe('padRadiusM', 0.2, 3);
+  for (const k of ['ghostTint', 'lineColor', 'lockColor']) if (typeof f[k] !== 'string' || !SHADOW_HEX.test(f[k])) e.push(`${at}.fx.${k}: a #rrggbb`);
+  for (const k of Object.keys(f)) if (!['ghostCount', 'ghostEveryTicks', 'ghostLifeTicks', 'ghostOpacity', 'ghostTint', 'lineColor', 'lockColor', 'lineWidthM', 'lineOpacity', 'lineFadeTicks', 'lineY', 'pulseHz', 'padRadiusM'].includes(k)) e.push(`${at}.fx.${k}: unknown key`);
+  return e;
+}
+const MECHANIC_CHECKS = { 'shadow-dash': checkShadowDash };   // one line per mechanic: id -> its row check
+export function checkMechanics(j) {
+  const e = [], rows = j.mechanics;
+  if (!rows || typeof rows !== 'object' || Array.isArray(rows)) return ['mechanics.mechanics: a map of id -> row'];
+  for (const [id, row] of Object.entries(rows)) {
+    if (!Object.hasOwn(MECHANIC_CHECKS, id)) e.push(`mechanics.${id}: no row check in src/sim/validate.js MECHANIC_CHECKS`);
+    else e.push(...MECHANIC_CHECKS[id](row));
   }
   return e;
 }
