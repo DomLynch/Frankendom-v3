@@ -107,7 +107,7 @@ export function mountMarket(ctx: MarketHookCtx, doc: Document = document, file: 
       const d = Math.hypot(hero.x - at.x, hero.z - at.z);
       if (panel.isOpen() && (!alive || d > M.closeMetres)) panel.close();
       const w = (doc as { documentElement?: { clientWidth?: number; clientHeight?: number } }).documentElement, W = w?.clientWidth || 1e9, H = w?.clientHeight || 1e9;
-      const on = alive && d <= M.openMetres && ctx.project(at.x, 2.15, at.z, xy) && xy[0] >= 28 && xy[0] <= W - 28 && xy[1] >= 24 && xy[1] <= H - 24;   // the chip never sits off the screen: with the merchant behind the camera or out of frame there is nothing to tap
+      const on = alive && d <= M.openMetres && ctx.project(at.x, 2.15, at.z, xy) && xy[0] >= 44 && xy[0] <= W - 44 && xy[1] >= 28 && xy[1] <= H - 28;   // the chip never sits off the screen: with the merchant behind the camera or out of frame there is nothing to tap
       panel.chipAt(on ? xy : null);
     },
     stand(hero) {

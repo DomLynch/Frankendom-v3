@@ -95,7 +95,7 @@ export function mountMarketPanel(doc: Doc, ctx: PanelCtx): MarketPanel {
   const api: MarketPanel = {
     chipAt(xy) {
       if (!xy || isOpen) { chip.hidden = true; return; }
-      chip.hidden = false; chip.style.transform = `translate(${Math.round(xy[0] - 28)}px,${Math.round(xy[1] - 24)}px)`;
+      chip.hidden = false; chip.style.transform = `translate(${Math.round(xy[0])}px,${Math.round(xy[1])}px) translate(-50%,-50%)`;   // centred on the merchant's head whatever the chip's width
     },
     open() { if (isOpen) return; isOpen = true; tab = 'buy'; sureKey = ''; chip.hidden = true; back.hidden = false; sheet.hidden = false; ctx.onToggle(true); draw(); chip.setAttribute('aria-expanded', 'true'); },
     close() { if (!isOpen) return; isOpen = false; back.hidden = true; sheet.hidden = true; chip.setAttribute('aria-expanded', 'false'); ctx.onToggle(false); },
