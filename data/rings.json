@@ -37,7 +37,8 @@
         { "kind": "the-boss", "count": 1, "angleDeg": 180, "stepDeg": 0, "distance": 130 },
         { "kind": "parasite", "count": 1, "angleDeg": 72, "stepDeg": 0, "distance": 130 },
         { "kind": "anime-boy-black", "count": 1, "angleDeg": 288, "stepDeg": 0, "distance": 130 },
-        { "kind": "anime-girl-blonde", "count": 1, "angleDeg": 234, "stepDeg": 0, "distance": 130 }
+        { "kind": "anime-girl-blonde", "count": 1, "angleDeg": 234, "stepDeg": 0, "distance": 130 },
+        { "kind": "big-vegas", "count": 1, "angleDeg": 126, "stepDeg": 0, "distance": 130 }
       ]
     }
   ],
@@ -49,6 +50,7 @@
     { "kind": "the-boss", "name": "The Accountant", "body": "the-boss", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
     { "kind": "parasite", "name": "The Titan's Envoy", "body": "parasite", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
     { "kind": "anime-boy-black", "name": "Ryo", "body": "anime-boy-black", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
-    { "kind": "anime-girl-blonde", "name": "Akane", "body": "anime-girl-blonde", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null }
+    { "kind": "anime-girl-blonde", "name": "Akane", "body": "anime-girl-blonde", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
+    { "kind": "big-vegas", "name": "The King", "body": "big-vegas", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null }
   ]
 }
