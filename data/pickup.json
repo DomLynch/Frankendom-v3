@@ -1,5 +1,5 @@
 {
-  "about": "The cut hint (Dom 2026-10-28: #219's select + Take UI is out; the corpse works as before, a tap on a part cuts it and the part lands on the ground). What stays is #219's small bobbing yellow arrow with ONE short line of small caps above the corpse (src/fight/pickup.ts validatePickup checks the values). PRESENTATION ONLY and DOM: pointer-events none, never touches the sim, the camera or the input. `on`/`query`/`off`: ?pickup=v1 hides it. `text.label`: the one line (Dom picks from: Cut your Frankendom / Carve up your Frankendom / Tap a part to cut it off / Cut it apart / Build your Frankendom: cut it up). `units`: the cut units a corpse must still have one of for the hint to show (the physics.json cut.cue units). `delayS`: seconds the corpse must have been frozen first. `hintSeconds`: it goes this long after it appears. It also goes at the first cut made while it shows. `walkAwayM`: it hides when the hero is further than this from the corpse. `arrow.liftPx`: the arrow's tip above the corpse's hips. `safe`: the box the arrow and line stay in, as fractions of the viewport, so they never sit on the thumb controls or the HUD bars.",
+  "about": "The cut hint (Dom 2026-10-28: #219's select + Take UI is out; the corpse works as before, a tap on a part cuts it and the part lands on the ground). What stays is #219's small bobbing yellow arrow with ONE short line of small caps above the corpse (src/fight/pickup.ts validatePickup checks the values). PRESENTATION ONLY and DOM: pointer-events none, never touches the sim, the camera or the input. `on`/`query`/`off`: ?pickup=v1 hides it. `text.label`: the one line (Dom's final wording: Strike to dismember, which reads right for a tap and a click). `units`: the cut units a corpse must still have one of for the hint to show (the physics.json cut.cue units). `delayS`: seconds the corpse must have been frozen first. `hintSeconds`: it goes this long after it appears. It also goes at the first cut made while it shows. `walkAwayM`: it hides when the hero is further than this from the corpse. `arrow.liftPx`: the arrow's tip above the corpse's hips. `safe`: the box the arrow and line stay in, as fractions of the viewport, so they never sit on the thumb controls or the HUD bars.",
   "on": true,
   "query": "pickup",
   "off": "v1",
@@ -9,7 +9,7 @@
   "walkAwayM": 14,
   "zIndex": 29,
   "colour": "#ffd34a",
-  "text": { "label": "Cut your Frankendom", "sizePx": 10, "letterSpacingEm": 0.14, "shadow": "0 1px 3px rgba(0,0,0,0.85)", "maxWidthPx": 170, "lineHeight": 1.25 },
+  "text": { "label": "Strike to dismember", "sizePx": 10, "letterSpacingEm": 0.14, "shadow": "0 1px 3px rgba(0,0,0,0.85)", "maxWidthPx": 170, "lineHeight": 1.25 },
   "arrow": { "sizePx": 15, "bobPx": 6, "bobS": 0.9, "liftPx": 64, "textGapPx": 4 },
   "safe": { "topFrac": 0.2, "bottomFrac": 0.3, "sideMarginPx": 12 },
   "fadeS": 0.18

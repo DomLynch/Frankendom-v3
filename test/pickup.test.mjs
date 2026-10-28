@@ -24,9 +24,11 @@ test('the rows validate, and a bad row is refused', () => {
   assert.throws(() => validatePickup(bad((r) => { r.units = []; })), /units/);
 });
 
-test('the default: a yellow arrow with the text row "Cut your Frankendom", ~0.6 s after the freeze, 8 s; ?pickup=v1 hides it', () => {
+test('the default: a yellow arrow with the text row "Strike to dismember", ~0.6 s after the freeze, 8 s; ?pickup=v1 hides it', () => {
   assert.equal(PICKUP.on, true);
-  assert.equal(PICKUP.text.label, 'Cut your Frankendom');
+  assert.equal(PICKUP.text.label, 'Strike to dismember');
+  assert.deepEqual(PICKUP.units, JSON.parse(read('../data/physics.json')).cut.cue.units, 'the hint counts the six units the old circles covered: head, both arms, both legs, the waist');
+  assert.equal(PICKUP.units.length, 6);
   assert.equal(PICKUP.colour.toLowerCase(), '#ffd34a');
   assert.equal(PICKUP.delayS, 0.6);
   assert.equal(PICKUP.hintSeconds, 8);

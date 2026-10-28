@@ -45,12 +45,25 @@ const boxes = await page.evaluate(() => {
   return { hint: r(document.querySelector('[data-pk=hint]')), hintOpacity: document.querySelector('[data-pk=hint]')?.style.opacity ?? null, text: document.querySelector('.pk-text')?.textContent ?? null, pill: !!document.querySelector('.pk-pill'), thumbs: ['joystick', 'actions'].map((id) => [id, r(document.getElementById(id))]) };
 });
 console.log(`${tag}: hint ${JSON.stringify(boxes)}`);
-const at = await page.evaluate((u) => { for (let y = 120; y < 700; y += 4) for (let x = 20; x < 360; x += 4) if (globalThis.__ragdoll.probe?.(x, y) === u) return [x, y]; return null; }, CUT);
-console.log(`${tag}: tap to cut ${CUT} at ${at}`);
-if (at) await page.touchscreen.tap(at[0], at[1]);
-await run(150);
+// every cuttable unit by a plain tap (the pre-#219 behaviour: a tap on a part cuts it; the piece flies a bit and lands): the first (CUT) is shot, then the rest
+const UNITS = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'];
+const tapUnit = async (u) => {
+  const cut = () => page.evaluate(() => (globalThis.__v3Cuts ?? []).map((c) => c.unit));
+  if ((await cut()).includes(u)) return console.log(`${tag}: ${u} already cut by the kill`);
+  const at = await page.evaluate((u) => { for (let y = 120; y < 700; y += 4) for (let x = 20; x < 360; x += 4) if (globalThis.__ragdoll.probe?.(x, y) === u) return [x, y]; return null; }, u);
+  const d0 = await page.evaluate((u) => globalThis.__ragdoll.limbDistance?.(u), u);
+  if (at) await page.touchscreen.tap(at[0], at[1]);
+  await run(60);
+  const d1 = await page.evaluate((u) => globalThis.__ragdoll.limbDistance?.(u), u);
+  console.log(`${tag}: tap ${u} at ${at}: cut ${(await cut()).includes(u)}, distance to the chest ${d0?.toFixed(2)} -> ${d1?.toFixed(2)} m`);
+};
+await tapUnit(CUT);
+await run(90);
 await shoot('2-cut');
 console.log(`${tag}: hint after the cut ${await page.evaluate(() => document.querySelector('[data-pk=hint]')?.style.opacity ?? null)}`);
+for (const u of UNITS) if (u !== CUT) await tapUnit(u);
+await run(120);
+await shoot('3-all-six');
 console.log(`${tag}: events ${JSON.stringify(await page.evaluate(() => (globalThis.__feelEvents ?? []).map((e) => `${e.name}:${e.payload?.unit}:${e.payload?.source}`)))}`);
 console.log(`${tag}: errors ${errors.length}${errors.length ? ' ' + errors.slice(0, 3).join(' | ') : ''}`);
 await browser.close();
