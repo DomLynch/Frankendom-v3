@@ -127,7 +127,7 @@ test('ragdoll rows are per id AND body: a held body without a data/physics.json 
   assert.equal(rigStemOf('minotaur-106'), 'minotaur'); assert.equal(rigStemOf('unmapped-106'), 'unmapped-106');
   // a body whose physics row exists but whose cut GLB/manifest does not: the chunk lists no manifest, the physics-chunk table is the data
   const chunk = src('fight/physics-chunk.ts');
-  assert.match(chunk, /export const cutManifests: Record<string, unknown> = \{ minotaur: minotaurManifest \};/);
+  assert.match(chunk, /export const cutManifests: Record<string, unknown> = \{ minotaur: minotaurManifest, gargantua: gargantuaManifest, arachne: arachneManifest \};/);
   assert.match(src('fight/ragdoll.ts'), /c\.cutManifests\?\.\[foe\.body\] \?\? \(foe\.body === 'minotaur' \? c\.minotaurCutManifest : undefined\)/);
 });
 
