@@ -9,12 +9,12 @@
       "weapon": "maul",
       "clipsAs": "cleaver",
       "equip": "cleaver",
-      "scale": 1.7,
+      "scale": 1.25,
       "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
-      "material": { "colour": "#7e838b", "metalness": 0.4, "roughness": 0.5 },
+      "material": { "colour": "#3b3e44", "metalness": 0.15, "roughness": 0.85 },
       "offhand": null,
       "placeholder": [
-        "mesh: the Pitborn's cleaver (src/assets/weapons/foe/cleaver.glb) scaled 1.7x stands in for a maul head and haft; no maul mesh is in the repo",
+        "mesh: the Pitborn's cleaver (src/assets/weapons/foe/cleaver.glb) scaled 1.25x, dark iron, stands in for a maul head and haft; no maul mesh is in the repo",
         "clips: the 106 body plays the sword clip family (clipsAs cleaver), not Maul_* swings; the sim keeps the maul's moves, timing and damage",
         "sweeps: V1's hero-rig maul blade table, not re-baked on Gargantua's body (his body is not in the repo yet; scripts/foe-body/bake-blades.mjs is the re-bake)"
       ]

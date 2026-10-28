@@ -131,7 +131,7 @@ test('the maul is the cleaver scaled about the grip; the axe is the cleaver as i
   const plain = await armed(), maul = dressBossHand(await armed(), row('executioner')), axe = dressBossHand(await armed(), row('shieldmaiden'));
   const len = (a) => { const w = graftOf(a.scene); return w ? sizeOf(w).length() : 0; };   // the DRAWN part (Grip106's WeaponDrawn), not the socket bone: scaling the socket left the blade as it was
   assert.ok(len(plain) > 0, 'the cleaver is in his hand');
-  assert.ok(Math.abs(len(maul) / len(plain) - 1.7) < 0.02, `maul ${len(maul)} vs cleaver ${len(plain)}`);
+  assert.ok(Math.abs(len(maul) / len(plain) - row('executioner').scale) < 0.02, `maul ${len(maul)} vs cleaver ${len(plain)}`);
   assert.ok(Math.abs(len(axe) / len(plain) - 1) < 1e-6, 'the axe is unscaled');
   const contact = (a) => sizeOf(boneOf(a.scene, HELD.weapon)).length();
   assert.ok(Math.abs(contact(maul) - contact(plain)) < 1e-6, 'the sim\'s contact segment is not scaled with the drawing');
