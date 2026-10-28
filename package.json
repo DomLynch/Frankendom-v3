@@ -24,7 +24,7 @@
     "pg": "8.16.3"
   },
   "dependencies": {
-    "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/909c5416102e9505ff1eb3106b7bef6338f7910b",
+    "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/5209d89304a773c5ab39c8f135a7625ff0f44ad0",
     "three": "0.186.0"
   }
 }
