@@ -1,5 +1,5 @@
-// The heat line (data/heat.json hud): one small line of small caps under the coin line, plain DOM text. Written only when the text changes (no canvas, no texture, no string built per frame: Armagedom's
-// tally trap). Hidden until there is heat. Presentation only: pointer-events none, never touches the sim, the camera or the input.
+// The heat line (data/heat.json hud): one small line of small caps under the coin line, plain DOM text. Written only when the count changes (nothing drawn, no string built per frame: Armagedom's
+// per-frame tally trap). Hidden until there is heat. Presentation only: pointer-events none, never touches the sim, the camera or the input.
 import { heatText, type Heat, type HeatRows } from '../heat.ts';
 
 type Doc = { createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };

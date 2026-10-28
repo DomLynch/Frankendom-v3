@@ -465,7 +465,8 @@ function zoneStep(dt: number) {
     }
   } else if (heroDied()) {
     if (sinceDeath === 0) reportFight('boss_death', killedBy ?? current);
-    if (sinceDeath === 0) { onHeroDied(); resetHeat(heat, heatClock); }   // the first frame of the death: what he carries drops where he fell
+    if (sinceDeath === 0) onHeroDied();
+    if (sinceDeath === 0) resetHeat(heat, heatClock);   // death clears heat (src/heat.ts)   // the first frame of the death: what he carries drops where he fell
     sinceDeath += dt;
     if (DEATH ? standUpDue(DEATH, sinceDeath, respawnAsked) : sinceDeath >= ZONE!.diedSeconds) { respawnAsked = false; const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
