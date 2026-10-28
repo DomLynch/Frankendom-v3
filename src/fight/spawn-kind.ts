@@ -13,6 +13,7 @@ import type { PickedStance } from './stance.ts';
 import type { DuelPose } from './duel.ts';
 import { bossOpponent } from './boss-weapon.ts';
 import { brainFor, brainProfile, type BrainRow } from '../brain.ts';
+import { tunedOpponent, tunedResolved, type TuneMap } from '../tune.ts';
 import { profileFor, resolveFight, scaledOpponent, scaledPractice, type DifficultyFile, type ProfileRow, type Resolved } from '../difficulty.ts';
 
 /** What every kind is built with: the data files, the page's difficulty pick and address, and the fight row's shared picks. */
@@ -20,6 +21,7 @@ export type KindCtx = {
   profiles: readonly ProfileRow[]; difficulty: DifficultyFile; brains: readonly BrainRow[]; pick: string | number; search: string; level: number;
   ai: string | undefined;                                   // data/fight.json `ai`: the brain row the legacy (off-difficulty) fight plays
   override: string | null;                                  // ?pitborn=v1: every kind fights as this archetype (the Centurion), difficulty off; null = each kind as its profile says
+  tune?: TuneMap;                                           // ?tune= (src/tune.ts, data/tune.json): per-kind multipliers on health, damage and speed; absent or empty = none
   weapon: WeaponId; skill: SkillId; skill2: SkillId; stance: PickedStance; specials: boolean;
 };
 /** One kind as the sim fights it: the archetype id and body, whether the difficulty/profile scales apply, and the AI profile the stepping uses. */
@@ -40,9 +42,9 @@ export function kindProblem(kind: string, profiles: readonly ProfileRow[], arche
 export function kindFightFor(kind: string, ctx: KindCtx): KindFight {
   const why = kindProblem(kind, ctx.profiles);
   if (why) throw new Error(why);
-  const resolved = resolveFight({ profile: kind, difficulty: ctx.pick }, ctx.profiles, ctx.difficulty, ctx.brains);
+  const resolved = tunedResolved(resolveFight({ profile: kind, difficulty: ctx.pick }, ctx.profiles, ctx.difficulty, ctx.brains), ctx.tune, kind);
   const opponentId = ctx.override ?? resolved.opponent, base = OPPONENTS[opponentId as keyof typeof OPPONENTS];
-  const opponent = ctx.override === null ? bossOpponent(base, ctx.search) : base;   // data/boss-weapons.json: Gargantua (executioner) fights with a maul, Arachne (shieldmaiden) with an axe; ?bossweapon=v1 and ?pitborn=v1 keep V1's row for the archetype
+  const opponent = ctx.override === null ? tunedOpponent(bossOpponent(base, ctx.search), ctx.tune, kind) : base;   // data/boss-weapons.json: Gargantua (executioner) fights with a maul, Arachne (shieldmaiden) with an axe; ?bossweapon=v1 and ?pitborn=v1 keep V1's row for the archetype
   const scaled = resolved.opponent === opponentId;   // the profile's own archetype fights with its difficulty and scales; the ?pitborn=v1 Centurion is V1's fight as before
   const v1 = profileAt(opponent, ctx.level);
   const ai = scaled ? profileFor(v1, resolved, new URLSearchParams(ctx.search).get('ai') === 'v1') : brainProfile(v1, brainFor(ctx.brains, ctx.ai, ctx.search));
