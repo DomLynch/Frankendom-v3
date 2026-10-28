@@ -293,7 +293,7 @@ test('Ryo\'s row: his profile only, the plain sword, the sim\'s cleaver family u
   assert.equal(r.id, 'ryo-sword'); assert.equal(r.opponent, 'pitborn'); assert.equal(r.equip, 'sword'); assert.equal(r.offhand, null);
   assert.equal(r.weapon, OPPONENTS.pitborn.weapon, 'the sim keeps the pitborn\'s own weapon: Ryo fights exactly as before, only the drawing changes');
   assert.equal(bossOpponent(OPPONENTS.pitborn, '', undefined, 'anime-boy-black'), OPPONENTS.pitborn, 'same weapon id: the very same object, nothing in the sim moves');
-  for (const p of PROFILES.profiles.filter((q) => q.id !== 'anime-boy-black' && q.id !== 'pumpkinhulk' && q.opponent !== 'executioner' && q.opponent !== 'shieldmaiden')) assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), undefined, `${p.id}: no sword`);
+  for (const p of PROFILES.profiles.filter((q) => q.id !== 'anime-boy-black' && q.id !== 'pumpkinhulk' && q.id !== 'kachujin' && q.opponent !== 'executioner' && q.opponent !== 'shieldmaiden')) assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), undefined, `${p.id}: no sword`);
   for (const p of PROFILES.profiles.filter((q) => q.opponent === 'shieldmaiden')) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, p.id)?.id, p.id === 'castle-guard' ? 'reginald-halberd' : 'arachne-axe-shield', `${p.id}: Sir Reginald has his own row, every other shieldmaiden keeps Arachne's archetype row`);
   assert.equal(bossWeaponFor('pitborn', '', undefined), undefined, 'the archetype itself (the Minotaur) has no row');
   assert.equal(bossWeaponFor('pitborn', '?bossweapon=v1', undefined, 'anime-boy-black'), undefined, '?bossweapon=v1 puts V1 back on Ryo');
