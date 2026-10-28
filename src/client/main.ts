@@ -79,7 +79,8 @@ import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } f
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, bossLoadAfterKill, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
-import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { GROUND, groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { TERRAIN, terrainFor } from '../zone/terrain.ts';
 import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
@@ -246,6 +247,7 @@ function nameOpponent() {   // :397 without the legend
 // (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale, undefined, sandOn(search)));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
+if (ZONE && groundOn(search)) { const zoneRow = orderedZone(zoneFor(search), FIGHT.order, search), hills = terrainFor(zoneRow, pitOrigin(zoneRow, WORLD)); if (hills) view.openTerrain(hills, TERRAIN, WORLD.pitScale, GROUND.gridRadiusMetres); }   // the zone's hills from a seed (data/terrain.json): flat pads at the pit, the camp and every boss, render only; no flag of its own (?ground=v1 and ?postkill=v1 stay flat)
 if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
 const DEATH = heroDeathFor(!!ZONE, search);   // data/hero-death.json: the death ragdoll, camera, 'You fell' line and Respawn button; null = ?herodeath=v1 (or ?postkill=v1): the fall, 'You died' and the automatic stand-up as before
 let respawnAsked = false;
