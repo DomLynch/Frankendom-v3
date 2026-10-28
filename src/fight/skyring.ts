@@ -115,7 +115,7 @@ export function createSkyRing(o: RingOptions): SkyRing {
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.name = `skyring-${p.id}`; mesh.renderOrder = -1000 + row.orderOffset + index; mesh.frustumCulled = false;
-      mesh.position.y = ringCentreY(o.horizonY, h);
+      mesh.position.y = ringCentreY(o.horizonY - row.dropMetres, h);   // lowered by `dropMetres` so the subjects (the alien) sit in the band of sky a portrait phone shows
       group.add(mesh); meshes.set(p.id, mesh); states.set(p.id, 'fading');
     }).catch(() => { states.set(p.id, 'failed'); });
   };

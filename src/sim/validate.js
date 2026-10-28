@@ -498,7 +498,7 @@ function checkSkyline(s) {
 
 // data/stage.json `skyline.ring` (src/fight/skyring.ts): the south, east and west plates. Plain WebP file names, one plate per bearing, ramps inside the overlap, colours as #rrggbb, query words that
 // differ from the other skyline ones, and the tallest arc (the baked picture's aspect at `spanDegrees`) inside the sky cylinder and the far plane.
-export const SKYRING_KEYS = ['about', 'on', 'query', 'v1', 'spanDegrees', 'overlapDegrees', 'orderOffset', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'bakedAspect', 'lazy', 'desktop', 'bake', 'plates'];
+export const SKYRING_KEYS = ['about', 'on', 'query', 'v1', 'spanDegrees', 'overlapDegrees', 'dropMetres', 'orderOffset', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'bakedAspect', 'lazy', 'desktop', 'bake', 'plates'];
 export const SKYRING_PLATE_KEYS = ['id', 'direction', 'on', 'compassDegrees', 'mobile', 'desktop', 'rampLeftDegrees', 'rampRightDegrees', 'grade', 'bake'];
 function checkSkyRing(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.ring.${p}: ${m}`), r = s.ring, obj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
@@ -509,7 +509,7 @@ function checkSkyRing(s) {
   const taken = [s.query, s.followQuery, s.views && s.views.query, s.views && s.views.foeFadeQuery, s.fold && s.fold.query, s.plate && s.plate.query, s.plate && s.plate.flatQuery, s.plate && s.plate.anim && s.plate.anim.query];
   if (typeof r.query === 'string' && taken.includes(r.query)) at('query', 'must differ from the other skyline query words');
   const rng = (o, k, lo, hi, int, path = k) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi || (int && !Number.isInteger(o[k]))) at(path, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
-  rng(r, 'spanDegrees', 90, 120); rng(r, 'overlapDegrees', 0, 30); rng(r, 'orderOffset', 1, 90, true); rng(r, 'topFadeFraction', 0, 0.5); rng(r, 'bottomFadeFraction', 0, 0.5); rng(r, 'segments', 8, 256, true); rng(r, 'bakedAspect', 1, 6);
+  rng(r, 'spanDegrees', 90, 120); rng(r, 'overlapDegrees', 0, 30); rng(r, 'dropMetres', 0, 60); rng(r, 'orderOffset', 1, 90, true); rng(r, 'topFadeFraction', 0, 0.5); rng(r, 'bottomFadeFraction', 0, 0.5); rng(r, 'segments', 8, 256, true); rng(r, 'bakedAspect', 1, 6);
   if (Number.isFinite(r.spanDegrees) && Number.isFinite(r.overlapDegrees) && r.spanDegrees !== 90 + r.overlapDegrees) at('overlapDegrees', 'must be spanDegrees minus 90 (each plate is a quarter turn plus the overlap it shares with its neighbour)');
   if (Number.isInteger(r.orderOffset) && s.fold && Number.isInteger(s.fold.orderOffset) && !(r.orderOffset > s.fold.orderOffset)) at('orderOffset', 'must draw after the folded floor (above fold.orderOffset)');
   if (Number.isInteger(r.orderOffset) && s.plate && Number.isInteger(s.plate.orderOffset) && Array.isArray(r.plates) && !(r.orderOffset + r.plates.length <= s.plate.orderOffset)) at('orderOffset', 'the plates must all draw before the north plate (under plate.orderOffset)');

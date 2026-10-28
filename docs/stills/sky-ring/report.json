@@ -118,6 +118,66 @@
       1
      ]
     ]
+   },
+   {
+    "bearing": 155,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ],
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   }
+  ]
+ },
+ "v1": {
+  "query": "skyring=v1",
+  "firstVisitRingFetches": 0,
+  "fetchedAfterTurning": [],
+  "shots": [
+   {
+    "bearing": 0,
+    "ringStates": null
+   },
+   {
+    "bearing": 90,
+    "ringStates": null
+   },
+   {
+    "bearing": 180,
+    "ringStates": null
+   },
+   {
+    "bearing": 270,
+    "ringStates": null
+   },
+   {
+    "bearing": 45,
+    "ringStates": null
+   },
+   {
+    "bearing": 135,
+    "ringStates": null
+   },
+   {
+    "bearing": 225,
+    "ringStates": null
+   },
+   {
+    "bearing": 315,
+    "ringStates": null
+   },
+   {
+    "bearing": 155,
+    "ringStates": null
    }
   ]
  }
