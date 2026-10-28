@@ -1,0 +1,20 @@
+{
+  "about": "What every boss resolves to, as DATA (CI hardening 2026-10-28, test/boss-expect.test.mjs). Three live breaks (the Gargantua freeze, the hero sword missing from the hashed asset names, boss weapons and shield gone after the rings merge) passed CI because nothing asserted the resolved weapon per boss. Change a value here DELIBERATELY, in the same PR as the change that moves it; a silent change fails the test. `bosses` is keyed by data/profiles.json id (the zone spawn kind); every profile must have a row (a new boss with no row fails). `body`: the 106 file stem the spawn draws (src/fight/foe-body.ts spawnBodyFile). `row`: the data/boss-weapons.json row id that body resolves to through src/fight/boss-resolve.ts, or null (no row: the body fights with `weapon`, its owner archetype's weapon, and grafts that weapon's own equip file). `rowProfile`: the profile id that row is keyed by, or null when it is the archetype's row (shared; for sporty-granny and the-boss that is the EXPLICIT FALLBACK to Arachne's axe and shield, until they get a row of their own). `weapon`: the sim weapon id (weaponOfBody). `equip`: the grafted part's file stem under src/assets/weapons/foe/. `offhand`: the off-hand mesh stem (null = none). `cutShaPinned` false: only the first three bodies (gargantua, arachne, minotaur) commit the physics batch SOURCE glb, not its cut output, so the file is not the row's expect_sha256 (their manifests, wiring and physics rows are still checked); every body from the biome rings on commits the cut GLB and is pinned. `pending`: profile ids whose bodies are not on main yet; the day one appears in data/profiles.json it must be given a row above (the test fails until it is). `hero`: the player's weapon family, the golden weapon aside.",
+  "liveBody": "gargantua-106",
+  "bosses": {
+    "gargantua": { "body": "gargantua-106", "cutShaPinned": false, "row": "gargantua-maul", "rowProfile": null, "weapon": "maul", "equip": "maul", "offhand": null },
+    "arachne": { "body": "arachne-106", "cutShaPinned": false, "row": "arachne-axe-shield", "rowProfile": null, "weapon": "cleaver", "equip": "axe", "offhand": "shield" },
+    "pitborn": { "body": "minotaur-106", "cutShaPinned": false, "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
+    "pumpkinhulk": { "body": "pumpkinhulk-106", "row": "lord-gourd-mace", "rowProfile": "pumpkinhulk", "weapon": "maul", "equip": "mace", "offhand": null },
+    "sporty-granny": { "body": "sporty-granny-106", "row": "arachne-axe-shield", "rowProfile": null, "weapon": "cleaver", "equip": "axe", "offhand": "shield" },
+    "kachujin": { "body": "kachujin-106", "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
+    "castle-guard": { "body": "castle-guard-106", "row": "reginald-halberd", "rowProfile": "castle-guard", "weapon": "cleaver", "equip": "halberd", "offhand": null },
+    "big-vegas": { "body": "big-vegas-106", "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
+    "parasite": { "body": "parasite-106", "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
+    "the-boss": { "body": "the-boss-106", "row": "arachne-axe-shield", "rowProfile": null, "weapon": "cleaver", "equip": "axe", "offhand": "shield" },
+    "anime-girl-blonde": { "body": "anime-girl-blonde-106", "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
+    "anime-boy-black": { "body": "anime-boy-black-106", "row": "ryo-sword", "rowProfile": "anime-boy-black", "weapon": "cleaver", "equip": "sword", "offhand": null }
+  },
+  "pending": ["hunter"],
+  "hero": { "weapon": "longsword", "weapons": ["longsword"], "guard": "blade" }
+}

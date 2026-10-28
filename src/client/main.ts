@@ -29,6 +29,7 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { startTelemetry } from '../telemetry.ts';
+import { mountShareClip } from '../share-clip.ts';
 import { setErrorSink } from '../stubs.ts';
 import { createScene, CARRIED_WEAPONS } from '../fight/scene.ts';
 import PROGRESSION from '../../data/progression.json' with { type: 'json' };
@@ -60,8 +61,12 @@ import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
 import { CORPSE, atCamp, bank, carriedSave, dropPile, earn, inReach, lineOf, lingerSpot, regain, retrieve, validateCorpseRun } from '../corpse-run.ts';   // the corpse run (data/corpse-run.json; rides the progression save)
 import { mountCorpseHud } from '../fight/corpse-hud.ts';
+import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wire.ts';   // golden weapon drops (data/golden-weapons.json): the rest of the wiring lives there
+import { goldenBlips } from '../zone/golden-drops.ts';
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
+import { createMobsRun } from '../mobs-run.ts';   // trash mob swarms (data/mobs.json, src/zone/mobs.ts)
 import { createInput } from '../fight/input.ts';
+import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
@@ -122,8 +127,10 @@ if (daily.run) starById[daily.run.spawnId] = daily.stars;   // the day's star mo
 const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) && !daily.run ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 validateCorpseRun(CORPSE, PROFILES.profiles.map((p) => p.id));   // data/corpse-run.json: a bad row stops the page at load
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
-const HERO_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
-const BASE_TUNE = mergeTune(mergeTune(TUNED, ringTune()), daily.tune);   // + the Daily Pit's modifier over the day's boss (empty outside it: the same object)   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
+const REWARD_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
+checkGolden(isWeaponId);   // data/golden-weapons.json: a bad row stops the page at load
+const HERO_WEAPON = goldenWeaponAtLoad(PROG?.save?.golden, CARRIED_WEAPONS, REWARD_WEAPON) as WeaponId;   // drawn and fought with: a golden weapon held from the last visit is its own weapon from the first frame, else the boss-reward one (REWARD_WEAPON, which the corpse run carries)
+const BASE_TUNE = mergeTune(mergeTune(TUNED, ringTune()), daily.tune);   // + the Daily Pit's modifier over the day's boss (empty outside it: the same object)   //   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
 const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
@@ -241,6 +248,7 @@ const controls = createInput({   // :832
   ready: () => assetsReady,
   practice: () => practice,
   quiet: () => feedback.quiet(),
+  strike: (aim) => { if ((practice.finish && practice.finish.victim === 1) || (ZONE && !engaged)) strikeCut(aim); },   // data/physics.json cut.strike: an attack press while the foe is down (not while another boss is on him) cuts the fallen body
 });
 function clearInput() { controls.clear(); hitStop = 0; accumulator = 0; }   // :713
 const KEEP_INPUT = !!ZONE && keepsInput(search);   // data/respawn.json input: a hand-over while he free-walks leaves the stick alone (?input=v1 = clear as before)
@@ -287,6 +295,7 @@ function reportFight(name: 'boss_death' | 'boss_kill', index: number) {
   const hero = practice.duel.fighters[0], foeFighter = index === current ? practice.duel.fighters[1] : attackers.find((a) => a.index === index)?.practice.duel.fighters[1];
   const pct = (f?: { health: number; maxHealth: number }) => (f && f.maxHealth > 0 ? (100 * f.health) / f.maxHealth : 0);
   telemetry.event(name, { boss: spawns[index]?.kind ?? 'unknown', sec: fightSec, heroHp: pct(hero), bossHp: pct(foeFighter) });
+  if (name === 'boss_kill') shareClip.moment(spawns[index]?.kind); else shareClip.cancel();   // the Share clip button (src/share-clip.ts): keep the last seconds at a kill, drop the buffer at a death
   fightSec = 0;
 }
 // The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
@@ -328,7 +337,7 @@ const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind, starById
 const CR = ZONE && PROG ? CORPSE : null;
 const crHud = CR ? mountCorpseHud(document, CR) : null;
 const pileXY: [number, number] = [0, 0];   // the pile marker's screen spot, rewritten each frame (no per-frame allocation)
-let carriedWeapon: string = HERO_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
+let carriedWeapon: string = REWARD_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
 const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
 function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
 const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
@@ -347,6 +356,7 @@ function endLinger() {
 }
 /** The hero has just died: what he carries leaves him as the pile; the boss that killed him lingers at it. Nothing here throws. */
 function onHeroDied() {
+  try { golden?.died(state); } catch (error) { console.warn('golden: weapon not dropped', error); }   // the golden weapon he held lies where he fell, with its charges
   if (!CR || !PROG?.save) return;
   try {
     const who = killedBy ?? current, out = dropPile(PROG.save, CR, { x: state.x, z: state.z }, spawns[who]!.kind, carriedWeapon !== FIGHT.weapon ? carriedWeapon : null);
@@ -376,7 +386,14 @@ function corpseStep(dt: number) {
   } catch (error) { console.warn('corpse run: step failed', error); }
 }
 if (CR) (globalThis as { __v3Corpse?: unknown }).__v3Corpse = { give: (n: number) => { if (PROG?.save) crPut({ ...PROG.save, coins: PROG.save.coins + Math.max(0, Math.floor(n)) }); } };   // the stills hand the hero carried coins (scripts/corpse-run-stills.mjs), as they read __v3Fight
+// TRASH MOBS (data/mobs.json; Dom 2026-10-28): packs in the open world outside the boss pads; none while a boss fight is on. A kill pays coins into the corpse run's carried coins (window.__v3Heat?.(event) is the Hunter heat hook).
+const mobsRun = ZONE && !daily.run ? createMobsRun({ zone: zoneFor(search), origin: pitOrigin(zoneFor(search), WORLD), bosses: () => spawns, suppress: () => !assetsReady || engaged || walkBack || heroDied() || attackers.some((a) => !a.dead), coins: (n) => { if (CR && PROG?.save) crPut({ ...PROG.save, coins: Math.min(CR.coins.cap, PROG.save.coins + n) }); }, rangeMetres: RADAR.rangeMetres }) : null;
+if (mobsRun) { view.mobs(mobsRun.view); (globalThis as { __v3Mobs?: unknown }).__v3Mobs = mobsRun; }   // the stills and the tests drive the same handle
 if (CR && PROG?.save?.pile) startLinger(spawns.findIndex((s) => s.kind === PROG!.save!.pile!.boss));   // a pile from an earlier visit: its boss stands at it from the first frame
+// GOLDEN WEAPON DROPS (data/golden-weapons.json, src/zone/golden-drops.ts; Dom 2026-10-28): rare weapons lie in the world; walking onto one makes it his for N charges (the HUD counts them), his blows hurt more, and at 0 he
+// reverts. Rides the progression save (optional `golden` field), so ?save=off and ?pitborn=v1 mount nothing. Other lanes: __v3Golden.dropGolden(position, tier) and .onPickup(fn).
+const golden = ZONE && PROG ? mountGolden({ doc: document, view, spots: SPOTS, drawable: CARRIED_WEAPONS, get: () => PROG.save?.golden, put: (next) => { if (PROG.save) { PROG.save = { ...PROG.save, golden: next }; writeSave(PROG.store, PROG_ROWS, PROG.save); } } }) : null;
+(globalThis as { __v3Golden?: unknown }).__v3Golden = golden;
 if (ZONE) { current = nearestStanding(spawns, heroStart); useKind(kindAt(current)); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
   if (ZONE) useKind(kindAt(index));   // the sim's opponent becomes the spawn it is handed to (and back as the hero walks to another)
@@ -418,8 +435,9 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 }
 /** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
 let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
-function onBossKilled(kind: string, star = 0) {
+function onBossKilled(kind: string, star = 0, at?: { x: number; z: number }) {
   if (!PROG?.save) return;
+  if (at) try { golden?.killed(at, star); } catch (error) { console.warn('golden: drop failed', error); }   // a golden weapon may lie where it fell
   try {
     const out = recordKill(PROG.save, kind, PROG_ROWS);
     if (out.save === PROG.save) return;
@@ -453,10 +471,10 @@ function zoneStep(dt: number) {
   for (const i of timers.due) rollStarFor(spawns[i]!);   // a spawn stands again: its next star, before anything builds its fight
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
-    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { onBossKilled(spawns[a.index]!.kind, starById[spawns[a.index]!.id] ?? 0); spawns = kill(spawns, a.index); }
+    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { onBossKilled(spawns[a.index]!.kind, starById[spawns[a.index]!.id] ?? 0, a.practice.enemy); spawns = kill(spawns, a.index); }
   }
   if (practice.finish) { openerSpent = true; openerLift = 0; }   // opener: a kill or a death spends it (no re-arm)
-  if (heroStands() && !killMarked) { killMarked = true; engaged = false; reportFight('boss_kill', current); onBossKilled(spawns[current]!.kind, starById[spawns[current]!.id] ?? 0); spawns = kill(spawns, current); if (!attackers.some((a) => !a.dead)) radar?.armFlash(); }   // the radar's red dots pulse yellow until the next fight (data/radar.json flash; not while another boss is already on him); this spawn's timer starts; nobody else's moves
+  if (heroStands() && !killMarked) { killMarked = true; engaged = false; reportFight('boss_kill', current); onBossKilled(spawns[current]!.kind, starById[spawns[current]!.id] ?? 0, practice.enemy); spawns = kill(spawns, current); if (!attackers.some((a) => !a.dead)) radar?.armFlash(); }   // the radar's red dots pulse yellow until the next fight (data/radar.json flash; not while another boss is already on him); this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
     const live = attackers.find((a) => !a.dead), phase = view.finishPhase();
     if (live) { if (roam || freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
@@ -603,7 +621,7 @@ function frame(now: number) {
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
       }
-      frameEvents.push(...practice.events); commentator.events(practice.events);
+      frameEvents.push(...practice.events); commentator.events(practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)
@@ -635,6 +653,7 @@ function frame(now: number) {
         if (!roam && handsOver(FREE, freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds, !!(intent.x || intent.z || intent.guard || isFreeAction(duelIntent.action)), killAge, intent.guard || isFreeAction(duelIntent.action) ? 0 : phase.stickBeat)) { roam = { ...practice.fighter }; view.stopTour(); }   // finisher-cam.json stickBeatS: a held stick does not end a finisher the camera frames until its whole length has played (0 = at once: ?finishercam=v1, a plain death)
         if (roam) { freeRoam ??= startFreeRoam(practice.duel, ZONE!.walkRadius); const walked = stepFreeRoam(freeRoam, roam, duelIntent, ZONE!.walkRadius); freeRoam = walked.free; state = roam = walked.body; }   // roll, step back and guard on the walk (src/fight/free-roam.ts, data/free-moves.json): idle it is exactly zone-loop.ts roamStep;   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
+      if (mobsRun) practice = mobsRun.tick(practice, roam && freeRoam ? freeRoam.duel.fighters[0] : practice.duel.fighters[0], step());   // trash mobs (data/mobs.json): the hero's blow on them, theirs on him
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
       const stop = stopFor(practice.events);
@@ -670,17 +689,20 @@ function frame(now: number) {
     locked, paused() ? 0 : dt, roam && freeRoam && freeRoam.duel.fighters[0].phase !== 'ready' ? { ...practice, duel: { ...practice.duel, fighters: [freeRoam.duel.fighters[0], practice.duel.fighters[1]] } } : practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
   );
   frameEvents = [];
+  shareClip.frame(engaged);   // right after the render: the arena canvas into the clip buffer
   if (engaged) radar?.stopFlash();   // the next fight began: the kill flash ends
   radar?.frame(state.x, state.z, view.yaw);
+  golden?.step(state, practice.playerHealth > 0);
   if (crHud && PROG?.save) { const p = PROG.save.pile; crHud.marker(p && view.projectInto(p.x, 0.15, p.z, pileXY) ? pileXY : null,p && !heroDied() ? Math.hypot(p.x - state.x, p.z - state.z) : 99, crClock); crHud.coins(PROG.save.coins, PROG.save.banked); }   // (dead on the spot, the marker stays full: it shows where he fell)
   updateHud();
   requestAnimationFrame(frame);
 }
+const shareClip = mountShareClip({ source: canvas, audio: () => feedback.stream(), untap: () => feedback.untap(), telemetry });   // Share clip (data/share-clip.json); event v3:clip-moment is the hook for the Pit modes
 nameOpponent();
 updateHud();
 const radarOrigin = ZONE ? pitOrigin(zoneFor(search), WORLD) : { x: 0, z: 0 };   // the radar (data/radar.json): bosses at their live spots, other players from the presence handle; hero and yaw come in per frame
 const radarLive = (i: number) => { if (i === current) return practice.enemy; for (let k = 0; k < attackers.length; k++) if (attackers[k]!.index === i) return attackers[k]!.practice.enemy; return undefined; };   // a boss in a fight is at its sim position, the rest at their spots
-const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); if (CR) pileBlip(PROG?.save?.pile, emit); } }) : null;
+const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); if (CR) pileBlip(PROG?.save?.pile, emit); if (golden) goldenBlips(golden.items(), emit); mobsRun?.radar(state.x, state.z, emit); } }) : null;
 (globalThis as { __v3Radar?: unknown }).__v3Radar = radar;   // debug handle for the stills (armFlash / stopFlash / flashPhase), like __v3Zone
 let buildLabel = '';
 fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, 7); element('build').textContent = buildLabel; }).catch(() => {});
