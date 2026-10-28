@@ -40,11 +40,11 @@ test('the south plate is dropped so the alien sits in the clear sky band between
 });
 
 // RE-PINNED (was: "west off", #194, Dom disliked the daytime colosseum plate). Dom 2026-10-28 then approved the NEW west plate ("Dreamy Floating Sky-City at Sunset", "i think is fine"), so the shipped west is ON again:
-// all three plates on, west already on the sunset palette (neutral grade: the old orange tint was for the colosseum), baked from its own native-resolution crop (1981 x 690, horizon y 690), and turning to west fetches it.
+// all three plates on, west already on the sunset palette (neutral grade: the old orange tint was for the colosseum), baked from its own native-resolution crop (1981 x 555 now: the Lavender Leviathan plate replaced the sky-city, horizon y 555), and turning to west fetches it.
 test('the shipped ring: east, south and west all on; west is the native sunset plate with a neutral grade; facing west loads it (Dom 2026-10-28)', async () => {
   assert.deepEqual(SHIPPED.plates.map((p) => [p.id, p.on]), [['east', true], ['south', true], ['west', true]]);
   const w = SHIPPED.plates[2]; assert.deepEqual(w.grade, { tint: '#ffffff', brightness: 1 }, 'the new west is already sunset: no code grade'); assert.deepEqual(w.bake.layers, [], 'no planet layer');
-  assert.deepEqual(w.bake.crop, { sourceWidthPx: 1981, cropLeftPx: 0, cropRightPx: 0, topPx: 0, bottomPx: 690, mobileScale: 1 }, 'native 1981 px, cropped at the horizon (y 690 of 793)');
+  assert.deepEqual(w.bake.crop, { sourceWidthPx: 1981, cropLeftPx: 0, cropRightPx: 0, topPx: 0, bottomPx: 555, mobileScale: 1 }, 'native 1981 px, cropped at the horizon (y 555 of 793; Lavender Leviathan plate replaced the sky-city, Dom 2026-10-28: fix-forward, the sea line is at y ~515 so the bottom row meets the folded floor)');
   assert.equal(facingPlate(270, SHIPPED), 'west'); assert.equal(facingPlate(300, SHIPPED), 'west');
   assert.deepEqual(platesToLoad(270, SHIPPED).map((p) => p.id), ['west']); assert.deepEqual(platesToLoad(340, SHIPPED).map((p) => p.id), ['west']); assert.deepEqual(platesToLoad(0, SHIPPED), []);
   const calls = []; const ring = createSkyRing({ row: SHIPPED, radius: 150, horizonY: -24, shade: 1, viewportWidth: 375, load: (f) => { calls.push(f); return Promise.resolve(tex(1981, 690)); } });
