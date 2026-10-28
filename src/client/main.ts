@@ -37,7 +37,9 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
-import { mechCaption } from '../fight/mechanics/registry.ts';
+import { configureMechanics, mechCaption } from '../fight/mechanics/registry.ts';
+import MECHANICS from '../../data/mechanics.json' with { type: 'json' };
+import { checkMechanics } from '../sim/validate-mechanics.js';
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -99,6 +101,7 @@ import type { DailyFile } from '../daily-pit.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
+{ const bad = checkMechanics(MECHANICS, PROFILES.profiles.map((p) => p.id)); if (bad.length) throw new Error(`data/mechanics.json: ${bad.join('; ')}`); configureMechanics(MECHANICS.mechanics); }   // the boss signature mechanics (the sim imports no data/ json: the driver lays the rows in, before any fight or effect is built)
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;

@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { validateFile } from '../src/sim/validate.js';
 import { CHECKS, checkMechanics } from '../src/sim/validate-mechanics.js';
 import { validateRings } from '../src/sim/validate-rings.js';
-import { MECHANICS, mechCaption, mechIntercept, mechSpecialLanded } from '../src/fight/mechanics/registry.ts';
+import { MECHANICS, configureMechanics, mechCaption, mechIntercept, mechSpecialLanded } from '../src/fight/mechanics/registry.ts';
 import { ID, ROW, stageOf } from '../src/fight/mechanics/accountant-parry-wall.ts';
 import { OPPONENTS } from '../src/fight/moves.ts';
 import { initialDuel, stepDuel, idleIntent } from '../src/fight/duel.ts';
@@ -16,6 +16,7 @@ import { ROWS as COMMENTS } from '../src/commentator.ts';
 
 const read = (n) => JSON.parse(readFileSync(new URL(`../data/${n}.json`, import.meta.url), 'utf8'));
 const RAW = read('mechanics'), RINGS = read('rings'), PROFILES = read('profiles'), FIGHT = read('fight'), DIFF = read('difficulty'), BRAINS = read('brains');
+configureMechanics(RAW.mechanics);   // the driver's call (src/client/main.ts): the sim imports no data/ json, so a mechanic is inert until its row is laid in
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const it = (o = {}) => ({ ...idleIntent(), ...o });
 const WALL = { ...OPPONENTS.shieldmaiden, mechanic: ID };
@@ -102,7 +103,7 @@ test('a blow in the window is parried for ZERO damage; sparks (Parried with wall
   const hp = d.fighters[1].health, heroHp = d.fighters[0].health;
   let parries = 0;
   for (let n = 0; n < ROW.parriesToDrop; n++) {
-    d = until(d, (x) => x.fighters[0].phase === 'ready' && !x.fighters[0].stun, 200);
+    d = until(d, (x) => x.fighters[0].phase === 'ready', 200);
     let got = null;
     d = step(d, it({ action: 'light' }));
     for (let i = 0; i < 90 && !got; i++) { got = d.events.find((e) => e.type === 'Parried'); if (!got) d = step(d); }
@@ -111,7 +112,7 @@ test('a blow in the window is parried for ZERO damage; sparks (Parried with wall
     assert.ok(!d.events.some((e) => e.type === 'Hit' && e.target === 1), 'no Hit on him');
     assert.equal(d.fighters[1].health, hp, 'zero damage');
     assert.equal(d.fighters[0].phase, 'hurt', 'the attacker staggers');
-    assert.ok(d.fighters[1].punish > 0 || n === ROW.parriesToDrop - 1 || d.fighters[1].punish === ROW.riposteTicks, 'his riposte opens');
+    assert.ok(d.fighters[1].punish > 0, 'his riposte opens');
   }
   assert.equal(parries, ROW.parriesToDrop);
   assert.equal(d.fighters[1].mS, undefined, 'the wall dropped on the last parry');

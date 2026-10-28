@@ -5,12 +5,11 @@
 import * as THREE from 'three';
 import type { Fighter } from '../duel.ts';
 import type { CombatEvent } from '../combat.ts';
-import { ROW, riseOf, stageOf } from './accountant-parry-wall.ts';
+import { ROW, riseOf, stageOf, type AccountantRow } from './accountant-parry-wall.ts';
 
-const FX = ROW.fx, POOL = FX.sparkCount * 4;   // up to four parries' sparks alive at once
 const LEDGER_LINES = 6, TEX_PX = 64;   // the ruled lines on the wall: a handful, so it reads as a ledger page at 375 wide
 
-function ledgerTexture(): THREE.Texture | null {
+function ledgerTexture(FX: AccountantRow['fx']): THREE.Texture | null {
   if (typeof document === 'undefined') return null;
   const c = document.createElement('canvas'); c.width = c.height = TEX_PX;
   const g = c.getContext('2d'); if (!g) return null;
@@ -21,9 +20,12 @@ function ledgerTexture(): THREE.Texture | null {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
-export function createWallFx(scene: THREE.Scene) {
+const NOOP = { update(_boss: Fighter | null, _at: THREE.Vector3 | null, _heading: number, _events: readonly CombatEvent[], _tick: number, _dt: number): void {}, hide(): void {}, dispose(): void {} };
+export function createWallFx(scene: THREE.Scene): typeof NOOP {
+  if (!ROW.fx) return NOOP;   // mechanics not configured (a page or test that never called configureMechanics): nothing to draw
+  const FX = ROW.fx, POOL = FX.sparkCount * 4;   // the configured row (configureMechanics ran before the page built its effects); up to four parries' sparks alive at once
   const root = new THREE.Group(); root.visible = false; root.renderOrder = 6;
-  const tex = ledgerTexture();
+  const tex = ledgerTexture(FX);
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.88, 1, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: FX.colour, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(FX.wallWidthM, FX.wallHeightM), new THREE.MeshBasicMaterial({ color: tex ? 0xffffff : FX.colour, ...(tex ? { map: tex } : {}), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
   const frame = new THREE.LineSegments(new THREE.EdgesGeometry(wall.geometry), new THREE.LineBasicMaterial({ color: FX.edgeColour, transparent: true, opacity: 0 }));

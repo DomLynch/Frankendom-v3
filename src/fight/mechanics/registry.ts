@@ -1,11 +1,12 @@
 // The boss signature mechanics (data/mechanics.json rows; one module per boss in this folder). The duel (src/fight/duel.ts) knows a mechanic only through the few calls below, keyed by the
 // `mech` id a Fighter carries; a fighter without one costs a single property read. A boss names its mechanic in data/rings.json bosses[].mechanic, and `mechanicOf(kind)` reads that.
 // To add a boss: write its module here, add ONE line to MECHANICS, its row to data/mechanics.json and its checker to src/sim/validate-mechanics.js CHECKS (a test pins the three lists to the same ids).
-import RINGS from '../../../data/rings.json' with { type: 'json' };
 import type { Fighter } from '../duel.ts';
 import { ID as ACCOUNTANT, mechanic as accountant } from './accountant-parry-wall.ts';
 
 export interface Mechanic {
+  /** Lay this mechanic's data/mechanics.json row into the module (the driver calls it once, before any fight; unconfigured = inert). */
+  configure(row: never): void;
   /** The fields a fresh fight with this boss starts with (the id and its first cooldown). */
   init(): Partial<Fighter>;
   /** One tick on the NEW copy of the boss `f`, reading the other fighter. */
@@ -26,9 +27,10 @@ export const MECHANICS: Readonly<Record<string, Mechanic>> = {
   [ACCOUNTANT]: accountant,
 };
 
-const KINDS = new Map<string, string>((RINGS.bosses as { kind: string; mechanic: string | null }[]).flatMap((b) => (b.mechanic ? [[b.kind, b.mechanic] as [string, string]] : [])));
-/** The mechanic id of a boss kind (data/rings.json), or undefined. */
-export const mechanicOf = (kind: string): string | undefined => KINDS.get(kind);
+/** The driver's one call: lay every data/mechanics.json row (id -> row) into its module. A row with no code is an error; a module with no row stays inert. */
+export function configureMechanics(rows: Readonly<Record<string, unknown>>): void {
+  for (const [id, row] of Object.entries(rows)) { const m = MECHANICS[id]; if (!m) throw new Error(`data/mechanics.json: no code module for mechanic "${id}" (src/fight/mechanics/registry.ts)`); m.configure(row as never); }
+}
 
 /** The fields a fresh fighter with mechanic `id` starts with (an Opponent's `mechanic`; a fighter without one gets none, so every other fight is byte for byte what it was). */
 export const mechFields = (id: string): Partial<Fighter> => MECHANICS[id]!.init();

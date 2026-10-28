@@ -4,7 +4,8 @@
 // (and still lands), a blow from BEHIND lands in full, a blow in the TELL lands in full and cancels the wall, or wait it out. He never attacks while it stands (fair: nothing here can kill).
 // Pure sim rules over the Fighter's flat fields (mech, mS state, mC cooldown, mN parries); every number is a row of data/mechanics.json. The duel (src/fight/duel.ts) calls these through
 // registry.ts; the look is accountant-parry-wall-fx.ts. A dying boss (health 0) drops the wall the same tick (the corpse cut, #252, reads a plain corpse).
-import ROWS from '../../../data/mechanics.json' with { type: 'json' };
+// The row is INJECTED (configure, called by registry.ts configureMechanics from the driver, src/client/main.ts): the sim imports no data/ json, because the Gate 0 copy of the tree is `src/` alone. Until it is
+// configured the mechanic is inert (a fighter starts with none of its fields), so a headless fight is byte for byte what it was.
 import type { Fighter } from '../duel.ts';
 import type { Mechanic } from './registry.ts';
 
@@ -14,8 +15,14 @@ export type AccountantRow = {
   parryStunTicks: number; riposteTicks: number; parriesToDrop: number; kickBreakStunTicks: number; specialBreakStunTicks: number; caption: string;
   fx: { colour: string; edgeColour: string; ringRadiusM: number; wallHeightM: number; wallWidthM: number; wallDistanceM: number; tellOpacity: number; wallOpacity: number; sparkCount: number; sparkSpeedMps: number; sparkLifeS: number; sparkSizeM: number; sparkGravityMps2: number; ringPulseHz: number };
 };
-export const ROW = (ROWS.mechanics as unknown as Record<string, AccountantRow>)[ID]!;
-const HALF_ARC = (ROW.arcDeg * Math.PI) / 360;   // radians each side of his heading that the wall covers
+/** The row, filled in place by configure (a live view: every reader sees the configured numbers). */
+export const ROW = {} as AccountantRow;
+let HALF_ARC = 0, RANGE_SQ = 0, ON = false;   // radians each side of his heading that the wall covers; the trigger range squared; configured
+/** Lay the data/mechanics.json row (already validated by src/sim/validate-mechanics.js) into the module. */
+export function configure(row: AccountantRow): void {
+  Object.assign(ROW, row); ON = true;
+  HALF_ARC = (ROW.arcDeg * Math.PI) / 360; RANGE_SQ = ROW.triggerRangeM * ROW.triggerRangeM;
+}
 
 /** The three looks of the state, read by the fx: nothing, the tell (feet planted, wall rising) and the wall standing. */
 export type WallStage = 'none' | 'tell' | 'up';
@@ -23,12 +30,11 @@ export const stageOf = (f: Pick<Fighter, 'mech' | 'mS'>): WallStage => (f.mech !
 /** 0..1 through the tell (the wall rising), 1 once it stands. */
 export const riseOf = (f: Pick<Fighter, 'mS'>): number => Math.min(1, (f.mS ?? 0) / ROW.tellTicks);
 
-const RANGE_SQ = ROW.triggerRangeM * ROW.triggerRangeM;
 const near = (a: Fighter, b: Fighter): boolean => { const dx = b.body.x - a.body.x, dz = b.body.z - a.body.z; return dx * dx + dz * dz <= RANGE_SQ; };   // squares, no sqrt: the sim takes no transcendental
 const end = (f: Fighter, cooldown: number): void => { delete f.mS; delete f.mN; f.mC = cooldown; };
 
 /** The fields a fresh fight with this boss starts with: the mechanic id and the first cooldown. */
-const init = (): Partial<Fighter> => ({ mech: ID, mC: ROW.firstTicks });
+const init = (): Partial<Fighter> => (ON ? { mech: ID, mC: ROW.firstTicks } : {});
 
 /** One tick, on the NEW tick's copy of the boss (`f`), reading the hero (`foe`). Starts the wall when it is ready and the hero is close; runs the tell and the window; drops it when he is hurt, dying or it ran out. */
 function clock(f: Fighter, foe: Fighter): void {
@@ -74,4 +80,4 @@ function broken(D: Fighter, source: 'kick' | 'special'): number {
 /** The commentator event id to say on the first tick of the tell (data/mechanics.json caption), or null. */
 const caption = (f: Fighter): string | null => (f.mech === ID && f.mS === 1 ? ROW.caption : null);
 
-export const mechanic: Mechanic = { init, clock, locked, intercept, parried, broken, caption };
+export const mechanic: Mechanic = { configure, init, clock, locked, intercept, parried, broken, caption };

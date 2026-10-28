@@ -12,7 +12,7 @@ import { recordSpecials } from './replay.ts';
 import type { PickedStance } from './stance.ts';
 import type { DuelPose } from './duel.ts';
 import { bossOpponent } from './boss-weapon.ts';
-import { mechanicOf } from './mechanics/registry.ts';
+import { mechanicOf } from './mechanics/kinds.ts';
 import { brainFor, brainProfile, type BrainRow } from '../brain.ts';
 import { tunedOpponent, tunedResolved, type TuneMap } from '../tune.ts';
 import { mergeTune } from '../progression.ts';
