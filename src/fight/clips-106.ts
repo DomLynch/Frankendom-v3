@@ -38,6 +38,14 @@ export const CLIP_106_LOADERS: Record<string, Loader> = {
   '106/arachne/execution-victim-hero.json': () => import('../assets/106/arachne/execution-victim-hero.json'),
   '106/arachne/hamstrung-killer.json': () => import('../assets/106/arachne/hamstrung-killer.json'),
   '106/arachne/hamstrung-victim-hero.json': () => import('../assets/106/arachne/hamstrung-victim-hero.json'),
+  '106/pumpkinhulk/special-skullcrack.json': () => import('../assets/106/pumpkinhulk/special-skullcrack.json'),
+  '106/pumpkinhulk/special-whirlwind.json': () => import('../assets/106/pumpkinhulk/special-whirlwind.json'),
+  '106/pumpkinhulk/special-groundslam.json': () => import('../assets/106/pumpkinhulk/special-groundslam.json'),
+  '106/pumpkinhulk/special-lunge.json': () => import('../assets/106/pumpkinhulk/special-lunge.json'),
+  '106/pumpkinhulk/execution-killer.json': () => import('../assets/106/pumpkinhulk/execution-killer.json'),
+  '106/pumpkinhulk/execution-victim-hero.json': () => import('../assets/106/pumpkinhulk/execution-victim-hero.json'),
+  '106/pumpkinhulk/hamstrung-killer.json': () => import('../assets/106/pumpkinhulk/hamstrung-killer.json'),
+  '106/pumpkinhulk/hamstrung-victim-hero.json': () => import('../assets/106/pumpkinhulk/hamstrung-victim-hero.json'),
 };
 /** The loader of `role`'s 106 clip for the 106 body file `body`, or undefined (no 106 version: the body plays what it would without it). */
 export const clip106Loader = (body: string | undefined, role: string): Loader | undefined => {
