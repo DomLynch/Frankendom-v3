@@ -22,7 +22,7 @@ export const expectedWeaponOfProfile = (profileId) => weaponRowOfProfile(profile
 export const bossBodyCases = () => [
   ...WEAPONS.rows.filter((r) => r.profile == null).map((r) => {
     const file = profileBodyOf(r.opponent);
-    return { label: r.id, file, profile: PROFILES.profiles.filter((p) => p.opponent === r.opponent && file === foeRigFile(p.body)).at(-1)?.id };
+    return { label: r.id, file, profile: PROFILES.profiles.filter((p) => p.opponent === r.opponent && file === foeRigFile(p.body) && !WEAPONS.rows.some((x) => x.profile === p.id)).at(-1)?.id };   // a profile with a row of its own is a ring boss case below, not the archetype's shared body
   }),
   ...RINGS.bosses.map((b) => ({ label: `ring ${b.kind}`, file: foeRigFile(b.body), profile: b.kind })),
 ].filter((c) => c.file && c.profile);
