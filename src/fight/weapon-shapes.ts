@@ -30,6 +30,9 @@ export const byBand = (stem: string, bands: readonly Band[]): RankFiles => RANK_
 // band for now (rank 1–3 plain, 4–7 crafted, 8–10 ornate). The maul's crafted is GPT's v3 Forge Warden (2026-09-29, a file swap); its plain and ornate files were flat grey and are out (the Knight's slab, 2026-09-30).
 // The table is ROWS (shipping-shapes-defs.json, shared registry): one row per shape id with its ten rank files, null = that rank keeps today's part. Notes that sat beside the old literal: the maul's plain and ornate
 // files were flat grey atlases and are out (its crafted is GPT's v3 Forge Warden, 2026-09-29); the trident's plain (1-3) is out like the maul's; 'estoc-cane' is the Plague Doctor's own estoc and 'witch-staff' the Witch's own.
+// The files that actually ship under public/weapons/shapes/ (shipping-shapes-defs.json `shipped`; a test pins it to the folder). The table names ranks whose
+// file is not shipped (scythe, maul-crafted...); asking for one is a 404 and a console error for no mesh, so the page never asks (shippedShape).
+export const SHIPPED_SHAPES: ReadonlySet<string> = new Set((SHAPE_DEFS as unknown as { shipped: string[] }).shipped);
 const SHAPE_TABLE = tableFromFile(SHAPE_MANIFEST.tables[0] as unknown as Manifest, SHAPE_DEFS, 'shipping-shapes-defs.json');
 loadRegistry([SHAPE_TABLE]);
 export const SHIPPING_SHAPES: ShapeTable = Object.fromEntries((SHAPE_TABLE.rows as unknown as { id: string; ranks: (string | null)[] }[]).map((r) => {
@@ -67,6 +70,9 @@ export const shapeFor = (weapon: WeaponId, level: number, shipping: ShapeTable =
   const file = shipping[own ?? weapon]?.[level - 1];
   return file ? artUrl(`/weapons/shapes/${file}.glb`) : undefined;
 };
+
+// Whether the page may fetch `url` (a shapeFor result) from the SHIPPING table: only files that ship. The dev flag's table (a local drop) is never filtered.
+export const shippedShape = (url: string): boolean => SHIPPED_SHAPES.has(/([^/]+)\.glb(?:\?.*)?$/.exec(url)?.[1] ?? '');
 
 // Both fighters' shape files for a fight (scene.ts reshape): the player's own weapon at the PLAYER's rung (his career rank), the opponent's at the
 // rung he is met at (Strategy's brief: "the player's rank for his own weapon"). Undefined = that weapon keeps today's part.
