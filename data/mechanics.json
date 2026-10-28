@@ -12,7 +12,7 @@
       "arcDeg": 150,
       "parryStunTicks": 20,
       "riposteTicks": 30,
-      "parriesToDrop": 3,
+      "parriesToDrop": 2,
       "kickBreakStunTicks": 54,
       "specialBreakStunTicks": 72,
       "caption": "parry_wall",
