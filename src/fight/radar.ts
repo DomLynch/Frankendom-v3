@@ -13,7 +13,7 @@ export type RadarRows = {
   kinds: Record<string, string>; defaultKind: string;
 };
 /** After a boss falls the live red dots pulse: `pulseSeconds` of every `periodSeconds`, a yellow wash (the dot swells by `dotGrow`) and a ring that spreads `ringPx` and fades; none within `stopWithinMetres` of the hero. */
-export type FlashRows = { on: boolean; periodSeconds: number; pulseSeconds: number; colour: string; dotGrow: number; ringPx: number; ringAlpha: number; stopWithinMetres: number };
+export type FlashRows = { on: boolean; periodSeconds: number; pulseSeconds: number; colour: string; dotGrow: number; ringPx: number; haloPx: number; ringAlpha: number; stopWithinMetres: number };
 const CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -36,7 +36,7 @@ export function validateRadar(r: RadarRows): void {
   const f = r.flash;
   if (typeof f?.on !== 'boolean') throw new Error('radar.flash.on is true or false');
   num('flash.periodSeconds', f.periodSeconds, 0.5, 60); num('flash.pulseSeconds', f.pulseSeconds, 0.1, 10); colour('flash.colour', f.colour);
-  num('flash.dotGrow', f.dotGrow, 0, 3); num('flash.ringPx', f.ringPx, 0, 20); num('flash.ringAlpha', f.ringAlpha, 0, 1); num('flash.stopWithinMetres', f.stopWithinMetres, 0, 1000);
+  num('flash.dotGrow', f.dotGrow, 0, 3); num('flash.ringPx', f.ringPx, 0, 20); num('flash.haloPx', f.haloPx, 0.2, 4); num('flash.ringAlpha', f.ringAlpha, 0, 1); num('flash.stopWithinMetres', f.stopWithinMetres, 0, 1000);
   if (!(f.pulseSeconds < f.periodSeconds)) throw new Error('radar.flash.pulseSeconds must be shorter than periodSeconds');
   if (typeof r.classes.dead.show !== 'boolean') throw new Error('radar.classes.dead.show is true or false');
   for (const [kind, cls] of Object.entries(r.kinds ?? {})) if (cls !== 'hostile' && cls !== 'npc') throw new Error(`radar.kinds.${kind} ${String(cls)} is not hostile or npc`);
@@ -115,12 +115,11 @@ export function mountRadar(doc: Doc, src: RadarSources, rows: RadarRows = RADAR,
     ctx!.globalAlpha = st.alpha * (spot.clamped ? rows.edgeAlpha : 1); ctx!.fillStyle = st.colour;
     const cx = centre + spot.x * centre, cy = centre - spot.y * centre;
     ctx!.beginPath(); ctx!.arc(cx, cy, st.sizePx, 0, Math.PI * 2); ctx!.fill();
-    if (phase >= 0 && cls === 'hostile' && flashes(fl, Math.hypot(x - hx, z - hz))) {   // the pulse: a yellow wash over the red dot that swells, and a ring spreading out and fading
-      const glow = flashGlow(phase);
-      ctx!.globalAlpha = glow; ctx!.fillStyle = fl.colour;
-      ctx!.beginPath(); ctx!.arc(cx, cy, st.sizePx * (1 + fl.dotGrow * glow), 0, Math.PI * 2); ctx!.fill();
-      ctx!.globalAlpha = fl.ringAlpha * (1 - phase); ctx!.strokeStyle = fl.colour; ctx!.lineWidth = 1;
-      ctx!.beginPath(); ctx!.arc(cx, cy, st.sizePx + fl.ringPx * phase, 0, Math.PI * 2); ctx!.stroke();
+    if (phase >= 0 && cls === 'hostile' && flashes(fl, Math.hypot(x - hx, z - hz))) {   // the pulse: the dot stays red and swells a little, a thin yellow halo spreads out from it and fades (yellow never covers the red)
+      const grown = st.sizePx * (1 + fl.dotGrow * flashGlow(phase));
+      ctx!.beginPath(); ctx!.arc(cx, cy, grown, 0, Math.PI * 2); ctx!.fill();   // fillStyle is still the class red
+      ctx!.globalAlpha = fl.ringAlpha * (1 - phase); ctx!.strokeStyle = fl.colour; ctx!.lineWidth = fl.haloPx;
+      ctx!.beginPath(); ctx!.arc(cx, cy, grown + 0.8 + fl.ringPx * phase, 0, Math.PI * 2); ctx!.stroke();
     }
   };
   return {

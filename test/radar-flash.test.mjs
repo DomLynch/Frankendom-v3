@@ -48,11 +48,12 @@ test('mount: idle has no yellow; armed and mid-pulse the far hostile dot gets th
   const src = { each: (emit) => { emit(0, -20, 'hostile'); emit(0, 20, 'dead'); emit(0, -2, 'hostile'); } };   // the last is 2 m from the hero: inside stopWithinMetres
   const run = (arm, r0 = rows) => {
     const f = fakeDoc(), r = mountRadar(f.doc, src, r0, f.body, 1); if (arm) arm(r); r.frame(0, 0, 0);
-    return { r, arcs: f.calls.filter((c) => c[0] === 'arc').length, strokes: f.calls.filter((c) => c[0] === 'stroke').length, yellows: f.calls.filter((c) => c[0] === 'set:fillStyle' && c[1] === yellow).length };
+    return { r, arcs: f.calls.filter((c) => c[0] === 'arc').length, strokes: f.calls.filter((c) => c[0] === 'stroke').length, yellows: f.calls.filter((c) => c[0] === 'set:strokeStyle' && c[1] === yellow).length, yellowFills: f.calls.filter((c) => c[0] === 'set:fillStyle' && c[1] === yellow).length };
   };
   const idle = run(null); assert.deepEqual([idle.arcs, idle.strokes, idle.yellows, idle.r.flashing, idle.r.flashPhase], [3, 0, 0, false, -1]);
   const on = run((r) => r.armFlash(performance.now() - 300)); assert.equal(on.r.flashing, true); assert.ok(Math.abs(on.r.flashPhase - 0.5) < 0.1, `phase ${on.r.flashPhase}`);
-  assert.deepEqual([on.arcs, on.strokes, on.yellows], [5, 1, 1], 'one far hostile dot gets a wash and a ring; the dead and the near one do not');
+  assert.deepEqual([on.arcs, on.strokes, on.yellows], [5, 1, 1], 'one far hostile dot gets a red swell and a yellow halo; the dead and the near one do not');
+  assert.equal(on.yellowFills, 0, 'yellow is only the thin halo: it never fills over the red dot');
   const off = run((r) => r.armFlash(performance.now() - 1500)); assert.equal(off.r.flashing, true); assert.deepEqual([off.arcs, off.yellows], [3, 0], 'between pulses: red only');
   const stopped = run((r) => { r.armFlash(performance.now() - 300); r.stopFlash(); }); assert.deepEqual([stopped.arcs, stopped.r.flashing], [3, false]);
   const re = run((r) => { r.armFlash(performance.now() - 1500); r.armFlash(performance.now() - 300); }); assert.equal(re.yellows, 1, 'a second kill restarts the rhythm');
