@@ -502,12 +502,16 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // data/physics.json cut.cue: a pulsing "cut" dot on each part of the frozen corpse that can still be cut (a button over the canvas, so a thumb finds it without aiming at a bone).
   // Built by listenTaps; moved to its bone each frame by updateCues; a tap on it cuts that unit (cutCue). Hidden whenever the corpse is not frozen, the unit is done, or the bone is behind the camera.
   // M8: one set of buttons per body that can be cut: the live foe's and each corpse that kept its ragdoll (a button carries data-corpse, its body's corpseId).
+  /** Dom 2026-10-28 ("yellow circles with text look tacky"): the buttons are hidden by default (cut.cue.default false; the plain tap on the body still cuts); ?cues=v1 (cut.cue.query / v1) brings them back. */
+  function cueShown(cue: { on?: boolean; default?: boolean; query?: string; v1?: string } | undefined): boolean {
+    return !!cue?.on && (!!cue.default || (!!cue.query && new URLSearchParams(search).get(cue.query) === cue.v1));
+  }
   type CueSet = { id: () => string; els: { unit: string; el: HTMLButtonElement }[]; boneOf(unit: string): THREE.Object3D | undefined; ready(): boolean; isDone(unit: string): boolean };
   let liveCues: CueSet | undefined, cueCamera: THREE.Camera | undefined, cueCanvas: HTMLElement | undefined;
   /** A set of cut buttons for one body (null before listenTaps gave the page's camera, or with the cue row off). `cut(unit, view)`: what a click does, view = the camera's line to the unit's bone. */
   function makeCueSet(id: () => string, boneOf: (unit: string) => THREE.Object3D | undefined, ready: () => boolean, isDone: (unit: string) => boolean, cut: (unit: string, view: THREE.Vector3) => unknown): CueSet | undefined {
     const cue = cutRows.cue as typeof cutRows.cue | undefined;
-    if (!cue?.on || !cueCamera) return undefined;
+    if (!cueShown(cue) || !cueCamera) return undefined;
     const els = cue.units.map((unit) => {
       const el = document.createElement('button');
       el.className = 'cut-cue'; el.type = 'button'; el.textContent = cue.labels[unit as keyof typeof cue.labels] ?? 'cut'; el.setAttribute('aria-label', `Cut ${unit.replace('_', ' ')}`);
@@ -525,7 +529,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   }
   function makeCues(canvas: HTMLElement, camera: THREE.Camera) {
     const cue = cutRows.cue as typeof cutRows.cue | undefined;   // a physics.json without the row simply has no cue (the plain tap still works)
-    if (!cue?.on || !canvas.parentElement) return;
+    if (!cueShown(cue) || !canvas.parentElement) return;
     cueCamera = camera; cueCanvas = canvas;
     const style = document.createElement('style');
     style.textContent = `.cut-cue{position:fixed;z-index:30;width:${cue.sizePx}px;height:${cue.sizePx}px;margin:${-cue.sizePx / 2}px 0 0 ${-cue.sizePx / 2}px;border-radius:50%;border:2px solid ${cue.color};background:${cue.color}33;color:${cue.color};font:700 10px/1 sans-serif;text-transform:uppercase;padding:0;display:none;animation:cut-cue-pulse ${cue.pulseS}s ease-in-out infinite;touch-action:manipulation}@keyframes cut-cue-pulse{0%,100%{box-shadow:0 0 0 0 ${cue.color}aa;opacity:.95}50%{box-shadow:0 0 0 9px ${cue.color}00;opacity:.7}}`;   // a glow, not a scale: the target a thumb aims at does not move
