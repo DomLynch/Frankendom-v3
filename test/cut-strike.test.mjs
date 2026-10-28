@@ -9,7 +9,7 @@ import { createInput } from '../src/fight/input.ts';
 import { initialPractice } from '../src/fight/combat.ts';
 import { validateFile } from '../src/sim/validate.js';
 import { kbmFor } from '../src/fight/kbm.ts';
-import { isAttackAction, isNear, nextUnit, registerStrikeSource, setHeroLocator, strikeBinds, strikeCut, strikeOnce } from '../src/fight/cut-strike.ts';
+import { corpseCutState, isAttackAction, isNear, nextUnit, registerCorpseSource, registerStrikeSource, setHeroLocator, strikeBinds, strikeCut, strikeOnce } from '../src/fight/cut-strike.ts';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const PHYSICS = JSON.parse(read('../data/physics.json')), STRIKE = PHYSICS.cut.strike, ORDER = PHYSICS.cut.tap.order;
@@ -72,6 +72,36 @@ test('after a kill #attack-button has no box and the thumb lands on the cluster 
   assert.equal(r.calls.length, 1);
   r.els.actions.fire('pointerdown', { button: 2, target: { closest: () => null } });
   assert.equal(r.calls.length, 1, 'not a secondary button');
+});
+
+test('regression (fails on e9685c3): after a kill a press at the STRIKE circle\'s centre cuts: the thumb lands on #actions, #attack-button has no box', () => {
+  const r = rig(), centre = { target: { closest: () => null }, clientX: 271, clientY: 684 };
+  r.els['attack-button'].getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 });   // the measured state after a kill
+  setHeroLocator(() => ({ x: 0, z: 0 }));
+  const b = body({ at: { x: 1, z: 0 } }), leave = registerStrikeSource(b.src);
+  try {
+    // main.ts: strike -> strikeCut; here the env's strike is the page's
+    const page = createInput({ element: (id) => (r.els[id] ??= fake()), window: r.win, now: () => 0, matchMedia: () => ({ matches: true }), innerWidth: () => 375, paused: () => false, ready: () => true, practice: () => initialPractice(), quiet: () => {}, strike: (aim) => strikeCut(aim) });
+    assert.ok(page);
+    r.els.actions.fire('pointerdown', centre);
+    assert.deepEqual([...b.done], ['head'], 'one press, the head (the next unit)');
+    r.els.actions.fire('pointerdown', centre);
+    assert.deepEqual([...b.done], ['head', 'arm_left']);
+  } finally { leave(); }
+});
+
+test('corpseCutState: the frozen bodies with units left, read-only, one reused array; empty when none', () => {
+  assert.deepEqual([...corpseCutState()], []);
+  let left = 3;
+  const leave = registerCorpseSource((push) => { if (left > 0) push(4, -2, left); });
+  try {
+    const a = corpseCutState();
+    assert.deepEqual(a.map((c) => ({ ...c })), [{ x: 4, z: -2, remainingUnits: 3 }]);
+    left = 0;
+    assert.equal(corpseCutState(), a, 'the same array every call');
+    assert.deepEqual([...a], [], 'a body with nothing left is not listed');
+  } finally { leave(); }
+  assert.deepEqual([...corpseCutState()], []);
 });
 
 test('guard, parry, backstep and roll are not attacks: no strike', () => {

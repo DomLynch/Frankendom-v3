@@ -41,6 +41,26 @@ export function strikeCut(aim: Aim | null): unknown | null {
   return null;
 }
 
+/** A frozen body that still has units to cut: where it lies (world metres) and how many. */
+export type CorpseCut = { x: number; z: number; remainingUnits: number };
+type CorpseSource = (push: (x: number, z: number, remainingUnits: number) => void) => void;
+const corpseSources = new Set<CorpseSource>();
+/** A ragdoll says where its frozen bodies lie and how many units each still has (ragdoll.ts listenTaps). */
+export function registerCorpseSource(s: CorpseSource): () => void { corpseSources.add(s); return () => { corpseSources.delete(s); }; }
+const corpseOut: CorpseCut[] = [];
+let corpseN = 0;
+const pushCorpse = (x: number, z: number, remainingUnits: number): void => {
+  const row = corpseOut[corpseN] ?? (corpseOut[corpseN] = { x: 0, z: 0, remainingUnits: 0 });
+  row.x = x; row.z = z; row.remainingUnits = remainingUnits; corpseN++;
+};
+/** Read-only: every frozen corpse (the live foe's and the kept ones) with at least one unit still to cut; empty when none. The SAME array is returned each call (no allocation; read it before the next call, do not keep it). */
+export function corpseCutState(): readonly CorpseCut[] {
+  corpseN = 0;
+  for (const s of corpseSources) s(pushCorpse);
+  corpseOut.length = corpseN;
+  return corpseOut;
+}
+
 let lastKey: number | null = null;
 /** The canvas tap: every ragdoll listens to the same pointerup, but one press cuts once (the first listener to see `key`, the event's timeStamp, runs it). */
 export function strikeOnce(key: number, aim: Aim): unknown | null {
