@@ -24,7 +24,7 @@
       "clipsAs": "cleaver",
       "equip": "cleaver",
       "scale": 1,
-      "offhand": { "kind": "disc", "hand": "hand_l", "radius": 0.36, "thickness": 0.05, "colour": "#6a5236", "rim": "#2b2b2b", "offset": [0, 0.12, 0], "rotationDeg": [0, 0, 90] },
+      "offhand": { "kind": "disc", "hand": "lowerarm_l", "radius": 0.25, "thickness": 0.04, "colour": "#6a5236", "rim": "#2b2b2b", "offset": [-0.12, 0.06, 0], "rotationDeg": [0, 0, 100] },
       "placeholder": [
         "axe: the Pitborn's cleaver (V1's axe-skill one-hander) drawn as it is; no separate axe mesh is in the repo",
         "shield: a flat round board built in code (kind disc, no file); the Centurion's scutum is skinned loot on the 65 rig and the painted shield files are not in the repo",

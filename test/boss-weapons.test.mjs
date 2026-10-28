@@ -47,7 +47,8 @@ test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden
   const g = row('executioner'), a = row('shieldmaiden');
   assert.equal(g.weapon, 'maul'); assert.equal(weaponOf('maul').grip, 'two-hand'); assert.equal(g.offhand, null);
   assert.equal(a.weapon, 'cleaver'); assert.equal(weaponOf('cleaver').grip, 'one-hand');   // V1's axe-skill one-hander
-  assert.equal(a.offhand.kind, 'disc'); assert.equal(a.offhand.hand, 'hand_l');
+  assert.equal(a.offhand.kind, 'disc'); assert.equal(a.offhand.hand, 'lowerarm_l');   // the left forearm, not the hand: a disc on the hand sat in front of her face (Dom review 2026-10-28)
+  assert.ok(a.offhand.radius <= 0.3, 'a forearm shield, not a board over the face');
   assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'shieldmaiden']);
   assert.equal(OPPONENTS.executioner.weapon, 'scythe', "V1's row for the executioner is untouched");
   assert.equal(OPPONENTS.shieldmaiden.weapon, 'gladius', "V1's row for the shieldmaiden is untouched");
@@ -132,8 +133,8 @@ test('the maul is the cleaver scaled about the grip; the axe is the cleaver as i
 });
 
 test('the shield board is on the left hand, in metres: the row\'s radius and thickness, whatever the bone\'s own scale', async () => {
-  const a = dressBossHand(await armed(), row('shieldmaiden')), hand = boneOf(a.scene, 'hand_l'), board = hand.getObjectByName(SHIELD_NAME);
-  assert.ok(board, 'the board hangs from hand_l');
+  const a = dressBossHand(await armed(), row('shieldmaiden')), hand = boneOf(a.scene, 'lowerarm_l'), board = hand.getObjectByName(SHIELD_NAME);
+  assert.ok(board, 'the board hangs from lowerarm_l');
   const o = row('shieldmaiden').offhand, face = board.getObjectByName('BossShield.face'), box = new Box3().setFromObject(face).getSize(new Vector3());
   const dims = [box.x, box.y, box.z].sort((p, q) => p - q);
   assert.ok(Math.abs(dims[0] - o.thickness) < 0.005, `thickness ${dims[0]}`);
