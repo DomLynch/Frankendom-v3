@@ -17,6 +17,7 @@ import { CC_LADDER, ccApply, type CcGuard, type CcLadder, type CcSource } from '
 import { bandFactor } from './bands.ts';
 import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
 import { foeSpecialFirst, specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
+import { heroPool, manaFree } from './hero-mana.ts';   // V3: the hero has no mana (data/fight.json heroMana); off in a headless run
 import { SPECIAL_TERMS, termCooldown, termed, termStamina } from './special-terms.ts';   // V3: the hero's specials every 9 s, no stamina; off in a headless run, so Gate 0 steps V1's numbers
 import { paceTicks } from './special-pace.ts';   // V3: the player's paced special (the Skull Crack ×0.75); off in a headless run, so Gate 0 steps V1's ticks
 import { foeSpecialFizzles, foeStartReach } from './foe-special-reach.ts';
@@ -187,7 +188,7 @@ const poseBodies = (given: DuelPose): [State, State] => {
 export const bandsFlag = (): { bands?: true } => (ROWS79_ON ? { bands: true } : {});
 export const initialDuel = (opponent: Opponent = OPPONENTS.veteran, weapon: WeaponId = DEFAULT_WEAPON, skill: SkillId | null = null, pose?: DuelPose): Duel => {
   const [hero, foe] = pose ? poseBodies(pose) : [initialState(), { ...initialTarget(), heading: 0, distance: 0 }];
-  return { tick: 0, fighters: [{ ...createFighter(hero, 'sheathed', weapon), skill, ...(skill && SANDBOX_ON ? { picked: true as const } : {}) }, opponentFighter(opponent, foe)], finish: null, events: [], ...bandsFlag() };
+  return { tick: 0, fighters: [{ ...heroPool(createFighter(hero, 'sheathed', weapon)), skill, ...(skill && SANDBOX_ON ? { picked: true as const } : {}) }, opponentFighter(opponent, foe)], finish: null, events: [], ...bandsFlag() };
 };
 
 // The one door a patron fight is built through, after initialDuel (and withSpecials): the player's perk in slot 0, the foe's (PvP only; ladder foes carry none) in slot 1.
@@ -289,7 +290,7 @@ const healSpent = (f: Fighter, s: Spell | undefined): boolean => { const h = hea
 export function legal(f: Fighter, action: Action): boolean {
   if (!f.health || f.exhausted || f.special) return false;   // a committed special windup takes no other input
   if (f.specialRecover && (isLight(action) || isHeavy(action) || action === 'thrust' || action === 'kick' || action === 'skill' || action === 'skill2')) return false;
-  { const mr = missileOf(f.weapon); if (mr && (isLight(action) || isHeavy(action) || action === 'thrust') && ((MANA_MAX && (f.mana ?? 0) < mr.mana) || (f.ammo !== undefined && f.ammo <= 0))) return false; }   // sandbox-mech missiles: a bolt is paid in mana, refused short of it
+  { const mr = missileOf(f.weapon); if (mr && (isLight(action) || isHeavy(action) || action === 'thrust') && ((MANA_MAX && !manaFree(f) && (f.mana ?? 0) < mr.mana) || (f.ammo !== undefined && f.ammo <= 0))) return false; }   // sandbox-mech missiles: a bolt is paid in mana, refused short of it
   if ((f.bound || f.disarmed) && (isLight(action) || isHeavy(action) || action === 'thrust' || action === 'skill')) return false;   // sandbox-mech bindAndDisarm: a bound blade or an empty hand has no swing   // the special's recovery: no attack until it ends
   // A committing parry (the Nightborn's, guard.commits) runs its window, and the exposure it ends in when it met nothing is a real recovery —
   // the blade is out of line — so no swing comes out of either. A man's parry yields to any action and his exposure only bares his guard.
@@ -299,9 +300,9 @@ export function legal(f: Fighter, action: Action): boolean {
   if (isLight(action)) return f.phase === 'sheathed' || ((standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina);
   if (isHeavy(action) || action === 'thrust') return (standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina;
   if (action === 'kick') return standing && !f.kickCd && f.stamina >= movesOf(f).kick.stamina;
-  if (action === 'skill' && f.specialShare !== undefined) return !f.skillCooldown && (standing || stepTail) && !healSpent(f, f.spell) && (!f.spell || (paysManaFor(f.spell.id) ? (f.mana ?? 0) >= manaCost(f.spell.cost) : f.stamina >= f.spell.cost));   // a special: no stamina, any class; a SPELL costs its stamina and is refused short of it
+  if (action === 'skill' && f.specialShare !== undefined) return !f.skillCooldown && (standing || stepTail) && !healSpent(f, f.spell) && (!f.spell || (paysManaFor(f.spell.id) ? (manaFree(f) || (f.mana ?? 0) >= manaCost(f.spell.cost)) : f.stamina >= f.spell.cost));   // a special: no stamina, any class; a SPELL costs its stamina and is refused short of it
   if (action === 'skill2' && f.skill2 !== undefined) return !f.skillCooldown2 && (standing || stepTail) && f.stamina >= termStamina(f, movesOf(f)[SKILL_MOVE[f.skill2]!].stamina);   // V3 special-terms.ts: the hero's gate is the row's (0) while on   // slot b as a melee special: its own cooldown, the move row's stamina (the shared bar), no Special Moves needed
-  if (action === 'skill2') return f.specialShare !== undefined && !!f.spell2 && !f.skillCooldown2 && (standing || stepTail) && !healSpent(f, f.spell2) && (paysManaFor(f.spell2.id) ? (f.mana ?? 0) >= manaCost(f.spell2.cost) : f.stamina >= f.spell2.cost);   // slot b: its own cooldown, the shared stamina bar; an empty slot is inert
+  if (action === 'skill2') return f.specialShare !== undefined && !!f.spell2 && !f.skillCooldown2 && (standing || stepTail) && !healSpent(f, f.spell2) && (paysManaFor(f.spell2.id) ? (manaFree(f) || (f.mana ?? 0) >= manaCost(f.spell2.cost)) : f.stamina >= f.spell2.cost);   // slot b: its own cooldown, the shared stamina bar; an empty slot is inert
   if (action === 'skill') return f.skill !== null && !f.skillCooldown && (standing || stepTail) && f.stamina >= termStamina(f, movesOf(f)[SKILL_MOVE[f.skill]!].stamina);   // as a heavy, plus an equipped skill that has cooled
   if (action === 'dodge') return (standing && f.stamina >= RULES.rollCost) || (stepping && f.stamina >= RULES.rollCost - RULES.backstep.cost);   // holding the control turns the step into a roll
   if (action === 'backstep') return standing && f.stamina >= RULES.backstep.cost;
@@ -389,7 +390,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         if (bowRow) { next.bowSpecial = bowRow.skill; if (next.ammo !== undefined) next.ammo -= bowRow.arrows; } else delete next.bowSpecial;   // the arrows are spent at the commit, like a spell's cost
         next.special = castWindup(me.sheet, heal ? heal.windup : bowRow ? bowRow.windup : !cast && me.picked && SPECIAL_MELEE_WINDUP ? paceTicks(next, SPECIAL_MELEE_WINDUP) : spellWindupOf(root, R.special.windup)); delete next.castHurt; delete next.castPush;   // sandbox specialMeleeWindup: a melee special (no spell) is as quick as a heavy swing, not the spell's 2 s delay
         next.phase = 'ready'; next.age = 0; next.parrying = false; next.guardDirection = null;
-        if (cast && paysManaFor(cast.id)) { const f = fighters[i]!; f.mana = Math.max(0, (f.mana ?? 0) - manaCost(cast.cost)); f.manaRest = MANA_DELAY; }   // sandbox-mech mana: the cast is paid in mana, stamina untouched
+        if (cast && paysManaFor(cast.id)) { const f = fighters[i]!; if (!manaFree(f)) { f.mana = Math.max(0, (f.mana ?? 0) - manaCost(cast.cost)); f.manaRest = MANA_DELAY; } }   // a pool-less hero (data/fight.json heroMana) casts free: neither mana nor stamina   // sandbox-mech mana: the cast is paid in mana, stamina untouched
         else if (cast) spend(i, cast.cost);   // the stamina is gone at the commit, whatever the outcome
         events.push({ tick, type: 'SpecialStarted', actor: i, ...(me.skill ? { move: SKILL_MOVE[me.skill] } : {}), ...(me.specialName ? { name: me.specialName } : {}), ...(cast ? { spell: cast.id } : {}) });
       }
@@ -538,9 +539,9 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       const lane = laneOf(a.move);
       if (a.age === t.windup && lane) {
         const gap = a.attackFrom?.gap ?? distance(a.body, d.body);
-        if ((MANA_MAX && (A.mana ?? 0) < mrow.mana) || (A.ammo !== undefined && A.ammo <= 0)) events.push({ tick, type: 'AttackMissed', actor: i, move: a.move });
+        if ((MANA_MAX && !manaFree(A) && (A.mana ?? 0) < mrow.mana) || (A.ammo !== undefined && A.ammo <= 0)) events.push({ tick, type: 'AttackMissed', actor: i, move: a.move });
         else {
-          if (MANA_MAX) { A.mana = (A.mana ?? 0) - mrow.mana; A.manaRest = MANA_DELAY; }
+          if (MANA_MAX && !manaFree(A)) { A.mana = (A.mana ?? 0) - mrow.mana; A.manaRest = MANA_DELAY; }
           if (A.ammo !== undefined) A.ammo--;
           if (gap >= missileMinGap() && !A.missile) {
             const ang = MISSILE_HOMING ? aim(a.body, d.body) : a.body.heading + (lane.lane * MISSILE_FAN * Math.PI) / 180, range = distance(a.body, d.body);

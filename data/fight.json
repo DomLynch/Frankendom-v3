@@ -146,5 +146,9 @@
     "trailReaping": 0.25,
     "soundGain": 1,
     "soundRows": ["cleave-3", "reaping-2", "reaping-3", "reaping-4"]
+  },
+  "heroMana": {
+    "about": "Dom 2026-10-28: 'remove mana for now'. The HERO has no mana: no MANA bar on the HUD (the STAMINA bar keeps the whole row) and no mana cost or gate on a spell, a heal or the staff's bolt, so they are free and held only by their own ~9 s cooldown (specialTerms) and the ready ring. `mana: false` = off. Opponents are untouched: the foes' spells and missiles still carry and spend their own pool (Dom: keep the opponent spells). src/fight/hero-mana.ts; off in headless runs (Gate 0). ?mana=v1 = the MANA bar and the mana cost, as before.",
+    "mana": false
   }
 }

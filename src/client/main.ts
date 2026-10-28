@@ -51,6 +51,7 @@ import { createHud } from '../fight/hud.ts';
 import { RADAR, bossBlips, mountRadar, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
+import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
 import { toastOver, zoneSoundRows, type ZoneSoundRows } from '../audio/zone-cues.ts';
 import { createKeep } from '../audio/keep.ts';
@@ -109,6 +110,7 @@ if (!v1Sound) feedback.prepare();
 for (const type of v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
   window.addEventListener(type, v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, { passive: true });
 const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
+setHeroNoMana(heroNoManaFor(FIGHT.heroMana, search));   // V3 (Dom: "remove mana for now"): the hero has no MANA bar and casts free (data/fight.json heroMana); ?mana=v1 = the bar and the mana cost
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
