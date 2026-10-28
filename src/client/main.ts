@@ -68,7 +68,7 @@ import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
-import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, zoneDuel, type Spawn } from '../stubs.ts';
+import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, bossLoadAfterKill, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import type { DuelPose } from '../fight/duel.ts';
@@ -226,7 +226,7 @@ function nameOpponent() {   // :397 without the legend
 if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale, undefined, sandOn(search)));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
 if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
-let roam: State | null = null, sinceDeath = 0;
+let roam: State | null = null, sinceDeath = 0, bossKilled = false;
 // The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
 // ceremony is over or he moves the stick; any stick input ends the ceremony at once. killAge counts the seconds since the kill landed (the rig's own finish age restarts when its finisher camera lets go); freeAfterKill latches the hand-over for this kill.
 // FREE is null under ?postkill=v1 (no zone), ?freecam=v1 and the row off: the lock camera exactly as it was
@@ -496,9 +496,10 @@ function frame(now: number) {
     if (aim === 1 && widen - 1 < 1 / 1000) widen = 1;
     view.setWiden(widen);
   }
-  if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
+  if (roam && bossLoadAfterKill(location.search)) bossKilled = true;   // the first kill's roam has started: far bosses are fetched and stand at their spots (respawn.json world.loadAfterKill, ?bossload=v1 off)
+  if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state, undefined, bossKilled));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]! }))); }   // the attackers' rigs (a killed one lies until its timer is up)
-  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, near: withinLoad(s, state) }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });

@@ -16,7 +16,7 @@ import { OPEN_RADIUS } from '../src/fight/play-radius.ts';
 import { project } from '../src/fight/combat.ts';
 import { poseFits, zoneDuel } from '../src/zone/spawns.ts';
 import { spawnBodyFile } from '../src/fight/foe-body.ts';
-import { WORLD, withinLoad, held, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, standing, tick, validateSpots } from '../src/zone/spawns.ts';
+import { WORLD, withinLoad, bossLoadAfterKill, held, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, standing, tick, validateSpots } from '../src/zone/spawns.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -52,8 +52,8 @@ test('lazy boss bodies: scene.ts fetches a non-live body only behind the hero-ne
 });
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 30, startClearance: 25, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 60, loadWithinMetres: 24 });
-  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres', 'loadWithinMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 30, startClearance: 25, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 60, loadWithinMetres: 24, loadAfterKill: true, loadRadiusAfterKillMetres: 120, loadQuery: 'bossload', loadOff: 'v1' });
+  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres', 'loadWithinMetres', 'loadRadiusAfterKillMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
 
@@ -253,4 +253,18 @@ test('?postkill=v1 and a one-spawn zone are the old fight: no zone state, the si
   assert.match(main, /const SPOTS = ZONE \? spotsFor\(zoneFor\(search\)\) : \[\];/, 'no ZONE (?postkill=v1) = no spots, no copies, no zoneStep');
   assert.match(main, /if \(ZONE\) \{ current = nearestStanding/);
   assert.match(main, /if \(ZONE\) \{ view\.idleFoes/);
+});
+
+// Dom 2026-10-28 "I don't see the new bosses 2 and 3": after the first kill the far bosses load (world.loadAfterKill / loadRadiusAfterKillMetres); before it nothing changes.
+test('bosses visible after the first kill: the trigger is pure, before a kill the first-visit load is unchanged, ?bossload=v1 reverts', () => {
+  const far = { x: 30, z: 12 }, hero = { x: 0, z: 0 };
+  assert.equal(withinLoad(far, hero, WORLD, false), false, 'before any kill, 30 m away loads nothing');
+  assert.equal(withinLoad(far, hero, WORLD, true), true, 'after the first kill the boss at 30 m is fetched and drawn');
+  assert.equal(withinLoad({ x: 130, z: 0 }, hero, WORLD, true), false, 'past loadRadiusAfterKillMetres still nothing');
+  assert.equal(withinLoad(far, hero, { ...WORLD, loadAfterKill: false }, true), false, 'loadAfterKill false = the old rule');
+  assert.equal(bossLoadAfterKill('', WORLD), true);
+  assert.equal(bossLoadAfterKill('?bossload=v1', WORLD), false);
+  assert.ok(WORLD.loadRadiusAfterKillMetres >= 60, 'covers the spots (spreadRadius 60)');
+  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
+  assert.match(main, /if \(roam && bossLoadAfterKill\(location\.search\)\) bossKilled = true/);
 });
