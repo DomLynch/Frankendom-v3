@@ -20,7 +20,9 @@ for (const query of queries.length ? queries : ['']) {
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
   await page.waitForTimeout(1500);
-  await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 1500);   // the VPS is shared and loaded: a short pause point is already past by the time the call lands
+  for (const ahead of [1500, 6000, 20000, 60000]) {   // the VPS is shared and loaded: a short pause point can already be past by the time the call lands, so widen it until it is not
+    try { await page.clock.pauseAt(await page.evaluate(() => Date.now()) + ahead); break; } catch (e) { if (!/past/.test(String(e))) throw e; }
+  }
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   const shoot = async (name) => { await page.waitForTimeout(150); await page.screenshot({ path: `${out}/${tag}-${name}.png` }); console.log(`${tag}: ${name}`); };
   const read = () => page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; return { hero: h.phase, foe: f.phase, age: f.age, weapon: f.weapon }; });
