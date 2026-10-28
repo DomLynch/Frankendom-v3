@@ -70,6 +70,7 @@ import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
 import { applyStar } from './star-look.ts';
 import { bodyOwnerOf, bodyProfileOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
+import { bossOfBody as bossOfBodyRow, ownerOfBody as ownerOfBodyOf, weaponOfBody as weaponOfBodyOf } from './boss-resolve.ts';
 import { bossOpponent, bossPreview, bossRowOfBody, bossWeaponFor } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
 import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
@@ -595,10 +596,10 @@ export function createScene(
   const bodyAssets = new Map<string, { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> }>();   // `loaded`: the held foe's swap (heldBodies) awaits the same fetch a standing or attacking spawn started, one file once
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
   // A boss body with a weapon row (data/boss-weapons.json; the body is found through the profile rows, foe-body.ts profileBodyOf) is armed with the row's weapon, scaled, with its off-hand part; any other body with the page's weapon, as before.
-  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch) ?? (file === liveBody || !bodyOwnerOf(file) ? undefined : bossWeaponFor(bodyOwnerOf(file)!, pageSearch, undefined, bodyProfileOf(file)));   // a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
+  const bossOfBody = (file: string) => bossOfBodyRow(file, liveBody, pageSearch);   // (src/fight/boss-resolve.ts, the one function the tests also call) a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
   // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
-  const ownerOfBody = (file: string): string | undefined => file === liveBody ? undefined : bodyOwnerOf(file);
-  const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch, undefined, bodyProfileOf(file)).weapon : builtFoeWeapon);
+  const ownerOfBody = (file: string): string | undefined => ownerOfBodyOf(file, liveBody);
+  const weaponOfBody = (file: string): WeaponId | undefined => weaponOfBodyOf(file, liveBody, builtFoeWeapon, pageSearch);
   function bodyRig(file: string) {
     let entry = bodyAssets.get(file);
     if (!entry) {
