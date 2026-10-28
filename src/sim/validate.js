@@ -20,7 +20,7 @@ export const SCHEMA = {
   // Star bosses (src/stars.ts validateStars checks the values)
   'stars': { keys: ['about', 'minKills', 'killsCap', 'zeroWeight', 'salt', 'starGlyph', 'hudColour', 'levels', 'weights'], rows: { levels: ['star', 'healthX', 'damageX', 'scaleX', 'trophy', 'tell'], weights: ['id', 'star1', 'star2'] } },
   // Progression and saving (src/progression.ts validateProgression checks the values)
-  'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'lineSeconds', 'healthCap', 'damageCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
+  'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'autoEquip', 'lineSeconds', 'healthCap', 'damageCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
   // The Daily Pit (src/daily-pit.ts; checkDailyPit below checks the values and the cross-file rows)
   'daily-pit': { keys: ['about', 'salt', 'attemptsPerDay', 'modeKey', 'event', 'cutLog', 'spawnId', 'respawnSeconds', 'resultDelaySeconds', 'bosses', 'modifiers', 'score', 'ui', 'later'], rows: { modifiers: ['id', 'name', 'about', 'tune', 'stars'], later: ['id', 'why'] },
     maps: { resultDelaySeconds: ['won', 'lost'], score: ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max', 'fields'], ui: ['zIndex', 'colour', 'text'] } },
