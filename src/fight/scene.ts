@@ -69,7 +69,7 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
 import { applyStar } from './star-look.ts';
-import { bodyOwnerOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
+import { bodyOwnerOf, bodyProfileOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
 import { bossOpponent, bossPreview, bossRowOfBody, bossWeaponFor } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
 import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
@@ -398,7 +398,7 @@ export function createScene(
   let ragdoll: FoeRagdoll | null = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one   // let: a held spawn in another body swaps it (heldBodies below)
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
   setHeroLocator(() => ({ x: player.position.x, z: player.position.z }));   // data/physics.json cut.strike: how near the hero stands to a fallen body
-  const pickupV = new THREE.Vector3();
+  const pickupV = new THREE.Vector3(), projectV = new THREE.Vector3();
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow and one line over a frozen corpse (presentation only)
     : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
   let heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created   // let: the zone page may ask for the death-only one (heroDeath below) before the rigs load
@@ -594,7 +594,7 @@ export function createScene(
   const bodyAssets = new Map<string, { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> }>();   // `loaded`: the held foe's swap (heldBodies) awaits the same fetch a standing or attacking spawn started, one file once
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
   // A boss body with a weapon row (data/boss-weapons.json; the body is found through the profile rows, foe-body.ts profileBodyOf) is armed with the row's weapon, scaled, with its off-hand part; any other body with the page's weapon, as before.
-  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch) ?? (file === liveBody || !bodyOwnerOf(file) ? undefined : bossWeaponFor(bodyOwnerOf(file)!, pageSearch));   // a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
+  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch) ?? (file === liveBody || !bodyOwnerOf(file) ? undefined : bossWeaponFor(bodyOwnerOf(file)!, pageSearch, undefined, bodyProfileOf(file)));   // a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
   // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
   const ownerOfBody = (file: string): string | undefined => file === liveBody ? undefined : bodyOwnerOf(file);
   const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch).weapon : builtFoeWeapon);
@@ -862,6 +862,13 @@ export function createScene(
       const v = new THREE.Vector3(point[0], point[1], point[2]).project(camera);
       if (v.z > 1) return null;
       return [(v.x * 0.5 + 0.5) * width, (-v.y * 0.5 + 0.5) * height];
+    },
+    /** The same projection with no allocation (a per-frame overlay): writes CSS pixels into `out` and returns false when the point is behind the camera. */
+    projectInto(x: number, y: number, z: number, out: [number, number]): boolean {
+      projectV.set(x, y, z).project(camera);
+      if (projectV.z > 1) return false;
+      out[0] = (projectV.x * 0.5 + 0.5) * width; out[1] = (-projectV.y * 0.5 + 0.5) * height;
+      return true;
     },
     // End-of-fight timing for the HUD (owner 2026-09-22: nothing over the body until the finisher camera has settled; the text
     // fades while the arena cam tours). `settled`: the push-in/reveal has run its course, or SETTLE seconds of finish age when

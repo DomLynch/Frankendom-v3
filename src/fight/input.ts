@@ -6,6 +6,7 @@ import { accepts, type Action, type CombatEvent, type Practice } from './combat.
 import type { Direction } from './moves.ts';
 import { inputNum } from './input-rows.ts';
 import { SPELL_BUFFER_MS } from './sandbox-rules.ts';
+import { isFreeAction } from './free-roam.ts';
 import { applyTouchLayout } from './touch-layout.ts';
 import { attachTapLog, tapLogOn } from './tap-log.ts';
 import { buttonOf, keyAlias, type KbmRows } from './kbm.ts';
@@ -25,6 +26,7 @@ export type InputEnv = {
   press?: () => void;        // any fight-button press, before it is read: the Coach hands the fight over here (src/coach-ui.ts)
   // Keyboard + mouse (data/input.json, src/fight/kbm.ts). Absent or null (`?input=v1`, and every test that builds the layer bare) = the controls exactly as they were: no mouse, no new key, no key map.
   kbm?: KbmRows | null;
+  walking?: () => boolean;   // the hero stands after a kill (free-roam.ts): ROLL, STEP and GUARD presses go to the page's walking hero though the finished fight takes none
   free?: () => boolean;      // the camera is free (nobody locks it): a left-drag looks round instead of picking a swing
   strike?: (aim: Aim | null) => void;   // data/physics.json cut.strike: ANY attack press (before the sim reads it) cuts a fallen body; `aim` = the click's point for a mouse strike, else null (the page decides whether a body is there to cut: main.ts)
   overPart?: (x: number, y: number) => boolean;   // an optional hook: a point that is not a strike (nothing passes one now: #219's Take is gone, a click on a corpse part strikes and the corpse tap cuts it)
@@ -137,7 +139,7 @@ export function createInput(env: InputEnv) {
   let pendingSpell: { action: Action; until: number } | null = null;
   function request(next: Action) {
     if (!paused() && env.ready()) { env.press?.(); if (isAttackAction(next)) env.strike?.(mouseAim); }
-    if (!paused() && env.ready() && accepts(env.practice(), next)) { action = next; pendingSpell = null; }
+    if (!paused() && env.ready() && (accepts(env.practice(), next) || (!!env.walking?.() && isFreeAction(next)))) { action = next; pendingSpell = null; }
     else if (SPELL_BUFFER_MS && (next === 'skill' || next === 'skill2') && !paused() && env.ready()) pendingSpell = { action: next, until: env.now() + SPELL_BUFFER_MS };
   }
   // Directional-cut flash (Dom 2026-10-07: "an indicator which comes at the same time, not before, but faint"): restart the CSS animation on the chosen edge; it removes itself.
