@@ -40,6 +40,8 @@ export const chooseFoeBody = (_search?: string): boolean => false;
  *  `stem`: the body row's 65 stem instead ('minotaur'), the name the bone and ragdoll rows key by; it is only a name: the page's loader
  *  table (scene.ts fighterUrls) holds the 106 files alone, so a 65 stem can never be fetched. */
 export const foeBodyFile = (id: string, rosterBody: string, stem = false): string => ((s: string) => stem ? s : foeRigFile(s))(rowOf(id)?.body || rosterBody);
+/** The 106 file stem the archetype `id` is drawn in by its profile row, or undefined when it has none (no body of its own yet) or `?boss=<body>` draws every boss in one body (the weapon rows, data/boss-weapons.json, then cannot tell the bosses apart and stay off). */
+export const profileBodyOf = (id: string): string | undefined => (override === null && id in PROFILE_BODY ? foeRigFile(PROFILE_BODY[id]!) : undefined);
 /** The 106 file stem a zone spawn of `id` draws: the spawn row's own `body` (data/zones `spawns[].body`, a data/rig.json files stem) when it has one, else exactly `foeBodyFile` (its kind's profile body).
  *  ?boss=<body> still draws every boss in one body for the page. This is the key of the scene's rig cache (scene.ts bodyRigs). */
 export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => {

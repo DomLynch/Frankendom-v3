@@ -6,6 +6,8 @@ import { rangedPartOf } from './ranged-model.ts';
 import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
+import { dressBossHand } from './boss-hand.ts';   // a boss weapon row's dressing: the part scaled, the off-hand part (data/boss-weapons.json)
+import type { BossWeaponRow } from './boss-weapon.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
 import { bone as boneOf, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';
 import { clip106Loader } from './clips-106.ts';   // a 106 body's baked clip JSONs (data/rig.json clips106)   // V3 rig swap: every bone lookup goes through the one map (65 body = today's lookup)
@@ -226,7 +228,7 @@ async function loadFighter(url: string) {
 // `opponentEquipUrl`: the equip file of a weapon the opponent's rig does not bake (the Centurion's gladius over his trident, SCOPE:76). It is
 // grafted onto his rig the same way; a file that fails is reported and he keeps the weapon his rig bakes (a fight never waits on it).
 // Only a shield carrier (`carry`) gets the scutum arm with it (armOpponent); the Pitborn's cleaver on the Minotaur's rig (foe-body.ts) is a bare graft.
-export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false) {
+export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false, look?: BossWeaponRow) {
   const equip = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
   const [hero, enemy, part, enemyPart] = await Promise.all([
     loadFighter(url),
@@ -235,14 +237,14 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
     opponentUrl === url ? undefined : equip(opponentEquipUrl),
   ]);
   let opponent: FighterAsset | undefined = enemy;
-  if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = carry ? armOpponent(opponent, enemyPart) : equipWeapon(opponent, enemyPart); } catch (error) { equipFailed(error); }
+  if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = carry ? armOpponent(opponent, enemyPart) : equipWeapon(opponent, enemyPart); if (look) dressBossHand(opponent, look); } catch (error) { equipFailed(error); }   // look: a boss weapon row drawn on this foe (the stills flag ?bossweapon=<opponent>)
   return armWarriors(hero, opponent, weapons, part, equipFailed, carry);
 }
 /** One more boss body, loaded alone (the per-spawn body rig cache, scene.ts bodyRigs): the file, with the boss's weapon grafted exactly as loadWarriors grafts the opponent's. A failed graft is reported and the body keeps what it bakes. */
-export async function loadFoeBody(url: string, equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, carry = false): Promise<FighterAsset> {
+export async function loadFoeBody(url: string, equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, carry = false, look?: BossWeaponRow): Promise<FighterAsset> {   // look: this boss's weapon row (data/boss-weapons.json): the part scaled, the off-hand part
   const [body, part] = await Promise.all([loadFighter(url), equipUrl ? loadEquip(equipUrl).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined]);
   if (!part) return body;
-  try { if (part instanceof Error) throw part; return carry ? armOpponent(body, part) : equipWeapon(body, part); } catch (error) { equipFailed(error); return body; }
+  try { if (part instanceof Error) throw part; const armed = carry ? armOpponent(body, part) : equipWeapon(body, part); return look ? dressBossHand(armed, look) : armed; } catch (error) { equipFailed(error); return body; }
 }
 // A live duel's peer drawn on the HERO rig (Strategy 2026-10-01, Option A): the page's second fighter is the hero's own warrior.glb, loaded a
 // second time under another cache key, with the peer's weapon grafted exactly as the player's is (equipWeapon, no shield carry), so he reads
@@ -1311,5 +1313,5 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
   }
   const player = create(false);
   // spawn: one more actor of the hero's own rig from the same asset (shared geometry, skins and materials, so no new program): the zone's other players (origins/preview/remote-heroes.ts).
-  return { player, opponent: solo ? player : create(true), spawn: () => create(false), spawnFoe: () => create(true), spawnBody: (body: FighterAsset, weapon: WeaponId) => create(true, { asset: body, weapon, clips: fighterClips(body, weapon, false) }) };   // spawnBody: an actor of ANOTHER boss body (a zone spawn's own body row, scene.ts bodyRigs), built like the opponent's from that body's loaded asset   // spawnFoe: one more actor of the opponent's own rig (the zone's extra attackers); with no opponent asset it is the hero's
+  return { player, opponent: solo ? player : create(true), spawn: () => create(false), spawnFoe: () => create(true), spawnBody: (body: FighterAsset, weapon: WeaponId, clipsAs: WeaponId = weapon) => create(true, { asset: body, weapon, clips: fighterClips(body, clipsAs, false) }) };   // clipsAs: the weapon whose clip family a 106 body plays (data/boss-weapons.json: a maul on the sword family until the bodies carry Maul_* clips)   // spawnBody: an actor of ANOTHER boss body (a zone spawn's own body row, scene.ts bodyRigs), built like the opponent's from that body's loaded asset   // spawnFoe: one more actor of the opponent's own rig (the zone's extra attackers); with no opponent asset it is the hero's
 }

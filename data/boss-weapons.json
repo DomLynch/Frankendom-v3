@@ -1,0 +1,36 @@
+{
+  "about": "Boss weapons (Dom + Strategy 2026-10-28): the weapon a boss of a V1 archetype (`opponent`) fights with and is drawn with. Boss 2 Gargantua is the executioner and wields a MAUL; boss 3 Arachne is the shieldmaiden and wields an AXE in one hand and a SHIELD in the other. Before this a foe's weapon was V1's row for its archetype (the executioner's scythe, the shieldmaiden's gladius). A zone spawn's kind (data/profiles.json, src/fight/spawn-kind.ts kindFightFor) whose `opponent` has a row here fights with `weapon` (a src/fight/weapon-defs.json row: its moves, reach, damage, timing, and V1's hero-rig blade sweeps for it, data/fight.json bladeTables) and is drawn with the same weapon (src/fight/boss-hand.ts, scene.ts). The archetype's guard, stats, specials and AI are untouched, so the shieldmaiden keeps her shield guard and the shield is the drawing of it. `clipsAs`: a 106 body carries no Maul_* or Scythe_* clips, so it plays this weapon's clip family (the sword family, as the Pitborn's cleaver does) until the bodies land with their own. `equip`: the grafted part, a file under src/assets/weapons/foe/ (the Pitborn's cleaver, no new file). `scale`: the drawn part scaled about its grip (the closest existing mesh, scaled: NO new art in this row set; Strategy). `offhand`: a part on the other hand (null = none); kind `disc` is a flat round board built in code (no file) sized in METRES in world space (`radius`, `thickness`), seated on `hand` at `offset` metres with `rotationDeg` Euler XYZ in that bone's frame. `placeholder`: exactly what is a stand-in, so nobody mistakes it for art. Presentation and the sim's weapon id only; the archetype's other rows are untouched. ?bossweapon=v1 puts every boss back on V1's weapon (and the drawn part); ?bossweapon=<opponent id> (stills) draws that row's weapon on the page's own foe (the Minotaur body) without changing the sim. Rows are checked by src/sim/validate.js (keys) and src/fight/boss-weapon.ts validateBossWeapons (values), at load.",
+  "query": "bossweapon",
+  "v1": "v1",
+  "rows": [
+    {
+      "id": "gargantua-maul",
+      "opponent": "executioner",
+      "weapon": "maul",
+      "clipsAs": "cleaver",
+      "equip": "cleaver",
+      "scale": 1.7,
+      "offhand": null,
+      "placeholder": [
+        "mesh: the Pitborn's cleaver (src/assets/weapons/foe/cleaver.glb) scaled 1.7x stands in for a maul head and haft; no maul mesh is in the repo",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver), not Maul_* swings; the sim keeps the maul's moves, timing and damage",
+        "sweeps: V1's hero-rig maul blade table, not re-baked on Gargantua's body (his body is not in the repo yet; scripts/foe-body/bake-blades.mjs is the re-bake)"
+      ]
+    },
+    {
+      "id": "arachne-axe-shield",
+      "opponent": "shieldmaiden",
+      "weapon": "cleaver",
+      "clipsAs": "cleaver",
+      "equip": "cleaver",
+      "scale": 1,
+      "offhand": { "kind": "disc", "hand": "lowerarm_l", "radius": 0.25, "thickness": 0.04, "colour": "#6a5236", "rim": "#2b2b2b", "offset": [-0.12, 0.06, 0], "rotationDeg": [0, 0, 100] },
+      "placeholder": [
+        "axe: the Pitborn's cleaver (V1's axe-skill one-hander) drawn as it is; no separate axe mesh is in the repo",
+        "shield: a flat round board built in code (kind disc, no file); the Centurion's scutum is skinned loot on the 65 rig and the painted shield files are not in the repo",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); her shield arm is the clip's own arm, not the shield carry",
+        "sweeps: V1's hero-rig cleaver blade table, not re-baked on Arachne's body (not in the repo yet)"
+      ]
+    }
+  ]
+}

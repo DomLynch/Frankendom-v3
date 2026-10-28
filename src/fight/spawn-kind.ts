@@ -11,6 +11,7 @@ import { OPPONENTS, opponentAt, profileAt, type AiProfile, type Opponent, type S
 import { recordSpecials } from './replay.ts';
 import type { PickedStance } from './stance.ts';
 import type { DuelPose } from './duel.ts';
+import { bossOpponent } from './boss-weapon.ts';
 import { brainFor, brainProfile, type BrainRow } from '../brain.ts';
 import { profileFor, resolveFight, scaledOpponent, scaledPractice, type DifficultyFile, type ProfileRow, type Resolved } from '../difficulty.ts';
 
@@ -40,7 +41,8 @@ export function kindFightFor(kind: string, ctx: KindCtx): KindFight {
   const why = kindProblem(kind, ctx.profiles);
   if (why) throw new Error(why);
   const resolved = resolveFight({ profile: kind, difficulty: ctx.pick }, ctx.profiles, ctx.difficulty, ctx.brains);
-  const opponentId = ctx.override ?? resolved.opponent, opponent = OPPONENTS[opponentId as keyof typeof OPPONENTS];
+  const opponentId = ctx.override ?? resolved.opponent, base = OPPONENTS[opponentId as keyof typeof OPPONENTS];
+  const opponent = ctx.override === null ? bossOpponent(base, ctx.search) : base;   // data/boss-weapons.json: Gargantua (executioner) fights with a maul, Arachne (shieldmaiden) with an axe; ?bossweapon=v1 and ?pitborn=v1 keep V1's row for the archetype
   const scaled = resolved.opponent === opponentId;   // the profile's own archetype fights with its difficulty and scales; the ?pitborn=v1 Centurion is V1's fight as before
   const v1 = profileAt(opponent, ctx.level);
   const ai = scaled ? profileFor(v1, resolved, new URLSearchParams(ctx.search).get('ai') === 'v1') : brainProfile(v1, brainFor(ctx.brains, ctx.ai, ctx.search));
