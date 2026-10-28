@@ -23,7 +23,7 @@ test('the rows: gargantua is the executioner at health x5.2 (first value on the 
   assert.equal(Object.keys(a)[1], 'foeHealthScale');
   assert.deepEqual(validateFile('profiles', PROFILES), []);
   assert.deepEqual(checkKinds(PROFILES, Object.keys(OPPONENTS)), []);
-  assert.deepEqual(checkBodies(PROFILES, RIG, 'psyche'), [], 'with no body named the rows draw the default body: valid on main before the bodies land');
+  assert.deepEqual(checkBodies(PROFILES, ROOMY, 'psyche'), [], 'with no body named the rows draw the default body: valid on main before the bodies land');
   assert.equal(PROFILES.default, 'pitborn');
 });
 
@@ -60,11 +60,12 @@ test('the staged rows (bodies named, spawn 2 gargantua, spawn 3 arachne) validat
   assert.deepEqual(checkBodies(WITH_BODIES, ROOMY, 'psyche'), []);
   assert.deepEqual(validateZone(MIXED, kinds, ROOMY), []);
   assert.deepEqual(MIXED.spawns.map((s) => s.kind), ['pitborn', 'gargantua', 'arachne']);
-  assert.match(checkBodies(WITH_BODIES, RIG, 'psyche').join('\n'), /profiles\.gargantua\.body: 'gargantua' is not a data\/rig\.json files row/, 'on main without the bodies the same rows are refused: that is why they are staged last');
 });
 
-test('the shipped zone row is unchanged: three Pitborn, no spawn body', () => {
-  assert.deepEqual(ZONE.spawns.map((s) => [s.id, s.kind]), [['yard-pitborn', 'pitborn'], ['pit-pitborn-east', 'pitborn'], ['pit-pitborn-west', 'pitborn']]);
+test('the staged commit: the shipped zone row is spawn 1 pitborn, 2 gargantua, 3 arachne (bodies named on the profiles); needs the bodies merged', () => {
+  assert.deepEqual(ZONE.spawns.map((s) => [s.id, s.kind]), [['yard-pitborn', 'pitborn'], ['pit-pitborn-east', 'gargantua'], ['pit-pitborn-west', 'arachne']]);
   assert.ok(ZONE.spawns.every((s) => s.body === undefined));
-  assert.equal(PROFILES.profiles.find((p) => p.id === 'pitborn').body, 'minotaur');
+  assert.deepEqual([row('gargantua').body, row('arachne').body, row('pitborn').body], ['gargantua', 'arachne', 'minotaur']);
+  assert.deepEqual(validateZone(ZONE, PROFILES.profiles.map((p) => p.id), RIG), []);
+  assert.deepEqual(checkBodies(PROFILES, RIG, 'psyche'), [], 'the real rig rows carry both bodies');
 });
