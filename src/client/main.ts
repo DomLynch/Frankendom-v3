@@ -31,6 +31,7 @@ import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClam
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
 import { freshLock, lockBreakFor, stepLock } from '../fight/lock-break.ts';
+import { isTap, lockSwitchFor, pickTarget, swapHeld, type Press } from '../fight/lock-switch.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
@@ -351,6 +352,20 @@ function syncSweeps() {
 // The zone's stills and the cost table read this (scripts/zone-stills.mjs)
 function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
 element('reset-button').addEventListener('click', () => rematch());
+// Tap-to-switch the soft lock (data/respawn.json lockSwitch, src/fight/lock-switch.ts; ?lockswitch=v1 off): a tap on another boss that is on him swaps the held fight with that boss's. A press listener of its own: the look drag, the corpse cut tap and the buttons are not touched.
+const SWITCH = LOCK_ROWS && multi ? lockSwitchFor(true, search) : null;
+if (SWITCH) {
+  let pressed: Press | null = null;
+  canvas.addEventListener('pointerdown', (e) => { pressed = { x: e.clientX, y: e.clientY, t: e.timeStamp, id: e.pointerId }; });
+  canvas.addEventListener('pointerup', (e) => {
+    const down = pressed; pressed = null;
+    if (paused() || !engaged || lockState.broken || practice.finish || !isTap(SWITCH, down, { x: e.clientX, y: e.clientY, t: e.timeStamp, id: e.pointerId })) return;
+    const box = canvas.getBoundingClientRect(), on = attackers.filter((a) => !a.dead).map((a) => { const p = view.project([a.practice.enemy.x, SWITCH.aimHeightMetres, a.practice.enemy.z]); return { index: a.index, x: p ? p[0] : NaN, y: p ? p[1] : NaN }; });
+    const pick = pickTarget(SWITCH, { x: e.clientX - box.left, y: e.clientY - box.top }, on, current), out = pick === null ? null : swapHeld(practice, attackers, current, pick, kindAt(current).ai);
+    (globalThis as { __v3Switch?: unknown }).__v3Switch = { tap: [e.clientX - box.left, e.clientY - box.top], on, pick, held: current, switched: !!out };   // the stills read the last tap's picture (scripts/*-stills.mjs)
+    if (out) { epoch++; practice = out.practice; attackers = out.list; current = out.index; useKind(kindAt(current)); updateHud(); }
+  });
+}
 if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger drag on empty ground looks round; the recenter key R stands behind him). The tap that cuts a corpse is a press that stays put (ragdoll.listenTaps), so a drag is never a cut.
   // The look thumb (data/respawn.json look, src/fight/look-drag.ts): its own pointer id, so the left thumb's stick and every button keep working; only while the camera is free (frame(): a fight cancels it)
   if (look) {

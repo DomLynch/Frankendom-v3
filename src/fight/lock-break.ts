@@ -3,7 +3,7 @@
 // input debounce commitSeconds (only so stick jitter does not drop it), or a roll is pointed away beyond the same angle; it also lets go when nobody is fighting him (the target died, or went past its leash). Nothing else
 // gates it: the hero's own body limits (staggered, knocked down, mid-attack, mid-roll) are the sim's and stay exactly as it enforces them; the lock only follows whether he is moving away. A broken lock gives the camera to the
 // player (look any way) and the hero turns to face the way he runs (the sim is asked for lock:false, its own existing free-facing). It re-locks on an attack press, or when the stick runs back toward the foe (relockAngleDeg,
-// relockSeconds). Input, camera and the hero's facing only: the duel sim is untouched. ?lock=v1 = the old hard lock. Every number is a row (data/respawn.json lockBreak). Target switching: see switchTarget below.
+// relockSeconds). Input, camera and the hero's facing only: the duel sim is untouched. ?lock=v1 = the old hard lock. Every number is a row (data/respawn.json lockBreak). Target switching by a tap: src/fight/lock-switch.ts.
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { wrapAngle } from './sim.ts';
 
@@ -77,6 +77,3 @@ export function stepLock(rows: LockBreakRows, s: LockState, f: LockFrame): { sta
   if (rollAway || next.away + 1e-9 >= rows.commitSeconds) return { state: { ...next, broken: true, away: 0, toward: 0 } };
   return { state: next };
 }
-
-/** HOOK, not wired: a tap on another attacker would lock onto him. The zone page holds one foe in the duel sim at a time (main.ts hand()), so a switch is hand(index, hero) for the tapped spawn; a tap picker (screen point to spawn) is the missing part, so it is left as a documented hook rather than a guess. */
-export const switchTarget = null;
