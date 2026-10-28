@@ -266,5 +266,7 @@ test('bosses visible after the first kill: the trigger is pure, before a kill th
   assert.equal(bossLoadAfterKill('?bossload=v1', WORLD), false);
   assert.ok(WORLD.loadRadiusAfterKillMetres >= 60, 'covers the spots (spreadRadius 60)');
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
+  const scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
+  assert.match(scene, /if \(!entry && \(atRest \|\| restSnap\)\)/, 'a far boss is drawn after the live foe is down (the rest pose kept), not only while the live foe stands');
   assert.match(main, /if \(roam && bossLoadAfterKill\(location\.search\)\) bossKilled = true/);
 });
