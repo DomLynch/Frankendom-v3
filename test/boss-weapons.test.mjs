@@ -133,7 +133,7 @@ test('two profiles sharing one archetype can have different rows; a profile with
   assert.equal(w('shieldmaiden', 'sporty-granny'), 'arachne-axe-shield', 'a profile with no row falls back to the archetype row');
   assert.equal(w('shieldmaiden'), 'arachne-axe-shield', 'no profile = the archetype row');
   assert.equal(w('pitborn', 'anime-girl-blonde'), 'blonde-maul');
-  assert.equal(w('pitborn', 'anime-boy-black'), 'ryo-sword', 'the shipped row stays beside the synthetic one');
+  assert.equal(w('pitborn', 'anime-boy-black'), undefined, 'withRows leaves the shipped profile rows (Reginald, Ryo) out, so a fixture names its own');
   assert.equal(w('pitborn', 'kachujin'), undefined, 'no profile row and no archetype row: V1\'s weapon');
   assert.equal(bossOpponent(OPPONENTS.pitborn, '', f, 'kachujin'), OPPONENTS.pitborn, 'the very same object');
   assert.equal(bossOpponent(OPPONENTS.pitborn, '', f, 'anime-girl-blonde').weapon, 'maul');
@@ -270,7 +270,7 @@ test('Ryo\'s row: his profile only, the plain sword, the sim\'s cleaver family u
   assert.equal(r.weapon, OPPONENTS.pitborn.weapon, 'the sim keeps the pitborn\'s own weapon: Ryo fights exactly as before, only the drawing changes');
   assert.equal(bossOpponent(OPPONENTS.pitborn, '', undefined, 'anime-boy-black'), OPPONENTS.pitborn, 'same weapon id: the very same object, nothing in the sim moves');
   for (const p of PROFILES.profiles.filter((q) => q.id !== 'anime-boy-black' && q.opponent !== 'executioner' && q.opponent !== 'shieldmaiden')) assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), undefined, `${p.id}: no sword`);
-  for (const p of PROFILES.profiles.filter((q) => q.opponent === 'shieldmaiden')) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, p.id)?.id, 'arachne-axe-shield', `${p.id}: still Arachne's archetype row`);
+  for (const p of PROFILES.profiles.filter((q) => q.opponent === 'shieldmaiden')) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, p.id)?.id, p.id === 'castle-guard' ? 'reginald-halberd' : 'arachne-axe-shield', `${p.id}: Sir Reginald has his own row, every other shieldmaiden keeps Arachne's archetype row`);
   assert.equal(bossWeaponFor('pitborn', '', undefined), undefined, 'the archetype itself (the Minotaur) has no row');
   assert.equal(bossWeaponFor('pitborn', '?bossweapon=v1', undefined, 'anime-boy-black'), undefined, '?bossweapon=v1 puts V1 back on Ryo');
   assert.equal(bossPreview('?bossweapon=anime-boy-black')?.id, 'ryo-sword', 'the stills flag draws his row on the page\'s own foe');
