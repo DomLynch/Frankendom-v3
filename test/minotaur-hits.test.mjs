@@ -16,7 +16,7 @@ import { readData } from './helpers/boss-rows.mjs';
 const FIGHT = readData('fight'), PROFILES = readData('profiles'), DIFF = readData('difficulty'), BRAINS = readData('brains'), STARS = readData('stars'), PROG = readData('progression');
 const ctxOf = (weapon, tune) => ({ profiles: PROFILES.profiles, difficulty: DIFF, brains: BRAINS.brains, pick: DIFF.default, search: '', level: FIGHT.level, ai: FIGHT.ai, override: null,
   weapon, skill: FIGHT.skill, skill2: FIGHT.skill2, stance: FIGHT.stance, specials: FIGHT.specials, stars: STARS, tune });
-const HERO_WEAPONS = [...new Set([FIGHT.weapon, ...PROG.bosses.map((b) => b.weapon), ...Object.values(WEAPONS).filter((w) => w.player != null && !NATURAL_WEAPONS.has(w.id)).map((w) => w.id)])];
+const HERO_WEAPONS = [...new Set([FIGHT.weapon, ...PROG.bosses.map((b) => b.weapon), ...readData('../src/fight/weapon-defs').weapons.filter((w) => w.player != null && !NATURAL_WEAPONS.has(w.id) && WEAPONS[w.id]).map((w) => w.id)])];
 const STAR_LEVELS = STARS.levels.map((l) => l.star);
 const MINOTAUR_ARCHETYPE = PROFILES.profiles.find((q) => q.id === FIGHT.order.kinds['yard-pitborn']).opponent;   // the zone row's yard spawn kind
 const MINOTAUR_KINDS = PROFILES.profiles.filter((p) => p.opponent === MINOTAUR_ARCHETYPE).map((p) => p.id);
