@@ -233,7 +233,8 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   const main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts');
   assert.match(main, /if \(ZONE\) \{ zoneStep\(dt\); syncSweeps\(\); \}/);
   assert.match(main, /startAction\(autoStart && \(!ZONE \|\| engaged\), practice, intent\.action\)/);
-  assert.match(main, /view\.idleFoes\(idleOnes\(spawns, current\)/);
+  assert.match(main, /\bidleFoes\(idleOnes\(spawns, current\)/);   // the page's idleFoes wrapper (Flesh Market) adds the merchant, then calls view.idleFoes
+  assert.match(main, /view\.idleFoes\(m \? \[\.\.\.list, m\] : list\)/);
   assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, kindIds\(KIND_CTX\.profiles\)\)/, 'every spawn kind is checked against the profile rows, not one page-wide kind');
   assert.match(main, /setPlayScale\(ZONE \? WORLD\.pitScale : playScaleFor\(opponentId, Infinity\)\)/, 'the zone fights in the wider pit; the single fight (ZONE null, ?postkill=v1) keeps playScaleFor, Gate 0 untouched');
   assert.ok(ROWS.world.pitScale * 11.7 - 0.425 - ROWS.world.edgeMetres > 0 && 0.65 * 11.7 - 0.425 - 1 >= 6.1, 'the zone wall holds spots a ring of 6.1 m or more');
@@ -252,7 +253,7 @@ test('?postkill=v1 and a one-spawn zone are the old fight: no zone state, the si
   const main = src('../src/client/main.ts');
   assert.match(main, /const SPOTS = ZONE \? spotsFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\)\) : \[\];/, 'no ZONE (?postkill=v1) = no spots, no copies, no zoneStep');
   assert.match(main, /if \(ZONE\) \{ current = nearestStanding/);
-  assert.match(main, /if \(ZONE\) \{ view\.idleFoes/);
+  assert.match(main, /if \(ZONE\) \{ idleFoes\(/);
 });
 
 // Dom 2026-10-28 "I don't see the new bosses 2 and 3": after the first kill the far bosses load (world.loadAfterKill / loadRadiusAfterKillMetres); before it nothing changes.

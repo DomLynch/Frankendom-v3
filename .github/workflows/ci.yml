@@ -44,7 +44,7 @@ jobs:
   boot:
     name: built-game boot
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,11 +64,25 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/boot-check.mjs
         timeout-minutes: 4
+      - name: Flesh Market through real touch input (375, the built dist)
+        run: |
+          node scripts/serve.mjs 4173 > /dev/null 2>&1 &
+          srv=$!
+          trap 'kill $srv' EXIT
+          sleep 3
+          node scripts/market-stills.mjs http://localhost:4173 market-out ci
+        timeout-minutes: 6
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: boot-check-375
           path: boot-check-out/
+          if-no-files-found: ignore
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-375
+          path: market-out/
           if-no-files-found: ignore
 
   # The zone server SQL (supabase/migrations/20261027000001_zone_server.sql) EXECUTED against a real Postgres and compared with the JS model (test/sql/zone-sql.test.mjs).
