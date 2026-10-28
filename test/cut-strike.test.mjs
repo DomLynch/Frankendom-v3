@@ -64,6 +64,16 @@ test('touch: a press on STRIKE reaches the strike, with no aim; so does the heav
   assert.ok(r.calls.every((a) => a === null));
 });
 
+test('after a kill #attack-button has no box and the thumb lands on the cluster itself: that press strikes; a press on a button is not counted twice', () => {
+  const r = rig();
+  r.els.actions.fire('pointerdown', { target: { closest: () => null } });
+  assert.deepEqual(r.calls, [null], 'a press on #actions, not on a button, is the strike');
+  r.els.actions.fire('pointerdown', { target: { closest: () => ({}) } });   // bubbled up from a button: its own handler already asked
+  assert.equal(r.calls.length, 1);
+  r.els.actions.fire('pointerdown', { button: 2, target: { closest: () => null } });
+  assert.equal(r.calls.length, 1, 'not a secondary button');
+});
+
 test('guard, parry, backstep and roll are not attacks: no strike', () => {
   const r = rig();
   r.els['guard-button'].fire('pointerdown'); r.els['guard-button'].fire('pointerup');

@@ -19,17 +19,27 @@ await page.clock.install();
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
 await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
 await page.waitForTimeout(3000);
+if (process.env.SPOT) {   // a zone boss other than the first (SPOT = a spawn id from __v3Zone.spawns, pit-pitborn-east = Arachne): walk to it in real time (as boss-walkin-stills), the zone's aggro takes the sim; its own body is drawn (held-body swap)
+  const key = (c, t) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [c, t]);
+  const pos = () => page.evaluate(() => { const f = globalThis.__v3Fight.fighter; return [f.x, f.z]; });
+  const basis = async (code) => { const a = await pos(); await key(code, 'keydown'); await page.waitForTimeout(700); await key(code, 'keyup'); await page.waitForTimeout(200); const b = await pos(), d = [b[0] - a[0], b[1] - a[1]], n = Math.hypot(...d) || 1; return [d[0] / n, d[1] / n]; };
+  const spot = await page.evaluate((id) => { const s = globalThis.__v3Zone.spawns.find((q) => q.id === id); return [s.x, s.z]; }, process.env.SPOT);
+  const fw = await basis('KeyW'), rt = await basis('KeyD');
+  for (let i = 0; i < 900; i++) {
+    if (await page.evaluate(() => globalThis.__v3Zone?.engaged)) break;
+    const [hx, hz] = await pos(), dx = spot[0] - hx, dz = spot[1] - hz, n = Math.hypot(dx, dz), f = (dx * fw[0] + dz * fw[1]) / n, r = (dx * rt[0] + dz * rt[1]) / n;
+    for (const [c, on] of [['KeyW', f > 0.3], ['KeyS', f < -0.3], ['KeyD', r > 0.3], ['KeyA', r < -0.3]]) await key(c, on ? 'keydown' : 'keyup');
+    await page.waitForTimeout(150);
+  }
+  for (const c of ['KeyW', 'KeyS', 'KeyD', 'KeyA']) await key(c, 'keyup');
+  console.log(`${tag}: zone ${JSON.stringify(await page.evaluate(() => ({ current: globalThis.__v3Zone?.current, engaged: globalThis.__v3Zone?.engaged })))}`);
+  await page.waitForTimeout(2000);
+}
 await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 15000);
 const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
 const read = () => page.evaluate(() => { const p = globalThis.__v3Fight, [h] = p.duel.fighters; return { hero: h.phase, victim: p.finish?.victim ?? -1, ragdoll: globalThis.__ragdoll?.state }; });
 const shoot = async (name) => { await page.waitForTimeout(350); await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };
 const cuts = () => page.evaluate(() => (globalThis.__v3Cuts ?? []).map((c) => `${c.unit}:${c.source}`));
-if (process.env.SPOT) {   // a zone boss other than the first: set the hero down 3 m short of its spawn (as boss-walkin-stills), the zone's aggro takes the sim; the foe's own body is drawn (held-body swap)
-  const [sx, sz] = process.env.SPOT.includes(',') ? process.env.SPOT.split(',').map(Number) : await page.evaluate((id) => { const s = globalThis.__v3Zone.spawns.find((q) => q.id === id); return [s.x, s.z]; }, process.env.SPOT);   // SPOT = "x,z" or a spawn id (pit-pitborn-east = Arachne)
-  await page.evaluate(([x, z]) => { const [h] = globalThis.__v3Fight.duel.fighters; h.body.x = x - 3; h.body.z = z; }, [sx, sz]);
-  for (let i = 0; i < 600; i++) { await run(1); if (await page.evaluate(() => globalThis.__v3Zone?.engaged)) break; }
-  console.log(`${tag}: zone ${JSON.stringify(await page.evaluate(() => ({ current: globalThis.__v3Zone?.current, engaged: globalThis.__v3Zone?.engaged })))}`);
-}
 for (let i = 0; i < 240 && /sheathed|draw/.test((await read()).hero); i++) await run(1);
 await run(30);
 await page.keyboard.down('KeyW');
@@ -50,7 +60,10 @@ console.log(`${tag}: ${MODE}: killed at ${killedAt}, ragdoll ${(await read()).ra
 await run(90);
 await shoot('1-hint');
 const press = async () => {
-  const b = await page.evaluate(() => { const r = document.getElementById('attack-button').getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), cs = getComputedStyle(document.getElementById('attack-button')); return [r.left + r.width / 2, r.top + r.height / 2, el?.id || el?.className || el?.tagName, cs.visibility, cs.pointerEvents]; });
+  const b = await page.evaluate(() => {   // the STRIKE circle as drawn: #attack-button's box, or (when the button reports none) the point of the circle on a 375 phone
+    const r = document.getElementById('attack-button').getBoundingClientRect(), x = r.width ? r.left + r.width / 2 : 271, y = r.width ? r.top + r.height / 2 : 684, el = document.elementFromPoint(x, y), cs = getComputedStyle(document.getElementById('attack-button'));
+    return [x, y, `${el?.id || el?.className || el?.tagName} (rect ${Math.round(r.width)}x${Math.round(r.height)})`, cs.visibility, cs.pointerEvents];
+  });
   if (!press.logged) { press.logged = true; console.log(`${tag}: STRIKE at ${b[0].toFixed(0)},${b[1].toFixed(0)}: top element ${b[2]}, visibility ${b[3]}, pointer-events ${b[4]}`); }
   await page.touchscreen.tap(b[0], b[1]); await run(70);
 };

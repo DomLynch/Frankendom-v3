@@ -359,6 +359,14 @@ export function createInput(env: InputEnv) {
       });
   }
   strikeControl(attackButton, 'light', () => requestStrike(), true);
+  // data/physics.json cut.strike: after a kill the STRIKE circle is still drawn on #actions but #attack-button has no box (measured on the built game: rect 0x0, the press lands on #actions itself), so a thumb on it
+  // reached no button and nothing cut. A press on the cluster that is not on one of its buttons is the strike's too (the page only cuts a fallen body then: main.ts strike).
+  const actionsEl = element('actions');
+  actionsEl.addEventListener('pointerdown', (event) => {
+    const t = event.target as HTMLElement | null;
+    if (event.button !== 0 || t?.closest?.('button') || paused() || !env.ready()) return;
+    env.strike?.(null);
+  });
   if (typeof document !== 'undefined' && tapLogOn(location.search)) attachTapLog(document, attackButton);   // `?taplog=1` only: a local STRIKE press-length meter (tap-log.ts); off by default, nothing leaves the page
   if (ONE_BUTTON && typeof document !== 'undefined') applyTouchLayout(document, location.search);   // touch layout A goes with the one-button strike (touch-layout.ts); off by default
   skillButton.addEventListener('pointerdown', (event) => {
