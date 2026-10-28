@@ -434,6 +434,27 @@
       "orderOffset": 50,
       "around": 128,
       "rings": 48
+    },
+    "ring": {
+      "about": "THE SKY RING (src/fight/skyring.ts; Dom 2026-10-28: the designer's plates 2 to 4). The plate above stays NORTH (compass 0, dead ahead of the page's first heading); SOUTH (plate 2, the alien, 180), EAST (plate 3, the observatory of rings and a waterfall, 90) and WEST (plate 4, the daytime colosseum, 270) are three more arcs of `spanDegrees` on the same far cylinder (`skyline.radius`), so turning the camera round shows four views. With the ring on, the whole sky is fixed in the world (it no longer glues itself to the view, or east, south and west could never be turned to); it is anchored at the first heading so the first view is the north plate where it is today. ?skyring=v1 (`query` = `v1`) builds nothing and fetches nothing: today's single plate that follows the view. PER PLATE: `compassDegrees` clockwise from north; `on` (a plate that is off is never fetched); `mobile` / `desktop` the baked WebP in src/assets/skyline/ (the desktop picture only from `desktop.minViewportWidth` px of screen up; the phone picture is the 2048-wide mobile base scaled to the baked crop); `rampLeftDegrees` / `rampRightDegrees` the cross-fade into the neighbour at that edge (over the `overlapDegrees` the arcs share; 0 = a hard edge, used where the neighbour covers it); `grade` = `tint` (#rrggbb, multiplies the picture) and `brightness`: a plate off the sunset palette is graded toward it in code (west is a daytime scene; its row shows what ships). JOINS: the plates' feathered pink/blue margins (a flat gradient that faded to nothing, which would show glowing vertical bars between plates), the flat blue top and the grey-blue band under the horizon are CROPPED when the pictures are baked (`bake`, scripts/skyring-bake.mjs): the baked picture is real art to its edge, its bottom row is the plate's horizon (y 1443), which lands the plate's `dropMetres` under the north plate's horizon (measured on a 375 phone: with south on the north horizon the alien's face sits above what the phone shows, 30 m puts it in the sky band; east and west need only 6 or their picture sinks under the sand; the arc's bottom fades into the sand and the folded cloud floor); the arcs overlap by `overlapDegrees` (`spanDegrees` - 90) and ramp in over it, drawn in order east, south, west, then the north plate over them (its own faded edge melts into east and west); below the horizon the folded cloud floor (skyline.fold) is the cloud sea in every direction, the bottom of each arc fades into it (`bottomFadeFraction`). LAYERS: the creature (south) and planets (east, west) are baked into the base (`bake.layers`; they register to within 0..4 grey levels of the master); the designer's animation layers (eyes, drool, islands, waterfall, aurora, stars, glints, cloud drift) are NOT built in this PR: none animates. LAZY: a plate is fetched only when the view has turned to within `lazy.loadWithinDegrees` of its bearing and the north plate has landed, never on the first visit (the first heading is 90 degrees from east and west, 180 from south); it then fades in over `lazy.fadeSeconds`.",
+      "on": true,
+      "query": "skyring",
+      "v1": "v1",
+      "spanDegrees": 100,
+      "overlapDegrees": 10,
+      "orderOffset": 52,
+      "topFadeFraction": 0.1,
+      "bottomFadeFraction": 0.06,
+      "segments": 64,
+      "bakedAspect": 2.6167,
+      "lazy": { "loadWithinDegrees": 70, "fadeSeconds": 1.2 },
+      "desktop": { "minViewportWidth": 1024 },
+      "bake": { "sourceWidthPx": 4096, "cropLeftPx": 160, "cropRightPx": 160, "topPx": 0, "bottomPx": 1443, "mobileScale": 0.5, "quality": 80 },
+      "plates": [
+        { "id": "east", "direction": "EAST", "on": true, "compassDegrees": 90, "mobile": "ring-east-m.webp", "desktop": "ring-east.webp", "rampLeftDegrees": 3, "rampRightDegrees": 0, "dropMetres": 6, "grade": { "tint": "#ffffff", "brightness": 1 }, "bake": { "dir": "03_EAST", "layers": ["04_planet_registered.webp"] } },
+        { "id": "south", "direction": "SOUTH", "on": true, "compassDegrees": 180, "mobile": "ring-south-m.webp", "desktop": "ring-south.webp", "rampLeftDegrees": 10, "rampRightDegrees": 0, "dropMetres": 30, "grade": { "tint": "#ffffff", "brightness": 1 }, "bake": { "dir": "02_SOUTH", "layers": ["03_creature_registered.webp"] } },
+        { "id": "west", "direction": "WEST", "on": true, "compassDegrees": 270, "mobile": "ring-west-m.webp", "desktop": "ring-west.webp", "rampLeftDegrees": 10, "rampRightDegrees": 3, "dropMetres": 6, "grade": { "tint": "#ffc6aa", "brightness": 0.96 }, "bake": { "dir": "04_WEST", "layers": ["04_planet_registered.webp"] } }
+      ]
     }
   },
   "ruler": { "show": false, "height": 1.8, "tick": 0.1, "color": "#ffd166", "x": -2.9 },
