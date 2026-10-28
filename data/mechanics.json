@@ -88,6 +88,15 @@
       "followWithinTicks": 90,
       "lineWidth": 0.7,
       "lineColour": "#c9402a"
+    },
+    "reginald-limb-loss": {
+      "type": "reginald-limb-loss",
+      "boss": "castle-guard",
+      "about": "SIR REGINALD, LIMB LOSS: as he takes damage his armour fails limb by limb. `limbs[]`: `id` the tag kept on his fighter (`limb:<id>` in Fighter.phases, the sim's own sticky list, so a new fight starts whole); `region` the cut manifest region (src/assets/castle-guard-106.cut.manifest.json) whose `piece` mesh disappears and whose `stumpCaps` show; `name` the words the caption says; `belowPct` his health share (0..100) under which it fails; `speedMult` his pace multiplier from then on (1 = none); `forbids` the actions he can no longer throw, each thrown as `swapTo` instead; `hitStopMs` the freeze on the tick it fails (the tell, with the caption, data/commentator.json events.limb_loss). The counter: keep the pressure on (each limb costs him a family of moves) or fight on; nothing here changes a hit row.",
+      "limbs": [
+        { "id": "arm_right", "region": "arm_right", "name": "halberd arm", "belowPct": 66, "speedMult": 1, "forbids": ["light", "light_left", "light_right", "heavy", "heavy_left", "heavy_right", "heavy_thrust", "thrust", "skill", "skill2"], "swapTo": "kick", "piece": "piece_arm_right", "stumpCaps": ["cap_shoulder_right_torso"], "hitStopMs": 140 },
+        { "id": "leg_right", "region": "leg_right", "name": "right leg", "belowPct": 33, "speedMult": 0.6, "forbids": ["heavy", "heavy_left", "heavy_right", "heavy_thrust"], "swapTo": "light", "piece": "piece_leg_right", "stumpCaps": ["cap_hip_right_root"], "hitStopMs": 140 }
+      ]
     }
   }
 }

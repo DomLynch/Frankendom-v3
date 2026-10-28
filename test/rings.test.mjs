@@ -31,6 +31,7 @@ test('the shipped rings validate against the profiles, the rig, the sky plates a
   assert.ok(RINGS.bosses.every((b) => b.mechanic === null || MECHANICS[b.mechanic]?.boss === b.kind), 'one signature mechanic each: null until built, else a data/mechanics.json row that names this boss');
   assert.equal(RINGS.bosses[0].mechanic, 'gourd', 'Lord Gourd throws pumpkin bombs');
   assert.equal(RINGS.bosses.find((b) => b.kind === 'big-vegas').mechanic, 'king-aura', 'The King has his aura');
+  assert.equal(RINGS.bosses.find((b) => b.kind === 'castle-guard').mechanic, 'reginald-limb-loss', 'Sir Reginald loses his limbs');
 });
 
 test('every spawned ring boss body has a cut row (data/cut-bodies.json) and a measure row in the pinned physics package', () => {

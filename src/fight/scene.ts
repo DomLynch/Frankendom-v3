@@ -83,6 +83,7 @@ import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
 import { setHeroLocator } from './cut-strike.ts';
 import { mountHint, pickupOn } from './pickup.ts';   // the cut hint (data/pickup.json)
+import { bodyMechanicFor, type BodyMechanic } from './mechanics/reginald-limb-loss.ts';   // boss signature mechanics (data/mechanics.json): a body draws what its mechanic did to it (Sir Reginald's lost limbs)
 import { foeRagdollFor, heldRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, setHeldRagdoll, snapshotRig, WARM_SCALE, type FoeRagdoll } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -726,6 +727,7 @@ export function createScene(
   }
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
   let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef }[] = [], frameWiden = 1;
+  let heldMech: BodyMechanic | null = null, heldPhases: readonly string[] | undefined;   // the boss mechanic of the spawn the sim holds (holdBody) and the phases list last handed to the ragdoll (it is told only when the list is a new one)
   const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
   let foeFadeTick = 0;
   function foeAdoptAll() {
@@ -752,6 +754,7 @@ export function createScene(
       live.group.visible = true; live.group.position.set(p.enemy.x, 0, p.enemy.z); live.group.rotation.y = p.enemy.heading; applyStar(live.group, star ?? 0);
       live.actor.fatigue(p.fatigue[1], FOE_TUNE[opponentId]);
       live.actor.update(speed, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, f.guardDirection, CHARGE_LEAN[opponentId] ?? null, holdingCharge(f), pose.span ?? null);
+      bodyMechanicFor(spawn?.kind)?.view(live.group, f.phases);   // an attacker boss with a signature mechanic wears what it did (a lost limb), the same drawing as the held foe's
     }
     for (const [id, live] of liveFoes) if (!seen.has(id)) live.group.visible = false;
     syncMobs(dt);   // the trash mobs are drawn beside the live attackers (syncMobs, below)
@@ -895,6 +898,7 @@ export function createScene(
     // `spawn` (optional, the spawn's kind and its zone row's `body`): a spawn in another body than the live rig is drawn from that body's own rig (bodyRig); absent or the live body: the frozen copies as before.
     /** main.ts, every frame, with the spawn the sim HOLDS: when its body is not the one the live rig wears, the live rig is swapped for that body's (held-body.ts). 'same' at the default (every spawn the Minotaur): nothing is built. */
     holdBody(spawn: SpawnRef | null | undefined, near = true): string {
+      heldMech = bodyMechanicFor(spawn?.kind);
       if (!spawn || !warriors) return 'same';
       const body = bodyOfSpawn(spawn);
       if (body === activeBody() && !heldCtl) return 'same';   // the default: no controller is made
@@ -1192,7 +1196,10 @@ export function createScene(
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
       heldFinishing = !!practice.finish;
       if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
+      const phases = heldMech ? practice.duel.fighters[1].phases : undefined;   // boss mechanics (src/fight/mechanics): the ragdoll learns which cut units the fight already took off him, then draws them gone AFTER its cut rig's update
+      if (phases !== heldPhases) { heldPhases = phases; const mech = heldMech; ragdoll?.setLost(mech ? mech.lostUnits(phases) : [], mech ? (root) => mech.view(root, phases) : undefined); }   // on a NEW list only (a lost limb, or a new fight): the closure is made then, never per frame
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
+      if (heldMech) heldMech.view(opponent, phases);
       pickup?.frame(animationDt);   // data/pickup.json: the arrow, the selected part's outline and Take pill, the flying chip (DOM only; reads the corpses' cut parts after the ragdolls stepped)
       heroRagdoll?.frame(animationDt, heroFeel ? events : events.filter((e) => e.type === 'Killed'), practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt

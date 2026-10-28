@@ -272,7 +272,33 @@ export function checkNanImpale(id, r) {
   if (!(r.backTo - r.stopGap <= r.lungeSpeed * r.lungeTicks)) e.push(`${at}: the lunge (lungeSpeed x lungeTicks) must cover backTo minus stopGap`);
   return e;
 }
-const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale };
+const LIMB_ACTIONS = ['light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill', 'skill2', 'heavy_right', 'heavy_left', 'heavy_thrust'];
+const LIMB_KEYS = ['id', 'region', 'name', 'belowPct', 'speedMult', 'forbids', 'swapTo', 'piece', 'stumpCaps', 'hitStopMs'];
+/** Sir Reginald's LIMB LOSS row (type "reginald-limb-loss"); the limbs' region/piece/cap names are checked against his cut manifest in test/mechanics.test.mjs. Returns one string per problem. */
+export function checkReginaldLimbLoss(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  for (const k of Object.keys(r)) if (!['type', 'boss', 'about', 'limbs'].includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (!Array.isArray(r.limbs) || !r.limbs.length) return [...e, `${at}.limbs: at least one limb`];
+  const seen = new Set();
+  r.limbs.forEach((l, i) => {
+    const p = `${at}.limbs[${i}]`;
+    for (const k of Object.keys(l)) if (!LIMB_KEYS.includes(k)) e.push(`${p}.${k}: unknown key`);
+    if (typeof l.id !== 'string' || !/^[a-z_]+$/.test(l.id) || seen.has(l.id)) e.push(`${p}.id: a unique lower-case id`); else seen.add(l.id);
+    if (typeof l.name !== 'string' || !l.name.trim()) e.push(`${p}.name: a non-empty string`);
+    if (!(Number.isFinite(l.belowPct) && l.belowPct > 0 && l.belowPct < 100)) e.push(`${p}.belowPct: a share between 0 and 100`);
+    if (!(Number.isFinite(l.speedMult) && l.speedMult >= 0.2 && l.speedMult <= 1)) e.push(`${p}.speedMult: 0.2..1`);
+    if (!Array.isArray(l.forbids) || !l.forbids.length || l.forbids.some((a) => !LIMB_ACTIONS.includes(a))) e.push(`${p}.forbids: a list of known actions`);
+    else if (l.swapTo !== null && l.forbids.includes(l.swapTo)) e.push(`${p}.swapTo: cannot be a forbidden action`);
+    if (l.swapTo !== null && !LIMB_ACTIONS.includes(l.swapTo)) e.push(`${p}.swapTo: null or a known action`);
+    if (!Number.isInteger(l.hitStopMs) || l.hitStopMs < 0 || l.hitStopMs > 400) e.push(`${p}.hitStopMs: 0..400`);
+    if (typeof l.region !== 'string' || typeof l.piece !== 'string' || !Array.isArray(l.stumpCaps) || l.stumpCaps.some((c) => typeof c !== 'string')) e.push(`${p}.region/piece/stumpCaps: node names`);
+  });
+  for (let i = 1; i < r.limbs.length; i++) if (!(r.limbs[i].belowPct < r.limbs[i - 1].belowPct)) e.push(`${at}.limbs: belowPct must fall from one limb to the next`);
+  return e;
+}
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'reginald-limb-loss': checkReginaldLimbLoss };
 /** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
 export function validateMechanics(json, kinds = [], moves = []) {
   const e = [], map = json?.mechanics;
@@ -441,7 +467,7 @@ export function validateFile(name, json) {
 }
 
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
-const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts', 'limb_loss'];
 const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
 export const COMMENTATOR_MIN_LINES = 6;
 export function checkCommentator(json) {
