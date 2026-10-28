@@ -1,0 +1,124 @@
+{
+ "ring": {
+  "query": "",
+  "firstVisitRingFetches": 0,
+  "fetchedAfterTurning": [
+   "ring-east-m.0201776e.webp",
+   "ring-south-m.0aeab12d.webp",
+   "ring-west-m.604bdddf.webp"
+  ],
+  "shots": [
+   {
+    "bearing": 0,
+    "ringStates": []
+   },
+   {
+    "bearing": 90,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 180,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ],
+     [
+      "skyring-south",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 270,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ],
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 45,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ],
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 135,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ],
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 225,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ],
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 315,
+    "ringStates": [
+     [
+      "skyring-east",
+      1
+     ],
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   }
+  ]
+ }
+}
