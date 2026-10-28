@@ -6,6 +6,7 @@ import { rangedPartOf } from './ranged-model.ts';
 import { beastRenderScale } from './beast-scale.ts';
 import { spectralAppearance } from './spectral.ts';
 import { swingProgress } from './blade.ts';
+import RIG_JSON from '../../data/rig.json' with { type: 'json' };
 import { dressBossHand } from './boss-hand.ts';   // a boss weapon row's dressing: the part scaled, the off-hand part (data/boss-weapons.json)
 import type { BossWeaponRow } from './boss-weapon.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
@@ -200,10 +201,12 @@ function missingMap(scene: Group): string {
   const material = (mesh as Mesh).material as MeshStandardMaterial;
   return !material.map ? `${name}.map` : !(creature ? material.roughnessMap : material.normalMap) ? `${name}.${creature ? 'roughnessMap' : 'normalMap'}` : '';
 }
+const RIG_ROWS = RIG_JSON as { plainSkin: string[] }, NORMAL_MAP = 'Steel.normalMap';
 // The check runs INSIDE the retried load, so a bare parse is re-loaded with the same back-off as a dropped fetch (FRANKENDOM-5).
 export const loadTextured = (url: string, load: () => Promise<FighterAsset>, sleep?: (ms: number) => Promise<void>): Promise<FighterAsset> =>
   retryTransient(async (i) => {
-    const asset = await load(), missing = missingMap(asset.scene);
+    const asset = await load(), found = missingMap(asset.scene);
+    const missing = found === NORMAL_MAP && (RIG_ROWS.plainSkin as string[]).some((stem) => url.includes(`/${stem}.`)) ? '' : found;   // data/rig.json plainSkin: a body whose source art has a skin map and no normal map (not a failed decode)
     if (missing) throw new MissingTextures(url, missing, i);
     return asset;
   }, 3, 800, sleep);
