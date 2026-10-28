@@ -43,7 +43,8 @@ const posix = (p) => p.split(sep).join('/');
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 
 test('data/build.json notShipped names every 65 body, its 65-rigged kits and every 65-keyed clip JSON; all stay in the repo', () => {
-  for (const stem of [...Object.keys(RIG.files), 'warrior', 'veteran']) assert.ok(NOT_SHIPPED.includes(`src/assets/${stem}.glb`), `${stem}.glb`);
+  // A 106-only body (gargantua, arachne: library bodies with no 65 twin) has no 65 file to keep out of dist/, so only a stem that has one is checked.
+  for (const stem of [...Object.keys(RIG.files).filter((s) => existsSync(join(ROOT, `src/assets/${s}.glb`))), 'warrior', 'veteran']) assert.ok(NOT_SHIPPED.includes(`src/assets/${stem}.glb`), `${stem}.glb`);
   for (const kit of ['carriers-minotaur', 'carriers-veteran']) assert.ok(NOT_SHIPPED.includes(`src/assets/loot/${kit}.glb`), kit);
   for (const f of Object.values(RIG.clips106.files)) assert.ok(NOT_SHIPPED.includes(`src/assets/${f}`), `${f} (65-keyed)`);
   for (const f of ['bowpower', 'bowfan', 'bowpin', 'bowquick']) assert.ok(NOT_SHIPPED.includes(`src/assets/special-${f}.json`), `special-${f}.json (65-keyed, no 106 file)`);
