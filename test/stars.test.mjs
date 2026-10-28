@@ -79,7 +79,7 @@ test('a star kill banks a trophy in the save; a save without stars is unchanged'
   assert.equal('trophies' in kill, false);
   const stored = {}, store = { getItem: (k) => stored[k] ?? null, setItem: (k, v) => { stored[k] = v; } };
   writeSave(store, PROG, kill);
-  assert.deepEqual(Object.keys(JSON.parse(stored[PROG.key])), ['v', 'kills', 'ladder', 'unlocked']);
+  assert.deepEqual(Object.keys(JSON.parse(stored[PROG.key])), ['v', 'kills', 'ladder', 'unlocked', 'coins', 'banked', 'pile', 'lost']);   // no trophies key without stars; the corpse run's own fields ride the save
   const two = addTrophy(addTrophy(kill, 2), 2);
   writeSave(store, PROG, two);
   assert.deepEqual(parseSave(stored[PROG.key], PROG).trophies, { 2: 2 });
