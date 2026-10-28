@@ -44,8 +44,11 @@ export function ringFileFor(plate: RingPlateRow, row: RingRow, viewportWidth: nu
 const smooth = (a: number, b: number, x: number) => { if (!(b > a)) return 1; const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 /** Opacity across a plate: u across the PICTURE (0 = its left edge), v up (0 = bottom). The ramps are fractions of the arc (`rampLeftDegrees` / `rampRightDegrees` of `spanDegrees`). */
 export function ringAlpha(plate: RingPlateRow, row: RingRow, u: number, v: number): number {
-  return smooth(0, plate.rampLeftDegrees / row.spanDegrees, u) * smooth(0, plate.rampRightDegrees / row.spanDegrees, 1 - u) * smooth(0, row.topFadeFraction, 1 - v) * smooth(0, row.bottomFadeFraction, v);
+  const span = plateSpan(plate, row);
+  return smooth(0, plate.rampLeftDegrees / span, u) * smooth(0, plate.rampRightDegrees / span, 1 - u) * smooth(0, row.topFadeFraction, 1 - v) * smooth(0, row.bottomFadeFraction, v);
 }
+/** The arc a plate covers (degrees): its own `spanDegrees` row when it has one (a narrower arc puts the same picture over less sky, so its subject reads smaller and further back; Dom 2026-10-28, "too close up"), else the ring's. */
+export function plateSpan(plate: { spanDegrees?: number }, row: RingRow): number { return plate.spanDegrees ?? row.spanDegrees; }
 export function ringAlphaMap(plate: RingPlateRow, row: RingRow, w = 256, h = 64): THREE.DataTexture {
   const data = new Uint8Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -58,8 +61,8 @@ export function ringAlphaMap(plate: RingPlateRow, row: RingRow, w = 256, h = 64)
 }
 
 /** Width and height (m) of an arc at `radius` for a picture `imgW` x `imgH` (native aspect, never stretched). */
-export function ringSize(row: RingRow, radius: number, imgW: number, imgH: number): { width: number; height: number } {
-  const width = radius * THREE.MathUtils.degToRad(row.spanDegrees);
+export function ringSize(row: RingRow, radius: number, imgW: number, imgH: number, spanDegrees: number = row.spanDegrees): { width: number; height: number } {
+  const width = radius * THREE.MathUtils.degToRad(spanDegrees);
   return { width, height: width * imgH / imgW };
 }
 /** The arc's centre height relative to the eye: its bottom edge (the horizon row of the picture) sits on the north plate's horizon (`horizonY`, m). */
@@ -69,7 +72,7 @@ export function bearingTheta(compassDegrees: number): number { return THREE.Math
 
 /** The arc: a partial cylinder centred on the plate's bearing, its picture's left edge on the viewer's left (the cylinder's own u runs the other way seen from inside, so it is flipped). */
 export function ringGeometry(plate: RingPlateRow, row: RingRow, radius: number, imgW: number, imgH: number): THREE.CylinderGeometry {
-  const { height } = ringSize(row, radius, imgW, imgH), span = THREE.MathUtils.degToRad(row.spanDegrees);
+  const spanDeg = plateSpan(plate, row), { height } = ringSize(row, radius, imgW, imgH, spanDeg), span = THREE.MathUtils.degToRad(spanDeg);
   const g = new THREE.CylinderGeometry(radius, radius, height, row.segments, 1, true, bearingTheta(plate.compassDegrees) - span / 2, span);
   const uv = g.getAttribute('uv');
   for (let i = 0; i < uv.count; i++) uv.setX(i, 1 - uv.getX(i));
@@ -108,7 +111,7 @@ export function createSkyRing(o: RingOptions): SkyRing {
       t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.ClampToEdgeWrapping; t.wrapT = THREE.ClampToEdgeWrapping;
       t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.anisotropy = 1;
       const img = t.image as { width?: number; height?: number } | undefined, iw = img?.width || row.bakedAspect * 100, ih = img?.height || 100;
-      const geometry = ringGeometry(p, row, o.radius, iw, ih), h = ringSize(row, o.radius, iw, ih).height, g = p.grade, shade = o.shade * g.brightness, tint = new THREE.Color(g.tint);
+      const geometry = ringGeometry(p, row, o.radius, iw, ih), h = ringSize(row, o.radius, iw, ih, plateSpan(p, row)).height, g = p.grade, shade = o.shade * g.brightness, tint = new THREE.Color(g.tint);
       const material = new THREE.MeshBasicMaterial({
         map: t, alphaMap: ringAlphaMap(p, row), side: THREE.BackSide, fog: false, toneMapped: false, transparent: true, opacity: 0, depthWrite: false,
         color: new THREE.Color(shade * tint.r, shade * tint.g, shade * tint.b),

@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { validateFile } from '../src/sim/validate.js';
 import { SKYLINE, createSkyline } from '../src/fight/skyline.ts';
-import { angularGap, bearingOf, bearingTheta, createSkyRing, facingPlate, platesToLoad, ringAlpha, ringFileFor, ringGeometry, ringOn, ringSize } from '../src/fight/skyring.ts';
+import { angularGap, bearingOf, bearingTheta, createSkyRing, facingPlate, platesToLoad, ringAlpha, ringFileFor, ringGeometry, ringOn, ringSize, plateSpan } from '../src/fight/skyring.ts';
 
 const STAGE = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8'));
 const SHIPPED = SKYLINE.ring;
@@ -36,7 +36,20 @@ test('the shipped ring row validates and bad rows are refused', () => {
 test('the south plate is dropped so the alien sits in the clear sky band between the HUD bars and the horizon (polish 2026-10-28: 30 put its crown under the bars at 375 wide)', () => {
   assert.equal(plate('south').dropMetres, 34);
   assert.equal(plate('south').rampRightDegrees, 6, 'the join with west keeps #196 ramp');
-  assert.deepEqual(R.plates.map((p) => [p.id, p.dropMetres]).filter(([id]) => id !== 'south'), [['east', 6], ['west', 6]], 'east and west unchanged');
+  // RE-PINNED (was [['east', 6], ['west', 6]]): Dom 2026-10-28 on live 57567ec, "the new plates read too close up": east and west are lowered (the subject sits in the band the phone shows, as the alien does)
+  // and narrowed (below), fix-forward, nothing reverted.
+  assert.deepEqual(R.plates.map((p) => [p.id, p.dropMetres]).filter(([id]) => id !== 'south'), [['east', 14], ['west', 20]], 'east and west lowered');
+});
+test('further back (Dom 2026-10-28): east and west carry their own narrower arc (the same picture over less sky = a smaller subject); south, the alien-kid benchmark, keeps the ring span', () => {
+  assert.deepEqual(R.plates.map((p) => [p.id, plateSpan(p, R)]), [['east', 80], ['south', R.spanDegrees], ['west', 80]]);
+  assert.equal(plate('south').spanDegrees, undefined, 'south is the benchmark: no own span');
+  assert.equal(plateSpan({}, R), R.spanDegrees, 'a plate with no row keeps the ring span');
+  const east = plate('east'), g = ringGeometry(east, R, 150, 1888, 722);
+  assert.ok(Math.abs(g.parameters.thetaLength - THREE.MathUtils.degToRad(80)) < 1e-9);
+  const w = plate('west'); assert.equal(ringAlpha(w, R, 4 / 80, 0.5), 1, 'ramps are in degrees of the plate\'s own span: 4 degrees of 80 is fully in');
+  assert.ok(bad((r) => { r.plates[0].spanDegrees = 60; }).some((m) => /spanDegrees/.test(m)), 'a plate narrower than 76 degrees would open a gap of plain sky');
+  assert.ok(bad((r) => { r.plates[0].spanDegrees = 130; }).some((m) => /spanDegrees/.test(m)), 'wider than the ring would make it bigger, not further back');
+  assert.deepEqual(bad((r) => { r.plates[2].spanDegrees = 78; }), []);
 });
 
 // RE-PINNED (was: "west off", #194, Dom disliked the daytime colosseum plate). Dom 2026-10-28 then approved the NEW west plate ("Dreamy Floating Sky-City at Sunset", "i think is fine"), so the shipped west is ON again:
@@ -50,7 +63,7 @@ test('the shipped ring: east, south and west all on; west is the native sunset p
   const calls = []; const ring = createSkyRing({ row: SHIPPED, radius: 150, horizonY: -24, shade: 1, viewportWidth: 375, load: (f) => { calls.push(f); return Promise.resolve(tex(1981, 690)); } });
   ring.request(0); await wait(); assert.deepEqual(calls, [], 'nothing on the first heading');
   ring.request(270); ring.update(new THREE.Vector3(), 0.05); await wait(); assert.deepEqual(calls, ['ring-west-m.webp']); assert.equal(ring.state('west'), 'fading'); assert.equal(ring.group.children.length, 1);
-  assert.ok(Math.abs(ring.group.children[0].geometry.parameters.height - ringSize(SHIPPED, 150, 1981, 690).height) < 1e-9, 'the arc takes the picture\'s own aspect'); ring.dispose();
+  assert.ok(Math.abs(ring.group.children[0].geometry.parameters.height - ringSize(SHIPPED, 150, 1981, 690, plateSpan(SHIPPED.plates[2], SHIPPED)).height) < 1e-9, 'the arc takes the picture\'s own aspect'); ring.dispose();
 });
 
 test('the view bearing and the plate it faces: north 0, east 90, south 180, west 270 (clockwise), by the camera heading', () => {
@@ -83,7 +96,7 @@ test('the ring fetches a plate once, only when asked, the phone picture on a pho
   ring.request(180); await wait(); assert.deepEqual(calls, ['ring-east-m.webp', 'ring-south-m.webp']);
   for (let i = 0; i < 100; i++) ring.update(new THREE.Vector3(), 0.05);
   assert.equal(ring.state('east'), 'on'); assert.equal(ring.group.children.length, 2);
-  const m = ring.group.getObjectByName('skyring-east'); assert.equal(m.material.opacity, 1); assert.ok(Math.abs(m.position.y - (-24 - plate('east').dropMetres + ringSize(R, 150, 1888, 722).height / 2)) < 1e-9, 'its bottom edge is dropMetres under the north horizon');
+  const m = ring.group.getObjectByName('skyring-east'); assert.equal(m.material.opacity, 1); assert.ok(Math.abs(m.position.y - (-24 - plate('east').dropMetres + ringSize(R, 150, 1888, 722, plateSpan(plate('east'), R)).height / 2)) < 1e-9, 'its bottom edge is dropMetres under the north horizon');
   ring.dispose();
   const wide = []; const r2 = createSkyRing({ row: R, radius: 150, horizonY: -24, shade: 1, viewportWidth: 1440, load: (f) => { wide.push(f); return Promise.resolve(tex(3776, 1443)); } });
   r2.request(180); await wait(); assert.deepEqual(wide, ['ring-south.webp']); r2.dispose();
@@ -97,8 +110,8 @@ test('a failed fetch leaves the plate out and the page alone; a plate that is of
 
 test('geometry: each arc spans spanDegrees centred on its bearing, native aspect, picture left on the viewer left; edges ramp, the middle is solid', () => {
   for (const p of R.plates) {
-    const g = ringGeometry(p, R, 150, 1888, 722), { width, height } = ringSize(R, 150, 1888, 722);
-    assert.ok(Math.abs(g.parameters.thetaLength - THREE.MathUtils.degToRad(R.spanDegrees)) < 1e-9);
+    const g = ringGeometry(p, R, 150, 1888, 722), { width, height } = ringSize(R, 150, 1888, 722, plateSpan(p, R));
+    assert.ok(Math.abs(g.parameters.thetaLength - THREE.MathUtils.degToRad(plateSpan(p, R))) < 1e-9);
     assert.ok(Math.abs(g.parameters.thetaStart + g.parameters.thetaLength / 2 - bearingTheta(p.compassDegrees)) < 1e-9);
     assert.ok(Math.abs(width / height - 1888 / 722) < 1e-9); assert.ok(height < 2 * SKYLINE.plate.sky.halfHeightMetres);
     const uv = g.getAttribute('uv'), n = R.segments;   // seen from inside, a vertex further round (larger theta) is further left: the first column (smallest theta) is the picture's RIGHT edge (u 1), the last its left (u 0)

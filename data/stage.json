@@ -451,9 +451,9 @@
       "desktop": { "minViewportWidth": 1024 },
       "bake": { "sourceWidthPx": 4096, "cropLeftPx": 160, "cropRightPx": 160, "topPx": 0, "bottomPx": 1443, "mobileScale": 0.5, "quality": 80 },
       "plates": [
-        { "id": "east", "direction": "EAST", "on": true, "compassDegrees": 90, "mobile": "ring-east-m.webp", "desktop": "ring-east.webp", "rampLeftDegrees": 3, "rampRightDegrees": 0, "dropMetres": 6, "grade": { "tint": "#ffffff", "brightness": 1 }, "bake": { "dir": "03_EAST", "layers": ["04_planet_registered.webp"] } },
+        { "id": "east", "direction": "EAST", "on": true, "compassDegrees": 90, "mobile": "ring-east-m.webp", "desktop": "ring-east.webp", "rampLeftDegrees": 3, "rampRightDegrees": 0, "dropMetres": 14, "spanDegrees": 80, "grade": { "tint": "#ffffff", "brightness": 1 }, "bake": { "dir": "03_EAST", "layers": ["04_planet_registered.webp"] } },
         { "id": "south", "direction": "SOUTH", "on": true, "compassDegrees": 180, "mobile": "ring-south-m.webp", "desktop": "ring-south.webp", "rampLeftDegrees": 10, "rampRightDegrees": 6, "dropMetres": 34, "grade": { "tint": "#ffffff", "brightness": 1 }, "bake": { "dir": "02_SOUTH", "layers": ["03_creature_registered.webp"] } },
-        { "id": "west", "direction": "WEST", "on": true, "compassDegrees": 270, "mobile": "ring-west-m.webp", "desktop": "ring-west.webp", "rampLeftDegrees": 10, "rampRightDegrees": 3, "dropMetres": 6, "grade": { "tint": "#ffffff", "brightness": 1 }, "bake": { "dir": "05_WEST_SUNSET", "base": "west_sunset_1981x793.png", "layers": [], "crop": { "sourceWidthPx": 1981, "cropLeftPx": 0, "cropRightPx": 0, "topPx": 0, "bottomPx": 555, "mobileScale": 1 } } }
+        { "id": "west", "direction": "WEST", "on": true, "compassDegrees": 270, "mobile": "ring-west-m.webp", "desktop": "ring-west.webp", "rampLeftDegrees": 4, "rampRightDegrees": 3, "dropMetres": 20, "spanDegrees": 80, "grade": { "tint": "#ffffff", "brightness": 1 }, "bake": { "dir": "05_WEST_SUNSET", "base": "west_sunset_1981x793.png", "layers": [], "crop": { "sourceWidthPx": 1981, "cropLeftPx": 0, "cropRightPx": 0, "topPx": 0, "bottomPx": 555, "mobileScale": 1 } } }
       ]
     }
   },

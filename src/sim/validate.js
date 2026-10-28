@@ -503,7 +503,7 @@ function checkSkyline(s) {
 // data/stage.json `skyline.ring` (src/fight/skyring.ts): the south, east and west plates. Plain WebP file names, one plate per bearing, ramps inside the overlap, colours as #rrggbb, query words that
 // differ from the other skyline ones, and the tallest arc (the baked picture's aspect at `spanDegrees`) inside the sky cylinder and the far plane.
 export const SKYRING_KEYS = ['about', 'on', 'query', 'v1', 'spanDegrees', 'overlapDegrees', 'orderOffset', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'bakedAspect', 'lazy', 'desktop', 'bake', 'plates'];
-export const SKYRING_PLATE_KEYS = ['id', 'direction', 'on', 'compassDegrees', 'mobile', 'desktop', 'rampLeftDegrees', 'rampRightDegrees', 'dropMetres', 'grade', 'bake'];
+export const SKYRING_PLATE_KEYS = ['id', 'direction', 'on', 'compassDegrees', 'mobile', 'desktop', 'rampLeftDegrees', 'rampRightDegrees', 'dropMetres', 'spanDegrees', 'grade', 'bake'];
 function checkSkyRing(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.ring.${p}: ${m}`), r = s.ring, obj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
   if (!obj(r)) return ['stage.skyline.ring: must be an object'];
@@ -543,6 +543,13 @@ function checkSkyRing(s) {
     if (p.mobile === p.desktop) pt('desktop', 'must differ from the mobile file');
     for (const k of ['rampLeftDegrees', 'rampRightDegrees']) rng(p, k, 0, Number.isFinite(r.overlapDegrees) ? Math.max(r.overlapDegrees, 0) : 30, false, `${pa}.${k}`);
     rng(p, 'dropMetres', 0, 60, false, `${pa}.dropMetres`);
+    // OPTIONAL own arc (Dom 2026-10-28, plates read too close): narrower than the ring's span = the same picture over less sky = a smaller, further-back subject. Not under 76: the plates sit a quarter turn apart,
+    // so a narrower arc would open a gap of plain sky between neighbours (the ring's span is a quarter turn plus 10 shared degrees)
+    if (p.spanDegrees !== undefined) {
+      rng(p, 'spanDegrees', 76, Number.isFinite(r.spanDegrees) ? r.spanDegrees : 120, false, `${pa}.spanDegrees`);
+      const cw = p.bake && p.bake.crop ? (p.bake.crop.sourceWidthPx - p.bake.crop.cropLeftPx - p.bake.crop.cropRightPx) / (p.bake.crop.bottomPx - p.bake.crop.topPx) : r.bakedAspect;
+      if (Number.isFinite(p.spanDegrees) && Number.isFinite(cw) && Number.isFinite(s.radius) && Number.isFinite(s.plate && s.plate.sky && s.plate.sky.halfHeightMetres) && s.radius * (p.spanDegrees * Math.PI / 180) / cw > 2 * s.plate.sky.halfHeightMetres) pt('spanDegrees', 'the arc is taller than the sky cylinder');
+    }
     if (!obj(p.grade)) pt('grade', 'must be an object {tint, brightness}');
     else { for (const k of Object.keys(p.grade)) if (!['tint', 'brightness'].includes(k)) pt(`grade.${k}`, 'unknown key'); if (typeof p.grade.tint !== 'string' || !/^#[0-9a-f]{6}$/i.test(p.grade.tint)) pt('grade.tint', 'must be a #rrggbb colour'); rng(p.grade, 'brightness', 0.2, 1.5, false, `${pa}.grade.brightness`); }
     if (!obj(p.bake)) pt('bake', 'must be an object {dir, layers}');
