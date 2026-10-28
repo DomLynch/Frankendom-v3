@@ -11,7 +11,7 @@ export { finishRow } from './core/finish-rows.ts';   // core/finish-rows.ts
 export { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, bossLoadAfterKill, zoneDuel, type Spawn } from './zone/spawns.ts';   // several bosses at their spots (live-zone phase 1b): the page's rules for the zone row's spawns
 export { ATTACKERS, attackersOn, dropped, framingWiden, joiners, validateFraming, MAX_ATTACKERS } from './zone/attackers.ts';   // real-time zone aggro: who joins the hero's fight and who lets go (the attackers' duels: src/fight/attacker-bout.ts)
 export { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from './zone/walk-back.ts';   // the boss leash walk-back: a leashed boss walks home regenerating instead of resetting on the spot
-export { zoneFor, type ZoneRow } from './zone/zone-rows.ts';   // the zone row (data/zones/zone1.row.json): the zone loop's one read (src/fight/zone-loop.ts)
+export { ringedZoneFor as zoneFor, type ZoneRow } from './zone/zone-rows.ts';   // the zone row (data/zones/zone1.row.json): the zone loop's one read (src/fight/zone-loop.ts)
 export { materialRow } from './core/contracts/definitions.ts';   // core/contracts/definitions.ts
 // core/loot.ts (pulls in legends, the economy and the account): the three reads the duel makes, V1's own expressions over V1's own rows
 export type LootId = `${string}.${string}`;   // core/loot.ts LootId

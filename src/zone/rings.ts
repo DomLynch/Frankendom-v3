@@ -24,7 +24,7 @@ export function ringOrigin(zone: ZoneRow, world: PitRows = RESPAWN.world as PitR
   return { x: area.min[0] + (area.max[0] - area.min[0]) * world.centre, z: area.min[1] + (area.max[1] - area.min[1]) * world.centre };
 }
 
-const round = (v: number, rows: RingRows): number => Math.round(v * rows.roundTo) / rows.roundTo;
+const round = (v: number, rows: RingRows): number => Math.round(v * rows.roundTo) / rows.roundTo + 0;   // + 0: a rounded -0 is 0
 /** Where one ring spawn stands in the zone's frame: `distance` metres from the pit's centre at `angleDeg` clockwise from north (-Z). */
 export function ringPlace(origin: At, spawn: RingSpawn, instance: number, rows: RingRows = RINGS): At {
   const turn = ((spawn.angleDeg + instance * spawn.stepDeg) * Math.PI) / rows.halfTurnDegrees;
@@ -46,7 +46,7 @@ export function ringSpawns(origin: At, rows: RingRows = RINGS): ZoneSpawn[] {
 }
 
 /** The zone with the rings' spawns after its own (a new row; the zone's own spawns are the same objects, byte for byte). */
-export const ringedZone = (zone: ZoneRow, rows: RingRows = RINGS): ZoneRow => (rows.rings.some((r) => r.spawns.length) ? { ...zone, spawns: [...zone.spawns, ...ringSpawns(ringOrigin(zone), rows)] } : zone);
+export const ringedZone = (zone: ZoneRow, rows: RingRows = RINGS, world: PitRows = RESPAWN.world as PitRows): ZoneRow => (rows.rings.some((r) => r.spawns.length) && zone.areas.some((a) => a.id === world.pitArea) ?{ ...zone, spawns: [...zone.spawns, ...ringSpawns(ringOrigin(zone), rows)] } : zone);
 
 /** The ring whose band holds `dist` metres from the pit's centre, or undefined (between two bands). */
 export const ringOf = (dist: number, rows: RingRows = RINGS): RingRow | undefined => rows.rings.find((r) => dist >= r.minDist && dist <= r.maxDist);

@@ -25,8 +25,7 @@ export type ZoneSet = { default: string; rows: Record<string, ZoneRow> };
 // The biome rings (data/rings.json): ring 1 is the row's own spawns, rings 2 and 3 are appended after them (src/zone/rings.ts). A bad rings file throws at load, naming every problem.
 const RING_PROBLEMS = validateRings(RINGS, ZONE1 as unknown as ZoneRow, ringOrigin(ZONE1 as unknown as ZoneRow), PROFILES.profiles.map((p) => p.id), RIG, STAGE.skyline.ring.plates.map((p: { id: string }) => p.id));
 if (RING_PROBLEMS.length) throw new Error(`data/rings.json: ${RING_PROBLEMS.join('; ')}`);
-export const RINGED_ZONE1: ZoneRow = ringedZone(ZONE1 as unknown as ZoneRow, RINGS as RingRows);
-const SHIPPED: ZoneRow[] = [RINGED_ZONE1];
+const SHIPPED: ZoneRow[] = [ZONE1 as unknown as ZoneRow];
 
 /**
  * Build a ZoneSet from an index and row list. A row that fails validateZone is dropped with a console error (so one bad test row cannot
@@ -57,3 +56,6 @@ export function zoneFor(search: string, set: ZoneSet = ZONES): ZoneRow {
   if (asked !== undefined && !hit) console.warn(`unknown zone '${asked}': playing the default zone '${set.default}'`);
   return hit ?? set.rows[set.default] ?? Object.values(set.rows)[0] ?? (SHIPPED[0] as ZoneRow);
 }
+
+/** `zoneFor` with the biome rings' spawns after the row's own (data/rings.json): the zone the page plays (src/stubs.ts exports it as `zoneFor`). The row's own spawns, ring 1, are the same objects as in `zoneFor`'s. */
+export const ringedZoneFor = (search: string, set: ZoneSet = ZONES): ZoneRow => ringedZone(zoneFor(search, set), RINGS as RingRows);

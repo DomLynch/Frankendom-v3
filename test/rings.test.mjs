@@ -6,7 +6,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { RINGS, ringBlend, ringLook, ringOf, ringOfSpawn, ringOrigin, ringPlace, ringSpawns, ringTune, ringedZone, ringLoadAfterKill } from '../src/zone/rings.ts';
 import { validateRings } from '../src/sim/validate-rings.js';
 import { mergeTune } from '../src/progression.ts';
-import { ZONES, zoneFor } from '../src/zone/zone-rows.ts';
+import { ZONES, ringedZoneFor as zoneFor, zoneFor as plainZoneFor } from '../src/zone/zone-rows.ts';
 import { WORLD, spotsFor, validateSpots, withinLoad } from '../src/zone/spawns.ts';
 import { bodyOwnerOf } from '../src/fight/foe-body.ts';
 import { validateZone } from '../src/sim/validate.js';
@@ -57,7 +57,7 @@ test('rings 2 and 3 place the nine bodies by distance from the pit, in their ban
 test('the ringed zone validates as a zone row and as spots the page can stand (spacing, start clearance, spread, kinds)', () => {
   const kinds = PROFILES.profiles.map((p) => p.id), live = zoneFor('');
   assert.deepEqual(validateZone(live, kinds, RIG), []);
-  const spots = spotsFor(live), wall = play.OPEN_RADIUS;
+  const spots = spotsFor(live), wall = play.RADIUS;
   assert.doesNotThrow(() => validateSpots(spots, initialState(), wall, WORLD, kinds));
   assert.ok(WORLD.spreadRadiusMetres >= Math.max(...spots.map((s) => Math.hypot(s.x, s.z) + Math.max(s.leash, wall))), 'ring 3 lies inside the spawn extent');
   const nearest = (s) => Math.min(...spots.filter((t) => t !== s).map((t) => Math.hypot(s.x - t.x, s.z - t.z)));
@@ -163,7 +163,9 @@ test('wiring pins: the page lays the ring tune under the address\'s, mixes the l
 });
 
 test('the zone set carries the ringed row and nothing else changed about it', () => {
-  const live = ZONES.rows['1'];
+  const live = zoneFor('');
+  assert.deepEqual(ZONES.rows['1'], ZONE1, 'the zone set (zoneFor in zone-rows.ts) is the row as it was: only the page\'s zone, src/stubs.ts zoneFor, carries the rings');
+  assert.deepEqual(plainZoneFor(''), ZONE1);
   assert.deepEqual({ ...live, spawns: undefined }, { ...ZONE1, spawns: undefined });
   assert.deepEqual(ringedZone(ZONE1), live);
   assert.deepEqual(ringedZone(ZONE1, { ...RINGS, rings: RINGS.rings.map((r) => ({ ...r, spawns: [] })) }), ZONE1, 'no ring spawns: the very zone row');
