@@ -74,3 +74,11 @@ iOS Safari MP4 recording; the iOS and Android share sheet with a file; TikTok / 
 
 - `L` = 4 s and tail 3 s are defaults in the row; Dom can change them.
 - Phase 2: WebCodecs ring for a single exact-length encoder, only if the staggered pair costs too much on phones.
+
+## 9. As built
+
+- `data/share-clip.json` (rows, validated in `src/sim/validate.js` + `validateShareClip`), `src/share-clip.ts` (all logic), `main.ts`: one import, one mount, `shareClip.frame(engaged)` after `view.render`, and `shareClip.moment(kind)` / `.cancel()` inside `reportFight` (the kill and death telemetry calls). `data/telemetry.json` gains `clip_shared { boss, sec }`. The `feedback.stream()` / `untap()` audio tap already existed (ported from V1), so there is no sound change.
+- Share needs a fresh tap, so the button appears only when the file is ready and the tap itself calls `navigator.share` (simpler than V1's auto-try + SEND). A dismissed or refused share leaves the button for another tap; no file-share support downloads.
+- Pit hook: `window.dispatchEvent(new CustomEvent('v3:clip-moment', { detail: { label } }))` at the result; `window.__v3Clip.arm(true)` while a run is on if `engaged` is not theirs, `arm(false)` after the moment. With nothing buffered the moment offers a still picture.
+- Built-game run (`scripts/share-clip-check.mjs`, headless Chromium 1234 on the Mac, Metal, 375x812): a real kill (boss health to 1, as `look-after-kill.mjs`) produced `frankendom-gargantua.mp4`: ffprobe h264 720x1280 30 fps yuv420p + opus audio, 6.9 s, 3.5 MB, 4.08 Mbps. Frame interval 16.6 ms mean, 17.7 ms p95 both idle and while two encoders ran (no measurable cost headless on an M-series Mac). Stills: `docs/stills/share-clip/` (button at 375, a result frame with the watermark). `--share` run: `navigator.share` received the same file (name, type, `title: Frankendom`).
+- Not tested: iOS Safari, a real share sheet, TikTok / Instagram / X acceptance, real phone frame rate, the Send-after-refusal path on a phone, audio level in the file. See the PR body for Dom's phone steps.
