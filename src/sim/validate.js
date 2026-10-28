@@ -21,6 +21,9 @@ export const SCHEMA = {
   'stars': { keys: ['about', 'minKills', 'killsCap', 'zeroWeight', 'salt', 'starGlyph', 'hudColour', 'levels', 'weights'], rows: { levels: ['star', 'healthX', 'damageX', 'scaleX', 'trophy', 'tell'], weights: ['id', 'star1', 'star2'] } },
   // Progression and saving (src/progression.ts validateProgression checks the values)
   'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'lineSeconds', 'healthCap', 'damageCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
+  // The Daily Pit (src/daily-pit.ts; checkDailyPit below checks the values and the cross-file rows)
+  'daily-pit': { keys: ['about', 'salt', 'attemptsPerDay', 'modeKey', 'event', 'cutLog', 'spawnId', 'respawnSeconds', 'resultDelaySeconds', 'bosses', 'modifiers', 'score', 'ui', 'later'], rows: { modifiers: ['id', 'name', 'about', 'tune', 'stars'], later: ['id', 'why'] },
+    maps: { resultDelaySeconds: ['won', 'lost'], score: ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max', 'fields'], ui: ['zIndex', 'colour', 'text'] } },
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)
   'hero-clips': { keys: ['about', 'sweeps', 'rig', 'weapon', 'blade', 'clips'], rows: { clips: ['role', 'clip', 'mixamo', 'name', 'mirror', 'from', 'to', 'contact', 'pullback', 'aim', 'aimFrom', 'paths', 'hold', 'about'] }, maps: { blade: ['about', 'node', 'contact'], sweeps: ['about', 'default', 'query'] } },
   // The 65 -> 106 rig swap (src/fight/rig-bones.ts): which rig each side draws, the bone map, the weapon nodes and sockets, the 106 files.
@@ -51,8 +54,10 @@ export const SCHEMA = {
   'radar': { keys: ['about', 'on', 'query', 'off', 'corner', 'sizePx', 'marginPx', 'offsetPx', 'zIndex', 'rangeMetres', 'rimInset', 'dprMax', 'disc', 'rim', 'edgeAlpha', 'hero', 'classes', 'flash', 'kinds', 'defaultKind'],
     maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead', 'pile', 'mob'] } },
   // Trash mob swarms (src/sim/validate-mobs.js checks the values; src/zone/mobs.ts reads the rows)
-  'mobs': { keys: ['about', 'on', 'cap', 'capMax', 'scanSeconds', 'activateMetres', 'despawnMetres', 'spawnMinMetres', 'startClearMetres', 'padMetres', 'swingMetres', 'lod', 'hitScale', 'turnRate', 'speedEase', 'pitArea', 'grid', 'pack', 'separation', 'attack', 'hero', 'states', 'fall', 'rings', 'respawnSeconds', 'kinds', 'limits'],
-    maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
+  'mobs': { keys: ['about', 'on', 'cap', 'capMax', 'scanSeconds', 'activateMetres', 'despawnMetres', 'spawnMinMetres', 'startClearMetres', 'padMetres', 'swingMetres', 'lod', 'hitScale', 'turnRate', 'speedEase', 'pitArea', 'grid', 'pack', 'separation', 'attack', 'hero', 'states', 'fall', 'corpse', 'farm', 'rings', 'respawnSeconds', 'kinds', 'limits'],
+    maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], corpse: ['nearMetres', 'graceSeconds', 'holdSeconds', 'max'], farm: ['decay'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
+  // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
+  'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
   'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
   // Boss weapons (Dom + Strategy 2026-10-28, src/fight/boss-weapon.ts validateBossWeapons checks the values): one row per archetype a boss is built on; the weapon it fights with and is drawn with
@@ -211,6 +216,7 @@ export function validateFile(name, json) {
     const obj = path.split('.').reduce((o, p) => o?.[p], json);
     for (const k of keys) if (!Number.isFinite(obj?.[k])) errors.push(`${name}.${path}.${k}: must be a finite number`);
   }
+  if (name === 'daily-pit') errors.push(...checkDailyPit(json));
   if (name === 'build' && !(Number.isInteger(json.clipDecimals) && json.clipDecimals >= 3 && json.clipDecimals <= 8)) errors.push('build.clipDecimals: must be an integer 3 to 8 (fewer than 3 decimals would be visible on positions in metres)');
   if (name === 'build' && !(Number.isInteger(json.firstVisitBytes) && json.firstVisitBytes > 0)) errors.push('build.firstVisitBytes: must be a positive integer (bytes on the wire at 375)');
   if (name === 'rules') {   // the hand-speed rows (rules-eval.ts handSpeedOf): finite, scale in (0, 1], divisor at least 1, span and window positive (an absent or bad one would reach the page as NaN)
@@ -334,8 +340,60 @@ export function validateFile(name, json) {
     errors.push(...checkCameraPitch(json.camera.pitch));
     errors.push(...checkWideLens(json.camera.wide, name));
   }
+  if (name === 'commentator') errors.push(...checkCommentator(json));
   banned(json, name, errors);
   return errors;
+}
+
+// The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
+export const COMMENTATOR_MIN_LINES = 6;
+export function checkCommentator(json) {
+  const e = [], n = 'commentator', fin = (p, v, lo, hi) => { if (!Number.isFinite(v) || v < lo || v > hi) e.push(`${n}.${p}: must be a finite number in ${lo}..${hi}`); };
+  if (typeof json.enabled !== 'boolean') e.push(`${n}.enabled: must be a boolean`);
+  if (typeof json.storageKey !== 'string' || !json.storageKey) e.push(`${n}.storageKey: must be a non-empty string`);
+  if (typeof json.seed !== 'string' || !json.seed) e.push(`${n}.seed: must be a non-empty string`);
+  const only = (p, o, keys) => { if (!o || typeof o !== 'object') { e.push(`${n}.${p}: must be an object`); return false; } for (const k of Object.keys(o)) if (!keys.includes(k)) e.push(`${n}.${p}.${k}: unknown key`); return true; };
+  if (only('caps', json.caps, ['perSession', 'perMinute', 'gapSeconds'])) { fin('caps.perSession', json.caps.perSession, 1, 1000); fin('caps.perMinute', json.caps.perMinute, 1, 60); fin('caps.gapSeconds', json.caps.gapSeconds, 0, 120); if (!Number.isInteger(json.caps.perMinute)) e.push(`${n}.caps.perMinute: must be an integer`); }
+  if (only('caption', json.caption, ['seconds', 'fadeMs', 'maxChars', 'topPct', 'maxWidthPct', 'fontPx', 'colour', 'shadow', 'zIndex'])) {
+    const c = json.caption; fin('caption.seconds', c.seconds, 0.5, 20); fin('caption.fadeMs', c.fadeMs, 0, 2000); fin('caption.maxChars', c.maxChars, 10, 200); fin('caption.topPct', c.topPct, 0, 90); fin('caption.maxWidthPct', c.maxWidthPct, 20, 100); fin('caption.fontPx', c.fontPx, 8, 40); fin('caption.zIndex', c.zIndex, 0, 1000);
+    if (!/^#[0-9a-f]{6}$/i.test(c.colour ?? '')) e.push(`${n}.caption.colour: must be #rrggbb`);
+    if (typeof c.shadow !== 'string') e.push(`${n}.caption.shadow: must be a string`);
+  }
+  if (only('thresholds', json.thresholds, ['heroLowPct', 'bossLowPct', 'missStreak', 'rollCount', 'rollWindowSeconds', 'idleSeconds'])) {
+    const t = json.thresholds; fin('thresholds.heroLowPct', t.heroLowPct, 1, 99); fin('thresholds.bossLowPct', t.bossLowPct, 1, 99); fin('thresholds.missStreak', t.missStreak, 2, 50); fin('thresholds.rollCount', t.rollCount, 2, 50); fin('thresholds.rollWindowSeconds', t.rollWindowSeconds, 0.5, 60); fin('thresholds.idleSeconds', t.idleSeconds, 3, 600);
+    for (const k of ['missStreak', 'rollCount']) if (!Number.isInteger(t[k])) e.push(`${n}.thresholds.${k}: must be an integer`);
+  }
+  if (!json.partNames || typeof json.partNames !== 'object' || Object.values(json.partNames).some((v) => typeof v !== 'string' || !v)) e.push(`${n}.partNames: must map unit ids to non-empty names`);
+  const ev = json.events;
+  if (!ev || typeof ev !== 'object') return [...e, `${n}.events: must be an object`];
+  for (const id of COMMENTATOR_EVENTS) if (!ev[id]) e.push(`${n}.events.${id}: missing`);
+  const cap = json.caption?.maxChars ?? 64;
+  for (const [id, row] of Object.entries(ev)) {
+    const p = `events.${id}`;
+    if (!COMMENTATOR_EVENTS.includes(id)) { e.push(`${n}.${p}: unknown event id`); continue; }
+    if (!only(p, row, ['about', 'cooldownSeconds', 'probability', 'priority', 'params', 'lines'])) continue;
+    if (typeof row.about !== 'string' || !row.about) e.push(`${n}.${p}.about: must be a non-empty string`);
+    fin(`${p}.cooldownSeconds`, row.cooldownSeconds, 0, 3600);
+    if (!Number.isFinite(row.probability) || row.probability <= 0 || row.probability > 1) e.push(`${n}.${p}.probability: must be a number in (0, 1]`);
+    if (row.priority !== undefined && typeof row.priority !== 'boolean') e.push(`${n}.${p}.priority: must be a boolean`);
+    const params = row.params ?? [];
+    if (!Array.isArray(params) || params.some((x) => typeof x !== 'string' || !/^\w+$/.test(x))) e.push(`${n}.${p}.params: must be a list of names`);
+    if (!Array.isArray(row.lines) || row.lines.length < COMMENTATOR_MIN_LINES) { e.push(`${n}.${p}.lines: needs at least ${COMMENTATOR_MIN_LINES} lines`); continue; }
+    const seen = new Set();
+    row.lines.forEach((line, i) => {
+      const q = `${n}.${p}.lines[${i}]`;
+      if (typeof line !== 'string' || !line.trim()) return void e.push(`${q}: must be a non-empty string`);
+      if (seen.has(line)) e.push(`${q}: duplicate line`); seen.add(line);
+      const shown = line.replace(/\{\w+\}/g, 'xxxxxxxxxx');
+      if (shown.length > cap) e.push(`${q}: longer than caption.maxChars (${cap}) once filled`);
+      for (const [, name] of line.matchAll(/\{(\w+)\}/g)) if (!params.includes(name)) e.push(`${q}: {${name}} is not a declared param`);
+      if (/[{}]/.test(line.replace(/\{\w+\}/g, ''))) e.push(`${q}: stray brace`);
+      if (COMMENTATOR_DENY.test(line)) e.push(`${q}: not PG-13 or names a real person`);
+    });
+  }
+  return e;
 }
 
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only
@@ -966,10 +1024,76 @@ export function checkHitreact(json) {
   return e;
 }
 
+// The Daily Pit rows (data/daily-pit.json). `ctx` (optional) adds the cross-file checks: { profiles, tune, physics, zone } = the parsed data/profiles.json, data/tune.json, data/physics.json and
+// data/zones/zone1.row.json. With it every boss in the pool must be a wired zone boss whose body has a physics opponents row with a 106 measure (cuttable), every modifier tune key must be a
+// data/tune.json key inside its clamp, and the cut log must be the name data/physics.json cut.log gives. Returns one string per problem.
+export function checkDailyPit(j, ctx) {
+  const e = [], at = 'daily-pit';
+  const word = (v) => typeof v === 'string' && /^[a-z0-9-]{1,32}$/.test(v), text = (v, n) => typeof v === 'string' && v.trim().length > 0 && v.length <= n;
+  if (typeof j.salt !== 'string' || !/^[a-z0-9]{1,16}$/.test(j.salt)) e.push(`${at}.salt: 1-16 lower-case letters or digits`);
+  if (!Number.isInteger(j.attemptsPerDay) || j.attemptsPerDay < 1 || j.attemptsPerDay > 99) e.push(`${at}.attemptsPerDay: a whole number 1 to 99`);
+  if (typeof j.modeKey !== 'string' || !/^[A-Za-z0-9._-]{3,60}$/.test(j.modeKey)) e.push(`${at}.modeKey: 3-60 letters, digits, . _ -`);
+  if (typeof j.event !== 'string' || !/^[a-z0-9:_-]{3,60}$/.test(j.event)) e.push(`${at}.event: 3-60 lower-case letters, digits, : _ -`);
+  if (typeof j.cutLog !== 'string' || !/^[A-Za-z0-9_]{3,40}$/.test(j.cutLog)) e.push(`${at}.cutLog: the global name of the cut log`);
+  if (!word(j.spawnId)) e.push(`${at}.spawnId: a zone spawn id`);
+  if (!Number.isFinite(j.respawnSeconds) || j.respawnSeconds < 600 || j.respawnSeconds > 86400) e.push(`${at}.respawnSeconds: 600 to 86400 (the day's boss never stands again within a run)`);
+  for (const k of ['won', 'lost']) if (!Number.isFinite(j.resultDelaySeconds?.[k]) || j.resultDelaySeconds[k] < 0 || j.resultDelaySeconds[k] > 30) e.push(`${at}.resultDelaySeconds.${k}: 0 to 30`);
+  if (!Array.isArray(j.bosses) || !j.bosses.length || new Set(j.bosses).size !== j.bosses.length || !j.bosses.every(word)) e.push(`${at}.bosses: a list of unique profile ids, at least one`);
+  const ids = new Set(), mods = Array.isArray(j.modifiers) ? j.modifiers : [];
+  if (!mods.length) e.push(`${at}.modifiers: at least one`);
+  mods.forEach((m, i) => {
+    const p = `${at}.modifiers[${i}] (${m?.id})`;
+    if (!word(m.id) || ids.has(m.id)) e.push(`${p}.id: a unique lower-case id`); else ids.add(m.id);
+    if (!text(m.name, 24)) e.push(`${p}.name: 1-24 characters`);
+    if (!text(m.about, 120)) e.push(`${p}.about: 1-120 characters`);
+    if (!Number.isInteger(m.stars) || m.stars < 0 || m.stars > 2) e.push(`${p}.stars: 0, 1 or 2`);
+    if (!m.tune || typeof m.tune !== 'object' || Array.isArray(m.tune)) { e.push(`${p}.tune: an object of key -> multiplier`); return; }
+    const keys = ctx?.tune ? ctx.tune.keys : [{ id: 'health', min: 0.25, max: 4 }, { id: 'damage', min: 0.25, max: 4 }, { id: 'speed', min: 0.5, max: 2 }];
+    for (const [k, v] of Object.entries(m.tune)) {
+      const row = keys.find((x) => x.id === k);
+      if (!row) e.push(`${p}.tune.${k}: no data/tune.json key of that name`);
+      else if (!Number.isFinite(v) || v < row.min || v > row.max) e.push(`${p}.tune.${k}: ${v} is outside data/tune.json's ${row.min} to ${row.max}`);
+      else if (v === 1) e.push(`${p}.tune.${k}: 1 is no change (leave the key out)`);
+    }
+    if (!Object.keys(m.tune).length && !m.stars) e.push(`${p}: a modifier changes something (a tune key or a star)`);
+  });
+  const sc = j.score ?? {};
+  for (const k of ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max']) if (!Number.isFinite(sc[k]) || sc[k] < 0 || sc[k] > 1000000) e.push(`${at}.score.${k}: a number 0 to 1000000`);
+  if (Number.isFinite(sc.min) && Number.isFinite(sc.max) && sc.min >= sc.max) e.push(`${at}.score: min must be below max`);
+  if (Number.isFinite(sc.base) && Number.isFinite(sc.max) && sc.base > sc.max) e.push(`${at}.score.base: must not exceed max`);
+  const FIELDS = ['time', 'damage', 'parts'];
+  if (!Array.isArray(sc.fields) || sc.fields.length !== FIELDS.length || !FIELDS.every((f) => sc.fields.includes(f))) e.push(`${at}.score.fields: the order of ${FIELDS.join(', ')} (each once)`);
+  const ui = j.ui ?? {};
+  if (!Number.isInteger(ui.zIndex) || ui.zIndex < 1 || ui.zIndex > 9999) e.push(`${at}.ui.zIndex: a whole number 1 to 9999`);
+  for (const k of ['gold', 'ink', 'panel', 'line', 'win', 'lose']) if (typeof ui.colour?.[k] !== 'string' || !/^(#[0-9a-fA-F]{6}|rgba?\([0-9., ]+\))$/.test(ui.colour[k])) e.push(`${at}.ui.colour.${k}: #rrggbb or rgb()/rgba()`);
+  const TEXT = ['button', 'buttonLeave', 'cardTitle', 'cardToday', 'cardBoss', 'cardModifier', 'cardAttempts', 'cardBest', 'cardBestNone', 'cardBestEver', 'fight', 'close', 'banner', 'won', 'lost', 'score', 'time', 'damage', 'parts', 'newBest', 'again', 'back', 'noneLeft'];
+  for (const k of TEXT) if (!text(ui.text?.[k], 80)) e.push(`${at}.ui.text.${k}: 1-80 characters`);
+  for (const k of Object.keys(ui.text ?? {})) if (!TEXT.includes(k)) e.push(`${at}.ui.text.${k}: unknown key`);
+  const later = new Set();
+  for (const l of Array.isArray(j.later) ? j.later : []) {
+    if (!word(l.id) || later.has(l.id) || ids.has(l.id)) e.push(`${at}.later.${l?.id}: a unique id, not a shipped modifier`); else later.add(l.id);
+    if (!text(l.why, 200)) e.push(`${at}.later.${l?.id}.why: 1-200 characters`);
+  }
+  if (ctx) {
+    const profiles = new Map((ctx.profiles?.profiles ?? []).map((p) => [p.id, p])), wired = new Set((ctx.zone?.spawns ?? []).map((s) => s.kind)), opp = ctx.physics?.opponents ?? [];
+    if (ctx.zone && !ctx.zone.spawns.some((s) => s.id === j.spawnId)) e.push(`${at}.spawnId: "${j.spawnId}" is no spawn of the zone row`);   // each cross-file check runs when its file is handed in (validateAll has no zone row: it lives in data/zones/)
+    if (ctx.physics && ctx.physics.cut?.log !== j.cutLog) e.push(`${at}.cutLog: "${j.cutLog}" is not data/physics.json cut.log ("${ctx.physics.cut?.log}")`);
+    for (const id of Array.isArray(j.bosses) ? j.bosses : []) {
+      const p = profiles.get(id);
+      if (!p) { e.push(`${at}.bosses.${id}: no data/profiles.json row`); continue; }
+      if (ctx.zone && !wired.has(id)) e.push(`${at}.bosses.${id}: not a wired boss (no spawn of the zone row has that kind)`);
+      const body = p.body ?? ctx.profiles.defaultBody;
+      if (ctx.physics && !opp.some((o) => o.body === body && o.measure?.['106'])) e.push(`${at}.bosses.${id}: body "${body}" has no data/physics.json opponents row with a 106 measure (not cuttable)`);
+    }
+  }
+  return e;
+}
+
 // all files together
 export function validateAll(files) {
   const errors = Object.entries(files).flatMap(([name, json]) => validateFile(name, json));
   if (files.profiles && files.rig) errors.push(...checkBodies(files.profiles, files.rig));
+  if (files['daily-pit'] && files.profiles && files.tune) errors.push(...checkDailyPit(files['daily-pit'], { profiles: files.profiles, tune: files.tune, physics: files.physics, zone: files.zone }));
   if (files.difficulty && files.profiles) errors.push(...checkDifficulty(files.difficulty, files.profiles, files.brains ?? {}, files.fight));
   return errors;
 }

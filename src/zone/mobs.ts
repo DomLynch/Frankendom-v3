@@ -16,17 +16,19 @@ export type MobRows = {
   hero: { radiusMetres: number; lethal: boolean; floorHealth: number; guard: number; roll: number; roamStrikes: string[] };
   states: Record<'idle' | 'chase' | 'windup' | 'recover' | 'hurt' | 'dying' | 'lying' | 'home', number>;
   fall: { lyingSeconds: number; fadeSeconds: number };
+  corpse: { nearMetres: number; graceSeconds: number; holdSeconds: number; max: number };
+  farm: { decay: number };
   rings: Record<string, RingRow>; respawnSeconds: number; kinds: Record<string, MobKind>;
 };
 export const MOBS = ROWS as unknown as MobRows;
 
 /** The hero as the core reads him each tick: his body, whether he can be hurt at all, and his defence this tick (0 none, the rows' guard, the rows' roll). */
-export type Hero = { x: number; z: number; heading: number; alive: boolean; defence: number };
+export type Hero = { x: number; z: number; heading: number; alive: boolean; defence: number; atFloor?: boolean /* held at the never-lethal floor: kills pay less and less (rows farm.decay) */ };
 /** The hero's swing this tick: `id` is the same for the whole swing (one hit per mob per swing); `hit` returns the damage the blow does to a mob at (x, z, heading, scale), 0 for a miss. */
 export type Swing = { active: boolean; id: number; x: number; z: number; heading: number; knockback: number; hit: (x: number, z: number, heading: number, scale: number) => number };
 export type Pad = { x: number; z: number; radius: number };
 export type Area = { id: string; x: number; z: number };
-export type Killed = { kind: string; pack: number; x: number; z: number; coins: number; xp: number; heat: number; left: number };
+export type Killed = { kind: string; pack: number; x: number; z: number; coins: number; xp: number; heat: number; left: number; farm: number /* the payout multiplier this kill got: 1, less while the hero sits at the floor */ };
 /** What the scene and the radar read: the arrays are the core's own, live, never copied. */
 export type MobView = { n: number; kind: Uint8Array; state: Uint8Array; x: Float32Array; z: Float32Array; heading: Float32Array; speed: Float32Array; hurt: Float32Array; fall: Float32Array; fade: Float32Array; hero: Float32Array /* the hero's x, z as of the last tick: the scene's animation level of detail is by distance from him */ };
 type Site = { id: number; x: number; z: number; kind: number; size: number; left: number; alive: number; clearedAt: number; manual: boolean };
@@ -68,6 +70,7 @@ export class Mobs {
   private readonly sites = new Map<number, Site>();
   private killedListeners: ((e: Killed) => void)[] = [];
   private clearedListeners: ((pack: number) => void)[] = [];
+  private floored = false; private floorKills = 0;
   private nextPack = 1; private clock = 0; private scanIn = 0; private heroHit = 0; private heroBlocked = 0;
   private n = 0;
 
@@ -117,6 +120,7 @@ export class Mobs {
   tick(dt: number, hero: Hero, swing: Swing | null, suppress: boolean): void {
     const R = this.rows, S = R.states;
     this.clock += dt; this.view.hero[0] = hero.x; this.view.hero[1] = hero.z;
+    this.floored = !!hero.atFloor; if (!this.floored) this.floorKills = 0;
     if (!suppress) {
       this.scanIn -= dt;
       if (this.scanIn <= 0) { this.scanIn = R.scanSeconds; this.scan(hero); }
@@ -313,7 +317,8 @@ export class Mobs {
       s.left = Math.max(0, s.left - 1); s.alive = Math.max(0, s.alive - 1); left = s.left;
       if (s.left === 0) { s.clearedAt = this.clock; for (const cb of this.clearedListeners) cb(s.id); }
     }
-    const e: Killed = { kind: KIND_IDS[this.kind[i]!]!, pack: this.pack[i]!, x: this.px[i]!, z: this.pz[i]!, coins: K.coins, xp: K.xp, heat: K.heat, left };
+    const f = this.floored ? Math.pow(R.farm.decay, this.floorKills++) : 1;   // a hero held at the floor farms nothing: each further kill pays decay x less
+    const e: Killed = { kind: KIND_IDS[this.kind[i]!]!, pack: this.pack[i]!, x: this.px[i]!, z: this.pz[i]!, coins: Math.floor(K.coins * f), xp: K.xp * f, heat: K.heat * f, left, farm: f };
     for (const cb of this.killedListeners) cb(e);
   }
 

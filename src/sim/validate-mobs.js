@@ -5,7 +5,7 @@ import { bodyProblem } from './validate.js';
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const KIND_KEYS = ['body', 'scale', 'tint', 'tintMix', 'hp', 'speed', 'wanderSpeed', 'damage', 'aggroMetres', 'leashMetres', 'reachMetres', 'bodyMetres', 'windupSeconds', 'recoverSeconds', 'hurtSeconds', 'knockSpeed', 'drag', 'fallSeconds', 'coins', 'xp', 'heat'];
 
-export function validateMobs(rows, rig, ringIds = [], areaIds = []) {
+export function validateMobs(rows, rig, ringIds = [], areaIds = [], physics = null) {
   const e = [], L = rows.limits ?? {};
   const within = (v, [lo, hi]) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
   const num = (at, v, range) => { if (!within(v, range)) e.push(`mobs.${at} ${String(v)} is not in ${range[0]}..${range[1]}`); };
@@ -42,6 +42,14 @@ export function validateMobs(rows, rig, ringIds = [], areaIds = []) {
   if (order.some((k) => !Number.isInteger(S[k])) || new Set(order.map((k) => S[k])).size !== order.length) e.push('mobs.states: eight different whole numbers');
   else if (!(S.dying < S.lying) || order.filter((k) => !['dying', 'lying'].includes(k)).some((k) => S[k] >= S.dying)) e.push('mobs.states: the fightable states are all below dying, and dying is below lying (the core compares them in that order)');
   num('fall.lyingSeconds', rows.fall?.lyingSeconds, L.seconds); num('fall.fadeSeconds', rows.fall?.fadeSeconds, L.seconds);
+  const c = rows.corpse ?? {};
+  num('corpse.nearMetres', c.nearMetres, L.metres); num('corpse.graceSeconds', c.graceSeconds, L.seconds); num('corpse.holdSeconds', c.holdSeconds, L.seconds); num('corpse.max', c.max, L.cap);
+  num('farm.decay', rows.farm?.decay, [0, 1]);
+  if (physics) {   // the corpse cut (data/physics.json): the pad must cover the any-attack-press reach (cut.strike.nearM, PR #252) and outlast the standing corpse (corpse.keepSeconds)
+    const strike = physics.cut?.strike?.nearM, keep = physics.corpse?.keepSeconds;
+    if (typeof strike === 'number' && !(c.nearMetres >= strike)) e.push(`mobs.corpse.nearMetres ${c.nearMetres} is under physics.json cut.strike.nearM ${strike}: a pack could stand where the hero is cutting`);
+    if (typeof keep === 'number' && !(c.holdSeconds >= keep)) e.push(`mobs.corpse.holdSeconds ${c.holdSeconds} is under physics.json corpse.keepSeconds ${keep}`);
+  }
   for (const [id, r] of Object.entries(rows.rings ?? {})) {
     if (id !== 'default' && ringIds.length && !ringIds.includes(id)) e.push(`mobs.rings.${id} is no data/rings.json ring`);
     num(`rings.${id}.density`, r.density, L.density);
