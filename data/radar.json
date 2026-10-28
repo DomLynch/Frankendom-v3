@@ -4,7 +4,7 @@
   "query": "radar",
   "off": "off",
   "corner": "top-right",
-  "sizePx": 76,
+  "sizePx": 68,
   "marginPx": 10,
   "offsetPx": 0,
   "zIndex": 4,

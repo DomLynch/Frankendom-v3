@@ -29,8 +29,18 @@ for (const spec of specs.length ? specs : ['ring=', 'v1=skyring=v1']) {
   for (const b of BEARINGS) {
     await page.evaluate((deg) => { globalThis.__turn = (-deg * Math.PI) / 180; }, b);   // a right turn lowers the heading
     await page.waitForTimeout(WAIT);
+    // the TRUE compass bearing the sky sees (skyline.ts: bearingOf(heading - the ring's anchor yaw)). The fight camera drifts on its own (the hero turns, a hit knocks it), so the scripted turn alone can land
+    // 30 degrees off: read the true bearing and nudge the turn until it is within 1 degree of the asked one, then shoot.
+    const measure = () => page.evaluate(() => { const c = globalThis.__v3Scene.userData.camera, g = globalThis.__v3Scene.getObjectByName('skyring'), d = c.getWorldDirection(new c.position.constructor()), h = Math.atan2(-d.x, -d.z); return g ? ((((-(h - g.rotation.y) * 180) / Math.PI) % 360) + 360) % 360 : null; });
+    let trueBearing = await measure();
+    for (let i = 0; i < 8 && trueBearing !== null; i++) {
+      const err = ((b - trueBearing + 540) % 360) - 180;
+      if (Math.abs(err) <= 1) break;
+      await page.evaluate((e) => { globalThis.__turn -= (e * Math.PI) / 180; }, err);
+      await page.waitForTimeout(700); trueBearing = await measure();
+    }
     await page.screenshot({ path: `${out}/${name}-bearing${String(b).padStart(3, '0')}-375.png` });
-    shots.push({ bearing: b, ringStates: await page.evaluate(() => { const g = globalThis.__v3Scene.getObjectByName('skyring'); return g ? g.children.map((m) => [m.name, +m.material.opacity.toFixed(2)]) : null; }) });
+    shots.push({ bearing: b, trueBearing: trueBearing === null ? null : +trueBearing.toFixed(1), ringStates: await page.evaluate(() => { const g = globalThis.__v3Scene.getObjectByName('skyring'); return g ? g.children.map((m) => [m.name, +m.material.opacity.toFixed(2)]) : null; }) });
   }
   report[name] = { query, firstVisitRingFetches, fetchedAfterTurning: [...fetched], shots };
   console.log(name, JSON.stringify(report[name]));
