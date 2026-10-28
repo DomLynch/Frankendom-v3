@@ -339,6 +339,7 @@ function corpseStep(dt: number) {
     }
   } catch (error) { console.warn('corpse run: step failed', error); }
 }
+if (CR) (globalThis as { __v3Corpse?: unknown }).__v3Corpse = { give: (n: number) => { if (PROG?.save) crPut({ ...PROG.save, coins: PROG.save.coins + Math.max(0, Math.floor(n)) }); } };   // the stills hand the hero carried coins (scripts/corpse-run-stills.mjs), as they read __v3Fight
 if (CR && PROG?.save?.pile) startLinger(spawns.findIndex((s) => s.kind === PROG!.save!.pile!.boss));   // a pile from an earlier visit: its boss stands at it from the first frame
 if (ZONE) { current = nearestStanding(spawns, heroStart); useKind(kindAt(current)); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
