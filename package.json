@@ -11,6 +11,8 @@
     "serve": "node scripts/serve.mjs",
     "presence": "node server/presence/main.ts",
     "presence:smoke": "node server/presence/smoke.ts",
+    "zone-writer": "node server/zone/main.ts",
+    "presence:proof": "node scripts/presence-proof.mjs",
     "check:stubs": "node scripts/check-stubs.mjs",
     "check:as-data": "node scripts/as-data/check.mjs",
     "test": "node --test \"test/**/*.test.mjs\"",
