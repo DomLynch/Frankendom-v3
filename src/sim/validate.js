@@ -65,6 +65,10 @@ export const SCHEMA = {
   'parts': { keys: ['about', 'maxCount', 'slots', 'rarities', 'button', 'panel', 'text'],
     rows: { slots: ['id', 'label', 'units'], rarities: ['star', 'id', 'label', 'colour'] },
     maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], text: ['title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] } },
+  // The Flesh Market (src/market.ts validateMarket checks the values): closed key sets
+  'market': { keys: ['about', 'merchant', 'salt', 'stock', 'weights', 'price', 'caps', 'lines', 'events', 'ui'],
+    maps: { merchant: ['id', 'name', 'kind', 'body', 'dx', 'dz', 'openMetres', 'closeMetres', 'loadMetres'], stock: ['size', 'slots'], weights: ['common', 'rare', 'epic', 'weapon'], price: ['base', 'buyX', 'sellX', 'weapon', 'trophy'], caps: ['buyMax', 'sellPerDay'],
+      lines: ['greet', 'buy', 'sell', 'broke', 'soldOut', 'capped', 'restock', 'leave'], events: ['open', 'buy', 'sell', 'refuse', 'restock'], ui: ['zIndex', 'sheetHeightFrac', 'text'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
   'pickup': { keys: ['about', 'on', 'query', 'off', 'units', 'delayS', 'hintSeconds', 'walkAwayM', 'zIndex', 'colour', 'text', 'arrow', 'safe', 'fadeS'],
     maps: { text: ['label', 'sizePx', 'letterSpacingEm', 'shadow', 'maxWidthPx', 'lineHeight'], arrow: ['sizePx', 'bobPx', 'bobS', 'liftPx', 'textGapPx'], safe: ['topFrac', 'bottomFrac', 'sideMarginPx'] } },

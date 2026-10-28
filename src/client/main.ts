@@ -37,6 +37,7 @@ import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, ty
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { mountParts } from '../fight/parts-hook.ts';
+import { mountMarket } from '../fight/market-hook.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
@@ -323,6 +324,8 @@ let carriedWeapon: string = HERO_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock
 const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
 function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
 const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
+const MARKET_HOOK = PROG && CR ? mountMarket({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, isWeapon: isWeaponId, weaponName, bankCap: CORPSE.coins.cap, camp: heroStart, now: Date.now, project: (x, y, z, out) => view.projectInto(x, y, z, out) }) : null;   // The Flesh Market (data/market.json): a merchant in the yard, banked coins for parts and weapons
+const idleFoes = (list: Parameters<typeof view.idleFoes>[0]) => { const m = MARKET_HOOK?.stand(state); view.idleFoes(m ? [...list, m] : list); };   // the zone's standing figures, and the merchant
 function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
 function startLinger(idx: number) {
   const pile = PROG?.save?.pile;
@@ -441,6 +444,7 @@ function zoneStep(dt: number) {
   if (engaged && !practice.finish) fightSec += dt;
   spawns = timers.spawns;
   corpseStep(dt);
+  MARKET_HOOK?.step(state, practice.playerHealth > 0);
   for (const i of timers.due) rollStarFor(spawns[i]!);   // a spawn stands again: its next star, before anything builds its fight
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
@@ -649,7 +653,7 @@ function frame(now: number) {
   if (ZONE) { const look = ringLook(Math.hypot(state.x, state.z)); view.ringLook(look.tintA, look.tintB, look.t, look.plates); }   // the biome ring's ground tint and sky-plate weights by the hero's distance from the pit (data/rings.json); ring 1 is today's look
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]!, star: starById[spawns[a.index]!.id] ?? 0 }))); }
   if (ZONE) view.liveStar(starById[spawns[current]!.id] ?? 0);   // the attackers' rigs (a killed one lies until its timer is up)
-  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (ZONE) { idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });
