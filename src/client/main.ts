@@ -49,7 +49,7 @@ import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { heroSpecialFxFor, setHeroSpecialFx } from '../fight/hero-special-fx.ts';
 import { setSpecialSink } from '../fight/special-sink.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
-import { foeDisplayName, foeNameFor, setFoeName, setKindNames } from '../fight/foe-name.ts';
+import { foeDisplayName, foeNameFor, setActiveKind, setFoeName, setKindNames } from '../fight/foe-name.ts';
 import { pitbornV1 } from '../fight/foe-pick.ts';
 import { orderedZone, orderProfile } from '../fight/boss-order.ts';
 import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
@@ -84,6 +84,7 @@ import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '..
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, bossLoadAfterKill, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
@@ -109,12 +110,14 @@ const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
 const HERO_WEAPON = (PROG?.save ? heroWeapon(PROG.save, PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
-const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)) : TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
+const BASE_TUNE = mergeTune(TUNED, ringTune());   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
+const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
-  const changed = !foe || foe.opponentId !== k.opponentId || (foe.star ?? 0) !== (k.star ?? 0);
+  const changed = !foe || foe.opponentId !== k.opponentId || foe.kind !== k.kind || (foe.star ?? 0) !== (k.star ?? 0);   // two bosses on one archetype (a ring boss cloned from Arachne) differ by their profile row
+  setActiveKind(k.kind);
   foe = k; opponentId = k.opponentId as OpponentId; opponent = k.opponent; difficultyOn = k.scaled; aiProfile = k.ai;
   if (changed) nameOpponent();   // the HUD names the spawn the sim holds
 }
@@ -353,7 +356,7 @@ function onBossKilled(kind: string, star = 0) {
     if (out.save === PROG.save) return;
     const trophy = trophyText(STAR_ROWS, star), tier = starLevel(STAR_ROWS, star).trophy?.tier;   // data/stars.json: a star kill drops that level's trophy (a count in the save and a line), no item art
     PROG.save = tier === undefined ? out.save : addTrophy(out.save, tier); writeSave(PROG.store, PROG_ROWS, PROG.save);
-    KIND_CTX.tune = mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
+    KIND_CTX.tune = mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
     const line = [out.unlocked ? unlockText(out.unlocked) : null, trophy].filter(Boolean).join(' · ');
     if (line) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(line);
   } catch (error) { console.warn('progression: kill not recorded', error); }
@@ -572,6 +575,7 @@ function frame(now: number) {
   }
   if (roam && bossLoadAfterKill(location.search)) bossKilled = true;   // the first kill's roam has started: far bosses are fetched and stand at their spots (respawn.json world.loadAfterKill, ?bossload=v1 off)
   if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state, undefined, bossKilled));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
+  if (ZONE) { const look = ringLook(Math.hypot(state.x, state.z)); view.ringLook(look.tintA, look.tintB, look.t, look.plates); }   // the biome ring's ground tint and sky-plate weights by the hero's distance from the pit (data/rings.json); ring 1 is today's look
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]!, star: starById[spawns[a.index]!.id] ?? 0 }))); }
   if (ZONE) view.liveStar(starById[spawns[current]!.id] ?? 0);   // the attackers' rigs (a killed one lies until its timer is up)
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero

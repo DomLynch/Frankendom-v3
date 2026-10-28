@@ -14,6 +14,7 @@ import { foeRigFile } from './rig-bones.ts';   // data/rig.json (106 only): the 
 // data/rig.json by src/sim/validate.js checkBodies. ?<profiles.bodyQuery>=<body> (?boss=psyche) swaps it for the page (setBossBody, main.ts). The kit is still none for every body.
 import PROFILES from '../../data/profiles.json' with { type: 'json' };
 import RIG from '../../data/rig.json' with { type: 'json' };
+import RINGS from '../../data/rings.json' with { type: 'json' };
 import { bodyProblem, checkBodies } from '../sim/validate.js';
 import { heroBodyFile } from './hero-body-rows.ts';   // the hero's stem: a boss cannot share it (validate.js bodyProblem)
 type BodyRow = { body: string; kit: string | null };
@@ -43,7 +44,10 @@ export const foeBodyFile = (id: string, rosterBody: string, stem = false): strin
 /** The 106 file stem the archetype `id` is drawn in by its profile row, or undefined when it has none (no body of its own yet) or `?boss=<body>` draws every boss in one body (the weapon rows, data/boss-weapons.json, then cannot tell the bosses apart and stay off). */
 export const profileBodyOf = (id: string): string | undefined => (override === null && id in PROFILE_BODY ? foeRigFile(PROFILE_BODY[id]!) : undefined);
 /** The archetype (`opponent` id) whose profile row draws 106 body `file`, or undefined (no profile row names it, or `?boss=<body>` draws every boss in one body). The inverse of `profileBodyOf`: a body the page's live rig does not wear is fought and drawn with this archetype's weapon (scene.ts weaponOfBody). */
-export const bodyOwnerOf = (file: string): string | undefined => (override === null ? Object.keys(PROFILE_BODY).find((id) => id !== 'veteran' && foeRigFile(PROFILE_BODY[id]!) === file) : undefined);
+export const bodyOwnerOf = (file: string): string | undefined => (override === null ? Object.keys(PROFILE_BODY).find((id) => id !== 'veteran' && foeRigFile(PROFILE_BODY[id]!) === file) ?? RING_OWNER[file] : undefined);
+// The biome rings' bosses (data/rings.json) wear a body of their own through the zone spawn's `body` while their profile row clones another boss: the archetype each fights as, by the 106 file it is drawn in
+// (the weapon the body is drawn with is that archetype's: the Minotaur's cleaver for a pitborn clone, Arachne's axe and shield for a shieldmaiden clone).
+const RING_OWNER: Record<string, string> = Object.fromEntries(RINGS.bosses.flatMap((b) => { const p = PROFILES.profiles.find((q: { id: string }) => q.id === b.kind); return p ? [[foeRigFile(b.body), p.opponent]] : []; }));
 /** The 106 file stem a zone spawn of `id` draws: the spawn row's own `body` (data/zones `spawns[].body`, a data/rig.json files stem) when it has one, else exactly `foeBodyFile` (its kind's profile body).
  *  ?boss=<body> still draws every boss in one body for the page. This is the key of the scene's rig cache (scene.ts bodyRigs). */
 export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => {
