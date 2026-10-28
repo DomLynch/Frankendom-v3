@@ -433,7 +433,7 @@ function chasers() {
 }
 function heatKill(spawn: Spawn) { heatOnKill(heat, HEAT, heatClock, starById[spawn.id] ?? 0, ringOfSpawn(spawn.id)?.id ?? null, coinsFor(CORPSE, spawn.kind)); }
 function heatStep(dt: number) { heatClock += dt; stepHeat(heat, HEAT, heatClock); heatHud?.update(heat); }
-(globalThis as { __v3Heat?: unknown }).__v3Heat = { heat, hunt, spawn: (i: number) => spawns[i], add: (n: number) => { addHeat(heat, HEAT, n, heatClock); } };   // the stills and tests read and raise it
+(globalThis as { __v3Heat?: unknown }).__v3Heat = { heat, hunt, spawn: (i: number) => spawns[i], skip: (seconds: number) => { heatClock += seconds; }, add: (n: number) => { addHeat(heat, HEAT, n, heatClock); } };   // the stills and tests read and raise it
 /** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
 let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
 function onBossKilled(kind: string, star = 0) {

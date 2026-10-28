@@ -29,22 +29,25 @@ await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, 
 await page.waitForTimeout(3000);
 const ready = await look(); console.log(`${tag} ready`, JSON.stringify(ready));
 if (ready.heat !== 0 || ready.hud !== null) fail('a fresh game has no heat and no heat line');
-await page.evaluate(() => { globalThis.__v3Heat.add(4); });
+// the beats are about the hunt, not about surviving the camp's boss beside the start mark: his health is topped up (the same sim hook the other stills use)
+await page.evaluate(() => { setInterval(() => { const [h] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; }, 100); globalThis.__v3Heat.add(4); });
 await page.waitForTimeout(1200); await shot('1-heat');
 const heated = await look(); console.log(`${tag} heated`, JSON.stringify(heated));
 if (heated.heat !== 4 || !/^Heat 4 · Marked$/.test(heated.hud ?? '')) fail(`the heat line (${heated.hud})`);
-// the announcement (tier 3 waits arrivalDelaySeconds x 0.35, floor 15 s)
-await page.waitForFunction(() => globalThis.__v3Heat.hunt.slots.some((s) => s.warnedAt !== null), null, { timeout: 90000 });
+// the announcement (tier 3 waits arrivalDelaySeconds x 0.35, floor 15 s). Software GL runs the page at a few frames a second and the sim clock steps are capped, so the waits are fast-forwarded on the page's heat clock (__v3Heat.skip); the walk is real time
+await page.evaluate(() => globalThis.__v3Heat.skip(25));
+await page.waitForFunction(() => globalThis.__v3Heat.hunt.slots.some((s) => s.warnedAt !== null), null, { timeout: 240000 });
 await page.waitForTimeout(600); await shot('2-warning');
 const warned = await look(); console.log(`${tag} warned`, JSON.stringify(warned));
 if (!/hunter/i.test(warned.line ?? '')) fail(`the announcement line (${warned.line})`);
-await page.waitForFunction(() => globalThis.__v3Heat.hunt.slots.some((s) => s.chasing), null, { timeout: 60000 });
+await page.evaluate(() => globalThis.__v3Heat.skip(7));
+await page.waitForFunction(() => globalThis.__v3Heat.hunt.slots.some((s) => s.chasing), null, { timeout: 240000 });
 await page.waitForTimeout(1500); await shot('3-chasing');
 const chasing = await look(); console.log(`${tag} chasing`, JSON.stringify(chasing));
 const walker = chasing.hunters.find((s) => s.chasing);
 if (!walker || walker.standing) fail('a hunter walks and is not yet a standing boss');
 // it closes on the standing hero and the zone's aggro takes over
-await page.waitForFunction(() => globalThis.__v3Heat.hunt.slots.some((s) => s.engaged), null, { timeout: 90000 });
+await page.waitForFunction(() => globalThis.__v3Heat.hunt.slots.some((s) => s.engaged), null, { timeout: 400000 });
 await page.waitForTimeout(2500); await shot('4-fight');
 const fight = await look(); console.log(`${tag} fight`, JSON.stringify(fight));
 const engagedSlot = fight.hunters.find((s) => s.engaged);
