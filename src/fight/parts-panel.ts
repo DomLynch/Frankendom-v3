@@ -21,6 +21,8 @@ const CSS = (r: PartsFile) => `#frank-parts{display:contents}
 #frank-parts .fp-btn[aria-expanded=true]{background:#1b1916;color:#f6f2ea}
 #frank-parts .fp-sheet{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(100vw - 24px);max-width:${r.panel.maxWidthPx}px;max-height:${Math.round(r.panel.maxHeightFrac * 100)}vh;overflow-y:auto;overscroll-behavior:contain;z-index:${r.panel.zIndex};box-sizing:border-box;padding:14px 14px 16px;border-radius:14px;background:#f6f2ea;color:#1b1916;font:13px/1.35 "Instrument Sans",Arial,sans-serif;box-shadow:0 10px 40px #0009}
 #frank-parts .fp-sheet[hidden]{display:none}
+#frank-parts .fp-back{position:fixed;inset:0;z-index:${r.panel.zIndex - 1};background:#0000;touch-action:manipulation}
+#frank-parts .fp-back[hidden]{display:none}
 #frank-parts .fp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px}
 #frank-parts h3{margin:0;font:600 17px/1.2 Georgia,"Iowan Old Style","Times New Roman",serif}
 #frank-parts .fp-hint{margin:0 0 10px;color:#7a746a;font-size:12px}
@@ -43,7 +45,8 @@ export function mountPartsPanel(doc: Doc, ctx: PanelCtx): PartsPanel {
   const root = doc.createElement('div'); root.id = 'frank-parts';
   const btn = doc.createElement('button'); btn.className = 'fp-btn'; btn.type = 'button'; btn.textContent = r.button.label; btn.setAttribute('aria-label', r.button.aria); btn.setAttribute('aria-expanded', 'false'); btn.dataset.frank = 'button';
   const sheet = doc.createElement('div'); sheet.className = 'fp-sheet'; sheet.hidden = true; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', T.title); sheet.dataset.frank = 'sheet';
-  root.append(btn, sheet); doc.body.append(root);
+  const back = doc.createElement('div'); back.className = 'fp-back'; back.hidden = true; back.dataset.frank = 'backdrop'; back.onclick = () => api.close();   // a tap outside the sheet closes it
+  root.append(btn, back, sheet); doc.body.append(root);
   const el = (tag: string, cls?: string, text?: string): HTMLElement => { const e = doc.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 
   function draw() {
@@ -76,8 +79,8 @@ export function mountPartsPanel(doc: Doc, ctx: PanelCtx): PartsPanel {
   }
   const api: PartsPanel = {
     refresh() { if (!sheet.hidden) draw(); },
-    open() { draw(); sheet.hidden = false; btn.setAttribute('aria-expanded', 'true'); },
-    close() { sheet.hidden = true; btn.setAttribute('aria-expanded', 'false'); },
+    open() { draw(); sheet.hidden = false; back.hidden = false; btn.setAttribute('aria-expanded', 'true'); },
+    close() { sheet.hidden = true; back.hidden = true; btn.setAttribute('aria-expanded', 'false'); },
     isOpen: () => !sheet.hidden,
     remove() { root.remove(); style.remove(); },
   };

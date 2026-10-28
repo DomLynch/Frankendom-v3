@@ -7,6 +7,7 @@ import { PARTS, cleanParts, collect, equip, partId, slotOfUnit, slotViews, unequ
 import { freshSave, loadSave, parseSave, writeSave, recordKill } from '../src/progression.ts';
 import { validateFile } from '../src/sim/validate.js';
 import { emitFeel } from '../src/fight/feel.ts';
+import { noteLife } from '../src/fight/foe-name.ts';
 import { mountParts } from '../src/fight/parts-hook.ts';
 
 const read = (f) => JSON.parse(readFileSync(new URL(`../data/${f}.json`, import.meta.url), 'utf8'));
@@ -139,6 +140,17 @@ test('the weapon slot shows the newest boss-weapon reward; no save collects noth
   assert.equal(none.box.save, null); none.hook.remove();
 });
 
+test('a tap outside the sheet (the backdrop) closes it', () => {
+  const { doc, hook } = page(freshSave());
+  const back = find(doc, (e) => e.dataset.frank === 'backdrop'), sheet = find(doc, (e) => e.dataset.frank === 'sheet');
+  assert.equal(back.hidden, true);
+  click(find(doc, (e) => e.dataset.frank === 'button'));
+  assert.equal(back.hidden, false); assert.equal(sheet.hidden, false);
+  click(back);
+  assert.equal(sheet.hidden, true); assert.equal(back.hidden, true);
+  hook.remove();
+});
+
 test('partId is profile:slot', () => assert.equal(partId('arachne', 'head'), 'arachne:head'));
 
 test('rarity follows each kill: a 2-star boss then a 0-star one; the killing-blow cut carries the star of its own life', () => {
@@ -156,9 +168,27 @@ test('rarity follows each kill: a 2-star boss then a 0-star one; the killing-blo
 
 test('the page hands the star to the cut: ragdoll.ts reads kind and star at the kill, main.ts sets both', () => {
   const rag = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8'), main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(rag, /lifeProfiles\.set\(lifeId, \{ profile: getActiveKind\(\) \?\? foe\.id, star: getActiveStar\(\) \}\)/);
+  // the life is noted at the TOP of the kill, before the finisher skip branch (a beheading finisher cuts through scene.finisherCut with mode 'skip' and never reaches the else branch)
+  const killAt = rag.indexOf('if (killed) {'), noteAt = rag.indexOf('noteLife(lifeProfiles, lifeId'), skipAt = rag.indexOf("mode = 'skip'", killAt), elseAt = rag.indexOf('rd.kill(blowImpulse', killAt);
+  assert.ok(killAt > 0 && noteAt > killAt && noteAt < skipAt && noteAt < elseAt, 'noteLife runs before the skip branch and the plain-death branch');
+  assert.equal(rag.split('noteLife(lifeProfiles').length - 1, 1, 'noted once, not per branch');
   assert.match(rag, /star: lifeProfiles\.get\(corpseId\)\?\.star \?\? 0/);
   assert.match(main, /setActiveKind\(k\.kind, k\.star \?\? 0\)/);
+});
+
+test('a finisher kill (skip mode, the head cut after the kill) yields a part of the kill\'s own star, and the next life never lends its', () => {
+  const lives = new Map(), { box, hook } = page(freshSave());
+  // the page's order on the default finisher path: kill frame (noteLife), later scene.finisherCut announces the head cut for that corpse id
+  const announce = (corpseId, unit, fallback) => emitFeel(PHYS.corpse.event, { unit, gear: [], source: 'finisher', corpseId, profile: lives.get(corpseId)?.profile ?? fallback, star: lives.get(corpseId)?.star ?? 0 });
+  noteLife(lives, 'executioner#1', 'gargantua', 2);
+  announce('executioner#1', 'head', 'gargantua');
+  assert.equal(box.save.parts['gargantua:head'].star, 2, 'a 2-star boss beheaded by a finisher is an Epic head, not Common');
+  noteLife(lives, 'executioner#2', 'gargantua', 0);
+  announce('executioner#2', 'arm_left', 'gargantua');
+  assert.equal(box.save.parts['gargantua:arm_left'].star, 0);
+  for (let i = 3; i < 30; i++) noteLife(lives, `executioner#${i}`, 'gargantua', 0);
+  assert.ok(lives.size <= 16, 'capped');
+  hook.remove();
 });
 
 test('cleanParts holds a save to the known bosses and one part per boss and slot', () => {

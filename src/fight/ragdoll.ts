@@ -23,7 +23,7 @@ import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 import { setGoreEvery } from './finishers.ts';
 import { setRagdollPlays } from '../roster.ts';
-import { getActiveKind, getActiveStar } from './foe-name.ts';   // the profile id a kill is of (data/parts.json: the cut event names it)
+import { getActiveKind, getActiveStar, noteLife } from './foe-name.ts';   // the profile id a kill is of (data/parts.json: the cut event names it)
 import { isNear, nextUnit, registerCorpseSource, registerStrikeSource, strikeBinds, strikeOnce, type Pt } from './cut-strike.ts';   // a strike cuts the fallen body (data/physics.json cut.strike)
 import { registerHintSource, type HintBody } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
@@ -848,6 +848,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       if (!finish) armed = true;
       const killed = mode === 'alive' ? events.find((e) => e.type === 'Killed' && e.target === side) : undefined;
       if (killed) {   // the killing blow: its own impulse, not the Hit's stagger as well
+        noteLife(lifeProfiles, lifeId, getActiveKind() ?? foe.id, getActiveStar());   // first, for every kill: the skip branch below (a finisher's beheading, scene finisherCut) announces a cut of this life too
         // A finisher with a finisherCuts row plays with this body under ?ragdoll=finishers (its row picks the cut, none for Run Through); any other keeps its clip (finisher row 'keep')
         const fc = bodyFinishers && finisher !== null && !isPlainDeath(finisher) ? finisherCutRow(rows, finisher) : undefined;
         const judgedKill = judgeKill(events), verdict = judgedKill?.tick === killed.tick ? judgedKill : null;   // ?rules=m4 cut.precedence: the evaluator's verdict on this killing blow when its zone's row says 'evaluator' (null: the rotation decides, as before)
@@ -856,7 +857,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           if (rules) for (const e of events) if (e.type === 'Hit' && e.target === side && e.tick !== verdict?.tick) { const p = rules.hit(e, false, handSpeed.speed()); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
           if (down <= 0) { rig.drive(); rd.snapToTarget(); }   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp (from where he lies, if he is down)
           down = -1; getUp = -1;
-          rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0; lifeProfiles.set(lifeId, { profile: getActiveKind() ?? foe.id, star: getActiveStar() }); if (lifeProfiles.size > 16) lifeProfiles.delete(lifeProfiles.keys().next().value!);
+          rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
           for (const f of feels) f.kill?.(killed, feelCtx());   // M7 (?feel=): his killing blow
           // ?rules=m4: the evaluator's cuts (this fight's, and the killing blow's) are the only cut trigger of the LIVE opponent's blows (the head-zone rule and V1's baked finisher cut are off); a finisher row's cut and every post-kill cut (the tap, the cue buttons) stay on
           for (const u of rulesOn ? ruleCuts.splice(0) : []) cutUnit(u, 'rules', blowImpulse({ ...cutRows.kill, parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group.rotation.y)?.impulse);
