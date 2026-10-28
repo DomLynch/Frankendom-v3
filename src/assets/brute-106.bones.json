@@ -1,0 +1,232 @@
+{
+ "about": "Minotaur V1 65-joint rig (UE style) -> Arachne ch47 Mixamo 106-joint rig; source name -> target name. Unlisted target joints (twist, fk_*, ik_*) stay at rest.",
+ "method": "world-delta retarget W_t = D*P*W_t_bind with per-bone rest correction P (shortest arc of aim-child directions at bind), hips world displacement k=1 (xz), height scaled by 1.28869",
+ "map": {
+  "root": "root",
+  "pelvis": "mixamorig:Hips",
+  "spine_01": "mixamorig:Spine",
+  "spine_02": "mixamorig:Spine1",
+  "spine_03": "mixamorig:Spine2",
+  "neck_01": "mixamorig:Neck",
+  "Head": "mixamorig:Head",
+  "clavicle_l": "mixamorig:LeftShoulder",
+  "upperarm_l": "mixamorig:LeftArm",
+  "lowerarm_l": "mixamorig:LeftForeArm",
+  "hand_l": "mixamorig:LeftHand",
+  "thigh_l": "mixamorig:LeftUpLeg",
+  "calf_l": "mixamorig:LeftLeg",
+  "foot_l": "mixamorig:LeftFoot",
+  "ball_l": "mixamorig:LeftToeBase",
+  "ball_leaf_l": "mixamorig:LeftToe_End",
+  "thumb_01_l": "mixamorig:LeftHandThumb1",
+  "thumb_02_l": "mixamorig:LeftHandThumb2",
+  "thumb_03_l": "mixamorig:LeftHandThumb3",
+  "thumb_04_leaf_l": "mixamorig:LeftHandThumb4",
+  "index_01_l": "mixamorig:LeftHandIndex1",
+  "index_02_l": "mixamorig:LeftHandIndex2",
+  "index_03_l": "mixamorig:LeftHandIndex3",
+  "index_04_leaf_l": "mixamorig:LeftHandIndex4",
+  "middle_01_l": "mixamorig:LeftHandMiddle1",
+  "middle_02_l": "mixamorig:LeftHandMiddle2",
+  "middle_03_l": "mixamorig:LeftHandMiddle3",
+  "middle_04_leaf_l": "mixamorig:LeftHandMiddle4",
+  "ring_01_l": "mixamorig:LeftHandRing1",
+  "ring_02_l": "mixamorig:LeftHandRing2",
+  "ring_03_l": "mixamorig:LeftHandRing3",
+  "ring_04_leaf_l": "mixamorig:LeftHandRing4",
+  "pinky_01_l": "mixamorig:LeftHandPinky1",
+  "pinky_02_l": "mixamorig:LeftHandPinky2",
+  "pinky_03_l": "mixamorig:LeftHandPinky3",
+  "pinky_04_leaf_l": "mixamorig:LeftHandPinky4",
+  "clavicle_r": "mixamorig:RightShoulder",
+  "upperarm_r": "mixamorig:RightArm",
+  "lowerarm_r": "mixamorig:RightForeArm",
+  "hand_r": "mixamorig:RightHand",
+  "thigh_r": "mixamorig:RightUpLeg",
+  "calf_r": "mixamorig:RightLeg",
+  "foot_r": "mixamorig:RightFoot",
+  "ball_r": "mixamorig:RightToeBase",
+  "ball_leaf_r": "mixamorig:RightToe_End",
+  "thumb_01_r": "mixamorig:RightHandThumb1",
+  "thumb_02_r": "mixamorig:RightHandThumb2",
+  "thumb_03_r": "mixamorig:RightHandThumb3",
+  "thumb_04_leaf_r": "mixamorig:RightHandThumb4",
+  "index_01_r": "mixamorig:RightHandIndex1",
+  "index_02_r": "mixamorig:RightHandIndex2",
+  "index_03_r": "mixamorig:RightHandIndex3",
+  "index_04_leaf_r": "mixamorig:RightHandIndex4",
+  "middle_01_r": "mixamorig:RightHandMiddle1",
+  "middle_02_r": "mixamorig:RightHandMiddle2",
+  "middle_03_r": "mixamorig:RightHandMiddle3",
+  "middle_04_leaf_r": "mixamorig:RightHandMiddle4",
+  "ring_01_r": "mixamorig:RightHandRing1",
+  "ring_02_r": "mixamorig:RightHandRing2",
+  "ring_03_r": "mixamorig:RightHandRing3",
+  "ring_04_leaf_r": "mixamorig:RightHandRing4",
+  "pinky_01_r": "mixamorig:RightHandPinky1",
+  "pinky_02_r": "mixamorig:RightHandPinky2",
+  "pinky_03_r": "mixamorig:RightHandPinky3",
+  "pinky_04_leaf_r": "mixamorig:RightHandPinky4"
+ },
+ "P_deg": {
+  "root": 0.0,
+  "pelvis": 3.67,
+  "spine_01": 1.94,
+  "spine_02": 1.94,
+  "spine_03": 14.92,
+  "neck_01": 9.26,
+  "Head": 9.26,
+  "clavicle_l": 19.3,
+  "upperarm_l": 11.12,
+  "lowerarm_l": 6.34,
+  "hand_l": 11.42,
+  "thigh_l": 7.67,
+  "calf_l": 3.77,
+  "foot_l": 18.76,
+  "ball_l": 18.76,
+  "ball_leaf_l": 18.76,
+  "thumb_01_l": 14.75,
+  "thumb_02_l": 6.78,
+  "thumb_03_l": 6.78,
+  "thumb_04_leaf_l": 6.78,
+  "index_01_l": 17.61,
+  "index_02_l": 25.05,
+  "index_03_l": 25.05,
+  "index_04_leaf_l": 25.05,
+  "middle_01_l": 13.98,
+  "middle_02_l": 23.4,
+  "middle_03_l": 23.4,
+  "middle_04_leaf_l": 23.4,
+  "ring_01_l": 14.03,
+  "ring_02_l": 30.07,
+  "ring_03_l": 30.07,
+  "ring_04_leaf_l": 30.07,
+  "pinky_01_l": 15.1,
+  "pinky_02_l": 33.81,
+  "pinky_03_l": 33.81,
+  "pinky_04_leaf_l": 33.81,
+  "clavicle_r": 19.31,
+  "upperarm_r": 10.97,
+  "lowerarm_r": 6.09,
+  "hand_r": 11.32,
+  "thigh_r": 7.96,
+  "calf_r": 3.75,
+  "foot_r": 19.3,
+  "ball_r": 19.3,
+  "ball_leaf_r": 19.3,
+  "thumb_01_r": 14.56,
+  "thumb_02_r": 5.75,
+  "thumb_03_r": 5.75,
+  "thumb_04_leaf_r": 5.75,
+  "index_01_r": 17.27,
+  "index_02_r": 25.24,
+  "index_03_r": 25.24,
+  "index_04_leaf_r": 25.24,
+  "middle_01_r": 15.53,
+  "middle_02_r": 23.42,
+  "middle_03_r": 23.42,
+  "middle_04_leaf_r": 23.42,
+  "ring_01_r": 15.24,
+  "ring_02_r": 28.08,
+  "ring_03_r": 28.08,
+  "ring_04_leaf_r": 28.08,
+  "pinky_01_r": 18.35,
+  "pinky_02_r": 38.07,
+  "pinky_03_r": 38.07,
+  "pinky_04_leaf_r": 38.07
+ },
+ "socket": {
+  "node": "fk_socket_hand_r",
+  "parent": "mixamorig:RightHand",
+  "from_source": "hand_r -> WeaponDrawn, rest correction P(hand) included",
+  "before": {
+   "translation": [
+    0.000489874292777609,
+    0.13065780662526483,
+    -0.0003772977837912528
+   ],
+   "rotation": [
+    -0.0,
+    -0.0,
+    -1.4901161193847656e-08,
+    0.9999999999999999
+   ]
+  },
+  "after": {
+   "translation": [
+    0.009669174378127272,
+    0.10533093528173337,
+    -0.01851306633503211
+   ],
+   "rotation": [
+    0.42982845743139086,
+    0.477901494496116,
+    -0.5174870209441439,
+    0.5648582493819888
+   ]
+  },
+  "candidates": {
+   "WeaponDrawn": {
+    "rot_xyzw": [
+     0.42982845743139086,
+     0.477901494496116,
+     -0.5174870209441439,
+     0.5648582493819888
+    ],
+    "offset_k_height": [
+     0.009444966197406417,
+     0.10288852846915537,
+     -0.01808378656819582
+    ],
+    "offset_k_hand": [
+     0.009669174378127272,
+     0.10533093528173337,
+     -0.01851306633503211
+    ],
+    "src_offset_world": [
+     -0.08000000322757062,
+     -3.86000520435914e-09,
+     0.014999992003197269
+    ]
+   },
+   "SwordDrawn": {
+    "rot_xyzw": [
+     0.42982845743139086,
+     0.477901494496116,
+     -0.5174870209441439,
+     0.5648582493819888
+    ],
+    "offset_k_height": [
+     0.009444966197406417,
+     0.10288852846915537,
+     -0.01808378656819582
+    ],
+    "offset_k_hand": [
+     0.009669174378127272,
+     0.10533093528173337,
+     -0.01851306633503211
+    ],
+    "src_offset_world": [
+     -0.08000000322757062,
+     -3.86000520435914e-09,
+     0.014999992003197269
+    ]
+   }
+  },
+  "k_hand": 1.3192811293547397,
+  "k_height": 1.2886897251350489,
+  "target_SwordDrawn_existing": {
+   "translation": [
+    0.011109281639518583,
+    0.06866498173998495,
+    0.004164964200518963
+   ],
+   "rotation": [
+    0.49183776094791065,
+    0.5078448551465168,
+    -0.4922824906150845,
+    0.5077865392473185
+   ]
+  }
+ }
+}
