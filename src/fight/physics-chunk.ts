@@ -2,6 +2,8 @@
 // first frame. scripts/build.mjs builds this file into its own content-hashed module (b/vendor/physics.<hash>.js), never into main.js.
 export { createPhysics } from '@frankendom/physics';
 export { createThreeRig } from '@frankendom/physics/three-rig';
+export { admit } from '@frankendom/physics';   // the cap on simultaneous ragdolls (physics budget.mjs); src/fight/ragdoll.ts asks it before it makes one
+export { default as budgetRows } from '@frankendom/physics/data/budget-rows.json' with { type: 'json' };   // its row max_simultaneous_ragdolls (3), the package's data
 export { createEvaluator, createFighterState, loadRules } from '@frankendom/physics';   // the M4 rules evaluator (src/fight/rules-eval.ts, ?rules=m4); the package's rows are bundled with it
 export { createCutRig } from '@frankendom/physics/three-cuts';   // the cut-piece meshes' rig (physics docs/CUT-CONTRACT.md): the body GLB is the physics cut GLB, its caps show with the ragdoll's cuts
 import minotaurManifest from '../assets/minotaur-106.cut.manifest.json' with { type: 'json' };

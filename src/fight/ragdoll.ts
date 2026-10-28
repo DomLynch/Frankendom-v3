@@ -45,6 +45,13 @@ export type Ragdoll = {
 export type CutEvent = { type: 'cut'; unit: string; gear: string[]; source: string };
 type CutRows = PhysicsRows['cut'];
 type Physics = { step(dt: number): number; createRagdoll(row: unknown, opts?: { position?: Vec3; id?: string; motorTuning?: Tuning; solveHinges?: boolean }): Ragdoll; tickDt: number };
+/** Every ragdoll the page's Jolt world holds, across foes (added in build, gone at destroy): the cap counts the AWAKE ones (a corpse asleep costs the step nothing). */
+const worldRagdolls = new Set<Pick<Ragdoll, 'awake'>>();
+/** physics budget-rows.json `max_simultaneous_ragdolls` via the package's admit(): 'baked' = the next death plays the baked clip, no body, no cut. The cap is the package's row, not a number here. */
+export function admitRagdoll(chunk: Pick<Chunk, 'admit' | 'budgetRows'>, pool: Iterable<Pick<Ragdoll, 'awake'>> = worldRagdolls): 'ragdoll' | 'baked' {
+  let active = 0; for (const r of pool) if (r.awake) active++;
+  return chunk.admit(active, chunk.budgetRows);
+}
 type Rig = { drive(): void; applyPose(): void };
 type Bones = Record<string, THREE.Object3D>;
 type Chunk = RulesPackage & {
@@ -52,6 +59,8 @@ type Chunk = RulesPackage & {
   createThreeRig(three: typeof THREE, rd: Ragdoll, bones: Bones, root: THREE.Object3D, opts?: { bind?: { bones: Bones; root: THREE.Object3D } }): Rig;
   createCutRig(three: typeof THREE, rd: Ragdoll, scene: THREE.Object3D, manifest: unknown, opts?: { rows?: unknown }): CutRig;
   minotaurCutManifest: unknown;   // the manifest of src/assets/minotaur-106.glb (the physics cut GLB)
+  admit(activeCount: number, rows: unknown): 'ragdoll' | 'baked';   // the package's cap on simultaneous ragdolls (budget.mjs), read with budgetRows
+  budgetRows: unknown;   // the package's data/budget-rows.json (max_simultaneous_ragdolls)
   cutManifests?: Record<string, unknown>;   // body stem -> the manifest beside that body's physics cut GLB (a body not listed has no cut data: it dies the plain way)
 };
 /** The package's cut-piece rig (three-cuts.mjs): `update()` shows each cap whose unit is in `rd.cuts`; the pieces are always drawn and the bones carry them. */
@@ -254,7 +263,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   }
   let cutRig: CutRig | undefined;   // the body is the physics cut GLB (piece_* and cap_* meshes, docs/CUT-CONTRACT.md): a cut shows the caps and the piece flies with its bones. Undefined = the old triangle cutter and ball caps
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
-  let mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
+  let capped = false, mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const late = createLateCuts();   // a finisher row's cut made some seconds after the killing blow (finisherCuts atS)
   // ?rules=m4 (rules-eval.ts): `rules` is the evaluator, `down` the seconds a knockdown has left (the bones follow the ragdoll), `getUp` the seconds left of the blend back to the clip
   let rules: ReturnType<typeof createRulesEval> | undefined, down = -1, getUp = -1;
@@ -303,10 +312,14 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     clearCuts(); late.clear();   // the rematch: the body whole again, this fight's cut list empty
     if (newLife) lifeId = `${foe.id}#${++lives}`;   // M8: a new life, a new corpseId (the get-up of ?rules=m4 is the same life)
     if (!rd?.reset()) {
-      rd?.destroy();
+      if (rd) worldRagdolls.delete(rd);
+      rd?.destroy(); rd = undefined; rig = cutRig = undefined;
+      if (admitRagdoll(chunk!) === 'baked') { capped = true; mode = 'alive'; cost.state = 'baked: ragdoll cap'; return; }   // the cap (budget-rows.json): no body now, the clip's baked death plays (step builds it when a place frees up)
+      capped = false;
       const cr = rows.corpse as typeof rows.corpse | undefined, count = (cr?.cuttable ? cr.max : 0) + 1;   // the lanes: the live foe and each corpse that keeps a ragdoll
       slot = freeSlot(corpses.filter((c) => c.rd).map((c) => c.slot), count);
       rd = physics.createRagdoll(measure, { id: foe.id, position: slotPosition(slot, cr?.slotSpacingM ?? 0), motorTuning: tune?.motorTuning ?? rows.motorTuning, solveHinges: tune?.solveHinges ?? rows.solveHinges });
+      worldRagdolls.add(rd);
       const p0 = rd.readPose(); spawnHips = [p0[0]!, p0[1]!, p0[2]!];   // where the rig was made: a corpse's rig is made later, from this (see armCorpse)
       bindOpts = rigged.bindScene ? { bones: Object.fromEntries(Object.entries(bones).map(([part, name]) => [part, bone(rigged!.bindScene!, name)!])), root: rigged.bindScene } : undefined;
       const bind = bindOpts;
@@ -327,6 +340,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const dropCorpse = (c: Corpse) => {
     c.root.removeFromParent();
     if (c.cues) for (const { el } of c.cues.els) el.remove();
+    if (c.rd) worldRagdolls.delete(c.rd);
     c.rd?.destroy(); c.rd = c.rig = c.cutRig = c.cues = undefined;   // its lane in the world is free again
     c.cutter = undefined;
     for (const g of c.owned) g.dispose();   // geometry the copy cloned for itself (a carved body)
@@ -743,6 +757,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     } catch (error) { disabled = true; armed = false; hideCues(); cost.state = `disabled: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
   }
   function step(dt: number, events: readonly CombatEvent[], finish: { victim: number } | null, finisher: FinisherId | null) {
+      if (capped && !finish && physics && admitRagdoll(chunk!) === 'ragdoll') build(false);   // a place freed up under the cap: stand the ragdoll up (not mid-finish)
       if (!rd || !rig || !physics || !group) return;
       const start = performance.now();
       if (!finish && mode !== 'alive') { build(); down = -1; getUp = -1; ruleCuts.length = 0; judged = null; rules?.renew(); }   // the rematch: a fresh ragdoll, standing (and the evaluator's fighter whole again)
