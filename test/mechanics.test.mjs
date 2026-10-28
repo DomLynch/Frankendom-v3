@@ -92,7 +92,7 @@ test('a real duel on the sim: under the arm share he throws nothing but kicks, u
     let p = withHealth(fresh(), share);
     const log = [];
     for (let t = 0; t < 1500; t++) {
-      p = stepMechanic(p, idleIntent(), PROFILES.normal, mechanicFor('castle-guard'));
+      p = stepMechanic(p, t === 0 ? { ...idleIntent(), action: 'light' } : idleIntent(), PROFILES.normal, mechanicFor('castle-guard'));   // the first press draws (auto-start.ts), then the hero stands
       for (const e of p.duel.events) if (e.actor === 1 && e.type === 'AttackStarted') log.push(e.move);
       if (p.duel.fighters[0].health <= 0) break;
     }
