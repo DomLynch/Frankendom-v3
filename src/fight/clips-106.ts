@@ -54,6 +54,14 @@ export const CLIP_106_LOADERS: Record<string, Loader> = {
   '106/parasite/execution-victim-hero.json': () => import('../assets/106/parasite/execution-victim-hero.json'),
   '106/parasite/hamstrung-killer.json': () => import('../assets/106/parasite/hamstrung-killer.json'),
   '106/parasite/hamstrung-victim-hero.json': () => import('../assets/106/parasite/hamstrung-victim-hero.json'),
+  '106/sporty-granny/special-skullcrack.json': () => import('../assets/106/sporty-granny/special-skullcrack.json'),
+  '106/sporty-granny/special-whirlwind.json': () => import('../assets/106/sporty-granny/special-whirlwind.json'),
+  '106/sporty-granny/special-groundslam.json': () => import('../assets/106/sporty-granny/special-groundslam.json'),
+  '106/sporty-granny/special-lunge.json': () => import('../assets/106/sporty-granny/special-lunge.json'),
+  '106/sporty-granny/execution-killer.json': () => import('../assets/106/sporty-granny/execution-killer.json'),
+  '106/sporty-granny/execution-victim-hero.json': () => import('../assets/106/sporty-granny/execution-victim-hero.json'),
+  '106/sporty-granny/hamstrung-killer.json': () => import('../assets/106/sporty-granny/hamstrung-killer.json'),
+  '106/sporty-granny/hamstrung-victim-hero.json': () => import('../assets/106/sporty-granny/hamstrung-victim-hero.json'),
 };
 /** The loader of `role`'s 106 clip for the 106 body file `body`, or undefined (no 106 version: the body plays what it would without it). */
 export const clip106Loader = (body: string | undefined, role: string): Loader | undefined => {
