@@ -7,6 +7,7 @@ import STAGE from '../../data/stage.json' with { type: 'json' };
 import { afterFirstFrame } from '../late-art.ts';
 import { createSkyAnim, type SkyAnim } from './skyanim.ts';
 import type { SkyView } from './skyview.ts';
+import { bearingOf, createSkyRing, ringOn, type SkyRing } from './skyring.ts';
 import { plateAhead, plateFile, plateFlat, plateOn,plateGeometry, plateAlphaMap, plateCentreY, plateHorizonY, plateSize, plateWindow, skyGradient } from './skyplate.ts';
 
 /** The strip draws first of all the transparents (skyview.ts FLOOR_ORDER sits just after it). */
@@ -58,6 +59,8 @@ export function createSkyline(
   scene: THREE.Scene, search: string, row: SkylineRow = SKYLINE,
   load: () => Promise<THREE.Texture> = () => new THREE.TextureLoader().loadAsync(new URL(`../assets/skyline/${plateOn(search, row.plate) ? plateFile(search, row.plate) : row.file}`, import.meta.url).href),
   view: SkyView | null = null,   // ?skyview=a|b|c (skyview.ts): its drop, height and brightness; null = the row as it is
+  ringLoad: (file: string) => Promise<THREE.Texture> = (file) => new THREE.TextureLoader().loadAsync(new URL(`../assets/skyline/${file}`, import.meta.url).href),   // the ring's lazy plate fetch (skyring.ts); the tests pass a stand-in
+  viewportWidth: number = typeof window === 'undefined' ? 375 : window.innerWidth,   // the ring's phone or desktop picture
 ): Skyline | null {
   if (!skylineOn(search, row)) return null;
   const shade = view ? view.brightness : row.brightness, height = view && view.heightMetres > 0 ? view.heightMetres : row.heightMetres;
@@ -66,6 +69,8 @@ export function createSkyline(
     color: new THREE.Color(shade, shade, shade),
   });
   const plate = plateOn(search, row.plate) ? row.plate : null;   // data/stage.json skyline.plate: a far backdrop arc at the picture's native aspect + a plain sky gradient; ?skyplate=v1 = the whole 360-degree strip (below)
+  const ringWanted = !!plate && ringOn(search, row.ring);   // data/stage.json skyline.ring: south, east and west plates, fetched lazily; with it the sky is fixed in the world (?skyring=v1 = today)
+  let ring: SkyRing | null = null, ringYaw = 0;
   let plateY = 0, dome: THREE.Mesh | undefined, anim: SkyAnim | null = null;   // plateY: the arc's centre relative to the eye (set when the picture lands and its real shape is known)
   if (plate) plateY = plateCentreY(plate, row.radius, plateSize(plate, row.radius, plate.cropAspect).height);
   const mesh = new THREE.Mesh(plate ? plateGeometry(plate, row.radius, plate.cropAspect * 100, 100) : new THREE.CylinderGeometry(row.radius, row.radius, height, 96, 1, true), material);
@@ -77,7 +82,7 @@ export function createSkyline(
   mesh.rotation.y = fixedYaw;
   mesh.visible = false;
   scene.add(mesh);
-  const follow = skyFollowOn(search, row), dir = new THREE.Vector3();
+  const follow = !ringWanted && skyFollowOn(search, row), dir = new THREE.Vector3();
   let started = false, target = 0, turn = fixedYaw;   // turn = the strip's yaw, eased toward target by the shortest way (so winding never builds up: the alien is at most (1 - yawFollow) x 180 degrees off)
   let state: Skyline['state'] = 'idle', opacity = 0, texture: THREE.Texture | undefined, disposed = false;
   afterFirstFrame()
@@ -100,6 +105,10 @@ export function createSkyline(
         dome = new THREE.Mesh(skyGradient(plate, row.radius, plateHorizonY(plate, plateY, size.height), plateY + size.height / 2), new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, toneMapped: false, transparent: true, opacity: 0, depthWrite: false, vertexColors: true, color: new THREE.Color(shade, shade, shade) }));
         dome.name = 'skyplate-sky'; dome.renderOrder = SKYLINE_ORDER - 1; dome.frustumCulled = false;
         mesh.add(dome);
+        if (ringWanted) {   // the ring's arcs: built now, nothing fetched; each plate is fetched when the camera turns to it (skyring.ts)
+          ring = createSkyRing({ row: row.ring, radius: row.radius, horizonY: plateHorizonY(plate, plateY, size.height), shade, viewportWidth, load: ringLoad });
+          scene.add(ring.group);
+        }
       }
       const show = () => { if (disposed) return; material.map = t; material.needsUpdate = true; mesh.visible = true; state = 'fading'; };
       return anim ? anim.ready.then(show) : show();   // the plate shows once its layer pictures are in (or the row's timeout), so the planet and globe never pop in over the clean plate
@@ -108,10 +117,15 @@ export function createSkyline(
   return {
     mesh,
     heading(camera) {
-      if (!follow) return;
+      if (!follow && !ringWanted) return;
       camera.getWorldDirection(dir);
       if (Math.hypot(dir.x, dir.z) < 1e-4) return;   // looking straight up or down: no heading, keep the last
       const h = headingOf(dir.x, dir.z);
+      if (ringWanted) {   // the ring: the sky is fixed in the world, anchored at the FIRST heading (the north plate is where today's is on the first frame); the view's bearing from north starts a plate's fetch
+        if (!started) { started = true; ringYaw = row.yawFollow * h; turn = fixedYaw + ringYaw; mesh.rotation.y = turn; if (ring) ring.group.rotation.y = ringYaw; }
+        if (ring && (state === 'on' || state === 'fading')) { ring.group.rotation.y = ringYaw; ring.request(bearingOf(h - ringYaw)); }
+        return;
+      }
       target = plate ? fixedYaw + row.yawFollow * h : stripYaw(row, h);   // the camera's heading folded into -pi..pi: the offset from the view never grows with how many times he has turned
       if (!started) { started = true; turn = target; }   // the first frame starts on target: no spin-up
     },
@@ -123,6 +137,7 @@ export function createSkyline(
       }
       mesh.position.set(camera.x, camera.y + (plate ? plateY : centreOffsetY(row, view)), camera.z);
       dome?.position.set(0, -plateY, 0);
+      ring?.update(camera, dt);
       anim?.update(dt);   // the gradient stays centred on the eye whatever the arc's height
       if (state === 'fading') {
         opacity = Math.min(1, opacity + (row.fadeSeconds > 0 ? dt / row.fadeSeconds : 1));
@@ -134,6 +149,6 @@ export function createSkyline(
     get state() { return state; },
     get opacity() { return opacity; },
     get texture() { return texture; },
-    dispose() { disposed = true; anim?.dispose(); scene.remove(mesh); mesh.geometry.dispose(); material.dispose(); material.alphaMap?.dispose(); if (dome) { dome.geometry.dispose(); (dome.material as THREE.Material).dispose(); } texture?.dispose(); },
+    dispose() { disposed = true; ring?.dispose(); anim?.dispose(); scene.remove(mesh); mesh.geometry.dispose(); material.dispose(); material.alphaMap?.dispose(); if (dome) { dome.geometry.dispose(); (dome.material as THREE.Material).dispose(); } texture?.dispose(); },
   };
 }

@@ -315,7 +315,7 @@ export function validateFile(name, json) {
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only
 // lengthens it, data/zone-ground.json cameraFarMetres 420, test/skyview.test.mjs pins both) and the file a plain asset name. SKYLINE_RIM_LIMIT is that 180 less a margin.
 export const SKYLINE_RIM_LIMIT = 175;
-export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'plate', 'views', 'fold'];
+export const SKYLINE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'seamOverlapPx', 'quality', 'radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'followOffsetDegrees', 'face', 'yawFollow', 'yawFollowSeconds', 'followQuery', 'followV1', 'brightness', 'fadeSeconds', 'loadAfterFirstFrameMs', 'plate', 'views', 'fold', 'ring'];
 export const SKYPLATE_KEYS = ['about', 'on', 'query', 'v1', 'file', 'spanDegrees', 'cropAspect', 'face', 'horizonFraction', 'faceElevationDegrees', 'turnDegrees', 'orderOffset', 'edgeFadeFraction', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'sky', 'anim', 'flatFile', 'flatQuery', 'flatValue'];
 // data/stage.json `skyline.plate` (src/fight/skyplate.ts): the far backdrop arc. A plain file name, a face inside the picture, fractions in range, colours as #rrggbb, and the rim (the arc at its tallest, the sky cylinder) inside the far plane.
 function checkSkyPlate(s) {
@@ -492,6 +492,57 @@ function checkSkyline(s) {
   e.push(...checkSkyViews(s));
   e.push(...checkSkyFold(s));
   e.push(...checkSkyPlate(s));
+  e.push(...checkSkyRing(s));
+  return e;
+}
+
+// data/stage.json `skyline.ring` (src/fight/skyring.ts): the south, east and west plates. Plain WebP file names, one plate per bearing, ramps inside the overlap, colours as #rrggbb, query words that
+// differ from the other skyline ones, and the tallest arc (the baked picture's aspect at `spanDegrees`) inside the sky cylinder and the far plane.
+export const SKYRING_KEYS = ['about', 'on', 'query', 'v1', 'spanDegrees', 'overlapDegrees', 'orderOffset', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'bakedAspect', 'lazy', 'desktop', 'bake', 'plates'];
+export const SKYRING_PLATE_KEYS = ['id', 'direction', 'on', 'compassDegrees', 'mobile', 'desktop', 'rampLeftDegrees', 'rampRightDegrees', 'grade', 'bake'];
+function checkSkyRing(s) {
+  const e = [], at = (p, m) => e.push(`stage.skyline.ring.${p}: ${m}`), r = s.ring, obj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
+  if (!obj(r)) return ['stage.skyline.ring: must be an object'];
+  for (const k of Object.keys(r)) if (!SKYRING_KEYS.includes(k)) at(k, 'unknown key');
+  if (typeof r.on !== 'boolean') at('on', 'must be true or false');
+  for (const k of ['query', 'v1']) if (typeof r[k] !== 'string' || !/^[a-z0-9]+$/i.test(r[k])) at(k, 'must be a plain word');
+  const taken = [s.query, s.followQuery, s.views && s.views.query, s.views && s.views.foeFadeQuery, s.fold && s.fold.query, s.plate && s.plate.query, s.plate && s.plate.flatQuery, s.plate && s.plate.anim && s.plate.anim.query];
+  if (typeof r.query === 'string' && taken.includes(r.query)) at('query', 'must differ from the other skyline query words');
+  const rng = (o, k, lo, hi, int, path = k) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi || (int && !Number.isInteger(o[k]))) at(path, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
+  rng(r, 'spanDegrees', 90, 120); rng(r, 'overlapDegrees', 0, 30); rng(r, 'orderOffset', 1, 90, true); rng(r, 'topFadeFraction', 0, 0.5); rng(r, 'bottomFadeFraction', 0, 0.5); rng(r, 'segments', 8, 256, true); rng(r, 'bakedAspect', 1, 6);
+  if (Number.isFinite(r.spanDegrees) && Number.isFinite(r.overlapDegrees) && r.spanDegrees !== 90 + r.overlapDegrees) at('overlapDegrees', 'must be spanDegrees minus 90 (each plate is a quarter turn plus the overlap it shares with its neighbour)');
+  if (Number.isInteger(r.orderOffset) && s.fold && Number.isInteger(s.fold.orderOffset) && !(r.orderOffset > s.fold.orderOffset)) at('orderOffset', 'must draw after the folded floor (above fold.orderOffset)');
+  if (Number.isInteger(r.orderOffset) && s.plate && Number.isInteger(s.plate.orderOffset) && Array.isArray(r.plates) && !(r.orderOffset + r.plates.length <= s.plate.orderOffset)) at('orderOffset', 'the plates must all draw before the north plate (under plate.orderOffset)');
+  if (!obj(r.lazy)) at('lazy', 'must be an object'); else { for (const k of Object.keys(r.lazy)) if (!['loadWithinDegrees', 'fadeSeconds'].includes(k)) at(`lazy.${k}`, 'unknown key'); rng(r.lazy, 'loadWithinDegrees', 10, 89, false, 'lazy.loadWithinDegrees'); rng(r.lazy, 'fadeSeconds', 0, 20, false, 'lazy.fadeSeconds'); }   // under 90: the first heading is 90 degrees from east and west, so nothing is fetched on the first visit
+  if (!obj(r.desktop)) at('desktop', 'must be an object'); else { for (const k of Object.keys(r.desktop)) if (k !== 'minViewportWidth') at(`desktop.${k}`, 'unknown key'); rng(r.desktop, 'minViewportWidth', 320, 10000, true, 'desktop.minViewportWidth'); }
+  if (!obj(r.bake)) at('bake', 'must be an object');
+  else {
+    for (const k of Object.keys(r.bake)) if (!['sourceWidthPx', 'cropLeftPx', 'cropRightPx', 'topPx', 'bottomPx', 'mobileScale', 'quality'].includes(k)) at(`bake.${k}`, 'unknown key');
+    rng(r.bake, 'sourceWidthPx', 256, 16384, true, 'bake.sourceWidthPx'); rng(r.bake, 'cropLeftPx', 0, 2000, true, 'bake.cropLeftPx'); rng(r.bake, 'cropRightPx', 0, 2000, true, 'bake.cropRightPx'); rng(r.bake, 'topPx', 0, 4000, true, 'bake.topPx'); rng(r.bake, 'bottomPx', 1, 4000, true, 'bake.bottomPx'); rng(r.bake, 'mobileScale', 0.1, 1, false, 'bake.mobileScale'); rng(r.bake, 'quality', 40, 100, true, 'bake.quality');
+    if ([r.bake.sourceWidthPx, r.bake.cropLeftPx, r.bake.cropRightPx, r.bake.topPx, r.bake.bottomPx].every(Number.isFinite) && Number.isFinite(r.bakedAspect)) {
+      const w = r.bake.sourceWidthPx - r.bake.cropLeftPx - r.bake.cropRightPx, h = r.bake.bottomPx - r.bake.topPx;
+      if (!(w > 0 && h > 0) || Math.abs(w / h - r.bakedAspect) > 0.01) at('bakedAspect', `must be the baked picture's width over height (${w}/${h})`);
+      if (Number.isFinite(r.spanDegrees) && Number.isFinite(s.radius) && Number.isFinite(s.plate && s.plate.sky && s.plate.sky.halfHeightMetres) && s.radius * (r.spanDegrees * Math.PI / 180) / r.bakedAspect > 2 * s.plate.sky.halfHeightMetres) at('spanDegrees', 'the arc is taller than the sky cylinder');
+    }
+  }
+  if (!Array.isArray(r.plates) || r.plates.length < 1 || r.plates.length > 8) return [...e, 'stage.skyline.ring.plates: must be 1 to 8 rows'];
+  const ids = new Set(), bearings = new Set(), file = /^[a-z0-9][a-z0-9._-]*\.webp$/i;
+  r.plates.forEach((p, i) => {
+    const pa = `plates[${i}]`, pt = (k, m) => at(`${pa}.${k}`, m);
+    if (!obj(p)) { at(pa, 'must be an object'); return; }
+    for (const k of Object.keys(p)) if (!SKYRING_PLATE_KEYS.includes(k)) pt(k, 'unknown key');
+    if (typeof p.id !== 'string' || !/^[a-z]+$/.test(p.id) || p.id === 'north' || ids.has(p.id)) pt('id', 'must be a unique lowercase word other than north'); else ids.add(p.id);
+    if (typeof p.direction !== 'string' || !/^[A-Z]+$/.test(p.direction)) pt('direction', 'must be an upper-case word');
+    if (typeof p.on !== 'boolean') pt('on', 'must be true or false');
+    rng(p, 'compassDegrees', 1, 359, false, `${pa}.compassDegrees`); if (Number.isFinite(p.compassDegrees)) { if (bearings.has(p.compassDegrees)) pt('compassDegrees', 'two plates on one bearing'); bearings.add(p.compassDegrees); }
+    for (const k of ['mobile', 'desktop']) if (typeof p[k] !== 'string' || !file.test(p[k])) pt(k, 'must be a plain .webp file name in src/assets/skyline/');
+    if (p.mobile === p.desktop) pt('desktop', 'must differ from the mobile file');
+    for (const k of ['rampLeftDegrees', 'rampRightDegrees']) rng(p, k, 0, Number.isFinite(r.overlapDegrees) ? Math.max(r.overlapDegrees, 0) : 30, false, `${pa}.${k}`);
+    if (!obj(p.grade)) pt('grade', 'must be an object {tint, brightness}');
+    else { for (const k of Object.keys(p.grade)) if (!['tint', 'brightness'].includes(k)) pt(`grade.${k}`, 'unknown key'); if (typeof p.grade.tint !== 'string' || !/^#[0-9a-f]{6}$/i.test(p.grade.tint)) pt('grade.tint', 'must be a #rrggbb colour'); rng(p.grade, 'brightness', 0.2, 1.5, false, `${pa}.grade.brightness`); }
+    if (!obj(p.bake)) pt('bake', 'must be an object {dir, layers}');
+    else { for (const k of Object.keys(p.bake)) if (!['dir', 'layers'].includes(k)) pt(`bake.${k}`, 'unknown key'); if (typeof p.bake.dir !== 'string' || !/^[A-Za-z0-9_]+$/.test(p.bake.dir)) pt('bake.dir', 'must be a plain folder name'); if (!Array.isArray(p.bake.layers) || p.bake.layers.some((l) => typeof l !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.(webp|png)$/i.test(l))) pt('bake.layers', 'must be a list of plain layer file names'); }
+  });
   return e;
 }
 
