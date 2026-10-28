@@ -9,7 +9,7 @@ if (!base || !out || !tag) { console.error('usage: node scripts/parts-stills.mjs
 mkdirSync(out, { recursive: true });
 const TICK = 1000 / 60, CUT_EVERY = 55, MAX_TICKS = 3000, errors = [], UNITS = (process.env.UNITS ?? 'arm_left,leg_right,head').split(',');
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: process.env.GL_ARGS ? process.env.GL_ARGS.split(' ') : ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
-const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const ctx = await browser.newContext({ viewport: { width: Number(process.env.W ?? 375), height: Number(process.env.H ?? 812) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 let page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
@@ -57,6 +57,14 @@ for (const u of UNITS) await tapUnit(u);
 await run(60);
 await shoot('1-closed');
 console.log(`${tag}: take-ui present ${await page.evaluate(() => !!document.querySelector('.pk-pill'))}; sheet hidden ${await page.evaluate(() => document.querySelector('[data-frank=sheet]')?.hidden)}; save ${JSON.stringify(await save())}`);
+// the ☰ against every other HUD box on the page (the radar, Daily Pit button and card, the commentator caption, the thumb controls, the share pill when it lands): no overlap
+console.log(`${tag}: hud overlap ${JSON.stringify(await page.evaluate(() => {
+  const r = (el) => { const b = el.getBoundingClientRect(); return b.width && b.height ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
+  const me = r(document.querySelector('[data-frank=button]')), hits = [];
+  const others = [...document.querySelectorAll('[data-radar],.dp-btn,.dp-card,.dp-banner,[data-commentator],.cm-line,#joystick,#actions,.share-button,[data-share],#reset-button,#camera-button,#recenter-button,.combat-hud,header')];
+  for (const el of others) { const o = r(el); if (o && me && o.l < me.r && o.r > me.l && o.t < me.b && o.b > me.t) hits.push(el.id || el.className || el.tagName); }
+  return { button: me, hits, viewport: [innerWidth, innerHeight] };
+}))}`);
 await tapCentre('[data-frank=button]');
 await run(2);
 console.log(`${tag}: sheet text ${JSON.stringify(await page.evaluate(() => document.querySelector('[data-frank=sheet]').innerText.replace(/\s+/g, ' ').slice(0, 400)))}`);

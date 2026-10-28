@@ -130,7 +130,7 @@ let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the n
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
   const changed = !foe || foe.opponentId !== k.opponentId || foe.kind !== k.kind || (foe.star ?? 0) !== (k.star ?? 0);   // two bosses on one archetype (a ring boss cloned from Arachne) differ by their profile row
-  setActiveKind(k.kind);
+  setActiveKind(k.kind, k.star ?? 0);
   foe = k; opponentId = k.opponentId as OpponentId; opponent = k.opponent; difficultyOn = k.scaled; aiProfile = k.ai;
   if (changed) nameOpponent();   // the HUD names the spawn the sim holds
 }
@@ -419,7 +419,6 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 /** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
 let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
 function onBossKilled(kind: string, star = 0) {
-  PARTS_HOOK?.noteKill(kind, star);
   if (!PROG?.save) return;
   try {
     const out = recordKill(PROG.save, kind, PROG_ROWS);
