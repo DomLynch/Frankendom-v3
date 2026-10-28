@@ -562,7 +562,8 @@ function frame(now: number) {
   last = now;
   const dt = Math.min(elapsed, FIGHT.frameDtMaxS);
   if (!paused()) {
-    if (ZONE) { zoneStep(dt); syncSweeps(); commentator.frame(dt, engaged, heroDied(), heroStands(), 100 * practice.playerHealth / practice.maxHealth, 100 * practice.health / practice.enemyMaxHealth, spawns[current]!.kind, starById[spawns[current]!.id] ?? 0, state.x, state.z); }   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
+    if (ZONE) { zoneStep(dt); syncSweeps(); }
+    if (ZONE) commentator.frame(dt, engaged, heroDied(), heroStands(), 100 * practice.playerHealth / practice.maxHealth, 100 * practice.health / practice.enemyMaxHealth, spawns[current]!.kind, starById[spawns[current]!.id] ?? 0, state.x, state.z);   // the arena commentator's captions (presentation only)   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
     if (heroStands()) killAge += dt;
     controls.promoteDodge(now);
     // :1517 the pause spends the frame's time first; what is left after it goes on to the simulation
