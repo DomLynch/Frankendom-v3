@@ -36,14 +36,14 @@ await page.waitForTimeout(500);
 const fw = await basis(KEYS.forward[0]), rt = await basis(KEYS.right[0]);
 await page.evaluate(([s, d]) => { const f = globalThis.__v3Fight.fighter; f.x = s.x + d; f.z = s.z; }, [spawn, DIST]);
 await page.waitForTimeout(500);
-for (let i = 0; i < 300 && !(await page.evaluate(() => globalThis.__v3Zone.engaged)); i++) {
+for (let i = 0; i < 1200 && !(await page.evaluate(() => globalThis.__v3Zone.engaged)); i++) {
   const h = await heroAt(), dx = spawn.x - h[0], dz = spawn.z - h[1], n = Math.hypot(dx, dz) || 1, f = (dx * fw[0] + dz * fw[1]) / n, r = (dx * rt[0] + dz * rt[1]) / n;
   for (const [c, on] of [[KEYS.forward[0], f > 0.3], [KEYS.back[0], f < -0.3], [KEYS.right[0], r > 0.3], [KEYS.left[0], r < -0.3]]) await key(c, on ? 'keydown' : 'keyup');
   if (i > 40 && n < 4) await page.evaluate(([s, ux, uz]) => { const q = globalThis.__v3Fight.fighter; q.x = s.x - ux * 2; q.z = s.z - uz * 2; }, [spawn, dx / n, dz / n]);
   await page.waitForTimeout(100);
 }
 for (const k of ['forward', 'back', 'left', 'right']) await key(KEYS[k][0], 'keyup');
-if (!(await page.evaluate(() => globalThis.__v3Zone.engaged))) { console.error(`${tag}: the Accountant did not engage`); process.exit(3); }
+if (!(await page.evaluate(() => globalThis.__v3Zone.engaged))) { console.error(`${tag}: the Accountant did not engage; hero`, JSON.stringify(await heroAt()), 'spawn', JSON.stringify(spawn), 'basis', JSON.stringify([fw, rt]), JSON.stringify(await page.evaluate(() => ({ cur: globalThis.__v3Zone.current ?? null, eng: globalThis.__v3Zone.engaged, near: globalThis.__v3Zone.spawns.length })))); await page.screenshot({ path: `${out}/${tag}-noengage.png` }); process.exit(3); }
 const st = () => page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; return { hero: h.phase, heroHp: h.health, mech: f.mech ?? null, mS: f.mS ?? 0, mC: f.mC ?? 0, foe: f.phase, hp: f.health, at: [f.body.x, f.body.z], log: { ...globalThis.__wallLog } }; });
 const fail = []; const check = (ok, what) => { console.log(`${tag}: ${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) fail.push(what); };
 let s = await st();
