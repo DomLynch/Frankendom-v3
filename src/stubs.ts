@@ -34,5 +34,7 @@ export type LessonLine = string;   // lessons.ts:25 LessonLine
 export const lessonText = (_id: LessonLine): string => '';   // lessons.ts:28 lessonText (no lesson fight)
 export const LESSON_FELL = 'You fell. That was the lesson.';   // lessons.ts:35
 export const LESSON_NEXT = 'Fight for real';   // lessons.ts:36
-// @sentry/browser: no monitoring service
-export const captureException = (error: unknown, _context?: unknown): void => { console.error(error); };   // @sentry/browser captureException
+// @sentry/browser: no monitoring service. The one error seam stays the one place errors are caught: it logs, and hands the error to the telemetry sink the page installs (src/telemetry.ts, js_error kind "caught"), so there is no second hook.
+let errorSink: ((error: unknown) => void) | null = null;
+export const setErrorSink = (sink: ((error: unknown) => void) | null): void => { errorSink = sink; };
+export const captureException = (error: unknown, _context?: unknown): void => { console.error(error); try { errorSink?.(error); } catch { /* telemetry never breaks the error path */ } };   // @sentry/browser captureException

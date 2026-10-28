@@ -29,6 +29,8 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
+import { startTelemetry } from '../telemetry.ts';
+import { setErrorSink } from '../stubs.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
@@ -78,6 +80,8 @@ import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
+const telemetry = startTelemetry();   // deaths and errors, anonymous (data/telemetry.json; off for ?telemetry=off, Do-Not-Track, localhost and the dev build). Every call below is a no-op when off and never throws
+setErrorSink((e) => telemetry.error('caught', e));   // the existing captureException seam feeds js_error: no second hook
 const canvas = element<HTMLCanvasElement>('world');
 // V1's Pitborn in the Minotaur's body (data/fight.json opponent); ?pitborn=v1 = the Centurion's fight, on the same 106 body (src/fight/foe-pick.ts, the one read)
 const level = FIGHT.level;
@@ -231,6 +235,14 @@ if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale, undefine
 if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0, bossKilled = false;
+let fightSec = 0;   // seconds the hero has been engaged in this fight (telemetry's `sec`); reset at every rematch and after each report
+/** Telemetry's boss_death / boss_kill row: the boss's kind, the seconds engaged, and the percent of max health each side has left. */
+function reportFight(name: 'boss_death' | 'boss_kill', index: number) {
+  const hero = practice.duel.fighters[0], foeFighter = index === current ? practice.duel.fighters[1] : attackers.find((a) => a.index === index)?.practice.duel.fighters[1];
+  const pct = (f?: { health: number; maxHealth: number }) => (f && f.maxHealth > 0 ? (100 * f.health) / f.maxHealth : 0);
+  telemetry.event(name, { boss: spawns[index]?.kind ?? 'unknown', sec: fightSec, heroHp: pct(hero), bossHp: pct(foeFighter) });
+  fightSec = 0;
+}
 // The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
 // ceremony is over or he moves the stick; any stick input ends the ceremony at once. killAge counts the seconds since the kill landed (the rig's own finish age restarts when its finisher camera lets go); freeAfterKill latches the hand-over for this kill.
 // FREE is null under ?postkill=v1 (no zone), ?freecam=v1 and the row off: the lock camera exactly as it was
@@ -269,7 +281,7 @@ function rematch(pose?: DuelPose, index = current, restart = true, handOver = fa
   if (ZONE) useKind(kindAt(index));   // the sim's opponent becomes the spawn it is handed to (and back as the hero walks to another)
   if (ZONE) view.respawnFoe();   // first: the dead body is left standing before his sim body is reset (scene.ts, ragdoll.leaveCorpse)
   seed = nextSeed(seed); practice = fresh(pose); frameEvents = []; openerLift = 0;   // every reset (hand-over, leash reset, respawn) clears the opener's leash lift; the next frame sets it again for the opener's own fight
-  roam = null; sinceDeath = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false; walkBack = false;
+  roam = null; sinceDeath = 0; fightSec = 0; killAge = 0; freeAfterKill = false; current = index; engaged = false; killMarked = false; walkBack = false;
   attackers = attackers.filter((a) => a.dead); killedBy = null;   // every live attacker lets go and stands again at full health at its spot; a killed one keeps lying until its own timer is up
   resetInput(handOver); state = previous = practice.fighter;
   if (restart) view.restartStandoff();
@@ -306,13 +318,14 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
+  if (engaged && !practice.finish) fightSec += dt;
   spawns = timers.spawns;
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
     for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) spawns = kill(spawns, a.index);
   }
   if (practice.finish) { openerSpent = true; openerLift = 0; }   // opener: a kill or a death spends it (no re-arm)
-  if (heroStands() && !killMarked) { killMarked = true; engaged = false; spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
+  if (heroStands() && !killMarked) { killMarked = true; engaged = false; reportFight('boss_kill', current); spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
     const live = attackers.find((a) => !a.dead), phase = view.finishPhase();
     if (live) { if (roam || freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
@@ -321,6 +334,7 @@ function zoneStep(dt: number) {
       if (next >= 0) hand(next, hero);
     }
   } else if (heroDied()) {
+    if (sinceDeath === 0) reportFight('boss_death', killedBy ?? current);
     if ((sinceDeath += dt) >= ZONE!.diedSeconds) { const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
     const near = inAggro(spawns, hero);

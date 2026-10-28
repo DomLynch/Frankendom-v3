@@ -1,0 +1,57 @@
+# /etc/systemd/system/frankendom-v3-telemetry.service   (NOT installed by this repo: deploy/telemetry/README.md is the ordered runbook, run on an explicit go)
+# V3's deaths-and-errors collector (server/telemetry/main.ts): validates what the page posts and appends it to a size-capped, rotating JSONL log under /var/lib/frankendom-v3-telemetry, on 127.0.0.1:8796 behind nginx (frankendom-v3-telemetry.conf).
+# Port 8796 was free on the box on 2026-10-28 (8791-8794 and 8795 are taken or parked: presence is 8794, the writer proof 8795). The name carries -v3- and -telemetry- so it can never overwrite or share another unit.
+# Pinned checkout: /opt/frankendom-v3-telemetry/current is a symlink to releases/<commit sha> (git archive: server/telemetry, src/telemetry-rows.ts, data/telemetry.json, package.json). No npm dependency.
+[Unit]
+Description=Frankendom V3 telemetry collector (deaths and errors)
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=frankendom-v3-telemetry
+Group=frankendom-v3-telemetry
+WorkingDirectory=/opt/frankendom-v3-telemetry/current
+ExecStart=/usr/bin/node server/telemetry/main.ts
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+
+# The VPS is shared and its disk is tight: the log is capped by the rows (10 MB x 5 files = 50 MB) and the process is capped here. Guards, not measured figures.
+MemoryHigh=96M
+MemoryMax=128M
+TasksMax=32
+CPUQuota=20%
+CPUWeight=50
+Nice=10
+LimitNOFILE=256
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/frankendom-v3-telemetry
+StateDirectory=frankendom-v3-telemetry
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+UMask=0077
+# stdout and stderr go to the journal (journalctl -u frankendom-v3-telemetry); the collector logs one start line and nothing per request.
+
+[Install]
+WantedBy=multi-user.target
