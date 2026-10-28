@@ -783,17 +783,19 @@ export function createScene(
     // The zone's other standing bosses (main.ts, every frame): where each stands (the pit's frame) and which way it faces. Drawn as frozen copies of the live foe at rest (syncIdleFoes).
     // `spawn` (optional, the spawn's kind and its zone row's `body`): a spawn in another body than the live rig is drawn from that body's own rig (bodyRig); absent or the live body: the frozen copies as before.
     /** main.ts, every frame, with the spawn the sim HOLDS: when its body is not the one the live rig wears, the live rig is swapped for that body's (held-body.ts). 'same' at the default (every spawn the Minotaur): nothing is built. */
-    holdBody(spawn: SpawnRef | null | undefined): string {
+    holdBody(spawn: SpawnRef | null | undefined, near = true): string {
       if (!spawn || !warriors) return 'same';
       const body = bodyOfSpawn(spawn);
       if (body === activeBody() && !heldCtl) return 'same';   // the default: no controller is made
+      if (!near && body !== liveBody && !bodyAssets.has(body) && !heldCtl?.has(body)) return 'same';   // lazy: the hero is far from this spawn and its body was never asked for: no fetch, the foe keeps the body it wears
       return heldBodies()?.hold(body) ?? 'same';
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
-    idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef }[]) {
+    idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean }[]) {
       const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
       idleList = list.every((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears) ? list : list.filter((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears);
-      idleOther = list.flatMap((e) => (e.spawn && e.id !== undefined && bodyOfSpawn(e.spawn) !== wears ? [{ id: e.id, x: e.x, z: e.z, heading: e.heading, file: bodyOfSpawn(e.spawn) }] : []));
+      // `near` false (the hero is beyond respawn.json world.loadWithinMetres) and the body never asked for: the spawn is not drawn and its file is not fetched (first-visit weight)
+      idleOther = list.flatMap((e) => (e.spawn && e.id !== undefined && bodyOfSpawn(e.spawn) !== wears && (e.near !== false || bodyAssets.has(bodyOfSpawn(e.spawn)) || bodyOfSpawn(e.spawn) === liveBody) ? [{ id: e.id, x: e.x, z: e.z, heading: e.heading, file: bodyOfSpawn(e.spawn) }] : []));
     },
     get idleFoeCount() { return idleCopies.filter((c) => c.visible).length + [...idleOtherActors.values()].filter((e) => e.group.visible).length; },   // the stills and the cost table read how many copies are on screen
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and

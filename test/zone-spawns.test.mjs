@@ -15,7 +15,8 @@ import { zoneFor } from '../src/zone/zone-rows.ts';
 import { OPEN_RADIUS } from '../src/fight/play-radius.ts';
 import { project } from '../src/fight/combat.ts';
 import { poseFits, zoneDuel } from '../src/zone/spawns.ts';
-import { WORLD, held, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, standing, tick, validateSpots } from '../src/zone/spawns.ts';
+import { spawnBodyFile } from '../src/fight/foe-body.ts';
+import { WORLD, withinLoad, held, idleOnes, inAggro, isStanding, kill, leashed, nearestStanding, pitOrigin, poseAt, spotsFor, standing, tick, validateSpots } from '../src/zone/spawns.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -26,9 +27,33 @@ const start = () => initialState();
 const list = () => spotsFor(ZONE).map((s) => ({ ...s, deadFor: null }));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
+// First-visit weight (late #188 finding, 2026-10-28): with spawns 2 and 3 in their own bodies the default page fetched both boss GLBs at load (+3.13 MB). A spawn whose body is not the live rig's is
+// fetched only once the hero is within respawn.json world.loadWithinMetres of it (scene.ts holdBody / idleFoes `near`, main.ts withinLoad); the browser wire receipt is in the PR.
+test('lazy boss bodies: no spawn that needs another body file is within load range of the hero at the page-load mark or the respawn mark', () => {
+  const live = spawnBodyFile('pitborn', 'minotaur'), start0 = initialState(), ZR = ZONE.respawn;
+  const others = list().filter((s) => spawnBodyFile(s.kind, 'minotaur', s.body) !== live);
+  assert.ok(others.length >= 2, 'the zone has spawns in other bodies (Gargantua, Arachne)');
+  for (const s of others) {
+    assert.equal(withinLoad(s, start0), false, `${s.id} (${s.kind}) is ${dist(s, start0).toFixed(1)} m from the load mark: its file would be fetched at page load`);
+    assert.equal(withinLoad(s, { x: ZR.x - pitOrigin(ZONE).x, z: ZR.z - pitOrigin(ZONE).z }), false, `${s.id} is within load range of the respawn point`);
+    assert.equal(withinLoad(s, { x: s.x + WORLD.loadWithinMetres - 0.01, z: s.z }), true, 'walking up to it loads it');
+    assert.equal(withinLoad(s, { x: s.x + WORLD.loadWithinMetres + 0.01, z: s.z }), false);
+    assert.ok(WORLD.loadWithinMetres > s.aggro + 5, 'the load starts well before the aggro, so the body is in before the fight');
+  }
+});
+
+test('lazy boss bodies: scene.ts fetches a non-live body only behind the hero-near gate (holdBody and idleFoes), main.ts passes the distance', () => {
+  const scene = src('../src/fight/scene.ts'), main = src('../src/client/main.ts');
+  assert.match(scene, /holdBody\(spawn: SpawnRef \| null \| undefined, near = true\)/);
+  assert.match(scene, /if \(!near && body !== liveBody && !bodyAssets\.has\(body\) && !heldCtl\?\.has\(body\)\) return 'same'/);
+  assert.match(scene, /e\.near !== false \|\| bodyAssets\.has\(bodyOfSpawn\(e\.spawn\)\) \|\| bodyOfSpawn\(e\.spawn\) === liveBody/);
+  assert.match(main, /view\.holdBody\(spawns\[current\], withinLoad\(spawns\[current\]!, state\)\)/);
+  assert.match(main, /near: withinLoad\(s, state\)/);
+});
+
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 30, startClearance: 25, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 60 });
-  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 30, startClearance: 25, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 60, loadWithinMetres: 24 });
+  for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres', 'loadWithinMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
 

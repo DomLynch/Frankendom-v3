@@ -67,7 +67,7 @@ import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
-import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, zoneDuel, type Spawn } from '../stubs.ts';
+import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import type { DuelPose } from '../fight/duel.ts';
@@ -474,9 +474,9 @@ function frame(now: number) {
     if (aim === 1 && widen - 1 < 1 / 1000) widen = 1;
     view.setWiden(widen);
   }
-  if (ZONE) view.holdBody(spawns[current]);   // [held-body] the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
+  if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]! }))); }   // the attackers' rigs (a killed one lies until its timer is up)
-  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, near: withinLoad(s, state) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });
