@@ -17,17 +17,21 @@ await page.goto(`${base}/?opener=off`);
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive' && globalThis.__v3Radar, null, { timeout: 180000 });
 await page.waitForTimeout(1500);
 // read the radar canvas in the frame after `setup` ran; returns the data URL and the phase that frame drew
-const grab = (agoMs) => page.evaluate(async (agoMs) => {
+// (a loaded machine stretches frames, so the page waits, frame by frame, for the phase it wants and reads the canvas in that very frame)
+const grab = (want) => page.evaluate(async (want) => {
   const r = globalThis.__v3Radar, cv = document.querySelector('[data-radar] canvas');
-  if (agoMs === null) r.stopFlash(); else r.armFlash(performance.now() - agoMs);
-  await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
-  await new Promise((res) => requestAnimationFrame(res));
-  return { url: cv.toDataURL('image/png'), phase: r.flashPhase, flashing: r.flashing, px: [cv.width, cv.height] };
-}, agoMs);
-const idle = await grab(null);
-const on = await grab(250);          // 0.25 s into a 0.6 s pulse: the swell is near its peak
+  if (want === 'idle') r.stopFlash(); else if (want === 'on') r.armFlash(performance.now());
+  const t0 = performance.now();
+  for (;;) {
+    await new Promise((res) => requestAnimationFrame(res));
+    const p = r.flashPhase, ok = want === 'idle' ? !r.flashing : want === 'on' ? p >= 0.4 && p <= 0.6 : r.flashing && p < 0;
+    if (ok || performance.now() - t0 > 20000) return { url: cv.toDataURL('image/png'), phase: p, flashing: r.flashing, px: [cv.width, cv.height], ok };
+  }
+}, want);
+const idle = await grab('idle');
+const on = await grab('on');          // 0.4..0.6 through the 0.6 s pulse: the swell is near its peak
 await page.screenshot({ path: `${out}/${tag}-flash-on-full.jpg`, type: 'jpeg', quality: 82 });
-const off = await grab(1500);        // 1.5 s into the 3 s period: between pulses
+const off = await grab('off');        // armed, between pulses
 for (const [n, g] of [['idle', idle], ['on', on], ['off', off]]) console.log(tag, n, JSON.stringify({ phase: +g.phase.toFixed(2), flashing: g.flashing, px: g.px }));
 const sheet = await browser.newPage({ viewport: { width: 375, height: 250 }, deviceScaleFactor: 2 });
 const cell = (n, g) => `<figure><img src="${g.url}"><figcaption>${n}</figcaption></figure>`;
