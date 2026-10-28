@@ -114,7 +114,7 @@ test('the shipped rows are unchanged by the profile key: Gargantua and Arachne r
   assert.equal(bossWeaponFor('executioner', '', undefined, 'gargantua')?.id, 'gargantua-maul');
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'arachne')?.id, 'arachne-axe-shield');
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'castle-guard')?.id, 'reginald-halberd', 'Sir Reginald has his own profile row (library polearm-200)');
-  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'sporty-granny')?.id, 'arachne-axe-shield', 'any other shieldmaiden profile keeps the archetype row');
+  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'sporty-granny')?.id, 'nan-spear-shield', 'Nan has her own profile row (library polearm-206)');
   assert.equal(bossWeaponFor('shieldmaiden', '')?.id, 'arachne-axe-shield', 'no profile = the archetype row, unchanged');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'castle-guard'), bossWeaponFor('pitborn', ''), 'the halberd is the castle-guard profile only');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black')?.id, 'ryo-sword', 'Ryo has his own row');
