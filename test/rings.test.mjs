@@ -159,7 +159,7 @@ test('wiring pins: the page lays the ring tune under the address\'s, mixes the l
   assert.match(main, /const BASE_TUNE = mergeTune\(TUNED, ringTune\(\)\)/);
   assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation/);
   assert.match(main, /view\.ringLook\(look\.tintA, look\.tintB, look\.t, look\.plates\)/);
-  assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch\)/);
+  assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch, undefined, bodyProfileOf\(file\)\)/);
   assert.match(scene, /plateWeights\(plates\)/);
 });
 

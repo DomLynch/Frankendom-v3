@@ -99,6 +99,51 @@ test('a zone spawn of each kind fights with the row\'s weapon, and the duel hold
   assert.equal(kindFightFor('pitborn', ctx()).opponent, OPPONENTS.pitborn, 'the default kind is the very same object as before');
 });
 
+// Rows keyed by profile id (2026-10-28): the new bosses share archetypes (Sir Reginald and Arachne are both shieldmaiden), so a row may name the profile; the archetype row is the fallback.
+const withRows = (...extra) => ({ ...clone(RAW), rows: [...clone(RAW).rows, ...extra] });
+const profRow = (id, profile, opponent, over = {}) => ({ ...clone(RAW).rows[0], id, profile, opponent, weapon: 'cleaver', equip: 'axe', ...over });
+
+test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had', () => {
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe']]);
+  for (const p of PROFILES.profiles) {
+    const base = OPPONENTS[p.opponent];
+    assert.equal(bossOpponent(base, '', undefined, p.id).weapon, bossOpponent(base, '').weapon, `${p.id}: naming the profile changes nothing while no row names it`);
+    assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), bossWeaponFor(p.opponent, ''), `${p.id}: the archetype's row`);
+  }
+  assert.equal(bossWeaponFor('executioner', '', undefined, 'gargantua')?.id, 'gargantua-maul');
+  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'arachne')?.id, 'arachne-axe-shield');
+  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'castle-guard')?.id, 'arachne-axe-shield', 'until a row names him, Sir Reginald inherits the archetype row');
+  assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black'), undefined, 'a pitborn profile with no row is on V1\'s weapon');
+  assert.match(readFileSync(new URL('../src/fight/spawn-kind.ts', import.meta.url), 'utf8'), /bossOpponent\(base, ctx\.search, undefined, kind\)/, 'kindFightFor passes the spawn kind (the profile id)');
+});
+
+test('two profiles sharing one archetype can have different rows; a profile without a row falls back to the archetype row, else V1\'s weapon; unknown profiles are refused', () => {
+  const reg = profRow('reginald-gladius', 'castle-guard', 'shieldmaiden', { weapon: 'gladius', equip: 'cleaver' }), ryo = profRow('ryo-maul', 'anime-boy-black', 'pitborn', { weapon: 'maul', equip: 'maul' });
+  const f = withRows(reg, ryo);
+  assert.deepEqual(validateBossWeapons(f), []);
+  assert.deepEqual(validateFile('boss-weapons', f), []);
+  const w = (opp, prof, s = '') => bossWeaponFor(opp, s, f, prof)?.id;
+  assert.equal(w('shieldmaiden', 'castle-guard'), 'reginald-gladius', 'the profile row wins');
+  assert.equal(w('shieldmaiden', 'arachne'), 'arachne-axe-shield', 'Arachne keeps the archetype row beside it');
+  assert.equal(w('shieldmaiden', 'sporty-granny'), 'arachne-axe-shield', 'a profile with no row falls back to the archetype row');
+  assert.equal(w('shieldmaiden'), 'arachne-axe-shield', 'no profile = the archetype row');
+  assert.equal(w('pitborn', 'anime-boy-black'), 'ryo-maul');
+  assert.equal(w('pitborn', 'kachujin'), undefined, 'no profile row and no archetype row: V1\'s weapon');
+  assert.equal(bossOpponent(OPPONENTS.pitborn, '', f, 'kachujin'), OPPONENTS.pitborn, 'the very same object');
+  assert.equal(bossOpponent(OPPONENTS.pitborn, '', f, 'anime-boy-black').weapon, 'maul');
+  assert.equal(bossOpponent(OPPONENTS.shieldmaiden, '', f, 'castle-guard').weapon, 'gladius');
+  assert.equal(bossOpponent(OPPONENTS.shieldmaiden, '', f, 'arachne').weapon, 'cleaver');
+  for (const q of ['?bossweapon=v1']) for (const [o, p] of [['shieldmaiden', 'castle-guard'], ['pitborn', 'anime-boy-black'], ['shieldmaiden', 'arachne']]) { assert.equal(bossWeaponFor(o, q, f, p), undefined, q); assert.equal(bossOpponent(OPPONENTS[o], q, f, p), OPPONENTS[o], q); }
+  assert.equal(bossPreview('?bossweapon=castle-guard', f)?.id, 'reginald-gladius'); assert.equal(bossPreview('?bossweapon=shieldmaiden', f)?.id, 'arachne-axe-shield');
+  assert.equal(bossRowOfBody('arachne-106', (o) => (o === 'shieldmaiden' ? 'arachne-106' : undefined), '', f)?.id, 'arachne-axe-shield', 'a body is found through the archetype rows only');
+  const bad = (rows) => validateBossWeapons({ ...clone(RAW), rows }).join('\n');
+  assert.match(bad([...clone(RAW).rows, profRow('x', 'no-such-boss', 'shieldmaiden')]), /profile: "no-such-boss" is no data\/profiles.json id/);
+  assert.match(bad([...clone(RAW).rows, profRow('x', 'castle-guard', 'pitborn')]), /profile: "castle-guard" fights as "shieldmaiden", not "pitborn"/);
+  assert.match(bad([...clone(RAW).rows, reg, { ...reg, id: 'reginald-2' }]), /profile: "castle-guard" has two rows/);
+  assert.match(bad([...clone(RAW).rows, { ...clone(RAW).rows[1], id: 'second-archetype-row' }]), /"shieldmaiden" has two rows/);
+  assert.equal(bad([...clone(RAW).rows, { ...reg, profile: null, opponent: 'pitborn', id: 'pit' }]), '', 'null profile = an archetype row');
+});
+
 test('?bossweapon=v1 and ?pitborn=v1 give V1\'s weapon back', () => {
   assert.equal(kindFightFor('gargantua', ctx({ search: '?bossweapon=v1' })).opponent.weapon, 'scythe');
   assert.equal(kindFightFor('arachne', ctx({ search: '?bossweapon=v1' })).opponent.weapon, 'gladius');

@@ -48,6 +48,10 @@ export const bodyOwnerOf = (file: string): string | undefined => (override === n
 // The biome rings' bosses (data/rings.json) wear a body of their own through the zone spawn's `body` while their profile row clones another boss: the archetype each fights as, by the 106 file it is drawn in
 // (the weapon the body is drawn with is that archetype's: the Minotaur's cleaver for a pitborn clone, Arachne's axe and shield for a shieldmaiden clone).
 const RING_OWNER: Record<string, string> = Object.fromEntries(RINGS.bosses.flatMap((b) => { const p = PROFILES.profiles.find((q: { id: string }) => q.id === b.kind); return p ? [[foeRigFile(b.body), p.opponent]] : []; }));
+// The same bodies by the profile id (the ring boss's `kind`): a boss weapon row may be keyed by profile (data/boss-weapons.json `profile`), so the body of Sir Reginald finds castle-guard's row, not Arachne's.
+const RING_PROFILE: Record<string, string> = Object.fromEntries(RINGS.bosses.flatMap((b) => (PROFILES.profiles.some((q: { id: string }) => q.id === b.kind) ? [[foeRigFile(b.body), b.kind]] : [])));
+/** The profile id (a ring boss's `kind`) whose zone spawn draws 106 body `file`, or undefined (not a ring boss's body, or `?boss=<body>` draws every boss in one body). Bodies shared by several profiles name none: they resolve by archetype (`bodyOwnerOf`). */
+export const bodyProfileOf = (file: string): string | undefined => (override === null ? RING_PROFILE[file] : undefined);
 /** The 106 file stem a zone spawn of `id` draws: the spawn row's own `body` (data/zones `spawns[].body`, a data/rig.json files stem) when it has one, else exactly `foeBodyFile` (its kind's profile body).
  *  ?boss=<body> still draws every boss in one body for the page. This is the key of the scene's rig cache (scene.ts bodyRigs). */
 export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => {
