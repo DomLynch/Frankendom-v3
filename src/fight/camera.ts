@@ -8,8 +8,9 @@ import type { Shove } from './camera-kick.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { stepShare, swingAround, virtualFoe, yawBehind, type FreeCameraRows } from './free-camera.ts';
 import { repitch, type PitchRows } from './camera-pitch.ts';
-import { cutCamPose, cutCamRows, cutCamShare, type CutCamPose } from './finisher-cam.ts';
-const CUT_CAM = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json: the late close view of the cut; null for ?finishercam=v1
+import { cutCamPose, cutCamRows, cutCamShare, finisherCamOn, type CutCamPose } from './finisher-cam.ts';
+const CUT_CAM = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json: the late close view of the cut; null by default (no finisher zoom), rows for ?finishercam=v1
+const FINISH_ZOOM = finisherCamOn(typeof location === 'undefined' ? '' : location.search);   // the finisher push-in and side reveal: off by default, ?finishercam=v1 restores them
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
@@ -339,7 +340,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       // The authorized slow push-in over the death window (finishers & gore 2026-09-17): a dolly toward the fallen, never a cut,
       // never an FOV change. Off when the viewer prefers reduced motion; the frame loop's hit-stop stays the one impact pause.
       // Paced to the slowed finisher clock (1.3 s / 0.75); a plain-death pick gets no dolly — an ordinary kill stays ordinary.
-      if (finish && finish.posed && !finish.draw && !still)
+      if (FINISH_ZOOM && finish && finish.posed && !finish.draw && !still)
         finishPush = Math.min(1, finishPush + dt / (1.3 / 0.75));
       else if (!finish) finishPush = 0;
       if (finishPush > 0) {
@@ -372,7 +373,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         }
       }
       const finisher = finish?.finisher ?? null, open = finisher !== null ? finisherRow(finisher)?.camera.reveal : undefined;
-      if (locked && !still && finish?.victim === 1 && open) {
+      if (FINISH_ZOOM && locked && !still && finish?.victim === 1 && open) {
         // The row's camera.reveal: when the side view opens on the finisher clock and over how long (Hamstrung and Execution open early, both blows
         // landing low inside the first 0.64 of the clock, and take Opened's raised three-quarter view; Opened opens wider for a big body).
         const t = THREE.MathUtils.clamp((finish.clock - open.from) / (finish.big && open.overBig !== undefined ? open.overBig : open.over), 0, 1),
