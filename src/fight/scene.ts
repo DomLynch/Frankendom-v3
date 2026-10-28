@@ -801,7 +801,6 @@ export function createScene(
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean }[]) {
-      (globalThis as { __dbgIdle?: unknown }).__dbgIdle = { wears: activeBody(), live: liveBody, list: list.map((e) => ({ id: e.id, near: e.near, body: e.spawn ? bodyOfSpawn(e.spawn) : null, kind: e.spawn?.kind })) };   // TEMP
       const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
       idleList = list.every((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears) ? list : list.filter((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears);
       // `near` false (the hero is beyond respawn.json world.loadWithinMetres) and the body never asked for: the spawn is not drawn and its file is not fetched (first-visit weight)
