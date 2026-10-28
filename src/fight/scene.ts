@@ -396,7 +396,7 @@ export function createScene(
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
   let ragdoll: FoeRagdoll | null = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one   // let: a held spawn in another body swaps it (heldBodies below)
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
-  const pickupV = new THREE.Vector3();
+  const pickupV = new THREE.Vector3(), projectV = new THREE.Vector3();
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow and one line over a frozen corpse (presentation only)
     : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
   let heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created   // let: the zone page may ask for the death-only one (heroDeath below) before the rigs load
@@ -860,6 +860,13 @@ export function createScene(
       const v = new THREE.Vector3(point[0], point[1], point[2]).project(camera);
       if (v.z > 1) return null;
       return [(v.x * 0.5 + 0.5) * width, (-v.y * 0.5 + 0.5) * height];
+    },
+    /** The same projection with no allocation (a per-frame overlay): writes CSS pixels into `out` and returns false when the point is behind the camera. */
+    projectInto(x: number, y: number, z: number, out: [number, number]): boolean {
+      projectV.set(x, y, z).project(camera);
+      if (projectV.z > 1) return false;
+      out[0] = (projectV.x * 0.5 + 0.5) * width; out[1] = (-projectV.y * 0.5 + 0.5) * height;
+      return true;
     },
     // End-of-fight timing for the HUD (owner 2026-09-22: nothing over the body until the finisher camera has settled; the text
     // fades while the arena cam tours). `settled`: the push-in/reveal has run its course, or SETTLE seconds of finish age when
