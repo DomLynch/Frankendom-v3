@@ -77,7 +77,7 @@ import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
 import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
-import { mountPickup, pickupOn } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
+import { mountHint, pickupOn } from './pickup.ts';   // the cut hint (data/pickup.json)
 import { foeRagdollFor, heldRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, setHeldRagdoll, snapshotRig, WARM_SCALE, type FoeRagdoll } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -394,8 +394,8 @@ export function createScene(
   let ragdoll: FoeRagdoll | null = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one   // let: a held spawn in another body swaps it (heldBodies below)
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
   const pickupV = new THREE.Vector3();
-  const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow, the line, a tap on a cut part, Take (presentation only)
-    : mountPickup(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
+  const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow and one line over a frozen corpse (presentation only)
+    : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
   const heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
