@@ -104,7 +104,7 @@ test('a bad save is a fresh game and nothing throws (corrupt, wrong version, wro
     assert.deepEqual(parseSave(raw, P), fresh, String(raw));
   // a table edited since: unknown bosses and bad counts are dropped, the rest kept, unlocked rebuilt from the ladder
   const kept = parseSave(JSON.stringify({ v: 1, kills: { arachne: 2, ghost: 5, gargantua: -1, pitborn: 'x' }, ladder: ['ghost', 'arachne', 'arachne', 'gargantua'], unlocked: ['excalibur'] }), P);
-  assert.deepEqual(kept, { v: 1, kills: { arachne: 2 }, ladder: ['arachne'], unlocked: ['cleaver'] });
+  assert.deepEqual(kept, { v: 1, kills: { arachne: 2 }, ladder: ['arachne'], unlocked: ['cleaver'], coins: 0, banked: 0, pile: null, lost: [] });
   // storage that throws on read, on write, or on the property itself
   const angry = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('QuotaExceededError'); } };
   assert.deepEqual(loadSave(angry, P), fresh); assert.equal(writeSave(angry, P, kill(fresh, 'arachne')), false);
