@@ -1,4 +1,4 @@
-// Zone bosses 2 and 3 (Dom 2026-10-28): the Gargantua (V1 executioner, health x3.75) and the Arachne (V1 shieldmaiden) are data/profiles.json rows with a display `name`.
+// Zone bosses 2 and 3 (Dom 2026-10-28): the Gargantua (V1 executioner, health x5.2) and the Arachne (V1 shieldmaiden) are data/profiles.json rows with a display `name`.
 // OpenTrident's bodies (data/rig.json files + clips106 rows, the GLBs) are a separate PR, so the zone spawn rows that name them are proved here against SYNTHETIC
 // bodies (the way test/boss-body.test.mjs does); the shipped zone row stays three Pitborn until the bodies merge.
 import { test } from 'node:test';
@@ -15,9 +15,9 @@ const ZONE = JSON.parse(readFileSync(new URL('../data/zones/zone1.row.json', imp
 const clone = (x) => structuredClone(x);
 const row = (id) => PROFILES.profiles.find((p) => p.id === id);
 
-test('the rows: gargantua is the executioner at health x3.75 (first value on the row), arachne the shieldmaiden at x1; both named', () => {
+test('the rows: gargantua is the executioner at health x5.2 (first value on the row), arachne the shieldmaiden at x1; both named', () => {
   const g = row('gargantua'), a = row('arachne');
-  assert.deepEqual([g.opponent, g.name, g.foeHealthScale, g.foeDamageScale, g.brain], ['executioner', 'Gargantua', 3.75, 1, null]);
+  assert.deepEqual([g.opponent, g.name, g.foeHealthScale, g.foeDamageScale, g.brain], ['executioner', 'Gargantua', 5.2, 1, null]);
   assert.deepEqual([a.opponent, a.name, a.foeHealthScale, a.foeDamageScale, a.brain], ['shieldmaiden', 'Arachne', 1, 1, null]);
   assert.equal(Object.keys(g)[1], 'foeHealthScale', 'the one number Dom tunes is the first value after the id');
   assert.equal(Object.keys(a)[1], 'foeHealthScale');
@@ -27,11 +27,12 @@ test('the rows: gargantua is the executioner at health x3.75 (first value on the
   assert.equal(PROFILES.default, 'pitborn');
 });
 
-test('health: executioner 160 x 3.75 = 600 at scale 1 of the ladder; the default difficulty row (0.72) makes it 432; the Arachne is 190 x 0.72', () => {
+test('health: executioner 160 x 5.2 x the default difficulty row (0.72) = ~600 at the DEFAULT pick (599); the Arachne is 190 x 0.72', () => {
   const at = (id, pick) => scaledOpponent(opponentAt(OPPONENTS[row(id).opponent], FIGHT.level), resolveFight({ profile: id, difficulty: pick }, PROFILES.profiles, DIFF, BRAINS.brains)).health;
   assert.equal(OPPONENTS.executioner.health, 160);
-  assert.equal(at('gargantua', 'legacy'), 600);
-  assert.equal(at('gargantua', DIFF.default), Math.round(160 * 3.75 * DIFF.rows.find((r) => r.id === DIFF.default).foeHealthScale));
+  assert.equal(at('gargantua', 'legacy'), 832);
+  assert.equal(at('gargantua', DIFF.default), 599);
+  assert.ok(Math.abs(at('gargantua', DIFF.default) - 600) <= 5, '~600 hp at the default pick');
   assert.equal(at('arachne', 'legacy'), 190);
 });
 
