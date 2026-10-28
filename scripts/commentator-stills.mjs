@@ -42,12 +42,20 @@ await gone(page); await page.waitForTimeout(500);
 await page.evaluate(() => { globalThis.__low = setInterval(() => { const f = globalThis.__v3Fight?.duel.fighters; if (f) f[0].health = Math.min(f[0].health, 20); }, 50); });
 await waitLine(page); await page.waitForTimeout(450); await shot(page, '2-hero-low');
 await page.evaluate(() => clearInterval(globalThis.__low)); await gone(page); await page.waitForTimeout(15000);   // the game clock runs slower than the wall clock under software GL: the 4 s gap between lines needs real seconds
-await page.evaluate(() => { globalThis.__lowb = setInterval(() => { const f = globalThis.__v3Fight?.duel.fighters; if (f) { f[0].health = f[0].maxHealth; f[1].health = Math.min(f[1].health, Math.floor(f[1].maxHealth * 0.15)); } }, 50); });
-await waitLine(page); await page.waitForTimeout(450); await shot(page, '3-boss-low');
-await page.evaluate(() => clearInterval(globalThis.__lowb));
+// the low-health line is edge-triggered (once per crossing), so a crossing blocked by the 4 s gap (the game clock runs slow under software GL) is retried by lifting the boss and dropping him again
+const bossHp = (frac) => page.evaluate((x) => { const f = globalThis.__v3Fight?.duel.fighters; if (f) { f[0].health = f[0].maxHealth; f[1].health = Math.floor(f[1].maxHealth * x); } }, frac);
+for (let i = 0; i < 12; i++) {
+  await bossHp(1); await page.waitForTimeout(1500); await bossHp(0.15);
+  if (await page.waitForFunction(() => document.querySelector('[data-commentator]')?.style.opacity === '1', null, { timeout: 6000 }).then(() => true, () => false)) break;
+}
+await waitLine(page, 5000); await shot(page, '3-boss-low');
 await gone(page); await page.waitForTimeout(15000);
-await page.evaluate(() => window.dispatchEvent(new CustomEvent('frankendom:cut', { detail: { unit: 'arm_right' } })));   // the ragdoll's own event (cutUnit), as a tap on a corpse part fires it
-await waitLine(page); await shot(page, '4-cut');
+for (let i = 0; i < 20; i++) {   // the ragdoll's own event (cutUnit), as a tap on a corpse part fires it; retried until the game clock (slow under software GL) has passed the 4 s gap
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('frankendom:cut', { detail: { unit: 'arm_right' } })));
+  if (await page.evaluate(() => document.querySelector('[data-commentator]')?.style.opacity === '1')) break;
+  await page.waitForTimeout(3000);
+}
+await waitLine(page, 5000); await shot(page, '4-cut');
 // the caption must not cover the controls, the radar, the boss bar or the hints: report the rects
 const rects = await page.evaluate(() => {
   const r = (q) => { const el = document.querySelector(q); if (!el) return null; const b = el.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), right: Math.round(b.right) }; };
