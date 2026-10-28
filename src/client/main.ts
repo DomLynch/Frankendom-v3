@@ -29,6 +29,7 @@ import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
 import { startTelemetry } from '../telemetry.ts';
+import { mountShareClip } from '../share-clip.ts';
 import { setErrorSink } from '../stubs.ts';
 import { createScene, CARRIED_WEAPONS } from '../fight/scene.ts';
 import PROGRESSION from '../../data/progression.json' with { type: 'json' };
@@ -290,6 +291,7 @@ function reportFight(name: 'boss_death' | 'boss_kill', index: number) {
   const hero = practice.duel.fighters[0], foeFighter = index === current ? practice.duel.fighters[1] : attackers.find((a) => a.index === index)?.practice.duel.fighters[1];
   const pct = (f?: { health: number; maxHealth: number }) => (f && f.maxHealth > 0 ? (100 * f.health) / f.maxHealth : 0);
   telemetry.event(name, { boss: spawns[index]?.kind ?? 'unknown', sec: fightSec, heroHp: pct(hero), bossHp: pct(foeFighter) });
+  if (name === 'boss_kill') shareClip.moment(spawns[index]?.kind); else shareClip.cancel();   // the Share clip button (src/share-clip.ts): keep the last seconds at a kill, drop the buffer at a death
   fightSec = 0;
 }
 // The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
@@ -678,6 +680,7 @@ function frame(now: number) {
     locked, paused() ? 0 : dt, roam && freeRoam && freeRoam.duel.fighters[0].phase !== 'ready' ? { ...practice, duel: { ...practice.duel, fighters: [freeRoam.duel.fighters[0], practice.duel.fighters[1]] } } : practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
   );
   frameEvents = [];
+  shareClip.frame(engaged);   // right after the render: the arena canvas into the clip buffer
   if (engaged) radar?.stopFlash();   // the next fight began: the kill flash ends
   radar?.frame(state.x, state.z, view.yaw);
   golden?.step(state, practice.playerHealth > 0);
@@ -685,6 +688,7 @@ function frame(now: number) {
   updateHud();
   requestAnimationFrame(frame);
 }
+const shareClip = mountShareClip({ source: canvas, audio: () => feedback.stream(), untap: () => feedback.untap(), telemetry });   // Share clip (data/share-clip.json); event v3:clip-moment is the hook for the Pit modes
 nameOpponent();
 updateHud();
 const radarOrigin = ZONE ? pitOrigin(zoneFor(search), WORLD) : { x: 0, z: 0 };   // the radar (data/radar.json): bosses at their live spots, other players from the presence handle; hero and yaw come in per frame
