@@ -11,7 +11,7 @@ import { mkdirSync } from 'node:fs';
 const [base, out, tag] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/hunt-stills.mjs <base url> <out dir> <tag>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--mute-audio'] });
 const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 2), isMobile: true, hasTouch: true });
 let bad = 0;
 const fail = (m) => { bad++; console.error(`${tag} FAIL ${m}`); };
