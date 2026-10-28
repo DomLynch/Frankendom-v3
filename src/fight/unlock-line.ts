@@ -6,7 +6,7 @@ export type UnlockLine = { show(text: string): void; remove(): void };
 /** Mounts the line (hidden) in `doc`. `show(text)` fades it in for `seconds`; a second `show` replaces the text and restarts the time. `later`: the timer (a test passes its own). */
 export function mountUnlockLine(doc: Doc, seconds: number, later: (fn: () => void, ms: number) => unknown = (fn, ms) => setTimeout(fn, ms), clear: (t: unknown) => void = (t) => clearTimeout(t as number)): UnlockLine {
   const style = doc.createElement('style');
-  style.textContent = '.ul-line{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:29;pointer-events:none;opacity:0;transition:opacity .4s ease;white-space:nowrap;color:#ffd34a;'
+  style.textContent = '.ul-line{position:fixed;left:50%;top:calc(18% + 22px);transform:translateX(-50%);z-index:29;pointer-events:none;opacity:0;transition:opacity .4s ease;white-space:nowrap;color:#ffd34a;'
     + "font:10px/1.25 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;text-shadow:0 1px 3px rgba(0,0,0,.85);user-select:none;-webkit-user-select:none}";
   doc.head.append(style);
   const el = doc.createElement('div'); el.className = 'ul-line'; el.dataset.unlock = 'true'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
