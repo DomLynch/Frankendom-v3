@@ -37,6 +37,7 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
+import { mountParts } from '../fight/parts-hook.ts';
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -137,7 +138,7 @@ let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the n
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
   const changed = !foe || foe.opponentId !== k.opponentId || foe.kind !== k.kind || (foe.star ?? 0) !== (k.star ?? 0);   // two bosses on one archetype (a ring boss cloned from Arachne) differ by their profile row
-  setActiveKind(k.kind);
+  setActiveKind(k.kind, k.star ?? 0);
   foe = k; opponentId = k.opponentId as OpponentId; opponent = k.opponent; difficultyOn = k.scaled; aiProfile = k.ai;
   if (changed) nameOpponent();   // the HUD names the spawn the sim holds
 }
@@ -340,6 +341,7 @@ const pileXY: [number, number] = [0, 0];   // the pile marker's screen spot, rew
 let carriedWeapon: string = REWARD_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
 const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
 function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
+const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
 function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
 function startLinger(idx: number) {
   const pile = PROG?.save?.pile;

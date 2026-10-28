@@ -18,7 +18,16 @@ export const setKindNames = (profiles: readonly { id?: string; opponent: string;
 let profileNames: Record<string, { opponent: string; name: string }> = {};
 let activeKind: string | null = null;
 /** The profile row (zone spawn kind) the sim holds now: the HUD names it by its own row when it has a name, so two bosses on one archetype (Arachne and the ring bosses cloned from her) keep their own names. */
-export const setActiveKind = (kind: string | null): void => { activeKind = kind; };
+export const getActiveKind = (): string | null => activeKind;
+export const setActiveKind = (kind: string | null, star = 0): void => { activeKind = kind; activeStar = star; };
+/** The star level (data/stars.json) of the boss the sim holds now, set with its kind: a part cut off his corpse is as rare as he was (src/fight/ragdoll.ts reads it at the kill, not when the cut lands). */
+export const getActiveStar = (): number => activeStar;
+let activeStar = 0;
+/** One life's profile and star, written ONCE at the top of the kill (before any finisher/skip branch: every cut of that corpse, the finisher's beheading included, reads it), the newest `cap` kept. */
+export type LifeRow = { profile: string; star: number };
+export function noteLife(lives: Map<string, LifeRow>, id: string, profile: string, star: number, cap = 16): void {
+  lives.set(id, { profile, star }); if (lives.size > cap) lives.delete(lives.keys().next().value!);
+}
 /** The row in force for this page: the name on the opponent this page fights (`opponent`, from foe-pick.ts: the Pitborn, or the Centurion under
  * ?pitborn=v1, both drawn as the Minotaur). No query changes it: every body drawn is the Minotaur. */
 export const foeNameFor = (data: FoeNameRow, _search: string, opponent: string = data.opponent): FoeNameRow | null => ({ opponent, name: data.name });

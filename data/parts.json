@@ -1,0 +1,32 @@
+{
+  "about": "Frankendom parts, stage 1 (Dom 2026-10-28: 'you become what you kill'). Cutting a fallen boss (tap, as before; no Take button) adds that part to the player's inventory automatically: the corpse:cut event names the boss's data/profiles.json id and the unit; the part is `<profile id>:<slot id>`. A part keeps the HIGHEST star level it was ever cut at (data/stars.json levels: 0, 1, 2), which is its rarity (`rarities`) and, for star 1 and 2, its trophy tag (the star level's trophy name). `slots`: the places on the hero; `units` are the physics cut units that fill them (head, arm_left, arm_right, leg_left, leg_right, torso_waist); the weapon slot has none (it shows the boss-weapon reward of data/progression.json and is not equipped here). One equipped part per slot; equip and unequip are one tap each. The inventory and the equipped map ride in the data/progression.json save as optional fields (`parts`, `equipped`), so a save from before them loads with both empty. `maxCount`: the cap on how many times one part is counted. Stage 1 is the inventory and the menu only: nothing is drawn on the hero yet (stage 2). `button` / `panel`: the ☰ button and the sheet it opens (DOM only, pointer-events on the button and sheet, the palette is the V1 journal's). `text`: every word the menu shows. Values are checked by src/parts.ts validateParts at load; keys by src/sim/validate.js.",
+  "maxCount": 99,
+  "slots": [
+    { "id": "head", "label": "Head", "units": ["head"] },
+    { "id": "arm_left", "label": "Left arm", "units": ["arm_left"] },
+    { "id": "arm_right", "label": "Right arm", "units": ["arm_right"] },
+    { "id": "leg_left", "label": "Left leg", "units": ["leg_left"] },
+    { "id": "leg_right", "label": "Right leg", "units": ["leg_right"] },
+    { "id": "torso", "label": "Torso", "units": ["torso_waist"] },
+    { "id": "weapon", "label": "Weapon", "units": [] }
+  ],
+  "rarities": [
+    { "star": 0, "id": "common", "label": "Common", "colour": "#7a746a" },
+    { "star": 1, "id": "rare", "label": "Rare", "colour": "#b7791f" },
+    { "star": 2, "id": "epic", "label": "Epic", "colour": "#b3231c" }
+  ],
+  "button": { "label": "☰", "aria": "Frankendom: your body parts", "sizePx": 36, "topPx": 170, "rightPx": 10, "zIndex": 30 },
+  "panel": { "zIndex": 80, "maxWidthPx": 420, "maxHeightFrac": 0.82 },
+  "text": {
+    "title": "Frankendom",
+    "close": "Close",
+    "hint": "Cut a fallen boss to keep a part. Equip one per slot.",
+    "empty": "Nothing cut yet",
+    "equip": "Equip",
+    "unequip": "Unequip",
+    "equipped": "Equipped",
+    "none": "Empty",
+    "weaponDefault": "Longsword",
+    "weaponReward": "reward"
+  }
+}

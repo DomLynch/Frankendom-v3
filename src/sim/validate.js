@@ -73,6 +73,10 @@ export const SCHEMA = {
     maps: { detect: ['media', 'attribute', 'mouseMovePx'], keys: ['forward', 'back', 'left', 'right', 'run', 'strike', 'heavy', 'stab', 'roll', 'guard', 'kick', 'skill', 'skill2', 'lock', 'recenter', 'escape'], mouse: ['strike', 'guard', 'lookDragPx'], strike: ['forwardStab', 'slidePx'], layout: ['attribute', 'wideAttribute', 'wideAspect', 'rows'] } },
   // The hero's death and respawn loop (src/fight/hero-death.ts validateHeroDeath checks the values): the death-only ragdoll, the death camera, the 'You fell' line and Respawn button
   'hero-death': { keys: ['about', 'on', 'query', 'off', 'ragdoll', 'line', 'button', 'keys', 'respawn', 'cam', 'limits'], maps: { respawn: ['minSeconds', 'autoSeconds'], cam: ['seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'], limits: ['minSeconds', 'autoSeconds', 'seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'] } },
+  // Frankendom parts (src/parts.ts validateParts checks the values): closed key sets
+  'parts': { keys: ['about', 'maxCount', 'slots', 'rarities', 'button', 'panel', 'text'],
+    rows: { slots: ['id', 'label', 'units'], rarities: ['star', 'id', 'label', 'colour'] },
+    maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], text: ['title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
   // Share clip (src/share-clip.ts validateShareClip checks the values): a closed key set; presentation only
   'share-clip': { keys: ['about', 'on', 'leadSeconds', 'tailSeconds', 'stopTimeoutSeconds', 'width', 'height', 'fps', 'bitsPerSecond', 'types', 'guard', 'watermark', 'file', 'button'],
