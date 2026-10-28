@@ -14,12 +14,14 @@ import { bossOfBody, ownerOfBody, weaponOfBody } from '../src/fight/boss-resolve
 import { spawnBodyFile } from '../src/fight/foe-body.ts';
 import { foeRigFile } from '../src/fight/rig-bones.ts';
 import { foeDrawnWeapon } from '../src/fight/foe-weapon.ts';
-import { FOE_EQUIP_URLS, FOE_OFFHAND_URLS } from '../src/fight/scene.ts';
+import { CARRIED_WEAPONS, FOE_EQUIP_URLS, FOE_OFFHAND_URLS } from '../src/fight/scene.ts';
+import { freshSave, heroWeapon, recordKill } from '../src/progression.ts';
 import { DEFAULT_WEAPON, PLAYER_WEAPONS, weaponOf } from '../src/fight/moves.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => JSON.parse(readFileSync(path.join(root, f), 'utf8'));
 const EXPECT = read('test/fixtures/boss-expect.json'), PROFILES = read('data/profiles.json'), RINGS = read('data/rings.json'), ZONE1 = read('data/zones/zone1.row.json'), RIG = read('data/rig.json'), PHYSICS = read('data/physics.json');
+const PROGRESSION = read('data/progression.json');
 const CUT = read('node_modules/@frankendom/physics/data/cut-bodies.json').bodies;
 const live = foeRigFile(EXPECT.liveBody);
 const stem = (url) => url.match(/\/([a-z0-9-]+)\.glb$/)[1];
@@ -83,6 +85,17 @@ test('the hero fights with the longsword family (a golden weapon aside)', () => 
   assert.equal(PLAYER_WEAPONS[0], EXPECT.hero.weapon);
   assert.equal(weaponOf(DEFAULT_WEAPON).guard, EXPECT.hero.guard);
   assert.ok(EXPECT.hero.weapons.includes(DEFAULT_WEAPON));
+});
+
+test('the hero keeps the longsword and its guard after 0, 1, 2 and 3 boss kills (a kill saves its weapon; it never swaps the hero\'s)', () => {
+  // the live break (Dom 2026-10-28, "the hero's weapon became a blunt cleaver and he blocked with the left hand"): #222 equipped the newest unlock (Gargantua gives the gladius, Arachne the cleaver). The golden weapon (a held pickup) is the only allowed exception, not modelled here.
+  let save = freshSave();
+  for (const [kills, boss] of [[0, null], [1, 'gargantua'], [2, 'arachne'], [3, 'pitborn']]) {
+    if (boss) save = recordKill(save, boss, PROGRESSION).save;
+    const weapon = heroWeapon(save, PROGRESSION, DEFAULT_WEAPON, CARRIED_WEAPONS, '');
+    assert.ok(EXPECT.hero.weapons.includes(weapon), `after ${kills} kills the hero fights with ${weapon}, not the longsword family`);
+    assert.equal(weaponOf(weapon).guard, EXPECT.hero.guard, `after ${kills} kills the hero's guard is the ${EXPECT.hero.guard} guard`);
+  }
 });
 
 // (e) the PRODUCTION build: every URL a boss needs is in the content-hashed art manifest of dist's main.js and the hashed copy is on disk.
