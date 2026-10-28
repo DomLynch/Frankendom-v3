@@ -62,6 +62,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-1.63.0-chromium-${{ runner.os }}
       - run: npx playwright install --with-deps chromium
+      - run: rm -f dist/weapons/shapes/*.glb dist/weapons/shapes/*.glb.gz   # TEMPORARY RED PROOF, removed next commit
       - run: node scripts/boot-check.mjs
         timeout-minutes: 4
       - if: always()

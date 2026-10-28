@@ -15,7 +15,7 @@ import path from 'node:path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outArg = process.argv.indexOf('--out');
 const out = path.resolve(root, outArg > 0 ? process.argv[outArg + 1] : 'boot-check-out');
-const TOTAL_MS = 150_000;   // tuning-ok: CI tool, hard cap for the whole check (software GL on a 2-core runner)
+const TOTAL_MS = 170_000;   // tuning-ok: CI tool, hard cap for the whole check (software GL on a 2-core runner)
 const READY_MS = 120_000;   // tuning-ok: CI tool, the fight must be playable within this
 const SETTLE_MS = 45_000;   // tuning-ok: CI tool, boss body and hero sword (both load after the first frame) within this after playable
 
@@ -31,7 +31,7 @@ const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=sw
 let page, done = false;
 async function finish(code) {
   if (done) return; done = true;
-  try { await page?.screenshot({ path: path.join(out, code ? 'failure-375.png' : 'boot-375.png'), timeout: 10_000 }); } catch {}
+  try { await page?.screenshot({ path: path.join(out, code ? 'failure-375.png' : 'boot-375.png'), timeout: 30_000 }); } catch (e) { note(`screenshot failed: ${String(e.message).split('\n')[0]}`); }   // software GL: a frame can take seconds
   writeFileSync(path.join(out, 'boot-check.log'), `${log.join('\n')}\n${problems.map((p) => `PROBLEM ${p}`).join('\n')}\n`);
   for (const p of problems) console.error(`BOOT CHECK FAIL: ${p}`);
   console.log(code ? 'built-game boot: FAIL' : 'built-game boot: PASS (hero, boss, sword, loop alive, no errors, no 404s)');
