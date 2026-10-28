@@ -90,6 +90,95 @@
         "clips: the 106 body plays the sword clip family (clipsAs cleaver), not Maul_* swings; the sim keeps the maul's moves, timing and damage (the Gargantua's weapon row)",
         "sweeps: V1's hero-rig maul blade table, not re-baked on the Minotaur body; Lord Gourd's own 106 body is not in the repo yet"
       ]
+    },
+    {
+      "id": "nan-spear-shield",
+      "opponent": "shieldmaiden",
+      "profile": "sporty-granny",
+      "weapon": "trident",
+      "clipsAs": "cleaver",
+      "equip": "spear",
+      "scale": 0.9,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": { "kind": "file", "file": "shield", "hand": "lowerarm_l", "scale": 0.75, "offset": [0, 0.15, -0.1], "rotationDeg": [0, 180, 0] },
+      "placeholder": [
+        "spear: a library prop, OpenTrident weapon library polearm-206 (a slender pike, 2 m), re-framed to the grip as src/assets/weapons/foe/spear.glb and scaled 0.9x; a picked prop, not a spear drawn for Nan the Impaler",
+        "shield: Arachne's shield file (shield-213) kept on Nan's left forearm exactly as the archetype row had it, so her shield guard keeps its drawing; no new shield",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim uses the trident's moves, timing and damage (the long thrust)",
+        "sweeps: V1's hero-rig trident blade table, not re-baked on her body"
+      ]
+    },
+    {
+      "id": "kachujin-katana",
+      "opponent": "pitborn",
+      "profile": "kachujin",
+      "weapon": "cleaver",
+      "clipsAs": "cleaver",
+      "equip": "katana",
+      "scale": 1,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mesh: a library prop, OpenTrident weapon library sword1h-210 (a slim one-hand blade, 0.95 m), re-framed to the grip as src/assets/weapons/foe/katana.glb; a picked prop, not a katana drawn for Kachujin",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim keeps the cleaver's moves, timing and damage",
+        "sweeps: V1's hero-rig cleaver blade table, not re-baked on this blade or Kachujin's body"
+      ]
+    },
+    {
+      "id": "the-boss-mace",
+      "opponent": "shieldmaiden",
+      "profile": "the-boss",
+      "weapon": "cleaver",
+      "clipsAs": "cleaver",
+      "equip": "mace",
+      "scale": 1.15,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mace: a library prop, OpenTrident weapon library mace-204 (a short one-hand mace, 0.65 m), the same src/assets/weapons/foe/mace.glb as Lord Gourd's, scaled 1.15x; a picked prop, not a mace drawn for The Accountant",
+        "shield: none drawn; the sim's shield guard of the shieldmaiden archetype is unchanged",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim keeps the cleaver's moves, timing and damage",
+        "sweeps: V1's hero-rig cleaver blade table, not re-baked on The Accountant's body"
+      ]
+    },
+    {
+      "id": "king-warhammer",
+      "opponent": "pitborn",
+      "profile": "big-vegas",
+      "weapon": "maul",
+      "clipsAs": "cleaver",
+      "equip": "warhammer",
+      "scale": 1.3,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mesh: a library prop, OpenTrident weapon library hammer-200 (a 1 m war hammer, 0.38 m head), the file as src/assets/weapons/foe/warhammer.glb, scaled 1.3x about the grip; a picked prop (OpenTrident weapons-picked table), not a hammer drawn for The King",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim keeps the maul's moves, timing and damage",
+        "grip and scale are not checked in a live fight yet (The King's body is not wired)",
+        "sweeps: V1's hero-rig maul blade table, not re-baked on his body"
+      ]
+    },
+    {
+      "id": "akane-rapier",
+      "opponent": "pitborn",
+      "profile": "anime-girl-blonde",
+      "weapon": "cleaver",
+      "clipsAs": "cleaver",
+      "equip": "rapier",
+      "scale": 1,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mesh: a library prop, OpenTrident weapon library sword1h-203 (a light thin one-hand blade, 0.95 m; the library has no file named rapier), the file as src/assets/weapons/foe/rapier.glb; a picked prop (OpenTrident weapons-picked table), not a rapier drawn for Akane",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim keeps the cleaver's moves, timing and damage",
+        "grip and scale are not checked in a live fight yet (Akane's body is not wired)",
+        "sweeps: V1's hero-rig cleaver blade table, not re-baked on her body"
+      ]
     }
   ]
 }
