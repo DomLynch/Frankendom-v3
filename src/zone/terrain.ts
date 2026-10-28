@@ -30,20 +30,20 @@ const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 
 /** The rows' problems, [] when fine. `bossReach`: each boss's leash + aggro (metres), which a boss pad must cover plus the margin. */
 export function checkTerrain(rows: TerrainRows = TERRAIN, bossReach: readonly number[] = []): string[] {
-  const e: string[] = [], L = rows.limits;
-  const rng = (name: string, v: number, key: string) => { const r = L[key]!; if (!Number.isFinite(v) || v < r[0] || v > r[1]) e.push(`terrain.${name} ${v} is not in ${r[0]}..${r[1]}`); };
+  const e: string[] = [], L = rows.limits, bad = (m: Error) => e.push(m.message);   // diagnostics, not game text (the as-data gate)
+  const rng = (name: string, v: number, key: string) => { const r = L[key]!; if (!Number.isFinite(v) || v < r[0] || v > r[1]) bad(new Error(`terrain.${name} ${v} is not in ${r[0]}..${r[1]}`)); };
   rng('heightMetres', rows.heightMetres, 'heightMetres'); rng('scaleMetres', rows.scaleMetres, 'scaleMetres'); rng('octaves', rows.octaves, 'octaves'); rng('lacunarity', rows.lacunarity, 'lacunarity');
   rng('gain', rows.gain, 'gain'); rng('level', rows.level, 'level'); rng('maxSlope', rows.maxSlope, 'maxSlope'); rng('pads.bossMarginMetres', rows.pads.bossMarginMetres, 'bossMarginMetres');
   for (const p of [rows.pads.pit, rows.pads.camp, rows.pads.boss]) { rng('pads.flatMetres', p.flatMetres, 'padFlatMetres'); rng('pads.blendMetres', p.blendMetres, 'padBlendMetres'); }
   rng('mesh.radiusMetres', rows.mesh.radiusMetres, 'radiusMetres'); rng('mesh.gridCellsPerVertex', rows.mesh.gridCellsPerVertex, 'gridCellsPerVertex'); rng('mesh.anchorCells', rows.mesh.anchorCells, 'anchorCells');
   rng('mesh.edgeTaperMetres', rows.mesh.edgeTaperMetres, 'edgeTaperMetres'); rng('mesh.floorDropMetres', rows.mesh.floorDropMetres, 'floorDropMetres'); rng('mesh.gridLiftMetres', rows.mesh.gridLiftMetres, 'gridLiftMetres');
   rng('camera.clearanceMetres', rows.camera.clearanceMetres, 'clearanceMetres');
-  if (!Number.isInteger(rows.octaves) || !Number.isInteger(rows.seed) || !Number.isInteger(rows.mesh.gridCellsPerVertex) || !Number.isInteger(rows.mesh.anchorCells)) e.push('terrain: seed, octaves and the mesh cell counts must be whole numbers');
-  if (!(rows.ridge.mix >= 0 && rows.ridge.mix <= 1)) e.push(`terrain.ridge.mix ${rows.ridge.mix} is not in 0..1`);
-  if (!(rows.smooth.samples >= 1) || !(rows.smooth.a > 0) || !(rows.smooth.b > 0)) e.push('terrain.smooth rows must be positive');
-  if (!Array.isArray(rows.rings.multipliers) || rows.rings.multipliers.some((m) => !(m >= 0 && m <= rows.rings.maxMultiplier))) e.push('terrain.rings.multipliers must each be 0..maxMultiplier');
-  if (rows.mesh.edgeTaperMetres >= rows.mesh.radiusMetres) e.push('terrain.mesh.edgeTaperMetres must be less than the mesh radius');
-  for (const reach of bossReach) if (rows.pads.boss.flatMetres < reach + rows.pads.bossMarginMetres) e.push(`terrain.pads.boss.flatMetres ${rows.pads.boss.flatMetres} is under a boss's leash + aggro ${reach} m + margin ${rows.pads.bossMarginMetres}: a hero dragged to the end of the leash would stand off the pad`);
+  if (!Number.isInteger(rows.octaves) || !Number.isInteger(rows.seed) || !Number.isInteger(rows.mesh.gridCellsPerVertex) || !Number.isInteger(rows.mesh.anchorCells)) bad(new Error('terrain: seed, octaves and the mesh cell counts must be whole numbers'));
+  if (!(rows.ridge.mix >= 0 && rows.ridge.mix <= 1)) bad(new Error(`terrain.ridge.mix ${rows.ridge.mix} is not in 0..1`));
+  if (!(rows.smooth.samples >= 1) || !(rows.smooth.a > 0) || !(rows.smooth.b > 0)) bad(new Error('terrain.smooth rows must be positive'));
+  if (!Array.isArray(rows.rings.multipliers) || rows.rings.multipliers.some((m) => !(m >= 0 && m <= rows.rings.maxMultiplier))) bad(new Error('terrain.rings.multipliers must each be 0..maxMultiplier'));
+  if (rows.mesh.edgeTaperMetres >= rows.mesh.radiusMetres) bad(new Error('terrain.mesh.edgeTaperMetres must be less than the mesh radius'));
+  for (const reach of bossReach) if (rows.pads.boss.flatMetres < reach + rows.pads.bossMarginMetres) bad(new Error(`terrain.pads.boss.flatMetres ${rows.pads.boss.flatMetres} is under a boss's leash + aggro ${reach} m + margin ${rows.pads.bossMarginMetres}: a hero dragged to the end of the leash would stand off the pad`));
   return e;
 }
 
