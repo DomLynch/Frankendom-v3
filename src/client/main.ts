@@ -85,7 +85,10 @@ import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, val
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, bossLoadAfterKill, zoneDuel, type Spawn } from '../stubs.ts';
-import { zoneFor } from '../stubs.ts';
+import { zoneFor as plainZoneFor } from '../stubs.ts';
+import DAILY_ROWS from '../../data/daily-pit.json' with { type: 'json' };
+import { createDaily, sessionOf } from '../daily-pit-ui.ts';   // the Daily Pit (data/daily-pit.json, src/daily-pit.ts): a button on every page; inside the daily the zone is the day's one boss with its modifier
+import type { DailyFile } from '../daily-pit.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
@@ -110,11 +113,15 @@ const STAR_ROWS = STARS as unknown as StarsFile;
 const starById: Record<string, number> = {}, spawnKills: Record<string, number> = {}, kindKills: Record<string, number> = {};   // by spawn id / by kind: this visit's star level, kills of that spawn, kills of that boss kind
 const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 { const bad = validateProgression(PROG_ROWS, PROFILES.profiles.map((p) => p.id), isWeaponId); if (bad.length) throw new Error(`data/progression.json: ${bad.join('; ')}`); }
-const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
+const daily = createDaily({ file: DAILY_ROWS as unknown as DailyFile, doc: document, win: window, store: storageOf(), session: sessionOf(window), progression: PROG_ROWS, useSave: progressionOn(PROG_ROWS, search) && !pitbornV1(search), now: () => Date.now(), reload: () => location.reload(), cuts: () => ((globalThis as Record<string, unknown[] | undefined>)[DAILY_ROWS.cutLog]?.length ?? 0), nameOf: (k) => PROFILES.profiles.find((p) => p.id === k)?.name ?? k });
+const zoneFor = (s: string) => daily.zoneFor(plainZoneFor(s));   // the daily's one-boss zone inside the Daily Pit, else the zone as it is
+if (daily.run) starById[daily.run.spawnId] = daily.stars;   // the day's star modifier: the boss stands with its star from the first frame
+// inside the Daily Pit the save is not read for the fight (no escalation, no unlock, no corpse run): the same fight for everyone
+const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) && !daily.run ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 validateCorpseRun(CORPSE, PROFILES.profiles.map((p) => p.id));   // data/corpse-run.json: a bad row stops the page at load
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
 const HERO_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
-const BASE_TUNE = mergeTune(TUNED, ringTune());   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
+const BASE_TUNE = mergeTune(mergeTune(TUNED, ringTune()), daily.tune);   // + the Daily Pit's modifier over the day's boss (empty outside it: the same object)   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
 const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
@@ -435,6 +442,7 @@ function rollStarFor(spawn: Spawn) {
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
+  daily.frame({ dt, engaged, heroHealth: practice.playerHealth, won: heroStands(), lost: heroDied() });   // the Daily Pit's score tracker (no-op outside it)
   if (engaged && !practice.finish) fightSec += dt;
   spawns = timers.spawns;
   corpseStep(dt);
