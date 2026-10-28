@@ -3,14 +3,17 @@
 // draws a handful of dots on a 2D canvas; it never touches the sim, the camera or the input (pointer-events none). The maths below is pure (test/radar.test.mjs); `mountRadar` is the only DOM.
 import ROWS from '../../data/radar.json' with { type: 'json' };
 
-export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead' | 'pile';
+export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead' | 'pile' | 'mob';   // mob: a trash mob (data/mobs.json), a small orange dot beside the red boss dots; never pulses with the kill flash
 type Style = { colour: string; alpha: number; sizePx: number };
 export type RadarRows = {
   on: boolean; query: string; off: string; corner: string; sizePx: number; marginPx: number; offsetPx: number; zIndex: number; rangeMetres: number; rimInset: number; dprMax: number;
   disc: { colour: string; alpha: number }; rim: { colour: string; alpha: number; widthPx: number }; edgeAlpha: number; hero: Style;
-  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean }; pile: Style };
+  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean }; pile: Style; mob: Style };
+  flash: FlashRows;
   kinds: Record<string, string>; defaultKind: string;
 };
+/** After a boss falls the live red dots pulse: `pulseSeconds` of every `periodSeconds`, a yellow wash (the dot swells by `dotGrow`) and a ring that spreads `ringPx` and fades; none within `stopWithinMetres` of the hero. */
+export type FlashRows = { on: boolean; periodSeconds: number; pulseSeconds: number; colour: string; dotGrow: number; ringPx: number; haloPx: number; ringAlpha: number; stopWithinMetres: number };
 const CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -26,10 +29,15 @@ export function validateRadar(r: RadarRows): void {
   colour('disc.colour', r.disc?.colour); num('disc.alpha', r.disc?.alpha, 0, 1);
   colour('rim.colour', r.rim?.colour); num('rim.alpha', r.rim?.alpha, 0, 1); num('rim.widthPx', r.rim?.widthPx, 0, 6);
   colour('hero.colour', r.hero?.colour); num('hero.alpha', r.hero?.alpha, 0, 1); num('hero.sizePx', r.hero?.sizePx, 0.5, 20);
-  for (const c of ['hostile', 'player', 'npc', 'dead', 'pile'] as const) {
+  for (const c of ['hostile', 'player', 'npc', 'dead', 'pile', 'mob'] as const) {
     const s = r.classes?.[c];
     colour(`classes.${c}.colour`, s?.colour); num(`classes.${c}.alpha`, s?.alpha, 0, 1); num(`classes.${c}.sizePx`, s?.sizePx, 0.5, 20);
   }
+  const f = r.flash;
+  if (typeof f?.on !== 'boolean') throw new Error('radar.flash.on is true or false');
+  num('flash.periodSeconds', f.periodSeconds, 0.5, 60); num('flash.pulseSeconds', f.pulseSeconds, 0.1, 10); colour('flash.colour', f.colour);
+  num('flash.dotGrow', f.dotGrow, 0, 3); num('flash.ringPx', f.ringPx, 0, 20); num('flash.haloPx', f.haloPx, 0.2, 4); num('flash.ringAlpha', f.ringAlpha, 0, 1); num('flash.stopWithinMetres', f.stopWithinMetres, 0, 1000);
+  if (!(f.pulseSeconds < f.periodSeconds)) throw new Error('radar.flash.pulseSeconds must be shorter than periodSeconds');
   if (typeof r.classes.dead.show !== 'boolean') throw new Error('radar.classes.dead.show is true or false');
   for (const [kind, cls] of Object.entries(r.kinds ?? {})) if (cls !== 'hostile' && cls !== 'npc') throw new Error(`radar.kinds.${kind} ${String(cls)} is not hostile or npc`);
   if (r.defaultKind !== 'hostile' && r.defaultKind !== 'npc') throw new Error(`radar.defaultKind ${String(r.defaultKind)} is not hostile or npc`);
@@ -67,6 +75,17 @@ export function playerBlips(handle: { remotes?: (now: number) => readonly { x: n
   for (const p of handle.remotes(now)) emit(p.x - origin.x, p.z - origin.z, 'player');
 }
 
+/** Where the flash is at `t` seconds after it started: -1 between pulses, else 0..1 through the pulse. Pure, no allocation. */
+export function flashPhase(f: FlashRows, t: number): number {
+  if (!f.on || !(t >= 0)) return -1;
+  const into = t % f.periodSeconds;
+  return into < f.pulseSeconds ? into / f.pulseSeconds : -1;
+}
+/** The swell of the yellow wash at a pulse phase: 0 at both ends, 1 in the middle (a soft there-and-back, not a blink). */
+export const flashGlow = (phase: number): number => (phase < 0 ? 0 : Math.sin(Math.PI * phase));
+/** A dot pulses while the flash runs and the hero is not already there (beyond `stopWithinMetres`). */
+export const flashes = (f: FlashRows, distMetres: number): boolean => f.on && distMetres > f.stopWithinMetres;
+
 /** The hero's corpse-run pile (data/corpse-run.json, a save field) as one blip of the `pile` class; none when there is no pile. Held on the rim like any dot beyond range, so it always points the way. */
 export function pileBlip(pile: { x: number; z: number } | null | undefined, emit: (x: number, z: number, cls: RadarClass) => void): void {
   if (pile) emit(pile.x, pile.z, 'pile');
@@ -91,19 +110,29 @@ export function mountRadar(doc: Doc, src: RadarSources, rows: RadarRows = RADAR,
   box.append(canvas); parent.append(box);
   const spot: Spot = { x: 0, y: 0, clamped: false };
   let hx = 0, hz = 0, yaw = 0, pass: 'dead' | 'live' = 'dead';
+  const fl = rows.flash;
+  let armed = false, armedAt = 0, phase = -1;   // armed: a boss fell and no fight has begun since; armedAt: seconds (performance.now) of that kill; phase: flashPhase of this frame
   const dot = (x: number, z: number, cls: RadarClass) => {
     if ((cls === 'dead') !== (pass === 'dead')) return;
     if (cls === 'dead' && !rows.classes.dead.show) return;
     const st = rows.classes[cls];
     place(rows, x - hx, z - hz, yaw, spot);
     ctx!.globalAlpha = st.alpha * (spot.clamped ? rows.edgeAlpha : 1); ctx!.fillStyle = st.colour;
-    ctx!.beginPath(); ctx!.arc(centre + spot.x * centre, centre - spot.y * centre, st.sizePx, 0, Math.PI * 2); ctx!.fill();
+    const cx = centre + spot.x * centre, cy = centre - spot.y * centre;
+    ctx!.beginPath(); ctx!.arc(cx, cy, st.sizePx, 0, Math.PI * 2); ctx!.fill();
+    if (phase >= 0 && cls === 'hostile' && flashes(fl, Math.hypot(x - hx, z - hz))) {   // the pulse: the dot stays red and swells a little, a thin yellow halo spreads out from it and fades (yellow never covers the red)
+      const grown = st.sizePx * (1 + fl.dotGrow * flashGlow(phase));
+      ctx!.beginPath(); ctx!.arc(cx, cy, grown, 0, Math.PI * 2); ctx!.fill();   // fillStyle is still the class red
+      ctx!.globalAlpha = fl.ringAlpha * (1 - phase); ctx!.strokeStyle = fl.colour; ctx!.lineWidth = fl.haloPx;
+      ctx!.beginPath(); ctx!.arc(cx, cy, grown + 0.8 + fl.ringPx * phase, 0, Math.PI * 2); ctx!.stroke();
+    }
   };
   return {
     element: box,
     frame(heroX: number, heroZ: number, viewYaw: number): void {
       if (!ctx || doc.hidden) return;
       hx = heroX; hz = heroZ; yaw = viewYaw;
+      phase = !armed ? -1 : flashPhase(fl, performance.now() / 1000 - armedAt);
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0); ctx.clearRect(0, 0, inner, inner);
       const hs = rows.hero.sizePx;   // the hero: a small chevron at the centre, tip up (the camera looks up the disc)
       ctx.globalAlpha = rows.hero.alpha; ctx.fillStyle = rows.hero.colour;
@@ -111,6 +140,13 @@ export function mountRadar(doc: Doc, src: RadarSources, rows: RadarRows = RADAR,
       pass = 'dead'; src.each(dot); pass = 'live'; src.each(dot);
       ctx.globalAlpha = 1;
     },
+    /** A boss fell: the live red dots start pulsing at once. Arming again restarts the rhythm. */
+    armFlash(nowMs: number = performance.now()): void { if (fl.on) { armed = true; armedAt = nowMs / 1000; } },
+    /** The next fight began: the pulsing stops. */
+    stopFlash(): void { armed = false; phase = -1; },
+    get flashing(): boolean { return armed; },
+    /** The phase drawn on the last frame (-1 between pulses or not flashing): the stills wait on it. */
+    get flashPhase(): number { return phase; },
     remove(): void { box.remove(); },
   };
 }

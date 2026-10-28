@@ -178,7 +178,10 @@ for (const glb of PACKED) {
 }
 // The Minotaur cut GLB (physics tool output, float32 + meshopt filter NONE, 2.37 MB in git, kept so: Blender and the cut validator read it plain)
 // ships through the lossy cut path (scripts/cut-glb-pack.mjs): positions within 0.1 mm, rotations within 0.006 degrees, 1.2 MB. Only this file.
-const CUT_GLBS = ['src/assets/minotaur-106.glb', 'src/assets/gargantua-106.glb', 'src/assets/arachne-106.glb'];
+const CUT_GLBS = ['src/assets/minotaur-106.glb', 'src/assets/gargantua-106.glb', 'src/assets/arachne-106.glb',
+  // the nine biome-ring boss bodies (data/rings.json): physics cut GLBs, each sha256 pinned to its row in the physics package's data/cut-bodies.json (test/rings.test.mjs)
+  // (sporty-granny-106 is not in the list: its file carries TEXCOORD_1 and _2, which the lossy cut pack refuses; it ships as the physics tool wrote it, 1.8 MB, fetched only near her)
+  ...['pumpkinhulk', 'kachujin', 'castle-guard', 'parasite', 'anime-boy-black', 'the-boss', 'anime-girl-blonde', 'big-vegas'].map((s) => `src/assets/${s}-106.glb`)];
 for (const glb of CUT_GLBS) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target), undefined, { cut: true }));

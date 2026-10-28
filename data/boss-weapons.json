@@ -1,5 +1,5 @@
 {
-  "about": "Boss weapons (Dom + Strategy 2026-10-28): the weapon a boss of a V1 archetype (`opponent`) fights with and is drawn with. KEY (2026-10-28): a row is the archetype's (no `profile`; at most one per archetype, shared by every profile of it) or one profile's own (`profile` = a data/profiles.json id, e.g. castle-guard, anime-boy-black, pumpkinhulk, kachujin, sporty-granny, parasite; its `opponent` must be that profile's archetype; at most one per profile). Many profiles share an archetype (Sir Reginald and Arachne are both shieldmaiden), so a profile's row wins over the archetype's, and a profile with no row of its own falls back to its archetype's row (src/fight/boss-weapon.ts bossWeaponFor), or to V1's weapon when the archetype has none. A ring boss's body finds its profile through its zone spawn (foe-body.ts bodyProfileOf). Gargantua's and Arachne's rows are archetype rows and behave exactly as before. Boss 2 Gargantua is the executioner and wields a MAUL; boss 3 Arachne is the shieldmaiden and wields an AXE in one hand and a SHIELD in the other. Before this a foe's weapon was V1's row for its archetype (the executioner's scythe, the shieldmaiden's gladius). A zone spawn's kind (data/profiles.json, src/fight/spawn-kind.ts kindFightFor) whose `opponent` has a row here fights with `weapon` (a src/fight/weapon-defs.json row: its moves, reach, damage, timing, and V1's hero-rig blade sweeps for it, data/fight.json bladeTables) and is drawn with the same weapon (src/fight/boss-hand.ts, scene.ts). The archetype's guard, stats, specials and AI are untouched, so the shieldmaiden keeps her shield guard and the shield is the drawing of it. `clipsAs`: a 106 body carries no Maul_* or Scythe_* clips, so it plays this weapon's clip family (the sword family, as the Pitborn's cleaver does) until the bodies land with their own. `equip`: the grafted part, a file under src/assets/weapons/foe/ (cleaver = the Pitborn's; maul.glb = library hammer-01, axe.glb = library axe1h-208, shield.glb = library shield-213: re-framed OpenTrident library props Dom picked 2026-10-28, licence ruled no concern). `scale`: the drawn part scaled about its grip. `offhand`: a part on the other hand (null = none); kind `file` is a mesh under src/assets/weapons/foe/ (`file` = stem, root node BossShield, metres, face normal +Z; `scale` about its origin), loaded only with the boss body (its URL: FOE_OFFHAND_URLS in src/fight/scene.ts) and seated on `hand` at `offset` metres, `rotationDeg` Euler XYZ; kind `disc` (still supported) is a flat round board built in code (no file) sized in METRES in world space (`radius`, `thickness`), seated on `hand` at `offset` metres with `rotationDeg` Euler XYZ in that bone's frame. MOUNTING knobs (2026-10-28): `equip` is the part's file stem under src/assets/weapons/foe/ (to drop in an OpenTrident GLB: put the file there, add its one-line URL to FOE_EQUIP_URLS in src/fight/scene.ts and the stem to PACKED in scripts/build.mjs, name it here); `scale` grows the DRAWN part about its grip (the grafted node under the Grip106 seat; before, the socket bone was scaled, which moved nothing drawn); `grip` {offset metres, rotationDeg Euler XYZ} nudges the drawn part in the seat frame (the sim's reach is V1's blade tables and is untouched); `material` {colour, metalness, roughness} replaces the part's own look (null = the file's; the Pitborn's cleaver is near-black and vanished against Arachne's dark legs, so the placeholder wears iron grey). The shield `offhand` is parented to `hand` (lowerarm_l); its board axis (the face normal) is the board's local Y rotated by `rotationDeg` in the forearm's frame: on a Mixamo left forearm Y runs elbow to wrist, -Z is the back of the forearm (away from the palm), so rotationDeg [-90,0,0] puts the face outward and `offset` [0, 0.14, -0.07] seats it between elbow and wrist with a small gap (radius, thickness, offset, rotationDeg are the tuning knobs; scripts/boss-walkin-stills.mjs METRIC=1 prints the clearance to head and chest). `placeholder`: exactly what is a stand-in, so nobody mistakes it for art. Presentation and the sim's weapon id only; the archetype's other rows are untouched. ?bossweapon=v1 puts every boss back on V1's weapon (and the drawn part); ?bossweapon=<opponent id> (stills) draws that row's weapon on the page's own foe (the Minotaur body) without changing the sim. Rows are checked by src/sim/validate.js (keys) and src/fight/boss-weapon.ts validateBossWeapons (values), at load.",
+  "about": "Boss weapons (Dom + Strategy 2026-10-28): the weapon a boss of a V1 archetype (`opponent`) fights with and is drawn with. KEY (2026-10-28): a row is the archetype's (no `profile`; at most one per archetype, shared by every profile of it) or one profile's own (`profile` = a data/profiles.json id, e.g. castle-guard, anime-boy-black, pumpkinhulk, kachujin, sporty-granny, parasite; its `opponent` must be that profile's archetype; at most one per profile). Many profiles share an archetype (Sir Reginald and Arachne are both shieldmaiden), so a profile's row wins over the archetype's, and a profile with no row of its own falls back to its archetype's row (src/fight/boss-weapon.ts bossWeaponFor), or to V1's weapon when the archetype has none. A ring boss's body finds its profile through its zone spawn (foe-body.ts bodyProfileOf). Gargantua's and Arachne's rows are archetype rows and behave exactly as before. Boss 2 Gargantua is the executioner and wields a MAUL; boss 3 Arachne is the shieldmaiden and wields an AXE in one hand and a SHIELD in the other. Before this a foe's weapon was V1's row for its archetype (the executioner's scythe, the shieldmaiden's gladius). A zone spawn's kind (data/profiles.json, src/fight/spawn-kind.ts kindFightFor) whose `opponent` has a row here fights with `weapon` (a src/fight/weapon-defs.json row: its moves, reach, damage, timing, and V1's hero-rig blade sweeps for it, data/fight.json bladeTables) and is drawn with the same weapon (src/fight/boss-hand.ts, scene.ts). The archetype's guard, stats, specials and AI are untouched, so the shieldmaiden keeps her shield guard and the shield is the drawing of it. `clipsAs`: a 106 body carries no Maul_* or Scythe_* clips, so it plays this weapon's clip family (the sword family, as the Pitborn's cleaver does) until the bodies land with their own. `equip`: the grafted part, a file under src/assets/weapons/foe/ (cleaver = the Pitborn's; maul.glb = library hammer-01, axe.glb = library axe1h-208, shield.glb = library shield-213, sword.glb = library sword1h-200 (Ryo's plain sword, profile anime-boy-black): re-framed OpenTrident library props Dom picked 2026-10-28, licence ruled no concern). `scale`: the drawn part scaled about its grip. `offhand`: a part on the other hand (null = none); kind `file` is a mesh under src/assets/weapons/foe/ (`file` = stem, root node BossShield, metres, face normal +Z; `scale` about its origin), loaded only with the boss body (its URL: FOE_OFFHAND_URLS in src/fight/scene.ts) and seated on `hand` at `offset` metres, `rotationDeg` Euler XYZ; kind `disc` (still supported) is a flat round board built in code (no file) sized in METRES in world space (`radius`, `thickness`), seated on `hand` at `offset` metres with `rotationDeg` Euler XYZ in that bone's frame. MOUNTING knobs (2026-10-28): `equip` is the part's file stem under src/assets/weapons/foe/ (to drop in an OpenTrident GLB: put the file there, add its one-line URL to FOE_EQUIP_URLS in src/fight/scene.ts and the stem to PACKED in scripts/build.mjs, name it here); `scale` grows the DRAWN part about its grip (the grafted node under the Grip106 seat; before, the socket bone was scaled, which moved nothing drawn); `grip` {offset metres, rotationDeg Euler XYZ} nudges the drawn part in the seat frame (the sim's reach is V1's blade tables and is untouched); `material` {colour, metalness, roughness} replaces the part's own look (null = the file's; the Pitborn's cleaver is near-black and vanished against Arachne's dark legs, so the placeholder wears iron grey). The shield `offhand` is parented to `hand` (lowerarm_l); its board axis (the face normal) is the board's local Y rotated by `rotationDeg` in the forearm's frame: on a Mixamo left forearm Y runs elbow to wrist, -Z is the back of the forearm (away from the palm), so rotationDeg [-90,0,0] puts the face outward and `offset` [0, 0.14, -0.07] seats it between elbow and wrist with a small gap (radius, thickness, offset, rotationDeg are the tuning knobs; scripts/boss-walkin-stills.mjs METRIC=1 prints the clearance to head and chest). `placeholder`: exactly what is a stand-in, so nobody mistakes it for art. Presentation and the sim's weapon id only; the archetype's other rows are untouched. ?bossweapon=v1 puts every boss back on V1's weapon (and the drawn part); ?bossweapon=<opponent id> (stills) draws that row's weapon on the page's own foe (the Minotaur body) without changing the sim. Rows are checked by src/sim/validate.js (keys) and src/fight/boss-weapon.ts validateBossWeapons (values), at load.",
   "query": "bossweapon",
   "v1": "v1",
   "rows": [
@@ -34,6 +34,61 @@
         "shield: a library prop, shield-213 (a round ornate targe, 0.75 m), src/assets/weapons/foe/shield.glb, seated on the left forearm (offhand kind file); the sim's shield guard is unchanged, the mesh is only its drawing",
         "clips: the 106 body plays the sword clip family (clipsAs cleaver); her shield arm is the clip's own arm, not the shield carry",
         "sweeps: V1's hero-rig cleaver blade table, not re-baked on Arachne's body (not in the repo yet)"
+      ]
+    },
+    {
+      "id": "reginald-halberd",
+      "opponent": "shieldmaiden",
+      "profile": "castle-guard",
+      "weapon": "cleaver",
+      "clipsAs": "cleaver",
+      "equip": "halberd",
+      "scale": 1,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mesh: a library prop, OpenTrident weapon library polearm-200 (a halberd, 2 m, scaled 0.9 to 1.8 m, gripped a third of the way up), re-framed to the grip as src/assets/weapons/foe/halberd.glb; a picked prop, not a halberd drawn for Sir Reginald",
+        "profile: the row is keyed by profile castle-guard, so only Sir Reginald draws it; Arachne and every other shieldmaiden keep the arachne-axe-shield row",
+        "offhand: none drawn; the sim keeps the shieldmaiden's shield guard, so Sir Reginald guards with no shield mesh until one is picked",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver) one-handed; the sim keeps the cleaver's moves, reach, timing and damage",
+        "sweeps: V1's hero-rig cleaver blade table, not re-baked on this halberd or Sir Reginald's body"
+      ]
+    },
+    {
+      "id": "ryo-sword",
+      "opponent": "pitborn",
+      "profile": "anime-boy-black",
+      "weapon": "cleaver",
+      "clipsAs": "cleaver",
+      "equip": "sword",
+      "scale": 1,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mesh: a library prop, OpenTrident weapon library sword1h-200 (a plain one-hand sword, 0.95 m), re-framed to the grip as src/assets/weapons/foe/sword.glb; a picked prop, not a sword drawn for Ryo",
+        "licence: library game-asset rip, no licence recorded; Dom ruled licence no concern. Receipt: DomLynch/opentrident-steam#4, docs/asset-desk/weapons-picked.md lists sword1h-200, sha256 032a04ac8adf028069898236e4b43d095b5599bcae34a3d8ab928e18306dba58",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim keeps the cleaver's moves, timing and damage, so Ryo fights exactly as the Minotaur's pitborn row does",
+        "sweeps: V1's hero-rig cleaver blade table, not re-baked on Ryo's body"
+      ]
+    },
+    {
+      "id": "lord-gourd-mace",
+      "opponent": "pitborn",
+      "profile": "pumpkinhulk",
+      "weapon": "maul",
+      "clipsAs": "cleaver",
+      "equip": "mace",
+      "scale": 2,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mesh: a library prop, OpenTrident weapon library mace-204 (a flanged mace, 0.65 m in the file), re-framed to the grip as src/assets/weapons/foe/mace.glb (meshopt + quantize, 256px webp, 18 KB) and scaled 2x about the grip (about 1.3 m on the hulk's body; 1.5x looked like a rolling pin in his fist, by eye on the Mac stills); a picked prop, not a mace drawn for Lord Gourd",
+        "licence: library game-asset rip, no licence recorded; Dom ruled licence no concern. Receipt: DomLynch/opentrident-steam#4 (docs/asset-desk/weapons-picked.md). mace-204 is not in that picked table; it is an asset desk index entry, library file custom/weapons/mace-204.glb, sha256 ca407c2caef45e589a91677e6e08d146401c90e1d64f5576f5d81e38d759e499",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver), not Maul_* swings; the sim keeps the maul's moves, timing and damage (the Gargantua's weapon row)",
+        "sweeps: V1's hero-rig maul blade table, not re-baked on the Minotaur body; Lord Gourd's own 106 body is not in the repo yet"
       ]
     }
   ]

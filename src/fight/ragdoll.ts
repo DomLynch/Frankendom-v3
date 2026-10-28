@@ -526,6 +526,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     steps.cut = performance.now() - t0;
     if (!result) return null;
     done.add(unit);
+    try { globalThis.dispatchEvent?.(new CustomEvent('frankendom:cut', { detail: { unit } })); } catch { /* no window: the commentator hears nothing */ }   // src/commentator.ts: the caption line for a cut
     const part = result.cap.part, role = rd.row.roles.find((r) => r.id === part), root = partBones[part];
     if (role && root && mode === 'dead' && cutRig) {   // the cut GLB: the piece is already its own mesh on its bones and the caps show from rd.cuts (cutRig.update, every frame)
       let t = performance.now();
