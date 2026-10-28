@@ -30,7 +30,7 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 // First-visit weight (late #188 finding, 2026-10-28): with spawns 2 and 3 in their own bodies the default page fetched both boss GLBs at load (+3.13 MB). A spawn whose body is not the live rig's is
 // fetched only once the hero is within respawn.json world.loadWithinMetres of it (scene.ts holdBody / idleFoes `near`, main.ts withinLoad); the browser wire receipt is in the PR.
 test('lazy boss bodies: no spawn that needs another body file is within load range of the hero at the page-load mark or the respawn mark', () => {
-  const live = spawnBodyFile('pitborn', 'minotaur'), start0 = initialState(), ZR = ZONE.respawn;
+  const live = spawnBodyFile('gargantua', 'minotaur'), start0 = initialState(), ZR = ZONE.respawn;
   const others = list().filter((s) => spawnBodyFile(s.kind, 'minotaur', s.body) !== live);
   assert.ok(others.length >= 2, 'the zone has spawns in other bodies (Gargantua, Arachne)');
   for (const s of others) {
@@ -84,7 +84,7 @@ test('bad spots are refused: off the zone\'s ground, in the pit wall, on the her
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, spreadRadiusMetres: 999 }), /spreadRadiusMetres/);
   assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = 1; }), start(), wall()), /inside its own aggro of the hero's start/);
   assert.throws(() => validateSpots(edit((s) => { s[1].x = s[0].x + 1; s[1].z = s[0].z; }), start(), wall()), /inside each other's aggro/);
-  assert.throws(() => validateSpots(ok, start(), wall(), WORLD, ['nobody']), /names kind "pitborn", which is no profile row/);
+  assert.throws(() => validateSpots(ok, start(), wall(), WORLD, ['nobody']), /names kind "gargantua", which is no profile row/);
   assert.throws(() => validateSpots(edit((s) => { s[1].id = s[0].id; }), start(), wall()), /share an id|aggro/);
   assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -2; s[1].x = 3; s[1].z = -2; }), start(), wall()), /closer than 30 m/);   // outside each other's 2.5 m aggro, inside the spacing row
   assert.throws(() => validateSpots(ok, start(), wall(), { ...WORLD, minSpacing: 99 }), /minSpacing/);
@@ -250,7 +250,7 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
 
 test('?postkill=v1 and a one-spawn zone are the old fight: no zone state, the sim at the pit marks', () => {
   const main = src('../src/client/main.ts');
-  assert.match(main, /const SPOTS = ZONE \? spotsFor\(zoneFor\(search\)\) : \[\];/, 'no ZONE (?postkill=v1) = no spots, no copies, no zoneStep');
+  assert.match(main, /const SPOTS = ZONE \? spotsFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\)\) : \[\];/, 'no ZONE (?postkill=v1) = no spots, no copies, no zoneStep');
   assert.match(main, /if \(ZONE\) \{ current = nearestStanding/);
   assert.match(main, /if \(ZONE\) \{ view\.idleFoes/);
 });

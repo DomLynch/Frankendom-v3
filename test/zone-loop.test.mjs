@@ -21,7 +21,7 @@ const zone = (patch) => { const z = structuredClone(ZONE); patch(z); return z; }
 test('the rows are pinned: roam on, hand-over 4 s, the zone row\'s spawn (Gargantua, 40 s) and hero respawn (2 s, "You died")', () => {
   assert.deepEqual({ roam: ROWS.postKill.roam, startAfterSeconds: ROWS.postKill.startAfterSeconds }, { roam: true, startAfterSeconds: 4 });
   assert.deepEqual(ROWS.flag, { query: 'postkill', off: 'v1' });
-  assert.equal(PROFILES.profiles.find((p) => p.id === ZONE.spawns[0].kind).opponent, FIGHT.opponent, 'the zone row\'s spawn 1 kind is the page fight\'s opponent (the Gargantua: executioner)');
+  assert.equal(read('../data/profiles.json').profiles.find((p) => p.id === ZONE.spawns[0].kind).opponent, FIGHT.opponent, 'the zone row\'s spawn 1 kind is the page fight\'s opponent (the Gargantua: executioner)');
   assert.equal(ZONE.spawns[0].respawnSeconds, 40); assert.equal(ZONE.respawn.downSeconds, 2); assert.equal(ZONE.respawn.died, 'You died');
   for (const dup of ['spawns', 'respawn', 'corpse']) assert.equal(ROWS[dup], undefined, `${dup} is the zone row's / Physics Dev's row, not repeated here`);
   assert.ok(read('../data/physics.json').corpse.keepSeconds > 0, 'one corpse timer: data/physics.json corpse.keepSeconds (ragdoll.leaveCorpse)');
