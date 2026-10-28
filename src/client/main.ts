@@ -28,7 +28,7 @@ import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-rea
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
-import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
+import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
 import { freshLock, lockBreakFor, stepLock } from '../fight/lock-break.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
@@ -354,11 +354,18 @@ element('reset-button').addEventListener('click', () => rematch());
 if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger drag on empty ground looks round; the recenter key R stands behind him). The tap that cuts a corpse is a press that stays put (ragdoll.listenTaps), so a drag is never a cut.
   // The look thumb (data/respawn.json look, src/fight/look-drag.ts): its own pointer id, so the left thumb's stick and every button keep working; only while the camera is free (frame(): a fight cancels it)
   if (look) {
+    // Just after a kill the finisher camera still holds the view (freeNow false) for up to startAfterSeconds: a look finger is taken then too, and once it drags past the dead zone it ends the ceremony as the stick does (free-camera.ts lookStarts); a tap on the corpse is still a tap
+    const lookReady = () => lookStarts(FREE, freeNow, heroStands(), freeAfterKill || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds, killAge, view.finishPhase().stickBeat);
     canvas.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || paused() || !freeNow || !look.down(e.pointerId, e.clientX, window.innerWidth, e.pointerType, e.timeStamp)) return;
+      if (e.button !== 0 || paused() || !lookReady() || !look.down(e.pointerId, e.clientX, window.innerWidth, e.pointerType, e.timeStamp)) return;
       try { canvas.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
     });
-    canvas.addEventListener('pointermove', (e) => { view.lookYaw(-look.move(e.pointerId, e.clientX, e.timeStamp)); });
+    canvas.addEventListener('pointermove', (e) => {
+      const turn = look.move(e.pointerId, e.clientX, e.timeStamp);
+      if (!turn) return;
+      if (!freeNow && lookReady()) { freeAfterKill = true; freeNow = true; view.stopTour(); }   // the drag is the hand-over: the ceremony ends now, the camera swings to the free follow
+      if (freeNow) view.lookYaw(-turn);
+    });
     for (const name of ['pointerup', 'lostpointercapture']) canvas.addEventListener(name, (e) => { look.up((e as PointerEvent).pointerId, (e as PointerEvent).timeStamp); });
     canvas.addEventListener('pointercancel', (e) => { look.abort((e as PointerEvent).pointerId); });
   } else {
@@ -481,7 +488,7 @@ function frame(now: number) {
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });
   // a fight (or a pause) drops the look finger and its glide cleanly; the walk's move already reads view.yaw, so the stick stays camera-relative as the view turns
-  if (look) { if (freeNow && !paused()) view.lookYaw(-look.step(dt)); else look.cancel(); }
+  if (look) { if (freeNow && !paused()) view.lookYaw(-look.step(dt)); else if (paused() || look.active === null || !heroStands()) look.cancel(); }   // a finger held down through the kill's ceremony is kept (its drag hands the camera over); a fight or a pause drops it
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
     locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,

@@ -234,11 +234,12 @@ test('the stick stays camera-relative: the same push walks a different way once 
 const code = (p) => read(p).replace(/(^|\s)\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '');
 const PINS = [
   ['../src/client/main.ts', 'the rows come from the free camera: none without it', /const LOOK = lookFor\(!!FREE, search\), look = LOOK \? createLook\(LOOK\) : null;/],
-  ['../src/client/main.ts', 'a press starts the look only while the camera is free, on its own pointer id', /if \(e\.button !== 0 \|\| paused\(\) \|\| !freeNow \|\| !look\.down\(e\.pointerId, e\.clientX, window\.innerWidth, e\.pointerType, e\.timeStamp\)\) return;/],
-  ['../src/client/main.ts', 'a move turns the view by the drag', /view\.lookYaw\(-look\.move\(e\.pointerId, e\.clientX, e\.timeStamp\)\);/],
+  ['../src/client/main.ts', 'a press starts the look only while the camera is free, on its own pointer id', /if \(e\.button !== 0 \|\| paused\(\) \|\| !lookReady\(\) \|\| !look\.down\(e\.pointerId, e\.clientX, window\.innerWidth, e\.pointerType, e\.timeStamp\)\) return;/],
+  ['../src/client/main.ts', 'a move turns the view by the drag, once the camera is free (a drag in the kill\'s ceremony hands it over first)', /const turn = look\.move\(e\.pointerId, e\.clientX, e\.timeStamp\);\s*if \(!turn\) return;\s*if \(!freeNow && lookReady\(\)\) \{ freeAfterKill = true; freeNow = true; view\.stopTour\(\); \}\s*if \(freeNow\) view\.lookYaw\(-turn\);/],
+  ['../src/client/main.ts', 'a look press is ready by the free camera rule, ceremony included', /const lookReady = \(\) => lookStarts\(FREE, freeNow, heroStands\(\), freeAfterKill \|\| view\.finishPhase\(\)\.complete \|\| killAge >= ZONE!\.startAfterSeconds, killAge, view\.finishPhase\(\)\.stickBeat\);/],
   ['../src/client/main.ts', 'a lift ends it', /look\.up\(\(e as PointerEvent\)\.pointerId, \(e as PointerEvent\)\.timeStamp\);/],
   ['../src/client/main.ts', 'a cancelled pointer aborts the look (no glide)', /canvas\.addEventListener\('pointercancel', \(e\) => \{ look\.abort\(\(e as PointerEvent\)\.pointerId\); \}\);/],
-  ['../src/client/main.ts', 'every frame: the glide while free, the cancel the moment a fight (or a pause) takes the camera', /if \(look\) \{ if \(freeNow && !paused\(\)\) view\.lookYaw\(-look\.step\(dt\)\); else look\.cancel\(\); \}/],
+  ['../src/client/main.ts', 'every frame: the glide while free, the cancel the moment a fight (or a pause) takes the camera', /if \(look\) \{ if \(freeNow && !paused\(\)\) view\.lookYaw\(-look\.step\(dt\)\); else if \(paused\(\) \|\| look\.active === null \|\| !heroStands\(\)\) look\.cancel\(\); \}/],
   ['../src/client/main.ts', '?look=off keeps the plain drag', /if \(freeNow\) view\.lookRound\(e\.clientX - drag\.x\);/],
   ['../src/fight/scene.ts', 'the scene turns the rig (#136\'s hook)', /lookYaw\(radians: number\) \{ rig\.lookYaw\(radians\); \}/],
 ];
@@ -253,4 +254,20 @@ test('the page wires the look thumb: its own pointer id, the free camera gate, t
 });
 test('each pin bites: without its wiring the text no longer matches', () => {
   for (const [file, what, re] of PINS) assert.doesNotMatch(code(file).replace(re, ''), re, what);
+});
+
+// Dom 2026-10-28, on his phone: free look worked at the start, but just after he killed the first boss he could not turn the camera round. The look press was taken only while freeNow, and
+// freeNow stays false through the kill's ceremony (the finisher camera holds the view up to startAfterSeconds unless the STICK is moved), so a right-thumb drag after the kill did nothing.
+test('regression: a look press during the kill\'s ceremony is taken and hands the camera over, as the stick does', async () => {
+  const { lookStarts, handsOver } = await import('../src/fight/free-camera.ts');
+  const FREE = JSON.parse(read('../data/respawn.json')).freeCamera;
+  assert.equal(lookStarts(FREE, false, true, false, 0.3, 0), true, 'just after the kill, ceremony still on: the look press is taken (before the fix only a free camera took it)');
+  assert.equal(lookStarts(FREE, false, true, false, 0.3, 1.5), false, 'a finisher that holds a held input back holds a look press back too, the same beat');
+  assert.equal(lookStarts(FREE, false, true, false, 1.6, 1.5), true, '... and takes it after the beat');
+  assert.equal(lookStarts(FREE, false, true, true, 0, 0), true, 'ceremony over');
+  assert.equal(lookStarts(FREE, true, false, false), true, 'free camera: always');
+  assert.equal(lookStarts(FREE, false, false, false, 99, 0), false, 'in a fight (the lock holds, nobody is standing over a kill): not taken');
+  assert.equal(lookStarts(null, false, true, true), false, '?freecam=v1: no free camera, no look');
+  assert.equal(lookStarts({ ...FREE, stickEndsCeremony: false }, false, true, false, 9, 0), false, 'a row that does not let input end the ceremony makes the look wait for it too');
+  for (const beat of [0, 0.5, 2]) for (const since of [0, 0.4, 3]) assert.equal(lookStarts(FREE, false, true, false, since, beat), handsOver(FREE, false, true, since, beat), 'the look is exactly the stick\'s hand-over rule');
 });
