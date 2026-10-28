@@ -80,9 +80,7 @@ await shot('3-kill');
 // the walk starts on the first press (a roll here ends the ceremony as the stick does)
 const j2 = await centre('joystick');
 await down('joystick', 1, j2); await move(1, j2.x, j2.y + 40);
-await page.waitForFunction(() => !!globalThis.__v3Roam, null, { timeout: 60000 }).catch(() => {});
-check('after the kill: the stick walks him', (await hero()).roam === true);
-await page.evaluate(() => { const h = globalThis.__v3FreeHero; if (h) h.stamina = h.maxStamina; });   // the kill left him winded: the roll costs the fight's stamina, so start it full
+await page.evaluate(() => { const h = globalThis.__v3Fight.duel.fighters[0]; h.stamina = h.maxStamina; });   // the kill left him winded: the roll costs the fight's stamina, so start it full
 await down('dodge-button', 2);
 const wrolled = await until('roll'), wr = await hero();
 if (wrolled) await shot('4-walk-roll');

@@ -217,7 +217,8 @@ test('the row: always on (no URL flag), the three free presses, a bad row throws
 
 test('the page wires it: the kill ceremony ends on a roll or guard press, the walk steps the free hero, the HUD and the pose follow him', () => {
   const main = read('../src/client/main.ts'), hud = read('../src/fight/hud.ts');
-  assert.match(main, /isFreeAction\(duelIntent\.action\)/, 'a roll or guard press ends the ceremony as the stick does');
+  assert.match(main, /intent\.guard \|\| isFreeAction\(duelIntent\.action\) \? 0 : phase\.stickBeat/, 'no held-stick beat for a roll or guard press');
+  assert.match(main, /isFreeAction\(duelIntent\.action\)/,'a roll or guard press ends the ceremony as the stick does');
   assert.match(main, /stepFreeRoam\(freeRoam, roam, duelIntent, ZONE!\.walkRadius\)/);
   assert.match(main, /walking: \(\) => heroStands\(\)/);
   assert.match(main, /free: freeHud\(freeRoam\)/);
