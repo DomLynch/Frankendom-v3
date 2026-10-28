@@ -453,7 +453,7 @@ function zoneStep(dt: number) {
   if (engaged && !practice.finish) fightSec += dt;
   spawns = timers.spawns;
   corpseStep(dt);
-  MARKET_HOOK?.step(state, practice.playerHealth > 0 && !engaged);   // no trading mid-fight: the chip goes and the sheet closes
+  MARKET_HOOK?.step(state, practice.playerHealth > 0, !engaged);   // mid-fight there is no new Trade chip; an open sheet closes only on death or walking away
   for (const i of timers.due) rollStarFor(spawns[i]!);   // a spawn stands again: its next star, before anything builds its fight
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));

@@ -27,7 +27,7 @@ export type MarketHookCtx = {
 };
 export type MarketHook = {
   /** Every frame: the chip follows the merchant while the hero is near and alive; the sheet closes when he walks off. */
-  step(hero: { x: number; z: number }, alive: boolean): void;
+  step(hero: { x: number; z: number }, alive: boolean, calm?: boolean): void;
   /** The merchant as a standing figure for view.idleFoes. Null when there is no save. */
   stand(hero: { x: number; z: number }): { x: number; z: number; heading: number; id: string; spawn: { kind: string; body: string }; star: number; near: boolean } | null;
   remove(): void;
@@ -102,12 +102,12 @@ export function mountMarket(ctx: MarketHookCtx, doc: Document = document, file: 
 
   const xy: [number, number] = [0, 0];
   return {
-    step(hero, alive) {
+    step(hero, alive, calm = true) {   // `calm` false (a fight is on): no new chip; a sheet already open stays until he dies or walks off
       if (!ctx.get()) { panel.chipAt(null); return; }
       const d = Math.hypot(hero.x - at.x, hero.z - at.z);
       if (panel.isOpen() && (!alive || d > M.closeMetres)) panel.close();
       const w = (doc as { documentElement?: { clientWidth?: number; clientHeight?: number } }).documentElement, W = w?.clientWidth || 1e9, H = w?.clientHeight || 1e9;
-      const on = alive && d <= M.openMetres && ctx.project(at.x, 2.15, at.z, xy) && xy[0] >= 44 && xy[0] <= W - 44 && xy[1] >= 28 && xy[1] <= H - 28;   // the chip never sits off the screen: with the merchant behind the camera or out of frame there is nothing to tap
+      const on = alive && calm && d <= M.openMetres && ctx.project(at.x, 2.15, at.z, xy) && xy[0] >= 44 && xy[0] <= W - 44 && xy[1] >= 28 && xy[1] <= H - 28;   // the chip never sits off the screen: with the merchant behind the camera or out of frame there is nothing to tap
       panel.chipAt(on ? xy : null);
     },
     stand(hero) {

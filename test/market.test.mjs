@@ -185,6 +185,7 @@ test('the chip shows only near the merchant; a tap opens the sheet; walking off 
   hook.step(near, true); assert.equal(byM(doc, 'chip').hidden, false); assert.match(byM(doc, 'chip').text(), /Trade/);
   assert.ok(byM(doc, 'chip').style.transform);
   hook.step(near, false); assert.equal(byM(doc, 'chip').hidden, true, 'a dead hero trades with nobody');
+  hook.step(near, true, false); assert.equal(byM(doc, 'chip').hidden, true, 'no new Trade chip mid-fight');
   hook.step(near, true); click(byM(doc, 'chip')); assert.equal(byM(doc, 'sheet').hidden, false); assert.equal(byM(doc, 'chip').hidden, true, 'the chip gives way to the sheet');
   hook.step({ x: 2, z: -1 }, true); assert.equal(byM(doc, 'sheet').hidden, false, 'still within the close distance');
   hook.step(far, true); assert.equal(byM(doc, 'sheet').hidden, true);
