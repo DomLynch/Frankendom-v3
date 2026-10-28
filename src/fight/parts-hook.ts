@@ -15,12 +15,12 @@ export type PartsHookCtx = {
   stars: StarsFile;
   prog: ProgressionFile;
 };
-export type PartsHook = { noteKill(profile: string, star: number): void; remove(): void };
+export type PartsHook = { remove(): void };
 
 export function mountParts(ctx: PartsHookCtx, doc: Document = document): PartsHook {
   const bad = validateParts(PARTS, ctx.stars.levels.length);
   if (bad.length) throw new Error(`data/parts.json: ${bad.join('; ')}`);
-  const names = new Map(ctx.profiles.map((p) => [p.id, p.name ?? p.id])), lastStar: Record<string, number> = {};
+  const names = new Map(ctx.profiles.map((p) => [p.id, p.name ?? p.id]));
   const write = (next: Save) => ctx.put(next);
   const panel = mountPartsPanel(doc as unknown as Parameters<typeof mountPartsPanel>[0], {
     rows: PARTS,
@@ -36,11 +36,11 @@ export function mountParts(ctx: PartsHookCtx, doc: Document = document): PartsHo
   });
   const off = feel.on((PHYSICS as { corpse: { event: string } }).corpse.event,(_name, payload) => {
     try {
-      const p = payload as { unit?: unknown; profile?: unknown } | undefined, s = ctx.get();
+      const p = payload as { unit?: unknown; profile?: unknown; star?: unknown } | undefined, s = ctx.get();
       if (!s || !p || typeof p.unit !== 'string' || typeof p.profile !== 'string' || !names.has(p.profile)) return;
-      const next = collect(s, p.profile, p.unit, lastStar[p.profile] ?? 0);
+      const next = collect(s, p.profile, p.unit, typeof p.star === 'number' ? p.star : 0);   // the star the boss had when it fell (ragdoll.ts reads it at the kill), never a later kill's
       if (next !== s) { write(next); panel.refresh(); }
     } catch (error) { console.warn('parts: cut not recorded', error); }
   });
-  return { noteKill(profile, star) { lastStar[profile] = star; }, remove() { off(); panel.remove(); } };
+  return { remove() { off(); panel.remove(); } };
 }

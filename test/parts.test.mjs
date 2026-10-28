@@ -65,8 +65,8 @@ test('save: parts and equipped round trip; an old save loads with neither; junk 
   assert.equal(o.parts, undefined); assert.equal(o.equipped, undefined); assert.equal(o.coins, 5);
   const noParts = store(); writeSave(noParts, P, o);
   assert.ok(!('parts' in JSON.parse(noParts.m.get(P.key))), 'a save with no parts writes none');
-  const junk = parseSave(JSON.stringify({ ...JSON.parse(old), parts: { 'x:head': { n: -1 }, 'bad': { n: 1 }, 'y:head': { n: 2, star: 99 }, 'z:weapon': { n: 1 } }, equipped: { head: 'nope', leg_left: 'y:head' } }), P);
-  assert.deepEqual(junk.parts, { 'y:head': { n: 2, star: 2 } }); assert.equal(junk.equipped, undefined, 'an equipped part must be owned and fit its slot');
+  const junk = parseSave(JSON.stringify({ ...JSON.parse(old), parts: { 'arachne:head': { n: -1 }, 'bad': { n: 1 }, 'arachne:leg_left': { n: 2, star: 99 }, 'arachne:weapon': { n: 1 }, 'nobody:head': { n: 1, star: 0 } }, equipped: { head: 'nope', leg_left: 'arachne:leg_left', leg_right: 'arachne:leg_left' } }), P);
+  assert.deepEqual(junk.parts, { 'arachne:leg_left': { n: 2, star: 2 } }, 'unknown bosses, bad ids and the weapon slot are dropped'); assert.deepEqual(junk.equipped, { leg_left: 'arachne:leg_left' }, 'worn only in its own slot'); junk.equipped = undefined; assert.equal(junk.equipped, undefined, 'an equipped part must be owned and fit its slot');
   assert.deepEqual(cleanParts({ parts: [], equipped: 3 }), {});
 });
 
@@ -105,9 +105,8 @@ function page(saveIn) {
 
 test('a cut of a fallen boss is kept automatically with its profile and kill star; the menu lists and equips it', () => {
   const { doc, box, hook } = page(freshSave());
-  hook.noteKill('arachne', 2);
-  emitFeel(PHYS.corpse.event, { unit: 'arm_right', gear: [], source: 'tap', corpseId: 'shieldmaiden#4', profile: 'arachne' });
-  emitFeel(PHYS.corpse.event, { unit: 'head_split', gear: [], source: 'tap', corpseId: 'shieldmaiden#4', profile: 'arachne' });
+  emitFeel(PHYS.corpse.event, { unit: 'arm_right', gear: [], source: 'tap', corpseId: 'shieldmaiden#4', profile: 'arachne', star: 2 });
+  emitFeel(PHYS.corpse.event, { unit: 'head_split', gear: [], source: 'tap', corpseId: 'shieldmaiden#4', profile: 'arachne', star: 2 });
   emitFeel(PHYS.corpse.event, { unit: 'head', gear: [], source: 'tap', corpseId: 'shieldmaiden#4' });   // no profile: ignored
   assert.deepEqual(box.save.parts, { 'arachne:arm_right': { n: 1, star: 2 } });
   assert.equal(find(doc, (e) => e.dataset.frank === 'sheet').hidden, true, 'no prompt opens on the body');
@@ -120,7 +119,7 @@ test('a cut of a fallen boss is kept automatically with its profile and kill sta
   assert.ok(find(doc, (e) => e.dataset.frank === 'unequip'), 'the button flips');
   click(find(doc, (e) => e.dataset.frank === 'unequip'));
   assert.equal(box.save.equipped?.arm_right, undefined);
-  emitFeel(PHYS.corpse.event, { unit: 'leg_left', gear: [], source: 'tap', corpseId: 'x#1', profile: 'arachne' });
+  emitFeel(PHYS.corpse.event, { unit: 'leg_left', gear: [], source: 'tap', corpseId: 'x#1', profile: 'arachne', star: 0 });
   assert.match(sheet.text(), /Arachne left leg/, 'a cut while the menu is open shows at once');
   click(find(doc, (e) => e.dataset.frank === 'close')); assert.equal(sheet.hidden, true);
   hook.remove();
@@ -141,3 +140,30 @@ test('the weapon slot shows the newest boss-weapon reward; no save collects noth
 });
 
 test('partId is profile:slot', () => assert.equal(partId('arachne', 'head'), 'arachne:head'));
+
+test('rarity follows each kill: a 2-star boss then a 0-star one; the killing-blow cut carries the star of its own life', () => {
+  const { box, hook } = page(freshSave());
+  emitFeel(PHYS.corpse.event, { unit: 'arm_left', gear: [], source: 'finisher', corpseId: 'executioner#1', profile: 'gargantua', star: 2 });
+  emitFeel(PHYS.corpse.event, { unit: 'leg_left', gear: [], source: 'tap', corpseId: 'executioner#2', profile: 'gargantua', star: 0 });
+  emitFeel(PHYS.corpse.event, { unit: 'leg_right', gear: [], source: 'tap', corpseId: 'executioner#1', profile: 'gargantua', star: 2 });   // a tap on the older corpse later
+  assert.equal(box.save.parts['gargantua:arm_left'].star, 2);
+  assert.equal(box.save.parts['gargantua:leg_left'].star, 0, 'the 0-star kill is not lent the earlier 2');
+  assert.equal(box.save.parts['gargantua:leg_right'].star, 2);
+  emitFeel(PHYS.corpse.event, { unit: 'head', gear: [], source: 'tap', corpseId: 'executioner#3', profile: 'gargantua' });   // an event with no star is a 0-star cut
+  assert.equal(box.save.parts['gargantua:head'].star, 0);
+  hook.remove();
+});
+
+test('the page hands the star to the cut: ragdoll.ts reads kind and star at the kill, main.ts sets both', () => {
+  const rag = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8'), main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
+  assert.match(rag, /lifeProfiles\.set\(lifeId, \{ profile: getActiveKind\(\) \?\? foe\.id, star: getActiveStar\(\) \}\)/);
+  assert.match(rag, /star: lifeProfiles\.get\(corpseId\)\?\.star \?\? 0/);
+  assert.match(main, /setActiveKind\(k\.kind, k\.star \?\? 0\)/);
+});
+
+test('cleanParts holds a save to the known bosses and one part per boss and slot', () => {
+  const many = Object.fromEntries(Array.from({ length: 500 }, (_, i) => [`arachne${i}:head`, { n: 1, star: 0 }]));
+  assert.equal(cleanParts({ parts: many }).parts, undefined, 'unknown bosses');
+  const known = new Set(['a', 'b']), wide = Object.fromEntries(['a', 'b', 'c'].flatMap((p) => ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso'].map((s) => [`${p}:${s}`, { n: 1, star: 0 }])));
+  assert.equal(Object.keys(cleanParts({ parts: wide }, PARTS, known).parts).length, 12);
+});

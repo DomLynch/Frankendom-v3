@@ -2,6 +2,8 @@
 // kept with the highest star level it was cut at, equipped one per slot. The inventory rides in the progression save as two OPTIONAL fields (`parts`, `equipped`): a save from before them loads with both
 // empty, and a save with none is byte for byte the one before. Nothing here touches storage, the DOM or the sim; the page (src/fight/parts-hook.ts) and the menu (parts-panel.ts) call these.
 import ROWS from '../data/parts.json' with { type: 'json' };
+import PROFILE_ROWS from '../data/profiles.json' with { type: 'json' };
+const KNOWN_PROFILES: ReadonlySet<string> = new Set((PROFILE_ROWS.profiles as { id: string }[]).map((p) => p.id));   // the bosses a part can come from (data/profiles.json)
 
 export type SlotRow = { id: string; label: string; units: string[] };
 export type RarityRow = { star: number; id: string; label: string; colour: string };
@@ -83,12 +85,13 @@ export function unequip<T extends PartsSave>(save: T, slot: string): T {
 }
 
 /** The two fields from a parsed save object, cleaned: unknown shapes dropped, counts and stars clamped, an equipped part kept only while it is owned and fits its slot. Absent when empty. */
-export function cleanParts(j: { parts?: unknown; equipped?: unknown }, file: PartsFile = PARTS): PartsSave {
-  const parts: Record<string, PartRow> = {}, out: PartsSave = {};
+export function cleanParts(j: { parts?: unknown; equipped?: unknown }, file: PartsFile = PARTS, known: ReadonlySet<string> = KNOWN_PROFILES): PartsSave {
+  const parts: Record<string, PartRow> = {}, out: PartsSave = {}, cap = known.size * file.slots.filter((s) => s.units.length).length;   // at most one part per known boss and slot: a hand-edited save cannot grow without bound
   if (j.parts && typeof j.parts === 'object' && !Array.isArray(j.parts))
     for (const [id, v] of Object.entries(j.parts as Record<string, unknown>)) {
-      const r = v as { n?: unknown; star?: unknown };
-      if (!splitPart(id, file) || !r || typeof r !== 'object' || typeof r.n !== 'number' || !Number.isInteger(r.n) || r.n < 1) continue;
+      const r = v as { n?: unknown; star?: unknown }, at = splitPart(id, file);
+      if (Object.keys(parts).length >= cap) break;
+      if (!at || !known.has(at.profile) ||!r || typeof r !== 'object' || typeof r.n !== 'number' || !Number.isInteger(r.n) || r.n < 1) continue;
       const star = typeof r.star === 'number' && Number.isInteger(r.star) ? Math.max(0, Math.min(file.rarities.length - 1, r.star)) : 0;
       parts[id] = { n: Math.min(file.maxCount, r.n), star };
     }
