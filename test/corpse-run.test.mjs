@@ -117,7 +117,7 @@ test('a fresh game is the game before: no coins, no pile, the same weapon, nothi
   const { coins, banked, pile, lost, ...rest } = earn(killed.save, CORPSE, 'gargantua');
   assert.deepEqual(rest, { v: 1, kills: { gargantua: 1 }, ladder: ['gargantua'], unlocked: ['gladius'] }, 'the ladder, kills and unlocks are what they were');
   assert.deepEqual([coins, banked, pile, lost], [10, 0, null, []]);
-  assert.equal(recordKill(withCoins(3), 'goblin', P).save.coins, 3, 'a kind that is no ladder boss changes nothing');
+  assert.equal(recordKill(withCoins(3), 'goblin', P).save.coins, withCoins(3).coins,'a kind that is no ladder boss changes nothing');
 });
 
 test('the marker fades as he nears the pile and pulses; the radar shows one gold blip, none without a pile', () => {
