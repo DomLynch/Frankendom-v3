@@ -47,7 +47,7 @@ export function ringAlpha(plate: RingPlateRow, row: RingRow, u: number, v: numbe
   const span = plateSpan(plate, row);
   return smooth(0, plate.rampLeftDegrees / span, u) * smooth(0, plate.rampRightDegrees / span, 1 - u) * smooth(0, row.topFadeFraction, 1 - v) * smooth(0, row.bottomFadeFraction, v);
 }
-/** The arc a plate covers (degrees): its own `spanDegrees` row when it has one (a wider arc spreads the same picture over more sky, so its subject reads smaller and further back; Dom 2026-10-28, "too close up"), else the ring's. */
+/** The arc a plate covers (degrees): its own `spanDegrees` row when it has one (a narrower arc puts the same picture over less sky, so its subject reads smaller and further back; Dom 2026-10-28, "too close up"), else the ring's. */
 export function plateSpan(plate: { spanDegrees?: number }, row: RingRow): number { return plate.spanDegrees ?? row.spanDegrees; }
 export function ringAlphaMap(plate: RingPlateRow, row: RingRow, w = 256, h = 64): THREE.DataTexture {
   const data = new Uint8Array(w * h * 4);
