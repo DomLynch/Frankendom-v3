@@ -41,7 +41,7 @@ test('the schema rejects bad rows: missing event, few lines, undeclared param, l
   assert.match(bad((r) => { r.caps.perMinute = 0; }), /caps\.perMinute/);
   assert.match(bad((r) => { r.caption.colour = 'red'; }), /caption\.colour/);
   assert.match(bad((r) => { r.thresholds.missStreak = 1; }), /thresholds\.missStreak/);
-  assert.match(bad((r) => { r.mood = 'angry'; }), /unknown key|mood/);
+  const top = clone(ROWS); top.mood = 'angry'; assert.match(validateFile('commentator', top).join('\n'), /commentator\.mood: unknown key/);
 });
 
 test('every shipped line is short, PG-13 by the deny-list, has no URL and names no real person', () => {
@@ -54,14 +54,14 @@ test('every shipped line is short, PG-13 by the deny-list, has no URL and names 
 
 test('no repeat: the same event never says the line it said last, over many calls', () => {
   const { cm, lines } = make(loose());
-  for (let i = 0; i < 400; i++) cm.say('first_hit');
+  for (let i = 0; i < 400; i++) { cm.say('first_hit'); cm.advance(1); }
   assert.equal(lines.length, 400);
   for (let i = 1; i < lines.length; i++) assert.notEqual(lines[i], lines[i - 1]);
   assert.ok(new Set(lines).size >= ROWS.events.first_hit.lines.length - 1, 'every line gets used');
 });
 
 test('deterministic: the same seed and calls pick the same lines; another seed picks others', () => {
-  const run = (seed) => { const r = loose(); r.seed = seed; const { cm, lines } = make(r); for (let i = 0; i < 30; i++) cm.say('hero_death'); return lines.join('|'); };
+  const run = (seed) => { const r = loose(); r.seed = seed; const { cm, lines } = make(r); for (let i = 0; i < 30; i++) { cm.say('hero_death'); cm.advance(1); } return lines.join('|'); };
   assert.equal(run('a'), run('a'));
   assert.notEqual(run('a'), run('b'));
 });
@@ -102,7 +102,7 @@ test('lines per session: the cap is final, priority included', () => {
 
 test('probability: a failed roll says nothing and keeps the cooldown free; the roll is deterministic', () => {
   const r = loose(); r.events.idle.probability = 0.5;
-  const run = () => { const { cm, lines } = make(r); for (let i = 0; i < 200; i++) cm.say('idle'); return lines.length; };
+  const run = () => { const { cm, lines } = make(r); for (let i = 0; i < 200; i++) { cm.say('idle'); cm.advance(1); } return lines.length; };
   const n = run(); assert.equal(n, run());
   assert.ok(n > 60 && n < 140, `about half: ${n}`);
 });
