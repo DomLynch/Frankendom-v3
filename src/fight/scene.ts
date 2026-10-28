@@ -97,7 +97,10 @@ const SIDES = [0, 1] as const;   // the two fighters, for the per-frame loops: o
 // The player weapons this build can draw: the longsword is warrior.glb's own, every other needs its equip file (scripts/build-player-weapon.mjs),
 // fetched only when that weapon is the one in hand. main.ts offers the fight only these (loot.ts fightWeapon), so no pick can lack its art.
 // V3: no Vite, so the globs below are the files the one fight ships, by URL (the Centurion's gladius at his level-1 loadout).
-const EQUIP_URLS: Record<string, string> = { '../assets/weapons/player/gladius.glb': new URL('../assets/weapons/player/gladius.glb', import.meta.url).href };
+const EQUIP_URLS: Record<string, string> = {
+  '../assets/weapons/player/gladius.glb': new URL('../assets/weapons/player/gladius.glb', import.meta.url).href,
+  '../assets/weapons/player/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href,   // data/progression.json: the cleaver the Arachne kill unlocks is the Pitborn's file (equipWeapon grafts a foe's and a hero's alike); the sword clip family
+};
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // V3: the opponent's DRAWN weapon over the one he fights with (foe-weapon.ts, data/fight.json foeWeapon: V1's Cleaver on the Minotaur, the
 // sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1: the gladius's).
