@@ -177,7 +177,7 @@ function shop(saveIn, nowMs = DAY1) {
   const hook = mountMarket({ get: () => box.save, put: (s) => { box.save = s; }, profiles: PROFILES.profiles, stars: STARS, isWeapon: (id) => WEAPONS.includes(id), weaponName: (id) => id, bankCap: CAP, camp: { x: 0, z: 2 }, now: () => box.now, project: (x, y, z, out) => { out[0] = 187; out[1] = 300; return true; } }, doc);
   return { doc, box, hook, done() { hook.remove(); for (const o of off) o(); } };
 }
-const near = { x: 3, z: 0 }, far = { x: 30, z: 30 };
+const near = { x: 0, z: 1 }, far = { x: 30, z: 30 };
 
 test('the chip shows only near the merchant; a tap opens the sheet; walking off or dying closes it', () => {
   const { doc, hook, done } = shop(rich());
@@ -186,7 +186,7 @@ test('the chip shows only near the merchant; a tap opens the sheet; walking off 
   assert.ok(byM(doc, 'chip').style.transform);
   hook.step(near, false); assert.equal(byM(doc, 'chip').hidden, true, 'a dead hero trades with nobody');
   hook.step(near, true); click(byM(doc, 'chip')); assert.equal(byM(doc, 'sheet').hidden, false); assert.equal(byM(doc, 'chip').hidden, true, 'the chip gives way to the sheet');
-  hook.step({ x: 3, z: -3 }, true); assert.equal(byM(doc, 'sheet').hidden, false, 'still within the close distance');
+  hook.step({ x: 2, z: -1 }, true); assert.equal(byM(doc, 'sheet').hidden, false, 'still within the close distance');
   hook.step(far, true); assert.equal(byM(doc, 'sheet').hidden, true);
   hook.step(near, true); click(byM(doc, 'chip')); hook.step(near, false); assert.equal(byM(doc, 'sheet').hidden, true, 'dying closes it');
   done();
