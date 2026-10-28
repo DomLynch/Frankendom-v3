@@ -20,7 +20,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildWarriors, specialRoleOf, sizeBeast, CHARGE_LEAN, defenceReaction, holdingCharge, heroClipsOn, loadLoot, MissingTextures, loadFoeBody, loadRankLook, loadShape, loadShield, loadWarriors, lootWorn, SHIELD_CARRIERS } from './characters.ts';
 import { shieldFor, SHIPPING_SHIELDS } from './shields.ts';
 import { RemoteSwords } from '../presence/sword.ts';
-import { shapesFlag,shapesFor, shapesOn, SHIPPING_SHAPES } from './weapon-shapes.ts';
+import { shapesFlag,shapesFor, shapesOn, shippedShape, SHIPPING_SHAPES } from './weapon-shapes.ts';
 import { bakeSafeFinisher, lookBakeOffFrom, lookBakes, rankLookFlag, runThroughForced, rankLookFor, rankLookStream, SHIPPING_LOOKS } from './rank-look.ts';
 import { kitWorn, levelOf, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/loot.ts
 import { STANDOFF_MS, standoffClock, standoffFlag, standoffPose } from './standoff.ts';
@@ -331,7 +331,7 @@ export function createScene(
     const urls = () => shapesFor({ player: loaded.playerWeapon, opponent: builtFoeWeapon ? foeDrawnWeapon(opponentId, builtFoeWeapon) : builtFoeWeapon, opponentId, playerLevel: levelOf(playerTier ?? 'Recruit'), opponentLevel: levelOf(tier ?? 'Recruit') }, shapeTable);
     for (const who of ['player', 'opponent'] as const) {
       const actor = loaded[who], url = urls()[who];
-      if (!url) { actor.reshape(undefined); continue; }
+      if (!url || (shapeTable === SHIPPING_SHAPES && !shippedShape(url))) { actor.reshape(undefined); continue; }   // a rank whose file is not shipped keeps the weapon's own part, with no fetch (no 404, no console error)
       if (!shapes.has(url)) shapes.set(url, loadShape(url).catch((error: unknown) => { captureException(error, { tags: { shape: url } }); return undefined; }));
       void shapes.get(url)!.then((mesh) => { if (warriors === loaded && urls()[who] === url) { actor.reshape(mesh); if (who === 'player') remoteSwords.set(mesh);((globalThis as { __weaponShapes?: Record<string, string | undefined> }).__weaponShapes ??= {})[who] = mesh ? url : undefined; } });   // the stills and phone check read what went on
     }
