@@ -43,7 +43,11 @@ await page.keyboard.up('KeyW');
 console.log(`${tag}: ${MODE}: killed at ${killedAt}, ragdoll ${(await read()).ragdoll}, cut by the kill ${JSON.stringify(await cuts())}`);
 await run(90);
 await shoot('1-hint');
-const press = async () => { const b = await page.evaluate(() => { const r = document.getElementById('attack-button').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); await page.touchscreen.tap(b[0], b[1]); await run(70); };
+const press = async () => {
+  const b = await page.evaluate(() => { const r = document.getElementById('attack-button').getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), cs = getComputedStyle(document.getElementById('attack-button')); return [r.left + r.width / 2, r.top + r.height / 2, el?.id || el?.className || el?.tagName, cs.visibility, cs.pointerEvents]; });
+  if (!press.logged) { press.logged = true; console.log(`${tag}: STRIKE at ${b[0].toFixed(0)},${b[1].toFixed(0)}: top element ${b[2]}, visibility ${b[3]}, pointer-events ${b[4]}`); }
+  await page.touchscreen.tap(b[0], b[1]); await run(70);
+};
 const have = async () => new Set((await cuts()).map((c) => c.split(':')[0]));
 if (MODE === 'far') {
   await page.keyboard.down('KeyS'); await run(200); await page.keyboard.up('KeyS');
