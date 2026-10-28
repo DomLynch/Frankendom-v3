@@ -192,6 +192,14 @@ test('the chip shows only near the merchant; a tap opens the sheet; walking off 
   done();
 });
 
+test('the chip never sits off the screen', () => {
+  const doc = { ...mkDoc(), documentElement: { clientWidth: 375, clientHeight: 812 } }; let spot = [527, 216];
+  const hook = mountMarket({ get: () => rich(), put: () => {}, profiles: PROFILES.profiles, stars: STARS, isWeapon: (id) => WEAPONS.includes(id), weaponName: (id) => id, bankCap: CAP, camp: { x: 0, z: 2 }, now: () => DAY1, project: (x, y, z, out) => { out[0] = spot[0]; out[1] = spot[1]; return true; } }, doc);
+  hook.step(near, true); assert.equal(byM(doc, 'chip').hidden, true, 'projected right of the 375 box: no chip');
+  spot = [187, 300]; hook.step(near, true); assert.equal(byM(doc, 'chip').hidden, false);
+  hook.remove();
+});
+
 test('open, buy, sell, with the banked coins on the sheet and an event for each', () => {
   const s0 = collect(collect(rich({ banked: 400 }), 'arachne', 'head', 1), 'arachne', 'head', 1);
   const { doc, box, hook, done } = shop(s0);
