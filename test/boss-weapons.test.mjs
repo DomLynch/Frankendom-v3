@@ -10,7 +10,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { validateFile } from '../src/sim/validate.js';
 import { BOSS_WEAPONS, bossOpponent, bossPreview, bossRowOfBody, bossWeaponFor, bossWeaponsOn, validateBossWeapons } from '../src/fight/boss-weapon.ts';
-import { dressBossHand, SHIELD_NAME } from '../src/fight/boss-hand.ts';
+import { dressBossHand, graftOf, SHIELD_NAME } from '../src/fight/boss-hand.ts';
 import { OPPONENTS, opponentAt, weaponOf } from '../src/fight/moves.ts';
 import { bladePathsByRig } from '../src/fight/blade-paths.ts';
 import { kindFightFor, kindPractice } from '../src/fight/spawn-kind.ts';
@@ -37,6 +37,10 @@ test('the rows validate; a bad row is refused with the rule it broke', () => {
   assert.match(bad((r) => { r.rows[1].offhand.colour = 'brown'; }), /offhand.colour/);
   assert.match(bad((r) => { r.rows[1].offhand.offset = [0, 0]; }), /offhand.offset/);
   assert.match(bad((r) => { r.rows[1].offhand.kind = 'tower'; }), /offhand.kind/);
+  assert.match(bad((r) => { r.rows[1].grip.offset = [0, 0]; }), /grip.offset/);
+  assert.match(bad((r) => { delete r.rows[1].grip; }), /grip.rotationDeg/);
+  assert.match(bad((r) => { r.rows[1].material.colour = 'iron'; }), /material.colour/);
+  assert.match(bad((r) => { r.rows[1].material.roughness = 3; }), /material.roughness/);
   assert.match(bad((r) => { r.rows[1].id = r.rows[0].id; }), /id: duplicate/);
   assert.deepEqual(validateFile('boss-weapons', { ...RAW, extra: 1 }), ['boss-weapons.extra: unknown key']);
   const unknownKey = clone(RAW); unknownKey.rows[0].grip = 'two-hand';
@@ -125,10 +129,12 @@ const sizeOf = (o) => { o.updateWorldMatrix(true, true); return new Box3().setFr
 
 test('the maul is the cleaver scaled about the grip; the axe is the cleaver as it is', async () => {
   const plain = await armed(), maul = dressBossHand(await armed(), row('executioner')), axe = dressBossHand(await armed(), row('shieldmaiden'));
-  const len = (a) => { const w = boneOf(a.scene, HELD.weapon); return w ? sizeOf(w).length() : 0; };
+  const len = (a) => { const w = graftOf(a.scene); return w ? sizeOf(w).length() : 0; };   // the DRAWN part (Grip106's WeaponDrawn), not the socket bone: scaling the socket left the blade as it was
   assert.ok(len(plain) > 0, 'the cleaver is in his hand');
   assert.ok(Math.abs(len(maul) / len(plain) - 1.7) < 0.02, `maul ${len(maul)} vs cleaver ${len(plain)}`);
   assert.ok(Math.abs(len(axe) / len(plain) - 1) < 1e-6, 'the axe is unscaled');
+  const contact = (a) => sizeOf(boneOf(a.scene, HELD.weapon)).length();
+  assert.ok(Math.abs(contact(maul) - contact(plain)) < 1e-6, 'the sim\'s contact segment is not scaled with the drawing');
   assert.equal(boneOf(maul.scene, 'hand_l').getObjectByName(SHIELD_NAME), undefined, 'the maul has no shield');
 });
 
@@ -141,4 +147,27 @@ test('the shield board is on the left hand, in metres: the row\'s radius and thi
   assert.ok(Math.abs(dims[1] - 2 * o.radius) < 0.01 && Math.abs(dims[2] - 2 * o.radius) < 0.01, `diameter ${dims[1]} x ${dims[2]}`);
   assert.ok(boneOf(a.scene, HELD.weapon), 'the axe is still in the right hand');
   assert.throws(() => dressBossHand({ scene: a.scene }, { ...row('shieldmaiden'), offhand: { ...o, hand: 'no_such_bone' } }), /no no_such_bone/);
+});
+
+test('the shield is strapped on the OUTER forearm: its face looks away from the palm (forearm -Z in the bind pose), with a small gap', async () => {
+  const a = dressBossHand(await armed(), row('shieldmaiden')), fore = boneOf(a.scene, 'lowerarm_l'), board = fore.getObjectByName(SHIELD_NAME), o = row('shieldmaiden').offhand;
+  const axis = new Vector3(0, 1, 0).applyQuaternion(board.quaternion);   // the board's face normal in the forearm's frame
+  assert.ok(axis.z < -0.99, `face normal ${axis.toArray()} must be the forearm's -Z (the back of the forearm in Mixamo's T-pose bind)`);
+  assert.ok(board.position.z < 0 && board.position.z > -0.12, `gap: the board stands ${board.position.z} m off the forearm axis (a forearm is ~0.04 m thick)`);
+  assert.ok(board.position.y > 0 && board.position.y < 0.3, 'centred on the forearm, between elbow and wrist');
+  assert.ok(o.radius <= 0.3);
+});
+
+test('the grip row moves the DRAWN part only; a material row restyles it and leaves the contact segment alone', async () => {
+  const r = { ...row('shieldmaiden'), offhand: null, grip: { offset: [0.02, 0.03, 0], rotationDeg: [0, 0, 90] }, material: { colour: '#808080', metalness: 0.5, roughness: 0.5 } };
+  const plain = dressBossHand(await armed(), { ...r, grip: { offset: [0, 0, 0], rotationDeg: [0, 0, 0] }, material: null }), moved = dressBossHand(await armed(), r);
+  const p = graftOf(plain.scene), m = graftOf(moved.scene);
+  assert.ok(Math.abs(m.position.x - p.position.x - 0.02) < 1e-9 && Math.abs(m.position.y - p.position.y - 0.03) < 1e-9, 'offset added in the seat frame');
+  assert.ok(m.quaternion.angleTo(p.quaternion) > 1.5, 'rotated about 90 degrees');
+  const mat = [], keep = [];
+  m.traverse((o) => { if (o.isMesh && o.name !== 'WeaponShape') mat.push(o.material.color.getHexString()); });
+  assert.ok(mat.length && mat.every((c) => c === '808080'), `the drawn meshes wear the row's colour: ${mat}`);
+  const c = boneOf(moved.scene, HELD.weapon), c0 = boneOf(plain.scene, HELD.weapon);
+  assert.ok(c.position.distanceTo(c0.position) < 1e-9 && c.quaternion.angleTo(c0.quaternion) < 1e-9, 'the socket (the contact segment) is where it was');
+  void keep;
 });
