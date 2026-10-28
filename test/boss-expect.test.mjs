@@ -50,7 +50,7 @@ for (const [kind, want] of Object.entries(EXPECT.bosses)) {
     assert.equal(got.weapon, want.weapon, `${kind}: the sim weapon (weaponOfBody)`);
     assert.equal(got.equip, want.equip, `${kind}: the equip stem the scene fetches`);
     assert.equal(got.offhand, want.offhand, `${kind}: the off-hand mesh`);
-    if (got.row) assert.equal(got.row.profile == null, want.fallback, `${kind}: fallback means the archetype's row, not the profile's own`);
+    if (got.row) assert.equal(got.row.profile ?? null, want.rowProfile, `${kind}: the row is keyed by the profile (a row of its own) or by the archetype (null: shared, or the explicit fallback)`);
     // (b) the part is real: its URL is in the scene's tables, the source file exists, the build packs/ships it by name
     assert.ok(got.equip, `${kind}: ${got.equipKey} is in FOE_EQUIP_URLS (scene.ts)`);
     assert.ok(existsSync(path.join(root, `src/assets/weapons/foe/${want.equip}.glb`)), `${kind}: src/assets/weapons/foe/${want.equip}.glb exists`);
