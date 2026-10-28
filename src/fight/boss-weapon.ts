@@ -5,7 +5,10 @@ import BOSS from '../../data/boss-weapons.json' with { type: 'json' };
 import { OPPONENTS, isWeaponId, type Opponent } from './moves.ts';
 
 export type OffhandRow = { kind: 'disc'; hand: string; radius: number; thickness: number; colour: string; rim: string; offset: [number, number, number]; rotationDeg: [number, number, number] };
-export type BossWeaponRow = { id: string; opponent: string; weapon: string; clipsAs: string; equip: string; scale: number; offhand: OffhandRow | null; placeholder: string[] };
+/** `grip`: where the drawn part sits in the hand, on top of the socket's own frame: metres and Euler XYZ degrees (the seat's frame; the sim's contact segment is not moved, this is the drawing). `material`: the part's own look replaced (null = the file's). */
+export type GripRow = { offset: [number, number, number]; rotationDeg: [number, number, number] };
+export type MaterialRow = { colour: string; metalness: number; roughness: number };
+export type BossWeaponRow = { id: string; opponent: string; weapon: string; clipsAs: string; equip: string; scale: number; grip: GripRow; material: MaterialRow | null; offhand: OffhandRow | null; placeholder: string[] };
 export type BossWeaponFile = { query: string; v1: string; rows: BossWeaponRow[] };
 
 const HEX = /^#[0-9a-f]{6}$/i, fin = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -24,6 +27,11 @@ export function validateBossWeapons(file: BossWeaponFile, opponents: readonly st
     if (!isWeapon(r.clipsAs)) e.push(`${at}.clipsAs: "${r.clipsAs}" is no src/fight/weapon-defs.json row`);
     if (!equips.includes(r.equip)) e.push(`${at}.equip: "${r.equip}" is no file under src/assets/weapons/foe/ (${equips.join(', ')})`);
     if (!fin(r.scale) || r.scale < 0.5 || r.scale > 4) e.push(`${at}.scale: a number in 0.5..4`);
+    for (const [k, lim] of [['offset', 0.5], ['rotationDeg', 360]] as const) { const v = r.grip?.[k]; if (!Array.isArray(v) || v.length !== 3 || !v.every((n) => fin(n) && Math.abs(n) <= lim)) e.push(`${at}.grip.${k}: three finite numbers within +-${lim}`); }
+    if (r.material !== null) {
+      if (!r.material || typeof r.material !== 'object' || typeof r.material.colour !== 'string' || !HEX.test(r.material.colour)) e.push(`${at}.material.colour: a #rrggbb colour (or material null)`);
+      else for (const k of ['metalness', 'roughness'] as const) if (!fin(r.material[k]) || r.material[k] < 0 || r.material[k] > 1) e.push(`${at}.material.${k}: a number in 0..1`);
+    }
     if (!Array.isArray(r.placeholder) || !r.placeholder.length || r.placeholder.some((s) => typeof s !== 'string' || !s)) e.push(`${at}.placeholder: say exactly what is a stand-in (a non-empty list of strings)`);
     const o = r.offhand;
     if (o !== null) {
