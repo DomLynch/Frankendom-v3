@@ -102,6 +102,14 @@ export const CLIP_106_LOADERS: Record<string, Loader> = {
   '106/anime-boy-black/execution-victim-hero.json': () => import('../assets/106/anime-boy-black/execution-victim-hero.json'),
   '106/anime-boy-black/hamstrung-killer.json': () => import('../assets/106/anime-boy-black/hamstrung-killer.json'),
   '106/anime-boy-black/hamstrung-victim-hero.json': () => import('../assets/106/anime-boy-black/hamstrung-victim-hero.json'),
+  '106/anime-girl-blonde/special-skullcrack.json': () => import('../assets/106/anime-girl-blonde/special-skullcrack.json'),
+  '106/anime-girl-blonde/special-whirlwind.json': () => import('../assets/106/anime-girl-blonde/special-whirlwind.json'),
+  '106/anime-girl-blonde/special-groundslam.json': () => import('../assets/106/anime-girl-blonde/special-groundslam.json'),
+  '106/anime-girl-blonde/special-lunge.json': () => import('../assets/106/anime-girl-blonde/special-lunge.json'),
+  '106/anime-girl-blonde/execution-killer.json': () => import('../assets/106/anime-girl-blonde/execution-killer.json'),
+  '106/anime-girl-blonde/execution-victim-hero.json': () => import('../assets/106/anime-girl-blonde/execution-victim-hero.json'),
+  '106/anime-girl-blonde/hamstrung-killer.json': () => import('../assets/106/anime-girl-blonde/hamstrung-killer.json'),
+  '106/anime-girl-blonde/hamstrung-victim-hero.json': () => import('../assets/106/anime-girl-blonde/hamstrung-victim-hero.json'),
 };
 /** The loader of `role`'s 106 clip for the 106 body file `body`, or undefined (no 106 version: the body plays what it would without it). */
 export const clip106Loader = (body: string | undefined, role: string): Loader | undefined => {
