@@ -24,6 +24,12 @@ const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
 const read = () => page.evaluate(() => { const p = globalThis.__v3Fight, [h] = p.duel.fighters; return { hero: h.phase, victim: p.finish?.victim ?? -1, ragdoll: globalThis.__ragdoll?.state }; });
 const shoot = async (name) => { await page.waitForTimeout(350); await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };
 const cuts = () => page.evaluate(() => (globalThis.__v3Cuts ?? []).map((c) => `${c.unit}:${c.source}`));
+if (process.env.SPOT) {   // a zone boss other than the first: set the hero down 3 m short of its spawn (as boss-walkin-stills), the zone's aggro takes the sim; the foe's own body is drawn (held-body swap)
+  const [sx, sz] = process.env.SPOT.includes(',') ? process.env.SPOT.split(',').map(Number) : await page.evaluate((id) => { const s = globalThis.__v3Zone.spawns.find((q) => q.id === id); return [s.x, s.z]; }, process.env.SPOT);   // SPOT = "x,z" or a spawn id (pit-pitborn-east = Arachne)
+  await page.evaluate(([x, z]) => { const [h] = globalThis.__v3Fight.duel.fighters; h.body.x = x - 3; h.body.z = z; }, [sx, sz]);
+  for (let i = 0; i < 600; i++) { await run(1); if (await page.evaluate(() => globalThis.__v3Zone?.engaged)) break; }
+  console.log(`${tag}: zone ${JSON.stringify(await page.evaluate(() => ({ current: globalThis.__v3Zone?.current, engaged: globalThis.__v3Zone?.engaged })))}`);
+}
 for (let i = 0; i < 240 && /sheathed|draw/.test((await read()).hero); i++) await run(1);
 await run(30);
 await page.keyboard.down('KeyW');
