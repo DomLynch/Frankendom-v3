@@ -617,7 +617,7 @@ function frame(now: number) {
   );
   frameEvents = [];
   radar?.frame(state.x, state.z, view.yaw);
-  if (crHud && PROG?.save) { const p = PROG.save.pile; crHud.marker(p ? view.project([p.x, 0.15, p.z]) : null, p ? Math.hypot(p.x - state.x, p.z - state.z) : 0, crClock); crHud.coins(PROG.save.coins, PROG.save.banked); }
+  if (crHud && PROG?.save) { const p = PROG.save.pile; crHud.marker(p ? view.project([p.x, 0.15, p.z]) : null, p && !heroDied() ? Math.hypot(p.x - state.x, p.z - state.z) : 99, crClock);   // (dead on the spot, the marker stays full: it shows where he fell) crHud.coins(PROG.save.coins, PROG.save.banked); }
   updateHud();
   requestAnimationFrame(frame);
 }
