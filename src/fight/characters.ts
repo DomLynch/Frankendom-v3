@@ -228,23 +228,25 @@ async function loadFighter(url: string) {
 // `opponentEquipUrl`: the equip file of a weapon the opponent's rig does not bake (the Centurion's gladius over his trident, SCOPE:76). It is
 // grafted onto his rig the same way; a file that fails is reported and he keeps the weapon his rig bakes (a fight never waits on it).
 // Only a shield carrier (`carry`) gets the scutum arm with it (armOpponent); the Pitborn's cleaver on the Minotaur's rig (foe-body.ts) is a bare graft.
-export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false, look?: BossWeaponRow) {
+export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false, look?: BossWeaponRow, offhandUrl?: string) {
   const equip = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
-  const [hero, enemy, part, enemyPart] = await Promise.all([
+  const [hero, enemy, part, enemyPart, offhand] = await Promise.all([
     loadFighter(url),
     opponentUrl === url ? undefined : loadFighter(opponentUrl),
     loadRangedPart(weapons[0], equipUrl).then((ranged) => ranged ?? equip(equipUrl)),   // the ranged model (the bow, the orb staff) replaces the equip file of a weapon the missile rows bind to a kind with a model row; every other weapon is its equip file
     opponentUrl === url ? undefined : equip(opponentEquipUrl),
+    opponentUrl === url ? undefined : equip(offhandUrl),   // the stills flag's off-hand file (the shield)
   ]);
   let opponent: FighterAsset | undefined = enemy;
-  if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = carry ? armOpponent(opponent, enemyPart) : equipWeapon(opponent, enemyPart); if (look) dressBossHand(opponent, look); } catch (error) { equipFailed(error); }   // look: a boss weapon row drawn on this foe (the stills flag ?bossweapon=<opponent>)
+  if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = carry ? armOpponent(opponent, enemyPart) : equipWeapon(opponent, enemyPart); if (offhand instanceof Error) throw offhand; if (look) dressBossHand(opponent, look, offhand?.scene); } catch (error) { equipFailed(error); }   // look: a boss weapon row drawn on this foe (the stills flag ?bossweapon=<opponent>)
   return armWarriors(hero, opponent, weapons, part, equipFailed, carry);
 }
 /** One more boss body, loaded alone (the per-spawn body rig cache, scene.ts bodyRigs): the file, with the boss's weapon grafted exactly as loadWarriors grafts the opponent's. A failed graft is reported and the body keeps what it bakes. */
-export async function loadFoeBody(url: string, equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, carry = false, look?: BossWeaponRow): Promise<FighterAsset> {   // look: this boss's weapon row (data/boss-weapons.json): the part scaled, the off-hand part
-  const [body, part] = await Promise.all([loadFighter(url), equipUrl ? loadEquip(equipUrl).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined]);
+export async function loadFoeBody(url: string, equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, carry = false, look?: BossWeaponRow, offhandUrl?: string): Promise<FighterAsset> {   // look: this boss's weapon row (data/boss-weapons.json): the part scaled, the off-hand part
+  const soft = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
+  const [body, part, offhand] = await Promise.all([loadFighter(url), soft(equipUrl), soft(offhandUrl)]);   // offhandUrl: the boss's off-hand file (the shield), fetched with the boss body and never earlier
   if (!part) return body;
-  try { if (part instanceof Error) throw part; const armed = carry ? armOpponent(body, part) : equipWeapon(body, part); return look ? dressBossHand(armed, look) : armed; } catch (error) { equipFailed(error); return body; }
+  try { if (part instanceof Error) throw part; if (offhand instanceof Error) throw offhand; const armed = carry ? armOpponent(body, part) : equipWeapon(body, part); return look ? dressBossHand(armed, look, offhand?.scene) : armed; } catch (error) { equipFailed(error); return body; }
 }
 // A live duel's peer drawn on the HERO rig (Strategy 2026-10-01, Option A): the page's second fighter is the hero's own warrior.glb, loaded a
 // second time under another cache key, with the peer's weapon grafted exactly as the player's is (equipWeapon, no shield carry), so he reads
