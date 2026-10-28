@@ -33,6 +33,12 @@ test('the shipped ring row validates and bad rows are refused', () => {
   const none = structuredClone(STAGE); delete none.skyline.ring; assert.ok(validateFile('stage', none).length >= 1);
 });
 
+test('the south plate is dropped so the alien sits in the clear sky band between the HUD bars and the horizon (polish 2026-10-28: 30 put its crown under the bars at 375 wide)', () => {
+  assert.equal(plate('south').dropMetres, 34);
+  assert.equal(plate('south').rampRightDegrees, 6, 'the join with west keeps #196 ramp');
+  assert.deepEqual(R.plates.map((p) => [p.id, p.dropMetres]).filter(([id]) => id !== 'south'), [['east', 6], ['west', 6]], 'east and west unchanged');
+});
+
 // RE-PINNED (was: "west off", #194, Dom disliked the daytime colosseum plate). Dom 2026-10-28 then approved the NEW west plate ("Dreamy Floating Sky-City at Sunset", "i think is fine"), so the shipped west is ON again:
 // all three plates on, west already on the sunset palette (neutral grade: the old orange tint was for the colosseum), baked from its own native-resolution crop (1981 x 690, horizon y 690), and turning to west fetches it.
 test('the shipped ring: east, south and west all on; west is the native sunset plate with a neutral grade; facing west loads it (Dom 2026-10-28)', async () => {

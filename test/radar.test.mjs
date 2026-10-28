@@ -24,6 +24,18 @@ test('the rows validate, and a bad row is refused', () => {
   assert.throws(() => validateRadar(bad((r) => { r.sizePx = NaN; })), /sizePx/);
 });
 
+test('the radar clears the top-left HUD bars at 375 wide (polish 2026-10-28: it sat 3 px from them)', () => {
+  const HUD_BAR_RIGHT = 286, VIEWPORT = 375, MIN_GAP = 8;   // measured at 375 (the name/health bars end at x 286); a reviewer nit on the radar PR
+  const left = VIEWPORT - RADAR.marginPx - RADAR.sizePx;
+  assert.equal(RADAR.corner, 'top-right');
+  assert.ok(left - HUD_BAR_RIGHT >= MIN_GAP, `radar left ${left} leaves ${left - HUD_BAR_RIGHT} px to the bars`);
+  assert.ok(RADAR.sizePx >= 60, 'still big enough to read');
+});
+
+test('the page ships an empty data icon, so the browser never asks for /favicon.ico (the one intermittent 404)', () => {
+  assert.match(readFileSync(new URL('../index.html', import.meta.url), 'utf8'), /<link rel="icon" href="data:,">/);
+});
+
 test('the radar is on by default and ?radar=off hides it', () => {
   assert.equal(RADAR.on, true);
   assert.equal(radarOn(''), true);
