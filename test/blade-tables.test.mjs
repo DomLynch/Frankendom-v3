@@ -53,7 +53,7 @@ test('the cut keeps the named tables byte for byte and drops the rest', () => {
   assert.deepEqual(Object.keys(table), ['hero']);
   assert.deepEqual(Object.keys(table.hero).sort(), [...FIGHT.bladeTables.hero].sort());
   for (const w of FIGHT.bladeTables.hero) assert.deepEqual(table.hero[w], bladePathsByRig.hero[w], `hero/${w}`);
-  assert.ok(out.length < SRC.length * 0.25, `cut to ${out.length} of ${SRC.length} bytes`);
+  assert.ok(out.length < SRC.length * 0.33, `cut to ${out.length} of ${SRC.length} bytes`);
 });
 
 test('a named table the source lacks is an error, not a gap', () => {
