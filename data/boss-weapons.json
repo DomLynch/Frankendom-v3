@@ -68,6 +68,7 @@
       "offhand": null,
       "placeholder": [
         "mesh: a library prop, OpenTrident weapon library sword1h-200 (a plain one-hand sword, 0.95 m), re-framed to the grip as src/assets/weapons/foe/sword.glb; a picked prop, not a sword drawn for Ryo",
+        "licence: library game-asset rip, no licence recorded; Dom ruled licence no concern. Receipt: DomLynch/opentrident-steam#4, docs/asset-desk/weapons-picked.md lists sword1h-200, sha256 032a04ac8adf028069898236e4b43d095b5599bcae34a3d8ab928e18306dba58",
         "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim keeps the cleaver's moves, timing and damage, so Ryo fights exactly as the Minotaur's pitborn row does",
         "sweeps: V1's hero-rig cleaver blade table, not re-baked on Ryo's body"
       ]
