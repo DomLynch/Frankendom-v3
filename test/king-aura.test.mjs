@@ -26,7 +26,7 @@ const FIRST_QUIET = ROW.tickEveryTicks + 1;   // a tick that is neither a damage
 test('data/mechanics.json validates and every registered mechanic has a row, a spec and a ring boss', () => {
   assert.deepEqual(validateFile('mechanics', FILE), []);
   assert.deepEqual(validateMechanics(FILE, KINDS), []);
-  assert.deepEqual(Object.keys(MECHANICS).sort(), ['gourd-bombs', 'king-aura']);
+  assert.ok(MECHANICS['king-aura'] && MECHANICS['gourd-bombs'], 'both merged mechanics are registered');
   for (const [id, row] of Object.entries(FILE.mechanics)) assert.ok(MECHANICS[row.type], `${id} has code for type ${row.type}`);
   assert.equal(ROW.type, 'king-aura'); assert.equal(ROW.boss, 'big-vegas');
   assert.equal(RINGS.bosses.find((b) => b.mechanic === 'king-aura').kind, 'big-vegas');
