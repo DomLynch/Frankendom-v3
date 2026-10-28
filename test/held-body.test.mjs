@@ -52,7 +52,7 @@ test('DEFAULT UNCHANGED: holding the page\'s own body builds, loads and mounts n
   assert.match(scene, /if \(body === activeBody\(\) && !heldCtl\) return 'same';/, 'no controller is made while the held body is the live one');
   // Re-pinned 2026-10-28 (lazy boss bodies, the +3.13 MB first-visit finding): the one hook line now also passes whether the hero is within world.loadWithinMetres of the held spawn; scene.ts holdBody
   // still returns before it makes a controller for the page's own body (asserted above), and still starts no fetch for a far spawn (test/zone-spawns.test.mjs).
-  assert.match(src('client/main.ts'), /if \(ZONE\) view\.holdBody\(spawns\[current\], withinLoad\(spawns\[current\]!, state\)\);/, 'one delimited line in main.ts');
+  assert.match(src('client/main.ts'), /if \(ZONE\) view\.holdBody\(spawns\[current\], withinLoad\(spawns\[current\]!, state, undefined, bossKilled\)\);/, 'one delimited line in main.ts');
 });
 
 test('cache miss: the first hold of another body starts ONE build, the live rig is untouched until it is in, then it swaps', async () => {

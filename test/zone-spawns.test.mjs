@@ -47,8 +47,8 @@ test('lazy boss bodies: scene.ts fetches a non-live body only behind the hero-ne
   assert.match(scene, /holdBody\(spawn: SpawnRef \| null \| undefined, near = true\)/);
   assert.match(scene, /if \(!near && body !== liveBody && !bodyAssets\.has\(body\) && !heldCtl\?\.has\(body\)\) return 'same'/);
   assert.match(scene, /e\.near !== false \|\| bodyAssets\.has\(bodyOfSpawn\(e\.spawn\)\) \|\| bodyOfSpawn\(e\.spawn\) === liveBody/);
-  assert.match(main, /view\.holdBody\(spawns\[current\], withinLoad\(spawns\[current\]!, state\)\)/);
-  assert.match(main, /near: withinLoad\(s, state\)/);
+  assert.match(main, /view\.holdBody\(spawns\[current\], withinLoad\(spawns\[current\]!, state, undefined, bossKilled\)\)/);
+  assert.match(main, /near: withinLoad\(s, state, undefined, bossKilled\)/);
 });
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
