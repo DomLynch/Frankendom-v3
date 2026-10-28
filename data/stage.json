@@ -372,7 +372,7 @@
           }
         },
         "drool": {
-          "on": true,
+          "on": false,
           "shimmer": {
             "on": true,
             "file": "09_drool_mask.png",
