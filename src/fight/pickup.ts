@@ -104,7 +104,7 @@ export function mountHint(doc: Doc, host: PickupHost, rows: PickupRows = PICKUP,
       const r = host.canvas.getBoundingClientRect(), hint = plan(rows, st, look(r), dt);
       if (hint && hint.onScreen) {
         const box = safeBox(rows, typeof innerWidth === 'number' ? innerWidth : r.width, typeof innerHeight === 'number' ? innerHeight : r.height);
-        const w = Math.min(rows.text.maxWidthPx, 120), h = rows.arrow.sizePx * 0.85 + rows.arrow.textGapPx + rows.text.sizePx * rows.text.lineHeight * 2.2;
+        const w = rows.text.maxWidthPx, h = rows.arrow.sizePx * 0.85 + rows.arrow.textGapPx + rows.text.sizePx * rows.text.lineHeight * 2.2;
         const x = clampTo(hint.cx, box.left + w / 2, box.right - w / 2), y = clampTo(hint.cy - rows.arrow.liftPx, box.top + h, box.bottom);
         hintEl.style.transform = `translate(${x}px,${y}px) translate(-50%,-100%)`; hintEl.style.opacity = '1';
       } else hintEl.style.opacity = '0';

@@ -9,7 +9,7 @@
   "walkAwayM": 14,
   "zIndex": 29,
   "colour": "#ffd34a",
-  "text": { "label": "Cut your Frankendom", "sizePx": 10, "letterSpacingEm": 0.14, "shadow": "0 1px 3px rgba(0,0,0,0.85)", "maxWidthPx": 110, "lineHeight": 1.25 },
+  "text": { "label": "Cut your Frankendom", "sizePx": 10, "letterSpacingEm": 0.14, "shadow": "0 1px 3px rgba(0,0,0,0.85)", "maxWidthPx": 170, "lineHeight": 1.25 },
   "arrow": { "sizePx": 15, "bobPx": 6, "bobS": 0.9, "liftPx": 64, "textGapPx": 4 },
   "safe": { "topFrac": 0.2, "bottomFrac": 0.3, "sideMarginPx": 12 },
   "fadeS": 0.18
