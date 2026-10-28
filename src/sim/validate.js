@@ -16,6 +16,8 @@ export const SCHEMA = {
   'profiles': { keys: ['about', 'default', 'defaultBody', 'bodyQuery', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'body', 'name', 'brain', 'foeHealthScale', 'foeDamageScale', 'knobs'] } },   // knobs: optional, this kind's own brain knobs over the difficulty row's (checkKinds)
   // Boss tuning by URL (src/tune.ts validateTune checks the values)
   'tune': { keys: ['about', 'query', 'kinds', 'keys'], rows: { keys: ['id', 'min', 'max', 'about'] } },
+  // Star bosses (src/stars.ts validateStars checks the values)
+  'stars': { keys: ['about', 'minKills', 'killsCap', 'zeroWeight', 'salt', 'starGlyph', 'hudColour', 'levels', 'weights'], rows: { levels: ['star', 'healthX', 'damageX', 'scaleX', 'trophy', 'tell'], weights: ['id', 'star1', 'star2'] } },
   // Progression and saving (src/progression.ts validateProgression checks the values)
   'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'lineSeconds', 'healthCap', 'damageCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)

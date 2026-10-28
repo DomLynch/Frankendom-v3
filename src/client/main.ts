@@ -30,7 +30,9 @@ import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-rea
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene, CARRIED_WEAPONS } from '../fight/scene.ts';
 import PROGRESSION from '../../data/progression.json' with { type: 'json' };
-import { escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type ProgressionFile } from '../progression.ts';
+import STARS from '../../data/stars.json' with { type: 'json' };
+import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
+import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -95,17 +97,21 @@ const level = FIGHT.level;
 const TUNED = tuneFrom(TUNE as TuneFile, search);   // ?tune=gargantua.health:1.2 (data/tune.json): empty with no ?tune=, and then nothing below changes
 // PROGRESSION AND SAVING (data/progression.json, src/progression.ts; Dom 2026-10-28): a boss's first kill unlocks a player weapon, every kill raises every boss's health and damage (capped) from the next respawn,
 // and the kills are saved in localStorage (one key, try/catch on every read and write). With no save (or ?save=off, or the ?pitborn=v1 Centurion) PROG is null, the tune below is TUNED itself and the weapon is the fight row's: the game as before.
+// STAR BOSSES (data/stars.json, src/stars.ts; Dom 2026-10-28, Valheim-style, no switch): a spawn instance stands as a 0-, 1- or 2-star boss, rolled when it respawns (deterministic: spawn id + its kill count; never on a boss's first encounter).
+const STAR_ROWS = STARS as unknown as StarsFile;
+{ const bad = validateStars(STAR_ROWS, [...DIFFICULTY.rows.map((r) => r.id), ...(DIFFICULTY.named ?? []).map((r) => r.id)]); if (bad.length) throw new Error(`data/stars.json: ${bad.join('; ')}`); }
+const starById: Record<string, number> = {}, spawnKills: Record<string, number> = {}, kindKills: Record<string, number> = {};   // by spawn id / by kind: this visit's star level, kills of that spawn, kills of that boss kind
 const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 { const bad = validateProgression(PROG_ROWS, PROFILES.profiles.map((p) => p.id), isWeaponId); if (bad.length) throw new Error(`data/progression.json: ${bad.join('; ')}`); }
 const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
 const HERO_WEAPON = (PROG?.save ? heroWeapon(PROG.save, PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
-const KIND_CTX: KindCtx = { tune: PROG?.save ? mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)) : TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
+const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)) : TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
-  const changed = !foe || foe.opponentId !== k.opponentId;
+  const changed = !foe || foe.opponentId !== k.opponentId || (foe.star ?? 0) !== (k.star ?? 0);
   foe = k; opponentId = k.opponentId as OpponentId; opponent = k.opponent; difficultyOn = k.scaled; aiProfile = k.ai;
   if (changed) nameOpponent();   // the HUD names the spawn the sim holds
 }
@@ -236,6 +242,8 @@ document.addEventListener('pointerdown', () => { if (practice.finish && view.fin
 function nameOpponent() {   // :397 without the legend
   const label = element('opponent-name'), name = foeDisplayName(opponentId);
   label.textContent = `THE ${name.toUpperCase()}`; label.dataset.mobile = name;
+  const marks = starMark(STAR_ROWS, foe?.star ?? 0);   // data/stars.json: one small gold star per level beside the name, in the class slot's style (#opponent-name .opponent-class)
+  if (marks) { const small = document.createElement('small'); small.className = 'opponent-class opponent-stars'; small.textContent = marks; small.style.color = STAR_ROWS.hudColour; small.style.opacity = '1'; label.append(' ', small); }
 }
 // :892 nextFight → match.rematch → began: the same warden, the next seed
 // The zone loop (data/zones/zone1.row.json via zoneFor, data/respawn.json, src/fight/zone-loop.ts; Dom 2026-10-27: a live real-time zone, not an instant duel). The duel sim stops at the kill
@@ -285,7 +293,7 @@ const heroStart = initialState();   // where the hero stands at a first load and
 /** The duel pose of spawn `index` against a hero at `at`: stepped back from its spot when he stands on it (zone-loop.ts respawnPose). */
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, OPEN_RADIUS, ZONE!.minDistance, heroStart);
 /** The kind spawn `index` fights as (its zone row's `kind`, a data/profiles.json row): the sim's opponent whenever it holds that spawn or that spawn joins as an attacker. */
-const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind);
+const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind, starById[spawns[index]!.id] ?? 0);
 if (ZONE) { current = nearestStanding(spawns, heroStart); useKind(kindAt(current)); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
   if (ZONE) useKind(kindAt(index));   // the sim's opponent becomes the spawn it is handed to (and back as the hero walks to another)
@@ -327,26 +335,36 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 }
 /** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
 let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
-function onBossKilled(kind: string) {
+function onBossKilled(kind: string, star = 0) {
   if (!PROG?.save) return;
   try {
     const out = recordKill(PROG.save, kind, PROG_ROWS);
     if (out.save === PROG.save) return;
-    PROG.save = out.save; writeSave(PROG.store, PROG_ROWS, PROG.save);
+    const trophy = trophyText(STAR_ROWS, star), tier = starLevel(STAR_ROWS, star).trophy?.tier;   // data/stars.json: a star kill drops that level's trophy (a count in the save and a line), no item art
+    PROG.save = tier === undefined ? out.save : addTrophy(out.save, tier); writeSave(PROG.store, PROG_ROWS, PROG.save);
     KIND_CTX.tune = mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
-    if (out.unlocked) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(unlockText(out.unlocked));
+    const line = [out.unlocked ? unlockText(out.unlocked) : null, trophy].filter(Boolean).join(' · ');
+    if (line) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(line);
   } catch (error) { console.warn('progression: kill not recorded', error); }
 }
+/** Spawn `id` stands again: its star is rolled from the spawn's own kill count and how often that boss kind has fallen (this visit's count or the save's, the larger). */
+function rollStarFor(spawn: Spawn) {
+  spawnKills[spawn.id] = (spawnKills[spawn.id] ?? 0) + 1; kindKills[spawn.kind] = (kindKills[spawn.kind] ?? 0) + 1;
+  starById[spawn.id] = rollStar(STAR_ROWS, KIND_CTX.pick, spawn.id, spawnKills[spawn.id]!, Math.max(kindKills[spawn.kind]!, PROG?.save?.kills[spawn.kind] ?? 0));
+}
+// The stills' and the tests' hook (no URL switch): force spawn `id` to `n` stars now (the held boss is rebuilt at the hero's side as a fresh fight), or read the table and the stars.
+(globalThis as { __v3Stars?: unknown }).__v3Stars = { rows: STAR_ROWS, of: () => ({ ...starById }), force(id: string, n: number): boolean { const i = spawns.findIndex((s) => s.id === id); if (i < 0) return false; starById[id] = n; if (i === current) rematch(poseFor(i, state), i); return true; } };
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
   spawns = timers.spawns;
+  for (const i of timers.due) rollStarFor(spawns[i]!);   // a spawn stands again: its next star, before anything builds its fight
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
-    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { onBossKilled(spawns[a.index]!.kind); spawns = kill(spawns, a.index); }
+    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { onBossKilled(spawns[a.index]!.kind, starById[spawns[a.index]!.id] ?? 0); spawns = kill(spawns, a.index); }
   }
   if (practice.finish) { openerSpent = true; openerLift = 0; }   // opener: a kill or a death spends it (no re-arm)
-  if (heroStands() && !killMarked) { killMarked = true; engaged = false; onBossKilled(spawns[current]!.kind); spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
+  if (heroStands() && !killMarked) { killMarked = true; engaged = false; onBossKilled(spawns[current]!.kind, starById[spawns[current]!.id] ?? 0); spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
     const live = attackers.find((a) => !a.dead), phase = view.finishPhase();
     if (live) { if (roam || freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
@@ -541,8 +559,9 @@ function frame(now: number) {
   }
   if (roam && bossLoadAfterKill(location.search)) bossKilled = true;   // the first kill's roam has started: far bosses are fetched and stand at their spots (respawn.json world.loadAfterKill, ?bossload=v1 off)
   if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state, undefined, bossKilled));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
-  if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]! }))); }   // the attackers' rigs (a killed one lies until its timer is up)
-  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]!, star: starById[spawns[a.index]!.id] ?? 0 }))); }
+  if (ZONE) view.liveStar(starById[spawns[current]!.id] ?? 0);   // the attackers' rigs (a killed one lies until its timer is up)
+  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });
