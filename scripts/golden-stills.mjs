@@ -40,6 +40,23 @@ await page.waitForTimeout(800); await shot('1-world');
 const world = await look(); console.log(`${tag} in the world`, JSON.stringify(world));
 if (!world.markers.some((o) => o > 0)) fail('the pickup shows no glowing marker');
 
+// the tap discs never sit under a control: for every pickup disc that is on (display not none) no control's box overlaps it, and a pickup low on the screen (over the thumbs) has its disc off
+const overlap = () => page.evaluate(() => {
+  const boxes = (sel) => [...document.querySelectorAll(sel)].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+  const controls = boxes('#joystick, #actions, #actions *, #attack-button, #reset-button, #camera-button, #recenter-button, #hud button, button');
+  const discs = [...document.querySelectorAll('.gw-hit')].map((e) => ({ on: getComputedStyle(e).display !== 'none', r: e.getBoundingClientRect() }));
+  const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  return { discs: discs.length, on: discs.filter((d) => d.on).length, overlapping: discs.filter((d) => d.on && controls.some((c) => hit(d.r, c))).length, high: innerHeight };
+});
+const ov = await overlap(); console.log(`${tag} tap discs`, JSON.stringify(ov));
+if (ov.overlapping) fail('a tap disc sits over a control');
+await page.evaluate(() => { const f = globalThis.__v3Fight.fighter; globalThis.__v3Golden.dropGolden({ x: f.x, z: f.z + 6 }, 1); globalThis.__v3Golden.dropGolden({ x: f.x + 1.2, z: f.z + 1.6 }, 1); });   // behind and beside him: low on the screen, over the thumb cluster
+await page.waitForTimeout(500);
+const ov2 = await overlap(); console.log(`${tag} tap discs low`, JSON.stringify(ov2));
+if (ov2.overlapping) fail('a low pickup\'s tap disc sits over a control');
+const strikeAt = await page.evaluate(() => { const r = (document.getElementById('attack-button') ?? document.querySelector('#actions')).getBoundingClientRect(); const x = r.x + r.width / 2, y = r.y + r.height / 2; return { x, y, top: document.elementsFromPoint(x, y)[0]?.className ?? '' }; });
+if (/gw-/.test(String(strikeAt.top))) fail(`a pickup element is over STRIKE (${strikeAt.top})`);
+
 // 2. walk onto it with the real W key until it is his
 await page.keyboard.down('KeyW');
 await page.waitForFunction(() => !!globalThis.__v3Golden.held(), null, { timeout: 15000 }).catch(() => fail('walking onto the pickup did not equip it'));
@@ -49,7 +66,7 @@ const held = await look(); console.log(`${tag} held`, JSON.stringify(held));
 const row = GOLD.weapons.find((w) => w.id === held.golden?.held?.id);
 if (!row || held.golden.held.charges !== row.charges) fail('he holds the row with all its charges');
 if (!held.counter?.includes(row?.name ?? '?')) fail(`the HUD counter names the weapon (${held.counter})`);
-if (held.golden?.ground?.length) fail('the pickup left the ground');
+if (held.golden?.ground?.length !== 2) fail(`the pickup he took left the ground and the two low ones stayed (${held.golden?.ground?.length})`);
 const charges0 = held.golden?.held?.charges ?? 0;
 
 // 3. a reload keeps it (the save) and he is drawn as that row's weapon from the first frame
@@ -70,6 +87,11 @@ for (let i = 0; i < 400 && !spent; i++) {
   await page.evaluate(() => { const h = globalThis.__v3Fight.duel.fighters[0]; h.health = Math.max(h.health, 60); });
 }
 await page.waitForTimeout(500); await shot('3-spent');
+// the radar: the white pickup dots beside the red boss dots, with the kill flash armed (the red dots pulse yellow-ringed): a crop of the disc at its brightest
+await page.evaluate(() => globalThis.__v3Radar?.armFlash());
+await page.waitForTimeout(450);
+const radar = await page.evaluate(() => { const r = document.querySelector('[data-radar]')?.getBoundingClientRect(); return r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null; });
+if (!radar) fail('no radar on the page'); else await page.screenshot({ path: `${out}/${tag}-4-radar.png`, clip: { x: Math.max(0, radar.x - 8), y: Math.max(0, radar.y - 8), width: radar.width + 16, height: radar.height + 16 } });
 const end = await look(); console.log(`${tag} end`, JSON.stringify(end));
 if (end.golden?.held) fail(`the weapon was not spent (${JSON.stringify(end.golden?.held)} of ${charges0})`);
 if (end.counter) fail('the counter is gone once spent');

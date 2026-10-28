@@ -5,9 +5,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  GOLDEN, bossDrop, cleanGolden, createGolden, dropGolden, freshGolden, goldenBlips, itemsNow, lineOf, loadWeapon, lose, nearest, pointAt, riderTune, rowOf, spend, take, usableRows,
+  GOLDEN, bonusOf, bossDrop, boostedBy, cleanGolden, createGolden, dropGolden, freshGolden, goldenBlips, itemsNow, lineOf, loadWeapon, lose, nearest, pointAt, rowOf, spend, take, usableRows,
 } from '../src/zone/golden-drops.ts';
-import { validateGolden } from '../src/fight/golden-check.ts';
+import { validateClearance, validateGolden } from '../src/fight/golden-check.ts';
+import { zoneFor } from '../src/stubs.ts';
+import { spotsFor } from '../src/zone/spawns.ts';
+import { orderedZone } from '../src/fight/boss-order.ts';
 import { freshSave, heroWeapon, loadSave, parseSave, writeSave } from '../src/progression.ts';
 import { dropPile, retrieve, CORPSE } from '../src/corpse-run.ts';
 import { RADAR, validateRadar } from '../src/fight/radar.ts';
@@ -56,7 +59,7 @@ test('roaming points: placed by ring distance and bearing, taken ones come back 
   const p = GOLDEN.drops.roaming.points[0], spot = pointAt(GOLDEN, p);
   assert.ok(Math.abs(Math.hypot(spot.x, spot.z) - p.distance) < 1e-9);
   const now = 1_000_000, all = itemsNow(freshGolden(), GOLDEN, USABLE, now);
-  assert.deepEqual(all.map((i) => i.key), ['ring-1-north-east', 'ring-1-south-west', 'ring-2-east'], 'dormant rows (no art) have no roaming pickup');
+  assert.deepEqual(all.map((i) => i.key), ['ring-1-north-east', 'ring-1-north-west', 'ring-2-east'], 'dormant rows (no art) have no roaming pickup');
   const ms = GOLDEN.drops.roaming.respawnSeconds * 1000, taken = { ...freshGolden(), taken: { 'ring-1-north-east': now } };
   assert.equal(itemsNow(taken, GOLDEN, USABLE, now + ms - 1).length, 2);
   assert.equal(itemsNow(taken, GOLDEN, USABLE, now + ms).length, 3, 'it is back after respawnSeconds');
@@ -92,10 +95,38 @@ test('he dies holding one: it lies where he fell with the charges left; the corp
   assert.equal(retrieve(drop.save, CORPSE).save.golden, held);
 });
 
-test('the rider is a boss-health tune of 1 / damageMul over every kind; nothing held = no tune', () => {
-  assert.deepEqual(riderTune(GOLDEN, null, ['a']), {});
-  const t = riderTune(GOLDEN, { id: 'golden-axe', charges: 3 }, ['gargantua', 'arachne']);
-  assert.deepEqual(Object.keys(t), ['gargantua', 'arachne']); assert.ok(Math.abs(t.gargantua.health - 1 / 1.5) < 1e-12);
+const prac = (events, hp = 100) => ({ health: hp, playerHealth: 150, duel: { fighters: [{ health: 150 }, { health: hp }] }, events });
+const BLOW = (damage) => ({ type: 'Hit', actor: 0, target: 1, damage });
+
+test('the power is applied in the sim step: the extra damage lands in the same step as the blow, mid-fight, and ends at 0 charges', () => {
+  assert.equal(bonusOf({ damageMul: 1.5 }, 20), 10); assert.equal(bonusOf({ damageMul: 1 }, 20), 0);
+  const p = prac([BLOW(20)], 100);
+  assert.equal(boostedBy(p, 1, 0), p, 'no extra = the same practice'); assert.equal(boostedBy(prac([], 0), 1, 9).health, 0, 'a dead boss is left alone');
+  assert.equal(boostedBy(prac([], 5), 1, 99).health, 1, 'never takes the boss to a kill the sim did not make');
+  const b = boostedBy(p, 1, 10); assert.equal(b.health, 90); assert.equal(b.duel.fighters[1].health, 90); assert.equal(b.duel.fighters[0].health, 150); assert.equal(p.health, 100, 'the input is not mutated');
+  // the controller, a fight already running: he picks one up between two blows and the very next blow is boosted; the last charge's blow is boosted, the one after is plain
+  let save = { ...freshGolden(), ground: [{ id: 'golden-axe', x: 1, z: 0, charges: 2 }] };
+  const ui = { frame() {}, counter() {}, line() {}, tint() {} };
+  const gc = createGolden({ rows: GOLDEN, drawable: DRAW, ui, get: () => save, put: (n) => { save = n; }, now: () => 0, rng: seq(0.5) });
+  assert.equal(gc.strike(prac([BLOW(20)])).health, 100, 'nothing held: a plain blow');
+  gc.step({ x: 1, z: 0 }, true); assert.equal(gc.held().charges, 2);
+  assert.equal(gc.strike(prac([BLOW(20)])).health, 90, 'the next blow after the pickup is already x1.5 (20 + 10)');
+  assert.equal(gc.held().charges, 1);
+  assert.equal(gc.strike(prac([BLOW(20)])).health, 90, 'the last charge is boosted too');
+  assert.equal(gc.held(), null);
+  assert.equal(gc.strike(prac([BLOW(20)])).health, 100, 'spent: back to plain blows at once, mid-fight');
+  const two = { ...freshGolden(), held: { id: 'golden-axe', charges: 5 } }; save = two;
+  assert.equal(gc.strike(prac([BLOW(20), BLOW(20), { type: 'Hit', actor: 1, target: 0, damage: 20 }, { type: 'Blocked', actor: 0, target: 1 }])).health, 80, 'two landed blows are both boosted; blows taken and blocked ones are not');
+  assert.equal(gc.held().charges, 3);
+});
+
+test('every roaming point keeps its clearance outside every boss leash in the shipped zone (a pickup never pulls him into a fight)', () => {
+  const spots = spotsFor(orderedZone(zoneFor(''), FIGHT.order, ''));
+  assert.ok(spots.length >= 8, 'the ringed zone: three ring-1 bosses and the ring 2 and 3 ones');
+  validateClearance(GOLDEN, spots);
+  for (const p of GOLDEN.drops.roaming.points) { const at = pointAt(GOLDEN, p); for (const s of spots) assert.ok(Math.hypot(at.x - s.x, at.z - s.z) - s.leash >= GOLDEN.drops.roaming.clearanceMetres, `${p.id} is clear of ${s.id}`); }
+  const bad = structuredClone(GOLDEN); bad.drops.roaming.points[1] = { ...bad.drops.roaming.points[1], distance: 42, angleDeg: 235 };   // the first cut's point, 1.5 m outside a leash
+  assert.throws(() => validateClearance(bad, spots), /ring-1-north-west.*outside/);
 });
 
 test('the save field is optional: an old save loads with none, a good one round trips, a hostile one is cleaned', () => {
@@ -114,11 +145,11 @@ test('the save field is optional: an old save loads with none, a good one round 
 });
 
 test('the controller: walk onto it, equip, charges fall with each landed blow, revert at 0, death drops it, tap needs reach', () => {
-  const log = { lines: [], counter: [], tint: [], frames: 0, tap: null, tune: [] };
+  const log = { lines: [], counter: [], tint: [], frames: 0, tap: null, lists: [] };
   let save = freshGolden(), clock = 0;
-  const ui = { frame: (_items, _hero, tap) => { log.frames++; log.tap = tap; }, counter: (h) => log.counter.push(h ? [h.row.id, h.charges] : null), line: (t) => log.lines.push(t), tint: (r) => log.tint.push(r ? r.id : null) };
+  const ui = { frame: (items, _hero, tap) => { log.frames++; log.tap = tap; log.lists.push(items); }, counter: (h) => log.counter.push(h ? [h.row.id, h.charges] : null), line: (t) => log.lines.push(t), tint: (r) => log.tint.push(r ? r.id : null) };
   const events = [];
-  const gc = createGolden({ rows: GOLDEN, drawable: DRAW, kinds: ['gargantua'], ui, get: () => save, put: (n) => { save = n; }, retune: (t) => log.tune.push(t), now: () => clock, rng: seq(0.5), });
+  const gc = createGolden({ rows: GOLDEN, drawable: DRAW, ui, get: () => save, put: (n) => { save = n; }, now: () => clock, rng: seq(0.5), });
   gc.onPickup((e) => events.push(e));
   const dropped = gc.dropGolden({ x: 30, z: 0 }, 2);   // another lane drops one (tier 2 = the axe is allowed)
   assert.ok(dropped); assert.equal(save.ground.length, 1);
@@ -129,39 +160,44 @@ test('the controller: walk onto it, equip, charges fall with each landed blow, r
   const held = gc.held(); assert.ok(held); assert.equal(events.length, 1); assert.equal(events[0].source, 'ground');
   assert.equal(save.ground.length, 0, 'the pickup left the ground');
   assert.deepEqual(log.counter.at(-1), [held.id, held.charges]); assert.equal(log.tint.at(-1), held.id);
-  assert.ok(Math.abs(Object.values(log.tune.at(-1))[0].health - 1 / rowOf(GOLDEN, held.id).damageMul) < 1e-12);
   assert.match(log.lines.at(-1), new RegExp(rowOf(GOLDEN, held.id).name));
   const blow = { type: 'Hit', actor: 0, target: 1 }, taken = { type: 'Hit', actor: 1, target: 0 }, other = { type: 'Blocked', actor: 1, target: 0 };
-  gc.hits([taken, other]); assert.equal(gc.held().charges, held.charges, 'blows he takes spend nothing');
-  gc.hits([blow]); assert.equal(gc.held().charges, held.charges - 1);
-  for (let i = 0; i < held.charges - 1; i++) gc.hits([blow]);
-  assert.equal(gc.held(), null, 'spent'); assert.equal(log.tint.at(-1), null, 'the tint is off'); assert.deepEqual(log.tune.at(-1), {}); assert.equal(log.counter.at(-1), null);
+  const hits = (events) => gc.strike({ health: 100, duel: { fighters: [{ health: 150 }, { health: 100 }] }, events });
+  hits([taken, other]); assert.equal(gc.held().charges, held.charges, 'blows he takes spend nothing');
+  hits([blow]); assert.equal(gc.held().charges, held.charges - 1);
+  for (let i = 0; i < held.charges - 1; i++) hits([blow]);
+  assert.equal(gc.held(), null, 'spent'); assert.equal(log.tint.at(-1), null, 'the tint is off'); assert.equal(log.counter.at(-1), null);
   assert.match(log.lines.at(-1), /spent/);
   gc.step({ x: 40, z: 0 }, true); gc.step({ x: 30.5, z: 0 }, true);   // pick it up again later: nothing left on the ground, a fresh walk-on finds only roaming ones
   assert.equal(gc.held(), null);
   const road = gc.items().find((i) => i.source === 'roaming'), spot = { x: road.x, z: road.z };
   gc.step(spot, true); assert.ok(gc.held(), 'a roaming point is walked onto the same way'); assert.equal(events.at(-1).source, 'roaming');
   assert.equal(gc.items().some((i) => i.key === road.key), false, 'taken: gone until it respawns');
-  gc.step(spot, true); gc.hits([blow]);
+  gc.step(spot, true); hits([blow]);
   const left = gc.held().charges; gc.died({ x: 7, z: 7 });
   assert.equal(gc.held(), null); assert.deepEqual(save.ground, [{ id: road.id, x: 7, z: 7, charges: left }]); assert.match(log.lines.at(-1), /lies where you fell/);
   // standing on a swap: the weapon he put down at his feet is not taken straight back
   gc.step({ x: 7.2, z: 7 }, true); assert.equal(gc.held()?.id, road.id, 'it can be taken back once he steps onto it');
   const n = gc.items().length; gc.step({ x: 7.2, z: 7 }, true); assert.equal(gc.items().length, n, 'no ping-pong while he stands on it');
-  clock += GOLDEN.drops.roaming.respawnSeconds * 1000; assert.ok(gc.items().some((i) => i.key === road.key), 'a taken roaming point returns on the clock');
+  clock += GOLDEN.drops.roaming.respawnSeconds * 1000; gc.step({ x: 500, z: 500 }, true); assert.ok(gc.items().some((i) => i.key === road.key), 'a taken roaming point returns on the clock');
   const radar = []; goldenBlips(gc.items(), (x, z, c) => radar.push(c)); assert.ok(radar.length && radar.every((c) => c === 'golden'));
   assert.equal(lineOf(GOLDEN.lines.spent, { name: 'A', power: 'p' }, 0), 'A is spent');
+  // one list per frame: the markers, the taps and the radar all read the list the step built, not a rebuild each
+  gc.step({ x: 500, z: 500 }, true); const frameList = log.lists.at(-1);
+  assert.equal(gc.items(), frameList, 'the radar reads the frame\'s list'); assert.equal(gc.items(), gc.items(), 'and so does everything else until the save changes');
+  gc.step({ x: 500, z: 500 }, true); assert.notEqual(log.lists.at(-1), frameList, 'the next frame builds a fresh one');
 });
 
 test('a tap on a pickup in reach takes it', () => {
   let save = { ...freshGolden(), ground: [{ id: 'sunblade', x: 3, z: 0, charges: 5 }] }, tapFn;
   const ui = { frame: (_i, _h, tap) => { tapFn = tap; }, counter() {}, line() {}, tint() {} };
-  const gc = createGolden({ rows: GOLDEN, drawable: DRAW, kinds: [], ui, get: () => save, put: (n) => { save = n; }, retune() {}, now: () => 0, rng: seq(0.1) });
+  const gc = createGolden({ rows: GOLDEN, drawable: DRAW, ui, get: () => save, put: (n) => { save = n; }, now: () => 0, rng: seq(0.1) });
   gc.step({ x: 0, z: 0 }, true); assert.equal(gc.held(), null);
   tapFn('0', 'ground'); assert.deepEqual(gc.held(), { id: 'sunblade', charges: 5 });
 });
 
 test('as built: the module and the page wiring carry no literal beyond the rows (as-data), and main.ts stays a few lines', () => {
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /mountGolden/); assert.match(main, /golden\?\.hits\(practice\.events\)/);
+  assert.match(main, /mountGolden/); assert.match(main, /practice = golden\.strike\(practice\)/);
+  assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation\(PROG\.save, PROG_ROWS\)\); KINDS = kindTable\(KIND_CTX\)/, 'the rider no longer rides the tune: the kill rebuild line is the original');
 });

@@ -30,7 +30,8 @@ export function mountGoldenHud(doc: Doc, rows: GoldenRows, heroNode: () => Objec
     + `.gw-hit{position:absolute;left:50%;top:50%;width:${rows.pickup.tapRadiusPx * 2}px;height:${rows.pickup.tapRadiusPx * 2}px;margin:${-rows.pickup.tapRadiusPx}px 0 0 ${-rows.pickup.tapRadiusPx}px;border-radius:50%;pointer-events:auto;display:none;touch-action:manipulation}`
     + `.gw-count,.gw-line{position:fixed;left:50%;transform:translateX(-50%);z-index:${h.zIndex};pointer-events:none;white-space:nowrap;color:${h.colour};opacity:0;transition:opacity .4s ease;`
     + `font:${h.sizePx}px/1.25 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;text-shadow:0 0 6px ${m.glow},0 1px 3px rgba(0,0,0,.85);user-select:none;-webkit-user-select:none}`
-    + `.gw-count{top:${h.topPct}%}.gw-line{top:calc(${h.topPct}% + ${h.sizePx * 2}px)}`;
+    + `.gw-count,.gw-line{background:rgba(8,10,22,${h.backdropAlpha});padding:${h.padPx / 2}px ${h.padPx * 2}px;border-radius:${h.padPx * 2}px}`   // a dark pill behind the text: it reads over the bright sky too
+    + `.gw-count{top:${h.topPct}%}.gw-line{top:calc(${h.topPct}% + ${h.sizePx * 2 + h.padPx * 2}px)}`;
   doc.head.append(style);
   const pool = new Map<string, HTMLElement>(), xy: [number, number] = [0, 0], saved = new Map<Mesh, Material | Material[]>();
   let count: HTMLElement | null = null, lineEl: HTMLElement | null = null, lineTimer: ReturnType<typeof setTimeout> | null = null, want: GoldenRow | null = null, applied: Object3D | undefined;
@@ -52,7 +53,8 @@ export function mountGoldenHud(doc: Doc, rows: GoldenRows, heroNode: () => Objec
         live.add(id);
         el.style.transform = `translate(${xy[0].toFixed(1)}px,${xy[1].toFixed(1)}px)`;
         el.style.opacity = (m.alpha * (0.65 + 0.35 * Math.sin(t * Math.PI * 2))).toFixed(3);
-        (el.firstChild as HTMLElement).style.display = d <= rows.pickup.tapReachMetres ? 'block' : 'none';
+        const high = (globalThis as { innerHeight?: number }).innerHeight ?? 0;   // the tap disc only where no control lives: clear of the stick, STRIKE, roll, guard and the bars
+        (el.firstChild as HTMLElement).style.display = d <= rows.pickup.tapReachMetres && xy[1] >= rows.pickup.tapTopFrac * high && xy[1] <= rows.pickup.tapBottomFrac * high ? 'block' : 'none';
       }
       for (const [id, el] of pool) if (!live.has(id) && !items.some((i) => i.source + i.key === id)) { el.remove(); pool.delete(id); }   // a pickup that is gone (taken, expired) loses its marker
     },

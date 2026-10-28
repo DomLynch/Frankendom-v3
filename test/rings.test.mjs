@@ -151,12 +151,13 @@ test('the bodies: each is in rig.json with its clips, drawn with its archetype\'
     assert.ok(!PHYSICS.opponents.some((o) => o.body === b.body), `${b.body} has no physics opponents row: no ragdoll to throw`);
   }
   assert.ok(BOSSW.rows.some((r) => r.opponent === 'shieldmaiden'), 'the shieldmaiden clones take Arachne\'s axe and shield row');
-  assert.equal(BOSSW.rows.some((r) => r.opponent === 'pitborn'), false, 'the pitborn clones take the Minotaur\'s own cleaver');
+  assert.equal(BOSSW.rows.some((r) => r.opponent === 'pitborn' && r.profile == null), false, 'the pitborn clones take the Minotaur\'s own cleaver, unless a profile row of their own says otherwise');
+  assert.deepEqual(BOSSW.rows.filter((r) => r.opponent === 'pitborn').map((r) => r.profile), ['anime-boy-black'], 'only Ryo has a pitborn profile row (the sword); the other pitborn clones are unchanged');
 });
 
 test('wiring pins: the page lays the ring tune under the address\'s, mixes the look per frame, and scene arms ring bodies by their archetype', () => {
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8'), scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(main, /const BASE_TUNE = mergeTune\(TUNED, ringTune\(\)\)/);
+  assert.match(main, /const BASE_TUNE = mergeTune\(mergeTune\(TUNED, ringTune\(\)\), daily\.tune\)/);   // re-pinned for the Daily Pit: its modifier tune (empty outside the daily, the same object) is laid over the rings' and the address's
   assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation/);
   assert.match(main, /view\.ringLook\(look\.tintA, look\.tintB, look\.t, look\.plates\)/);
   assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch, undefined, bodyProfileOf\(file\)\)/);

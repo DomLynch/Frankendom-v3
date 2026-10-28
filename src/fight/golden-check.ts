@@ -6,6 +6,21 @@ type Range = [number, number];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+/** A boss spot as spotsFor gives it: its place in the pit's frame and its leash (data/zones rows). */
+export type Spot = { id: string; x: number; z: number; leash: number };
+
+/** Throws when a roaming point lies within `drops.roaming.clearanceMetres` of any boss's leash circle (measured from the spot): a pickup there pulls the hero into that boss's fight. Pure; the page runs it on its own spots, the test on the shipped zone. */
+export function validateClearance(r: GoldenRows, spots: readonly Spot[]): void {
+  const turn = Math.PI / r.halfTurnDegrees;
+  for (const p of r.drops.roaming.points) {
+    const x = Math.sin(p.angleDeg * turn) * p.distance, z = -Math.cos(p.angleDeg * turn) * p.distance;
+    for (const s of spots) {
+      const gap = Math.hypot(x - s.x, z - s.z) - s.leash;
+      if (gap < r.drops.roaming.clearanceMetres) throw new Error(`golden-weapons: roaming point ${p.id} is ${gap.toFixed(1)} m outside ${s.id}'s leash, needs ${r.drops.roaming.clearanceMetres} m`);
+    }
+  }
+}
+
 /** `ringRows`: data/rings.json rings (id, minDist, maxDist). */
 export function validateGolden(r: GoldenRows, isWeapon: (id: string) => boolean, ringRows: readonly { id: string; minDist: number; maxDist: number }[]): void {
   const fail = (m: string): never => { throw new Error(`golden-weapons: ${m}`); };
@@ -18,6 +33,8 @@ export function validateGolden(r: GoldenRows, isWeapon: (id: string) => boolean,
   for (const k of ['actor', 'target'] as const) if (!Number.isInteger(r.spend?.[k])) fail(`spend.${k} is a whole number`);
   const L = r.limits;
   within('pickup.reachMetres', r.pickup?.reachMetres, L.metres); within('pickup.tapReachMetres', r.pickup?.tapReachMetres, L.metres); within('pickup.tapRadiusPx', r.pickup?.tapRadiusPx, L.px);
+  within('pickup.tapTopFrac', r.pickup?.tapTopFrac, L.alpha); within('pickup.tapBottomFrac', r.pickup?.tapBottomFrac, L.alpha);
+  if (!(r.pickup.tapTopFrac < r.pickup.tapBottomFrac)) fail('pickup.tapTopFrac is above tapBottomFrac');
   if (!Array.isArray(r.weapons) || !r.weapons.length) fail('weapons: at least one row');
   const ids = new Set<string>();
   for (const w of r.weapons) {
@@ -38,6 +55,7 @@ export function validateGolden(r: GoldenRows, isWeapon: (id: string) => boolean,
   within('drops.bossKill.scatterMetres', b.scatterMetres, L.metres);
   if (typeof d.packChest?.on !== 'boolean') fail('drops.packChest.on is true or false');
   within('drops.packChest.chance', d.packChest.chance, L.chance); within('drops.packChest.tier', d.packChest.tier, L.tier);
+  within('drops.roaming.clearanceMetres', d.roaming?.clearanceMetres, L.metres);
   within('drops.roaming.respawnSeconds', d.roaming?.respawnSeconds, L.seconds); within('drops.maxGround', d.maxGround, L.ground);
   const seen = new Set<string>();
   for (const p of d.roaming?.points ?? []) {
@@ -54,5 +72,5 @@ export function validateGolden(r: GoldenRows, isWeapon: (id: string) => boolean,
   for (const k of ['ringPx', 'beamPx', 'widthPx'] as const) within(`marker.${k}`, r.marker?.[k], L.px);
   within('marker.alpha', r.marker?.alpha, L.alpha); within('marker.pulseSeconds', r.marker?.pulseSeconds, L.pulse);
   within('marker.showWithinMetres', r.marker?.showWithinMetres, L.metres); within('marker.zIndex', r.marker?.zIndex, [0, L.coord]);
-  colour('hud.colour', r.hud?.colour); within('hud.zIndex', r.hud?.zIndex, [0, L.coord]); within('hud.topPct', r.hud?.topPct, [0, L.px[1]]); within('hud.sizePx', r.hud?.sizePx, L.px); word('hud.text', r.hud?.text);
+  colour('hud.colour', r.hud?.colour); within('hud.backdropAlpha', r.hud?.backdropAlpha, L.alpha); within('hud.padPx', r.hud?.padPx, L.px); within('hud.zIndex', r.hud?.zIndex, [0, L.coord]); within('hud.topPct', r.hud?.topPct, [0, L.px[1]]); within('hud.sizePx', r.hud?.sizePx, L.px); word('hud.text', r.hud?.text);
 }

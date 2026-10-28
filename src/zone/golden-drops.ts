@@ -3,7 +3,6 @@
 // plus one small controller; the DOM lives in src/fight/golden-hud.ts and is handed in (`GoldenUi`), the page wiring is a handful of lines in src/client/main.ts. No literal other than 0 and 1 is written here
 // (scripts/as-data scans src/zone/): every number, id and line is a row of the table. Nothing here throws at runtime except validateGolden at load; storage is never trusted (cleanGolden).
 import ROWS from '../../data/golden-weapons.json' with { type: 'json' };
-import type { TuneMap } from '../tune.ts';
 
 export type Tint = { colour: string; emissive: string; emissiveIntensity: number; metalness: number; roughness: number };
 export type GoldenRow = { id: string; name: string; weapon: string; power: string; tell: string; charges: number; damageMul: number; tier: number; tint: Tint };
@@ -13,17 +12,17 @@ export type GoldenRows = {
   version: number; halfTurnDegrees: number;
   limits: { charges: Range; damageMul: Range; tier: Range; chance: Range; metres: Range; seconds: Range; pulse: Range; intensity: Range; angle: Range; coord: number; ground: Range; px: Range; alpha: Range };
   spend: { event: string; actor: number; target: number };
-  pickup: { reachMetres: number; tapReachMetres: number; tapRadiusPx: number };
+  pickup: { reachMetres: number; tapReachMetres: number; tapRadiusPx: number; tapTopFrac: number; tapBottomFrac: number };
   weapons: GoldenRow[];
   drops: {
     bossKill: { chanceByStar: number[]; tierByStar: number[]; scatterMetres: number };
     packChest: { on: boolean; chance: number; tier: number };
-    roaming: { respawnSeconds: number; points: RoamPoint[] };
+    roaming: { respawnSeconds: number; clearanceMetres: number; points: RoamPoint[] };
     maxGround: number;
   };
   lines: { pickup: string; spent: string; lost: string; seconds: number };
   marker: { colour: string; glow: string; ringPx: number; beamPx: number; widthPx: number; alpha: number; pulseSeconds: number; showWithinMetres: number; zIndex: number };
-  hud: { colour: string; zIndex: number; topPct: number; sizePx: number; text: string };
+  hud: { colour: string; zIndex: number; topPct: number; sizePx: number; backdropAlpha: number; padPx: number; text: string };
 };
 export const GOLDEN = ROWS as unknown as GoldenRows;
 
@@ -146,10 +145,16 @@ export function lose(save: GoldenSave, rows: GoldenRows, at: At): { save: Golden
   return { save: { ...putGround(save, rows, h.id, at, h.charges), held: null }, lost: h };
 }
 
-/** The ?tune= map the held weapon makes: every boss kind's health at 1 / damageMul (his blows hurt more = the boss has that much less to lose). Empty when he holds nothing. */
-export function riderTune(rows: GoldenRows, held: Held | null, kinds: readonly string[]): TuneMap {
-  const row = held ? rowOf(rows, held.id) : undefined;
-  return row ? Object.fromEntries(kinds.map((k) => [k, { health: 1 / row.damageMul }])) : {};
+/** The extra damage a landed blow of `damage` does with `row` in hand: damage * (damageMul - 1), rounded to whole health. */
+export const bonusOf = (row: Pick<GoldenRow, 'damageMul'>, damage: number): number => Math.round(damage * (row.damageMul - 1));
+
+/** A practice with `extra` more taken off the fighter at index `target` (the boss), and the copy of that fighter's health the practice itself carries. Never kills: a boss left standing by the sim is left at 1 at least (the sim's own blow decides the kill, so its finisher, events and kill record stay as they are). The same object when there is nothing to do. */
+export function boostedBy<P extends { health: number; duel: { fighters: readonly { health: number }[] } }>(p: P, target: number, extra: number): P {
+  const foe = p.duel.fighters[target];
+  if (!foe || !(extra > 0) || !(foe.health > 0)) return p;
+  const health = Math.max(1, foe.health - extra);
+  if (health === foe.health) return p;
+  return { ...p, health, duel: { ...p.duel, fighters: p.duel.fighters.map((f, i) => (i === target ? { ...f, health } : f)) } };
 }
 
 /** The weapon id the hero is drawn with at load when he carries a golden weapon of a drawable id, else `fallback`. */
@@ -175,66 +180,75 @@ export type GoldenUi = {
   tint(row: GoldenRow | null): void;
 };
 export type GoldenDeps = {
-  rows: GoldenRows; drawable: readonly string[]; kinds: readonly string[]; ui: GoldenUi;
+  rows: GoldenRows; drawable: readonly string[]; ui: GoldenUi;
   get(): GoldenSave; put(next: GoldenSave): void;   // the page's save: read, and write back (the page persists)
-  retune(extra: TuneMap): void;                     // the rider as a tune map: the page lays it over its own and rebuilds its kinds
   now(): number; rng: Rng;
 };
+type Strikes = { health: number; duel: { fighters: readonly { health: number }[] }; events: readonly { type: string; actor: number; target?: number; damage?: number }[] };
 
-/** The controller: the page calls `step` each frame, `hits` with each frame's combat events, `died` when the hero dies, `killed` when a boss falls; other lanes call `dropGolden` and `onPickup`. */
+/** The controller: the page calls `step` each frame, `strike` with each sim step's practice, `died` when the hero dies, `killed` when a boss falls; other lanes call `dropGolden` and `onPickup`. */
 export function createGolden(d: GoldenDeps) {
   const usable = usableRows(d.rows, d.drawable), listeners: ((e: PickupEvent) => void)[] = [];
   let armed = true;   // a pickup is taken once per visit: after one (or a swap that put his old weapon at his feet) he must step off everything before the next
+  let cache: Item[] | null = null;   // the items of this frame: built once (step), dropped whenever the save changes
+  const put = (next: GoldenSave) => { cache = null; d.put(next); };
+  const list = (): Item[] => (cache ??= itemsNow(d.get(), d.rows, usable, d.now()));
   const show = () => {
     const h = d.get().held, row = h ? rowOf(d.rows, h.id) : undefined;
     d.ui.counter(h && row ? { row, charges: h.charges } : null); d.ui.tint(h && row ? row : null);
-    d.retune(riderTune(d.rows, h ?? null, d.kinds));
   };
   function grab(item: Item, hero: At) {
     const out = take(d.get(), d.rows, item, hero, d.now()), row = rowOf(d.rows, item.id)!;
-    d.put(out.save); show(); d.ui.line(lineOf(d.rows.lines.pickup, row, out.held.charges));
+    put(out.save); show(); d.ui.line(lineOf(d.rows.lines.pickup, row, out.held.charges));
     const e: PickupEvent = { id: row.id, weapon: row.weapon, name: row.name, charges: out.held.charges, source: item.source, x: item.x, z: item.z };
     for (const fn of listeners) try { fn(e); } catch { /* a listener never breaks the page */ }
   }
   let hero: At = { x: 0, z: 0 };
   const tap = (key: string, source: Source) => {
-    const it = itemsNow(d.get(), d.rows, usable, d.now()).find((i) => i.key === key && i.source === source);
+    const it = list().find((i) => i.key === key && i.source === source);
     if (it && Math.hypot(it.x - hero.x, it.z - hero.z) <= d.rows.pickup.tapReachMetres) grab(it, hero);
   };
   show();
   return {
     /** Every frame: the markers, and a pickup under the hero's feet is taken. `alive`: a fallen hero takes nothing. */
     step(at: At, alive: boolean) {
-      hero = at;
-      const items = itemsNow(d.get(), d.rows, usable, d.now()), under = alive ? nearest(items, at, d.rows.pickup.reachMetres) : null;
+      hero = at; cache = null;   // the clock moved: this frame's list is built once, here, and read by the taps, the radar and the markers
+      const under = alive ? nearest(list(), at, d.rows.pickup.reachMetres) : null;
       if (under && armed) { armed = false; grab(under, at); } else if (!under) armed = true;
-      d.ui.frame(itemsNow(d.get(), d.rows, usable, d.now()), at, tap);
+      d.ui.frame(list(), at, tap);
     },
-    /** The frame's combat events: each blow the hero lands spends a charge; the last one reverts him. */
-    hits(events: readonly { type: string; actor: number; target?: number }[]) {
+    /**
+     * The sim step's practice: each blow the hero lands in it does the held weapon's extra damage to the boss RIGHT NOW (the same step, the same tick) and spends one charge; the blow that spends the last
+     * charge still gets its bonus, and the next blow is plain. Returns the practice with the boss's health lowered (the same object with nothing held or no blow).
+     */
+    strike<P extends Strikes>(p: P): P {
       const s = d.rows.spend;
-      for (const e of events) {
-        if (e.type !== s.event || e.actor !== s.actor || e.target !== s.target || !d.get().held) continue;
-        const out = spend(d.get()); d.put(out.save); show();
+      let extra = 0;
+      for (const e of p.events) {
+        const held = d.get().held, row = held ? rowOf(d.rows, held.id) : undefined;
+        if (!row || e.type !== s.event || e.actor !== s.actor || e.target !== s.target) continue;
+        extra += bonusOf(row, e.damage ?? 0);
+        const out = spend(d.get()); put(out.save); show();
         if (out.spent) d.ui.line(lineOf(d.rows.lines.spent, rowOf(d.rows, out.spent.id)!, 0));
       }
+      return boostedBy(p, s.target, extra);
     },
     /** The hero died at `at`: his golden weapon lies where he fell. */
     died(at: At) {
       const out = lose(d.get(), d.rows, at);
       if (!out.lost) return;
-      d.put(out.save); show(); d.ui.line(lineOf(d.rows.lines.lost, rowOf(d.rows, out.lost.id)!, out.lost.charges));
+      put(out.save); show(); d.ui.line(lineOf(d.rows.lines.lost, rowOf(d.rows, out.lost.id)!, out.lost.charges));
     },
     /** A boss of star level `star` fell at `at`. */
     killed(at: At, star: number) {
       const out = bossDrop(d.get(), d.rows, usable, at, star, d.rng);
-      if (out.item) d.put(out.save);
+      if (out.item) put(out.save);
       return out.item;
     },
     /** For other lanes: a golden weapon of tier up to `tier` appears at `position`. */
     dropGolden(position: At, tier: number): Ground | null {
       const out = dropGolden(d.get(), d.rows, usable, position, tier, d.rng);
-      if (out.item) d.put(out.save);
+      if (out.item) put(out.save);
       return out.item;
     },
     /** For other lanes: `fn` runs when the hero picks one up. Returns the way to stop listening. */
@@ -242,7 +256,7 @@ export function createGolden(d: GoldenDeps) {
       listeners.push(fn);
       return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
     },
-    items: () => itemsNow(d.get(), d.rows, usable, d.now()),
+    items: (): readonly Item[] => list(),
     held: () => d.get().held,
   };
 }

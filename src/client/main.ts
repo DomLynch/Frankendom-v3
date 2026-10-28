@@ -12,7 +12,7 @@ import { kindIds, kindPractice, kindTable, type KindCtx, type KindFight } from '
 import DIFFICULTY from '../../data/difficulty.json' with { type: 'json' };
 import PROFILES from '../../data/profiles.json' with { type: 'json' };
 import TUNE from '../../data/tune.json' with { type: 'json' };
-import { tuneFrom, type TuneFile, type TuneMap } from '../tune.ts';
+import { tuneFrom, type TuneFile } from '../tune.ts';
 import { difficultyPick, type DifficultyFile, type ProfileRow } from '../difficulty.ts';
 import { applyFoeSweeps, applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
@@ -87,7 +87,10 @@ import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, val
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, bossLoadAfterKill, zoneDuel, type Spawn } from '../stubs.ts';
-import { zoneFor } from '../stubs.ts';
+import { zoneFor as plainZoneFor } from '../stubs.ts';
+import DAILY_ROWS from '../../data/daily-pit.json' with { type: 'json' };
+import { createDaily, sessionOf } from '../daily-pit-ui.ts';   // the Daily Pit (data/daily-pit.json, src/daily-pit.ts): a button on every page; inside the daily the zone is the day's one boss with its modifier
+import type { DailyFile } from '../daily-pit.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
@@ -112,15 +115,17 @@ const STAR_ROWS = STARS as unknown as StarsFile;
 const starById: Record<string, number> = {}, spawnKills: Record<string, number> = {}, kindKills: Record<string, number> = {};   // by spawn id / by kind: this visit's star level, kills of that spawn, kills of that boss kind
 const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 { const bad = validateProgression(PROG_ROWS, PROFILES.profiles.map((p) => p.id), isWeaponId); if (bad.length) throw new Error(`data/progression.json: ${bad.join('; ')}`); }
-const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
+const daily = createDaily({ file: DAILY_ROWS as unknown as DailyFile, doc: document, win: window, store: storageOf(), session: sessionOf(window), progression: PROG_ROWS, useSave: progressionOn(PROG_ROWS, search) && !pitbornV1(search), now: () => Date.now(), reload: () => location.reload(), cuts: () => ((globalThis as Record<string, unknown[] | undefined>)[DAILY_ROWS.cutLog]?.length ?? 0), nameOf: (k) => PROFILES.profiles.find((p) => p.id === k)?.name ?? k });
+const zoneFor = (s: string) => daily.zoneFor(plainZoneFor(s));   // the daily's one-boss zone inside the Daily Pit, else the zone as it is
+if (daily.run) starById[daily.run.spawnId] = daily.stars;   // the day's star modifier: the boss stands with its star from the first frame
+// inside the Daily Pit the save is not read for the fight (no escalation, no unlock, no corpse run): the same fight for everyone
+const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) && !daily.run ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 validateCorpseRun(CORPSE, PROFILES.profiles.map((p) => p.id));   // data/corpse-run.json: a bad row stops the page at load
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
 const REWARD_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
 checkGolden(isWeaponId);   // data/golden-weapons.json: a bad row stops the page at load
 const HERO_WEAPON = goldenWeaponAtLoad(PROG?.save?.golden, CARRIED_WEAPONS, REWARD_WEAPON) as WeaponId;   // drawn and fought with: a golden weapon held from the last visit is its own weapon from the first frame, else the boss-reward one (REWARD_WEAPON, which the corpse run carries)
-let goldenTune: TuneMap = {};   // the held golden weapon's rider (his blows hurt more = the bosses' health scaled down), laid over the kills' escalation; empty with none
-const tuneNow = () => mergeTune(PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, goldenTune);
-const BASE_TUNE = mergeTune(TUNED, ringTune());   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
+const BASE_TUNE = mergeTune(mergeTune(TUNED, ringTune()), daily.tune);   // + the Daily Pit's modifier over the day's boss (empty outside it: the same object)   //   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
 const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
@@ -375,8 +380,7 @@ if (CR) (globalThis as { __v3Corpse?: unknown }).__v3Corpse = { give: (n: number
 if (CR && PROG?.save?.pile) startLinger(spawns.findIndex((s) => s.kind === PROG!.save!.pile!.boss));   // a pile from an earlier visit: its boss stands at it from the first frame
 // GOLDEN WEAPON DROPS (data/golden-weapons.json, src/zone/golden-drops.ts; Dom 2026-10-28): rare weapons lie in the world; walking onto one makes it his for N charges (the HUD counts them), his blows hurt more, and at 0 he
 // reverts. Rides the progression save (optional `golden` field), so ?save=off and ?pitborn=v1 mount nothing. Other lanes: __v3Golden.dropGolden(position, tier) and .onPickup(fn).
-const golden = ZONE && PROG ? mountGolden({ doc: document, view, kinds: PROFILES.profiles.map((p) => p.id), drawable: CARRIED_WEAPONS, isWeapon: isWeaponId, get: () => PROG.save?.golden, put: (next) => { if (PROG.save) { PROG.save = { ...PROG.save, golden: next }; writeSave(PROG.store, PROG_ROWS, PROG.save); } },
-  retune: (extra) => { goldenTune = extra; KIND_CTX.tune = tuneNow(); KINDS = kindTable(KIND_CTX); } }) : null;
+const golden = ZONE && PROG ? mountGolden({ doc: document, view, spots: SPOTS, drawable: CARRIED_WEAPONS, get: () => PROG.save?.golden, put: (next) => { if (PROG.save) { PROG.save = { ...PROG.save, golden: next }; writeSave(PROG.store, PROG_ROWS, PROG.save); } } }) : null;
 (globalThis as { __v3Golden?: unknown }).__v3Golden = golden;
 if (ZONE) { current = nearestStanding(spawns, heroStart); useKind(kindAt(current)); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
@@ -433,7 +437,7 @@ function onBossKilled(kind: string, star = 0, at?: { x: number; z: number }) {
     }
     const trophy = trophyText(STAR_ROWS, star), tier = starLevel(STAR_ROWS, star).trophy?.tier;   // data/stars.json: a star kill drops that level's trophy (a count in the save and a line), no item art
     PROG.save = tier === undefined ? next : addTrophy(next, tier); writeSave(PROG.store, PROG_ROWS, PROG.save);
-    KIND_CTX.tune = mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)); KIND_CTX.tune = mergeTune(KIND_CTX.tune, goldenTune); KINDS = kindTable(KIND_CTX);
+    KIND_CTX.tune = mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
     const line = [out.unlocked || regained ? unlockText((out.unlocked ?? regained)!) : null, trophy].filter(Boolean).join(' · ');
     if (line) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(line);
   } catch (error) { console.warn('progression: kill not recorded', error); }
@@ -448,6 +452,7 @@ function rollStarFor(spawn: Spawn) {
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
+  daily.frame({ dt, engaged, heroHealth: practice.playerHealth, won: heroStands(), lost: heroDied() });   // the Daily Pit's score tracker (no-op outside it)
   if (engaged && !practice.finish) fightSec += dt;
   spawns = timers.spawns;
   corpseStep(dt);
@@ -603,7 +608,7 @@ function frame(now: number) {
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
       }
-      frameEvents.push(...practice.events); golden?.hits(practice.events);   // each blow he lands spends a golden charge
+      frameEvents.push(...practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)
