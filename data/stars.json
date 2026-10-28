@@ -8,8 +8,8 @@
   "hudColour": "#ffd34a",
   "levels": [
     { "star": 0, "healthX": 1, "damageX": 1, "scaleX": 1, "trophy": null, "tell": null },
-    { "star": 1, "healthX": 1.5, "damageX": 1.25, "scaleX": 1.12, "trophy": { "tier": 1, "name": "Bronze trophy" }, "tell": { "colour": "#ffd34a", "intensity": 0.35 } },
-    { "star": 2, "healthX": 2, "damageX": 1.5, "scaleX": 1.25, "trophy": { "tier": 2, "name": "Gold trophy" }, "tell": { "colour": "#ff9a1a", "intensity": 0.6 } }
+    { "star": 1, "healthX": 1.5, "damageX": 1.25, "scaleX": 1.12, "trophy": { "tier": 1, "name": "Bronze trophy" }, "tell": { "colour": "#ffd34a", "intensity": 0.12 } },
+    { "star": 2, "healthX": 2, "damageX": 1.5, "scaleX": 1.25, "trophy": { "tier": 2, "name": "Gold trophy" }, "tell": { "colour": "#ff9a1a", "intensity": 0.22 } }
   ],
   "weights": [
     { "id": "1", "star1": { "base": 2, "perKill": 3 }, "star2": { "base": 0, "perKill": 1 } },
