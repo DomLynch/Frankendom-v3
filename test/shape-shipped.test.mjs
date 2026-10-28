@@ -15,6 +15,14 @@ test('the V1 scythe (not shipped) is not fetched; shipped files still are', () =
   assert.equal(shippedShape(scythe), false);
   for (const w of ['cleaver', 'gladius', 'longsword']) assert.equal(shippedShape(shapeFor(w, 1, SHIPPING_SHAPES)), true, w);
 });
+test('the BUILT url carries a content hash: shipped files are still asked for (the hero sword vanished on live when #218 compared the hashed name)', () => {
+  for (const w of ['cleaver', 'gladius', 'longsword']) {
+    const built = shapeFor(w, 1, SHIPPING_SHAPES).replace(/\.glb$/, '.a3defee2.glb');
+    assert.equal(shippedShape(built), true, `${w} ${built}`);
+    assert.equal(shippedShape(`${built}?v=1`), true, `${w} with a query`);
+  }
+  assert.equal(shippedShape('/weapons/shapes/scythe-plain.a3defee2.glb'), false);
+});
 test('scene.ts gates the fetch on the shipping table only (the ?shapes= local drop is never filtered)', () => {
   const src = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
   assert.match(src, /shapeTable === SHIPPING_SHAPES && !shippedShape\(url\)/);
