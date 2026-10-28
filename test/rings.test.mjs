@@ -25,7 +25,7 @@ const check = (rows = RINGS, zone = ZONE1) => validateRings(rows, zone, ringOrig
 test('the shipped rings validate against the profiles, the rig, the sky plates and the zone row', () => {
   assert.deepEqual(check(), []);
   assert.deepEqual(RINGS.rings.map((r) => r.id), ['ring-1', 'ring-2', 'ring-3']);
-  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard', 'parasite', 'the-boss', 'anime-girl-blonde', 'anime-boy-black']);
+  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard', 'parasite','anime-girl-blonde', 'anime-boy-black']);
   assert.ok(RINGS.bosses.every((b) => b.mechanic === null), 'one signature mechanic each, later: the row is null today');
 });
 
@@ -49,7 +49,7 @@ test('rings 2 and 3 place the nine bodies by distance from the pit, in their ban
     assert.equal(s.kind, s.body, 'a ring boss\'s kind and body share the stem');
   }
   assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-2').map((s) => s.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard']);
-  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['parasite', 'the-boss', 'anime-girl-blonde', 'anime-boy-black']);
+  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['parasite', 'anime-girl-blonde', 'anime-boy-black']);
   assert.deepEqual(ringSpawns(origin), added, 'the zone is the row plus the generated spawns, nothing else');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 90, stepDeg: 0, distance: 10 }, 0), { x: 10, z: 0 }, 'east is +x, north is -z');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 0, stepDeg: 90, distance: 10 }, 1), { x: 10, z: 0 }, 'instance i turns by stepDeg');
@@ -108,9 +108,9 @@ test('difficulty rises with distance: ring 1 adds nothing, each ring multiplies 
 
 test('the same health at ring 1 multipliers: a ring boss fights as its source archetype, scaled by its ring only', () => {
   const ctx = (tune) => ({ profiles: PROFILES.profiles, difficulty: read('difficulty'), brains: read('brains').brains, pick: read('difficulty').default, search: '', level: read('fight').level, ai: read('fight').ai, override: null, tune, weapon: read('fight').weapon, skill: read('fight').skill, skill2: read('fight').skill2, stance: read('fight').stance, specials: read('fight').specials });
-  const base = kindFightFor('arachne', ctx({})), mine = kindFightFor('the-boss', ctx({})), ringed = kindFightFor('the-boss', ctx(ringTune()));
+  const base = kindFightFor('pitborn', ctx({})), mine = kindFightFor('parasite', ctx({})), ringed = kindFightFor('parasite', ctx(ringTune()));
   assert.equal(mine.opponentId, base.opponentId);
-  assert.equal(mine.resolved.foeHealthScale, base.resolved.foeHealthScale, 'the clone is at Arachne\'s health');
+  assert.equal(mine.resolved.foeHealthScale, base.resolved.foeHealthScale, 'the clone is at the Minotaur\'s health');
   assert.equal(ringed.resolved.foeHealthScale, mine.resolved.foeHealthScale * RINGS.rings[2].health, 'ring 3 multiplies it');
   assert.equal(kindFightFor('pumpkinhulk', ctx({})).resolved.foeHealthScale, kindFightFor('pitborn', ctx({})).resolved.foeHealthScale);
 });
