@@ -115,15 +115,14 @@ const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 validateCorpseRun(CORPSE, PROFILES.profiles.map((p) => p.id));   // data/corpse-run.json: a bad row stops the page at load
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
-const HERO_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
+const REWARD_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
 checkGolden(isWeaponId);   // data/golden-weapons.json: a bad row stops the page at load
-const DRAWN_WEAPON = goldenWeaponAtLoad(PROG?.save?.golden, CARRIED_WEAPONS, HERO_WEAPON) as WeaponId;   // a golden weapon held from the last visit is drawn as its own weapon from the first frame (HERO_WEAPON stays the boss-reward one the corpse run carries)
+const HERO_WEAPON = goldenWeaponAtLoad(PROG?.save?.golden, CARRIED_WEAPONS, REWARD_WEAPON) as WeaponId;   // drawn and fought with: a golden weapon held from the last visit is its own weapon from the first frame, else the boss-reward one (REWARD_WEAPON, which the corpse run carries)
 let goldenTune: TuneMap = {};   // the held golden weapon's rider (his blows hurt more = the bosses' health scaled down), laid over the kills' escalation; empty with none
 const tuneNow = () => mergeTune(PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, goldenTune);
 const BASE_TUNE = mergeTune(TUNED, ringTune());   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
 const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
-KIND_CTX.weapon = DRAWN_WEAPON;
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
@@ -220,7 +219,7 @@ const view = createScene(
     assetsReady = kind === 'ready';
     if (kind === 'ready') view.startStandoff();
   },
-  opponentId, undefined, DRAWN_WEAPON, () => {}, level, gfxPost,
+  opponentId, undefined, HERO_WEAPON, () => {}, level, gfxPost,
 );
 view.setZoom(cameraZoom(FIGHT.camera.zoom, search));   // the lens zoom (data/fight.json camera.zoom 1.1); ?zoom=1 = the camera as it was
 view.setWide(wideRow(FIGHT.camera.wide, search));   // the wide-screen lens (data/fight.json camera.wide): more zoom on a landscape or desktop screen, none on a portrait one; ?wide=v1 = without it
@@ -325,7 +324,7 @@ const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind, starById
 const CR = ZONE && PROG ? CORPSE : null;
 const crHud = CR ? mountCorpseHud(document, CR) : null;
 const pileXY: [number, number] = [0, 0];   // the pile marker's screen spot, rewritten each frame (no per-frame allocation)
-let carriedWeapon: string = HERO_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
+let carriedWeapon: string = REWARD_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
 const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
 function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
 function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
@@ -434,7 +433,7 @@ function onBossKilled(kind: string, star = 0, at?: { x: number; z: number }) {
     }
     const trophy = trophyText(STAR_ROWS, star), tier = starLevel(STAR_ROWS, star).trophy?.tier;   // data/stars.json: a star kill drops that level's trophy (a count in the save and a line), no item art
     PROG.save = tier === undefined ? next : addTrophy(next, tier); writeSave(PROG.store, PROG_ROWS, PROG.save);
-    KIND_CTX.tune = tuneNow(); KINDS = kindTable(KIND_CTX);
+    KIND_CTX.tune = mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)); KIND_CTX.tune = mergeTune(KIND_CTX.tune, goldenTune); KINDS = kindTable(KIND_CTX);
     const line = [out.unlocked || regained ? unlockText((out.unlocked ?? regained)!) : null, trophy].filter(Boolean).join(' · ');
     if (line) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(line);
   } catch (error) { console.warn('progression: kill not recorded', error); }
