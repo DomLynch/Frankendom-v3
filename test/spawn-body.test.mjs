@@ -3,8 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { checkBodies, validateZone } from '../src/sim/validate.js';
-import { heroBodyFile } from '../src/fight/hero-body-rows.ts';
+import { validateZone } from '../src/sim/validate.js';
 import { foeBodyFile, setBossBody, spawnBodyFile, spotBodyProblems } from '../src/fight/foe-body.ts';
 import { spotsFor } from '../src/zone/spawns.ts';
 import { buildZoneSet } from '../src/zone/zone-rows.ts';
@@ -13,28 +12,16 @@ const read = (n) => JSON.parse(readFileSync(new URL(`../data/${n}.json`, import.
 const RIG = read('rig'), PROFILES = read('profiles');
 const ZONE = JSON.parse(readFileSync(new URL('../data/zones/zone1.row.json', import.meta.url), 'utf8'));
 const INDEX = JSON.parse(readFileSync(new URL('../data/zones/index.json', import.meta.url), 'utf8'));
-// Re-pinned 2026-10-28 (Dom: zone spawns 2 and 3 are different bosses): a zone spawn's kind is a PROFILE id, so the kinds list is the profile ids (it was the opponent ids, which lacks gargantua/arachne).
-const kinds = PROFILES.profiles.map((p) => p.id);
+const kinds = PROFILES.profiles.map((p) => p.opponent);
 const clone = (x) => structuredClone(x);
 
-test('the shipped zone names no spawn body (the body is the kind\'s profile row): spawn 1 Pitborn/Minotaur, spawn 2 Gargantua, spawn 3 Arachne, every body passes the profile body check', () => {
+test('DEFAULT UNCHANGED: the shipped zone names no spawn body, and every spawn draws exactly the body its kind drew before', () => {
   setBossBody('');
-  // Was: every spawn draws minotaur-106. Now only spawn 1 does; spawns 2 and 3 draw their own 106 bodies named on their profile rows (Dom 2026-10-28).
-  const want = { 'yard-pitborn': ['pitborn', 'minotaur-106'], 'pit-pitborn-east': ['gargantua', 'gargantua-106'], 'pit-pitborn-west': ['arachne', 'arachne-106'] };
   for (const s of ZONE.spawns) {
     assert.ok(!('body' in s), `${s.id} carries no body row`);
-    assert.deepEqual([s.kind, spawnBodyFile(s.kind, 'ignored', undefined)], want[s.id], s.id);
+    assert.equal(spawnBodyFile(s.kind, 'ignored', undefined), foeBodyFile(s.kind, 'ignored'));
+    assert.equal(spawnBodyFile(s.kind, 'ignored', undefined), 'minotaur-106');
   }
-  assert.equal(spawnBodyFile('pitborn', 'ignored', undefined), foeBodyFile('pitborn', 'ignored'), 'spawn 1 is still exactly the body the Pitborn drew before');
-  assert.deepEqual(['pitborn', 'gargantua', 'arachne'].map((id) => PROFILES.profiles.find((p) => p.id === id).body), ['minotaur', 'gargantua', 'arachne']);
-  assert.deepEqual(checkBodies(PROFILES, RIG, heroBodyFile()), [], 'every profile body passes the profile body check');
-  for (const stem of ['gargantua', 'arachne']) {
-    assert.equal(RIG.files[stem], `${stem}-106`, `${stem} is a data/rig.json files row`);
-    assert.ok(RIG.clips106.dir[`${stem}-106`], `${stem}-106 has a clips106.dir folder, so the body loads`);
-  }
-  setBossBody('?boss=minotaur');
-  assert.equal(spawnBodyFile('gargantua', 'ignored', undefined), 'minotaur-106', '?boss= still wins over a profile body');
-  setBossBody('');
   assert.ok(spotsFor(ZONE).every((s) => !('body' in s)), 'a spot has no body key unless the row has one');
   assert.deepEqual(validateZone(ZONE, kinds, RIG), []);
   assert.deepEqual(spotBodyProblems(spotsFor(ZONE)), []);

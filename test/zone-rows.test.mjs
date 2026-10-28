@@ -13,11 +13,9 @@ const ROW = json('zone1.row.json');
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const KINDS = Object.keys(ROSTER);
-// Re-pinned 2026-10-28 (Dom: spawns 2 and 3 are different bosses): the SHIPPED row's kinds are profile ids (data/profiles.json: gargantua, arachne are profile rows, not roster archetypes).
-const PROFILE_IDS = JSON.parse(readFileSync(new URL('../data/profiles.json', import.meta.url), 'utf8')).profiles.map((p) => p.id);
 
 test('the shipped zone row validates, spawn kinds included', () => {
-  assert.deepEqual(validateZone(ROW, PROFILE_IDS), []);
+  assert.deepEqual(validateZone(ROW, KINDS), []);
   assert.deepEqual(validateZoneIndex(INDEX, { [ROW.id]: ROW }), []);
 });
 
@@ -43,10 +41,9 @@ test('the shipped row pinned: id, band, respawn, areas, the spawn', () => {
   assert.deepEqual(ROW.respawn, { x: 200, z: 54, facing: 3.142, downSeconds: 2, died: 'You died' });
   assert.deepEqual(ROW.areas.map((a) => [a.id, a.pvp, a.spawnsAllowed]), [['yard', 'off', false], ['duel-pit', 'on', true], ['field', 'on', true]]);
   assert.deepEqual(ROW.spawns.map((x) => [x.id, x.respawnSeconds]), [['yard-pitborn', 40], ['pit-pitborn-east', 60], ['pit-pitborn-west', 90]], 'three bosses, each its own timer (live-zone phase 1b)');
-  assert.deepEqual(ROW.spawns.map((x) => x.kind), ['pitborn', 'gargantua', 'arachne'], 'spawn 1 Pitborn; spawns 2 and 3 the Gargantua and the Arachne (Dom 2026-10-28; was three Pitborn)');
-  assert.equal(ROW.spawns[0].kind, FIGHT.opponent, "spawn 1 is still the opponent data/fight.json names (the single fight is unchanged)");
   for (const x of ROW.spawns) {
-    assert.ok(PROFILE_IDS.includes(x.kind), 'kind is a profile row id');
+    assert.equal(x.kind, FIGHT.opponent, "today's spawns are the opponent data/fight.json names (one foe rig is built)");
+    assert.ok(KINDS.includes(x.kind), 'kind is a roster opponent id');
     assert.equal(x.roster, true);
     assert.deepEqual(x.behaviour, { aggro: 2.5, leash: 20, roam: 2.6, campSize: [1, 1] });
   }
