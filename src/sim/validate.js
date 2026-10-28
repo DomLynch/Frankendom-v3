@@ -253,7 +253,26 @@ export function checkKingAura(id, r) {
   return e;
 }
 /** One checker per mechanic `type` (the registry of src/fight/mechanics/index.ts has the same ids). A new boss mechanic adds one line here. */
-const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura };
+const IMPALE_NUMS = { firstTicks: [0, 3600], cooldownTicks: [60, 7200], abortCooldownTicks: [0, 7200], gapMin: [0.5, 20], gapMax: [0.5, 20], parkTicks: [1, 53], freezeTicks: [1, 52], lungeSpeed: [0.01, 0.5], lungeTicks: [1, 120],
+  stopGap: [0.8, 3], dragM: [0, 6], dragTicks: [1, 90], dragStop: [0.9, 3], followWithinTicks: [1, 300], lineWidth: [0.1, 3], backTo: [0, 12], backSpeed: [0, 0.3] };
+/** Nan's IMPALE AND DRAG row (type "nan-impale"). Returns one string per problem. */
+export function checkNanImpale(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const known = ['type', 'about', 'boss', 'move', 'followMove', 'lineColour', ...Object.keys(IMPALE_NUMS)];
+  for (const k of Object.keys(r)) if (!known.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  for (const [k, [lo, hi]] of Object.entries(IMPALE_NUMS)) if (!(Number.isFinite(r[k]) && r[k] >= lo && r[k] <= hi)) e.push(`${at}.${k}: a number from ${lo} to ${hi}`);
+  if (r.move !== 'heavy_thrust') e.push(`${at}.move: heavy_thrust (the held, chambered stab the engine charges)`);
+  if (r.followMove !== 'thrust') e.push(`${at}.followMove: thrust`);
+  if (!/^#[0-9a-fA-F]{6}$/.test(r.lineColour ?? '')) e.push(`${at}.lineColour: a #rrggbb`);
+  if (!(r.gapMax > r.gapMin)) e.push(`${at}: gapMax must be above gapMin`);
+  if (!(r.freezeTicks < r.parkTicks)) e.push(`${at}: freezeTicks must be shorter than parkTicks`);
+  if (!(r.dragStop >= r.stopGap - 0.2)) e.push(`${at}.dragStop: about the stopGap or more (the hook never pulls him through her)`);
+  if (!(r.backTo <= r.gapMax)) e.push(`${at}.backTo: inside gapMax`);
+  if (!(r.backTo - r.stopGap <= r.lungeSpeed * r.lungeTicks)) e.push(`${at}: the lunge (lungeSpeed x lungeTicks) must cover backTo minus stopGap`);
+  return e;
+}
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale };
 /** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
 export function validateMechanics(json, kinds = [], moves = []) {
   const e = [], map = json?.mechanics;

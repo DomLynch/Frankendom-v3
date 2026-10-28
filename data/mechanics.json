@@ -63,6 +63,31 @@
       "pulseDamageFraction": 0.03,
       "pulseStaminaFraction": 0.15,
       "look": { "core": "#ffd24a", "edge": "#ffb21a", "wave": "#fff1b0", "discOpacity": 0.1, "edgeOpacity": 0.45, "tellOpacity": 0.9, "waveOpacity": 0.8, "lift": 0.04, "segments": 64, "edgeWidth": 0.08 }
+    },
+    "nan-impale": {
+      "type": "nan-impale",
+      "boss": "sporty-granny",
+      "about": "Nan the Impaler's one signature move, IMPALE AND DRAG (Dom 2026-10-28: each boss its own fighting identity). When her move is ready she backs away from you to backTo metres while she raises the polearm and holds the stab chambered (the sim's own heavy-stab hold, so it is a real charged blow) while a line on the ground shows where it will go; the aim freezes for the last freezeTicks of the hold, then she lunges down the line. A roll out of the line dodges it, a parry throws her off, a hit on her in the hold cancels it. If the stab lands she hooks you and pulls you in dragM, then pokes once. Damage is the stab's and the poke's own rows (so stars, ring multipliers and the Daily Pit scale it); this row only picks when, how long and how far.",
+      "move": "heavy_thrust",
+      "followMove": "thrust",
+      "firstTicks": 240,
+      "cooldownTicks": 600,
+      "abortCooldownTicks": 240,
+      "gapMin": 0.9,
+      "gapMax": 5,
+      "backTo": 3.4,
+      "backSpeed": 0.08,
+      "parkTicks": 36,
+      "freezeTicks": 20,
+      "lungeSpeed": 0.17,
+      "lungeTicks": 24,
+      "stopGap": 1.1,
+      "dragM": 1.4,
+      "dragTicks": 14,
+      "dragStop": 1.15,
+      "followWithinTicks": 90,
+      "lineWidth": 0.7,
+      "lineColour": "#c9402a"
     }
   }
 }
