@@ -7,7 +7,7 @@
 // Fails on: any uncaught page error, console.error, failed or >= 400 same-origin request, a missing hero/boss/sword, or the timeout.
 //   node scripts/boot-check.mjs [--out boot-check-out]      (needs `playwright` + chromium; run `npm run build` first)
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -51,9 +51,32 @@ try {
   note('playable');
   const sim = () => page.evaluate(() => { const p = globalThis.__v3Fight, f = p?.duel?.fighters; return { tick: p?.duel?.tick ?? -1, hero: f?.[0]?.health ?? 0, boss: f?.[1]?.health ?? 0 }; });
   const a = await sim();
-  await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive' && typeof globalThis.__weaponShapes?.player === 'string', null, { timeout: SETTLE_MS })
+  await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive' && typeof globalThis.__weaponShapes?.player === 'string' && typeof globalThis.__bossArms === 'function', null, { timeout: SETTLE_MS })
     .catch(async () => problems.push(`not settled in ${SETTLE_MS / 1000} s: ${JSON.stringify(await page.evaluate(() => ({ ragdoll: globalThis.__ragdoll?.state ?? null, shapes: globalThis.__weaponShapes ?? null })))} (boss body alive, hero sword loaded)`));
   const b = await sim();
+  // Every boss body: the page's own resolution (window.__bossArms, src/fight/scene.ts, the very functions bodyRig uses) must give the row and sim weapon test/fixtures/boss-expect.json expects, and the
+  // grafted part, the off-hand mesh and the body file it would fetch must each return 200 from the HASHED production build (zero 404s is also enforced for the whole page, above).
+  const EXPECT = JSON.parse(readFileSync(path.join(root, 'test/fixtures/boss-expect.json'), 'utf8'));
+  const arms = await page.evaluate(async (bodies) => {
+    const hook = globalThis.__bossArms, out = {};
+    if (typeof hook !== 'function') return null;
+    for (const [kind, w] of Object.entries(bodies)) {
+      const got = hook(w.body), status = {};
+      for (const k of ['equip', 'offhand', 'body']) status[k] = got[k] ? (await fetch(got[k], { method: 'GET', cache: 'no-store' }).then((r) => r.status, () => 0)) : null;
+      out[kind] = { ...got, status };
+    }
+    return out;
+  }, EXPECT.bosses);
+  if (!arms) problems.push('window.__bossArms is missing (no boss weapon resolution hook in the built page)');
+  else for (const [kind, w] of Object.entries(EXPECT.bosses)) {
+    const g = arms[kind], at = `boss ${kind} (${w.body})`;
+    if (g.row !== w.row) problems.push(`${at}: weapon row ${g.row} (expected ${w.row})`);
+    if (g.weapon !== w.weapon) problems.push(`${at}: sim weapon ${g.weapon} (expected ${w.weapon})`);
+    if (!g.equip || !g.equip.includes(`/${w.equip}.`) || g.status.equip !== 200) problems.push(`${at}: equip part ${g.equip} -> HTTP ${g.status.equip} (expected the ${w.equip} part, 200)`);
+    if (w.offhand ? (!g.offhand || !g.offhand.includes(`/${w.offhand}.`) || g.status.offhand !== 200) : g.offhand) problems.push(`${at}: off-hand ${g.offhand} -> HTTP ${g.status.offhand} (expected ${w.offhand ?? 'none'}, 200)`);
+    if (!g.body || g.status.body !== 200) problems.push(`${at}: body file ${g.body} -> HTTP ${g.status.body}`);
+  }
+  note(`boss arms checked: ${Object.keys(EXPECT.bosses).length} bodies`);
   if (!(a.hero > 0)) problems.push('hero not spawned (no fighter 0 with health)');
   if (!(a.boss > 0)) problems.push('first boss not spawned (no fighter 1 with health)');
   if (!(b.tick > a.tick)) problems.push(`render/sim loop frozen (tick ${a.tick} -> ${b.tick})`);

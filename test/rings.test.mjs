@@ -178,7 +178,9 @@ test('wiring pins: the page lays the ring tune under the address\'s, mixes the l
   assert.match(main, /const BASE_TUNE = mergeTune\(mergeTune\(TUNED, ringTune\(\)\), daily\.tune\)/);   // re-pinned for the Daily Pit: its modifier tune (empty outside the daily, the same object) is laid over the rings' and the address's
   assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation/);
   assert.match(main, /view\.ringLook\(look\.tintA, look\.tintB, look\.t, look\.plates\)/);
-  assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch, undefined, bodyProfileOf\(file\)\)/);
+  // re-pinned for CI hardening 2026-10-28: the expression moved verbatim to src/fight/boss-resolve.ts (the one function the scene and test/boss-expect.test.mjs both call); the scene must call it
+  assert.match(scene, /bossOfBodyRow\(file, liveBody, pageSearch\)/);
+  assert.match(readFileSync(new URL('../src/fight/boss-resolve.ts', import.meta.url), 'utf8'), /bossWeaponFor\(bodyOwnerOf\(file\)!, search, undefined, bodyProfileOf\(file\)\)/);
   assert.match(scene, /plateWeights\(plates\)/);
 });
 
