@@ -542,7 +542,20 @@ function checkSkyRing(s) {
     if (!obj(p.grade)) pt('grade', 'must be an object {tint, brightness}');
     else { for (const k of Object.keys(p.grade)) if (!['tint', 'brightness'].includes(k)) pt(`grade.${k}`, 'unknown key'); if (typeof p.grade.tint !== 'string' || !/^#[0-9a-f]{6}$/i.test(p.grade.tint)) pt('grade.tint', 'must be a #rrggbb colour'); rng(p.grade, 'brightness', 0.2, 1.5, false, `${pa}.grade.brightness`); }
     if (!obj(p.bake)) pt('bake', 'must be an object {dir, layers}');
-    else { for (const k of Object.keys(p.bake)) if (!['dir', 'layers'].includes(k)) pt(`bake.${k}`, 'unknown key'); if (typeof p.bake.dir !== 'string' || !/^[A-Za-z0-9_]+$/.test(p.bake.dir)) pt('bake.dir', 'must be a plain folder name'); if (!Array.isArray(p.bake.layers) || p.bake.layers.some((l) => typeof l !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.(webp|png)$/i.test(l))) pt('bake.layers', 'must be a list of plain layer file names'); }
+    else { for (const k of Object.keys(p.bake)) if (!['dir', 'layers', 'base', 'crop'].includes(k)) pt(`bake.${k}`, 'unknown key'); if (typeof p.bake.dir !== 'string' || !/^[A-Za-z0-9_]+$/.test(p.bake.dir)) pt('bake.dir', 'must be a plain folder name'); if (!Array.isArray(p.bake.layers) || p.bake.layers.some((l) => typeof l !== 'string' || !/^[a-z0-9][a-z0-9._-]*\.(webp|png)$/i.test(l))) pt('bake.layers', 'must be a list of plain layer file names');
+      if (p.bake.base !== undefined && (typeof p.bake.base !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]*\.png$/.test(p.bake.base))) pt('bake.base', 'must be a plain .png file name');
+      if (p.bake.crop !== undefined) {   // a plate that is not a 4096 x 1640 designer plate (the west sunset plate: native 1981 px) bakes with its own crop, which overrides the ring's `bake` key by key
+        const c = p.bake.crop, ca = (k, m) => pt(`bake.crop.${k}`, m);
+        if (!obj(c)) pt('bake.crop', 'must be an object');
+        else {
+          for (const k of Object.keys(c)) if (!['sourceWidthPx', 'cropLeftPx', 'cropRightPx', 'topPx', 'bottomPx', 'mobileScale', 'quality'].includes(k)) ca(k, 'unknown key');
+          const cr = (k, lo, hi, int) => { if (!Number.isFinite(c[k]) || c[k] < lo || c[k] > hi || (int && !Number.isInteger(c[k]))) ca(k, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
+          cr('sourceWidthPx', 256, 16384, true); cr('cropLeftPx', 0, 2000, true); cr('cropRightPx', 0, 2000, true); cr('topPx', 0, 4000, true); cr('bottomPx', 1, 4000, true); cr('mobileScale', 0.1, 1, false); if (c.quality !== undefined) cr('quality', 40, 100, true);
+          const w = c.sourceWidthPx - c.cropLeftPx - c.cropRightPx, h = c.bottomPx - c.topPx;
+          if ([w, h].every(Number.isFinite) && Number.isFinite(s.radius) && Number.isFinite(r.spanDegrees) && Number.isFinite(s.plate && s.plate.sky && s.plate.sky.halfHeightMetres) && (!(w > 0 && h > 0) || s.radius * (r.spanDegrees * Math.PI / 180) * h / w > 2 * s.plate.sky.halfHeightMetres)) ca('bottomPx', 'the cropped picture is empty or its arc is taller than the sky cylinder');
+        }
+      }
+    }
   });
   return e;
 }

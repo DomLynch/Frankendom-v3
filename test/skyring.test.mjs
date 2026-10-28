@@ -10,7 +10,7 @@ import { angularGap, bearingOf, bearingTheta, createSkyRing, facingPlate, plates
 
 const STAGE = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8'));
 const SHIPPED = SKYLINE.ring;
-// The shipped west plate is off by Dom's call (2026-10-28, he dislikes the colosseum plate), but the plate geometry, bearing and lazy-load logic must still work for all four directions: R is the shipped row cloned with every plate on.
+// R is the shipped row cloned with every plate on (the geometry fixture: bearing, ramp and lazy-load logic must work for all four directions whatever a plate's own `on` is; the shipped west is on again).
 const R = { ...structuredClone(SHIPPED), plates: SHIPPED.plates.map((p) => ({ ...structuredClone(p), on: true })) };
 const plate = (id) => R.plates.find((p) => p.id === id);
 const bad = (mut) => { const s = structuredClone(STAGE); mut(s.skyline.ring); return validateFile('stage', s); };
@@ -27,19 +27,24 @@ test('the shipped ring row validates and bad rows are refused', () => {
     (r) => { r.bakedAspect = 3; }, (r) => { r.bake.cropLeftPx = -1; }, (r) => { r.plates = []; }, (r) => { r.plates[0].id = 'north'; }, (r) => { r.plates[1].id = 'east'; },
     (r) => { r.plates[1].compassDegrees = 90; }, (r) => { r.plates[0].compassDegrees = 360; }, (r) => { r.plates[0].mobile = '../x.webp'; }, (r) => { r.plates[0].desktop = r.plates[0].mobile; },
     (r) => { r.plates[0].rampLeftDegrees = 40; }, (r) => { r.plates[2].grade.tint = 'orange'; }, (r) => { r.plates[2].grade.brightness = 0; }, (r) => { r.plates[0].grade = null; },
-    (r) => { r.plates[0].extra = 1; }, (r) => { r.plates[0].on = 1; }, (r) => { r.plates[0].bake.layers = ['../x.png']; }, (r) => { delete r.plates[0].bake; }];
+    (r) => { r.plates[0].extra = 1; }, (r) => { r.plates[0].on = 1; }, (r) => { r.plates[0].bake.layers = ['../x.png']; }, (r) => { delete r.plates[0].bake; },
+    (r) => { r.plates[2].bake.crop.cropLeftPx = -1; }, (r) => { r.plates[2].bake.crop.bottomPx = 4000; }, (r) => { r.plates[2].bake.crop.extra = 1; }, (r) => { r.plates[2].bake.crop = 5; }, (r) => { r.plates[2].bake.base = '../x.png'; }, (r) => { r.plates[2].bake.crop.mobileScale = 2; }];
   for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad ring row #${i} is refused`);
   const none = structuredClone(STAGE); delete none.skyline.ring; assert.ok(validateFile('stage', none).length >= 1);
 });
 
-test('the shipped ring: east on, south on, west off (Dom 2026-10-28); facing west earns and loads no plate and falls back to the north strip', async () => {
-  assert.deepEqual(SHIPPED.plates.map((p) => [p.id, p.on]), [['east', true], ['south', true], ['west', false]]);
-  assert.equal(facingPlate(270, SHIPPED), 'north'); assert.equal(facingPlate(300, SHIPPED), 'north');
-  assert.deepEqual(platesToLoad(270, SHIPPED), []); assert.deepEqual(platesToLoad(340, SHIPPED), []);
-  assert.deepEqual(platesToLoad(180, SHIPPED).map((p) => p.id), ['south']);
-  const calls = []; const ring = createSkyRing({ row: SHIPPED, radius: 150, horizonY: -24, shade: 1, viewportWidth: 375, load: (f) => { calls.push(f); return Promise.resolve(tex()); } });
-  assert.doesNotThrow(() => { ring.request(270); ring.request(300); ring.update(new THREE.Vector3(), 0.05); });
-  await wait(); assert.deepEqual(calls, []); assert.equal(ring.state('west'), 'idle'); assert.equal(ring.group.children.length, 0); ring.dispose();
+// RE-PINNED (was: "west off", #194, Dom disliked the daytime colosseum plate). Dom 2026-10-28 then approved the NEW west plate ("Dreamy Floating Sky-City at Sunset", "i think is fine"), so the shipped west is ON again:
+// all three plates on, west already on the sunset palette (neutral grade: the old orange tint was for the colosseum), baked from its own native-resolution crop (1981 x 690, horizon y 690), and turning to west fetches it.
+test('the shipped ring: east, south and west all on; west is the native sunset plate with a neutral grade; facing west loads it (Dom 2026-10-28)', async () => {
+  assert.deepEqual(SHIPPED.plates.map((p) => [p.id, p.on]), [['east', true], ['south', true], ['west', true]]);
+  const w = SHIPPED.plates[2]; assert.deepEqual(w.grade, { tint: '#ffffff', brightness: 1 }, 'the new west is already sunset: no code grade'); assert.deepEqual(w.bake.layers, [], 'no planet layer');
+  assert.deepEqual(w.bake.crop, { sourceWidthPx: 1981, cropLeftPx: 0, cropRightPx: 0, topPx: 0, bottomPx: 690, mobileScale: 1 }, 'native 1981 px, cropped at the horizon (y 690 of 793)');
+  assert.equal(facingPlate(270, SHIPPED), 'west'); assert.equal(facingPlate(300, SHIPPED), 'west');
+  assert.deepEqual(platesToLoad(270, SHIPPED).map((p) => p.id), ['west']); assert.deepEqual(platesToLoad(340, SHIPPED).map((p) => p.id), ['west']); assert.deepEqual(platesToLoad(0, SHIPPED), []);
+  const calls = []; const ring = createSkyRing({ row: SHIPPED, radius: 150, horizonY: -24, shade: 1, viewportWidth: 375, load: (f) => { calls.push(f); return Promise.resolve(tex(1981, 690)); } });
+  ring.request(0); await wait(); assert.deepEqual(calls, [], 'nothing on the first heading');
+  ring.request(270); ring.update(new THREE.Vector3(), 0.05); await wait(); assert.deepEqual(calls, ['ring-west-m.webp']); assert.equal(ring.state('west'), 'fading'); assert.equal(ring.group.children.length, 1);
+  assert.ok(Math.abs(ring.group.children[0].geometry.parameters.height - ringSize(SHIPPED, 150, 1981, 690).height) < 1e-9, 'the arc takes the picture\'s own aspect'); ring.dispose();
 });
 
 test('the view bearing and the plate it faces: north 0, east 90, south 180, west 270 (clockwise), by the camera heading', () => {
@@ -94,7 +99,7 @@ test('geometry: each arc spans spanDegrees centred on its bearing, native aspect
     assert.ok(Math.abs(uv.getX(0) - 1) < 1e-9 && Math.abs(uv.getX(n)) < 1e-9, `${p.id}: u runs against theta`);
     assert.equal(ringAlpha(p, R, 0.5, 0.5), 1);
   }
-  const s = plate('south'); assert.equal(ringAlpha(s, R, 0, 0.5), 0); assert.ok(ringAlpha(s, R, 0.05, 0.5) > 0 && ringAlpha(s, R, 0.05, 0.5) < 1); assert.equal(ringAlpha(s, R, 1, 0.5), 1);   // south ramps in on its left, not its right
+  const s = plate('south'); assert.equal(ringAlpha(s, R, 0, 0.5), 0); assert.ok(ringAlpha(s, R, 0.05, 0.5) > 0 && ringAlpha(s, R, 0.05, 0.5) < 1); assert.equal(ringAlpha(s, R, 1, 0.5), 0); assert.ok(ringAlpha(s, R, 0.97, 0.5) > 0 && ringAlpha(s, R, 0.97, 0.5) < 1);   // south ramps in on its left and (since the west sunset plate, whose bottom sits 24 m higher than south's) out on its right over 6 of the 10 overlap degrees: a hard right edge showed as a vertical line under west's bottom edge in the stills
   assert.equal(ringAlpha(plate('west'), R, 1, 0.5), 0); assert.equal(ringAlpha(s, R, 0.5, 0), 0); assert.equal(ringAlpha(s, R, 0.5, 1), 0);
 });
 
@@ -119,8 +124,8 @@ test('createSkyline: ?skyring=v1 is today (no ring, the plate follows the view);
 
 test('the baked pictures ship: WebP at the sizes the rows say, the first visit fetches none of them, the weights are in the budget table', () => {
   const dim = (buf) => { const vp8x = buf.toString('latin1', 12, 16) === 'VP8X'; return vp8x ? [1 + (buf[24] | (buf[25] << 8) | (buf[26] << 16)), 1 + (buf[27] | (buf[28] << 8) | (buf[29] << 16))] : [buf.readUInt16LE(26) & 0x3fff, buf.readUInt16LE(28) & 0x3fff]; };
-  const B = R.bake, w = B.sourceWidthPx - B.cropLeftPx - B.cropRightPx, h = B.bottomPx - B.topPx;
   for (const p of R.plates) {
+    const B = { ...R.bake, ...(p.bake.crop || {}) }, w = B.sourceWidthPx - B.cropLeftPx - B.cropRightPx, h = B.bottomPx - B.topPx;   // west bakes from its own native crop (1981 x 690), same pixels on phone and desktop
     for (const [file, ww, hh, cap] of [[p.mobile, Math.round(w * B.mobileScale), Math.round(h * B.mobileScale), 150_000], [p.desktop, w, h, 400_000]]) {
       const buf = readFileSync(new URL(`../src/assets/skyline/${file}`, import.meta.url));
       assert.equal(buf.toString('latin1', 0, 4), 'RIFF'); assert.equal(buf.toString('latin1', 8, 12), 'WEBP'); assert.ok(buf.length < cap, `${file} ${buf.length}`);

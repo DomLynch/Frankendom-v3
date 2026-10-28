@@ -1,0 +1,164 @@
+{
+ "ring": {
+  "query": "",
+  "firstVisitRingFetches": 0,
+  "fetchedAfterTurning": [
+   "ring-south-m.0aeab12d.webp",
+   "ring-west-m.8c3e1a65.webp",
+   "ring-east-m.0201776e.webp"
+  ],
+  "shots": [
+   {
+    "bearing": 225,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 230,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 244,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 270,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 300,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 315,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 90,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ],
+     [
+      "skyring-east",
+      1
+     ]
+    ]
+   },
+   {
+    "bearing": 180,
+    "ringStates": [
+     [
+      "skyring-south",
+      1
+     ],
+     [
+      "skyring-west",
+      1
+     ],
+     [
+      "skyring-east",
+      1
+     ]
+    ]
+   }
+  ]
+ },
+ "v1": {
+  "query": "skyring=v1",
+  "firstVisitRingFetches": 0,
+  "fetchedAfterTurning": [],
+  "shots": [
+   {
+    "bearing": 225,
+    "ringStates": null
+   },
+   {
+    "bearing": 230,
+    "ringStates": null
+   },
+   {
+    "bearing": 244,
+    "ringStates": null
+   },
+   {
+    "bearing": 270,
+    "ringStates": null
+   },
+   {
+    "bearing": 300,
+    "ringStates": null
+   },
+   {
+    "bearing": 315,
+    "ringStates": null
+   },
+   {
+    "bearing": 90,
+    "ringStates": null
+   },
+   {
+    "bearing": 180,
+    "ringStates": null
+   }
+  ]
+ }
+}

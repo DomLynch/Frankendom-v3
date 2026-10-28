@@ -11,15 +11,17 @@ const sharp = createRequire(process.env.SHARP_FROM + '/x.js')('sharp');
 const ring = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8')).skyline.ring, B = ring.bake;
 const [plates, outDir = new URL('../src/assets/skyline/', import.meta.url).pathname] = process.argv.slice(2);
 if (!plates) { console.error('usage: SHARP_FROM=... node scripts/skyring-bake.mjs <plates dir> [out dir]'); process.exit(2); }
-const W = B.sourceWidthPx - B.cropLeftPx - B.cropRightPx, H = B.bottomPx - B.topPx;
 for (const p of ring.plates) {
-  const dir = `${plates}/${p.bake.dir}`;
-  let img = sharp(`${dir}/02_base_clean_4096x1640.png`).removeAlpha();
+  if (process.env.ONLY && !process.env.ONLY.split(',').includes(p.id)) continue;   // ONLY=west bakes just that plate
+  // A plate that is not a 4096 x 1640 designer plate (the west sunset plate: native 1981 px, no feathered frame, horizon at y 690) carries `bake.base` (its master PNG) and `bake.crop`
+  // (sourceWidthPx, cropLeftPx, cropRightPx, topPx, bottomPx, mobileScale, quality: each optional, overriding the ring's `bake` key by key).
+  const dir = `${plates}/${p.bake.dir}`, C = { ...B, ...(p.bake.crop || {}) }, W = C.sourceWidthPx - C.cropLeftPx - C.cropRightPx, H = C.bottomPx - C.topPx;
+  let img = sharp(`${dir}/${p.bake.base || '02_base_clean_4096x1640.png'}`).removeAlpha();
   if (p.bake.layers.length) img = sharp(await img.composite(p.bake.layers.map((l) => ({ input: `${dir}/${l}` }))).png().toBuffer());
-  const crop = await img.extract({ left: B.cropLeftPx, top: B.topPx, width: W, height: H }).png().toBuffer();
-  const desk = await sharp(crop).webp({ quality: B.quality, effort: 6 }).toBuffer();
-  const mw = Math.round(W * B.mobileScale), mh = Math.round(H * B.mobileScale);
-  const mob = await sharp(crop).resize(mw, mh, { kernel: 'lanczos3' }).webp({ quality: B.quality, effort: 6 }).toBuffer();
+  const crop = await img.extract({ left: C.cropLeftPx, top: C.topPx, width: W, height: H }).png().toBuffer();
+  const desk = await sharp(crop).webp({ quality: C.quality, effort: 6 }).toBuffer();
+  const mw = Math.round(W * C.mobileScale), mh = Math.round(H * C.mobileScale);
+  const mob = await (mw === W ? sharp(crop) : sharp(crop).resize(mw, mh, { kernel: 'lanczos3' })).webp({ quality: C.quality, effort: 6 }).toBuffer();
   writeFileSync(`${outDir}/${p.desktop}`, desk); writeFileSync(`${outDir}/${p.mobile}`, mob);
   console.log(p.id, `${p.desktop} ${W}x${H} ${desk.length} B`, `${p.mobile} ${mw}x${mh} ${mob.length} B`);
 }
