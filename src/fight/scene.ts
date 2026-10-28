@@ -112,6 +112,7 @@ const FOE_EQUIP_URLS: Record<string, string> = {
   '../assets/weapons/foe/axe.glb': new URL('../assets/weapons/foe/axe.glb', import.meta.url).href,   // Arachne's axe (library axe1h-208)
   '../assets/weapons/foe/halberd.glb': new URL('../assets/weapons/foe/halberd.glb', import.meta.url).href,   // Sir Reginald's halberd (library polearm-200; the castle-guard profile row)
   '../assets/weapons/foe/sword.glb': new URL('../assets/weapons/foe/sword.glb', import.meta.url).href,   // Ryo's sword (library sword1h-200): fetched only with his body
+  '../assets/weapons/foe/mace.glb': new URL('../assets/weapons/foe/mace.glb', import.meta.url).href,   // Lord Gourd's mace (library mace-204): the pumpkinhulk profile row, fetched only with his body
 };
 const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
 const offhandUrlOf = (row?: { offhand: { kind: string; file?: string } | null }): string | undefined => (row?.offhand?.kind === 'file' ? FOE_OFFHAND_URLS[`../assets/weapons/foe/${row.offhand.file}.glb`] : undefined);
