@@ -4,12 +4,11 @@
 // globalThis.__v3Mech (the mechanic's view) in the page. Exit 1 on a failed check; stills land in <out dir>.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { ringedZoneFor } from '../src/zone/zone-rows.ts';
 
 const [base, out, query = 'opener=off'] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/mechanic-nan-check.mjs <base url> <out dir> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const NANP = ringedZoneFor('').spawns.find((s) => s.kind === 'sporty-granny').position, NAN = [NANP.x, NANP.z];   // her ring spot in the sim's frame, from the rows (the ring distances are rows, so no number is copied here)
+let NAN = [0, 0];   // her ring spot in the sim's frame, read off the live zone once the page is up (the ring distances are rows, so no number is copied here)
 const browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
 const pageErrors = [];
@@ -17,6 +16,7 @@ page.on('pageerror', (e) => { pageErrors.push(e.message); console.error('pageerr
 await page.goto(`${base}/?${query}`);
 await page.waitForFunction(() => globalThis.__v3Zone && document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
 await page.waitForTimeout(2000);
+NAN = await page.evaluate(() => { const s = globalThis.__v3Zone.spawns.find((o) => /sporty-granny/.test(o.id)); return [s.x, s.z]; });
 const key = (c, t) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [c, t]);
 const state = () => page.evaluate(() => { const z = globalThis.__v3Zone, f = globalThis.__v3Fight, m = globalThis.__v3Mech; return { current: z?.current, engaged: z?.engaged, hero: f && [+f.fighter.x.toFixed(2), +f.fighter.z.toFixed(2)], foe: f && [+f.enemy.x.toFixed(2), +f.enemy.z.toFixed(2)], heroHp: f?.playerHealth, stage: m?.stage ?? 'none', lock: !!m?.lock, tick: f?.duel.tick }; });
 const keepAlive = () => page.evaluate(() => { const f = globalThis.__v3Fight; if (f) { const h = f.duel.fighters[0]; h.health = h.maxHealth; } });

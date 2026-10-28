@@ -66,8 +66,11 @@ test('the validator names a bad row', () => {
 
 test('stood still at 4 m: the hold, the frozen line, the lunge, the hook, the pull, the poke, then the cooldown', () => {
   const f = fight(4);
-  let lockedAt = null;
-  for (let t = 0; t < 700; t++) { const v = f.step(); if (v?.stage === 'tell' && v.lock && lockedAt === null) lockedAt = f.practice.duel.tick; }
+  let lockedAt = null, pulledGap = null;
+  for (let t = 0; t < 700; t++) {
+    const v = f.step(); if (v?.stage === 'tell' && v.lock && lockedAt === null) lockedAt = f.practice.duel.tick;
+    if (v?.stage === 'follow' && pulledGap === null) pulledGap = distance(f.practice.duel.fighters[0].body, f.practice.duel.fighters[1].body);   // measured when the pull ends: a second cycle may already be backing her off by the end of the run
+  }
   const names = f.stages.map((s) => s[1]);
   assert.deepEqual(names.slice(0, 6), ['idle', 'tell', 'lunge', 'drag', 'follow', 'idle'], JSON.stringify(f.stages));
   const at = (n) => f.stages.find((s) => s[1] === n)[0];
@@ -78,7 +81,7 @@ test('stood still at 4 m: the hold, the frozen line, the lunge, the hook, the pu
   assert.ok(hit && hit[3] > 0, 'it landed through the sim\'s own hit row');
   const poke = f.log.find((e) => (e[1] === 'Hit' || e[1] === 'Blocked') && e[2] === 'thrust');
   assert.ok(poke && poke[0] > hit[0], 'the follow-up poke came after the hook');
-  assert.ok(distance(f.practice.duel.fighters[0].body, f.practice.duel.fighters[1].body) < ROW.stopGap + 0.5, 'he was pulled in to her point');
+  assert.ok(pulledGap !== null && pulledGap < ROW.stopGap + 0.5, `he was pulled in to her point (gap ${pulledGap})`);
   assert.ok(f.practice.duel.fighters[0].health > 0, 'no instant kill');
   const second = f.stages.filter((s) => s[1] === 'tell');
   if (second.length > 1) assert.ok(second[1][0] - at('lunge') >= ROW.cooldownTicks - 120, 'the cooldown row spaces the next one');
