@@ -111,7 +111,7 @@ const FOE_EQUIP_URLS: Record<string, string> = {
   '../assets/weapons/foe/maul.glb': new URL('../assets/weapons/foe/maul.glb', import.meta.url).href,   // Gargantua's maul (data/boss-weapons.json; library hammer-01): fetched only with his body
   '../assets/weapons/foe/axe.glb': new URL('../assets/weapons/foe/axe.glb', import.meta.url).href,   // Arachne's axe (library axe1h-208)
   '../assets/weapons/foe/halberd.glb': new URL('../assets/weapons/foe/halberd.glb', import.meta.url).href,   // Sir Reginald's halberd (library polearm-200; the castle-guard profile row)
-};
+  '../assets/weapons/foe/sword.glb': new URL('../assets/weapons/foe/sword.glb', import.meta.url).href,   // Ryo's sword (library sword1h-200): fetched only with his body};
 const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
 const offhandUrlOf = (row?: { offhand: { kind: string; file?: string } | null }): string | undefined => (row?.offhand?.kind === 'file' ? FOE_OFFHAND_URLS[`../assets/weapons/foe/${row.offhand.file}.glb`] : undefined);
 // The Pitborn (foe-pick.ts, Dom 2026-10-26) really fights with the cleaver: the same file, grafted over the trident his Minotaur body bakes.
