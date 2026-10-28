@@ -28,7 +28,7 @@ test('the table validates, covers every difficulty row, and star 0 is the identi
 test('the default first fight is byte for byte the one without the feature (star 0 changes nothing)', () => {
   for (const kind of KINDS) {
     const plain = ctxOf(), withStars = ctxOf({ stars: STARS });
-    const a = kindFightFor(kind, plain), b = kindTable(withStars)(kind), c = kindTable(withStars)(kind, 0);
+    const table = kindTable(withStars), a = kindFightFor(kind, plain), b = table(kind), c = table(kind, 0);
     assert.equal(digest(a), digest(b)); assert.equal(b, c); assert.equal(b.star, undefined);
     assert.equal(digest(kindPractice(a, plain, 7)), digest(kindPractice(b, withStars, 7)));
   }
