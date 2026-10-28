@@ -1,0 +1,48 @@
+{
+  "about": "BIOME RINGS (Dom 2026-10-28, 'no switches, just get everything live in game'): the zone's spawns are placed in rings by DISTANCE FROM THE DUEL PIT'S CENTRE (where the hero first stands; metres; src/zone/rings.ts). Ring 1 is the three bosses the zone row (data/zones/zone1.row.json) already places, byte for byte (Gargantua, Arachne, Minotaur; a test pins them): this file adds no spawn to it. Rings 2 and 3 take the nine merged-but-unwired bodies. Nothing here is a switch: it is on, and every number is a row, validated at load (src/zone/rings.ts validateRings) and again by test/rings.test.mjs. RING ROWS: `minDist`..`maxDist` the band a ring's spawns stand in (rings do not overlap; ring 1 covers the zone row's own three); `blendAtMetres` the distance at which the ring's LOOK is full (between two rings the look is mixed by distance, so the ground and the sky change gradually, never in a step); `groundTint` a #rrggbb that MULTIPLIES the sand's colour (data/stage.json ground.color; #ffffff = untouched, so ring 1 is today's floor); `skyPlates` a brightness weight 0..2 for each of the sky ring's plates east, south and west (data/stage.json skyline.ring.plates; the existing pictures only, no new art; north is the page's own plate and is not touched); `health` and `damage` the ring's difficulty multipliers, laid over every boss of the ring as a ?tune= multiplier (src/tune.ts; they multiply the profile and difficulty rows' scales, they do not replace them; 1 = none); `loadAfterKillMetres` how near the hero must come before a boss of this ring is FETCHED once a first kill has happened (null = respawn.json world.loadRadiusAfterKillMetres, ring 1's own rule; the near-load, world.loadWithinMetres, is unchanged for every ring), so a ring 2 or 3 body is never fetched on the first visit and not in the background after the first kill either, only when the hero walks up to it. `spawns`: which boss `kind`s stand in the ring, how many (`count`), and where: `angleDeg` clockwise from north (the -Z axis, dead ahead at the first heading) and `distance` metres from the pit's centre (inside minDist..maxDist), instance i of a count at angleDeg + i x stepDeg. Positions are rounded to 1/roundTo of a metre. BOSS ROWS (`bosses`): one per ring boss. `kind` is its data/profiles.json row id (a clone of Arachne's shieldmaiden or the Minotaur's pitborn at the same stats and health, 137 hp at the default pick; the profile row says which); `body` its data/rig.json files stem, drawn through the zone spawn's per-spawn `body`; `name` is the HUD name (a placeholder from the body's stem where Dom has not named it yet); `respawnSeconds`, `aggro`, `leash`, `roam`, `campSize` become the zone spawn's rows; `mechanic` is the ONE signature move the boss gets later, null today (not built). A body without a cut manifest or a data/physics.json opponents row (all nine) dies the plain ragdoll way, with no error (docs/BOSS-BODIES.md). Walk distance: ring 2 stands 70 to 100 m and ring 3 110 to 150 m from the pit, spaced far past respawn.json world.minSpacing, so the camp stays quiet; respawn.json world.spreadRadiusMetres was raised to cover ring 3's reach.",
+  "roundTo": 100,
+  "halfTurnDegrees": 180,
+  "limits": {
+    "about": "Validation ranges for the rows above.",
+    "distance": [0, 400],
+    "multiplier": [0.1, 4],
+    "plateWeight": [0, 2],
+    "angleDeg": [-360, 360],
+    "count": [1, 8],
+    "respawnSeconds": [5, 3600]
+  },
+  "rings": [
+    {
+      "id": "ring-1", "minDist": 0, "maxDist": 60, "blendAtMetres": 30,
+      "groundTint": "#ffffff", "skyPlates": { "east": 1, "south": 1, "west": 1 },
+      "health": 1, "damage": 1, "loadAfterKillMetres": null,
+      "spawns": []
+    },
+    {
+      "id": "ring-2", "minDist": 70, "maxDist": 100, "blendAtMetres": 85,
+      "groundTint": "#d9b98f", "skyPlates": { "east": 1.1, "south": 0.9, "west": 1.1 },
+      "health": 1.25, "damage": 1.15, "loadAfterKillMetres": 40,
+      "spawns": [
+        { "kind": "pumpkinhulk", "count": 1, "angleDeg": 20, "stepDeg": 0, "distance": 85 },
+        { "kind": "kachujin", "count": 1, "angleDeg": 200, "stepDeg": 0, "distance": 85 },
+        { "kind": "castle-guard", "count": 1, "angleDeg": 290, "stepDeg": 0, "distance": 85 }
+      ]
+    },
+    {
+      "id": "ring-3", "minDist": 110, "maxDist": 150, "blendAtMetres": 130,
+      "groundTint": "#a99ab8", "skyPlates": { "east": 0.8, "south": 1.2, "west": 0.8 },
+      "health": 1.5, "damage": 1.3, "loadAfterKillMetres": 40,
+      "spawns": [
+        { "kind": "parasite", "count": 1, "angleDeg": 72, "stepDeg": 0, "distance": 130 },
+        { "kind": "anime-boy-black", "count": 1, "angleDeg": 288, "stepDeg": 0, "distance": 130 }
+      ]
+    }
+  ],
+  "bosses": [
+    { "kind": "pumpkinhulk", "name": "Lord Gourd", "body": "pumpkinhulk", "respawnSeconds": 90, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
+    { "kind": "kachujin", "name": "Kachujin", "body": "kachujin", "respawnSeconds": 90, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
+    { "kind": "castle-guard", "name": "Sir Reginald", "body": "castle-guard", "respawnSeconds": 90, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
+    { "kind": "parasite", "name": "The Titan's Envoy", "body": "parasite", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
+    { "kind": "anime-boy-black", "name": "Ryo", "body": "anime-boy-black", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null }
+  ]
+}

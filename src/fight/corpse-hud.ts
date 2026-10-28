@@ -20,9 +20,11 @@ export function mountCorpseHud(doc: Doc, rows: CorpseRows): CorpseHud {
     + `.cr-pile{position:fixed;left:0;top:0;width:${m.ringPx}px;height:${m.ringPx * 0.4}px;margin:${-m.ringPx * 0.2}px 0 0 ${-m.ringPx / 2}px;z-index:${m.zIndex};pointer-events:none;opacity:0;border:${m.widthPx}px solid ${m.colour};border-radius:50%;will-change:transform,opacity}`
     + `.cr-pile::after{content:"";position:absolute;left:50%;bottom:50%;width:${m.widthPx}px;height:${m.beamPx}px;margin-left:${-m.widthPx / 2}px;background:linear-gradient(to top,${m.colour},transparent)}`;
   doc.head.append(style);
-  let coinEl: HTMLElement | null = null, pileEl: HTMLElement | null = null, lastText = '';
+  let coinEl: HTMLElement | null = null, pileEl: HTMLElement | null = null, lastText = '', lastCarried = 0, lastBanked = 0;
   return {
     coins(carried, banked) {
+      if (carried === lastCarried && banked === lastBanked) return;   // unchanged: no string is built (this runs every frame)
+      lastCarried = carried; lastBanked = banked;
       const text = carried > 0 || banked > 0 ? `${h.carried} ${carried}${banked > 0 ? ` · ${h.banked} ${banked}` : ''}` : '';
       if (text === lastText) return;
       lastText = text;
