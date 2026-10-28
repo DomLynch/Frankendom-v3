@@ -106,7 +106,7 @@ export function mountRadar(doc: Doc, src: RadarSources, rows: RadarRows = RADAR,
   const spot: Spot = { x: 0, y: 0, clamped: false };
   let hx = 0, hz = 0, yaw = 0, pass: 'dead' | 'live' = 'dead';
   const fl = rows.flash;
-  let armedAt = -1, phase = -1;   // armedAt: seconds (performance.now) when the last boss fell, -1 = not flashing; phase: flashPhase of this frame
+  let armed = false, armedAt = 0, phase = -1;   // armed: a boss fell and no fight has begun since; armedAt: seconds (performance.now) of that kill; phase: flashPhase of this frame
   const dot = (x: number, z: number, cls: RadarClass) => {
     if ((cls === 'dead') !== (pass === 'dead')) return;
     if (cls === 'dead' && !rows.classes.dead.show) return;
@@ -128,7 +128,7 @@ export function mountRadar(doc: Doc, src: RadarSources, rows: RadarRows = RADAR,
     frame(heroX: number, heroZ: number, viewYaw: number): void {
       if (!ctx || doc.hidden) return;
       hx = heroX; hz = heroZ; yaw = viewYaw;
-      phase = armedAt < 0 ? -1 : flashPhase(fl, performance.now() / 1000 - armedAt);
+      phase = !armed ? -1 : flashPhase(fl, performance.now() / 1000 - armedAt);
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0); ctx.clearRect(0, 0, inner, inner);
       const hs = rows.hero.sizePx;   // the hero: a small chevron at the centre, tip up (the camera looks up the disc)
       ctx.globalAlpha = rows.hero.alpha; ctx.fillStyle = rows.hero.colour;
@@ -137,10 +137,10 @@ export function mountRadar(doc: Doc, src: RadarSources, rows: RadarRows = RADAR,
       ctx.globalAlpha = 1;
     },
     /** A boss fell: the live red dots start pulsing at once. Arming again restarts the rhythm. */
-    armFlash(nowMs: number = performance.now()): void { if (fl.on) armedAt = nowMs / 1000; },
+    armFlash(nowMs: number = performance.now()): void { if (fl.on) { armed = true; armedAt = nowMs / 1000; } },
     /** The next fight began: the pulsing stops. */
-    stopFlash(): void { armedAt = -1; phase = -1; },
-    get flashing(): boolean { return armedAt >= 0; },
+    stopFlash(): void { armed = false; phase = -1; },
+    get flashing(): boolean { return armed; },
     /** The phase drawn on the last frame (-1 between pulses or not flashing): the stills wait on it. */
     get flashPhase(): number { return phase; },
     remove(): void { box.remove(); },
