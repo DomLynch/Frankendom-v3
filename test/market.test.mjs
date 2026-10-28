@@ -14,7 +14,8 @@ import { mountMarket } from '../src/fight/market-hook.ts';
 
 const read = (f) => JSON.parse(readFileSync(new URL(`../data/${f}.json`, import.meta.url), 'utf8'));
 const P = read('progression'), STARS = read('stars'), PROFILES = read('profiles'), RAW = read('market'), CORPSE = read('corpse-run');
-const WEAPONS = Object.keys(JSON.parse(readFileSync(new URL('../src/fight/weapon-defs.json', import.meta.url), 'utf8')).weapons);
+const WDEFS = JSON.parse(readFileSync(new URL('../src/fight/weapon-defs.json', import.meta.url), 'utf8')).weapons;
+const WEAPONS = Array.isArray(WDEFS) ? WDEFS.map((w) => w.id) : Object.keys(WDEFS);
 const IDS = PROFILES.profiles.map((p) => p.id), CAP = CORPSE.coins.cap, clone = (o) => JSON.parse(JSON.stringify(o));
 const CTX = { weaponIds: WEAPONS, tiers: STARS.levels.map((l) => l.star) };
 const store = () => { const m = new Map(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v), m }; };
