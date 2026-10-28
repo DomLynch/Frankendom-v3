@@ -43,8 +43,8 @@ test('the shipped row pinned: id, band, respawn, areas, the spawn', () => {
   assert.deepEqual(ROW.respawn, { x: 200, z: 54, facing: 3.142, downSeconds: 2, died: 'You died' });
   assert.deepEqual(ROW.areas.map((a) => [a.id, a.pvp, a.spawnsAllowed]), [['yard', 'off', false], ['duel-pit', 'on', true], ['field', 'on', true]]);
   assert.deepEqual(ROW.spawns.map((x) => [x.id, x.respawnSeconds]), [['yard-pitborn', 40], ['pit-pitborn-east', 60], ['pit-pitborn-west', 90]], 'three bosses, each its own timer (live-zone phase 1b)');
-  assert.deepEqual(ROW.spawns.map((x) => x.kind), ['pitborn', 'gargantua', 'arachne'], 'spawn 1 Pitborn; spawns 2 and 3 the Gargantua and the Arachne (Dom 2026-10-28; was three Pitborn)');
-  assert.equal(ROW.spawns[0].kind, FIGHT.opponent, "spawn 1 is still the opponent data/fight.json names (the single fight is unchanged)");
+  assert.deepEqual(ROW.spawns.map((x) => x.kind), ['gargantua', 'arachne', 'pitborn'], 'boss order (Dom 2026-10-28): spawn 1 the Gargantua, spawn 2 the Arachne, spawn 3 the Minotaur');
+  assert.equal(JSON.parse(readFileSync(new URL('../data/profiles.json', import.meta.url), 'utf8')).profiles.find((p) => p.id === ROW.spawns[0].kind).opponent, FIGHT.opponent, 'spawn 1 is the opponent data/fight.json names (the single fight is the Gargantua)');
   for (const x of ROW.spawns) {
     assert.ok(PROFILE_IDS.includes(x.kind), 'kind is a profile row id');
     assert.equal(x.roster, true);

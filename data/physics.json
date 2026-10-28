@@ -12,7 +12,7 @@
     { "id": "pitborn", "body": "gargantua", "measure": { "106": "physics/bodies/gargantua-106.measure.json" }, "helmet": false, "gear": {} },
     { "id": "pitborn", "body": "arachne", "measure": { "106": "physics/bodies/arachne-106.measure.json" }, "helmet": false, "gear": {} },
     { "id": "executioner", "body": "gargantua", "measure": { "106": "physics/bodies/gargantua-106.measure.json" }, "helmet": false, "gear": {} },
-    { "id": "executioner", "body": "minotaur", "measure": { "65": "physics/bodies/minotaur.measure.json", "106": "physics/bodies/minotaur-106.measure.json" }, "helmet": false, "gear": {} },
+    { "id": "executioner", "body": "minotaur", "measure": { "106": "physics/bodies/minotaur-106.measure.json" }, "helmet": false, "gear": {} },
     { "id": "executioner", "body": "arachne", "measure": { "106": "physics/bodies/arachne-106.measure.json" }, "helmet": false, "gear": {} }
   ],
   "hero": { "id": "psyche", "body": "psyche", "measure": { "106": "physics/bodies/psyche-106.measure.json" }, "helmet": false, "gear": {} },

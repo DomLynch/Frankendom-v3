@@ -17,10 +17,10 @@ const INDEX = JSON.parse(readFileSync(new URL('../data/zones/index.json', import
 const kinds = PROFILES.profiles.map((p) => p.id);
 const clone = (x) => structuredClone(x);
 
-test('the shipped zone names no spawn body (the body is the kind\'s profile row): spawn 1 Pitborn/Minotaur, spawn 2 Gargantua, spawn 3 Arachne, every body passes the profile body check', () => {
+test('the shipped zone names no spawn body (the body is the kind\'s profile row): spawn 1 Gargantua, spawn 2 Arachne, spawn 3 Pitborn/Minotaur, every body passes the profile body check', () => {
   setBossBody('');
   // Was: every spawn draws minotaur-106. Now only spawn 1 does; spawns 2 and 3 draw their own 106 bodies named on their profile rows (Dom 2026-10-28).
-  const want = { 'yard-pitborn': ['pitborn', 'minotaur-106'], 'pit-pitborn-east': ['gargantua', 'gargantua-106'], 'pit-pitborn-west': ['arachne', 'arachne-106'] };
+  const want = { 'yard-pitborn': ['gargantua', 'gargantua-106'], 'pit-pitborn-east': ['arachne', 'arachne-106'], 'pit-pitborn-west': ['pitborn', 'minotaur-106'] };   // boss order (Dom 2026-10-28)
   for (const s of ZONE.spawns) {
     assert.ok(!('body' in s), `${s.id} carries no body row`);
     assert.deepEqual([s.kind, spawnBodyFile(s.kind, 'ignored', undefined)], want[s.id], s.id);
@@ -77,7 +77,7 @@ test('the scene: rig cache keyed by body file stem, the live body takes the old 
   assert.match(src, /const bodyAssets = new Map<string,/, 'the cache is keyed by the body id (its 106 file stem)');
   assert.match(src, /if \(file === liveBody\) return warriors\.spawnFoe\(\);/, 'a spawn in the live body is the opponent\'s own spawnFoe, as before');
   assert.match(src, /warriors\.spawnBody\(asset, weapon, bossOfBody\(file\)\?\.clipsAs\)/, 'a body is armed with its boss weapon row (data/boss-weapons.json), else the page\'s foe weapon (weaponOfBody)');
-  assert.match(src, /const weaponOfBody = \(file: string\): WeaponId \| undefined => bossOfBody\(file\)\?\.weapon \?\? builtFoeWeapon;/, 'no row: the page-wide foe weapon, as before');
+  assert.match(src, /const weaponOfBody = \(file: string\): WeaponId \| undefined => bossOfBody\(file\)\?\.weapon \?\? \(ownerOfBody\(file\) \? bossOpponent\(OPPONENTS\[ownerOfBody\(file\)! as OpponentId\], pageSearch\)\.weapon : builtFoeWeapon\);/, 'no boss row: the weapon of the archetype whose profile row names the body (the Minotaur\'s cleaver, since he is no longer the live rig), else the page-wide foe weapon');
   assert.match(src, /if \(!actor\) continue;/, 'a body still loading is not drawn yet');
   const chars = readFileSync(new URL('../src/fight/characters.ts', import.meta.url), 'utf8');
   assert.match(chars, /spawnBody: \(body: FighterAsset, weapon: WeaponId, clipsAs: WeaponId = weapon\) => create\(true,/, 'clipsAs defaults to the weapon: every body without a boss row takes its own clip family');

@@ -18,15 +18,15 @@ const ids = read('../data/profiles.json').profiles.map((p) => p.id);   // re-pin
 const loop = (patch) => { const d = structuredClone(ROWS); patch(d); return d; };
 const zone = (patch) => { const z = structuredClone(ZONE); patch(z); return z; };
 
-test('the rows are pinned: roam on, hand-over 4 s, the zone row\'s spawn (Pitborn, 40 s) and hero respawn (2 s, "You died")', () => {
+test('the rows are pinned: roam on, hand-over 4 s, the zone row\'s spawn (Gargantua, 40 s) and hero respawn (2 s, "You died")', () => {
   assert.deepEqual({ roam: ROWS.postKill.roam, startAfterSeconds: ROWS.postKill.startAfterSeconds }, { roam: true, startAfterSeconds: 4 });
   assert.deepEqual(ROWS.flag, { query: 'postkill', off: 'v1' });
-  assert.equal(ZONE.spawns[0].kind, FIGHT.opponent, 'the zone row\'s spawn kind is the page fight\'s opponent');
+  assert.equal(PROFILES.profiles.find((p) => p.id === ZONE.spawns[0].kind).opponent, FIGHT.opponent, 'the zone row\'s spawn 1 kind is the page fight\'s opponent (the Gargantua: executioner)');
   assert.equal(ZONE.spawns[0].respawnSeconds, 40); assert.equal(ZONE.respawn.downSeconds, 2); assert.equal(ZONE.respawn.died, 'You died');
   for (const dup of ['spawns', 'respawn', 'corpse']) assert.equal(ROWS[dup], undefined, `${dup} is the zone row's / Physics Dev's row, not repeated here`);
   assert.ok(read('../data/physics.json').corpse.keepSeconds > 0, 'one corpse timer: data/physics.json corpse.keepSeconds (ragdoll.leaveCorpse)');
   const z = zoneLoopFor(ZONE, '', ids);
-  assert.deepEqual(z, { walkRadius: OPEN_RADIUS, cameraMetres: 8, startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, fallSeconds: 1.4, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'pitborn', respawnSeconds: 40 } });
+  assert.deepEqual(z, { walkRadius: OPEN_RADIUS, cameraMetres: 8, startAfterSeconds: 4, minDistance: 3.25, diedSeconds: 2, fallSeconds: 1.4, zone: ZONE.id, spawn: { id: ZONE.spawns[0].id, kind: 'gargantua', respawnSeconds: 40 } });
 });
 
 test('bad rows are refused', () => {
@@ -169,7 +169,7 @@ test('the page wires the fall: main tells the scene the row (0 without the loop)
 
 test('the page wires the loop: the zone row via zoneFor, the corpse left BEFORE his sim body resets, the HUD drops the Rematch in the zone', () => {
   const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8'), main = src('../src/client/main.ts'), hud = src('../src/fight/hud.ts');
-  assert.match(main, /zoneLoopFor\(zoneFor\(search\), search/);
+  assert.match(main, /zoneLoopFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\), search/);
   assert.match(main, /zone: heroStands\(\) \|\| heroDied\(\)/);
   assert.match(main, /diedSeconds\) \{ const who = killedBy \?\? current; rematch\(poseFor\(who, heroStart\), who\); \}/);
   assert.match(main, /if \(ZONE\) view\.respawnFoe\(\);[^\n]*\n\s*seed = nextSeed/);

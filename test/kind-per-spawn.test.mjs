@@ -37,8 +37,8 @@ const intentOf = (p, t) => ({ ...idleIntent(), action: p.phase === 'sheathed' &&
 
 /** The fight the page built before this PR: one page-wide opponent id (main.ts make(), copied), for the equivalence below. */
 function legacyMake(seed, p) {
-  const opponentId = FIGHT.opponent, opponent = OPPONENTS[opponentId];
-  const resolved = resolveFight({ profile: FIGHT.profile, difficulty: DIFF.default }, PROFILES.profiles, DIFF, BRAINS.brains);
+  const opponentId = FIGHT.order.opponent, opponent = OPPONENTS[opponentId];   // the Minotaur's fight: the page-wide fight before the boss reorder (?order=v1)
+  const resolved = resolveFight({ profile: FIGHT.order.profile, difficulty: DIFF.default }, PROFILES.profiles, DIFF, BRAINS.brains);
   const body = opponentAt(opponent, FIGHT.level);
   const made = initialPractice(seed, scaledOpponent(body, resolved), FIGHT.weapon, FIGHT.skill, recordSpecials({ specials: FIGHT.specials, level: FIGHT.level, opponent: opponentId }), undefined, FIGHT.stance, p, undefined, undefined, undefined, undefined, FIGHT.skill2);
   const aiProfile = profileFor(profileAt(opponent, FIGHT.level), resolved, false);
@@ -53,15 +53,15 @@ test('the data: the fight row names the profile whose opponent it fights, and ev
   assert.deepEqual(kindIds(PROFILES.profiles), PROFILES.profiles.map((p) => p.id));
 });
 
-test('(c) the default zone: spawn 1 (Pitborn) is the old page-wide fight, digest for digest; spawns 2 and 3 are the Gargantua and the Arachne (Dom 2026-10-28)', () => {
+test('(c) the default zone: the Pitborn (spawn 3 since the boss reorder) is the old page-wide fight, digest for digest; spawns 1 and 2 are the Gargantua and the Arachne (Dom 2026-10-28)', () => {
   // Re-pinned 2026-10-28: was three Pitborn spawns resolving to ONE kind object. Spawns 2 and 3 are different bosses on purpose; the Pitborn spawn and the no-zone single fight are asserted exactly as before.
-  assert.deepEqual(ZONE.spawns.map((s) => s.kind), ['pitborn', 'gargantua', 'arachne']);
+  assert.deepEqual(ZONE.spawns.map((s) => s.kind), ['gargantua', 'arachne', 'pitborn']);
   const kinds = kindTable(CTX), spots = spotsFor(ZONE);
   assert.equal(new Set(spots.map((s) => kinds(s.kind))).size, 3, 'three kinds, three kind objects');
-  assert.deepEqual(spots.map((s) => kinds(s.kind).opponentId), ['pitborn', 'executioner', 'shieldmaiden']);
-  assert.equal(kinds('pitborn'), kinds(spots[0].kind), 'spawn 1 is the one Pitborn kind object');
+  assert.deepEqual(spots.map((s) => kinds(s.kind).opponentId), ['executioner', 'shieldmaiden', 'pitborn']);
+  assert.equal(kinds('pitborn'), kinds(spots[2].kind), 'spawn 3 is the one Pitborn kind object');
   const k = kinds('pitborn'), old = legacyMake(731, pose);
-  assert.equal(k.opponentId, FIGHT.opponent); assert.equal(k.scaled, true);
+  assert.equal(k.opponentId, FIGHT.order.opponent); assert.equal(k.scaled, true);
   const made = kindPractice(k, CTX, 731, pose);
   assert.deepEqual(made, old.practice, 'the opening practice is the old one, field for field');
   assert.deepEqual(k.ai, old.aiProfile, 'and so is the brain');
@@ -73,7 +73,7 @@ test('(c) ?pitborn=v1 stays the Centurion for every kind, difficulty off, V1 bra
   assert.equal(k.opponentId, FIGHT.opponentV1.opponent); assert.equal(k.scaled, false);
   assert.equal(g.opponentId, FIGHT.opponentV1.opponent, 'the legacy toggle is page-wide on purpose: every spawn is the Centurion');
   assert.deepEqual(k.ai, g.ai);
-  assert.deepEqual(kindFightFor(FIGHT.profile, CTX).opponent, OPPONENTS[FIGHT.opponent], 'no zone: the fight row\'s profile');
+  assert.equal(kindFightFor(FIGHT.profile, CTX).opponentId, FIGHT.opponent, 'no zone: the fight row\'s profile');
 });
 
 test('(a) handing the sim to a goblin spawn uses the goblin\'s stats, specials and brain, and handing back restores the Pitborn exactly', () => {
@@ -161,6 +161,6 @@ test('the page wires it: each spawn\'s kind on every hand-over, leash reset, ado
   assert.match(main, /joinAttacker\(i, make\([^;]*kindAt\(i\)\), kindAt\(i\)\.ai\)/, 'an attacker is built and stepped as its own kind');
   assert.match(main, /useKind\(kindAt\(current\)\); practice = fresh\(poseFor\(current, heroStart\)\)/, 'the page opens on the held spawn\'s kind');
   assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, kindIds\(KIND_CTX\.profiles\)\); for \(const s of SPOTS\) KINDS\(s\.kind\)/);
-  assert.match(main, /zoneLoopFor\(zoneFor\(search\), search, kindIds\(KIND_CTX\.profiles\)\)/);
+  assert.match(main, /zoneLoopFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\), search, kindIds\(KIND_CTX\.profiles\)\)/);
   assert.match(main, /override: pitbornV1\(search\) \? FIGHT\.opponentV1\.opponent : null/, '?pitborn=v1 stays the page-wide Centurion toggle');
 });

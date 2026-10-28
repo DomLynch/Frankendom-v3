@@ -26,8 +26,8 @@ for (const [stem, want] of Object.entries(BOSSES)) {
     // The real held-spawn path (scene.ts holdBody -> heldRagdollFor(search, opponentId, rigStemOf(file))) passes the PAGE's opponent id (the zone page's foe is 'pitborn') with the spawn's body stem.
     const PAGE_ID = 'pitborn';
     const rows = PHYSICS.opponents.filter((o) => o.body === stem);
-    assert.equal(rows.length, 1);
-    assert.deepEqual(rows[0], { id: PAGE_ID, body: stem, measure: { 106: `physics/bodies/${file}.measure.json` }, helmet: false, gear: {} });
+    assert.deepEqual(rows.map((o) => o.id), ['pitborn', 'executioner'], 'one row per page id: pitborn (?order=v1, the Minotaur-first page) and executioner (the Gargantua-first page)');
+    for (const r of rows) assert.deepEqual({ ...r, id: PAGE_ID }, { id: PAGE_ID, body: stem, measure: { 106: `physics/bodies/${file}.measure.json` }, helmet: false, gear: {} });
     assert.equal(rigStemOf(file), stem);
     assert.equal(ragdollRowFor(PHYSICS, '', PAGE_ID, rigStemOf(file))?.body, stem, 'the held-spawn lookup finds the row with the id the page passes');
     assert.equal(ragdollRowFor(PHYSICS, '', stem, stem), null, 'the boss stem is not the page id: no row under it');
