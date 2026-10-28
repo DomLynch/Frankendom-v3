@@ -1,0 +1,23 @@
+{
+  "about": "Taking a defeated boss's body parts (Dom 2026-10-28, option 1 'floating arrow', first PR of 'tap a part to select it, then press Take'; src/fight/pickup.ts validatePickup checks the values). PRESENTATION ONLY: nothing here touches the sim, the camera or the input (every element is pointer-events none except the Take pill, and a tap on a part rides the corpse tap's own pointerup). `on`/`query`/`off`: ?pickup=v1 turns the whole thing off (the corpse and its cut parts look exactly as before). `units`: the cut units that can be taken (the physics.json cut.cue units). `delayS`: seconds the corpse must have been frozen before the hint shows (the fall is watched first). `hintSeconds`: the arrow and text go this long after they appear if nobody taps a part. `walkAwayM`: the hint goes when the hero is further than this from the corpse. `rangeM`: a part can be selected only within this distance. `hitRadiusPx`: the tap disc around a part's bone. `event`: the bus name (feel.on) announced when a part is taken, payload { unit, boss, corpseId }. `text`: the hint line; `pill.label`: the Take button's label. `arrow`/`mini`: the bobbing triangles. `outline`: the thin ring on the selected part. `safe`: the box the arrow, text and pill stay in, in fractions of the viewport and px, so they never sit on the thumb controls (the left stick and the STRIKE cluster) or the HUD bars. `fly`: the taken part's chip flies to the hero over this long.",
+  "on": true,
+  "query": "pickup",
+  "off": "v1",
+  "event": "part:taken",
+  "units": ["head", "arm_left", "arm_right", "leg_left", "leg_right", "torso_waist"],
+  "delayS": 0.6,
+  "hintSeconds": 8,
+  "walkAwayM": 14,
+  "rangeM": 30,
+  "hitRadiusPx": 34,
+  "zIndex": 29,
+  "colour": "#ffd34a",
+  "text": { "label": "Take your body parts", "sizePx": 10, "letterSpacingEm": 0.14, "shadow": "0 1px 3px rgba(0,0,0,0.85)", "maxWidthPx": 96, "lineHeight": 1.25 },
+  "arrow": { "sizePx": 15, "bobPx": 6, "bobS": 0.9, "liftPx": 64, "textGapPx": 4 },
+  "mini": { "sizePx": 10, "bobPx": 3, "bobS": 0.7, "gapPx": 3 },
+  "outline": { "widthPx": 1.5, "radiusPx": 24, "fillAlpha": 0.1, "glowPx": 6 },
+  "pill": { "label": "Take", "sizePx": 12, "letterSpacingEm": 0.18, "textColour": "#241a05", "padXPx": 14, "padYPx": 5, "radiusPx": 14, "gapPx": 18, "weight": 700 },
+  "safe": { "topFrac": 0.2, "bottomFrac": 0.3, "sideMarginPx": 12, "pillRightFrac": 0.62 },
+  "fly": { "seconds": 0.45, "sizePx": 14, "arcPx": 40, "heroLiftM": 1.1 },
+  "fadeS": 0.18
+}

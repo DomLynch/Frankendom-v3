@@ -77,6 +77,7 @@ import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
 import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
+import { mountPickup, pickupOn } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
 import { foeRagdollFor, heldRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, setHeldRagdoll, snapshotRig, WARM_SCALE, type FoeRagdoll } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -389,6 +390,9 @@ export function createScene(
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
   let ragdoll: FoeRagdoll | null = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one   // let: a held spawn in another body swaps it (heldBodies below)
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
+  const pickupV = new THREE.Vector3();
+  const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow, the line, a tap on a cut part, Take (presentation only)
+    : mountPickup(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
   const heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
@@ -1079,6 +1083,7 @@ export function createScene(
       heldFinishing = !!practice.finish;
       if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
+      pickup?.frame(animationDt);   // data/pickup.json: the arrow, the selected part's outline and Take pill, the flying chip (DOM only; reads the corpses' cut parts after the ragdolls stepped)
       heroRagdoll?.frame(animationDt, events, practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
       // (the clip's first 9 %) — baked from the rig at that pose, popped along the killing blow, ballistic to a stop. Blood
