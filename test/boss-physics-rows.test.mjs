@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
-import { ragdollRowFor } from '../src/fight/ragdoll.ts';
+import { heldRagdollFor, ragdollRowFor } from '../src/fight/ragdoll.ts';
+import { rigStemOf } from '../src/fight/rig-bones.ts';
 import { optimizeGlb } from '../scripts/optimize-glb.mjs';
 import { BOUNDS, unpackMeshopt } from '../scripts/cut-glb-pack.mjs';
 
@@ -22,12 +23,17 @@ for (const [stem, want] of Object.entries(BOSSES)) {
   const file = `${stem}-106`;
 
   test(`${stem}: a data/physics.json opponents row fitted to the body, found by (id, body) and by nothing else`, () => {
-    const rows = PHYSICS.opponents.filter((o) => o.id === stem);
+    // The real held-spawn path (scene.ts holdBody -> heldRagdollFor(search, opponentId, rigStemOf(file))) passes the PAGE's opponent id (the zone page's foe is 'pitborn') with the spawn's body stem.
+    const PAGE_ID = 'pitborn';
+    const rows = PHYSICS.opponents.filter((o) => o.body === stem);
     assert.equal(rows.length, 1);
-    assert.deepEqual(rows[0], { id: stem, body: stem, measure: { 106: `physics/bodies/${file}.measure.json` }, helmet: false, gear: {} });
-    assert.equal(ragdollRowFor(PHYSICS, '', stem, stem)?.body, stem);
-    assert.equal(ragdollRowFor(PHYSICS, '', stem, 'minotaur'), null, 'a row is fitted to its own body only');
-    assert.equal(ragdollRowFor(PHYSICS, '?physics=v1', stem, stem), null, '?physics=v1 is today\'s death');
+    assert.deepEqual(rows[0], { id: PAGE_ID, body: stem, measure: { 106: `physics/bodies/${file}.measure.json` }, helmet: false, gear: {} });
+    assert.equal(rigStemOf(file), stem);
+    assert.equal(ragdollRowFor(PHYSICS, '', PAGE_ID, rigStemOf(file))?.body, stem, 'the held-spawn lookup finds the row with the id the page passes');
+    assert.equal(ragdollRowFor(PHYSICS, '', stem, stem), null, 'the boss stem is not the page id: no row under it');
+    assert.ok(heldRagdollFor('', PAGE_ID, rigStemOf(file)), 'heldRagdollFor builds a ragdoll for the held body');
+    assert.equal(heldRagdollFor('?physics=v1', PAGE_ID, rigStemOf(file)), null, '?physics=v1 is today\'s death');
+    assert.equal(ragdollRowFor(PHYSICS, '', PAGE_ID)?.body, 'minotaur', 'the page\'s own foe still resolves to the Minotaur row');
     assert.equal(PHYSICS.opponents[0].id, 'pitborn', 'the Minotaur\'s row is still the first, unchanged');
     assert.equal(RIG.files[stem], file);
   });
