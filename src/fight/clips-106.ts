@@ -62,6 +62,14 @@ export const CLIP_106_LOADERS: Record<string, Loader> = {
   '106/brute/execution-victim-hero.json': () => import('../assets/106/brute/execution-victim-hero.json'),
   '106/brute/hamstrung-killer.json': () => import('../assets/106/brute/hamstrung-killer.json'),
   '106/brute/hamstrung-victim-hero.json': () => import('../assets/106/brute/hamstrung-victim-hero.json'),
+  '106/maw/special-skullcrack.json': () => import('../assets/106/maw/special-skullcrack.json'),
+  '106/maw/special-whirlwind.json': () => import('../assets/106/maw/special-whirlwind.json'),
+  '106/maw/special-groundslam.json': () => import('../assets/106/maw/special-groundslam.json'),
+  '106/maw/special-lunge.json': () => import('../assets/106/maw/special-lunge.json'),
+  '106/maw/execution-killer.json': () => import('../assets/106/maw/execution-killer.json'),
+  '106/maw/execution-victim-hero.json': () => import('../assets/106/maw/execution-victim-hero.json'),
+  '106/maw/hamstrung-killer.json': () => import('../assets/106/maw/hamstrung-killer.json'),
+  '106/maw/hamstrung-victim-hero.json': () => import('../assets/106/maw/hamstrung-victim-hero.json'),
 };
 /** The loader of `role`'s 106 clip for the 106 body file `body`, or undefined (no 106 version: the body plays what it would without it). */
 export const clip106Loader = (body: string | undefined, role: string): Loader | undefined => {
