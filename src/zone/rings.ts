@@ -9,7 +9,7 @@ import type { TuneMap } from '../tune.ts';
 
 export type RingSpawn = { kind: string; count: number; angleDeg: number; stepDeg: number; distance: number };
 export type RingRow = { id: string; minDist: number; maxDist: number; blendAtMetres: number; groundTint: string; skyPlates: Record<string, number>; health: number; damage: number; loadAfterKillMetres: number | null; spawns: RingSpawn[] };
-export type RingBoss = { kind: string; name: string; body: string; respawnSeconds: number; aggro: number; leash: number; roam: number; campSize: [number, number]; mechanic: null };
+export type RingBoss = { kind: string; name: string; body: string; respawnSeconds: number; aggro: number; leash: number; roam: number; campSize: [number, number]; mechanic: string | null };
 export type RingLimits = { distance: [number, number]; multiplier: [number, number]; plateWeight: [number, number]; angleDeg: [number, number]; count: [number, number]; respawnSeconds: [number, number] };
 export type RingRows = { roundTo: number; halfTurnDegrees: number; limits: RingLimits; rings: RingRow[]; bosses: RingBoss[] };
 export const RINGS = ROWS as unknown as RingRows;
