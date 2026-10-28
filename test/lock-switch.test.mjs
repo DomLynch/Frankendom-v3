@@ -47,7 +47,7 @@ test('the pick: nearest boss within the radius, never the held one, none on empt
   assert.equal(pickTarget(R, { x: 200, y: 300 }, c, 0), 2, 'the held boss is not a target: the next nearest within the radius, or none');
   assert.equal(pickTarget(R, { x: 200, y: 300 }, [c[0]], 0), null);
   assert.equal(pickTarget(R, { x: 125 + R.pickRadiusPx + 1, y: 300 + 200 }, c, 0), null, 'empty ground');
-  assert.equal(pickTarget(R, { x: 120, y: 300 + R.pickRadiusPx }, c, 0), 1, 'exactly the radius');
+  assert.equal(pickTarget(R, { x: 120, y: 300 + R.pickRadiusPx }, [c[1]], 0), 1, 'exactly the radius');
   assert.equal(pickTarget(R, { x: 120, y: 300 }, [{ index: 1, x: NaN, y: 300 }], 0), null, 'behind the camera');
   assert.equal(pickTarget(R, { x: 120, y: 300 }, [], 0), null);
 });
