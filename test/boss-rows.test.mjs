@@ -15,9 +15,9 @@ const ZONE = JSON.parse(readFileSync(new URL('../data/zones/zone1.row.json', imp
 const clone = (x) => structuredClone(x);
 const row = (id) => PROFILES.profiles.find((p) => p.id === id);
 
-test('the rows: gargantua is the executioner at health x2.6 (first value on the row; Dom 2026-10-28 said x5.2 was too strong), arachne the shieldmaiden at x1; both named', () => {
+test('the rows: gargantua is the executioner at health x1.19 (first value on the row; Dom 2026-10-28: 137 hp for consistency with the Minotaur and Arachne), arachne the shieldmaiden at x1; both named', () => {
   const g = row('gargantua'), a = row('arachne');
-  assert.deepEqual([g.opponent, g.name, g.foeHealthScale, g.foeDamageScale, g.brain], ['executioner', 'Gargantua', 2.6, 1, null]);
+  assert.deepEqual([g.opponent, g.name, g.foeHealthScale, g.foeDamageScale, g.brain], ['executioner', 'Gargantua', 1.19, 1, null]);
   assert.deepEqual([a.opponent, a.name, a.foeHealthScale, a.foeDamageScale, a.brain], ['shieldmaiden', 'Arachne', 1, 1, null]);
   assert.equal(Object.keys(g)[1], 'foeHealthScale', 'the one number Dom tunes is the first value after the id');
   assert.equal(Object.keys(a)[1], 'foeHealthScale');
@@ -27,12 +27,12 @@ test('the rows: gargantua is the executioner at health x2.6 (first value on the 
   assert.equal(PROFILES.default, 'pitborn');
 });
 
-test('health: executioner 160 x 2.6 x the default difficulty row (0.72) = ~300 at the DEFAULT pick (Dom: 599 was too strong; the Minotaur is 137, the Arachne 137); the Arachne is 190 x 0.72', () => {
+test('health: executioner 160 x 1.19 x the default difficulty row (0.72) = 137 at the DEFAULT pick (Dom: same as the Minotaur 137 and the Arachne 137); the Arachne is 190 x 0.72', () => {
   const at = (id, pick) => scaledOpponent(opponentAt(OPPONENTS[row(id).opponent], FIGHT.level), resolveFight({ profile: id, difficulty: pick }, PROFILES.profiles, DIFF, BRAINS.brains)).health;
   assert.equal(OPPONENTS.executioner.health, 160);
-  assert.equal(at('gargantua', 'legacy'), 416);
-  assert.equal(at('gargantua', DIFF.default), 300);
-  assert.ok(Math.abs(at('gargantua', DIFF.default) - 300) <= 5, '~300 hp at the default pick');
+  assert.equal(at('gargantua', 'legacy'), 190);
+  assert.equal(at('gargantua', DIFF.default), 137);
+  assert.equal(at('gargantua', DIFF.default), at('arachne', DIFF.default), 'same hp as the Arachne at the default pick');
   assert.equal(at('arachne', 'legacy'), 190);
 });
 
