@@ -78,6 +78,14 @@ export const CLIP_106_LOADERS: Record<string, Loader> = {
   '106/castle-guard/execution-victim-hero.json': () => import('../assets/106/castle-guard/execution-victim-hero.json'),
   '106/castle-guard/hamstrung-killer.json': () => import('../assets/106/castle-guard/hamstrung-killer.json'),
   '106/castle-guard/hamstrung-victim-hero.json': () => import('../assets/106/castle-guard/hamstrung-victim-hero.json'),
+  '106/kachujin/special-skullcrack.json': () => import('../assets/106/kachujin/special-skullcrack.json'),
+  '106/kachujin/special-whirlwind.json': () => import('../assets/106/kachujin/special-whirlwind.json'),
+  '106/kachujin/special-groundslam.json': () => import('../assets/106/kachujin/special-groundslam.json'),
+  '106/kachujin/special-lunge.json': () => import('../assets/106/kachujin/special-lunge.json'),
+  '106/kachujin/execution-killer.json': () => import('../assets/106/kachujin/execution-killer.json'),
+  '106/kachujin/execution-victim-hero.json': () => import('../assets/106/kachujin/execution-victim-hero.json'),
+  '106/kachujin/hamstrung-killer.json': () => import('../assets/106/kachujin/hamstrung-killer.json'),
+  '106/kachujin/hamstrung-victim-hero.json': () => import('../assets/106/kachujin/hamstrung-victim-hero.json'),
 };
 /** The loader of `role`'s 106 clip for the 106 body file `body`, or undefined (no 106 version: the body plays what it would without it). */
 export const clip106Loader = (body: string | undefined, role: string): Loader | undefined => {
