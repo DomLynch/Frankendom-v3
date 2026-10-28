@@ -73,8 +73,11 @@ await tapCentre('[data-frank=equip]');
 await run(2);
 console.log(`${tag}: after Equip ${JSON.stringify((await save())?.equipped)}`);
 await shoot('3-equipped');
+const raw = await page.evaluate(() => localStorage.getItem('frankendom.v3.progress'));
 await page.close();
-page = await ctx.newPage();   // a fresh page, real clock, same storage: what a reload sees
+const ctx2 = await browser.newContext({ viewport: { width: Number(process.env.W ?? 375), height: Number(process.env.H ?? 812) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+await ctx2.addInitScript((s) => { try { localStorage.setItem('frankendom.v3.progress', s); } catch { /* blocked */ } }, raw);   // the save the first visit wrote, in a fresh browser: what a later visit sees
+page = await ctx2.newPage();
 page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
 await boot();
