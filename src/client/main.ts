@@ -362,6 +362,7 @@ if (SWITCH) {
     if (paused() || !engaged || lockState.broken || practice.finish || !isTap(SWITCH, down, { x: e.clientX, y: e.clientY, t: e.timeStamp, id: e.pointerId })) return;
     const box = canvas.getBoundingClientRect(), on = attackers.filter((a) => !a.dead).map((a) => { const p = view.project([a.practice.enemy.x, SWITCH.aimHeightMetres, a.practice.enemy.z]); return { index: a.index, x: p ? p[0] : NaN, y: p ? p[1] : NaN }; });
     const pick = pickTarget(SWITCH, { x: e.clientX - box.left, y: e.clientY - box.top }, on, current), out = pick === null ? null : swapHeld(practice, attackers, current, pick, kindAt(current).ai);
+    (globalThis as { __v3Switch?: unknown }).__v3Switch = { tap: [e.clientX - box.left, e.clientY - box.top], on, pick, held: current, switched: !!out };   // the stills read the last tap's picture (scripts/*-stills.mjs)
     if (out) { epoch++; practice = out.practice; attackers = out.list; current = out.index; useKind(kindAt(current)); updateHud(); }
   });
 }
