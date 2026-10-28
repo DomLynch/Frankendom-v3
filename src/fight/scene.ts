@@ -66,7 +66,8 @@ import { scorch } from './scorch.ts';
 import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself (V3 meets only the veteran: the other nine opponents' signatures are not shipped)
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
-import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, spawnBodyFile } from './foe-body.ts';
+import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
+import { bossPreview, bossRowOfBody } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
 import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
 import { foeDrawnWeapon } from './foe-weapon.ts';
@@ -100,6 +101,7 @@ const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets
 // sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1: the gladius's).
 const FOE_EQUIP_URLS: Record<string, string> = { '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href };
 // The Pitborn (foe-pick.ts, Dom 2026-10-26) really fights with the cleaver: the same file, grafted over the trident his Minotaur body bakes.
+const pageSearch = typeof location === 'undefined' ? '' : location.search;   // the page's query, for the boss weapon rows (data/boss-weapons.json: ?bossweapon=v1 reverts, ?bossweapon=<opponent> is the stills flag)
 const foeEquipUrl = (opponentId: string, weapon: WeaponId): string | undefined =>
   FOE_EQUIP_URLS[`../assets/weapons/foe/${foeDrawnWeapon(opponentId, weapon)}.glb`] ?? equipUrl(weapon);
 // A rank look's pre-swap bake takes up to this many ms of each frame (it runs while the fight plays; one bounded step is ~8 ms at worst).
@@ -393,7 +395,7 @@ export function createScene(
       // The weapon his drawn body bakes (foe-body.ts: the Minotaur's is veteran.glb's trident; a 106 body bakes none) needs no file; a drawn weapon over his (foe-weapon.ts) is its own file.
       const opponentEquip = pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
       const foe = foeUrl(opponentId);
-      const load = (hero: string) => loadWarriors(hero, foe, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId));
+      const load = (hero: string) => loadWarriors(hero, foe, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId), pageSearch ? bossPreview(pageSearch) : undefined);   // the last argument: ?bossweapon=<opponent> draws that boss row on this foe (stills; the sim's weapon is not changed)
       // 106 only: both sides load their 106 files. A failure is NOT papered over with another body (the 65 fallback is gone, Dom 2026-10-26):
       // it is a RigLoadError, reported and shown on screen by the catch below, so a broken 106 file is noticed.
       const hero = fighterUrls[`../assets/${heroRigFile(heroBodyFile())}.glb`];
@@ -567,13 +569,16 @@ export function createScene(
   type BodyAsset = Awaited<ReturnType<typeof loadFoeBody>>;
   const bodyAssets = new Map<string, { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> }>();   // `loaded`: the held foe's swap (heldBodies) awaits the same fetch a standing or attacking spawn started, one file once
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
+  // A boss body with a weapon row (data/boss-weapons.json; the body is found through the profile rows, foe-body.ts profileBodyOf) is armed with the row's weapon, scaled, with its off-hand part; any other body with the page's weapon, as before.
+  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch);
+  const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? builtFoeWeapon;
   function bodyRig(file: string) {
     let entry = bodyAssets.get(file);
     if (!entry) {
       const row: { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> } = entry = {}; bodyAssets.set(file, row);
-      const url = fighterUrls[`../assets/${file}.glb`], weapon = builtFoeWeapon;
+      const boss = bossOfBody(file), url = fighterUrls[`../assets/${file}.glb`], weapon = weaponOfBody(file);
       if (!url || !weapon) row.failed = true;
-      else row.loaded = loadFoeBody(url, weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId))
+      else row.loaded = loadFoeBody(url, boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss)
         .then((asset) => { row.asset = asset; return asset; }, (error: unknown) => { row.failed = true; captureException(error); return undefined; });
     }
     return entry.asset;
@@ -583,8 +588,9 @@ export function createScene(
     if (!warriors) return undefined;
     if (file === liveBody) return warriors.spawnFoe();
     const asset = bodyRig(file);
-    if (!asset || !builtFoeWeapon) return undefined;
-    const actor = warriors.spawnBody(asset, builtFoeWeapon);
+    const weapon = weaponOfBody(file);
+    if (!asset || !weapon) return undefined;
+    const actor = warriors.spawnBody(asset, weapon, bossOfBody(file)?.clipsAs);
     actor.useClips106(file);   // this body's own baked clips (data/rig.json clips106)
     return actor;
   }
@@ -603,8 +609,9 @@ export function createScene(
       build: async (file) => {
         bodyRig(file);   // starts the fetch if no standing/attacking spawn of this body did
         const asset = await bodyAssets.get(file)?.loaded;
-        if (!asset || !builtFoeWeapon) return null;
-        const rig = w.spawnBody(asset, builtFoeWeapon);
+        const weapon = weaponOfBody(file);
+        if (!asset || !weapon) return null;
+        const rig = w.spawnBody(asset, weapon, bossOfBody(file)?.clipsAs);
         rig.useClips106(file);   // this body's own baked clips (data/rig.json clips106)
         sizeBeast({ opponent: rig }, opponentId);
         let rd: FoeRagdoll | null = null;
