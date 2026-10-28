@@ -42,7 +42,7 @@ test('no Take pill, no select, no part:taken, no yellow cut circles: the corpse 
   for (const word of ['part:taken', 'pk-pill', 'pk-sel', 'pk-chip', 'pickupTapGate', 'takeablesOf']) for (const [n, s] of [['pickup.ts', pk], ['ragdoll.ts', rag], ['scene.ts', scene]]) assert.ok(!s.includes(word), `${word} is not in ${n}`);
   assert.ok(!('event' in ROWS) && !('pill' in ROWS) && !('fly' in ROWS), 'no Take rows');
   // #252 (cut.strike): the same maxMovePx/maxMs gate, then the tap goes straight to the corpse tap (the strike row off) or through the strike, whose aimed pass IS that same corpse tap at the same point
-  assert.match(rag, /<= row\.maxMs\)\)\) return;/, 'a tap passes the same px/ms gate');
+  assert.match(rag, /<= row\.maxMs\)\) return;/, 'a tap passes the same px/ms gate');
   assert.match(rag, /if \(!strike\?\.on\) \{ this\.tap\(aim\(e\.clientX, e\.clientY\)\); return; \}/, 'the strike row off: a tap goes straight to the corpse tap');
   assert.match(rag, /req\.aim \? this\.tap\(aim\(req\.aim\.x, req\.aim\.y\)\) : null/, 'the strike\'s aimed pass is the corpse tap at the point');
   assert.match(rag, /strikeOnce\(e\.timeStamp, \{ x: e\.clientX, y: e\.clientY \}\)/, 'a finger\'s tap hands its point to the strike');
