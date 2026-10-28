@@ -53,6 +53,10 @@ export const wantsFreeCamera = (rows: FreeCameraRows | null, w: CameraWorld): bo
 export const handsOver = (rows: FreeCameraRows | null, ceremonyOver: boolean, stick: boolean, sinceKill = Infinity, minBeat = 0): boolean => stick && (ceremonyOver || (!!rows?.stickEndsCeremony && sinceKill >= minBeat));
 // `sinceKill` / `minBeat` (finisher-cam.json stickEndsCeremonyAfterS, 0 for ?finishercam=v1): a stick held in the first `minBeat` seconds after the kill does not end the ceremony, so the finisher camera plays for a player who was still holding the stick at the killing blow; the ceremony's own end still hands him over.
 
+/** Whether a press on the look thumb may start a look now (Dom 2026-10-28, on his phone: "just after I killed the first boss I could not turn the camera round"). While the camera is free, always. In the kill's ceremony (the finisher camera still has the view, `freeNow` false)
+ *  a look press is a hand-over exactly as the stick is (`handsOver` with the stick down): the ceremony ends at once, or after the finisher's `minBeat` when the row holds a held input back. Never while a fight holds the lock, nor while his own death plays. */
+export const lookStarts = (rows: FreeCameraRows | null, freeNow: boolean, heroStands: boolean, ceremonyOver: boolean, sinceKill = Infinity, minBeat = 0): boolean => !!rows && (freeNow || (heroStands && handsOver(rows, ceremonyOver, true, sinceKill, minBeat)));
+
 /** The share of the free camera (0 = the lock, 1 = free), moved toward its target over `seconds`. `first` snaps (the first frame has nothing to swing from). */
 export const stepShare = (share: number, target: boolean, dt: number, seconds: number, first: boolean): number =>
   first ? (target ? 1 : 0) : Math.min(1, Math.max(0, share + (target ? dt : -dt) / seconds));
