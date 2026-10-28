@@ -38,6 +38,39 @@ jobs:
       - name: No 65 file in dist/
         run: DIST_REQUIRED=1 node --test test/rig-bones.test.mjs
 
+  # The PRODUCTION build booted in headless Chromium (scripts/boot-check.mjs): hero and first boss spawned, the hero's sword loaded, the loop alive,
+  # zero console errors, zero failed or 404 requests. Two live breaks (the Gargantua freeze, the hero sword missing on live) shipped because nothing booted the BUILT game.
+  # Runs beside `test`, not after it. The 375 screenshot is uploaded on every run.
+  boot:
+    name: built-game boot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: jpegtran
+        run: command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)
+      - run: npm run build
+      # --no-save keeps playwright out of package.json and the lockfile (the stills scripts take it from the machine they run on)
+      - run: npm install --no-save --no-audit --no-fund playwright@1.63.0
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-1.63.0-chromium-${{ runner.os }}
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/boot-check.mjs
+        timeout-minutes: 4
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot-check-375
+          path: boot-check-out/
+          if-no-files-found: ignore
+
   # The zone server SQL (supabase/migrations/20261027000001_zone_server.sql) EXECUTED against a real Postgres and compared with the JS model (test/sql/zone-sql.test.mjs).
   # A separate job: the `test` job stays fast and does not wait for it, and `deploy` does not need it. The database is a throwaway service container, the password below is a
   # throwaway value for that container only (not a secret), and nothing here touches Supabase or any real database. The Supabase-specific roles are plain NOLOGIN roles (test/sql/bootstrap.sql).

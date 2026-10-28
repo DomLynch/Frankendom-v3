@@ -1,0 +1,27 @@
+{
+  "about": "Valheim-style star bosses (Dom 2026-10-28: 'no switches, just get everything live'; the public Valheim wiki is the reference only). Any boss may stand as a 0-star (as before), 1-star or 2-star instance. `levels`: per star level, healthX / damageX (multipliers laid over the boss as a ?tune= map, src/tune.ts, so they multiply on top of the profile, difficulty rows, progression escalation (data/progression.json) and ?tune=), scaleX (the body's RENDER scale only: the sim's capsule, reach and ragdoll bones are untouched), `tell` (a gold emissive glow on the body, null = none; colour and intensity are the glow's), `trophy` (the per-kill reward row: a star kill adds one trophy of that tier to the save and shows 'Trophy: <name>'; no item art). The star roll is deterministic per spawn instance (src/stars.ts rollStar: hash32 of the spawn id + `salt`, stepped by that spawn's own kill count; no Math.random, no clock), so a replay or a test rolls the same star. A boss's FIRST encounter is always 0-star: a star can only roll once that boss kind has been killed `minKills` times (the save's kill count, else this visit's). `weights`: per difficulty row id (data/difficulty.json rows 1-10 and `legacy`) the weight of a 1-star and a 2-star against `zeroWeight` for a 0-star, each = base + perKill x min(kills of that boss, `killsCap`), so stars grow likelier with every kill. (Per-ring weights, data/rings.json, join these rows the same way once that file ships.) `starGlyph`: the HUD mark, one per star, drawn small beside the boss name in the bars (the class slot's style) in `hudColour`.",
+  "minKills": 1,
+  "killsCap": 10,
+  "zeroWeight": 100,
+  "salt": "star",
+  "starGlyph": "★",
+  "hudColour": "#ffd34a",
+  "levels": [
+    { "star": 0, "healthX": 1, "damageX": 1, "scaleX": 1, "trophy": null, "tell": null },
+    { "star": 1, "healthX": 1.5, "damageX": 1.25, "scaleX": 1.12, "trophy": { "tier": 1, "name": "Bronze trophy" }, "tell": { "colour": "#ffd34a", "intensity": 0.12 } },
+    { "star": 2, "healthX": 2, "damageX": 1.5, "scaleX": 1.25, "trophy": { "tier": 2, "name": "Gold trophy" }, "tell": { "colour": "#ff9a1a", "intensity": 0.22 } }
+  ],
+  "weights": [
+    { "id": "1", "star1": { "base": 2, "perKill": 3 }, "star2": { "base": 0, "perKill": 1 } },
+    { "id": "2", "star1": { "base": 4, "perKill": 4 }, "star2": { "base": 0, "perKill": 2 } },
+    { "id": "3", "star1": { "base": 6, "perKill": 5 }, "star2": { "base": 0, "perKill": 3 } },
+    { "id": "4", "star1": { "base": 8, "perKill": 6 }, "star2": { "base": 0, "perKill": 4 } },
+    { "id": "5", "star1": { "base": 10, "perKill": 7 }, "star2": { "base": 0, "perKill": 5 } },
+    { "id": "6", "star1": { "base": 12, "perKill": 8 }, "star2": { "base": 0, "perKill": 6 } },
+    { "id": "7", "star1": { "base": 14, "perKill": 9 }, "star2": { "base": 0, "perKill": 7 } },
+    { "id": "8", "star1": { "base": 16, "perKill": 10 }, "star2": { "base": 0, "perKill": 8 } },
+    { "id": "9", "star1": { "base": 18, "perKill": 11 }, "star2": { "base": 0, "perKill": 9 } },
+    { "id": "10", "star1": { "base": 20, "perKill": 12 }, "star2": { "base": 0, "perKill": 10 } },
+    { "id": "legacy", "star1": { "base": 10, "perKill": 7 }, "star2": { "base": 0, "perKill": 5 } }
+  ]
+}
