@@ -4,6 +4,8 @@
   "defaultBody": "minotaur",
   "bodyQuery": "boss",
   "profiles": [
-    { "id": "pitborn", "about": "The level-18 Pitborn (V3's Minotaur): V1's cleaver, stats and class special; his skill knobs come from the difficulty row (brain null = V1's own for anything a row leaves out: spamRun 6).", "opponent": "pitborn", "body": "minotaur", "brain": null, "foeHealthScale": 1, "foeDamageScale": 1 }
+    { "id": "pitborn", "about": "The level-18 Pitborn (V3's Minotaur): V1's cleaver, stats and class special; his skill knobs come from the difficulty row (brain null = V1's own for anything a row leaves out: spamRun 6).", "opponent": "pitborn", "body": "minotaur", "brain": null, "foeHealthScale": 1, "foeDamageScale": 1 },
+    { "id": "gargantua", "foeHealthScale": 5.2, "about": "Zone boss 2 (Dom 2026-10-28): the Gargantua. THE NUMBER DOM TUNES ON HIS PHONE IS foeHealthScale, first on this row: V1's executioner is 160 hp; x5.2 x the default difficulty row 5's own 0.72 = ~600 hp (599) at the DEFAULT pick Dom plays (at ladder scale 1 / legacy he is 832). Name, brain and damage are the executioner's own. Body: `gargantua` (OpenTrident's 106 body) once its data/rig.json files + clips106 rows land; until then he is drawn in `defaultBody` (docs/BOSS-BODIES.md). Revert: delete this row and the zone spawn that names it.", "opponent": "executioner", "body": "gargantua", "name": "Gargantua", "brain": null, "foeDamageScale": 1 },
+    { "id": "arachne", "foeHealthScale": 1, "about": "Zone boss 3 (Dom 2026-10-28): the Arachne, V1's shieldmaiden (190 hp) at her own health (foeHealthScale 1, first on the row). Body: `arachne` once OpenTrident's 106 body lands (see the Gargantua row). Revert: delete this row and the zone spawn that names it.", "opponent": "shieldmaiden", "body": "arachne", "name": "Arachne", "brain": null, "foeDamageScale": 1 }
   ]
 }

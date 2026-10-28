@@ -53,10 +53,13 @@ test('the data: the fight row names the profile whose opponent it fights, and ev
   assert.deepEqual(kindIds(PROFILES.profiles), PROFILES.profiles.map((p) => p.id));
 });
 
-test('(c) the default zone is unchanged: three Pitborn spawns resolve to ONE kind object, and it is the old page-wide fight, digest for digest', () => {
-  assert.deepEqual(ZONE.spawns.map((s) => s.kind), ['pitborn', 'pitborn', 'pitborn']);
+test('(c) the default zone: spawn 1 (Pitborn) is the old page-wide fight, digest for digest; spawns 2 and 3 are the Gargantua and the Arachne (Dom 2026-10-28)', () => {
+  // Re-pinned 2026-10-28: was three Pitborn spawns resolving to ONE kind object. Spawns 2 and 3 are different bosses on purpose; the Pitborn spawn and the no-zone single fight are asserted exactly as before.
+  assert.deepEqual(ZONE.spawns.map((s) => s.kind), ['pitborn', 'gargantua', 'arachne']);
   const kinds = kindTable(CTX), spots = spotsFor(ZONE);
-  assert.equal(new Set(spots.map((s) => kinds(s.kind))).size, 1, 'every default spawn is the same kind object: a hand-over between them swaps nothing');
+  assert.equal(new Set(spots.map((s) => kinds(s.kind))).size, 3, 'three kinds, three kind objects');
+  assert.deepEqual(spots.map((s) => kinds(s.kind).opponentId), ['pitborn', 'executioner', 'shieldmaiden']);
+  assert.equal(kinds('pitborn'), kinds(spots[0].kind), 'spawn 1 is the one Pitborn kind object');
   const k = kinds('pitborn'), old = legacyMake(731, pose);
   assert.equal(k.opponentId, FIGHT.opponent); assert.equal(k.scaled, true);
   const made = kindPractice(k, CTX, 731, pose);
@@ -130,14 +133,14 @@ test('(b) the validators refuse an unknown kind, with the profile ids in the mes
   {
     assert.doesNotThrow(() => validateSpots(spots, start, play.RADIUS, WORLD, ids), 'the shipped kinds are profile rows');
     assert.doesNotThrow(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, kindIds(profiles)), 'a second kind passes once it has a profile row');
-    assert.throws(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, ids), /spawn pit-pitborn-east names kind "goblin", which is no profile row \(data\/profiles\.json: pitborn\)/);
+    assert.throws(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, ids), /spawn pit-pitborn-east names kind "goblin", which is no profile row \(data\/profiles\.json: pitborn(, [a-z]+)*\)/);   // the message lists every profile row (pitborn, then the zone bosses added since)
     assert.throws(() => validateSpots(spots.map((s) => ({ ...s, kind: 'nobody' })), start, play.RADIUS, WORLD, ids), /names kind "nobody"/);
   }
   const row = JSON.parse(JSON.stringify(ZONE)); row.spawns[2].kind = 'nobody';
   assert.match(validateZone(row, ids).join('\n'), /spawns\[2\]\.kind: 'nobody' is not an opponent profile id/);
   assert.deepEqual(validateZone(ZONE, ids), []);
   assert.throws(() => zoneLoopFor(row, '', ids), /spawn pit-pitborn-west names unknown kind "nobody"/);
-  assert.throws(() => kindFightFor('nobody', CTX), /kind "nobody" is no data\/profiles\.json row \(pitborn, goblin\)/);
+  assert.throws(() => kindFightFor('nobody', CTX), /kind "nobody" is no data\/profiles\.json row \(pitborn(, [a-z]+)*, goblin\)/);
   assert.match(kindProblem('ghost', [{ ...GOBLIN, id: 'ghost', opponent: 'no-such-archetype' }]), /names opponent "no-such-archetype", which is no archetype/);
   assert.match(checkKinds({ profiles: [{ ...GOBLIN, opponent: 'nope' }] }, Object.keys(OPPONENTS)).join('\n'), /profiles\.goblin\.opponent: 'nope' is not an archetype/);
   assert.match(checkKinds({ profiles: [GOBLIN, GOBLIN] }, Object.keys(OPPONENTS)).join('\n'), /duplicate id/);

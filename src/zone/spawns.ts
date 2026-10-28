@@ -11,8 +11,8 @@ import { OPEN_RADIUS } from '../fight/play-radius.ts';
 import type { Duel, DuelPose } from '../fight/duel.ts';
 import type { ZoneRow } from '../stubs.ts';
 
-export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; startClearance: number; leashMargin: number; pitScale: number; spreadRadiusMetres: number };
-type Limits = { retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; startClearance: [number, number]; leashMargin: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number] };
+export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; startClearance: number; leashMargin: number; pitScale: number; spreadRadiusMetres: number; loadWithinMetres: number };   // loadWithinMetres: a spawn in another body than the live rig loads that body's file only when the hero is within this many metres (first-visit weight)
+type Limits ={ retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; startClearance: [number, number]; leashMargin: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number]; loadWithinMetres: [number, number] };
 export const WORLD = ROWS.world as WorldRows;
 const LIMITS = ROWS.limits as unknown as Limits;
 
@@ -44,7 +44,7 @@ export function spotsFor(zone: ZoneRow, world: WorldRows = WORLD): Spot[] {
  * ambiguous) or closer than `minSpacing`, or a spawn kind that is no profile row (`kinds`, optional: the data/profiles.json ids; every spawn fights as its own kind, src/fight/spawn-kind.ts).
  */
 export function validateSpots(spots: readonly Spot[], heroStart: At, wall: number, world: WorldRows = WORLD, kinds?: readonly string[], limits: Limits = LIMITS): void {
-  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres'] as const) {
+  for (const key of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres', 'loadWithinMetres'] as const) {
     const [lo, hi] = limits[key], v = world[key];
     if (!(Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`respawn.json world.${key} ${v} is not in ${lo}..${hi}`);
   }
@@ -73,6 +73,9 @@ export function nearestStanding(spawns: readonly Spawn[], at: At): number {
   spawns.forEach((s, i) => { if (isStanding(s) && (best < 0 || dist(s, at) < dist(spawns[best]!, at))) best = i; });
   return best;
 }
+
+/** Is the hero close enough to `s` for its body file to be fetched (respawn.json world.loadWithinMetres)? A spawn beyond it draws nothing and requests nothing (the 2026-10-28 weight finding: both boss GLBs were fetched at load, +3.1 MB first visit). */
+export const withinLoad = (s: At, hero: At, world: Pick<WorldRows, 'loadWithinMetres'> = WORLD): boolean => dist(s, hero) <= world.loadWithinMetres;
 
 /** The standing spawn nearest the hero among those whose aggro he is inside, or -1: the one he has walked up to. */
 export function inAggro(spawns: readonly Spawn[], at: At): number {
