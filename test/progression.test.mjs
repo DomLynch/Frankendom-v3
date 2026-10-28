@@ -78,15 +78,16 @@ test('difficulty escalates per kill, additive, and stops at the caps', () => {
 test('the unlocked weapon becomes his: the newest he can draw, ?weapon= picks among his, nothing undrawable', () => {
   const draw = ['longsword', 'gladius', 'cleaver'];
   const g = kill(freshSave(), 'gargantua'), ga = kill(g, 'arachne'), all = kill(ga, 'pitborn');
-  assert.equal(heroWeapon(g, P, 'longsword', draw, ''), 'gladius');
-  assert.equal(heroWeapon(ga, P, 'longsword', draw, ''), 'cleaver');
-  assert.equal(heroWeapon(all, P, 'longsword', draw, ''), 'cleaver', 'the maul is unlocked but has no art for his hand: he keeps the cleaver');
+  assert.equal(P.autoEquip, false, 'shipped row: a kill never switches his weapon (Dom 2026-10-28)');
+  for (const s of [freshSave(), g, ga, all]) assert.equal(heroWeapon(s, P, 'longsword', draw, ''), 'longsword', '0, 1, 2, 3 kills: the longsword');
+  assert.deepEqual(ga.unlocked, ['gladius', 'cleaver'], 'the unlocks are still saved');
   assert.equal(heroWeapon(all, P, 'longsword', draw, '?weapon=gladius'), 'gladius');
-  assert.equal(heroWeapon(all, P, 'longsword', draw, '?weapon=longsword'), 'longsword');
-  assert.equal(heroWeapon(all, P, 'longsword', draw, '?weapon=maul'), 'cleaver');
-  assert.equal(heroWeapon(g, P, 'longsword', draw, '?weapon=cleaver'), 'gladius', 'cleaver is not unlocked yet');
-  assert.equal(heroWeapon(all, P, 'longsword', draw, '?weapon=excalibur'), 'cleaver');
-  assert.equal(heroWeapon(all, P, 'longsword', ['longsword'], ''), 'longsword', 'nothing he can draw: the fight row weapon');
+  assert.equal(heroWeapon(all, P, 'longsword', draw, '?weapon=maul'), 'longsword');
+  assert.equal(heroWeapon(g, P, 'longsword', draw, '?weapon=cleaver'), 'longsword', 'cleaver is not unlocked yet');
+  const on = { ...P, autoEquip: true };   // the old newest-unlock rule, behind the row
+  assert.equal(heroWeapon(g, on, 'longsword', draw, ''), 'gladius');
+  assert.equal(heroWeapon(all, on, 'longsword', draw, ''), 'cleaver', 'the maul has no art for his hand: he keeps the cleaver');
+  assert.equal(heroWeapon(all, on, 'longsword', ['longsword'], ''), 'longsword', 'nothing he can draw: the fight row weapon');
 });
 
 test('the save round-trips in its own key and touches no other key', () => {

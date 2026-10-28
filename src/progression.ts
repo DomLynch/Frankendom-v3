@@ -8,7 +8,7 @@ import { cleanCorpse, type Pile } from './corpse-run.ts';
 import { cleanDaily, type DailyRecord } from './daily-pit.ts';
 
 export type BossRow = { id: string; weapon: string; name: string; healthStep: number; damageStep: number };
-export type ProgressionFile = { query: string; off: string; key: string; version: number; weaponQuery: string; lineSeconds: number; healthCap: number; damageCap: number; bosses: readonly BossRow[] };
+export type ProgressionFile = { query: string; off: string; key: string; version: number; weaponQuery: string; autoEquip: boolean; lineSeconds: number; healthCap: number; damageCap: number; bosses: readonly BossRow[] };
 /** The save: `kills` per boss id, `ladder` the boss ids in the order each was first killed, `unlocked` the weapons that opened (always the ladder's weapons, in ladder order). */
 /** The corpse run's fields (data/corpse-run.json, src/corpse-run.ts) ride in the same save: `coins` carried (unbanked), `banked`, the ONE `pile` a death left, and `lost` weapons (a replaced pile's) until their boss falls again. */
 export type Save = { v: number; kills: Record<string, number>; ladder: string[]; unlocked: string[]; trophies?: Record<string, number>; coins: number; banked: number; pile: Pile | null; lost: string[]; daily?: DailyRecord };   // daily (data/daily-pit.json, src/daily-pit.ts): today's Daily Pit attempts and best, absent until the first attempt, so an old save loads as it was. trophies (data/stars.json): star kills per trophy tier; absent until the first star kill, so a save without stars is byte for byte the one before
@@ -20,6 +20,7 @@ export function validateProgression(file: ProgressionFile, profileIds: readonly 
   const e: string[] = [];
   for (const k of ['query', 'off', 'weaponQuery'] as const) if (typeof file[k] !== 'string' || !/^[a-z]+$/.test(file[k])) e.push(`progression.${k}: a lower-case word`);
   if (typeof file.key !== 'string' || !/^[A-Za-z0-9._-]{3,60}$/.test(file.key)) e.push('progression.key: 3-60 letters, digits, . _ -');
+  if (typeof file.autoEquip !== 'boolean') e.push('progression.autoEquip: true or false (false = a kill saves its weapon but the hero keeps the fight row weapon)');
   if (!Number.isInteger(file.version) || file.version < 1) e.push('progression.version: a whole number from 1');
   if (!(Number.isFinite(file.lineSeconds) && file.lineSeconds > 0 && file.lineSeconds <= 60)) e.push('progression.lineSeconds: 0 to 60');
   for (const k of ['healthCap', 'damageCap'] as const) if (!(Number.isFinite(file[k]) && file[k] >= 1 && file[k] <= 4)) e.push(`progression.${k}: 1 to 4 (a multiplier; 1 = no escalation)`);
@@ -108,7 +109,7 @@ export function mergeTune(base: TuneMap, extra: TuneMap): TuneMap {
 export function heroWeapon(save: Save, file: ProgressionFile, fallback: string, drawable: readonly string[], search: string): string {
   const asked = new URLSearchParams(search).get(file.weaponQuery);
   if (asked && (asked === fallback || save.unlocked.includes(asked)) && drawable.includes(asked)) return asked;
-  for (let i = save.unlocked.length - 1; i >= 0; i--) if (drawable.includes(save.unlocked[i]!)) return save.unlocked[i]!;
+  if (file.autoEquip) for (let i = save.unlocked.length - 1; i >= 0; i--) if (drawable.includes(save.unlocked[i]!)) return save.unlocked[i]!;
   return fallback;
 }
 
