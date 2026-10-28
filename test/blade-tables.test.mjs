@@ -53,7 +53,7 @@ test('the cut keeps the named tables byte for byte and drops the rest', () => {
   assert.deepEqual(Object.keys(table), ['hero']);
   assert.deepEqual(Object.keys(table.hero).sort(), [...FIGHT.bladeTables.hero].sort());
   for (const w of FIGHT.bladeTables.hero) assert.deepEqual(table.hero[w], bladePathsByRig.hero[w], `hero/${w}`);
-  assert.ok(out.length < SRC.length * 0.33, `cut to ${out.length} of ${SRC.length} bytes`);   // 0.25 before the scythe (#193) and Gargantua's maul (data/boss-weapons.json, 2026-10-28: + hero/maul, 28 KB raw / ~11 KB gzip)
+  assert.ok(out.length < SRC.length * 0.40, `cut to ${out.length} of ${SRC.length} bytes`);   // 0.25 before the scythe (#193); 0.33 before Gargantua's maul (data/boss-weapons.json, 2026-10-28). Two heavy-weapon tables are kept on purpose: the maul is Gargantua's (spawn-kind.ts bossOpponent) and the scythe is still the executioner's under ?bossweapon=v1 and in every profile-row check below; measured 38 % (156849 of 412923 bytes), maul about +28 KB raw / ~11 KB gzip
 });
 
 test('a named table the source lacks is an error, not a gap', () => {
