@@ -3,12 +3,12 @@
 // draws a handful of dots on a 2D canvas; it never touches the sim, the camera or the input (pointer-events none). The maths below is pure (test/radar.test.mjs); `mountRadar` is the only DOM.
 import ROWS from '../../data/radar.json' with { type: 'json' };
 
-export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead';
+export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead' | 'pile';
 type Style = { colour: string; alpha: number; sizePx: number };
 export type RadarRows = {
   on: boolean; query: string; off: string; corner: string; sizePx: number; marginPx: number; offsetPx: number; zIndex: number; rangeMetres: number; rimInset: number; dprMax: number;
   disc: { colour: string; alpha: number }; rim: { colour: string; alpha: number; widthPx: number }; edgeAlpha: number; hero: Style;
-  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean } };
+  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean }; pile: Style };
   kinds: Record<string, string>; defaultKind: string;
 };
 const CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
@@ -26,7 +26,7 @@ export function validateRadar(r: RadarRows): void {
   colour('disc.colour', r.disc?.colour); num('disc.alpha', r.disc?.alpha, 0, 1);
   colour('rim.colour', r.rim?.colour); num('rim.alpha', r.rim?.alpha, 0, 1); num('rim.widthPx', r.rim?.widthPx, 0, 6);
   colour('hero.colour', r.hero?.colour); num('hero.alpha', r.hero?.alpha, 0, 1); num('hero.sizePx', r.hero?.sizePx, 0.5, 20);
-  for (const c of ['hostile', 'player', 'npc', 'dead'] as const) {
+  for (const c of ['hostile', 'player', 'npc', 'dead', 'pile'] as const) {
     const s = r.classes?.[c];
     colour(`classes.${c}.colour`, s?.colour); num(`classes.${c}.alpha`, s?.alpha, 0, 1); num(`classes.${c}.sizePx`, s?.sizePx, 0.5, 20);
   }
@@ -65,6 +65,11 @@ export function bossBlips(rows: RadarRows, spawns: readonly { x: number; z: numb
 export function playerBlips(handle: { remotes?: (now: number) => readonly { x: number; z: number }[] } | undefined, now: number, origin: { x: number; z: number }, emit: (x: number, z: number, cls: RadarClass) => void): void {
   if (!handle || typeof handle.remotes !== 'function') return;
   for (const p of handle.remotes(now)) emit(p.x - origin.x, p.z - origin.z, 'player');
+}
+
+/** The hero's corpse-run pile (data/corpse-run.json, a save field) as one blip of the `pile` class; none when there is no pile. Held on the rim like any dot beyond range, so it always points the way. */
+export function pileBlip(pile: { x: number; z: number } | null | undefined, emit: (x: number, z: number, cls: RadarClass) => void): void {
+  if (pile) emit(pile.x, pile.z, 'pile');
 }
 
 const rgba = (hex: string, a: number): string => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;

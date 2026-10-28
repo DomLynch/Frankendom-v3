@@ -30,7 +30,7 @@ import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-rea
 import type { PickedStance } from '../fight/stance.ts';
 import { createScene, CARRIED_WEAPONS } from '../fight/scene.ts';
 import PROGRESSION from '../../data/progression.json' with { type: 'json' };
-import { escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type ProgressionFile } from '../progression.ts';
+import { escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -52,7 +52,9 @@ import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
 import { foeSweepsFor } from '../fight/foe-reach.ts';
 import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
-import { RADAR, bossBlips, mountRadar, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
+import { CORPSE, atCamp, bank, carriedSave, dropPile, earn, inReach, lineOf, lingerSpot, regain, retrieve, validateCorpseRun } from '../corpse-run.ts';   // the corpse run (data/corpse-run.json; rides the progression save)
+import { mountCorpseHud } from '../fight/corpse-hud.ts';
+import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
@@ -97,8 +99,9 @@ const TUNED = tuneFrom(TUNE as TuneFile, search);   // ?tune=gargantua.health:1.
 const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 { const bad = validateProgression(PROG_ROWS, PROFILES.profiles.map((p) => p.id), isWeaponId); if (bad.length) throw new Error(`data/progression.json: ${bad.join('; ')}`); }
 const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
+validateCorpseRun(CORPSE, PROFILES.profiles.map((p) => p.id));   // data/corpse-run.json: a bad row stops the page at load
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
-const HERO_WEAPON = (PROG?.save ? heroWeapon(PROG.save, PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
+const HERO_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
 const KIND_CTX: KindCtx = { tune: PROG?.save ? mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)) : TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
@@ -285,6 +288,58 @@ const heroStart = initialState();   // where the hero stands at a first load and
 const poseFor = (index: number, at: { x: number; z: number }): DuelPose => poseAt(at, spawns[index]!, OPEN_RADIUS, ZONE!.minDistance, heroStart);
 /** The kind spawn `index` fights as (its zone row's `kind`, a data/profiles.json row): the sim's opponent whenever it holds that spawn or that spawn joins as an attacker. */
 const kindAt = (index: number): KindFight => KINDS(spawns[index]!.kind);
+// THE CORPSE RUN (data/corpse-run.json, src/corpse-run.ts; Dom 2026-10-28, Valheim style, no flag of its own): a boss kill pays coins the hero carries until he banks them at camp; when he dies his carried coins and the
+// weapon he carries leave him as ONE pile where he fell (a second death replaces it), he respawns at camp with neither, and walking over the pile gives them back. The boss that killed him lingers at the pile: its
+// spot moves there with the row's leash for the row's seconds (the existing aggro, leash and walk-home rules, no new AI). The pile lives in the progression save (so ?save=off and ?pitborn=v1 are the game as before).
+const CR = ZONE && PROG ? CORPSE : null;
+const crHud = CR ? mountCorpseHud(document, CR) : null;
+let carriedWeapon: string = HERO_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
+const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
+function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
+function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
+function startLinger(idx: number) {
+  const pile = PROG?.save?.pile;
+  if (!CR || !pile || idx < 0 || !spawns[idx]) return;
+  endLinger();
+  lingerIdx = idx; lingerLeft = CR.linger.seconds; spawns = spawns.map((s, i) => (i === idx ? lingerSpot(CR, s, pile) : s));
+}
+function endLinger() {
+  if (lingerIdx < 0) return;
+  const i = lingerIdx; lingerIdx = -1;
+  spawns = spawns.map((s, k) => (k === i ? { ...SPOTS[i]!, deadFor: s.deadFor } : s));
+  if (i === current && !engaged && !practice.finish) leashReset(i, state);   // the lingering boss that stands alone goes home (the existing reset, at its own spot)
+}
+/** The hero has just died: what he carries leaves him as the pile; the boss that killed him lingers at it. Nothing here throws. */
+function onHeroDied() {
+  if (!CR || !PROG?.save) return;
+  try {
+    const who = killedBy ?? current, out = dropPile(PROG.save, CR, { x: state.x, z: state.z }, spawns[who]!.kind, carriedWeapon !== FIGHT.weapon ? carriedWeapon : null);
+    if (!out.pile) return;
+    crPut(out.save); carriedWeapon = FIGHT.weapon;
+    startLinger(who);
+  } catch (error) { console.warn('corpse run: pile not dropped', error); }
+}
+/** Every frame: the pile is retrieved on touch, carried coins bank at camp, the lingering boss goes home when its time is up. */
+function corpseStep(dt: number) {
+  if (!CR || !PROG?.save) return;
+  try {
+    crClock += dt;
+    const alive = practice.playerHealth > 0, pile = PROG.save.pile;
+    if (alive && pile && inReach(CR, pile, state)) {
+      const out = retrieve(PROG.save, CR);
+      crPut(out.save); if (out.weapon) carriedWeapon = out.weapon;
+      crLine(lineOf(out.weapon ? CR.pile.lineWeapon : CR.pile.line, { coins: out.coins, weapon: out.weapon ? weaponName(out.weapon) : '' }));
+    } else if (alive && PROG.save.coins > 0 && atCamp(CR, heroStart, state)) {
+      const out = bank(PROG.save, CR);
+      crPut(out.save); crLine(lineOf(CR.bank.line, { coins: out.coins }));
+    }
+    if (lingerIdx >= 0) {
+      lingerLeft -= dt;
+      if (lingerLeft <= 0 && !(engaged && lingerIdx === current) && !attackers.some((a) => a.index === lingerIdx && !a.dead)) endLinger();
+    }
+  } catch (error) { console.warn('corpse run: step failed', error); }
+}
+if (CR && PROG?.save?.pile) startLinger(spawns.findIndex((s) => s.kind === PROG!.save!.pile!.boss));   // a pile from an earlier visit: its boss stands at it from the first frame
 if (ZONE) { current = nearestStanding(spawns, heroStart); useKind(kindAt(current)); practice = fresh(poseFor(current, heroStart)); state = previous = practice.fighter; }   // the page opens on the hero at the mark and the bosses at their spots
 function rematch(pose?: DuelPose, index = current, restart = true, handOver = false) {
   if (ZONE) useKind(kindAt(index));   // the sim's opponent becomes the spawn it is handed to (and back as the hero walks to another)
@@ -331,15 +386,22 @@ function onBossKilled(kind: string) {
   try {
     const out = recordKill(PROG.save, kind, PROG_ROWS);
     if (out.save === PROG.save) return;
-    PROG.save = out.save; writeSave(PROG.store, PROG_ROWS, PROG.save);
+    let next = out.save, regained: BossRow | null = null;
+    if (CR) {   // the corpse run: the kill pays coins, and a weapon lost with a replaced pile comes back with its boss's next kill
+      next = earn(next, CR, kind);
+      const row = PROG_ROWS.bosses.find((b) => b.id === kind), back = row ? regain(next, row.weapon) : null;
+      if (back?.regained) { next = back.save; regained = row!; }
+    }
+    PROG.save = next; writeSave(PROG.store, PROG_ROWS, PROG.save);
     KIND_CTX.tune = mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
-    if (out.unlocked) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(unlockText(out.unlocked));
+    if (out.unlocked || regained) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(unlockText((out.unlocked ?? regained)!));
   } catch (error) { console.warn('progression: kill not recorded', error); }
 }
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
   spawns = timers.spawns;
+  corpseStep(dt);
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
     for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { onBossKilled(spawns[a.index]!.kind); spawns = kill(spawns, a.index); }
@@ -354,6 +416,7 @@ function zoneStep(dt: number) {
       if (next >= 0) hand(next, hero);
     }
   } else if (heroDied()) {
+    if (sinceDeath === 0) onHeroDied();   // the first frame of the death: what he carries drops where he fell
     sinceDeath += dt;
     if (DEATH ? standUpDue(DEATH, sinceDeath, respawnAsked) : sinceDeath >= ZONE!.diedSeconds) { respawnAsked = false; const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
@@ -553,6 +616,7 @@ function frame(now: number) {
   );
   frameEvents = [];
   radar?.frame(state.x, state.z, view.yaw);
+  if (crHud && PROG?.save) { const p = PROG.save.pile; crHud.marker(p ? view.project([p.x, 0.15, p.z]) : null, p ? Math.hypot(p.x - state.x, p.z - state.z) : 0, crClock); crHud.coins(PROG.save.coins, PROG.save.banked); }
   updateHud();
   requestAnimationFrame(frame);
 }
@@ -560,7 +624,7 @@ nameOpponent();
 updateHud();
 const radarOrigin = ZONE ? pitOrigin(zoneFor(search), WORLD) : { x: 0, z: 0 };   // the radar (data/radar.json): bosses at their live spots, other players from the presence handle; hero and yaw come in per frame
 const radarLive = (i: number) => { if (i === current) return practice.enemy; for (let k = 0; k < attackers.length; k++) if (attackers[k]!.index === i) return attackers[k]!.practice.enemy; return undefined; };   // a boss in a fight is at its sim position, the rest at their spots
-const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); } }) : null;
+const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); if (CR) pileBlip(PROG?.save?.pile, emit); } }) : null;
 let buildLabel = '';
 fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, 7); element('build').textContent = buildLabel; }).catch(() => {});
 // ?snd=1: the audio state beside the build label, e.g. "f297c4e running+sprite+keep 12" (context, sprite decoded, silent clip, cues played)
