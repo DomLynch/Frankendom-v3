@@ -243,7 +243,7 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   assert.match(live, /leashed\(spawns\[current\]!, practice\.enemy(, openerLift)?\)/, 'the leash measures the boss, not the hero (live code, not a comment)');
   assert.match(live, /dropped\(spawns, alive\(\), \(i\) => attackers\.find\(\(a\) => a\.index === i\)!\.practice\.enemy\)/);
   assert.doesNotMatch(main, /respawnDue|sinceKill/);
-  assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number; id\?: string; spawn\?: SpawnRef \}\[\]\)/);
+  assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number; id\?: string; spawn\?: SpawnRef; near\?: boolean \}\[\]\)/);
   assert.match(scene, /snapshotRig\(opponent, false\)/);
   assert.match(scene, /syncIdleFoes\(practice, dt\);\n\s*syncLiveFoes\(dt\);\n\s*if \(!look\?\.render\(\)\)/, 'the copies are placed just before the draw');
 });
