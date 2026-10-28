@@ -3,11 +3,17 @@
 import ROWS from '../../../data/mechanics.json' with { type: 'json' };
 import type { Practice } from '../combat.ts';
 import type { MechanicRuntime } from './runtime.ts';
+import { MECHANIC_SCALE } from './runtime.ts';
 import { createGourdBombsRuntime } from './gourd-bombs.ts';
+import { createKingAuraRuntime } from './king-aura.ts';
 
 export const MECHANICS: Readonly<Record<string, (row: never) => MechanicRuntime>> = {
   'gourd-bombs': createGourdBombsRuntime as (row: never) => MechanicRuntime,
+  'king-aura': createKingAuraRuntime as (row: never) => MechanicRuntime,
 };
+
+/** The page hands the sim a spawn: `damage` is its multiplier (ring, star, Daily Pit), read by a mechanic that scales with it (the King's aura). */
+export function setMechanicScale(damage: number): void { MECHANIC_SCALE.damage = damage; }
 
 /** The page's one handle: a runtime per row of data/mechanics.json, keyed by the boss it belongs to. */
 export function createMechanics(rows: Readonly<Record<string, { type: string }>> = ROWS.mechanics) {

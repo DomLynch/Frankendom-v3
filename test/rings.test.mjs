@@ -30,6 +30,7 @@ test('the shipped rings validate against the profiles, the rig, the sky plates a
   assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'kachujin', 'castle-guard', 'sporty-granny', 'the-boss', 'parasite', 'anime-boy-black', 'anime-girl-blonde', 'big-vegas']);
   assert.ok(RINGS.bosses.every((b) => b.mechanic === null || MECHANICS[b.mechanic]?.boss === b.kind), 'one signature mechanic each: null until built, else a data/mechanics.json row that names this boss');
   assert.equal(RINGS.bosses[0].mechanic, 'gourd', 'Lord Gourd throws pumpkin bombs');
+  assert.equal(RINGS.bosses.find((b) => b.kind === 'big-vegas').mechanic, 'king-aura', 'The King has his aura');
 });
 
 test('every spawned ring boss body has a cut row (data/cut-bodies.json) and a measure row in the pinned physics package', () => {
