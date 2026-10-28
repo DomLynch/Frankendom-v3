@@ -45,7 +45,7 @@ import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { heroSpecialFxFor, setHeroSpecialFx } from '../fight/hero-special-fx.ts';
 import { setSpecialSink } from '../fight/special-sink.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
-import { foeDisplayName, foeNameFor, setFoeName, setKindNames } from '../fight/foe-name.ts';
+import { foeDisplayName, foeNameFor, setActiveKind, setFoeName, setKindNames } from '../fight/foe-name.ts';
 import { pitbornV1 } from '../fight/foe-pick.ts';
 import { orderedZone, orderProfile } from '../fight/boss-order.ts';
 import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
@@ -106,7 +106,8 @@ const KIND_CTX: KindCtx = { tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(P
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
-  const changed = !foe || foe.opponentId !== k.opponentId;
+  const changed = !foe || foe.opponentId !== k.opponentId || foe.kind !== k.kind;   // two bosses on one archetype (a ring boss cloned from Arachne) differ by their profile row
+  setActiveKind(k.kind);
   foe = k; opponentId = k.opponentId as OpponentId; opponent = k.opponent; difficultyOn = k.scaled; aiProfile = k.ai;
   if (changed) nameOpponent();   // the HUD names the spawn the sim holds
 }

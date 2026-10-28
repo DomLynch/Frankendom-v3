@@ -12,6 +12,7 @@ import { bodyOwnerOf } from '../src/fight/foe-body.ts';
 import { validateZone } from '../src/sim/validate.js';
 import { kindFightFor, kindProblem } from '../src/fight/spawn-kind.ts';
 import { initialState } from '../src/fight/sim.ts';
+import { foeDisplayName, setActiveKind, setKindNames } from '../src/fight/foe-name.ts';
 import * as play from '../src/fight/play-radius.ts';
 
 const read = (f) => JSON.parse(readFileSync(new URL(`../data/${f}.json`, import.meta.url), 'utf8'));
@@ -61,7 +62,7 @@ test('the ringed zone validates as a zone row and as spots the page can stand (s
   assert.doesNotThrow(() => validateSpots(spots, initialState(), wall, WORLD, kinds));
   assert.ok(WORLD.spreadRadiusMetres >= Math.max(...spots.map((s) => Math.hypot(s.x, s.z) + Math.max(s.leash, wall))), 'ring 3 lies inside the spawn extent');
   const nearest = (s) => Math.min(...spots.filter((t) => t !== s).map((t) => Math.hypot(s.x - t.x, s.z - t.z)));
-  for (const s of spots.slice(3)) assert.ok(nearest(s) >= 30 + 40, `${s.id} stands well clear of every other camp (${nearest(s)} m): the camp stays quiet`);
+  for (const s of spots.slice(3)) assert.ok(nearest(s) >= WORLD.minSpacing * 1.5, `${s.id} stands well clear of every other camp (${nearest(s)} m): the camp stays quiet`);
 });
 
 test('every ring boss is a profile row cloning Arachne\'s or the Minotaur\'s: same archetype, health scale, damage scale and brain', () => {
@@ -160,6 +161,14 @@ test('wiring pins: the page lays the ring tune under the address\'s, mixes the l
   assert.match(main, /view\.ringLook\(look\.tintA, look\.tintB, look\.t, look\.plates\)/);
   assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch\)/);
   assert.match(scene, /plateWeights\(plates\)/);
+});
+
+test('names: a ring boss is named by its own profile row; Arachne and the Minotaur keep theirs although the ring bosses clone their archetypes', () => {
+  setKindNames(PROFILES.profiles);
+  assert.deepEqual(['shieldmaiden', 'pitborn'].map(foeDisplayName), ['Arachne', 'Minotaur'], 'the first row of an archetype names it');
+  for (const b of RINGS.bosses) { setActiveKind(b.kind); assert.equal(foeDisplayName(PROFILES.profiles.find((p) => p.id === b.kind).opponent), b.name); }
+  setActiveKind('arachne'); assert.equal(foeDisplayName('shieldmaiden'), 'Arachne');
+  setKindNames([]);
 });
 
 test('the zone set carries the ringed row and nothing else changed about it', () => {
