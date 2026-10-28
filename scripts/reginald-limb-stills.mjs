@@ -37,7 +37,7 @@ for (let i = 0; i < 400 && /sheathed|draw/.test((await read()).hero); i++) await
 let s = await read(); console.log(`${tag}: engaged ${JSON.stringify({ current: s.current, health: s.health, max: s.max, phases: s.phases })}`);
 await shot('1-whole');
 const seen = { arm: new Set(), leg: new Set() };
-let armShot = false, legShot = false, started = Date.now();
+let armShot = false, legShot = false, started = Date.now(), loops = 0;
 while (Date.now() - started < 240000) {
   s = await read();
   if (s.finish || s.foe === 'dead') break;
@@ -47,6 +47,7 @@ while (Date.now() - started < 240000) {
   if (s.foe === 'attack' && s.move) { if (arm) seen.arm.add(s.move); if (leg) seen.leg.add(s.move); }
   await topUp();
   const d = Math.hypot(s.x - s.hx, s.z - s.hz);
+  if (++loops % 15 === 1) console.log(`${tag}: gap ${d.toFixed(2)} m foe ${s.foe}/${s.move} hp ${s.health}/${s.max} hero ${s.hero} at ${s.hx.toFixed(1)},${s.hz.toFixed(1)} foe at ${s.x.toFixed(1)},${s.z.toFixed(1)}`);
   if (d > 1.9) await press('KeyW', 160); else { await press(['KeyF', 'KeyF', 'KeyC', 'KeyF'][Math.floor(s.tick / 40) % 4], 70); await press('KeyQ', 90); }   // F strike, C kick, Q guard (data/input.json keys)
 }
 const end = await read();
