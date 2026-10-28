@@ -1,6 +1,14 @@
 {
   "about": "The one fight V3 plays: the first career fight of a frankendom.com page load at 82a994d15 (V1 main.ts + match.ts begin('career')): the Centurion at the Match's default level (PRESET_LEVEL.normal = level-anchor-defs.json normal, 18: V1 only moves to the career level on a rematch, and a rematch that changes his loadout reloads the page, so a guest always meets him at 18 with the gladius and scutum), met at a guest's tier (Recruit), the Match's default seed, the longsword, SPECIAL 1/2 from career-rules.json betaCut slot defaults, specials on (rows80 specialsFromLevel 1), the default stance pick (stance.ts PICKS[0]). Rematch steps the seed as V1 nextSeed does. tempoHz: V1's default tempo (main.ts TEMPO_KEY). frameDtMaxS: the most one frame injects into the sim (V1 first-loss-rules.json frame-dt-max-s). gfx: V1's gfx lift (fx-rows gfx.default on). Dom 2026-10-26 (later): the opponent keeps the Minotaur's look but fights as V1's Pitborn (`opponent`): the Pitborn's moves, cleaver (at every level), stats, AI profile under the `ai` brain row and class special (Earth Fold at 18), no shield and no shield-bearer block; the same level, seed and picks. ?pitborn=v1 (and ?foe=v1) = the Centurion's fight above exactly (`opponentV1`, src/fight/foe-pick.ts).",
-  "opponent": "pitborn",
+  "opponent": "executioner",
+  "order": {
+    "about": "BOSS ORDER (Dom 2026-10-28, 'the women second, the Minotaur third'): the first opponent is the Gargantua (`opponent` executioner, `profile` gargantua; the zone row data/zones/zone1.row.json spawns: Gargantua at the start mark, the Arachne east, the Minotaur west). ?order=v1 (and ?pitborn=v1, the Centurion's fight, which keeps the Minotaur's body) is the order before: `opponent` and `profile` here are the page's first foe and `kinds` maps a zone spawn id to the kind it had (src/fight/boss-order.ts). A data row: reorder the bosses by editing the spawn kinds, the `opponent`/`profile` pair and this map together (test/boss-order.test.mjs pins that they agree).",
+    "query": "order",
+    "v1": "v1",
+    "opponent": "pitborn",
+    "profile": "pitborn",
+    "kinds": { "yard-pitborn": "pitborn", "pit-pitborn-east": "gargantua", "pit-pitborn-west": "arachne" }
+  },
   "opponentV1": {
     "about": "?pitborn=v1 (and ?foe=v1, the Centurion exactly): the opponent before Dom's 2026-10-26 Pitborn call, the Centurion at `level` (gladius + scutum), drawn as the Minotaur with the Cleaver over his gladius (`foeWeapon`) and no shield (src/fight/foe-body.ts). Gate 0's V1-vs-V3 configs are pinned to him (test/gate0/configs.json).",
     "opponent": "veteran"
@@ -40,7 +48,7 @@
     }
   },
   "ai": "novice",
-  "profile": "pitborn",
+  "profile": "gargantua",
   "guardWalk": {
     "about": "V2 #48 (Dom: 'guarding then backing off floats'): moving with a guard held, the legs keep walking. The tracks of these bones (V1's warrior and Centurion rigs) come from the armed walk/strafe/run clips, every other bone from Guard (src/fight/characters.ts setGuardWalk). ?guard=v1 = V1's whole-body Guard clip.",
     "lowerBones": "^(root|pelvis|thigh_[lr]|calf_[lr]|foot_[lr]|ball_[lr]|ball_leaf_[lr])\\."
