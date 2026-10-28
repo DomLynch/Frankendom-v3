@@ -65,7 +65,10 @@ const press = async () => {
     return [x, y, `${el?.id || el?.className || el?.tagName} (rect ${Math.round(r.width)}x${Math.round(r.height)})`, cs.visibility, cs.pointerEvents];
   });
   if (!press.logged) { press.logged = true; console.log(`${tag}: STRIKE at ${b[0].toFixed(0)},${b[1].toFixed(0)}: top element ${b[2]}, visibility ${b[3]}, pointer-events ${b[4]}`); }
-  await page.touchscreen.tap(b[0], b[1]); await run(70);
+  if (process.env.INPUT === 'key') { await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF'); }   // the keyboard's strike
+  else if (process.env.INPUT === 'mouse') await page.mouse.click(30, 300);   // a mouse click on empty canvas (no aim: the next unit)
+  else await page.touchscreen.tap(b[0], b[1]);
+  await run(70);
 };
 const have = async () => new Set((await cuts()).map((c) => c.split(':')[0]));
 if (MODE === 'far') {
