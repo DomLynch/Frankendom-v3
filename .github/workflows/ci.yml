@@ -56,7 +56,7 @@ jobs:
         run: command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)
       - run: npm run build
       # the boss data test (test/boss-expect.test.mjs) again, now against the PRODUCTION build: every boss part, off-hand and body is in dist under its hashed name
-      - run: BOSS_EXPECT_DIST=1 node --test test/boss-expect.test.mjs
+      - run: BOSS_EXPECT_DIST=1 node --test --test-name-pattern 'production build' test/boss-expect.test.mjs
       # --no-save keeps playwright out of package.json and the lockfile (the stills scripts take it from the machine they run on)
       - run: npm install --no-save --no-audit --no-fund playwright@1.63.0
       - uses: actions/cache@v4
