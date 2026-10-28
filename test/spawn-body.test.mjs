@@ -63,8 +63,9 @@ test('the scene: rig cache keyed by body file stem, the live body takes the old 
   const src = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
   assert.match(src, /const bodyAssets = new Map<string,/, 'the cache is keyed by the body id (its 106 file stem)');
   assert.match(src, /if \(file === liveBody\) return warriors\.spawnFoe\(\);/, 'a spawn in the live body is the opponent\'s own spawnFoe, as before');
-  assert.match(src, /warriors\.spawnBody\(asset, builtFoeWeapon\)/);
+  assert.match(src, /warriors\.spawnBody\(asset, weapon, bossOfBody\(file\)\?\.clipsAs\)/, 'a body is armed with its boss weapon row (data/boss-weapons.json), else the page\'s foe weapon (weaponOfBody)');
+  assert.match(src, /const weaponOfBody = \(file: string\): WeaponId \| undefined => bossOfBody\(file\)\?\.weapon \?\? builtFoeWeapon;/, 'no row: the page-wide foe weapon, as before');
   assert.match(src, /if \(!actor\) continue;/, 'a body still loading is not drawn yet');
   const chars = readFileSync(new URL('../src/fight/characters.ts', import.meta.url), 'utf8');
-  assert.match(chars, /spawnBody: \(body: FighterAsset, weapon: WeaponId\) => create\(true,/);
+  assert.match(chars, /spawnBody: \(body: FighterAsset, weapon: WeaponId, clipsAs: WeaponId = weapon\) => create\(true,/, 'clipsAs defaults to the weapon: every body without a boss row takes its own clip family');
 });
