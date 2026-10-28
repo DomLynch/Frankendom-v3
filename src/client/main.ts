@@ -36,6 +36,7 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
+import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
@@ -150,6 +151,7 @@ if (!v1Sound) feedback.prepare();
 for (const type of v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
   window.addEventListener(type, v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, { passive: true });
 const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
+const commentator = mountCommentator(document, Object.fromEntries(PROFILES.profiles.flatMap((p) => ((p as { name?: string }).name ? [[p.id, (p as { name?: string }).name!]] : []))));
 setHeroNoMana(heroNoManaFor(FIGHT.heroMana, search));   // V3 (Dom: "remove mana for now"): the hero has no MANA bar and casts free (data/fight.json heroMana); ?mana=v1 = the bar and the mana cost
 mountManaBar();
 
@@ -364,7 +366,7 @@ function corpseStep(dt: number) {
     const alive = practice.playerHealth > 0, pile = PROG.save.pile;
     if (alive && pile && inReach(CR, pile, state)) {
       const out = retrieve(PROG.save, CR);
-      crPut(out.save); if (out.weapon) carriedWeapon = out.weapon;
+      crPut(out.save); if (out.weapon) carriedWeapon = out.weapon; commentator.say('retrieve');
       crLine(lineOf(out.weapon ? CR.pile.lineWeapon : CR.pile.line, { coins: out.coins, weapon: out.weapon ? weaponName(out.weapon) : '' }));
     } else if (alive && PROG.save.coins > 0 && atCamp(CR, heroStart, state)) {
       const out = bank(PROG.save, CR);
@@ -578,7 +580,8 @@ function frame(now: number) {
   last = now;
   const dt = Math.min(elapsed, FIGHT.frameDtMaxS);
   if (!paused()) {
-    if (ZONE) { zoneStep(dt); syncSweeps(); }   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
+    if (ZONE) { zoneStep(dt); syncSweeps(); }
+    if (ZONE) commentator.frame(dt, engaged, heroDied(), heroStands(), 100 * practice.playerHealth / practice.maxHealth, 100 * practice.health / practice.enemyMaxHealth, spawns[current]!.kind, starById[spawns[current]!.id] ?? 0, state.x, state.z);   // the arena commentator's captions (presentation only)   // every spawn's own timer; a kill, an aggro, a leash, a respawn or the hero's death moves the sim between spawns; the dead body is left lying (view.respawnFoe)
     if (heroStands()) killAge += dt;
     controls.promoteDodge(now);
     // :1517 the pause spends the frame's time first; what is left after it goes on to the simulation
@@ -608,7 +611,7 @@ function frame(now: number) {
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
       }
-      frameEvents.push(...practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
+      frameEvents.push(...practice.events); commentator.events(practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)

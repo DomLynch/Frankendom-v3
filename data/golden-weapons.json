@@ -40,9 +40,9 @@
       "points": [
         { "id": "ring-1-north-east", "weapon": "golden-gladius", "ring": "ring-1", "distance": 58, "angleDeg": 55 },
         { "id": "ring-1-north-west", "weapon": "sunblade", "ring": "ring-1", "distance": 58, "angleDeg": 330 },
-        { "id": "ring-2-east", "weapon": "golden-axe", "ring": "ring-2", "distance": 78, "angleDeg": 110 },
+        { "id": "ring-2-north-west", "weapon": "golden-axe", "ring": "ring-2", "distance": 88, "angleDeg": 335 },
         { "id": "ring-3-north", "weapon": "plasma-spear", "ring": "ring-3", "distance": 120, "angleDeg": 355 },
-        { "id": "ring-3-south", "weapon": "cursed-hammer", "ring": "ring-3", "distance": 120, "angleDeg": 175 }
+        { "id": "ring-3-north-west", "weapon": "cursed-hammer", "ring": "ring-3", "distance": 148, "angleDeg": 335 }
       ]
     },
     "maxGround": 8

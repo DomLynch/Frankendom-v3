@@ -86,7 +86,7 @@
     "SwordDrawn": ["fk_socket_hand_r", "SwordDrawn"],
     "SwordSheathed": ["SwordSheathed", "fk_socket_hip_r"]
   },
-  "plainSkin": ["anime-boy-black-106"],
+  "plainSkin": ["anime-boy-black-106", "anime-girl-blonde-106"],
   "hide": ["Layer_Tunic", "Layer_Helmet", "Layer_Bracers", "Layer_Greaves"],
   "gapFill": {
     "Jog": ["Run", "Walk"],

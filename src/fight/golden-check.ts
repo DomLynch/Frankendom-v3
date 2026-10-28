@@ -21,6 +21,16 @@ export function validateClearance(r: GoldenRows, spots: readonly Spot[]): void {
   }
 }
 
+/**
+ * The rows the PAGE runs with: a roaming point that has come to lie inside a boss's leash clearance (another lane added a boss spawn after the point was placed) is left out and named in the console, never
+ * a broken page at load. The test (validateClearance over the shipped zone) is what fails the PR that does it. The same object when every point is clear.
+ */
+export function clearOf(r: GoldenRows, spots: readonly Spot[]): GoldenRows {
+  const bad: string[] = [];
+  for (const p of r.drops.roaming.points) { const one = { ...r, drops: { ...r.drops, roaming: { ...r.drops.roaming, points: [p] } } }; try { validateClearance(one, spots); } catch (e) { bad.push(p.id); console.warn(String((e as Error).message)); } }
+  return bad.length ? { ...r, drops: { ...r.drops, roaming: { ...r.drops.roaming, points: r.drops.roaming.points.filter((p) => !bad.includes(p.id)) } } } : r;
+}
+
 /** `ringRows`: data/rings.json rings (id, minDist, maxDist). */
 export function validateGolden(r: GoldenRows, isWeapon: (id: string) => boolean, ringRows: readonly { id: string; minDist: number; maxDist: number }[]): void {
   const fail = (m: string): never => { throw new Error(`golden-weapons: ${m}`); };

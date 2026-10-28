@@ -3,7 +3,7 @@
 // real second body is not exercised here (the PR body says so). The default (every spawn the Minotaur) must build nothing: pinned below.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import * as THREE from 'three';
 import { createHeldBodies } from '../src/fight/held-body.ts';
 import { createFoeRagdoll, heldRagdollFor, ragdollBody, ragdollFinisher, ragdollRowFor, setHeldRagdoll } from '../src/fight/ragdoll.ts';
@@ -131,7 +131,12 @@ test('ragdoll rows are per id AND body: a held body without a data/physics.json 
   assert.equal(rigStemOf('minotaur-106'), 'minotaur'); assert.equal(rigStemOf('unmapped-106'), 'unmapped-106');
   // a body whose physics row exists but whose cut GLB/manifest does not: the chunk lists no manifest, the physics-chunk table is the data
   const chunk = src('fight/physics-chunk.ts');
-  assert.match(chunk, /export const cutManifests: Record<string, unknown> = \{ minotaur: minotaurManifest, gargantua: gargantuaManifest, arachne: arachneManifest \};/);
+  // data-driven: the map lists exactly the bodies that have a data/physics.json opponents row AND a cut manifest beside their body file (data/rig.json files), nothing else
+  const RIGF = read('rig').files, line = chunk.match(/export const cutManifests: Record<string, unknown> = \{(.*)\};/)?.[1] ?? '';
+  const listed = [...line.matchAll(/'?([a-z-]+)'?: \w+Manifest/g)].map((m) => m[1]).sort();
+  const cuttable = [...new Set(PHYSICS.opponents.map((o) => o.body))].filter((b) => RIGF[b] && existsSync(new URL(`../src/assets/${RIGF[b]}.cut.manifest.json`, import.meta.url))).sort();
+  assert.deepEqual(listed, cuttable, 'cutManifests lists every body with a physics row and a cut manifest, and no other');
+  assert.ok(['minotaur', 'gargantua', 'arachne'].every((b) => listed.includes(b)));
   assert.match(src('fight/ragdoll.ts'), /c\.cutManifests\?\.\[foe\.body\] \?\? \(foe\.body === 'minotaur' \? c\.minotaurCutManifest : undefined\)/);
 });
 

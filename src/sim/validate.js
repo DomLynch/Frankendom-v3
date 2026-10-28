@@ -53,6 +53,8 @@ export const SCHEMA = {
   // The radar (src/fight/radar.ts validateRadar checks the values): a closed key set; presentation only
   'radar': { keys: ['about', 'on', 'query', 'off', 'corner', 'sizePx', 'marginPx', 'offsetPx', 'zIndex', 'rangeMetres', 'rimInset', 'dprMax', 'disc', 'rim', 'edgeAlpha', 'hero', 'classes', 'flash', 'kinds', 'defaultKind'],
     maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead', 'pile', 'golden'] } },
+  // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
+  'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
   'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
   // Golden weapon drops (src/zone/golden-drops.ts validateGolden checks the values)
@@ -337,8 +339,60 @@ export function validateFile(name, json) {
     errors.push(...checkCameraPitch(json.camera.pitch));
     errors.push(...checkWideLens(json.camera.wide, name));
   }
+  if (name === 'commentator') errors.push(...checkCommentator(json));
   banned(json, name, errors);
   return errors;
+}
+
+// The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
+export const COMMENTATOR_MIN_LINES = 6;
+export function checkCommentator(json) {
+  const e = [], n = 'commentator', fin = (p, v, lo, hi) => { if (!Number.isFinite(v) || v < lo || v > hi) e.push(`${n}.${p}: must be a finite number in ${lo}..${hi}`); };
+  if (typeof json.enabled !== 'boolean') e.push(`${n}.enabled: must be a boolean`);
+  if (typeof json.storageKey !== 'string' || !json.storageKey) e.push(`${n}.storageKey: must be a non-empty string`);
+  if (typeof json.seed !== 'string' || !json.seed) e.push(`${n}.seed: must be a non-empty string`);
+  const only = (p, o, keys) => { if (!o || typeof o !== 'object') { e.push(`${n}.${p}: must be an object`); return false; } for (const k of Object.keys(o)) if (!keys.includes(k)) e.push(`${n}.${p}.${k}: unknown key`); return true; };
+  if (only('caps', json.caps, ['perSession', 'perMinute', 'gapSeconds'])) { fin('caps.perSession', json.caps.perSession, 1, 1000); fin('caps.perMinute', json.caps.perMinute, 1, 60); fin('caps.gapSeconds', json.caps.gapSeconds, 0, 120); if (!Number.isInteger(json.caps.perMinute)) e.push(`${n}.caps.perMinute: must be an integer`); }
+  if (only('caption', json.caption, ['seconds', 'fadeMs', 'maxChars', 'topPct', 'maxWidthPct', 'fontPx', 'colour', 'shadow', 'zIndex'])) {
+    const c = json.caption; fin('caption.seconds', c.seconds, 0.5, 20); fin('caption.fadeMs', c.fadeMs, 0, 2000); fin('caption.maxChars', c.maxChars, 10, 200); fin('caption.topPct', c.topPct, 0, 90); fin('caption.maxWidthPct', c.maxWidthPct, 20, 100); fin('caption.fontPx', c.fontPx, 8, 40); fin('caption.zIndex', c.zIndex, 0, 1000);
+    if (!/^#[0-9a-f]{6}$/i.test(c.colour ?? '')) e.push(`${n}.caption.colour: must be #rrggbb`);
+    if (typeof c.shadow !== 'string') e.push(`${n}.caption.shadow: must be a string`);
+  }
+  if (only('thresholds', json.thresholds, ['heroLowPct', 'bossLowPct', 'missStreak', 'rollCount', 'rollWindowSeconds', 'idleSeconds'])) {
+    const t = json.thresholds; fin('thresholds.heroLowPct', t.heroLowPct, 1, 99); fin('thresholds.bossLowPct', t.bossLowPct, 1, 99); fin('thresholds.missStreak', t.missStreak, 2, 50); fin('thresholds.rollCount', t.rollCount, 2, 50); fin('thresholds.rollWindowSeconds', t.rollWindowSeconds, 0.5, 60); fin('thresholds.idleSeconds', t.idleSeconds, 3, 600);
+    for (const k of ['missStreak', 'rollCount']) if (!Number.isInteger(t[k])) e.push(`${n}.thresholds.${k}: must be an integer`);
+  }
+  if (!json.partNames || typeof json.partNames !== 'object' || Object.values(json.partNames).some((v) => typeof v !== 'string' || !v)) e.push(`${n}.partNames: must map unit ids to non-empty names`);
+  const ev = json.events;
+  if (!ev || typeof ev !== 'object') return [...e, `${n}.events: must be an object`];
+  for (const id of COMMENTATOR_EVENTS) if (!ev[id]) e.push(`${n}.events.${id}: missing`);
+  const cap = json.caption?.maxChars ?? 64;
+  for (const [id, row] of Object.entries(ev)) {
+    const p = `events.${id}`;
+    if (!COMMENTATOR_EVENTS.includes(id)) { e.push(`${n}.${p}: unknown event id`); continue; }
+    if (!only(p, row, ['about', 'cooldownSeconds', 'probability', 'priority', 'params', 'lines'])) continue;
+    if (typeof row.about !== 'string' || !row.about) e.push(`${n}.${p}.about: must be a non-empty string`);
+    fin(`${p}.cooldownSeconds`, row.cooldownSeconds, 0, 3600);
+    if (!Number.isFinite(row.probability) || row.probability <= 0 || row.probability > 1) e.push(`${n}.${p}.probability: must be a number in (0, 1]`);
+    if (row.priority !== undefined && typeof row.priority !== 'boolean') e.push(`${n}.${p}.priority: must be a boolean`);
+    const params = row.params ?? [];
+    if (!Array.isArray(params) || params.some((x) => typeof x !== 'string' || !/^\w+$/.test(x))) e.push(`${n}.${p}.params: must be a list of names`);
+    if (!Array.isArray(row.lines) || row.lines.length < COMMENTATOR_MIN_LINES) { e.push(`${n}.${p}.lines: needs at least ${COMMENTATOR_MIN_LINES} lines`); continue; }
+    const seen = new Set();
+    row.lines.forEach((line, i) => {
+      const q = `${n}.${p}.lines[${i}]`;
+      if (typeof line !== 'string' || !line.trim()) return void e.push(`${q}: must be a non-empty string`);
+      if (seen.has(line)) e.push(`${q}: duplicate line`); seen.add(line);
+      const shown = line.replace(/\{\w+\}/g, 'xxxxxxxxxx');
+      if (shown.length > cap) e.push(`${q}: longer than caption.maxChars (${cap}) once filled`);
+      for (const [, name] of line.matchAll(/\{(\w+)\}/g)) if (!params.includes(name)) e.push(`${q}: {${name}} is not a declared param`);
+      if (/[{}]/.test(line.replace(/\{\w+\}/g, ''))) e.push(`${q}: stray brace`);
+      if (COMMENTATOR_DENY.test(line)) e.push(`${q}: not PG-13 or names a real person`);
+    });
+  }
+  return e;
 }
 
 // data/stage.json `skyline` (src/fight/skyline.ts): the 360-degree backdrop. Ranges keep it inside the camera's BASE far plane (180 m, src/fight/scene.ts; the zone's open ground only

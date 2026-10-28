@@ -4,7 +4,7 @@ import type { Object3D } from 'three';
 import { GOLDEN, createGolden, freshGolden, loadWeapon, type GoldenSave } from '../zone/golden-drops.ts';
 import { RINGS } from '../zone/rings.ts';
 import { mountGoldenHud } from './golden-hud.ts';
-import { validateClearance, validateGolden, type Spot } from './golden-check.ts';
+import { clearOf, validateGolden, type Spot } from './golden-check.ts';
 
 type Doc = Parameters<typeof mountGoldenHud>[0];
 export type GoldenPage = {
@@ -22,7 +22,7 @@ export const checkGolden = (isWeapon: (id: string) => boolean): void => validate
 export const goldenWeaponAtLoad = (save: GoldenSave | undefined, drawable: readonly string[], fallback: string): string => loadWeapon(save, GOLDEN, drawable, fallback);
 
 export function mountGolden(p: GoldenPage) {
-  validateClearance(GOLDEN, p.spots);   // a roaming pickup inside a boss's leash would drag the hero into a fight: a bad row stops the page at load
-  const ui = mountGoldenHud(p.doc, GOLDEN, () => p.view.heroWeaponNode(), (x, y, z, out) => p.view.projectInto(x, y, z, out), () => performance.now());
-  return createGolden({ rows: GOLDEN, drawable: p.drawable, ui, get: () => p.get() ?? freshGolden(), put: p.put, now: () => Date.now(), rng: Math.random });
+  const rows = clearOf(GOLDEN, p.spots);   // a roaming pickup inside a boss's leash would drag the hero into a fight: such a point is left out here (named in the console) and the test fails the PR that made it so
+  const ui = mountGoldenHud(p.doc, rows, () => p.view.heroWeaponNode(), (x, y, z, out) => p.view.projectInto(x, y, z, out), () => performance.now());
+  return createGolden({ rows, drawable: p.drawable, ui, get: () => p.get() ?? freshGolden(), put: p.put, now: () => Date.now(), rng: Math.random });
 }

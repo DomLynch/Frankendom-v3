@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import {
   GOLDEN, bonusOf, bossDrop, boostedBy, cleanGolden, createGolden, dropGolden, freshGolden, goldenBlips, itemsNow, lineOf, loadWeapon, lose, nearest, pointAt, rowOf, spend, take, usableRows,
 } from '../src/zone/golden-drops.ts';
-import { validateClearance, validateGolden } from '../src/fight/golden-check.ts';
+import { clearOf, validateClearance, validateGolden } from '../src/fight/golden-check.ts';
 import { zoneFor } from '../src/stubs.ts';
 import { spotsFor } from '../src/zone/spawns.ts';
 import { orderedZone } from '../src/fight/boss-order.ts';
@@ -59,7 +59,7 @@ test('roaming points: placed by ring distance and bearing, taken ones come back 
   const p = GOLDEN.drops.roaming.points[0], spot = pointAt(GOLDEN, p);
   assert.ok(Math.abs(Math.hypot(spot.x, spot.z) - p.distance) < 1e-9);
   const now = 1_000_000, all = itemsNow(freshGolden(), GOLDEN, USABLE, now);
-  assert.deepEqual(all.map((i) => i.key), ['ring-1-north-east', 'ring-1-north-west', 'ring-2-east'], 'dormant rows (no art) have no roaming pickup');
+  assert.deepEqual(all.map((i) => i.key), ['ring-1-north-east', 'ring-1-north-west', 'ring-2-north-west'], 'dormant rows (no art) have no roaming pickup');
   const ms = GOLDEN.drops.roaming.respawnSeconds * 1000, taken = { ...freshGolden(), taken: { 'ring-1-north-east': now } };
   assert.equal(itemsNow(taken, GOLDEN, USABLE, now + ms - 1).length, 2);
   assert.equal(itemsNow(taken, GOLDEN, USABLE, now + ms).length, 3, 'it is back after respawnSeconds');
@@ -127,16 +127,18 @@ test('every roaming point keeps its clearance outside every boss leash in the sh
   for (const p of GOLDEN.drops.roaming.points) { const at = pointAt(GOLDEN, p); for (const s of spots) assert.ok(Math.hypot(at.x - s.x, at.z - s.z) - s.leash >= GOLDEN.drops.roaming.clearanceMetres, `${p.id} is clear of ${s.id}`); }
   const bad = structuredClone(GOLDEN); bad.drops.roaming.points[1] = { ...bad.drops.roaming.points[1], distance: 42, angleDeg: 235 };   // the first cut's point, 1.5 m outside a leash
   assert.throws(() => validateClearance(bad, spots), /ring-1-north-west.*outside/);
+  const warn = console.warn; let said = ''; console.warn = (m) => { said += m; };
+  try { const kept = clearOf(bad, spots); assert.deepEqual(kept.drops.roaming.points.map((p) => p.id), bad.drops.roaming.points.filter((p) => p.id !== 'ring-1-north-west').map((p) => p.id), 'the page leaves the offending point out instead of failing to load'); assert.match(said, /ring-1-north-west/); assert.equal(clearOf(GOLDEN, spots), GOLDEN, 'all clear = the same rows'); } finally { console.warn = warn; }
 });
 
 test('the save field is optional: an old save loads with none, a good one round trips, a hostile one is cleaned', () => {
   const old = JSON.stringify({ v: P.version, kills: {}, ladder: [], unlocked: [], coins: 3, banked: 0, pile: null, lost: [] });
   assert.equal('golden' in parseSave(old, P), false, 'a save from before has no field');
-  const g = { held: { id: 'sunblade', charges: 9 }, ground: [{ id: 'golden-axe', x: 4, z: -2, charges: 10 }], taken: { 'ring-2-east': 12345 } };
+  const g = { held: { id: 'sunblade', charges: 9 }, ground: [{ id: 'golden-axe', x: 4, z: -2, charges: 10 }], taken: { 'ring-2-north-west': 12345 } };
   const store = memory(); assert.equal(writeSave(store, P, { ...freshSave(), golden: g }), true);
   assert.deepEqual(loadSave(store, P).golden, g);
   assert.equal(parseSave(JSON.stringify({ v: P.version, kills: {}, ladder: [], golden: { held: { id: 'x', charges: 3 } } }), P).golden, undefined, 'unknown ids are dropped, and an empty field is no field');
-  const dirty = cleanGolden({ held: { id: 'golden-axe', charges: 999 }, ground: [{ id: 'sunblade', x: 1e9, z: 0, charges: 3 }, { id: 'sunblade', x: 1, z: 2, charges: -1 }, null, 'x'], taken: { nope: 1, 'ring-2-east': -4 } });
+  const dirty = cleanGolden({ held: { id: 'golden-axe', charges: 999 }, ground: [{ id: 'sunblade', x: 1e9, z: 0, charges: 3 }, { id: 'sunblade', x: 1, z: 2, charges: -1 }, null, 'x'], taken: { nope: 1, 'ring-2-north-west': -4 } });
   assert.deepEqual(dirty, { held: { id: 'golden-axe', charges: GOLDEN.weapons.find((w) => w.id === 'golden-axe').charges }, ground: [], taken: {} });
   assert.equal(cleanGolden('junk'), undefined); assert.equal(cleanGolden(null), undefined);
   assert.equal(loadWeapon(g.held ? { ...freshGolden(), held: g.held } : undefined, GOLDEN, DRAW, 'x'), 'longsword', 'held at load, his drawn weapon is the golden row\'s');
