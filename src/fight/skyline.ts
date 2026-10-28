@@ -51,6 +51,8 @@ export type Skyline = {
   readonly opacity: number;
   /** The landed picture (skyfold.ts lays its lower band on the ground; no second download); undefined until it lands. */
   readonly texture: THREE.Texture | undefined;
+  /** The sky ring's plate brightness weights by plate id (data/rings.json skyPlates); a no-op while the ring is off (?skyring=v1) or not built. */
+  plateWeights(weights: Readonly<Record<string, number>>): void;
   dispose(): void;
 };
 
@@ -149,6 +151,7 @@ export function createSkyline(
     get state() { return state; },
     get opacity() { return opacity; },
     get texture() { return texture; },
+    plateWeights(weights) { ring?.setWeights(weights); },
     dispose() { disposed = true; ring?.dispose(); anim?.dispose(); scene.remove(mesh); mesh.geometry.dispose(); material.dispose(); material.alphaMap?.dispose(); if (dome) { dome.geometry.dispose(); (dome.material as THREE.Material).dispose(); } texture?.dispose(); },
   };
 }

@@ -8,6 +8,10 @@ import { validateZone, validateZoneIndex } from '../sim/validate.js';
 import INDEX from '../../data/zones/index.json' with { type: 'json' };
 import RIG from '../../data/rig.json' with { type: 'json' };
 import ZONE1 from '../../data/zones/zone1.row.json' with { type: 'json' };
+import PROFILES from '../../data/profiles.json' with { type: 'json' };
+import STAGE from '../../data/stage.json' with { type: 'json' };
+import { validateRings } from '../sim/validate-rings.js';
+import { RINGS, ringOrigin, ringedZone, type RingRows } from './rings.ts';
 
 export type ZoneBehaviour = { aggro: number; leash: number; roam: number; campSize: [number, number] };
 export type ZoneSpawn = { id: string; kind: string; position: { x: number; z: number }; respawnSeconds: number; roster: boolean; behaviour: ZoneBehaviour; body?: string };   // body: a data/rig.json files stem drawn for this spawn (absent: its kind's profile body, foe-body.ts spawnBodyFile)
@@ -18,7 +22,11 @@ export type ZoneIndex = { about?: string; default: string; zones: string[] };
 export type ZoneSet = { default: string; rows: Record<string, ZoneRow> };
 
 /** Every row file the build ships, keyed by its own id (test/zone-rows.test.mjs fails if data/zones/index.json lists another set). */
-const SHIPPED: ZoneRow[] = [ZONE1 as unknown as ZoneRow];
+// The biome rings (data/rings.json): ring 1 is the row's own spawns, rings 2 and 3 are appended after them (src/zone/rings.ts). A bad rings file throws at load, naming every problem.
+const RING_PROBLEMS = validateRings(RINGS, ZONE1 as unknown as ZoneRow, ringOrigin(ZONE1 as unknown as ZoneRow), PROFILES.profiles.map((p) => p.id), RIG, STAGE.skyline.ring.plates.map((p: { id: string }) => p.id));
+if (RING_PROBLEMS.length) throw new Error(`data/rings.json: ${RING_PROBLEMS.join('; ')}`);
+export const RINGED_ZONE1: ZoneRow = ringedZone(ZONE1 as unknown as ZoneRow, RINGS as RingRows);
+const SHIPPED: ZoneRow[] = [RINGED_ZONE1];
 
 /**
  * Build a ZoneSet from an index and row list. A row that fails validateZone is dropped with a console error (so one bad test row cannot

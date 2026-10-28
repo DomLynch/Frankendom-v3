@@ -80,6 +80,7 @@ import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '..
 import { OPENERS, WORLD, held, openerLeashLift, openerOn, openerReach, validateOpeners, idleOnes, inAggro, kill, leashed, nearestStanding, pitOrigin, poseAt, poseFits, spotsFor, tick, validateSpots, withinLoad, bossLoadAfterKill, zoneDuel, type Spawn } from '../stubs.ts';
 import { zoneFor } from '../stubs.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
@@ -99,7 +100,8 @@ const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
 const HERO_WEAPON = (PROG?.save ? heroWeapon(PROG.save, PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
-const KIND_CTX: KindCtx = { tune: PROG?.save ? mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)) : TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
+const BASE_TUNE = mergeTune(TUNED, ringTune());   // the biome rings' difficulty multipliers (data/rings.json) under the address's own ?tune=; ring 1 and a zone with no rings add nothing
+const KIND_CTX: KindCtx = { tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
@@ -332,7 +334,7 @@ function onBossKilled(kind: string) {
     const out = recordKill(PROG.save, kind, PROG_ROWS);
     if (out.save === PROG.save) return;
     PROG.save = out.save; writeSave(PROG.store, PROG_ROWS, PROG.save);
-    KIND_CTX.tune = mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
+    KIND_CTX.tune = mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
     if (out.unlocked) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(unlockText(out.unlocked));
   } catch (error) { console.warn('progression: kill not recorded', error); }
 }
@@ -540,6 +542,7 @@ function frame(now: number) {
   }
   if (roam && bossLoadAfterKill(location.search)) bossKilled = true;   // the first kill's roam has started: far bosses are fetched and stand at their spots (respawn.json world.loadAfterKill, ?bossload=v1 off)
   if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state, undefined, bossKilled));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
+  if (ZONE) { const look = ringLook(Math.hypot(state.x, state.z)); view.ringLook(look.tintA, look.tintB, look.t, look.plates); }   // the biome ring's ground tint and sky-plate weights by the hero's distance from the pit (data/rings.json); ring 1 is today's look
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]! }))); }   // the attackers' rigs (a killed one lies until its timer is up)
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go

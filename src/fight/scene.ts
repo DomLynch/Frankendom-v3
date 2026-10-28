@@ -69,7 +69,7 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
 import { bodyOwnerOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
-import { bossOpponent, bossPreview, bossRowOfBody } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
+import { bossOpponent, bossPreview, bossRowOfBody, bossWeaponFor } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
 import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
 import { foeDrawnWeapon } from './foe-weapon.ts';
@@ -255,6 +255,7 @@ export function createScene(
   const foeFade = skyView && foeFadeOn(pageSearch, skyView) ? createFoeFade(skyView) : null;   // the far opponent melts into the clouds where the sand does (foefade.ts); ?foefade=v1 or no band: null, nothing below runs
   scene.userData.foeFade = foeFade;   // read by the stills' probe only
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
+  let floorBase: THREE.Color | undefined; const ringTintA = new THREE.Color(), ringTintB = new THREE.Color();   // the sand's own colour and scratch colours for the biome ring's tint (ringLook below)
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
   arena.ready.then(() => { if ((arena.sky.image as { width: number }).width > 2) { arenaSky = arena.sky; rebuildEnvironment(); } }).catch(() => {});
@@ -590,7 +591,7 @@ export function createScene(
   const bodyAssets = new Map<string, { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> }>();   // `loaded`: the held foe's swap (heldBodies) awaits the same fetch a standing or attacking spawn started, one file once
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
   // A boss body with a weapon row (data/boss-weapons.json; the body is found through the profile rows, foe-body.ts profileBodyOf) is armed with the row's weapon, scaled, with its off-hand part; any other body with the page's weapon, as before.
-  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch);
+  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch) ?? (file === liveBody || !bodyOwnerOf(file) ? undefined : bossWeaponFor(bodyOwnerOf(file)!, pageSearch));   // a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
   // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
   const ownerOfBody = (file: string): string | undefined => file === liveBody ? undefined : bodyOwnerOf(file);
   const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch).weapon : builtFoeWeapon);
@@ -835,6 +836,12 @@ export function createScene(
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
+    /** The biome ring's look at the hero's distance (data/rings.json via src/zone/rings.ts ringLook): the sand's colour is its own colour times the tint mixed `t` of the way from `tintA` to `tintB`, and the sky ring's plates take their brightness weights. Presentation only. */
+    ringLook(tintA: string, tintB: string, t: number, plates: Readonly<Record<string, number>>) {
+      const floor = arena.group.getObjectByName('floor') as THREE.Mesh | null, mat = floor?.material as THREE.MeshStandardMaterial | undefined;
+      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); }
+      skyline?.plateWeights(plates);
+    },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
     /** The zone's hero death (data/hero-death.json, src/fight/hero-death.ts): the death-only ragdoll (built before the rigs load, so it attaches with them) and the death camera. null = ?herodeath=v1. */
     heroDeath(rows: { ragdoll: boolean; cam: DeathCamRows } | null) {
