@@ -110,6 +110,7 @@ const FOE_EQUIP_URLS: Record<string, string> = {
   '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href,
   '../assets/weapons/foe/maul.glb': new URL('../assets/weapons/foe/maul.glb', import.meta.url).href,   // Gargantua's maul (data/boss-weapons.json; library hammer-01): fetched only with his body
   '../assets/weapons/foe/axe.glb': new URL('../assets/weapons/foe/axe.glb', import.meta.url).href,   // Arachne's axe (library axe1h-208)
+  '../assets/weapons/foe/katana.glb': new URL('../assets/weapons/foe/katana.glb', import.meta.url).href,   // Kachujin's blade (library sword1h-210; the pitborn row)
 };
 const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
 const offhandUrlOf = (row?: { offhand: { kind: string; file?: string } | null }): string | undefined => (row?.offhand?.kind === 'file' ? FOE_OFFHAND_URLS[`../assets/weapons/foe/${row.offhand.file}.glb`] : undefined);

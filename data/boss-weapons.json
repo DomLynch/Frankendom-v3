@@ -35,6 +35,23 @@
         "clips: the 106 body plays the sword clip family (clipsAs cleaver); her shield arm is the clip's own arm, not the shield carry",
         "sweeps: V1's hero-rig cleaver blade table, not re-baked on Arachne's body (not in the repo yet)"
       ]
+    },
+    {
+      "id": "kachujin-katana",
+      "opponent": "pitborn",
+      "weapon": "cleaver",
+      "clipsAs": "cleaver",
+      "equip": "katana",
+      "scale": 1,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": null,
+      "placeholder": [
+        "mesh: a library prop, OpenTrident weapon library sword1h-210 (a slim one-hand blade, 0.95 m), re-framed to the grip as src/assets/weapons/foe/katana.glb; a picked prop, not a katana drawn for Kachujin",
+        "archetype: the row is keyed by V1 archetype (pitborn), so every pitborn clone (the Minotaur, Lord Gourd, Kachujin, The King, The Titan's Envoy, Ryo) draws this blade until rows can be keyed by profile",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim keeps the cleaver's moves, timing and damage",
+        "sweeps: V1's hero-rig cleaver blade table, not re-baked on this blade or Kachujin's body"
+      ]
     }
   ]
 }
