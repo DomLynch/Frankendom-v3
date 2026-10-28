@@ -38,6 +38,9 @@ export const SCHEMA = {
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), played by ?rules=m4 (and by a bare link when `default` is m4; it is v1 for now); `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'default', 'query', 'v1', 'm4', 'variants', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'killAsSwings', 'knockdownSwing', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
+  // The radar (src/fight/radar.ts validateRadar checks the values): a closed key set; presentation only
+  'radar': { keys: ['about', 'on', 'query', 'off', 'corner', 'sizePx', 'marginPx', 'offsetPx', 'zIndex', 'rangeMetres', 'rimInset', 'dprMax', 'disc', 'rim', 'edgeAlpha', 'hero', 'classes', 'kinds', 'defaultKind'],
+    maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
   'feel-kick': { keys: ['about', 'on', 'moves', 'massKg', 'massClamp', 'massExp', 'stance', 'track', 'fall', 'getUpS', 'knockdownAt', 'push', 'window', 'shove', 'event'],
     maps: { stance: ['about', 'open', 'guarding', 'midSwing', 'recovering'], track: ['about', 'swingS', 'recoverS'], fall: ['about', 'push', 'down'], push: ['refImpulse', 'impulsePerForce', 'impulseClamp', 'lift', 'distanceM', 'pushS', 'part'], window: ['about', 'stagger', 'knockdown'], shove: ['about', 'moves'], event: ['name', 'log', 'keep'] },
