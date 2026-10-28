@@ -130,7 +130,7 @@ test('(b) the validators refuse an unknown kind, with the profile ids in the mes
   {
     assert.doesNotThrow(() => validateSpots(spots, start, play.RADIUS, WORLD, ids), 'the shipped kinds are profile rows');
     assert.doesNotThrow(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, kindIds(profiles)), 'a second kind passes once it has a profile row');
-    assert.throws(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, ids), /spawn pit-pitborn-east names kind "goblin", which is no profile row \(data\/profiles\.json: pitborn(, [a-z]+)*\)/);   \/\/ the message lists every profile row (pitborn, then the zone bosses added since)
+    assert.throws(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, ids), /spawn pit-pitborn-east names kind "goblin", which is no profile row \(data\/profiles\.json: pitborn(, [a-z]+)*\)/);   // the message lists every profile row (pitborn, then the zone bosses added since)
     assert.throws(() => validateSpots(spots.map((s) => ({ ...s, kind: 'nobody' })), start, play.RADIUS, WORLD, ids), /names kind "nobody"/);
   }
   const row = JSON.parse(JSON.stringify(ZONE)); row.spawns[2].kind = 'nobody';
