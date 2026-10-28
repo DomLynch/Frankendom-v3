@@ -20,7 +20,7 @@ const mk = (over = {}) => {
 const raw = () => JSON.parse(readFileSync(new URL('../data/telemetry.json', import.meta.url), 'utf8'));
 
 test('the row file loads, names the five events and the same-origin path, and a bad row is refused', () => {
-  assert.deepEqual(Object.keys(TELEMETRY.events), ['session_start', 'session_end', 'boss_death', 'boss_kill', 'js_error']);
+  assert.deepEqual(Object.keys(TELEMETRY.events), ['session_start', 'session_end', 'boss_death', 'boss_kill', 'clip_shared', 'js_error']);
   assert.equal(TELEMETRY.path, '/t');
   assert.equal(TELEMETRY.server.host, '127.0.0.1');
   assert.ok(TELEMETRY.server.maxFileBytes * TELEMETRY.server.keepFiles <= 50 * 1024 * 1024, 'the log ceiling is 50 MB at most');
