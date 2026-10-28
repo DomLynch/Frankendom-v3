@@ -7,6 +7,8 @@ import type { Terrain, TerrainRows } from '../zone/terrain.ts';
 export type TerrainDraw = {
   /** The terrain's height at (x, z) in the pit's frame (0 on every pad). */
   height(x: number, z: number): number;
+  /** The hills' own material (a clone of the floor's): the biome ring's tint (scene.ringLook) multiplies it too. */
+  material: THREE.Material;
   /** Re-centre on the hero; true when the mesh was rebuilt this call. */
   update(x: number, z: number): boolean;
   /** The draped grid and the mesh, for the sand-melt fade to adopt. */
@@ -72,6 +74,7 @@ export function drawTerrain(o: { parent: THREE.Object3D; floor: THREE.Mesh; scal
   const normals = () => geo.computeVertexNormals();
   return {
     height: (x, z) => terrain.height(x, z),
+    material: floorMaterial,
     group,
     update(x, z) {
       const nx = Math.round(x / snap) * snap, nz = Math.round(z / snap) * snap;

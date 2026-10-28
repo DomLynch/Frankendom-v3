@@ -854,7 +854,7 @@ export function createScene(
     /** The biome ring's look at the hero's distance (data/rings.json via src/zone/rings.ts ringLook): the sand's colour is its own colour times the tint mixed `t` of the way from `tintA` to `tintB`, and the sky ring's plates take their brightness weights. Presentation only. */
     ringLook(tintA: string, tintB: string, t: number, plates: Readonly<Record<string, number>>) {
       const floor = arena.group.getObjectByName('floor') as THREE.Mesh | null, mat = floor?.material as THREE.MeshStandardMaterial | undefined;
-      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); }
+      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); (terrainDraw?.material as THREE.MeshStandardMaterial | undefined)?.color.copy(mat.color); }   // the hills' clone of the sand takes the same tint
       skyline?.plateWeights(plates);
     },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
