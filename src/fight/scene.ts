@@ -395,6 +395,7 @@ export function createScene(
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow, the line, a tap on a cut part, Take (presentation only)
     : mountPickup(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
   let heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created   // let: the zone page may ask for the death-only one (heroDeath below) before the rigs load
+  let heroLies = false, fallenAt: THREE.Vector3 | null = null;   // the death camera looks at the hero's hips while the death-only ragdoll has him down (heroDeath below)
   const heroFeel = typeof location !== 'undefined' && !!heroRagdoll;   // ?feel=hero: the ragdoll hears every blow (hit reactions); the death-only one hears the killing blow alone
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
@@ -834,7 +835,7 @@ export function createScene(
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
     /** The zone's hero death (data/hero-death.json, src/fight/hero-death.ts): the death-only ragdoll (built before the rigs load, so it attaches with them) and the death camera. null = ?herodeath=v1. */
     heroDeath(rows: { ragdoll: boolean; cam: DeathCamRows } | null) {
-      setDeathCam(rows ? rows.cam : null);
+      setDeathCam(rows ? rows.cam : null); heroLies = !!rows && rows.ragdoll;
       if (rows?.ragdoll && !heroRagdoll && !warriors && typeof location !== 'undefined') heroRagdoll = heroRagdollFor(location.search, true);
     },
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
@@ -1294,6 +1295,7 @@ export function createScene(
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
         focus: cutBone ? cutFocus : null,
+        fallen: heroLies && practice.finish.victim === 0 ? (fallenAt = warriors?.player.boneWorld('pelvis') ?? fallenAt) : null,
       } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden, freeCamera);
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock

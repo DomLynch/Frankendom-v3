@@ -407,7 +407,7 @@ if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger d
 
 function updateHud() {   // :684, the career fight's view
   hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge), death: DEATH && heroDied() ? { line: DEATH.line, button: DEATH.button, ready: respawnReady(DEATH, sinceDeath) } : undefined });
-  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null;   // a walking hero keeps the whole HUD (Respawn included) up
+  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null || (!!DEATH && heroDied());   // a walking hero keeps the whole HUD (Respawn included) up; so does a fallen one under the death loop (the camera is still moving, so "settled" would hide the line and Respawn)
   document.documentElement.classList.toggle('endgame-fade', !!phase && !walking && (hushed || phase.touring));
   document.documentElement.classList.toggle('endgame-hush', !!phase && !walking && hushed);
 }

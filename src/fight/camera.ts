@@ -190,6 +190,7 @@ export type CameraFinish = {
   clock: number;
   head: { x: number; z: number } | null;
   big: boolean;
+  fallen?: { x: number; y: number; z: number } | null;   // the hero's death camera (data/hero-death.json): where his ragdoll body lies now (his hips), so the camera looks at him and not at the spot the sim left
   focus?: { x: number; y: number; z: number } | null;   // finisher-cam.json: where the foe's cut is now (its bone's world position), null / absent = the row's own fixed spot
   // Opened (2026-09-21): how far, horizontally, the farthest settled piece (torso, legs, dropped weapon) reaches from the
   // fallen fighter's origin — measured from the pieces' world bounds, never shrinking, so the side view fits what actually
@@ -427,7 +428,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         const pose = deathCamPose(DEATH_CAM, deathShare, desired, state), r = Math.hypot(pose.x, pose.z);
         if (r > ARENA_CLAMP) { pose.x *= ARENA_CLAMP / r; pose.z *= ARENA_CLAMP / r; }
         desired.set(pose.x, pose.y, pose.z);
-        look.lerp(lookTarget.set(state.x, pose.lookY, state.z), pose.k);
+        look.lerp(lookTarget.set(finish?.fallen?.x ?? state.x, pose.lookY, finish?.fallen?.z ?? state.z), pose.k);   // the camera stands round the sim's hero; it looks at where the ragdoll body actually lies
       }
       if (finish && !finish.draw && !still && !tourStopped && !dyingHero && (tourAngle !== null || finishAge > tourStart)) {
         tourBegan ??= finishAge;   // captured once, the frame the tour actually starts — never moves even if tourStart later does
