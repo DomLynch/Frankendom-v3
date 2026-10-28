@@ -43,7 +43,7 @@ export const foeBodyFile = (id: string, rosterBody: string, stem = false): strin
 /** The 106 file stem a zone spawn of `id` draws: the spawn row's own `body` (data/zones `spawns[].body`, a data/rig.json files stem) when it has one, else exactly `foeBodyFile` (its kind's profile body).
  *  ?boss=<body> still draws every boss in one body for the page. This is the key of the scene's rig cache (scene.ts bodyRigs). */
 export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => {
-  if (override !== null) return foeBodyFile(id, rosterBody);
+  if (override !== null) return foeRigFile(override);   // ?boss=<body>: every spawn, a profile-id kind too
   if (spawnBody !== undefined) return foeRigFile(spawnBody);
   // A zone spawn's `kind` is a PROFILE id (gargantua, arachne), not an opponent id (executioner, shieldmaiden): PROFILE_BODY above is keyed by opponent, so look the profile row up by id first.
   const own = (PROFILES.profiles as { id: string; body?: string }[]).find((p) => p.id === id);
