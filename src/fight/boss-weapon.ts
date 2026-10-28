@@ -10,7 +10,7 @@ export type DiscRow = { kind: 'disc'; hand: string; radius: number; thickness: n
 export type FileRow = { kind: 'file'; file: string; hand: string; scale: number; offset: [number, number, number]; rotationDeg: [number, number, number] };
 export type OffhandRow = DiscRow | FileRow;
 /** The file stems under src/assets/weapons/foe/ a row may graft (`equip`) or seat (`offhand.file`). */
-export const FOE_PART_STEMS: readonly string[] = ['cleaver', 'maul', 'axe', 'shield'];
+export const FOE_PART_STEMS: readonly string[] = ['cleaver', 'maul', 'axe', 'shield', 'mace'];
 /** `grip`: where the drawn part sits in the hand, on top of the socket's own frame: metres and Euler XYZ degrees (the seat's frame; the sim's contact segment is not moved, this is the drawing). `material`: the part's own look replaced (null = the file's). */
 export type GripRow = { offset: [number, number, number]; rotationDeg: [number, number, number] };
 export type MaterialRow = { colour: string; metalness: number; roughness: number };

@@ -110,6 +110,7 @@ const FOE_EQUIP_URLS: Record<string, string> = {
   '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href,
   '../assets/weapons/foe/maul.glb': new URL('../assets/weapons/foe/maul.glb', import.meta.url).href,   // Gargantua's maul (data/boss-weapons.json; library hammer-01): fetched only with his body
   '../assets/weapons/foe/axe.glb': new URL('../assets/weapons/foe/axe.glb', import.meta.url).href,   // Arachne's axe (library axe1h-208)
+  '../assets/weapons/foe/mace.glb': new URL('../assets/weapons/foe/mace.glb', import.meta.url).href,   // The Accountant's mace (library mace-204; profile row the-boss)
 };
 const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
 const offhandUrlOf = (row?: { offhand: { kind: string; file?: string } | null }): string | undefined => (row?.offhand?.kind === 'file' ? FOE_OFFHAND_URLS[`../assets/weapons/foe/${row.offhand.file}.glb`] : undefined);
@@ -595,7 +596,7 @@ export function createScene(
   const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch) ?? (file === liveBody || !bodyOwnerOf(file) ? undefined : bossWeaponFor(bodyOwnerOf(file)!, pageSearch, undefined, bodyProfileOf(file)));   // a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
   // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
   const ownerOfBody = (file: string): string | undefined => file === liveBody ? undefined : bodyOwnerOf(file);
-  const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch).weapon : builtFoeWeapon);
+  const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch, undefined, bodyProfileOf(file)).weapon : builtFoeWeapon);
   function bodyRig(file: string) {
     let entry = bodyAssets.get(file);
     if (!entry) {

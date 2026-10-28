@@ -60,7 +60,7 @@ test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden
   assert.equal(a.weapon, 'cleaver'); assert.equal(weaponOf('cleaver').grip, 'one-hand');   // V1's axe-skill one-hander
   assert.equal(a.offhand.kind, 'file'); assert.equal(a.offhand.file, 'shield'); assert.equal(a.offhand.hand, 'lowerarm_l');   // the left forearm, not the hand: a board on the hand sat in front of her face (Dom review 2026-10-28)
   assert.deepEqual([g.equip, a.equip], ['maul', 'axe'], 'Dom picked these three library props (2026-10-28): hammer-01, axe1h-208, shield-213');
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'shieldmaiden']);
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'shieldmaiden', 'shieldmaiden']);   // + The Accountant's profile row
   assert.equal(OPPONENTS.executioner.weapon, 'scythe', "V1's row for the executioner is untouched");
   assert.equal(OPPONENTS.shieldmaiden.weapon, 'gladius', "V1's row for the shieldmaiden is untouched");
   for (const r of BOSS_WEAPONS.rows) {
@@ -104,8 +104,8 @@ const withRows = (...extra) => ({ ...clone(RAW), rows: [...clone(RAW).rows, ...e
 const profRow = (id, profile, opponent, over = {}) => ({ ...clone(RAW).rows[0], id, profile, opponent, weapon: 'cleaver', equip: 'axe', ...over });
 
 test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had', () => {
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe']]);
-  for (const p of PROFILES.profiles) {
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe'], ['the-boss-mace', 'shieldmaiden', 'the-boss', 'cleaver', 'mace']]);
+  for (const p of PROFILES.profiles.filter((q) => q.id !== 'the-boss')) {
     const base = OPPONENTS[p.opponent];
     assert.equal(bossOpponent(base, '', undefined, p.id).weapon, bossOpponent(base, '').weapon, `${p.id}: naming the profile changes nothing while no row names it`);
     assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), bossWeaponFor(p.opponent, ''), `${p.id}: the archetype's row`);
@@ -113,6 +113,10 @@ test('the shipped rows are unchanged by the profile key: Gargantua and Arachne r
   assert.equal(bossWeaponFor('executioner', '', undefined, 'gargantua')?.id, 'gargantua-maul');
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'arachne')?.id, 'arachne-axe-shield');
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'castle-guard')?.id, 'arachne-axe-shield', 'until a row names him, Sir Reginald inherits the archetype row');
+  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'the-boss')?.id, 'the-boss-mace', 'The Accountant has a profile row of her own');
+  for (const p of PROFILES.profiles.filter((q) => q.opponent === 'shieldmaiden' && q.id !== 'the-boss')) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, p.id)?.id, 'arachne-axe-shield', `${p.id} (shieldmaiden) keeps the archetype row: only the-boss changes`);
+  assert.equal(bossWeaponFor('shieldmaiden', '')?.id, 'arachne-axe-shield', 'the archetype row is Arachne\'s still');
+  assert.equal(bossWeaponFor('shieldmaiden', '?bossweapon=v1', undefined, 'the-boss'), undefined, '?bossweapon=v1 reverts The Accountant too');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black'), undefined, 'a pitborn profile with no row is on V1\'s weapon');
   assert.match(readFileSync(new URL('../src/fight/spawn-kind.ts', import.meta.url), 'utf8'), /bossOpponent\(base, ctx\.search, undefined, kind\)/, 'kindFightFor passes the spawn kind (the profile id)');
 });
@@ -185,7 +189,7 @@ const dressed = async (r) => dressBossHand(await armed(r), r, r.offhand?.kind ==
 const sizeOf = (o) => { o.updateWorldMatrix(true, true); return new Box3().setFromObject(o).getSize(new Vector3()); };
 
 test('the three library files hold the nodes the rows need: WeaponDrawn with a contact in maul and axe, BossShield in the shield', async () => {
-  for (const stem of ['maul', 'axe']) {
+  for (const stem of ['maul', 'axe', 'mace']) {
     const w = (await loadGlb(FOE(stem))).scene.getObjectByName(HELD.weapon);
     assert.ok(w, `${stem}.glb has a ${HELD.weapon} root`);
     assert.ok(w.userData.contact && w.userData.contact.from < w.userData.contact.to, `${stem}.glb carries extras.contact`);
@@ -255,4 +259,13 @@ test('the grip row moves the DRAWN part only; a material row restyles it; the se
   const s = moved.scene.getObjectByName('Grip106'), s0 = plain.scene.getObjectByName('Grip106');
   assert.ok(s.position.distanceTo(s0.position) < 1e-9 && s.quaternion.angleTo(s0.quaternion) < 1e-9, 'the seat the part hangs from is where it was: only the drawn part moved');
   void keep;
+});
+
+test('the-boss mace (library mace-204): about 0.65 m, a small file, and the scene passes the body\'s profile to the weapon fallback', () => {
+  const r = BOSS_WEAPONS.rows.find((x) => x.profile === 'the-boss');
+  assert.equal(r.equip, 'mace'); assert.equal(r.offhand, null); assert.match(r.placeholder.join(' '), /mace: a library prop, .*mace-204/);
+  assert.ok(readFileSync(new URL('../src/assets/weapons/foe/mace.glb', import.meta.url)).length < 40000, 'mace.glb is packed (webp 256 px, no normal map)');
+  const scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
+  assert.match(scene, /FOE_EQUIP_URLS[^]*foe\/mace\.glb/, 'mace.glb is in FOE_EQUIP_URLS');
+  assert.match(scene, /bossOpponent\(OPPONENTS\[ownerOfBody\(file\)! as OpponentId\], pageSearch, undefined, bodyProfileOf\(file\)\)/, 'weaponOfBody passes the profile to bossOpponent');
 });
