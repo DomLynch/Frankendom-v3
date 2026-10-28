@@ -131,7 +131,8 @@ export const poseFits = (pose: DuelPose, wall: number): boolean => [pose.hero, p
 export function zoneDuel<D extends Duel>(duel: D, pose?: DuelPose, open: number = OPEN_RADIUS): D {
   const [hero, foe] = duel.fighters;
   const placed = pose ? [{ ...hero, body: { ...hero.body, x: pose.hero.x, z: pose.hero.z, heading: pose.heroFacing } }, { ...foe, body: { ...foe.body, x: pose.foe.x, z: pose.foe.z, heading: M.atan2(pose.hero.x - pose.foe.x, pose.hero.z - pose.foe.z) } }] as D['fighters'] : duel.fighters;
-  return { ...duel, fighters: placed, radius: open };
+  const freed = [{ ...placed[0], free: true }, placed[1]] as D['fighters'];   // the zone's hero rolls, steps back and guards with the sword away too (duel.ts freeStep): never gated on a fight
+  return { ...duel, fighters: freed, radius: open };
 }
 
 /**

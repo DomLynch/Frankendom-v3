@@ -250,7 +250,7 @@ test('the page wires the look thumb: its own pointer id, the free camera gate, t
     assert.doesNotMatch(text.replace(re, ''), re, `${what} (once)`);
   }
   const main = code('../src/client/main.ts');
-  assert.equal(main.match(/\{ x: intent\.x, z: intent\.z, yaw: view\.yaw, run: intent\.run \}/g)?.length, 2, 'both the duel move and the free walk read the view yaw: the stick is camera-relative');
+  assert.equal(main.match(/\{ x: intent\.x, z: intent\.z, yaw: view\.yaw, run: intent\.run \}/g)?.length, 1, 'the duel move reads the view yaw (the free walk steps on that same intent, free-roam.ts): the stick is camera-relative');
 });
 test('each pin bites: without its wiring the text no longer matches', () => {
   for (const [file, what, re] of PINS) assert.doesNotMatch(code(file).replace(re, ''), re, what);

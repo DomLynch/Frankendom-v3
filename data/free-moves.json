@@ -1,0 +1,4 @@
+{
+  "about": "Dom 2026-10-28: 'outside of combat (open world, desert exploring, no fight active) I cannot ROLL or GUARD; these must always be available'. Roll (dodge), the step back (backstep) and guard (parry) are never gated on a fight: before the first aggro the sim lets the sword-away hero take them (duel.ts freeStep, Fighter.free) and after a kill the walking hero runs them on a hero-only duel (src/fight/free-roam.ts). `actions` is the list of presses the walking hero takes after a kill; the rules are the fight's own (stamina cost, roll length, i-frames, guard window) from data/rules.json. No URL flag: always on.",
+  "actions": ["dodge", "backstep", "parry"]
+}
