@@ -1,0 +1,50 @@
+{
+  "about": "BOSS SIGNATURE MECHANICS (Dom 2026-10-28: each boss has its own fighting identity). A map: mechanic id -> its row. A ring boss names its id in data/rings.json bosses[].mechanic (null = none). Each row's `type` picks the code in src/fight/mechanics/ (one registry line each in src/fight/mechanics/index.ts) and its `boss` is the data/profiles.json id it belongs to; every number below is read by that code, never written in it (src/sim/validate.js validateMechanics checks the values). Rules for every row: damage comes from the boss's own move rows, a blow is never lethal unless the row says so, nothing runs while the boss is down or the hero is dead.",
+  "mechanics": {
+    "gourd": {
+      "type": "gourd-bombs",
+      "boss": "pumpkinhulk",
+      "about": "LORD GOURD, PUMPKIN BOMBS: he stomps, then lobs gourds that land on the hero's spot as glowing ground rings and burst after a fuse (area hit, small shove). Step or roll out of a ring before it bursts. The aim is taken when the gourd leaves his hand, so a hero who keeps moving is missed; one who stands is hit. `count`/`countLow`: gourds per cast, more once he is under `lowShare` of his health. `damageMove` x `damageShare`: the blow is the boss's own move row (damage on a hit, scaled by his sheet's attack dial and the hero's armour). `guardShare`: the share that gets through a raised guard. A roll inside its safe frames takes none.",
+      "engageMetres": 14,
+      "firstSeconds": 4,
+      "cooldownSeconds": 9,
+      "stompSeconds": 0.7,
+      "flightSeconds": 0.45,
+      "fuseSeconds": 1.25,
+      "burstSeconds": 0.4,
+      "count": 2,
+      "countLow": 3,
+      "lowShare": 0.5,
+      "radiusMetres": 1.7,
+      "heroRadiusMetres": 0.4,
+      "scatterMetres": 2.6,
+      "launchHeightMetres": 3.4,
+      "arcMetres": 2.4,
+      "damageMove": "heavy_overhead",
+      "damageShare": 0.5,
+      "guardShare": 0.4,
+      "knockbackMetres": 1.4,
+      "shoveSeconds": 0.2,
+      "waitWhileHeroHurt": true,
+      "lethal": false,
+      "floorHealth": 1,
+      "pool": 6,
+      "look": {
+        "core": "#ffb13b",
+        "edge": "#ff5a00",
+        "fuse": "#fff0a8",
+        "gourd": "#e07a1f",
+        "gourdRadiusMetres": 0.32,
+        "groundY": 0.06,
+        "ringWidth": 0.14,
+        "segments": 40,
+        "alpha": 0.85,
+        "markAlpha": 0.35,
+        "stompColour": "#ffd08a",
+        "stompAlpha": 0.6,
+        "pulseHz": 3,
+        "burstScale": 1.5
+      }
+    }
+  }
+}
