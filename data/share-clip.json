@@ -3,6 +3,7 @@
   "on": true,
   "leadSeconds": 4,
   "tailSeconds": 3,
+  "stopTimeoutSeconds": 5,
   "width": 720,
   "height": 1280,
   "fps": 30,
@@ -11,5 +12,5 @@
   "guard": { "seconds": 3, "maxFrameMs": 45 },
   "watermark": { "text": "frankendom.com", "sizePx": 30, "colour": "#ffffff", "alpha": 0.75, "marginPx": 28 },
   "file": { "prefix": "frankendom", "title": "Frankendom", "stillType": "image/png" },
-  "button": { "label": "Share clip", "stillLabel": "Share picture", "making": "Making clip…", "saved": "Saved", "failed": "Couldn't make the clip", "hideSeconds": 40, "bottomFrac": 0.32, "zIndex": 31, "colour": "#ffd34a", "sizePx": 12 }
+  "button": { "label": "Share clip", "stillLabel": "Share picture", "making": "Making clip…", "saved": "Saved", "failed": "Couldn't make the clip", "hideSeconds": 40, "bottomPx": 14, "zIndex": 31, "colour": "#ffd34a", "sizePx": 12 }
 }

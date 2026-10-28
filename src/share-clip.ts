@@ -8,11 +8,11 @@
 import ROWS from '../data/share-clip.json' with { type: 'json' };
 
 export type ShareClipRows = {
-  on: boolean; leadSeconds: number; tailSeconds: number; width: number; height: number; fps: number; bitsPerSecond: number; types: string[];
+  on: boolean; leadSeconds: number; tailSeconds: number; stopTimeoutSeconds: number; width: number; height: number; fps: number; bitsPerSecond: number; types: string[];
   guard: { seconds: number; maxFrameMs: number };
   watermark: { text: string; sizePx: number; colour: string; alpha: number; marginPx: number };
   file: { prefix: string; title: string; stillType: string };
-  button: { label: string; stillLabel: string; making: string; saved: string; failed: string; hideSeconds: number; bottomFrac: number; zIndex: number; colour: string; sizePx: number };
+  button: { label: string; stillLabel: string; making: string; saved: string; failed: string; hideSeconds: number; bottomPx: number; zIndex: number; colour: string; sizePx: number };
 };
 export const SHARE_CLIP = ROWS as unknown as ShareClipRows;
 export const MOMENT_EVENT = 'v3:clip-moment';
@@ -23,7 +23,7 @@ export function validateShareClip(r: ShareClipRows): void {
   const num = (name: string, v: unknown, lo: number, hi: number) => { if (!(typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi)) throw new Error(`share-clip.${name} ${String(v)} is not a number in ${lo}..${hi}`); };
   const word = (name: string, v: unknown, max = 60) => { if (!(typeof v === 'string' && v.trim().length > 0 && v.length <= max)) throw new Error(`share-clip.${name} is a non-empty string of at most ${max} characters`); };
   if (typeof r.on !== 'boolean') throw new Error('share-clip.on is true or false');
-  num('leadSeconds', r.leadSeconds, 1, 30); num('tailSeconds', r.tailSeconds, 0, 15); num('width', r.width, 160, 2160); num('height', r.height, 160, 3840); num('fps', r.fps, 5, 60); num('bitsPerSecond', r.bitsPerSecond, 200_000, 20_000_000);
+  num('leadSeconds', r.leadSeconds, 1, 30); num('tailSeconds', r.tailSeconds, 0, 15); num('stopTimeoutSeconds', r.stopTimeoutSeconds, 0.05, 60); num('width', r.width, 160, 2160); num('height', r.height, 160, 3840); num('fps', r.fps, 5, 60); num('bitsPerSecond', r.bitsPerSecond, 200_000, 20_000_000);
   if (!Number.isInteger(r.width) || !Number.isInteger(r.height) || r.width % 2 || r.height % 2) throw new Error('share-clip.width and height are even whole numbers (H.264 needs even sides)');
   if (!(r.height > r.width)) throw new Error('share-clip: the frame is portrait (height > width)');
   if (r.leadSeconds * 2 + r.tailSeconds > 60) throw new Error('share-clip: a clip may run at most 60 s (2 * leadSeconds + tailSeconds)');
@@ -35,7 +35,7 @@ export function validateShareClip(r: ShareClipRows): void {
   word('file.title', r.file?.title, 60);
   if (!['image/png', 'image/jpeg'].includes(r.file?.stillType)) throw new Error('share-clip.file.stillType is image/png or image/jpeg');
   for (const k of ['label', 'stillLabel', 'making', 'saved', 'failed'] as const) word(`button.${k}`, r.button?.[k], 40);
-  num('button.hideSeconds', r.button?.hideSeconds, 3, 600); num('button.bottomFrac', r.button?.bottomFrac, 0, 0.8); num('button.zIndex', r.button?.zIndex, 0, 1000); num('button.sizePx', r.button?.sizePx, 8, 30);
+  num('button.hideSeconds', r.button?.hideSeconds, 3, 600); num('button.bottomPx', r.button?.bottomPx, 0, 200); num('button.zIndex', r.button?.zIndex, 0, 1000); num('button.sizePx', r.button?.sizePx, 8, 30);
   if (!(typeof r.button?.colour === 'string' && HEX.test(r.button.colour))) throw new Error('share-clip.button.colour is a #rrggbb colour');
 }
 validateShareClip(SHARE_CLIP);
@@ -72,7 +72,7 @@ export function createShareClip(env: ClipEnv) {
   const canCapture = typeof HTMLCanvasElement !== 'undefined' && 'captureStream' in HTMLCanvasElement.prototype;
   const type = env.Recorder && canCapture ? pickType((t) => env.Recorder!.isTypeSupported(t), rows.types) : null;
   let state: State = rows.on ? 'idle' : 'off', epoch = 0, forced = false, stillOnly = !type;
-  let takes: Take[] = [], nextAt = 0, tailEnd = 0, lastDraw = -1e9, lastFrame = 0, guardSum = 0, guardN = 0, guardStart = 0, guarded = false, hideAt = 0;
+  let takes: Take[] = [], nextAt = 0, tailEnd = 0, lastDraw = -1e9, lastFrame = 0, guardSum = 0, guardN = 0, guardStart = 0, guardPhase = 0, hideAt = 0, sending = false;
   let frame: HTMLCanvasElement | null = null, ctx: CanvasRenderingContext2D | null = null, mark: HTMLCanvasElement | null = null, boss = 'boss', file: File | null = null, clipSec = 0;
   let button: HTMLButtonElement | null = null, style: HTMLStyleElement | null = null;
 
@@ -122,15 +122,17 @@ export function createShareClip(env: ClipEnv) {
     if (take.done) { resolve(null); return; }
     take.done = true;
     const stopTracks = () => { try { for (const t of take.stream.getVideoTracks()) t.stop(); } catch { /* gone */ } };
-    take.rec.onstop = () => { stopTracks(); resolve(keep && !take.failed && take.chunks.length ? new Blob(take.chunks, { type: type!.split(';')[0] }) : null); };
-    try { if (take.rec.state === 'inactive') take.rec.onstop!(new Event('stop')); else take.rec.stop(); } catch { stopTracks(); resolve(null); }
+    // watchdog: a recorder whose onstop never fires (a phone's MediaRecorder can stall) resolves null after stopTimeoutSeconds, so "Making clip…" never hangs: the caller falls back to the still
+    const timer = setTimeout(() => { stopTracks(); resolve(null); }, rows.stopTimeoutSeconds * 1000);
+    take.rec.onstop = () => { clearTimeout(timer); stopTracks(); resolve(keep && !take.failed && take.chunks.length ? new Blob(take.chunks, { type: type!.split(';')[0] }) : null); };
+    try { if (take.rec.state === 'inactive') take.rec.onstop!(new Event('stop')); else take.rec.stop(); } catch { clearTimeout(timer); stopTracks(); resolve(null); }
   });
   const dropTakes = () => { for (const t of takes) void endTake(t, false); takes = []; };
 
   const removeButton = () => { button?.remove(); button = null; };
   const showButton = (label: string, enabled: boolean) => {
     try {
-      if (!style) { style = env.doc.createElement('style'); style.textContent = `.sc-btn{position:fixed;left:50%;bottom:${(B.bottomFrac * 100).toFixed(1)}%;transform:translateX(-50%);z-index:${B.zIndex};padding:9px 18px;border:1px solid ${B.colour};border-radius:999px;background:rgba(10,8,6,.72);color:${B.colour};font:${B.sizePx}px/1.2 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;cursor:pointer}.sc-btn[disabled]{opacity:.6;cursor:default}`; env.doc.head.append(style); }
+      if (!style) { style = env.doc.createElement('style'); style.textContent = `.sc-btn{position:fixed;left:50%;bottom:calc(${B.bottomPx}px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:${B.zIndex};padding:6px 14px;border:1px solid ${B.colour};border-radius:999px;background:rgba(10,8,6,.72);color:${B.colour};font:${B.sizePx}px/1.2 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;cursor:pointer}.sc-btn[disabled]{opacity:.6;cursor:default}`; env.doc.head.append(style); }
       if (!button) {
         button = env.doc.createElement('button'); button.className = 'sc-btn'; button.type = 'button'; button.dataset.shareClip = 'true';
         for (const ev of ['pointerdown', 'touchstart', 'mousedown'] as const) button.addEventListener(ev, (e) => e.stopPropagation());   // the game's own touch input never sees a tap on the button
@@ -172,7 +174,8 @@ export function createShareClip(env: ClipEnv) {
   // The tap: a fresh user gesture, so navigator.share is allowed. A refused or dismissed share leaves the button for another tap; no file sharing: the clip downloads.
   async function send(): Promise<void> {
     const f = file;
-    if (!f || state !== 'ready') return;
+    if (!f || state !== 'ready' || sending) return;   // a second tap while the share sheet is pending does nothing (never a second share or a stray download)
+    sending = true; if (button) button.disabled = true;
     const nav = env.nav;
     let done = false;
     try {
@@ -185,7 +188,7 @@ export function createShareClip(env: ClipEnv) {
         a.href = url; a.download = f.name; env.doc.body.append(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 60_000); done = true;
       }
-    } catch { return; }
+    } catch { return; } finally { sending = false; if (button && state === 'ready') button.disabled = false; }
     if (!done) return;
     try { env.telemetry.event('clip_shared', { boss, sec: clipSec }); } catch { /* never throws */ }   // the clip's length in seconds and the boss kind, nothing else
     file = null; state = 'idle'; showButton(B.saved, false); hideAt = env.now() + 2000;
@@ -205,14 +208,19 @@ export function createShareClip(env: ClipEnv) {
         if (state === 'making') return;
         if (state === 'idle') {
           if (!on) return;
-          state = 'buffering'; stillOnly = !type; guardStart = now; guardSum = 0; guardN = 0; guarded = false; nextAt = now + rows.leadSeconds * 1000; lastDraw = -1e9;
+          state = 'buffering'; stillOnly = !type; guardStart = now; guardSum = 0; guardN = 0; guardPhase = 0; nextAt = now + rows.leadSeconds * 1000; lastDraw = -1e9;
           if (type) { const t = startTake(); if (!t) { stillOnly = true; } else takes = [t]; }
         }
         if (state === 'buffering') {
           if (!on || gap > 1000) { reset(); return; }   // the fight ended without a kill (death, leash) or the tab slept: nothing worth keeping
-          if (!guarded) {
+          // the jank guard in two windows: the first `seconds` with one encoder, then `seconds` more from the moment the SECOND encoder starts (the load a phone really carries through the rest of the fight)
+          if (guardPhase === 1 && takes.length >= 2) { guardPhase = 2; guardStart = now; guardSum = 0; guardN = 0; }
+          if (guardPhase === 0 || guardPhase === 2) {
             guardSum += gap; guardN++;
-            if (now - guardStart >= rows.guard.seconds * 1000) { guarded = true; if (guardN > 3 && guardSum / guardN > rows.guard.maxFrameMs) { disable(); return; } }
+            if (now - guardStart >= rows.guard.seconds * 1000) {
+              if (guardN > 3 && guardSum / guardN > rows.guard.maxFrameMs) { disable(); return; }
+              guardPhase = guardPhase === 0 ? 1 : 3;
+            }
           }
           if (takes.length && now - lastDraw >= 1000 / rows.fps - 3) { lastDraw = now; draw(); }
           if (takes.length && now >= nextAt) {

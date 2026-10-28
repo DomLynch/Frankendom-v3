@@ -52,14 +52,14 @@ test('type pick, file name, boss token and the 9:16 crop', () => {
 });
 
 // ---- fakes ----
-function world({ recorder = true, share = null, throwOnStart = false } = {}) {
+function world({ recorder = true, share = null, throwOnStart = false, hang = false, rows = SHARE_CLIP } = {}) {
   let t = 0;
   const made = [], anchors = [], events = [], shares = [];
   class Rec {
     static isTypeSupported(type) { return type.startsWith('video/mp4'); }
     constructor(stream, opts) { if (throwOnStart) throw new Error('refused'); this.stream = stream; this.opts = opts; this.state = 'inactive'; this.t0 = t; made.push(this); }
     start() { this.state = 'recording'; }
-    stop() { this.state = 'inactive'; this.stoppedAt = t; this.ondataavailable?.({ data: new Blob(['v'.repeat(1000)]) }); this.onstop?.(); }
+    stop() { this.state = 'inactive'; this.stoppedAt = t; if (hang) return; this.ondataavailable?.({ data: new Blob(['v'.repeat(1000)]) }); this.onstop?.(); }
   }
   const el = (tag) => {
     const o = { tag, style: {}, dataset: {}, listeners: {}, children: [], width: 0, height: 0,
@@ -72,7 +72,7 @@ function world({ recorder = true, share = null, throwOnStart = false } = {}) {
   const doc = { createElement: el, head: el('head'), body: el('body') };
   globalThis.HTMLCanvasElement = class { captureStream() {} };
   globalThis.URL.createObjectURL ??= () => 'blob:x';
-  const env = { rows: SHARE_CLIP, doc, source: { width: 390, height: 844 }, now: () => t, Recorder: recorder ? Rec : undefined,
+  const env = { rows, doc, source: { width: 390, height: 844 }, now: () => t, Recorder: recorder ? Rec : undefined,
     nav: share === null ? { share: undefined } : { canShare: () => true, share: async (d) => { shares.push(d); await share(); } },
     audio: () => null, untap() {}, telemetry: { event: (n, f) => events.push([n, f]) } };
   const clip = createShareClip(env);
@@ -184,6 +184,48 @@ test('the jank guard: a mean frame interval over the row switches clips off for 
   w.run(2000); assert.equal(w.alive().length, 0, 'stays off');
   const fine = world(); fine.run(SHARE_CLIP.guard.seconds * 1000 + 1500, true, 16);
   assert.notEqual(fine.clip.state, 'off');
+});
+
+test('the jank guard keeps measuring after the SECOND encoder starts: fast with one, slow with two switches clips off', () => {
+  const w = world();
+  w.run(L - 300, true, 16);   // the first window (one encoder) passes
+  assert.equal(w.alive().length, 1); assert.notEqual(w.clip.state, 'off');
+  w.run(2000, true, 16); assert.equal(w.alive().length, 2, 'the second encoder is running');
+  w.run(SHARE_CLIP.guard.seconds * 1000 + 600, true, SHARE_CLIP.guard.maxFrameMs + 30);   // ...and the phone chokes under two
+  assert.equal(w.clip.state, 'off');
+  assert.equal(w.alive().length, 0);
+  const fast = world(); fast.run(L + SHARE_CLIP.guard.seconds * 1000 + 2000, true, 16);
+  assert.notEqual(fast.clip.state, 'off', 'a phone that holds the budget with two encoders keeps clips');
+});
+
+test('a recorder whose onstop never fires: the watchdog resolves it, "Making clip…" ends in the still picture', async () => {
+  const w = world({ hang: true, rows: { ...SHARE_CLIP, stopTimeoutSeconds: 0.05 } });
+  w.run(6000); w.clip.moment('minotaur'); w.run(TAIL + 100, false);
+  assert.equal(w.btn().textContent, 'Making clip…');
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal(w.clip.state, 'ready');
+  assert.equal(w.btn().textContent, 'Share picture');
+});
+
+test('a second tap while the share sheet is pending does nothing: one share, no download, one event', async () => {
+  let release;
+  const w = world({ share: () => new Promise((r) => { release = r; }) });
+  w.run(6000); w.clip.moment('minotaur'); w.run(TAIL + 300, false); await w.flush();
+  const click = w.btn().listeners.click[0];
+  click(); click(); click();
+  await w.flush();
+  assert.equal(w.shares.length, 1);
+  assert.equal(w.btn().disabled, true);
+  release(); await w.flush();
+  assert.equal(w.shares.length, 1); assert.equal(w.anchors.length, 0); assert.equal(w.events.length, 1);
+});
+
+test('the button sits on the bottom edge, below the cut hint box (pickup.json safe.bottomFrac), never mid-screen', () => {
+  const pickup = JSON.parse(read('../data/pickup.json')), src = read('../src/share-clip.ts');
+  assert.ok(ROWS.button.bottomPx <= 24, 'a few px above the bottom edge');
+  assert.match(src, /bottom:calc\(\$\{B\.bottomPx\}px \+ env\(safe-area-inset-bottom/);
+  assert.ok(!/top:\$\{|left:50%;top/.test(src));
+  assert.ok(pickup.safe.bottomFrac >= 0.1, 'the hint keeps off the bottom band the button lives in');
 });
 
 test('a new fight clears the offer; the button hides on its own after hideSeconds', async () => {

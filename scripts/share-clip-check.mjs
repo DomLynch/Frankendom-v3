@@ -47,6 +47,21 @@ try {
   await page.waitForSelector('button.sc-btn:not([disabled])', { timeout: 20_000 });
   result.label = await page.textContent('button.sc-btn');
   await page.screenshot({ path: path.join(out, 'button-375.png') });
+  // Where the button sits next to the cut hint and the corpse's cut circles, at 375, 320 and landscape: its box must overlap neither the hint's safe band nor any hint / cut-cue element, and a tap at the hint's centre must not land on the button.
+  result.geometry = [];
+  for (const [w, h] of [[375, 812], [320, 568], [812, 375]]) {
+    await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(600);
+    const g = await page.evaluate(() => {
+      const r = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; }, hit = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+      const btn = r(document.querySelector('button.sc-btn')), others = [...document.querySelectorAll('.pk-hint, .pk-text, .pk-arrow, .cut-cue')].filter((e) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).opacity !== '0').map((e) => ({ c: e.className, ...r(e) }));
+      const H = innerHeight, band = { l: 0, r: innerWidth, t: H * 0.2, b: H * 0.7 };   // pickup.json safe.topFrac / bottomFrac: the band the hint lives in
+      const centre = others.find((o) => o.c.includes('pk-hint')), onHint = centre ? document.elementFromPoint((centre.l + centre.r) / 2, (centre.t + centre.b) / 2) : null;
+      return { viewport: [innerWidth, innerHeight], button: btn, inHintBand: hit(btn, band), overlapsHintOrCutCircle: others.some((o) => hit(btn, o)), hintVisible: !!centre, tapAtHintHitsButton: !!onHint?.closest?.('button.sc-btn'), insideViewport: btn.l >= 0 && btn.r <= innerWidth && btn.b <= innerHeight && btn.t >= 0 };
+    });
+    result.geometry.push(g);
+    await page.screenshot({ path: path.join(out, `button-${w}x${h}.png`) });
+  }
+  await page.setViewportSize({ width: 375, height: 812 }); await page.waitForTimeout(300);
   if (shareMode) {
     await page.click('button.sc-btn');
     await page.waitForFunction(() => window.__shared, null, { timeout: 10_000 });
