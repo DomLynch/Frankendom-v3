@@ -51,6 +51,7 @@ await page.waitForTimeout(500);
 for (let i = 0; i < 300 && !(await page.evaluate(() => globalThis.__v3Zone.engaged)); i++) {
   const h = await heroAt(), dx = spawn.x - h[0], dz = spawn.z - h[1], n = Math.hypot(dx, dz) || 1, f = (dx * fw[0] + dz * fw[1]) / n, r = (dx * rt[0] + dz * rt[1]) / n;
   for (const [c, on] of [['KeyW', f > 0.3], ['KeyS', f < -0.3], ['KeyD', r > 0.3], ['KeyA', r < -0.3]]) await key(c, on ? 'keydown' : 'keyup');
+  if (i > 40 && n < 4) await page.evaluate(([s, ux, uz]) => { const q = globalThis.__v3Fight.fighter; q.x = s.x - ux * 2; q.z = s.z - uz * 2; }, [spawn, dx / n, dz / n]);   // a big body holds him just outside the aggro ring: step him in to 2 m
   await page.waitForTimeout(100);
 }
 for (const c of ['KeyW', 'KeyS', 'KeyD', 'KeyA']) await key(c, 'keyup');
@@ -69,6 +70,8 @@ console.log(`${tag}: ready`, JSON.stringify(await state()));
 for (const [mode, name] of [['hand', 'hand'], ['weapon', 'weapon']]) {
   await page.evaluate((m) => { globalThis.__handCam = m; }, mode);
   await page.waitForTimeout(700);
+  for (let i = 0; i < 200 && /attack|stagger|hit/.test((await state()).foe); i++) await page.waitForTimeout(50);   // not mid-swing (the weapon is across the lens then)
+  await page.waitForTimeout(150);
   await page.screenshot({ path: `${out}/${tag}-${name}.png` });
   console.log(`${tag}: ${name}`, JSON.stringify(await state()));
 }
