@@ -12,7 +12,7 @@ import { tuneFrom } from '../src/tune.ts';
 
 const read = (f) => JSON.parse(readFileSync(new URL(`../data/${f}.json`, import.meta.url), 'utf8'));
 const clone = (x) => JSON.parse(JSON.stringify(x));
-const IDS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const IDS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts', 'limb_loss'];
 /** A commentator whose clock the test drives; `lines` collects what the caption would show. */
 const make = (rows = ROWS, names = { gargantua: 'Gargantua' }) => { const lines = []; const cm = createCommentator(rows, (l) => lines.push(l), names, true); return { cm, lines }; };
 const loose = () => { const r = clone(ROWS); r.caps = { perSession: 1000, perMinute: 60, gapSeconds: 0 }; for (const e of Object.values(r.events)) { e.cooldownSeconds = 0; e.probability = 1; } return r; };
