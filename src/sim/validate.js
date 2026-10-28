@@ -57,6 +57,8 @@ export const SCHEMA = {
   'mobs': { keys: ['about', 'on', 'cap', 'capMax', 'scanSeconds', 'activateMetres', 'despawnMetres', 'spawnMinMetres', 'startClearMetres', 'padMetres', 'swingMetres', 'lod', 'hitScale', 'turnRate', 'speedEase', 'pitArea', 'grid', 'pack', 'separation', 'attack', 'hero', 'states', 'fall', 'corpse', 'farm', 'rings', 'respawnSeconds', 'kinds', 'limits'],
     maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], corpse: ['nearMetres', 'graceSeconds', 'holdSeconds', 'max'], farm: ['decay'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
   // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
+  // Boss signature mechanics (src/fight/mechanics/registry.ts; each module checks its own row, test/mechanics.test.mjs): a MAP of mechanic id -> row
+  'mechanics': { keys: ['about', 'mechanics'] },
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
   'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
@@ -344,12 +346,25 @@ export function validateFile(name, json) {
     errors.push(...checkWideLens(json.camera.wide, name));
   }
   if (name === 'commentator') errors.push(...checkCommentator(json));
+  if (name === 'mechanics') errors.push(...checkMechanics(json));
   banned(json, name, errors);
   return errors;
 }
 
+/** data/mechanics.json: `mechanics` is a map of lower-case-kebab ids to row objects (a row's own values are checked by its module, src/fight/mechanics/*.ts validate). */
+export function checkMechanics(json) {
+  const e = [], m = json.mechanics;
+  if (typeof json.about !== 'string' || !json.about) e.push('mechanics.about: a non-empty string');
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return [...e, 'mechanics.mechanics: must be a map of id -> row'];
+  for (const [id, row] of Object.entries(m)) {
+    if (!/^[a-z][a-z0-9-]*$/.test(id)) e.push(`mechanics.mechanics.${id}: ids are lower-case words with dashes`);
+    if (!row || typeof row !== 'object' || Array.isArray(row)) e.push(`mechanics.mechanics.${id}: must be an object`);
+  }
+  return e;
+}
+
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
-const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts', 'limb_loss'];
 const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
 export const COMMENTATOR_MIN_LINES = 6;
 export function checkCommentator(json) {

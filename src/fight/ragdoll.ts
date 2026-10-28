@@ -265,6 +265,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let cutRig: CutRig | undefined;   // the body is the physics cut GLB (piece_* and cap_* meshes, docs/CUT-CONTRACT.md): a cut shows the caps and the piece flies with its bones. Undefined = the old triangle cutter and ball caps
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   const worldRagdolls = new Set<Pick<Ragdoll, 'awake'>>();   // this foe's world only: his live ragdoll and the corpses that kept one
+  let lostUnits: readonly string[] = [], drawLost: ((root: THREE.Object3D) => void) | undefined;   // boss mechanics (setLost): the cut units already gone from the live body, and how a copy of it draws them gone
   let capped = false, slain = false, sawFinish = false, mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const late = createLateCuts();   // a finisher row's cut made some seconds after the killing blow (finisherCuts atS)
   // ?rules=m4 (rules-eval.ts): `rules` is the evaluator, `down` the seconds a knockdown has left (the bones follow the ragdoll), `getUp` the seconds left of the blend back to the clip
@@ -338,7 +339,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // loses flies. The package steps one world: the corpse's bodies sleep until a cut wakes one, so a standing corpse costs the world nothing but a sleep test (cost.byMode.corpses has the rest).
   type Corpse = { id: string; root: THREE.Object3D; age: number; piecesHidden: boolean; pieces: THREE.Object3D[]; owned: THREE.BufferGeometry[]; slot: number;
     rd?: Ragdoll; rig?: Rig; cutRig?: CutRig; bones?: Bones; anchor?: THREE.Object3D; cutter?: PieceCutter; cues?: CueSet;
-    done: Set<string>; gone: Set<THREE.Object3D>; hideAt: { mesh: THREE.Object3D; at: number }[]; dirty: boolean; frozenFor: number };
+    done: Set<string>; gone: Set<THREE.Object3D>; hideAt: { mesh: THREE.Object3D; at: number }[]; dirty: boolean; frozenFor: number; draw?: (root: THREE.Object3D) => void };   // draw: a boss mechanic's lost units drawn gone on this copy (setLost); cutRig.update re-shows every piece, so it runs after each
   let corpses: Corpse[] = [], idleAcc = 0;   // idleAcc: idleFrame's physics clock
   const dropCorpse = (c: Corpse) => {
     c.root.removeFromParent();
@@ -361,7 +362,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     const manifest = chunk && cutManifestOf(chunk) as { regions?: { mesh: string; detached_by?: string }[] } | undefined;
     if (cutRig && rd && manifest?.regions) for (const r of manifest.regions) { const m = r.detached_by && rd.cuts.includes(r.detached_by) ? copy.getObjectByName(r.mesh) : undefined; if (m) pieces.push(m); }
     group.parent.add(copy);
-    const c: Corpse = { id: lifeId, root: copy, age: 0, piecesHidden: false, pieces, owned, slot, done: new Set(rd?.cuts ?? []), gone: new Set(), hideAt: [], dirty: false, frozenFor: 0 };
+    const c: Corpse = { id: lifeId, root: copy, age: 0, piecesHidden: false, pieces, owned, slot, done: new Set([...(rd?.cuts ?? []), ...lostUnits]), gone: new Set(), hideAt: [], dirty: false, frozenFor: 0, ...(drawLost ? { draw: drawLost } : {}) };   // a lost unit counts as done: its cue never shows and a tap never cuts it (nothing is there), and no cut event means no part
     if (row.cuttable && cutRig && rd && manifest) {
       try { armCorpse(c, manifest); } catch (error) { cost.state = `corpse stays static: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }   // a static copy, as before M8
     }
@@ -397,6 +398,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       for (const prop of result.props) prop.destroy();
       c.cutRig.update();   // shows the new stump caps (and every piece again: the ones already gone are hidden again below)
       for (const m of c.gone) m.visible = false;
+      c.draw?.(c.root);   // the limbs the fight took off him stay gone (cutRig.update shows every piece again)
       const manifest = chunk && cutManifestOf(chunk) as { regions?: { id: string; detached_by?: string }[] } | undefined;
       for (const id of piecesOfUnit(manifest, unit)) { const m = c.cutRig.pieces[id]; if (m) c.hideAt.push({ mesh: m, at: c.age + (rows.corpse as { pieceSeconds: number }).pieceSeconds }); }   // this piece goes pieceSeconds after ITS cut
       c.dirty = true;
@@ -469,7 +471,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // follows them, caps cover the two ends of the seam, and the event goes on the page's list. `impulse`: the piece's push in the ragdoll's frame.
   // Only on a corpse (the ragdoll's bones follow its capsules) and with gore shown (blood 'off' keeps the body whole, as for the finisher's head).
   function cutUnit(unit: string, source: string, impulse?: Vec3): CutEvent | null {
-    if (!rd || !group || !rigged || !cutRows.on || !gore || done.has(unit)) return null;
+    if (!rd || !group || !rigged || !cutRows.on || !gore || done.has(unit) || lostUnits.includes(unit)) return null;   // a unit the fight already took off (setLost) is not there to cut: no event, no part
     if (!hasUnit(unit)) return null;   // a visual unit the body's cut GLB does not carry: no cut (never the triangle cutter, which would carve the torso at its cap part)
     const t0 = performance.now(), steps: Record<string, number> = {};
     const result = rd.cut(unit, { helmet: !!gearRow.helmet, impulse });
@@ -653,6 +655,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const blend: Record<string, number> = tune?.blend ?? rows.hit.blend, blendOn = Object.values(blend).some((w) => w > 0);
 
   return {
+    /** Boss mechanics (src/fight/mechanics, scene.ts every time the boss's phases list changes): the cut units this fight already took off him (Sir Reginald's lost limbs). They can no longer be cut (nothing is there: no cut event, so no part is counted), a corpse keeps them gone, and `draw` shows them gone on a corpse's copy. An empty list = whole. */
+    setLost(units: readonly string[], draw?: (root: THREE.Object3D) => void) { lostUnits = units; drawLost = units.length ? draw : undefined; },
     // scene.ts, once the rigs are in: the opponent's group (the sim frame) and his rig. The chunk and the body row load after the first frame.
     attach(opponentGroup: THREE.Object3D, opponentRig: Rigged, heroRig?: Rigged) {
       group = opponentGroup; rigged = opponentRig;

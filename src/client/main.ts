@@ -16,7 +16,8 @@ import { tuneFrom, type TuneFile } from '../tune.ts';
 import { difficultyPick, type DifficultyFile, type ProfileRow } from '../difficulty.ts';
 import { applyFoeSweeps, applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
-import { project, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
+import { project, type CombatEvent, type Practice } from '../fight/combat.ts';
+import { mechanicFor, stepMechanic } from '../fight/mechanics/registry.ts';   // the boss signature mechanics (data/mechanics.json): stepMechanic is stepPractice with the held boss's mechanic laid over it
 import { RULES, weaponOf, isWeaponId, type AiProfile, type Opponent, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
@@ -181,7 +182,7 @@ let practice = fresh(), frameEvents: CombatEvent[] = [];
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
-let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0;
+let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0, tellStop = 0;   // tellStop: a boss mechanic's freeze (ms) for the tick it fired on
 const locked = true;
 let assetsReady = false, graphicsLost = false;
 const step = () => 1 / FIGHT.tempoHz;
@@ -490,7 +491,7 @@ function zoneStep(dt: number) {
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
         attackers = attackers.filter((a) => !gone.includes(a.index));
-        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai));   // each attacker fights as its own kind, its own brain
+        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai, mechanicFor(spawns[i]!.kind)));   // each attacker fights as its own kind, its own brain
       }
     }
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
@@ -601,7 +602,10 @@ function frame(now: number) {
       const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: lockOn, cancel: intent.cancel });
       const prior = practice;
-      practice = stepPractice(prior, duelIntent, aiProfile);
+      const mech = ZONE ? mechanicFor(spawns[current]?.kind) : null;   // the held boss's signature mechanic (data/mechanics.json via data/rings.json); none = stepPractice exactly
+      practice = stepMechanic(prior, duelIntent, aiProfile, mech);
+      const tell = mech ? mech.tell(prior, practice) : null;   // Sir Reginald's armour fails: the caption (priority line) and a short freeze, the limb itself is drawn by the view
+      if (tell) { commentator.say(tell.event, tell.params); tellStop = tell.hitStopMs; }
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
@@ -642,7 +646,7 @@ function frame(now: number) {
       if (mobsRun) practice = mobsRun.tick(practice, roam && freeRoam ? freeRoam.duel.fighters[0] : practice.duel.fighters[0], step());   // trash mobs (data/mobs.json): the hero's blow on them, theirs on him
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
-      const stop = stopFor(practice.events);
+      const stop = Math.max(stopFor(practice.events), tellStop); tellStop = 0;
       if (stop) { hitStop = stop; accumulator = 0; previous = state; }
     }
   } else { accumulator = 0; previous = state; }
