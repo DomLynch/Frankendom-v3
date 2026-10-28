@@ -30,10 +30,10 @@ test('the rows validate; an unknown body, a clip-less body and two bodies on one
   const unknown = clone(PROFILES); unknown.profiles[0].body = 'no-such-body';
   assert.match(checkBodies(unknown, RIG).join('\n'), /profiles\.pitborn\.body: 'no-such-body' is not a data\/rig\.json files row/);
   assert.match(validateAll({ profiles: unknown, rig: RIG }).join('\n'), /no-such-body/);
-  const noDefault = clone(PROFILES); noDefault.defaultBody = 'kachujin';
-  assert.match(checkBodies(noDefault, RIG).join('\n'), /profiles\.defaultBody: 'kachujin' is not a data\/rig\.json files row/);
-  const noClips = clone(RIG); noClips.files.kachujin = 'kachujin-106';   // a files row whose 106 file has no clips106 folder
-  const clipless = clone(PROFILES); clipless.profiles[0].body = 'kachujin';
+  const noDefault = clone(PROFILES); noDefault.defaultBody = 'synthbody';
+  assert.match(checkBodies(noDefault, RIG).join('\n'), /profiles\.defaultBody: 'synthbody' is not a data\/rig\.json files row/);
+  const noClips = clone(RIG); noClips.files.synthbody = 'synthbody-106';   // a files row whose 106 file has no clips106 folder
+  const clipless = clone(PROFILES); clipless.profiles[0].body = 'synthbody';
   assert.match(checkBodies(clipless, noClips).join('\n'), /no data\/rig\.json clips106\.dir folder/);
   const two = clone(PROFILES); two.profiles.push({ ...two.profiles[0], id: 'pitborn-b', body: 'psyche' });
   assert.match(checkBodies(two, RIG).join('\n'), /one body per opponent id/);
@@ -42,18 +42,18 @@ test('the rows validate; an unknown body, a clip-less body and two bodies on one
 });
 
 // Only two 106 bodies are in the repo and one is the hero's, so a second boss body is a synthetic rig row here (a third `files` row with a clips106 folder).
-const ROOMY = clone(RIG); ROOMY.files.kachujin = 'kachujin-106'; ROOMY.clips106.dir['kachujin-106'] = '106/kachujin';
+const ROOMY = clone(RIG); ROOMY.files.synthbody = 'synthbody-106'; ROOMY.clips106.dir['synthbody-106'] = '106/synthbody';
 
 test('?boss= draws every boss in another usable body for that page only; a bad value is ignored with a warning', () => {
   const warned = [], warn = (m) => warned.push(m);
-  assert.equal(setBossBody('?boss=kachujin', warn, ROOMY, 'psyche'), 'kachujin');
-  assert.equal(foeBodyFile('pitborn', 'ignored', true), 'kachujin');
-  assert.equal(foeBodyFile('veteran', 'ignored', true), 'kachujin');
+  assert.equal(setBossBody('?boss=synthbody', warn, ROOMY, 'psyche'), 'synthbody');
+  assert.equal(foeBodyFile('pitborn', 'ignored', true), 'synthbody');
+  assert.equal(foeBodyFile('veteran', 'ignored', true), 'synthbody');
   assert.equal(setBossBody('?boss=nobody', warn, ROOMY, 'psyche'), null);
   assert.equal(foeBodyFile('pitborn', 'ignored'), 'minotaur-106');   // back to the row
   assert.equal(warned.length, 1);
   assert.match(warned[0], /\?boss=nobody ignored: 'nobody' is not a data\/rig\.json files row/);
-  assert.equal(setBossBody('?boss=kachujin', warn, RIG, 'psyche'), null, 'a body the rig rows do not have is ignored');
+  assert.equal(setBossBody('?boss=synthbody', warn, RIG, 'psyche'), null, 'a body the rig rows do not have is ignored');
   setBossBody('');
 });
 
@@ -71,7 +71,7 @@ test('the Minotaur-fitted ragdoll row and cleaver bake apply to the Minotaur onl
   setBossBody('');
   assert.ok(ragdollRowFor(PHYSICS, '', 'pitborn'), 'default: the Pitborn has his ragdoll row');
   assert.ok(foeSweepsFor(FIGHT.foeReach, '', 'pitborn'), "default: the cleaver sweeps are laid over V1's table");
-  setBossBody('?boss=kachujin', () => {}, ROOMY, 'psyche');
+  setBossBody('?boss=synthbody', () => {}, ROOMY, 'psyche');
   assert.equal(ragdollRowFor(PHYSICS, '', 'pitborn'), null, 'another body has no measure row: today\'s death');
   assert.equal(foeSweepsFor(FIGHT.foeReach, '', 'pitborn'), null, "the bake is the Minotaur's");
   setBossBody('');
