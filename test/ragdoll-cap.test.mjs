@@ -13,7 +13,9 @@ const awake = (n) => Array.from({ length: n }, () => ({ awake: true }));
 test('the row is the package\'s (3 today) and V3 reads it, not a copy', () => {
   assert.equal(rows.max_simultaneous_ragdolls, 3);
   const src = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8');
-  assert.match(src, /admitRagdoll\(chunk!\)/);
+  assert.match(src, /admitRagdoll\(chunk!, worldRagdolls\)/);
+  assert.match(src, /const worldRagdolls = new Set/);
+  assert.doesNotMatch(src, /^const worldRagdolls/m);   // per foe (per Jolt world), never module-global
   assert.doesNotMatch(src, /max_simultaneous_ragdolls\s*[:=]\s*\d/);
 });
 
@@ -24,6 +26,13 @@ test('a single kill is admitted as before; with three active ragdolls the fourth
   assert.equal(admitRagdoll(chunk, awake(cap - 1)), 'ragdoll');
   assert.equal(admitRagdoll(chunk, awake(cap)), 'baked');
   assert.equal(admitRagdoll(chunk, awake(3)), 'baked');
+});
+
+test('the cap counts one Jolt world: 3 parked/held foes (a world each) plus a live foe are not capped; 3 awake fighting/dying in one world cap the 4th', () => {
+  const worlds = [0, 1, 2, 3].map(() => new Set([{ awake: true }]));   // a zone page: three held foes' worlds and the live foe's, one awake ragdoll each
+  for (const w of worlds) assert.equal(admitRagdoll(chunk, w), 'ragdoll');
+  const fight = new Set(awake(3));                                       // one world: three awake ragdolls (live + dying corpses)
+  assert.equal(admitRagdoll(chunk, fight), 'baked');
 });
 
 test('a corpse asleep does not count against the cap; the cap row moves the answer', () => {
