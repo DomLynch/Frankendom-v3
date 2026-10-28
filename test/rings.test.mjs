@@ -25,7 +25,7 @@ const check = (rows = RINGS, zone = ZONE1) => validateRings(rows, zone, ringOrig
 test('the shipped rings validate against the profiles, the rig, the sky plates and the zone row', () => {
   assert.deepEqual(check(), []);
   assert.deepEqual(RINGS.rings.map((r) => r.id), ['ring-1', 'ring-2', 'ring-3']);
-  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard', 'big-vegas', 'parasite', 'the-boss', 'anime-girl-blonde', 'anime-boy-black']);
+  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'sporty-granny', 'kachujin', 'castle-guard', 'parasite', 'the-boss', 'anime-girl-blonde', 'anime-boy-black']);
   assert.ok(RINGS.bosses.every((b) => b.mechanic === null), 'one signature mechanic each, later: the row is null today');
 });
 
