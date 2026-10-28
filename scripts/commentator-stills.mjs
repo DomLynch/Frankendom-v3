@@ -11,7 +11,7 @@ import { mkdirSync } from 'node:fs';
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/commentator-stills.mjs <base url> <out dir>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--mute-audio'] });
+const browser = await chromium.launch({ ...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}), args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--mute-audio'] });
 const phone = { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const errors = [];
 const open = async (ctx, tag) => {
@@ -23,7 +23,14 @@ const open = async (ctx, tag) => {
   return page;
 };
 const caption = (page) => page.evaluate(() => { const el = document.querySelector('[data-commentator]'); return el ? { text: el.textContent, opacity: el.style.opacity, box: (({ x, y, width, height }) => ({ x: Math.round(x), y: Math.round(y), w: Math.round(width), h: Math.round(height) }))(el.getBoundingClientRect()), said: globalThis.__v3Commentator?.said } : null; });
-const shot = async (page, name) => { await page.screenshot({ path: `${out}/${name}.png` }); console.log(name, JSON.stringify(await caption(page))); };
+// a software-GL screenshot takes seconds and the caption lasts 3.4 s: hold it fully shown (no fade) for the shot only; its text, place and size are the page's own
+const shot = async (page, name) => {
+  const hold = await page.addStyleTag({ content: '.cm-line{opacity:1!important;transition:none!important}' });
+  const before = await caption(page);
+  await page.screenshot({ path: `${out}/${name}.png` });
+  await hold.evaluate((n) => n.remove());
+  console.log(name, JSON.stringify(before));
+};
 const waitLine = (page, ms = 60000) => page.waitForFunction(() => { const el = document.querySelector('[data-commentator]'); return !!el && el.style.opacity === '1' && el.textContent.length > 0; }, null, { timeout: ms });
 const gone = (page) => page.waitForFunction(() => document.querySelector('[data-commentator]')?.style.opacity !== '1', null, { timeout: 20000 });
 
@@ -34,10 +41,13 @@ await waitLine(page); await page.waitForTimeout(450); await shot(page, '1-fight-
 await gone(page); await page.waitForTimeout(500);
 await page.evaluate(() => { globalThis.__low = setInterval(() => { const f = globalThis.__v3Fight?.duel.fighters; if (f) f[0].health = Math.min(f[0].health, 20); }, 50); });
 await waitLine(page); await page.waitForTimeout(450); await shot(page, '2-hero-low');
-await page.evaluate(() => clearInterval(globalThis.__low)); await gone(page); await page.waitForTimeout(4500);
+await page.evaluate(() => clearInterval(globalThis.__low)); await gone(page); await page.waitForTimeout(15000);   // the game clock runs slower than the wall clock under software GL: the 4 s gap between lines needs real seconds
 await page.evaluate(() => { globalThis.__lowb = setInterval(() => { const f = globalThis.__v3Fight?.duel.fighters; if (f) { f[0].health = f[0].maxHealth; f[1].health = Math.min(f[1].health, Math.floor(f[1].maxHealth * 0.15)); } }, 50); });
 await waitLine(page); await page.waitForTimeout(450); await shot(page, '3-boss-low');
 await page.evaluate(() => clearInterval(globalThis.__lowb));
+await gone(page); await page.waitForTimeout(15000);
+await page.evaluate(() => window.dispatchEvent(new CustomEvent('frankendom:cut', { detail: { unit: 'arm_right' } })));   // the ragdoll's own event (cutUnit), as a tap on a corpse part fires it
+await waitLine(page); await shot(page, '4-cut');
 // the caption must not cover the controls, the radar, the boss bar or the hints: report the rects
 const rects = await page.evaluate(() => {
   const r = (q) => { const el = document.querySelector(q); if (!el) return null; const b = el.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), right: Math.round(b.right) }; };
