@@ -3,11 +3,11 @@
 // metres in world space, so the row's numbers mean the same on any body; it is a stand-in (the row's `placeholder` says so) until the painted shield files land.
 import { CylinderGeometry, Euler, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3, type Object3D } from 'three';
 import { bone as boneOf, HELD } from './rig-bones.ts';
-import type { BossWeaponRow, MaterialRow, OffhandRow } from './boss-weapon.ts';
+import type { BossWeaponRow, DiscRow, MaterialRow } from './boss-weapon.ts';
 
 export const SHIELD_NAME = 'BossShield';
 /** The board of an `offhand` row, in metres, axis along its local Y: a thin cylinder (face = a cap) with a darker rim ring. Pure geometry and materials, no bone. */
-export function discShield(o: OffhandRow): Group {
+export function discShield(o: DiscRow): Group {
   const g = new Group(); g.name = SHIELD_NAME;
   const face = new Mesh(new CylinderGeometry(o.radius, o.radius, o.thickness, 40), new MeshStandardMaterial({ color: o.colour, roughness: 0.7, metalness: 0.2 }));
   const rim = new Mesh(new CylinderGeometry(o.radius * 1.04, o.radius * 1.04, o.thickness * 0.8, 40, 1, true), new MeshStandardMaterial({ color: o.rim, roughness: 0.5, metalness: 0.6 }));
@@ -22,7 +22,7 @@ function restyle(part: Object3D, m: MaterialRow): void {
   part.traverse((o) => { if (o instanceof Mesh && o.name !== CONTACT) { const mat = new MeshStandardMaterial({ color: m.colour, metalness: m.metalness, roughness: m.roughness }); o.material = mat; } });
 }
 /** The equipped body with the row's weapon dressing: the grafted part scaled `scale` about its grip, the off-hand part seated on its bone. Returns the same asset. */
-export function dressBossHand<A extends { scene: Object3D }>(asset: A, row: BossWeaponRow): A {
+export function dressBossHand<A extends { scene: Object3D }>(asset: A, row: BossWeaponRow, offhandPart?: Object3D): A {   // offhandPart: the loaded scene of an offhand `file` row (loadFoeBody loads it with the boss body)
   const scene = asset.scene;
   const part = graftOf(scene);
   if (part) {
@@ -36,8 +36,14 @@ export function dressBossHand<A extends { scene: Object3D }>(asset: A, row: Boss
     const hand = boneOf(scene, o.hand);
     if (!hand) throw new Error(`boss weapon ${row.id}: the body has no ${o.hand} to hold the ${o.kind}`);
     scene.updateMatrixWorld(true);
-    const k = 1 / hand.getWorldScale(new Vector3()).x, shield = discShield(o);   // the board is built in metres; the bone's own scale (a Mixamo rig is centimetres) is undone so it keeps its metres
-    shield.scale.setScalar(k); shield.position.set(o.offset[0] * k, o.offset[1] * k, o.offset[2] * k);
+    let shield: Object3D;
+    if (o.kind === 'file') {   // a library mesh (shield.glb, root BossShield, metres), loaded with the boss body and handed in as `offhandPart`
+      const root = offhandPart?.getObjectByName(SHIELD_NAME);
+      if (!root) throw new Error(`boss weapon ${row.id}: the ${o.file} file has no ${SHIELD_NAME} node`);
+      shield = root.clone(); shield.name = SHIELD_NAME;
+    } else shield = discShield(o);
+    const k = 1 / hand.getWorldScale(new Vector3()).x;   // the part is in metres; the bone's own scale (a Mixamo rig is centimetres) is undone so it keeps its metres
+    shield.scale.setScalar(k * (o.kind === 'file' ? o.scale : 1)); shield.position.set(o.offset[0] * k, o.offset[1] * k, o.offset[2] * k);
     shield.rotation.copy(new Euler(...o.rotationDeg.map((d) => (d * Math.PI) / 180) as [number, number, number]));
     hand.add(shield);
   }

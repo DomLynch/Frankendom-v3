@@ -4,7 +4,12 @@
 import BOSS from '../../data/boss-weapons.json' with { type: 'json' };
 import { OPPONENTS, isWeaponId, type Opponent } from './moves.ts';
 
-export type OffhandRow = { kind: 'disc'; hand: string; radius: number; thickness: number; colour: string; rim: string; offset: [number, number, number]; rotationDeg: [number, number, number] };
+export type DiscRow = { kind: 'disc'; hand: string; radius: number; thickness: number; colour: string; rim: string; offset: [number, number, number]; rotationDeg: [number, number, number] };
+/** kind `file`: a mesh file under src/assets/weapons/foe/ (`file` = its stem; root node BossShield, 1 unit = 1 m), loaded with the boss body only; `scale` grows it about its own origin. */
+export type FileRow = { kind: 'file'; file: string; hand: string; scale: number; offset: [number, number, number]; rotationDeg: [number, number, number] };
+export type OffhandRow = DiscRow | FileRow;
+/** The file stems under src/assets/weapons/foe/ a row may graft (`equip`) or seat (`offhand.file`). */
+export const FOE_PART_STEMS: readonly string[] = ['cleaver', 'maul', 'axe', 'shield'];
 /** `grip`: where the drawn part sits in the hand, on top of the socket's own frame: metres and Euler XYZ degrees (the seat's frame; the sim's contact segment is not moved, this is the drawing). `material`: the part's own look replaced (null = the file's). */
 export type GripRow = { offset: [number, number, number]; rotationDeg: [number, number, number] };
 export type MaterialRow = { colour: string; metalness: number; roughness: number };
@@ -13,7 +18,7 @@ export type BossWeaponFile = { query: string; v1: string; rows: BossWeaponRow[] 
 
 const HEX = /^#[0-9a-f]{6}$/i, fin = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 /** Why `file` is not a good set of boss weapon rows (one string per problem; empty = fine). `equips`: the file stems under src/assets/weapons/foe/ a row may graft. */
-export function validateBossWeapons(file: BossWeaponFile, opponents: readonly string[] = Object.keys(OPPONENTS), equips: readonly string[] = ['cleaver'], isWeapon: (id: string) => boolean = isWeaponId): string[] {
+export function validateBossWeapons(file: BossWeaponFile, opponents: readonly string[] = Object.keys(OPPONENTS), equips: readonly string[] = FOE_PART_STEMS, isWeapon: (id: string) => boolean = isWeaponId): string[] {
   const e: string[] = [], seenId = new Set<string>(), seenOpp = new Set<string>();
   if (typeof file.query !== 'string' || !/^[a-z]+$/.test(file.query)) e.push('boss-weapons.query: a lower-case word');
   if (typeof file.v1 !== 'string' || !file.v1) e.push('boss-weapons.v1: the revert word');
@@ -35,11 +40,16 @@ export function validateBossWeapons(file: BossWeaponFile, opponents: readonly st
     if (!Array.isArray(r.placeholder) || !r.placeholder.length || r.placeholder.some((s) => typeof s !== 'string' || !s)) e.push(`${at}.placeholder: say exactly what is a stand-in (a non-empty list of strings)`);
     const o = r.offhand;
     if (o !== null) {
-      if (!o || typeof o !== 'object' || o.kind !== 'disc') e.push(`${at}.offhand.kind: "disc" (or offhand null)`);
+      if (!o || typeof o !== 'object' || (o.kind !== 'disc' && o.kind !== 'file')) e.push(`${at}.offhand.kind: "disc" or "file" (or offhand null)`);
       else {
         if (typeof o.hand !== 'string' || !o.hand) e.push(`${at}.offhand.hand: a bone name`);
-        for (const [k, lo, hi] of [['radius', 0.1, 0.8], ['thickness', 0.01, 0.2]] as const) if (!fin(o[k]) || o[k] < lo || o[k] > hi) e.push(`${at}.offhand.${k}: metres in ${lo}..${hi}`);
-        for (const k of ['colour', 'rim'] as const) if (typeof o[k] !== 'string' || !HEX.test(o[k])) e.push(`${at}.offhand.${k}: a #rrggbb colour`);
+        if (o.kind === 'disc') {
+          for (const [k, lo, hi] of [['radius', 0.1, 0.8], ['thickness', 0.01, 0.2]] as const) if (!fin(o[k]) || o[k] < lo || o[k] > hi) e.push(`${at}.offhand.${k}: metres in ${lo}..${hi}`);
+          for (const k of ['colour', 'rim'] as const) if (typeof o[k] !== 'string' || !HEX.test(o[k])) e.push(`${at}.offhand.${k}: a #rrggbb colour`);
+        } else {
+          if (!equips.includes(o.file)) e.push(`${at}.offhand.file: "${o.file}" is no file under src/assets/weapons/foe/ (${equips.join(', ')})`);
+          if (!fin(o.scale) || o.scale < 0.2 || o.scale > 3) e.push(`${at}.offhand.scale: a number in 0.2..3`);
+        }
         for (const [k, lim] of [['offset', 1], ['rotationDeg', 360]] as const) { const v = o[k]; if (!Array.isArray(v) || v.length !== 3 || !v.every((n) => fin(n) && Math.abs(n) <= lim)) e.push(`${at}.offhand.${k}: three finite numbers within +-${lim}`); }
       }
     }

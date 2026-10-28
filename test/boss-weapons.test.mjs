@@ -33,14 +33,21 @@ test('the rows validate; a bad row is refused with the rule it broke', () => {
   assert.match(bad((r) => { r.rows[0].scale = 0; }), /scale: a number in 0.5..4/);
   assert.match(bad((r) => { r.rows[0].scale = NaN; }), /scale/);
   assert.match(bad((r) => { r.rows[0].placeholder = []; }), /placeholder: say exactly what is a stand-in/);
-  assert.match(bad((r) => { r.rows[1].offhand.radius = 5; }), /offhand.radius/);
-  assert.match(bad((r) => { r.rows[1].offhand.colour = 'brown'; }), /offhand.colour/);
+  const disc = { kind: 'disc', hand: 'lowerarm_l', radius: 0.25, thickness: 0.04, colour: '#6a5236', rim: '#2b2b2b', offset: [0, 0.14, -0.07], rotationDeg: [-90, 0, 0] };
+  const withDisc = (f) => bad((r) => { r.rows[1].offhand = clone(disc); f(r.rows[1].offhand); });
+  assert.equal(withDisc(() => {}), '', 'the old disc kind still validates');
+  assert.match(withDisc((o) => { o.radius = 5; }), /offhand.radius/);
+  assert.match(withDisc((o) => { o.colour = 'brown'; }), /offhand.colour/);
   assert.match(bad((r) => { r.rows[1].offhand.offset = [0, 0]; }), /offhand.offset/);
   assert.match(bad((r) => { r.rows[1].offhand.kind = 'tower'; }), /offhand.kind/);
+  assert.match(bad((r) => { r.rows[1].offhand.file = 'no-such-shield'; }), /offhand.file: "no-such-shield" is no file/);
+  assert.match(bad((r) => { r.rows[1].offhand.scale = 9; }), /offhand.scale/);
+  assert.match(bad((r) => { r.rows[1].offhand.hand = ''; }), /offhand.hand/);
+  assert.match(bad((r) => { r.rows[1].offhand.rotationDeg = [0, 0, Infinity]; }), /offhand.rotationDeg/);
   assert.match(bad((r) => { r.rows[1].grip.offset = [0, 0]; }), /grip.offset/);
   assert.match(bad((r) => { delete r.rows[1].grip; }), /grip.rotationDeg/);
-  assert.match(bad((r) => { r.rows[1].material.colour = 'iron'; }), /material.colour/);
-  assert.match(bad((r) => { r.rows[1].material.roughness = 3; }), /material.roughness/);
+  assert.match(bad((r) => { r.rows[1].material = { colour: 'iron', metalness: 0.4, roughness: 0.5 }; }), /material.colour/);
+  assert.match(bad((r) => { r.rows[1].material = { colour: '#808080', metalness: 0.4, roughness: 3 }; }), /material.roughness/);
   assert.match(bad((r) => { r.rows[1].id = r.rows[0].id; }), /id: duplicate/);
   assert.deepEqual(validateFile('boss-weapons', { ...RAW, extra: 1 }), ['boss-weapons.extra: unknown key']);
   const unknownKey = clone(RAW); unknownKey.rows[0].handedness = 'two-hand';
@@ -51,8 +58,8 @@ test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden
   const g = row('executioner'), a = row('shieldmaiden');
   assert.equal(g.weapon, 'maul'); assert.equal(weaponOf('maul').grip, 'two-hand'); assert.equal(g.offhand, null);
   assert.equal(a.weapon, 'cleaver'); assert.equal(weaponOf('cleaver').grip, 'one-hand');   // V1's axe-skill one-hander
-  assert.equal(a.offhand.kind, 'disc'); assert.equal(a.offhand.hand, 'lowerarm_l');   // the left forearm, not the hand: a disc on the hand sat in front of her face (Dom review 2026-10-28)
-  assert.ok(a.offhand.radius <= 0.3, 'a forearm shield, not a board over the face');
+  assert.equal(a.offhand.kind, 'file'); assert.equal(a.offhand.file, 'shield'); assert.equal(a.offhand.hand, 'lowerarm_l');   // the left forearm, not the hand: a board on the hand sat in front of her face (Dom review 2026-10-28)
+  assert.deepEqual([g.equip, a.equip], ['maul', 'axe'], 'Dom picked these three library props (2026-10-28): hammer-01, axe1h-208, shield-213');
   assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'shieldmaiden']);
   assert.equal(OPPONENTS.executioner.weapon, 'scythe', "V1's row for the executioner is untouched");
   assert.equal(OPPONENTS.shieldmaiden.weapon, 'gladius', "V1's row for the shieldmaiden is untouched");
@@ -60,8 +67,10 @@ test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden
     assert.ok(r.placeholder.length >= 2 && r.placeholder.every((s) => s.length > 20), `${r.id}: the stand-ins are named`);
     assert.match(r.placeholder.join(' '), /sweeps: .*not re-baked/, `${r.id}: the sweeps are said to be V1's`);
   }
-  assert.match(a.placeholder.join(' '), /shield: a flat round board built in code/);
-  assert.match(g.placeholder.join(' '), /mesh: the Pitborn's cleaver/);
+  assert.match(a.placeholder.join(' '), /shield: a library prop, shield-213/);
+  assert.match(a.placeholder.join(' '), /axe: a library prop, .*axe1h-208/);
+  assert.match(g.placeholder.join(' '), /mesh: a library prop, .*hammer-01/);
+  assert.match(g.placeholder.join(' '), /not a maul drawn for Gargantua/);
 });
 
 test('bossOpponent lays the weapon over V1\'s row for the archetype and nothing else; ?bossweapon=v1 puts V1 back; other archetypes are the same object', () => {
@@ -124,39 +133,69 @@ const loadGlb = async (path) => {   // as scripts/foe-body/bake-blades.mjs: node
   json.buffers[0].uri = 'data:application/octet-stream;base64,' + bytes.subarray(28 + size).toString('base64');
   return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(JSON.stringify(json), '');
 };
-const armed = async () => equipWeapon(await loadGlb('../src/assets/minotaur-106.glb'), await loadGlb('../src/assets/weapons/foe/cleaver.glb'));
+const FOE = (stem) => `../src/assets/weapons/foe/${stem}.glb`;
+const armed = async (r = row('executioner')) => equipWeapon(await loadGlb('../src/assets/minotaur-106.glb'), await loadGlb(FOE(r.equip)));   // the body armed with the row's own file
+const shieldScene = async () => (await loadGlb(FOE('shield'))).scene;
+const dressed = async (r) => dressBossHand(await armed(r), r, r.offhand?.kind === 'file' ? await shieldScene() : undefined);
 const sizeOf = (o) => { o.updateWorldMatrix(true, true); return new Box3().setFromObject(o).getSize(new Vector3()); };
 
-test('the maul is the cleaver scaled about the grip; the axe is the cleaver as it is', async () => {
-  const plain = await armed(), maul = dressBossHand(await armed(), row('executioner')), axe = dressBossHand(await armed(), row('shieldmaiden'));
+test('the three library files hold the nodes the rows need: WeaponDrawn with a contact in maul and axe, BossShield in the shield', async () => {
+  for (const stem of ['maul', 'axe']) {
+    const w = (await loadGlb(FOE(stem))).scene.getObjectByName(HELD.weapon);
+    assert.ok(w, `${stem}.glb has a ${HELD.weapon} root`);
+    assert.ok(w.userData.contact && w.userData.contact.from < w.userData.contact.to, `${stem}.glb carries extras.contact`);
+    assert.ok(sizeOf(w).length() > 0.3, `${stem}.glb has mesh under the grip`);
+  }
+  const s = (await shieldScene()).getObjectByName(SHIELD_NAME);
+  assert.ok(s, 'shield.glb has a BossShield root');
+  const box = sizeOf(s), dims = [box.x, box.y, box.z].sort((p, q) => p - q);
+  assert.ok(dims[2] > 0.6 && dims[2] < 0.9, `shield about 0.75 m across: ${dims}`);
+  assert.ok(dims[0] < 0.4 && box.z === dims[0], `shield is a dished board, shallow along its +Z face normal: ${dims}`);
+});
+
+test('the maul and axe are the picked files, scaled about the grip by the row (the drawn part, not the seat)', async () => {
+  const gr = row('executioner'), ar = row('shieldmaiden');
+  const plain = dressBossHand(await armed(gr), { ...gr, scale: 1 }), maul = await dressed(gr), axe = await dressed(ar);
   const len = (a) => { const w = graftOf(a.scene); return w ? sizeOf(w).length() : 0; };   // the DRAWN part (Grip106's WeaponDrawn), not the socket bone: scaling the socket left the blade as it was
-  assert.ok(len(plain) > 0, 'the cleaver is in his hand');
-  assert.ok(Math.abs(len(maul) / len(plain) - row('executioner').scale) < 0.02, `maul ${len(maul)} vs cleaver ${len(plain)}`);
-  assert.ok(Math.abs(len(axe) / len(plain) - 1) < 1e-6, 'the axe is unscaled');
+  assert.ok(len(plain) > 0, 'the maul is in his hand');
+  assert.ok(Math.abs(len(maul) / len(plain) - gr.scale) < 0.02, `maul ${len(maul)} vs unscaled ${len(plain)}`);
+  assert.equal(len(axe) > 0, true, 'the axe is in her hand');
   // The sim's reach and sweeps are V1's tables (data/fight.json bladeTables, pinned above) and no mesh feeds them: scaling the drawing cannot move them. What stays put is the seat the part hangs from.
   const seat = (a) => a.scene.getObjectByName('Grip106');
   assert.ok(Math.abs(seat(maul).scale.x - seat(plain).scale.x) < 1e-9 && seat(maul).position.distanceTo(seat(plain).position) < 1e-9, 'the Grip106 seat is not scaled or moved; only the drawn part under it is');
   assert.equal(boneOf(maul.scene, 'hand_l').getObjectByName(SHIELD_NAME), undefined, 'the maul has no shield');
 });
 
-test('the shield board is on the left hand, in metres: the row\'s radius and thickness, whatever the bone\'s own scale', async () => {
-  const a = dressBossHand(await armed(), row('shieldmaiden')), hand = boneOf(a.scene, 'lowerarm_l'), board = hand.getObjectByName(SHIELD_NAME);
+test('the shield file is found on the Minotaur 106 body: on lowerarm_l, in metres whatever the bone\'s own scale, and a missing node is refused', async () => {
+  const r = row('shieldmaiden'), a = await dressed(r), board = boneOf(a.scene, 'lowerarm_l').getObjectByName(SHIELD_NAME);
+  assert.ok(board, 'BossShield hangs from lowerarm_l');
+  a.scene.updateMatrixWorld(true);
+  assert.ok(Math.abs(board.getWorldScale(new Vector3()).x - r.offhand.scale) < 1e-6, `the file's metres are kept: world scale ${board.getWorldScale(new Vector3()).x}`);   // the forearm's own scale (centimetres on a Mixamo rig) is undone
+  assert.ok(boneOf(a.scene, HELD.weapon), 'the axe is still in the right hand');
+  assert.throws(() => dressBossHand({ scene: a.scene }, r, undefined), /has no BossShield node/);
+  assert.throws(() => dressBossHand({ scene: a.scene }, { ...r, offhand: { ...r.offhand, hand: 'no_such_bone' } }, undefined), /no no_such_bone/);
+});
+
+test('the shield face points away from the palm, with a gap; the old disc kind still seats a board', async () => {
+  const r = row('shieldmaiden'), a = await dressed(r), board = boneOf(a.scene, 'lowerarm_l').getObjectByName(SHIELD_NAME);
+  const normal = new Vector3(0, 0, 1).applyQuaternion(board.quaternion);   // the file's face normal (+Z) in the forearm's frame
+  assert.ok(normal.z < -0.99, `face normal ${normal.toArray()} must be the forearm's -Z (the back of the forearm in Mixamo's T-pose bind)`);
+  assert.ok(board.position.z < 0 && board.position.z > -0.2, `the board stands ${board.position.z} m off the forearm axis`);
+  assert.ok(board.position.y > 0 && board.position.y < 0.3, 'centred on the forearm, between elbow and wrist');
+  const disc = { kind: 'disc', hand: 'lowerarm_l', radius: 0.25, thickness: 0.04, colour: '#6a5236', rim: '#2b2b2b', offset: [0, 0.14, -0.07], rotationDeg: [-90, 0, 0] };
+  assert.ok(dressBossHand(await armed(r), { ...r, offhand: disc }).scene.getObjectByName(SHIELD_NAME).getObjectByName('BossShield.face'), 'the disc board is code-built, no file');
+});
+
+test('LEGACY disc: the shield board is on the left hand, in metres: the row\'s radius and thickness, whatever the bone\'s own scale', async () => {
+  const disc = { kind: 'disc', hand: 'lowerarm_l', radius: 0.25, thickness: 0.04, colour: '#6a5236', rim: '#2b2b2b', offset: [0, 0.14, -0.07], rotationDeg: [-90, 0, 0] };
+  const a = dressBossHand(await armed(), { ...row('shieldmaiden'), offhand: disc }), hand = boneOf(a.scene, 'lowerarm_l'), board = hand.getObjectByName(SHIELD_NAME);
   assert.ok(board, 'the board hangs from lowerarm_l');
-  const o = row('shieldmaiden').offhand, face = board.getObjectByName('BossShield.face'), box = new Box3().setFromObject(face).getSize(new Vector3());
+  const o = disc, face = board.getObjectByName('BossShield.face'), box = new Box3().setFromObject(face).getSize(new Vector3());
   const dims = [box.x, box.y, box.z].sort((p, q) => p - q);
   assert.ok(Math.abs(dims[0] - o.thickness) < 0.005, `thickness ${dims[0]}`);
   assert.ok(Math.abs(dims[1] - 2 * o.radius) < 0.01 && Math.abs(dims[2] - 2 * o.radius) < 0.01, `diameter ${dims[1]} x ${dims[2]}`);
   assert.ok(boneOf(a.scene, HELD.weapon), 'the axe is still in the right hand');
   assert.throws(() => dressBossHand({ scene: a.scene }, { ...row('shieldmaiden'), offhand: { ...o, hand: 'no_such_bone' } }), /no no_such_bone/);
-});
-
-test('the shield is strapped on the OUTER forearm: its face looks away from the palm (forearm -Z in the bind pose), with a small gap', async () => {
-  const a = dressBossHand(await armed(), row('shieldmaiden')), fore = boneOf(a.scene, 'lowerarm_l'), board = fore.getObjectByName(SHIELD_NAME), o = row('shieldmaiden').offhand;
-  const axis = new Vector3(0, 1, 0).applyQuaternion(board.quaternion);   // the board's face normal in the forearm's frame
-  assert.ok(axis.z < -0.99, `face normal ${axis.toArray()} must be the forearm's -Z (the back of the forearm in Mixamo's T-pose bind)`);
-  assert.ok(board.position.z < 0 && board.position.z > -0.12, `gap: the board stands ${board.position.z} m off the forearm axis (a forearm is ~0.04 m thick)`);
-  assert.ok(board.position.y > 0 && board.position.y < 0.3, 'centred on the forearm, between elbow and wrist');
-  assert.ok(o.radius <= 0.3);
 });
 
 test('the grip row moves the DRAWN part only; a material row restyles it; the seat stays put', async () => {

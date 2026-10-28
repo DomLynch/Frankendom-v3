@@ -99,7 +99,13 @@ const EQUIP_URLS: Record<string, string> = { '../assets/weapons/player/gladius.g
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // V3: the opponent's DRAWN weapon over the one he fights with (foe-weapon.ts, data/fight.json foeWeapon: V1's Cleaver on the Minotaur, the
 // sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1: the gladius's).
-const FOE_EQUIP_URLS: Record<string, string> = { '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href };
+const FOE_EQUIP_URLS: Record<string, string> = {
+  '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href,
+  '../assets/weapons/foe/maul.glb': new URL('../assets/weapons/foe/maul.glb', import.meta.url).href,   // Gargantua's maul (data/boss-weapons.json; library hammer-01): fetched only with his body
+  '../assets/weapons/foe/axe.glb': new URL('../assets/weapons/foe/axe.glb', import.meta.url).href,   // Arachne's axe (library axe1h-208)
+};
+const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
+const offhandUrlOf = (row?: { offhand: { kind: string; file?: string } | null }): string | undefined => (row?.offhand?.kind === 'file' ? FOE_OFFHAND_URLS[`../assets/weapons/foe/${row.offhand.file}.glb`] : undefined);
 // The Pitborn (foe-pick.ts, Dom 2026-10-26) really fights with the cleaver: the same file, grafted over the trident his Minotaur body bakes.
 const pageSearch = typeof location === 'undefined' ? '' : location.search;   // the page's query, for the boss weapon rows (data/boss-weapons.json: ?bossweapon=v1 reverts, ?bossweapon=<opponent> is the stills flag)
 const foeEquipUrl = (opponentId: string, weapon: WeaponId): string | undefined =>
@@ -393,9 +399,10 @@ export function createScene(
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
       // The weapon his drawn body bakes (foe-body.ts: the Minotaur's is veteran.glb's trident; a 106 body bakes none) needs no file; a drawn weapon over his (foe-weapon.ts) is its own file.
-      const opponentEquip = pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
+      const preview = pageSearch ? bossPreview(pageSearch) : undefined;   // ?bossweapon=<opponent>: that row's own part (maul, axe) is grafted on the page's foe
+      const opponentEquip = preview ? FOE_EQUIP_URLS[`../assets/weapons/foe/${preview.equip}.glb`] : pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
       const foe = foeUrl(opponentId);
-      const load = (hero: string) => loadWarriors(hero, foe, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId), pageSearch ? bossPreview(pageSearch) : undefined);   // the last argument: ?bossweapon=<opponent> draws that boss row on this foe (stills; the sim's weapon is not changed)
+      const load = (hero: string) => loadWarriors(hero, foe, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId), preview, offhandUrlOf(preview));   // the last argument: ?bossweapon=<opponent> draws that boss row on this foe (stills; the sim's weapon is not changed)
       // 106 only: both sides load their 106 files. A failure is NOT papered over with another body (the 65 fallback is gone, Dom 2026-10-26):
       // it is a RigLoadError, reported and shown on screen by the catch below, so a broken 106 file is noticed.
       const hero = fighterUrls[`../assets/${heroRigFile(heroBodyFile())}.glb`];
@@ -578,7 +585,7 @@ export function createScene(
       const row: { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> } = entry = {}; bodyAssets.set(file, row);
       const boss = bossOfBody(file), url = fighterUrls[`../assets/${file}.glb`], weapon = weaponOfBody(file);
       if (!url || !weapon) row.failed = true;
-      else row.loaded = loadFoeBody(url, boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss)
+      else row.loaded = loadFoeBody(url, boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss, offhandUrlOf(boss))
         .then((asset) => { row.asset = asset; return asset; }, (error: unknown) => { row.failed = true; captureException(error); return undefined; });
     }
     return entry.asset;
