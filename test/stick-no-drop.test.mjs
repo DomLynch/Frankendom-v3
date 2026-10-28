@@ -56,7 +56,7 @@ test('wiring: hand() and a walking adoptAttacker are the only hand-overs; death,
   assert.match(src, /if \(dropsInput\(KEEP_INPUT, handOver\)\) clearInput\(\);\s*\n\s*else \{ hitStop = 0; accumulator = 0; \}/);
   assert.match(src, /const KEEP_INPUT = !!ZONE && keepsInput\(search\);/);
   assert.match(src, /rematch\(poseFor\(who, heroStart\), who\);/, 'the death stand-up still clears');
-  assert.match(src, /element\('reset-button'\)\.addEventListener\('click', \(\) => rematch\(\)\);/, 'the Respawn button still clears');
+  assert.match(src, /element\('reset-button'\)\.addEventListener\('click', \(\) => \{ if \(DEATH && heroDied\(\)\) askRespawn\(\); else rematch\(\); \}\);/, 'the Respawn button still clears (a fallen hero asks the death loop, which stands him up through the same rematch)');
   assert.match(src, /window\.addEventListener\('blur', clearInput\);/, 'blur still clears');
   assert.equal((src.match(/\bclearInput\(\)/g) || []).length, 2, 'clearInput() is called only by its definition and resetInput');
 });

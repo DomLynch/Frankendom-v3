@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { deathCamPose, deathCamStep, heroDeathFor, respawnDue, respawnKey, respawnReady, validateHeroDeath, wantsRagdoll } from '../src/fight/hero-death.ts';
+import { deathCamPose, deathCamStep, heroDeathFor, respawnKey, respawnReady, standUpDue, validateHeroDeath, wantsRagdoll } from '../src/fight/hero-death.ts';
 import { zoneFor } from '../src/zone/zone-rows.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -49,10 +49,10 @@ test('bad rows are refused', () => {
 test('the Respawn gate: not before minSeconds, a tap stands him up, nobody asking stands him up at autoSeconds', () => {
   const d = heroDeathFor(true, '');
   assert.equal(respawnReady(d, 1.19), false); assert.equal(respawnReady(d, 1.2), true);
-  assert.equal(respawnDue(d, 0.5, true), false, 'a tap during the fall does nothing');
-  assert.equal(respawnDue(d, 1.2, true), true);
-  assert.equal(respawnDue(d, 5, false), false, 'he waits on the line');
-  assert.equal(respawnDue(d, 11.99, false), false); assert.equal(respawnDue(d, 12, false), true, 'but nobody is stuck on it');
+  assert.equal(standUpDue(d, 0.5, true), false, 'a tap during the fall does nothing');
+  assert.equal(standUpDue(d, 1.2, true), true);
+  assert.equal(standUpDue(d, 5, false), false, 'he waits on the line');
+  assert.equal(standUpDue(d, 11.99, false), false); assert.equal(standUpDue(d, 12, false), true, 'but nobody is stuck on it');
   assert.equal(respawnKey(d, 'Enter'), true); assert.equal(respawnKey(d, 'Space'), true); assert.equal(respawnKey(d, 'KeyF'), false, 'the attack keys are not Respawn');
 });
 
@@ -85,7 +85,7 @@ test('the death camera pose: share 0 is the camera as it was; share 1 is pulled 
 test('the wiring: the page asks for the loop from the row, the scene builds the death-only ragdoll and tells it the killing blow alone, the HUD swaps the line and the button', () => {
   const main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts'), hud = src('../src/fight/hud.ts'), ragdoll = src('../src/fight/ragdoll.ts'), cam = src('../src/fight/camera.ts');
   assert.match(main, /heroDeathFor\(!!ZONE, search\)/); assert.match(main, /view\.heroDeath\(DEATH\)/);
-  assert.match(main, /respawnDue\(DEATH, sinceDeath, respawnAsked\) : sinceDeath >= ZONE!\.diedSeconds/, 'v1 keeps the zone row\'s downSeconds');
+  assert.match(main, /standUpDue\(DEATH, sinceDeath, respawnAsked\) : sinceDeath >= ZONE!\.diedSeconds/, 'v1 keeps the zone row\'s downSeconds');
   assert.match(main, /if \(DEATH && heroDied\(\)\) askRespawn\(\); else rematch\(\)/);
   assert.match(scene, /heroRagdollFor\(location\.search, true\)/); assert.match(scene, /heroFeel \? events : events\.filter\(\(e\) => e\.type === 'Killed'\)/);
   assert.match(ragdoll, /feelHero \? activeFeels\(search, undefined, true\) : \[\]/, 'no hit reactions without ?feel=hero');

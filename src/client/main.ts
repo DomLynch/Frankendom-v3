@@ -68,7 +68,7 @@ import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
-import { heroDeathFor, respawnDue, respawnKey, respawnReady } from '../fight/hero-death.ts';
+import { heroDeathFor, respawnKey, respawnReady, standUpDue } from '../fight/hero-death.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
@@ -326,7 +326,7 @@ function zoneStep(dt: number) {
     }
   } else if (heroDied()) {
     sinceDeath += dt;
-    if (DEATH ? respawnDue(DEATH, sinceDeath, respawnAsked) : sinceDeath >= ZONE!.diedSeconds) { respawnAsked = false; const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
+    if (DEATH ? standUpDue(DEATH, sinceDeath, respawnAsked) : sinceDeath >= ZONE!.diedSeconds) { respawnAsked = false; const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
     const near = inAggro(spawns, hero);
     if (near >= 0 && near !== current) hand(near, hero);

@@ -43,7 +43,7 @@ export const wantsRagdoll = (rows: HeroDeathRows | null): boolean => !!rows && r
 export const respawnReady = (rows: HeroDeathRows, sinceDeath: number): boolean => sinceDeath >= rows.respawn.minSeconds;
 
 /** Does he stand up this frame: he asked and it is allowed, or nobody did and the wait is over. */
-export const respawnDue = (rows: HeroDeathRows, sinceDeath: number, asked: boolean): boolean => (asked && respawnReady(rows, sinceDeath)) || sinceDeath >= rows.respawn.autoSeconds;
+export const standUpDue =(rows: HeroDeathRows, sinceDeath: number, asked: boolean): boolean => (asked && respawnReady(rows, sinceDeath)) || sinceDeath >= rows.respawn.autoSeconds;
 
 /** Does this key stand him up? (KeyboardEvent.code, a row's list.) */
 export const respawnKey = (rows: HeroDeathRows, code: string): boolean => rows.keys.includes(code);
