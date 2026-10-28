@@ -498,8 +498,8 @@ function checkSkyline(s) {
 
 // data/stage.json `skyline.ring` (src/fight/skyring.ts): the south, east and west plates. Plain WebP file names, one plate per bearing, ramps inside the overlap, colours as #rrggbb, query words that
 // differ from the other skyline ones, and the tallest arc (the baked picture's aspect at `spanDegrees`) inside the sky cylinder and the far plane.
-export const SKYRING_KEYS = ['about', 'on', 'query', 'v1', 'spanDegrees', 'overlapDegrees', 'dropMetres', 'orderOffset', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'bakedAspect', 'lazy', 'desktop', 'bake', 'plates'];
-export const SKYRING_PLATE_KEYS = ['id', 'direction', 'on', 'compassDegrees', 'mobile', 'desktop', 'rampLeftDegrees', 'rampRightDegrees', 'grade', 'bake'];
+export const SKYRING_KEYS = ['about', 'on', 'query', 'v1', 'spanDegrees', 'overlapDegrees', 'orderOffset', 'topFadeFraction', 'bottomFadeFraction', 'segments', 'bakedAspect', 'lazy', 'desktop', 'bake', 'plates'];
+export const SKYRING_PLATE_KEYS = ['id', 'direction', 'on', 'compassDegrees', 'mobile', 'desktop', 'rampLeftDegrees', 'rampRightDegrees', 'dropMetres', 'grade', 'bake'];
 function checkSkyRing(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.ring.${p}: ${m}`), r = s.ring, obj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
   if (!obj(r)) return ['stage.skyline.ring: must be an object'];
@@ -509,7 +509,7 @@ function checkSkyRing(s) {
   const taken = [s.query, s.followQuery, s.views && s.views.query, s.views && s.views.foeFadeQuery, s.fold && s.fold.query, s.plate && s.plate.query, s.plate && s.plate.flatQuery, s.plate && s.plate.anim && s.plate.anim.query];
   if (typeof r.query === 'string' && taken.includes(r.query)) at('query', 'must differ from the other skyline query words');
   const rng = (o, k, lo, hi, int, path = k) => { if (!Number.isFinite(o[k]) || o[k] < lo || o[k] > hi || (int && !Number.isInteger(o[k]))) at(path, `must be ${int ? 'an integer' : 'a finite number'} in ${lo}..${hi}`); };
-  rng(r, 'spanDegrees', 90, 120); rng(r, 'overlapDegrees', 0, 30); rng(r, 'dropMetres', 0, 60); rng(r, 'orderOffset', 1, 90, true); rng(r, 'topFadeFraction', 0, 0.5); rng(r, 'bottomFadeFraction', 0, 0.5); rng(r, 'segments', 8, 256, true); rng(r, 'bakedAspect', 1, 6);
+  rng(r, 'spanDegrees', 90, 120); rng(r, 'overlapDegrees', 0, 30); rng(r, 'orderOffset', 1, 90, true); rng(r, 'topFadeFraction', 0, 0.5); rng(r, 'bottomFadeFraction', 0, 0.5); rng(r, 'segments', 8, 256, true); rng(r, 'bakedAspect', 1, 6);
   if (Number.isFinite(r.spanDegrees) && Number.isFinite(r.overlapDegrees) && r.spanDegrees !== 90 + r.overlapDegrees) at('overlapDegrees', 'must be spanDegrees minus 90 (each plate is a quarter turn plus the overlap it shares with its neighbour)');
   if (Number.isInteger(r.orderOffset) && s.fold && Number.isInteger(s.fold.orderOffset) && !(r.orderOffset > s.fold.orderOffset)) at('orderOffset', 'must draw after the folded floor (above fold.orderOffset)');
   if (Number.isInteger(r.orderOffset) && s.plate && Number.isInteger(s.plate.orderOffset) && Array.isArray(r.plates) && !(r.orderOffset + r.plates.length <= s.plate.orderOffset)) at('orderOffset', 'the plates must all draw before the north plate (under plate.orderOffset)');
@@ -538,6 +538,7 @@ function checkSkyRing(s) {
     for (const k of ['mobile', 'desktop']) if (typeof p[k] !== 'string' || !file.test(p[k])) pt(k, 'must be a plain .webp file name in src/assets/skyline/');
     if (p.mobile === p.desktop) pt('desktop', 'must differ from the mobile file');
     for (const k of ['rampLeftDegrees', 'rampRightDegrees']) rng(p, k, 0, Number.isFinite(r.overlapDegrees) ? Math.max(r.overlapDegrees, 0) : 30, false, `${pa}.${k}`);
+    rng(p, 'dropMetres', 0, 60, false, `${pa}.dropMetres`);
     if (!obj(p.grade)) pt('grade', 'must be an object {tint, brightness}');
     else { for (const k of Object.keys(p.grade)) if (!['tint', 'brightness'].includes(k)) pt(`grade.${k}`, 'unknown key'); if (typeof p.grade.tint !== 'string' || !/^#[0-9a-f]{6}$/i.test(p.grade.tint)) pt('grade.tint', 'must be a #rrggbb colour'); rng(p.grade, 'brightness', 0.2, 1.5, false, `${pa}.grade.brightness`); }
     if (!obj(p.bake)) pt('bake', 'must be an object {dir, layers}');

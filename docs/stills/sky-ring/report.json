@@ -120,7 +120,7 @@
     ]
    },
    {
-    "bearing": 155,
+    "bearing": 150,
     "ringStates": [
      [
       "skyring-east",
@@ -176,7 +176,7 @@
     "ringStates": null
    },
    {
-    "bearing": 155,
+    "bearing": 150,
     "ringStates": null
    }
   ]

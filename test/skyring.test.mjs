@@ -19,7 +19,7 @@ test('the shipped ring row validates and bad rows are refused', () => {
   assert.deepEqual(validateFile('stage', STAGE), []);
   assert.deepEqual(R.plates.map((p) => [p.id, p.compassDegrees]), [['east', 90], ['south', 180], ['west', 270]]);
   assert.equal(R.query, 'skyring'); assert.equal(R.v1, 'v1'); assert.equal(R.spanDegrees, 90 + R.overlapDegrees);
-  const cases = [(r) => { r.extra = 1; }, (r) => { r.on = 'yes'; }, (r) => { r.query = 'skyplate'; }, (r) => { r.query = 'sky'; }, (r) => { r.spanDegrees = 120; }, (r) => { r.overlapDegrees = 3; }, (r) => { r.dropMetres = -1; }, (r) => { r.dropMetres = 'low'; },
+  const cases = [(r) => { r.extra = 1; }, (r) => { r.on = 'yes'; }, (r) => { r.query = 'skyplate'; }, (r) => { r.query = 'sky'; }, (r) => { r.spanDegrees = 120; }, (r) => { r.overlapDegrees = 3; }, (r) => { r.plates[0].dropMetres = -1; }, (r) => { r.plates[1].dropMetres = 'low'; }, (r) => { delete r.plates[2].dropMetres; },
     (r) => { r.orderOffset = 40; }, (r) => { r.orderOffset = 59; }, (r) => { r.lazy.loadWithinDegrees = 95; }, (r) => { r.lazy = null; }, (r) => { r.desktop.minViewportWidth = 'wide'; },
     (r) => { r.bakedAspect = 3; }, (r) => { r.bake.cropLeftPx = -1; }, (r) => { r.plates = []; }, (r) => { r.plates[0].id = 'north'; }, (r) => { r.plates[1].id = 'east'; },
     (r) => { r.plates[1].compassDegrees = 90; }, (r) => { r.plates[0].compassDegrees = 360; }, (r) => { r.plates[0].mobile = '../x.webp'; }, (r) => { r.plates[0].desktop = r.plates[0].mobile; },
@@ -59,7 +59,7 @@ test('the ring fetches a plate once, only when asked, the phone picture on a pho
   ring.request(180); await wait(); assert.deepEqual(calls, ['ring-east-m.webp', 'ring-south-m.webp']);
   for (let i = 0; i < 100; i++) ring.update(new THREE.Vector3(), 0.05);
   assert.equal(ring.state('east'), 'on'); assert.equal(ring.group.children.length, 2);
-  const m = ring.group.getObjectByName('skyring-east'); assert.equal(m.material.opacity, 1); assert.ok(Math.abs(m.position.y - (-24 - R.dropMetres + ringSize(R, 150, 1888, 722).height / 2)) < 1e-9, 'its bottom edge is dropMetres under the north horizon');
+  const m = ring.group.getObjectByName('skyring-east'); assert.equal(m.material.opacity, 1); assert.ok(Math.abs(m.position.y - (-24 - plate('east').dropMetres + ringSize(R, 150, 1888, 722).height / 2)) < 1e-9, 'its bottom edge is dropMetres under the north horizon');
   ring.dispose();
   const wide = []; const r2 = createSkyRing({ row: R, radius: 150, horizonY: -24, shade: 1, viewportWidth: 1440, load: (f) => { wide.push(f); return Promise.resolve(tex(3776, 1443)); } });
   r2.request(180); await wait(); assert.deepEqual(wide, ['ring-south.webp']); r2.dispose();
