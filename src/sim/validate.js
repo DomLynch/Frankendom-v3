@@ -21,6 +21,8 @@ export const SCHEMA = {
   'stars': { keys: ['about', 'minKills', 'killsCap', 'zeroWeight', 'salt', 'starGlyph', 'hudColour', 'levels', 'weights'], rows: { levels: ['star', 'healthX', 'damageX', 'scaleX', 'trophy', 'tell'], weights: ['id', 'star1', 'star2'] } },
   // Progression and saving (src/progression.ts validateProgression checks the values)
   'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'autoEquip', 'lineSeconds', 'healthCap', 'damageCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
+  // Boss signature mechanics (checkMechanics below checks the values; src/fight/mechanics/registry.ts runs them): a map of mechanic id -> row
+  'mechanics': { keys: ['about', 'rows'] },
   // The Daily Pit (src/daily-pit.ts; checkDailyPit below checks the values and the cross-file rows)
   'daily-pit': { keys: ['about', 'salt', 'attemptsPerDay', 'modeKey', 'event', 'cutLog', 'spawnId', 'respawnSeconds', 'resultDelaySeconds', 'bosses', 'modifiers', 'score', 'ui', 'later'], rows: { modifiers: ['id', 'name', 'about', 'tune', 'stars'], later: ['id', 'why'] },
     maps: { resultDelaySeconds: ['won', 'lost'], score: ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max', 'fields'], ui: ['zIndex', 'colour', 'text'] } },
@@ -222,6 +224,7 @@ export function validateFile(name, json) {
     for (const k of keys) if (!Number.isFinite(obj?.[k])) errors.push(`${name}.${path}.${k}: must be a finite number`);
   }
   if (name === 'daily-pit') errors.push(...checkDailyPit(json));
+  if (name === 'mechanics') errors.push(...checkMechanics(json));
   if (name === 'build' && !(Number.isInteger(json.clipDecimals) && json.clipDecimals >= 3 && json.clipDecimals <= 8)) errors.push('build.clipDecimals: must be an integer 3 to 8 (fewer than 3 decimals would be visible on positions in metres)');
   if (name === 'build' && !(Number.isInteger(json.firstVisitBytes) && json.firstVisitBytes > 0)) errors.push('build.firstVisitBytes: must be a positive integer (bytes on the wire at 375)');
   if (name === 'rules') {   // the hand-speed rows (rules-eval.ts handSpeedOf): finite, scale in (0, 1], divisor at least 1, span and window positive (an absent or bad one would reach the page as NaN)
@@ -1025,6 +1028,40 @@ export function checkHitreact(json) {
     num(`${p}.lift`, row.lift, (x) => x >= 0 && x <= 50, 'a finite number in [0, 50]');
     num(`${p}.twist`, row.twist, (x) => x >= 0 && x <= 50, 'a finite number in [0, 50]');
     if (keys(`${p}.dirs`, row.dirs, HIT_SECTORS)) for (const s of HIT_SECTORS) if (keys(`${p}.dirs.${s}`, row.dirs[s], ['impulse', 'dip', 'twist'])) for (const k of ['impulse', 'dip', 'twist']) num(`${p}.dirs.${s}.${k}`, row.dirs[s][k], (x) => x >= 0 && x <= 3, 'a finite number in [0, 3]');
+  }
+  return e;
+}
+
+// The boss signature mechanics (data/mechanics.json): one checker per mechanic id (a new mechanic adds ONE line to MECHANIC_CHECKS). `ctx.rollCost` (optional, RULES.rollCost): a stamina floor must leave a roll affordable.
+const ENVOY_KEYS = ['firstCooldownTicks', 'cooldownTicks', 'lungeMinM', 'lungeMaxM', 'tellTicks', 'lungeTicks', 'contactM', 'latchGapM', 'drainPerSecond', 'drainFloor', 'slowPct', 'breakHits', 'breakWindowTicks', 'maxLatchTicks', 'guardChipStamina', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks', 'breakKnockM', 'tell'];
+const MECHANIC_CHECKS = {
+  'envoy-latch': (r, at, e, ctx) => {
+    const num = (k, lo, hi, int) => { const v = r[k]; if (!(typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi && (!int || Number.isInteger(v)))) e.push(`${at}.${k}: ${int ? 'an integer' : 'a number'} from ${lo} to ${hi}`); };
+    for (const k of ['firstCooldownTicks', 'cooldownTicks', 'tellTicks', 'lungeTicks', 'breakWindowTicks', 'maxLatchTicks', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks']) num(k, 1, 3600, true);
+    num('breakHits', 1, 10, true); num('slowPct', 10, 100, true);
+    for (const k of ['lungeMinM', 'lungeMaxM', 'contactM', 'latchGapM', 'breakKnockM']) num(k, 0.1, 30);
+    num('drainPerSecond', 0, 100); num('drainFloor', 0, 100); num('guardChipStamina', 0, 100);
+    if (!(r.lungeMaxM > r.lungeMinM)) e.push(`${at}.lungeMaxM must be above lungeMinM`);
+    if (!(r.contactM >= r.latchGapM)) e.push(`${at}.contactM must reach at least the latchGapM (a lunge that stops at the gap must latch)`);
+    if (ctx?.rollCost !== undefined && !(r.drainFloor >= ctx.rollCost)) e.push(`${at}.drainFloor ${r.drainFloor} is below the roll cost ${ctx.rollCost}: the latch must always be breakable by a roll`);
+    if (!(r.maxLatchTicks > r.breakWindowTicks / 2)) e.push(`${at}.maxLatchTicks must outlast half the break window`);
+    const t = r.tell;
+    if (!t || typeof t !== 'object') e.push(`${at}.tell: an object`);
+    else {
+      for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
+      if (typeof t.colour !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(t.colour)) e.push(`${at}.tell.colour: a #rrggbb`);
+      for (const k of ['alpha', 'latchedAlpha']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
+      for (const k of ['widthM', 'liftM']) if (!(t[k] >= 0 && t[k] <= 5)) e.push(`${at}.tell.${k}: from 0 to 5`);
+    }
+    for (const k of Object.keys(r)) if (!ENVOY_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  },
+};
+export function checkMechanics(json, ctx) {
+  const e = [];
+  if (!json || typeof json.rows !== 'object' || json.rows === null || Array.isArray(json.rows)) return ['mechanics.rows: a map of mechanic id to row'];
+  for (const [id, row] of Object.entries(json.rows)) {
+    const at = `mechanics.rows.${id}`, check = MECHANIC_CHECKS[id];
+    if (!check) e.push(`${at}: no checker in src/sim/validate.js MECHANIC_CHECKS`); else if (!row || typeof row !== 'object') e.push(`${at}: an object`); else check(row, at, e, ctx);
   }
   return e;
 }

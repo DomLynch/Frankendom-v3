@@ -1,0 +1,27 @@
+{
+  "about": "BOSS SIGNATURE MECHANICS (Dom 2026-10-28: each boss has its own fighting identity). A map: mechanic id -> its row. A ring boss names its id in data/rings.json bosses[].mechanic (null = none); the code lives in src/fight/mechanics/<id>.ts and is registered in src/fight/mechanics/registry.ts; src/sim/validate.js checkMechanics checks every row. Ticks are 60 Hz, distances metres, stamina on the 0-100 bar. envoy-latch (The Titan's Envoy, parasite): he crouches (a green glow line runs from him to the hero), lunges along it and latches on; while latched the hero's stamina drains to a floor and his walk is slowed until he rolls, lands breakHits cuts inside breakWindowTicks, or maxLatchTicks run out. A guarded lunge or a rolled-away lunge leaves the Envoy open. The latch is a crowd-control kind (cc-defs.json `latch`): the 2nd landing lasts half, the 3rd a quarter, the 4th is a harmless bump.",
+  "rows": {
+    "envoy-latch": {
+      "firstCooldownTicks": 150,
+      "cooldownTicks": 480,
+      "lungeMinM": 2.4,
+      "lungeMaxM": 6,
+      "tellTicks": 40,
+      "lungeTicks": 12,
+      "contactM": 1.1,
+      "latchGapM": 1,
+      "drainPerSecond": 10,
+      "drainFloor": 40,
+      "slowPct": 55,
+      "breakHits": 3,
+      "breakWindowTicks": 150,
+      "maxLatchTicks": 360,
+      "guardChipStamina": 10,
+      "blockedRecoverTicks": 80,
+      "whiffRecoverTicks": 70,
+      "breakRecoverTicks": 50,
+      "breakKnockM": 1.4,
+      "tell": { "colour": "#5dff7a", "alpha": 0.6, "widthM": 0.35, "latchedAlpha": 0.3, "liftM": 0.04 }
+    }
+  }
+}

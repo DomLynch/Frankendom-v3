@@ -14,6 +14,8 @@ import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
 import { firstFrameDrawn } from '../late-art.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
+import { createEnvoyLineFx } from './mechanics/envoy-latch-fx.ts';
+import type { MechanicView } from './mechanics/types.ts';
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -578,6 +580,7 @@ export function createScene(
   const previewBackground = scene.background instanceof THREE.Color ? scene.background.clone() : null;
   const bossRing = typeof location !== 'undefined' && telegraphFlag(location.search);   // ?telegraph=1 look-test: the boss ring (boss-telegraph.ts); a spell cast's tell is always on
   const castTells = [createBossTelegraph(scene), createBossTelegraph(scene)] as const;   // one ring per caster side, drawn under the other fighter
+  let mechanicView: MechanicView | null = null, mechanicLine: ReturnType<typeof createEnvoyLineFx> | null = null;   // a boss signature mechanic's tell (src/fight/mechanics): main.ts hands the view each frame, the line is made on first use
   const runtimeSpecial = specialId ? null : createSpecialPresentation(scene, theme.exposure, camera);
   const signatures = createSignatures(scene, opponentId);   // the opponent's signature effect (signature.ts); the ruled variant (SHIPPED) unless the admin select or ?signature= asks
   let heading = Math.PI;
@@ -887,6 +890,7 @@ export function createScene(
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
     heroWeaponNode(): THREE.Object3D | undefined { return warriors?.player.heldWeaponNode(); },   // the node the hero's weapon hangs from (golden weapon tint, src/fight/golden-hud.ts)
+    mechanic(view: MechanicView | null) { mechanicView = view; },   // main.ts every frame: the live boss mechanic's tell line (src/fight/mechanics/envoy-latch-fx.ts); null = none
     liveStar(star: number) { liveStarN = star; },   // data/stars.json: the star level of the spawn the live rig is (main.ts every frame); 0 = the body as built
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean; star?: number }[]) {
       const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
@@ -1291,8 +1295,9 @@ export function createScene(
         const foe = (side === 0 ? warriors?.opponent : warriors?.player), l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r');
         castTells[side].update(practice.duel.fighters[side], l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null, practice.duel.tick, bossRing && side === 1);
       }
+      if (mechanicView || mechanicLine) (mechanicLine ??= createEnvoyLineFx(scene)).update(mechanicView, practice.duel.tick);
       if (runtimeSpecial) {
-        const feet = (w: NonNullable<typeof warriors>['player'] | undefined) => { const l = w?.boneWorld('foot_l'), r = w?.boneWorld('foot_r'); return l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null; };
+        const feet =(w: NonNullable<typeof warriors>['player'] | undefined) => { const l = w?.boneWorld('foot_l'), r = w?.boneWorld('foot_r'); return l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null; };
         runtimeSpecial.render(dt, practice.duel.fighters, practice.duel.tick, [feet(warriors?.player), feet(warriors?.opponent)], [warriors?.player.boneWorld('Head') ?? null, warriors?.opponent.boneWorld('Head') ?? null], warriors, !!practice.finish);
         for (const side of SIDES) if (runtimeSpecial.mode(side)?.hideTrail && specialStage(practice.duel.fighters[side])) {
           const trail = (side === 0 ? warriors?.player : warriors?.opponent)?.anchor.getObjectByName('WeaponTrail'); if (trail) trail.visible = false;

@@ -19,6 +19,8 @@ import SOUND from '../../data/sound.json' with { type: 'json' };
 import { project, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
 import { RULES, weaponOf, isWeaponId, type AiProfile, type Opponent, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
+import { createMechanic, heldBoss, mechanicIdFor } from '../fight/mechanics/registry.ts';
+import type { Mechanic } from '../fight/mechanics/types.ts';
 import { quantizeIntent } from '../fight/record.ts';
 import { RADIUS, initialState, wrapAngle, type State } from '../fight/sim.ts';
 import { OPEN_RADIUS, playScaleFor, setLateNotice, setPlayScale } from '../fight/play-radius.ts';
@@ -181,7 +183,7 @@ function make(s: number, pose?: DuelPose, k: KindFight = foe): Practice {
 }
 useKind(KINDS(ZONE ? ZONE.spawn.kind : orderProfile(FIGHT.profile, FIGHT.order, search)));   // the page opens on the first spawn's kind (the no-zone fight: the fight row's profile); every other spawn's kind is taken on its hand-over
 let practice = fresh(), frameEvents: CombatEvent[] = [];
-// the warden's brain (aiProfile, per kind: useKind): the kind's profile knobs over the difficulty row's over his V1 profile at his level (src/fight/spawn-kind.ts, src/difficulty.ts); ?ai=v1 = V1's profile untouched; off under ?pitborn=v1 (data/fight.json `ai`, a data/brains.json row)
+let mech: Mechanic | null = null;   // the held boss's signature mechanic (src/fight/mechanics), made when a boss that names one is the foe// the warden's brain (aiProfile, per kind: useKind): the kind's profile knobs over the difficulty row's over his V1 profile at his level (src/fight/spawn-kind.ts, src/difficulty.ts); ?ai=v1 = V1's profile untouched; off under ?pitborn=v1 (data/fight.json `ai`, a data/brains.json row)
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
@@ -611,7 +613,11 @@ function frame(now: number) {
       const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: lockOn, cancel: intent.cancel });
       const prior = practice;
-      practice = stepPractice(prior, duelIntent, aiProfile);
+      const mechId = ZONE ? mechanicIdFor(foe.kind) : null;   // the boss's signature mechanic (data/rings.json, src/fight/mechanics): a fight with none steps exactly as before
+      if (mechId !== (mech?.id ?? null)) mech = mechId ? createMechanic(mechId) : null;
+      if (mech && (!engaged || walkBack)) mech.reset();
+      const mechStep = mech && engaged && !walkBack ? mech.step(prior.duel, duelIntent) : null;
+      practice = mechStep ? stepPractice(mechStep.duel === prior.duel ? prior : { ...prior, duel: mechStep.duel }, mechStep.intent, aiProfile, mechStep.hold ? heldBoss : undefined) : stepPractice(prior, duelIntent, aiProfile);
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
@@ -673,6 +679,7 @@ function frame(now: number) {
   if (ZONE) view.holdBody(spawns[current], withinLoad(spawns[current]!, state, undefined, bossKilled));   // [held-body] (a body not yet fetched is fetched only once the hero is within respawn.json world.loadWithinMetres of the spawn) the live foe wears the body of the spawn the sim holds (scene.ts, held-body.ts); the default (every spawn the Minotaur) builds nothing
   if (ZONE) { const look = ringLook(Math.hypot(state.x, state.z)); view.ringLook(look.tintA, look.tintB, look.t, look.plates); }   // the biome ring's ground tint and sky-plate weights by the hero's distance from the pit (data/rings.json); ring 1 is today's look
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]!, star: starById[spawns[a.index]!.id] ?? 0 }))); }
+  view.mechanic(mech?.view() ?? null);   // the boss mechanic's tell line (null = none; the scene makes the line on first use)
   if (ZONE) view.liveStar(starById[spawns[current]!.id] ?? 0);   // the attackers' rigs (a killed one lies until its timer is up)
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
