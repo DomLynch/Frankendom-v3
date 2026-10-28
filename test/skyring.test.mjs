@@ -77,9 +77,8 @@ test('geometry: each arc spans spanDegrees centred on its bearing, native aspect
     assert.ok(Math.abs(g.parameters.thetaLength - THREE.MathUtils.degToRad(R.spanDegrees)) < 1e-9);
     assert.ok(Math.abs(g.parameters.thetaStart + g.parameters.thetaLength / 2 - bearingTheta(p.compassDegrees)) < 1e-9);
     assert.ok(Math.abs(width / height - 1888 / 722) < 1e-9); assert.ok(height < 2 * SKYLINE.plate.sky.halfHeightMetres);
-    const uv = g.getAttribute('uv'), pos = g.getAttribute('position');   // seen from inside, a vertex further round (larger theta) is further left: its picture u must be smaller
-    let a = 0, b = 0; for (let i = 0; i < pos.count; i++) { if (Math.abs(pos.getX(i) - 150 * Math.sin(g.parameters.thetaStart)) < 1e-6) a = uv.getX(i); if (Math.abs(pos.getX(i) - 150 * Math.sin(g.parameters.thetaStart + g.parameters.thetaLength)) < 1e-6 && Math.abs(Math.abs(pos.getX(i)) - 150) > 0 ) b = uv.getX(i); }
-    assert.ok(a > b, `${p.id}: u runs against theta`);
+    const uv = g.getAttribute('uv'), n = R.segments;   // seen from inside, a vertex further round (larger theta) is further left: the first column (smallest theta) is the picture's RIGHT edge (u 1), the last its left (u 0)
+    assert.ok(Math.abs(uv.getX(0) - 1) < 1e-9 && Math.abs(uv.getX(n)) < 1e-9, `${p.id}: u runs against theta`);
     assert.equal(ringAlpha(p, R, 0.5, 0.5), 1);
   }
   const s = plate('south'); assert.equal(ringAlpha(s, R, 0, 0.5), 0); assert.ok(ringAlpha(s, R, 0.05, 0.5) > 0 && ringAlpha(s, R, 0.05, 0.5) < 1); assert.equal(ringAlpha(s, R, 1, 0.5), 1);   // south ramps in on its left, not its right
