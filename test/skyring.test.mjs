@@ -9,7 +9,10 @@ import { SKYLINE, createSkyline } from '../src/fight/skyline.ts';
 import { angularGap, bearingOf, bearingTheta, createSkyRing, facingPlate, platesToLoad, ringAlpha, ringFileFor, ringGeometry, ringOn, ringSize } from '../src/fight/skyring.ts';
 
 const STAGE = JSON.parse(readFileSync(new URL('../data/stage.json', import.meta.url), 'utf8'));
-const R = SKYLINE.ring, plate = (id) => R.plates.find((p) => p.id === id);
+const SHIPPED = SKYLINE.ring;
+// The shipped west plate is off by Dom's call (2026-10-28, he dislikes the colosseum plate), but the plate geometry, bearing and lazy-load logic must still work for all four directions: R is the shipped row cloned with every plate on.
+const R = { ...structuredClone(SHIPPED), plates: SHIPPED.plates.map((p) => ({ ...structuredClone(p), on: true })) };
+const plate = (id) => R.plates.find((p) => p.id === id);
 const bad = (mut) => { const s = structuredClone(STAGE); mut(s.skyline.ring); return validateFile('stage', s); };
 const tex = (w = 1888, h = 722) => { const t = new THREE.Texture(); t.image = { width: w, height: h }; return t; };
 const camAt = (yaw) => { const c = new THREE.PerspectiveCamera(); c.rotation.y = yaw; c.updateMatrixWorld(true); return c; };
@@ -27,6 +30,16 @@ test('the shipped ring row validates and bad rows are refused', () => {
     (r) => { r.plates[0].extra = 1; }, (r) => { r.plates[0].on = 1; }, (r) => { r.plates[0].bake.layers = ['../x.png']; }, (r) => { delete r.plates[0].bake; }];
   for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad ring row #${i} is refused`);
   const none = structuredClone(STAGE); delete none.skyline.ring; assert.ok(validateFile('stage', none).length >= 1);
+});
+
+test('the shipped ring: east on, south on, west off (Dom 2026-10-28); facing west earns and loads no plate and falls back to the north strip', async () => {
+  assert.deepEqual(SHIPPED.plates.map((p) => [p.id, p.on]), [['east', true], ['south', true], ['west', false]]);
+  assert.equal(facingPlate(270, SHIPPED), 'north'); assert.equal(facingPlate(300, SHIPPED), 'north');
+  assert.deepEqual(platesToLoad(270, SHIPPED), []); assert.deepEqual(platesToLoad(340, SHIPPED), []);
+  assert.deepEqual(platesToLoad(180, SHIPPED).map((p) => p.id), ['south']);
+  const calls = []; const ring = createSkyRing({ row: SHIPPED, radius: 150, horizonY: -24, shade: 1, viewportWidth: 375, load: (f) => { calls.push(f); return Promise.resolve(tex()); } });
+  assert.doesNotThrow(() => { ring.request(270); ring.request(300); ring.update(new THREE.Vector3(), 0.05); });
+  await wait(); assert.deepEqual(calls, []); assert.equal(ring.state('west'), 'idle'); assert.equal(ring.group.children.length, 0); ring.dispose();
 });
 
 test('the view bearing and the plate it faces: north 0, east 90, south 180, west 270 (clockwise), by the camera heading', () => {
