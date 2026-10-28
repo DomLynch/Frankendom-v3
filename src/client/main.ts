@@ -65,6 +65,7 @@ import { goldenBlips } from '../zone/golden-drops.ts';
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createMobsRun } from '../mobs-run.ts';   // trash mob swarms (data/mobs.json, src/zone/mobs.ts)
 import { createInput } from '../fight/input.ts';
+import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
@@ -246,6 +247,7 @@ const controls = createInput({   // :832
   ready: () => assetsReady,
   practice: () => practice,
   quiet: () => feedback.quiet(),
+  strike: (aim) => { if ((practice.finish && practice.finish.victim === 1) || (ZONE && !engaged)) strikeCut(aim); },   // data/physics.json cut.strike: an attack press while the foe is down (not while another boss is on him) cuts the fallen body
 });
 function clearInput() { controls.clear(); hitStop = 0; accumulator = 0; }   // :713
 const KEEP_INPUT = !!ZONE && keepsInput(search);   // data/respawn.json input: a hand-over while he free-walks leaves the stick alone (?input=v1 = clear as before)
