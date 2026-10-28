@@ -1,0 +1,161 @@
+{
+  "about": "The arena commentator (Dom-approved idea, 2026-10-28; TEXT only, no sound yet): a sarcastic announcer line fades in near the top of the screen on game events. Every line is a row here: event id -> lines, cooldown, probability. src/commentator.ts is the pure picker (deterministic: hash32 of the seed, the event and its own count; never the same line twice running; no Math.random, no clock) and the one-element caption; checkCommentator in src/sim/validate.js is the schema. Caps keep it quiet: a per-event cooldown, a global gap, lines per minute and lines per session; a `priority` event skips the gap and the per-minute cap. Off with localStorage fd3.commentator = 'off' (the game has no menu to hold a toggle row yet). `{name}` in a line is filled from the call's params; a call missing a declared param says nothing. PG-13, no real people, no quoted lines. `wearing_parts` is the extension point for the Frankendom equip feature: call commentator.say('wearing_parts', { partName }) when a taken part is worn.",
+  "enabled": true,
+  "storageKey": "fd3.commentator",
+  "seed": "arena-commentator",
+  "caps": { "perSession": 80, "perMinute": 6, "gapSeconds": 4 },
+  "caption": { "seconds": 3.4, "fadeMs": 350, "maxChars": 64, "topPct": 15.2, "maxWidthPct": 92, "fontPx": 12, "colour": "#fff3d6", "shadow": "0 1px 2px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.85)", "zIndex": 28 },
+  "thresholds": { "heroLowPct": 25, "bossLowPct": 20, "missStreak": 4, "rollCount": 5, "rollWindowSeconds": 4, "idleSeconds": 20 },
+  "partNames": { "arm_right": "right arm", "arm_left": "left arm", "leg_right": "right leg", "leg_left": "left leg", "head": "head", "head_split": "head", "belly_open": "belly", "arm_sword": "sword arm", "arm_off": "off arm" },
+  "events": {
+    "fight_start": { "about": "a boss engages the hero (params: boss)", "cooldownSeconds": 20, "probability": 1, "priority": true, "params": ["boss"], "lines": [
+      "{boss} approaches. Please try to look surprised.",
+      "Ah, {boss}. Right on schedule, unlike your reflexes.",
+      "Round one against {boss}. Odds are grim.",
+      "{boss} has entered the chat. Your sword has not.",
+      "Here comes {boss}. Remember: pointy end forward.",
+      "{boss} looks rested. You look optimistic. Bold.",
+      "Fresh meat versus {boss}. Guess which one you are.",
+      "{boss} wants a word. The word is 'ouch'."
+    ] },
+    "first_hit": { "about": "the hero's first landed hit of a fight", "cooldownSeconds": 25, "probability": 1, "lines": [
+      "A hit! Frame it, nobody will believe this.",
+      "First blood. Savour it, it is all downhill.",
+      "Contact! Even a broken clock, as they say.",
+      "Wow, you hit something on purpose.",
+      "The crowd gasps. Mostly out of surprise.",
+      "One hit down, a few hundred to go.",
+      "Look at that, the pointy bit works."
+    ] },
+    "miss_streak": { "about": "several swings in a row hit nothing", "cooldownSeconds": 14, "probability": 0.85, "lines": [
+      "Swinging at air again. Very menacing air.",
+      "The boss is over there. Slightly to the left.",
+      "Four misses. Is the sword on backwards?",
+      "You are fighting the wind and the wind is winning.",
+      "Cardio is great, but you can hit it too.",
+      "That was a lovely breeze you made.",
+      "Missing is a strategy. A bad one, but still.",
+      "Aim is a setting, you know. It can be turned on."
+    ] },
+    "guard_break": { "about": "the hero's guard is broken", "cooldownSeconds": 12, "probability": 0.9, "lines": [
+      "Your guard just left the building.",
+      "Blocked? Not anymore. Shield day is cancelled.",
+      "That guard lasted longer than most excuses.",
+      "Crunch! That was your defence, wasn't it?",
+      "Holding a shield is not the same as using one.",
+      "The guard has been dismissed, effective now.",
+      "Turtle mode failed. Please try bravery instead."
+    ] },
+    "hero_low": { "about": "the hero's health crosses the low line", "cooldownSeconds": 30, "probability": 1, "priority": true, "lines": [
+      "You are one sneeze from the floor.",
+      "Health is low. Optimism is lower.",
+      "Very red, very sad. Maybe run?",
+      "Your health bar called. It wants a break.",
+      "Bold plan, fighting on fumes.",
+      "Almost dead. Make it look intentional.",
+      "That is not a health bar, that is a splinter."
+    ] },
+    "boss_low": { "about": "the boss's health crosses the low line", "cooldownSeconds": 30, "probability": 1, "lines": [
+      "The boss is wobbling. Do not blow it now.",
+      "Nearly there. Try not to celebrate early.",
+      "He is hurting. Be a little cruel about it.",
+      "A sliver of health left. Finish him, hero.",
+      "Even the boss thinks you might win. Weird.",
+      "Almost dead. For him, I mean. This time.",
+      "The beast is bleeding. Go on, be rude."
+    ] },
+    "boss_kill": { "about": "the boss falls (params: boss)", "cooldownSeconds": 6, "probability": 1, "priority": true, "params": ["boss"], "lines": [
+      "{boss} is down. The floor thanks you for the company.",
+      "Victory! Somebody tell the family.",
+      "And {boss} falls. Even I did not see that coming.",
+      "A win. Do not let it go to your head.",
+      "{boss} is dead. Pity, they were so punctual.",
+      "Flawless. By a very generous definition.",
+      "Dead boss, happy crowd. Do it again.",
+      "One fewer problem and one more story."
+    ] },
+    "star_1": { "about": "the fight starts against a 1-star boss (params: boss)", "cooldownSeconds": 20, "probability": 1, "priority": true, "params": ["boss"], "lines": [
+      "A one-star {boss}. How considerate.",
+      "One star on {boss}. Somebody upgraded the menu.",
+      "{boss}, now with a star. Free of charge.",
+      "A shiny {boss}. Shinier means angrier.",
+      "That {boss} has a star. Not a participation one.",
+      "One star. The kind that comes with teeth.",
+      "{boss} with a star on. Fancy."
+    ] },
+    "star_2": { "about": "the fight starts against a 2-star boss (params: boss)", "cooldownSeconds": 20, "probability": 1, "priority": true, "params": ["boss"], "lines": [
+      "A two-star {boss}, how generous.",
+      "Two stars on {boss}. Someone loves you.",
+      "{boss}, two stars. Hope you wrote a will.",
+      "Double-starred {boss}. Doubly unfair, doubly fun.",
+      "Two stars! The house is feeling cruel today.",
+      "A two-star {boss}. Ambition has a price.",
+      "{boss} in gold. Try not to dent the trophy."
+    ] },
+    "cut": { "about": "a part is cut off a corpse (params: part)", "cooldownSeconds": 5, "probability": 0.9, "params": ["part"], "lines": [
+      "And that, folks, is a {part}. It was attached earlier.",
+      "Snip! Somebody needed that {part}.",
+      "Bits are now loose. Collect them for later.",
+      "Dismembered. Sorry, no refunds.",
+      "That {part} belonged to someone a moment ago.",
+      "A fine cut. The anatomy teacher is proud.",
+      "Off it comes. Tidy work, butcher.",
+      "Spare parts! Always handy."
+    ] },
+    "hero_death": { "about": "the hero dies", "cooldownSeconds": 6, "probability": 1, "priority": true, "lines": [
+      "And down goes our hero. Again.",
+      "You died. Hardly a shock.",
+      "Lie there. The floor is comfortable, we hear.",
+      "Another defeat, another lesson ignored.",
+      "Embarrassing. Do it quieter next time.",
+      "Rest in pieces. Try the guard button.",
+      "That was fast. Even the boss looks sorry.",
+      "Deceased. Please collect your dignity at the door."
+    ] },
+    "respawn": { "about": "the hero stands up again", "cooldownSeconds": 6, "probability": 1, "lines": [
+      "Back already? Optimism is a renewable resource.",
+      "Welcome back. The boss kept your seat warm.",
+      "Round two. Try something different.",
+      "Up you get. Nobody saw. Everybody saw.",
+      "A fresh start, same old you.",
+      "Resurrected! The refund policy still applies.",
+      "On your feet, champion. Allegedly."
+    ] },
+    "retrieve": { "about": "the hero gets his pile back", "cooldownSeconds": 10, "probability": 1, "lines": [
+      "You found your stuff. It was right where you died.",
+      "Corpse run complete. Dignity not included.",
+      "Got it back. Maybe do not drop it twice.",
+      "Retrieved! The pile is relieved, too.",
+      "Pockets full again. Try keeping them that way.",
+      "Reclaimed. The ground is a rubbish bank.",
+      "Gear back, pride still missing."
+    ] },
+    "roll_spam": { "about": "several rolls in a few seconds", "cooldownSeconds": 12, "probability": 0.9, "lines": [
+      "Roll, roll, roll. Fighting or doing laundry?",
+      "You are not a barrel. Though you roll like one.",
+      "Rolling away from your problems works until it does not.",
+      "That is a lot of tumbling for one hero.",
+      "A dodge is a plan. Forty dodges is a hobby.",
+      "Dizzy yet? The boss is, just watching.",
+      "Somersault enthusiast detected."
+    ] },
+    "idle": { "about": "the hero stands still with nobody fighting him", "cooldownSeconds": 45, "probability": 1, "lines": [
+      "Standing still is a bold opening move.",
+      "Asleep? The boss is polite, but not that polite.",
+      "The arena is waiting. So are we.",
+      "Nothing is happening and you are leading it.",
+      "Are you stretching or just scared?",
+      "Take your time. We have eternity.",
+      "Any day now. Really, no hurry."
+    ] },
+    "wearing_parts": { "about": "EXTENSION POINT, not hooked yet: the Frankendom equip feature calls commentator.say('wearing_parts', { partName }) when a taken part is worn (params: partName)", "cooldownSeconds": 40, "probability": 0.8, "params": ["partName"], "lines": [
+      "Nice {partName}. It looks borrowed.",
+      "Wearing a {partName} now? Fashion has fallen.",
+      "That {partName} does not match your shoes.",
+      "A {partName} on you. The previous owner objects.",
+      "Fresh {partName}, still slightly warm.",
+      "Bold choice, the {partName}. Very you.",
+      "The {partName} suits you. Sadly."
+    ] }
+  }
+}
