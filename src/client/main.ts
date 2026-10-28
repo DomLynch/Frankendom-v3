@@ -30,6 +30,7 @@ import { createScene } from '../fight/scene.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
+import { freshLock, lockBreakFor, stepLock } from '../fight/lock-break.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
 import { setGuardWalk } from '../fight/characters.ts';
@@ -230,6 +231,8 @@ const FREE = freeCameraFor(!!ZONE, search);
 setFreeCamera(FREE);
 // The look thumb's rows (data/respawn.json look): null = ?look=off, the row off, or no free camera
 const LOOK = lookFor(!!FREE, search), look = LOOK ? createLook(LOOK) : null;
+const LOCK_ROWS = FREE ? lockBreakFor(!!ZONE, search) : null;   // the soft lock (src/fight/lock-break.ts): null = the old hard lock (?lock=v1, ?freecam=v1, ?postkill=v1)
+let lockState = freshLock();
 let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
@@ -405,8 +408,14 @@ function frame(now: number) {
       const intent = controls.intent();
       // :1526 match.step: the live intent, quantized as the recorder stores it, stepped against the warden's profile at his level
       // the fight starts by itself: a sheathed hero with no press of his own steps with V1's draw press (src/auto-start.ts)
+      let lockOn: boolean = locked;   // the soft lock (data/respawn.json lockBreak): held in a fight until the stick breaks it; free facing (lock:false, the sim's own) when broken or when nobody fights him
+      if (LOCK_ROWS) {
+        const fighting = engaged || attackers.some((a) => !a.dead);
+        lockState = stepLock(LOCK_ROWS, lockState, { dt: step(), fighting, stick: { x: intent.x, z: intent.z }, yaw: view.yaw, hero: state, foe: practice.enemy, action: intent.action }).state;
+        lockOn = locked && fighting && !lockState.broken;
+      }
       const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
-        guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: locked, cancel: intent.cancel });
+        guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: lockOn, cancel: intent.cancel });
       const prior = practice;
       practice = stepPractice(prior, duelIntent, aiProfile);
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
@@ -468,7 +477,7 @@ function frame(now: number) {
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s }))); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
-  freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged });
+  freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });
   // a fight (or a pause) drops the look finger and its glide cleanly; the walk's move already reads view.yaw, so the stick stays camera-relative as the view turns
   if (look) { if (freeNow && !paused()) view.lookYaw(-look.step(dt)); else look.cancel(); }
   view.render(

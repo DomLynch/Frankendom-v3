@@ -149,7 +149,7 @@ const code = (p) => read(p).replace(/(^|\s)\/\/.*$/gm, '$1').replace(/\/\*[\s\S]
 const PINS = [
   ['../src/client/main.ts', 'the rows come from the zone: none without it', /const FREE = freeCameraFor\(!!ZONE, search\);/],
   ['../src/client/main.ts', 'the camera is given them', /setFreeCamera\(FREE\);/],
-  ['../src/client/main.ts', 'the follow camera is decided every frame from the world', /freeNow = wantsFreeCamera\(FREE, \{ finished: !!practice\.finish, heroStands: heroStands\(\), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged \}\);/],
+  ['../src/client/main.ts', 'the follow camera is decided every frame from the world', /freeNow = wantsFreeCamera\(FREE, \{ finished: !!practice\.finish, heroStands: heroStands\(\), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged(, broken: lockState\.broken)? \}\);/],
   ['../src/client/main.ts', 'and handed to the draw', /roam !== null, freeNow,\s*\);/],
   ['../src/client/main.ts', 'the stick ends the ceremony through the row', /handsOver\(FREE, freeAfterKill \|\| phase\.complete \|\| killAge >= ZONE!\.startAfterSeconds, !!\(intent\.x \|\| intent\.z\), killAge, phase\.stickBeat\)/],
   ['../src/client/main.ts', 'a drag looks round only when the camera is free', /if \(freeNow\) view\.lookRound\(e\.clientX - drag\.x\);/],
