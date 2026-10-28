@@ -153,7 +153,7 @@ test('(b) the validators refuse an unknown kind, with the profile ids in the mes
 test('the page wires it: each spawn\'s kind on every hand-over, leash reset, adoption and join; no page-wide opponent left in the zone path', () => {
   const main = src('../src/client/main.ts');
   assert.doesNotMatch(main, /fightOpponent\(/, 'the page no longer reads one opponent id for the whole zone');
-  assert.match(main, /const kindAt = \(index: number\): KindFight => KINDS\(spawns\[index\]!\.kind\)/);
+  assert.match(main, /const kindAt = \(index: number\): KindFight => KINDS\(spawns\[index\]!\.kind, starById\[spawns\[index\]!\.id\] \?\? 0\)/);
   assert.match(main, /if \(ZONE\) useKind\(kindAt\(index\)\);/, 'rematch (every hand-over, death and reset) takes the target spawn\'s kind');
   assert.match(main, /make\(seed, poseFor\(index, at\), kindAt\(index\)\)/, 'a leash reset rebuilds the boss as its own kind');
   assert.match(main, /useKind\(kindAt\(current\)\);\s+\/\/ an attacker may take the sim/);
