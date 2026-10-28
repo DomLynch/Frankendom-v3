@@ -36,7 +36,7 @@ test('height() is a pure function of the seed: same seed same bytes, another see
   assert.deepEqual([[120, 90], [-200, 60], [300, -150]].map(([x, z]) => Number(T.height(x, z).toFixed(9))), PINNED);
   assert.ok(pts.every(([x, z]) => Number.isFinite(T.height(x, z)) && T.height(x, z) >= 0));
 });
-const PINNED = [0, 2.247539286, 1.434060849];
+const PINNED = [2.461369506, 0, 5.86839027];   // re-pinned when scaleMetres 100 -> 200 and level 0.52 -> 0.4 made the hills tall enough to see (tallest 3.5 m -> 7.8 m in 800 m, still under maxSlope)
 
 test('the ground really has hills: tall enough to see, and the steepest the rows allow is never more than maxSlope', () => {
   let top = 0, raised = 0, n = 0;
