@@ -29,6 +29,7 @@
     "session_end": { "about": "the page was hidden or closed (sendBeacon); sec = seconds since the visit began, the last one per visit (sid) is the length", "fields": { "sec": "seconds" } },
     "boss_death": { "about": "a boss killed the hero. boss = the spawn's kind, sec = seconds engaged in this fight, heroHp / bossHp = percent of max left (the hero is 0)", "fields": { "boss": "boss", "sec": "seconds", "heroHp": "percent", "bossHp": "percent" } },
     "boss_kill": { "about": "the hero killed a boss. Same fields; bossHp is 0, heroHp is what the hero had left", "fields": { "boss": "boss", "sec": "seconds", "heroHp": "percent", "bossHp": "percent" } },
+    "clip_shared": { "about": "the player sent a Share clip file to the share sheet or downloaded it (src/share-clip.ts). boss = the boss kind, sec = the clip's length in seconds (0 for a still picture). Nothing about the file or the player.", "fields": { "boss": "boss", "sec": "seconds" } },
     "js_error": { "about": "window.onerror, unhandledrejection, or a caught error routed through captureException (src/stubs.ts). kind: error | rejection | caught", "fields": { "kind": "kind", "msg": "message", "src": "source", "line": "int", "col": "int", "stack": "stack" } }
   },
   "kinds": ["error", "rejection", "caught"]

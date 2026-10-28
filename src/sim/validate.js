@@ -70,6 +70,9 @@ export const SCHEMA = {
   // The hero's death and respawn loop (src/fight/hero-death.ts validateHeroDeath checks the values): the death-only ragdoll, the death camera, the 'You fell' line and Respawn button
   'hero-death': { keys: ['about', 'on', 'query', 'off', 'ragdoll', 'line', 'button', 'keys', 'respawn', 'cam', 'limits'], maps: { respawn: ['minSeconds', 'autoSeconds'], cam: ['seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'], limits: ['minSeconds', 'autoSeconds', 'seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
+  // Share clip (src/share-clip.ts validateShareClip checks the values): a closed key set; presentation only
+  'share-clip': { keys: ['about', 'on', 'leadSeconds', 'tailSeconds', 'stopTimeoutSeconds', 'width', 'height', 'fps', 'bitsPerSecond', 'types', 'guard', 'watermark', 'file', 'button'],
+    maps: { guard: ['seconds', 'maxFrameMs'], watermark: ['text', 'sizePx', 'colour', 'alpha', 'marginPx'], file: ['prefix', 'title', 'stillType'], button: ['label', 'stillLabel', 'making', 'saved', 'failed', 'hideSeconds', 'bottomPx', 'zIndex', 'colour', 'sizePx'] } },
   'pickup': { keys: ['about', 'on', 'query', 'off', 'units', 'delayS', 'hintSeconds', 'walkAwayM', 'zIndex', 'colour', 'text', 'arrow', 'safe', 'fadeS'],
     maps: { text: ['label', 'sizePx', 'letterSpacingEm', 'shadow', 'maxWidthPx', 'lineHeight'], arrow: ['sizePx', 'bobPx', 'bobS', 'liftPx', 'textGapPx'], safe: ['topFrac', 'bottomFrac', 'sideMarginPx'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
