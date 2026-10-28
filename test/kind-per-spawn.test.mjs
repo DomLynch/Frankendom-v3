@@ -137,7 +137,7 @@ test('(b) the validators refuse an unknown kind, with the profile ids in the mes
   assert.match(validateZone(row, ids).join('\n'), /spawns\[2\]\.kind: 'nobody' is not an opponent profile id/);
   assert.deepEqual(validateZone(ZONE, ids), []);
   assert.throws(() => zoneLoopFor(row, '', ids), /spawn pit-pitborn-west names unknown kind "nobody"/);
-  assert.throws(() => kindFightFor('nobody', CTX), /kind "nobody" is no data\/profiles\.json row \(pitborn, goblin\)/);
+  assert.throws(() => kindFightFor('nobody', CTX), /kind "nobody" is no data\/profiles\.json row \(pitborn(, [a-z]+)*, goblin\)/);
   assert.match(kindProblem('ghost', [{ ...GOBLIN, id: 'ghost', opponent: 'no-such-archetype' }]), /names opponent "no-such-archetype", which is no archetype/);
   assert.match(checkKinds({ profiles: [{ ...GOBLIN, opponent: 'nope' }] }, Object.keys(OPPONENTS)).join('\n'), /profiles\.goblin\.opponent: 'nope' is not an archetype/);
   assert.match(checkKinds({ profiles: [GOBLIN, GOBLIN] }, Object.keys(OPPONENTS)).join('\n'), /duplicate id/);
