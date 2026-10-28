@@ -62,9 +62,9 @@
       "weapon": "cleaver",
       "clipsAs": "cleaver",
       "equip": "sword",
-      "scale": 1,
+      "scale": 0.9,
       "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
-      "material": null,
+      "material": { "colour": "#aeb4bc", "metalness": 0.85, "roughness": 0.32 },
       "offhand": null,
       "placeholder": [
         "mesh: a library prop, OpenTrident weapon library sword1h-200 (a plain one-hand sword, 0.95 m), re-framed to the grip as src/assets/weapons/foe/sword.glb; a picked prop, not a sword drawn for Ryo",
