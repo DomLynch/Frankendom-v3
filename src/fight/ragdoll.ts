@@ -24,7 +24,7 @@ import type { FinisherId } from './finishers.ts';
 import { setGoreEvery } from './finishers.ts';
 import { setRagdollPlays } from '../roster.ts';
 import { getActiveKind, getActiveStar, noteLife } from './foe-name.ts';   // the profile id a kill is of (data/parts.json: the cut event names it)
-import { isNear, nextUnit, registerCorpseSource, registerStrikeSource, strikeBinds, strikeOnce, type Pt } from './cut-strike.ts';   // a strike cuts the fallen body (data/physics.json cut.strike)
+import { isNear, nextUnit, registerCorpseSource, registerDyingSource, registerStrikeSource, setPendingWindow, strikeBinds, strikeOnce, strikeReplay, type Pt } from './cut-strike.ts';   // a strike cuts the fallen body (data/physics.json cut.strike)
 import { registerHintSource, type HintBody } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
@@ -467,6 +467,19 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     } catch (error) { cost.state = `strike failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     return null;
   }
+  /** cut-strike.ts registerDyingSource: a body of this ragdoll that is dead but not yet frozen (cut.tap.needs) within cut.strike.nearM of the hero: a press now cuts nothing, so it waits. */
+  function dyingNear(hero: Pt | null): boolean {
+    const row = cutRows.tap, strike = (cutRows as { strike?: { on: boolean; nearM: number } }).strike;
+    if (!strike?.on || disabled || !row.on || !cutRows.on || !gore) return false;
+    const hips = partBones.hips;
+    if (rd && mode === 'dead' && rd.state !== row.needs && hips) { hips.getWorldPosition(stateV); if (isNear(hero, stateV.x, stateV.z, strike.nearM)) return true; }
+    for (const c of corpses) {
+      const h = c.bones?.hips;
+      if (!c.rd || !h || c.rd.state === row.needs) continue;
+      h.getWorldPosition(stateV); if (isNear(hero, stateV.x, stateV.z, strike.nearM)) return true;
+    }
+    return false;
+  }
   /** cut-strike.ts corpseCutState: each frozen body of this ragdoll (the live foe's, then the kept corpses) with at least one unit of cut.tap.order still on it. */
   function corpseState(push: (x: number, z: number, remaining: number) => void): void {
     const row = cutRows.tap;
@@ -748,6 +761,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       // data/physics.json cut.strike: this body joins the strike (an attack press, or the tap below): the AIMED pass is the tap on a part, the NEXT pass the next uncut unit near the hero
       const strike = (cutRows as { strike?: { on: boolean } }).strike;
       registerCorpseSource(corpseState);
+      setPendingWindow((cutRows as { strike?: { pendingS?: number } }).strike?.pendingS ?? 0);
+      registerDyingSource((hero) => dyingNear(hero));
       registerStrikeSource((req) => req.pass === 'aimed' ? (req.aim ? this.tap(aim(req.aim.x, req.aim.y)) : null) : strikeNext(req.hero, camera));
       canvas.addEventListener('pointerup', (e) => {
         const d = down; down = null;
@@ -920,6 +935,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         lyingHips.copy(partBones.hips!.position);
       } else if (mode === 'alive' && getUp > 0) { getUp -= dt; fromLying(getUp > 0 ? 1 - getUp / RULES.getUpS : 1); if (getUp <= 0) getUp = -1;
       } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger * staggerK.time) * staggerK.blend, blend);   // the stagger on screen, the most at the dip's deepest
+      if (mode === 'dead') strikeReplay();   // a press kept while the body was still dying cuts now if a body near the hero has frozen (cut-strike.ts)
       if (mode === 'dead' && follow.length + props.length) followCuts();
       if (cutRig && warm === 0) { cutRig.update(); slideHalves(dt); }   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
