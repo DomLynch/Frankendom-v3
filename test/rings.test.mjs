@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { RINGS, ringBlend, ringLook, ringOf, ringOfSpawn, ringOrigin, ringPlace, ringSpawns, ringTune, ringedZone, ringLoadAfterKill } from '../src/zone/rings.ts';
 import { validateRings } from '../src/sim/validate-rings.js';
 import { mergeTune } from '../src/progression.ts';
@@ -35,6 +36,13 @@ test('every spawned ring boss body has a cut row (data/cut-bodies.json) and a me
     const stem = RIG.files[b.body], row = cut.find((r) => r.name === stem);
     assert.ok(row, `${b.kind}: body ${stem} has no row in the pinned physics data/cut-bodies.json`);
     assert.match(row.expect_sha256, /^[0-9a-f]{64}$/, `${stem}: the cut row records its cut GLB hash`);
+    // spawned means cuttable: the body file IS the physics cut GLB (sha256 = the row's), its manifest ships beside it, is wired in physics-chunk.ts, and a physics.json row fits the body
+    assert.equal(createHash('sha256').update(readFileSync(new URL(`../src/assets/${stem}.glb`, import.meta.url))).digest('hex'), row.expect_sha256, `${stem}.glb is the cut GLB of the physics row`);
+    const manifest = JSON.parse(readFileSync(new URL(`../src/assets/${stem}.cut.manifest.json`, import.meta.url), 'utf8'));
+    assert.equal(manifest.schema, 'cut-pieces/1'); assert.equal(manifest.body, stem);
+    assert.match(readFileSync(new URL('../src/fight/physics-chunk.ts', import.meta.url), 'utf8'), new RegExp(`'?${b.body}'?: \\w+Manifest`), `${b.body}: wired in physics-chunk.ts cutManifests`);
+    assert.match(readFileSync(new URL('../scripts/build.mjs', import.meta.url), 'utf8'), new RegExp(`'${b.body}'`), `${b.body}: in the build's cut GLB list`);
+    assert.equal(PHYSICS.opponents.filter((o) => o.body === b.body).map((o) => o.id).sort().join(), 'executioner,pitborn', `${b.body}: physics.json opponents rows`);
     assert.ok(existsSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${stem}.measure.json`, import.meta.url)), `${stem}: measure row`);
   }
 });
