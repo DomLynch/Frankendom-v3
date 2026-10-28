@@ -14,6 +14,7 @@ import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
 import { firstFrameDrawn } from '../late-art.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
+import { createWallFx } from './mechanics/accountant-parry-wall-fx.ts';   // the Accountant's parry wall (data/mechanics.json): drawn from the foe fighter's mech state, in the Pit scene
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -580,6 +581,7 @@ export function createScene(
   const previewLighting = createTitheLighting(scene);
   const previewBackground = scene.background instanceof THREE.Color ? scene.background.clone() : null;
   const bossRing = typeof location !== 'undefined' && telegraphFlag(location.search);   // ?telegraph=1 look-test: the boss ring (boss-telegraph.ts); a spell cast's tell is always on
+  const wallFx = createWallFx(scene), wallFoot = new THREE.Vector3();   // the parry wall's mesh, ledger lines and sparks: built once, hidden while no boss holds the mechanic
   const castTells = [createBossTelegraph(scene), createBossTelegraph(scene)] as const;   // one ring per caster side, drawn under the other fighter
   const runtimeSpecial = specialId ? null : createSpecialPresentation(scene, theme.exposure, camera);
   const signatures = createSignatures(scene, opponentId);   // the opponent's signature effect (signature.ts); the ruled variant (SHIPPED) unless the admin select or ?signature= asks
@@ -1302,6 +1304,11 @@ export function createScene(
       for (const side of SIDES) {
         const foe = (side === 0 ? warriors?.opponent : warriors?.player), l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r');
         castTells[side].update(practice.duel.fighters[side], l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null, practice.duel.tick, bossRing && side === 1);
+      }
+      {   // a boss with a standing mechanic (the parry wall): ring, ledger wall and parry sparks at his feet, facing the hero as the sim has him (a boss with none: hidden, one call)
+        const foe = warriors?.opponent, hero = warriors?.player, l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r'), h = hero?.boneWorld('foot_l');
+        if (practice.duel.fighters[1].mech && l && r && h) { wallFoot.copy(l).add(r).multiplyScalar(0.5); wallFx.update(practice.duel.fighters[1], wallFoot.setY(Math.min(l.y, r.y)), Math.atan2(h.x - wallFoot.x, h.z - wallFoot.z), practice.events, practice.duel.tick, dt); }
+        else wallFx.update(null, null, 0, practice.events, 0, dt);
       }
       if (runtimeSpecial) {
         const feet = (w: NonNullable<typeof warriors>['player'] | undefined) => { const l = w?.boneWorld('foot_l'), r = w?.boneWorld('foot_r'); return l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null; };

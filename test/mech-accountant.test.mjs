@@ -174,3 +174,24 @@ test('the same fight twice is the same bytes (no clock, no random)', () => {
   const run = () => { let d = ready(stand()); const log = []; for (let i = 0; i < 400; i++) { d = step(d, i % 70 === 40 ? it({ action: 'light' }) : it()); log.push(d.fighters[1].mS ?? 0, d.fighters[1].mC ?? 0, d.fighters[0].health, d.fighters[1].health, d.events.length); } return JSON.stringify([log, d.fighters]); };
   assert.equal(run(), run());
 });
+
+test('the wall is DRAWN in the built scene: scene.ts builds createWallFx and feeds it every frame, and the fx shows a wall while the stage is up', async () => {
+  const src = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
+  assert.match(src, /import \{ createWallFx \} from '\.\/mechanics\/accountant-parry-wall-fx\.ts'/, 'scene.ts must import createWallFx (zone-fx.ts is not called by anything in src/)');
+  assert.match(src, /const wallFx = createWallFx\(scene\)/, 'scene.ts must build the wall fx on its scene');
+  assert.match(src, /wallFx\.update\(practice\.duel\.fighters\[1\]/, 'scene.ts must feed the wall fx the foe every frame');
+  const THREE = await import('three');
+  const { createWallFx } = await import('../src/fight/mechanics/accountant-parry-wall-fx.ts');
+  const scene = new THREE.Scene(), fx = createWallFx(scene);
+  assert.ok(scene.children.length >= 2, 'the fx adds its wall group and spark points to the scene');
+  const at = new THREE.Vector3(1, 0, 2), boss = { mech: ID, mS: ROW.tellTicks + 5 };
+  fx.update(boss, at, 0, [], 1, 1 / 60);
+  const group = scene.children.find((c) => c.type === 'Group');
+  assert.equal(group.visible, true, 'wall up: drawn');
+  assert.ok(group.children.some((c) => c.material && c.material.opacity > 0), 'wall up: something opaque');
+  fx.update(boss, at, 0, [{ type: 'Parried', wall: true }], 2, 1 / 60);
+  const sparks = scene.children.find((c) => c.type === 'Points');
+  assert.ok(sparks.geometry.attributes.position.array.some((v, i) => i % 3 === 1 && v > -50), 'a parry throws sparks');
+  fx.update({ mech: ID, mS: 0 }, at, 0, [], 3, 1 / 60);
+  assert.equal(group.visible, false, 'wall down: hidden');
+});
