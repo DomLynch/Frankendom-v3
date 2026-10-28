@@ -21,7 +21,7 @@
       "whiffRecoverTicks": 70,
       "breakRecoverTicks": 50,
       "breakKnockM": 1.4,
-      "tell": { "colour": "#5dff7a", "alpha": 0.6, "widthM": 0.35, "latchedAlpha": 0.3, "liftM": 0.04 }
+      "tell": { "colour": "#5dff7a", "alpha": 0.6, "widthM": 0.45, "latchedAlpha": 0.3, "liftM": 0.04, "beyondM": 2.5 }
     }
   }
 }

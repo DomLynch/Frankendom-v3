@@ -1048,10 +1048,10 @@ const MECHANIC_CHECKS = {
     const t = r.tell;
     if (!t || typeof t !== 'object') e.push(`${at}.tell: an object`);
     else {
-      for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
+      for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM', 'beyondM'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
       if (typeof t.colour !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(t.colour)) e.push(`${at}.tell.colour: a #rrggbb`);
       for (const k of ['alpha', 'latchedAlpha']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
-      for (const k of ['widthM', 'liftM']) if (!(t[k] >= 0 && t[k] <= 5)) e.push(`${at}.tell.${k}: from 0 to 5`);
+      for (const k of ['widthM', 'liftM', 'beyondM']) if (!(t[k] >= 0 && t[k] <= 5)) e.push(`${at}.tell.${k}: from 0 to 5`);
     }
     for (const k of Object.keys(r)) if (!ENVOY_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
   },

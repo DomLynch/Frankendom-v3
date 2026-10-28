@@ -14,7 +14,8 @@ export function createEnvoyLineFx(scene: THREE.Scene) {
   return {
     update(view: MechanicView | null, tick: number): void {
       if (!view) { mesh.visible = false; return; }
-      const dx = view.toX - view.fromX, dz = view.toZ - view.fromZ, length = Math.hypot(dx, dz);
+      const gap = Math.hypot(view.toX - view.fromX, view.toZ - view.fromZ), reach = gap + tell.beyondM, k = gap > 0 ? reach / gap : 0;   // the line runs on past the hero: at melee range a line only to his feet reads as a patch of floor
+      const dx = (view.toX - view.fromX) * k, dz = (view.toZ - view.fromZ) * k, length = Math.hypot(dx, dz);
       mesh.visible = length > 0;
       mesh.position.set(view.fromX + dx / 2, tell.liftM, view.fromZ + dz / 2);
       mesh.rotation.set(0, Math.atan2(dx, dz), 0);
