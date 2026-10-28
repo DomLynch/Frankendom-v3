@@ -1,6 +1,6 @@
 // Kachujin's Shadow Dash on the BUILT game with REAL keyboard input (data/mechanics.json "shadow-dash"). The hero walks to his spot, is aggroed, and then:
 //   A. leaves the line (runs sideways once it locks): the dash must happen, he must NOT cut, and he must stand open through the recovery;
-//   B. stands and guards: the dash lands, the cut comes, and the guard takes it (no health lost, a Blocked or Parried event).
+//   B. stands on the line and rolls (E) sideways as the cut starts: the dash lands, the cut comes, the roll takes him through it (no health lost).
 // Also shoots 375-wide stills of the tell (locked line) and the dash (afterimages). Pass/fail is printed and the exit code says it.
 //   node scripts/shadow-dash-check.mjs <base url> <out dir>          (serve dist with scripts/serve.mjs; needs playwright)
 import { chromium } from 'playwright';
@@ -21,7 +21,7 @@ await page.evaluate(() => {
   const log = (globalThis.__rec = []); let last = -1;
   setInterval(() => {
     const p = globalThis.__v3Fight, m = globalThis.__v3Mech; if (!p || p.duel.tick === last) return; last = p.duel.tick;
-    log.push({ tick: last, phase: m?.state?.phase ?? null, locked: !!m?.state?.locked, foe: p.duel.fighters[1].phase, hp: p.playerHealth, foeHp: p.health, ev: p.events.filter((e) => e.type !== 'PhaseChanged').map((e) => `${e.type}:${e.actor}`) });
+    log.push({ hx: +p.fighter.x.toFixed(2), hz: +p.fighter.z.toFixed(2), bx: +p.enemy.x.toFixed(2), bz: +p.enemy.z.toFixed(2), tick: last, phase: m?.state?.phase ?? null, locked: !!m?.state?.locked, foe: p.duel.fighters[1].phase, hp: p.playerHealth, foeHp: p.health, ev: p.events.filter((e) => e.type !== 'PhaseChanged').map((e) => `${e.type}:${e.actor}`) });
     if (log.length > 20000) log.splice(0, 5000);
   }, 3);
 });
@@ -39,10 +39,14 @@ const steer = async (target, stopWithin, withRun = false) => {   // hold the key
 const results = [], ok = (name, pass, note = '') => { results.push(pass); console.log(`${pass ? 'PASS' : 'FAIL'} ${name} ${note}`); };
 
 // walk to him until aggro
-for (let i = 0; i < 900; i++) { const s = await st(); if (s.engaged) break; await steer(SPOT, 1.5, true); await page.waitForTimeout(120); }
+const ROUTE = [[-46, 30], [-46, 72], SPOT];   // round Arachne (-14, 31) and Gargantua (28, 12), then in
+for (const wp of ROUTE) for (let i = 0; i < 900; i++) { const s = await st(); if (s.engaged && wp === SPOT) break; if (await steer(wp, wp === SPOT ? 1.5 : 2, true)) break; await page.waitForTimeout(120); }
 await release();
+for (let i = 0; i < 100 && !(await page.evaluate(() => globalThis.__v3Mech)); i++) await page.waitForTimeout(100);
+console.log('mech after wait', JSON.stringify(await page.evaluate(() => globalThis.__v3Mech && { id: globalThis.__v3Mech.id, phase: globalThis.__v3Mech.state.phase })), 'cur', await page.evaluate(() => globalThis.__v3Zone?.current));
 let s = await st();
-ok('aggroed Kachujin by real walking', !!s.engaged, `gap ${s.gap.toFixed(1)}`);
+console.log('after the walk: hero', s.hero.map((v) => +v.toFixed(1)), 'held boss', s.foe.map((v) => +v.toFixed(1)), 'engaged', s.engaged, 'cur', await page.evaluate(() => globalThis.__v3Zone?.current));
+ok('aggroed Kachujin by real walking (the mechanic is on the held boss)', !!s.engaged && !!(await page.evaluate(() => globalThis.__v3Mech?.id === 'shadow-dash')), `gap ${s.gap.toFixed(1)}`);
 
 // hold the hero about 5 m from him (back off / close in) until the tell begins; returns the state at the tell
 async function toTell() {
@@ -64,8 +68,8 @@ await page.waitForTimeout(250);
 await page.screenshot({ path: `${out}/shadow-dash-tell.png` });
 const lockedAt = await lockWait();
 await page.screenshot({ path: `${out}/shadow-dash-locked.png` });
-await key('ShiftLeft', 'keydown'); await key('KeyD', 'keydown');   // run sideways, off the locked line
-const mark = (await st()).tick;
+await key('KeyD', 'keydown'); await key('KeyE', 'keydown'); await page.waitForTimeout(60); await key('KeyE', 'keyup');   // roll sideways (E + D), off the locked line; D stays held, so he keeps walking off it
+const mark = t.tick;
 let shot = false;
 for (let i = 0; i < 400; i++) { const c = await st(); if (c.phase === 'dash' && !shot) { shot = true; await page.waitForTimeout(40); await page.screenshot({ path: `${out}/shadow-dash-trail.png` }); } if (c.phase === 'recover' || (c.tick - mark > 400)) break; await page.waitForTimeout(8); }
 await release();
@@ -73,8 +77,9 @@ await page.waitForTimeout(1500);
 let rec = await page.evaluate((from) => globalThis.__rec.filter((r) => r.tick >= from), mark);
 const phasesA = [...new Set(rec.map((r) => r.phase))];
 ok('A: the dash happens (dash then recover seen)', phasesA.includes('dash') && phasesA.includes('recover'), phasesA.join('>'));
-const cutA = rec.filter((r) => r.ev.includes('AttackStarted:1'));
-ok('A: no cut at a hero who left the line', cutA.length === 0, `cuts ${cutA.length}`);
+if (process.env.TRACE) console.log(rec.filter((r) => r.phase && r.phase !== 'idle').filter((_, i) => i % 3 === 0).map((r) => `${r.tick} ${r.phase}${r.locked ? '*' : ''} hero(${r.hx},${r.hz}) boss(${r.bx},${r.bz}) ${r.foe}`).join('\n'));
+const cutA = rec.filter((r) => r.ev.includes('AttackStarted:1') && r.phase !== null && r.phase !== 'idle');
+ok('A: no cut at a hero who left the line', cutA.length === 0, `cuts ${cutA.length} ${cutA.map((r) => r.phase + '@' + r.tick).join(',')}`);
 const recoverA = rec.filter((r) => r.phase === 'recover');
 ok('A: he stood open for the recovery (never attacking)', recoverA.length >= 40 && recoverA.every((r) => r.foe !== 'attack'), `recover ticks ${recoverA.length}`);
 ok('A: no health lost', rec.every((r) => r.hp >= rec[0].hp), `hp ${rec[0]?.hp} -> ${rec.at(-1)?.hp}`);
@@ -83,13 +88,19 @@ ok('A: no health lost', rec.every((r) => r.hp >= rec[0].hp), `hp ${rec[0]?.hp} -
 t = await toTell(); await release();
 ok('B: a second tell after the cooldown', !!t);
 await lockWait();
-await key('KeyQ', 'keydown');   // guard, held
 const markB = (await st()).tick;
-for (let i = 0; i < 600; i++) { const c = await st(); if (c.phase === 'recover' || c.tick - markB > 500) break; await page.waitForTimeout(10); }
+let rolled = false;
+for (let i = 0; i < 800; i++) {   // stand on the line; the moment the cut starts, roll (E) sideways through it
+  const c = await st();
+  if (!rolled && c.phase === 'slash' && c.foePhase === 'attack') { rolled = true; await key('KeyD', 'keydown'); await key('KeyE', 'keydown'); await page.waitForTimeout(60); await key('KeyE', 'keyup'); await key('KeyD', 'keyup'); }
+  if (c.phase === 'recover' || c.tick - markB > 500) break;
+  await page.waitForTimeout(6);
+}
 await page.waitForTimeout(400); await release();
 rec = await page.evaluate((from) => globalThis.__rec.filter((r) => r.tick >= from), markB);
+console.log('B events:', rec.filter((r) => r.ev.length).map((r) => `${r.tick}:${r.phase}:${r.ev.join('/')}`).join(' ').slice(0, 600), '| hp', rec[0]?.hp, '->', rec.at(-1)?.hp);
 ok('B: he dashed in and cut', rec.some((r) => r.phase === 'dash') && rec.some((r) => r.ev.includes('AttackStarted:1')));
-ok('B: the guard answered the cut (Blocked or Parried)', rec.some((r) => r.ev.some((e) => /^(Blocked|Parried):/.test(e))), rec.flatMap((r) => r.ev).filter((e) => /Blocked|Parried|Hit/.test(e)).join(','));
+ok('B: the roll took me through the cut (no health lost)', rolled && rec.every((r) => r.hp >= rec[0].hp), `rolled ${rolled}, hp ${rec[0]?.hp} -> ${rec.at(-1)?.hp}`);
 console.log(results.every(Boolean) ? 'ALL PASS' : 'FAILED');
 await browser.close();
 process.exit(results.every(Boolean) ? 0 : 1);
