@@ -16,7 +16,7 @@
     { "star": 2, "id": "epic", "label": "Epic", "colour": "#b3231c" }
   ],
   "button": { "label": "☰", "aria": "Frankendom: your body parts", "sizePx": 36, "topPx": 170, "rightPx": 10, "zIndex": 30 },
-  "panel": { "zIndex": 40, "maxWidthPx": 420, "maxHeightFrac": 0.82 },
+  "panel": { "zIndex": 80, "maxWidthPx": 420, "maxHeightFrac": 0.82 },
   "text": {
     "title": "Frankendom",
     "close": "Close",
