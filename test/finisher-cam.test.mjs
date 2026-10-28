@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cutAim, cutCamPose, cutCamProblems, cutCamRows, cutCamShare, finisherCamOn, MIN_EYE, stickBeat } from '../src/fight/finisher-cam.ts';
+import { cutAim, cutBloodRows, cutCamPose, cutCamProblems, cutCamRows, cutCamShare, finisherCamOn, MIN_EYE, stickBeat } from '../src/fight/finisher-cam.ts';
 import { handsOver } from '../src/fight/free-camera.ts';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -12,12 +12,22 @@ const DEFS = JSON.parse(read('../src/fight/finisher-defs.json')).finishers;
 const SIX = ['decapitation', 'splitCrown', 'dismember', 'hamstringCut', 'opened', 'runThrough'];
 const tanHalfH = (aspect, vfovDeg = 51 / 1.1) => Math.tan((vfovDeg * Math.PI) / 360) * aspect;
 
-test('the flag: on by default, ?finishercam=v1 reverts', () => {
-  assert.equal(finisherCamOn(''), true);
-  assert.equal(finisherCamOn('?zoom=1'), true);
-  assert.equal(finisherCamOn('?finishercam=v1'), false);
-  assert.equal(cutCamRows('?finishercam=v1'), null);
-  assert.deepEqual(Object.keys(cutCamRows('')).sort(), Object.keys(ROWS).sort());
+test('the flag: NO finisher zoom by default (Dom 2026-10-28), ?finishercam=v1 restores it', () => {
+  assert.equal(finisherCamOn(''), false);
+  assert.equal(finisherCamOn('?zoom=1'), false);
+  assert.equal(finisherCamOn('?finishercam=v2'), false);
+  assert.equal(finisherCamOn('?finishercam=v1'), true);
+  assert.equal(cutCamRows(''), null, 'default: no close view of the cut, no stick beat');
+  assert.deepEqual(Object.keys(cutCamRows('?finishercam=v1')).sort(), Object.keys(ROWS).sort());
+  assert.deepEqual(Object.keys(cutBloodRows('')).sort(), Object.keys(ROWS).sort(), 'blood is not a camera effect: on by default');
+});
+
+test('the camera rig gates the push-in, the side reveal and the close view on the flag; the default frames a finish like normal combat', () => {
+  const cam = read('../src/fight/camera.ts');
+  assert.match(cam, /const FINISH_ZOOM = finisherCamOn\(/);
+  assert.match(cam, /if \(FINISH_ZOOM && finish && finish\.posed/, 'push-in gated');
+  assert.match(cam, /if \(FINISH_ZOOM && locked && !still && finish\?\.victim === 1 && open\)/, 'side reveal gated');
+  assert.match(cam, /const cutRow = CUT_CAM && finish/, 'close view gated by the null rows');
 });
 
 test('the rows are sound and every id is a real finisher', () => {
@@ -90,8 +100,9 @@ test('a narrower screen stands further back; no pose is NaN with the hero on the
   for (const v of Object.values(a)) assert.ok(Number.isFinite(v));
 });
 
-test('the stick beat: a held stick does not end the whole ceremony of any of the six; ?finishercam=v1 and a plain death end it at once', () => {
-  const FREE = JSON.parse(read('../data/respawn.json')).freeCamera, on = cutCamRows(''), v1 = cutCamRows('?finishercam=v1');
+test('the stick beat: ?finishercam=v1 holds a stick through the whole ceremony of any of the six; the default (no zoom) and a plain death hand over at once', () => {
+  const FREE = JSON.parse(read('../data/respawn.json')).freeCamera, on = cutCamRows('?finishercam=v1'), v1 = cutCamRows('');
+  for (const id of SIX) assert.equal(handsOver(FREE, false, true, 0, stickBeat(v1, id)), true, `${id}: default hands over at once (free-look / stick as in normal combat)`);
   assert.equal(FREE.stickEndsCeremony, true);
   for (const id of SIX) {
     const secs = DEFS.find((f) => f.id === id).seconds ?? DEFS.find((f) => f.id === DEFS.find((g) => g.id === id).secondsFrom).seconds;
@@ -99,7 +110,6 @@ test('the stick beat: a held stick does not end the whole ceremony of any of the
     assert.equal(handsOver(FREE, false, true, 0.2, stickBeat(on, id)), false, `${id}: held at 0.2 s, the finisher plays`);
     assert.equal(handsOver(FREE, false, true, secs - 0.1, stickBeat(on, id)), false, `${id}: held to the end`);
     assert.equal(handsOver(FREE, false, true, secs + 0.1, stickBeat(on, id)), true, `${id}: after it, a held stick ends it as today`);
-    assert.equal(handsOver(FREE, false, true, 0, stickBeat(v1, id)), true, `${id}: v1 ends at once`);
   }
   assert.equal(stickBeat(on, 'plainDeath'), 0);
   assert.equal(stickBeat(on, null), 0);
@@ -110,6 +120,7 @@ test('the stick beat: a held stick does not end the whole ceremony of any of the
 
 test('wired: the camera, the blood and the stick rule read the rows; no sim file knows them', () => {
   assert.match(read('../src/fight/camera.ts'), /cutCamRows\(/);
+  assert.match(read('../src/fight/scene.ts'), /!CUT_STICK \? 0/, 'the stick beat follows the zoom flag');
   assert.match(read('../src/fight/camera.ts'), /cutRow && finish!\.focus/);
   assert.match(read('../src/fight/scene.ts'), /CUT_BLOOD\?\.\[finisher\]\?\.blood/);
   assert.match(read('../src/fight/scene.ts'), /focus: cutBone \? cutFocus : null/);

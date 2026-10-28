@@ -48,8 +48,9 @@ import { createWoundNotice } from './wound-notice.ts';
 import { shardCapacity } from './special-shards-rows.ts';
 import { createSpecialShards } from './special-shards.ts';
 import { createFinisherBlood, finisherBloodSources } from './finisher-blood.ts';
-import { cutAim, cutCamRows, MIDDLE_BONE, STICK_FIRST_FRAME, stickBeat } from './finisher-cam.ts';
-const CUT_BLOOD = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json blood boosts by finisher id; null = ?finishercam=v1 (the blood as it was)
+import { cutAim, cutBloodRows, cutCamRows, MIDDLE_BONE, STICK_FIRST_FRAME, stickBeat } from './finisher-cam.ts';
+const CUT_BLOOD = cutBloodRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json blood boosts by finisher id (not a camera effect: on by default)
+const CUT_STICK = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // the stick beat belongs to the finisher zoom: null by default (the stick hands over at once), rows for ?finishercam=v1
 import { phoneTier, pixelCap } from './quality.ts';
 import { FOE_TUNE } from './fatigue-tune.ts';
 import { fatigueReadFrom } from './fatigue-read.ts';
@@ -1263,7 +1264,7 @@ export function createScene(
       // The cut's place for the finisher camera (finisher-cam.json): the row's bone on the foe, followed live as the ragdoll falls.
       const cutRow = CUT_BLOOD && finisher !== null && practice.finish?.victim === 1 ? CUT_BLOOD[finisher] : undefined;
       // finishPhase().stickBeat: main.ts's stick rule. Between fights it stands at STICK_FIRST_FRAME, so the frame the kill lands in (main.ts steps the sim before this render has seen the finish) holds a stick that is still down.
-      stickBeatNow = !CUT_BLOOD ? 0 : practice.finish?.victim === 1 ? stickBeat(CUT_BLOOD, finisher) : STICK_FIRST_FRAME;
+      stickBeatNow = !CUT_STICK ? 0 : practice.finish?.victim === 1 ? stickBeat(CUT_STICK, finisher) : STICK_FIRST_FRAME;
       if (!cutRow) { cutBone = null; cutMid = null; cutBoneKey = null; cutRigKey = null; }
       else {
         const rigNow = warriors?.opponent ?? null;   // a foe swap (the held body of another spawn) makes the bones stale: look them up again

@@ -1,6 +1,7 @@
 // The finisher camera for the cut (data: finisher-cam.json). Pure functions that write into the caller's `out` (no allocation per frame): the camera
 // rig (camera.ts), the finisher blood and the stick rule (scene.ts, main.ts) read them. PRESENTATION ONLY: nothing here touches the sim, the record or Gate 0.
-// ?finishercam=v1 = the camera, the blood and the stick rule as they were before the rows.
+// DEFAULT = NO finisher zoom (Dom 2026-10-28: V3 is a real-time zone, the camera must not zoom or take over): no push-in, no side reveal, no close view of the cut, no held stick.
+// ?finishercam=v1 restores the old zoom (the row's dolly, the side reveal, the close view of the cut, the stick beat). The blood boosts are not a camera effect and stay on in both.
 import ROWS from './finisher-cam.json' with { type: 'json' };
 
 export type CutCamRow = { from: number; over: number; bone: string; mix: number; angle: number; dist: number; span: number; rise: number; stickBeatS: number; blood: { burst: number; pool: number } };
@@ -10,11 +11,14 @@ export const MIN_EYE: number = ROWS.minEye;   // metres: the lens never stands l
 export const STICK_FIRST_FRAME = 0.25;         // seconds: the stick beat before the scene has seen the finish (the killing frame), until its own row's beat is known
 export const MIDDLE_BONE = 'pelvis';           // the bone `mix` pulls the aim toward
 
-/** Off for ?finishercam=v1 (any other value keeps the default, ON). */
-export const finisherCamOn = (search: string): boolean => new URLSearchParams(search).get('finishercam') !== 'v1';
+/** The finisher zoom (push-in, side reveal, close view of the cut, stick beat): OFF by default, ON only for ?finishercam=v1. */
+export const finisherCamOn = (search: string): boolean => new URLSearchParams(search).get('finishercam') === 'v1';
 
-/** The rows for this page: null when reverted. */
+/** The close-view / stick-beat rows for this page: null by default (no zoom), the rows for ?finishercam=v1. */
 export const cutCamRows = (search: string): Readonly<Record<string, CutCamRow>> | null => finisherCamOn(search) ? (ROWS.rows as Record<string, CutCamRow>) : null;
+
+/** The blood boosts by finisher id: always on (blood is not a camera effect). */
+export const cutBloodRows = (_search: string): Readonly<Record<string, CutCamRow>> => ROWS.rows as Record<string, CutCamRow>;
 
 /** Seconds after the kill a held stick may not yet end the ceremony of finisher `id` (free-camera.ts handsOver): its row's `stickBeatS`; 0 with no row (a finisher the camera does not frame) or ?finishercam=v1. */
 export const stickBeat = (rows: Readonly<Record<string, CutCamRow>> | null, id: string | null): number => (rows && id !== null ? rows[id]?.stickBeatS : 0) ?? 0;
