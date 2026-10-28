@@ -156,7 +156,7 @@ test('the bodies: each is in rig.json with its clips, drawn with its archetype\'
 
 test('wiring pins: the page lays the ring tune under the address\'s, mixes the look per frame, and scene arms ring bodies by their archetype', () => {
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8'), scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(main, /const BASE_TUNE = mergeTune\(TUNED, ringTune\(\)\)/);
+  assert.match(main, /const BASE_TUNE = mergeTune\(mergeTune\(TUNED, ringTune\(\)\), daily\.tune\)/);   // re-pinned for the Daily Pit: its modifier tune (empty outside the daily, the same object) is laid over the rings' and the address's
   assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation/);
   assert.match(main, /view\.ringLook\(look\.tintA, look\.tintB, look\.t, look\.plates\)/);
   assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch, undefined, bodyProfileOf\(file\)\)/);

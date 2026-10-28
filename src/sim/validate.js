@@ -1019,14 +1019,14 @@ export function checkDailyPit(j, ctx) {
   }
   if (ctx) {
     const profiles = new Map((ctx.profiles?.profiles ?? []).map((p) => [p.id, p])), wired = new Set((ctx.zone?.spawns ?? []).map((s) => s.kind)), opp = ctx.physics?.opponents ?? [];
-    if (!(ctx.zone?.spawns ?? []).some((s) => s.id === j.spawnId)) e.push(`${at}.spawnId: "${j.spawnId}" is no spawn of the zone row`);
-    if (ctx.physics?.cut?.log !== j.cutLog) e.push(`${at}.cutLog: "${j.cutLog}" is not data/physics.json cut.log ("${ctx.physics?.cut?.log}")`);
+    if (ctx.zone && !ctx.zone.spawns.some((s) => s.id === j.spawnId)) e.push(`${at}.spawnId: "${j.spawnId}" is no spawn of the zone row`);   // each cross-file check runs when its file is handed in (validateAll has no zone row: it lives in data/zones/)
+    if (ctx.physics && ctx.physics.cut?.log !== j.cutLog) e.push(`${at}.cutLog: "${j.cutLog}" is not data/physics.json cut.log ("${ctx.physics.cut?.log}")`);
     for (const id of Array.isArray(j.bosses) ? j.bosses : []) {
       const p = profiles.get(id);
       if (!p) { e.push(`${at}.bosses.${id}: no data/profiles.json row`); continue; }
-      if (!wired.has(id)) e.push(`${at}.bosses.${id}: not a wired boss (no spawn of the zone row has that kind)`);
+      if (ctx.zone && !wired.has(id)) e.push(`${at}.bosses.${id}: not a wired boss (no spawn of the zone row has that kind)`);
       const body = p.body ?? ctx.profiles.defaultBody;
-      if (!opp.some((o) => o.body === body && o.measure?.['106'])) e.push(`${at}.bosses.${id}: body "${body}" has no data/physics.json opponents row with a 106 measure (not cuttable)`);
+      if (ctx.physics && !opp.some((o) => o.body === body && o.measure?.['106'])) e.push(`${at}.bosses.${id}: body "${body}" has no data/physics.json opponents row with a 106 measure (not cuttable)`);
     }
   }
   return e;

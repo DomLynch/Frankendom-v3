@@ -104,7 +104,7 @@ test('a modifier is only ?tune= multipliers and a star level: the fight is built
   }
   const dd = D.modifiers.find((m) => m.id === 'double-damage');
   const p1 = kindPractice(kindFightFor('gargantua', ctxOf(base)), ctxOf(base), 7), p2 = kindPractice(kindFightFor('gargantua', ctxOf(mergeTune(base, { gargantua: dd.tune }))), ctxOf(mergeTune(base, { gargantua: dd.tune })), 7);
-  assert.equal(p2.health, p1.health * 0.5, 'double damage both ways: he has half the health (my blows land twice as hard)');
+  assert.ok(Math.abs(p2.health - p1.health * 0.5) <= 1, `double damage both ways: he has half the health (my blows land twice as hard): ${p2.health} vs ${p1.health}`);   // the sim rounds his health to a whole number
 });
 
 test('a run lays the day\'s tune over the page\'s tune and escalation never enters: the daily is the same for everyone', () => {
@@ -156,9 +156,8 @@ function play(frames) {
 test('the tracker: the attempt is spent at the first engage, time counts only while engaged, damage is every hit point lost, parts are the cut log\'s growth', () => {
   const idle = play(Array.from({ length: 100 }, () => frame(0.1)));
   assert.equal(idle.spent, 0); assert.equal(idle.t.phase, 'idle'); assert.equal(idle.row, null);
-  const frames = [frame(0.1), frame(0.1, { engaged: true }), ...Array.from({ length: 99 }, () => frame(0.1, { engaged: true }))];
-  frames[10] = frame(0.1, { engaged: true, heroHealth: 120 }); frames[11] = frame(0.1, { engaged: true, heroHealth: 120 });
-  frames.push(frame(0.1, { engaged: true, heroHealth: 100 }));   // a second blow
+  const frames = [frame(0.1), frame(0.1, { engaged: true }), ...Array.from({ length: 99 }, (_, i) => frame(0.1, { engaged: true, heroHealth: i < 8 ? 150 : 120 }))];   // one blow of 30
+  frames.push(frame(0.1, { engaged: true, heroHealth: 100 }));   // a second blow of 20
   frames.push(frame(0.1, { won: true, heroHealth: 100, cuts: 2 }));
   for (let i = 0; i < 70; i++) frames.push(frame(0.1, { won: true, heroHealth: 100, cuts: 2 + (i > 30 ? 3 : 0) }));
   const r = play(frames);
@@ -182,7 +181,7 @@ test('the tracker: the result waits resultDelaySeconds after the kill, and a fal
   assert.equal(lost.row.won, false); assert.equal(lost.row.score, D.score.min); assert.equal(lost.row.damage, 150);
   assert.equal(lost.rows.length, 1);
   const walkedOff = play([frame(0.1), frame(0.1, { engaged: true }), ...Array.from({ length: 50 }, () => frame(0.1, { engaged: false })), frame(0.1, { engaged: true }), frame(0.1, { won: true })]);
-  assert.ok(Math.abs(walkedOff.t.time - 0.2) < 1e-9, 'time pauses while he is not engaged (a boss walking home)');
+  assert.ok(Math.abs(walkedOff.t.time - 0.1) < 1e-9, 'time pauses while he is not engaged (a boss walking home): only the one engaged frame after the first counts');
 });
 
 test('the record: attempts per day, the best win of the day, the best ever, a new day resets the day but keeps the best ever', () => {

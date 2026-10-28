@@ -22,7 +22,7 @@ const at = (iso) => Date.parse(iso);
 const pick1 = pickFor(D, DAY1), pick2 = pickFor(D, DAY2);
 assert.deepEqual([pick1.boss, pick1.modifier.id], ['gargantua', 'double-damage']);
 
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}), args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const phone = { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const errors = [];
 const ctx = await browser.newContext(phone);

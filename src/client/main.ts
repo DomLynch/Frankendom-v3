@@ -116,7 +116,8 @@ const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 const daily = createDaily({ file: DAILY_ROWS as unknown as DailyFile, doc: document, win: window, store: storageOf(), session: sessionOf(window), progression: PROG_ROWS, useSave: progressionOn(PROG_ROWS, search) && !pitbornV1(search), now: () => Date.now(), reload: () => location.reload(), cuts: () => ((globalThis as Record<string, unknown[] | undefined>)[DAILY_ROWS.cutLog]?.length ?? 0), nameOf: (k) => PROFILES.profiles.find((p) => p.id === k)?.name ?? k });
 const zoneFor = (s: string) => daily.zoneFor(plainZoneFor(s));   // the daily's one-boss zone inside the Daily Pit, else the zone as it is
 if (daily.run) starById[daily.run.spawnId] = daily.stars;   // the day's star modifier: the boss stands with its star from the first frame
-const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) && !daily.run ? {   // inside the Daily Pit the save is not read for the fight (no escalation, no unlock, no corpse run): the same fight for everyone store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
+// inside the Daily Pit the save is not read for the fight (no escalation, no unlock, no corpse run): the same fight for everyone
+const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) && !daily.run ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
 validateCorpseRun(CORPSE, PROFILES.profiles.map((p) => p.id));   // data/corpse-run.json: a bad row stops the page at load
 if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
 const HERO_WEAPON = (PROG?.save ? heroWeapon(carriedSave(PROG.save), PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
