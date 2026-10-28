@@ -1,0 +1,35 @@
+{
+  "about": "Deaths-and-errors telemetry (Dom 2026-10-28: 'tracking deaths and errors on a server'). The page (src/telemetry.ts) batches a few anonymous events and POSTs them to the SAME-ORIGIN `path` (nginx proxies /t to the collector on 127.0.0.1:`port`, deploy/telemetry/); the collector (server/telemetry/, node, NOT in the game bundle) validates every event against the `events` table below and appends one JSON line per event to a size-capped, rotating log. Privacy: a random per-browser id (localStorage, try/catch) and a random per-visit id; no IP is read or stored, no free text from the player (the only strings are the boss kind, an error message / stack from the code, and the build sha); `?telemetry=off`, Do-Not-Track, localhost and a non-sha dev build send nothing. Every number is a row here so the page and the collector cannot disagree.",
+  "path": "/t",
+  "off": { "query": "telemetry", "value": "off", "hosts": ["localhost", "127.0.0.1", "[::1]"], "hostSuffixes": [".localhost", ".test"] },
+  "client": {
+    "flushMs": 15000,
+    "maxQueue": 40,
+    "maxBatch": 10,
+    "maxEventsPerMinute": 30,
+    "maxErrorsPerVisit": 10,
+    "maxPerEventPerVisit": 60,
+    "storageKey": "fd3.tid"
+  },
+  "caps": { "maxBodyBytes": 6144, "maxId": 40, "maxSha": 40, "maxMessage": 200, "maxSource": 120, "maxStack": 600, "maxBoss": 40, "maxSeconds": 86400 },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8796,
+    "logDir": "/var/lib/frankendom-v3-telemetry",
+    "logName": "telemetry.jsonl",
+    "maxFileBytes": 10485760,
+    "keepFiles": 5,
+    "perIdEventsPerMinute": 40,
+    "perIdRequestsPerMinute": 12,
+    "globalEventsPerMinute": 1200,
+    "maxTrackedIds": 5000
+  },
+  "events": {
+    "session_start": { "about": "the page became ready (once per visit)", "fields": {} },
+    "session_end": { "about": "the page was hidden or closed (sendBeacon); sec = seconds since the visit began, the last one per visit (sid) is the length", "fields": { "sec": "seconds" } },
+    "boss_death": { "about": "a boss killed the hero. boss = the spawn's kind, sec = seconds engaged in this fight, heroHp / bossHp = percent of max left (the hero is 0)", "fields": { "boss": "boss", "sec": "seconds", "heroHp": "percent", "bossHp": "percent" } },
+    "boss_kill": { "about": "the hero killed a boss. Same fields; bossHp is 0, heroHp is what the hero had left", "fields": { "boss": "boss", "sec": "seconds", "heroHp": "percent", "bossHp": "percent" } },
+    "js_error": { "about": "window.onerror, unhandledrejection, or a caught error routed through captureException (src/stubs.ts). kind: error | rejection | caught", "fields": { "kind": "kind", "msg": "message", "src": "source", "line": "int", "col": "int", "stack": "stack" } }
+  },
+  "kinds": ["error", "rejection", "caught"]
+}
