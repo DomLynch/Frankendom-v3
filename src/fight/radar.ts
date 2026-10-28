@@ -3,12 +3,12 @@
 // draws a handful of dots on a 2D canvas; it never touches the sim, the camera or the input (pointer-events none). The maths below is pure (test/radar.test.mjs); `mountRadar` is the only DOM.
 import ROWS from '../../data/radar.json' with { type: 'json' };
 
-export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead' | 'pile';
+export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead' | 'pile' | 'golden';
 type Style = { colour: string; alpha: number; sizePx: number };
 export type RadarRows = {
   on: boolean; query: string; off: string; corner: string; sizePx: number; marginPx: number; offsetPx: number; zIndex: number; rangeMetres: number; rimInset: number; dprMax: number;
   disc: { colour: string; alpha: number }; rim: { colour: string; alpha: number; widthPx: number }; edgeAlpha: number; hero: Style;
-  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean }; pile: Style };
+  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean }; pile: Style; golden: Style };
   flash: FlashRows;
   kinds: Record<string, string>; defaultKind: string;
 };
@@ -29,7 +29,7 @@ export function validateRadar(r: RadarRows): void {
   colour('disc.colour', r.disc?.colour); num('disc.alpha', r.disc?.alpha, 0, 1);
   colour('rim.colour', r.rim?.colour); num('rim.alpha', r.rim?.alpha, 0, 1); num('rim.widthPx', r.rim?.widthPx, 0, 6);
   colour('hero.colour', r.hero?.colour); num('hero.alpha', r.hero?.alpha, 0, 1); num('hero.sizePx', r.hero?.sizePx, 0.5, 20);
-  for (const c of ['hostile', 'player', 'npc', 'dead', 'pile'] as const) {
+  for (const c of ['hostile', 'player', 'npc', 'dead', 'pile', 'golden'] as const) {
     const s = r.classes?.[c];
     colour(`classes.${c}.colour`, s?.colour); num(`classes.${c}.alpha`, s?.alpha, 0, 1); num(`classes.${c}.sizePx`, s?.sizePx, 0.5, 20);
   }

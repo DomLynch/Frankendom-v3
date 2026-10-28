@@ -1,0 +1,52 @@
+{
+  "about": "GOLDEN WEAPON DROPS (Dom 2026-10-28: 'we have endless sand, so it's good if we have good weapons and everything that drops'). A rare weapon lies in the world as a glowing pickup; the hero walks onto it (or taps its ring) and it is his for a limited number of CHARGES (one charge per blow he lands). One pickup = one power: `damageMul` (his blows hurt that much more; laid over the bosses as a ?tune= health scale of 1/damageMul, src/tune.ts, so it rides the profile, difficulty, ring and escalation rows and is felt from the next fight or respawn) and a golden `tint` on the weapon he holds. At 0 charges it is spent and he reverts to the weapon he had (the boss-weapon reward of data/progression.json). NO NEW ART (Dom): a row names a src/fight/weapon-defs.json id (`weapon`); a row drops only while that id is one the hero can draw (src/fight/scene.ts CARRIED_WEAPONS: today longsword, gladius, cleaver), so `plasma-spear` (trident) and `cursed-hammer` (maul) sit dormant, fully specified, until OpenTrident packs a hero GLB for them, then they drop with no code change. The drawn mesh is the rig built at load (corpse-run.json says the same), so a pickup tints and powers the weapon in his hand now and, if it is a different weapon id, draws as that weapon from the next page load. SOURCES (`drops`): a boss kill rolls `bossKill.chanceByStar[star]` (the star level of the boss, data/stars.json) and drops a row of tier up to `tierByStar[star]` within `scatterMetres` of the corpse; `roaming.points` are fixed pickups at a distance and bearing from the pit's centre inside a biome ring (data/rings.json), taken ones come back after `respawnSeconds`; `packChest` is the later hook for mob packs (off; the Pit Crawl and trash-mob lanes call dropGolden(position, tier) from src/zone/golden-drops.ts and listen on onPickup). A held golden weapon is lost where the hero dies, as a ground pickup with the charges it had left (the corpse run's pile of coins and boss weapon is separate and untouched). Saved as the optional `golden` field of the progression save (src/progression.ts); a save without it loads as before. Rows are checked by src/sim/validate.js (keys) and src/fight/golden-check.ts validateGolden (values), at load. Balance is its own (not Armagedom's).",
+  "version": 1,
+  "halfTurnDegrees": 180,
+  "limits": {
+    "charges": [1, 99],
+    "damageMul": [1, 3],
+    "tier": [1, 9],
+    "chance": [0, 1],
+    "metres": [0.5, 400],
+    "seconds": [5, 86400],
+    "pulse": [0.1, 10],
+    "intensity": [0, 3],
+    "angle": [-720, 720],
+    "coord": 2000,
+    "ground": [1, 64],
+    "px": [1, 400],
+    "alpha": [0, 1]
+  },
+  "spend": { "event": "Hit", "actor": 0, "target": 1 },
+  "pickup": { "reachMetres": 1.6, "tapReachMetres": 14, "tapRadiusPx": 34 },
+  "weapons": [
+    { "id": "golden-gladius", "name": "Golden Gladius", "weapon": "gladius", "power": "Hits hurt 35% more", "tell": "gold sheen", "charges": 14, "damageMul": 1.35, "tier": 1,
+      "tint": { "colour": "#ffcf4a", "emissive": "#a86a00", "emissiveIntensity": 0.55, "metalness": 1, "roughness": 0.28 } },
+    { "id": "sunblade", "name": "Sunblade", "weapon": "longsword", "power": "Hits hurt 25% more", "tell": "sun glow", "charges": 18, "damageMul": 1.25, "tier": 1,
+      "tint": { "colour": "#ffe27a", "emissive": "#c98a00", "emissiveIntensity": 0.7, "metalness": 1, "roughness": 0.22 } },
+    { "id": "golden-axe", "name": "Golden Axe", "weapon": "cleaver", "power": "Hits hurt 50% more", "tell": "gold sheen", "charges": 10, "damageMul": 1.5, "tier": 2,
+      "tint": { "colour": "#ffc02e", "emissive": "#b36b00", "emissiveIntensity": 0.65, "metalness": 1, "roughness": 0.3 } },
+    { "id": "plasma-spear", "name": "Plasma Spear", "weapon": "trident", "power": "Hits hurt 60% more", "tell": "blue plasma", "charges": 8, "damageMul": 1.6, "tier": 3,
+      "tint": { "colour": "#9ff0ff", "emissive": "#1fa6d6", "emissiveIntensity": 1, "metalness": 0.6, "roughness": 0.2 } },
+    { "id": "cursed-hammer", "name": "Cursed Hammer", "weapon": "maul", "power": "Hits hurt 80% more", "tell": "violet curse", "charges": 6, "damageMul": 1.8, "tier": 3,
+      "tint": { "colour": "#b05cff", "emissive": "#5a1296", "emissiveIntensity": 0.9, "metalness": 0.7, "roughness": 0.35 } }
+  ],
+  "drops": {
+    "bossKill": { "chanceByStar": [0.08, 0.2, 0.4], "tierByStar": [1, 2, 3], "scatterMetres": 3 },
+    "packChest": { "on": false, "chance": 0.12, "tier": 1 },
+    "roaming": {
+      "respawnSeconds": 900,
+      "points": [
+        { "id": "ring-1-north-east", "weapon": "golden-gladius", "ring": "ring-1", "distance": 42, "angleDeg": 55 },
+        { "id": "ring-1-south-west", "weapon": "sunblade", "ring": "ring-1", "distance": 42, "angleDeg": 235 },
+        { "id": "ring-2-east", "weapon": "golden-axe", "ring": "ring-2", "distance": 78, "angleDeg": 110 },
+        { "id": "ring-3-north", "weapon": "plasma-spear", "ring": "ring-3", "distance": 120, "angleDeg": 355 },
+        { "id": "ring-3-south", "weapon": "cursed-hammer", "ring": "ring-3", "distance": 120, "angleDeg": 175 }
+      ]
+    },
+    "maxGround": 8
+  },
+  "lines": { "pickup": "{name}: {power}, {charges} charges", "spent": "{name} is spent", "lost": "{name} lies where you fell", "seconds": 5 },
+  "marker": { "colour": "#fff1a8", "glow": "#ffd34a", "ringPx": 52, "beamPx": 150, "widthPx": 2, "alpha": 0.95, "pulseSeconds": 1.4, "showWithinMetres": 160, "zIndex": 28 },
+  "hud": { "colour": "#fff1a8", "zIndex": 29, "topPct": 22, "sizePx": 11, "text": "{name} x{charges}" }
+}
