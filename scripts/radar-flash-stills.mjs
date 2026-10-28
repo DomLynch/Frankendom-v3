@@ -25,7 +25,7 @@ const grab = (want) => page.evaluate(async (want) => {
   for (;;) {
     await new Promise((res) => requestAnimationFrame(res));
     const p = r.flashPhase, ok = want === 'idle' ? !r.flashing : want === 'on' ? p >= 0.25 && p <= 0.75 : r.flashing && p < 0;
-    if (ok || performance.now() - t0 > 20000) return { url: cv.toDataURL('image/png'), phase: p, flashing: r.flashing, px: [cv.width, cv.height], ok };
+    if (ok || performance.now() - t0 > 60000) return { url: cv.toDataURL('image/png'), phase: p, flashing: r.flashing, px: [cv.width, cv.height], ok };
   }
 }, want);
 const idle = await grab('idle');
