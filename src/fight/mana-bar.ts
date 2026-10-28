@@ -1,6 +1,7 @@
 // The MANA third bar on the live HUD (RV80 default-on: the sandbox's entry.ts used to add it). Shown only while the manaMax row is on (the sandbox era); src/fight/hud.ts fills #mana and #mana-value from the player's fighter.
 // Dom's pick (option B, 2026-10-15): on the phone HUD health runs full width, and stamina and mana share the row below at 50% each (rows shift down one pair).
 import { MANA_MAX } from './sandbox-rules.ts';
+import { HERO_NO_MANA } from './hero-mana.ts';   // V3 (Dom 2026-10-28, "remove mana for now"): no bar and no stamina/mana row split while the hero has no mana; ?mana=v1 = this bar
 
 const CSS = '#mana{--bar-color:#3f78d4}#mana::-webkit-meter-optimum-value{background:#3f78d4}#mana::-moz-meter-bar{background:#3f78d4}' +
   '@media (max-width:900px),(pointer:coarse){.combat-hud>span:nth-of-type(2){grid-column:1/-1;grid-row:4}#player-health{grid-column:1/-1;grid-row:5}#posture{grid-column:1/-1;grid-row:6}' +
@@ -10,7 +11,7 @@ const CSS = '#mana{--bar-color:#3f78d4}#mana::-webkit-meter-optimum-value{backgr
 
 export function mountManaBar(doc: Document | undefined = typeof document === 'undefined' ? undefined : document, manaMax: number = MANA_MAX): HTMLMeterElement | null {
   const stamina = doc?.getElementById('stamina');
-  if (!doc || !manaMax || !stamina || doc.getElementById('mana')) return null;   // no page (a headless harness) or no stamina bar: nothing to anchor to
+  if (!doc || !manaMax || HERO_NO_MANA || !stamina || doc.getElementById('mana')) return null;   // no page (a headless harness) or no stamina bar: nothing to anchor to
   const css = doc.createElement('style'); css.textContent = CSS; doc.head.append(css);
   const caption = doc.createElement('span'); caption.className = 'meter-label'; caption.id = 'mana-label'; caption.textContent = 'MANA'; caption.setAttribute('data-mobile', 'Mana');   // the phone HUD draws the caption from data-mobile
   const value = doc.createElement('span'); value.id = 'mana-value'; value.textContent = `${manaMax} / ${manaMax}`;

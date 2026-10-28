@@ -5,6 +5,7 @@
 import { OPPONENTS, RULES, worldOpponentAt, worldProfileAt, DEFAULT_WEAPON, type AiProfile } from './moves.ts';
 import { OPEN_RADIUS } from './play-radius.ts';
 import { emptyLadder } from './cc-ladder.ts';
+import { heroPool } from './hero-mana.ts';   // V3: the hero has no mana (data/fight.json heroMana)
 import { initialAi, decide, lcg, seedUnit, type AiState } from './ai.ts';
 import { simBound } from './sim-bounds-rows.ts';   // rows: sim-bounds-defs.json
 const MOTION_SEED_SALT = simBound('motion.seedSalt');   // salts the creature's circle-draw stream apart from the brain's own
@@ -32,7 +33,7 @@ const pitOf = (f: Fighter): PitFighter => (f.side === 'creature'
 /** The hero's Pit fighter as the Pit builds it (initialDuel: createFighter with his weapon; withSheet: his sheet's bar and recovery, the sheet itself carried on the fighter so stepDuel reads its dials). No weapon = DEFAULT_WEAPON, no sheet = today's hero. */
 export function heroSheeted(f: Fighter): PitFighter {
   // open-world: a hero with a spell casts through the Pit's special slot (spell-cast.ts), ready at once (no opening delay: the world has no fight start), so a live hero and a replayed one are the same hero
-  const plain = createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON), hero = f.skill2 ? { ...plain, skill2: f.skill2, skillCooldown2: 0 } : plain, cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
+  const plain = heroPool(createFighter(body(f), 'ready', f.weapon ?? DEFAULT_WEAPON)), hero = f.skill2 ? { ...plain, skill2: f.skill2, skillCooldown2: 0 } : plain, cast = f.spell || f.spell2 ? { ...hero, specialShare: RULES.special.damage, skillCooldown: 0, ...(f.spell ? { spell: f.spell } : {}), ...(f.spell2 ? { spell2: f.spell2, skillCooldown2: 0 } : {}) } : hero;
   // RV83 (sandbox-era.ts rows83For; RV84 below widens it to every weapon): a hero with no spell whose weapon has a `bow` missile row carries the Pit hero's special share (duel.ts withSpecials; initialDuel's `picked` with a skill), ready at once like a caster,
   // so his special fires the bow special beyond the missile gap (duel.ts bowSpecialOf) and the melee special inside it; without it the press threw the melee skill swing, which whiffed at range. Any other weapon: unchanged.
   // RV84 (sandbox-era.ts rows84For): the same share for EVERY weapon, as the Pit's hero has it (duel.ts withSpecials + initialDuel's `picked`): a world hero with a picked skill and no spell carries the special share and is
