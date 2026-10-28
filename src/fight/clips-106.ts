@@ -22,6 +22,22 @@ export const CLIP_106_LOADERS: Record<string, Loader> = {
   '106/minotaur/execution-victim-hero.json': () => import('../assets/106/minotaur/execution-victim-hero.json'),
   '106/minotaur/hamstrung-killer.json': () => import('../assets/106/minotaur/hamstrung-killer.json'),
   '106/minotaur/hamstrung-victim-hero.json': () => import('../assets/106/minotaur/hamstrung-victim-hero.json'),
+  '106/gargantua/special-skullcrack.json': () => import('../assets/106/gargantua/special-skullcrack.json'),
+  '106/gargantua/special-whirlwind.json': () => import('../assets/106/gargantua/special-whirlwind.json'),
+  '106/gargantua/special-groundslam.json': () => import('../assets/106/gargantua/special-groundslam.json'),
+  '106/gargantua/special-lunge.json': () => import('../assets/106/gargantua/special-lunge.json'),
+  '106/gargantua/execution-killer.json': () => import('../assets/106/gargantua/execution-killer.json'),
+  '106/gargantua/execution-victim-hero.json': () => import('../assets/106/gargantua/execution-victim-hero.json'),
+  '106/gargantua/hamstrung-killer.json': () => import('../assets/106/gargantua/hamstrung-killer.json'),
+  '106/gargantua/hamstrung-victim-hero.json': () => import('../assets/106/gargantua/hamstrung-victim-hero.json'),
+  '106/arachne/special-skullcrack.json': () => import('../assets/106/arachne/special-skullcrack.json'),
+  '106/arachne/special-whirlwind.json': () => import('../assets/106/arachne/special-whirlwind.json'),
+  '106/arachne/special-groundslam.json': () => import('../assets/106/arachne/special-groundslam.json'),
+  '106/arachne/special-lunge.json': () => import('../assets/106/arachne/special-lunge.json'),
+  '106/arachne/execution-killer.json': () => import('../assets/106/arachne/execution-killer.json'),
+  '106/arachne/execution-victim-hero.json': () => import('../assets/106/arachne/execution-victim-hero.json'),
+  '106/arachne/hamstrung-killer.json': () => import('../assets/106/arachne/hamstrung-killer.json'),
+  '106/arachne/hamstrung-victim-hero.json': () => import('../assets/106/arachne/hamstrung-victim-hero.json'),
 };
 /** The loader of `role`'s 106 clip for the 106 body file `body`, or undefined (no 106 version: the body plays what it would without it). */
 export const clip106Loader = (body: string | undefined, role: string): Loader | undefined => {
