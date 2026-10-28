@@ -34,7 +34,7 @@ import { setErrorSink } from '../stubs.ts';
 import { createScene, CARRIED_WEAPONS } from '../fight/scene.ts';
 import PROGRESSION from '../../data/progression.json' with { type: 'json' };
 import STARS from '../../data/stars.json' with { type: 'json' };
-import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
+import { rollStar, starMark, starTune, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { mountParts } from '../fight/parts-hook.ts';
@@ -65,7 +65,7 @@ import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wi
 import { goldenBlips } from '../zone/golden-drops.ts';
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createMobsRun } from '../mobs-run.ts';   // trash mob swarms (data/mobs.json, src/zone/mobs.ts)
-import { createMechanics } from '../fight/mechanics/index.ts';   // the bosses' signature mechanics (data/mechanics.json): Lord Gourd's pumpkin bombs
+import { createMechanics, setMechanicScale } from '../fight/mechanics/index.ts';   // the bosses' signature mechanics (data/mechanics.json): Lord Gourd's pumpkin bombs
 import { createInput } from '../fight/input.ts';
 import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -139,6 +139,7 @@ let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: bo
 function useKind(k: KindFight) {
   const changed = !foe || foe.opponentId !== k.opponentId || foe.kind !== k.kind || (foe.star ?? 0) !== (k.star ?? 0);   // two bosses on one archetype (a ring boss cloned from Arachne) differ by their profile row
   setActiveKind(k.kind, k.star ?? 0);
+  setMechanicScale(mergeTune(KIND_CTX.tune ?? {}, starTune(STAR_ROWS, k.star ?? 0, k.kind))[k.kind]?.damage ?? 1);   // a mechanic that scales (the King's aura) rides the same ring, star, escalation and Daily Pit multiplier as the boss's blows
   foe = k; opponentId = k.opponentId as OpponentId; opponent = k.opponent; difficultyOn = k.scaled; aiProfile = k.ai;
   if (changed) nameOpponent();   // the HUD names the spawn the sim holds
 }

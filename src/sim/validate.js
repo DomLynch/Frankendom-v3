@@ -232,8 +232,28 @@ export function checkGourdBombs(id, r, moves = []) {
   lnum('gourdRadiusMetres', 0.05, 2); lnum('groundY', 0, 1); lnum('ringWidth', 0.02, 1); lnum('segments', 8, 128, true); lnum('alpha', 0, 1); lnum('markAlpha', 0, 1); lnum('stompAlpha', 0, 1); lnum('pulseHz', 0, 20); lnum('burstScale', 1, 4);
   return e;
 }
+const KING_NUMBERS = { radiusMetres: [1, 20], minRadiusMetres: [0.5, 20], regenFactor: [0, 1], tickEveryTicks: [1, 600, true], tickDamageFraction: [0, 0.05], pulsePeriodTicks: [60, 1800, true], frenzyBelowFraction: [0, 1], frenzyPeriodTicks: [60, 1800, true], pulseTellTicks: [1, 300, true], pulseWaveTicks: [1, 300, true], pulseDamageFraction: [0, 0.2], pulseStaminaFraction: [0, 1] };
+const KING_LOOK = { colours: ['core', 'edge', 'wave'], numbers: { discOpacity: [0, 1], edgeOpacity: [0, 1], tellOpacity: [0, 1], waveOpacity: [0, 1], lift: [0, 0.5], segments: [8, 128, true], edgeWidth: [0.01, 0.5] } };
+const KING_ORDER = [['minRadiusMetres', 'radiusMetres'], ['frenzyPeriodTicks', 'pulsePeriodTicks'], ['pulseTellTicks', 'frenzyPeriodTicks'], ['pulseWaveTicks', 'frenzyPeriodTicks']];   // [a, b]: a must not exceed b (the wave and the tell fit in the shortest period)
+/** The King's AURA row (type "king-aura"): its numbers with [lo, hi, whole?], its look, and the pairs that must order. Returns one string per problem. */
+export function checkKingAura(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const num = (where, v, [lo, hi, whole]) => { if (!Number.isFinite(v) || v < lo || v > hi || (whole && !Number.isInteger(v))) e.push(`${where}: must be ${whole ? 'a whole number' : 'a number'} in ${lo}..${hi}`); };
+  const keys = ['type', 'boss', 'about', ...Object.keys(KING_NUMBERS), 'look'];
+  for (const k of Object.keys(r)) if (!keys.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  for (const [k, range] of Object.entries(KING_NUMBERS)) num(`${at}.${k}`, r[k], range);
+  for (const [a, b] of KING_ORDER) if (Number.isFinite(r[a]) && Number.isFinite(r[b]) && r[a] > r[b]) e.push(`${at}: ${a} must not exceed ${b}`);
+  const L = r.look;
+  if (!L || typeof L !== 'object') return [...e, `${at}.look: missing`];
+  const lookKeys = [...KING_LOOK.colours, ...Object.keys(KING_LOOK.numbers)];
+  for (const k of Object.keys(L)) if (!lookKeys.includes(k)) e.push(`${at}.look.${k}: unknown key`);
+  for (const k of KING_LOOK.colours) if (typeof L[k] !== 'string' || !HEX6.test(L[k])) e.push(`${at}.look.${k}: a #rrggbb colour`);
+  for (const [k, range] of Object.entries(KING_LOOK.numbers)) num(`${at}.look.${k}`, L[k], range);
+  return e;
+}
 /** One checker per mechanic `type` (the registry of src/fight/mechanics/index.ts has the same ids). A new boss mechanic adds one line here. */
-const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs };
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura };
 /** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
 export function validateMechanics(json, kinds = [], moves = []) {
   const e = [], map = json?.mechanics;

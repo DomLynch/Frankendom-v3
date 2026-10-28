@@ -2,6 +2,9 @@
 import type * as THREE from 'three';
 import type { Practice } from '../combat.ts';
 
+/** The held boss's damage multiplier (ring, star, escalation, Daily Pit: the same one its blows carry). The page sets it when it hands the sim a spawn (setMechanicScale); a mechanic whose damage has no sheet dial of its own reads it. */
+export const MECHANIC_SCALE = { damage: 1 };
+
 export type MechanicRuntime = {
   /** The data/profiles.json id this mechanic belongs to (the row's `boss`). */
   boss: string;

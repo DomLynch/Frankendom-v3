@@ -45,6 +45,24 @@
         "pulseHz": 3,
         "burstScale": 1.5
       }
+    },
+    "king-aura": {
+      "type": "king-aura",
+      "boss": "big-vegas",
+      "about": "The King (big-vegas): a pulsing stage spotlight around him. Inside it the hero's stamina regrows at regenFactor and a small tick of his max health is lost every tickEveryTicks. Every period the ring flares (the tell, pulseTellTicks), then a wave runs out from the King over pulseWaveTicks and hurts whoever it passes who is not mid-roll. The ring shrinks with the King's health (radiusMetres at full, minRadiusMetres at none); below frenzyBelowFraction of his health the period is frenzyPeriodTicks. Ticks and the wave never kill (the hero keeps at least 1 health). Ends the tick the King falls. Ticks are the sim's 60 Hz. The tick damage and the wave ride the King's damage multiplier (ring, star, Daily Pit), like his blows.",
+      "radiusMetres": 4.2,
+      "minRadiusMetres": 2.4,
+      "regenFactor": 0.35,
+      "tickEveryTicks": 36,
+      "tickDamageFraction": 0.004,
+      "pulsePeriodTicks": 300,
+      "frenzyBelowFraction": 0.4,
+      "frenzyPeriodTicks": 210,
+      "pulseTellTicks": 48,
+      "pulseWaveTicks": 36,
+      "pulseDamageFraction": 0.03,
+      "pulseStaminaFraction": 0.15,
+      "look": { "core": "#ffd24a", "edge": "#ffb21a", "wave": "#fff1b0", "discOpacity": 0.1, "edgeOpacity": 0.45, "tellOpacity": 0.9, "waveOpacity": 0.8, "lift": 0.04, "segments": 64, "edgeWidth": 0.08 }
     }
   }
 }
