@@ -20,7 +20,7 @@ import { bone as boneOf, HELD } from '../src/fight/rig-bones.ts';
 const read = (n) => JSON.parse(readFileSync(new URL(`../data/${n}.json`, import.meta.url), 'utf8'));
 const FIGHT = read('fight'), PROFILES = read('profiles'), DIFFICULTY = read('difficulty'), BRAINS = read('brains'), RAW = read('boss-weapons');
 const clone = (x) => structuredClone(x);
-const row = (opponent) => BOSS_WEAPONS.rows.find((r) => r.opponent === opponent);
+const row = (opponent) => BOSS_WEAPONS.rows.find((r) => r.opponent === opponent && r.profile == null);   // the archetype row (a profile's own row is found by its profile)
 
 test('the rows validate; a bad row is refused with the rule it broke', () => {
   assert.deepEqual(validateFile('boss-weapons', RAW), []);
@@ -60,7 +60,7 @@ test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden
   assert.equal(a.weapon, 'cleaver'); assert.equal(weaponOf('cleaver').grip, 'one-hand');   // V1's axe-skill one-hander
   assert.equal(a.offhand.kind, 'file'); assert.equal(a.offhand.file, 'shield'); assert.equal(a.offhand.hand, 'lowerarm_l');   // the left forearm, not the hand: a board on the hand sat in front of her face (Dom review 2026-10-28)
   assert.deepEqual([g.equip, a.equip], ['maul', 'axe'], 'Dom picked these three library props (2026-10-28): hammer-01, axe1h-208, shield-213');
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'shieldmaiden']);
+  assert.deepEqual(BOSS_WEAPONS.rows.filter((r) => r.profile == null).map((r) => r.opponent).sort(), ['executioner', 'shieldmaiden']);
   assert.equal(OPPONENTS.executioner.weapon, 'scythe', "V1's row for the executioner is untouched");
   assert.equal(OPPONENTS.shieldmaiden.weapon, 'gladius', "V1's row for the shieldmaiden is untouched");
   for (const r of BOSS_WEAPONS.rows) {
@@ -103,9 +103,9 @@ test('a zone spawn of each kind fights with the row\'s weapon, and the duel hold
 const withRows = (...extra) => ({ ...clone(RAW), rows: [...clone(RAW).rows, ...extra] });
 const profRow = (id, profile, opponent, over = {}) => ({ ...clone(RAW).rows[0], id, profile, opponent, weapon: 'cleaver', equip: 'axe', ...over });
 
-test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had', () => {
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe']]);
-  for (const p of PROFILES.profiles) {
+test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had (and Nan the Impaler has her own)', () => {
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe'], ['nan-spear-shield', 'shieldmaiden', 'sporty-granny', 'trident', 'spear']]);
+  for (const p of PROFILES.profiles.filter((q) => q.id !== 'sporty-granny')) {
     const base = OPPONENTS[p.opponent];
     assert.equal(bossOpponent(base, '', undefined, p.id).weapon, bossOpponent(base, '').weapon, `${p.id}: naming the profile changes nothing while no row names it`);
     assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), bossWeaponFor(p.opponent, ''), `${p.id}: the archetype's row`);
@@ -125,7 +125,8 @@ test('two profiles sharing one archetype can have different rows; a profile with
   const w = (opp, prof, s = '') => bossWeaponFor(opp, s, f, prof)?.id;
   assert.equal(w('shieldmaiden', 'castle-guard'), 'reginald-gladius', 'the profile row wins');
   assert.equal(w('shieldmaiden', 'arachne'), 'arachne-axe-shield', 'Arachne keeps the archetype row beside it');
-  assert.equal(w('shieldmaiden', 'sporty-granny'), 'arachne-axe-shield', 'a profile with no row falls back to the archetype row');
+  assert.equal(w('shieldmaiden', 'sporty-granny'), 'nan-spear-shield', 'Nan the Impaler has her own profile row');
+  assert.equal(w('shieldmaiden', 'the-boss'), 'arachne-axe-shield', 'a profile with no row falls back to the archetype row');
   assert.equal(w('shieldmaiden'), 'arachne-axe-shield', 'no profile = the archetype row');
   assert.equal(w('pitborn', 'anime-boy-black'), 'ryo-maul');
   assert.equal(w('pitborn', 'kachujin'), undefined, 'no profile row and no archetype row: V1\'s weapon');
@@ -255,4 +256,16 @@ test('the grip row moves the DRAWN part only; a material row restyles it; the se
   const s = moved.scene.getObjectByName('Grip106'), s0 = plain.scene.getObjectByName('Grip106');
   assert.ok(s.position.distanceTo(s0.position) < 1e-9 && s.quaternion.angleTo(s0.quaternion) < 1e-9, 'the seat the part hangs from is where it was: only the drawn part moved');
   void keep;
+});
+
+test('Nan the Impaler (sporty-granny) alone wields the spear: a library polearm, her shield kept; every other shieldmaiden and pitborn boss is unchanged', () => {
+  const n = BOSS_WEAPONS.rows.find((r) => r.profile === 'sporty-granny');
+  assert.equal(n.id, 'nan-spear-shield'); assert.equal(n.opponent, 'shieldmaiden'); assert.equal(n.weapon, 'trident'); assert.equal(n.equip, 'spear');
+  assert.deepEqual(validateBossWeapons(BOSS_WEAPONS), []);
+  assert.match(n.placeholder.join(' '), /spear: a library prop, .*polearm-206/); assert.match(n.placeholder.join(' '), /not a spear drawn for Nan/);
+  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'sporty-granny')?.id, 'nan-spear-shield');
+  assert.equal(bossOpponent(OPPONENTS.shieldmaiden, '', undefined, 'sporty-granny').weapon, 'trident');
+  for (const p of PROFILES.profiles.filter((q) => q.id !== 'sporty-granny')) assert.notEqual(bossWeaponFor(p.opponent, '', undefined, p.id)?.id, 'nan-spear-shield', p.id);
+  for (const [o, p] of [['shieldmaiden', 'castle-guard'], ['shieldmaiden', 'the-boss'], ['shieldmaiden', 'arachne'], ['pitborn', 'pumpkinhulk'], ['pitborn', 'kachujin'], ['pitborn', 'parasite']]) assert.notEqual(bossOpponent(OPPONENTS[o], '', undefined, p).weapon, 'trident', p);
+  assert.equal(bossWeaponFor('shieldmaiden', '?bossweapon=v1', undefined, 'sporty-granny'), undefined, '?bossweapon=v1 puts her back on V1');
 });

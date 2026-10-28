@@ -35,6 +35,24 @@
         "clips: the 106 body plays the sword clip family (clipsAs cleaver); her shield arm is the clip's own arm, not the shield carry",
         "sweeps: V1's hero-rig cleaver blade table, not re-baked on Arachne's body (not in the repo yet)"
       ]
+    },
+    {
+      "id": "nan-spear-shield",
+      "opponent": "shieldmaiden",
+      "profile": "sporty-granny",
+      "weapon": "trident",
+      "clipsAs": "cleaver",
+      "equip": "spear",
+      "scale": 0.9,
+      "grip": { "offset": [0, 0, 0], "rotationDeg": [0, 0, 0] },
+      "material": null,
+      "offhand": { "kind": "file", "file": "shield", "hand": "lowerarm_l", "scale": 0.75, "offset": [0, 0.15, -0.1], "rotationDeg": [0, 180, 0] },
+      "placeholder": [
+        "spear: a library prop, OpenTrident weapon library polearm-206 (a slender pike, 2 m), re-framed to the grip as src/assets/weapons/foe/spear.glb and scaled 0.9x; a picked prop, not a spear drawn for Nan the Impaler",
+        "shield: Arachne's shield file (shield-213) kept on Nan's left forearm exactly as the archetype row had it, so her shield guard keeps its drawing; no new shield",
+        "clips: the 106 body plays the sword clip family (clipsAs cleaver); the sim uses the trident's moves, timing and damage (the long thrust)",
+        "sweeps: V1's hero-rig trident blade table, not re-baked on her body"
+      ]
     }
   ]
 }
