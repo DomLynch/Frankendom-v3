@@ -76,14 +76,15 @@ const walk = (key) => async () => { await page.keyboard.down(key); await page.ke
 const roll = async () => {   // the last 0.15 s of the fuse: the press lands, its safe frames cover the burst
   await page.waitForFunction(() => { const c = globalThis.__v3Mechanics.of('pumpkinhulk').core, v = c.view; for (let i = 0; i < v.n; i++) if (v.state[i] === 2 && v.age[i] > c.row.fuseSeconds - 0.15) return true; return false; }, null, { timeout: 420000, polling: 4 });
   await page.keyboard.press('KeyE');
+  console.log(`${tag} roll phases`, JSON.stringify(await page.evaluate(() => new Promise((res) => { const seq = []; const id = setInterval(() => { const h = globalThis.__v3Fight.duel.fighters[0], v = globalThis.__v3Mechanics.of('pumpkinhulk').core.view; seq.push(`${h.phase}:${h.age}|${[...v.state].join('')}`); if (seq.length > 40) { clearInterval(id); res(seq.filter((s, i) => i === 0 || s !== seq[i - 1])); } }, 16); }))));
 };
 const TRIES = Number(process.env.TRIES ?? 3);
 if (!process.env.STILLS_ONLY) {
   // B. walk out of the rings after the lob: at least one cast must miss a hero who ran (the key is the camera-relative way he runs)
   const B = [];
-  for (const key of ['KeyD', 'KeyA', 'KeyS', 'KeyW', 'KeyD'].slice(0, TRIES + 1)) { B.push({ key, ...(await cast(walk(key))) }); if (B.at(-1).hit === 0) break; }
+  if (!process.env.SKIP_B) for (const key of ['KeyD', 'KeyA', 'KeyS', 'KeyW', 'KeyD'].slice(0, TRIES + 1)) { B.push({ key, ...(await cast(walk(key))) }); if (B.at(-1).hit === 0) break; }
   console.log(`${tag} B walk out`, JSON.stringify(B));
-  if (!B.some((r) => r.hit === 0)) fail('B: no cast missed a hero who ran out of the rings');
+  if (!process.env.SKIP_B && !B.some((r) => r.hit === 0)) fail('B: no cast missed a hero who ran out of the rings');
   // C. roll in the burst's last 0.15 s: at least one cast must take nothing (a dodge, or the roll carried him out)
   const C = [];
   for (let i = 0; i < TRIES; i++) { C.push(await cast(roll)); if (C.at(-1).hit === 0) break; }
