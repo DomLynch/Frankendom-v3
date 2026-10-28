@@ -15,6 +15,7 @@ export const SCHEMA = {
   'difficulty': { keys: ['about', 'default', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
   'profiles': { keys: ['about', 'default', 'defaultBody', 'bodyQuery', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'body', 'name', 'brain', 'foeHealthScale', 'foeDamageScale', 'knobs'] } },   // knobs: optional, this kind's own brain knobs over the difficulty row's (checkKinds)
   // Boss tuning by URL (src/tune.ts validateTune checks the values)
+  'free-moves': { keys: ['about', 'actions'] },   // src/fight/free-roam.ts validateFreeMoves checks the values
   'tune': { keys: ['about', 'query', 'kinds', 'keys'], rows: { keys: ['id', 'min', 'max', 'about'] } },
   // Star bosses (src/stars.ts validateStars checks the values)
   'stars': { keys: ['about', 'minKills', 'killsCap', 'zeroWeight', 'salt', 'starGlyph', 'hudColour', 'levels', 'weights'], rows: { levels: ['star', 'healthX', 'damageX', 'scaleX', 'trophy', 'tell'], weights: ['id', 'star1', 'star2'] } },
