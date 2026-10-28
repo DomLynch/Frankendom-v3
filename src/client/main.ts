@@ -64,6 +64,7 @@ import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wi
 import { goldenBlips } from '../zone/golden-drops.ts';
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createMobsRun } from '../mobs-run.ts';   // trash mob swarms (data/mobs.json, src/zone/mobs.ts)
+import { createMechanics } from '../fight/mechanics/index.ts';   // the bosses' signature mechanics (data/mechanics.json): Lord Gourd's pumpkin bombs
 import { createInput } from '../fight/input.ts';
 import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -387,6 +388,8 @@ if (CR) (globalThis as { __v3Corpse?: unknown }).__v3Corpse = { give: (n: number
 // TRASH MOBS (data/mobs.json; Dom 2026-10-28): packs in the open world outside the boss pads; none while a boss fight is on. A kill pays coins into the corpse run's carried coins (window.__v3Heat?.(event) is the Hunter heat hook).
 const mobsRun = ZONE && !daily.run ? createMobsRun({ zone: zoneFor(search), origin: pitOrigin(zoneFor(search), WORLD), bosses: () => spawns, suppress: () => !assetsReady || engaged || walkBack || heroDied() || attackers.some((a) => !a.dead), coins: (n) => { if (CR && PROG?.save) crPut({ ...PROG.save, coins: Math.min(CR.coins.cap, PROG.save.coins + n) }); }, rangeMetres: RADAR.rangeMetres }) : null;
 if (mobsRun) { view.mobs(mobsRun.view); (globalThis as { __v3Mobs?: unknown }).__v3Mobs = mobsRun; }   // the stills and the tests drive the same handle
+const mechanics = ZONE ? createMechanics() : null;   // each ring boss's one signature move (data/mechanics.json, src/fight/mechanics/): stepped with the fight, drawn on the ground
+if (mechanics) { for (const m of mechanics.list) if (m.group) view.addLayer(m.group); (globalThis as { __v3Mechanics?: unknown }).__v3Mechanics = mechanics; }   // the stills and the tests drive the same handle
 if (CR && PROG?.save?.pile) startLinger(spawns.findIndex((s) => s.kind === PROG!.save!.pile!.boss));   // a pile from an earlier visit: its boss stands at it from the first frame
 // GOLDEN WEAPON DROPS (data/golden-weapons.json, src/zone/golden-drops.ts; Dom 2026-10-28): rare weapons lie in the world; walking onto one makes it his for N charges (the HUD counts them), his blows hurt more, and at 0 he
 // reverts. Rides the progression save (optional `golden` field), so ?save=off and ?pitborn=v1 mount nothing. Other lanes: __v3Golden.dropGolden(position, tier) and .onPickup(fn).
@@ -652,6 +655,7 @@ function frame(now: number) {
         if (roam) { freeRoam ??= startFreeRoam(practice.duel, ZONE!.walkRadius); const walked = stepFreeRoam(freeRoam, roam, duelIntent, ZONE!.walkRadius); freeRoam = walked.free; state = roam = walked.body; }   // roll, step back and guard on the walk (src/fight/free-roam.ts, data/free-moves.json): idle it is exactly zone-loop.ts roamStep;   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
       if (mobsRun) practice = mobsRun.tick(practice, roam && freeRoam ? freeRoam.duel.fighters[0] : practice.duel.fighters[0], step());   // trash mobs (data/mobs.json): the hero's blow on them, theirs on him
+      if (mechanics) practice = mechanics.tick(practice, spawns[current]!.kind, engaged && !walkBack, step());   // the engaged boss's signature move (data/mechanics.json): its hits land on the hero's health, it wipes itself when the fight ends
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
       const stop = stopFor(practice.events);
@@ -677,6 +681,7 @@ function frame(now: number) {
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]!, star: starById[spawns[a.index]!.id] ?? 0 }))); }
   if (ZONE) view.liveStar(starById[spawns[current]!.id] ?? 0);   // the attackers' rigs (a killed one lies until its timer is up)
   if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (mechanics) mechanics.frame(dt);   // the bombs' rings follow the core's state (presentation only)
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });

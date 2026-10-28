@@ -900,6 +900,8 @@ export function createScene(
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
     // programs, its own bones and mixer), posed from that fight's own Practice. Presentation only; the first boss is the live rig above and is never in this list.
     liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef; star?: number }[]) { liveList = list; },
+    /** A boss mechanic's drawing (src/fight/mechanics/): added to the scene once, then moved by its own frame step. */
+    addLayer(layer: THREE.Object3D): void { scene.add(layer); },
     mobs(view: MobView | null) { mobView = view; },   // trash mobs (src/mobs-run.ts, every frame): the core's live arrays; null = none drawn
     get mobDrawn() { return mobSlots.filter((s) => s.group.visible).length; },   // the stills and the cost table read how many mobs are on screen
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
