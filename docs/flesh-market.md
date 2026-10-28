@@ -17,7 +17,7 @@ Dom: a shady merchant. Trade harvested body parts, rare weapons and monster trop
 
 - **Open**: a DOM chip ("Trade", min 48 px) appears above the merchant when the hero is within **4 m**, same pattern as the pickup hint and corpse-run marker (DOM over the canvas, pointer events only on the chip, never touches sim, camera or input). Tap opens the panel. Walking beyond **6 m**, or dying, closes it. No fight can start in the yard (spawnsAllowed false), so the sim is never paused.
 - **Radar**: the existing `npc` class in `data/radar.json` shows him; no new class.
-- **Body (no new art)**: reuse a 106 body already in `src/assets`: **`kachujin-106.glb`**. Every 106 body is also a boss profile; Kachujin is a profile row but no zone spawn uses him, and the merchant is not a fight (no profile, brain or spawn row). Swapping is one data row (`merchant.body`; Nan, Sir Reginald or the King also work). Idle uses the existing 106 idle clip; no new animation. **Lazy**: fetched after first frame, only when the hero is within `loadMetres` (40), so first-visit bytes are untouched. Whether OpenTrident Dev has a library NPC body is asked in parallel; if so the row points at it, otherwise Kachujin ships.
+- **Body (no new art)**: reuse a 106 body already in `src/assets`: **`kachujin-106.glb`**. Every 106 body is also a boss profile; Kachujin is a profile row but no zone spawn uses him, and the merchant is not a fight (no profile, brain or spawn row). Swapping is one data row (`merchant.body`; Nan, Sir Reginald or the King also work). Idle uses the existing 106 idle clip; no new animation. **Lazy**: fetched after first frame, only when the hero is within `loadMetres` (40), so first-visit bytes are untouched. **Decision (coordinator): the final merchant body is `mh-crowd-b1-02`** (long-coat MakeHuman crowd body, 106 rig, idle clip, under 1.2 MB, no cut), which OpenTrident Dev is packing as a draft PR; PR number and stem to come. Until it lands the row holds `kachujin` (the small existing body), and the swap is that one data row. ARMAGEDOM's hub NPCs are not used.
 - **Name and voice**: "Gristle". Lines show in the existing HUD line style, no pop-up.
 
 ## 2. `data/market.json` (every number is a row, validated in `src/sim/validate.js`)
@@ -116,5 +116,5 @@ Events on the existing feel bus: `market:open {day, stock}`, `market:buy {item, 
 
 ## Open questions (none block stage 1)
 
-- Merchant body: Kachujin by default; swap if OpenTrident Dev has a library NPC.
+- Merchant body: Kachujin placeholder; `mh-crowd-b1-02` replaces it when OpenTrident Dev's PR lands (data row switch).
 - Price numbers are a first pass against 10 coins a kill; they are rows, so tuning is a data edit.
