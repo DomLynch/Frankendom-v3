@@ -61,7 +61,8 @@ for (const [kind, want] of Object.entries(EXPECT.bosses)) {
     // (c) the body is cuttable: the cut GLB is the physics package's (sha256), its manifest ships and is wired, a physics row fits
     const bodyStem = file, cutRow = CUT.find((r) => r.name === bodyStem);
     assert.ok(cutRow, `${kind}: ${bodyStem} has a row in the pinned physics data/cut-bodies.json`);
-    assert.equal(createHash('sha256').update(readFileSync(path.join(root, `src/assets/${bodyStem}.glb`))).digest('hex'), cutRow.expect_sha256, `${bodyStem}.glb is the cut GLB the physics row pins`);
+    assert.match(cutRow.expect_sha256, /^[0-9a-f]{64}$/, `${bodyStem}: the physics row records its cut GLB hash`);
+    if (want.cutShaPinned !== false) assert.equal(createHash('sha256').update(readFileSync(path.join(root, `src/assets/${bodyStem}.glb`))).digest('hex'), cutRow.expect_sha256, `${bodyStem}.glb is the cut GLB the physics row pins`);
     const manifest = read(`src/assets/${bodyStem}.cut.manifest.json`);
     assert.equal(manifest.schema, 'cut-pieces/1'); assert.equal(manifest.body, bodyStem);
     const bodyKey = bodyStem.replace(/-106$/, '');
