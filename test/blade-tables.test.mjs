@@ -29,6 +29,24 @@ test('every weapon the duel can reach has its table kept: the hero, and the oppo
   assert.deepEqual([fightOpponent(FIGHT, ''), fightOpponent(FIGHT, '?pitborn=v1')], ['pitborn', 'veteran']);
 });
 
+// The Gargantua freeze (2026-10-28): zone spawn 2 is the executioner (scythe) and the build had cut the scythe table, so bladeFrames threw inside stepDuel on his first heavy and the page stopped.
+// Unit tests read the uncut source and never saw it. The zone's bosses are profile rows (data/profiles.json), not the fight row's opponent: check every profile at every level, and the
+// zone's spawn kinds, against the table the BUILD keeps (keepBladeTables), not the source.
+test('every profile row and every zone spawn kind has its weapon table in the BUILT bundle, at every level', () => {
+  const PROFILES = JSON.parse(readFileSync(new URL('../data/profiles.json', import.meta.url), 'utf8')).profiles;
+  const ZONE = JSON.parse(readFileSync(new URL('../data/zones/zone1.row.json', import.meta.url), 'utf8'));
+  const built = JSON.parse(keepBladeTables(SRC, FIGHT.bladeTables).match(/bladePathsByRig\b[^=]*= (\{.*\});/)[1]);
+  const kinds = new Set([...PROFILES.map((p) => p.id), ...ZONE.spawns.map((s) => s.kind)]);
+  for (const kind of kinds) {
+    const row = PROFILES.find((p) => p.id === kind);
+    assert.ok(row, `zone kind ${kind} is a profile row`);
+    for (let level = 1; level <= 100; level++) {
+      const body = opponentAt(OPPONENTS[row.opponent], level);
+      for (const kindOfBlow of ['light_right', 'heavy_overhead', 'thrust']) assert.ok(built[body.rig]?.[body.weapon]?.[kindOfBlow], `${kind} (${row.opponent}) at level ${level}: ${body.rig}/${body.weapon}/${kindOfBlow} is cut from the build`);
+    }
+  }
+});
+
 test('the cut keeps the named tables byte for byte and drops the rest', () => {
   const out = keepBladeTables(SRC, FIGHT.bladeTables);
   const table = JSON.parse(out.match(/bladePathsByRig\b[^=]*= (\{.*\});/)[1]);
