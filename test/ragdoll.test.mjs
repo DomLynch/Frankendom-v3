@@ -53,11 +53,15 @@ test('every ragdoll row names a body the opponent is drawn in, the package\'s 20
   const physics = await createPhysics({ seed: ROWS.seed }), RIG = JSON.parse(readFileSync(new URL('../data/rig.json', import.meta.url), 'utf8'));
   for (const row of ROWS.opponents) {
     chooseFoeBody('');
-    assert.equal(foeBodyFile(row.id, row.id, true), row.body, `${row.id} is drawn as ${row.body} (its 65 file: the row's body stem; its 106 file is data/rig.json files[${row.body}])`);
-    const rd = physics.createRagdoll(measure(row), { id: row.id }), map = ROWS.bones;
+    // a held-spawn row (the page's id, another body: the boss bodies) is found by (id, body) in heldRagdollFor, never by the page's own lookup
+    if (row.body !== foeBodyFile(row.id, row.id, true)) { assert.ok(row.measure['106'] && !row.measure['65'] && RIG.files[row.body], `${row.body}: a held-spawn row is 106 only and a data/rig.json files stem`); }
+    else assert.equal(foeBodyFile(row.id, row.id, true), row.body, `${row.id} is drawn as ${row.body} (its 65 file: the row's body stem; its 106 file is data/rig.json files[${row.body}])`);
+    const rd = physics.createRagdoll(measure(row, row.measure['65'] ? '65' : '106'), { id: row.id }), map = ROWS.bones;
     assert.deepEqual(Object.keys(map).sort(), [...rd.partIds].sort(), 'one bone per part');
-    const nodes = glbNodes(row.body);
-    for (const [part, bone] of Object.entries(map)) assert.ok(nodes.has(bone), `${row.body}.glb has ${bone} (${part})`);
+    if (row.measure['65']) {   // the 65 file is checked for a row that has a 65 measure; the boss bodies are 106 only (no 65 file ships)
+      const nodes = glbNodes(row.body);
+      for (const [part, bone] of Object.entries(map)) assert.ok(nodes.has(bone), `${row.body}.glb has ${bone} (${part})`);
+    }
     const nodes106 = glbNodes(RIG.files[row.body]);   // the 106 body: the same 65 names through the one map (data/rig.json bones)
     for (const [part, bone] of Object.entries(map)) assert.ok(nodes106.has(RIG.bones[bone]), `${RIG.files[row.body]}.glb has ${RIG.bones[bone]} (${part} = ${bone})`);
     for (const rig of Object.keys(row.measure)) assert.ok(['65', '106'].includes(rig), `measure keyed by rig: ${rig}`);
