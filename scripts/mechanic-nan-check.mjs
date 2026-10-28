@@ -11,7 +11,8 @@ mkdirSync(out, { recursive: true });
 const NAN = [79.87, 29.07];   // ring-2-sporty-granny-0 in the sim's frame (globalThis.__v3Zone.spawns)
 const browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error('pageerror', e.message));
+const pageErrors = [];
+page.on('pageerror', (e) => { pageErrors.push(e.message); console.error('pageerror', e.message); });
 await page.goto(`${base}/?${query}`);
 await page.waitForFunction(() => globalThis.__v3Zone && document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
 await page.waitForTimeout(2000);
@@ -60,6 +61,37 @@ if (tell2) {
   const drag = await until((s) => s.stage === 'drag', 20000, 'the hook');
   if (drag) { await shot('drag'); const rec = await page.evaluate(() => globalThis.__rec); const lungeRow = rec.find((r) => r.stage === 'lunge'), dragRow = rec.find((r) => r.stage === 'drag'); check(!!dragRow && dragRow.gap < (lungeRow?.gap ?? 99), `stood in the line: hooked and pulled in (gap ${lungeRow?.gap} -> ${dragRow?.gap})`); }
 }
+// 4. the kill ends the move and the corpse is cut as any other: a real kick (KeyC, with W to close in) lands with her health at 1 while the move is up (the tell), then the stage goes idle, the finish is set, and a tap on a limb cuts it
+await page.evaluate(() => { globalThis.__rec.length = 0; });
+const tell3 = await until((s) => s.stage === 'tell', 120000, 'a third tell to kill her in');
+if (tell3) {
+  const killed = await page.evaluate(() => new Promise((done) => {
+    const fire = (code, type) => window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
+    fire('KeyW', 'keydown'); let n = 0;
+    const id = setInterval(() => {
+      const f = globalThis.__v3Fight, [h, foe] = f.duel.fighters; h.health = h.maxHealth; foe.health = Math.min(foe.health, 1);
+      fire('KeyC', 'keydown'); fire('KeyC', 'keyup');
+      if (f.finish || ++n > 160) { clearInterval(id); fire('KeyW', 'keyup'); done(!!f.finish); }
+    }, 250);
+  }));
+  check(killed, 'a real kick killed her while the move was up');
+  await page.waitForTimeout(1500);
+  const end = await state();
+  check(end.stage === 'idle' || end.stage === 'none', `the move ended with her (stage ${end.stage})`);
+  const seq4 = (await page.evaluate(() => globalThis.__rec)).map((r) => r.stage);
+  check(!seq4.slice(-1).includes('lunge') && !seq4.slice(-1).includes('drag'), `no lunge or hook left running after the kill (${seq4.join('>')})`);
+  for (let i = 0; i < 60 && (await page.evaluate(() => globalThis.__ragdoll?.state)) !== 'frozen'; i++) await page.waitForTimeout(250);
+  const rag = await page.evaluate(() => globalThis.__ragdoll?.state ?? 'none');
+  check(rag === 'frozen', `the corpse is down and still (ragdoll ${rag})`);
+  if (rag === 'frozen') {
+    for (const part of ['armLeft', 'armRight', 'thighLeft']) { const at = await page.evaluate((p) => globalThis.__ragdoll.screenOf?.(p), part); if (at) { await page.touchscreen.tap(at[0], at[1]); await page.waitForTimeout(150); } }
+    await page.waitForTimeout(2500);
+    const cuts = await page.evaluate(() => globalThis.__ragdoll.cuts ?? []);
+    check(cuts.length > 0, `a tap cuts the corpse after the kill (${cuts.length} cut${cuts.length === 1 ? '' : 's'})`);
+    await shot('after-kill-cut');
+  }
+}
+check(pageErrors.length === 0, `zero page errors (${pageErrors.length})`);
 console.log('stages', JSON.stringify((await page.evaluate(() => globalThis.__rec)).map((r) => `${r.tick}:${r.stage}`)));
 await browser.close();
 process.exit(fails.length ? 1 : 0);
