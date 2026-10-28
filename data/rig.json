@@ -3,7 +3,7 @@
   "default": { "hero": "106", "foe": "106" },
   "clips106": {
     "about": "The baked clip JSONs (src/assets/special-*.json, execution-*.json, hamstrung-*.json) are keyed to the 65 joints and posed wrong when bound by name on a 106 body (the joints' rest frames differ: the Skull Crack's sword arm swung out to the side). OpenTrident retargeted all eight to each 106 body (FK error <= 0.0006 deg, same key times and track order; the two sets differ only in pelvis.position, each fitted to its body). `dir`: a 106 body file stem (`files`' values) -> its folder under src/assets. `files`: a clip role -> its file name in that folder. A 106 body plays the file of ITS folder (the special's caster; the finisher's killer and victim each their own); a 65 body the 65 file under src/assets, as before. A role or body not listed here plays what it would without the clip (rig-bones.ts clip106Path; src/fight/clips-106.ts holds the lazy loaders, test/rig-bones.test.mjs keeps every path here loadable).",
-    "dir": { "psyche-106": "106/psyche", "minotaur-106": "106/minotaur", "gargantua-106": "106/gargantua", "arachne-106": "106/arachne", "pumpkinhulk-106": "106/pumpkinhulk", "parasite-106": "106/parasite", "sporty-granny-106": "106/sporty-granny" },
+    "dir": { "psyche-106": "106/psyche", "minotaur-106": "106/minotaur", "gargantua-106": "106/gargantua", "arachne-106": "106/arachne", "pumpkinhulk-106": "106/pumpkinhulk", "parasite-106": "106/parasite", "sporty-granny-106": "106/sporty-granny", "big-vegas-106": "106/big-vegas" },
     "files": { "Special_SkullCrack": "special-skullcrack.json", "Special_Whirlwind": "special-whirlwind.json", "Special_GroundSlam": "special-groundslam.json", "Special_Lunge": "special-lunge.json", "Fin_Execution": "execution-killer.json", "Death_Execution": "execution-victim-hero.json", "Fin_Hamstrung": "hamstrung-killer.json", "Death_Hamstrung": "hamstrung-victim-hero.json" }
   },
   "clipLoad": {
@@ -12,7 +12,7 @@
     "afterFirstFrame": ["Fin_Hamstrung", "Death_Hamstrung"]
   },
   "held": { "weapon": "WeaponDrawn", "sword": "SwordDrawn", "sheath": "SwordSheathed" },
-  "files": { "psyche": "psyche-106", "minotaur": "minotaur-106", "gargantua": "gargantua-106", "arachne": "arachne-106", "pumpkinhulk": "pumpkinhulk-106", "parasite": "parasite-106", "sporty-granny": "sporty-granny-106" },
+  "files": { "psyche": "psyche-106", "minotaur": "minotaur-106", "gargantua": "gargantua-106", "arachne": "arachne-106", "pumpkinhulk": "pumpkinhulk-106", "parasite": "parasite-106", "sporty-granny": "sporty-granny-106", "big-vegas": "big-vegas-106" },
   "detect": { "65": "pelvis", "106": "mixamorig:Hips" },
   "bones": {
     "root": "root",
