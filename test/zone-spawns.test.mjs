@@ -35,7 +35,7 @@ test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from t
 test('the shipped zone row: three spots across the zone\'s ground (leash circle on it), none on the pit wall, none in the hero\'s start aggro, none inside another\'s, one rig kind', () => {
   const spots = spotsFor(ZONE);
   assert.equal(spots.length, 3);
-  assert.doesNotThrow(() => validateSpots(spots, start(), wall(), WORLD, read('../data/profiles.json').profiles.map((p) => p.id)));   // re-pinned 2026-10-28: spawns 2 and 3 are the gargantua / arachne profile rows (Dom)
+  assert.doesNotThrow(() => validateSpots(spots, start(), wall(), WORLD, [FIGHT.opponent]));
   for (const s of spots) {
     assert.ok(Math.hypot(s.x, s.z) + Math.max(s.leash, wall()) <= WORLD.spreadRadiusMetres, `${s.id}: its fight arena lies inside the spawn extent`);
     assert.ok(dist(s, start()) > s.aggro, `${s.id}: the page does not open on a fight`);

@@ -37,17 +37,15 @@ function harness(plan = {}, over = {}) {
 }
 
 test('DEFAULT UNCHANGED: holding the page\'s own body builds, loads and mounts nothing, however often it is asked', async () => {
-  const { held, log, home } = harness();
+  const { held, log } = harness();
   for (let i = 0; i < 50; i++) assert.equal(held.hold('minotaur-106'), 'same');
   assert.equal(held.hold(undefined), 'same'); assert.equal(held.hold(null), 'same');
   await held.settled();
   assert.deepEqual(log.builds, []); assert.deepEqual(log.mounts, []);
   assert.equal(held.atHome, true); assert.equal(held.slots().length, 1);
   assert.deepEqual(held.counts(), { builds: 0, hits: 0, swaps: 0 });
-  // the shipped zone: no spawn row names a body; the Pitborn spawn (spawn 1, the page's own body) builds nothing (the scene's holdBody returns before it makes a controller).
-  // Re-pinned 2026-10-28 (Dom: spawns 2 and 3 are different bosses): spawns 2 and 3 take their profile rows' bodies (gargantua-106, arachne-106), reached through the swap path tested below.
-  assert.deepEqual(ZONE.spawns.map((s) => spawnBodyFile(s.kind, 'minotaur', s.body)), ['minotaur-106', 'gargantua-106', 'arachne-106']);
-  assert.equal(spawnBodyFile(ZONE.spawns[0].kind, 'minotaur', ZONE.spawns[0].body), home.body, 'spawn 1 is the live body: nothing to swap');
+  // the shipped zone: no spawn names a body, so every spawn's body is the page's own (the scene's holdBody returns before it makes a controller)
+  for (const s of ZONE.spawns) assert.equal(spawnBodyFile(s.kind, 'minotaur', s.body), 'minotaur-106');
   const scene = src('fight/scene.ts');
   assert.match(scene, /if \(body === activeBody\(\) && !heldCtl\) return 'same';/, 'no controller is made while the held body is the live one');
   assert.match(src('client/main.ts'), /if \(ZONE\) view\.holdBody\(spawns\[current\]\);/, 'one delimited line in main.ts');

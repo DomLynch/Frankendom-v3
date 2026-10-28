@@ -26,7 +26,7 @@ const walk = (p, move, ticks) => { for (let t = 0; t < ticks; t++) p = stepPract
 
 test('the shipped spread: bosses stand beyond the drawn floor, 10 m or more apart, aggro 2.5 / leash 20 intact, every spot\'s reach inside the spawn extent', () => {
   const s = spots();
-  assert.doesNotThrow(() => validateSpots(s, initialState(), wall(), WORLD, JSON.parse(read('../data/profiles.json')).profiles.map((p) => p.id)));   // re-pinned 2026-10-28: spawns 2 and 3 are the gargantua / arachne profile rows (Dom)
+  assert.doesNotThrow(() => validateSpots(s, initialState(), wall(), WORLD, [FIGHT.opponent]));
   assert.ok(s.filter((x) => Math.hypot(x.x, x.z) > wall()).length >= 2, 'at least two bosses stand outside the drawn pit');
   for (const a of s) {
     assert.deepEqual([a.aggro, a.leash], [2.5, 20], `${a.id}: aggro 2.5 m, leash 20 m (the boss's own distance from its camp, #126)`);

@@ -14,7 +14,7 @@ import { zoneFor } from '../src/zone/zone-rows.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ROWS = read('../data/respawn.json'), FIGHT = read('../data/fight.json'), ZONE = zoneFor('');
-const ids = read('../data/profiles.json').profiles.map((p) => p.id);   // re-pinned 2026-10-28: the shipped zone's kinds are profile ids (gargantua, arachne are profile rows, not OPPONENTS keys)
+const ids = Object.keys(OPPONENTS);
 const loop = (patch) => { const d = structuredClone(ROWS); patch(d); return d; };
 const zone = (patch) => { const z = structuredClone(ZONE); patch(z); return z; };
 
