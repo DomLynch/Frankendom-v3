@@ -60,7 +60,7 @@ test('the staged rows (bodies named, spawn 2 gargantua, spawn 3 arachne) validat
   assert.deepEqual(checkBodies(WITH_BODIES, ROOMY, 'psyche'), []);
   assert.deepEqual(validateZone(MIXED, kinds, ROOMY), []);
   assert.deepEqual(MIXED.spawns.map((s) => s.kind), ['pitborn', 'gargantua', 'arachne']);
-  assert.match(checkBodies(WITH_BODIES, RIG, 'psyche').join('\n'), /profiles\.gargantua\.body: 'gargantua' is not a data\/rig\.json files row/, 'on main without the bodies the same rows are refused: that is why they are staged last');
+  assert.deepEqual(checkBodies(WITH_BODIES, RIG, 'psyche'), [], 'the real rig rows carry both bodies (#181 landed them), so naming them on the profiles validates');
 });
 
 test('the shipped zone row is unchanged: three Pitborn, no spawn body', () => {
