@@ -34,12 +34,10 @@ test('a bad table is named, and a table where a sale could beat the rebuy is ref
   const bad = clone(MARKET); bad.price.sellX = 0.9; bad.price.buyX = 0.5; bad.price.weapon.nope = 5; bad.stock.slots = ['part']; bad.lines.buy = []; bad.merchant.closeMetres = 1;
   const e = validateMarket(bad, CTX).join('\n');
   assert.match(e, /sellX/); assert.match(e, /buyX/); assert.match(e, /weapon-defs row/); assert.match(e, /size entries/); assert.match(e, /lines\.buy/); assert.match(e, /closeMetres/);
-  const tight = clone(MARKET); tight.price.base.common = 1; tight.price.buyX = 1; tight.price.sellX = 0.5;   // sells 0, asks 1: fine
-  assert.deepEqual(validateMarket(tight, CTX).filter((x) => /rebuys/.test(x)), []);
-  const loop = clone(MARKET); loop.price.buyX = 1; loop.price.sellX = 0.5; loop.price.base.common = 30; loop.price.base.rare = 90;
-  loop.price.sellX = 0.5; loop.price.buyX = 1;   // 15 sells for 30 asks: still a loss; now make rounding eat the spread
-  const rounding = clone(MARKET); rounding.price.buyX = 1; rounding.price.sellX = 0.5; rounding.price.base.common = 1;   // sells floor(0.5)=0, asks 1
-  assert.deepEqual(validateMarket(rounding, CTX).filter((x) => /rebuys/.test(x)), []);
+  const edge = clone(MARKET); edge.price.buyX = 1; edge.price.sellX = 0.5; edge.price.base.common = 1;   // sells floor(0.5) = 0, asks 1: still a loss, so it passes
+  assert.deepEqual(validateMarket(edge, CTX).filter((x) => /rebuys/.test(x)), []);
+  const loopy = clone(MARKET); loopy.price.buyX = 1; loopy.price.sellX = 0.5; loopy.price.base.common = 3;   // sells 1, asks 3 fine; the validator's rule is sell < ask after rounding
+  assert.deepEqual(validateMarket(loopy, CTX).filter((x) => /rebuys/.test(x)), []);
   // for the shipped table: every rarity sells for less than it asks
   for (const r of PARTS.rarities) assert.ok(sellPrice(MARKET, MARKET.price.base[r.id]) < buyPrice(MARKET, MARKET.price.base[r.id]), r.id);
 });
@@ -70,7 +68,7 @@ test('buy: spends banked coins, adds the part at its rarity, one purchase per it
   assert.deepEqual(buy(MARKET, out.save, it.key, '2026-10-28', IDS), { ok: false, reason: 'soldOut' });
   assert.equal(buy(MARKET, out.save, it.key, '2026-10-29', IDS).ok === false && buy(MARKET, out.save, it.key, '2026-10-29', IDS).reason, 'unknown', 'a key that is not in that day\'s stock');
   assert.deepEqual(buy(MARKET, rich({ banked: it.price - 1 }), it.key, '2026-10-28', IDS), { ok: false, reason: 'broke', short: 1 });
-  assert.equal(buy(MARKET, rich(), 'part:gargantua:head:2', '2026-10-28', IDS).ok === true && !stock.some((s) => s.key === 'part:gargantua:head:2'), false, 'a forged key buys nothing');
+  assert.deepEqual(buy(MARKET, rich(), 'part:nonsense:head:2', '2026-10-28', IDS), { ok: false, reason: 'unknown' }, 'a forged key buys nothing');
 });
 
 test('a weapon bought is owned, drawn by heroWeapon, and not bought twice', () => {
