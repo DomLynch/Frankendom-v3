@@ -23,6 +23,7 @@ import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 import { setGoreEvery } from './finishers.ts';
 import { setRagdollPlays } from '../roster.ts';
+import { PICKUP, pickupTapGate, registerTakeSource, type Takeable } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
 import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, halvesApart, PHYSICS_MODE, VISUAL_UNITS, type FinisherCutRows } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
@@ -291,6 +292,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     return root && chest ? root.getWorldPosition(new THREE.Vector3()).distanceTo(chest.getWorldPosition(new THREE.Vector3())) : null;
   };
   cost.leave = () => leaveCorpse();   // the stills: leave a corpse by hand (the zone loop calls leaveCorpse at the respawn); cost.corpses counts those standing
+  registerTakeSource((units) => takeablesOf(units));   // data/pickup.json: the parts of this body's corpses that can be taken (src/fight/pickup.ts)
 
   // The bones `w` of the way from the clip's pose (on them now) to the ragdoll's: 1 = the ragdoll's alone.
   // `share`: a part's own weight (hit.blend: only the parts that track the clip closely enough to show), 1 for every part when absent.
@@ -434,6 +436,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     for (const r of cutBones) r.bone.position.copy(r.home);   // the cut bones go back to their joints
     cutBones.length = 0; follow.length = 0; props.length = 0; done.clear();
     cutLog().length = 0; cost.cuts = cutLog(); cost.pieces = []; cost.cutSteps = [];
+    for (const m of takenLive) m.visible = true;   // a part taken from the last life: the rig is whole again
+    takenLive.clear();
   }
 
   // At load, once the ragdoll stands (so a cut frame builds nothing): the body's twin and its skin copies, a pool of cap balls (two a cut unit) and the helmet ball (only a foe
@@ -558,6 +562,35 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     if (disabled || !row.on || !cutRows.on || !rd || !rigged || !group || mode !== 'dead' || rd.state !== row.needs || done.has(unit)) return null;
     try { return cutUnit(unit, 'tap', tapPush(view)); } catch (error) { cost.state = `cue failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); return null; }
   }
+  // data/pickup.json (src/fight/pickup.ts): the cut parts of the frozen corpses (the live foe's and each kept corpse's) that can be taken now: the unit was cut, one of its pieces still shows, and it is not taken yet.
+  // `take` hides the unit's pieces for good (the live foe's are hidden again after every cutRig.update, a corpse's are in `gone`) and tells the bus. Presentation only; nothing reads it back.
+  const takenLive = new Set<THREE.Object3D>();
+  function takeablesOf(units: readonly string[]): Takeable[] {
+    const out: Takeable[] = [];
+    if (disabled || !chunk) return out;
+    const manifest = cutManifestOf(chunk) as { regions?: { id: string; detached_by?: string }[] } | undefined;
+    if (!manifest) return out;
+    const collect = (corpseId: string, frozenS: number, done: ReadonlySet<string>, pieces: Record<string, THREE.Object3D>, bones: Bones, severable: readonly { id: string; cut_role: string }[], taken: Set<THREE.Object3D>) => {
+      if (frozenS <= 0) return;
+      const hips = bones.hips;
+      for (const unit of units) {
+        if (!done.has(unit)) continue;
+        const meshes = piecesOfUnit(manifest, unit).map((id) => pieces[id]).filter((m): m is THREE.Object3D => !!m && m.visible && !taken.has(m));
+        const bone = bones[severable.find((s) => s.id === unit)?.cut_role ?? ''];
+        if (!meshes.length || !bone || !hips) continue;
+        const at = bone.getWorldPosition(new THREE.Vector3()), centre = hips.getWorldPosition(new THREE.Vector3());
+        out.push({ corpseId, unit, boss: foe.id, frozenS, at, centre, take: () => {
+          if (meshes.every((m) => taken.has(m))) return false;
+          for (const m of meshes) { m.visible = false; taken.add(m); }
+          emitFeel(PICKUP.event, { unit, boss: foe.id, corpseId });   // the bus: data/pickup.json event
+          return true;
+        } });
+      }
+    };
+    if (rd && cutRig && mode === 'dead' && rd.state === cutRows.tap.needs) collect(lifeId, cueDelay, done, cutRig.pieces as Record<string, THREE.Object3D>, partBones, rd.row.severable, takenLive);
+    for (const c of corpses) if (c.rd && c.cutRig && c.bones && c.rd.state === cutRows.tap.needs) collect(c.id, c.frozenFor, c.done, c.cutRig.pieces as Record<string, THREE.Object3D>, c.bones, c.rd.row.severable, c.gone);
+    return out;
+  }
   /** Every cut button off (the ragdoll was disabled by an error, or the page stops running it): updateCues does not run then, so a button the last frame left showing would stay on screen and do nothing. */
   function hideCues() { for (const s of [liveCues, ...corpses.map((c) => c.cues)]) if (s) for (const { el } of s.els) el.style.display = 'none'; }
   function updateCues() {
@@ -680,7 +713,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       canvas.addEventListener('pointerup', (e) => {
         const d = down; down = null;
         cost.lastTap = d ? `up ${Math.round(Math.hypot(e.clientX - d.x, e.clientY - d.y))}px ${Math.round(e.timeStamp - d.t)}ms mode ${mode} rd ${rd?.state}` : 'up without down';
-        if (d && d.id === e.pointerId && Math.hypot(e.clientX - d.x, e.clientY - d.y) <= row.maxMovePx && e.timeStamp - d.t <= row.maxMs) this.tap(aim(e.clientX, e.clientY));
+        if (d && d.id === e.pointerId && Math.hypot(e.clientX - d.x, e.clientY - d.y) <= row.maxMovePx && e.timeStamp - d.t <= row.maxMs && !pickupTapGate(e.clientX, e.clientY)) this.tap(aim(e.clientX, e.clientY));   // data/pickup.json: a tap on a cut part selects it (the gate), it never cuts the body behind it
       });
       cost.probe = (x: number, y: number) => {   // the stills: which unit a tap at this CSS px would cut (null: none), without cutting
         if (!rd || !rigged) return null;
@@ -845,7 +878,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       } else if (mode === 'alive' && getUp > 0) { getUp -= dt; fromLying(getUp > 0 ? 1 - getUp / RULES.getUpS : 1); if (getUp <= 0) getUp = -1;
       } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger * staggerK.time) * staggerK.blend, blend);   // the stagger on screen, the most at the dip's deepest
       if (mode === 'dead' && follow.length + props.length) followCuts();
-      if (cutRig && warm === 0) { cutRig.update(); slideHalves(dt); }   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
+      if (cutRig && warm === 0) { cutRig.update(); slideHalves(dt); for (const m of takenLive) m.visible = false; }   // (a part the player took stays gone: update() shows every piece again)   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });
       cost.frames++; cost.totalMs += ms; cost.maxMs = Math.max(cost.maxMs, ms); cost.lastMs = ms; cost.ticks += ticks; cost.state = rd.state;
       by.frames++; by.totalMs += ms; by.maxMs = Math.max(by.maxMs, ms);
