@@ -20,6 +20,7 @@ export const ENVOY_LATCH_ROW = (MECHANICS.rows as unknown as Record<string, Envo
 
 type Stage = 'idle' | 'tell' | 'lunge' | 'latched' | 'recover';
 const PERCENT = 100, TICKS_PER_S = Math.round(1 / STEP);
+const REST_HOLD = 2;   // stepDuel counts `rest` down before it regenerates: 2 in, 1 left, no regen this tick (the sprint's way, duel.ts)
 const isHit = (e: CombatEvent): boolean => e.type === 'Hit' && e.actor === 0;   // the hero's blow that landed on the Envoy (a blocked or parried cut is not a hit)
 
 /** One Envoy's latch. `row` defaults to the shipped row; a test passes its own. */
@@ -70,7 +71,7 @@ export function createEnvoyLatch(row: EnvoyLatchRow = ENVOY_LATCH_ROW): Mechanic
           if (!near || hero.phase === 'roll') { settle('recover', row.whiffRecoverTicks, row.cooldownTicks); return pass({ ...duel, fighters: [hero, lunged] }, intent, true); }   // out of the line, or rolled through it: he whiffs, open
           if (hero.phase === 'guard') {   // guarded: he bounces off, chips the stamina and stands open
             settle('recover', row.blockedRecoverTicks, row.cooldownTicks);
-            return pass({ ...duel, fighters: [{ ...hero, stamina: Math.max(0, hero.stamina - row.guardChipStamina), rest: Math.max(hero.rest, 1) }, shoved(lunged, hero, row.breakKnockM, wall)] }, intent, true);
+            return pass({ ...duel, fighters: [{ ...hero, stamina: Math.max(0, hero.stamina - row.guardChipStamina), rest: Math.max(hero.rest, REST_HOLD) }, shoved(lunged, hero, row.breakKnockM, wall)] }, intent, true);
           }
           const landed = ccApply(ladder, 'latch', duel.tick, row.maxLatchTicks, CC_LADDER);
           ladder = landed.ladder;
@@ -91,7 +92,7 @@ export function createEnvoyLatch(row: EnvoyLatchRow = ENVOY_LATCH_ROW): Mechanic
         latchTicks++;
         const [x, z] = clampWall(hero.body.x - (gap ? dx / gap : 0) * row.latchGapM, hero.body.z - (gap ? dz / gap : 0) * row.latchGapM, wall);   // rides on the hero on the side he latched
         const riding: Fighter = { ...boss, body: { ...boss.body, x, z } };
-        const drained: Fighter = { ...hero, stamina: Math.max(Math.min(hero.stamina, row.drainFloor), hero.stamina - drain), rest: Math.max(hero.rest, 1) };   // never below the floor (and never lifted to it)
+        const drained: Fighter = { ...hero, stamina: Math.max(Math.min(hero.stamina, row.drainFloor), hero.stamina - drain), rest: Math.max(hero.rest, REST_HOLD) };   // never below the floor (and never lifted to it); no regen while latched
         show('latched', riding, hero, latchTicks / latchMax);
         const walking = hero.phase !== 'roll' && intent.action !== 'dodge';   // a roll keeps its own direction and speed
         return pass({ ...duel, fighters: [drained, riding] }, walking ? { ...intent, move: { x: intent.move.x * slow, z: intent.move.z * slow, yaw: intent.move.yaw, run: false } } : intent);

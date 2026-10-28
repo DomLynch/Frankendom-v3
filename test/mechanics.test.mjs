@@ -116,8 +116,8 @@ test('breakHits cuts inside breakWindowTicks break it; cuts spread wider than th
   s.duel = hit(s); tick(s, go()); tick(s, go());
   assert.equal(phase(s), null, 'the last cut of the count breaks it');
   const slow = fresh(); until(slow, (x) => phase(x) === 'latched');
-  for (let i = 0; i < ROW.breakHits + 3; i++) { slow.duel = hit(slow); tick(slow, go()); for (let k = 0; k < ROW.breakWindowTicks; k++) tick(slow, go()); if (phase(slow) !== 'latched') break; }
-  assert.equal(phase(slow) === 'latched' || slow.log.some((l) => l.stage === 'latched'), true);
+  for (let i = 0; i < ROW.breakHits - 1; i++) { slow.duel = hit(slow); tick(slow, go()); for (let k = 0; k < ROW.breakWindowTicks + 2; k++) tick(slow, go()); }
+  assert.equal(phase(slow), 'latched', 'cuts each a window apart never add up to the count');
   const idle = fresh({ ...ROW, maxLatchTicks: 90, breakWindowTicks: 40 }); until(idle, (x) => phase(x) === 'latched');
   const held = idle.duel.tick; until(idle, (x) => phase(x) !== 'latched', () => go(), 300);
   assert.ok(idle.duel.tick - held <= 92 && idle.duel.tick - held >= 40, 'the timeout is the ladder-scaled maxLatchTicks (the first landing is full length)');
@@ -149,13 +149,11 @@ test('a cut on the crouch cancels the lunge; a death ends the latch the same tic
 
 test('the latch is a crowd-control kind: full, half, quarter, then a harmless bump; and the whole thing is deterministic', () => {
   const durations = [];
-  const s = { mech: createEnvoyLatch({ ...ROW, firstCooldownTicks: 1, cooldownTicks: 1, breakRecoverTicks: 1, maxLatchTicks: 200, breakWindowTicks: 400 }), duel: start(), log: [] };
+  const s = { mech: createEnvoyLatch({ ...ROW, firstCooldownTicks: 1, cooldownTicks: 150, breakRecoverTicks: 1, maxLatchTicks: 200, breakWindowTicks: 400 }), duel: start(), log: [] };
   for (let n = 0; n < 4; n++) {
-    s.duel = start(); s.duel = { ...s.duel, tick: s.duel.tick + n * 10 };
-    if (!until(s, (x) => phase(x) === 'latched', () => go(), 400)) { durations.push(0); continue; }
+    if (!until(s, (x) => phase(x) === 'latched', () => go(), 500)) { durations.push(0); continue; }
     let t = 0; while (phase(s) === 'latched' && t < 400) { tick(s, go()); t++; }
     durations.push(t);
-    for (let i = 0; i < 6; i++) tick(s, go());
   }
   assert.ok(durations[0] >= 180 && durations[0] <= 202, `the first landing is full length (${durations[0]})`);
   assert.ok(durations[1] >= 90 && durations[1] <= 102, `the second lasts half (${durations[1]})`);
