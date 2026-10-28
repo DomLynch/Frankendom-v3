@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { RINGS, ringBlend, ringLook, ringOf, ringOfSpawn, ringOrigin, ringPlace, ringSpawns, ringTune, ringedZone, ringLoadAfterKill } from '../src/zone/rings.ts';
 import { validateRings } from '../src/sim/validate-rings.js';
 import { mergeTune } from '../src/progression.ts';
@@ -25,8 +26,25 @@ const check = (rows = RINGS, zone = ZONE1) => validateRings(rows, zone, ringOrig
 test('the shipped rings validate against the profiles, the rig, the sky plates and the zone row', () => {
   assert.deepEqual(check(), []);
   assert.deepEqual(RINGS.rings.map((r) => r.id), ['ring-1', 'ring-2', 'ring-3']);
-  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'kachujin', 'castle-guard', 'parasite', 'anime-boy-black']);
+  assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'kachujin', 'castle-guard', 'sporty-granny', 'the-boss', 'parasite', 'anime-boy-black', 'anime-girl-blonde', 'big-vegas']);
   assert.ok(RINGS.bosses.every((b) => b.mechanic === null), 'one signature mechanic each, later: the row is null today');
+});
+
+test('every spawned ring boss body has a cut row (data/cut-bodies.json) and a measure row in the pinned physics package', () => {
+  const cut = JSON.parse(readFileSync(new URL('../node_modules/@frankendom/physics/data/cut-bodies.json', import.meta.url), 'utf8')).bodies;
+  for (const b of RINGS.bosses) {
+    const stem = RIG.files[b.body], row = cut.find((r) => r.name === stem);
+    assert.ok(row, `${b.kind}: body ${stem} has no row in the pinned physics data/cut-bodies.json`);
+    assert.match(row.expect_sha256, /^[0-9a-f]{64}$/, `${stem}: the cut row records its cut GLB hash`);
+    // spawned means cuttable: the body file IS the physics cut GLB (sha256 = the row's), its manifest ships beside it, is wired in physics-chunk.ts, and a physics.json row fits the body
+    assert.equal(createHash('sha256').update(readFileSync(new URL(`../src/assets/${stem}.glb`, import.meta.url))).digest('hex'), row.expect_sha256, `${stem}.glb is the cut GLB of the physics row`);
+    const manifest = JSON.parse(readFileSync(new URL(`../src/assets/${stem}.cut.manifest.json`, import.meta.url), 'utf8'));
+    assert.equal(manifest.schema, 'cut-pieces/1'); assert.equal(manifest.body, stem);
+    assert.match(readFileSync(new URL('../src/fight/physics-chunk.ts', import.meta.url), 'utf8'), new RegExp(`'?${b.body}'?: \\w+Manifest`), `${b.body}: wired in physics-chunk.ts cutManifests`);
+    if (b.body !== 'sporty-granny') assert.match(readFileSync(new URL('../scripts/build.mjs', import.meta.url), 'utf8'), new RegExp(`'${b.body}'`), `${b.body}: in the build's cut GLB list (sporty-granny's extra UV sets keep it out of the lossy pack)`);
+    assert.equal(PHYSICS.opponents.filter((o) => o.body === b.body).map((o) => o.id).sort().join(), 'executioner,pitborn', `${b.body}: physics.json opponents rows`);
+    assert.ok(existsSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${stem}.measure.json`, import.meta.url)), `${stem}: measure row`);
+  }
 });
 
 test('ring 1 is the zone row\'s three bosses, byte for byte (the live ring-1 spawns are pinned)', () => {
@@ -48,8 +66,8 @@ test('rings 2 and 3 place the spawned bodies by distance from the pit, in their 
     assert.equal(s.body, RINGS.bosses.find((b) => b.kind === s.kind).body, `${s.id} is drawn in its own body`);
     assert.equal(s.kind, s.body, 'a ring boss\'s kind and body share the stem');
   }
-  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-2').map((s) => s.kind), ['pumpkinhulk', 'kachujin', 'castle-guard']);
-  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['parasite', 'anime-boy-black']);
+  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-2').map((s) => s.kind), ['pumpkinhulk', 'kachujin', 'castle-guard', 'sporty-granny']);
+  assert.deepEqual(added.filter((s) => ringOfSpawn(s.id).id === 'ring-3').map((s) => s.kind), ['the-boss', 'parasite', 'anime-boy-black', 'anime-girl-blonde', 'big-vegas']);
   assert.deepEqual(ringSpawns(origin), added, 'the zone is the row plus the generated spawns, nothing else');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 90, stepDeg: 0, distance: 10 }, 0), { x: 10, z: 0 }, 'east is +x, north is -z');
   assert.deepEqual(ringPlace({ x: 0, z: 0 }, { angleDeg: 0, stepDeg: 90, distance: 10 }, 1), { x: 10, z: 0 }, 'instance i turns by stepDeg');
@@ -140,23 +158,24 @@ test('the look blends by distance: ring 1 is today\'s floor and sky, then the ri
   assert.equal(JSON.stringify(Object.keys(ringLook(10).plates).sort()), JSON.stringify([...PLATES].sort()), 'the existing sky ring plates only; no new art');
 });
 
-test('the bodies: each is in rig.json with its clips, drawn with its archetype\'s weapon, and dies plain (no cut manifest, no physics row, no error)', () => {
+test('the bodies: each is in rig.json with its clips, drawn with its archetype\'s weapon, and is cuttable (cut manifest and physics row)', () => {
   const clips = RIG.clips106.dir;
   for (const b of RINGS.bosses) {
     const file = RIG.files[b.body];
     assert.ok(file && clips[file], `${b.body} is a rig body with a clips folder`);
     const owner = PROFILES.profiles.find((p) => p.id === b.kind).opponent;
     assert.equal(bodyOwnerOf(file), owner, `${b.body} is drawn with ${owner}'s weapon`);
-    assert.equal(existsSync(new URL(`../src/assets/${file}.cut.manifest.json`, import.meta.url)), false, `${b.body} has no cut manifest: the plain death`);
-    assert.ok(!PHYSICS.opponents.some((o) => o.body === b.body), `${b.body} has no physics opponents row: no ragdoll to throw`);
+    assert.equal(existsSync(new URL(`../src/assets/${file}.cut.manifest.json`, import.meta.url)), true, `${b.body} has a cut manifest: it can be cut`);
+    assert.ok(PHYSICS.opponents.some((o) => o.body === b.body), `${b.body} has a physics opponents row: a ragdoll to throw`);
   }
   assert.ok(BOSSW.rows.some((r) => r.opponent === 'shieldmaiden'), 'the shieldmaiden clones take Arachne\'s axe and shield row');
-  assert.equal(BOSSW.rows.some((r) => r.opponent === 'pitborn'), false, 'the pitborn clones take the Minotaur\'s own cleaver');
+  assert.equal(BOSSW.rows.some((r) => r.opponent === 'pitborn' && r.profile == null), false, 'the pitborn clones take the Minotaur\'s own cleaver, unless a profile row of their own says otherwise');
+  assert.deepEqual(BOSSW.rows.filter((r) => r.opponent === 'pitborn').map((r) => r.profile), ['anime-boy-black', 'pumpkinhulk'], 'only Ryo (the sword) and Lord Gourd (the mace) have a pitborn profile row; the other pitborn clones are unchanged');
 });
 
 test('wiring pins: the page lays the ring tune under the address\'s, mixes the look per frame, and scene arms ring bodies by their archetype', () => {
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8'), scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(main, /const BASE_TUNE = mergeTune\(TUNED, ringTune\(\)\)/);
+  assert.match(main, /const BASE_TUNE = mergeTune\(mergeTune\(TUNED, ringTune\(\)\), daily\.tune\)/);   // re-pinned for the Daily Pit: its modifier tune (empty outside the daily, the same object) is laid over the rings' and the address's
   assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation/);
   assert.match(main, /view\.ringLook\(look\.tintA, look\.tintB, look\.t, look\.plates\)/);
   assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch, undefined, bodyProfileOf\(file\)\)/);
