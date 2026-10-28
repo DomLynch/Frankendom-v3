@@ -34,14 +34,19 @@ export function startFreeRoam(duel: Duel, wall: number): FreeRoam {
 }
 
 /** Whether the press is one the walking hero takes (the row's list). */
-export const isFreeAction = (action: Action | null | undefined): boolean => !!action && FREE_MOVES.actions.includes(action);
+let STRIKES: readonly string[] = [];
+/** The strike presses a walking hero also takes while trash mobs are about (data/mobs.json hero.roamStrikes, set by the page once the mobs are built); none (the default, and every test that does not call this) = the three free presses as before. */
+export const setRoamStrikes = (list: readonly string[]): void => { STRIKES = list; };
+export const isFreeAction = (action: Action | null | undefined): boolean => !!action && FREE_MOVES.actions.includes(action);   // roll, step back, guard: these (and only these) end a kill's ceremony when the stick row says so (handsOver)
+/** A strike press the walking hero takes once the walk has begun. It is NOT a hand-over: a STRIKE mashed during the finisher never ends the ceremony or the finisher camera (only `isFreeAction` and the stick do). */
+export const isFreeStrike = (action: Action | null | undefined): boolean => !!action && STRIKES.includes(action);
 
 export type FreeStep = { free: FreeRoam; body: State };
 
 /** One tick of the walk: `roam` is his body, `intent` the tick's quantized intent (stick, press, held guard and its side), `wall` the walking radius. */
 export function stepFreeRoam(free: FreeRoam, roam: State, intent: Intent, wall: number): FreeStep {
   const hero = free.duel.fighters[0], corpse = free.duel.fighters[1], move = intent.move, guard = intent.guard;
-  const press = isFreeAction(intent.action) ? intent.action : null;
+  const press = isFreeAction(intent.action) || isFreeStrike(intent.action) ? intent.action : null;
   const acting = hero.phase !== 'ready' || press !== null || guard;
   const synced: Duel = { ...free.duel, radius: wall, fighters: [{ ...hero, body: roam }, corpse] };
   if (!acting) {   // the plain walk: roamStep moves him, the duel only gives him his breath back
