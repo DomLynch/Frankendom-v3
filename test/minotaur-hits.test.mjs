@@ -17,7 +17,8 @@ const FIGHT = readData('fight'), PROFILES = readData('profiles'), DIFF = readDat
 const ctxOf = (weapon, tune) => ({ profiles: PROFILES.profiles, difficulty: DIFF, brains: BRAINS.brains, pick: DIFF.default, search: '', level: FIGHT.level, ai: FIGHT.ai, override: null,
   weapon, skill: FIGHT.skill, skill2: FIGHT.skill2, stance: FIGHT.stance, specials: FIGHT.specials, stars: STARS, tune });
 const HERO_WEAPONS = [...new Set([FIGHT.weapon, ...PROG.bosses.map((b) => b.weapon), ...readData('../src/fight/weapon-defs').weapons.filter((w) => w.player != null && !NATURAL_WEAPONS.has(w.id) && WEAPONS[w.id]).map((w) => w.id)])];
-const STAR_LEVELS = STARS.levels.map((l) => l.star);
+const POMMEL = new Set(readData('../src/fight/weapon-defs').weapons.filter((w) => w.look?.pommelBash).map((w) => w.id));   // bow, staff: their kick is a pommel bash that deals no damage on ANY boss (the Gargantua control too), so it is not a damage strike here
+const STAR_LEVELS =STARS.levels.map((l) => l.star);
 const MINOTAUR_ARCHETYPE = PROFILES.profiles.find((q) => q.id === FIGHT.order.kinds['yard-pitborn']).opponent;   // the zone row's yard spawn kind
 const MINOTAUR_KINDS = PROFILES.profiles.filter((p) => p.opponent === MINOTAUR_ARCHETYPE).map((p) => p.id);
 const CONTROL = FIGHT.order.profile;   // the zone's first boss (the Gargantua): another body, the same blows
@@ -46,7 +47,7 @@ const lands = (args) => GAPS.some((gap) => { const r = dealt({ ...args, gap }); 
 
 test('every hero weapon x star level x strike lands damage on every Minotaur kind (the Gargantua is the control)', () => {
   const matrix = [];
-  for (const weapon of HERO_WEAPONS) for (const star of STAR_LEVELS) for (const action of STRIKES) for (const kind of [...MINOTAUR_KINDS, CONTROL]) {
+  for (const weapon of HERO_WEAPONS) for (const star of STAR_LEVELS) for (const action of STRIKES.filter((a) => !(a === 'kick' && POMMEL.has(weapon)))) for (const kind of [...MINOTAUR_KINDS, CONTROL]) {
     const ok = lands({ weapon, star, action, kind });
     matrix.push(`${weapon} s${star} ${action} ${kind}: ${ok ? 'hit' : 'NO DAMAGE'}`);
   }
@@ -61,7 +62,7 @@ test('the real hand-over: kills 1 and 2 saved, each weapon the hero can hold lan
   const held = [heroWeapon(save, PROG, FIGHT.weapon, HERO_WEAPONS, ''), ...save.unlocked.map((w) => heroWeapon(save, PROG, FIGHT.weapon, HERO_WEAPONS, `?${PROG.weaponQuery}=${w}`))];
   assert.equal(held[0], PROG.autoEquip ? save.unlocked.at(-1) : FIGHT.weapon, 'the hero keeps the fight row weapon unless autoEquip');
   const fails = [];
-  for (const weapon of new Set(held)) for (const star of STAR_LEVELS) for (const action of STRIKES) for (const kind of MINOTAUR_KINDS)
+  for (const weapon of new Set(held)) for (const star of STAR_LEVELS) for (const action of STRIKES.filter((a) => !(a === 'kick' && POMMEL.has(weapon)))) for (const kind of MINOTAUR_KINDS)
     if (!lands({ weapon, kind, star, action, tune })) fails.push(`${weapon} s${star} ${action} ${kind}`);
   assert.deepEqual(fails, []);
 });
