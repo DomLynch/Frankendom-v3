@@ -107,7 +107,7 @@ const EQUIP_URLS: Record<string, string> = {
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // V3: the opponent's DRAWN weapon over the one he fights with (foe-weapon.ts, data/fight.json foeWeapon: V1's Cleaver on the Minotaur, the
 // sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1: the gladius's).
-const FOE_EQUIP_URLS: Record<string, string> = {
+export const FOE_EQUIP_URLS: Record<string, string> = {
   '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href,
   '../assets/weapons/foe/maul.glb': new URL('../assets/weapons/foe/maul.glb', import.meta.url).href,   // Gargantua's maul (data/boss-weapons.json; library hammer-01): fetched only with his body
   '../assets/weapons/foe/axe.glb': new URL('../assets/weapons/foe/axe.glb', import.meta.url).href,   // Arachne's axe (library axe1h-208)
@@ -115,7 +115,7 @@ const FOE_EQUIP_URLS: Record<string, string> = {
   '../assets/weapons/foe/sword.glb': new URL('../assets/weapons/foe/sword.glb', import.meta.url).href,   // Ryo's sword (library sword1h-200): fetched only with his body
   '../assets/weapons/foe/mace.glb': new URL('../assets/weapons/foe/mace.glb', import.meta.url).href,   // Lord Gourd's mace (library mace-204): the pumpkinhulk profile row, fetched only with his body
 };
-const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
+export const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
 const offhandUrlOf = (row?: { offhand: { kind: string; file?: string } | null }): string | undefined => (row?.offhand?.kind === 'file' ? FOE_OFFHAND_URLS[`../assets/weapons/foe/${row.offhand.file}.glb`] : undefined);
 // The Pitborn (foe-pick.ts, Dom 2026-10-26) really fights with the cleaver: the same file, grafted over the trident his Minotaur body bakes.
 const pageSearch = typeof location === 'undefined' ? '' : location.search;   // the page's query, for the boss weapon rows (data/boss-weapons.json: ?bossweapon=v1 reverts, ?bossweapon=<opponent> is the stills flag)
@@ -600,13 +600,22 @@ export function createScene(
   // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
   const ownerOfBody = (file: string): string | undefined => ownerOfBodyOf(file, liveBody);
   const weaponOfBody = (file: string): WeaponId | undefined => weaponOfBodyOf(file, liveBody, builtFoeWeapon, pageSearch);
+  // Read-only debug hook for the built-game boot check (scripts/boot-check.mjs; no URL flag): what boss body `file` resolves to through the very functions bodyRig above uses: the weapon row, the sim weapon, and the URLs it would fetch (the grafted part, the off-hand mesh).
+  const equipUrlOfBody = (file: string): string | undefined => {
+    const boss = bossOfBody(file), weapon = weaponOfBody(file);
+    return boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : !weapon || weapon === foeBakedWeapon(ownerOfBody(file) ?? opponentId, ROSTER[(ownerOfBody(file) ?? opponentId) as OpponentId].weapon) ? undefined : foeEquipUrl(ownerOfBody(file) ?? opponentId, weapon);
+  };
+  (globalThis as { __bossArms?: unknown }).__bossArms = (file: string) => {
+    const boss = bossOfBody(file);
+    return { row: boss?.id ?? null, weapon: weaponOfBody(file) ?? null, equip: equipUrlOfBody(file) ?? null, offhand: offhandUrlOf(boss) ?? null, offhandKind: boss?.offhand?.kind ?? null, body: fighterUrls[`../assets/${file}.glb`] ?? null };
+  };
   function bodyRig(file: string) {
     let entry = bodyAssets.get(file);
     if (!entry) {
       const row: { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> } = entry = {}; bodyAssets.set(file, row);
       const boss = bossOfBody(file), url = fighterUrls[`../assets/${file}.glb`], weapon = weaponOfBody(file);
       if (!url || !weapon) row.failed = true;
-      else row.loaded = loadFoeBody(url, boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : weapon === foeBakedWeapon(ownerOfBody(file) ?? opponentId, ROSTER[(ownerOfBody(file) ?? opponentId) as OpponentId].weapon) ? undefined : foeEquipUrl(ownerOfBody(file) ?? opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss, offhandUrlOf(boss))
+      else row.loaded = loadFoeBody(url, equipUrlOfBody(file), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss, offhandUrlOf(boss))
         .then((asset) => { row.asset = asset; return asset; }, (error: unknown) => { row.failed = true; captureException(error); return undefined; });
     }
     return entry.asset;
