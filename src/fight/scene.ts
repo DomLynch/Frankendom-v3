@@ -59,7 +59,8 @@ import { readyOffset, slouchFrom } from './upright-ready.ts';
 import { armfeelFrom, Flinch } from './armfeel.ts';
 import { createBurstPool } from './armfeel-fx.ts';
 import { createBloodEdge } from './blood-edge.ts';
-import { createCameraRig, framingLow, framingTall, setLensBoost } from './camera.ts';
+import { createCameraRig, framingLow, framingTall, setDeathCam, setLensBoost } from './camera.ts';
+import type { DeathCamRows } from './hero-death.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
 import { createFightFx, impactTexture } from './fx.ts';
 import { createSignatures } from './signature.ts';
@@ -393,7 +394,8 @@ export function createScene(
   const pickupV = new THREE.Vector3();
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow, the line, a tap on a cut part, Take (presentation only)
     : mountPickup(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
-  const heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created
+  let heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created   // let: the zone page may ask for the death-only one (heroDeath below) before the rigs load
+  const heroFeel = typeof location !== 'undefined' && !!heroRagdoll;   // ?feel=hero: the ragdoll hears every blow (hit reactions); the death-only one hears the killing blow alone
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
     if (warriors) return Promise.resolve();
@@ -830,6 +832,11 @@ export function createScene(
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
+    /** The zone's hero death (data/hero-death.json, src/fight/hero-death.ts): the death-only ragdoll (built before the rigs load, so it attaches with them) and the death camera. null = ?herodeath=v1. */
+    heroDeath(rows: { ragdoll: boolean; cam: DeathCamRows } | null) {
+      setDeathCam(rows ? rows.cam : null);
+      if (rows?.ragdoll && !heroRagdoll && !warriors && typeof location !== 'undefined') heroRagdoll = heroRagdollFor(location.search, true);
+    },
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
       rig.stopTour();
@@ -1084,7 +1091,7 @@ export function createScene(
       if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
       pickup?.frame(animationDt);   // data/pickup.json: the arrow, the selected part's outline and Take pill, the flying chip (DOM only; reads the corpses' cut parts after the ragdolls stepped)
-      heroRagdoll?.frame(animationDt, events, practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
+      heroRagdoll?.frame(animationDt, heroFeel ? events : events.filter((e) => e.type === 'Killed'), practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
       // (the clip's first 9 %) — baked from the rig at that pose, popped along the killing blow, ballistic to a stop. Blood
       // 'off' keeps the head on: gore is presentation, like the rest of the layer.
