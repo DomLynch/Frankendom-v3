@@ -25,7 +25,7 @@ export type InputEnv = {
   // Keyboard + mouse (data/input.json, src/fight/kbm.ts). Absent or null (`?input=v1`, and every test that builds the layer bare) = the controls exactly as they were: no mouse, no new key, no key map.
   kbm?: KbmRows | null;
   free?: () => boolean;      // the camera is free (nobody locks it): a left-drag looks round instead of picking a swing
-  overPart?: (x: number, y: number) => boolean;   // a cut part to take is under this point (data/pickup.json): that click is the pickup's, not a strike
+  overPart?: (x: number, y: number) => boolean;   // an optional hook: a point that is not a strike (nothing passes one now: #219's Take is gone, a click on a corpse part strikes and the corpse tap cuts it)
 };
 // The controls' intent for one frame, named apart from the simulation's `Intent` (duel.ts) it is folded into by main.ts: the two
 // shapes differ (stick axes here, a camera-relative move plus lock there) and sharing a name at that seam misled the audit twice.

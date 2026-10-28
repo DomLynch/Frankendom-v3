@@ -37,7 +37,6 @@ import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/
 import { createLook, lookFor } from '../fight/look-drag.ts';
 import { freshLock, lockBreakFor, stepLock, toggleLock } from '../fight/lock-break.ts';
 import { kbmFor, mountKbm } from '../fight/kbm.ts';
-import { pickupHitAt } from '../fight/pickup.ts';
 import { isTap, lockSwitchFor, pickTarget, swapHeld, type Press } from '../fight/lock-switch.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
@@ -207,7 +206,7 @@ view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 mark
 const KBM = kbmFor(search);
 if (KBM) mountKbm(document, window, KBM);
 const controls = createInput({   // :832
-  kbm: KBM, free: () => freeNow, overPart: pickupHitAt,
+  kbm: KBM, free: () => freeNow,
   element, window, paused,
   now: () => performance.now(),
   matchMedia: (query) => matchMedia(query),
