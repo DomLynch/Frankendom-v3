@@ -35,7 +35,9 @@ import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
-import { freshLock, lockBreakFor, stepLock } from '../fight/lock-break.ts';
+import { freshLock, lockBreakFor, stepLock, toggleLock } from '../fight/lock-break.ts';
+import { kbmFor, mountKbm } from '../fight/kbm.ts';
+import { pickupHitAt } from '../fight/pickup.ts';
 import { isTap, lockSwitchFor, pickTarget, swapHeld, type Press } from '../fight/lock-switch.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
@@ -201,7 +203,11 @@ view.setZoom(cameraZoom(FIGHT.camera.zoom, search));   // the lens zoom (data/fi
 view.setWide(wideRow(FIGHT.camera.wide, search));   // the wide-screen lens (data/fight.json camera.wide): more zoom on a landscape or desktop screen, none on a portrait one; ?wide=v1 = without it
 view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 marks): a guest's rung, and the Centurion met at it
 
+// Keyboard + mouse and the wide screen (data/input.json, src/fight/kbm.ts): null under ?input=v1 / the row off, and then the controls and the screen are exactly as before (no listener, no attribute, no style)
+const KBM = kbmFor(search);
+if (KBM) mountKbm(document, window, KBM);
 const controls = createInput({   // :832
+  kbm: KBM, free: () => freeNow, overPart: pickupHitAt,
   element, window, paused,
   now: () => performance.now(),
   matchMedia: (query) => matchMedia(query),
@@ -471,6 +477,7 @@ function frame(now: number) {
       let lockOn: boolean = locked;   // the soft lock (data/respawn.json lockBreak): held in a fight until the stick breaks it; free facing (lock:false, the sim's own) when broken or when nobody fights him
       if (LOCK_ROWS) {
         const fighting = engaged || attackers.some((a) => !a.dead);
+        if (KBM && controls.takeLockToggle() && fighting) lockState = toggleLock(lockState);   // Tab (data/input.json keys.lock): let go of the lock / lock on again
         lockState = stepLock(LOCK_ROWS, lockState, { dt: step(), fighting, stick: { x: intent.x, z: intent.z }, yaw: view.yaw, hero: state, foe: practice.enemy, action: intent.action }).state;
         lockOn = locked && fighting && !lockState.broken;
       }

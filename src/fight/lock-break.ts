@@ -52,8 +52,11 @@ export function awayAngleDeg(dir: { x: number; z: number }, hero: { x: number; z
   return Math.abs(wrapAngle(Math.atan2(dir.x, dir.z) - Math.atan2(fx, fz))) * 180 / Math.PI;
 }
 
-export type LockState = { broken: boolean; engagedFor: number; away: number; toward: number };
+export type LockState = { broken: boolean; engagedFor: number; away: number; toward: number; manual?: boolean };   // manual: the player let go of the lock with the lock key (data/input.json keys.lock); only the key locks on again
 export const freshLock = (): LockState => ({ broken: false, engagedFor: 0, away: 0, toward: 0 });
+
+/** The lock key (Tab, keyboard + mouse only): a held lock is let go and stays so (the camera is the player's: mouse look, free run); a broken lock (by the stick or by this key) locks on again. */
+export const toggleLock = (s: LockState): LockState => (s.broken ? { ...s, broken: false, manual: undefined, away: 0, toward: 0 } : { ...s, broken: true, manual: true, away: 0, toward: 0 });
 
 export type LockFrame = {
   dt: number; fighting: boolean;                      // fighting: a boss (or an attacker) is engaged with him
@@ -68,6 +71,7 @@ export function stepLock(rows: LockBreakRows, s: LockState, f: LockFrame): { sta
   const next: LockState = { ...s, engagedFor: s.engagedFor + f.dt };
   const dir = stickWorld(f.stick, f.yaw), angle = dir ? awayAngleDeg(dir, f.hero, f.foe) : 0, pushed = !!dir && dir.length >= rows.minPush;
   if (s.broken) {
+    if (s.manual) return { state: next };   // let go by the key: neither an attack press nor the stick toward the foe locks on again
     next.toward = pushed && angle <= rows.relockAngleDeg ? s.toward + f.dt : 0;
     if ((f.action && ATTACKS.has(f.action)) || next.toward + 1e-9 >= rows.relockSeconds) return { state: { ...next, broken: false, away: 0, toward: 0 } };
     return { state: next };

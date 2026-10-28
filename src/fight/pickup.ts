@@ -58,6 +58,9 @@ export function registerTakeSource(s: TakeSource): () => void { sources.add(s); 
 let gate: ((x: number, y: number) => boolean) | null = null;
 /** ragdoll.listenTaps asks this on every tap (CSS px): true = the tap selected a cut part and is used up (the corpse is not cut under it). False with no pickup mounted (?pickup=v1). */
 export const pickupTapGate = (x: number, y: number): boolean => gate?.(x, y) ?? false;
+let over: ((x: number, y: number) => boolean) | null = null;
+/** A cut part to take is under this point (CSS px)? Asks only: it selects nothing (the mouse's strike press uses it to leave a click on a part to the pickup, input.ts). False with no pickup mounted. */
+export const pickupHitAt = (x: number, y: number): boolean => over?.(x, y) ?? false;
 
 export type PickupState = { hintFor: string | null; hintAge: number; done: Set<string>; selected: { corpseId: string; unit: string } | null };
 export const newPickupState = (): PickupState => ({ hintFor: null, hintAge: 0, done: new Set(), selected: null });
@@ -168,6 +171,7 @@ export function mountPickup(doc: Doc, host: PickupHost, rows: PickupRows = PICKU
     st.selected = null;   // a tap anywhere else lets go (and falls through to the corpse tap, as it always did)
     return false;
   };
+  over = (x, y) => !!pick(rows, seen, x, y);
   (globalThis as { __pickup?: unknown }).__pickup = { seen: () => seen.map((t) => ({ corpseId: t.corpseId, unit: t.unit, boss: t.boss, sx: t.sx, sy: t.sy, onScreen: t.onScreen, dist: t.dist, frozenS: t.frozenS })), selected: () => st.selected, done: () => [...st.done] };   // the stills and the tests read it
 
   return {
@@ -201,6 +205,6 @@ export function mountPickup(doc: Doc, host: PickupHost, rows: PickupRows = PICKU
         if (u >= 1) { k.el.remove(); chips.splice(i, 1); }
       }
     },
-    remove(): void { gate = null; root.remove(); style.remove(); chips.length = 0; },
+    remove(): void { gate = null; over = null; root.remove(); style.remove(); chips.length = 0; },
   };
 }
