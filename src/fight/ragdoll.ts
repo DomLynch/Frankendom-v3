@@ -104,10 +104,11 @@ let heldPlainOnly = false;   // the live foe wears a body other than the page's 
 export function setHeldRagdoll(ragdoll: FoeRagdoll | null, plainOnly: boolean): void { page = ragdoll; heldPlainOnly = plainOnly; }
 /** scene.ts, ?feel=hero (data/physics.json `hero`): the HERO's presentation ragdoll, a second createFoeRagdoll on sim fighter 0 (hit reactions from the same data/feel-hitreact.json rows as the opponent's, the package's
  *  death fall on her killing blow). No cuts, no corpse, no finisher, no rules path. Null without the flag, under ?physics=v1, or with the physics rows off: nothing is created. */
-export function heroRagdollFor(search: string): FoeRagdoll | null {
-  if (!PHYSICS.on || !feelNames(search).includes('hero') || new URLSearchParams(search).get(PHYSICS.query) === PHYSICS.v1) return null;
+export function heroRagdollFor(search: string, deathOnly = false): FoeRagdoll | null {
+  const feelHero = feelNames(search).includes('hero');   // deathOnly (data/hero-death.json ragdoll, the zone): the same body with no hit reactions; the scene tells it only his killing blow
+  if (!PHYSICS.on || !(feelHero || deathOnly) || new URLSearchParams(search).get(PHYSICS.query) === PHYSICS.v1) return null;
   const rows = { ...PHYSICS, cut: { ...PHYSICS.cut, on: false, onKill: {} } } as PhysicsRows;
-  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as Promise<Chunk>, false, false, false, activeFeels(search, undefined, true), search, 0, '__ragdollHero');
+  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as Promise<Chunk>, false, false, false, feelHero ? activeFeels(search, undefined, true) : [], search, 0, '__ragdollHero');
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
  *  finisher's camera, blood and sound by its id and skips V1's victim clip and its bakes. */

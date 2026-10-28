@@ -8,6 +8,7 @@ import { inputNum } from './input-rows.ts';
 import { SPELL_BUFFER_MS } from './sandbox-rules.ts';
 import { applyTouchLayout } from './touch-layout.ts';
 import { attachTapLog, tapLogOn } from './tap-log.ts';
+import { buttonOf, keyAlias, type KbmRows } from './kbm.ts';
 
 type Lookup = <T extends HTMLElement>(id: string) => T;
 export type InputEnv = {
@@ -21,6 +22,10 @@ export type InputEnv = {
   practice: () => Practice;
   quiet: () => void;         // feedback.quiet — clearing input also silences pending cues
   press?: () => void;        // any fight-button press, before it is read: the Coach hands the fight over here (src/coach-ui.ts)
+  // Keyboard + mouse (data/input.json, src/fight/kbm.ts). Absent or null (`?input=v1`, and every test that builds the layer bare) = the controls exactly as they were: no mouse, no new key, no key map.
+  kbm?: KbmRows | null;
+  free?: () => boolean;      // the camera is free (nobody locks it): a left-drag looks round instead of picking a swing
+  overPart?: (x: number, y: number) => boolean;   // an optional hook: a point that is not a strike (nothing passes one now: #219's Take is gone, a click on a corpse part strikes and the corpse tap cuts it)
 };
 // The controls' intent for one frame, named apart from the simulation's `Intent` (duel.ts) it is folded into by main.ts: the two
 // shapes differ (stick axes here, a camera-relative move plus lock there) and sharing a name at that seam misled the audit twice.
@@ -89,6 +94,8 @@ const MOVE_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'Arro
 
 export function createInput(env: InputEnv) {
   const { element, paused } = env;
+  const KBM = env.kbm ?? null, alias = KBM ? keyAlias(KBM) : null;
+  let lockToggles = 0;   // Tab presses since the page last asked (takeLockToggle)
   const attackButton = element<HTMLButtonElement>('attack-button');
   const kickButton = element<HTMLButtonElement>('kick-button');
   const heavyButton = element<HTMLButtonElement>('heavy-button');
@@ -186,9 +193,10 @@ export function createInput(env: InputEnv) {
   function requestParry() {
     request('parry');
   }
-  function fireSlash(side: 'left' | 'right' | null) {
+  function fireSlash(side: 'left' | 'right' | null, byMouse = false) {
     slashWait = null;
     if (side) { attackButton.dataset.slide = side; take(side === 'left' ? 'light_left' : 'light_right'); }
+    else if (byMouse && KBM?.strike.forwardStab && (keys.has('KeyW') || keys.has('ArrowUp')) && !keys.has('KeyQ') && !cutLateral()) fireStab();   // a click with W held (and no side key) is the stab
     else requestStrike();
   }
   function fireStab() { slashWait = null; hold('thrust'); request('thrust'); }   // oneButton: a slide up from STRIKE
@@ -201,46 +209,60 @@ export function createInput(env: InputEnv) {
   function requestStrike(isHeavy = false) {
     take(isHeavy ? 'heavy' : cutAction(cutLateral()));   // the press goes through take(): flashed only when taken
   }
+  // The key map (data/input.json keys): with the rows on, a code is read as its action's canonical code (Space is the roll's E, Z the first special's 1...); a code in no row does nothing. Off: the code as it is.
+  const codeOf = (event: KeyboardEvent): string | null => (alias ? alias.get(event.code) ?? null : event.code);
   env.window.addEventListener('keydown', (event) => {
     if (paused() || (event.target as { tagName?: string } | null)?.tagName === 'INPUT') return; // typing a name is not fighting
-    if ([...MOVE_KEYS, 'ShiftLeft', 'ShiftRight'].includes(event.code)) {
+    const code = codeOf(event);
+    if (code === null) return;
+    if (KBM && (event.metaKey || event.ctrlKey || event.altKey)) return;   // a browser shortcut (Ctrl+R, Cmd+Q...) is not a fight key
+    if (KBM && event.code === 'Space' && (event.target as { tagName?: string } | null)?.tagName === 'BUTTON') return;   // Space on a focused button presses that button (its own handler)
+    if ([...MOVE_KEYS, 'ShiftLeft', 'ShiftRight'].includes(code)) {
       event.preventDefault();
-      keys.add(event.code);
+      keys.add(code);
     }
-    if (event.code === 'KeyF' && !event.repeat) {
+    if (code === 'KeyF' && !event.repeat) {
       event.preventDefault();
       requestStrike();
     }
-    if (event.code === 'KeyC' && !event.repeat) {
+    if (code === 'KeyC' && !event.repeat) {
       event.preventDefault();
       requestKick();
     }
-    if (event.code === 'KeyG' && !event.repeat) {
+    if (code === 'KeyG' && !event.repeat) {
       event.preventDefault();
       hold('heavy');
       take(DIRECTIONAL_HEAVY && !counterOpen() ? keyHeavy() : 'heavy');   // V3: G + A/D/W picks a directional heavy; ?heavy=v1 = requestStrike(true), V1's
     }
-    if (event.code === 'KeyT' && !event.repeat) {
+    if (code === 'KeyT' && !event.repeat) {
       event.preventDefault();
       hold('thrust');
       request('thrust');
     }
-    if (event.code === 'KeyE' && !event.repeat) {
+    if (code === 'KeyE' && !event.repeat) {
       event.preventDefault();
       pressDodge(env.now());
     }
-    if (event.code === 'KeyQ') {
+    if (code === 'KeyQ') {
       event.preventDefault();
-      keys.add(event.code);
+      keys.add(code);
       if (!event.repeat) requestParry();
     }
-    if (event.code === 'KeyR' && !event.repeat) element('recenter-button').click();
+    if (code === 'KeyR' && !event.repeat) element('recenter-button').click();
+    if (KBM && !event.repeat) {   // the keys V1's keyboard never had: the two specials, the lock, Esc
+      if (code === 'Digit1') { event.preventDefault(); requestSkill(); }
+      if (code === 'Digit2') { event.preventDefault(); requestSkill2(); }
+      if (code === 'Tab') { event.preventDefault(); lockToggles++; }
+      if (code === 'Escape') clearAll();   // lets go of everything held (keys, the mouse press, a guard); the browser's own Esc (full screen) is not stopped
+    }
   });
   env.window.addEventListener('keyup', (event) => {
-    keys.delete(event.code);
-    if (event.code === 'KeyE') releaseDodge();
-    if (event.code === 'KeyG') unhold('heavy');
-    if (event.code === 'KeyT') unhold('thrust');
+    const code = codeOf(event);
+    if (code === null) return;
+    keys.delete(code);
+    if (code === 'KeyE') releaseDodge();
+    if (code === 'KeyG') unhold('heavy');
+    if (code === 'KeyT') unhold('thrust');
   });
   function setRun(value: boolean) {
     run = value;
@@ -440,6 +462,65 @@ export function createInput(env: InputEnv) {
     guard = false;
     if (action === 'parry') action = null;
   });
+  // The mouse (data/input.json mouse, strike): the arena canvas is the STRIKE and GUARD buttons for a mouse pointer. Left = STRIKE with the thumb's own rules (a click is the light, a hold the heavy, a flick the
+  // stab or a slash; A/D/W held pick the same before it); right held = GUARD, the cursor's slide from the press the side. Touch and pen never reach this (pointerType), and ?input=v1 never builds it.
+  let mouseId: number | null = null, mouseGuardId: number | null = null;
+  if (KBM) {
+    const canvas = element<HTMLCanvasElement>('world');
+    const capture = (id: number) => { try { canvas.setPointerCapture(id); } catch { /* capture is a convenience */ } };
+    canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+    canvas.addEventListener('pointerdown', (event) => {
+      if (event.pointerType !== 'mouse' || paused() || !env.ready()) return;
+      if (event.button === buttonOf(KBM, KBM.mouse.guard)) {
+        if (guardId !== null || mouseGuardId !== null) return;
+        event.preventDefault();
+        mouseGuardId = event.pointerId; capture(mouseGuardId);
+        guardFrom = { x: event.clientX, y: event.clientY };
+        guardDir = null; showSide();
+        guard = true;
+        requestParry();
+      } else if (event.button === buttonOf(KBM, KBM.mouse.strike)) {
+        if (mouseId !== null || env.overPart?.(event.clientX, event.clientY)) return;   // a click on a cut part to take is the pickup's
+        event.preventDefault();
+        mouseId = event.pointerId; capture(mouseId);
+        hold('light');
+        attackButton.dataset.held = '';
+        slashWait = { since: env.now(), x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY };
+      }
+    });
+    canvas.addEventListener('pointermove', (event) => {
+      if (event.pointerType !== 'mouse') return;
+      if (event.pointerId === mouseGuardId && guardFrom) {
+        const side = guardSide(event.clientX - guardFrom.x, event.clientY - guardFrom.y, guardDir);
+        if (side !== guardDir) { guardDir = side; showSide(); }
+        return;
+      }
+      if (event.pointerId !== mouseId || !slashWait) return;
+      slashWait.lx = event.clientX; slashWait.ly = event.clientY;
+      const dx = event.clientX - slashWait.x, dy = event.clientY - slashWait.y, moved = Math.hypot(dx, dy);
+      if (env.free?.()) {   // the camera is free: the drag looks round (main.ts), it is not a swing; a click that stays put is still a strike
+        if (moved >= KBM.mouse.lookDragPx) { slashWait = null; mouseId = null; unhold('light'); delete attackButton.dataset.held; }
+        return;
+      }
+      if (moved < KBM.strike.slidePx) return;
+      if (slashWait.armed !== undefined) fireHeavy(heavySlide(dx, dy)); else if (stabSector(dx, dy)) fireStab(); else fireSlash(dx < 0 ? 'left' : 'right');
+    });
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'])
+      canvas.addEventListener(type, (event) => {
+        const e = event as PointerEvent;
+        if (e.pointerType !== 'mouse') return;
+        if (e.pointerId === mouseGuardId) {
+          mouseGuardId = null; guardFrom = null; guardDir = null; showSide(); guard = false;
+          if (type === 'pointercancel') withdraw('parry');
+        }
+        if (e.pointerId !== mouseId) return;
+        mouseId = null;
+        if (slashWait) { if (type === 'pointerup') { if (slashWait.armed !== undefined) fireHeavy(); else fireSlash(null, true); } else slashWait = null; }
+        unhold('light'); unhold('heavy'); unhold('thrust');
+        delete attackButton.dataset.held; delete attackButton.dataset.slide;
+        if (type === 'pointercancel') withdraw('light');
+      });
+  }
   function moveStick(event: PointerEvent) {
     const rect = joystick.getBoundingClientRect();
     const x = (event.clientX - rect.left - rect.width / 2) / 42;
@@ -540,8 +621,13 @@ export function createInput(env: InputEnv) {
       action = null;
       cancel = false;
     },
+    /** Tab was pressed since the last ask (kbm only): the page toggles the soft lock (lock-break.ts toggleLock). Read once per tick. */
+    takeLockToggle(): boolean { const t = lockToggles > 0; lockToggles = 0; return t; },
     // Every press, hold, key and stick released: the welcome/journal/rename/visibility paths, a rematch, a graphics loss.
-    clear() {
+    clear: clearAll,
+  };
+  function clearAll() {
+      lockToggles = 0; mouseId = null; mouseGuardId = null;
       action = null; pendingSpell = null;
       cancel = true;
       dodgeHeld = null;
@@ -560,7 +646,6 @@ export function createInput(env: InputEnv) {
       stick.style.transform = '';
       stick.dataset.run = 'false';
       runButton.setAttribute('aria-pressed', 'false');
-    },
-  };
+  }
 }
 export type Controls = ReturnType<typeof createInput>;   // was `Input`, which sim.ts already uses for the movement input

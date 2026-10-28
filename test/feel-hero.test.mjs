@@ -33,8 +33,8 @@ test('opt-in: ?feel=hero names the hero module; the opponent\'s list never gets 
 
 test('the flag off changes nothing: no hero ragdoll is made, and the opponent\'s hooks and tracking are unchanged', () => {
   const ragdoll = src('src/fight/ragdoll.ts'), scene = src('src/fight/scene.ts');
-  assert.match(ragdoll, /export function heroRagdollFor\(search: string\): FoeRagdoll \| null \{\n  if \(!PHYSICS\.on \|\| !feelNames\(search\)\.includes\('hero'\)/, 'null unless ?feel=hero');
-  assert.match(scene, /const heroRagdoll = typeof location === 'undefined' \? null : heroRagdollFor\(location\.search\)/);
+  assert.match(ragdoll, /export function heroRagdollFor\(search: string, deathOnly = false\): FoeRagdoll \| null \{\n  const feelHero = feelNames\(search\)\.includes\('hero'\);[^\n]*\n  if \(!PHYSICS\.on \|\| !\(feelHero \|\| deathOnly\)/, 'null unless ?feel=hero (or the zone\'s death-only ragdoll, data/hero-death.json)');
+  assert.match(scene, /let heroRagdoll = typeof location === 'undefined' \? null : heroRagdollFor\(location\.search\)/);
   assert.match(scene, /heroRagdoll\?\.attach\(player, loaded\.player\)/); assert.match(scene, /heroRagdoll\?\.frame\(/);
   assert.match(ragdoll, /side = 1, costKey = '__ragdoll'\)/, 'the opponent\'s ragdoll is still fighter 1 with its old cost record');
   assert.match(ragdoll, /foe \? createFoeRagdoll\(PHYSICS, foe, [^\n]*activeFeels\(search, FEEL_DEFAULTS\), search\) : null/, 'foeRagdollFor passes no side: unchanged');
@@ -112,7 +112,7 @@ test('hero death: she is the killed fighter 0, the ragdoll runs after the clip i
   const scene = src('src/fight/scene.ts'), ragdoll = src('src/fight/ragdoll.ts');
   const frame = scene.indexOf('heroRagdoll?.frame('), pose = scene.indexOf('heroFalls(stand(');
   assert.ok(pose > 0 && frame > pose, 'the hero ragdoll frame comes after the Death clip pose, so its bones win each frame');
-  assert.match(scene, /heroRagdoll\?\.frame\(animationDt, events, practice\.finish\?\.victim === 0 \|\| practice\.duel\.fighters\[0\]\.health <= 0 \? \{ victim: 0 \} : null/);
+  assert.match(scene, /heroRagdoll\?\.frame\(animationDt, heroFeel \? events : events\.filter\(\(e\) => e\.type === 'Killed'\), practice\.finish\?\.victim === 0 \|\| practice\.duel\.fighters\[0\]\.health <= 0 \? \{ victim: 0 \} : null/);
   assert.match(ragdoll, /e\.type === 'Killed' && e\.target === side/);
 });
 
@@ -120,7 +120,7 @@ test('hero ragdoll: no cuts, no corpse, no finisher, no rules path; her kill is 
   const s = src('src/fight/ragdoll.ts'); const i = s.indexOf('export function heroRagdollFor');
   const body = s.slice(i, s.indexOf('/** scene.ts: does the ragdoll play', i));
   assert.match(body, /cut: \{ \.\.\.PHYSICS\.cut, on: false, onKill: \{\} \}/);
-  assert.match(body, /false, false, false, activeFeels\(search, undefined, true\), search, 0, '__ragdollHero'/);
+  assert.match(body, /false, false, false, feelHero \? activeFeels\(search, undefined, true\) : \[\], search, 0, '__ragdollHero'/);
   assert.match(s, /e\.type === 'Killed' && e\.target === side/); assert.match(s, /rd\.kill\(blowImpulse\(/);
 });
 

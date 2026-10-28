@@ -60,8 +60,8 @@ test('a bad spawn body is rejected by the row check (with the rig rows), the pag
   assert.match(validateZone(empty, kinds).join('\n'), /spawns\[0\]\.body: must be a non-empty string/);
   const unknownKey = clone(ZONE); unknownKey.spawns[0].bodie = 'x';
   assert.match(validateZone(unknownKey, kinds, RIG).join('\n'), /bodie: unknown key/);
-  const noClips = clone(RIG); noClips.files.kachujin = 'kachujin-106';
-  const clipless = clone(ZONE); clipless.spawns[0].body = 'kachujin';
+  const noClips = clone(RIG); noClips.files.synthbody = 'synthbody-106';
+  const clipless = clone(ZONE); clipless.spawns[0].body = 'synthbody';
   assert.match(validateZone(clipless, kinds, noClips).join('\n'), /no data\/rig\.json clips106\.dir folder/);
   const origError = console.error, origWarn = console.warn; console.error = console.warn = () => {};
   try { assert.deepEqual(Object.keys(buildZoneSet(INDEX, [unknown], undefined, RIG).rows), [], 'the bad row is dropped, never loaded'); } finally { console.error = origError; console.warn = origWarn; }

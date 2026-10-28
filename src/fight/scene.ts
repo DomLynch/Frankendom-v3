@@ -59,7 +59,8 @@ import { readyOffset, slouchFrom } from './upright-ready.ts';
 import { armfeelFrom, Flinch } from './armfeel.ts';
 import { createBurstPool } from './armfeel-fx.ts';
 import { createBloodEdge } from './blood-edge.ts';
-import { createCameraRig, framingLow, framingTall, setLensBoost } from './camera.ts';
+import { createCameraRig, framingLow, framingTall, setDeathCam, setLensBoost } from './camera.ts';
+import type { DeathCamRows } from './hero-death.ts';
 import { launchSeveredHead, stepSeveredHead, type SeveredHead } from './severed-head.ts';
 import { createFightFx, impactTexture } from './fx.ts';
 import { createSignatures } from './signature.ts';
@@ -291,7 +292,7 @@ export function createScene(
   // 106 ONLY (Dom 2026-10-26: "no risk of going back to the old 65 rig"; docs/PLAN.md section 10). The loader table holds the 106-joint
   // Psyche and Minotaur and nothing else: no 65 body (psyche.glb, minotaur.glb, warrior.glb, veteran.glb) is addressable, so none is
   // built into dist/ (data/build.json notShipped; test/rig-bones.test.mjs is the lock). No query picks a body.
-  const fighterUrls: Record<string, string> = { '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href, '../assets/gargantua-106.glb': new URL('../assets/gargantua-106.glb', import.meta.url).href, '../assets/arachne-106.glb': new URL('../assets/arachne-106.glb', import.meta.url).href, '../assets/pumpkinhulk-106.glb': new URL('../assets/pumpkinhulk-106.glb', import.meta.url).href };
+  const fighterUrls: Record<string, string> = { '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href, '../assets/gargantua-106.glb': new URL('../assets/gargantua-106.glb', import.meta.url).href, '../assets/arachne-106.glb': new URL('../assets/arachne-106.glb', import.meta.url).href, '../assets/pumpkinhulk-106.glb': new URL('../assets/pumpkinhulk-106.glb', import.meta.url).href, '../assets/parasite-106.glb': new URL('../assets/parasite-106.glb', import.meta.url).href, '../assets/sporty-granny-106.glb': new URL('../assets/sporty-granny-106.glb', import.meta.url).href, '../assets/big-vegas-106.glb': new URL('../assets/big-vegas-106.glb', import.meta.url).href, '../assets/castle-guard-106.glb': new URL('../assets/castle-guard-106.glb', import.meta.url).href, '../assets/kachujin-106.glb': new URL('../assets/kachujin-106.glb', import.meta.url).href, '../assets/the-boss-106.glb': new URL('../assets/the-boss-106.glb', import.meta.url).href, '../assets/anime-boy-black-106.glb': new URL('../assets/anime-boy-black-106.glb', import.meta.url).href, '../assets/anime-girl-blonde-106.glb': new URL('../assets/anime-girl-blonde-106.glb', import.meta.url).href };
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): none in V3. The Minotaur wears no kit (foe-body.ts) and the old cuts
   // (carriers-minotaur.glb, carriers-veteran.glb) are skinned to the 65 rig, so they are not shipped.
   const carrierUrls: Record<string, string> = {};
@@ -396,7 +397,9 @@ export function createScene(
   const pickupV = new THREE.Vector3();
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow and one line over a frozen corpse (presentation only)
     : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
-  const heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created
+  let heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created   // let: the zone page may ask for the death-only one (heroDeath below) before the rigs load
+  let heroLies = false, fallenAt: THREE.Vector3 | null = null;   // the death camera looks at the hero's hips while the death-only ragdoll has him down (heroDeath below)
+  const heroFeel = typeof location !== 'undefined' && !!heroRagdoll;   // ?feel=hero: the ragdoll hears every blow (hit reactions); the death-only one hears the killing blow alone
   let loading: Promise<void> | null = null;
   function loadFighters(): Promise<void> {
     if (warriors) return Promise.resolve();
@@ -833,6 +836,11 @@ export function createScene(
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
+    /** The zone's hero death (data/hero-death.json, src/fight/hero-death.ts): the death-only ragdoll (built before the rigs load, so it attaches with them) and the death camera. null = ?herodeath=v1. */
+    heroDeath(rows: { ragdoll: boolean; cam: DeathCamRows } | null) {
+      setDeathCam(rows ? rows.cam : null); heroLies = !!rows && rows.ragdoll;
+      if (rows?.ragdoll && !heroRagdoll && !warriors && typeof location !== 'undefined') heroRagdoll = heroRagdollFor(location.search, true);
+    },
     heroFall(seconds: number) { fallSeconds = seconds; },   // the hero's death fall, seconds (0 = none: he keeps the pose the sim left)
     stopTour() {
       rig.stopTour();
@@ -1087,7 +1095,7 @@ export function createScene(
       if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
       pickup?.frame(animationDt);   // data/pickup.json: the arrow, the selected part's outline and Take pill, the flying chip (DOM only; reads the corpses' cut parts after the ragdolls stepped)
-      heroRagdoll?.frame(animationDt, events, practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
+      heroRagdoll?.frame(animationDt, heroFeel ? events : events.filter((e) => e.type === 'Killed'), practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
       // (the clip's first 9 %) — baked from the rig at that pose, popped along the killing blow, ballistic to a stop. Blood
       // 'off' keeps the head on: gore is presentation, like the rest of the layer.
@@ -1290,6 +1298,7 @@ export function createScene(
         big: ['wraith', 'minotaur'].includes(opponentId),
         reach: openedReach,
         focus: cutBone ? cutFocus : null,
+        fallen: heroLies && practice.finish.victim === 0 ? (fallenAt = warriors?.player.boneWorld('pelvis') ?? fallenAt) : null,
       } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden, freeCamera);
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock

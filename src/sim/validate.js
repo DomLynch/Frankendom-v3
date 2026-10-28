@@ -47,6 +47,11 @@ export const SCHEMA = {
     maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead'] } },
   // Boss weapons (Dom + Strategy 2026-10-28, src/fight/boss-weapon.ts validateBossWeapons checks the values): one row per archetype a boss is built on; the weapon it fights with and is drawn with
   'boss-weapons': { keys: ['about', 'query', 'v1', 'rows'], rows: { rows: ['id', 'opponent', 'weapon', 'clipsAs', 'equip', 'scale', 'grip', 'material', 'offhand', 'placeholder'] } },
+  // Keyboard + mouse and the wide screen (src/fight/kbm.ts validateInput checks the values): a closed key set; input and presentation only
+  'input': { keys: ['about', 'schema_version', 'on', 'query', 'off', 'detect', 'hide', 'keys', 'mouseButtons', 'mouse', 'strike', 'partJoin', 'keyNames', 'mouseNames', 'hints', 'layout'],
+    maps: { detect: ['media', 'attribute', 'mouseMovePx'], keys: ['forward', 'back', 'left', 'right', 'run', 'strike', 'heavy', 'stab', 'roll', 'guard', 'kick', 'skill', 'skill2', 'lock', 'recenter', 'escape'], mouse: ['strike', 'guard', 'lookDragPx'], strike: ['forwardStab', 'slidePx'], layout: ['attribute', 'wideAttribute', 'wideAspect', 'rows'] } },
+  // The hero's death and respawn loop (src/fight/hero-death.ts validateHeroDeath checks the values): the death-only ragdoll, the death camera, the 'You fell' line and Respawn button
+  'hero-death': { keys: ['about', 'on', 'query', 'off', 'ragdoll', 'line', 'button', 'keys', 'respawn', 'cam', 'limits'], maps: { respawn: ['minSeconds', 'autoSeconds'], cam: ['seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'], limits: ['minSeconds', 'autoSeconds', 'seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
   'pickup': { keys: ['about', 'on', 'query', 'off', 'units', 'delayS', 'hintSeconds', 'walkAwayM', 'zIndex', 'colour', 'text', 'arrow', 'safe', 'fadeS'],
     maps: { text: ['label', 'sizePx', 'letterSpacingEm', 'shadow', 'maxWidthPx', 'lineHeight'], arrow: ['sizePx', 'bobPx', 'bobS', 'liftPx', 'textGapPx'], safe: ['topFrac', 'bottomFrac', 'sideMarginPx'] } },

@@ -1,0 +1,22 @@
+{
+  "about": "The hero's death and respawn loop in the zone (Dom 2026-10-28: 'hero death and respawn, get that sorted'; Strategy brief: ragdoll, a short death cam, a respawn loop). Built on what shipped: the Death-clip fall (data/respawn.json heroDeath.fallSeconds, PR #94), the 106-bone Psyche ragdoll of ?feel=hero (PR #157, src/fight/ragdoll.ts heroRagdollFor; here a DEATH-ONLY ragdoll with no hit reactions: it is built for the hero and is told only the killing blow, so he is as he always was until he dies, and the package's death fall takes him), the zone's death beat (src/client/main.ts zoneStep: 'You died' for the zone row's respawn.downSeconds, then the pit's mark at full health) and the Rematch button (src/fight/hud.ts). New here: (1) `ragdoll`: the hero falls as the physics body, flung along the killing blow; the rig's Death clip is only the first pose it blends from. (2) `cam`: a short, gentle death camera, NOT the finisher zoom Dom had removed (#216): over `seconds` the camera slowly pulls back `pullBackMetres`, rises `riseMetres` and drifts `orbitDegrees` round the fallen hero, looking `lookY` metres up his body, then holds there (he has no input to take over; the world's other bosses keep running); it eases away `releaseSeconds` after he stands again. (3) `line` / `button` / `keys`: after `respawn.minSeconds` a plain HUD line 'You fell' and the Respawn button (the Rematch button's place and style) appear, and a tap or one of `keys` stands him up; no pop-up. `respawn.autoSeconds`: nobody is stuck on the line, he stands up by himself after this long. The respawn itself is the existing one (src/client/main.ts rematch: the hero at the pit's mark at full health, the boss that killed him at full health, every other boss and every kill untouched; nothing of the save or progress is wiped). Finishers: no finisher row has a hero-victim clip today (src/fight/finishers.ts selectFinisher: the player's own death keeps the plain fall; every finisher clip is a foe-body role), so no boss plays a finisher on the hero; when a finisher row gains a hero victim body the killing boss's row goes here. ?herodeath=v1, on:false and ?postkill=v1 (no zone) = the death as it was: the Death-clip fall, 'You died', an automatic stand-up after the zone row's downSeconds. Presentation only: the sim stays stopped at the kill. Ranges: limits.",
+  "on": true,
+  "query": "herodeath",
+  "off": "v1",
+  "ragdoll": true,
+  "line": "You fell",
+  "button": "Respawn",
+  "keys": ["Enter", "Space"],
+  "respawn": { "minSeconds": 1.2, "autoSeconds": 12 },
+  "cam": { "seconds": 2.5, "pullBackMetres": 2.2, "riseMetres": 0.9, "orbitDegrees": 35, "releaseSeconds": 0.8, "lookY": 0.5 },
+  "limits": {
+    "minSeconds": [0, 10],
+    "autoSeconds": [2, 120],
+    "seconds": [0.5, 6],
+    "pullBackMetres": [0, 8],
+    "riseMetres": [0, 4],
+    "orbitDegrees": [0, 120],
+    "releaseSeconds": [0.1, 3],
+    "lookY": [0, 2]
+  }
+}

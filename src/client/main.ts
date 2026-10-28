@@ -35,7 +35,8 @@ import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
-import { freshLock, lockBreakFor, stepLock } from '../fight/lock-break.ts';
+import { freshLock, lockBreakFor, stepLock, toggleLock } from '../fight/lock-break.ts';
+import { kbmFor, mountKbm } from '../fight/kbm.ts';
 import { isTap, lockSwitchFor, pickTarget, swapHeld, type Press } from '../fight/lock-switch.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
@@ -72,6 +73,7 @@ import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
+import { heroDeathFor, respawnKey, respawnReady, standUpDue } from '../fight/hero-death.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
@@ -200,7 +202,11 @@ view.setZoom(cameraZoom(FIGHT.camera.zoom, search));   // the lens zoom (data/fi
 view.setWide(wideRow(FIGHT.camera.wide, search));   // the wide-screen lens (data/fight.json camera.wide): more zoom on a landscape or desktop screen, none on a portrait one; ?wide=v1 = without it
 view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 marks): a guest's rung, and the Centurion met at it
 
+// Keyboard + mouse and the wide screen (data/input.json, src/fight/kbm.ts): null under ?input=v1 / the row off, and then the controls and the screen are exactly as before (no listener, no attribute, no style)
+const KBM = kbmFor(search);
+if (KBM) mountKbm(document, window, KBM);
 const controls = createInput({   // :832
+  kbm: KBM, free: () => freeNow,
   element, window, paused,
   now: () => performance.now(),
   matchMedia: (query) => matchMedia(query),
@@ -241,6 +247,9 @@ function nameOpponent() {   // :397 without the legend
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale, undefined, sandOn(search)));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
 if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
+const DEATH = heroDeathFor(!!ZONE, search);   // data/hero-death.json: the death ragdoll, camera, 'You fell' line and Respawn button; null = ?herodeath=v1 (or ?postkill=v1): the fall, 'You died' and the automatic stand-up as before
+let respawnAsked = false;
+view.heroDeath(DEATH);
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0, bossKilled = false;
 // The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
@@ -345,7 +354,8 @@ function zoneStep(dt: number) {
       if (next >= 0) hand(next, hero);
     }
   } else if (heroDied()) {
-    if ((sinceDeath += dt) >= ZONE!.diedSeconds) { const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
+    sinceDeath += dt;
+    if (DEATH ? standUpDue(DEATH, sinceDeath, respawnAsked) : sinceDeath >= ZONE!.diedSeconds) { respawnAsked = false; const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
     const near = inAggro(spawns, hero);
     if (near >= 0 && near !== current) hand(near, hero);
@@ -379,7 +389,10 @@ function syncSweeps() {
 }
 // The zone's stills and the cost table read this (scripts/zone-stills.mjs)
 function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), ...(Object.keys(TUNED).length ? { tune: TUNED } : {}), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
-element('reset-button').addEventListener('click', () => rematch());
+// The hero's death (data/hero-death.json, src/fight/hero-death.ts): after the fall the HUD says 'You fell' and the Respawn button (the Rematch button) or a key stands him up; the existing respawn does it (zoneStep).
+function askRespawn() { if (DEATH && heroDied() && respawnReady(DEATH, sinceDeath)) respawnAsked = true; }
+element('reset-button').addEventListener('click', () => { if (DEATH && heroDied()) askRespawn(); else rematch(); });
+if (DEATH) window.addEventListener('keydown', (e) => { if (heroDied() && respawnKey(DEATH, e.code)) { e.preventDefault(); askRespawn(); } });
 // Tap-to-switch the soft lock (data/respawn.json lockSwitch, src/fight/lock-switch.ts; ?lockswitch=v1 off): a tap on another boss that is on him swaps the held fight with that boss's. A press listener of its own: the look drag, the corpse cut tap and the buttons are not touched.
 const SWITCH = LOCK_ROWS && multi ? lockSwitchFor(true, search) : null;
 if (SWITCH) {
@@ -422,8 +435,8 @@ if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger d
 }
 
 function updateHud() {   // :684, the career fight's view
-  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge) });
-  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null;   // a walking hero keeps the whole HUD (Respawn included) up
+  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge), death: DEATH && heroDied() ? { line: DEATH.line, button: DEATH.button, ready: respawnReady(DEATH, sinceDeath) } : undefined });
+  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null || (!!DEATH && heroDied());   // a walking hero keeps the whole HUD (Respawn included) up; so does a fallen one under the death loop (the camera is still moving, so "settled" would hide the line and Respawn)
   document.documentElement.classList.toggle('endgame-fade', !!phase && !walking && (hushed || phase.touring));
   document.documentElement.classList.toggle('endgame-hush', !!phase && !walking && hushed);
 }
@@ -463,6 +476,7 @@ function frame(now: number) {
       let lockOn: boolean = locked;   // the soft lock (data/respawn.json lockBreak): held in a fight until the stick breaks it; free facing (lock:false, the sim's own) when broken or when nobody fights him
       if (LOCK_ROWS) {
         const fighting = engaged || attackers.some((a) => !a.dead);
+        if (KBM && controls.takeLockToggle() && fighting) lockState = toggleLock(lockState);   // Tab (data/input.json keys.lock): let go of the lock / lock on again
         lockState = stepLock(LOCK_ROWS, lockState, { dt: step(), fighting, stick: { x: intent.x, z: intent.z }, yaw: view.yaw, hero: state, foe: practice.enemy, action: intent.action }).state;
         lockOn = locked && fighting && !lockState.broken;
       }

@@ -171,8 +171,8 @@ test('the page wires the loop: the zone row via zoneFor, the corpse left BEFORE 
   const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8'), main = src('../src/client/main.ts'), hud = src('../src/fight/hud.ts');
   assert.match(main, /zoneLoopFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\), search/);
   assert.match(main, /zone: heroStands\(\) \|\| heroDied\(\)/);
-  assert.match(main, /diedSeconds\) \{ const who = killedBy \?\? current; rematch\(poseFor\(who, heroStart\), who\); \}/);
+  assert.match(main, /diedSeconds\) \{ respawnAsked = false; const who = killedBy \?\? current; rematch\(poseFor\(who, heroStart\), who\); \}/);
   assert.match(main, /if \(ZONE\) view\.respawnFoe\(\);[^\n]*\n\s*seed = nextSeed/);
   assert.match(src('../src/fight/scene.ts'), /respawnFoe\(\): boolean \{ return ragdoll\?\.leaveCorpse\(\)/);
-  assert.match(hud, /resetButton\.hidden = !!view\.zone/);
+  assert.match(hud, /resetButton\.hidden = view\.death \? !view\.death\.ready : !!view\.zone/);   // a fallen hero gets Respawn (data/hero-death.json); everyone else in the zone still no Rematch
 });
