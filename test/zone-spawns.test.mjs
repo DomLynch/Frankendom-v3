@@ -52,7 +52,7 @@ test('lazy boss bodies: scene.ts fetches a non-live body only behind the hero-ne
 });
 
 test('the world rows are pinned: the pit area, centred, 1.5 m margin, 1 m from the wall, 6.5 m between spots; limits hold them', () => {
-  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 30, startClearance: 25, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 60, loadWithinMetres: 24, loadAfterKill: true, loadRadiusAfterKillMetres: 120, loadQuery: 'bossload', loadOff: 'v1' });
+  assert.deepEqual({ ...WORLD, about: undefined }, { about: undefined, pitArea: 'duel-pit', centre: 0.5, retargetMargin: 1.5, edgeMetres: 1, minSpacing: 30, startClearance: 25, leashMargin: 15, pitScale: 0.65, spreadRadiusMetres: 180, loadWithinMetres: 24, loadAfterKill: true, loadRadiusAfterKillMetres: 120, loadQuery: 'bossload', loadOff: 'v1' });
   for (const k of ['retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres', 'loadWithinMetres', 'loadRadiusAfterKillMetres']) assert.ok(WORLD[k] >= ROWS.limits[k][0] && WORLD[k] <= ROWS.limits[k][1], k);
   assert.deepEqual(pitOrigin(ZONE), { x: 226, z: 47 }, 'the Duel pit area (217..235, 38..56) is centred at 226, 47');
 });
@@ -77,7 +77,7 @@ test('the shipped zone row: three spots across the zone\'s ground (leash circle 
 test('bad spots are refused: off the zone\'s ground, in the pit wall, on the hero\'s start, inside each other\'s aggro, another kind, a bad world row', () => {
   const ok = spotsFor(ZONE), edit = (f) => { const s = structuredClone(ok); f(s); return s; };
   const arena = (s) => Math.max(s.leash, wall());
-  assert.throws(() => validateSpots(edit((s) => { s[0].x = 40; }), start(), wall()), /outside the zone's spawn extent/);
+  assert.throws(() => validateSpots(edit((s) => { s[0].x = WORLD.spreadRadiusMetres + 20; }), start(), wall()), /outside the zone's spawn extent/);
   assert.throws(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - arena(s[0]) + 0.1); }), start(), wall()), /outside the zone's spawn extent/, 'the fight arena must lie inside it, not only the spot');
   assert.doesNotThrow(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -(WORLD.spreadRadiusMetres - arena(s[0]) - 0.1); }), start(), wall()), 'a spot well beyond the pit is fine');
   assert.doesNotThrow(() => validateSpots(edit((s) => { s[0].x = 0; s[0].z = -wall(); }), start(), wall()), 'there is no pit wall to stand in any more: open ground');
@@ -243,7 +243,7 @@ test('the page wires it: one sim, every frame zoneStep, the auto-draw waits for 
   assert.match(live, /leashed\(spawns\[current\]!, practice\.enemy(, openerLift)?\)/, 'the leash measures the boss, not the hero (live code, not a comment)');
   assert.match(live, /dropped\(spawns, alive\(\), \(i\) => attackers\.find\(\(a\) => a\.index === i\)!\.practice\.enemy\)/);
   assert.doesNotMatch(main, /respawnDue|sinceKill/);
-  assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number; id\?: string; spawn\?: SpawnRef; near\?: boolean \}\[\]\)/);
+  assert.match(scene, /idleFoes\(list: readonly \{ x: number; z: number; heading: number; id\?: string; spawn\?: SpawnRef; near\?: boolean; star\?: number \}\[\]\)/);
   assert.match(scene, /snapshotRig\(opponent, false\)/);
   assert.match(scene, /syncIdleFoes\(practice, dt\);\n\s*syncLiveFoes\(dt\);\n\s*if \(!look\?\.render\(\)\)/, 'the copies are placed just before the draw');
 });

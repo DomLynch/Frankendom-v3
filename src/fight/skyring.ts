@@ -87,6 +87,8 @@ export type SkyRing = {
   /** The view's bearing this frame (degrees clockwise from north), once the north plate has landed: starts the fetch of every plate the camera has turned to. */
   request(bearing: number): void;
   update(camera: THREE.Vector3, dt: number): void;
+  /** Brightness weights by plate id (data/rings.json skyPlates, mixed by the hero's distance from the pit): each plate's graded colour times its weight; a plate not named is 1. Absent = the plates as graded. */
+  setWeights(weights: Readonly<Record<string, number>>): void;
   state(id: string): RingPlateState;
   readonly requested: string[];
   dispose(): void;
@@ -100,7 +102,8 @@ export type RingOptions = {
 
 export function createSkyRing(o: RingOptions): SkyRing {
   const { row } = o, group = new THREE.Group(), requested: string[] = [], states = new Map<string, RingPlateState>(), meshes = new Map<string, THREE.Mesh>(), textures: THREE.Texture[] = [];
-  let disposed = false;
+  let disposed = false, weights: Readonly<Record<string, number>> = {};
+  const baseColours = new Map<string, THREE.Color>();   // each plate's graded colour, before the ring weight
   group.name = 'skyring';
   for (const p of row.plates) states.set(p.id, 'idle');
   const fetchPlate = (p: RingPlateRow, index: number) => {
@@ -119,6 +122,7 @@ export function createSkyRing(o: RingOptions): SkyRing {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.name = `skyring-${p.id}`; mesh.renderOrder = -1000 + row.orderOffset + index; mesh.frustumCulled = false;
       mesh.position.y = ringCentreY(o.horizonY - p.dropMetres, h);   // lowered by the plate's `dropMetres` so its subject (the south alien) sits in the band of sky a portrait phone shows
+      baseColours.set(p.id, material.color.clone()); material.color.multiplyScalar(weights[p.id] ?? 1);
       group.add(mesh); meshes.set(p.id, mesh); states.set(p.id, 'fading');
     }).catch(() => { states.set(p.id, 'failed'); });
   };
@@ -128,10 +132,12 @@ export function createSkyRing(o: RingOptions): SkyRing {
       if (disposed) return;
       row.plates.forEach((p, i) => { if (states.get(p.id) === 'idle' && platesToLoad(bearing, row).includes(p)) fetchPlate(p, i); });
     },
+    setWeights(next) { weights = next; },
     update(camera, dt) {
       group.position.set(camera.x, camera.y, camera.z);
       for (const [id, m] of meshes) {
-        const mat = m.material as THREE.MeshBasicMaterial, st = states.get(id);
+        const mat = m.material as THREE.MeshBasicMaterial, st = states.get(id), base = baseColours.get(id);
+        if (base) mat.color.copy(base).multiplyScalar(weights[id] ?? 1);
         if (st === 'fading') { mat.opacity = Math.min(1, mat.opacity + (row.lazy.fadeSeconds > 0 ? dt / row.lazy.fadeSeconds : 1)); if (mat.opacity >= 1) states.set(id, 'on'); }
       }
     },

@@ -133,14 +133,14 @@ test('(b) the validators refuse an unknown kind, with the profile ids in the mes
   {
     assert.doesNotThrow(() => validateSpots(spots, start, play.RADIUS, WORLD, ids), 'the shipped kinds are profile rows');
     assert.doesNotThrow(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, kindIds(profiles)), 'a second kind passes once it has a profile row');
-    assert.throws(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, ids), /spawn pit-pitborn-east names kind "goblin", which is no profile row \(data\/profiles\.json: pitborn(, [a-z]+)*\)/);   // the message lists every profile row (pitborn, then the zone bosses added since)
+    assert.throws(() => validateSpots(spots.map((s, i) => (i === 1 ? { ...s, kind: NEW } : s)), start, play.RADIUS, WORLD, ids), /spawn pit-pitborn-east names kind "goblin", which is no profile row \(data\/profiles\.json: pitborn(, [a-z-]+)*\)/);   // the message lists every profile row (pitborn, then the zone bosses added since)
     assert.throws(() => validateSpots(spots.map((s) => ({ ...s, kind: 'nobody' })), start, play.RADIUS, WORLD, ids), /names kind "nobody"/);
   }
   const row = JSON.parse(JSON.stringify(ZONE)); row.spawns[2].kind = 'nobody';
   assert.match(validateZone(row, ids).join('\n'), /spawns\[2\]\.kind: 'nobody' is not an opponent profile id/);
   assert.deepEqual(validateZone(ZONE, ids), []);
   assert.throws(() => zoneLoopFor(row, '', ids), /spawn pit-pitborn-west names unknown kind "nobody"/);
-  assert.throws(() => kindFightFor('nobody', CTX), /kind "nobody" is no data\/profiles\.json row \(pitborn(, [a-z]+)*, goblin\)/);
+  assert.throws(() => kindFightFor('nobody', CTX), /kind "nobody" is no data\/profiles\.json row \(pitborn(, [a-z-]+)*, goblin\)/);
   assert.match(kindProblem('ghost', [{ ...GOBLIN, id: 'ghost', opponent: 'no-such-archetype' }]), /names opponent "no-such-archetype", which is no archetype/);
   assert.match(checkKinds({ profiles: [{ ...GOBLIN, opponent: 'nope' }] }, Object.keys(OPPONENTS)).join('\n'), /profiles\.goblin\.opponent: 'nope' is not an archetype/);
   assert.match(checkKinds({ profiles: [GOBLIN, GOBLIN] }, Object.keys(OPPONENTS)).join('\n'), /duplicate id/);
@@ -153,7 +153,7 @@ test('(b) the validators refuse an unknown kind, with the profile ids in the mes
 test('the page wires it: each spawn\'s kind on every hand-over, leash reset, adoption and join; no page-wide opponent left in the zone path', () => {
   const main = src('../src/client/main.ts');
   assert.doesNotMatch(main, /fightOpponent\(/, 'the page no longer reads one opponent id for the whole zone');
-  assert.match(main, /const kindAt = \(index: number\): KindFight => KINDS\(spawns\[index\]!\.kind\)/);
+  assert.match(main, /const kindAt = \(index: number\): KindFight => KINDS\(spawns\[index\]!\.kind, starById\[spawns\[index\]!\.id\] \?\? 0\)/);
   assert.match(main, /if \(ZONE\) useKind\(kindAt\(index\)\);/, 'rematch (every hand-over, death and reset) takes the target spawn\'s kind');
   assert.match(main, /make\(seed, poseFor\(index, at\), kindAt\(index\)\)/, 'a leash reset rebuilds the boss as its own kind');
   assert.match(main, /useKind\(kindAt\(current\)\);\s+\/\/ an attacker may take the sim/);
