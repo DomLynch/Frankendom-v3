@@ -66,8 +66,8 @@ import { scorch } from './scorch.ts';
 import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself (V3 meets only the veteran: the other nine opponents' signatures are not shipped)
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
-import { foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
-import { bossPreview, bossRowOfBody } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
+import { bodyOwnerOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
+import { bossOpponent, bossPreview, bossRowOfBody } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
 import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
 import { foeDrawnWeapon } from './foe-weapon.ts';
@@ -279,7 +279,7 @@ export function createScene(
     dustPositions = Array.from({ length: 4 }, () => new THREE.Vector3());
   // The player, and the chosen opponent; each rig plays the clips of the weapon the simulation gives that side (moves.ts OPPONENTS, duel.ts initialDuel).
   const weapons = Promise.all([playerWeapon, opponentLevel]).then(([weapon, level]) =>
-    initialPractice(731, opponentAt(OPPONENTS[opponentId], level), weapon).duel.fighters.map((f) => f.weapon) as [WeaponId, WeaponId]);
+    initialPractice(731, opponentAt(bossOpponent(OPPONENTS[opponentId], pageSearch), level), weapon).duel.fighters.map((f) => f.weapon) as [WeaponId, WeaponId]);
   let builtFoeWeapon: WeaponId | undefined;
   // Every roster body except the held ones (roster.ts `hold`): glob patterns must be literals, so the exclusions are spelled out here —
   // tests/roster.test.ts checks the two lists agree. Held GLBs stay in src/assets for their lanes; they are just not in the beta bundle.
@@ -399,10 +399,12 @@ export function createScene(
       twoHanded = weaponOf(pair[1]).grip === 'two-hand'; builtFoeWeapon = pair[1];
       // A weapon his rig does not bake (ROSTER.weapon is what veteran.glb carries) comes from its equip file, grafted as the player's is.
       // The weapon his drawn body bakes (foe-body.ts: the Minotaur's is veteran.glb's trident; a 106 body bakes none) needs no file; a drawn weapon over his (foe-weapon.ts) is its own file.
-      const preview = pageSearch ? bossPreview(pageSearch) : undefined;   // ?bossweapon=<opponent>: that row's own part (maul, axe) is grafted on the page's foe
-      const opponentEquip = preview ? FOE_EQUIP_URLS[`../assets/weapons/foe/${preview.equip}.glb`] : pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
+      // The live rig of a boss body that has a weapon row (data/boss-weapons.json: since the boss reorder the page's first foe is the Gargantua, so the live rig is a boss body) is armed with the row, as a spawn of that body is (bodyRig).
+      const liveBoss = bossRowOfBody(foeBodyFile(opponentId, ROSTER[opponentId as OpponentId].body), profileBodyOf, pageSearch);
+      const opponentEquip = liveBoss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${liveBoss.equip}.glb`] : pair[1] === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, pair[1]);
       const foe = foeUrl(opponentId);
-      const load = (hero: string) => loadWarriors(hero, foe, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId), preview, offhandUrlOf(preview));   // the last argument: ?bossweapon=<opponent> draws that boss row on this foe (stills; the sim's weapon is not changed)
+      const look = liveBoss ?? (pageSearch ? bossPreview(pageSearch) : undefined);   // ?bossweapon=<opponent>: that row's own part (maul, axe) is grafted on the page's foe
+      const load = (hero: string) => loadWarriors(hero, foe, pair, WEAPON_LOOK[pair[0]]?.baked ? undefined : equipUrl(pair[0]), (error) => captureException(error, { tags: { equip: pair[0] } }), opponentEquip, SHIELD_CARRIERS.has(opponentId), look, offhandUrlOf(look), liveBoss?.clipsAs);   // look: the live boss row, or ?bossweapon=<opponent> drawing that boss row on this foe (stills; the sim's weapon is not changed)
       // 106 only: both sides load their 106 files. A failure is NOT papered over with another body (the 65 fallback is gone, Dom 2026-10-26):
       // it is a RigLoadError, reported and shown on screen by the catch below, so a broken 106 file is noticed.
       const hero = fighterUrls[`../assets/${heroRigFile(heroBodyFile())}.glb`];
@@ -578,14 +580,16 @@ export function createScene(
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
   // A boss body with a weapon row (data/boss-weapons.json; the body is found through the profile rows, foe-body.ts profileBodyOf) is armed with the row's weapon, scaled, with its off-hand part; any other body with the page's weapon, as before.
   const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch);
-  const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? builtFoeWeapon;
+  // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
+  const ownerOfBody = (file: string): string | undefined => file === liveBody ? undefined : bodyOwnerOf(file);
+  const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch).weapon : builtFoeWeapon);
   function bodyRig(file: string) {
     let entry = bodyAssets.get(file);
     if (!entry) {
       const row: { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> } = entry = {}; bodyAssets.set(file, row);
       const boss = bossOfBody(file), url = fighterUrls[`../assets/${file}.glb`], weapon = weaponOfBody(file);
       if (!url || !weapon) row.failed = true;
-      else row.loaded = loadFoeBody(url, boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : weapon === foeBakedWeapon(opponentId, ROSTER[opponentId].weapon) ? undefined : foeEquipUrl(opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss, offhandUrlOf(boss))
+      else row.loaded = loadFoeBody(url, boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : weapon === foeBakedWeapon(ownerOfBody(file) ?? opponentId, ROSTER[(ownerOfBody(file) ?? opponentId) as OpponentId].weapon) ? undefined : foeEquipUrl(ownerOfBody(file) ?? opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss, offhandUrlOf(boss))
         .then((asset) => { row.asset = asset; return asset; }, (error: unknown) => { row.failed = true; captureException(error); return undefined; });
     }
     return entry.asset;

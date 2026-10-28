@@ -19,14 +19,14 @@ test('fight.json validates with the bladeTables row', () => {
 
 test('every weapon the duel can reach has its table kept: the hero, and the opponent at every level (default and ?pitborn=v1)', () => {
   assert.ok(kept('hero', FIGHT.weapon), `hero/${FIGHT.weapon}`);
-  for (const search of ['', '?pitborn=v1']) {
+  for (const search of ['', '?order=v1', '?pitborn=v1']) {
     const id = fightOpponent(FIGHT, search), o = OPPONENTS[id];
     for (let level = 1; level <= 100; level++) {
       const body = opponentAt(o, level);
       assert.ok(kept(body.rig, body.weapon), `${id} (${search || 'default'}) at level ${level}: ${body.rig}/${body.weapon}`);
     }
   }
-  assert.deepEqual([fightOpponent(FIGHT, ''), fightOpponent(FIGHT, '?pitborn=v1')], ['pitborn', 'veteran']);
+  assert.deepEqual([fightOpponent(FIGHT, ''), fightOpponent(FIGHT, '?order=v1'), fightOpponent(FIGHT, '?pitborn=v1')], ['executioner', 'pitborn', 'veteran']);
 });
 
 // The Gargantua freeze (2026-10-28): zone spawn 2 is the executioner (scythe) and the build had cut the scythe table, so bladeFrames threw inside stepDuel on his first heavy and the page stopped.

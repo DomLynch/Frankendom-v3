@@ -12,9 +12,11 @@ const read = (n) => JSON.parse(readFileSync(new URL(`../data/${n}.json`, import.
 const PROFILES = read('profiles'), RIG = read('rig'), FIGHT = read('fight'), PHYSICS = read('physics');
 const clone = (x) => structuredClone(x);
 
-test('the default boss body is the Minotaur, pinned (a change is a deliberate re-pin)', () => {
+test('the default boss body is the Gargantua (the first opponent since the boss reorder) and the Minotaur is the pitborn profile\'s, pinned (a change is a deliberate re-pin)', () => {
   assert.equal(PROFILES.defaultBody, 'minotaur');
-  assert.equal(PROFILES.profiles.find((p) => p.id === PROFILES.default).body, 'minotaur');
+  assert.equal(PROFILES.default, 'gargantua');
+  assert.equal(PROFILES.profiles.find((p) => p.id === PROFILES.default).body, 'gargantua');
+  assert.equal(PROFILES.profiles.find((p) => p.id === 'pitborn').body, 'minotaur');
   setBossBody('');
   assert.equal(foeBodyFile('pitborn', 'ignored'), 'minotaur-106');
   assert.equal(foeBodyFile('veteran', 'ignored'), 'minotaur-106');   // ?pitborn=v1's Centurion is drawn as the Minotaur too

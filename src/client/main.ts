@@ -41,6 +41,7 @@ import { setSpecialSink } from '../fight/special-sink.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
 import { foeDisplayName, foeNameFor, setFoeName, setKindNames } from '../fight/foe-name.ts';
 import { pitbornV1 } from '../fight/foe-pick.ts';
+import { orderedZone, orderProfile } from '../fight/boss-order.ts';
 import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
 import { foeSweepsFor } from '../fight/foe-reach.ts';
 import { setBlend } from '../fight/anim-blend.ts';
@@ -108,7 +109,7 @@ const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.ready
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
-const ZONE = zoneLoopFor(zoneFor(search), search, kindIds(KIND_CTX.profiles));   // the live zone (every spawn kind must be a profile row) (null under ?postkill=v1: the single fight, whose pit is exactly as before)
+const ZONE = zoneLoopFor(orderedZone(zoneFor(search), FIGHT.order, search), search, kindIds(KIND_CTX.profiles));   // the live zone (every spawn kind must be a profile row) (null under ?postkill=v1: the single fight, whose pit is exactly as before)
 // The zone's sound rows (data/sound.json zone): which scene-change cues stay silent and when the kill toast clears. Null under ?postkill=v1: every cue plays, the line stays.
 const ZONE_SOUND: ZoneSoundRows | null = ZONE ? zoneSoundRows(SOUND.zone) : null;
 feedback.zoneCues(ZONE_SOUND);
@@ -129,7 +130,7 @@ function make(s: number, pose?: DuelPose, k: KindFight = foe): Practice {
   const scaled = kindPractice(k, KIND_CTX, s, fits ? pose : undefined);   // pose: a respawn stands the hero where he is (zone-loop.ts respawnPose); absent = the pit's marks
   return ZONE ? project(zoneDuel(scaled.duel, fits ? undefined : pose), scaled.ai, scaled) : scaled;   // the zone's duels have no ring wall and may begin far from the pit (spawns.ts zoneDuel); the single fight keeps the pit's circle
 }
-useKind(KINDS(ZONE ? ZONE.spawn.kind : FIGHT.profile));   // the page opens on the first spawn's kind (the no-zone fight: the fight row's profile); every other spawn's kind is taken on its hand-over
+useKind(KINDS(ZONE ? ZONE.spawn.kind : orderProfile(FIGHT.profile, FIGHT.order, search)));   // the page opens on the first spawn's kind (the no-zone fight: the fight row's profile); every other spawn's kind is taken on its hand-over
 let practice = fresh(), frameEvents: CombatEvent[] = [];
 // the warden's brain (aiProfile, per kind: useKind): the kind's profile knobs over the difficulty row's over his V1 profile at his level (src/fight/spawn-kind.ts, src/difficulty.ts); ?ai=v1 = V1's profile untouched; off under ?pitborn=v1 (data/fight.json `ai`, a data/brains.json row)
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
@@ -157,7 +158,7 @@ setSpecialSink(/[?&]dip=v1\b/.test(search) || FIGHT.specialSink.sink);
 // Pitborn, who fights with his own cleaver); ?foeweapon=v1 = the gladius.
 setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
 // The HUD names the Minotaur body the Minotaur whoever fights in it (data/fight.json foeName, display only).
-setFoeName(foeNameFor(FIGHT.foeName, search, opponentId));
+setFoeName(foeNameFor(FIGHT.foeName, search, pitbornV1(search) ? opponentId : FIGHT.foeName.opponent));   // the row names the Minotaur's opponent id (pitborn) wherever he stands (boss order: he is spawn 3); the Centurion of ?pitborn=v1 is drawn as him too
 setKindNames(PROFILES.profiles);   // a profile row with a `name` (Gargantua, Arachne) names its own spawn over the bar; a row without one falls back to the row above / the roster
 setBossBody(search);   // [boss-body row] ?boss=<body>: draw the boss in another data/rig.json body (data/profiles.json bodyQuery); must run before the sweeps, scene and ragdoll below read the body
 // Clip-to-clip blends in milliseconds (data/fight.json blendMs/settleMs, V2's rows: swings, hits and rolls ease in and out, the roll settles); ?blend=v1 = V1's transitions exactly.
@@ -239,7 +240,7 @@ let lockState = freshLock();
 let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
-const SPOTS = ZONE ? spotsFor(zoneFor(search)) : [];
+const SPOTS = ZONE ? spotsFor(orderedZone(zoneFor(search), FIGHT.order, search)) : [];
 if (ZONE) { validateSpots(SPOTS, initialState(), RADIUS, WORLD, kindIds(KIND_CTX.profiles)); for (const s of SPOTS) KINDS(s.kind); }   // every spawn fights as its own kind: each must be a profile row whose opponent is an archetype (built now, so a bad row fails at load)
 if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);

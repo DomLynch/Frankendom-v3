@@ -27,13 +27,13 @@ test('the row: the Pitborn in the Minotaur, the hero rig\'s cleaver, ?reach=v1; 
   assert.deepEqual(validateFile('fight', FIGHT), []);
   assert.deepEqual([ROW.opponent, ROW.body, ROW.rig, ROW.weapon, ROW.query, ROW.v1], ['pitborn', 'minotaur', 'hero', 'cleaver', 'reach', 'v1']);
   assert.equal(OPPONENTS[ROW.opponent].rig, ROW.rig); assert.equal(OPPONENTS[ROW.opponent].weapon, ROW.weapon);
-  assert.equal(fightOpponent(FIGHT, ''), ROW.opponent, 'the default page fights the row\'s opponent');
+  assert.equal(fightOpponent(FIGHT, '?order=v1'), ROW.opponent, 'the Minotaur-first page (?order=v1) fights the row\'s opponent; by default the Gargantua is first and the Minotaur is spawn 3, whose sweeps follow the hand-over (main.ts sweepOwner)');
   assert.ok(validateFile('fight', { ...FIGHT, foeReach: { ...ROW, extra: 1 } }).some((e) => /foeReach\.extra/.test(e)));
 });
 
 test('which sweeps: the Minotaur\'s by default; V1\'s under ?reach=v1 and ?pitborn=v1 (?foe=v1 is gone: the default)', () => {
-  const cases = [['', BLADE_MINOTAUR], ['?reach=v1', null], ['?reach=clip', BLADE_MINOTAUR], ['?clips=v1', BLADE_MINOTAUR], ['?gfx=v1&reach=v1', null],
-    ['?pitborn=v1', null], ['?foe=v1', BLADE_MINOTAUR], ['?pitborn=v1&reach=v1', null], ['?shield=v1', BLADE_MINOTAUR]];
+  const cases = [['', null], ['?order=v1', BLADE_MINOTAUR], ['?order=v1&reach=v1', null], ['?order=v1&reach=clip', BLADE_MINOTAUR], ['?order=v1&clips=v1', BLADE_MINOTAUR], ['?order=v1&gfx=v1&reach=v1', null],
+    ['?pitborn=v1', null], ['?order=v1&foe=v1', BLADE_MINOTAUR], ['?pitborn=v1&reach=v1', null], ['?order=v1&shield=v1', BLADE_MINOTAUR]];   // by default the Gargantua is the page's first foe: no Minotaur sweeps at load (they follow the hand-over to the Minotaur, main.ts sweepOwner)
   for (const [search, sweeps] of cases) {
     assert.equal(foeSweepsFor(ROW, search, fightOpponent(FIGHT, search))?.hero?.cleaver ?? null, sweeps, search || '(none)');
   }

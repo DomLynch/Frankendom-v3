@@ -41,7 +41,7 @@ test('?foeweapon=v1 puts the gladius back; ?foe=v1 (removed with the 65 bodies) 
 });
 
 test('the Pitborn (the default since Dom 10-26) really fights with the cleaver: the row is a no-op for him, his shape is cleaver-plain', () => {
-  const id = fightOpponent(FIGHT, '');
+  const id = fightOpponent(FIGHT, '?order=v1');   // the Minotaur (zone spawn 3 since the boss reorder)
   assert.equal(id, 'pitborn');
   const body = opponentAt(OPPONENTS[id], FIGHT.level);
   assert.equal(body.weapon, 'cleaver', 'his own weapon at level 18');

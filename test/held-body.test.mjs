@@ -46,8 +46,8 @@ test('DEFAULT UNCHANGED: holding the page\'s own body builds, loads and mounts n
   assert.deepEqual(held.counts(), { builds: 0, hits: 0, swaps: 0 });
   // the shipped zone: no spawn row names a body; the Pitborn spawn (spawn 1, the page's own body) builds nothing (the scene's holdBody returns before it makes a controller).
   // Re-pinned 2026-10-28 (Dom: spawns 2 and 3 are different bosses): spawns 2 and 3 take their profile rows' bodies (gargantua-106, arachne-106), reached through the swap path tested below.
-  assert.deepEqual(ZONE.spawns.map((s) => spawnBodyFile(s.kind, 'minotaur', s.body)), ['minotaur-106', 'gargantua-106', 'arachne-106']);
-  assert.equal(spawnBodyFile(ZONE.spawns[0].kind, 'minotaur', ZONE.spawns[0].body), home.body, 'spawn 1 is the live body: nothing to swap');
+  assert.deepEqual(ZONE.spawns.map((s) => spawnBodyFile(s.kind, 'minotaur', s.body)), ['gargantua-106', 'arachne-106', 'minotaur-106']);   // re-pinned 2026-10-28 (boss order: the Gargantua is spawn 1 and the page's live body, the Minotaur is spawn 3 and swaps in)
+  assert.equal(spawnBodyFile(ZONE.spawns[0].kind, 'minotaur', ZONE.spawns[0].body), 'gargantua-106', 'spawn 1 is the live body: nothing to swap');
   const scene = src('fight/scene.ts');
   assert.match(scene, /if \(body === activeBody\(\) && !heldCtl\) return 'same';/, 'no controller is made while the held body is the live one');
   // Re-pinned 2026-10-28 (lazy boss bodies, the +3.13 MB first-visit finding): the one hook line now also passes whether the hero is within world.loadWithinMetres of the held spawn; scene.ts holdBody

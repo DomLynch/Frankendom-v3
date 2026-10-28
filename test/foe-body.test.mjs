@@ -71,13 +71,14 @@ test('the Centurion and the Pitborn both draw the 106 Minotaur with no kit, what
 // Dom 2026-10-26 (later): the opponent fights as V1's Pitborn in the Minotaur's body (data/fight.json opponent, src/fight/foe-pick.ts): no kit,
 // no shield, his cleaver grafted at the 106 body's socket (minotaur-106.glb bakes no weapon). ?pitborn=v1 = the Centurion's fight, same body.
 test('the Pitborn\'s cleaver is grafted (the 106 body bakes none); ?pitborn=v1 = the Centurion, ?foe=v1 = nothing', () => {
-  assert.equal(fightOpponent(FIGHT, ''), 'pitborn');
+  assert.equal(fightOpponent(FIGHT, ''), 'executioner', 'the first opponent is the Gargantua (boss reorder); the Minotaur stands third');
+  assert.equal(fightOpponent(FIGHT, '?order=v1'), 'pitborn');
   assert.equal(foeBakedWeapon('pitborn', 'cleaver'), '', 'minotaur-106.glb bakes no weapon, so the cleaver is grafted');
   assert.equal(foeBakedWeapon('veteran', 'gladius'), '');
   assert.notEqual(foeBakedWeapon('pitborn', 'cleaver'), opponentAt(OPPONENTS.pitborn, FIGHT.level).weapon);
   assert.equal(foeBakedWeapon('goblin', 'axe'), 'axe', 'a body with no row bakes its roster weapon');
   for (const q of ['?pitborn=v1', '?pitborn=v1&shield=v1', '?pitborn=v1&foe=v1']) assert.equal(fightOpponent(FIGHT, q), 'veteran', q);
-  for (const q of ['?foe=v1', '?shield=v1']) assert.equal(fightOpponent(FIGHT, q), 'pitborn', q);
+  for (const q of ['?foe=v1', '?shield=v1']) assert.equal(fightOpponent(FIGHT, q), 'executioner', q);
 });
 
 test("the cleaver plays the sword clip family, and minotaur.glb carries every clip of it (no fallback)", () => {

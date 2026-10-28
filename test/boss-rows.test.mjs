@@ -24,7 +24,8 @@ test('the rows: gargantua is the executioner at health x1.19 (first value on the
   assert.deepEqual(validateFile('profiles', PROFILES), []);
   assert.deepEqual(checkKinds(PROFILES, Object.keys(OPPONENTS)), []);
   assert.deepEqual(checkBodies(PROFILES, ROOMY, 'psyche'), [], 'with no body named the rows draw the default body: valid on main before the bodies land');
-  assert.equal(PROFILES.default, 'pitborn');
+  assert.equal(PROFILES.default, 'gargantua', 'the first opponent is the Gargantua (boss order, Dom 2026-10-28)');
+  assert.equal(row('pitborn').name, 'Minotaur');
 });
 
 test('health: executioner 160 x 1.19 x the default difficulty row (0.72) = 137 at the DEFAULT pick (Dom: same as the Minotaur 137 and the Arachne 137); the Arachne is 190 x 0.72', () => {
@@ -53,17 +54,17 @@ test('names: a profile row names its own spawn; a nameless row and the page-wide
 const ROOMY = clone(RIG);
 for (const b of ['gargantua', 'arachne']) { ROOMY.files[b] = `${b}-106`; ROOMY.clips106.dir[`${b}-106`] = `106/${b}`; }
 const WITH_BODIES = clone(PROFILES); for (const p of WITH_BODIES.profiles) if (p.id === 'gargantua' || p.id === 'arachne') p.body = p.id;
-const MIXED = clone(ZONE); MIXED.spawns[1].kind = 'gargantua'; MIXED.spawns[2].kind = 'arachne';
+const MIXED = clone(ZONE); MIXED.spawns[0].kind = 'gargantua'; MIXED.spawns[1].kind = 'arachne'; MIXED.spawns[2].kind = 'pitborn';
 
-test('the staged rows (bodies named, spawn 2 gargantua, spawn 3 arachne) validate against synthetic bodies; spawn 1 stays pitborn', () => {
+test('the staged rows (bodies named, spawn 1 gargantua, spawn 2 arachne, spawn 3 pitborn) validate against synthetic bodies', () => {
   const kinds = WITH_BODIES.profiles.map((p) => p.id);
   assert.deepEqual(checkBodies(WITH_BODIES, ROOMY, 'psyche'), []);
   assert.deepEqual(validateZone(MIXED, kinds, ROOMY), []);
-  assert.deepEqual(MIXED.spawns.map((s) => s.kind), ['pitborn', 'gargantua', 'arachne']);
+  assert.deepEqual(MIXED.spawns.map((s) => s.kind), ['gargantua', 'arachne', 'pitborn']);
 });
 
-test('the staged commit: the shipped zone row is spawn 1 pitborn, 2 gargantua, 3 arachne (bodies named on the profiles); needs the bodies merged', () => {
-  assert.deepEqual(ZONE.spawns.map((s) => [s.id, s.kind]), [['yard-pitborn', 'pitborn'], ['pit-pitborn-east', 'gargantua'], ['pit-pitborn-west', 'arachne']]);
+test('the staged commit: the shipped zone row is spawn 1 gargantua, 2 arachne, 3 pitborn (bodies named on the profiles); needs the bodies merged', () => {
+  assert.deepEqual(ZONE.spawns.map((s) => [s.id, s.kind]), [['yard-pitborn', 'gargantua'], ['pit-pitborn-east', 'arachne'], ['pit-pitborn-west', 'pitborn']]);
   assert.ok(ZONE.spawns.every((s) => s.body === undefined));
   assert.deepEqual([row('gargantua').body, row('arachne').body, row('pitborn').body], ['gargantua', 'arachne', 'minotaur']);
   assert.deepEqual(validateZone(ZONE, PROFILES.profiles.map((p) => p.id), RIG), []);

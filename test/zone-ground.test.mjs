@@ -88,7 +88,7 @@ test('the wiring: only the zone, behind the flag, builds the open ground; ?postk
   const main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts'), stage = src('../src/arena-stage.ts'), draw = src('../src/zone/ground-draw.ts');
   assert.equal((main.match(/openGround\(/g) ?? []).length, 1, 'one call site');
   assert.match(main, /if \(ZONE && groundOn\(search\)\) view\.openGround\(groundFor\(WORLD\.pitScale/);
-  assert.match(main, /const ZONE = zoneLoopFor\(zoneFor\(search\), search/, 'ZONE is null under ?postkill=v1');
+  assert.match(main, /const ZONE = zoneLoopFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\), search/, 'ZONE is null under ?postkill=v1');
   assert.match(scene, /openGround\(sizing: GroundSizing\) \{ drawOpenGround\(arena\.group, camera, sizing\); groundSnap = sizing\.snap;/);
   assert.match(scene, /let groundSnap = 0/, 'no follow until the zone opens the ground');
   assert.match(scene, /if \(groundSnap > 0\) \{ anchorInto\(groundAt, state\.x, state\.z, groundSnap\);/);

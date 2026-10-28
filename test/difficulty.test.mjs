@@ -13,7 +13,7 @@ import { recordSpecials } from '../src/fight/replay.ts';
 const read = (f) => JSON.parse(readFileSync(new URL(`../data/${f}.json`, import.meta.url), 'utf8'));
 const DIFF = read('difficulty'), PROFILES = read('profiles'), BRAINS = read('brains'), FIGHT = read('fight');
 const clone = (x) => JSON.parse(JSON.stringify(x));
-const pick = (difficulty) => ({ profile: FIGHT.profile, difficulty });
+const pick = (difficulty) => ({ profile: FIGHT.order.profile, difficulty });
 const resolve = (difficulty) => resolveFight(pick(difficulty), PROFILES.profiles, DIFF, BRAINS.brains);
 
 test('the data files validate: every row has every knob in range and the ladder runs 1..10', () => {
@@ -48,8 +48,8 @@ test('the ladder is monotonic: every knob moves one way as the row rises', () =>
 
 test('the default row is pinned (row 5) and an easier fight than the one before this setting', () => {
   assert.equal(DIFF.default, 5);
-  assert.equal(PROFILES.default, 'pitborn');
-  assert.equal(FIGHT.profile, 'pitborn');
+  assert.equal(PROFILES.default, 'gargantua');   // boss order (Dom 2026-10-28); these tests fight the Minotaur (FIGHT.order.profile)
+  assert.equal(FIGHT.profile, 'gargantua');
   const d = DIFF.rows[4], legacy = DIFF.named[0];
   assert.equal(d.id, 5);
   assert.ok(d.foeHealthScale < 1 && d.foeDamageScale < 1 && d.reaction > legacy.reaction - 1);

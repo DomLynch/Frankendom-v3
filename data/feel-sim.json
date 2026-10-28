@@ -9,7 +9,7 @@
   "finishWindow": { "seconds": 1.2 },
   "targets": ["foe"],
   "knockdownAtPerMille": 1000,
-  "massKg": { "default": 80, "hero": 85, "pitborn": 120 },
+  "massKg": { "default": 80, "hero": 85, "pitborn": 120, "executioner": 120 },
   "massBands": [
     { "minRatioPct": 0, "perMille": 600 },
     { "minRatioPct": 60, "perMille": 800 },

@@ -228,7 +228,7 @@ async function loadFighter(url: string) {
 // `opponentEquipUrl`: the equip file of a weapon the opponent's rig does not bake (the Centurion's gladius over his trident, SCOPE:76). It is
 // grafted onto his rig the same way; a file that fails is reported and he keeps the weapon his rig bakes (a fight never waits on it).
 // Only a shield carrier (`carry`) gets the scutum arm with it (armOpponent); the Pitborn's cleaver on the Minotaur's rig (foe-body.ts) is a bare graft.
-export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false, look?: BossWeaponRow, offhandUrl?: string) {
+export async function loadWarriors(url: string, opponentUrl = url, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, opponentEquipUrl?: string, carry = false, look?: BossWeaponRow, offhandUrl?: string, clipsAs?: WeaponId) {   // clipsAs: the clip family the opponent plays when his weapon has none on his body (a boss row, data/boss-weapons.json)
   const equip = (u?: string) => u ? loadEquip(u).catch((error: unknown) => (error instanceof Error ? error : Error(String(error)))) : undefined;
   const [hero, enemy, part, enemyPart, offhand] = await Promise.all([
     loadFighter(url),
@@ -239,7 +239,7 @@ export async function loadWarriors(url: string, opponentUrl = url, weapons: [Wea
   ]);
   let opponent: FighterAsset | undefined = enemy;
   if (opponent && enemyPart) try { if (enemyPart instanceof Error) throw enemyPart; opponent = carry ? armOpponent(opponent, enemyPart) : equipWeapon(opponent, enemyPart); if (offhand instanceof Error) throw offhand; if (look) dressBossHand(opponent, look, offhand?.scene); } catch (error) { equipFailed(error); }   // look: a boss weapon row drawn on this foe (the stills flag ?bossweapon=<opponent>)
-  return armWarriors(hero, opponent, weapons, part, equipFailed, carry);
+  return armWarriors(hero, opponent, weapons, part, equipFailed, carry, clipsAs);
 }
 /** One more boss body, loaded alone (the per-spawn body rig cache, scene.ts bodyRigs): the file, with the boss's weapon grafted exactly as loadWarriors grafts the opponent's. A failed graft is reported and the body keeps what it bakes. */
 export async function loadFoeBody(url: string, equipUrl?: string, equipFailed: (error: unknown) => void = () => {}, carry = false, look?: BossWeaponRow, offhandUrl?: string): Promise<FighterAsset> {   // look: this boss's weapon row (data/boss-weapons.json): the part scaled, the off-hand part
@@ -270,14 +270,14 @@ export function withShieldCarry(asset: FighterAsset): FighterAsset { asset.scene
 export const SHIELD_CARRIERS: ReadonlySet<string> = new Set(['shieldmaiden', 'veteran']);
 // The opponent with his rung kit grafted on (loadWarriors): the equip file in his hand, and the carry his scutum arm needs.
 export const armOpponent = (opponent: FighterAsset, kit: FighterAsset): FighterAsset => withShieldCarry(equipWeapon(opponent, kit));
-export function armWarriors(hero: FighterAsset, enemy: FighterAsset | undefined, weapons: [WeaponId, WeaponId], part?: FighterAsset | Error, equipFailed: (error: unknown) => void = () => {}, carry = false) {
+export function armWarriors(hero: FighterAsset, enemy: FighterAsset | undefined, weapons: [WeaponId, WeaponId], part?: FighterAsset | Error, equipFailed: (error: unknown) => void = () => {}, carry = false, clipsAs?: WeaponId) {
   { const ranged = (globalThis as { __SANDBOX_RANGED__?: (weapon: WeaponId) => Object3D | undefined }).__SANDBOX_RANGED__?.(weapons[0]); if (ranged) part = { scene: new Group().add(ranged) as Group, animations: part && !(part instanceof Error) ? part.animations : [] }; }   // sandbox-mech: a stand-in weapon shown as the staff / bow model, keeping the stand-in's own clip family (the trident's Trident_Idle...) (sandbox/entry.ts); absent everywhere else
   if (carry && enemy) withShieldCarry(enemy);
   // `asset`: the hero's parsed file as the player was built from it, so a page that needs a second actor of the same rig (a remote player, a warm-up probe) builds it from this with buildWarriors (it clones) and fetches and parses nothing.
-  if (part && !(part instanceof Error)) try { const armed = equipWeapon(hero, part); return { ...buildWarriors(armed, enemy, weapons), playerWeapon: weapons[0], asset: armed }; } catch (error) { part = error instanceof Error ? error : Error(String(error)); }
+  if (part && !(part instanceof Error)) try { const armed = equipWeapon(hero, part); return { ...buildWarriors(armed, enemy, weapons, false, clipsAs), playerWeapon: weapons[0], asset: armed }; } catch (error) { part = error instanceof Error ? error : Error(String(error)); }
   if (part) { if ((globalThis as { __SANDBOX_RANGED__?: unknown }).__SANDBOX_RANGED__) (globalThis as { __SANDBOX_ERR__?: string }).__SANDBOX_ERR__ = String((part as Error).stack ?? part); equipFailed(part); }   // sandbox: keep why a ranged model fell back to the longsword
   const playerWeapon: WeaponId = part ? DEFAULT_WEAPON : weapons[0];
-  return { ...buildWarriors(hero, enemy, [playerWeapon, weapons[1]]), playerWeapon, asset: hero };
+  return { ...buildWarriors(hero, enemy, [playerWeapon, weapons[1]], false, clipsAs), playerWeapon, asset: hero };
 }
 // A player weapon's equip file (scripts/build-player-weapon.mjs, the #309 contract): its WeaponDrawn part, placed under hand_r exactly as
 // the hero build places it, and the weapon's own clip family when it has one. Nothing of the body.
@@ -543,8 +543,8 @@ export function sizeBeast(warriors: { opponent: { anchor: Group } }, opponentId:
   const k = beastRenderScale(opponentId);
   if (k !== 1) warriors.opponent.anchor.scale.setScalar(k);
 }
-export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], solo = false) {   // solo: the caller poses ONE actor (a zone creature): the opponent is not built, `.opponent` aliases `.player`
-  const hero = { asset, weapon: weapons[0], clips: fighterClips(asset, weapons[0], true) }, enemy = opponentAsset ? { asset: opponentAsset, weapon: weapons[1], clips: fighterClips(opponentAsset, weapons[1], false) } : undefined;
+export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset, weapons: [WeaponId, WeaponId] = [DEFAULT_WEAPON, DEFAULT_WEAPON], solo = false, foeClipsAs?: WeaponId) {   // solo: the caller poses ONE actor (a zone creature): the opponent is not built, `.opponent` aliases `.player`
+  const hero = { asset, weapon: weapons[0], clips: fighterClips(asset, weapons[0], true) }, enemy = opponentAsset ? { asset: opponentAsset, weapon: weapons[1], clips: fighterClips(opponentAsset, foeClipsAs ?? weapons[1], false) } : undefined;
   if (!enemy && weapons[1] !== weapons[0]) throw new Error('A shared rig carries one weapon');
   function create(opponent: boolean, source?: { asset: FighterAsset; weapon: WeaponId; clips: ReturnType<typeof fighterClips> }) {   // source: another body's asset (spawnBody), else the opponent's or hero's own
     const { asset, clips, weapon } = source ?? (opponent && enemy ? enemy : hero), specs = attackSpecs(weapon);

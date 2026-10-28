@@ -42,6 +42,8 @@ export const chooseFoeBody = (_search?: string): boolean => false;
 export const foeBodyFile = (id: string, rosterBody: string, stem = false): string => ((s: string) => stem ? s : foeRigFile(s))(rowOf(id)?.body || rosterBody);
 /** The 106 file stem the archetype `id` is drawn in by its profile row, or undefined when it has none (no body of its own yet) or `?boss=<body>` draws every boss in one body (the weapon rows, data/boss-weapons.json, then cannot tell the bosses apart and stay off). */
 export const profileBodyOf = (id: string): string | undefined => (override === null && id in PROFILE_BODY ? foeRigFile(PROFILE_BODY[id]!) : undefined);
+/** The archetype (`opponent` id) whose profile row draws 106 body `file`, or undefined (no profile row names it, or `?boss=<body>` draws every boss in one body). The inverse of `profileBodyOf`: a body the page's live rig does not wear is fought and drawn with this archetype's weapon (scene.ts weaponOfBody). */
+export const bodyOwnerOf = (file: string): string | undefined => (override === null ? Object.keys(PROFILE_BODY).find((id) => id !== 'veteran' && foeRigFile(PROFILE_BODY[id]!) === file) : undefined);
 /** The 106 file stem a zone spawn of `id` draws: the spawn row's own `body` (data/zones `spawns[].body`, a data/rig.json files stem) when it has one, else exactly `foeBodyFile` (its kind's profile body).
  *  ?boss=<body> still draws every boss in one body for the page. This is the key of the scene's rig cache (scene.ts bodyRigs). */
 export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => {
