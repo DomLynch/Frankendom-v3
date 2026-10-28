@@ -131,7 +131,7 @@ test('the marker fades as he nears the pile and pulses; the radar shows one gold
 test('the page wires it with no new URL flag and keeps #225 and the progression flags', () => {
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
   assert.match(main, /const CR = ZONE && PROG \? CORPSE : null;/, 'it rides the progression save (?save=off, ?pitborn=v1)');
-  assert.match(main, /if \(sinceDeath === 0\) onHeroDied\(\);/);
+  assert.match(main, /if \(sinceDeath === 0\) \{ onHeroDied\(\);/);
   assert.match(main, /standUpDue\(DEATH, sinceDeath, respawnAsked\)/, '#225\'s respawn loop is as it was');
   assert.doesNotMatch(readFileSync(new URL('../src/corpse-run.ts', import.meta.url), 'utf8'), /URLSearchParams|search/, 'no query switch');
 });
