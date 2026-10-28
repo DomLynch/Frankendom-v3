@@ -72,7 +72,8 @@ import { resolveFinisher, type OpponentId } from '../roster.ts';
 import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
-import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
+import { zoneLoopFor, validateWalk } from '../fight/zone-loop.ts';
+import { freeHud, isFreeAction, startFreeRoam, stepFreeRoam, type FreeRoam } from '../fight/free-roam.ts';
 import { heroDeathFor, respawnKey, respawnReady, standUpDue } from '../fight/hero-death.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
@@ -206,7 +207,7 @@ view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 mark
 const KBM = kbmFor(search);
 if (KBM) mountKbm(document, window, KBM);
 const controls = createInput({   // :832
-  kbm: KBM, free: () => freeNow,
+  kbm: KBM, free: () => freeNow, walking: () => heroStands(),
   element, window, paused,
   now: () => performance.now(),
   matchMedia: (query) => matchMedia(query),
@@ -251,7 +252,7 @@ const DEATH = heroDeathFor(!!ZONE, search);   // data/hero-death.json: the death
 let respawnAsked = false;
 view.heroDeath(DEATH);
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
-let roam: State | null = null, sinceDeath = 0, bossKilled = false;
+let roam: State | null = null, freeRoam: FreeRoam | null = null, sinceDeath = 0, bossKilled = false;
 // The zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts; Dom 2026-10-27: after the kill shot the camera goes free so he can move round): the camera follows the hero whenever nobody fights him and, after a kill, once the
 // ceremony is over or he moves the stick; any stick input ends the ceremony at once. killAge counts the seconds since the kill landed (the rig's own finish age restarts when its finisher camera lets go); freeAfterKill latches the hand-over for this kill.
 // FREE is null under ?postkill=v1 (no zone), ?freecam=v1 and the row off: the lock camera exactly as it was
@@ -435,7 +436,7 @@ if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger d
 }
 
 function updateHud() {   // :684, the career fight's view
-  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge), death: DEATH && heroDied() ? { line: DEATH.line, button: DEATH.button, ready: respawnReady(DEATH, sinceDeath) } : undefined });
+  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge), ...(roam && freeRoam ? { free: freeHud(freeRoam) } : {}), death: DEATH && heroDied() ? { line: DEATH.line, button: DEATH.button, ready: respawnReady(DEATH, sinceDeath) } : undefined });
   const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null || (!!DEATH && heroDied());   // a walking hero keeps the whole HUD (Respawn included) up; so does a fallen one under the death loop (the camera is still moving, so "settled" would hide the line and Respawn)
   document.documentElement.classList.toggle('endgame-fade', !!phase && !walking && (hushed || phase.touring));
   document.documentElement.classList.toggle('endgame-hush', !!phase && !walking && hushed);
@@ -517,8 +518,9 @@ function frame(now: number) {
       if (heroStands()) {   // the zone loop: the sim is over, the hero walks (presentation only) once the kill's ceremony lets him go
         const phase = view.finishPhase();
         // the ceremony is over, or (freeCamera.stickEndsCeremony) any stick input ends it
-        if (!roam && handsOver(FREE, freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds, !!(intent.x || intent.z), killAge, phase.stickBeat)) { roam = { ...practice.fighter }; view.stopTour(); }   // finisher-cam.json stickBeatS: a held stick does not end a finisher the camera frames until its whole length has played (0 = at once: ?finishercam=v1, a plain death)
-        if (roam) state = roam = roamStep(roam, { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, practice.enemy, ZONE!.walkRadius);   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
+        if (!roam) freeRoam = null;
+        if (!roam && handsOver(FREE, freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds, !!(intent.x || intent.z || intent.guard || isFreeAction(duelIntent.action)), killAge, phase.stickBeat)) { roam = { ...practice.fighter }; view.stopTour(); }   // finisher-cam.json stickBeatS: a held stick does not end a finisher the camera frames until its whole length has played (0 = at once: ?finishercam=v1, a plain death)
+        if (roam) { freeRoam ??= startFreeRoam(practice.duel, ZONE!.walkRadius); const walked = stepFreeRoam(freeRoam, roam, duelIntent, ZONE!.walkRadius); freeRoam = walked.free; state = roam = walked.body; }   // roll, step back and guard on the walk (src/fight/free-roam.ts, data/respawn.json freeMoves): idle it is exactly zone-loop.ts roamStep;   // the zone's free walk: past the pit's wall out to data/respawn.json postKill.walkRadiusMetres (the duel sim's RADIUS is untouched)
       }
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
@@ -527,6 +529,7 @@ function frame(now: number) {
     }
   } else { accumulator = 0; previous = state; }
   if (ZONE) setWalkClamp(roam ? ZONE.walkRadius + ZONE.cameraMetres : 0);   // the follow camera stands behind a hero who walked beyond the pit (data/respawn.json postKill.cameraMetres); the fight camera is unchanged
+  (globalThis as { __v3FreeHero?: unknown }).__v3FreeHero = roam && freeRoam ? freeRoam.duel.fighters[0] : null;   // the walking hero's roll/guard fighter (tests, stills)
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Yaw?: number }).__v3Yaw = +view.yaw.toFixed(4);
   (globalThis as { __v3FreeShare?: number }).__v3FreeShare = +view.freeShare.toFixed(3);   // the stills read how far the camera has swung to the free follow camera (scripts/free-camera-stills.mjs)
@@ -549,7 +552,7 @@ function frame(now: number) {
   if (look) { if (freeNow && !paused()) view.lookYaw(-look.step(dt)); else if (paused() || look.active === null || !heroStands()) look.cancel(); }   // a finger held down through the kill's ceremony is kept (its drag hands the camera over); a fight or a pause drops it
   view.render(
     { ...state, x: previous.x + (state.x - previous.x) * alpha, z: previous.z + (state.z - previous.z) * alpha, heading: previous.heading + wrapAngle(state.heading - previous.heading) * alpha },
-    locked, paused() ? 0 : dt, practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
+    locked, paused() ? 0 : dt, roam && freeRoam && freeRoam.duel.fighters[0].phase !== 'ready' ? { ...practice, duel: { ...practice.duel, fighters: [freeRoam.duel.fighters[0], practice.duel.fighters[1]] } } : practice, frameEvents, hitStop > 0, epoch, identity(), roam !== null, freeNow,
   );
   frameEvents = [];
   radar?.frame(state.x, state.z, view.yaw);
