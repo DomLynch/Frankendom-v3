@@ -3,12 +3,12 @@
 // draws a handful of dots on a 2D canvas; it never touches the sim, the camera or the input (pointer-events none). The maths below is pure (test/radar.test.mjs); `mountRadar` is the only DOM.
 import ROWS from '../../data/radar.json' with { type: 'json' };
 
-export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead' | 'pile';
+export type RadarClass = 'hostile' | 'player' | 'npc' | 'dead' | 'pile' | 'hunter';
 type Style = { colour: string; alpha: number; sizePx: number };
 export type RadarRows = {
   on: boolean; query: string; off: string; corner: string; sizePx: number; marginPx: number; offsetPx: number; zIndex: number; rangeMetres: number; rimInset: number; dprMax: number;
   disc: { colour: string; alpha: number }; rim: { colour: string; alpha: number; widthPx: number }; edgeAlpha: number; hero: Style;
-  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean }; pile: Style };
+  classes: { hostile: Style; player: Style; npc: Style; dead: Style & { show: boolean }; pile: Style; hunter: Style };
   flash: FlashRows;
   kinds: Record<string, string>; defaultKind: string;
 };
@@ -29,7 +29,7 @@ export function validateRadar(r: RadarRows): void {
   colour('disc.colour', r.disc?.colour); num('disc.alpha', r.disc?.alpha, 0, 1);
   colour('rim.colour', r.rim?.colour); num('rim.alpha', r.rim?.alpha, 0, 1); num('rim.widthPx', r.rim?.widthPx, 0, 6);
   colour('hero.colour', r.hero?.colour); num('hero.alpha', r.hero?.alpha, 0, 1); num('hero.sizePx', r.hero?.sizePx, 0.5, 20);
-  for (const c of ['hostile', 'player', 'npc', 'dead', 'pile'] as const) {
+  for (const c of ['hostile', 'player', 'npc', 'dead', 'pile', 'hunter'] as const) {
     const s = r.classes?.[c];
     colour(`classes.${c}.colour`, s?.colour); num(`classes.${c}.alpha`, s?.alpha, 0, 1); num(`classes.${c}.sizePx`, s?.sizePx, 0.5, 20);
   }
@@ -39,7 +39,7 @@ export function validateRadar(r: RadarRows): void {
   num('flash.dotGrow', f.dotGrow, 0, 3); num('flash.ringPx', f.ringPx, 0, 20); num('flash.haloPx', f.haloPx, 0.2, 4); num('flash.ringAlpha', f.ringAlpha, 0, 1); num('flash.stopWithinMetres', f.stopWithinMetres, 0, 1000);
   if (!(f.pulseSeconds < f.periodSeconds)) throw new Error('radar.flash.pulseSeconds must be shorter than periodSeconds');
   if (typeof r.classes.dead.show !== 'boolean') throw new Error('radar.classes.dead.show is true or false');
-  for (const [kind, cls] of Object.entries(r.kinds ?? {})) if (cls !== 'hostile' && cls !== 'npc') throw new Error(`radar.kinds.${kind} ${String(cls)} is not hostile or npc`);
+  for (const [kind, cls] of Object.entries(r.kinds ?? {})) if (cls !== 'hostile' && cls !== 'npc' && cls !== 'hunter') throw new Error(`radar.kinds.${kind} ${String(cls)} is not hostile or npc`);
   if (r.defaultKind !== 'hostile' && r.defaultKind !== 'npc') throw new Error(`radar.defaultKind ${String(r.defaultKind)} is not hostile or npc`);
 }
 export const RADAR = ROWS as unknown as RadarRows;
@@ -65,6 +65,7 @@ export function place(rows: RadarRows, dx: number, dz: number, yaw: number, out:
 export function bossBlips(rows: RadarRows, spawns: readonly { x: number; z: number; kind: string; deadFor: number | null }[], liveAt: (i: number) => { x: number; z: number } | undefined, emit: (x: number, z: number, cls: RadarClass) => void): void {
   for (let i = 0; i < spawns.length; i++) {
     const s = spawns[i]!, dead = s.deadFor !== null, at = dead ? s : liveAt(i) ?? s;
+    if (dead && rows.kinds[s.kind] === 'hunter') continue;   // a hunter that is parked, walking (drawn by the hunt) or killed has no dim dot; one that stands shows as a hunter
     emit(at.x, at.z, classOf(rows, s.kind, dead));
   }
 }

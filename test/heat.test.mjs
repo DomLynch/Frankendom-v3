@@ -15,7 +15,7 @@ const patch = (f) => { const d = structuredClone(HEAT); f(d); return d; };
 
 test('the table validates and a bad row is named', () => {
   assert.deepEqual(validateFile('heat', read('heat')), []);
-  assert.deepEqual(validateHeat(HEAT, RING_IDS), []);
+  assert.deepEqual(validateHeat(HEAT, RING_IDS, read('profiles').profiles.map((p) => p.id), read('stars').levels.map((l) => l.star)), []);
   for (const [name, f, re] of [
     ['a ceiling out of range', (d) => { d.maxHeat = 500; }, /maxHeat/],
     ['a ring that is not a ring', (d) => { d.gain.ring['ring-9'] = 1; }, /ring/],

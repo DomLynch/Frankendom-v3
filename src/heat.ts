@@ -2,11 +2,17 @@
 // touches the save or any storage, so the save string is byte for byte the same with or without heat. No clock of its own (callers pass the page's seconds) and no allocation per step.
 import ROWS from '../data/heat.json' with { type: 'json' };
 
-export type HeatTier = { minHeat: number; name: string };
+export type HeatStarChance = { stars: number; chance: number };
+export type HeatTier = { minHeat: number; name: string; timeScale: number; hunters: number; stars: readonly HeatStarChance[] };
+export type HuntRows = {
+  kind: string; maxHunters: number; arrivalDelaySeconds: number; spawnCooldownSeconds: number; respawnDelaySeconds: number; minSeconds: number; warningSeconds: number; retrySeconds: number;
+  spawnDistanceMetres: number; campClearMetres: number; speedMetresPerSecond: number; aggro: number; leash: number; giveUpMetres: number; parkedSeconds: number;
+  lines: { warning: string; arrived: string; gone: string };
+};
 export type HeatRows = {
-  version: number; maxHeat: number; decay: { secondsPerMark: number };
+  version: number; maxHeat: number; seed: number; decay: { secondsPerMark: number };
   gain: { kill: number; perStar: number; ring: Record<string, number>; coinsPerHeat: number };
-  tiers: readonly HeatTier[];
+  tiers: readonly HeatTier[]; hunt: HuntRows;
   hud: { label: string; colour: string; zIndex: number; topOffsetPx: number };
   limits: Record<string, [number, number]>;
 };
@@ -17,7 +23,7 @@ export type Heat = { count: number; lastAt: number; coinBank: number };
 export const freshHeat = (): Heat => ({ count: 0, lastAt: 0, coinBank: 0 });
 
 /** Why `rows` is not a good heat table (one string per problem; empty = fine). `ringIds`: the data/rings.json ring ids. */
-export function validateHeat(rows: HeatRows = HEAT, ringIds: readonly string[] = []): string[] {
+export function validateHeat(rows: HeatRows = HEAT, ringIds: readonly string[] = [], profileIds: readonly string[] = [], starLevels: readonly number[] = []): string[] {
   const e: string[] = [], L = rows.limits;
   const inside = (name: string, v: unknown, key: string, whole = true): void => {
     const r = L?.[key];
@@ -34,8 +40,32 @@ export function validateHeat(rows: HeatRows = HEAT, ringIds: readonly string[] =
     inside(`tiers.${String(t.name)}.minHeat`, t.minHeat, 'minHeat');
     if (t.minHeat <= last) e.push(`heat.tiers.${String(t.name)}: tiers ascend (minHeat ${t.minHeat} is not above ${last})`);
     if (typeof t.name !== 'string' || !t.name.trim() || t.name.length > 16) e.push('heat.tiers.name: 1-16 characters');
+    inside(`tiers.${String(t.name)}.timeScale`, t.timeScale, 'timeScale', false);
+    inside(`tiers.${String(t.name)}.hunters`, t.hunters, 'hunters');
+    if (rows.hunt && t.hunters > rows.hunt.maxHunters) e.push(`heat.tiers.${String(t.name)}.hunters: above hunt.maxHunters`);
+    let chances = 0;
+    if (!Array.isArray(t.stars)) e.push(`heat.tiers.${String(t.name)}.stars: a list`);
+    for (const s of t.stars ?? []) {
+      if (!starLevels.includes(s.stars) || s.stars < 1) e.push(`heat.tiers.${String(t.name)}.stars: ${String(s.stars)} is no data/stars.json level above 0`);
+      if (!(Number.isFinite(s.chance) && s.chance >= 0 && s.chance <= 1)) e.push(`heat.tiers.${String(t.name)}.stars.chance: 0 to 1`);
+      chances += s.chance;
+    }
+    if (chances > 1) e.push(`heat.tiers.${String(t.name)}.stars: the chances add up past 1`);
     last = t.minHeat;
   }
+  const u = rows.hunt;
+  if (!u) e.push('heat.hunt: missing');
+  else {
+    if (!profileIds.includes(u.kind)) e.push(`heat.hunt.kind: "${String(u.kind)}" is no data/profiles.json row`);
+    inside('hunt.maxHunters', u.maxHunters, 'maxHunters');
+    for (const k of ['arrivalDelaySeconds', 'spawnCooldownSeconds', 'respawnDelaySeconds', 'minSeconds', 'warningSeconds', 'retrySeconds'] as const) inside(`hunt.${k}`, u[k], 'seconds', false);
+    for (const k of ['spawnDistanceMetres', 'campClearMetres', 'aggro', 'leash', 'giveUpMetres'] as const) inside(`hunt.${k}`, u[k], 'metres', false);
+    inside('hunt.speedMetresPerSecond', u.speedMetresPerSecond, 'speed', false); inside('hunt.parkedSeconds', u.parkedSeconds, 'parked', false);
+    if (u.leash < u.aggro + 1) e.push('heat.hunt.leash: shorter than the aggro plus 1 m');
+    if (u.giveUpMetres <= u.spawnDistanceMetres) e.push('heat.hunt.giveUpMetres: a hunter would lose him the moment it arrived');
+    for (const k of ['warning', 'arrived', 'gone'] as const) if (typeof u.lines?.[k] !== 'string' || !u.lines[k].trim()) e.push(`heat.hunt.lines.${k}: a line of text`);
+  }
+  inside('seed', rows.seed, 'seed');
   if (rows.tiers?.length && rows.tiers[0]!.minHeat !== 1) e.push('heat.tiers: the first tier starts at heat 1');
   if (rows.tiers?.length && rows.tiers[rows.tiers.length - 1]!.minHeat > rows.maxHeat) e.push('heat.maxHeat: below the top tier, which could never be reached');
   const h = rows.hud;
@@ -83,6 +113,27 @@ export function resetHeat(h: Heat, now: number): void { h.count = 0; h.coinBank 
 export function heatTier(h: Heat, rows: HeatRows = HEAT): HeatTier | null {
   for (let i = rows.tiers.length - 1; i >= 0; i--) if (rows.tiers[i]!.minHeat <= h.count) return rows.tiers[i]!;
   return null;
+}
+
+/** A hunt wait scaled by the tier (never below hunt.minSeconds, never above the base wait); no tier = the base wait. */
+export function heatSeconds(h: Heat, seconds: number, rows: HeatRows = HEAT): number {
+  const tier = heatTier(h, rows);
+  return tier ? Math.min(seconds, Math.max(rows.hunt.minSeconds, seconds * tier.timeScale)) : seconds;
+}
+
+/** The hunters the tier allows at once (0 below the first tier), never past hunt.maxHunters. */
+export const huntersAllowed = (h: Heat, rows: HeatRows = HEAT): number => Math.min(rows.hunt.maxHunters, heatTier(h, rows)?.hunters ?? 0);
+
+/** Deterministic star level of the `n`th hunter to arrive: the tier's chances against a hash of the seed and `n` (no Math.random, no clock; a replay or a test rolls the same star). 0 = no star. */
+export function heatStar(h: Heat, n: number, rows: HeatRows = HEAT): number {
+  const tier = heatTier(h, rows);
+  if (!tier || !tier.stars.length) return 0;
+  let x = (rows.seed ^ Math.imul(n + 1, 0x9e3779b1)) >>> 0;   // a 32-bit integer mix (murmur3 finaliser), the roll in [0, 1)
+  x = Math.imul(x ^ (x >>> 16), 0x85ebca6b) >>> 0; x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0; x = (x ^ (x >>> 16)) >>> 0;
+  const roll = x / 0x100000000;
+  let edge = 0;
+  for (const s of tier.stars) { edge += s.chance; if (roll < edge) return s.stars; }
+  return 0;
 }
 
 /** The HUD line for the count: '' at 0, else `Heat 3 · Hunted`. Built only when the count changes. */

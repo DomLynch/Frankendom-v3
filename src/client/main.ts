@@ -60,6 +60,7 @@ import { CORPSE, coinsFor, atCamp, bank, carriedSave, dropPile, earn, inReach, l
 import { mountCorpseHud } from '../fight/corpse-hud.ts';
 import { HEAT, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
 import { mountHeatHud } from '../fight/heat-hud.ts';
+import { freshHunt, hunterSpawns, stepHunt } from '../zone/hunters.ts';   // the hunt (data/heat.json hunt): a hunter walks at a hero who has heat
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -294,13 +295,13 @@ let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
 const SPOTS = ZONE ? spotsFor(orderedZone(zoneFor(search), FIGHT.order, search)) : [];
-if (ZONE) { validateSpots(SPOTS, initialState(), RADIUS, WORLD, kindIds(KIND_CTX.profiles)); for (const s of SPOTS) KINDS(s.kind); }   // every spawn fights as its own kind: each must be a profile row whose opponent is an archetype (built now, so a bad row fails at load)
+if (ZONE) { validateSpots(SPOTS, initialState(), RADIUS, WORLD, kindIds(KIND_CTX.profiles)); for (const s of SPOTS) KINDS(s.kind); KINDS(HEAT.hunt.kind); }   // every spawn fights as its own kind: each must be a profile row whose opponent is an archetype (built now, so a bad row fails at load)
 if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
 if (ZONE) setArenaClamp(OPEN_RADIUS);   // endless open ground: every camera clamp (walk, finisher side view, tour, intro orbit) is out of reach in the zone, so the camera follows the hero wherever he runs
 if (ZONE) { const bad = spotBodyProblems(SPOTS); if (bad.length) throw new Error(`zone row bodies: ${bad.join('; ')}`); }   // a spawn's own body (zone row spawns[].body) is a usable boss body; none in the shipped zone
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
-let spawns: Spawn[] = SPOTS.map((s) => ({ ...s, deadFor: null })), current = 0, engaged = false, killMarked = false;
+let spawns: Spawn[] = [...SPOTS.map((s) => ({ ...s, deadFor: null })), ...(ZONE ? hunterSpawns(HEAT) : [])], current = 0, engaged = false, killMarked = false;
 // Real-time aggro (data/respawn.json attackers, src/zone/attackers.ts, src/fight/attacker-bout.ts): while the hero fights the held boss, every other standing spawn whose aggro he enters fights him too, in its own duel on his one health pool.
 // `attackers` holds them (a killed one stays, lying, until its own timer stands it again); `killedBy` is the attacker whose blow killed the hero (that boss starts again at full health). ?aggro=v1 / row off / ?postkill=v1: none, the others are frozen copies.
 const multi = !!ZONE && attackersOn(search);
@@ -333,7 +334,7 @@ function startLinger(idx: number) {
 function endLinger() {
   if (lingerIdx < 0) return;
   const i = lingerIdx; lingerIdx = -1;
-  spawns = spawns.map((s, k) => (k === i ? { ...SPOTS[i]!, deadFor: s.deadFor } : s));
+  spawns = spawns.map((s, k) => (k === i ? { ...(SPOTS[i] ?? { ...s, leash: HEAT.hunt.leash }), deadFor: s.deadFor } : s));   // a hunter (not a zone spot) keeps where it stands, its own leash back
   if (i === current && !engaged && !practice.finish) leashReset(i, state);   // the lingering boss that stands alone goes home (the existing reset, at its own spot)
 }
 /** The hero has just died: what he carries leaves him as the pile; the boss that killed him lingers at it. Nothing here throws. */
@@ -409,12 +410,30 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 }
 // HEAT (data/heat.json, src/heat.ts; Dom 2026-10-28, ported from Armagedom): each boss kill (and its stars, ring and coins) raises a number that cools with quiet time and clears on the hero's death. It lives in these
 // variables only: never saved, never sent, so ?save=off or a reload starts cold and the save string is untouched. The HUD is one DOM line written when the count changes. No URL flag.
-{ const bad = validateHeat(HEAT, RINGS.rings.map((r) => r.id)); if (bad.length) throw new Error(`data/heat.json: ${bad.join('; ')}`); }
+{ const bad = validateHeat(HEAT, RINGS.rings.map((r) => r.id), PROFILES.profiles.map((p) => p.id), STAR_ROWS.levels.map((l) => l.star)); if (bad.length) throw new Error(`data/heat.json: ${bad.join('; ')}`); }
 const heat = freshHeat(), heatHud = ZONE ? mountHeatHud(document, HEAT) : null;
 let heatClock = 0;
+// THE HUNT (src/zone/hunters.ts): while he has heat a hunter is announced, arrives behind him and walks at him; close enough it stands as an ordinary boss and the existing aggro hand-over (or attacker join) starts the 1v1.
+// PLACEHOLDER body: Gargantua's (data/profiles.json `hunter`); the line is the discreet HUD line the unlocks use. Session only, nothing saved.
+const hunt = ZONE ? freshHunt(SPOTS.length, HEAT) : null;
+const huntLine = (text: string) => { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); };
+const inFightWith = (i: number) => (i === current && engaged) || attackers.some((a) => a.index === i && !a.dead);
+function huntStep(dt: number) {
+  if (!hunt) return;
+  const note = stepHunt(hunt, spawns, state, heat, heatClock, dt, inFightWith, HEAT);
+  if (note.warned) huntLine(HEAT.hunt.lines.warning);
+  if (note.arrived) { starById[spawns[note.index]!.id] = note.star; huntLine(HEAT.hunt.lines.arrived); }
+  if (note.gone) huntLine(HEAT.hunt.lines.gone);
+}
+/** The walking hunters as idle copies this frame (drawn gliding at the hero, always loaded: the hunter's body is fetched when the first one arrives, never on the first visit). */
+function chasers() {
+  const list: { x: number; z: number; heading: number; id: string; spawn: Spawn; star: number; near: boolean }[] = [];
+  if (hunt) for (const slot of hunt.slots) if (slot.chasing) { const s = spawns[slot.index]!; list.push({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: true }); }
+  return list;
+}
 function heatKill(spawn: Spawn) { heatOnKill(heat, HEAT, heatClock, starById[spawn.id] ?? 0, ringOfSpawn(spawn.id)?.id ?? null, coinsFor(CORPSE, spawn.kind)); }
 function heatStep(dt: number) { heatClock += dt; stepHeat(heat, HEAT, heatClock); heatHud?.update(heat); }
-(globalThis as { __v3Heat?: unknown }).__v3Heat = { heat, add: (n: number) => { addHeat(heat, HEAT, n, heatClock); } };   // the stills and tests read and raise it
+(globalThis as { __v3Heat?: unknown }).__v3Heat = { heat, hunt, spawn: (i: number) => spawns[i], add: (n: number) => { addHeat(heat, HEAT, n, heatClock); } };   // the stills and tests read and raise it
 /** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
 let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
 function onBossKilled(kind: string, star = 0) {
@@ -449,6 +468,7 @@ function zoneStep(dt: number) {
   spawns = timers.spawns;
   corpseStep(dt);
   heatStep(dt);
+  huntStep(dt);
   for (const i of timers.due) rollStarFor(spawns[i]!);   // a spawn stands again: its next star, before anything builds its fight
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
@@ -658,7 +678,7 @@ function frame(now: number) {
   if (ZONE) { const look = ringLook(Math.hypot(state.x, state.z)); view.ringLook(look.tintA, look.tintB, look.t, look.plates); }   // the biome ring's ground tint and sky-plate weights by the hero's distance from the pit (data/rings.json); ring 1 is today's look
   if (ZONE) { view.liveFoes(attackers.map((a) => ({ id: spawns[a.index]!.id, practice: a.practice, spawn: spawns[a.index]!, star: starById[spawns[a.index]!.id] ?? 0 }))); }
   if (ZONE) view.liveStar(starById[spawns[current]!.id] ?? 0);   // the attackers' rigs (a killed one lies until its timer is up)
-  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) }))); zoneDebug(); }   // the other standing bosses, facing the hero
+  if (ZONE) { view.idleFoes(idleOnes(spawns, current).filter((s) => !attackers.some((a) => spawns[a.index] === s)).map((s) => ({ x: s.x, z: s.z, heading: Math.atan2(state.x - s.x, state.z - s.z), id: s.id, spawn: s, star: starById[s.id] ?? 0, near: withinLoad(s, state, undefined, bossKilled) })).concat(chasers())); zoneDebug(); }   // the other standing bosses, facing the hero
   if (FREE && heroStands() && !freeAfterKill && (roam || view.finishPhase().complete || killAge >= ZONE!.startAfterSeconds)) freeAfterKill = true;   // latched for this kill: the rig's finish age restarts once its finisher camera lets go
   // the camera follows the hero: free when nobody fights him and after a kill, the lock only in a fight
   freeNow = wantsFreeCamera(FREE, { finished: !!practice.finish, heroStands: heroStands(), ceremonyOver: freeAfterKill, roaming: roam !== null, engaged, broken: lockState.broken });
@@ -679,7 +699,7 @@ nameOpponent();
 updateHud();
 const radarOrigin = ZONE ? pitOrigin(zoneFor(search), WORLD) : { x: 0, z: 0 };   // the radar (data/radar.json): bosses at their live spots, other players from the presence handle; hero and yaw come in per frame
 const radarLive = (i: number) => { if (i === current) return practice.enemy; for (let k = 0; k < attackers.length; k++) if (attackers[k]!.index === i) return attackers[k]!.practice.enemy; return undefined; };   // a boss in a fight is at its sim position, the rest at their spots
-const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); if (CR) pileBlip(PROG?.save?.pile, emit); } }) : null;
+const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); if (hunt) for (const slot of hunt.slots) if (slot.chasing) emit(spawns[slot.index]!.x, spawns[slot.index]!.z, 'hunter'); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); if (CR) pileBlip(PROG?.save?.pile, emit); } }) : null;
 (globalThis as { __v3Radar?: unknown }).__v3Radar = radar;   // debug handle for the stills (armFlash / stopFlash / flashPhase), like __v3Zone
 let buildLabel = '';
 fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, 7); element('build').textContent = buildLabel; }).catch(() => {});

@@ -20,9 +20,10 @@
     "player": { "colour": "#4aa8ff", "alpha": 1, "sizePx": 2.5 },
     "npc": { "colour": "#e8c34d", "alpha": 1, "sizePx": 2.5 },
     "dead": { "colour": "#e24b44", "alpha": 0.28, "sizePx": 1.7, "show": true },
-    "pile": { "colour": "#ffd34a", "alpha": 1, "sizePx": 3 }
+    "pile": { "colour": "#ffd34a", "alpha": 1, "sizePx": 3 },
+    "hunter": { "colour": "#ff8a1f", "alpha": 1, "sizePx": 3 }
   },
   "flash": { "on": true, "periodSeconds": 3, "pulseSeconds": 0.6, "colour": "#ffd23f", "dotGrow": 0.4, "ringPx": 4, "haloPx": 0.9, "ringAlpha": 0.9, "stopWithinMetres": 8 },
-  "kinds": { "pitborn": "hostile" },
+  "kinds": { "pitborn": "hostile", "hunter": "hunter" },
   "defaultKind": "hostile"
 }
