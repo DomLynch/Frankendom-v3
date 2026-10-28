@@ -50,9 +50,9 @@ export function createDaily(o: DailyOptions): Daily {
   const z = file.ui.zIndex;
   const style = doc.createElement('style');
   style.textContent = [
-    `.dp-btn{position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:${z};padding:7px 12px;border-radius:999px;border:1px solid ${colour.line};background:${colour.panel};color:${colour.gold};`
+    `.dp-btn{position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 104px);z-index:${z};padding:7px 12px;border-radius:999px;border:1px solid ${colour.line};background:${colour.panel};color:${colour.gold};`
       + "font:11px/1 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}",
-    `.dp-card{position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 44px);z-index:${z};width:min(260px,calc(100vw - 16px));box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid ${colour.line};background:${colour.panel};color:${colour.ink};`
+    `.dp-card{position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 140px);z-index:${z};width:min(260px,calc(100vw - 16px));box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid ${colour.line};background:${colour.panel};color:${colour.ink};`
       + "font:13px/1.35 Georgia,'Times New Roman',serif}",
     '.dp-card[hidden],.dp-result[hidden],.dp-banner[hidden]{display:none}',
     `.dp-card h2,.dp-result h2{margin:0 0 6px;font:600 15px/1.2 Georgia,serif;font-variant-caps:all-small-caps;letter-spacing:.14em;color:${colour.gold}}`,
@@ -60,7 +60,7 @@ export function createDaily(o: DailyOptions): Daily {
     '.dp-card small,.dp-result small{display:block;opacity:.75;font-size:11px}',
     `.dp-row{display:flex;gap:8px;margin-top:10px}.dp-row button{flex:1;padding:9px 6px;border-radius:8px;border:1px solid ${colour.line};background:transparent;color:${colour.ink};font:13px Georgia,serif;cursor:pointer;touch-action:manipulation}`,
     `.dp-row button.dp-go{background:${colour.gold};color:#171e20;font-weight:600}`,
-    `.dp-banner{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translateX(-50%);z-index:${z - 1};pointer-events:none;text-align:center;max-width:calc(100vw - 150px);`
+    `.dp-banner{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 142px);transform:translateX(-50%);z-index:${z - 1};pointer-events:none;text-align:center;max-width:calc(100vw - 32px);`
       + `color:${colour.gold};font:11px/1.3 Georgia,serif;font-variant-caps:all-small-caps;letter-spacing:.14em;text-shadow:0 1px 3px rgba(0,0,0,.85)}`,
     '.dp-banner small{display:block;color:' + colour.ink + ';font-size:10px;letter-spacing:.04em;font-variant-caps:normal;opacity:.9}',
     `.dp-result{position:fixed;inset:0;z-index:${z + 1};display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,8,10,.72);color:${colour.ink};font:14px/1.4 Georgia,serif}`,

@@ -77,7 +77,7 @@ assert.match(await page.textContent('#daily-pit-banner'), /Daily Pit · Double d
 const dailyHealth = await page.evaluate(() => globalThis.__v3Fight.duel.fighters[1].maxHealth);
 assert.ok(Math.abs(dailyHealth - plainHealth * 0.5) <= 1, `double damage: half the health (${dailyHealth} vs ${plainHealth})`);
 console.log(`daily boot: ${JSON.stringify({ run: [run.boss, run.modifier.id], plainHealth, dailyHealth })}`);
-assert.equal(await page.evaluate(() => (localStorage.getItem('frankendom.v3.progress') ?? '').includes('"kills"') && JSON.parse(localStorage.getItem('frankendom.v3.progress')).ladder.length), 0, 'nothing from the daily reaches the ladder');
+assert.equal(await page.evaluate((k) => { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw).ladder.length : 0; }, PROG.key), 0, 'nothing from the daily reaches the ladder');
 await page.waitForFunction(() => globalThis.__v3Zone?.engaged === true, null, { timeout: 180000 });
 await shot(page, '3-fight-banner');
 assert.equal((await saved(page)).daily.attempts, 1, 'the attempt is spent at the engage');
