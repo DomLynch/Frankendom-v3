@@ -9,6 +9,7 @@ import { SPELL_BUFFER_MS } from './sandbox-rules.ts';
 import { applyTouchLayout } from './touch-layout.ts';
 import { attachTapLog, tapLogOn } from './tap-log.ts';
 import { buttonOf, keyAlias, type KbmRows } from './kbm.ts';
+import { isAttackAction, strikeBinds, type Aim } from './cut-strike.ts';
 
 type Lookup = <T extends HTMLElement>(id: string) => T;
 export type InputEnv = {
@@ -25,6 +26,7 @@ export type InputEnv = {
   // Keyboard + mouse (data/input.json, src/fight/kbm.ts). Absent or null (`?input=v1`, and every test that builds the layer bare) = the controls exactly as they were: no mouse, no new key, no key map.
   kbm?: KbmRows | null;
   free?: () => boolean;      // the camera is free (nobody locks it): a left-drag looks round instead of picking a swing
+  strike?: (aim: Aim | null) => void;   // data/physics.json cut.strike: ANY attack press (before the sim reads it) cuts a fallen body; `aim` = the click's point for a mouse strike, else null (the page decides whether a body is there to cut: main.ts)
   overPart?: (x: number, y: number) => boolean;   // an optional hook: a point that is not a strike (nothing passes one now: #219's Take is gone, a click on a corpse part strikes and the corpse tap cuts it)
 };
 // The controls' intent for one frame, named apart from the simulation's `Intent` (duel.ts) it is folded into by main.ts: the two
@@ -115,6 +117,7 @@ export function createInput(env: InputEnv) {
   let dodgeHeld: { since: number; rolled: boolean } | null = null;
   let slashWait: { since: number; x: number; y: number; lx: number; ly: number; armed?: number } | null = null;   // a SLASH press still deciding its side (see slashSlide); x/y: where the slide is measured from; lx/ly: the thumb's last place; armed: when its hold armed the directional heavy (DIRECTIONAL_HEAVY), which now waits for a slide
   const holders = new Set<Strike>();
+  let mouseAim: Aim | null = null;   // the point of the mouse click that is striking now (null for a key or a thumb): cut.strike aims at it
   let dragGuard = false;
   // The held level the simulation sees: during a swing, whether the control that threw it is still down; otherwise whether any strike control is.
   const held = () => {
@@ -133,7 +136,7 @@ export function createInput(env: InputEnv) {
   // sandbox spellBuffer: a SPELL press the game cannot take yet (staggered, mid-recovery) waits SPELL_BUFFER_MS and fires the moment it can, so a tap is never silently lost. 0 (trunk) = off.
   let pendingSpell: { action: Action; until: number } | null = null;
   function request(next: Action) {
-    if (!paused() && env.ready()) env.press?.();
+    if (!paused() && env.ready()) { env.press?.(); if (isAttackAction(next)) env.strike?.(mouseAim); }
     if (!paused() && env.ready() && accepts(env.practice(), next)) { action = next; pendingSpell = null; }
     else if (SPELL_BUFFER_MS && (next === 'skill' || next === 'skill2') && !paused() && env.ready()) pendingSpell = { action: next, until: env.now() + SPELL_BUFFER_MS };
   }
@@ -466,6 +469,7 @@ export function createInput(env: InputEnv) {
   // stab or a slash; A/D/W held pick the same before it); right held = GUARD, the cursor's slide from the press the side. Touch and pen never reach this (pointerType), and ?input=v1 never builds it.
   let mouseId: number | null = null, mouseGuardId: number | null = null;
   if (KBM) {
+    strikeBinds.mouse = true;   // cut.strike: a mouse click on the canvas is a strike below, so the ragdoll's own tap leaves mouse pointers to it
     const canvas = element<HTMLCanvasElement>('world');
     const capture = (id: number) => { try { canvas.setPointerCapture(id); } catch { /* capture is a convenience */ } };
     canvas.addEventListener('contextmenu', (event) => event.preventDefault());
@@ -483,6 +487,7 @@ export function createInput(env: InputEnv) {
         if (mouseId !== null || env.overPart?.(event.clientX, event.clientY)) return;   // a click on a cut part to take is the pickup's
         event.preventDefault();
         mouseId = event.pointerId; capture(mouseId);
+        mouseAim = { x: event.clientX, y: event.clientY };   // the click's point: where a strike on a fallen body is aimed (cut.strike)
         hold('light');
         attackButton.dataset.held = '';
         slashWait = { since: env.now(), x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY };
@@ -499,7 +504,7 @@ export function createInput(env: InputEnv) {
       slashWait.lx = event.clientX; slashWait.ly = event.clientY;
       const dx = event.clientX - slashWait.x, dy = event.clientY - slashWait.y, moved = Math.hypot(dx, dy);
       if (env.free?.()) {   // the camera is free: the drag looks round (main.ts), it is not a swing; a click that stays put is still a strike
-        if (moved >= KBM.mouse.lookDragPx) { slashWait = null; mouseId = null; unhold('light'); delete attackButton.dataset.held; }
+        if (moved >= KBM.mouse.lookDragPx) { slashWait = null; mouseId = null; mouseAim = null; unhold('light'); delete attackButton.dataset.held; }
         return;
       }
       if (moved < KBM.strike.slidePx) return;
@@ -516,6 +521,7 @@ export function createInput(env: InputEnv) {
         if (e.pointerId !== mouseId) return;
         mouseId = null;
         if (slashWait) { if (type === 'pointerup') { if (slashWait.armed !== undefined) fireHeavy(); else fireSlash(null, true); } else slashWait = null; }
+        mouseAim = null;
         unhold('light'); unhold('heavy'); unhold('thrust');
         delete attackButton.dataset.held; delete attackButton.dataset.slide;
         if (type === 'pointercancel') withdraw('light');

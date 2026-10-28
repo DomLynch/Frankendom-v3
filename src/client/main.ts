@@ -54,6 +54,7 @@ import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
 import { RADAR, bossBlips, mountRadar, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createInput } from '../fight/input.ts';
+import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
@@ -214,6 +215,7 @@ const controls = createInput({   // :832
   ready: () => assetsReady,
   practice: () => practice,
   quiet: () => feedback.quiet(),
+  strike: (aim) => { if ((practice.finish && practice.finish.victim === 1) || (ZONE && !engaged)) strikeCut(aim); },   // data/physics.json cut.strike: an attack press while the foe is down (not while another boss is on him) cuts the fallen body
 });
 function clearInput() { controls.clear(); hitStop = 0; accumulator = 0; }   // :713
 const KEEP_INPUT = !!ZONE && keepsInput(search);   // data/respawn.json input: a hand-over while he free-walks leaves the stick alone (?input=v1 = clear as before)
