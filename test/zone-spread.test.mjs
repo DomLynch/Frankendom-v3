@@ -126,11 +126,12 @@ test('a long run 5 km from the origin: the sim and the AI stay finite (no NaN / 
   }
 });
 
-test('a pose that fits is the sim\'s own: zoneDuel changes nothing but the radius', () => {
+test('a pose that fits is the sim\'s own: zoneDuel changes nothing but the radius and the hero\'s free flag (roll and guard are never gated on a fight)', () => {
   const s = spots(), pose = poseAt(initialState(), s[0], play.OPEN_RADIUS, ROWS.spawn.minDistance, initialState());
   assert.ok(poseFits(pose, wall()));
   const sim = fresh(pose), same = zoneDuel(sim.duel);
-  assert.deepEqual({ ...same, radius: undefined }, { ...sim.duel, radius: undefined });
+  assert.equal(same.fighters[0].free, true); assert.ok(!('free' in sim.duel.fighters[0]));
+  assert.deepEqual({ ...same, radius: undefined, fighters: [{ ...same.fighters[0], free: undefined }, same.fighters[1]] }, { ...sim.duel, radius: undefined, fighters: [{ ...sim.duel.fighters[0], free: undefined }, sim.duel.fighters[1]] });
   assert.equal(same.radius, play.OPEN_RADIUS); assert.ok(!('radius' in sim.duel));
 });
 

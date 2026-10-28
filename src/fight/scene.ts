@@ -70,8 +70,9 @@ import { scorch } from './scorch.ts';
 import './signature-veteran.ts';   // the Veteran's Battle Scars registers itself (V3 meets only the veteran: the other nine opponents' signatures are not shipped)
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
+import { applyStar } from './star-look.ts';
 import { bodyOwnerOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
-import { bossOpponent, bossPreview, bossRowOfBody } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
+import { bossOpponent, bossPreview, bossRowOfBody, bossWeaponFor } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
 import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
 import { foeDrawnWeapon } from './foe-weapon.ts';
@@ -259,6 +260,7 @@ export function createScene(
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
   let terrainDraw: TerrainDraw | null = null, terrainRows!: TerrainRows, terrainLift = 0, terrainHero = 0;   // the zone's hills (openTerrain below); null = the floor stays flat, every height below is 0
   const fadeEye = new THREE.Vector3(), groundH = (x: number, z: number): number => (terrainDraw ? terrainDraw.height(x, z) : 0);
+  let floorBase: THREE.Color | undefined; const ringTintA = new THREE.Color(), ringTintB = new THREE.Color();   // the sand's own colour and scratch colours for the biome ring's tint (ringLook below)
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
   arena.ready.then(() => { if ((arena.sky.image as { width: number }).width > 2) { arenaSky = arena.sky; rebuildEnvironment(); } }).catch(() => {});
@@ -398,7 +400,7 @@ export function createScene(
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
   let ragdoll: FoeRagdoll | null = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one   // let: a held spawn in another body swaps it (heldBodies below)
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
-  const pickupV = new THREE.Vector3();
+  const pickupV = new THREE.Vector3(), projectV = new THREE.Vector3();
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow and one line over a frozen corpse (presentation only)
     : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
   let heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created   // let: the zone page may ask for the death-only one (heroDeath below) before the rigs load
@@ -594,7 +596,7 @@ export function createScene(
   const bodyAssets = new Map<string, { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> }>();   // `loaded`: the held foe's swap (heldBodies) awaits the same fetch a standing or attacking spawn started, one file once
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
   // A boss body with a weapon row (data/boss-weapons.json; the body is found through the profile rows, foe-body.ts profileBodyOf) is armed with the row's weapon, scaled, with its off-hand part; any other body with the page's weapon, as before.
-  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch);
+  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch) ?? (file === liveBody || !bodyOwnerOf(file) ? undefined : bossWeaponFor(bodyOwnerOf(file)!, pageSearch));   // a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
   // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
   const ownerOfBody = (file: string): string | undefined => file === liveBody ? undefined : bodyOwnerOf(file);
   const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch).weapon : builtFoeWeapon);
@@ -662,8 +664,9 @@ export function createScene(
     return heldCtl;
   }
   let heldFinishing = false;   // render(): a finish is playing (the live rig is mid-kill): a swap waits for it
-  let idleList: readonly { x: number; z: number; heading: number }[] = [];
-  let idleOther: readonly { id: string; x: number; z: number; heading: number; file: string }[] = [];   // the standing spawns in another body than the live rig
+  let idleList: readonly { x: number; z: number; heading: number; star?: number }[] = [];
+  let liveStarN = 0;   // data/stars.json: the star level the live rig wears (liveStar)
+  let idleOther: readonly { id: string; x: number; z: number; heading: number; file: string; star: number }[] = [];   // the standing spawns in another body than the live rig
   const idleOtherActors = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; pose: ReturnType<typeof actorPose>; guard: Practice['duel']['fighters'][1]['guardDirection']; holding: boolean }>();
   const idleCopies: THREE.Group[] = [];
   let restSnap: { pose: ReturnType<typeof actorPose>; guard: Practice['duel']['fighters'][1]['guardDirection']; holding: boolean } | null = null;   // the live foe's rest pose, kept from the first at-rest frame (the frozen copies of a far boss are made from it once the live foe is down)
@@ -686,7 +689,7 @@ export function createScene(
           }
         }
         if (!entry) continue;
-        entry.group.visible = true; entry.group.position.set(at.x, groundH(at.x, at.z), at.z); entry.group.rotation.y = at.heading;
+        entry.group.visible = true; entry.group.position.set(at.x, groundH(at.x, at.z), at.z); entry.group.rotation.y = at.heading; applyStar(entry.group, at.star);
         const { pose } = entry;
         entry.actor.update(0, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, entry.guard, CHARGE_LEAN[opponentId] ?? null, entry.holding, pose.span ?? null);   // the rest pose it was made in, held (speed 0)
       }
@@ -695,14 +698,14 @@ export function createScene(
     if (atRest)
       while (idleCopies.length < idleList.length) {
         const holder = new THREE.Group(), { copy } = snapshotRig(opponent, false);
-        copy.position.set(0, 0, 0); copy.rotation.set(0, 0, 0);   // the live foe's own place and heading: the holder carries the copy's now
+        copy.position.set(0, 0, 0); copy.rotation.set(0, 0, 0); copy.scale.set(1, 1, 1);   // (the live group's star scale is not the copy's: the holder carries each copy's own, applyStar)   // the live foe's own place and heading: the holder carries the copy's now
         copy.traverse((o) => { if (o !== copy && o.scale.x <= WARM_SCALE) o.visible = false; });   // the cut caps' warm-up specks (ragdoll.ts prepareCutArt) are the live rig's to hide, not a copy's to carry
         holder.add(copy); scene.add(holder); idleCopies.push(holder);
       }
     idleCopies.forEach((holder, i) => {
       const at = idleList[i];
       holder.visible = !!at;
-      if (at) { holder.position.set(at.x, 0, at.z); holder.rotation.y = at.heading; }
+      if (at) { holder.position.set(at.x, 0, at.z); holder.rotation.y = at.heading; applyStar(holder, at.star ?? 0); }
     });
   }
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
@@ -718,7 +721,7 @@ export function createScene(
   }
   function syncLiveFoes(dt: number) {
     const seen = new Set<string>();
-    if (warriors) for (const { id, practice: p, spawn } of liveList) {
+    if (warriors) for (const { id, practice: p, spawn, star } of liveList) {
       seen.add(id);
       let live = liveFoes.get(id);
       if (!live) {
@@ -730,7 +733,7 @@ export function createScene(
       }
       const pose = actorPose(p, 1), f = p.duel.fighters[1], speed = dt > 0 ? Math.hypot(p.enemy.x - live.x, p.enemy.z - live.z) / dt : 0;
       live.x = p.enemy.x; live.z = p.enemy.z;
-      live.group.visible = true; live.group.position.set(p.enemy.x, groundH(p.enemy.x, p.enemy.z), p.enemy.z); live.group.rotation.y = p.enemy.heading;
+      live.group.visible = true; live.group.position.set(p.enemy.x, groundH(p.enemy.x, p.enemy.z), p.enemy.z); live.group.rotation.y = p.enemy.heading; applyStar(live.group, star ?? 0);
       live.actor.fatigue(p.fatigue[1], FOE_TUNE[opponentId]);
       live.actor.update(speed, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, f.guardDirection, CHARGE_LEAN[opponentId] ?? null, holdingCharge(f), pose.span ?? null);
     }
@@ -826,16 +829,17 @@ export function createScene(
       return heldBodies()?.hold(body) ?? 'same';
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
-    idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean }[]) {
+    liveStar(star: number) { liveStarN = star; },   // data/stars.json: the star level of the spawn the live rig is (main.ts every frame); 0 = the body as built
+    idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean; star?: number }[]) {
       const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
       idleList = list.every((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears) ? list : list.filter((e) => !e.spawn || bodyOfSpawn(e.spawn) === wears);
       // `near` false (the hero is beyond respawn.json world.loadWithinMetres) and the body never asked for: the spawn is not drawn and its file is not fetched (first-visit weight)
-      idleOther = list.flatMap((e) => (e.spawn && e.id !== undefined && bodyOfSpawn(e.spawn) !== wears && (e.near !== false || bodyAssets.has(bodyOfSpawn(e.spawn)) || bodyOfSpawn(e.spawn) === liveBody) ? [{ id: e.id, x: e.x, z: e.z, heading: e.heading, file: bodyOfSpawn(e.spawn) }] : []));
+      idleOther = list.flatMap((e) => (e.spawn && e.id !== undefined && bodyOfSpawn(e.spawn) !== wears && (e.near !== false || bodyAssets.has(bodyOfSpawn(e.spawn)) || bodyOfSpawn(e.spawn) === liveBody) ? [{ id: e.id, x: e.x, z: e.z, heading: e.heading, file: bodyOfSpawn(e.spawn), star: e.star ?? 0 }] : []));
     },
     get idleFoeCount() { return idleCopies.filter((c) => c.visible).length + [...idleOtherActors.values()].filter((e) => e.group.visible).length; },   // the stills and the cost table read how many copies are on screen
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
     // programs, its own bones and mixer), posed from that fight's own Practice. Presentation only; the first boss is the live rig above and is never in this list.
-    liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef }[]) { liveList = list; },
+    liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef; star?: number }[]) { liveList = list; },
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     /** The zone's terrain (data/terrain.json, src/zone/terrain.ts), called after openGround: hills on the floor, the hero, the foes and the camera ride them; the pads stay level at 0. `scale`: the floor group's scale (world.pitScale). */
@@ -847,6 +851,12 @@ export function createScene(
       floor.position.y = -rows.mesh.floorDropMetres / scale; terrainRows = rows;
     },
     openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
+    /** The biome ring's look at the hero's distance (data/rings.json via src/zone/rings.ts ringLook): the sand's colour is its own colour times the tint mixed `t` of the way from `tintA` to `tintB`, and the sky ring's plates take their brightness weights. Presentation only. */
+    ringLook(tintA: string, tintB: string, t: number, plates: Readonly<Record<string, number>>) {
+      const floor = arena.group.getObjectByName('floor') as THREE.Mesh | null, mat = floor?.material as THREE.MeshStandardMaterial | undefined;
+      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); }
+      skyline?.plateWeights(plates);
+    },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
     /** The zone's hero death (data/hero-death.json, src/fight/hero-death.ts): the death-only ragdoll (built before the rigs load, so it attaches with them) and the death camera. null = ?herodeath=v1. */
     heroDeath(rows: { ragdoll: boolean; cam: DeathCamRows } | null) {
@@ -862,6 +872,13 @@ export function createScene(
       const v = new THREE.Vector3(point[0], point[1], point[2]).project(camera);
       if (v.z > 1) return null;
       return [(v.x * 0.5 + 0.5) * width, (-v.y * 0.5 + 0.5) * height];
+    },
+    /** The same projection with no allocation (a per-frame overlay): writes CSS pixels into `out` and returns false when the point is behind the camera. */
+    projectInto(x: number, y: number, z: number, out: [number, number]): boolean {
+      projectV.set(x, y, z).project(camera);
+      if (projectV.z > 1) return false;
+      out[0] = (projectV.x * 0.5 + 0.5) * width; out[1] = (-projectV.y * 0.5 + 0.5) * height;
+      return true;
     },
     // End-of-fight timing for the HUD (owner 2026-09-22: nothing over the body until the finisher camera has settled; the text
     // fades while the arena cam tours). `settled`: the push-in/reveal has run its course, or SETTLE seconds of finish age when
@@ -995,7 +1012,7 @@ export function createScene(
           ? Math.hypot(practice.enemy.x - opponent.position.x, practice.enemy.z - opponent.position.z) / dt
           : 0;
       player.position.set(state.x, groundH(state.x, state.z), state.z);
-      opponent.position.set(practice.enemy.x, groundH(practice.enemy.x, practice.enemy.z), practice.enemy.z);
+      opponent.position.set(practice.enemy.x, groundH(practice.enemy.x, practice.enemy.z), practice.enemy.z); applyStar(opponent, liveStarN);   // data/stars.json: the live rig's star scale and glow
       const playerDefence = defenceReaction(practice),
         enemyDefence = defenceReaction(practice, true);
       // Both actors present the same per-move combat state; the rig's clip and contact pose come from the simulation's data.

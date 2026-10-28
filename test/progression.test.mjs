@@ -104,7 +104,7 @@ test('a bad save is a fresh game and nothing throws (corrupt, wrong version, wro
     assert.deepEqual(parseSave(raw, P), fresh, String(raw));
   // a table edited since: unknown bosses and bad counts are dropped, the rest kept, unlocked rebuilt from the ladder
   const kept = parseSave(JSON.stringify({ v: 1, kills: { arachne: 2, ghost: 5, gargantua: -1, pitborn: 'x' }, ladder: ['ghost', 'arachne', 'arachne', 'gargantua'], unlocked: ['excalibur'] }), P);
-  assert.deepEqual(kept, { v: 1, kills: { arachne: 2 }, ladder: ['arachne'], unlocked: ['cleaver'] });
+  assert.deepEqual(kept, { v: 1, kills: { arachne: 2 }, ladder: ['arachne'], unlocked: ['cleaver'], coins: 0, banked: 0, pile: null, lost: [] });
   // storage that throws on read, on write, or on the property itself
   const angry = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('QuotaExceededError'); } };
   assert.deepEqual(loadSave(angry, P), fresh); assert.equal(writeSave(angry, P, kill(fresh, 'arachne')), false);
@@ -123,7 +123,7 @@ test('?save=off switches it off, anything else leaves it on', () => {
 
 test('wiring: the page records kills in the zone loop, rebuilds the kinds, shows one discreet line, and the hero equip exists', () => {
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8'), scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(main, /onBossKilled\(spawns\[current\]!\.kind\)/); assert.match(main, /onBossKilled\(spawns\[a\.index\]!\.kind\)/);
+  assert.match(main, /onBossKilled\(spawns\[current\]!\.kind[,)]/); assert.match(main, /onBossKilled\(spawns\[a\.index\]!\.kind[,)]/);   // (the star bosses pass the dead one's star too, data/stars.json)
   assert.match(main, /KINDS = kindTable\(KIND_CTX\)/); assert.match(main, /opponentId, undefined, HERO_WEAPON,/);
   assert.match(scene, /weapons\/player\/cleaver\.glb/);
   assert.equal(P.bosses.some((b) => b.weapon === 'cleaver'), true);

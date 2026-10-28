@@ -14,6 +14,8 @@ import type { DuelPose } from './duel.ts';
 import { bossOpponent } from './boss-weapon.ts';
 import { brainFor, brainProfile, type BrainRow } from '../brain.ts';
 import { tunedOpponent, tunedResolved, type TuneMap } from '../tune.ts';
+import { mergeTune } from '../progression.ts';
+import { starTune, type StarsFile } from '../stars.ts';
 import { profileFor, resolveFight, scaledOpponent, scaledPractice, type DifficultyFile, type ProfileRow, type Resolved } from '../difficulty.ts';
 
 /** What every kind is built with: the data files, the page's difficulty pick and address, and the fight row's shared picks. */
@@ -21,11 +23,12 @@ export type KindCtx = {
   profiles: readonly ProfileRow[]; difficulty: DifficultyFile; brains: readonly BrainRow[]; pick: string | number; search: string; level: number;
   ai: string | undefined;                                   // data/fight.json `ai`: the brain row the legacy (off-difficulty) fight plays
   override: string | null;                                  // ?pitborn=v1: every kind fights as this archetype (the Centurion), difficulty off; null = each kind as its profile says
-  tune?: TuneMap;                                           // ?tune= (src/tune.ts, data/tune.json): per-kind multipliers on health, damage and speed; absent or empty = none
+  stars?: StarsFile;                                        // data/stars.json: the star levels a kind may be built at (kindTable(kind, star)); absent = 0-star only
+  tune?: TuneMap;                                        // ?tune= (src/tune.ts, data/tune.json): per-kind multipliers on health, damage and speed; absent or empty = none
   weapon: WeaponId; skill: SkillId; skill2: SkillId; stance: PickedStance; specials: boolean;
 };
 /** One kind as the sim fights it: the archetype id and body, whether the difficulty/profile scales apply, and the AI profile the stepping uses. */
-export type KindFight = { kind: string; opponentId: string; opponent: Opponent; resolved: Resolved; scaled: boolean; ai: AiProfile };
+export type KindFight = { kind: string; opponentId: string; opponent: Opponent; resolved: Resolved; scaled: boolean; ai: AiProfile; star?: number };   // star: the data/stars.json level this instance stands at (absent = 0-star)
 
 /** The profile ids a spawn `kind` may name (the data/profiles.json rows). */
 export const kindIds = (profiles: readonly ProfileRow[]): string[] => profiles.map((p) => p.id);
@@ -39,22 +42,23 @@ export function kindProblem(kind: string, profiles: readonly ProfileRow[], arche
 }
 
 /** The sim's opponent for `kind`. Throws (kindProblem's words) on an unknown kind. */
-export function kindFightFor(kind: string, ctx: KindCtx): KindFight {
+export function kindFightFor(kind: string, ctx: KindCtx, star = 0): KindFight {
   const why = kindProblem(kind, ctx.profiles);
   if (why) throw new Error(why);
-  const resolved = tunedResolved(resolveFight({ profile: kind, difficulty: ctx.pick }, ctx.profiles, ctx.difficulty, ctx.brains), ctx.tune, kind);
+  const tune = star > 0 && ctx.stars ? mergeTune(ctx.tune ?? {}, starTune(ctx.stars, star, kind)) : ctx.tune;   // data/stars.json: a star instance's health and damage multiply on top of the profile, difficulty, escalation and ?tune=; star 0 is `ctx.tune` itself
+  const resolved = tunedResolved(resolveFight({ profile: kind, difficulty: ctx.pick }, ctx.profiles, ctx.difficulty, ctx.brains), tune, kind);
   const opponentId = ctx.override ?? resolved.opponent, base = OPPONENTS[opponentId as keyof typeof OPPONENTS];
-  const opponent = ctx.override === null ? tunedOpponent(bossOpponent(base, ctx.search), ctx.tune, kind) : base;   // data/boss-weapons.json: Gargantua (executioner) fights with a maul, Arachne (shieldmaiden) with an axe; ?bossweapon=v1 and ?pitborn=v1 keep V1's row for the archetype
+  const opponent = ctx.override === null ? tunedOpponent(bossOpponent(base, ctx.search), tune, kind) : base;   // data/boss-weapons.json: Gargantua (executioner) fights with a maul, Arachne (shieldmaiden) with an axe; ?bossweapon=v1 and ?pitborn=v1 keep V1's row for the archetype
   const scaled = resolved.opponent === opponentId;   // the profile's own archetype fights with its difficulty and scales; the ?pitborn=v1 Centurion is V1's fight as before
   const v1 = profileAt(opponent, ctx.level);
   const ai = scaled ? profileFor(v1, resolved, new URLSearchParams(ctx.search).get('ai') === 'v1') : brainProfile(v1, brainFor(ctx.brains, ctx.ai, ctx.search));
-  return { kind, opponentId, opponent, resolved, scaled, ai };
+  return star > 0 ? { kind, opponentId, opponent, resolved, scaled, ai, star } : { kind, opponentId, opponent, resolved, scaled, ai };
 }
 
-/** A memo of `kindFightFor`: one object per kind, so handing the sim to a kind and back is the same value each time. */
-export function kindTable(ctx: KindCtx): (kind: string) => KindFight {
+/** A memo of `kindFightFor`: one object per kind and star, so handing the sim to a kind and back is the same value each time (star 0, the default, is keyed by the kind alone as before). */
+export function kindTable(ctx: KindCtx): (kind: string, star?: number) => KindFight {
   const seen = new Map<string, KindFight>();
-  return (kind) => { let k = seen.get(kind); if (!k) { k = kindFightFor(kind, ctx); seen.set(kind, k); } return k; };
+  return (kind, star = 0) => { const key = star > 0 ? `${kind}:${star}` : kind; let k = seen.get(key); if (!k) { k = kindFightFor(kind, ctx, star); seen.set(key, k); } return k; };
 }
 
 /** A whole fight against `k` on seed `s` (the hero and one boss, the profile and difficulty scales on the boss), before the zone's ring and place (src/zone/spawns.ts zoneDuel). `pose`: where they stand, absent = the pit's marks. */

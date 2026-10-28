@@ -53,6 +53,8 @@ export type Fighter = {
   guardProfile?: Partial<GuardProfile>;   // shield/loadout overrides; absent = the longsword defaults in RULES
   legHits?: number[]; kickCd?: number; interruptCd?: number; downCd?: number;   // ?feel=kick (knock-sim.ts): leg-hit ticks inside the window; the kicker's cooldown; the target's interrupt resistance; the no-chain guard after a knockdown (ticks left; absent = none, and always absent with the flag off)
   down?: number;   // ?feel=kick (knock-sim.ts): ticks left lying and rising after a sim knockdown; absent = on his feet (and always absent with the flag off)
+  free?: boolean;   // the open world's hero (set by the zone loop only): with the sword away he may still roll, step back and guard (never gated on a fight); absent in every other duel
+  unsheathed?: boolean;   // free hero only: the roll, step or guard he is in began from the sheath, so it ends back in it and no swing comes out of it before the draw
   postureRest: number;   // ticks left before posture drains again (a gain pauses the drain)
   phases?: readonly string[];   // sandbox-mech boss phases reached this fight (boss-phase-defs.json ids)
   scars?: readonly string[];   // sandbox-mech wounds (stance.ts woundsAt): the wound rows this fighter has taken; absent until a row fires
@@ -287,6 +289,8 @@ const castOf = (f: Fighter): Spell | undefined => f.castSlot ? f.spell2 : f.spel
 // sandbox spellHeal: a heal spell is paid in mana whatever its root's kind, and is refused once its per-fight use cap is spent.
 const paysManaFor = (spell: string): boolean => (healOf(spell) ? MANA_MAX > 0 : paysMana(spellRoot(spell)));
 const healSpent = (f: Fighter, s: Spell | undefined): boolean => { const h = healOf(s?.id); return !!h && (f.healUses ?? 0) >= h.uses; };
+/** The zone's hero with the sword away (Fighter.free): roll, step back and guard are his at all times, fight or no fight. */
+export const freeStep = (f: Fighter): boolean => !!f.free && f.phase === 'sheathed';
 export function legal(f: Fighter, action: Action): boolean {
   if (!f.health || f.exhausted || f.special) return false;   // a committed special windup takes no other input
   if (f.specialRecover && (isLight(action) || isHeavy(action) || action === 'thrust' || action === 'kick' || action === 'skill' || action === 'skill2')) return false;
@@ -296,6 +300,8 @@ export function legal(f: Fighter, action: Action): boolean {
   // the blade is out of line — so no swing comes out of either. A man's parry yields to any action and his exposure only bares his guard.
   const g = guardOf(f), committed = g.commits && ((f.phase === 'guard' && f.parrying && !f.punish && f.age < g.window) || (f.phase === 'ready' && f.exposed > 0));
   const standing = (f.phase === 'ready' || f.phase === 'guard') && !committed;   // a guard yields to any action; it never eats an input
+  const loose = freeStep(f);   // the zone hero with the sword away: roll, step and guard are his at all times
+  if (f.unsheathed && action !== 'dodge' && action !== 'backstep' && action !== 'parry') return false;   // a free move from the sheath: the swing waits for the draw
   const stepping = f.phase === 'backstep', stepTail = stepping && f.age >= RULES.backstep.cancelFrom;   // a backstep's tail cancels into a swing
   if (isLight(action)) return f.phase === 'sheathed' || ((standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina);
   if (isHeavy(action) || action === 'thrust') return (standing || stepTail) && f.stamina >= movesOf(f)[chooseMove(f, action)].stamina;
@@ -304,9 +310,9 @@ export function legal(f: Fighter, action: Action): boolean {
   if (action === 'skill2' && f.skill2 !== undefined) return !f.skillCooldown2 && (standing || stepTail) && f.stamina >= termStamina(f, movesOf(f)[SKILL_MOVE[f.skill2]!].stamina);   // V3 special-terms.ts: the hero's gate is the row's (0) while on   // slot b as a melee special: its own cooldown, the move row's stamina (the shared bar), no Special Moves needed
   if (action === 'skill2') return f.specialShare !== undefined && !!f.spell2 && !f.skillCooldown2 && (standing || stepTail) && !healSpent(f, f.spell2) && (paysManaFor(f.spell2.id) ? (manaFree(f) || (f.mana ?? 0) >= manaCost(f.spell2.cost)) : f.stamina >= f.spell2.cost);   // slot b: its own cooldown, the shared stamina bar; an empty slot is inert
   if (action === 'skill') return f.skill !== null && !f.skillCooldown && (standing || stepTail) && f.stamina >= termStamina(f, movesOf(f)[SKILL_MOVE[f.skill]!].stamina);   // as a heavy, plus an equipped skill that has cooled
-  if (action === 'dodge') return (standing && f.stamina >= RULES.rollCost) || (stepping && f.stamina >= RULES.rollCost - RULES.backstep.cost);   // holding the control turns the step into a roll
-  if (action === 'backstep') return standing && f.stamina >= RULES.backstep.cost;
-  return (f.phase === 'ready' && !f.exposed) || feintable(f);
+  if (action === 'dodge') return ((standing || loose) && f.stamina >= RULES.rollCost) || (stepping && f.stamina >= RULES.rollCost - RULES.backstep.cost);   // holding the control turns the step into a roll
+  if (action === 'backstep') return (standing || loose) && f.stamina >= RULES.backstep.cost;
+  return (f.phase === 'ready' && !f.exposed) || feintable(f) || loose;
 }
 
 // Every attack starts through one door: the transient modifiers of the previous action (charge, punish/critical windows, guard
@@ -325,6 +331,7 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
   const fighters = before.map(f => ({ ...f, age: f.stall > 0 ? f.age : f.age + 1, stall: Math.max(0, f.stall - 1), wound: Math.max(0, f.wound - 1), chain: Math.max(0, f.chain - 1), parryCooldown: Math.max(0, f.parryCooldown - 1), skillCooldown: Math.max(0, f.skillCooldown - 1), ...(f.skillCooldown2 !== undefined ? { skillCooldown2: Math.max(0, f.skillCooldown2 - 1) } : {}), punish: Math.max(0, f.punish - 1), critical: Math.max(0, f.critical - 1), posture: f.phase === 'hurt' || f.phase === 'dead' || f.postureRest > 0 ? f.posture : Math.max(0, f.posture - stanced(f, 'recover', R.posture.decay) * guardOf(f, R).postureDecay * (f.health < R.posture.bloodied * f.maxHealth ? R.posture.bloodiedDecay : 1)), postureRest: Math.max(0, f.postureRest - 1), rest: Math.max(0, f.rest - 1), exposed: Math.max(0, f.exposed - 1), evaded: Math.max(0, f.evaded - 1), counterWindow: Math.max(0, f.counterWindow - 1), buffer: f.buffer && f.buffer.ttl > 1 ? { ...f.buffer, ttl: f.buffer.ttl - 1 } : null })) as [Fighter, Fighter];
   for (const f of fighters) if (f.poiseRest) { if (f.poiseRest > 1) f.poiseRest--; else delete f.poiseRest; }
   for (const f of fighters) if (f.specialRecover) f.specialRecover--;
+  for (const f of fighters) if (f.unsheathed && f.phase !== 'roll' && f.phase !== 'backstep' && f.phase !== 'guard') delete f.unsheathed;   // the free hero's move from the sheath is over (it ended, or a blow broke it)
   for (const f of fighters) if (f.down) { f.down--; if (f.phase === 'hurt') f.stun = Math.max(f.stun, f.age + f.down); if (!f.down) delete f.down; }   // a knocked-down man lies for his whole count: a later stagger on him (a blow, a missile) cannot stand him up early; his own clock, one tick per tick
   for (const f of fighters) for (const key of ['kickCd', 'interruptCd', 'downCd'] as const) if (f[key]) { f[key]!--; if (!f[key]) delete f[key]; }   // ?feel=kick timers, each on its owner's own clock
   for (const f of fighters) if (f.feintEdge) { f.feintEdge--; if (!f.feintEdge) delete f.feintEdge; }
@@ -373,10 +380,12 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       // Direction locks at the press; without movement, roll away from the opponent. A roll grown out of a backstep pays the difference.
       const moving = M.hypot(intent.move.x, intent.move.z) > MOVE_EPSILON;
       next.body = { ...me.body, heading: moving ? advance(me.body, intent.move, foe.body, 1, wall).heading : aim(me.body, foe.body) + Math.PI };
+      if (freeStep(me)) next.unsheathed = true;
       next.phase = 'roll'; next.age = 0; spend(i, me.phase === 'backstep' ? R.rollCost - R.backstep.cost : R.rollCost); events.push({ tick, type: 'ActionStarted', actor: i, action: 'roll' });
     } else if (action === 'backstep' && walled(me.body, -M.sin(me.body.heading), -M.cos(me.body.heading), wall)) {
       // Cornered: the wall is at the back, there is nowhere to step. The press is simply refused (a roll still works).
     } else if (action === 'backstep') {
+      if (freeStep(me)) next.unsheathed = true;
       next.phase = 'backstep'; next.age = 0; next.parrying = false; next.guardDirection = null; spend(i, R.backstep.cost); events.push({ tick, type: 'ActionStarted', actor: i, action: 'backstep' });
     } else if ((action === 'skill' || action === 'skill2') && me.specialShare !== undefined && !(action === 'skill2' && me.skill2 !== undefined)) {
       // Special: committed from this tick; the cooldown is spent at commitment. Out of reach the press is refused and nothing is spent.
@@ -419,8 +428,9 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
       if (me.stance === 'trickster') next.feintEdge = R.feintBeat;
       if (fresh) next.parryCooldown = R.parryCooldown;
       events.push({ tick, type: 'ActionStarted', actor: i, action: 'feint' });
-    } else if ((action === 'parry' || intent.guard) && me.phase === 'ready' && !me.exhausted && !me.exposed) {
+    } else if ((action === 'parry' || intent.guard) && (me.phase === 'ready' || freeStep(me)) && !me.exhausted && !me.exposed) {
       const fresh = action === 'parry' && !me.parryCooldown;
+      if (freeStep(me)) next.unsheathed = true;
       next.phase = 'guard'; next.age = fresh ? 0 : guardOf(me, R).window; next.guardDirection = intent.guardDirection ?? null; next.parrying = fresh;
       if (fresh) next.parryCooldown = R.parryCooldown;
       events.push({ tick, type: 'ActionStarted', actor: i, action: fresh ? 'parry' : 'guard' });
@@ -436,11 +446,11 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     // (guard.commits) has no such refuge: met nothing, it ends exposed whether or not the guard is held.
     // A held guard follows the thumb: the side may change mid-hold (a slide, or the warden re-reading late) without a new press.
     if (next.phase === 'guard' && intent.guard && R.directionalGuard) next.guardDirection = intent.guardDirection ?? null;
-    if (next.phase === 'guard' && next.age >= window && next.parrying) { next.parrying = false; if (recovery > 0 && !next.punish && (!intent.guard || commits)) { next.phase = 'ready'; next.age = 0; next.exposed = recovery; } }
+    if (next.phase === 'guard' && next.age >= window && next.parrying) { next.parrying = false; if (recovery > 0 && !next.punish && !next.unsheathed && (!intent.guard || commits)) { next.phase = 'ready'; next.age = 0; next.exposed = recovery; } }
     if ((length !== null && next.age >= length && next.phase !== 'dead') || (next.phase === 'guard' && !intent.guard && next.age >= window)) {
       if (next.phase === 'attack' && !next.chained && next.move && movesOf(next)[next.move].chain) next.chain = movesOf(next)[next.move].chain!.window;
       if (next.phase === 'roll' || next.phase === 'backstep') next.evaded = R.dodgeAttackWindow;
-      next.phase = 'ready'; next.age = 0; next.guardDirection = null; next.parrying = false;
+      next.phase = next.unsheathed ? 'sheathed' : 'ready'; next.age = 0; next.guardDirection = null; next.parrying = false;   // the free hero's move from the sheath ends back in it
     }
     // Chamber: a held swing pauses at its chamber tick (age is rewound each tick) until release or the maximum; a charging move held long enough becomes the charged swing.
     const chamber = next.phase === 'attack' && next.move !== null && !next.chained ? movesOf(next)[next.move].chamber : null;

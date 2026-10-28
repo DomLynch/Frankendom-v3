@@ -10,6 +10,7 @@ import { respawnPose, intoPit } from '../fight/zone-loop.ts';
 import { OPEN_RADIUS } from '../fight/play-radius.ts';
 import type { Duel, DuelPose } from '../fight/duel.ts';
 import type { ZoneRow } from '../stubs.ts';
+import { ringLoadAfterKill } from './rings.ts';
 
 export type WorldRows = { pitArea: string; centre: number; retargetMargin: number; edgeMetres: number; minSpacing: number; startClearance: number; leashMargin: number; pitScale: number; spreadRadiusMetres: number; loadWithinMetres: number; loadAfterKill: boolean; loadRadiusAfterKillMetres: number; loadQuery: string; loadOff: string };   // loadWithinMetres: a spawn in another body than the live rig loads that body's file only when the hero is within this many metres (first-visit weight)
 type Limits ={ retargetMargin: [number, number]; edgeMetres: [number, number]; centre: [number, number]; minSpacing: [number, number]; startClearance: [number, number]; leashMargin: [number, number]; pitScale: [number, number]; spreadRadiusMetres: [number, number]; loadWithinMetres: [number, number]; loadRadiusAfterKillMetres: [number, number] };
@@ -75,7 +76,7 @@ export function nearestStanding(spawns: readonly Spawn[], at: At): number {
 }
 
 /** Is the hero close enough to `s` for its body file to be fetched (respawn.json world.loadWithinMetres)? A spawn beyond it draws nothing and requests nothing (the 2026-10-28 weight finding: both boss GLBs were fetched at load, +3.1 MB first visit). */
-export const withinLoad = (s: At, hero: At, world: Pick<WorldRows, 'loadWithinMetres'> & Partial<Pick<WorldRows, 'loadAfterKill' | 'loadRadiusAfterKillMetres'>> = WORLD, killed = false): boolean => dist(s, hero) <= (killed && world.loadAfterKill ? Math.max(world.loadWithinMetres, world.loadRadiusAfterKillMetres ?? 0) : world.loadWithinMetres);
+export const withinLoad = (s: At & { id?: string }, hero: At, world: Pick<WorldRows, 'loadWithinMetres'> & Partial<Pick<WorldRows, 'loadAfterKill' | 'loadRadiusAfterKillMetres'>> = WORLD, killed = false): boolean => dist(s, hero) <= (killed && world.loadAfterKill ? Math.max(world.loadWithinMetres, s.id === undefined ? world.loadRadiusAfterKillMetres ?? 0 : ringLoadAfterKill(s.id, world.loadRadiusAfterKillMetres ?? 0)) : world.loadWithinMetres);   // a ring 2 or 3 spawn (data/rings.json loadAfterKillMetres) is fetched only when the hero walks up to it, never in the background after the first kill
 /** Dom 2026-10-28 "I don't see the new bosses 2 and 3": after the FIRST KILL (the roam starts) bosses within world.loadRadiusAfterKillMetres are fetched and stand visible at their spots; before any kill the first visit is unchanged. ?bossload=v1 (world.loadQuery/loadOff) keeps the near-only load. */
 export const bossLoadAfterKill = (search: string, world: Pick<WorldRows, 'loadAfterKill' | 'loadQuery' | 'loadOff'> = WORLD): boolean => world.loadAfterKill && new URLSearchParams(search).get(world.loadQuery) !== world.loadOff;
 
@@ -130,7 +131,8 @@ export const poseFits = (pose: DuelPose, wall: number): boolean => [pose.hero, p
 export function zoneDuel<D extends Duel>(duel: D, pose?: DuelPose, open: number = OPEN_RADIUS): D {
   const [hero, foe] = duel.fighters;
   const placed = pose ? [{ ...hero, body: { ...hero.body, x: pose.hero.x, z: pose.hero.z, heading: pose.heroFacing } }, { ...foe, body: { ...foe.body, x: pose.foe.x, z: pose.foe.z, heading: M.atan2(pose.hero.x - pose.foe.x, pose.hero.z - pose.foe.z) } }] as D['fighters'] : duel.fighters;
-  return { ...duel, fighters: placed, radius: open };
+  const freed = [{ ...placed[0], free: true }, placed[1]] as D['fighters'];   // the zone's hero rolls, steps back and guards with the sword away too (duel.ts freeStep): never gated on a fight
+  return { ...duel, fighters: freed, radius: open };
 }
 
 /**
