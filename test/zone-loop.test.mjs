@@ -107,7 +107,8 @@ test('a hero beyond the pit wall enters a duel on the wall\'s edge, in line with
 
 test('the page wires the free walk: the zone path passes the data row radius to roamStep and the follow camera; the flag path (ZONE null) has no roam and the pit wall', () => {
   const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /roamStep\(roam, \{[^}]*\}, practice\.enemy, ZONE!\.walkRadius\)/);
+  assert.match(main, /stepFreeRoam\(freeRoam, roam, duelIntent, ZONE!\.walkRadius\)/, 'the walk is zone-loop roamStep through free-roam.ts (idle it is roamStep to the bit)');
+  assert.match(readFileSync(new URL('../src/fight/free-roam.ts', import.meta.url), 'utf8'),/roamStep\(roam, move, corpse\.body, wall\)/);
   assert.doesNotMatch(main, /roamStep\([^\n]*RADIUS\)/);
   assert.match(main, /if \(ZONE\) validateWalk\(ZONE\.walkRadius, RADIUS\)/);
   assert.match(main, /if \(ZONE\) setWalkClamp\(roam \? ZONE\.walkRadius \+ ZONE\.cameraMetres : 0\)/);
