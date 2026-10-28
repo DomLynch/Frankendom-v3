@@ -17,7 +17,7 @@ await page.clock.install();
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
 await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
 await page.waitForTimeout(3000);
-await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
+await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 2000);   // (a loaded box can be slower than 100 ms between the two calls)
 const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
 const read = () => page.evaluate(() => { const p = globalThis.__v3Fight, [h] = p.duel.fighters; return { hero: h.phase, victim: p.finish?.victim ?? -1, ragdoll: globalThis.__ragdoll?.state }; });
 const shoot = async (name) => { await page.waitForTimeout(350); await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };
