@@ -2744,3 +2744,17 @@ html[data-tutorial] #combat-status { visibility: hidden; }   /* the prompt is th
 #journal .tab-strip .tab-career { margin-right: var(--tab-gap); }   /* CAREER and SETTINGS no longer touch at 375; the gap sits only there, and Stats gives back 4 px at phone width, so the strip stays <= the 166 px the name's room was sized for (a 6 px gap between all three put journal-name 7 px into Stats at 375: release row 54, pit-landscape-webkit) */
 @media (max-width: 440px) { #journal .tab-strip .tab-fighter { min-width: 48px; } }
 #journal .tab-strip .tab-career { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 3h10v5a5 5 0 0 1-10 0zM4 4h3v2a2 2 0 0 0 1 1.7A3 3 0 0 1 4 5zM20 4h-3v2a2 2 0 0 1-1 1.7A3 3 0 0 0 20 5zM11 13h2v4h3v2H8v-2h3z'/%3E%3C/svg%3E"); }   /* a trophy: Career is no longer the Stats bars */
+
+/* === keyboard + mouse and the wide screen (data/input.json, src/fight/kbm.ts; Dom 2026-10-28, Steam needs 16:9). EVERY rule below is scoped to html[data-kbm] (a keyboard or mouse is in use) or html[data-layout=landscape|desktop] / html[data-wide]
+   (src/fight/kbm.ts marks them from the window's shape): a portrait phone carries none of those marks, so it matches none of this (test/kbm.test.mjs reads this block). The touch controls the row lists are hidden by kbm.ts's own style node. === */
+/* keyboard / mouse on a desktop window: the two SPECIAL buttons stay (they carry the ready ring) as a pair in the bottom-right corner, clear of the camera pill */
+html[data-kbm][data-layout=desktop] .actions[data-gestures=cluster] #skill-button { top: auto !important; left: auto !important; right: 112px !important; bottom: 36px !important; }
+html[data-kbm][data-layout=desktop] .actions[data-gestures=cluster] #skill2-button:not([hidden]) { top: auto !important; left: auto !important; right: 32px !important; bottom: 36px !important; }
+html[data-kbm][data-layout=desktop] .instructions { max-width: calc(100vw - 420px); }
+/* 16:9 desktop: the bars and the radar grow with the window so they read at 1920x1080 as they do at 1280x720 */
+html[data-layout=desktop][data-wide] .combat-hud { top: 28px; }
+@media (min-height: 900px) {
+  html[data-layout=desktop][data-wide] .combat-hud { transform: scale(1.35); transform-origin: top left; }
+  html[data-layout=desktop][data-wide] [data-radar] { transform: scale(1.4); transform-origin: top right; }
+  html[data-kbm][data-layout=desktop] .actions[data-gestures=cluster] :is(#skill-button, #skill2-button) { transform: scale(1.25); transform-origin: bottom right; }
+}

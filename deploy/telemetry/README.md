@@ -2,7 +2,7 @@
 
 ## Status (2026-10-28)
 
-NOT deployed. The page ships the client (it posts to `/t` and a missing route is a silent 404/405, never an error in the game). Nothing below has been applied: the collector needs an unprivileged user, a systemd unit and one nginx include, and each of those is a change to the public web server / unit set that needs an explicit go from Dom or Strategy.
+Deployed 2026-10-28 on the VPS from 2dc9f56d4 (pin to the main sha after this merges). The page ships the client (it posts to `/t` and a missing route is a silent 404/405, never an error in the game). The collector runs as an unprivileged user with a systemd unit and one nginx include, as described below.
 
 ```
 page  --POST /t (same origin, sendBeacon / fetch keepalive)-->  nginx v3.frankendom.com :443  location = /t  -->  node 127.0.0.1:8796 (systemd, unprivileged, capped)  -->  /var/lib/frankendom-v3-telemetry/telemetry.jsonl

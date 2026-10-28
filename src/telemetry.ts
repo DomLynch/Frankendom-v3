@@ -80,7 +80,7 @@ export function createTelemetry(env: TelemetryEnv, defs: TelemetryDefs = TELEMET
       const line = where.line ?? undefined, key = `${kind}|${msg.slice(0, 80)}|${line ?? ''}`;
       if (seenErrors.has(key)) return;
       seenErrors.add(key); errors++;
-      event('js_error', { kind, msg, src: where.src ? stripQuery(where.src) : undefined, line, col: where.col, stack: typeof o.stack === 'string' ? stripQuery(o.stack) : undefined });
+      event('js_error', { kind, msg: stripQuery(msg), src: where.src ? stripQuery(where.src) : undefined, line, col: where.col, stack: typeof o.stack === 'string' ? stripQuery(o.stack) : undefined });
     } catch { /* never throws */ }
   };
   const leave = (): void => {

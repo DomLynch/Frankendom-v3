@@ -1,0 +1,54 @@
+{
+  "about": "Keyboard + mouse and the wide screen (Dom 2026-10-28: 'keyboard + mouse input and a 16:9 landscape layout, Steam needs it'; src/fight/kbm.ts validateInput checks the values, src/fight/input.ts reads `keys`/`mouse`). INPUT and PRESENTATION only: the duel sim, the digest and Gate 0 never see this file. Row shapes follow ARMAGEDOM Web/src/data/inputKeys.json (PR #450): schema_version, `keys` = action -> KeyboardEvent.code list, mouse buttons by name (`mouseButtons`, `mouse`), `keyNames`/`mouseNames`/`hints` rows the footer legend is built from (kbm.ts legendFor). Where V3 differs it keeps its own shipped keys (F strike, G heavy, T stab, Q guard, E roll) because V3 players already have them. `on`/`query`/`off`: ?input=v1 turns every new binding, the detection, the hiding and the wide layout off (the controls exactly as they were; the same flag as respawn.json input, which keeps the stick through a hand-over). `detect`: the page marks <html data-kbm> when a keyboard or mouse is in use (`media` matches at load, a mapped key or a mouse that moved `mouseMovePx` turns it on, a touch or a pen press turns it off again); `hide` lists the touch controls not drawn while data-kbm is set (the SPECIAL buttons stay: they carry the ready ring). `keys`: action -> codes. Movement is W A S D plus the arrow keys (arrows also pick the guard side with Q held and are fixed). Tab toggles the soft lock (let go: the camera is yours; Tab again locks on). Esc drops every held key and press. `mouse`: primary (left) is STRIKE (see `strike`), secondary (right) held is GUARD (slide the cursor `strike.slidePx` for the side). No pointer lock: the cursor stays visible so a click on a cut part still takes it (data/pickup.json) and a click on another boss still switches the lock. Look: while the camera is free (before an aggro, after a kill, or after Tab) a left-drag past `lookDragPx` looks round (the phone's look thumb, respawn.json look); a click without a drag is a strike. In a locked fight the camera is the pair camera and the mouse movement picks the swing. `strike`: the STRIKE thumb's mapping: a plain click is the light (alternating), A or D (or the arrows) held is that side's slash, W held (`forwardStab`) is the stab, a flick of `slidePx` while the button is down is the stab (up) or that side's slash (left/right), held past the heavy hold it is the heavy (flick up = heavy stab). `layout`: the screen shapes (<html data-layout>): the first row whose `minAspect`, `maxAspect`, `minHeight` and `maxHeight` all hold wins; portrait is exactly the layout that shipped (no mark, no rule). <html data-wide> is set when the aspect is at least `wideAspect`.",
+  "schema_version": 1,
+  "on": true,
+  "query": "input",
+  "off": "v1",
+  "detect": { "media": "(hover: hover) and (pointer: fine)", "attribute": "kbm", "mouseMovePx": 8 },
+  "hide": ["#joystick", "#run-button", "#attack-button", "#heavy-button", "#thrust-button", "#dodge-button", "#guard-button", "#kick-button", "#touch-zones"],
+  "keys": {
+    "forward": ["KeyW"],
+    "back": ["KeyS"],
+    "left": ["KeyA"],
+    "right": ["KeyD"],
+    "run": ["ShiftLeft", "ShiftRight"],
+    "strike": ["KeyF"],
+    "heavy": ["KeyG"],
+    "stab": ["KeyT"],
+    "roll": ["KeyE", "Space"],
+    "guard": ["KeyQ"],
+    "kick": ["KeyC"],
+    "skill": ["Digit1", "KeyZ"],
+    "skill2": ["Digit2", "KeyX"],
+    "lock": ["Tab"],
+    "recenter": ["KeyR"],
+    "escape": ["Escape"]
+  },
+  "mouseButtons": ["primary", "middle", "secondary"],
+  "mouse": { "strike": "primary", "guard": "secondary", "lookDragPx": 6 },
+  "strike": { "forwardStab": true, "slidePx": 18 },
+  "partJoin": "/",
+  "keyNames": { "Space": "Space", "ShiftLeft": "Shift", "ShiftRight": "Shift", "Escape": "Esc", "Tab": "Tab", "Digit1": "1", "Digit2": "2", "ArrowUp": "Up", "ArrowDown": "Down", "ArrowLeft": "Left", "ArrowRight": "Right" },
+  "mouseNames": { "primary": "Click", "middle": "Middle", "secondary": "Right-click" },
+  "hints": [
+    { "text": "move", "keys": ["forward", "left", "back", "right"], "join": "" },
+    { "text": "run", "keys": ["run"] },
+    { "text": "strike (A/D slash, W stab, hold = heavy)", "mouse": ["primary"], "keys": ["strike"] },
+    { "text": "guard", "mouse": ["secondary"], "keys": ["guard"] },
+    { "text": "roll", "keys": ["roll"] },
+    { "text": "kick", "keys": ["kick"] },
+    { "text": "Skull Crack", "keys": ["skill"] },
+    { "text": "Whirlwind", "keys": ["skill2"] },
+    { "text": "lock on/off", "keys": ["lock"] }
+  ],
+  "layout": {
+    "attribute": "layout",
+    "wideAttribute": "wide",
+    "wideAspect": 1.6,
+    "rows": [
+      { "id": "portrait", "maxAspect": 1 },
+      { "id": "landscape", "minAspect": 1, "maxHeight": 500 },
+      { "id": "desktop", "minAspect": 1, "minHeight": 501 }
+    ]
+  }
+}

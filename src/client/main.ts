@@ -17,7 +17,7 @@ import { difficultyPick, type DifficultyFile, type ProfileRow } from '../difficu
 import { applyFoeSweeps, applyHeroClips } from '../hero-clips.ts';
 import SOUND from '../../data/sound.json' with { type: 'json' };
 import { project, stepPractice, type CombatEvent, type Practice } from '../fight/combat.ts';
-import { RULES, weaponOf, type AiProfile, type Opponent, type SkillId, type WeaponId } from '../fight/moves.ts';
+import { RULES, weaponOf, isWeaponId, type AiProfile, type Opponent, type SkillId, type WeaponId } from '../fight/moves.ts';
 import type { Fighter } from '../fight/duel.ts';
 import { quantizeIntent } from '../fight/record.ts';
 import { RADIUS, initialState, wrapAngle, type State } from '../fight/sim.ts';
@@ -28,13 +28,17 @@ import { setSpecialPace, specialPaceFor } from '../fight/special-pace.ts';
 import { setSpecialTerms, specialTermsFor } from '../fight/special-terms.ts';
 import { setFoeSpecialReach, foeSpecialReachFor } from '../fight/foe-special-reach.ts';
 import type { PickedStance } from '../fight/stance.ts';
-import { createScene } from '../fight/scene.ts';
 import { startTelemetry } from '../telemetry.ts';
 import { setErrorSink } from '../stubs.ts';
+import { createScene, CARRIED_WEAPONS } from '../fight/scene.ts';
+import PROGRESSION from '../../data/progression.json' with { type: 'json' };
+import { escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type ProgressionFile } from '../progression.ts';
+import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
-import { freshLock, lockBreakFor, stepLock } from '../fight/lock-break.ts';
+import { freshLock, lockBreakFor, stepLock, toggleLock } from '../fight/lock-break.ts';
+import { kbmFor, mountKbm } from '../fight/kbm.ts';
 import { isTap, lockSwitchFor, pickTarget, swapHeld, type Press } from '../fight/lock-switch.ts';
 import { pitchChoice, portraitPitch } from '../fight/camera-pitch.ts';
 import { cameraZoom, wideRow } from '../fight/camera-zoom.ts';
@@ -53,6 +57,7 @@ import { createHud } from '../fight/hud.ts';
 import { RADAR, bossBlips, mountRadar, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createInput } from '../fight/input.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
+import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
 import { toastOver, zoneSoundRows, type ZoneSoundRows } from '../audio/zone-cues.ts';
 import { createKeep } from '../audio/keep.ts';
@@ -70,6 +75,7 @@ import { stopFor } from '../hit-stop.ts';
 import { lockPageZoom } from '../zoom-guard.ts';
 import { autoStartOn, startAction } from '../auto-start.ts';
 import { zoneLoopFor, roamStep, validateWalk } from '../fight/zone-loop.ts';
+import { heroDeathFor, respawnKey, respawnReady, standUpDue } from '../fight/hero-death.ts';
 import { ATTACKERS, attackersOn, dropped, framingWiden, isStanding, joiners, validateFraming } from '../stubs.ts';
 import { WALK_BACK, arrived, holdBack, reaggro, validateWalkBack, walkBackOn } from '../stubs.ts';   // the boss leash walk-back (src/zone/walk-back.ts, data/respawn.json walkBack)
 import { adopt, joinAttacker, resetHeld, stepAttackers, type Attacker } from '../fight/attacker-bout.ts';
@@ -90,9 +96,16 @@ const level = FIGHT.level;
 // PER-SPAWN KIND (src/fight/spawn-kind.ts): every zone spawn's `kind` is a data/profiles.json row; KINDS(kind) is its opponent, stats, scales and AI profile. The four lets below are the opponent of the
 // spawn the sim HOLDS, reassigned by useKind when the sim is handed to a spawn of another kind (and back); nothing else on the page names an opponent. ?pitborn=v1 makes every kind the Centurion (override).
 const TUNED = tuneFrom(TUNE as TuneFile, search);   // ?tune=gargantua.health:1.2 (data/tune.json): empty with no ?tune=, and then nothing below changes
-const KIND_CTX: KindCtx = { tune: TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
-  override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: FIGHT.weapon as WeaponId, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
-const KINDS = kindTable(KIND_CTX);
+// PROGRESSION AND SAVING (data/progression.json, src/progression.ts; Dom 2026-10-28): a boss's first kill unlocks a player weapon, every kill raises every boss's health and damage (capped) from the next respawn,
+// and the kills are saved in localStorage (one key, try/catch on every read and write). With no save (or ?save=off, or the ?pitborn=v1 Centurion) PROG is null, the tune below is TUNED itself and the weapon is the fight row's: the game as before.
+const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
+{ const bad = validateProgression(PROG_ROWS, PROFILES.profiles.map((p) => p.id), isWeaponId); if (bad.length) throw new Error(`data/progression.json: ${bad.join('; ')}`); }
+const PROG = progressionOn(PROG_ROWS, search) && !pitbornV1(search) ? { store: storageOf(), save: null as ReturnType<typeof loadSave> | null } : null;
+if (PROG) PROG.save = loadSave(PROG.store, PROG_ROWS);
+const HERO_WEAPON = (PROG?.save ? heroWeapon(PROG.save, PROG_ROWS, FIGHT.weapon, CARRIED_WEAPONS, search) : FIGHT.weapon) as WeaponId;   // the newest unlock he can draw, or ?weapon=<id> (longsword or an unlock)
+const KIND_CTX: KindCtx = { tune: PROG?.save ? mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)) : TUNED, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
+  override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
+let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
 let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
   const changed = !foe || foe.opponentId !== k.opponentId;
@@ -113,6 +126,7 @@ if (!v1Sound) feedback.prepare();
 for (const type of v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
   window.addEventListener(type, v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, { passive: true });
 const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
+setHeroNoMana(heroNoManaFor(FIGHT.heroMana, search));   // V3 (Dom: "remove mana for now"): the hero has no MANA bar and casts free (data/fight.json heroMana); ?mana=v1 = the bar and the mana cost
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
@@ -186,13 +200,17 @@ const view = createScene(
     assetsReady = kind === 'ready';
     if (kind === 'ready') view.startStandoff();
   },
-  opponentId, undefined, FIGHT.weapon as WeaponId, () => {}, level, gfxPost,
+  opponentId, undefined, HERO_WEAPON, () => {}, level, gfxPost,
 );
 view.setZoom(cameraZoom(FIGHT.camera.zoom, search));   // the lens zoom (data/fight.json camera.zoom 1.1); ?zoom=1 = the camera as it was
 view.setWide(wideRow(FIGHT.camera.wide, search));   // the wide-screen lens (data/fight.json camera.wide): more zoom on a landscape or desktop screen, none on a portrait one; ?wide=v1 = without it
 view.setTier('Recruit'); view.setPlayerTier('Recruit');   // :1309 tierAt(0 marks): a guest's rung, and the Centurion met at it
 
+// Keyboard + mouse and the wide screen (data/input.json, src/fight/kbm.ts): null under ?input=v1 / the row off, and then the controls and the screen are exactly as before (no listener, no attribute, no style)
+const KBM = kbmFor(search);
+if (KBM) mountKbm(document, window, KBM);
 const controls = createInput({   // :832
+  kbm: KBM, free: () => freeNow,
   element, window, paused,
   now: () => performance.now(),
   matchMedia: (query) => matchMedia(query),
@@ -233,6 +251,9 @@ function nameOpponent() {   // :397 without the legend
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale, undefined, sandOn(search)));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
 if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
+const DEATH = heroDeathFor(!!ZONE, search);   // data/hero-death.json: the death ragdoll, camera, 'You fell' line and Respawn button; null = ?herodeath=v1 (or ?postkill=v1): the fall, 'You died' and the automatic stand-up as before
+let respawnAsked = false;
+view.heroDeath(DEATH);
 view.heroFall(ZONE ? ZONE.fallSeconds : 0);   // the hero's death fall (data/respawn.json heroDeath.fallSeconds; 0 = ?postkill=v1, the frozen end screen as before)
 let roam: State | null = null, sinceDeath = 0, bossKilled = false;
 let fightSec = 0;   // seconds the hero has been engaged in this fight (telemetry's `sec`); reset at every rematch and after each report
@@ -315,6 +336,18 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
   resetInput(walking); state = previous = practice.fighter;
   updateHud();
 }
+/** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
+let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
+function onBossKilled(kind: string) {
+  if (!PROG?.save) return;
+  try {
+    const out = recordKill(PROG.save, kind, PROG_ROWS);
+    if (out.save === PROG.save) return;
+    PROG.save = out.save; writeSave(PROG.store, PROG_ROWS, PROG.save);
+    KIND_CTX.tune = mergeTune(TUNED, escalation(PROG.save, PROG_ROWS)); KINDS = kindTable(KIND_CTX);
+    if (out.unlocked) (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(unlockText(out.unlocked));
+  } catch (error) { console.warn('progression: kill not recorded', error); }
+}
 /** One frame of the zone's rules: every spawn's own timer runs; a kill, an aggro, a leash or a respawn moves the sim between spawns. */
 function zoneStep(dt: number) {
   const hero = state, timers = tick(spawns, dt);
@@ -322,10 +355,10 @@ function zoneStep(dt: number) {
   spawns = timers.spawns;
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
-    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) spawns = kill(spawns, a.index);
+    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { onBossKilled(spawns[a.index]!.kind); spawns = kill(spawns, a.index); }
   }
   if (practice.finish) { openerSpent = true; openerLift = 0; }   // opener: a kill or a death spends it (no re-arm)
-  if (heroStands() && !killMarked) { killMarked = true; engaged = false; reportFight('boss_kill', current); spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
+  if (heroStands() && !killMarked) { killMarked = true; engaged = false; reportFight('boss_kill', current); onBossKilled(spawns[current]!.kind); spawns = kill(spawns, current); }   // this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
     const live = attackers.find((a) => !a.dead), phase = view.finishPhase();
     if (live) { if (roam || freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
@@ -335,7 +368,8 @@ function zoneStep(dt: number) {
     }
   } else if (heroDied()) {
     if (sinceDeath === 0) reportFight('boss_death', killedBy ?? current);
-    if ((sinceDeath += dt) >= ZONE!.diedSeconds) { const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
+    sinceDeath += dt;
+    if (DEATH ? standUpDue(DEATH, sinceDeath, respawnAsked) : sinceDeath >= ZONE!.diedSeconds) { respawnAsked = false; const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
     const near = inAggro(spawns, hero);
     if (near >= 0 && near !== current) hand(near, hero);
@@ -369,7 +403,10 @@ function syncSweeps() {
 }
 // The zone's stills and the cost table read this (scripts/zone-stills.mjs)
 function zoneDebug() { (globalThis as { __v3Zone?: unknown }).__v3Zone = { current, engaged, heroHealth: practice.playerHealth, foeHealth: practice.health, attackers: attackers.map((a) => ({ id: spawns[a.index]!.id, health: a.practice.health, dead: a.dead, phase: a.practice.duel.fighters[1].phase, x: +a.practice.enemy.x.toFixed(2), z: +a.practice.enemy.z.toFixed(2) })), live: view.liveFoeCount, openerIdle: +openerIdle.toFixed(2), openerSpent, spawns: spawns.map((s) => ({ id: s.id, x: s.x, z: s.z, deadFor: s.deadFor })), ...(Object.keys(TUNED).length ? { tune: TUNED } : {}), copies: view.idleFoeCount, calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }; }
-element('reset-button').addEventListener('click', () => rematch());
+// The hero's death (data/hero-death.json, src/fight/hero-death.ts): after the fall the HUD says 'You fell' and the Respawn button (the Rematch button) or a key stands him up; the existing respawn does it (zoneStep).
+function askRespawn() { if (DEATH && heroDied() && respawnReady(DEATH, sinceDeath)) respawnAsked = true; }
+element('reset-button').addEventListener('click', () => { if (DEATH && heroDied()) askRespawn(); else rematch(); });
+if (DEATH) window.addEventListener('keydown', (e) => { if (heroDied() && respawnKey(DEATH, e.code)) { e.preventDefault(); askRespawn(); } });
 // Tap-to-switch the soft lock (data/respawn.json lockSwitch, src/fight/lock-switch.ts; ?lockswitch=v1 off): a tap on another boss that is on him swaps the held fight with that boss's. A press listener of its own: the look drag, the corpse cut tap and the buttons are not touched.
 const SWITCH = LOCK_ROWS && multi ? lockSwitchFor(true, search) : null;
 if (SWITCH) {
@@ -412,8 +449,8 @@ if (FREE) {   // the free follow camera's hands (V1's open world: a one-finger d
 }
 
 function updateHud() {   // :684, the career fight's view
-  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge) });
-  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null;   // a walking hero keeps the whole HUD (Respawn included) up
+  hud.update(practice, { controlsReady: assetsReady && !graphicsLost, debug: false, opponentId, practiceOnly: false, autoStart, zone: heroStands() || heroDied(), toastOver: heroStands() && toastOver(ZONE_SOUND, killAge), death: DEATH && heroDied() ? { line: DEATH.line, button: DEATH.button, ready: respawnReady(DEATH, sinceDeath) } : undefined });
+  const phase = practice.finish ? view.finishPhase() : null, hushed = !phase?.settled, walking = roam !== null || (!!DEATH && heroDied());   // a walking hero keeps the whole HUD (Respawn included) up; so does a fallen one under the death loop (the camera is still moving, so "settled" would hide the line and Respawn)
   document.documentElement.classList.toggle('endgame-fade', !!phase && !walking && (hushed || phase.touring));
   document.documentElement.classList.toggle('endgame-hush', !!phase && !walking && hushed);
 }
@@ -453,6 +490,7 @@ function frame(now: number) {
       let lockOn: boolean = locked;   // the soft lock (data/respawn.json lockBreak): held in a fight until the stick breaks it; free facing (lock:false, the sim's own) when broken or when nobody fights him
       if (LOCK_ROWS) {
         const fighting = engaged || attackers.some((a) => !a.dead);
+        if (KBM && controls.takeLockToggle() && fighting) lockState = toggleLock(lockState);   // Tab (data/input.json keys.lock): let go of the lock / lock on again
         lockState = stepLock(LOCK_ROWS, lockState, { dt: step(), fighting, stick: { x: intent.x, z: intent.z }, yaw: view.yaw, hero: state, foe: practice.enemy, action: intent.action }).state;
         lockOn = locked && fighting && !lockState.broken;
       }

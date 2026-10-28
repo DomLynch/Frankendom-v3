@@ -85,6 +85,10 @@ test('errors: message, source, line, trimmed stack; the query string is stripped
   assert.equal(js.length, 1);
   assert.equal(js[0].msg, 'boom'); assert.equal(js[0].line, 10); assert.equal(js[0].kind, 'error');
   assert.ok(!js[0].src.includes('secret') && !js[0].stack.includes('presence'), 'queries never leave the page');
+  tel.error('error', 'failed https://v3.frankendom.com/x.js?presence=wss://secret#frag now', {});
+  tel.flush();
+  const withQ = sent.flatMap((s) => s.body.events).find((x) => x.e === 'js_error' && x.msg.startsWith('failed'));
+  assert.ok(withQ && !withQ.msg.includes('secret') && !withQ.msg.includes('?') && !withQ.msg.includes('#'), 'the message is query-stripped too');
   for (let i = 0; i < 50; i++) tel.error('rejection', `distinct ${i}`);
   tel.flush();
   const total = sent.flatMap((s) => s.body.events).filter((x) => x.e === 'js_error').length;

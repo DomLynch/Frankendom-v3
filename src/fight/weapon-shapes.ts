@@ -72,7 +72,7 @@ export const shapeFor = (weapon: WeaponId, level: number, shipping: ShapeTable =
 };
 
 // Whether the page may fetch `url` (a shapeFor result) from the SHIPPING table: only files that ship. The dev flag's table (a local drop) is never filtered.
-export const shippedShape = (url: string): boolean => SHIPPED_SHAPES.has(/([^/]+)\.glb(?:\?.*)?$/.exec(url)?.[1] ?? '');
+export const shippedShape = (url: string): boolean => SHIPPED_SHAPES.has(/([^/.]+)(?:\.[0-9a-f]{8})?\.glb(?:\?.*)?$/.exec(url)?.[1] ?? '');   // the built file carries a content hash (longsword-plain.a3defee2.glb): the stem is what ships
 
 // Both fighters' shape files for a fight (scene.ts reshape): the player's own weapon at the PLAYER's rung (his career rank), the opponent's at the
 // rung he is met at (Strategy's brief: "the player's rank for his own weapon"). Undefined = that weapon keeps today's part.

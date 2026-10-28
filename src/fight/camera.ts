@@ -8,6 +8,7 @@ import type { Shove } from './camera-kick.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { stepShare, swingAround, virtualFoe, yawBehind, type FreeCameraRows } from './free-camera.ts';
 import { repitch, type PitchRows } from './camera-pitch.ts';
+import { deathCamPose, deathCamStep, type DeathCamRows } from './hero-death.ts';
 import { cutCamPose, cutCamRows, cutCamShare, finisherCamOn, type CutCamPose } from './finisher-cam.ts';
 const CUT_CAM = cutCamRows(typeof location === 'undefined' ? '' : location.search);   // finisher-cam.json: the late close view of the cut; null by default (no finisher zoom), rows for ?finishercam=v1
 const FINISH_ZOOM = finisherCamOn(typeof location === 'undefined' ? '' : location.search);   // the finisher push-in and side reveal: off by default, ?finishercam=v1 restores them
@@ -31,6 +32,9 @@ let PITCH_PORTRAIT: { degrees: number; belowAspect: number; rows: Pick<PitchRows
 /** The zone's follow-camera pitch (data/fight.json camera.pitch, src/fight/camera-pitch.ts): degrees the view axis looks down, or null = the lock exactly as it was. A finish eases it back to the default frame.
  *  `portrait` (camera.pitch.portrait): the pitch a screen narrower than `belowAspect` gets instead, so a phone held upright shows more sky while landscape keeps `degrees`. */
 export const setCameraPitch = (degrees: number | null, rows: Pick<PitchRows, 'heroY' | 'minEyeY'>, portrait: { degrees: number; belowAspect: number } | null = null): void => { PITCH = degrees === null ? null : { degrees, rows }; PITCH_PORTRAIT = portrait ? { ...portrait, rows } : null; };
+let DEATH_CAM: DeathCamRows | null = null;
+/** The zone's death camera (data/hero-death.json cam, src/fight/hero-death.ts): while the hero lies dead the camera slowly pulls back, rises and drifts round him; null = ?herodeath=v1, no change. */
+export const setDeathCam = (rows: DeathCamRows | null): void => { DEATH_CAM = rows; };
 let LOCK_LIFT = 1, LOCK_SIDE = 0;
 export const setLockFrame = (lift: number, side: number): void => { LOCK_LIFT = lift; LOCK_SIDE = side; };
 let LENS_BOOST = 1;
@@ -186,6 +190,7 @@ export type CameraFinish = {
   clock: number;
   head: { x: number; z: number } | null;
   big: boolean;
+  fallen?: { x: number; y: number; z: number } | null;   // the hero's death camera (data/hero-death.json): where his ragdoll body lies now (his hips), so the camera looks at him and not at the spot the sim left
   focus?: { x: number; y: number; z: number } | null;   // finisher-cam.json: where the foe's cut is now (its bone's world position), null / absent = the row's own fixed spot
   // Opened (2026-09-21): how far, horizontally, the farthest settled piece (torso, legs, dropped weapon) reaches from the
   // fallen fighter's origin — measured from the pieces' world bounds, never shrinking, so the side view fits what actually
@@ -224,6 +229,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
   let finishPush = 0; // the authorized slow dolly over the death window (0 = off; respects prefers-reduced-motion)
   let shortFade = 1; // share of the short-opponent lock terms (cameraPose targetScale) in use: 1 in the fight, easing to 0 once a finish begins
   let finishAge = 0, tourStopped = false, tourAngle: number | null = null, tourBegan: number | null = null;   // the stop-on-touch, the orbit angle it started from, and the finish age it started at (captured once — settledAt can still move after the tour is already running, on a slow reveal past TOUR.delay, and must not restart it)
+  let deathShare = 0;   // the death camera's rise 0..1 (hero-death.ts deathCamStep)
   let introOn = false, introShare = 0, introT = 0, introAngle: number | null = null;   // the intro orbit: wanted, its blend 0..1, seconds into the lap, the angle it started from
   let stillFor = 0, settled = false, settledAt: number | null = null;   // how long the drawn camera has been (nearly) motionless, the settle latch, and the finish age it latched at
   const lastDrawn = new THREE.Vector3();
@@ -415,7 +421,16 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       // regardless (Lead review, 2026-09-22: recomputing the start mid-tour reset tourAngle and produced a visible jump).
       if (finish) finishAge += dt; else { finishAge = 0; tourStopped = false; tourAngle = null; tourBegan = null; stillFor = 0; settled = false; settledAt = null; }
       const tourStart = settled && settledAt !== null ? settledAt + TOUR.afterSettle : TOUR.delay;
-      if (finish && !finish.draw && !still && !tourStopped && (tourAngle !== null || finishAge > tourStart)) {
+      // The hero's death camera (data/hero-death.json cam): the lock camera's own place, slowly pulled back, raised and turned round the fallen hero, held until he stands. Not the finisher zoom; the arena tour below stays out of it.
+      const dyingHero = !!DEATH_CAM && !!finish && finish.victim === 0 && !still;
+      if (DEATH_CAM) deathShare = deathCamStep(DEATH_CAM, deathShare, dyingHero, dt);
+      if (DEATH_CAM && deathShare > 0) {
+        const pose = deathCamPose(DEATH_CAM, deathShare, desired, state), r = Math.hypot(pose.x, pose.z);
+        if (r > ARENA_CLAMP) { pose.x *= ARENA_CLAMP / r; pose.z *= ARENA_CLAMP / r; }
+        desired.set(pose.x, pose.y, pose.z);
+        look.lerp(lookTarget.set(finish?.fallen?.x ?? state.x, pose.lookY, finish?.fallen?.z ?? state.z), pose.k);   // the camera stands round the sim's hero; it looks at where the ragdoll body actually lies
+      }
+      if (finish && !finish.draw && !still && !tourStopped && !dyingHero && (tourAngle !== null || finishAge > tourStart)) {
         tourBegan ??= finishAge;   // captured once, the frame the tour actually starts — never moves even if tourStart later does
         const t = finishAge - tourBegan, fallen = finish.victim === 1 ? enemy : state, low = finish.victim === 0;
         const focusX = finish.head ? (fallen.x + finish.head.x) / 2 : fallen.x, focusZ = finish.head ? (fallen.z + finish.head.z) / 2 : fallen.z;
