@@ -1,0 +1,52 @@
+{
+  "about": "TRASH MOB SWARMS (Dom 2026-10-28 approved): packs of weak goblins roam the open world OUTSIDE the boss pads; most die in one or two hits, they drop coins and feed XP and heat (a hook: the kill event carries `xp` and `heat`, and the page calls window.__v3Heat?.(event) when a Hunter heat system installs one). Every number lives here; the code (src/zone/mobs.ts, the pure core; src/fight/mob-swing.ts reads the hero's swing off the sim; src/mobs-run.ts wires it to the page) writes none (scripts/as-data scans src/zone/ at zero). Validated by src/sim/validate-mobs.js at load and by test/mobs.test.mjs. PERFORMANCE is the whole risk, so: `cap` is the hard ceiling of mobs in the world at once (alive, dying and lying; default 12 near the hero, `capMax` is only the typed-array size and the validator's ceiling); every per-mob field is a preallocated typed array (no per-frame allocation); the AI is seek + leash + separation + an attack-token limit, no pathfinding and no duel per mob; the hero's blow is tested with the sim's own blade sweep (src/fight/blade.ts bladeImpact) against the mob's capsule only while the hero's swing is in its active frames and only for mobs within `swingMetres`, damage and knockback read off the same move rows the bosses are hit with (data/moves, RULES.location); the mob body is ONE shared asset (src/fight/scene.ts draws each slot as a pooled actor of that body, one tinted material shared by all, the weapon hidden), the scene never loads it until the first pack is live. PACKS: the open world is a grid of `cellMetres` cells; a cell holds a pack with the ring's `density` (a hash of the cell and `seed`, so it is the same pack at the same place every visit); a pack is live while the hero is within `activateMetres`, its members come in as slots free, never closer than `spawnMinMetres` to the hero (no pop-in), and drop out beyond `despawnMetres` (the pack keeps its count); a cleared pack stands again after `respawnSeconds`. A pack is never placed within `startClearMetres` of the pit centre nor within `padMetres` of any boss spot plus its leash, and every tick a mob inside a boss's circle is walked out of it; while a boss fight is on (any boss engaged, the hero down) no pack aggros and the live mobs walk home (`suppress`). The hero is never killed by a mob (`lethal` false: a mob's blow leaves him at `floorHealth` at least; the hero death flow stays the bosses'); guard blocks a mob's blow and a roll's invulnerable frames dodge it, as against a boss. API for the Pit Crawl: Mobs.spawnPack(areaId, kind, count) and Mobs.onMobKilled(cb) (src/zone/mobs.ts). RINGS: `rings` keys are data/rings.json ring ids (a distance in a gap between rings, or beyond the last, takes the nearest ring below it; ring 1's pit is sparse, ring 3 is dense); `default` is the row for a zone with no rings. THE BODY: `body` is a data/rig.json files stem. STAND-IN until OpenTrident's mh-crowd-b1-05 lands (<1.2 MB): big-vegas (0.68 MB); switch the one row, nothing else changes. `scale` shrinks it, `tint` + `tintMix` make the goblin green. Rat and undead kinds are later rows.",
+  "on": true,
+  "cap": 12,
+  "capMax": 24,
+  "scanSeconds": 0.5,
+  "activateMetres": 55,
+  "despawnMetres": 80,
+  "spawnMinMetres": 22,
+  "startClearMetres": 30,
+  "padMetres": 12,
+  "swingMetres": 3,
+  "hitScale": 0.85,
+  "turnRate": 9,
+  "speedEase": 8,
+  "pitArea": "duel-pit",
+  "grid": {
+    "cellMetres": 48,
+    "keySpan": 100003,
+    "seed": 20261028,
+    "hash": { "a": 374761393, "b": 668265263, "c": 1274126177, "s1": 13, "s2": 16, "range": 4294967296 },
+    "lcg": { "mul": 1664525, "add": 1013904223, "range": 4294967296 },
+    "salts": { "exists": 1, "x": 2, "z": 3, "size": 4, "kind": 5, "member": 6 }
+  },
+  "pack": { "radiusMetres": 4, "wanderMetres": 5, "wanderSeconds": [2, 5], "callMetres": 12 },
+  "separation": { "metres": 0.9, "speed": 2.2 },
+  "attack": { "maxAttackers": 3, "orbitMetres": 2.6, "slackMetres": 0.35, "arcRadians": 1.3, "spreadRadians": 1.2 },
+  "hero": { "radiusMetres": 0.4, "lethal": false, "floorHealth": 1, "guard": 1, "roll": 2, "roamStrikes": ["light", "light_left", "light_right", "heavy", "thrust", "kick"] },
+  "states": { "idle": 0, "chase": 1, "windup": 2, "recover": 3, "hurt": 4, "home": 5, "dying": 6, "lying": 7 },
+  "fall": { "lyingSeconds": 1.6, "fadeSeconds": 0.6 },
+  "rings": {
+    "default": { "density": 0.3, "size": [5, 8], "kinds": ["goblin"] },
+    "ring-1": { "density": 0.3, "size": [5, 8], "kinds": ["goblin"] },
+    "ring-2": { "density": 0.45, "size": [8, 14], "kinds": ["goblin"] },
+    "ring-3": { "density": 0.55, "size": [10, 20], "kinds": ["goblin"] }
+  },
+  "respawnSeconds": 180,
+  "kinds": {
+    "goblin": {
+      "body": "mob-crowd-b1-05", "scale": 0.6, "tint": "#6fbf4a", "tintMix": 0.55,
+      "hp": 20, "speed": 2.7, "wanderSpeed": 0.9, "damage": 6,
+      "aggroMetres": 9, "leashMetres": 30, "reachMetres": 1.1, "bodyMetres": 0.35,
+      "windupSeconds": 0.45, "recoverSeconds": 0.9, "hurtSeconds": 0.35,
+      "knockSpeed": 1.1, "drag": 7, "fallSeconds": 0.7,
+      "coins": 1, "xp": 2, "heat": 1
+    }
+  },
+  "limits": {
+    "cap": [1, 24], "metres": [0, 400], "seconds": [0.05, 3600], "hp": [1, 10000], "speed": [0.1, 12], "damage": [0, 200],
+    "scale": [0.2, 2], "density": [0, 1], "size": [1, 40], "coins": [0, 1000], "tintMix": [0, 1]
+  }
+}

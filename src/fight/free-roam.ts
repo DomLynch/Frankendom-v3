@@ -34,7 +34,10 @@ export function startFreeRoam(duel: Duel, wall: number): FreeRoam {
 }
 
 /** Whether the press is one the walking hero takes (the row's list). */
-export const isFreeAction = (action: Action | null | undefined): boolean => !!action && FREE_MOVES.actions.includes(action);
+let STRIKES: readonly string[] = [];
+/** The strike presses a walking hero also takes while trash mobs are about (data/mobs.json hero.roamStrikes, set by the page once the mobs are built); none (the default, and every test that does not call this) = the three free presses as before. */
+export const setRoamStrikes = (list: readonly string[]): void => { STRIKES = list; };
+export const isFreeAction = (action: Action | null | undefined): boolean => !!action && (FREE_MOVES.actions.includes(action) || STRIKES.includes(action));
 
 export type FreeStep = { free: FreeRoam; body: State };
 

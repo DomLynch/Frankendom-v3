@@ -71,7 +71,8 @@ import { heroBodyFile } from './hero-body-rows.ts';
 import { applyStar } from './star-look.ts';
 import { bodyOwnerOf, bodyProfileOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
 import { bossOpponent, bossPreview, bossRowOfBody, bossWeaponFor } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
-import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
+import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD, HELD, foeRigFile as foeRigFileOf } from './rig-bones.ts';
+import { MOBS, kindRow, type MobKind, type MobView } from '../zone/mobs.ts';   // trash mobs (data/mobs.json): the core's live arrays are drawn as pooled actors of one shared body (syncMobs)
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { fovForZoom, wideBoost, type WideRow } from './camera-zoom.ts';
@@ -294,7 +295,7 @@ export function createScene(
   // 106 ONLY (Dom 2026-10-26: "no risk of going back to the old 65 rig"; docs/PLAN.md section 10). The loader table holds the 106-joint
   // Psyche and Minotaur and nothing else: no 65 body (psyche.glb, minotaur.glb, warrior.glb, veteran.glb) is addressable, so none is
   // built into dist/ (data/build.json notShipped; test/rig-bones.test.mjs is the lock). No query picks a body.
-  const fighterUrls: Record<string, string> = { '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href, '../assets/gargantua-106.glb': new URL('../assets/gargantua-106.glb', import.meta.url).href, '../assets/arachne-106.glb': new URL('../assets/arachne-106.glb', import.meta.url).href, '../assets/pumpkinhulk-106.glb': new URL('../assets/pumpkinhulk-106.glb', import.meta.url).href, '../assets/parasite-106.glb': new URL('../assets/parasite-106.glb', import.meta.url).href, '../assets/sporty-granny-106.glb': new URL('../assets/sporty-granny-106.glb', import.meta.url).href, '../assets/big-vegas-106.glb': new URL('../assets/big-vegas-106.glb', import.meta.url).href, '../assets/castle-guard-106.glb': new URL('../assets/castle-guard-106.glb', import.meta.url).href, '../assets/kachujin-106.glb': new URL('../assets/kachujin-106.glb', import.meta.url).href, '../assets/the-boss-106.glb': new URL('../assets/the-boss-106.glb', import.meta.url).href, '../assets/anime-boy-black-106.glb': new URL('../assets/anime-boy-black-106.glb', import.meta.url).href, '../assets/anime-girl-blonde-106.glb': new URL('../assets/anime-girl-blonde-106.glb', import.meta.url).href };
+  const fighterUrls: Record<string, string> = { '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href, '../assets/gargantua-106.glb': new URL('../assets/gargantua-106.glb', import.meta.url).href, '../assets/arachne-106.glb': new URL('../assets/arachne-106.glb', import.meta.url).href, '../assets/pumpkinhulk-106.glb': new URL('../assets/pumpkinhulk-106.glb', import.meta.url).href, '../assets/parasite-106.glb': new URL('../assets/parasite-106.glb', import.meta.url).href, '../assets/sporty-granny-106.glb': new URL('../assets/sporty-granny-106.glb', import.meta.url).href, '../assets/big-vegas-106.glb': new URL('../assets/big-vegas-106.glb', import.meta.url).href, '../assets/castle-guard-106.glb': new URL('../assets/castle-guard-106.glb', import.meta.url).href, '../assets/kachujin-106.glb': new URL('../assets/kachujin-106.glb', import.meta.url).href, '../assets/the-boss-106.glb': new URL('../assets/the-boss-106.glb', import.meta.url).href, '../assets/anime-boy-black-106.glb': new URL('../assets/anime-boy-black-106.glb', import.meta.url).href, '../assets/anime-girl-blonde-106.glb': new URL('../assets/anime-girl-blonde-106.glb', import.meta.url).href, '../assets/mob-crowd-b1-05-106.glb': new URL('../assets/mob-crowd-b1-05-106.glb', import.meta.url).href };
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): none in V3. The Minotaur wears no kit (foe-body.ts) and the old cuts
   // (carriers-minotaur.glb, carriers-veteran.glb) are skinned to the 65 rig, so they are not shipped.
   const carrierUrls: Record<string, string> = {};
@@ -734,6 +735,52 @@ export function createScene(
       live.actor.update(speed, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, f.guardDirection, CHARGE_LEAN[opponentId] ?? null, holdingCharge(f), pose.span ?? null);
     }
     for (const [id, live] of liveFoes) if (!seen.has(id)) live.group.visible = false;
+    syncMobs(dt);   // the trash mobs are drawn beside the live attackers (syncMobs, below)
+  }
+  // TRASH MOBS (data/mobs.json, src/zone/mobs.ts; src/mobs-run.ts hands the core's live arrays in): each slot of the core is one pooled actor of ONE shared mob body (the first pack that goes live starts its fetch; nothing is
+  // requested before), scaled down, drawn with one tinted copy of the body's materials shared by every mob, the weapon hidden, posed at the rest pose the live foe was kept at with the walk driven by the mob's own speed.
+  // Presentation only: the lean back of a blow, the lean in of a wind-up and the topple of a kill are the group's tilt, not the skeleton's.
+  type MobSlot = { group: THREE.Group; actor: FoeActor };
+  let mobView: MobView | null = null;
+  const mobSlots: MobSlot[] = [], mobTinted = new Map<THREE.Material, THREE.Material>();
+  function tintMobBody(root: THREE.Object3D, k: MobKind) {
+    root.traverse((o) => {
+      if (!(o instanceof THREE.SkinnedMesh)) return;
+      const one = (m: THREE.Material): THREE.Material => {
+        let t = mobTinted.get(m);
+        if (!t) { t = m.clone(); const c = (t as THREE.MeshStandardMaterial).color; if (c) c.lerp(new THREE.Color(k.tint), k.tintMix); mobTinted.set(m, t); }
+        return t;
+      };
+      o.material = Array.isArray(o.material) ? o.material.map(one) : one(o.material);
+    });
+    for (const name of [HELD.weapon, HELD.sword, HELD.sheath]) boneOf(root, name)?.traverse((o) => { o.visible = false; });   // a crowd mob goes bare-handed
+  }
+  function syncMobs(dt: number) {
+    const v = mobView;
+    if (!v) return;
+    const S = MOBS.states, MOB_LEAN_IN = 0.45, MOB_LEAN_BACK = 0.5, MOB_TOPPLE = Math.PI / 2;   // radians: in on the wind-up, back on a blow, flat on a kill
+    if (v.n === 0 && mobSlots.length === 0) return;
+    for (let i = 0; i < Math.max(v.n, mobSlots.length); i++) {
+      if (i >= v.n) { if (mobSlots[i]) mobSlots[i]!.group.visible = false; continue; }
+      const k = kindRow(v.kind[i]!), file = foeRigFileOf(k.body);
+      let slot = mobSlots[i];
+      if (!slot) {
+        bodyRig(file);   // the first live pack starts the one fetch
+        if (!restSnap) continue;
+        const asset = bodyRig(file), weapon = weaponOfBody(file);
+        if (!asset || !weapon || !warriors) continue;
+        const actor = warriors.spawnBody(asset, weapon, bossOfBody(file)?.clipsAs);   // no useClips106: a crowd mob never plays a finisher or a special, so the body's eight baked clip files (1.2 MB) are never fetched
+        const group = new THREE.Group(); group.rotation.order = 'YXZ';
+        group.add(actor.anchor); actor.setUpright(readyOffset(opponentId)); tintMobBody(actor.anchor, k); scene.add(group);
+        slot = mobSlots[i] = { group, actor };
+      }
+      const g = slot.group, st = v.state[i]!, rest = restSnap!;
+      g.visible = true; g.position.set(v.x[i]!, 0, v.z[i]!); g.rotation.y = v.heading[i]!;
+      const lean = st === S.windup ? MOB_LEAN_IN : -v.hurt[i]! * MOB_LEAN_BACK;
+      g.rotation.x = st >= S.dying && st <= S.lying ? -v.fall[i]! * MOB_TOPPLE : lean;
+      g.scale.setScalar(k.scale * (1 - v.fade[i]!));
+      slot.actor.update(v.speed[i]!, dt, rest.pose.pose, rest.pose.progress, rest.pose.attack, rest.pose.contact, 0, 0, rest.guard, CHARGE_LEAN[opponentId] ?? null, rest.holding, rest.pose.span ?? null);
+    }
   }
   // Kill dip: the killing blow darkens the frame 6 % for two frames and recovers over two more — the cinematic reserve (GAME_SPEC 80/15/5),
   // never on an ordinary hit. Applied around the draw on top of whatever exposure the renderer holds, so nothing else has to know.
@@ -836,6 +883,8 @@ export function createScene(
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
     // programs, its own bones and mixer), posed from that fight's own Practice. Presentation only; the first boss is the live rig above and is never in this list.
     liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef; star?: number }[]) { liveList = list; },
+    mobs(view: MobView | null) { mobView = view; },   // trash mobs (src/mobs-run.ts, every frame): the core's live arrays; null = none drawn
+    get mobDrawn() { return mobSlots.filter((s) => s.group.visible).length; },   // the stills and the cost table read how many mobs are on screen
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
