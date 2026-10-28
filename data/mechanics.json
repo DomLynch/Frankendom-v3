@@ -4,7 +4,7 @@
     "envoy-latch": {
       "firstCooldownTicks": 150,
       "cooldownTicks": 480,
-      "lungeMinM": 2.4,
+      "lungeMinM": 0.5,
       "lungeMaxM": 6,
       "tellTicks": 40,
       "lungeTicks": 12,
