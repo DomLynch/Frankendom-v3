@@ -14,6 +14,10 @@ export function validateRings(rows, zone, origin, kinds, rig, plates) {
   const L = rows.limits;
   if (!(Number.isFinite(rows.roundTo) && rows.roundTo >= 1)) e.push('rings.roundTo must be a number from 1');
   if (!(Number.isFinite(rows.halfTurnDegrees) && rows.halfTurnDegrees > 0)) e.push('rings.halfTurnDegrees must be above 0');
+  const sp = rows.spacing, range2 = (r) => Array.isArray(r) && r.length === 2 && r.every((v) => Number.isFinite(v) && v > 0) && r[0] < r[1];
+  if (!sp || !(Number.isFinite(sp.marginMetres) && sp.marginMetres >= 0)) e.push('rings.spacing.marginMetres: a number from 0');
+  if (!sp || !range2(sp.hopSeconds)) e.push('rings.spacing.hopSeconds: [min, max] seconds, 0 < min < max');
+  if (!sp || !range2(sp.firstBossSeconds)) e.push('rings.spacing.firstBossSeconds: [min, max] seconds, 0 < min < max');
   if (!Array.isArray(rows.rings) || !rows.rings.length) return [...e, 'rings.rings needs at least one ring'];
   const seen = new Set(), bossKinds = new Set();
   for (const b of rows.bosses ?? []) {
