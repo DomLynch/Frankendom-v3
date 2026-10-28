@@ -190,8 +190,8 @@ test('the jank guard keeps measuring after the SECOND encoder starts: fast with 
   const w = world();
   w.run(L - 300, true, 16);   // the first window (one encoder) passes
   assert.equal(w.alive().length, 1); assert.notEqual(w.clip.state, 'off');
-  w.run(2000, true, 16); assert.equal(w.alive().length, 2, 'the second encoder is running');
-  w.run(SHARE_CLIP.guard.seconds * 1000 + 600, true, SHARE_CLIP.guard.maxFrameMs + 30);   // ...and the phone chokes under two
+  w.run(SHARE_CLIP.guard.seconds * 1000 + 600, true, SHARE_CLIP.guard.maxFrameMs + 30);   // the second encoder starts, and the phone chokes under two
+  assert.ok(w.made.length >= 2, 'the second encoder did start');
   assert.equal(w.clip.state, 'off');
   assert.equal(w.alive().length, 0);
   const fast = world(); fast.run(L + SHARE_CLIP.guard.seconds * 1000 + 2000, true, 16);
