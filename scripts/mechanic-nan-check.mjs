@@ -4,11 +4,12 @@
 // globalThis.__v3Mech (the mechanic's view) in the page. Exit 1 on a failed check; stills land in <out dir>.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { ringedZoneFor } from '../src/zone/zone-rows.ts';
 
 const [base, out, query = 'opener=off'] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/mechanic-nan-check.mjs <base url> <out dir> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const NAN = [79.87, 29.07];   // ring-2-sporty-granny-0 in the sim's frame (globalThis.__v3Zone.spawns)
+const NANP = ringedZoneFor('').spawns.find((s) => s.kind === 'sporty-granny').position, NAN = [NANP.x, NANP.z];   // her ring spot in the sim's frame, from the rows (the ring distances are rows, so no number is copied here)
 const browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
 const pageErrors = [];
