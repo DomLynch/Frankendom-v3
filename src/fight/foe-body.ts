@@ -42,7 +42,13 @@ export const chooseFoeBody = (_search?: string): boolean => false;
 export const foeBodyFile = (id: string, rosterBody: string, stem = false): string => ((s: string) => stem ? s : foeRigFile(s))(rowOf(id)?.body || rosterBody);
 /** The 106 file stem a zone spawn of `id` draws: the spawn row's own `body` (data/zones `spawns[].body`, a data/rig.json files stem) when it has one, else exactly `foeBodyFile` (its kind's profile body).
  *  ?boss=<body> still draws every boss in one body for the page. This is the key of the scene's rig cache (scene.ts bodyRigs). */
-export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => (spawnBody === undefined || override !== null ? foeBodyFile(id, rosterBody) : foeRigFile(spawnBody));
+export const spawnBodyFile = (id: string, rosterBody: string, spawnBody?: string): string => {
+  if (override !== null) return foeRigFile(override);   // ?boss=<body>: every spawn, a profile-id kind too
+  if (spawnBody !== undefined) return foeRigFile(spawnBody);
+  // A zone spawn's `kind` is a PROFILE id (gargantua, arachne), not an opponent id (executioner, shieldmaiden): PROFILE_BODY above is keyed by opponent, so look the profile row up by id first.
+  const own = (PROFILES.profiles as { id: string; body?: string }[]).find((p) => p.id === id);
+  return own ? foeRigFile(own.body ?? PROFILES.defaultBody) : foeBodyFile(id, rosterBody);
+};
 /** Problems with the per-spawn bodies of a zone's spots (empty = fine): each must pass the same check a profile body does (a rig.json files row with clips106 folder, not the hero's body). */
 export const spotBodyProblems = (spots: readonly { id: string; body?: string }[], rig: typeof RIG = RIG, hero: string = heroBodyFile()): string[] =>
   spots.flatMap((s) => { const why = s.body === undefined ? null : bodyProblem(s.body, rig, hero); return why ? [`spawn ${s.id} body: ${why}`] : []; });

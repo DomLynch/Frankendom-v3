@@ -53,10 +53,13 @@ test('the data: the fight row names the profile whose opponent it fights, and ev
   assert.deepEqual(kindIds(PROFILES.profiles), PROFILES.profiles.map((p) => p.id));
 });
 
-test('(c) the default zone is unchanged: three Pitborn spawns resolve to ONE kind object, and it is the old page-wide fight, digest for digest', () => {
-  assert.deepEqual(ZONE.spawns.map((s) => s.kind), ['pitborn', 'pitborn', 'pitborn']);
+test('(c) the default zone: spawn 1 (Pitborn) is the old page-wide fight, digest for digest; spawns 2 and 3 are the Gargantua and the Arachne (Dom 2026-10-28)', () => {
+  // Re-pinned 2026-10-28: was three Pitborn spawns resolving to ONE kind object. Spawns 2 and 3 are different bosses on purpose; the Pitborn spawn and the no-zone single fight are asserted exactly as before.
+  assert.deepEqual(ZONE.spawns.map((s) => s.kind), ['pitborn', 'gargantua', 'arachne']);
   const kinds = kindTable(CTX), spots = spotsFor(ZONE);
-  assert.equal(new Set(spots.map((s) => kinds(s.kind))).size, 1, 'every default spawn is the same kind object: a hand-over between them swaps nothing');
+  assert.equal(new Set(spots.map((s) => kinds(s.kind))).size, 3, 'three kinds, three kind objects');
+  assert.deepEqual(spots.map((s) => kinds(s.kind).opponentId), ['pitborn', 'executioner', 'shieldmaiden']);
+  assert.equal(kinds('pitborn'), kinds(spots[0].kind), 'spawn 1 is the one Pitborn kind object');
   const k = kinds('pitborn'), old = legacyMake(731, pose);
   assert.equal(k.opponentId, FIGHT.opponent); assert.equal(k.scaled, true);
   const made = kindPractice(k, CTX, 731, pose);
