@@ -44,7 +44,7 @@ jobs:
   boot:
     name: built-game boot
     runs-on: ubuntu-latest
-    timeout-minutes: 16
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,6 +64,35 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/boot-check.mjs
         timeout-minutes: 4
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot-check-375
+          path: boot-check-out/
+          if-no-files-found: ignore
+
+  # The Flesh Market (data/market.json) driven by real touch input on the BUILT dist at 375 (scripts/market-stills.mjs): open, buy, sell, reload keeps the seeded stock. A separate job so
+  # built-game boot (a required check) is untouched; not required (continue-on-error), and the 375 stills are its artifact.
+  market-stills:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: jpegtran
+        run: command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)
+      - run: npm run build
+      - run: npm install --no-save --no-audit --no-fund playwright@1.63.0
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-1.63.0-chromium-${{ runner.os }}
+      - run: npx playwright install --with-deps chromium
       - name: Flesh Market through real touch input (375, the built dist)
         run: |
           node scripts/serve.mjs 4173 > /dev/null 2>&1 &
@@ -72,12 +101,6 @@ jobs:
           sleep 3
           node scripts/market-stills.mjs http://localhost:4173 market-out ci
         timeout-minutes: 6
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: boot-check-375
-          path: boot-check-out/
-          if-no-files-found: ignore
       - if: always()
         uses: actions/upload-artifact@v4
         with:
