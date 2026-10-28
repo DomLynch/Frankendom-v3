@@ -886,6 +886,7 @@ export function createScene(
       return heldBodies()?.hold(body) ?? 'same';
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
+    heroWeaponNode(): THREE.Object3D | undefined { return warriors?.player.heldWeaponNode(); },   // the node the hero's weapon hangs from (golden weapon tint, src/fight/golden-hud.ts)
     liveStar(star: number) { liveStarN = star; },   // data/stars.json: the star level of the spawn the live rig is (main.ts every frame); 0 = the body as built
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean; star?: number }[]) {
       const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
