@@ -8,11 +8,11 @@ export type MobKind = { body: string; scale: number; tint: string; tintMix: numb
 type RingRow = { density: number; size: [number, number]; kinds: string[] };
 type Hash = { a: number; b: number; c: number; s1: number; s2: number; range: number };
 export type MobRows = {
-  on: boolean; cap: number; capMax: number; scanSeconds: number; activateMetres: number; despawnMetres: number; spawnMinMetres: number; startClearMetres: number; padMetres: number; swingMetres: number; hitScale: number; turnRate: number; speedEase: number; pitArea: string;
+  on: boolean; cap: number; capMax: number; scanSeconds: number; activateMetres: number; despawnMetres: number; spawnMinMetres: number; startClearMetres: number; padMetres: number; swingMetres: number; lod: { nearMetres: number; nearStride: number; farStride: number }; hitScale: number; turnRate: number; speedEase: number; pitArea: string;
   grid: { cellMetres: number; keySpan: number; seed: number; hash: Hash; lcg: { mul: number; add: number; range: number }; salts: Record<'exists' | 'x' | 'z' | 'size' | 'kind' | 'member', number> };
   pack: { radiusMetres: number; wanderMetres: number; wanderSeconds: [number, number]; callMetres: number };
   separation: { metres: number; speed: number };
-  attack: { maxAttackers: number; orbitMetres: number; slackMetres: number; arcRadians: number; spreadRadians: number };
+  attack: { maxAttackers: number; orbitMetres: number; slackMetres: number; ringMetres: number; arcRadians: number; spreadRadians: number };
   hero: { radiusMetres: number; lethal: boolean; floorHealth: number; guard: number; roll: number; roamStrikes: string[] };
   states: Record<'idle' | 'chase' | 'windup' | 'recover' | 'hurt' | 'dying' | 'lying' | 'home', number>;
   fall: { lyingSeconds: number; fadeSeconds: number };
@@ -28,7 +28,7 @@ export type Pad = { x: number; z: number; radius: number };
 export type Area = { id: string; x: number; z: number };
 export type Killed = { kind: string; pack: number; x: number; z: number; coins: number; xp: number; heat: number; left: number };
 /** What the scene and the radar read: the arrays are the core's own, live, never copied. */
-export type MobView = { n: number; kind: Uint8Array; state: Uint8Array; x: Float32Array; z: Float32Array; heading: Float32Array; speed: Float32Array; hurt: Float32Array; fall: Float32Array; fade: Float32Array };
+export type MobView = { n: number; kind: Uint8Array; state: Uint8Array; x: Float32Array; z: Float32Array; heading: Float32Array; speed: Float32Array; hurt: Float32Array; fall: Float32Array; fade: Float32Array; hero: Float32Array /* the hero's x, z as of the last tick: the scene's animation level of detail is by distance from him */ };
 type Site = { id: number; x: number; z: number; kind: number; size: number; left: number; alive: number; clearedAt: number; manual: boolean };
 
 const KIND_IDS = Object.keys(MOBS.kinds);
@@ -80,7 +80,7 @@ export class Mobs {
     this.hp = new Float32Array(m); this.timer = new Float32Array(m); this.wander = new Float32Array(m); this.cool = new Float32Array(m);
     this.hurtT = new Float32Array(m); this.fallT = new Float32Array(m); this.fadeT = new Float32Array(m);
     this.seen = new Int32Array(m); this.rng = new Uint32Array(m); this.slot = new Float32Array(m); this.struck = new Int32Array(m);
-    this.view = { n: 0, kind: this.kind, state: this.st, x: this.px, z: this.pz, heading: this.hd, speed: this.sp, hurt: this.hurtT, fall: this.fallT, fade: this.fadeT };
+    this.view = { n: 0, kind: this.kind, state: this.st, x: this.px, z: this.pz, heading: this.hd, speed: this.sp, hurt: this.hurtT, fall: this.fallT, fade: this.fadeT, hero: new Float32Array([0, 0]) };
   }
 
   // ---- the API the Pit Crawl and the page use ----
@@ -116,7 +116,7 @@ export class Mobs {
   /** `suppress`: a boss fight is on (or the hero is down): no pack aggros or spawns and the live mobs go home. `swing`: the hero's blow this tick, or null. */
   tick(dt: number, hero: Hero, swing: Swing | null, suppress: boolean): void {
     const R = this.rows, S = R.states;
-    this.clock += dt;
+    this.clock += dt; this.view.hero[0] = hero.x; this.view.hero[1] = hero.z;
     if (!suppress) {
       this.scanIn -= dt;
       if (this.scanIn <= 0) { this.scanIn = R.scanSeconds; this.scan(hero); }
@@ -217,7 +217,7 @@ export class Mobs {
         if (dh <= reach && this.cool[i]! <= 0 && token) { this.st[i] = S.windup; this.timer[i] = K.windupSeconds; want = Math.atan2(dxh, dzh); }
         else {
           // a point on a ring round the hero, a slot each: surround, not stack; the ones without an attack token wait further out
-          const ring = token || dh <= reach ? reach * R.attack.slackMetres + R.hero.radiusMetres : R.attack.orbitMetres;
+          const ring = token || dh <= reach ? R.attack.ringMetres : R.attack.orbitMetres;
           const tx = hero.x - Math.sin(this.slot[i]!) * ring, tz = hero.z - Math.cos(this.slot[i]!) * ring, ex = tx - this.px[i]!, ez = tz - this.pz[i]!, e = Math.hypot(ex, ez);
           if (e > R.attack.slackMetres * K.bodyMetres) { vx = (ex / e) * K.speed; vz = (ez / e) * K.speed; }
           want = Math.atan2(dxh, dzh);

@@ -19,6 +19,8 @@ export function validateMobs(rows, rig, ringIds = [], areaIds = []) {
   if (!(rows.despawnMetres > rows.activateMetres)) e.push('mobs.despawnMetres must be above activateMetres (a pack must not blink in and out at one distance)');
   if (!(rows.spawnMinMetres < rows.activateMetres)) e.push('mobs.spawnMinMetres must be below activateMetres (a pack would never come in)');
   num('scanSeconds', rows.scanSeconds, L.seconds); num('respawnSeconds', rows.respawnSeconds, L.seconds);
+  num('lod.nearMetres', rows.lod?.nearMetres, L.metres);
+  for (const k of ['nearStride', 'farStride']) if (!(Number.isInteger(rows.lod?.[k]) && rows.lod[k] >= 1 && rows.lod[k] <= 30)) e.push(`mobs.lod.${k} is a whole number of frames from 1 (1 = every frame)`);
   num('hitScale', rows.hitScale, L.scale); num('turnRate', rows.turnRate, L.speed); num('speedEase', rows.speedEase, L.speed);
   const g = rows.grid ?? {};
   num('grid.cellMetres', g.cellMetres, [4, 400]);
@@ -31,7 +33,7 @@ export function validateMobs(rows, rig, ringIds = [], areaIds = []) {
   num('pack.radiusMetres', p.radiusMetres, L.metres); num('pack.wanderMetres', p.wanderMetres, L.metres); num('pack.callMetres', p.callMetres, L.metres);
   if (!Array.isArray(p.wanderSeconds) || p.wanderSeconds.length !== 2 || !within(p.wanderSeconds[0], L.seconds) || !(p.wanderSeconds[1] >= p.wanderSeconds[0])) e.push('mobs.pack.wanderSeconds is [min, max] seconds');
   num('separation.metres', rows.separation?.metres, L.metres); num('separation.speed', rows.separation?.speed, L.speed);
-  num('attack.maxAttackers', rows.attack?.maxAttackers, L.cap); num('attack.orbitMetres', rows.attack?.orbitMetres, L.metres); num('attack.slackMetres', rows.attack?.slackMetres, L.metres); num('attack.arcRadians', rows.attack?.arcRadians, [0.1, 7]); num('attack.spreadRadians', rows.attack?.spreadRadians, [0, 7]);
+  num('attack.maxAttackers', rows.attack?.maxAttackers, L.cap); num('attack.orbitMetres', rows.attack?.orbitMetres, L.metres); num('attack.slackMetres', rows.attack?.slackMetres, L.metres); num('attack.ringMetres', rows.attack?.ringMetres, L.metres); num('attack.arcRadians', rows.attack?.arcRadians, [0.1, 7]); num('attack.spreadRadians', rows.attack?.spreadRadians, [0, 7]);
   const h = rows.hero ?? {};
   num('hero.radiusMetres', h.radiusMetres, L.metres); num('hero.floorHealth', h.floorHealth, [0, 1000]);
   if (typeof h.lethal !== 'boolean') e.push('mobs.hero.lethal is true or false');

@@ -740,12 +740,13 @@ export function createScene(
   // TRASH MOBS (data/mobs.json, src/zone/mobs.ts; src/mobs-run.ts hands the core's live arrays in): each slot of the core is one pooled actor of ONE shared mob body (the first pack that goes live starts its fetch; nothing is
   // requested before), scaled down, drawn with one tinted copy of the body's materials shared by every mob, the weapon hidden, posed at the rest pose the live foe was kept at with the walk driven by the mob's own speed.
   // Presentation only: the lean back of a blow, the lean in of a wind-up and the topple of a kill are the group's tilt, not the skeleton's.
-  type MobSlot = { group: THREE.Group; actor: FoeActor };
-  let mobView: MobView | null = null;
+  type MobSlot = { group: THREE.Group; actor: FoeActor; pending: number };
+  let mobView: MobView | null = null, mobFrame = 0;
   const mobSlots: MobSlot[] = [], mobTinted = new Map<THREE.Material, THREE.Material>();
   function tintMobBody(root: THREE.Object3D, k: MobKind) {
     root.traverse((o) => {
       if (!(o instanceof THREE.SkinnedMesh)) return;
+      o.frustumCulled = true;   // a crowd mob off screen is neither skinned nor drawn
       const one = (m: THREE.Material): THREE.Material => {
         let t = mobTinted.get(m);
         if (!t) { t = m.clone(); const c = (t as THREE.MeshStandardMaterial).color; if (c) c.lerp(new THREE.Color(k.tint), k.tintMix); mobTinted.set(m, t); }
@@ -758,6 +759,7 @@ export function createScene(
   function syncMobs(dt: number) {
     const v = mobView;
     if (!v) return;
+    mobFrame++;
     const S = MOBS.states, MOB_LEAN_IN = 0.45, MOB_LEAN_BACK = 0.5, MOB_TOPPLE = Math.PI / 2;   // radians: in on the wind-up, back on a blow, flat on a kill
     if (v.n === 0 && mobSlots.length === 0) return;
     for (let i = 0; i < Math.max(v.n, mobSlots.length); i++) {
@@ -772,14 +774,19 @@ export function createScene(
         const actor = warriors.spawnBody(asset, weapon, bossOfBody(file)?.clipsAs);   // no useClips106: a crowd mob never plays a finisher or a special, so the body's eight baked clip files (1.2 MB) are never fetched
         const group = new THREE.Group(); group.rotation.order = 'YXZ';
         group.add(actor.anchor); actor.setUpright(readyOffset(opponentId)); tintMobBody(actor.anchor, k); scene.add(group);
-        slot = mobSlots[i] = { group, actor };
+        slot = mobSlots[i] = { group, actor, pending: 0 };
       }
       const g = slot.group, st = v.state[i]!, rest = restSnap!;
       g.visible = true; g.position.set(v.x[i]!, 0, v.z[i]!); g.rotation.y = v.heading[i]!;
       const lean = st === S.windup ? MOB_LEAN_IN : -v.hurt[i]! * MOB_LEAN_BACK;
       g.rotation.x = st >= S.dying && st <= S.lying ? -v.fall[i]! * MOB_TOPPLE : lean;
       g.scale.setScalar(k.scale * (1 - v.fade[i]!));
-      slot.actor.update(v.speed[i]!, dt, rest.pose.pose, rest.pose.progress, rest.pose.attack, rest.pose.contact, 0, 0, rest.guard, CHARGE_LEAN[opponentId] ?? null, rest.holding, rest.pose.span ?? null);
+      // level of detail: a mob beyond lod.nearMetres of the hero poses its skeleton only every lod.farStride-th frame (carrying the skipped time), and one outside the view is not skinned at all (frustum culling is on for them)
+      slot.pending += dt;
+      const dx = v.x[i]! - v.hero[0]!, dz = v.z[i]! - v.hero[1]!;
+      if ((mobFrame + i) % (dx * dx + dz * dz > MOBS.lod.nearMetres * MOBS.lod.nearMetres ? MOBS.lod.farStride : MOBS.lod.nearStride) !== 0) continue;
+      const step = slot.pending; slot.pending = 0;
+      slot.actor.update(v.speed[i]!, step, rest.pose.pose, rest.pose.progress, rest.pose.attack, rest.pose.contact, 0, 0, rest.guard, CHARGE_LEAN[opponentId] ?? null, rest.holding, rest.pose.span ?? null);
     }
   }
   // Kill dip: the killing blow darkens the frame 6 % for two frames and recovers over two more — the cinematic reserve (GAME_SPEC 80/15/5),

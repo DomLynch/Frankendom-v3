@@ -11,7 +11,12 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || un
 const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
-let bytes = 0; page.on('response', async (r) => { try { bytes += (await r.body()).length; } catch { /* a redirect */ } });
+let bytes = 0;   // bytes on the wire (CDP encodedDataLength: after compression)
+const cdp = await page.context().newCDPSession(page);
+await cdp.send('Network.enable');
+cdp.on('Network.loadingFinished', (e) => { bytes += e.encodedDataLength; });
+const THROTTLE = Number(process.env.THROTTLE ?? 4);   // CPU slowdown: a phone-ish main thread, so the frame cost shows instead of the display's 60 Hz
+if (THROTTLE > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: THROTTLE });
 await page.goto(`${base}/__reset`).catch(() => {});
 await page.goto(`${base}/?opener=off`);
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 240000 });
@@ -30,9 +35,21 @@ console.log(`${tag} idle`, JSON.stringify(await frames(8000)), `mobs feature: ${
 if (!hasMobs) { await browser.close(); process.exit(0); }
 
 // a swarm: 12 goblins (the cap) in the open, walking in on the hero; frame time while they fight him
-const h = await hero();
-await page.evaluate(({ x, z, heading }) => { const m = globalThis.__v3Mobs.core; m.spawnPackAt(x + Math.sin(heading) * 26, z + Math.cos(heading) * 26, 'goblin', 20); }, h);
-await page.waitForTimeout(6000);
+// the start stands inside the three boss circles (no pack is made there, by design): walk west along z = 2.6 until clear of them, then make a 20-strong pack 26 m ahead
+await page.keyboard.down('KeyA');
+for (let i = 0; i < 60; i++) { await page.waitForTimeout(500); if (Math.abs((await hero()).x) >= 40) break; }
+await page.keyboard.up('KeyA');
+const h = await hero(), side = h.x < 0 ? -1 : 1;
+await page.evaluate(({ x, z, side }) => { globalThis.__v3Mobs.core.spawnPackAt(x + side * 26, z, 'goblin', 20); }, { ...h, side });
+await page.waitForTimeout(1500);
+await page.keyboard.down('KeyA');   // walk in: the goblins see him at 9 m
+for (let i = 0; i < 60; i++) {   // until the nearest goblin is within 4 m
+  await page.waitForTimeout(250);
+  const d = await page.evaluate(() => { const m = globalThis.__v3Mobs.core, v = m.view, f = globalThis.__v3Roam ?? globalThis.__v3Fight.fighter; let d = 1e9; for (let k = 0; k < v.n; k++) d = Math.min(d, Math.hypot(v.x[k] - f.x, v.z[k] - f.z)); return d; });
+  if (d < 4) break;
+}
+await page.keyboard.up('KeyA');
+await page.waitForTimeout(1500);
 console.log(`${tag} swarm state`, JSON.stringify(await page.evaluate(() => { const m = globalThis.__v3Mobs.core; return { count: m.count, alive: m.alive, cap: m.cap, drawn: null }; })));
 await page.screenshot({ path: `${out}/${tag}-1-swarm.jpg`, type: 'jpeg', quality: 82 });
 console.log(`${tag} swarm`, JSON.stringify(await frames(8000)));
