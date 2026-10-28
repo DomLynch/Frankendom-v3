@@ -12,6 +12,7 @@ import { recordSpecials } from './replay.ts';
 import type { PickedStance } from './stance.ts';
 import type { DuelPose } from './duel.ts';
 import { bossOpponent } from './boss-weapon.ts';
+import { mechanicOf } from './mechanics/registry.ts';
 import { brainFor, brainProfile, type BrainRow } from '../brain.ts';
 import { tunedOpponent, tunedResolved, type TuneMap } from '../tune.ts';
 import { mergeTune } from '../progression.ts';
@@ -48,7 +49,8 @@ export function kindFightFor(kind: string, ctx: KindCtx, star = 0): KindFight {
   const tune = star > 0 && ctx.stars ? mergeTune(ctx.tune ?? {}, starTune(ctx.stars, star, kind)) : ctx.tune;   // data/stars.json: a star instance's health and damage multiply on top of the profile, difficulty, escalation and ?tune=; star 0 is `ctx.tune` itself
   const resolved = tunedResolved(resolveFight({ profile: kind, difficulty: ctx.pick }, ctx.profiles, ctx.difficulty, ctx.brains), tune, kind);
   const opponentId = ctx.override ?? resolved.opponent, base = OPPONENTS[opponentId as keyof typeof OPPONENTS];
-  const opponent = ctx.override === null ? tunedOpponent(bossOpponent(base, ctx.search, undefined, kind), tune, kind) : base;   // data/boss-weapons.json: Gargantua (executioner) fights with a maul, Arachne (shieldmaiden) with an axe, a profile with a row of its own (`profile` = this kind) with that; ?bossweapon=v1 and ?pitborn=v1 keep V1's row for the archetype
+  const armed = ctx.override === null ? tunedOpponent(bossOpponent(base, ctx.search, undefined, kind), tune, kind) : base, mechanic = ctx.override === null ? mechanicOf(kind) : undefined;
+  const opponent = mechanic ? { ...armed, mechanic } : armed;   // data/rings.json bosses[].mechanic: the kind's one signature move (src/fight/mechanics/); ?pitborn=v1 plays V1's fight without it   // data/boss-weapons.json: Gargantua (executioner) fights with a maul, Arachne (shieldmaiden) with an axe, a profile with a row of its own (`profile` = this kind) with that; ?bossweapon=v1 and ?pitborn=v1 keep V1's row for the archetype
   const scaled = resolved.opponent === opponentId;   // the profile's own archetype fights with its difficulty and scales; the ?pitborn=v1 Centurion is V1's fight as before
   const v1 = profileAt(opponent, ctx.level);
   const ai = scaled ? profileFor(v1, resolved, new URLSearchParams(ctx.search).get('ai') === 'v1') : brainProfile(v1, brainFor(ctx.brains, ctx.ai, ctx.search));

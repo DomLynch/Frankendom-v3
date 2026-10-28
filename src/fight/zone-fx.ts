@@ -16,6 +16,7 @@ import { shardRows, specialShardsOf } from './sandbox-rules.ts';
 import { specialRequestOf } from './special-request.ts';
 import { countSpecial } from './special-counter.ts';
 import { createBossTelegraph, telegraphLook } from './boss-telegraph.ts';
+import { createWallFx } from './mechanics/accountant-parry-wall-fx.ts';   // the Accountant's parry wall (data/mechanics.json): drawn from the foe fighter's mech state
 
 /** The hint sink for a walk camera that is placed afresh every frame (camera.position set, then lookAt): draw() adds the settling shove and tumble on top, and the next placement drops them. */
 export function createWalkKick(camera: THREE.Camera): CameraKick & { draw(dt: number): void } {
@@ -52,6 +53,7 @@ export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera; r
   // when its rows exist (none on trunk = nothing built). One of each for the page, not per pair: a hit is a frame's event. Read from the same Pit events the pair's contacts carry.
   const skillImpact = createSkillImpact(host.scene), shards = shardRows() ? createSpecialShards(host.scene, shardCapacity()) : null, shardAt = new THREE.Vector3();
   const windupRing = createBossTelegraph(host.scene), ringFoot = new THREE.Vector3();   // the Pit's cast-tell ring (boss-telegraph.ts), here under the foe the hero's special will land on: its own cool tint (scene-rows boss-telegraph.world-color), a pose alone is no telegraph (Lead 2026-10-20)
+  const wallFx = createWallFx(host.scene), wallFoot = new THREE.Vector3();
   const live = new Map<string, Slot>(), free: Slot[] = [];
   const newSlot = (): Slot => ({ fx: createFightFx({ scene: host.scene, dropTexture, splatTexture }), idle: 0 });
   free.push(newSlot());   // the first pair's effects exist before any contact, so the zone's warm-up (planUpload) sees their materials and links their programs before [zone ready], not at the first hit
@@ -98,6 +100,8 @@ export function createZoneFx(host: { scene: THREE.Scene; camera: THREE.Camera; r
       }
       { const c = pairs.find((p) => telegraphLook(p.duel.fighters[0], false, true)), foe = c && host.rigs?.foe(c.foe), l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r');   // the hero's special windup, in the world only
         if (c && l && r) windupRing.update(c.duel.fighters[0], ringFoot.copy(l).add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)), c.duel.tick, false, true); else windupRing.hide(); }
+      { const c = pairs.find((p) => p.duel.fighters[1].mech), foe = c && host.rigs?.foe(c.foe), l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r');   // a boss with a standing mechanic (the parry wall): drawn at his feet, facing as the sim has him
+        if (c && l && r) wallFx.update(c.duel.fighters[1], wallFoot.copy(l).add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)), c.foeAt.facing, c.events, c.duel.tick, dt); else wallFx.update(null, null, 0, pairs.length ? pairs[0]!.events : [], 0, dt); }
       skillImpact.update(dt); shards?.update(dt);
       kick.draw(dt);
     },

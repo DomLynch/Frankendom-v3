@@ -5,8 +5,12 @@
 // V1's fight rows (src/fight/*-defs.json) keep V1's own loader checks (src/core/registry.ts); a schema here is
 // added per file as V2's rows come back on top (PLAN.md section 5, step 5).
 
+import { checkMechanics } from './validate-mechanics.js';
+
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
+  // Boss signature mechanics (src/sim/validate-mechanics.js checks the values): a map, mechanic id -> row
+  'mechanics': { keys: ['about', 'mechanics'] },
   'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'skyline', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
   'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx', 'order', 'heroMana'], maps: { heroMana: ['about', 'mana'], order: ['about', 'query', 'v1', 'opponent', 'profile', 'kinds'], specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch', 'wide'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
@@ -346,12 +350,13 @@ export function validateFile(name, json) {
     errors.push(...checkWideLens(json.camera.wide, name));
   }
   if (name === 'commentator') errors.push(...checkCommentator(json));
+  if (name === 'mechanics') errors.push(...checkMechanics(json));
   banned(json, name, errors);
   return errors;
 }
 
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
-const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'parry_wall', 'wearing_parts'];
 const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
 export const COMMENTATOR_MIN_LINES = 6;
 export function checkCommentator(json) {

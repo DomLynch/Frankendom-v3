@@ -11,6 +11,7 @@ import ZONE1 from '../../data/zones/zone1.row.json' with { type: 'json' };
 import PROFILES from '../../data/profiles.json' with { type: 'json' };
 import STAGE from '../../data/stage.json' with { type: 'json' };
 import { validateRings } from '../sim/validate-rings.js';
+import MECHANICS from '../../data/mechanics.json' with { type: 'json' };
 import { RINGS, ringOrigin, ringedZone, type RingRows } from './rings.ts';
 
 export type ZoneBehaviour = { aggro: number; leash: number; roam: number; campSize: [number, number] };
@@ -23,7 +24,7 @@ export type ZoneSet = { default: string; rows: Record<string, ZoneRow> };
 
 /** Every row file the build ships, keyed by its own id (test/zone-rows.test.mjs fails if data/zones/index.json lists another set). */
 // The biome rings (data/rings.json): ring 1 is the row's own spawns, rings 2 and 3 are appended after them (src/zone/rings.ts). A bad rings file throws at load, naming every problem.
-const RING_PROBLEMS = validateRings(RINGS, ZONE1 as unknown as ZoneRow, ringOrigin(ZONE1 as unknown as ZoneRow), PROFILES.profiles.map((p) => p.id), RIG, STAGE.skyline.ring.plates.map((p: { id: string }) => p.id));
+const RING_PROBLEMS = validateRings(RINGS, ZONE1 as unknown as ZoneRow, ringOrigin(ZONE1 as unknown as ZoneRow), PROFILES.profiles.map((p) => p.id), RIG, STAGE.skyline.ring.plates.map((p: { id: string }) => p.id), Object.keys(MECHANICS.mechanics));
 if (RING_PROBLEMS.length) throw new Error(`data/rings.json: ${RING_PROBLEMS.join('; ')}`);
 const SHIPPED: ZoneRow[] = [ZONE1 as unknown as ZoneRow];
 

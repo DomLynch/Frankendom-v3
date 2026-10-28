@@ -37,6 +37,7 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
+import { mechCaption } from '../fight/mechanics/registry.ts';
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -620,6 +621,7 @@ function frame(now: number) {
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
       }
       frameEvents.push(...practice.events); commentator.events(practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
+      { const line = mechCaption(practice.duel.fighters[1]); if (line) commentator.say(line); }   // a boss's signature mechanic announces itself on the first tick of its tell (data/mechanics.json caption -> data/commentator.json)
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)

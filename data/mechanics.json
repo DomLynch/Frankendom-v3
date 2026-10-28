@@ -1,0 +1,22 @@
+{
+  "about": "BOSS SIGNATURE MECHANICS (Dom 2026-10-28: each boss gets its own fighting identity). A MAP from mechanic id to its row; one entry per boss, written by the lane that builds it (keep it a map; never reorder another boss's entry). A ring boss names its mechanic in data/rings.json bosses[].mechanic (null = none); src/fight/mechanics/registry.ts maps the id to its code module; src/sim/validate-mechanics.js checks the values. Every time is TICKS at 60 Hz, every distance METRES, every angle DEGREES. THE ACCOUNTANT (the-boss): PARRY WALL. He plants his feet and a ledger wall rises in front of him: tellTicks of warning (a hit on him in that time lands in full and cancels it), then wallTicks in which every ORDINARY weapon blow from the front (golden weapons included: the wall reads the move, not the blade) is parried for ZERO damage (a spark, the attacker staggers parryStunTicks, he gets riposteTicks of punish window); after parriesToDrop parries the wall drops. COUNTERS: a KICK breaks the wall (he staggers kickBreakStunTicks); a hero SPECIAL breaks it (specialBreakStunTicks, and the special still lands); a blow from BEHIND (outside arcDeg) lands in full; or wait it out. He does not attack while the wall stands. Cooldown cooldownTicks from the wall's end (cancelCooldownTicks if it was cancelled in the tell); firstTicks before the first wall of a fight. A dying boss drops it the same tick. fx: the wall's look (ring on the sand, a translucent wall, sparks), reading the sim's own state, never writing it.",
+  "mechanics": {
+    "accountant-parry-wall": {
+      "boss": "the-boss",
+      "firstTicks": 300,
+      "triggerRangeM": 3.2,
+      "tellTicks": 42,
+      "wallTicks": 150,
+      "cooldownTicks": 660,
+      "cancelCooldownTicks": 300,
+      "arcDeg": 150,
+      "parryStunTicks": 20,
+      "riposteTicks": 30,
+      "parriesToDrop": 3,
+      "kickBreakStunTicks": 54,
+      "specialBreakStunTicks": 72,
+      "caption": "parry_wall",
+      "fx": { "colour": "#f2c14e", "edgeColour": "#fff0b8", "ringRadiusM": 1.5, "wallHeightM": 2.1, "wallWidthM": 2.4, "wallDistanceM": 0.9, "tellOpacity": 0.18, "wallOpacity": 0.42, "sparkCount": 10, "sparkSpeedMps": 3.2, "sparkLifeS": 0.35, "sparkSizeM": 0.07, "sparkGravityMps2": 6, "ringPulseHz": 2.5 }
+    }
+  }
+}

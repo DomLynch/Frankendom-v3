@@ -6,9 +6,9 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 
 /**
  * `rows`: data/rings.json. `zone`: the zone row (ring 1 holds its own spawns). `origin`: the pit's centre in the zone's frame. `kinds`: the data/profiles.json ids. `rig`: data/rig.json.
- * `plates`: the sky ring's plate ids (data/stage.json skyline.ring.plates).
+ * `plates`: the sky ring's plate ids (data/stage.json skyline.ring.plates). `mechanics`: the ids in data/mechanics.json (a boss's `mechanic` is null or one of them).
  */
-export function validateRings(rows, zone, origin, kinds, rig, plates) {
+export function validateRings(rows, zone, origin, kinds, rig, plates, mechanics = []) {
   const e = [];
   const within = (v, [lo, hi]) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
   const L = rows.limits;
@@ -22,7 +22,7 @@ export function validateRings(rows, zone, origin, kinds, rig, plates) {
     if (!kinds.includes(b.kind)) e.push(`${at}: no data/profiles.json row`);
     if (typeof b.name !== 'string' || !b.name.trim()) e.push(`${at}.name: a non-empty string`);
     const why = bodyProblem(b.body, rig); if (why) e.push(`${at}.body: ${why}`);
-    if (b.mechanic !== null) e.push(`${at}.mechanic: null until the boss gets its one signature move`);
+    if (b.mechanic !== null && !mechanics.includes(b.mechanic)) e.push(`${at}.mechanic: null, or the id of a mechanic in data/mechanics.json (the boss's one signature move)`);
     if (!within(b.respawnSeconds, L.respawnSeconds)) e.push(`${at}.respawnSeconds out of range`);
     for (const k of ['aggro', 'leash', 'roam']) if (!(Number.isFinite(b[k]) && b[k] >= 0)) e.push(`${at}.${k}: a number from 0`);
     if (!(b.leash > b.aggro)) e.push(`${at}.leash must be above its aggro`);
