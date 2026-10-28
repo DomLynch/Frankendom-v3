@@ -36,6 +36,7 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
+import { mountParts } from '../fight/parts-hook.ts';
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
 import { createLook, lookFor } from '../fight/look-drag.ts';
@@ -321,6 +322,7 @@ const pileXY: [number, number] = [0, 0];   // the pile marker's screen spot, rew
 let carriedWeapon: string = HERO_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
 const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
 function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
+const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
 function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
 function startLinger(idx: number) {
   const pile = PROG?.save?.pile;
@@ -408,6 +410,7 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 /** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
 let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
 function onBossKilled(kind: string, star = 0) {
+  PARTS_HOOK?.noteKill(kind, star);
   if (!PROG?.save) return;
   try {
     const out = recordKill(PROG.save, kind, PROG_ROWS);

@@ -23,6 +23,7 @@ import type { CombatEvent } from './duel.ts';
 import type { FinisherId } from './finishers.ts';
 import { setGoreEvery } from './finishers.ts';
 import { setRagdollPlays } from '../roster.ts';
+import { getActiveKind } from './foe-name.ts';   // the profile id a kill is of (data/parts.json: the cut event names it)
 import { registerHintSource, type HintBody } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
@@ -282,6 +283,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let warm = 0, cutter: PieceCutter | undefined, gore = true, capGeometry: THREE.SphereGeometry | undefined, capMaterials: THREE.MeshStandardMaterial[] = [], helmetMaterial: THREE.MeshStandardMaterial | undefined, helmetGeometry: THREE.SphereGeometry | undefined;
   const capPool: THREE.Mesh[] = [], helmetPool: THREE.Mesh[] = [], cutBones: { bone: THREE.Object3D; home: THREE.Vector3 }[] = [];   // cutBones: where each cut bone sat (the package's applyPose moves it to its capsule's joint; the rematch puts it back)
   // M8 (data/physics.json `corpse`): the live body's life (corpseId `<foe>#<n>`, kept by his corpse), his lane in the world, where his rig was made and the untouched scene it reads the bind pose from
+  const lifeProfiles = new Map<string, string>();   // corpseId -> the data/profiles.json id of the boss that fell (the archetype id alone cannot name Arachne or Sir Reginald)
   let lives = 0, lifeId = `${foe.id}#0`, slot = 0, spawnHips: Vec3 = [0, 0, 0], bindOpts: { bones: Bones; root: THREE.Object3D } | undefined;
   const done = new Set<string>(), follow: { mesh: THREE.Mesh; at: number; off: THREE.Vector3 }[] = [], props: { mesh: THREE.Mesh; prop: CutResult['props'][number] }[] = [];
   const cutLog = (): CutEvent[] => ((globalThis as Record<string, unknown>)[cutRows.log] ??= []) as CutEvent[];
@@ -384,7 +386,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   function announce(event: CutEvent, corpseId: string) {
     const name = (rows.corpse as typeof rows.corpse | undefined)?.event;
     cost.corpseCuts.push({ corpseId, unit: event.unit, source: event.source });
-    if (name) emitFeel(name, { unit: event.unit, gear: [...event.gear], source: event.source, corpseId });
+    if (name) emitFeel(name, { unit: event.unit, gear: [...event.gear], source: event.source, corpseId, profile: lifeProfiles.get(corpseId) ?? getActiveKind() ?? foe.id });
   }
   /** Cut `unit` of a corpse that kept its ragdoll (the cue button's view is the camera's line to the bone, a tap's the ray). The piece flies on the corpse's own bodies; null when it is not cuttable now. */
   function cutCorpse(c: Corpse, unit: string, source: string, view: THREE.Vector3): CutEvent | null {
@@ -796,7 +798,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
           if (rules) for (const e of events) if (e.type === 'Hit' && e.target === side && e.tick !== verdict?.tick) { const p = rules.hit(e, false, handSpeed.speed()); if (p?.cut) ruleCuts.push(p.cut); }   // ?rules=m4: the killing blow is evaluated too (the list, the cuts); the sim's Killed is the death
           if (down <= 0) { rig.drive(); rd.snapToTarget(); }   // the death starts from the killing frame's own pose (no motor lag), then the package's death ramp (from where he lies, if he is down)
           down = -1; getUp = -1;
-          rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0;
+          rd.kill(blowImpulse({ ...rows.kill, impulse: finisherPush(fc, rows.kill.impulse) }, killed.location, killed.heading, group.rotation.y) ?? undefined); mode = 'dead'; stagger = -1; dying = 0; lifeProfiles.set(lifeId, getActiveKind() ?? foe.id); if (lifeProfiles.size > 16) lifeProfiles.delete(lifeProfiles.keys().next().value!);
           for (const f of feels) f.kill?.(killed, feelCtx());   // M7 (?feel=): his killing blow
           // ?rules=m4: the evaluator's cuts (this fight's, and the killing blow's) are the only cut trigger of the LIVE opponent's blows (the head-zone rule and V1's baked finisher cut are off); a finisher row's cut and every post-kill cut (the tap, the cue buttons) stay on
           for (const u of rulesOn ? ruleCuts.splice(0) : []) cutUnit(u, 'rules', blowImpulse({ ...cutRows.kill, parts: { [killed.location ?? 'torso']: u } }, killed.location ?? 'torso', killed.heading, group.rotation.y)?.impulse);

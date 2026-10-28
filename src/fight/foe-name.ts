@@ -18,6 +18,7 @@ export const setKindNames = (profiles: readonly { id?: string; opponent: string;
 let profileNames: Record<string, { opponent: string; name: string }> = {};
 let activeKind: string | null = null;
 /** The profile row (zone spawn kind) the sim holds now: the HUD names it by its own row when it has a name, so two bosses on one archetype (Arachne and the ring bosses cloned from her) keep their own names. */
+export const getActiveKind = (): string | null => activeKind;
 export const setActiveKind = (kind: string | null): void => { activeKind = kind; };
 /** The row in force for this page: the name on the opponent this page fights (`opponent`, from foe-pick.ts: the Pitborn, or the Centurion under
  * ?pitborn=v1, both drawn as the Minotaur). No query changes it: every body drawn is the Minotaur. */
