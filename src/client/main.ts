@@ -38,7 +38,7 @@ import { setTrailOpacity } from '../fight/trail-opacity.ts';
 import { heroSpecialFxFor, setHeroSpecialFx } from '../fight/hero-special-fx.ts';
 import { setSpecialSink } from '../fight/special-sink.ts';
 import { foeWeaponFor, setFoeWeapon } from '../fight/foe-weapon.ts';
-import { foeDisplayName, foeNameFor, setFoeName } from '../fight/foe-name.ts';
+import { foeDisplayName, foeNameFor, setFoeName, setKindNames } from '../fight/foe-name.ts';
 import { pitbornV1 } from '../fight/foe-pick.ts';
 import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
 import { foeSweepsFor } from '../fight/foe-reach.ts';
@@ -157,6 +157,7 @@ setSpecialSink(/[?&]dip=v1\b/.test(search) || FIGHT.specialSink.sink);
 setFoeWeapon(foeWeaponFor(FIGHT.foeWeapon, search));
 // The HUD names the Minotaur body the Minotaur whoever fights in it (data/fight.json foeName, display only).
 setFoeName(foeNameFor(FIGHT.foeName, search, opponentId));
+setKindNames(PROFILES.profiles);   // a profile row with a `name` (Gargantua, Arachne) names its own spawn over the bar; a row without one falls back to the row above / the roster
 setBossBody(search);   // [boss-body row] ?boss=<body>: draw the boss in another data/rig.json body (data/profiles.json bodyQuery); must run before the sweeps, scene and ragdoll below read the body
 // Clip-to-clip blends in milliseconds (data/fight.json blendMs/settleMs, V2's rows: swings, hits and rolls ease in and out, the roll settles); ?blend=v1 = V1's transitions exactly.
 if (/[?&]blend=v1\b/.test(search)) setBlend(null); else setBlend(FIGHT.blendMs, FIGHT.settleMs);
