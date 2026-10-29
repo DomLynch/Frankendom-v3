@@ -11,6 +11,12 @@ export type Tell = { event: string; params: Record<string, string>; hitStopMs: n
 /** A node of a body's scene graph, as far as a mechanic's view touches it (three.js Object3D fits). */
 export type BodyNode = { visible: boolean; getObjectByName(name: string): BodyNode | undefined };
 
+/** The held boss's view for the page's debug handle (`__v3Mech`, read by the check scripts). Only a core whose `view` is a FUNCTION has one (Nan, Envoy, Kachujin); Lord Gourd's `view` is a plain object (the bombs' arrays), the King and the others have none: those give null. Never throws. */
+export function mechanicView(m: { core: unknown } | undefined): unknown {
+  const v = (m?.core as { view?: unknown } | undefined)?.view;
+  return typeof v === 'function' ? ((v as () => unknown)() ?? null) : null;
+}
+
 export type MechanicRuntime = {
   /** The data/profiles.json id this mechanic belongs to (the row's `boss`). */
   boss: string;
