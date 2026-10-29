@@ -124,7 +124,7 @@ const STAR_ROWS = STARS as unknown as StarsFile;
 const starById: Record<string, number> = {}, spawnKills: Record<string, number> = {}, kindKills: Record<string, number> = {};   // by spawn id / by kind: this visit's star level, kills of that spawn, kills of that boss kind
 const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 { const bad = validateProgression(PROG_ROWS, PROFILES.profiles.map((p) => p.id), isWeaponId); if (bad.length) throw new Error(`data/progression.json: ${bad.join('; ')}`); }
-const daily = createDaily({ file: DAILY_ROWS as unknown as DailyFile, doc: document, win: window, store: storageOf(), session: sessionOf(window), progression: PROG_ROWS, useSave: progressionOn(PROG_ROWS, search) && !pitbornV1(search), now: () => Date.now(), reload: () => location.reload(), cuts: () => ((globalThis as Record<string, unknown[] | undefined>)[DAILY_ROWS.cutLog]?.length ?? 0), nameOf: (k) => PROFILES.profiles.find((p) => p.id === k)?.name ?? k });
+const daily = createDaily({ file: DAILY_ROWS as unknown as DailyFile, doc: document, win: window, store: storageOf(), session: sessionOf(window), progression: PROG_ROWS, useSave: progressionOn(PROG_ROWS, search) && !pitbornV1(search), now: () => Date.now(), reload: () => location.reload(), cuts: () => ((globalThis as unknown as Record<string, unknown[] | undefined>)[DAILY_ROWS.cutLog]?.length ?? 0), nameOf: (k) => PROFILES.profiles.find((p) => p.id === k)?.name ?? k });
 const zoneFor = (s: string) => daily.zoneFor(plainZoneFor(s));   // the daily's one-boss zone inside the Daily Pit, else the zone as it is
 if (daily.run) starById[daily.run.spawnId] = daily.stars;   // the day's star modifier: the boss stands with its star from the first frame
 // inside the Daily Pit the save is not read for the fight (no escalation, no unlock, no corpse run): the same fight for everyone
@@ -138,7 +138,7 @@ const BASE_TUNE = mergeTune(mergeTune(TUNED, ringTune()), daily.tune);   // + th
 const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
-let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
+let foe: KindFight, opponentId!: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
   const changed = !foe || foe.opponentId !== k.opponentId || foe.kind !== k.kind || (foe.star ?? 0) !== (k.star ?? 0);   // two bosses on one archetype (a ring boss cloned from Arachne) differ by their profile row
   setActiveKind(k.kind, k.star ?? 0);

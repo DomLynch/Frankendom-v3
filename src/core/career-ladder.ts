@@ -1,4 +1,4 @@
-import type { Profile } from './profile.ts';
+type Profile = { career?: { victoryMarks: number } };   // the part of the account profile the ladder reads; the profile module that exported this type is not in V3
 import CAREER_RULES from './career-rules.json' with { type: 'json' };
 
 const LADDER = CAREER_RULES.ladderRule[0]!;   // the ladderRule row of career-rules.json (every default equals the literal it replaced; tests/career-rules.test.ts pins it)

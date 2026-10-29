@@ -38,6 +38,21 @@ jobs:
       - name: No 65 file in dist/
         run: DIST_REQUIRED=1 node --test test/rig-bones.test.mjs
 
+  # Static checks (audit A, 2026-10-29): `tsc --noEmit` over src/ (tsconfig.json, strict) and ESLint (eslint.config.js). Beside `test`, not after it; NOT a required check yet.
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+
   # The PRODUCTION build booted in headless Chromium (scripts/boot-check.mjs): hero and first boss spawned, the hero's sword loaded, the loop alive,
   # zero console errors, zero failed or 404 requests. Two live breaks (the Gargantua freeze, the hero sword missing on live) shipped because nothing booted the BUILT game.
   # Runs beside `test`, not after it. The 375 screenshot is uploaded on every run.

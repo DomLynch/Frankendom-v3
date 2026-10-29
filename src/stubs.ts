@@ -25,7 +25,7 @@ export { arenaFor, buildArena, crowdWave, type Arena, type ArenaTheme } from './
 // sparring.ts: no sparring links in V3
 export const SPARRING_SKILLS = Object.keys(SKILL_MOVE) as SkillId[];   // sparring.ts:23 SPARRING_SKILLS
 export const sparringAsked = (_search: string): boolean => false;   // sparring.ts:36 sparringAsked (?spar=1 is not read)
-export const sparringParam = (_search: string, _carried?: readonly string[]): null => null;   // sparring.ts:27 sparringParam
+export const sparringParam = (_search: string, _carried?: readonly string[]): SparringKit | null => null;   // sparring.ts:27 sparringParam
 export type SparringLevel = 'easy' | 'normal' | 'hard' | 'dummy' | number;   // sparring.ts:17 SparringLevel
 export type SparringKit = { weapon: import('./fight/moves.ts').WeaponId; difficulty: SparringLevel; skill: SkillId | null };   // sparring.ts:24 SparringKit
 // ladder.ts, lessons.ts: one fight, no ladder, no scripted first loss

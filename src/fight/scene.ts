@@ -728,7 +728,7 @@ export function createScene(
     });
   }
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
-  let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef }[] = [], frameWiden = 1;
+  let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef; star?: number }[] = [], frameWiden = 1;
   let heldMech: BodyMechanic | null = null, heldPhases: readonly string[] | undefined;   // the boss mechanic of the spawn the sim holds (holdBody) and the phases list last handed to the ragdoll (it is told only when the list is a new one)
   const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
   let foeFadeTick = 0;
