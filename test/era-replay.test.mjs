@@ -21,7 +21,7 @@ import { knockRoundFor, setKnockRound } from '../src/fight/knock-round.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const FIGHT = read('../data/fight.json'), FEEL_SIM = read('../data/feel-sim.json'), FEEL_DEFAULTS = read('../data/feel-defaults.json');
-const foeId = FIGHT.opponent, opponent = OPPONENTS[foeId], profile = profileAt(opponent, FIGHT.level);
+const foeId = FIGHT.opponentV1.opponent, opponent = OPPONENTS[foeId], profile = profileAt(opponent, FIGHT.level);
 
 // The four long-standing flags, each turned on from the page's own rows (what src/client/main.ts does with an empty search).
 const SETTERS = {
