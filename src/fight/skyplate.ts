@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import STAGE from '../../data/stage.json' with { type: 'json' };
 
-export type PlateRow = typeof STAGE.skyline.plate;
+type PlateRow = typeof STAGE.skyline.plate;
 
 /** The plate is on: the row is on and the link does not ask for the old strip (?skyplate=v1). */
 export function plateOn(search: string, row: PlateRow): boolean {

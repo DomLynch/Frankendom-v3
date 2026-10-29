@@ -13,7 +13,7 @@
 import * as THREE from 'three';
 import STAGE from '../../data/stage.json' with { type: 'json' };
 
-export type AnimRow = typeof STAGE.skyline.plate.anim;
+type AnimRow = typeof STAGE.skyline.plate.anim;
 export const SKY_ANIM: AnimRow = STAGE.skyline.plate.anim;
 
 /** The motion is on: the row is on and the link does not say ?skyanim=off. (The layers composite either way.) */

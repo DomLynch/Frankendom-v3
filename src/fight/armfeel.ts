@@ -10,7 +10,6 @@ import { CONTACTS, frameMs } from './hit-stop-rows.ts';
 import { HEAVY_HIT } from '../hit-stop-rules.ts';   // the heavy-hit stop ms: one row, Web's hit-stop-rules.json
 
 export type Feel = 'high' | 'low' | 'off';
-export const FEELS: readonly Feel[] = ['high', 'low', 'off'];
 // On for everyone at High (Dom 2026-10-06: "likes armfeel"); `?feel=low|off` (and `?look=armfeel&feel=...`, the look test's old links) still choose, and reduced motion starts at Low
 // as the prototype does. `off` is the game as it was before this.
 export function armfeelFrom(search: string, reducedMotion = false): Feel {
@@ -19,8 +18,7 @@ export function armfeelFrom(search: string, reducedMotion = false): Feel {
 }
 
 // The handoff's numbers (armfeel-defs.json rows). Low: energy 0.4, no holds. Off: nothing added.
-export { ARMFEEL, GRAVITY };
-export const energyOf = (feel: Feel): number => (feel === 'high' ? 1 : feel === 'low' ? ARMFEEL.lowEnergy : 0);
+const energyOf = (feel: Feel): number => (feel === 'high' ? 1 : feel === 'low' ? ARMFEEL.lowEnergy : 0);
 
 // The heaviest stop a hit gets today (main.ts HEAVY_HIT 90 ms + hit-impact.ts full tier 5 frames): no armfeel hold may take a frame past it.
 export const FULL_TIER_STOP_MS = HEAVY_HIT + frameMs(CONTACTS.hitHeavy);   // the heavy hit's stop (hit-stop-rules.json) plus its impact frames, the same expression it was written as
@@ -28,12 +26,6 @@ export const FULL_TIER_STOP_MS = HEAVY_HIT + frameMs(CONTACTS.hitHeavy);   // th
 // at least 100 ms (main.ts HIT_STOP 50 ms + the half tier's 3 frames), so the extra milliseconds this returns are 0 on every real hit, and a light hit
 // is not made to stutter by a second freeze stacked on the first (Dom 2026-10-06: "a bit more nauseous"; measured, the old top-up made a light hit
 // freeze 140 ms against 100). Never past the full-tier stop either. High only.
-export function weaponHoldMs(feel: Feel, stopMs: number, events: readonly CombatEvent[], tier: 'half' | 'full' | null): number {
-  if (feel !== 'high' || stopMs <= 0 || !tier) return 0;
-  const floor = events.some((e) => e.type === 'Killed') ? ARMFEEL.weaponHoldMs.kill : ARMFEEL.weaponHoldMs[tier];
-  return Math.max(0, Math.min(floor, FULL_TIER_STOP_MS) - stopMs);
-}
-
 // How much of the flinch each fighter shows. The hero stands 4.5 m from the camera and every hit on him moves the biggest thing on the screen: at the
 // handoff's full size his head swept 50 px of a 375 px screen (his feet 35 px), the sway Dom felt as nausea. He keeps a quarter of it (9 px). The
 // opponent is 7 m away and moves along the view axis, so his flinch is turned to the side the blow arrives from (scene.ts) to be seen at all.
@@ -54,7 +46,7 @@ export function tickParticle(p: Particle, dt: number): boolean {
 
 // One victim's flinch: a lean about the pivot and a nudge along the blow, both scaled by an energy that starts at 1 per landed blow and decays
 // exponentially after a short hold. `update` returns the pose of the visual pivot for this frame.
-export type Pose = { lean: number; dx: number; dz: number };
+type Pose = { lean: number; dx: number; dz: number };
 export class Flinch {
   private energy = 0; private hold = 0; private kill = false; private dirX = 0; private dirZ = 0;
   feel: Feel;

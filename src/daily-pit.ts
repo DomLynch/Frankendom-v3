@@ -7,8 +7,8 @@ import type { TuneMap } from './tune.ts';
 import type { ZoneRow } from './zone/zone-rows.ts';
 import { checkDailyPit } from './sim/validate.js';
 
-export type DailyModifier = { id: string; name: string; about: string; tune: Readonly<Partial<Record<'health' | 'damage' | 'speed', number>>>; stars: number };
-export type DailyScoreRows = { base: number; perSecond: number; perDamage: number; perPart: number; min: number; max: number; fields: readonly ('time' | 'damage' | 'parts')[] };
+type DailyModifier = { id: string; name: string; about: string; tune: Readonly<Partial<Record<'health' | 'damage' | 'speed', number>>>; stars: number };
+type DailyScoreRows = { base: number; perSecond: number; perDamage: number; perPart: number; min: number; max: number; fields: readonly ('time' | 'damage' | 'parts')[] };
 export type DailyFile = {
   salt: string; attemptsPerDay: number; modeKey: string; event: string; cutLog: string; spawnId: string; respawnSeconds: number; resultDelaySeconds: { won: number; lost: number };
   bosses: readonly string[]; modifiers: readonly DailyModifier[]; score: DailyScoreRows;
@@ -16,7 +16,7 @@ export type DailyFile = {
   later: readonly { id: string; why: string }[];
 };
 /** One finished attempt: what the result screen shows and the save keeps. */
-export type DailyRow = { score: number; timeSeconds: number; damage: number; parts: number; won: boolean; boss: string; modifier: string };
+type DailyRow = { score: number; timeSeconds: number; damage: number; parts: number; won: boolean; boss: string; modifier: string };
 /** The `daily` field of the progression save: today's attempts and best, and the best score ever. */
 export type DailyRecord = { date: string; attempts: number; best: DailyRow | null; last: DailyRow | null; bestEver: number };
 /** The day's fight: the boss, the modifier and what the page lays over the shipped game. */
@@ -70,7 +70,7 @@ export function finishAttempt(rec: DailyRecord | undefined, date: string, row: D
 
 // ---- the tracker: frames in, one result out ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-export type Phase = 'idle' | 'fighting' | 'won' | 'lost' | 'done';
+type Phase = 'idle' | 'fighting' | 'won' | 'lost' | 'done';
 export type Tracker = { phase: Phase; time: number; damage: number; lastHealth: number | null; cutsAtStart: number; wait: number };
 /** One frame of the page: the step in seconds, whether the boss is engaged, the hero's health, whether he won / fell, and the length of the cut log. */
 export type Frame = { dt: number; engaged: boolean; heroHealth: number; won: boolean; lost: boolean; cuts: number };

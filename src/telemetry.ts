@@ -4,7 +4,7 @@
 // Identity: a random id kept in localStorage (try/catch; in memory when storage is refused) and a random id per visit. No IP, no cookie, no player text. The existing error seam (src/stubs.ts captureException) feeds js_error: reuse, not a second hook.
 import { TELEMETRY, cleanEvent, type TelemetryDefs, type TelemetryEvent } from './telemetry-rows.ts';
 
-export type TelemetryEnv = {
+type TelemetryEnv = {
   search: string; hostname: string; doNotTrack: boolean;
   sha: string | null;   // the deployed build id (null = a dev build: telemetry stays off)
   storage: { getItem(k: string): string | null; setItem(k: string, v: string): void } | null;
@@ -25,7 +25,7 @@ export function offReason(env: Pick<TelemetryEnv, 'search' | 'hostname' | 'doNot
   return null;
 }
 
-export type Telemetry = {
+type Telemetry = {
   readonly on: boolean;
   /** Queue one event (cleaned against the table, rate-limited). Never throws. */
   event(name: string, fields?: Record<string, unknown>): void;

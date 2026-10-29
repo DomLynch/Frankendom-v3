@@ -12,7 +12,7 @@ const BASE = DEFS.base[0]!, WIDE = DEFS.wide[0]!;
 const RAD = Math.PI / 180;   // degrees to radians
 
 /** The CSS of layout A for a page's query string (`?lay=1|3` picks another size variant; anything else is the base's own). */
-export function touchLayoutCss(search: string): string {
+function touchLayoutCss(search: string): string {
   const lay = new URLSearchParams(search).get('lay'), V = DEFS.variants.find((v) => v.id === lay) ?? DEFS.variants.find((v) => v.id === BASE.variant)!;
   // The centre offset (down is +) of a button of diameter d touching the ring at this angle.
   type Size = { ring: number; strike: number; button: number };

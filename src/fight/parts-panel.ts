@@ -4,8 +4,8 @@
 import { slotViews, type PartsFile, type PartsSave, type SlotView } from '../parts.ts';
 
 type Doc = { createElement<K extends keyof HTMLElementTagNameMap>(tag: K): HTMLElementTagNameMap[K]; createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
-export type PartsPanel = { refresh(): void; open(): void; close(): void; isOpen(): boolean; remove(): void };
-export type PanelCtx = {
+type PartsPanel = { refresh(): void; open(): void; close(): void; isOpen(): boolean; remove(): void };
+type PanelCtx = {
   rows: PartsFile;
   get(): PartsSave | null;
   /** The save with part `id` worn (or the slot emptied when `id` is null): the page writes it. */

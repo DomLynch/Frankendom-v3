@@ -8,8 +8,8 @@ import COMMENTATOR from '../data/commentator.json' with { type: 'json' };
 import { checkCommentator } from './sim/validate.js';
 import { hash32 } from './fight/bout-seed.ts';
 
-export type CommentatorEventRow = { about: string; cooldownSeconds: number; probability: number; priority?: boolean; params?: string[]; lines: string[] };
-export type CommentatorFile = {
+type CommentatorEventRow = { about: string; cooldownSeconds: number; probability: number; priority?: boolean; params?: string[]; lines: string[] };
+type CommentatorFile = {
   about: string; enabled: boolean; storageKey: string; seed: string;
   caps: { perSession: number; perMinute: number; gapSeconds: number };
   caption: { seconds: number; fadeMs: number; maxChars: number; topPct: number; maxWidthPct: number; fontPx: number; colour: string; shadow: string; zIndex: number };
@@ -17,15 +17,15 @@ export type CommentatorFile = {
   partNames: Record<string, string>;
   events: Record<string, CommentatorEventRow>;
 };
-export type SayParams = Record<string, string>;
+type SayParams = Record<string, string>;
 /** The sim's events, as far as the commentator reads them (src/fight/duel.ts CombatEvent). */
-export type SimEvent = { type: string; actor: number; target?: number; action?: string };
+type SimEvent = { type: string; actor: number; target?: number; action?: string };
 
 export const ROWS = COMMENTATOR as unknown as CommentatorFile;
 /** A bad row stops the page at load (the same rule as every data file); an empty list = fine. */
 export function validateCommentator(rows: CommentatorFile = ROWS): string[] { return checkCommentator(rows); }
 
-export type Commentator = {
+type Commentator = {
   /** Say event `id` if the caps, the cooldown and the probability allow it: returns the line, or null. `params` fills {name} in the line; a line needing a param the call lacks is not said. */
   say(id: string, params?: SayParams): string | null;
   /** Advance the clock by dt seconds (frame() does this too). */

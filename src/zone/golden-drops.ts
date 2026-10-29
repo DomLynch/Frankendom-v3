@@ -4,9 +4,9 @@
 // (scripts/as-data scans src/zone/): every number, id and line is a row of the table. Nothing here throws at runtime except validateGolden at load; storage is never trusted (cleanGolden).
 import ROWS from '../../data/golden-weapons.json' with { type: 'json' };
 
-export type Tint = { colour: string; emissive: string; emissiveIntensity: number; metalness: number; roughness: number };
+type Tint = { colour: string; emissive: string; emissiveIntensity: number; metalness: number; roughness: number };
 export type GoldenRow = { id: string; name: string; weapon: string; power: string; tell: string; charges: number; damageMul: number; tier: number; tint: Tint };
-export type RoamPoint = { id: string; weapon: string; ring: string; distance: number; angleDeg: number };
+type RoamPoint = { id: string; weapon: string; ring: string; distance: number; angleDeg: number };
 type Range = [number, number];
 export type GoldenRows = {
   version: number; halfTurnDegrees: number;
@@ -27,18 +27,18 @@ export type GoldenRows = {
 export const GOLDEN = ROWS as unknown as GoldenRows;
 
 /** What the hero holds: a row id and the charges left. */
-export type Held = { id: string; charges: number };
+type Held = { id: string; charges: number };
 /** A pickup lying where a kill or a death put it. */
-export type Ground = { id: string; x: number; z: number; charges: number };
+type Ground = { id: string; x: number; z: number; charges: number };
 /** The optional `golden` field of the progression save: what he holds, what lies about, and when each roaming point was last taken (epoch ms). */
 export type GoldenSave = { held: Held | null; ground: Ground[]; taken: Record<string, number> };
 type At = { x: number; z: number };
-export type Rng = () => number;
+type Rng = () => number;
 /** One pickup that can be taken now. `key`: a ground entry's index or a roaming point's id. */
 export type Item = { source: Source; key: string; id: string; x: number; z: number; charges: number };
 export type Source = typeof SOURCE[keyof typeof SOURCE];
 const SOURCE = { ground: 'ground', roaming: 'roaming' } as const;
-export type PickupEvent = { id: string; weapon: string; name: string; charges: number; source: Source; x: number; z: number };
+type PickupEvent = { id: string; weapon: string; name: string; charges: number; source: Source; x: number; z: number };
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
@@ -93,13 +93,13 @@ export function nearest(items: readonly Item[], at: At, reach: number): Item | n
 }
 
 /** A row of tier up to `tier` chosen with `rng`; null when none is usable. */
-export function pickRow(usable: readonly GoldenRow[], tier: number, rng: Rng): GoldenRow | null {
+function pickRow(usable: readonly GoldenRow[], tier: number, rng: Rng): GoldenRow | null {
   const fit = usable.filter((w) => w.tier <= tier);
   return fit.length ? fit[Math.min(fit.length - 1, Math.floor(rng() * fit.length))]! : null;
 }
 
 /** A pickup of `id` lying at `at` with `charges` (the oldest one goes if the ground is full). A new save. */
-export function putGround(save: GoldenSave, rows: GoldenRows, id: string, at: At, charges: number): GoldenSave {
+function putGround(save: GoldenSave, rows: GoldenRows, id: string, at: At, charges: number): GoldenSave {
   const ground = [...save.ground, { id, x: at.x, z: at.z, charges }];
   while (ground.length > rows.drops.maxGround) ground.shift();
   return { ...save, ground };
@@ -179,7 +179,7 @@ export type GoldenUi = {
   line(text: string): void;
   tint(row: GoldenRow | null): void;
 };
-export type GoldenDeps = {
+type GoldenDeps = {
   rows: GoldenRows; drawable: readonly string[]; ui: GoldenUi;
   get(): GoldenSave; put(next: GoldenSave): void;   // the page's save: read, and write back (the page persists)
   now(): number; rng: Rng;

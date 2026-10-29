@@ -9,7 +9,7 @@ type Doc = { createElement(tag: string): HTMLElement; body: HTMLElement; head: H
 type Project = (x: number, y: number, z: number, out: [number, number]) => boolean;
 
 /** Gold on `node`'s meshes (their own materials remembered in `saved`); `row` null puts them back. Returns whether anything changed. */
-export function tintHeld(node: Object3D | undefined, row: GoldenRow | null, saved: Map<Mesh, Material | Material[]>): void {
+function tintHeld(node: Object3D | undefined, row: GoldenRow | null, saved: Map<Mesh, Material | Material[]>): void {
   if (!node) return;
   if (!row) { for (const [mesh, mat] of saved) { mesh.material = mat; delete mesh.userData.golden; } saved.clear(); return; }
   const t = row.tint;

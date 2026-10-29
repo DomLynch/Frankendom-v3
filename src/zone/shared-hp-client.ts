@@ -14,10 +14,10 @@ import CLIENT_RAW from '../../data/zone-client.json' with { type: 'json' };
 import { parseRules, weaponCaps, type Rules } from '../server-model/zone-model.ts';
 
 export const ACT = { lost: 'lost', reengage: 'reengage', dead: 'dead', backoff: 'backoff', wait: 'wait', stop: 'stop', block: 'block' } as const;
-export type Action = (typeof ACT)[keyof typeof ACT];
+type Action = (typeof ACT)[keyof typeof ACT];
 export const ACTIONS: readonly Action[] = Object.values(ACT);
 export const PHASE = { idle: 'idle', engaging: 'engaging', engaged: 'engaged', dead: 'dead', off: 'off' } as const;
-export type Phase = (typeof PHASE)[keyof typeof PHASE];
+type Phase = (typeof PHASE)[keyof typeof PHASE];
 
 export type ClientRows = {
   query: string; path: string; hosts: string[];
@@ -74,19 +74,19 @@ export function parseClientRows(json: unknown, server: Rules): ClientRows {
 
 export const SERVER: Rules = parseRules(SERVER_RAW);
 export const ROWS: ClientRows = parseClientRows(CLIENT_RAW, SERVER);
-export type Caps = Map<string, { maxDamage: number; maxHitsPerS: number }>;
+type Caps = Map<string, { maxDamage: number; maxHitsPerS: number }>;
 export const CAPS: Caps = weaponCaps(SERVER);
 
 // ---- the wire shapes (docs/ZONE-CLIENT-CONTRACT.md) ---------------------------------------------------------------------------------------------------------------------------------------
 
 /** A whole call that failed: kind is offline or timeout (no answer), or status (an HTTP error); code is the SQLSTATE / O-code the writer relays when a SQL function raised. */
 export type TransportError = { kind: string; status?: number; code?: string; message?: string };
-export type EngageOk = { token: string; instance: string; layer: number; generation: number; hp: number; maxHp: number; expiresAt?: unknown };
-export type Refused = { refused: string; respawnAt?: unknown };
-export type HitRowOut = { token: string; weapon: string; claimed: number; hits: number; layer: number };
-export type Slot = { token?: string; error?: string; message?: string; refused?: string; respawnAt?: unknown; applied?: number; hp?: number; maxHp?: number; killed?: boolean };
-export type View = { instance: string; layer?: number; alive: boolean; hp: number; maxHp: number; respawnAt?: unknown; generation: number };
-export type KillAnswer = { state: string; paid?: boolean; reason?: string; sharePct?: number; payShare?: number };
+type EngageOk = { token: string; instance: string; layer: number; generation: number; hp: number; maxHp: number; expiresAt?: unknown };
+type Refused = { refused: string; respawnAt?: unknown };
+type HitRowOut = { token: string; weapon: string; claimed: number; hits: number; layer: number };
+type Slot = { token?: string; error?: string; message?: string; refused?: string; respawnAt?: unknown; applied?: number; hp?: number; maxHp?: number; killed?: boolean };
+type View = { instance: string; layer?: number; alive: boolean; hp: number; maxHp: number; respawnAt?: unknown; generation: number };
+type KillAnswer = { state: string; paid?: boolean; reason?: string; sharePct?: number; payShare?: number };
 export type Transport = {
   engage(q: { instance: string; layer: number }): Promise<EngageOk | Refused>;
   touch(q: { token: string }): Promise<unknown>;
@@ -96,11 +96,11 @@ export type Transport = {
 };
 
 /** The sim's CombatEvent, the few fields the claim reads. */
-export type SimEvent = { type: string; actor?: number; target?: number; damage?: number; weapon?: string };
+type SimEvent = { type: string; actor?: number; target?: number; damage?: number; weapon?: string };
 /** The shared bar as the page may draw it. `stale`: the server has not answered for offlineAfter calls in a row (the last known value, not a live one). */
-export type Bar = { instance: string; hp: number; maxHp: number; fraction: number; alive: boolean; generation: number; respawnAt: unknown; stale: boolean };
-export type KillNote = { instance: string; generation: number; state: string | null; paid: boolean | null; reason: string | null; sharePct: number | null; payShare: number | null };
-export type Counters = { sent: number; lost: number; replays: number; clamped: number; dropped: number; refused: number; errors: number; applied: number };
+type Bar = { instance: string; hp: number; maxHp: number; fraction: number; alive: boolean; generation: number; respawnAt: unknown; stale: boolean };
+type KillNote = { instance: string; generation: number; state: string | null; paid: boolean | null; reason: string | null; sharePct: number | null; payShare: number | null };
+type Counters = { sent: number; lost: number; replays: number; clamped: number; dropped: number; refused: number; errors: number; applied: number };
 
 export type Options = {
   transport: Transport;

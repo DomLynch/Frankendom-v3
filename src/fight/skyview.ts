@@ -37,7 +37,7 @@ export function fadeAlpha(depression: number, start: number, end: number): numbe
   return t * t * (3 - 2 * t);
 }
 
-export type FloorFade = {
+type FloorFade = {
   /** Called every frame with the camera's place: the melt is measured from the eye. */
   move(eye: THREE.Vector3): void;
   /** Melts every floor part under `parts` that is not melted yet (the zone's open ground swaps in a longer grid after the scene is built). */

@@ -5,9 +5,9 @@ import { phaseText } from './sandbox-rules.ts';
 // sandbox-mech: wounds, the notice. Dom 2026-10-13 (option B of the wound mockups): the moment a wound row scars a fighter, a message sits on screen for a
 // few seconds ("ARM WOUNDED" and what it costs), then fades; nothing stays after. Text comes from the wound row's optional `label` / `note` columns; a row
 // without a label shows nothing. Presentation only: it reads fighters' `scars`, never the sim's rules.
-export const NOTICE_SECONDS = 2.6;
+const NOTICE_SECONDS = 2.6;
 /** The scar ids a fighter has gained since `seen` (a shorter list than before means a new fight: everything is new again). */
-export const gained = (seen: number, scars: readonly string[] | undefined): { ids: string[]; seen: number } => {
+const gained = (seen: number, scars: readonly string[] | undefined): { ids: string[]; seen: number } => {
   const now = scars ?? [];
   return { ids: now.slice(now.length < seen ? 0 : seen), seen: now.length };
 };
