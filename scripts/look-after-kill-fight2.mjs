@@ -1,9 +1,9 @@
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 // Kill boss 1, then put the walking hero beside boss 2 (the roam body is moved in the page) so boss 2 takes the sim; probe the look thumb in fight 2 as it is, then after running away from boss 2.
 //   node scripts/look-after-kill-fight2.mjs <base url> [query]
-import { chromium } from 'playwright';
 const [base, query = ''] = process.argv.slice(2);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', '--use-angle=metal', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ angle: 'metal' });
+const page = await browser.newPage(phoneOptions());
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 const cdp = await page.context().newCDPSession(page);
 const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([id, x, y]) => ({ id, x, y })) });

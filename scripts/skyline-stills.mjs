@@ -2,13 +2,13 @@
 // the boss so the camera turns); then the same ready and round views in landscape (812x375) and on a desktop window (1280x720), where the horizon is on screen.
 //   node scripts/skyline-stills.mjs <base url> <out dir> [query ...]      ('' = the default page; 'sky=v1' = the flat sky)
 // Headless Chromium; on a Mac it uses Metal, elsewhere SwiftShader. Waits for the strip to land (the row's load delay + fade) before the picture.
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/skyline-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ chromeEnv: null });
 const pause = (page, ms) => page.waitForTimeout(ms);
 const VIEWS = [['phone', 375, 812, 3, true], ['land', 812, 375, 2, true], ['desk', 1280, 720, 1, false]];
 for (const query of queries.length ? queries : ['']) {
@@ -17,7 +17,7 @@ for (const query of queries.length ? queries : ['']) {
     const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: dpr, isMobile: mobile, hasTouch: mobile });
     page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
     await page.goto(`${base}/${query ? `?${query}` : ''}`);
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await waitPlayable(page, { timeout: 180000 });
     await pause(page, 4000);
     await page.screenshot({ path: `${out}/${tag}-${view}-ready.png` });
     if (view === 'phone') {

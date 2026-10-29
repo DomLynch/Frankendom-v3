@@ -6,18 +6,17 @@
 //   <tag>-4-kill       the held boss at 1 health and killed (a kick), the corpse lying, the hero standing over it
 //   <tag>-5-others     the hero has walked on: the other bosses still stand at their spots, the killed one's timer runs on its own
 //   node scripts/zone-stills.mjs <base url> <out dir> <tag> [query]      (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/zone-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const WALK_KEY = process.env.WALK_KEY ?? 'KeyW';
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+const browser = await launchBrowser({ extra: ['--enable-unsafe-swiftshader'] });
 const [VW, VH] = (process.env.VIEW ?? '375x812').split('x').map(Number);   // VIEW=812x375: the phone on its side, a wider look at the bosses (the 375-wide frame holds the hero and one boss)
 const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+collectErrors(page, { echo: true });
 const shot = async (n) => { await page.screenshot({ path: `${out}/${tag}-${n}.png` }); };
 const key = (code, type) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [code, type]);
 const zone = () => page.evaluate(() => ({ zone: globalThis.__v3Zone ?? null, hero: globalThis.__v3Fight ? { x: +globalThis.__v3Fight.fighter.x.toFixed(2), z: +globalThis.__v3Fight.fighter.z.toFixed(2) } : null, foe: globalThis.__v3Fight ? { x: +globalThis.__v3Fight.enemy.x.toFixed(2), z: +globalThis.__v3Fight.enemy.z.toFixed(2) } : null, finish: !!globalThis.__v3Fight?.finish, foeHealth: globalThis.__v3Fight?.health, phase: globalThis.__v3Fight?.duel.fighters.map((f) => f.phase) }));

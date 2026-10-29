@@ -5,20 +5,20 @@
 //   4 storage that throws on every read and write -> the page plays, the kill still lands, no page error
 //   5 a seeded save with Gargantua + Arachne down -> the cleaver in his hand (the shipped Pitborn file)
 //   node scripts/progression-stills.mjs <base url> <out dir>
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, waitPlayable } from './lib/browser.mjs';
 
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/progression-stills.mjs <base url> <out dir>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const KEY = 'frankendom.v3.progress';
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ angle: 'swiftshader', chromeEnv: null });
 const errors = [];
 const open = async (ctx, query = '', tag = 'page') => {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => { errors.push(`${tag}: ${e.message}`); console.error(`${tag}: pageerror ${e.message}`); });
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   await page.waitForTimeout(1500);
   return page;
 };

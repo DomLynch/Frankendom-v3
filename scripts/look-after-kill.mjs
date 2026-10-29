@@ -1,9 +1,9 @@
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 // Look thumb before and after the first kill, 375 wide, real touches (CDP). A right-thumb drag is tried standing (before), then at several ages after the kill; logs yaw, freeShare, engaged.
 //   node scripts/look-after-kill.mjs <base url> [query]
-import { chromium } from 'playwright';
 const [base, query = ''] = process.argv.slice(2);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', '--use-angle=metal', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ angle: 'metal' });
+const page = await browser.newPage(phoneOptions());
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 const cdp = await page.context().newCDPSession(page);
 const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([id, x, y]) => ({ id, x, y })) });

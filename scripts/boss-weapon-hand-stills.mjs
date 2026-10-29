@@ -4,15 +4,15 @@
 //   <out>/<tag>-hand.png        the same instant, the stills' close-up lens (src/fight/camera.ts __v3CamShot, as scripts/finisher-cuts-stills.mjs CAM=) set beside the boss's right hand
 //   node scripts/boss-weapon-hand-stills.mjs <base url> <out dir> <spawn id> <tag> [query]      e.g. ring-3-anime-boy-black-0 ryo opener=off
 //   env: DIST=2.2 (metres short of the spawn), HAND_SIDE=1|-1 (which flank of the boss the close-up stands on), HAND_DIST=0.9 (metres from the hand), HAND_RISE=0.25, HAND_LOOK=0.25 (aim this far above the hand)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, spawnId, tag, query = 'opener=off'] = process.argv.slice(2);
 if (!base || !out || !spawnId || !tag) { console.error('usage: node scripts/boss-weapon-hand-stills.mjs <base url> <out dir> <spawn id> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const num = (k, d) => Number(process.env[k] ?? d);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(2));
 page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') console.error(`${tag}: console ${m.text().slice(0, 200)}`); });
 await page.addInitScript(([side, dist, rise, look]) => {   // the close-up lens: beside the boss's right hand, aimed a little above it (the grip and the blade's root), only while globalThis.__handCam is on
@@ -36,7 +36,7 @@ await page.addInitScript(([side, dist, rise, look]) => {   // the close-up lens:
   };
 }, [num('HAND_SIDE', 1), num('HAND_DIST', 0.9), num('HAND_RISE', 0.25), num('HAND_LOOK', 0.25)]);
 await page.goto(`${base}/?${query}`);
-await page.waitForFunction(() => globalThis.__v3Zone && document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+await waitPlayable(page, { timeout: 180000, zone: true });
 await page.waitForTimeout(1500);
 const spawn = await page.evaluate((id) => globalThis.__v3Zone.spawns.find((s) => s.id === id), spawnId);
 if (!spawn) { console.error(`${tag}: no spawn ${spawnId} in this build (${(await page.evaluate(() => globalThis.__v3Zone.spawns.map((s) => s.id))).join(', ')})`); process.exit(3); }
