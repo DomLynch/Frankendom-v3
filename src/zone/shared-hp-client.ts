@@ -242,11 +242,11 @@ export function createSharedHp(o: Options): SharedHp {
       const unrecoverable = typeof e.code !== 'string' && e.status !== undefined && classed === rows.fallback.transport && ER.stopStatus.some(([lo, hi]) => e.status! >= lo && e.status! <= hi);   // a bare 4xx no table row answered: asking again cannot help
       const action = unrecoverable ? ACT.stop : classed;
       run[action](now, {});
-      if (action === ACT.wait) { if (phase !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs; }   // the zone is not loaded yet: the server DID answer, so it never counts toward the cap (as before engageRetry existed)
+      if (action === ACT.wait) { if ((phase as Phase) !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs; }   // the zone is not loaded yet: the server DID answer, so it never counts toward the cap (as before engageRetry existed)
       else {
       engageFails += 1;
       if (action !== ACT.stop && engageFails >= ER.maxTries) run[ACT.stop](now, {});   // capped: this many lost engages in a row ends the asking
-      else if (action !== ACT.stop && phase !== PHASE.off && engageAt === null) engageAt = now + Math.min(T.engageRetryMs * ER.factor ** (engageFails - 1), ER.maxMs);   // an engage that was lost is asked again, later each time
+      else if (action !== ACT.stop && (phase as Phase) !== PHASE.off && engageAt === null) engageAt = now + Math.min(T.engageRetryMs * ER.factor ** (engageFails - 1), ER.maxMs);   // an engage that was lost is asked again, later each time
       }
     } finally { busy.engage = false; }
   }

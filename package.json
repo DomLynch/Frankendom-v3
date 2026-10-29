@@ -14,15 +14,23 @@
     "presence:smoke": "node server/presence/smoke.ts",
     "check:stubs": "node scripts/check-stubs.mjs",
     "check:as-data": "node scripts/as-data/check.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
     "test": "node --test \"test/**/*.test.mjs\"",
     "gate0": "node --test test/gate0/gate0.test.mjs",
     "gate0:table": "node scripts/gate0-table.mjs",
     "gate0:v3": "node scripts/gate0-v3-golden.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/three": "0.186.0",
     "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
     "meshoptimizer": "1.2.0",
-    "pg": "8.16.3"
+    "pg": "8.16.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
   },
   "dependencies": {
     "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/ca66d642b9c38196456a8f9ee5fbce7c1ebcbb1b",
