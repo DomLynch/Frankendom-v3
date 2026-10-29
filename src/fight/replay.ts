@@ -9,6 +9,8 @@ import { LEVELS, OPPONENTS, opponentAt, profileAt } from './moves.ts';
 import { encodeRecord, type FightRecord } from './record.ts';
 import { underRecord } from './detmath.ts';
 import { groupLayer, withIncoming } from './pack.ts';
+import { underEra } from './era-flags.ts';
+import { PAGE_ERA } from './era-rows.ts';
 import { skillOf } from '../stubs.ts';   // V3: core/loot.ts
 import { specialOf, type SkillId, type SpecialName } from './moves.ts';
 import type { Sheet } from './sheet-rows.ts';
@@ -35,7 +37,11 @@ export function sheetRefusal(record: Pick<FightRecord, 'sheet'>, option?: Sheet 
 export function verifyRecord(record: FightRecord, onTick?: (practice: Practice) => void, opts: VerifyOptions = {}): Verification {
   const refused = sheetRefusal(record, opts.sheet);
   if (refused) return { ok: false, reason: refused, practice: null };   // onTick: called after every stepped tick (src/group-verify.ts reads the damage each stream dealt)
-  return underRecord(record, () => verifyUnder(record, onTick));   // the record's version picks the sim's math (detmath.ts), here and in every replay
+  try {   // audit C: the replay steps under the record's own era flags (knock-sim, special-pace, special-terms, hero-mana), never whatever this process happens to have set; a flag the record names that this build's rows have off is a refusal
+    return underRecord(record, () => underEra(record.era, PAGE_ERA, () => verifyUnder(record, onTick)));   // the record's version picks the sim's math (detmath.ts), here and in every replay
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error), practice: null };
+  }
 }
 function verifyUnder(record: FightRecord, onTick?: (practice: Practice) => void): Verification {
   const opponent = OPPONENTS[record.opponent], profile = opponent && Number.isInteger(record.level) && record.level >= 1 && record.level <= LEVELS ? profileAt(opponent, record.level) : undefined;   // the warden at the record's level, exactly as main.ts steps it

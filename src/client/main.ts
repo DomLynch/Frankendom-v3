@@ -71,6 +71,7 @@ import { createInput } from '../fight/input.ts';
 import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
+import { knockRoundFor, setKnockRound } from '../fight/knock-round.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
 import { toastOver, zoneSoundRows, type ZoneSoundRows } from '../audio/zone-cues.ts';
 import { createKeep } from '../audio/keep.ts';
@@ -162,6 +163,7 @@ rearmWhenLocked((fn) => feedback.onStateChange(fn), audioUnlock.arm, () => feedb
 const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
 const commentator = mountCommentator(document, Object.fromEntries(PROFILES.profiles.flatMap((p) => ((p as { name?: string }).name ? [[p.id, (p as { name?: string }).name!]] : []))));
 setHeroNoMana(heroNoManaFor(FIGHT.heroMana, search));   // V3 (Dom: "remove mana for now"): the hero has no MANA bar and casts free (data/fight.json heroMana); ?mana=v1 = the bar and the mana cost
+setKnockRound(knockRoundFor(FIGHT.knockRound, search));   // V3 (audit C): a glancing blow's fractional knockback shoves rounded whole steps, not ceil'd (data/fight.json knockRound); ?knock=v1 = V1's shove
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
