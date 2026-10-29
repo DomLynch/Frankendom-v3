@@ -156,6 +156,14 @@
       "Fresh {partName}, still slightly warm.",
       "Bold choice, the {partName}. Very you.",
       "The {partName} suits you. Sadly."
+    ] },
+    "limb_loss": { "about": "a boss's armour fails and a limb comes off mid-fight (src/fight/mechanics, data/mechanics.json reginald-limb-loss; params: limb); always said, it is the tell", "cooldownSeconds": 0, "probability": 1, "priority": true, "params": ["limb"], "lines": [
+      "Sir Reginald's {limb} just left the group chat.",
+      "There goes the {limb}. He did not use it much.",
+      "The {limb} is gone. Armour was a suggestion.",
+      "That {limb} was on a short lease.",
+      "Down a {limb}. The knight is rethinking his plan.",
+      "The {limb} fell off. Nobody told the knight."
     ] }
   }
 }

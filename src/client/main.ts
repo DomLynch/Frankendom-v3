@@ -189,7 +189,7 @@ let practice = fresh(), frameEvents: CombatEvent[] = [];
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
-let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0;
+let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0, tellStop = 0;   // tellStop: a boss mechanic's freeze (ms) for the tick it fired on (Sir Reginald's limb fails)
 const locked = true;
 let assetsReady = false, graphicsLost = false;
 const step = () => 1 / FIGHT.tempoHz;
@@ -508,7 +508,7 @@ function zoneStep(dt: number) {
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
         attackers = attackers.filter((a) => !gone.includes(a.index));
-        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai));   // each attacker fights as its own kind, its own brain
+        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai, ((m) => (m?.pure ? m : null))(mechanics?.of(spawns[i]!.kind))));   // each attacker fights as its own kind, its own brain, and wears a stateless signature mechanic (Sir Reginald's limbs; Nan's holds state, so only the held boss runs it)
       }
     }
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
@@ -623,6 +623,8 @@ function frame(now: number) {
       const pre = shaping?.pre?.(prior.duel, duelIntent);   // a signature move that acts on the hero's side first (the Envoy's latch): the duel and the intent the tick runs on
       practice = pre ? stepPractice(pre.duel === prior.duel ? prior : { ...prior, duel: pre.duel }, pre.intent, aiProfile, shaping?.layer) : stepPractice(prior, duelIntent, aiProfile, shaping?.layer);
       if (shaping?.settle) { const moved = shaping.settle(prior.duel, practice.duel); if (moved !== practice.duel) practice = { ...practice, duel: moved, fighter: moved.fighters[0].body, enemy: moved.fighters[1].body }; }   // the lunge and the drag move bodies after the tick
+      const tell = mech?.tell ? mech.tell(prior, practice) : null;   // Sir Reginald's armour fails: the caption (priority line) and a short freeze, the limb itself is drawn by the scene's view
+      if (tell) { commentator.say(tell.event, tell.params); tellStop = tell.hitStopMs; }
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
@@ -664,7 +666,7 @@ function frame(now: number) {
       if (mechanics) practice = mechanics.tick(practice, spawns[current]!.kind, engaged && !walkBack, step());   // the engaged boss's signature move (data/mechanics.json): its hits land on the hero's health, it wipes itself when the fight ends
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
-      const stop = stopFor(practice.events);
+      const stop = Math.max(stopFor(practice.events), tellStop); tellStop = 0;
       if (stop) { hitStop = stop; accumulator = 0; previous = state; }
     }
   } else { accumulator = 0; previous = state; }
