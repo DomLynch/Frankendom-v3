@@ -161,13 +161,12 @@ export function loadRegistry(tables: readonly TableData[], external: Readonly<Re
 
 // Rows of a manifest out of its parsed rows file (the gate and the runtime both use this, so they read a file the same way).
 // A manifest entry straight from a parsed *.manifest.json is accepted as-is: JSON types its field specs as `string`, never the FieldType union, so a typed Manifest parameter forced every caller to cast.
-// The overload is a declaration only (no runtime code); the registry's own gate (loadRegistry) is what checks the manifest and the rows.
-export function tableFromFile(manifest: object, parsed: unknown, file?: string): TableData;
-export function tableFromFile(manifest: Manifest, parsed: unknown, file?: string): TableData {
+// The casts below are type-only (no runtime code); the registry's own gate (loadRegistry) is what checks the manifest and the rows.
+export function tableFromFile(manifest: object, parsed: unknown, file?: string): TableData {
   let cur: unknown = parsed;
-  if (manifest.at) for (const seg of manifest.at.split('.')) cur = isObj(cur) ? cur[seg] : undefined;
-  const rows = manifest.keyed ? (isObj(cur) ? keyedRows(cur, manifest.key) : []) : Array.isArray(cur) ? (cur as Record<string, unknown>[]) : [];
-  return { manifest, rows, file: file ?? manifest.file ?? manifest.table };
+  if ((manifest as Manifest).at) for (const seg of (manifest as Manifest).at!.split('.')) cur = isObj(cur) ? cur[seg] : undefined;
+  const rows = (manifest as Manifest).keyed ? (isObj(cur) ? keyedRows(cur, (manifest as Manifest).key) : []) : Array.isArray(cur) ? (cur as Record<string, unknown>[]) : [];
+  return { manifest: manifest as Manifest, rows, file: file ?? (manifest as Manifest).file ?? (manifest as Manifest).table };
 }
 
 // Every table of a set of manifests, plain ones from their parsed rows files and derived ones (manifest.from) from their source table.

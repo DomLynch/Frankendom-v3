@@ -48,7 +48,7 @@ export function ccRows(kinds: readonly CcKind[], tiers: readonly (Band & { id: s
   const by = <T extends { id: string }>(xs: readonly T[]) => Object.fromEntries(xs.map((x) => [x.id, x])) as Record<string, T>;
   return { kinds: by(kinds), tiers: by(tiers), resists: by(resists) };
 }
-export const CC_LADDER: CcRows = ccRows(('cckind'.rows as readonly CcKind[]), ('cctier'.rows as readonly (Band & { immune: CcFamily[] })[]), ('ccresist'.rows as readonly (Band & { keep: number })[]));
+export const CC_LADDER: CcRows = ccRows(rowsOf<CcKind>('cckind'), rowsOf<Band & { immune: CcFamily[] }>('cctier'), rowsOf<Band & { keep: number }>('ccresist'));
 
 // The career rank of a ladder level (five levels a rank, career.ts: levels 36 / 41 / 46 are ranks 8 / 9 / 10), 1-10, and the guard its band gives a creature of that level; a rank no band covers has none.
 const MAX_RANK = simBound('career.maxRank');
