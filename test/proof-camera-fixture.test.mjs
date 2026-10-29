@@ -14,6 +14,7 @@ const close = (a, b, path = '') => {
   assert.deepEqual(a, b, path);
 };
 const keys = Object.keys(GOLDEN);
-test(`proof: the fixture has ${keys.length} keys, ${keys.filter((k) => k.startsWith('zone-chase')).length} of them zone-chase-*`, () => assert.ok(keys.some((k) => k.startsWith('zone-chase'))));
+const chase = Object.keys(GOLDEN.rigs).filter((k) => k.startsWith('zone-chase'));
+test(`proof: the fixture's rigs key holds the 4 zone-chase-* rigs (${chase.join(', ')}); the rigs test below covers them to 1e-12`, () => assert.equal(chase.length, 4));
 for (const key of keys) test(`pre-change code reproduces fixture key: ${key}`, () => close(NOW[key], GOLDEN[key], key));
 test('the probe covers what the fixture covers, nothing more', () => assert.deepEqual(Object.keys(NOW), keys));
