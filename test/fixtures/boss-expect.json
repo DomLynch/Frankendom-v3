@@ -16,5 +16,9 @@
     "anime-boy-black": { "body": "anime-boy-black-106", "row": "ryo-sword", "rowProfile": "anime-boy-black", "weapon": "cleaver", "equip": "sword", "offhand": null }
   },
   "pending": ["hunter"],
+  "weaponRowExceptions": {
+    "pitborn": "the Minotaur keeps the Centurion's gladius and scutum (Dom ruling); no boss-weapons row",
+    "parasite": "no boss-weapons row yet: fights with its archetype's V1 weapon"
+  },
   "hero": { "weapon": "longsword", "weapons": ["longsword"], "guard": "blade" }
 }
