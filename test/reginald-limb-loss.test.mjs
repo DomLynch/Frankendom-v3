@@ -103,7 +103,7 @@ test('a real duel on the sim (layer, then settle, as the page and the attackers 
     let p = withHealth(fresh(), share);
     const log = [];
     for (let t = 0; t < 1500; t++) {
-      p = stepShaped(p, idleIntent(), PROFILES.normal, mech);
+      p = stepShaped(p, p.duel.fighters[0].phase === 'sheathed' ? { ...idleIntent(), action: 'light' } : idleIntent(), PROFILES.normal, mech);   // a press draws (auto-start.ts) while the hero is sheathed, then he stands
       for (const e of p.duel.events) if (e.actor === 1 && e.type === 'AttackStarted') log.push(e.move);
       if (p.duel.fighters[0].health <= 0) break;
     }
