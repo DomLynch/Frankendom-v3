@@ -3,7 +3,7 @@
 // input except that the sheet and button are interactive HUD (#frank-parts, touch-router.ts), so a tap on them never turns the camera. The rows come from src/parts.ts slotViews (pure, tested).
 import { slotViews, type PartsFile, type PartsSave, type SlotView } from '../parts.ts';
 
-type Doc = { createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
+type Doc = { createElement<K extends keyof HTMLElementTagNameMap>(tag: K): HTMLElementTagNameMap[K]; createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
 export type PartsPanel = { refresh(): void; open(): void; close(): void; isOpen(): boolean; remove(): void };
 export type PanelCtx = {
   rows: PartsFile;

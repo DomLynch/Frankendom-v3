@@ -60,7 +60,7 @@ export function withDirectionalHeavies<M extends Record<string, MoveDef>, P exte
     const from = moves[d.from]!, look = paths[d.blade]!, windup = Math.round(from.windup * d.windupFactor);
     const chained = from.chained ? { ...from.chained, windup: Math.round(from.chained.windup * d.windupFactor) } : null;
     const chainLook = from.chainPath ? paths[from.chainPath]! : null, chainPath = chained && chainLook ? chainPathOf(d) : null;
-    addMoves[d.id] = checkMove({ ...from, id: d.id, direction: d.direction, path: d.id, chainPath, chained, chain: from.chain, windup });
+    addMoves[d.id] = checkMove({ ...from, id: d.id, direction: d.direction, path: d.id as string as PathId, chainPath, chained, chain: from.chain, windup });
     addPaths[d.id] = { clip: look.clip, source: look.source, windup, active: from.active, recovery: from.recovery, blade: d.blade };
     if (chainPath) addPaths[chainPath] = { clip: look.clip, source: look.source, windup: Math.round(chainLook!.windup * d.windupFactor), active: chainLook!.active, recovery: chainLook!.recovery, blade: d.blade };
   }

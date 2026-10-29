@@ -229,7 +229,7 @@ export function createSharedHp(o: Options): SharedHp {
       if (phase === PHASE.engaging) setPhase(before);
       const action = classify(err);
       run[action](now, {});
-      if (action !== ACT.stop && phase !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs;   // an engage that was lost is asked again
+      if (action !== ACT.stop && (phase as Phase) !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs;   // an engage that was lost is asked again
     } finally { busy.engage = false; }
   }
 

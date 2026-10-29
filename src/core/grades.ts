@@ -7,7 +7,7 @@
 // Pure data — no three, no loader. The runtime reads `gradeFor(tier, material)` and writes the factors onto the piece's own material.
 import { TITLES, rankFor } from './career-ladder.ts';
 import { DEFINITIONS } from './contracts/definitions.ts';
-import type { LootId } from './loot.ts';
+type LootId = string;   // a loot piece id, `<opponent>.<slot>` (src/core/loot-pieces.json); the loot module that exported this type is not in V3
 import type { OpponentId } from '../roster.ts';
 
 // The ladder is the CAREER ladder: a tier and a rank are the same word (owner via Strategy, 2026-09-22), so the journal can say

@@ -6,7 +6,7 @@
 import ROWS from '../../../data/mechanics.json' with { type: 'json' };
 import { movesOf, type Fighter } from '../duel.ts';
 import { statDown, statUp } from '../sheet-rows.ts';
-import { RULES } from '../moves.ts';
+import { RULES, type MoveId } from '../moves.ts';
 import { M } from '../detmath.ts';
 import type { Practice } from '../combat.ts';
 import { createGourdBombsView, type BombView } from './gourd-bombs-view.ts';
@@ -110,7 +110,7 @@ export function createGourdBombsRuntime(row: GourdRow = GOURD): MechanicRuntime 
       if (ctx.active) {
         ctx.bossX = boss.body.x; ctx.bossZ = boss.body.z; ctx.bossShare = boss.maxHealth > 0 ? boss.health / boss.maxHealth : 1;
         ctx.heroX = hero.body.x; ctx.heroZ = hero.body.z; ctx.heroRoll = rolling(hero); ctx.heroGuard = hero.phase === 'guard'; ctx.heroHurt = hero.phase === 'hurt';
-        ctx.damage = statDown(hero.sheet, 'armour', statUp(boss.sheet, 'attack', movesOf(boss)[row.damageMove]!.damage * row.damageShare));
+        ctx.damage = statDown(hero.sheet, 'armour', statUp(boss.sheet, 'attack', movesOf(boss)[row.damageMove as MoveId]!.damage * row.damageShare));
       }
       const o = core.tick(dt, ctx);
       if (!(o.damage > 0) && o.shoveX === 0 && o.shoveZ === 0) return practice;
