@@ -5,28 +5,27 @@
 //   COST=1     no stills, no fake clock: the fight plays in real time for COST_S seconds with the part at 0; the module's own per-frame cost and the ragdoll's are printed
 //   node scripts/limbs-stills.mjs <base url> <out dir> [query ...]     (default queries: "rules=m4" and "rules=m4&feel=limbs"; a Mac uses Metal: CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 //   playwright is not a repo dependency: npm i --no-save playwright@1.62.1
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/limbs-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, LIMB = process.env.LIMB ?? 'leg', PART = { leg: 'leg_left', arm: 'arm_right' }[LIMB];
 const QUIET = Number(process.env.QUIET ?? 0), AT = Number(process.env.AT ?? 240), SECONDS = Number(process.env.SECS ?? process.env.SECONDS ?? 3)   /* SECS from a bash script: SECONDS is bash's own clock (and an integer: `export SECONDS=2.5` is an error there) */, EVERY = Number(process.env.EVERY ?? 3), GAP = Number(process.env.GAP ?? 45);
 const FROM = Number(process.env.FROM ?? 0), EXT = process.env.FMT === 'jpg' ? 'jpg' : 'png', SHOT = { timeout: 180000, ...(EXT === 'jpg' ? { type: 'jpeg', quality: 70 } : {}) };   // software GL on a job can take over the 30 s default for one shot
 const MIX =[['KeyF'], ['KeyG'], ['KeyD', 'KeyF'], ['KeyG'], ['KeyA', 'KeyF'], ['KeyF']];
 const open = async () => {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DPR ?? 2), isMobile: true, hasTouch: true });
-  page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+  const page = await browser.newPage(phoneOptions(Number(process.env.DPR ?? 2)));
+  collectErrors(page, { echo: true });
   return page;
 };
 const press = async (page, codes) => { for (const c of codes) await page.keyboard.down(c); for (const c of codes.slice().reverse()) await page.keyboard.up(c); };
 const keep = (page) => page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; h.stamina = h.maxStamina; f.health = Math.max(f.health, Math.ceil(f.maxHealth / 2)); });
 const ready = async (page, query) => {
   await page.goto(`${base}/${query ? `?${query}` : ''}`, { timeout: 180000 });
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 240000, polling: 'raf' });
 };
 
 if (process.env.COST) {

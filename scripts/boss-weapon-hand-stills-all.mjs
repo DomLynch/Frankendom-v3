@@ -7,11 +7,8 @@
 // archetype's boss: executioner = Gargantua, shieldmaiden = Arachne). A row with no spawn is reported "skipped: no spawn", never a failure. For each boss, as scripts/boss-weapon-hand-stills.mjs does:
 //   <out>/<tag>-375-ready.png  fight camera, 375 wide, ready pose      <out>/<tag>-hand.png  close-up on the right hand      <out>/<tag>-weapon.png  the whole weapon
 // and <out>/ALL-contact.png, a labelled grid of the ready stills. env: ONLY=ryo,gargantua (tags to run), DIST=2.2, HAND_SIDE=1|-1, HAND_DIST=1.4, HAND_RISE=0.25, HAND_LOOK=0.25, CHROME=<path>
-import { chromium } from 'playwright';
-import { createServer } from 'node:http';
-import { mkdirSync, readFileSync, existsSync, statSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { extname, join, normalize, resolve } from 'node:path';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, serveDist, waitPlayable } from './lib/browser.mjs';
 
 const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h') || !args.length) { console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').filter((l) => l.startsWith('//')).map((l) => l.slice(3)).join('\n')); process.exit(args.length ? 0 : 2); }
@@ -19,27 +16,15 @@ const [target, out = 'docs/stills/boss-weapons', query = 'opener=off'] = args;
 mkdirSync(out, { recursive: true });
 const t0 = Date.now();
 const num = (k, d) => Number(process.env[k] ?? d);
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.glb': 'model/gltf-binary', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.txt': 'text/plain', '.css': 'text/css' };
 let server = null, base = target;
 if (!/^https?:\/\//.test(target)) {   // a built dist directory: serve it here (a path with no extension falls back to index.html; a .gz twin goes out gzip-encoded)
-  const dist = resolve(target);
-  if (!existsSync(join(dist, 'index.html')) || !statSync(dist).isDirectory()) { console.error(`${target}: not a built dist (no index.html)`); process.exit(2); }
-  server = createServer(async (req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '');
-    let file = join(dist, path.endsWith('/') ? path + 'index.html' : path), body = await readFile(file).catch(() => null);
-    if (!body && !extname(path)) { file = join(dist, 'index.html'); body = await readFile(file); }
-    if (!body) { res.writeHead(404); res.end(); return; }
-    const gz = /\bgzip\b/.test(req.headers['accept-encoding'] || '') ? await readFile(file + '.gz').catch(() => null) : null;
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream', 'cache-control': 'no-cache', ...(gz ? { 'content-encoding': 'gzip' } : {}) });
-    res.end(gz ?? body);
-  });
-  await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
-  base = `http://127.0.0.1:${server.address().port}`;
+  try { server = await serveDist(target); } catch (e) { console.error(e.message); process.exit(2); }
+  base = server.url;
 }
 const rows = JSON.parse(readFileSync(new URL('../data/boss-weapons.json', import.meta.url), 'utf8')).rows;
 const ARCHETYPE_TAG = { executioner: 'gargantua', shieldmaiden: 'arachne' }, ARCHETYPE_SPAWN = { executioner: 'yard-pitborn', shieldmaiden: 'pit-pitborn-east' };   // the zone's own boss spawn ids (data/zones/zone1.row.json); other archetypes are reached through a profile row
 const only = process.env.ONLY?.split(',');
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 
 const initCam = ([side, dist, rise, look]) => {   // the close-up lens: beside the boss's right hand, only while globalThis.__handCam is on
   const st = { hand: null };
@@ -64,13 +49,13 @@ const initCam = ([side, dist, rise, look]) => {   // the close-up lens: beside t
 };
 
 async function shoot(tag, pickSpawn) {   // one boss on a fresh page of the same browser; returns { spawnId, weapon } or { skipped }
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   try {
     page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
     page.on('console', (m) => { if (/^bodyScale/.test(m.text()) && !globalThis.__scaleSeen?.has(tag + m.text())) console.log(`${tag}: ${m.text()}`); });
     await page.addInitScript(initCam, [num('HAND_SIDE', 1), num('HAND_DIST', 1.4), num('HAND_RISE', 0.25), num('HAND_LOOK', 0.25)]);
     await page.goto(`${base}/?${query}`);
-    await page.waitForFunction(() => globalThis.__v3Zone && document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await waitPlayable(page, { timeout: 180000, zone: true });
     await page.waitForTimeout(1500);
     const all = await page.evaluate(() => globalThis.__v3Zone.spawns.map((s) => ({ id: s.id, kind: s.kind, x: s.x, z: s.z })));
     const spawn = pickSpawn(all);

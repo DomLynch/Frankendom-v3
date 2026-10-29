@@ -1,0 +1,10 @@
+{
+  "about": "The V3-era module flags stepDuel reads as module globals, which a fight record stamps at fight start (era-flags.ts) so a headless replay steps the fight the live page played (audit C, 2026-10-29: knock-sim, special-pace, special-terms and hero-mana were read by the sim but never stamped, so a replay ran them OFF; knock-round is the audit's own shove fix, born stamped). `bit` is the flag's place in the record's era byte: append only, a bit never changes meaning, at most 8. An absent stamp = every flag off = the headless run Gate 0 steps. The ids are the flags' own names; era-flags.ts holds one accessor per id and refuses to load if the rows and the accessors disagree.",
+  "flags": [
+    { "id": "knock-sim", "bit": 0, "module": "src/fight/knock-sim.ts" },
+    { "id": "special-pace", "bit": 1, "module": "src/fight/special-pace.ts" },
+    { "id": "special-terms", "bit": 2, "module": "src/fight/special-terms.ts" },
+    { "id": "hero-mana", "bit": 3, "module": "src/fight/hero-mana.ts" },
+    { "id": "knock-round", "bit": 4, "module": "src/fight/knock-round.ts" }
+  ]
+}

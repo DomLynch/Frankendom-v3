@@ -5,17 +5,16 @@
 //   <tag>-3-tap      a touch tap on the corpse's PART (default armLeft) after walking away: the part is cut
 //   <tag>-4-respawn  (RESPAWN=1) the wait for the spawn's respawnSeconds: the fresh foe stands, the dead body is left beside him
 //   node scripts/roam-stills.mjs <base url> <out dir> <tag> [query]      (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/roam-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const WALK_S = Number(process.env.WALK_S ?? 2.5), PART = process.env.PART ?? 'armLeft', KEY = process.env.KEY ?? 'KeyA';
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 2), isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 2)));
+collectErrors(page, { echo: true });
 const shot = async (n) => { await page.screenshot({ path: `${out}/${tag}-${n}.png` }); };
 const key = (code, type) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [code, type]);
 const hero = () => page.evaluate(() => ({ fight: globalThis.__v3Fight?.fighter, foe: globalThis.__v3Fight?.enemy, roam: globalThis.__v3Roam ?? null, finish: !!globalThis.__v3Fight?.finish, ragdoll: globalThis.__ragdoll?.state, cuts: globalThis.__ragdoll?.cuts }));

@@ -76,7 +76,7 @@ test('Gate 0 and the headless sim never see a default: the sim files import no r
   assert.equal(KNOCK_SIM, null, 'the sim knockdown is null until main.ts sets it');
   const dir = new URL('../src/fight/', import.meta.url), srcs = readdirSync(dir).filter((f) => f.endsWith('.ts'));
   const readers = srcs.filter((f) => /from '[^']*feel-defaults\.json'/.test(readFileSync(new URL(f, dir), 'utf8')));
-  assert.deepEqual(readers, ['ragdoll.ts'], 'only the presentation ragdoll imports the defaults row inside src/fight');
+  assert.deepEqual(readers, ['era-rows.ts', 'ragdoll.ts'], "only the presentation ragdoll and era-rows.ts import the defaults row inside src/fight (era-rows.ts is the REPLAY driver: verifyRecord turns a record's stamped flags on from the page defaults, audit C; the sim files, record.ts and the Gate 0 tree never import it)");
   for (const f of ['duel.ts', 'sim.ts', 'moves.ts', 'match.ts', 'record.ts', 'replay.ts']) if (srcs.includes(f)) assert.doesNotMatch(readFileSync(new URL(f, dir), 'utf8'), /feel-defaults|FEEL_DEFAULTS/, `${f} (the sim) does not read the defaults`);
   const setters = [];
   const walk = (d) => { for (const e of readdirSync(d, { withFileTypes: true })) { const p = new URL(e.name + (e.isDirectory() ? '/' : ''), d); if (e.isDirectory()) walk(p); else if (/\.(ts|js|mjs)$/.test(e.name) && /setKnockSim\(knockSimFor/.test(readFileSync(p, 'utf8'))) setters.push(p.pathname.split('/src/')[1]); } };

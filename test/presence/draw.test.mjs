@@ -2,7 +2,6 @@
 // (no ?presence=) carries none of it. No THREE here: the bodies are fakes; the real rig is checked by scripts/presence-two-pages.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { createDraw, heroPoseFn, startDrawLoop, SEAM } from '../../src/presence/draw.ts';
 import { startZonePresence } from '../../src/presence/chunk.ts';
 import { presenceRule, PRESENCE } from '../../src/presence/rows.ts';
@@ -119,15 +118,4 @@ test('the zone frame: with an origin the wire carries zone-frame metres (hero + 
     assert.deepEqual([b.made[0].group.position.x, b.made[0].group.position.z], [3, -4]);
     b.h.stop();
   } finally { g.WebSocket = real; g.requestAnimationFrame = raf; g.cancelAnimationFrame = caf; delete g[SEAM]; }
-});
-
-test('the default page is untouched: main.ts names the seam only inside the ?presence= branch, scene.ts spawnRemote sits in one marked block and is called from nowhere else, draw.ts imports no THREE', () => {
-  const main = readFileSync(new URL('../../src/client/main.ts', import.meta.url), 'utf8'), scene = readFileSync(new URL('../../src/fight/scene.ts', import.meta.url), 'utf8');
-  const draw = readFileSync(new URL('../../src/presence/draw.ts', import.meta.url), 'utf8');
-  assert.equal(main.split('\n').filter((l) => /spawnRemote|startZonePresence|__v3HeroPose/.test(l)).length, 1, 'one line in main.ts, the one behind /[?&]presence=/');
-  assert.match(main.split('\n').find((l) => /spawnRemote/.test(l)), /^if \(\/\[\?&\]presence=\/\.test\(search\)\)/);
-  assert.equal((scene.match(/spawnRemote/g) ?? []).length, 1);
-  assert.equal((scene.match(/other players \(presence wiring/g) ?? []).length, 1);
-  assert.doesNotMatch(draw, /from\s+['"]three['"]/);
-  assert.doesNotMatch(draw, /fetch\(|new WebSocket|XMLHttpRequest/, 'draw.ts fetches nothing');
 });

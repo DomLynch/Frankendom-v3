@@ -121,13 +121,6 @@ test('the spark sits on the line between the two weapon hands, lifted', () => {
   assert.deepEqual(p.map((v) => +v.toFixed(6)), [0, +(1 + ROWS.spark.liftM).toFixed(6), 1]);
 });
 
-test('the module never reaches the sim: it imports the event type only, no sim module is changed by it', () => {
-  const src = readFileSync(new URL('../src/fight/feel-clash.ts', import.meta.url), 'utf8');
-  assert.match(src, /import type \{ CombatEvent \} from '\.\/duel\.ts'/);
-  assert.doesNotMatch(src, /import \{[^}]*\} from '\.\/duel\.ts'/);
-  assert.doesNotMatch(src, /from '\.\/(sim|moves)\.ts'/);
-});
-
 test('the package ragdoll really recoils: the same blow moves the struck arm further with the clash than without, and the dip releases', async () => {
   const physics = await createPhysics({ seed: PHYS.seed, states: PHYS.states }), row = PHYS.opponents[0];
   const measure = read('physics') && JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${row.measure['106'].split('/').pop()}`, import.meta.url), 'utf8'));

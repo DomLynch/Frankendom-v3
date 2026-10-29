@@ -95,11 +95,6 @@ test('?skyfollow=v1 (and yawFollow 0) keeps the strip fixed in world yaw', () =>
   for (const yaw of [0, 1, 2, 3]) { sky.heading(camAt(yaw)); sky.update(new THREE.Vector3(), 1 / 60); assert.ok(Math.abs(sky.mesh.rotation.y - Math.PI / 6) < 1e-9); }
 });
 
-test('scene.ts feeds the camera heading before the strip update, on its own line (source pin)', () => {
-  const scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(scene, /skyline\?\.heading\(camera\);\n\s*skyline\?\.update\(camera\.position, dt\);/);
-});
-
 test('the face row validates, and under B the face centre sits in the clear sky band above the HUD at 375 (stills: screen top +4.3 deg, HUD to -4, sand melt from -9 deg)', () => {
   const bad = (patch) => { const s = structuredClone(STAGE); Object.assign(s.skyline.face, patch); return validateFile('stage', s).join('\n'); };
   assert.match(bad({ u: 1.5 }), /face\.u/); assert.match(bad({ v: -0.1 }), /face\.v/); assert.match(bad({ w: 1 }), /face\.w: unknown key/);

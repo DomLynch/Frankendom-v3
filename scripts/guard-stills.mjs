@@ -3,22 +3,22 @@
 // until the HUD reads "Blocked"; BLOCK_SIDE picks the guard side, the directional guard covers one), and the hero's cuts into the Centurion's guard (a burst around contact,
 // for his scutum block): <tag>-<shot>.png. The sim is the same under every query here (Gate 0), so the same tick is the same moment.
 //   node scripts/guard-stills.mjs <base url> <out dir> [query ...]     (CHROME=<path> picks the browser; on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/guard-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const LAG = 3, TICK = 1000 / 60, CLOSE_IN = Number(process.env.CLOSE_IN ?? 10);
 const want = (part) => !process.env.ONLY || process.env.ONLY.split(',').includes(part);   // ONLY=guard,blocked,foe picks the shot groups; TRACE=1 logs the captions while waiting for a block
 const caption = (page) => page.evaluate(() => document.body.innerText);   // the HUD's status line reads "Blocked · −N stamina" on the tick the sim blocks
 async function fight(tag) {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   await page.clock.install();
   await page.goto(`${base}/${tag === 'default' ? '' : `?${tag}`}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   await page.waitForTimeout(800);
   if (/[?&]start=v1\b/.test(page.url())) await page.click('#attack-button');   // V1's Fight press draws; by default the fight draws itself (data/fight.json start.auto)
   await page.waitForTimeout(400);

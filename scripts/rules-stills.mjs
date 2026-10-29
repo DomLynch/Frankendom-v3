@@ -5,24 +5,24 @@
 // Prints the rules' own record (globalThis.__v3Rules: totals, cuts, per-hit cost) and every console error.
 //   node scripts/rules-stills.mjs <base url> <out dir> [query ...]    (default queries: 'rules=m4' = M4 and 'rules=v1' = V1's rules, so a bare run compares the two whatever data/rules.json `default` is; pass '' to shoot the bare link; on a Mac it uses Metal, elsewhere SwiftShader)
 //   SEQUENCES=3 HEAVY_EVERY=70 MAX_TICKS=3000 (env)
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/rules-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, EVERY = Number(process.env.HEAVY_EVERY ?? 70), MAX_TICKS = Number(process.env.MAX_TICKS ?? 3000), SEQ = Number(process.env.SEQUENCES ?? 3);
 const AT_TICKS = [0, 4, 10, 20, 35, 60, 100, 140, 200];
 const report = {};
 for (const query of queries.length ? queries : ['rules=m4', 'rules=v1']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default', errors = [];
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 180000, polling: 'raf' });
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   await run(120);

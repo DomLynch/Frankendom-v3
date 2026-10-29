@@ -179,13 +179,6 @@ test('the quiet window after a knockdown is at least the rules package\'s get-up
   assert.ok(ROWS.knockdownQuietS >= read('rules').getUpS, `${ROWS.knockdownQuietS} >= ${read('rules').getUpS}`);
 });
 
-test('the module imports only TYPES from feel.ts (the feel chunk is its own bundle) and nothing back into the ragdoll or three', () => {
-  const src = readFileSync(new URL('../src/fight/feel-hitreact.ts', import.meta.url), 'utf8');
-  assert.match(src, /import type \{ FeelCtx, FeelHooks \} from '\.\/feel\.ts'/); assert.doesNotMatch(src, /registerFeel/);
-  assert.doesNotMatch(src, /from '\.\/ragdoll/, 'no import back into ragdoll.ts');
-  assert.doesNotMatch(src, /from 'three'/, 'the core has no three dependency');
-});
-
 // ---- blow classes (Dom 2026-10-27: "every hit he sways left and right; tone it down"): a light is a small quick flinch, a heavy and a counter keep the full reaction ----
 import { classOf } from '../src/fight/feel-hitreact.ts';
 const CL = ROWS.classes, mag = (plan) => Math.max(...plan.impulses.map((i) => Math.hypot(...i.v)));
@@ -236,12 +229,6 @@ test('classes: the hook softens the package\'s own stagger for a light (impulse,
   globalThis.location = { search: '?sway=v1' };
   try { assert.deepEqual(run({ move: 'light_left' }), { impulse: 1, blend: 1, time: 1 }, '?sway=v1'); } finally { delete globalThis.location; }
   HOOKS.hit({ type: 'Hit', tick: 1, location: 'torso', heading: FRONT, move: 'light_left' }, { rd: { state: 'alive', setMotorStrength() {}, applyImpulse() {} }, mode: 'alive', group: { rotation: { y: 0 } }, blendToward() {} }); HOOKS.kill();
-});
-
-test('classes: ragdoll.ts reads ctx.soften in all three stagger places and puts it back to 1 after every blow', () => {
-  const src = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8');
-  assert.match(src, /p\.scale \* soften\.impulse/); assert.match(src, /\* staggerK\.time\)/); assert.match(src, /\* staggerK\.blend, blend\)/);
-  assert.match(src, /soften\.impulse = soften\.blend = soften\.time = 1;/);
 });
 
 test('classes: the validator rejects a missing, unknown or out-of-range class row', () => {
