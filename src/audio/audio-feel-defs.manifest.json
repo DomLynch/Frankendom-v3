@@ -1,0 +1,8 @@
+{
+  "tables": [
+    { "table": "audio-feel", "file": "audio-feel-defs.json", "at": "feel", "key": "id", "required": { "value": "number", "unit": "string" } },
+    { "table": "bell-partial", "file": "audio-feel-defs.json", "at": "bellPartials", "key": "id", "required": { "hz": { "type": "number", "min": 1 }, "gain": "number", "decay": { "type": "number", "min": 0.001 }, "phase": "number" } },
+    { "table": "arena-cue", "file": "audio-feel-defs.json", "at": "arenaCues", "key": "id", "required": { "fade": { "type": "number", "min": 0 }, "scaled": "boolean", "jitter": "boolean", "fallback": "boolean" } },
+    { "table": "audio-pattern", "file": "audio-feel-defs.json", "at": "patterns", "key": "id", "required": { "pattern": "string" } }
+  ]
+}

@@ -5,6 +5,7 @@ import type { CombatEvent } from '../fight/combat.ts';
 import type { ArenaCue } from './arena-manifest.ts';
 import DEFS from './crowd-defs.json' with { type: 'json' };
 import MANIFEST from './crowd-defs.manifest.json' with { type: 'json' };
+import { CROWD_PATTERNS } from './audio-feel.ts';
 
 export const ROAR_MOMENTS = ['kill', 'parry', 'guardBreak', 'heavy'] as const;
 export type RoarMoment = (typeof ROAR_MOMENTS)[number];
@@ -19,4 +20,4 @@ for (const r of ROARS) if (r.outlive !== undefined && typeof r.outlive !== 'bool
 
 /** The moments this frame's events make: a kill, a parry, a guard break, a heavy (charged) hit. A light hit is none. */
 export const momentsOf = (events: readonly CombatEvent[]): Set<RoarMoment> => new Set(events.flatMap((e): RoarMoment[] =>
-  e.type === 'Killed' ? ['kill'] : e.type === 'Parried' ? ['parry'] : e.type === 'GuardBroken' ? ['guardBreak'] : e.type === 'Hit' && (e.charged || /heavy/.test(e.move ?? '')) ? ['heavy'] : []));
+  e.type === 'Killed' ? ['kill'] : e.type === 'Parried' ? ['parry'] : e.type === 'GuardBroken' ? ['guardBreak'] : e.type === 'Hit' && (e.charged || CROWD_PATTERNS.heavyRoar.test(e.move ?? '')) ? ['heavy'] : []));
