@@ -22,32 +22,8 @@
     {
       "file": "src/commentator.ts",
       "kind": "number",
-      "literal": "60",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/commentator.ts",
-      "kind": "number",
       "literal": "4294967296",
       "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
-    },
-    {
-      "file": "src/commentator.ts",
-      "kind": "number",
-      "literal": "2",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/commentator.ts",
-      "kind": "number",
-      "literal": "15",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/commentator.ts",
-      "kind": "number",
-      "literal": "0.05",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
     },
     {
       "file": "src/commentator.ts",
@@ -106,18 +82,6 @@
     {
       "file": "src/corpse-run.ts",
       "kind": "number",
-      "literal": "1e5",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/corpse-run.ts",
-      "kind": "number",
-      "literal": "20",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/corpse-run.ts",
-      "kind": "number",
       "literal": "0.75",
       "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
     },
@@ -149,7 +113,7 @@
       "file": "src/daily-pit-ui.ts",
       "kind": "label",
       "literal": "font:13px/1.35 Georgia,'Times New Roman',serif}",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+      "reason": "CSS stylesheet text for the Daily Pit panel: the structure of the stylesheet, its colours come from rows interpolated into it."
     },
     {
       "file": "src/daily-pit-ui.ts",
@@ -251,7 +215,7 @@
       "file": "src/daily-pit.ts",
       "kind": "number",
       "literal": "86400",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+      "reason": "Unit identity: 86400 is seconds per day and 2 is the zero-pad width of a clock digit; the tuning is data/daily-pit.json."
     },
     {
       "file": "src/daily-pit.ts",
@@ -263,7 +227,7 @@
       "file": "src/daily-pit.ts",
       "kind": "number",
       "literal": "2",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+      "reason": "Unit identity: 86400 is seconds per day and 2 is the zero-pad width of a clock digit; the tuning is data/daily-pit.json."
     },
     {
       "file": "src/difficulty.ts",
@@ -288,18 +252,6 @@
       "kind": "name-compare",
       "literal": "clip",
       "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
-    },
-    {
-      "file": "src/hit-stop-rules.ts",
-      "kind": "label",
-      "literal": "Hit",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
-    },
-    {
-      "file": "src/hit-stop-rules.ts",
-      "kind": "label",
-      "literal": "Blocked",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
     },
     {
       "file": "src/hit-stop.ts",
@@ -518,24 +470,6 @@
       "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
     },
     {
-      "file": "src/retry.ts",
-      "kind": "label",
-      "literal": "Warrior textures did not load",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
-    },
-    {
-      "file": "src/retry.ts",
-      "kind": "number",
-      "literal": "3",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/retry.ts",
-      "kind": "number",
-      "literal": "800",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
       "file": "src/share-clip.ts",
       "kind": "number",
       "literal": "60",
@@ -669,18 +603,6 @@
     },
     {
       "file": "src/share-clip.ts",
-      "kind": "label",
-      "literal": "600  px Georgia, 'Times New Roman', serif",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
-    },
-    {
-      "file": "src/share-clip.ts",
-      "kind": "number",
-      "literal": "1.4",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/share-clip.ts",
       "kind": "number",
       "literal": "4",
       "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
@@ -705,18 +627,6 @@
     },
     {
       "file": "src/share-clip.ts",
-      "kind": "number",
-      "literal": "0.92",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/share-clip.ts",
-      "kind": "number",
-      "literal": "3000",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/share-clip.ts",
       "kind": "name-compare",
       "literal": "ready",
       "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
@@ -732,18 +642,6 @@
       "kind": "name-compare",
       "literal": "NotAllowedError",
       "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
-    },
-    {
-      "file": "src/share-clip.ts",
-      "kind": "number",
-      "literal": "60_000",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/share-clip.ts",
-      "kind": "number",
-      "literal": "2000",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
     },
     {
       "file": "src/share-clip.ts",
@@ -903,72 +801,6 @@
     },
     {
       "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Trident",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Cleaver",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Knife",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Estoc",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Gladius",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Scythe",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Warhammer",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Maul",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Longsword",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Bow",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Staff",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
       "kind": "name-compare",
       "literal": "Shield",
       "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
@@ -984,18 +816,6 @@
       "kind": "name-compare",
       "literal": "Crest",
       "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "You fell. That was the lesson.",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
-    },
-    {
-      "file": "src/stubs.ts",
-      "kind": "label",
-      "literal": "Fight for real",
-      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
     },
     {
       "file": "src/telemetry-rows.ts",
@@ -1101,33 +921,9 @@
     },
     {
       "file": "src/telemetry.ts",
-      "kind": "label",
-      "literal": "local host",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
-    },
-    {
-      "file": "src/telemetry.ts",
-      "kind": "label",
-      "literal": "not a deployed build",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
-    },
-    {
-      "file": "src/telemetry.ts",
       "kind": "number",
       "literal": "1e9",
       "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
-    },
-    {
-      "file": "src/telemetry.ts",
-      "kind": "number",
-      "literal": "60_000",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
-      "file": "src/telemetry.ts",
-      "kind": "number",
-      "literal": "80",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
     },
     {
       "file": "src/telemetry.ts",
@@ -1232,72 +1028,6 @@
       "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
     },
     {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Recruit",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Legionary",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Gladiator",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Veteran",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Champion",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Praetorian",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Master",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Primus",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Invictus",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "label",
-      "literal": "Origin",
-      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
-    },
-    {
-      "file": "src/core/career-ladder.ts",
-      "kind": "number",
-      "literal": "27",
-      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
-    },
-    {
       "file": "src/core/grades.ts",
       "kind": "name-compare",
       "literal": "cloth",
@@ -1331,7 +1061,7 @@
       "file": "src/core/registry.ts",
       "kind": "label",
       "literal": " : a field spec is a type string or { type, min?, max? }",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+      "reason": "Diagnostic message of the rows-registry validator (developer-facing, never shown in the game)."
     },
     {
       "file": "src/core/registry.ts",
@@ -1373,13 +1103,13 @@
       "file": "src/core/registry.ts",
       "kind": "label",
       "literal": "  must be  ",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+      "reason": "Diagnostic message of the rows-registry validator (developer-facing, never shown in the game)."
     },
     {
       "file": "src/core/registry.ts",
       "kind": "label",
       "literal": "  =   is outside  .. ",
-      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+      "reason": "Diagnostic message of the rows-registry validator (developer-facing, never shown in the game)."
     },
     {
       "file": "src/core/registry.ts",
@@ -1962,6 +1692,18 @@
       "kind": "label",
       "literal": "a hit batch is an array of at most   rows",
       "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/retry.ts",
+      "kind": "number",
+      "literal": "10",
+      "reason": "Legal-range bound of the data/retry.json load check (most attempts a row may ask for): guards the row, not tuning."
+    },
+    {
+      "file": "src/retry.ts",
+      "kind": "number",
+      "literal": "10000",
+      "reason": "Legal-range bound of the data/retry.json load check (longest back-off a row may ask for): guards the row, not tuning."
     }
   ],
   "files": [

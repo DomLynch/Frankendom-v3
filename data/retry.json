@@ -1,0 +1,6 @@
+{
+  "about": "Transient-failure retry of the art loaders (src/retry.ts retryTransient; characters.ts and lorarii.ts call it). A dropped connection is not a broken rig: a failed fetch is retried `attempts` times in all with a back-off of `delayMs` x the attempt number before the game gives up on the art. `missingTexturesMessage` is the Error text of a fighter that parsed with a skin map missing (MissingTextures), which is retried too. Presentation and loading only: the sim never reads this file.",
+  "attempts": 3,
+  "delayMs": 800,
+  "missingTexturesMessage": "Warrior textures did not load"
+}
