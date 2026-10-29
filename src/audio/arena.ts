@@ -17,7 +17,7 @@ const URLS = {
   opus: new URL('../assets/arena-audio/arena.ogg', import.meta.url).href,
   aac: new URL('../assets/arena-audio/arena.m4a', import.meta.url).href,
 };
-export async function loadArena(context: BaseAudioContext, formats: Format[] = spriteFormats(), fetcher: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
+async function loadArena(context: BaseAudioContext, formats: Format[] = spriteFormats(), fetcher: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
   return loadFirst(URLS, context, formats, fetcher, leaving);
 }
 

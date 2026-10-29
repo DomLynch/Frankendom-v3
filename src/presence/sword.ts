@@ -2,7 +2,7 @@
 // earlier must be given it later. One latest shape, a small list of the pooled bodies (they live as long as the page and are recycled, never disposed), and an apply that touches a body
 // only when it does not already wear that shape: no per-frame work, no fetch, no stacking (the body's own reshape replaces what it hung before). Pure: no THREE import; the caller passes the
 // body's reshape. Called from the marked spawnRemote() block in src/fight/scene.ts.
-export interface SwordBody<M> { reshape(mesh: M | undefined): void }
+interface SwordBody<M> { reshape(mesh: M | undefined): void }
 interface Entry<M> { body: SwordBody<M>; wears: M | undefined; set: boolean }
 export class RemoteSwords<M> {
   private latest: M | undefined;

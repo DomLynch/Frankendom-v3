@@ -4,14 +4,14 @@
 // what it read. A move row is the resolved MoveDef, one line each: the old `light()` / `skill()` helpers and the four timing rows are gone, their values are in the rows.
 // The notes that sat beside the old literal (why each number is what it is, which ruling set it) are kept in docs/specs/combat/move-notes.md.
 // A sim file: it imports only the shared row loader and the types of moves.ts, so moves.ts can import it without a cycle.
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import type { MoveDef, MoveId, PathId, PathSpec } from './moves.ts';
 import MOVE_DEFS from './move-defs.json' with { type: 'json' };
 import MOVE_MANIFEST from './move-defs.manifest.json' with { type: 'json' };
 
-const MOVE_TABLE = tableFromFile(MOVE_MANIFEST.tables[0] as unknown as Manifest, MOVE_DEFS, 'move-defs.json');
-const PATH_TABLE = tableFromFile(MOVE_MANIFEST.tables[1] as unknown as Manifest, MOVE_DEFS, 'move-defs.json');
-const DIRECTIONAL_TABLE = tableFromFile(MOVE_MANIFEST.tables[2] as unknown as Manifest, MOVE_DEFS, 'move-defs.json');   // V3: the directional heavies (move-defs.json `directional`)
+const MOVE_TABLE = tableFromFile(MOVE_MANIFEST.tables[0], MOVE_DEFS, 'move-defs.json');
+const PATH_TABLE = tableFromFile(MOVE_MANIFEST.tables[1], MOVE_DEFS, 'move-defs.json');
+const DIRECTIONAL_TABLE = tableFromFile(MOVE_MANIFEST.tables[2], MOVE_DEFS, 'move-defs.json');   // V3: the directional heavies (move-defs.json `directional`)
 loadRegistry([MOVE_TABLE, PATH_TABLE, DIRECTIONAL_TABLE]);
 const MOVE_DIRECTIONS: readonly string[] = ['right', 'left', 'overhead', 'thrust', 'low'];
 const checkMove = (m: MoveDef): MoveDef => {
@@ -19,14 +19,14 @@ const checkMove = (m: MoveDef): MoveDef => {
   if (m.windup < 0 || m.active < 1 || m.recovery < 0) throw Error(`move-defs "${m.id}": windup and recovery from 0, active from 1`);
   return m;
 };
-const BASE_MOVES = Object.fromEntries((MOVE_TABLE.rows as unknown as MoveDef[]).map((m) => [m.id, checkMove(m)])) as Record<MoveId, MoveDef>;
-const BASE_PATHS = Object.fromEntries((PATH_TABLE.rows as unknown as (PathSpec & { id: string })[]).map(({ id, ...spec }) => [id, spec])) as Record<PathId, PathSpec>;
+const BASE_MOVES = Object.fromEntries((MOVE_TABLE.rows as readonly MoveDef[]).map((m) => [m.id, checkMove(m)])) as Record<MoveId, MoveDef>;
+const BASE_PATHS = Object.fromEntries((PATH_TABLE.rows as readonly (PathSpec & { id: string })[]).map(({ id, ...spec }) => [id, spec])) as Record<PathId, PathSpec>;
 
 // V3 directional heavies (not in V1). A row names the move it copies (`from`, the overhead heavy), the side it comes from and the path whose clip and baked sweep
 // it borrows (`blade`); resolved against ONE weapon's tables, so a weapon that retunes its heavy retunes its directional heavies with it. Added keys only: every
 // V1 move and path keeps its object, so no V1 fight can reach them (only the new actions in duel.ts chooseMove do).
 export type DirectionalHeavy = { id: MoveId; from: MoveId; direction: MoveDef['direction']; blade: PathId; windupFactor: number; holdPoseAge?: number; holdBlendTicks?: number };   // holdPose*: view only (combat.ts poseAge), never copied into a MoveDef or PathSpec
-export const DIRECTIONAL_HEAVIES: readonly DirectionalHeavy[] = (DIRECTIONAL_TABLE.rows as unknown as DirectionalHeavy[]).map((d) => {
+export const DIRECTIONAL_HEAVIES: readonly DirectionalHeavy[] = (DIRECTIONAL_TABLE.rows as readonly DirectionalHeavy[]).map((d) => {
   if (!MOVE_DIRECTIONS.includes(d.direction)) throw Error(`move-defs directional "${d.id}": direction ${d.direction} is not one of ${MOVE_DIRECTIONS.join(', ')}`);
   if ([d.id, chainPathOf(d)].some((k) => Object.hasOwn(BASE_MOVES, k) || Object.hasOwn(BASE_PATHS, k))) throw Error(`move-defs directional "${d.id}": the id is already a move or a path`);
   return d;

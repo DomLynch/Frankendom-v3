@@ -23,7 +23,7 @@ function readEnv(): TierEnv {
 }
 
 // Pure tier detection — tests drive this directly; phoneTier() below memoizes it for the app.
-export function detectPhoneTier(env: TierEnv = readEnv()): boolean {
+function detectPhoneTier(env: TierEnv = readEnv()): boolean {
   const search = env.locationSearch ?? '';
   if (/[?&]gfx=phone\b/.test(search)) return true;   // overrides win, both directions — the QA path for the tier
   if (/[?&]gfx=full\b/.test(search)) return false;
@@ -36,23 +36,16 @@ export function detectPhoneTier(env: TierEnv = readEnv()): boolean {
 // ?dpr=<1|1.5|2|3> (Strategy 2026-09-28, an instrument for Dom's iPhone A/B, not a lever): the renderer's pixel-ratio ceiling for THIS page
 // load, in place of the tier's (PIXEL_CAP below); the device's own ratio still caps it (scene.ts). Any other value is no override. Read once
 // here, at module load, which runs before main.ts strips it from the address (withoutDpr), so a reload or Next link boots the default.
-export const DPR_CHOICES: readonly number[] = [1, 1.5, 2, 3];
-export const urlDpr = (search: string): number | undefined => {
+const DPR_CHOICES: readonly number[] = [1, 1.5, 2, 3];
+const urlDpr = (search: string): number | undefined => {
   const raw = new URLSearchParams(search).get('dpr');
   return raw !== null && raw.trim() !== '' && DPR_CHOICES.includes(Number(raw)) ? Number(raw) : undefined;
 };
-export const withoutDpr = (search: string): string => { const params = new URLSearchParams(search); params.delete('dpr'); const rest = params.toString(); return rest ? `?${rest}` : ''; };
-export const DPR_OVERRIDE = urlDpr(readEnv().locationSearch ?? '');
+const DPR_OVERRIDE = urlDpr(readEnv().locationSearch ?? '');
 // ?debug view hook (Lead 2026-09-28, for the Auditer's per-owner draw breakdown, scratchpad fight-owners.mjs: attributing every draw to its
 // object needs the renderer, and the app keeps `view` private). With ?debug in the address at load, globalThis.__view is a read-only getter
 // on the live view; without it nothing is defined — no property, no shipping-path change — and the journal's later debug toggle does not
 // add it either (the flag is read once, from the page's own URL, the same regex main.ts uses).
-export const debugFlag = (search: string): boolean => /[?&]debug\b/.test(search);
-export function exposeDebugView<T>(get: () => T, search: string = readEnv().locationSearch ?? '', target: object = globalThis): boolean {
-  if (!debugFlag(search)) return false;
-  Object.defineProperty(target, '__view', { get, configurable: true, enumerable: false });
-  return true;
-}
 // The pixel-ratio ceiling: the override, else the tier's (phone 1.25: the MSAA framebuffer above; desktop 1.5).
 export const pixelCap = (phone: boolean, override: number | undefined = DPR_OVERRIDE): number => override ?? (phone ? 1.25 : 1.5);
 
@@ -62,8 +55,6 @@ export function phoneTier(): boolean {
   return memo;
 }
 // Test hook: the memo is module-global state, and a test that stubs globals mid-run needs it reset.
-export function resetPhoneTierForTests(): void { memo = undefined; }
-
 export const FIGHTER_TEXTURE_CAP = fxNum('quality.fighter-texture-cap');   // the Gambeson atlas is the only 2K runtime map — face and skin already ship 1K
 
 const SLOTS = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'alphaMap'] as const;
@@ -93,7 +84,7 @@ export function budgetTextures(root: Object3D, maxSize: number, resize: (t: Text
 
 // The browser resize: redraw the decoded image onto a maxSize canvas and hand it to the texture. drawImage
 // copies raw pixel values (no colorspace round-trip), so the texture's sRGB/normal interpretation is kept.
-export function canvasResize(texture: Texture, maxSize: number): boolean {
+function canvasResize(texture: Texture, maxSize: number): boolean {
   const img = texture.image as { width: number; height: number; close?: () => void } | undefined;
   if (!img?.width || typeof document === 'undefined' || Math.max(img.width, img.height) <= maxSize) return false;
   const k = maxSize / Math.max(img.width, img.height);
@@ -111,9 +102,3 @@ export function canvasResize(texture: Texture, maxSize: number): boolean {
 // 59 fps). medianMs is the median interval between playable frames, which is the screen's delivered refresh when the GPU keeps up (16.7 at
 // 60 Hz, 33.3 capped, 8.3 at 120 Hz). capped30: the WHOLE fight ran at ~30 Hz: enough frames, a median of 30-36 ms, and no fast frame (the
 // 5th percentile at 28 ms or more). A heavy scene on an uncapped screen still shows 16.7 ms frames among its slow ones.
-export function rafCadence(frames: readonly number[]): { medianMs: number | null; capped30: boolean } {
-  const sorted = frames.filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
-  if (!sorted.length) return { medianMs: null, capped30: false };
-  const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))]!, median = at(0.5);
-  return { medianMs: Math.round(median * 10) / 10, capped30: sorted.length >= 60 && median >= 30 && median <= 36 && at(0.05) >= 28 };
-}

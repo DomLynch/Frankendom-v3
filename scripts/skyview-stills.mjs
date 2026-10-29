@@ -3,8 +3,8 @@
 // that holds no body), then a contact sheet with b first. Same fight state for every variant (the page loads and waits the same way each time).
 //   node scripts/skyview-stills.mjs <base url> <out dir> [variants ...]        (default: default b a c)
 // Writes <out>/<id>-fight-375.png, <id>-walk-375.png, <id>-fight-812.png, contact-sheet.png and measure.json. Headless Chromium (Metal on a Mac, SwiftShader elsewhere).
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...ids] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/skyview-stills.mjs <base url> <out dir> [variants ...]'); process.exit(2); }
@@ -13,7 +13,7 @@ const IDS = ids.length ? ids : ['default', 'v1'];   // 'default' = no link (B si
 const WORDS = { default: 'no link (B)', v1: 'before (?skyview=v1)', a: 'A: fog only', b: 'B: melt + lowered strip', c: 'C: lowered strip only' };
 const STRIP = [0.02, 0.12];   // x range (fraction of the width) the sand test reads: beside the fighters, clear of the HUD's middle
 const THRESHOLD = Number(process.env.THRESHOLD ?? 25);   // mean 0..255 difference a row must show, floor shown against floor hidden, to count as sand (about half melted)
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const calc = await browser.newPage();   // decodes two PNGs and reads the rows
 const rows = (a, b, from, to, threshold) => calc.evaluate(async ([a, b, from, to, threshold]) => {
   const load = (s) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = `data:image/png;base64,${s}`; });
@@ -47,10 +47,10 @@ for (const id of IDS) {
   const query = id === 'default' ? '' : `skyview=${id}`;
   results[id] = {};
   // phone portrait: the fight, then the free walk after a kill
-  let page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
+  let page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
   page.on('pageerror', (e) => console.error(`${id}: pageerror ${e.message}`));
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+  await waitPlayable(page, { timeout: 240000 });
   await page.waitForTimeout(5000);
   await page.screenshot({ path: `${out}/${id}-fight-375.png` });
   results[id].fight375 = await measure(page, `${id}-fight-375.png`, `${id} fight 375`);
@@ -73,7 +73,7 @@ for (const id of IDS) {
   // phone landscape
   page = await browser.newPage({ viewport: { width: 812, height: 375 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+  await waitPlayable(page, { timeout: 240000 });
   await page.waitForTimeout(5000);
   await page.screenshot({ path: `${out}/${id}-fight-812.png` });
   results[id].fight812 = await measure(page, `${id}-fight-812.png`, `${id} fight 812`);

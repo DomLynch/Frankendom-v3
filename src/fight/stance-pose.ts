@@ -2,7 +2,7 @@
 // HUD icon. Neutral is today's ready pose. The others are bones-only offsets on the calm ready layer (radians, in the bone's own frame; the pelvis drop in rig-scale metres), restored
 // before every update like the tired body. No sim state, no hitbox, no blade table: the stance sim is Combat's and is not wired here.
 export type Stance = 'neutral' | 'aggressive' | 'defensive' | 'trickster';
-export const STANCES: readonly Stance[] = ['neutral', 'aggressive', 'defensive', 'trickster'];
+const STANCES: readonly Stance[] = ['neutral', 'aggressive', 'defensive', 'trickster'];
 
 /** The look-test flag: `?look=stances` plus `stance=<name>`; anything else (or no flag) is neutral, i.e. today's frame. */
 export function stanceFrom(search: string): Stance {
@@ -12,8 +12,8 @@ export function stanceFrom(search: string): Stance {
   return s && STANCES.includes(s) ? s : 'neutral';
 }
 
-export type StancePose = { drop: number; sway: number; hip: number; knee: number; spine1: number; spine2: number; spine3: number; neck: number; head: number; headTilt: number; arm: number; fore: number; offArm: number; lean: number };
-export const NO_STANCE: StancePose = { drop: 0, sway: 0, hip: 0, knee: 0, spine1: 0, spine2: 0, spine3: 0, neck: 0, head: 0, headTilt: 0, arm: 0, fore: 0, offArm: 0, lean: 0 };
+type StancePose = { drop: number; sway: number; hip: number; knee: number; spine1: number; spine2: number; spine3: number; neck: number; head: number; headTilt: number; arm: number; fore: number; offArm: number; lean: number };
+const NO_STANCE: StancePose = { drop: 0, sway: 0, hip: 0, knee: 0, spine1: 0, spine2: 0, spine3: 0, neck: 0, head: 0, headTilt: 0, arm: 0, fore: 0, offArm: 0, lean: 0 };
 
 // hip/knee: thigh and calf bend together so the feet stay put while the pelvis drops; arm/fore: sword arm up (negative) or down; lean: side-to-side sway of the spine.
 const FULL: Record<Stance, Partial<StancePose>> = {

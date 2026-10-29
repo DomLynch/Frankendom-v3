@@ -1,16 +1,16 @@
 // A REAL kill starts the radar flash (data/radar.json flash) on the built dist: the first boss fights, is brought to 1 hp and struck down (the same driver as scripts/progression-stills.mjs); the radar must
 // then be armed and pulse within a period, red dots with a thin yellow ring on the canvas; no flash before the kill.  node scripts/radar-flash-kill.mjs <base url> <out dir>
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/radar-flash-kill.mjs <base url> <out dir>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ angle: 'swiftshader' });
+const page = await browser.newPage(phoneOptions(3));
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 await page.goto(`${base}/?save=off`);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+await waitPlayable(page, { timeout: 180000 });
 await page.waitForTimeout(1500);
 const before = await page.evaluate(() => globalThis.__v3Radar.flashing);
 await page.waitForFunction(() => globalThis.__v3Zone?.engaged === true, null, { timeout: 120000 });

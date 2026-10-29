@@ -3,16 +3,16 @@
 // Pure: no DOM, no node API, so the same file is bundled into the page chunk and run by node.
 import DEFS from '../../data/presence.json' with { type: 'json' };
 
-export type PresenceRule = { readonly id: string; readonly value: number; readonly unit: string };
+type PresenceRule = { readonly id: string; readonly value: number; readonly unit: string };
 export type PresenceOrigins = { allowed: readonly string[]; devHosts: readonly string[]; allowMissing: boolean };
-export type PresenceDefs = { origins: PresenceOrigins; query: string; path: string; host: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; spawn: { x: number; z: number }; rules: readonly PresenceRule[] };
+type PresenceDefs = { origins: PresenceOrigins; query: string; path: string; host: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; spawn: { x: number; z: number }; rules: readonly PresenceRule[] };
 
 /** Every rule the code reads by name (presenceRule's argument type). */
 export const NAMED = ['cellCm', 'radiusCm', 'nearCap', 'tier1Cm', 'tier1Every', 'tier2Cm', 'tier2Every', 'tier3Cm', 'tier3Every', 'tickMs', 'tickFloorMs', 'tickChecksPerTick', 'softCap', 'hardCap', 'maxLayers',
   'maxSpeedCmS', 'speedSlack', 'jitterMs', 'strikesToDrop', 'strikeWindowMs', 'emptyLayerMs', 'maxMessage', 'perSecond', 'idleMs', 'ipSockets', 'ipJoinsPerMinute', 'beatMs', 'maxWriteBytes', 'closeGraceMs', 'tickRing', 'logEveryMs',
   'sweepEveryMs', 'presencePort', 'walkHalfCm', 'giveUp', 'retryBaseMs', 'retryMaxMs', 'remoteSnap', 'remoteExpire',
   'drawMax', 'drawIdle', 'drawSmooth', 'animIdle', 'animWalk', 'animRun', 'animRunMps', 'poseMinDtMs', 'drawDtMaxS', 'drawContact'] as const;
-export type RuleId = (typeof NAMED)[number];
+type RuleId = (typeof NAMED)[number];
 
 /** The one loader: the file's shape, rules keyed by id (a duplicate is refused), a positive number for each, and a row for every rule read by name. */
 export function loadPresence(raw: Partial<PresenceDefs>): PresenceDefs {

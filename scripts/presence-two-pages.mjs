@@ -4,20 +4,21 @@
 //   (playwright: not a dependency of this repo; PLAYWRIGHT_MODULE=/abs/path/to/playwright/index.mjs when it is not resolvable from here)
 // Start first: `npm run build && node scripts/serve.mjs 8733` and `npm run presence` (docs/PRESENCE.md).
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, ws, out] = process.argv.slice(2);
 if (!base || !ws || !out) { console.error('usage: node scripts/presence-two-pages.mjs <game url> <presence ws url> <out dir>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ angle: 'swiftshader', chromeEnv: null });
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const open = async (tag) => {
-  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const ctx = await browser.newContext(phoneOptions(2));
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   const requests = []; page.on('request', (r) => requests.push(r.url()));
   await page.goto(`${base}/?presence=${encodeURIComponent(ws).replace(/%3A/g, ':').replace(/%2F/g, '/')}`, { waitUntil: 'domcontentloaded', timeout: 120000 });
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   return { page, requests };
 };
 const A = await open('A'), B = await open('B');

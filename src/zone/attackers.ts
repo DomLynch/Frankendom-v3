@@ -7,8 +7,8 @@ import { M } from '../fight/detmath.ts';
 import { MAX_ATTACKERS } from '../fight/attackers.ts';
 import { isStanding, leashed, type Spawn } from '../stubs.ts';   // spawns.ts is reached through the stub boundary (scripts/check-stubs.mjs); the cycle is only read inside functions
 
-export type FramingRows = { widenAtMetres: number; maxWiden: number; easeSeconds: number };
-export type AttackerRows = { on: boolean; query: string; off: string; camera: FramingRows };
+type FramingRows = { widenAtMetres: number; maxWiden: number; easeSeconds: number };
+type AttackerRows = { on: boolean; query: string; off: string; camera: FramingRows };
 export const ATTACKERS = ROWS.attackers as AttackerRows;
 export { MAX_ATTACKERS };
 

@@ -24,14 +24,14 @@ export function multiplyOnto(material: MeshBasicMaterial, map: Texture) {
 // The floor stain shapes (scripts/blood/floor-textures.py): two pools, four splashes, handed out in turn so no two neighbours match.
 export const FLOOR_POOLS = ['floor-pool.png', 'floor-pool-b.png'], FLOOR_SPLASHES = ['floor-splash.png', 'floor-splash-b.png', 'floor-splash-c.png', 'floor-splash-d.png'];
 
-export type BloodSource = { site: string; position: Vector3; direction: Vector3; strength: number; delay?: number; seed?: number };   // delay: seconds after the finish begins before the wound opens (a later blow of a paired scene); seed: drops thrown on the frame it opens, so the blow reads at 375
+type BloodSource = { site: string; position: Vector3; direction: Vector3; strength: number; delay?: number; seed?: number };   // delay: seconds after the finish begins before the wound opens (a later blow of a paired scene); seed: drops thrown on the frame it opens, so the blow reads at 375
 
 // Which of a weapon's materials a kill bloodies. A sword bloodies its Blade only. A hafted weapon bloodies everything but its
 // handle: every shipped two-hander ships the haft, grip wrap and binding as their own materials (Haft/Ash/Leather/Cord/Wire), so
 // "tint the whole weapon" painted the scythe's haft red after a kill (owner, 2026-09-19).
 // A reconstructed part (weapons lane Phase 2, scripts/weapon-fit.py) ships two materials: Weapon<Id> — the head, the striking part —
 // and Weapon<Id>Shaft, its baked handle; the sword rule admits the head, the handle rule the shaft.
-export const HANDLE_MATERIAL = /haft|handle|grip|wrap|leather|cord|wire|shaft$|^ash$/i;
+const HANDLE_MATERIAL = /haft|handle|grip|wrap|leather|cord|wire|shaft$|^ash$/i;
 const RECONSTRUCTED_HEAD = /^Weapon[A-Z]\w*$/;
 export function bloodiesMaterial(name: string, twoHanded: boolean): boolean {
   return twoHanded ? !HANDLE_MATERIAL.test(name) : name === 'Blade' || (RECONSTRUCTED_HEAD.test(name) && !HANDLE_MATERIAL.test(name));

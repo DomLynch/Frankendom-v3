@@ -5,8 +5,8 @@ import ROWS from '../data/parts.json' with { type: 'json' };
 import PROFILE_ROWS from '../data/profiles.json' with { type: 'json' };
 const KNOWN_PROFILES: ReadonlySet<string> = new Set((PROFILE_ROWS.profiles as { id: string }[]).map((p) => p.id));   // the bosses a part can come from (data/profiles.json)
 
-export type SlotRow = { id: string; label: string; units: string[] };
-export type RarityRow = { star: number; id: string; label: string; colour: string };
+type SlotRow = { id: string; label: string; units: string[] };
+type RarityRow = { star: number; id: string; label: string; colour: string };
 export type PartsFile = {
   maxCount: number; slots: SlotRow[]; rarities: RarityRow[];
   button: { label: string; aria: string; sizePx: number; topPx: number; rightPx: number; zIndex: number };
@@ -54,7 +54,7 @@ export const partId = (profile: string, slot: string): string => `${profile}:${s
 /** The slot a cut unit fills, or null (a visual unit such as head_split, or a unit the table does not name). */
 export const slotOfUnit = (unit: string, file: PartsFile = PARTS): string | null => file.slots.find((s) => s.units.includes(unit))?.id ?? null;
 /** `profile:slot` split, or null when it is not an id of this table's shape. */
-export function splitPart(id: string, file: PartsFile = PARTS): { profile: string; slot: string } | null {
+function splitPart(id: string, file: PartsFile = PARTS): { profile: string; slot: string } | null {
   const i = id.indexOf(':');
   if (i < 1) return null;
   const profile = id.slice(0, i), slot = id.slice(i + 1);
@@ -104,7 +104,7 @@ export function cleanParts(j: { parts?: unknown; equipped?: unknown }, file: Par
 }
 
 /** One line of the menu: a part to show. `name`: the boss's name + the slot's label. */
-export type PartView = { id: string; name: string; boss: string; n: number; star: number; rarity: RarityRow; trophy: string | null; worn: boolean };
+type PartView = { id: string; name: string; boss: string; n: number; star: number; rarity: RarityRow; trophy: string | null; worn: boolean };
 export type SlotView = { slot: SlotRow; worn: PartView | null; parts: PartView[] };
 /** The menu's rows, pure: every slot with the parts owned for it (best star first, then by boss name). `bossName`: profile id -> display name; `trophyOf`: star -> trophy name (null for none). The weapon slot has no parts (the page shows its reward). */
 export function slotViews(save: PartsSave, bossName: (profile: string) => string, trophyOf: (star: number) => string | null, file: PartsFile = PARTS): SlotView[] {

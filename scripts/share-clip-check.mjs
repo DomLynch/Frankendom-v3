@@ -8,6 +8,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { waitPlayable } from './lib/browser.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.resolve(process.argv[2] ?? 'share-clip-out'), shareMode = process.argv.includes('--share');
@@ -30,7 +31,7 @@ try {
     } else { Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }); Object.defineProperty(navigator, 'share', { value: undefined, configurable: true }); }
   }, shareMode);
   await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 150_000 });
+  await waitPlayable(page, { timeout: 150_000 });
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive' && globalThis.__v3Clip, null, { timeout: 60_000 });
   const frames = (ms) => page.evaluate((ms) => new Promise((res) => { const d = []; let last = performance.now(), t0 = last; const f = (n) => { d.push(n - last); last = n; if (n - t0 < ms) requestAnimationFrame(f); else res(d); }; requestAnimationFrame(f); }), ms)
     .then((d) => ({ meanMs: +(d.reduce((a, b) => a + b, 0) / d.length).toFixed(1), p95Ms: +[...d].sort((a, b) => a - b)[Math.floor(d.length * 0.95)].toFixed(1), n: d.length }));

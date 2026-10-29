@@ -2,20 +2,20 @@
 // The hero kills the foe (held at 1 hp), the corpse freezes, then:  <tag>-1-hint (the arrow and the line over the corpse), <tag>-2-cut (one part tapped: it flew and lies on the ground, the hint gone).
 // Prints the page errors (must be 0), the arrow / line box against the thumb controls, and the cut events.
 //   node scripts/pickup-stills.mjs <base url> <out dir> <tag> [query]      env: CUT=arm_left (the unit tapped)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/pickup-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const TICK = 1000 / 60, CUT_EVERY = 55, MAX_TICKS = 3000, errors = [], CUT = process.env.CUT ?? 'arm_left';
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: process.env.GL_ARGS ? process.env.GL_ARGS.split(' ') : ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ glArgsEnv: true });
+const page = await browser.newPage(phoneOptions(2));
 page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
 await page.clock.install();
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+await waitPlayable(page, { timeout: 180000 });
 await page.waitForTimeout(3000);
 await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 2000);   // (a loaded box can be slower than 100 ms between the two calls)
 const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));

@@ -2,14 +2,14 @@
 // (window.__v3Zone, __v3Fight): the spots, the hero, the held boss, and logs the hero-to-every-other-spot distance across a scripted fight (hero closes on the boss and swings,
 // topped up so he does not die). Stills: -1-wide (the page open, all three bosses), -2-fight (mid-fight, fight camera).
 //   node scripts/zone-spacing-measure.mjs <base url> <out dir> <tag> [query] [seconds]
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = '', secs = '30'] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/zone-spacing-measure.mjs <base url> <out dir> <tag> [query] [seconds]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ extra: ['--enable-unsafe-swiftshader'] });
+const page = await browser.newPage(phoneOptions(2));
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 const shot = (n) => page.screenshot({ path: `${out}/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 });
 const key = (code, type) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [code, type]);

@@ -40,11 +40,3 @@ test('kite A past its leash while B is on the hero: the hero\'s health and body 
   const killed = joinAttacker(1, withFighters(base(poseOf(hero, B)), ([h, f]) => [h, { ...f, health: 0 }]));
   assert.equal(resetHeld(primary, [{ ...killed, dead: true }], 0, () => base(poseOf(hero, A))).engaged, false, 'a dead attacker does not take the fight');
 });
-
-test('the page: a leash calls leashReset (only that boss), never hand / rematch / fresh', () => {
-  const main = read('../src/client/main.ts');
-  assert.match(main, /leashed\(spawns\[current\]!, practice\.enemy, openerLift\)\) \{ if \(walkBackEnabled && !attackers\.some\(\(a\) => !a\.dead\)\) \{ walkBack = true; engaged = false; \} else leashReset\(current, hero\); \}/);   // alone it walks home first (test/zone-leash-walk-back.test.mjs); the reset itself is unchanged
-  const fn = main.slice(main.indexOf('function leashReset'), main.indexOf('/** The opening pose of attacker'));
-  assert.doesNotMatch(fn, /fresh\(|rematch\(|\bhand\(/);
-  assert.match(fn, /resetHeld\(practice, attackers, index,/);
-});

@@ -7,7 +7,7 @@ import { mountGoldenHud } from './golden-hud.ts';
 import { clearOf, validateGolden, type Spot } from './golden-check.ts';
 
 type Doc = Parameters<typeof mountGoldenHud>[0];
-export type GoldenPage = {
+type GoldenPage = {
   doc: Doc;
   view: { projectInto(x: number, y: number, z: number, out: [number, number]): boolean; heroWeaponNode(): Object3D | undefined };
   spots: readonly Spot[];                                   // the zone's boss spots in the pit's frame (spotsFor): roaming points keep clear of every one

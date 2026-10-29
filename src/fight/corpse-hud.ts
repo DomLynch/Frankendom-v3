@@ -5,7 +5,7 @@ import { markerAlpha, type CorpseRows } from '../corpse-run.ts';
 
 type Doc = { createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
 
-export type CorpseHud = {
+type CorpseHud = {
   /** The coin line: carried and banked (nothing at all while both are 0). */
   coins(carried: number, banked: number): void;
   /** The marker at CSS pixel `xy` (null = off screen or no pile), `distMetres` from the hero, `seconds` the page clock. */
