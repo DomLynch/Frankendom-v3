@@ -38,12 +38,30 @@ export function rigOf(root: Object3D): Rig {
 }
 /** The name `name` (a 65 bone or a 65 weapon node) has on `rig`: itself on 65; the mapped bone on 106 (a weapon node: its first try). */
 export const boneName = (rig: Rig, name: string): string => rig === '106' ? TO_106.get(name) ?? WEAPONS[name]?.[0] ?? name : name;
-/** The node `name` (a 65 bone or weapon-node name) names on this fighter: root.getObjectByName(name) on a 65 body, the mapped node on a 106 body. */
+// Per-rig bone cache (audit 5): `bone` ran a recursive getObjectByName search on every call and the fight loop asks for the same few bones every frame.
+// One Map name -> node per root, filled on the first hit. A hit is trusted only while its node still hangs under the root (a dispose, a rig swap or a
+// re-parent drops it and the next call searches again); a miss is never kept, so a bone that arrives later (a graft, a wear) is still found.
+const boneCache = new WeakMap<Object3D, Map<string, Object3D>>();
+/** Counters for the timing harness and the cache test: recursive searches run, cache hits served. */
+export const boneLookups = { searches: 0, hits: 0 };
+const under = (node: Object3D, root: Object3D): boolean => { for (let n: Object3D | null = node; n; n = n.parent) if (n === root) return true; return false; };
+/** Drop every cached bone of `root` (a rig swap or a dispose; a stale entry is also caught lazily by the ancestor check). */
+export const clearBoneCache = (root: Object3D): void => { boneCache.delete(root); };
+function named(root: Object3D, name: string): Object3D | undefined {
+  let cache = boneCache.get(root);
+  const hit = cache?.get(name);
+  if (hit && under(hit, root)) { boneLookups.hits++; return hit; }
+  boneLookups.searches++;
+  const found = root.getObjectByName(name);
+  if (found) { if (!cache) boneCache.set(root, cache = new Map()); cache.set(name, found); } else cache?.delete(name);
+  return found;
+}
+/** The node `name` (a 65 bone or weapon-node name) names on this fighter: root.getObjectByName(name) on a 65 body, the mapped node on a 106 body (cached per root). */
 export function bone(root: Object3D, name: string): Object3D | undefined {
-  if (rigOf(root) === '65') return root.getObjectByName(name);
+  if (rigOf(root) === '65') return named(root, name);
   const tries = WEAPONS[name];
-  if (tries) { for (const t of tries) { const found = root.getObjectByName(t); if (found) return found; } return undefined; }
-  return root.getObjectByName(TO_106.get(name) ?? name);
+  if (tries) { for (const t of tries) { const found = named(root, t); if (found) return found; } return undefined; }
+  return named(root, TO_106.get(name) ?? name);
 }
 /** The weapon in hand: the held weapon node (always in hand, or a grafted part), else the drawn sword's (on a 106 body, its socket first). */
 export const heldWeapon = (root: Object3D): Object3D | undefined => bone(root, HELD.weapon) ?? bone(root, HELD.sword);
