@@ -3,7 +3,7 @@
 // Places the hero 9 m from Nan's ring-2 spot (the sim's fighter position, as scripts/ground-sky-stills.mjs does), walks him in with W (aggro does the rest), tops his health up so the fight lasts, and reads
 // globalThis.__v3Mech (the mechanic's view) in the page. Exit 1 on a failed check; stills land in <out dir>.
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 
 const [base, out, query = 'opener=off'] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/mechanic-nan-check.mjs <base url> <out dir> [query]'); process.exit(2); }
@@ -77,6 +77,9 @@ if (tell2) {
       const toward = (last.hx - first.hx) * (first.fx - first.hx) + (last.hz - first.hz) * (first.fz - first.hz);   // the hero's own move projected on the hero->Nan direction at the hook
       console.log('drag rows', JSON.stringify({ first, last }), 'moved-toward', toward.toFixed(3));
       check(last.gap < first.gap - 0.02 && toward > 0, `stood in the line: hooked and pulled in (drag gap ${first.gap.toFixed(2)} -> ${last.gap.toFixed(2)}, the hero moved toward her by ${toward.toFixed(2)} m-ish)`);
+      // the drag-distance check (Strategy ruling A, alpha: a short shove): the pull the row says (dragM) is the pull the hero gets, within 0.05 m
+      const row = JSON.parse(readFileSync(new URL('../data/mechanics.json', import.meta.url), 'utf8')).mechanics['nan-impale'], pulled = first.gap - last.gap;
+      check(Math.abs(pulled - Math.min(row.dragM, first.gap - row.dragStop)) <= 0.05, `the drag pulls what the row says (dragM ${row.dragM}, stop ${row.dragStop}): the gap fell ${pulled.toFixed(3)} m`);
     }
   }
 }
