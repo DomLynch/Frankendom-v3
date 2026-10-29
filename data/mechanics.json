@@ -122,6 +122,40 @@
         { "id": "arm_right", "region": "arm_right", "name": "halberd arm", "belowPct": 66, "speedMult": 1, "forbids": ["light", "light_left", "light_right", "heavy", "heavy_left", "heavy_right", "heavy_thrust", "thrust", "skill", "skill2"], "swapTo": "kick", "piece": "piece_arm_right", "stumpCaps": ["cap_shoulder_right_torso"], "hitStopMs": 140 },
         { "id": "leg_right", "region": "leg_right", "name": "right leg", "belowPct": 33, "speedMult": 0.6, "forbids": ["heavy", "heavy_left", "heavy_right", "heavy_thrust"], "swapTo": "light", "piece": "piece_leg_right", "stumpCaps": ["cap_hip_right_root"], "hitStopMs": 140 }
       ]
+    },
+    "accountant-parry-wall": {
+      "type": "accountant-parry-wall",
+      "boss": "the-boss",
+      "about": "THE ACCOUNTANT'S PARRY WALL: he plants his feet and a ledger wall rises in front of him (the tell). While it stands every ordinary weapon blow from the front is parried for zero damage (a spark, the attacker staggers, he gets a riposte window); a golden weapon is ordinary here. A kick breaks it, a hero special breaks it and still lands, a blow from behind lands in full, a blow in the tell lands in full and cancels it. He never attacks while it stands and nothing here can kill. The sim rules are in src/fight/mechanics/accountant-parry-wall.ts (called from the duel through sim-hooks.ts), the look is accountant-parry-wall-fx.ts.",
+      "firstTicks": 300,
+      "triggerRangeM": 3.2,
+      "tellTicks": 42,
+      "wallTicks": 150,
+      "cooldownTicks": 660,
+      "cancelCooldownTicks": 300,
+      "arcDeg": 150,
+      "parryStunTicks": 20,
+      "riposteTicks": 30,
+      "parriesToDrop": 2,
+      "kickBreakStunTicks": 54,
+      "specialBreakStunTicks": 72,
+      "caption": "parry_wall",
+      "fx": {
+        "colour": "#f2c14e",
+        "edgeColour": "#fff0b8",
+        "ringRadiusM": 1.5,
+        "wallHeightM": 2.1,
+        "wallWidthM": 2.4,
+        "wallDistanceM": 0.9,
+        "tellOpacity": 0.18,
+        "wallOpacity": 0.42,
+        "sparkCount": 10,
+        "sparkSpeedMps": 3.2,
+        "sparkLifeS": 0.35,
+        "sparkSizeM": 0.07,
+        "sparkGravityMps2": 6,
+        "ringPulseHz": 2.5
+      }
     }
   }
 }

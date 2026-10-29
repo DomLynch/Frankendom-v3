@@ -48,7 +48,7 @@
     { "kind": "kachujin", "name": "Kachujin", "body": "kachujin", "respawnSeconds": 90, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
     { "kind": "castle-guard", "name": "Sir Reginald", "body": "castle-guard", "respawnSeconds": 90, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": "reginald-limb-loss" },
     { "kind": "sporty-granny", "name": "Nan the Impaler", "body": "sporty-granny", "respawnSeconds": 90, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": "nan-impale" },
-    { "kind": "the-boss", "name": "The Accountant", "body": "the-boss", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
+    { "kind": "the-boss", "name": "The Accountant", "body": "the-boss", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": "accountant-parry-wall" },
     { "kind": "parasite", "name": "The Titan's Envoy", "body": "parasite", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": "envoy-latch" },
     { "kind": "anime-boy-black", "name": "Ryo", "body": "anime-boy-black", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },
     { "kind": "anime-girl-blonde", "name": "Akane", "body": "anime-girl-blonde", "respawnSeconds": 120, "aggro": 2.5, "leash": 20, "roam": 2.6, "campSize": [1, 1], "mechanic": null },

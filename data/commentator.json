@@ -148,6 +148,15 @@
       "Take your time. We have eternity.",
       "Any day now. Really, no hurry."
     ] },
+    "parry_wall": { "about": "the Accountant raises his parry wall (data/mechanics.json accountant-parry-wall; said on the first tick of the tell)", "cooldownSeconds": 20, "probability": 1, "priority": true, "lines": [
+      "The Accountant raises a wall of fine print. Kick it.",
+      "A contract wall. Swords are not legally binding.",
+      "Your blade has been parried by paperwork.",
+      "Audit in progress. Please stop hitting the auditor.",
+      "He is filing a ruling. Step around the paperwork.",
+      "That wall disputes every blow. Kick it, or wait it out.",
+      "Terms and conditions apply. Try kicking them."
+    ] },
     "wearing_parts": { "about": "EXTENSION POINT, not hooked yet: the Frankendom equip feature calls commentator.say('wearing_parts', { partName }) when a taken part is worn (params: partName)", "cooldownSeconds": 40, "probability": 0.8, "params": ["partName"], "lines": [
       "Nice {partName}. It looks borrowed.",
       "Wearing a {partName} now? Fashion has fallen.",
