@@ -17,6 +17,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "test": "node --test \"test/**/*.test.mjs\"",
+    "perf:rows": "node --test \"test/perf/**/*.perf.mjs\"",
     "test:pins": "node --test \"test/source-pins/*.test.mjs\"",
     "check:source-regex": "node scripts/source-regex-tests.mjs --check",
     "gate0": "node --test test/gate0/gate0.test.mjs",

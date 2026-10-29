@@ -13,6 +13,7 @@ npm ci
 npm run build          # dist/, build id "dev" (BUILD=<sha> for a release id); needs jpegtran for the GLB pack
 npm run serve [port]   # serves dist/ for a local look
 npm test               # the whole unit suite (node --test test/**/*.test.mjs)
+npm run perf:rows      # wall-clock budget rows (test/perf/*.perf.mjs): Mac only, MAC_HEAVY_OK=1, load < 12 (uptime), never in CI/hfjob
 npm run check:stubs    # nothing outside src/stubs.ts imports core/*, net, zones, legends or pit
 npm run check:as-data  # no number, timer, cap or label that belongs in a data row, in the live-zone code
 npm run gate0          # Gate 0 (below)
