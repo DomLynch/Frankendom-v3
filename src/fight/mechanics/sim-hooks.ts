@@ -35,7 +35,7 @@ export function configureSimMechanics(rows: Readonly<Record<string, unknown>>): 
 }
 
 /** The fields a fresh fighter with mechanic `id` starts with (an Opponent's `mechanic`; a fighter without one gets none, so every other fight is byte for byte what it was). */
-export const mechFields = (id: string): Partial<Fighter> => MECHANICS[id]!.init();
+export const mechFields = (id: string): Partial<Fighter> => MECHANICS[id]?.init() ?? {};
 export const mechClock = (f: Fighter, foe: Fighter): void => { if (f.mech) MECHANICS[f.mech]?.clock(f, foe); };
 export const mechLocked = (f: Fighter): boolean => !!f.mech && !!MECHANICS[f.mech]?.locked(f);
 export const mechIntercept = (D: Fighter, d: Fighter, move: string | null, angle: number): 'parry' | 'break' | null => (d.mech ? MECHANICS[d.mech]?.intercept(D, d, move, angle) ?? null : null);
