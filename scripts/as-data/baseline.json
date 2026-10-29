@@ -173,6 +173,9 @@
   "src/fight/skyview.ts": {
    "number": 2
   },
+  "src/fight/terrain-draw.ts": {
+   "number": 3
+  },
   "src/art-url.ts": {
    "compare": 1
   },

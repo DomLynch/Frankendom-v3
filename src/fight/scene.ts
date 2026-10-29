@@ -36,6 +36,8 @@ import { createHamstrungAssets } from './hamstrung-assets.ts';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import { drawOpenGround } from '../zone/ground-draw.ts';
 import { anchorInto, type Sizing as GroundSizing } from '../zone/ground.ts';
+import type { Terrain, TerrainRows } from '../zone/terrain.ts';
+import { drawTerrain, type TerrainDraw } from './terrain-draw.ts';
 import { arenaFor, buildArena } from '../stubs.ts';   // V3: arena.ts, arena-themes.ts (V2's flat stage)
 import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
@@ -268,6 +270,8 @@ export function createScene(
   const foeFade = skyView && foeFadeOn(pageSearch, skyView) ? createFoeFade(skyView) : null;   // the far opponent melts into the clouds where the sand does (foefade.ts); ?foefade=v1 or no band: null, nothing below runs
   scene.userData.foeFade = foeFade;   // read by the stills' probe only
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
+  let terrainDraw: TerrainDraw | null = null, terrainRows!: TerrainRows, terrainLift = 0, terrainHero = 0;   // the zone's hills (openTerrain below); null = the floor stays flat, every height below is 0
+  const fadeEye = new THREE.Vector3(), groundH = (x: number, z: number): number => (terrainDraw ? terrainDraw.height(x, z) : 0);
   let floorBase: THREE.Color | undefined; const ringTintA = new THREE.Color(), ringTintB = new THREE.Color();   // the sand's own colour and scratch colours for the biome ring's tint (ringLook below)
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
@@ -708,7 +712,7 @@ export function createScene(
           }
         }
         if (!entry) continue;
-        entry.group.visible = true; entry.group.position.set(at.x, 0, at.z); entry.group.rotation.y = at.heading; applyStar(entry.group, at.star);
+        entry.group.visible = true; entry.group.position.set(at.x, groundH(at.x, at.z), at.z); entry.group.rotation.y = at.heading; applyStar(entry.group, at.star);
         const { pose } = entry;
         entry.actor.update(0, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, entry.guard, CHARGE_LEAN[opponentId] ?? null, entry.holding, pose.span ?? null);   // the rest pose it was made in, held (speed 0)
       }
@@ -753,7 +757,7 @@ export function createScene(
       }
       const pose = actorPose(p, 1), f = p.duel.fighters[1], speed = dt > 0 ? Math.hypot(p.enemy.x - live.x, p.enemy.z - live.z) / dt : 0;
       live.x = p.enemy.x; live.z = p.enemy.z;
-      live.group.visible = true; live.group.position.set(p.enemy.x, 0, p.enemy.z); live.group.rotation.y = p.enemy.heading; applyStar(live.group, star ?? 0);
+      live.group.visible = true; live.group.position.set(p.enemy.x, groundH(p.enemy.x, p.enemy.z), p.enemy.z); live.group.rotation.y = p.enemy.heading; applyStar(live.group, star ?? 0);
       live.actor.fatigue(p.fatigue[1], FOE_TUNE[opponentId]);
       live.actor.update(speed, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, f.guardDirection, CHARGE_LEAN[opponentId] ?? null, holdingCharge(f), pose.span ?? null);
       bodyMechanicFor(spawn?.kind)?.view(live.group, f.phases);   // an attacker boss with a signature mechanic wears what it did (a lost limb), the same drawing as the held foe's
@@ -926,11 +930,19 @@ export function createScene(
     get mobDrawn() { return mobSlots.filter((s) => s.group.visible).length; },   // the stills and the cost table read how many mobs are on screen
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
+    /** The zone's terrain (data/terrain.json, src/zone/terrain.ts), called after openGround: hills on the floor, the hero, the foes and the camera ride them; the pads stay level at 0. `scale`: the floor group's scale (world.pitScale). */
+    openTerrain(terrain: Terrain, rows: TerrainRows, scale: number, gridRadiusMetres: number) {
+      const floor = arena.group.getObjectByName('floor') as THREE.Mesh | null;
+      if (!floor || terrainDraw) return;
+      const oldGrid = arena.group.children.find((c) => c instanceof THREE.GridHelper); if (oldGrid) oldGrid.visible = false;
+      terrainDraw = drawTerrain({ parent: scene, floor, scale, gridRadiusMetres, terrain, rows, fade: floorFade });
+      floor.position.y = -rows.mesh.floorDropMetres / scale; terrainRows = rows;
+    },
     openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
     /** The biome ring's look at the hero's distance (data/rings.json via src/zone/rings.ts ringLook): the sand's colour is its own colour times the tint mixed `t` of the way from `tintA` to `tintB`, and the sky ring's plates take their brightness weights. Presentation only. */
     ringLook(tintA: string, tintB: string, t: number, plates: Readonly<Record<string, number>>) {
       const floor = arena.group.getObjectByName('floor') as THREE.Mesh | null, mat = floor?.material as THREE.MeshStandardMaterial | undefined;
-      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); }
+      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); (terrainDraw?.material as THREE.MeshStandardMaterial | undefined)?.color.copy(mat.color); }   // the hills' clone of the sand takes the same tint
       skyline?.plateWeights(plates);
     },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
@@ -982,6 +994,7 @@ export function createScene(
       freeCamera = false,   // the zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts): no finisher camera, no lock on the corpse; the hero keeps whatever pose he holds until `roamed`
     ) {
       if (arena.group.scale.x !== PLAY_SCALE) { arena.group.scale.setScalar(PLAY_SCALE); const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // the painted boundary ring is the full arena's circle: in a smaller one the wall is the edge   // the floor, ring, backdrop and props come inward with the play circle of the fight on screen (play-radius.ts; Match sets it)
+      terrainDraw?.update(state.x, state.z);   // the terrain mesh re-centres in whole lattice steps (terrain-draw.ts)
       if (groundSnap > 0) { anchorInto(groundAt, state.x, state.z, groundSnap); arena.group.position.set(groundAt.x, 0, groundAt.z); sun.position.set(sunHome.x + groundAt.x, sunHome.y, sunHome.z + groundAt.z); sun.target.position.set(groundAt.x, 0, groundAt.z); }   // the zone's endless ground (data/zone-ground.json groundFollow): the floor, its grid and the sun's shadow frustum stand on the hero, in whole grid cells
       if (specialId && (previewEpoch !== specialEpoch || practice.duel.tick < previewTick)) {
         previewGeneration++; specialFx?.clear(); previewBlocked = false; if (!specialFx) { specialFxLoading = false; if (previewGroup) disposeSpecialGroup(previewGroup); }
@@ -1086,8 +1099,8 @@ export function createScene(
         rig.started && dt > 0
           ? Math.hypot(practice.enemy.x - opponent.position.x, practice.enemy.z - opponent.position.z) / dt
           : 0;
-      player.position.set(state.x, 0, state.z);
-      opponent.position.set(practice.enemy.x, 0, practice.enemy.z); applyStar(opponent, liveStarN);   // data/stars.json: the live rig's star scale and glow
+      player.position.set(state.x, groundH(state.x, state.z), state.z);
+      opponent.position.set(practice.enemy.x, groundH(practice.enemy.x, practice.enemy.z), practice.enemy.z); applyStar(opponent, liveStarN);   // data/stars.json: the live rig's star scale and glow
       const playerDefence = defenceReaction(practice),
         enemyDefence = defenceReaction(practice, true);
       // Both actors present the same per-move combat state; the rig's clip and contact pose come from the simulation's data.
@@ -1405,6 +1418,7 @@ export function createScene(
         }
       }
       // roamed or free: no finisher camera, the follow lock on the walking hero
+      camera.position.y -= terrainLift;   // the terrain's lift (below) comes off before the rig reads its own place and goes back on after it
       rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed && !freeCamera ? {
         finisher, posed: !!finisherPose, draw: !!practice.finish.draw, victim: practice.finish.victim, clock: finishClock,
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
@@ -1413,6 +1427,12 @@ export function createScene(
         focus: cutBone ? cutFocus : null,
         fallen: heroLies && practice.finish.victim === 0 ? (fallenAt = warriors?.player.boneWorld('pelvis') ?? fallenAt) : null,
       } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden, freeCamera);
+      if (terrainDraw) {   // the camera rides the hero's ground (a translation, so its aim is kept) and never sinks into the hill behind him
+        terrainHero = groundH(state.x, state.z);
+        const floorAt = groundH(camera.position.x, camera.position.z) + terrainRows.camera.clearanceMetres;
+        terrainLift = Math.max(terrainHero, floorAt - camera.position.y);
+        camera.position.y += terrainLift;
+      }
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock
       // for a posed finisher, the plain fall's own progress for a plain death, so the plain death completes earlier and the
@@ -1431,7 +1451,7 @@ export function createScene(
       const specialDim = runtimeSpecial?.exposure ?? (specialFx as ModeFx | undefined)?.exposure ?? 1;   // Nyx's Nightfall drain
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
-      floorFade?.move(camera.position);
+      floorFade?.move(terrainDraw ? fadeEye.copy(camera.position).setY(camera.position.y - terrainHero) : camera.position);   // the sand-melt reads the eye's height over the hero's ground
       if (foeFade) { foeFade.move(camera.position); if ((foeFadeTick++ & 15) === 0) foeAdoptAll(); }   // the opponents' fade is measured from the eye; new gear and pooled bodies are picked up within 16 frames
       skyline?.heading(camera);
       skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts); the camera was placed by rig.update above

@@ -98,7 +98,7 @@ test('?skyview=v1 equals the look before: no view = the row as it was (centre, h
   assert.match(scene2, /const skyView = skylineOn\(pageSearch\) \? skyViewFor\(pageSearch\) : null;/);   // no link: null, and every use below is gated on it
   assert.match(scene2, /if \(skyView\) applyFog\(scene, skyView\);/);
   assert.match(scene2, /const floorFade = skyView \? fadeFloor\(arena\.group, skyView\) : null;/);
-  assert.match(scene2, /\n\s*floorFade\?\.move\(camera\.position\);\n/);
+  assert.match(scene2, /\n\s*floorFade\?\.move\(terrainDraw \? fadeEye\.copy\(camera\.position\)\.setY\(camera\.position\.y - terrainHero\) : camera\.position\);/);   // re-pinned with the terrain (data/terrain.json): with no hills (terrainDraw null) the melt reads camera.position exactly as before
   assert.match(scene2, /drawOpenGround\(arena\.group, camera, sizing\); groundSnap = sizing\.snap; floorFade\?\.adopt\(arena\.group\);/);   // the zone swaps in a longer grid: it melts too
 });
 

@@ -102,7 +102,8 @@ import { zoneFor as plainZoneFor } from '../stubs.ts';
 import DAILY_ROWS from '../../data/daily-pit.json' with { type: 'json' };
 import { createDaily, sessionOf } from '../daily-pit-ui.ts';   // the Daily Pit (data/daily-pit.json, src/daily-pit.ts): a button on every page; inside the daily the zone is the day's one boss with its modifier
 import type { DailyFile } from '../daily-pit.ts';
-import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { GROUND, groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { TERRAIN, terrainFor } from '../zone/terrain.ts';
 import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
 configureSimMechanics(MECHANICS_ROWS.mechanics);   // the boss signature mechanics (the sim imports no data/ json: the driver lays the rows in, before any fight or effect is built)
@@ -294,6 +295,7 @@ function nameOpponent() {   // :397 without the legend
 // (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale, undefined, sandOn(search)));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
+if (ZONE && groundOn(search)) { const zoneRow = orderedZone(zoneFor(search), FIGHT.order, search), hills = terrainFor(zoneRow, pitOrigin(zoneRow, WORLD)); if (hills) view.openTerrain(hills, TERRAIN, WORLD.pitScale, GROUND.gridRadiusMetres); }   // the zone's hills from a seed (data/terrain.json): flat pads at the pit, the camp and every boss, render only; no flag of its own (?ground=v1 and ?postkill=v1 stay flat)
 if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
 const DEATH = heroDeathFor(!!ZONE, search);   // data/hero-death.json: the death ragdoll, camera, 'You fell' line and Respawn button; null = ?herodeath=v1 (or ?postkill=v1): the fall, 'You died' and the automatic stand-up as before
 let respawnAsked = false;
