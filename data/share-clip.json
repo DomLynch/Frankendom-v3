@@ -10,7 +10,7 @@
   "bitsPerSecond": 4000000,
   "types": ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"],
   "guard": { "seconds": 3, "maxFrameMs": 45 },
-  "watermark": { "text": "frankendom.com", "sizePx": 30, "colour": "#ffffff", "alpha": 0.75, "marginPx": 28, "font": "600 {px}px Georgia, 'Times New Roman', serif", "lineHeight": 1.4 },
-  "file": { "prefix": "frankendom", "title": "Frankendom", "stillType": "image/png", "stillQuality": 0.92, "revokeSeconds": 60 },
-  "button": { "label": "Share clip", "stillLabel": "Share picture", "making": "Making clip…", "saved": "Saved", "failed": "Couldn't make the clip", "failedSeconds": 3, "savedSeconds": 2,"hideSeconds": 40, "bottomPx": 14, "zIndex": 31, "colour": "#ffd34a", "sizePx": 12 }
+  "watermark": { "text": "frankendom.com", "sizePx": 30, "colour": "#ffffff", "alpha": 0.75, "marginPx": 28 },
+  "file": { "prefix": "frankendom", "title": "Frankendom", "stillType": "image/png" },
+  "button": { "label": "Share clip", "stillLabel": "Share picture", "making": "Making clip…", "saved": "Saved", "failed": "Couldn't make the clip", "hideSeconds": 40, "bottomPx": 14, "zIndex": 31, "colour": "#ffd34a", "sizePx": 12 }
 }

@@ -6,7 +6,7 @@ import DEFS from './camera-rules-defs.json' with { type: 'json' };
 import MANIFEST from './camera-rules-defs.manifest.json' with { type: 'json' };
 
 export type CameraRule = { readonly id: string; readonly value: number; readonly unit: string };
-const NAMED = ['aimPerShrink', 'fightBackDefault', 'combatPitchMax','lowSide', 'lowLift', 'tallBack', 'tallLift', 'shoulder', 'sideClear', 'shortFade', 'followAhead', 'followLookY', 'compileBoundMs', 'lookBakeMs', 'tourDelay', 'tourAfterSettle', 'tourBlendIn', 'tourLap', 'tourBreathe', 'tourRise', 'tourRadius', 'tourBreath', 'tourLookY', 'tourLookYPortrait', 'introLap', 'introRadius', 'introBreath', 'introBreathe', 'introHeight', 'introRise', 'introRiseEvery', 'introLookY', 'introLookYPortrait', 'introBlendIn', 'introBlendOut', 'arenaClamp', 'lockBackFloor', 'lockLiftFloor', 'lockGapFloor', 'framingTallWraith', 'lockBackPerGap', 'lockBackBase', 'lockLiftPerGap', 'walkOrbitRadius', 'sideLookY', 'settleMin', 'settleStill', 'settleSpeed', 'dollyPush', 'dollySlide', 'dollyTurn', 'orbitPitchStart', 'orbitYawPerPx', 'orbitPitchPerPx', 'orbitPitchMin', 'orbitPitchMax', 'kickSettleDefault', 'camSettleRate', 'lockLookY', 'finishPushClock', 'finishPushRate', 'pushEyeY', 'pushEyeShare', 'pushLookY', 'pushLookShare', 'bigBodyScale', 'tourEyeLow', 'tourEyeHigh', 'tourRiseLow', 'tourRiseHigh', 'lookFoeAngle', 'lookFoeDistance', 'lookFoeEyeY', 'lookFoeLookY', 'baseFov', 'zoomLimitLow', 'zoomLimitHigh', 'wideZoomHigh', 'wideFromLow', 'wideFromHigh', 'wideHfovLow', 'wideHfovHigh', 'wideHfovNone', 'shoveFps', 'followOpenBack', 'followOpenUp', 'followStartY', 'followStartZ', 'followFpLookMetres', 'followFitUpShare', 'followCapUpShare', 'followStickDrop', 'followStickGaze', 'followEaseRate'] as const;
+const NAMED = ['aimPerShrink', 'fightBackDefault', 'combatPitchMax','lowSide', 'lowLift', 'tallBack', 'tallLift', 'shoulder', 'sideClear', 'shortFade', 'followAhead', 'followLookY', 'compileBoundMs', 'lookBakeMs', 'tourDelay', 'tourAfterSettle', 'tourBlendIn', 'tourLap', 'tourBreathe', 'tourRise', 'tourRadius', 'tourBreath', 'tourLookY', 'tourLookYPortrait', 'introLap', 'introRadius', 'introBreath', 'introBreathe', 'introHeight', 'introRise', 'introRiseEvery', 'introLookY', 'introLookYPortrait', 'introBlendIn', 'introBlendOut', 'arenaClamp', 'lockBackFloor', 'lockLiftFloor', 'lockGapFloor'] as const;
 /** The one loader: rows keyed by id (a duplicate id or a missing or mistyped field is refused), every rule the stage reads by name must exist, with a positive value. */
 export function loadCameraRules(raw: { rules?: readonly unknown[] }): readonly CameraRule[] {
   loadRegistry([tableFromFile(MANIFEST.tables[0], raw, 'camera-rules-defs.json')]);
@@ -16,15 +16,7 @@ export function loadCameraRules(raw: { rules?: readonly unknown[] }): readonly C
   return rows;
 }
 export const CAMERA_RULES: readonly CameraRule[] = loadCameraRules(DEFS);
-/** One contact's camera shove, a row of camera-rules-defs.json `shoves` (metres; `holdFrames` at the shoveFps rule; `settle` seconds). camera-kick.ts reads these by id; a missing id throws at load. */
-export type ShoveRow = { readonly id: string; readonly along: number; readonly drop: number; readonly dropPerfect?: number; readonly side: number; readonly holdFrames: number; readonly settle: number };
-const SHOVES = tableFromFile(MANIFEST.tables[1], DEFS, 'camera-rules-defs.json');
-loadRegistry([SHOVES]);
-const SHOVE_IDS = ['guardBroken', 'hitHeavy', 'hitLight', 'parried', 'blockedHeavy', 'blockedLight'] as const;
-for (const must of SHOVE_IDS) if (!(SHOVES.rows as readonly ShoveRow[]).some((r) => r.id === must)) throw Error(`camera-rules: the camera kick reads the "${must}" shove by name, so it needs a row`);
-export const shoveRow = (id: (typeof SHOVE_IDS)[number]): ShoveRow => (SHOVES.rows as readonly ShoveRow[]).find((r) => r.id === id)!;
-const BY_ID = new Map(CAMERA_RULES.map((r) => [r.id, r.value]));
-export const cameraRule = (id: (typeof NAMED)[number]): number => BY_ID.get(id)!;
+export const cameraRule = (id: (typeof NAMED)[number]): number => CAMERA_RULES.find((r) => r.id === id)!.value;
 /** The title tour's seconds and metres, one row each. */
 export const tourRules = () => ({ delay: cameraRule('tourDelay'), afterSettle: cameraRule('tourAfterSettle'), blendIn: cameraRule('tourBlendIn'), lap: cameraRule('tourLap'), breathe: cameraRule('tourBreathe'), rise: cameraRule('tourRise'), radius: cameraRule('tourRadius'), breath: cameraRule('tourBreath'), lookY: cameraRule('tourLookY'), lookYPortrait: cameraRule('tourLookYPortrait') });
 /** The first-visit intro orbit's seconds and metres, one row each (camera.ts introTour). */

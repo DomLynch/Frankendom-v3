@@ -3,9 +3,9 @@
   "enabled": true,
   "storageKey": "fd3.commentator",
   "seed": "arena-commentator",
-  "caps": { "perSession": 80, "perMinute": 6, "gapSeconds": 4, "minuteSeconds": 60 },
+  "caps": { "perSession": 80, "perMinute": 6, "gapSeconds": 4 },
   "caption": { "seconds": 3.4, "fadeMs": 350, "maxChars": 64, "topPct": 15.2, "maxWidthPct": 92, "fontPx": 12, "colour": "#fff3d6", "shadow": "0 1px 2px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.85)", "zIndex": 28 },
-  "thresholds": { "heroLowPct": 25, "bossLowPct": 20, "missStreak": 4, "rollCount": 5, "rollWindowSeconds": 4, "idleSeconds": 20, "lowResetPct": 15, "idleMoveEpsilon": 0.05, "starTwoLevel": 2 },
+  "thresholds": { "heroLowPct": 25, "bossLowPct": 20, "missStreak": 4, "rollCount": 5, "rollWindowSeconds": 4, "idleSeconds": 20 },
   "partNames": { "arm_right": "right arm", "arm_left": "left arm", "leg_right": "right leg", "leg_left": "left leg", "head": "head", "head_split": "head", "belly_open": "belly", "arm_sword": "sword arm", "arm_off": "off arm" },
   "events": {
     "fight_start": { "about": "a boss engages the hero (params: boss)", "cooldownSeconds": 20, "probability": 1, "priority": true, "params": ["boss"], "lines": [

@@ -1,9 +1,8 @@
-import { cameraRule } from './camera-rules.ts';
 // V3: the duel camera's zoom (data/fight.json camera.zoom, Dom 2026-10-27: "just add 10%"). Presentation only: it scales the lens, never the sim.
 // zoom 1 is today's lens exactly (the 51 degree vertical field of view); 1.1 makes everything 10% larger on screen about the frame's centre.
 // ?zoom=<n> replaces the row for that page load (any value inside the limits; ?zoom=1 = the camera as it was before the row).
-export const ZOOM_LIMITS = [cameraRule('zoomLimitLow'), cameraRule('zoomLimitHigh')] as const;
-export const BASE_FOV = cameraRule('baseFov');   // camera-rules-defs.json baseFov; scene.ts's PerspectiveCamera vertical field of view (degrees), the lens at zoom 1
+export const ZOOM_LIMITS = [0.5, 2] as const;
+export const BASE_FOV = 51;   // scene.ts's PerspectiveCamera vertical field of view (degrees), the lens at zoom 1
 
 /** The zoom for this page: the `?zoom=` query when it is a number inside the limits, else the row's. An unusable query is ignored, not clamped. */
 export const cameraZoom = (row: number, search: string): number => {
@@ -17,15 +16,14 @@ export const cameraZoom = (row: number, search: string): number => {
 // (a blend from 1 at `fromAspect`), never past `maxHfovDeg` of horizontal view on an ultra-wide. A screen narrower than `fromAspect` (every portrait phone and tablet) gets exactly 1: portrait is untouched.
 // ?wide=<n> replaces the row's zoom for that page load (1..2; ?wide=v1 or ?wide=1 = no wide-screen zoom at all).
 export type WideRow = { fromAspect: number; toAspect: number; zoom: number; maxHfovDeg: number };
-export const WIDE_LIMITS = { zoom: [1, cameraRule('wideZoomHigh')], fromAspect: [cameraRule('wideFromLow'), cameraRule('wideFromHigh')], maxHfovDeg: [cameraRule('wideHfovLow'), cameraRule('wideHfovHigh')] } as const;
-const NO_HFOV_CAP = cameraRule('wideHfovNone');   // degrees: wide off means no horizontal cap
+export const WIDE_LIMITS = { zoom: [1, 2], fromAspect: [0.75, 2], maxHfovDeg: [40, 120] } as const;
 
 /** The row for this page: `?wide=<n>` (a number 1..2) replaces its zoom, `?wide=v1` is the lens without it; anything else keeps the row. */
 export const wideRow = (row: WideRow, search: string): WideRow => {
   const q = new URLSearchParams(search).get('wide');
-  if (q === 'v1') return { ...row, zoom: 1, maxHfovDeg: NO_HFOV_CAP };
+  if (q === 'v1') return { ...row, zoom: 1, maxHfovDeg: 179 };
   const n = q === null || q.trim() === '' ? NaN : Number(q);
-  return Number.isFinite(n) && n >= WIDE_LIMITS.zoom[0] && n <= WIDE_LIMITS.zoom[1] ? { ...row, zoom: n, ...(n === 1 ? { maxHfovDeg: NO_HFOV_CAP } : {}) } : row;
+  return Number.isFinite(n) && n >= WIDE_LIMITS.zoom[0] && n <= WIDE_LIMITS.zoom[1] ? { ...row, zoom: n, ...(n === 1 ? { maxHfovDeg: 179 } : {}) } : row;
 };
 
 /** The extra lens zoom for a screen of this aspect (width / height) on top of the page's lens `zoom`: exactly 1 below `fromAspect`, `row.zoom` from `toAspect`, linear between; and never so little that the horizontal field passes `maxHfovDeg`. */

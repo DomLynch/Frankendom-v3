@@ -1,7 +1,7 @@
 {
   "about": "Deaths-and-errors telemetry (Dom 2026-10-28: 'tracking deaths and errors on a server'). The page (src/telemetry.ts) batches a few anonymous events and POSTs them to the SAME-ORIGIN `path` (nginx proxies /t to the collector on 127.0.0.1:`port`, deploy/telemetry/); the collector (server/telemetry/, node, NOT in the game bundle) validates every event against the `events` table below and appends one JSON line per event to a size-capped, rotating log. Privacy: a random per-browser id (localStorage, try/catch) and a random per-visit id; no IP is read or stored, no free text from the player (the only strings are the boss kind, an error message / stack from the code, and the build sha); `?telemetry=off`, Do-Not-Track, localhost and a non-sha dev build send nothing. Every number is a row here so the page and the collector cannot disagree.",
   "path": "/t",
-  "off": { "query": "telemetry", "value": "off", "hosts": ["localhost", "127.0.0.1", "[::1]"], "hostSuffixes": [".localhost", ".test"], "reasons": { "localHost": "local host", "notDeployed": "not a deployed build" } },
+  "off": { "query": "telemetry", "value": "off", "hosts": ["localhost", "127.0.0.1", "[::1]"], "hostSuffixes": [".localhost", ".test"] },
   "client": {
     "flushMs": 15000,
     "maxQueue": 40,
@@ -9,8 +9,6 @@
     "maxEventsPerMinute": 30,
     "maxErrorsPerVisit": 10,
     "maxPerEventPerVisit": 60,
-    "rateWindowMs": 60000,
-    "dedupeChars": 80,
     "storageKey": "fd3.tid"
   },
   "caps": { "maxBodyBytes": 6144, "maxId": 40, "maxSha": 40, "maxMessage": 200, "maxSource": 120, "maxStack": 600, "maxBoss": 40, "maxSeconds": 86400 },

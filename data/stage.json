@@ -410,7 +410,6 @@
       "v1": "v1",
       "foeFadeQuery": "foefade",
       "foeFadeV1": "v1",
-      "floorOrderOffset": 100,
       "default": "b",
       "variants": {
         "a": { "fogColor": "#936877", "fogDensity": 0.014, "fadeStartDegrees": 0, "fadeEndDegrees": 0, "dropMetres": 0, "heightMetres": 0, "brightness": 0.9, "foeFade": false, "foeFadeMinOpacity": 0.5, "foeFadeClearMetres": 30 },

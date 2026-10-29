@@ -5,8 +5,8 @@ import DEFS from '../data/telemetry.json' with { type: 'json' };
 type FieldType = 'seconds' | 'percent' | 'boss' | 'message' | 'source' | 'stack' | 'int' | 'kind';
 export type TelemetryDefs = {
   path: string;
-  off: { query: string; value: string; hosts: string[]; hostSuffixes: string[]; reasons: { localHost: string; notDeployed: string } };
-  client: { flushMs: number; maxQueue: number; maxBatch: number; maxEventsPerMinute: number; maxErrorsPerVisit: number; maxPerEventPerVisit: number; rateWindowMs: number; dedupeChars: number; storageKey: string };
+  off: { query: string; value: string; hosts: string[]; hostSuffixes: string[] };
+  client: { flushMs: number; maxQueue: number; maxBatch: number; maxEventsPerMinute: number; maxErrorsPerVisit: number; maxPerEventPerVisit: number; storageKey: string };
   caps: { maxBodyBytes: number; maxId: number; maxSha: number; maxMessage: number; maxSource: number; maxStack: number; maxBoss: number; maxSeconds: number };
   server: { host: string; port: number; logDir: string; logName: string; maxFileBytes: number; keepFiles: number; perIdEventsPerMinute: number; perIdRequestsPerMinute: number; globalEventsPerMinute: number; maxTrackedIds: number };
   events: Record<string, { about: string; fields: Record<string, FieldType> }>;

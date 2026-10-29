@@ -10,9 +10,9 @@ import ROWS from '../data/share-clip.json' with { type: 'json' };
 type ShareClipRows = {
   on: boolean; leadSeconds: number; tailSeconds: number; stopTimeoutSeconds: number; width: number; height: number; fps: number; bitsPerSecond: number; types: string[];
   guard: { seconds: number; maxFrameMs: number };
-  watermark: { text: string; sizePx: number; colour: string; alpha: number; marginPx: number; font: string; lineHeight: number };
-  file: { prefix: string; title: string; stillType: string; stillQuality: number; revokeSeconds: number };
-  button: { label: string; stillLabel: string; making: string; saved: string; failed: string; failedSeconds: number; savedSeconds: number; hideSeconds: number; bottomPx: number; zIndex: number; colour: string; sizePx: number };
+  watermark: { text: string; sizePx: number; colour: string; alpha: number; marginPx: number };
+  file: { prefix: string; title: string; stillType: string };
+  button: { label: string; stillLabel: string; making: string; saved: string; failed: string; hideSeconds: number; bottomPx: number; zIndex: number; colour: string; sizePx: number };
 };
 export const SHARE_CLIP = ROWS as unknown as ShareClipRows;
 const MOMENT_EVENT = 'v3:clip-moment';
@@ -32,9 +32,7 @@ export function validateShareClip(r: ShareClipRows): void {
   word('watermark.text', r.watermark?.text, 40); num('watermark.sizePx', r.watermark?.sizePx, 8, 120); num('watermark.alpha', r.watermark?.alpha, 0, 1); num('watermark.marginPx', r.watermark?.marginPx, 0, 200);
   if (!(typeof r.watermark?.colour === 'string' && HEX.test(r.watermark.colour))) throw new Error('share-clip.watermark.colour is a #rrggbb colour');
   if (!(typeof r.file?.prefix === 'string' && /^[a-z0-9-]{1,24}$/.test(r.file.prefix))) throw new Error('share-clip.file.prefix is a lower-case token');
-  word('file.title', r.file?.title, 60); word('watermark.font', r.watermark?.font, 60); if (!r.watermark.font.includes('{px}')) throw new Error('share-clip.watermark.font has a {px} slot');
-  num('watermark.lineHeight', r.watermark?.lineHeight, 1, 2); num('file.stillQuality', r.file?.stillQuality, 0.05, 1); num('file.revokeSeconds', r.file?.revokeSeconds, 5, 60);
-  num('button.failedSeconds', r.button?.failedSeconds, 0.05, 30); num('button.savedSeconds', r.button?.savedSeconds, 0.05, 30);
+  word('file.title', r.file?.title, 60);
   if (!['image/png', 'image/jpeg'].includes(r.file?.stillType)) throw new Error('share-clip.file.stillType is image/png or image/jpeg');
   for (const k of ['label', 'stillLabel', 'making', 'saved', 'failed'] as const) word(`button.${k}`, r.button?.[k], 40);
   num('button.hideSeconds', r.button?.hideSeconds, 3, 600); num('button.bottomPx', r.button?.bottomPx, 0, 200); num('button.zIndex', r.button?.zIndex, 0, 1000); num('button.sizePx', r.button?.sizePx, 8, 30);
@@ -85,10 +83,9 @@ export function createShareClip(env: ClipEnv) {
       if (!ctx) { frame = null; return false; }
       const w = rows.watermark, m = env.doc.createElement('canvas'), mc = m.getContext('2d');
       if (mc) {   // the watermark is drawn once into a small canvas; each frame only blits it
-        const font = w.font.replace('{px}', String(w.sizePx));
-        mc.font = font;
-        m.width = Math.ceil(mc.measureText(w.text).width) + 8; m.height = Math.ceil(w.sizePx * w.lineHeight);
-        mc.font = font; mc.textBaseline = 'middle'; mc.globalAlpha = w.alpha;
+        mc.font = `600 ${w.sizePx}px Georgia, 'Times New Roman', serif`;
+        m.width = Math.ceil(mc.measureText(w.text).width) + 8; m.height = Math.ceil(w.sizePx * 1.4);
+        mc.font = `600 ${w.sizePx}px Georgia, 'Times New Roman', serif`; mc.textBaseline = 'middle'; mc.globalAlpha = w.alpha;
         mc.shadowColor = 'rgba(0,0,0,.7)'; mc.shadowBlur = 4; mc.fillStyle = w.colour; mc.fillText(w.text, 4, m.height / 2);
         mark = m;
       }
@@ -154,7 +151,7 @@ export function createShareClip(env: ClipEnv) {
   const disable = () => { dropTakes(); removeButton(); try { env.untap(); } catch { /* none */ } state = 'off'; };
 
   const stillBlob = (): Promise<Blob | null> => new Promise((resolve) => {
-    try { if (!draw()) { resolve(null); return; } frame!.toBlob((b) => resolve(b), rows.file.stillType, rows.file.stillQuality); } catch { resolve(null); }
+    try { if (!draw()) { resolve(null); return; } frame!.toBlob((b) => resolve(b), rows.file.stillType, 0.92); } catch { resolve(null); }
   });
   const finish = async () => {
     const mine = epoch, wasStill = stillOnly;
@@ -168,9 +165,9 @@ export function createShareClip(env: ClipEnv) {
     }
     if (!blob) { clipSec = 0; blob = await stillBlob(); kind = rows.file.stillType; try { env.untap(); } catch { /* none */ } }   // no video (unsupported, failed, or nothing was buffered): a picture of the moment
     if (mine !== epoch) return;   // the next fight began while the file was made: it is dropped
-    if (!blob) { state = 'idle'; showButton(B.failed, false); hideAt = env.now() + B.failedSeconds * 1000; return; }
+    if (!blob) { state = 'idle'; showButton(B.failed, false); hideAt = env.now() + 3000; return; }
     name = fileName(kind, boss, rows);
-    try { file = new File([blob], name, { type: kind }); } catch { state = 'idle'; showButton(B.failed, false); hideAt = env.now() + B.failedSeconds * 1000; return; }
+    try { file = new File([blob], name, { type: kind }); } catch { state = 'idle'; showButton(B.failed, false); hideAt = env.now() + 3000; return; }
     state = 'ready'; showButton(kind.startsWith('video/') ? B.label : B.stillLabel, true); hideAt = env.now() + B.hideSeconds * 1000;
   };
 
@@ -189,12 +186,12 @@ export function createShareClip(env: ClipEnv) {
       if (!done) {
         const a = env.doc.createElement('a'), url = URL.createObjectURL(f);
         a.href = url; a.download = f.name; env.doc.body.append(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), rows.file.revokeSeconds * 1000); done = true;
+        setTimeout(() => URL.revokeObjectURL(url), 60_000); done = true;
       }
     } catch { return; } finally { sending = false; if (button && state === 'ready') button.disabled = false; }
     if (!done) return;
     try { env.telemetry.event('clip_shared', { boss, sec: clipSec }); } catch { /* never throws */ }   // the clip's length in seconds and the boss kind, nothing else
-    file = null; state = 'idle'; showButton(B.saved, false); hideAt = env.now() + B.savedSeconds * 1000;
+    file = null; state = 'idle'; showButton(B.saved, false); hideAt = env.now() + 2000;
   }
 
   return {

@@ -38,7 +38,7 @@ export const SCHEMA = {
   // The presence service and its page client (server/presence/, src/presence/): V1's presence rule rows (id, value, unit); src/presence/rows.ts also checks every rule the code reads by name exists
   'presence': { keys: ['about', 'query', 'path', 'host', 'protocol', 'poseGlobal', 'frame', 'spawn', 'spawnAbout', 'originsAbout', 'origins', 'rules'], rows: { rules: ['id', 'value', 'unit'] }, maps: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'], origins: ['allowed', 'devHosts', 'allowMissing'] }, finite: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] } },
   // The deaths-and-errors telemetry (src/telemetry-rows.ts loads and checks the rest: event field types, caps, the 50 MB log ceiling; test/telemetry.test.mjs pins them)
-  'telemetry': { keys: ['about', 'path', 'off', 'client', 'caps', 'server', 'events', 'kinds'], maps: { off: ['query', 'value', 'hosts', 'hostSuffixes', 'reasons'], client: ['flushMs', 'maxQueue', 'maxBatch', 'maxEventsPerMinute', 'maxErrorsPerVisit', 'maxPerEventPerVisit', 'rateWindowMs', 'dedupeChars', 'storageKey'], caps: ['maxBodyBytes', 'maxId', 'maxSha', 'maxMessage', 'maxSource', 'maxStack', 'maxBoss', 'maxSeconds'], server: ['host', 'port', 'logDir', 'logName', 'maxFileBytes', 'keepFiles', 'perIdEventsPerMinute', 'perIdRequestsPerMinute', 'globalEventsPerMinute', 'maxTrackedIds'] } },
+  'telemetry': { keys: ['about', 'path', 'off', 'client', 'caps', 'server', 'events', 'kinds'], maps: { off: ['query', 'value', 'hosts', 'hostSuffixes'], client: ['flushMs', 'maxQueue', 'maxBatch', 'maxEventsPerMinute', 'maxErrorsPerVisit', 'maxPerEventPerVisit', 'storageKey'], caps: ['maxBodyBytes', 'maxId', 'maxSha', 'maxMessage', 'maxSource', 'maxStack', 'maxBoss', 'maxSeconds'], server: ['host', 'port', 'logDir', 'logName', 'maxFileBytes', 'keepFiles', 'perIdEventsPerMinute', 'perIdRequestsPerMinute', 'globalEventsPerMinute', 'maxTrackedIds'] } },
   'sound': { keys: ['about', 'keep', 'statusMs', 'zone'], maps: { keep: ['about', 'samples', 'rate', 'volume'] } },
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
   'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'hero', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
@@ -61,7 +61,7 @@ export const SCHEMA = {
   // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
-  'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap', 'pileCoordMax', 'lostMax'] } },
+  'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
   // Golden weapon drops (src/zone/golden-drops.ts validateGolden checks the values)
   'golden-weapons': { keys: ['about', 'version', 'halfTurnDegrees', 'limits', 'spend', 'pickup', 'weapons', 'drops', 'lines', 'marker', 'hud'], rows: { weapons: ['id', 'name', 'weapon', 'power', 'tell', 'charges', 'damageMul', 'tier', 'tint'] }, maps: { limits: ['charges', 'damageMul', 'tier', 'chance', 'metres', 'seconds', 'pulse', 'intensity', 'angle', 'coord', 'ground', 'px', 'alpha'], spend: ['event', 'actor', 'target'], pickup: ['reachMetres', 'tapReachMetres', 'tapRadiusPx', 'tapTopFrac', 'tapBottomFrac'], drops: ['bossKill', 'packChest', 'roaming', 'maxGround'], lines: ['pickup', 'spent', 'lost', 'seconds'], marker: ['colour', 'glow', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'showWithinMetres', 'zIndex'], hud: ['colour', 'zIndex', 'topPct', 'sizePx', 'backdropAlpha', 'padPx', 'text'] } },
   // Boss weapons (Dom + Strategy 2026-10-28, src/fight/boss-weapon.ts validateBossWeapons checks the values): one row per archetype a boss is built on; the weapon it fights with and is drawn with
@@ -70,7 +70,7 @@ export const SCHEMA = {
   'rings': { keys: ['about', 'spacing', 'roundTo', 'halfTurnDegrees', 'limits', 'rings', 'bosses'], maps: { spacing: ['marginMetres', 'hopSeconds', 'firstBossSeconds'], limits: ['about', 'distance', 'multiplier', 'plateWeight', 'angleDeg', 'count', 'respawnSeconds'] }, rows: { rings: ['id', 'minDist', 'maxDist', 'blendAtMetres', 'groundTint', 'skyPlates', 'health', 'damage', 'loadAfterKillMetres', 'spawns'], bosses: ['kind', 'name', 'body', 'respawnSeconds', 'aggro', 'leash', 'roam', 'campSize', 'mechanic'] } },
   // Keyboard + mouse and the wide screen (src/fight/kbm.ts validateInput checks the values): a closed key set; input and presentation only
   'input': { keys: ['about', 'schema_version', 'on', 'query', 'off', 'detect', 'hide', 'keys', 'mouseButtons', 'mouse', 'strike', 'partJoin', 'keyNames', 'mouseNames', 'hints', 'layout'],
-    maps: { detect: ['media', 'attribute', 'mouseMovePx', 'doubleTapMs'], keys: ['forward', 'back', 'left', 'right', 'run', 'strike', 'heavy', 'stab', 'roll', 'guard', 'kick', 'skill', 'skill2', 'lock', 'recenter', 'escape'], mouse: ['strike', 'guard', 'lookDragPx'], strike: ['forwardStab', 'slidePx'], layout: ['attribute', 'wideAttribute', 'wideAspect', 'rows'] } },
+    maps: { detect: ['media', 'attribute', 'mouseMovePx'], keys: ['forward', 'back', 'left', 'right', 'run', 'strike', 'heavy', 'stab', 'roll', 'guard', 'kick', 'skill', 'skill2', 'lock', 'recenter', 'escape'], mouse: ['strike', 'guard', 'lookDragPx'], strike: ['forwardStab', 'slidePx'], layout: ['attribute', 'wideAttribute', 'wideAspect', 'rows'] } },
   // The hero's death and respawn loop (src/fight/hero-death.ts validateHeroDeath checks the values): the death-only ragdoll, the death camera, the 'You fell' line and Respawn button
   'hero-death': { keys: ['about', 'on', 'query', 'off', 'ragdoll', 'line', 'button', 'keys', 'respawn', 'cam', 'limits'], maps: { respawn: ['minSeconds', 'autoSeconds'], cam: ['seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'], limits: ['minSeconds', 'autoSeconds', 'seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'] } },
   // Frankendom parts (src/parts.ts validateParts checks the values): closed key sets
@@ -79,12 +79,8 @@ export const SCHEMA = {
     maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], text: ['title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
   // Share clip (src/share-clip.ts validateShareClip checks the values): a closed key set; presentation only
-  // The art-load retry (src/retry.ts reads attempts / delayMs / missingTexturesMessage; test/data-top-rows.test.mjs pins them)
-  'retry': { keys: ['about', 'attempts', 'delayMs', 'missingTexturesMessage'] },
-  // The V1 donor stand-ins that carry names or text (src/stubs.ts)
-  'stubs': { keys: ['about', 'weaponSlots', 'lessonFell', 'lessonNext'] },
   'share-clip': { keys: ['about', 'on', 'leadSeconds', 'tailSeconds', 'stopTimeoutSeconds', 'width', 'height', 'fps', 'bitsPerSecond', 'types', 'guard', 'watermark', 'file', 'button'],
-    maps: { guard: ['seconds', 'maxFrameMs'], watermark: ['text', 'sizePx', 'colour', 'alpha', 'marginPx', 'font', 'lineHeight'], file: ['prefix', 'title', 'stillType', 'stillQuality', 'revokeSeconds'], button: ['label', 'stillLabel', 'making', 'saved', 'failed', 'failedSeconds', 'savedSeconds', 'hideSeconds','bottomPx', 'zIndex', 'colour', 'sizePx'] } },
+    maps: { guard: ['seconds', 'maxFrameMs'], watermark: ['text', 'sizePx', 'colour', 'alpha', 'marginPx'], file: ['prefix', 'title', 'stillType'], button: ['label', 'stillLabel', 'making', 'saved', 'failed', 'hideSeconds', 'bottomPx', 'zIndex', 'colour', 'sizePx'] } },
   'pickup': { keys: ['about', 'on', 'query', 'off', 'units', 'delayS', 'hintSeconds', 'walkAwayM', 'zIndex', 'colour', 'text', 'arrow', 'safe', 'fadeS'],
     maps: { text: ['label', 'sizePx', 'letterSpacingEm', 'shadow', 'maxWidthPx', 'lineHeight'], arrow: ['sizePx', 'bobPx', 'bobS', 'liftPx', 'textGapPx'], safe: ['topFrac', 'bottomFrac', 'sideMarginPx'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
@@ -101,10 +97,10 @@ export const SCHEMA = {
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'classes', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
-    maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale', 'dipFloor'], pushback: ['metres', 'heavyOnly', 'digits'], event: ['type', 'log'],
-      hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength', 'minScale'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max', 'gravityMps2', 'hideY', 'spin', 'upBase', 'upMul', 'speedBase', 'speedMul', 'mod'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
+    maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
+      hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
   // M7 limb damage that changes the fight (src/fight/feel-limbs.ts), opt-in ?feel=limbs (needs ?rules=m4); one row per part (leg, arm_sword, arm_off, torso, head). checked by the 'feel-limbs' block below
-  'feel-limbs': { keys: ['about', 'on', 'query', 'value', 'needs', 'events', 'levelStep', 'dipAskBelow', 'limbs'], maps: { needs: ['query', 'value'], events: ['limp', 'guardDrop', 'weaponDrop'], limbs: ['parts'] },
+  'feel-limbs': { keys: ['about', 'on', 'query', 'value', 'needs', 'events', 'levelStep', 'limbs'], maps: { needs: ['query', 'value'], events: ['limp', 'guardDrop', 'weaponDrop'], limbs: ['parts'] },
     rowMaps: { 'limbs.parts': ['startFrac', 'sided', 'motor', 'blend', 'gait', 'stumble', 'drop', 'sim'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
@@ -172,7 +168,6 @@ function checkFeelLimbs(json, errors) {
   const num = (path, v, lo, hi) => { if (!fin(v) || v < lo || v > hi) errors.push(`${n}.${path}: must be a finite number in [${lo}, ${hi}]`); };
   for (const k of ['query', 'value']) if (typeof json[k] !== 'string' || !json[k]) errors.push(`${n}.${k}: must be a non-empty string`);
   if (typeof json.on !== 'boolean') errors.push(`${n}.on: must be a boolean`);
-  num('dipAskBelow', json.dipAskBelow, 0.5, 1);
   for (const k of ['query', 'value']) if (typeof json.needs?.[k] !== 'string' || !json.needs[k]) errors.push(`${n}.needs.${k}: must be a non-empty string`);
   for (const k of ['limp', 'guardDrop', 'weaponDrop']) if (typeof json.events?.[k] !== 'string' || !json.events[k]) errors.push(`${n}.events.${k}: must be a non-empty string`);
   num('levelStep', json.levelStep, 0.01, 1);
@@ -436,14 +431,14 @@ export function checkCommentator(json) {
   if (typeof json.storageKey !== 'string' || !json.storageKey) e.push(`${n}.storageKey: must be a non-empty string`);
   if (typeof json.seed !== 'string' || !json.seed) e.push(`${n}.seed: must be a non-empty string`);
   const only = (p, o, keys) => { if (!o || typeof o !== 'object') { e.push(`${n}.${p}: must be an object`); return false; } for (const k of Object.keys(o)) if (!keys.includes(k)) e.push(`${n}.${p}.${k}: unknown key`); return true; };
-  if (only('caps', json.caps, ['perSession', 'perMinute', 'gapSeconds', 'minuteSeconds'])) { fin('caps.minuteSeconds', json.caps.minuteSeconds, 1, 600); fin('caps.perSession', json.caps.perSession, 1, 1000); fin('caps.perMinute', json.caps.perMinute, 1, 60); fin('caps.gapSeconds', json.caps.gapSeconds, 0, 120); if (!Number.isInteger(json.caps.perMinute)) e.push(`${n}.caps.perMinute: must be an integer`); }
+  if (only('caps', json.caps, ['perSession', 'perMinute', 'gapSeconds'])) { fin('caps.perSession', json.caps.perSession, 1, 1000); fin('caps.perMinute', json.caps.perMinute, 1, 60); fin('caps.gapSeconds', json.caps.gapSeconds, 0, 120); if (!Number.isInteger(json.caps.perMinute)) e.push(`${n}.caps.perMinute: must be an integer`); }
   if (only('caption', json.caption, ['seconds', 'fadeMs', 'maxChars', 'topPct', 'maxWidthPct', 'fontPx', 'colour', 'shadow', 'zIndex'])) {
     const c = json.caption; fin('caption.seconds', c.seconds, 0.5, 20); fin('caption.fadeMs', c.fadeMs, 0, 2000); fin('caption.maxChars', c.maxChars, 10, 200); fin('caption.topPct', c.topPct, 0, 90); fin('caption.maxWidthPct', c.maxWidthPct, 20, 100); fin('caption.fontPx', c.fontPx, 8, 40); fin('caption.zIndex', c.zIndex, 0, 1000);
     if (!/^#[0-9a-f]{6}$/i.test(c.colour ?? '')) e.push(`${n}.caption.colour: must be #rrggbb`);
     if (typeof c.shadow !== 'string') e.push(`${n}.caption.shadow: must be a string`);
   }
-  if (only('thresholds', json.thresholds, ['heroLowPct', 'bossLowPct', 'missStreak', 'rollCount', 'rollWindowSeconds', 'idleSeconds', 'lowResetPct', 'idleMoveEpsilon', 'starTwoLevel'])) {
-    const t = json.thresholds; fin('thresholds.lowResetPct', t.lowResetPct, 1, 99); fin('thresholds.idleMoveEpsilon', t.idleMoveEpsilon, 0, 10); fin('thresholds.starTwoLevel', t.starTwoLevel, 1, 10);fin('thresholds.heroLowPct', t.heroLowPct, 1, 99); fin('thresholds.bossLowPct', t.bossLowPct, 1, 99); fin('thresholds.missStreak', t.missStreak, 2, 50); fin('thresholds.rollCount', t.rollCount, 2, 50); fin('thresholds.rollWindowSeconds', t.rollWindowSeconds, 0.5, 60); fin('thresholds.idleSeconds', t.idleSeconds, 3, 600);
+  if (only('thresholds', json.thresholds, ['heroLowPct', 'bossLowPct', 'missStreak', 'rollCount', 'rollWindowSeconds', 'idleSeconds'])) {
+    const t = json.thresholds; fin('thresholds.heroLowPct', t.heroLowPct, 1, 99); fin('thresholds.bossLowPct', t.bossLowPct, 1, 99); fin('thresholds.missStreak', t.missStreak, 2, 50); fin('thresholds.rollCount', t.rollCount, 2, 50); fin('thresholds.rollWindowSeconds', t.rollWindowSeconds, 0.5, 60); fin('thresholds.idleSeconds', t.idleSeconds, 3, 600);
     for (const k of ['missStreak', 'rollCount']) if (!Number.isInteger(t[k])) e.push(`${n}.thresholds.${k}: must be an integer`);
   }
   if (!json.partNames || typeof json.partNames !== 'object' || Object.values(json.partNames).some((v) => typeof v !== 'string' || !v)) e.push(`${n}.partNames: must map unit ids to non-empty names`);
@@ -765,8 +760,7 @@ export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fade
 function checkSkyViews(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
   if (v === null || typeof v !== 'object' || Array.isArray(v)) return ['stage.skyline.views: must be an object'];
-  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'foeFadeQuery', 'foeFadeV1', 'floorOrderOffset', 'default', 'variants'].includes(k)) at(k, 'unknown key');
-  if (!Number.isInteger(v.floorOrderOffset) || v.floorOrderOffset < 1 || v.floorOrderOffset > 1000) at('floorOrderOffset', 'must be an integer 1..1000 (the floor draws this many render orders after the strip)');
+  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'foeFadeQuery', 'foeFadeV1', 'default', 'variants'].includes(k)) at(k, 'unknown key');
   if (typeof v.query !== 'string' || !/^[a-z0-9]+$/i.test(v.query) || v.query === s.query) at('query', 'must be a plain word other than skyline.query');
   if (typeof v.v1 !== 'string' || !/^[a-z0-9]+$/i.test(v.v1)) at('v1', 'must be a plain word (the link value for the look before the variants)');
   for (const k of ['foeFadeQuery', 'foeFadeV1']) if (typeof v[k] !== 'string' || !/^[a-z0-9]+$/i.test(v[k])) at(k, 'must be a plain word');
@@ -878,9 +872,7 @@ export function checkFeelClash(j) {
   if (typeof j.pushback?.heavyOnly !== 'boolean') at('pushback.heavyOnly', 'must be a boolean');
   if (typeof j.event?.type !== 'string' || !j.event.type || typeof j.event?.log !== 'string' || !j.event.log) at('event', 'type and log must be non-empty strings');
   for (const k of ['weaponArmRad', 'guardArmRad', 'spineRad']) if (!Array.isArray(j.hero?.[k]) || j.hero[k].length !== 3 || j.hero[k].some((v) => !fin(v) || Math.abs(v) > 1.5)) at(`hero.${k}`, 'must be [x, y, z] radians, each within +-1.5');
-  range('hero.maxStrength', j.hero?.maxStrength, 1, 10); range('hero.minScale', j.hero?.minScale, 0.01, 1); range('timing.dipFloor', j.timing?.dipFloor, 0.001, 1);
-  if (!Number.isInteger(j.pushback?.digits) || j.pushback.digits < 0 || j.pushback.digits > 8) at('pushback.digits', 'must be an integer 0..8');
-  for (const [k, lo, hi] of [['gravityMps2', 0, 100], ['hideY', -100000, 0], ['spin', -10, 10], ['upBase', 0, 10], ['upMul', 1, 1000], ['speedBase', 0, 10], ['speedMul', 1, 1000], ['mod', 1, 1000]]) range(`spark.${k}`, j.spark?.[k], lo, hi);
+  range('hero.maxStrength', j.hero?.maxStrength, 1, 10);
   for (const k of ['weaponArm', 'guardArm', 'spine']) if (typeof j.hero?.bones?.[k] !== 'string' || !j.hero.bones[k]) at(`hero.bones.${k}`, 'must be a bone name');
   const s = j.spark ?? {};
   if (typeof s.on !== 'boolean') at('spark.on', 'must be a boolean');

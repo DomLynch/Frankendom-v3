@@ -6,5 +6,5 @@
   "pile": { "reachMetres": 2, "line": "Recovered {coins} coins", "lineWeapon": "Recovered {coins} coins and the {weapon}", "lostLine": "The {weapon} is lost until its boss falls again" },
   "linger": { "leashRadius": 24, "seconds": 90 },
   "marker": { "colour": "#ffd34a", "ringPx": 46, "beamPx": 110, "widthPx": 2, "alpha": 0.9, "pulseSeconds": 1.6, "fadeWithinMetres": 2.5, "zIndex": 28 },
-  "limits": { "perKill": [0, 10000], "radiusMetres": [0.5, 40], "reachMetres": [0.5, 10], "leashRadius": [4, 80], "seconds": [5, 600], "ringPx": [12, 160], "beamPx": [0, 400], "widthPx": [1, 8], "alpha": [0.1, 1], "pulseSeconds": [0.4, 6], "fadeWithinMetres": [0, 20], "cap": [1000, 99999999], "pileCoordMax": [0, 100000], "lostMax": [0, 20] }
+  "limits": { "perKill": [0, 10000], "radiusMetres": [0.5, 40], "reachMetres": [0.5, 10], "leashRadius": [4, 80], "seconds": [5, 600], "ringPx": [12, 160], "beamPx": [0, 400], "widthPx": [1, 8], "alpha": [0.1, 1], "pulseSeconds": [0.4, 6], "fadeWithinMetres": [0, 20], "cap": [1000, 99999999] }
 }

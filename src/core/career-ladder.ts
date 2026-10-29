@@ -8,15 +8,15 @@ const LADDER = CAREER_RULES.ladderRule[0]!;   // the ladderRule row of career-ru
 // sub-rank everywhere, so Recruit V is 4 wins, Origin I 45 and Origin V 49. Wins only add marks and losses never remove them, so rank never demotes.
 // Existing marks carry over as they are: the count is the same, only the mapping changed. Pure: the same count renders the same rank on
 // the HUD, in the journal, in tests and on the loot verifier (deploy.sh ships src/ to it, so client and server switch together).
-export const TITLES: readonly string[] = LADDER.titles;   // the ten names are the ladderRule row's `titles` (career-rules.json)
+export const TITLES = ['Recruit', 'Legionary', 'Gladiator', 'Veteran', 'Champion', 'Praetorian', 'Master', 'Primus', 'Invictus', 'Origin'] as const;
 const MAX_LEVEL = LADDER.maxLevel;
 // A fight recorded before the 50-level ladder (record version < FIRST_FIFTY_VERSION) was fought under a top of 46: the server judges it by the rank
 // that ladder gave (awards.ts levelRefusal), so a claim already in the queue at the deploy is not refused for a floor that did not exist when it was played.
-export const FIRST_FIFTY_VERSION = LADDER.firstFiftyVersion, OLD_MAX_LEVEL = LADDER.oldMaxLevel;
+export const FIRST_FIFTY_VERSION = 27, OLD_MAX_LEVEL = LADDER.oldMaxLevel;
 const NUMERALS = ['I', 'II', 'III', 'IV', 'V'] as const;
 // step/fill: the class-progress bar (Dom 2026-09-23; 2026-09-27: one whole segment per win, no partial fill) — one segment per numeral,
 // `step` of them lit, `fill` always 0 now (kept so the bar code reads unchanged); next: the class the bar climbs toward ('' at Origin, no bar).
-type Rank = { title: string;numeral: string; level: number; label: string; next: string; step: number; fill: number };
+type Rank = { title: (typeof TITLES)[number]; numeral: string; level: number; label: string; next: string; step: number; fill: number };
 // The marks the rank shows: the account's server figure when it has one (session.standing) plus its unswept claims and the wins still
 // in this device's claims outbox (loot-claims.ts), else this device's count.
 // Beta award policy (owner 2026-09-20): every won duel in the arena earns one mark — a rematch or a journal-picked opponent included.
@@ -52,6 +52,6 @@ export const DIAL_TRAIL = LADDER.dialTrail;
 // `rank`: the rank level the fight was fought at (before its result lands).
 export function rankFor(marks: number): Rank {
   const level = levelOfMarks(marks), index = level - 1;
-  const title = TITLES[Math.floor(index / NUMERALS.length)]!, step = index % NUMERALS.length, numeral = NUMERALS[step];
+  const title = TITLES[Math.floor(index / NUMERALS.length)], step = index % NUMERALS.length, numeral = NUMERALS[step];
   return { title, numeral, level, label: `${title} ${numeral}`, next: TITLES[Math.floor(index / NUMERALS.length) + 1] ?? '', step, fill: 0 };
 }

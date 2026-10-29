@@ -11,9 +11,9 @@ import { hash32 } from './fight/bout-seed.ts';
 type CommentatorEventRow = { about: string; cooldownSeconds: number; probability: number; priority?: boolean; params?: string[]; lines: string[] };
 type CommentatorFile = {
   about: string; enabled: boolean; storageKey: string; seed: string;
-  caps: { perSession: number; perMinute: number; gapSeconds: number; minuteSeconds: number };
+  caps: { perSession: number; perMinute: number; gapSeconds: number };
   caption: { seconds: number; fadeMs: number; maxChars: number; topPct: number; maxWidthPct: number; fontPx: number; colour: string; shadow: string; zIndex: number };
-  thresholds: { heroLowPct: number; bossLowPct: number; missStreak: number; rollCount: number; rollWindowSeconds: number; idleSeconds: number; lowResetPct: number; idleMoveEpsilon: number; starTwoLevel: number };
+  thresholds: { heroLowPct: number; bossLowPct: number; missStreak: number; rollCount: number; rollWindowSeconds: number; idleSeconds: number };
   partNames: Record<string, string>;
   events: Record<string, CommentatorEventRow>;
 };
@@ -58,7 +58,7 @@ export function createCommentator(rows: CommentatorFile, sink: (line: string) =>
     const row = rows.events[id];
     if (!enabled || !row || said >= caps.perSession) return null;
     if (clock - lastAt[id]! < row.cooldownSeconds) return null;
-    if (!row.priority && (clock - lastAny < caps.gapSeconds || clock - stamps[ring]! < caps.minuteSeconds)) return null;
+    if (!row.priority && (clock - lastAny < caps.gapSeconds || clock - stamps[ring]! < 60)) return null;
     const need = row.params;
     if (need) for (let i = 0; i < need.length; i++) if (!params || typeof params[need[i]!] !== 'string') return null;
     if (row.probability < 1 && hash32(`${rows.seed}:p:${id}`, rolls[id]!++) / 4294967296 >= row.probability) return null;
@@ -81,7 +81,7 @@ export function createCommentator(rows: CommentatorFile, sink: (line: string) =>
       if (dt > 0) clock += dt;
       if (engaged && !wasEngaged && !heroDown) {   // a fight begins: its counters restart; a star boss gets his own introduction
         firstHit = false; misses = 0; heroLow = false; bossLow = false; rollTimes.fill(-Infinity);
-        if (star > 0) { if (!say(star >= th.starTwoLevel ?'star_2' : 'star_1', { boss: bossName(kind) })) say('fight_start', { boss: bossName(kind) }); }
+        if (star > 0) { if (!say(star >= 2 ? 'star_2' : 'star_1', { boss: bossName(kind) })) say('fight_start', { boss: bossName(kind) }); }
         else say('fight_start', { boss: bossName(kind) });
       }
       wasEngaged = engaged;
@@ -92,12 +92,12 @@ export function createCommentator(rows: CommentatorFile, sink: (line: string) =>
       wasBossDown = bossDown;
       if (engaged && !heroDown && !bossDown) {
         if (!heroLow && heroPct <= th.heroLowPct) { heroLow = true; say('hero_low'); }
-        else if (heroLow && heroPct > th.heroLowPct + th.lowResetPct) heroLow = false;
+        else if (heroLow && heroPct > th.heroLowPct + 15) heroLow = false;
         if (!bossLow && bossPct <= th.bossLowPct) { bossLow = true; say('boss_low'); }
-        else if (bossLow && bossPct > th.bossLowPct + th.lowResetPct) bossLow = false;
+        else if (bossLow && bossPct > th.bossLowPct + 15) bossLow = false;
       }
       if (!engaged && !heroDown && !bossDown) {   // idling: standing in the same place with nobody fighting him
-        if (Math.abs(x - lastX) + Math.abs(z - lastZ) > th.idleMoveEpsilon|| lastX !== lastX) idleFor = 0; else idleFor += dt;
+        if (Math.abs(x - lastX) + Math.abs(z - lastZ) > 0.05 || lastX !== lastX) idleFor = 0; else idleFor += dt;
         if (idleFor >= th.idleSeconds) { idleFor = 0; say('idle'); }
       } else idleFor = 0;
       lastX = x; lastZ = z;

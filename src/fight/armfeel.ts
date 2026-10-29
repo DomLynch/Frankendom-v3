@@ -5,7 +5,7 @@
 // (a short extra freeze at contact, capped so a hit never freezes longer than the heaviest hit already does). World adds the
 // burst pool and the layered sounds on top of this branch.
 import type { CombatEvent } from './duel.ts';
-import { ARMFEEL, ENERGY_FLOOR, FLINCH_GAIN_HERO, GRAVITY } from './armfeel-rows.ts';
+import { ARMFEEL, GRAVITY } from './armfeel-rows.ts';
 import { CONTACTS, frameMs } from './hit-stop-rows.ts';
 import { HEAVY_HIT } from '../hit-stop-rules.ts';   // the heavy-hit stop ms: one row, Web's hit-stop-rules.json
 
@@ -29,7 +29,7 @@ export const FULL_TIER_STOP_MS = HEAVY_HIT + frameMs(CONTACTS.hitHeavy);   // th
 // How much of the flinch each fighter shows. The hero stands 4.5 m from the camera and every hit on him moves the biggest thing on the screen: at the
 // handoff's full size his head swept 50 px of a 375 px screen (his feet 35 px), the sway Dom felt as nausea. He keeps a quarter of it (9 px). The
 // opponent is 7 m away and moves along the view axis, so his flinch is turned to the side the blow arrives from (scene.ts) to be seen at all.
-export const FLINCH_GAIN = { hero: FLINCH_GAIN_HERO, opponent: 1 } as const;
+export const FLINCH_GAIN = { hero: 0.25, opponent: 1 } as const;
 
 // The blood burst's particles (blood-style.ts fills them): life, position, velocity, size (width) and stretch (length over width), in one fixed pool.
 export type Particle = { life: number; total: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; size: number; stretch: number };
@@ -62,7 +62,7 @@ export class Flinch {
     if (this.energy <= 0) return { lean: 0, dx: 0, dz: 0 };
     const spent = Math.min(this.hold, dt); this.hold -= spent;
     this.energy *= Math.exp(-(this.kill ? ARMFEEL.decayKill : ARMFEEL.decay) * Math.max(0, dt - spent));
-    if (this.energy < ENERGY_FLOOR) { this.energy = 0; return { lean: 0, dx: 0, dz: 0 }; }
+    if (this.energy < 0.001) { this.energy = 0; return { lean: 0, dx: 0, dz: 0 }; }
     const k = energyOf(this.feel) * this.energy;
     return { lean: (this.kill ? ARMFEEL.leanKill : ARMFEEL.lean) * k, dx: this.dirX * ARMFEEL.nudge * k, dz: this.dirZ * ARMFEEL.nudge * k };
   }

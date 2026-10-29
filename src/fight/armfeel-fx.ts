@@ -2,13 +2,12 @@
 // built once when the flag is on and not at all otherwise; nothing here allocates per hit (the pool, the colour and the transform helpers are made up front).
 import * as THREE from 'three';
 import { newParticle, tickParticle, type Feel, type Particle } from './armfeel.ts';
-import { BURST_SEED, DROPLET_SEGMENTS } from './armfeel-rows.ts';
 import { BLOOD, bloodCount, makeRng, spawnBlood } from './blood-style.ts';
 
 // One shared 112-slot InstancedMesh, no shadows, one draw call. `burst` fills the next slots of the ring; `update` moves, shrinks and dims them.
 export function createBurstPool(scene: THREE.Scene, colours: { start: string; end: string } = BLOOD) {   // `colours`: a species' own blood (src/fight/wounds-fx.ts); the Pit's is the default
-  const rnd = makeRng(BURST_SEED);
-  const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, ...DROPLET_SEGMENTS), new THREE.MeshBasicMaterial({ color: '#ffffff' }), BLOOD.slots);   // unit-diameter droplets, unlit: the colour is the blood's own (a lit material came out bright red under the arena's sun), no glow
+  const rnd = makeRng(0x5eed1234);
+  const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff' }), BLOOD.slots);   // unit-diameter droplets, unlit: the colour is the blood's own (a lit material came out bright red under the arena's sun), no glow
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mesh.frustumCulled = false; mesh.visible = false; mesh.castShadow = false; mesh.receiveShadow = false; mesh.name = 'armfeel burst';
   mesh.setColorAt(0, new THREE.Color(colours.start));   // allocates the instance colour buffer once, up front
   scene.add(mesh);
