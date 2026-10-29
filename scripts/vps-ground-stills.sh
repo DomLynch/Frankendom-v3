@@ -1,7 +1,7 @@
 #!/bin/bash
 # The ground stills on the VPS (root, so Chromium has its libraries; the Hugging Face box job is not root and has none): build this tree, serve it, run scripts/ground-stills.mjs
 # BEFORE (?ground=v1) and AFTER, into <out dir> (default /tmp/ground-out).
-#   ssh root@49.12.7.18 'cd <checkout> && capture --prio 3 v3 bash scripts/vps-ground-stills.sh [out dir]'
+#   ssh <user>@<vps-host>'cd <checkout> && capture --prio 3 v3 bash scripts/vps-ground-stills.sh [out dir]'
 set -uo pipefail
 OUT=${1:-/tmp/ground-out}; rm -rf "$OUT"; mkdir -p "$OUT"
 [ -d node_modules/playwright ] || npm i --no-save --no-audit --no-fund playwright@1.62.1 >/dev/null 2>&1

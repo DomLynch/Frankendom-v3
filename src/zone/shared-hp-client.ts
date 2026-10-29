@@ -26,6 +26,7 @@ export type ClientRows = {
   sim: { hit: string; heroSide: number; foeSide: number };
   batch: { idPrefix: string; idSep: string };
   backoff: { baseMs: number; factor: number; maxMs: number; offlineAfter: number };
+  engageRetry: { maxTries: number; factor: number; maxMs: number; stopStatus: [number, number][] };
   kill: { tries: number; retryMs: number; settled: string; unpaid: string };
   refusals: { id: string; action: Action; delayMs?: number }[];
   sqlClasses: { id: string; match: string[]; action: Action }[];
@@ -50,6 +51,9 @@ export function parseClientRows(json: unknown, server: Rules): ClientRows {
   assert(typeof r.sim.hit === 'string' && r.sim.hit.length > 0, 'zone-client.sim.hit: an event type');
   for (const k of ['baseMs', 'factor', 'maxMs', 'offlineAfter'] as const) assert(positive(r.backoff[k]), `zone-client.backoff.${k}: a positive number`);
   assert(r.backoff.factor >= 1 && r.backoff.maxMs >= r.backoff.baseMs, 'zone-client.backoff: factor at least 1 and maxMs at least baseMs');
+  for (const k of ['maxTries', 'factor', 'maxMs'] as const) assert(positive(r.engageRetry?.[k]), `zone-client.engageRetry.${k}: a positive number`);
+  assert(r.engageRetry.factor >= 1 && r.engageRetry.maxMs >= r.timing.engageRetryMs, 'zone-client.engageRetry: factor at least 1 and maxMs at least timing.engageRetryMs');
+  assert(Array.isArray(r.engageRetry.stopStatus) && r.engageRetry.stopStatus.every(([lo, hi]) => Number.isInteger(lo) && Number.isInteger(hi) && lo <= hi), 'zone-client.engageRetry.stopStatus: status ranges');
   assert(positive(r.kill.tries) && positive(r.kill.retryMs) && r.kill.settled !== r.kill.unpaid, 'zone-client.kill: tries, retryMs and two different states');
   const batchSample = [r.batch.idPrefix, 'session', '0'].join(r.batch.idSep);
   assert(new RegExp(server.ids.batchIdPattern).test(batchSample), `zone-client.batch: ${batchSample} does not match ids.batchIdPattern`);
@@ -140,7 +144,7 @@ export function createSharedHp(o: Options): SharedHp {
   let phase: Phase = PHASE.idle, token: string | null = null, generation = -1, bar: Bar | null = null, stopped = false;
   let contributed = false, settled: KillNote | null = null, killAt: number | null = null, killTries = 0;
   let lastSentMs: number | null = null, lastActiveMs = 0, lastStateMs: number | null = null, engageAt: number | null = null;
-  let backoffUntil = 0, failures = 0, seq = 0;
+  let backoffUntil = 0, failures = 0, seq = 0, engageFails = 0;   // engageFails: lost engages in a row (rows.engageRetry caps it)
   const pending = new Map<string, { claimed: number; hits: number }>(), blocked = new Set<string>();
   const busy = { hits: false, state: false, touch: false, engage: false, kill: false };
   const count: Counters = { sent: 0, lost: 0, replays: 0, clamped: 0, dropped: 0, refused: 0, errors: 0, applied: 0 };
@@ -220,6 +224,7 @@ export function createSharedHp(o: Options): SharedHp {
         const ok = r as EngageOk;
         if (typeof ok.token !== 'string' || !Number.isFinite(ok.generation)) throw { kind: 'shape' };
         if (ok.generation !== generation) newLife(ok.generation);
+        engageFails = 0;
         token = ok.token; lastSentMs = null; lastActiveMs = now; pending.clear();
         setPhase(PHASE.engaged);
         setBar(ok.hp, ok.maxHp, ok.generation, true, null);
@@ -227,9 +232,13 @@ export function createSharedHp(o: Options): SharedHp {
     } catch (err) {
       count.errors += 1;
       if (phase === PHASE.engaging) setPhase(before);
-      const action = classify(err);
+      const e = (err ?? {}) as TransportError, ER = rows.engageRetry, classed = classify(err);
+      const unrecoverable = typeof e.code !== 'string' && e.status !== undefined && classed === rows.fallback.transport && ER.stopStatus.some(([lo, hi]) => e.status! >= lo && e.status! <= hi);   // a bare 4xx no table row answered: asking again cannot help
+      const action = unrecoverable ? ACT.stop : classed;
       run[action](now, {});
-      if (action !== ACT.stop && phase !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs;   // an engage that was lost is asked again
+      engageFails += 1;
+      if (action !== ACT.stop && engageFails >= ER.maxTries) run[ACT.stop](now, {});   // capped: this many lost engages in a row ends the asking
+      else if (action !== ACT.stop && phase !== PHASE.off && engageAt === null) engageAt = now + Math.min(T.engageRetryMs * ER.factor ** (engageFails - 1), ER.maxMs);   // an engage that was lost is asked again, later each time
     } finally { busy.engage = false; }
   }
 

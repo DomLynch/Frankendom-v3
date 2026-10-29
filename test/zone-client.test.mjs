@@ -463,6 +463,39 @@ test('engage: a lost engage is asked again after engageRetryMs; dead waits for t
   await sk.c.tick(10 ** 6); assert.equal(s.log.engage.length, 1);
 });
 
+test('engage retry is capped: an unknown 4xx stops at once, 408/425/429 are retried, and a lost engage backs off by engageRetry rows then stops after maxTries (never an endless 2 s loop)', async () => {
+  const ER = ROWS.engageRetry;
+  const u = fake({ engage: () => { throw { kind: 'status', status: 418 }; } });
+  const uk = client(u); await uk.c.start(0);
+  assert.equal(uk.c.phase(), PHASE.off, 'an unrecoverable 4xx no table row names stops sharing');
+  await uk.c.tick(10 ** 9); assert.equal(u.log.engage.length, 1, 'and never asks again');
+  for (const status of [408, 425]) {
+    const r = fake({ engage: () => { throw { kind: 'status', status }; } });
+    const rk = client(r); await rk.c.start(0);
+    assert.notEqual(rk.c.phase(), PHASE.off, `${status} can pass: it is retried`);
+  }
+  const f = fake({ engage: () => { throw { kind: 'weird' }; } });
+  const k = client(f); await k.c.start(0);
+  let at = 0;
+  for (let n = 1; n < ER.maxTries; n++) {
+    const wait = Math.min(T.engageRetryMs * ER.factor ** (n - 1), ER.maxMs);
+    assert.equal(f.log.engage.length, n);
+    await k.c.tick(at + wait - 1); assert.equal(f.log.engage.length, n, `attempt ${n + 1} is not before ${wait} ms`);
+    at += wait; await k.c.tick(at); assert.equal(f.log.engage.length, n + 1);
+  }
+  assert.equal(f.log.engage.length, ER.maxTries);
+  assert.equal(k.c.phase(), PHASE.off, 'maxTries lost engages in a row end the asking');
+  await k.c.tick(at + 10 ** 9); assert.equal(f.log.engage.length, ER.maxTries, 'no further engage, ever');
+});
+
+test('parseClientRows refuses a missing or malformed engageRetry row', () => {
+  const bad = (edit, re) => { const r = clone(RAW); edit(r); assert.throws(() => parseClientRows(r, SERVER), re); };
+  bad((r) => { delete r.engageRetry; }, /engageRetry/);
+  bad((r) => { r.engageRetry.maxTries = 0; }, /maxTries/);
+  bad((r) => { r.engageRetry.factor = 0.5; }, /factor at least 1/);
+  bad((r) => { r.engageRetry.stopStatus = [[500, 400]]; }, /status ranges/);
+});
+
 test('stop() ends everything: no claims, no calls', async () => {
   const f = fake(), { c } = await up(f);
   c.stop();

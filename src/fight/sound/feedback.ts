@@ -172,6 +172,8 @@ export function createFeedback(host?: FeedbackHost) {
   }
   return {
     unlock,
+    /** Whether the context is running (the gesture listeners in main.ts remove themselves once it is; src/audio/unlock-once.ts). */
+    unlocked: () => live(),
     // V3 (V2 PR #65): the context is made at page load (it starts 'suspended') and the sprite decoded at once, so the first touch
     // only resumes it. V1 decoded on the first touch, and a phone took seconds to decode while the fight went on with the synth stand-ins.
     prepare() { if (!host) open(); },
