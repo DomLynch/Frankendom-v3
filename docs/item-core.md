@@ -12,13 +12,13 @@ Everything below that describes an existing V3 row was read from the file. Anyth
 
 ## 1. Core row
 
-One row = one JSON object in an array under a named key of a data file, unique `id` (V3's convention: `rows`, `profiles`, `weapons`). The file also carries `core_version: 1`.
+One row = one JSON object, unique `id`. The shared core schema has a FIXED wrapper: `{ "core_version": 1, "rows": [ ... ] }`. A game's own files may keep their named keys (V3: `rows`, `profiles`, `weapons`; ARMAGEDOM: an array under a named key); a generated core view of a file is `{core_version, rows[]}`.
 
 | field | type | rule |
 |---|---|---|
 | `id` | string | required; kebab `^[a-z0-9-]{1,48}$` (ARMAGEDOM's Supabase `arma_items.id` rule; every V3 id fits: `gargantua-maul`, `golden-gladius`, `anime-boy-black`); unique within `game_id` + `type` |
 | `game_id` | string | required; enum: `armagedom` (ARMAGEDOM), `frankendom-v3` (V3) |
-| `type` | string | required; enum: `weapon`, `character`, `consumable`, `part`, `relic`. No armour (cut from ARMAGEDOM's alpha). New types need Lead sign-off |
+| `type` | string | required; enum: `weapon`, `character`, `consumable`, `part`, `relic`, `bodypart`. No armour (cut from ARMAGEDOM's alpha). `bodypart` is V3's addition (cut body parts); `part` is ARMAGEDOM's loot parts and is not used for V3 cut parts. New types need Lead sign-off. Consumers key on `game_id` + `type` + `id` |
 | `name` | string | required; 1 to 48 characters; display name |
 | `asset` | string | required; path relative to the owning game's public asset root, extension preferred (`weapons/foe/maul.glb`). A bare stem only where that game's loader documents it (ARMAGEDOM: stems like `mh-npc-marsh` under `Web/public/assets/<dir>/<stem>.glb`). Never a URL |
 | `weapon` | object | optional, only when `type` is `weapon` |
@@ -78,7 +78,7 @@ V3 extension (stays V3's, never core):
 - Fight moves and timing: `src/fight/weapon-defs.json` (not under `data/`).
 - Golden `charges` (hits landed) and `damageMul`: V3 extension, not `ammo` or `damage` (answer 6).
 
-PROPOSED, V3 asks Lead to sign: cut body parts use core `type: "part"` (answer 2): one `part` row per harvestable unit, `id` = `<profile id>-<cut unit>` in kebab form (`gargantua-arm-left`), `name` display, `asset` the cut piece mesh path, and the cut unit string stays an extension key (`cutUnit`). V3 trophies are not proposed here; V3 proposes a type for them separately.
+SIGNED by Lead: cut body parts use core `type: "bodypart"` (not `part`, which is ARMAGEDOM's loot parts): one `bodypart` row per harvestable unit, `id` = `<profile id>-<cut unit>` in kebab form (`gargantua-arm-left`), `name` display, `asset` the cut piece mesh path, and the cut unit string stays an extension key (`cutUnit`). V3 trophies are not proposed here; V3 proposes a type for them separately.
 
 ### 3a. `data/boss-weapons.json` (`rows[]`, 10 rows)
 
@@ -171,7 +171,7 @@ PROPOSED core check (a pure function in a later code PR, not this one), run on e
 5. Core stays free of ballistics and cut: a deny list (`impulse`, `lift`, `seam`, `unit`, `cut`, `projectile`, `speed`, `spread`, `mana`, `charges`, `damageMul`) inside a block fails.
 6. As-data gate unchanged: it keeps scanning code; a new core reader under `src/zone/**` starts at zero findings.
 
-Existing rows are not forced through this (no refactor): it runs on rows that opt in with `game_id`.
+Existing rows are not forced through this (no refactor): it runs on rows that opt in with `game_id`. Rows without a `name`, or with an undefined `rate`, stay V3 extension (not core rows) until fixed.
 
 ## 5. Open items
 
@@ -181,5 +181,5 @@ For V3 (owners: V3 Dev, later PRs, none blocking the signed shape):
 1. Document V3's stem rule for `equip` and `body` (R2, M7), or move to paths.
 2. Add base `damage` and `rate` inputs for longsword, gladius, estoc, reaper as data (M3, M4).
 3. Propose a V3 type for trophies, with Lead sign-off.
-4. Confirm the `part` row id form for cut body parts (section 3).
+4. (Done: `bodypart`, id `<profile>-<unit>`, signed by Lead.)
 5. Decide whether the core view of V3 rows is generated or hand-written.

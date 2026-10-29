@@ -19,7 +19,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9-]{1,48}$" },
         "game_id": { "enum": ["armagedom", "frankendom-v3"] },
-        "type": { "enum": ["weapon", "character", "consumable", "part", "relic"] },
+        "type": { "enum": ["weapon", "character", "consumable", "part", "relic", "bodypart"] },
         "name": { "type": "string", "minLength": 1, "maxLength": 48 },
         "asset": {
           "type": "string",
