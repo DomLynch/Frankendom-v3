@@ -292,7 +292,7 @@
    "number": 62
   },
   "src/fight/catalogue-data.ts": {
-   "label": 34,
+   "label": 339,
    "data-id": 7
   },
   "src/fight/catalogue-defs.ts": {
@@ -330,7 +330,7 @@
   "src/fight/combat.ts": {
    "number": 13,
    "name-compare": 99,
-   "label": 49
+   "label": 6
   },
   "src/fight/cone-era.ts": {
    "number": 1

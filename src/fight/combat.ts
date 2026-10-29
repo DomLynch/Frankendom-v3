@@ -12,6 +12,7 @@ import { paceTicks } from './special-pace.ts';
 import type { BlendSpan } from './anim-blend.ts';
 import { holdPoseOf } from './move-rows.ts';
 import { stepFatigue, type Fatigue } from './fatigue.ts';
+import { HINTS, fmt } from './practice-hints.ts';
 import { simBound } from './sim-bounds-rows.ts';
 import { specialCooldown, specialFirst } from './rows80.ts';
 import { meleeSpecialReach } from './sandbox-rules.ts';
@@ -267,11 +268,8 @@ export function poseAge(f: Pick<Fighter, 'phase' | 'move' | 'charge' | 'age' | '
   return held + (rejoin - held) * (f.age - chamber) / (rejoin - chamber);
 }
 
-const NAMES: Partial<Record<MoveId, string>> = {   // a skill's name is its row's (skill-defs.json)
-  light_right: 'right cut', light_left: 'left cut', heavy_overhead: 'heavy', thrust: 'thrust', riposte: 'riposte',
-  slash_riposte: 'counter slash', heavy_riposte: 'heavy riposte', critical: 'critical', heavy_counter: 'guard counter', kick: 'kick',
-  heavy_right: 'heavy right cut', heavy_left: 'heavy left cut', heavy_thrust: 'heavy stab',   // V3 directional heavies
-};
+const NAMES: Partial<Record<MoveId, string>> = HINTS.moves;   // a skill's name is its row's (skill-defs.json); the move names are data/practice-hints.json `moves`
+const L = HINTS.lines, P = HINTS.parts;
 // `foe`: the opponent's own name without its article ("Centurion", "Goblin"), so the coaching lines name whoever is in the arena
 // (Dom via Strategy, 2026-09-22: "warden" leaves every player-facing string; identifiers keep it). The default covers the callers
 // that have no opponent loaded — the sim's own tests and any hint drawn before the rung is known.
@@ -282,47 +280,48 @@ const NAMES: Partial<Record<MoveId, string>> = {   // a skill's name is its row'
 // The line reads "You beat <legend>" exactly when this holds (practiceHint below): the legend fell, the player stands, no draw. The kill
 // screen's medallion (main.ts winFace) keys on it, so the face and the name never disagree.
 // The sheathed line's threat names the legend when the fight has one (Dom 2026-09-28: the legend on every surface), else the class.
-export const counterLine = (foe: string, legend?: string): string => `${legend ?? `The ${foe}`} will counterattack.`;
+export const counterLine = (foe: string, legend?: string): string => fmt(L.counter!, { who: legend ?? fmt(L.classFoe!, { foe }) });
 export const beatLegend = (s: Practice, legend?: string): boolean => !!legend && !s.finish?.draw && !!s.playerHealth && !s.health;
-export function practiceHint(s: Practice, foe = 'Opponent', legend?: string, specialLabel?: (skill: string) => string | undefined): string {   // specialLabel: the HUD hands in the picker's name for a special (Whirlwind), so this SIM-boundary module never imports the presentation names
+export function practiceHint(s: Practice, foe = HINTS.defaultFoe, legend?: string, specialLabel?: (skill: string) => string | undefined): string {   // specialLabel: the HUD hands in the picker's name for a special (Whirlwind), so this SIM-boundary module never imports the presentation names
   const me = s.duel.fighters[0];
-  if (s.finish?.draw) return 'You both fell. Rematch?';
-  if (!s.playerHealth) return 'You fell. Rematch?';
-  if (!s.health) return beatLegend(s, legend) ? `You beat ${legend}. Ready for a rematch?` : `${foe} defeated. Ready for a rematch?`;
-  if (s.phase === 'sheathed') return `Tap Fight. ${counterLine(foe, legend)}`;   // the words match the button (Dom 2026-09-29: Draw → FIGHT; the tap still draws)
-  if (s.phase === 'draw') return `Drawing ${me.weapon}…`;
-  if (me.critical > 0 && me.phase !== 'attack') return 'Posture broken';
+  if (s.finish?.draw) return L.bothFell!;
+  if (!s.playerHealth) return L.fell!;
+  if (!s.health) return beatLegend(s, legend) ? fmt(L.beatLegend!, { legend }) : fmt(L.defeated!, { foe });
+  if (s.phase === 'sheathed') return fmt(L.tapFight!, { counter: counterLine(foe, legend) });   // the words match the button (Dom 2026-09-29: Draw → FIGHT; the tap still draws)
+  if (s.phase === 'draw') return fmt(L.drawing!, { weapon: me.weapon });
+  if (me.critical > 0 && me.phase !== 'attack') return L.postureBroken!;
   if (me.phase === 'attack' && me.charge) {
-    return !movesOf(me)[me.move!].charges ? 'Chambered' : me.charged ? 'Charged' : 'Charging…';
+    return !movesOf(me)[me.move!].charges ? L.chambered! : me.charged ? L.charged! : L.charging!;
   }
-  if (me.exhausted) return 'Exhausted';
-  if (s.phase === 'ready' && s.chain > 0) return 'Follow-through';
+  if (me.exhausted) return L.exhausted!;
+  if (s.phase === 'ready' && s.chain > 0) return L.followThrough!;
   if (s.result !== 'none' && s.resultAge < RESULT_AGE_CAP) {
-    const name = me.chained ? 'follow-up' : (NAMES[me.lastMove ?? 'light_right'] ?? specialLabel?.(skillOfMove(me.lastMove) ?? '') ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
-    const wall = (text: string) => s.resultWalled ? ` · ${text}` : '';
+    const name = me.chained ? HINTS.followUp : (NAMES[me.lastMove ?? 'light_right'] ?? specialLabel?.(skillOfMove(me.lastMove) ?? '') ?? SKILL_ROWS[skillOfMove(me.lastMove) ?? '']?.name);
+    const wall = (text: string) => s.resultWalled ? fmt(P.wall, { text }) : '';
+    const damage = s.resultDamage;
     return {
-      kicked: 'Kick connected',
-      hit: `${s.resultStop ? 'Stop-hit' : s.resultCounter ? 'Counter' : 'Clean'} ${name} hit · −${s.resultDamage}${wall('into the wall')}`,
-      miss: 'Miss',
-      hurt: `${s.resultStop ? 'Stop-hit — you walked onto the point' : s.resultTrip ? 'Swept — a low blade trips a roll' : s.resultCounter ? 'Countered' : 'Hit taken'} · −${s.resultDamage}${wall('pinned on the wall')}`,
-      blocked: `${s.resultPerfect ? 'Perfect block' : 'Blocked'} · −${Math.round(s.resultStamina)} stamina${s.resultDamage ? ` · −${s.resultDamage} chip` : ''}`,
-      parried: 'Parried!',
-      dodged: 'Evaded!',
+      kicked: L.kicked!,
+      hit: fmt(L.hit!, { kind: s.resultStop ? P.hitKind.stop : s.resultCounter ? P.hitKind.counter : P.hitKind.clean, name, damage, wall: wall(P.wallText.hit) }),
+      miss: L.miss!,
+      hurt: fmt(L.hurt!, { kind: s.resultStop ? P.hurtKind.stop : s.resultTrip ? P.hurtKind.trip : s.resultCounter ? P.hurtKind.counter : P.hurtKind.plain, damage, wall: wall(P.wallText.hurt) }),
+      blocked: fmt(L.blocked!, { kind: s.resultPerfect ? P.blockedKind.perfect : P.blockedKind.plain, stamina: Math.round(s.resultStamina), chip: damage ? fmt(P.chip, { damage }) : '' }),
+      parried: L.parried!,
+      dodged: L.dodged!,
       // Plain words (Strategy 2026-09-24): the charge tell lives in motion + sound, so the line names what broke the guard.
-      broken: s.resultBreak === 'charged' ? 'Guard broken: a charged heavy breaks guard.' : s.resultBreak === 'kick' ? 'Guard broken: a kick breaks guard.' : 'Guard broken.',
-      enemyBlocked: `${foe} blocked`,
-      enemyBroken: 'Guard shattered',
-      enemyParried: 'Your strike was turned aside',
-      enemyDodged: `The ${foe} rolled clear.`,
-      enemyKicked: `Kicked · −${s.resultDamage}`,
-      traded: `Traded · ${s.resultDealt} / −${s.resultDamage}`,
-      postureBroken: 'Your posture broke',
-      enemyPostureBroken: '',   // it read the opponent's state and named the answer: removed, the line is blank
+      broken: s.resultBreak === 'charged' ? L.brokenCharged! : s.resultBreak === 'kick' ? L.brokenKick! : L.broken!,
+      enemyBlocked: fmt(L.enemyBlocked!, { foe }),
+      enemyBroken: L.enemyBroken!,
+      enemyParried: L.enemyParried!,
+      enemyDodged: fmt(L.enemyDodged!, { foe }),
+      enemyKicked: fmt(L.enemyKicked!, { damage }),
+      traded: fmt(L.traded!, { dealt: s.resultDealt, damage }),
+      postureBroken: L.postureBrokeSelf!,
+      enemyPostureBroken: L.enemyPostureBroken!,   // it read the opponent's state and named the answer: removed, the line is blank
     }[s.result];
   }
-  if (s.phase === 'guard') return 'Guarding';
-  if (me.exposed) return 'Parry missed · guard down for a moment';
-  if (s.posture >= RULES.posture.max * .7) return 'Your posture is breaking';
+  if (s.phase === 'guard') return L.guarding!;
+  if (me.exposed) return L.parryMissed!;
+  if (s.posture >= RULES.posture.max * .7) return L.postureBreaking!;
   return '';   // nothing happened: the line is blank (Strategy 2026-09-24, Dom 09-20 "no visual cues"; the coach hint went 09-19, f5410421)
 }
 

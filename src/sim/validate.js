@@ -61,6 +61,8 @@ export const SCHEMA = {
   // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
   // The ten Pit ranks' named opponents per ranked character (src/fight/catalogue-rows.ts joins them onto the catalogue rows; checkLegends below)
   'legends': { keys: ['about', 'ranks'] },
+  // The practice HUD's one-line report (src/fight/practice-hints.ts; checkPracticeHints below): the text of every state and the move names a result line wears
+  'practice-hints': { keys: ['about', 'defaultFoe', 'followUp', 'moves', 'lines', 'parts'], maps: { parts: ['wall', 'chip', 'hitKind', 'hurtKind', 'blockedKind', 'wallText'] } },
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
   'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
@@ -420,8 +422,40 @@ export function validateFile(name, json) {
   }
   if (name === 'commentator') errors.push(...checkCommentator(json));
   if (name === 'legends') errors.push(...checkLegends(json));
+  if (name === 'practice-hints') errors.push(...checkPracticeHints(json));
   banned(json, name, errors);
   return errors;
+}
+
+// The practice HUD's lines (data/practice-hints.json): every named line and part exists as a string, and a {piece} in a text is one the code fills for that line.
+const HINT_PIECES = {
+  bothFell: [], fell: [], beatLegend: ['legend'], defeated: ['foe'], tapFight: ['counter'], counter: ['who'], classFoe: ['foe'], drawing: ['weapon'], postureBroken: [], chambered: [], charged: [], charging: [], exhausted: [], followThrough: [],
+  kicked: [], hit: ['kind', 'name', 'damage', 'wall'], miss: [], hurt: ['kind', 'damage', 'wall'], blocked: ['kind', 'stamina', 'chip'], parried: [], dodged: [], brokenCharged: [], brokenKick: [], broken: [], enemyBlocked: ['foe'], enemyBroken: [],
+  enemyParried: [], enemyDodged: ['foe'], enemyKicked: ['damage'], traded: ['dealt', 'damage'], postureBrokeSelf: [], enemyPostureBroken: [], guarding: [], parryMissed: [], postureBreaking: [],
+};
+function checkPracticeHints(json) {
+  const e = [], n = 'practice-hints', pieces = (t) => [...String(t).matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+  for (const k of ['defaultFoe', 'followUp']) if (typeof json[k] !== 'string' || !json[k].trim()) e.push(`${n}.${k}: must be a non-blank string`);
+  if (!json.moves || typeof json.moves !== 'object') e.push(`${n}.moves: must be an object of move id -> name`);
+  else for (const [id, t] of Object.entries(json.moves)) if (typeof t !== 'string' || !t.trim()) e.push(`${n}.moves.${id}: must be a non-blank string`);
+  const lines = json.lines ?? {};
+  for (const [id, want] of Object.entries(HINT_PIECES)) {
+    if (typeof lines[id] !== 'string') { e.push(`${n}.lines.${id}: must be a string`); continue; }
+    for (const p of pieces(lines[id])) if (!want.includes(p)) e.push(`${n}.lines.${id}: unknown piece {${p}}`);
+  }
+  for (const id of Object.keys(lines)) if (!(id in HINT_PIECES)) e.push(`${n}.lines.${id}: unknown line`);
+  const P = json.parts ?? {};
+  for (const [id, want] of [['wall', ['text']], ['chip', ['damage']]]) {
+    if (typeof P[id] !== 'string') e.push(`${n}.parts.${id}: must be a string`);
+    else for (const p of pieces(P[id])) if (!want.includes(p)) e.push(`${n}.parts.${id}: unknown piece {${p}}`);
+  }
+  for (const [id, keys] of [['hitKind', ['stop', 'counter', 'clean']], ['hurtKind', ['stop', 'trip', 'counter', 'plain']], ['blockedKind', ['perfect', 'plain']], ['wallText', ['hit', 'hurt']]]) {
+    const m = P[id];
+    if (!m || typeof m !== 'object') { e.push(`${n}.parts.${id}: must be an object`); continue; }
+    for (const k of keys) if (typeof m[k] !== 'string' || !m[k].trim()) e.push(`${n}.parts.${id}.${k}: must be a non-blank string`);
+    for (const k of Object.keys(m)) if (!keys.includes(k)) e.push(`${n}.parts.${id}.${k}: unknown key`);
+  }
+  return e;
 }
 
 // The Pit rank legends (data/legends.json): character id -> exactly ten rows of { name, source, backstory }, each a non-blank string, no other key.
