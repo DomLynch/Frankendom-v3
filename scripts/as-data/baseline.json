@@ -233,12 +233,10 @@
    "name-compare": 4
   },
   "src/fight/armfeel-fx.ts": {
-   "number": 5,
    "label": 1
   },
   "src/fight/armfeel.ts": {
-   "name-compare": 8,
-   "number": 2
+   "name-compare": 8
   },
   "src/fight/attacker-bout.ts": {
    "name-compare": 12,
@@ -278,18 +276,10 @@
    "number": 8
   },
   "src/fight/camera-kick.ts": {
-   "name-compare": 5,
-   "number": 26
-  },
-  "src/fight/camera-pitch.ts": {
-   "number": 3
+   "name-compare": 5
   },
   "src/fight/camera-zoom.ts": {
-   "number": 15,
    "name-compare": 1
-  },
-  "src/fight/camera.ts": {
-   "number": 62
   },
   "src/fight/catalogue-data.ts": {
    "label": 623,
@@ -376,8 +366,7 @@
    "number": 12
   },
   "src/fight/feel-clash.ts": {
-   "name-compare": 10,
-   "number": 48
+   "name-compare": 10
   },
   "src/fight/feel-hero.ts": {
    "name-compare": 2
@@ -390,12 +379,10 @@
    "name-compare": 11
   },
   "src/fight/feel-limbs.ts": {
-   "name-compare": 19,
-   "number": 13
+   "name-compare": 19
   },
   "src/fight/feel.ts": {
-   "name-compare": 1,
-   "number": 1
+   "name-compare": 1
   },
   "src/fight/finisher-blood.ts": {
    "name-compare": 9,
@@ -446,16 +433,12 @@
    "number": 2,
    "label": 7
   },
-  "src/fight/follow-camera.ts": {
-   "number": 15
-  },
   "src/fight/foot-dust.ts": {
    "number": 72,
    "label": 3
   },
   "src/fight/free-camera.ts": {
-   "name-compare": 3,
-   "number": 2
+   "name-compare": 3
   },
   "src/fight/free-roam.ts": {
    "name-compare": 3
@@ -508,8 +491,7 @@
    "number": 7
   },
   "src/fight/hit-stop-rows.ts": {
-   "name-compare": 1,
-   "number": 1
+   "name-compare": 1
   },
   "src/fight/hud.ts": {
    "number": 23,
@@ -749,7 +731,6 @@
    "name-compare": 2
   },
   "src/fight/skyview.ts": {
-   "number": 3,
    "label": 6
   },
   "src/fight/sound/armfeel-sound.ts": {

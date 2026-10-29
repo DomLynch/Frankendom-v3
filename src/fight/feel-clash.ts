@@ -50,7 +50,7 @@ export function clashOf(rows: ClashRows, e: Pick<CombatEvent, 'type' | 'tick' | 
     tick: e.tick, kind, move: e.move, weapon: e.weapon, heavy, charged, attacker: e.target as Side, defender: e.actor as Side, strength,
     attackerImpulse: at(incoming * k.recoil), defenderImpulse: at(incoming * k.absorbed), dip: k.dip, stagger: k.stagger,
     durationS: rows.timing.easeInS + rows.timing.holdS + rows.timing.upS,
-    pushbackM: +(rows.pushback.metres[kind] * (rows.pushback.heavyOnly && !heavy ? 0 : strength)).toFixed(4),
+    pushbackM: +(rows.pushback.metres[kind] * (rows.pushback.heavyOnly && !heavy ? 0 : strength)).toFixed(rows.pushback.digits),
     sparks: Math.round(heavy ? rows.spark.countHeavy : rows.spark.count),
   };
 }
@@ -67,10 +67,10 @@ const roleOf = (part: string): 'arm' | 'forearm' | 'hand' | 'spine' | null => (/
 /** The motor strengths (package setMotorStrength rows, part id -> 0..1) this clash asks of `role` ('attacker' or 'defender') at depth `depth`, and the same parts at 1 once it is over. */
 export function motorRows(rows: ClashRows, clash: Pick<Clash, 'dip' | 'strength'>, role: 'attacker' | 'defender', depth: number): Record<string, number> {
   const parts = rows.parts[role] as Record<string, readonly string[]>, weights = rows.dipParts as Record<string, number>, out: Record<string, number> = {};
-  const scale = clamp(clash.strength / rows.hero.maxStrength, 0.25, 1);   // a light clash dips less deep than a heavy one
+  const scale = clamp(clash.strength / rows.hero.maxStrength, rows.hero.minScale, 1);   // a light clash dips less deep than a heavy one
   for (const list of Object.values(parts)) for (const part of list) {
     const r = roleOf(part), w = r ? weights[r] ?? 0 : 0;
-    out[part] = depth < 0 ? 1 : clamp(1 - (1 - clash.dip) * depth * w * scale, 0.01, 1);
+    out[part] = depth < 0 ? 1 : clamp(1 - (1 - clash.dip) * depth * w * scale, rows.timing.dipFloor, 1);
   }
   return out;
 }
@@ -81,7 +81,7 @@ export function impulseVector(magnitude: number, lift: number): Vec3 { return [0
 
 /** The hero's bone lean at depth `depth` for a clash he is part of: Euler radians per bone slot (weaponArm, guardArm, spine), all zero when he is not in it. Presentation only. */
 export function leanOf(rows: ClashRows, clash: Pick<Clash, 'attacker' | 'defender' | 'strength'>, hero: Side, depth: number): { weaponArm: Vec3; guardArm: Vec3; spine: Vec3 } {
-  const zero: Vec3 = [0, 0, 0], k = depth < 0 ? 0 : depth * clamp(clash.strength / rows.hero.maxStrength, 0.25, 1), by = (v: readonly number[]): Vec3 => [v[0]! * k || 0, v[1]! * k || 0, v[2]! * k || 0];
+  const zero: Vec3 = [0, 0, 0], k = depth < 0 ? 0 : depth * clamp(clash.strength / rows.hero.maxStrength, rows.hero.minScale, 1), by = (v: readonly number[]): Vec3 => [v[0]! * k || 0, v[1]! * k || 0, v[2]! * k || 0];
   if (clash.attacker === hero) return { weaponArm: by(rows.hero.weaponArmRad), guardArm: zero, spine: by(rows.hero.spineRad) };
   if (clash.defender === hero) return { weaponArm: zero, guardArm: by(rows.hero.guardArmRad), spine: by(rows.hero.spineRad) };
   return { weaponArm: zero, guardArm: zero, spine: zero };
@@ -180,7 +180,7 @@ function makeSparks(rows: ClashRows) {
       for (let i = 0; i < count; i++) {
         const k = next; next = (next + 1) % n;
         pos[k * 3] = at[0]; pos[k * 3 + 1] = at[1]; pos[k * 3 + 2] = at[2]; age[k] = 0;
-        const a = (i / Math.max(1, count)) * Math.PI * 2 + k * 0.7, up = 0.4 + ((k * 37) % 10) / 10, s = rows.spark.speedMps * (0.5 + ((k * 53) % 10) / 10);
+        const sp = rows.spark, a = (i / Math.max(1, count)) * Math.PI * 2 + k * sp.spin, up = sp.upBase + ((k * sp.upMul) % sp.mod) / sp.mod, s = sp.speedMps * (sp.speedBase + ((k * sp.speedMul) % sp.mod) / sp.mod);
         vel[k * 3] = Math.cos(a) * s; vel[k * 3 + 1] = up * s; vel[k * 3 + 2] = Math.sin(a) * s;
       }
       points.visible = true;
@@ -189,9 +189,9 @@ function makeSparks(rows: ClashRows) {
       if (!points.visible) return;
       live = 0;
       for (let k = 0; k < n; k++) {
-        if (age[k]! >= rows.spark.lifeS) { pos[k * 3 + 1] = -1000; continue; }
+        if (age[k]! >= rows.spark.lifeS) { pos[k * 3 + 1] = rows.spark.hideY; continue; }
         age[k] = age[k]! + dt; live++;
-        vel[k * 3 + 1] = vel[k * 3 + 1]! - 9.8 * dt;
+        vel[k * 3 + 1] = vel[k * 3 + 1]! - rows.spark.gravityMps2 * dt;
         pos[k * 3] = pos[k * 3]! + vel[k * 3]! * dt; pos[k * 3 + 1] = pos[k * 3 + 1]! + vel[k * 3 + 1]! * dt; pos[k * 3 + 2] = pos[k * 3 + 2]! + vel[k * 3 + 2]! * dt;
       }
       geometry.attributes.position!.needsUpdate = true;

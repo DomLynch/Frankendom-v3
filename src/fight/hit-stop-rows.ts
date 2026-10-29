@@ -17,4 +17,4 @@ export const KNOCK_SETTLE: number = (FEEL.rows as readonly { id: string; value: 
 /** A `feel` row's value by id (the impact flash and ring's life in seconds and heights in metres: impact-fx.ts); a missing id throws at load rather than answering NaN. */
 export const feelNum = (id: string): number => (FEEL.rows as readonly { id: string; value: number }[]).find((r) => r.id === id)?.value ?? (() => { throw Error(`hit-stop-defs: no feel row "${id}"`); })();
 /** Milliseconds a contact row's impact frames hold the picture at 60 Hz (the stop `ms` is Web's hit-stop-rules.json). */
-export const frameMs = (row: ContactRow): number => (row.frames * 1000) / 60;
+export const frameMs = (row: ContactRow): number => (row.frames * 1000) / feelNum('frameRate');

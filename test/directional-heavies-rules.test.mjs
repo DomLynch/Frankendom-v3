@@ -142,7 +142,7 @@ test('sandbox rows: the heavy stab pierces, the maul and warhammer commit every 
 // camera-kick.ts imports three.js (via clash-sparks.ts), which node cannot load here: the rule is read from its source, the helper it asks is run.
 test('camera: a parried heavy left nudges the way a parried left cut does', () => {
   const src = readFileSync(new URL('../src/fight/camera-kick.ts', import.meta.url), 'utf8');
-  assert.match(src, /case 'Parried': return \{[^}]*side: strikeOf\(event\.move\) === 'light_left' \? -0\.02 : 0\.02,/);
+  assert.match(src, /case 'Parried': \{[^}]*strikeOf\(event\.move\) === 'light_left' \? -row\.side : row\.side/);   // the 0.02 m is the camera-rules-defs.json `parried` shove row (test/camera-feel-ab.test.mjs pins it)
   assert.deepEqual(['light_left', 'heavy_left', 'light_right', 'heavy_right', 'heavy_thrust'].map((m) => strikeOf(m) === 'light_left'), [true, true, false, false, false]);
 });
 

@@ -97,10 +97,10 @@ export const SCHEMA = {
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'classes', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
-    maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
-      hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
+    maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale', 'dipFloor'], pushback: ['metres', 'heavyOnly', 'digits'], event: ['type', 'log'],
+      hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength', 'minScale'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max', 'gravityMps2', 'hideY', 'spin', 'upBase', 'upMul', 'speedBase', 'speedMul', 'mod'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
   // M7 limb damage that changes the fight (src/fight/feel-limbs.ts), opt-in ?feel=limbs (needs ?rules=m4); one row per part (leg, arm_sword, arm_off, torso, head). checked by the 'feel-limbs' block below
-  'feel-limbs': { keys: ['about', 'on', 'query', 'value', 'needs', 'events', 'levelStep', 'limbs'], maps: { needs: ['query', 'value'], events: ['limp', 'guardDrop', 'weaponDrop'], limbs: ['parts'] },
+  'feel-limbs': { keys: ['about', 'on', 'query', 'value', 'needs', 'events', 'levelStep', 'dipAskBelow', 'limbs'], maps: { needs: ['query', 'value'], events: ['limp', 'guardDrop', 'weaponDrop'], limbs: ['parts'] },
     rowMaps: { 'limbs.parts': ['startFrac', 'sided', 'motor', 'blend', 'gait', 'stumble', 'drop', 'sim'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
@@ -168,6 +168,7 @@ function checkFeelLimbs(json, errors) {
   const num = (path, v, lo, hi) => { if (!fin(v) || v < lo || v > hi) errors.push(`${n}.${path}: must be a finite number in [${lo}, ${hi}]`); };
   for (const k of ['query', 'value']) if (typeof json[k] !== 'string' || !json[k]) errors.push(`${n}.${k}: must be a non-empty string`);
   if (typeof json.on !== 'boolean') errors.push(`${n}.on: must be a boolean`);
+  num('dipAskBelow', json.dipAskBelow, 0.5, 1);
   for (const k of ['query', 'value']) if (typeof json.needs?.[k] !== 'string' || !json.needs[k]) errors.push(`${n}.needs.${k}: must be a non-empty string`);
   for (const k of ['limp', 'guardDrop', 'weaponDrop']) if (typeof json.events?.[k] !== 'string' || !json.events[k]) errors.push(`${n}.events.${k}: must be a non-empty string`);
   num('levelStep', json.levelStep, 0.01, 1);
@@ -760,7 +761,8 @@ export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fade
 function checkSkyViews(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
   if (v === null || typeof v !== 'object' || Array.isArray(v)) return ['stage.skyline.views: must be an object'];
-  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'foeFadeQuery', 'foeFadeV1', 'default', 'variants'].includes(k)) at(k, 'unknown key');
+  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'foeFadeQuery', 'foeFadeV1', 'floorOrderOffset', 'default', 'variants'].includes(k)) at(k, 'unknown key');
+  if (!Number.isInteger(v.floorOrderOffset) || v.floorOrderOffset < 1 || v.floorOrderOffset > 1000) at('floorOrderOffset', 'must be an integer 1..1000 (the floor draws this many render orders after the strip)');
   if (typeof v.query !== 'string' || !/^[a-z0-9]+$/i.test(v.query) || v.query === s.query) at('query', 'must be a plain word other than skyline.query');
   if (typeof v.v1 !== 'string' || !/^[a-z0-9]+$/i.test(v.v1)) at('v1', 'must be a plain word (the link value for the look before the variants)');
   for (const k of ['foeFadeQuery', 'foeFadeV1']) if (typeof v[k] !== 'string' || !/^[a-z0-9]+$/i.test(v[k])) at(k, 'must be a plain word');
@@ -872,7 +874,9 @@ export function checkFeelClash(j) {
   if (typeof j.pushback?.heavyOnly !== 'boolean') at('pushback.heavyOnly', 'must be a boolean');
   if (typeof j.event?.type !== 'string' || !j.event.type || typeof j.event?.log !== 'string' || !j.event.log) at('event', 'type and log must be non-empty strings');
   for (const k of ['weaponArmRad', 'guardArmRad', 'spineRad']) if (!Array.isArray(j.hero?.[k]) || j.hero[k].length !== 3 || j.hero[k].some((v) => !fin(v) || Math.abs(v) > 1.5)) at(`hero.${k}`, 'must be [x, y, z] radians, each within +-1.5');
-  range('hero.maxStrength', j.hero?.maxStrength, 1, 10);
+  range('hero.maxStrength', j.hero?.maxStrength, 1, 10); range('hero.minScale', j.hero?.minScale, 0.01, 1); range('timing.dipFloor', j.timing?.dipFloor, 0.001, 1);
+  if (!Number.isInteger(j.pushback?.digits) || j.pushback.digits < 0 || j.pushback.digits > 8) at('pushback.digits', 'must be an integer 0..8');
+  for (const [k, lo, hi] of [['gravityMps2', 0, 100], ['hideY', -100000, 0], ['spin', -10, 10], ['upBase', 0, 10], ['upMul', 1, 1000], ['speedBase', 0, 10], ['speedMul', 1, 1000], ['mod', 1, 1000]]) range(`spark.${k}`, j.spark?.[k], lo, hi);
   for (const k of ['weaponArm', 'guardArm', 'spine']) if (typeof j.hero?.bones?.[k] !== 'string' || !j.hero.bones[k]) at(`hero.bones.${k}`, 'must be a bone name');
   const s = j.spark ?? {};
   if (typeof s.on !== 'boolean') at('spark.on', 'must be a boolean');
