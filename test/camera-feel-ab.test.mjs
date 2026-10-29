@@ -10,7 +10,15 @@ import { cameraRule, shoveRow, loadCameraRules } from '../src/fight/camera-rules
 const GOLDEN = JSON.parse(readFileSync(new URL('./fixtures/camera-feel-ab.json', import.meta.url), 'utf8'));
 const NOW = JSON.parse(JSON.stringify(probe()));   // through JSON, as the golden went (NaN and Infinity would both become null)
 
-for (const key of Object.keys(GOLDEN)) test(`camera/feel A/B: ${key} is exactly what the literals produced`, () => assert.deepEqual(NOW[key], GOLDEN[key]));
+// The rig frames run through Math.exp / sin / cos many times, and another Node build's libm may differ in the last digit (the HF CPU job did: 1e-16 relative), so the rig and follow keys
+// are compared to 1e-12; every other key, and the same machine's run of the rig, is bit for bit.
+const close = (a, b, path = '') => {
+  if (typeof a === 'number' && typeof b === 'number') return assert.ok(Math.abs(a - b) <= 1e-12 * Math.max(1, Math.abs(a), Math.abs(b)), `${path}: ${a} vs ${b}`);
+  if (Array.isArray(a) && Array.isArray(b)) { assert.equal(a.length, b.length, path); return a.forEach((x, i) => close(x, b[i], `${path}[${i}]`)); }
+  if (a && b && typeof a === 'object' && typeof b === 'object') { assert.deepEqual(Object.keys(a), Object.keys(b), path); return Object.keys(a).forEach((k) => close(a[k], b[k], `${path}.${k}`)); }
+  assert.deepEqual(a, b, path);
+};
+for (const key of Object.keys(GOLDEN)) test(`camera/feel A/B: ${key} is what the literals produced`, () => (key === 'rigs' || key === 'follow' ? close(NOW[key], GOLDEN[key], key) : assert.deepEqual(NOW[key], GOLDEN[key])));
 test('camera/feel A/B: the probe covers what the golden covers, nothing more', () => assert.deepEqual(Object.keys(NOW), Object.keys(GOLDEN)));
 
 // The rows that replaced the literals, pinned to the old values.
