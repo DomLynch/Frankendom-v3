@@ -1,7 +1,8 @@
 # Shared item core: row shape, core_version 1 (platform plan step 1, design only)
 
 Status: SIGNED by ARMAGEDOM Lead in PR #292 (answers folded in below). Still DESIGN ONLY: no code, no data row and no game behaviour changes with this doc. V3 facts checked against `main` 6e8cc81.
-Canonical copy: this file plus `docs/item-core.schema.json` in Frankendom-v3. ARMAGEDOM pins the commit sha later; neither repo writes into the other.
+Canonical copy (Dom's plan rewrite, 2026-10-29): the schema now lives in `DomLynch/games-platform` (`packages/item-core`, public, schema-only), pinned by commit sha like physics; this file stays V3's design note and `docs/item-core.schema.json` is a byte-identical copy of the one at games-platform `739c6e9`. Neither game repo writes into the other.
+Ruled by Strategy (2026-10-29): the games-platform validator is the rule. An unknown key beside the core ones is rejected; a game's extras live only under `ext.<game_id>`. V3 aligns to the package pinned above; ARMAGEDOM Lead signs against `739c6e9` separately. No core key is added or moved by this note.
 Plan (Strategy): shared item core = `id`, `game_id`, `type`, `asset` (Lead added `name`); optional typed `weapon` block (damage, rate, range, ammo) and `character` block (rig); cut/dismember stays in V3's extension, ballistics never in the core.
 
 Standing rules (Strategy): new gameplay data uses the core shape once published, no refactor of existing rows; before building loot, inventory, NPC AI or trading, check the other game first (reuse-first); no auth or database change in either repo except through ARMAGEDOM Server & Deploy.
@@ -26,7 +27,7 @@ One row = one JSON object, unique `id`. The shared core schema has a FIXED wrapp
 
 Where rows live: ARMAGEDOM in `Web/src/data/*.json` (array under a named key, unique kebab ids) and Supabase `arma_items` (`id text`, `^[a-z0-9-]{1,48}$`); V3 in `data/*.json` and `src/fight/weapon-defs.json`.
 
-Rules: no other top-level field is core. A game may carry extra keys beside the core ones (V3's extension, section 3); a consumer from the other game ignores keys it does not know. A `weapon` block on a non-weapon row, or a `character` block on a non-character row, is invalid. All numbers are finite; units are fixed by the tables, never by a suffix in a key name.
+Rules: no other top-level field is core. A game carries its extras only under `ext.<game_id>` (V3's extension, section 3; no extra keys beside the core ones, per the ruling at the top); a consumer from the other game ignores the `ext` of a game it does not know. A `weapon` block on a non-weapon row, or a `character` block on a non-character row, is invalid. All numbers are finite; units are fixed by the tables, never by a suffix in a key name.
 
 ## 2. Optional typed blocks
 

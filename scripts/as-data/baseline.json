@@ -142,11 +142,10 @@
    "compare:Staggered": 1
   }
  },
+ "backlog_about": "Count of allow.json rows whose reason starts with DEFERRED (a value that belongs in a data row and has not moved yet). Shrink-only, target 0.",
+ "backlog": 0,
  "totals_about": "Per-file TOTAL hit counts per kind over all of src/**/*.ts, recorded on unchanged main e44150da before any other change. A file may only go down; see scripts/as-data/check.mjs.",
  "totals": {
-  "src/art-url.ts": {
-   "compare": 1
-  },
   "src/audio/arena-manifest.ts": {
    "number": 36
   },
@@ -174,52 +173,6 @@
   },
   "src/audio/zone-cues.ts": {
    "name-compare": 3
-  },
-  "src/auto-start.ts": {
-   "name-compare": 1
-  },
-  "src/brain.ts": {
-   "name-compare": 1
-  },
-  "src/client/main.ts": {
-   "name-compare": 11,
-   "number": 16,
-   "label": 3,
-   "compare": 1
-  },
-  "src/commentator.ts": {
-   "number": 6,
-   "name-compare": 6,
-   "label": 2
-  },
-  "src/core/career-ladder.ts": {
-   "label": 10,
-   "number": 1
-  },
-  "src/core/grades.ts": {
-   "number": 49,
-   "name-compare": 3,
-   "label": 2
-  },
-  "src/core/registry.ts": {
-   "label": 16,
-   "name-compare": 4,
-   "number": 1
-  },
-  "src/corpse-run.ts": {
-   "number": 7
-  },
-  "src/daily-pit-ui.ts": {
-   "label": 12,
-   "name-compare": 1
-  },
-  "src/daily-pit.ts": {
-   "number": 15,
-   "name-compare": 4
-  },
-  "src/difficulty.ts": {
-   "label": 1,
-   "number": 1
   },
   "src/fight/ai.ts": {
    "number": 33,
@@ -998,85 +951,6 @@
    "number": 5,
    "name-compare": 9,
    "label": 2
-  },
-  "src/hero-reach.ts": {
-   "name-compare": 2
-  },
-  "src/hit-stop-rules.ts": {
-   "label": 2
-  },
-  "src/hit-stop.ts": {
-   "name-compare": 2
-  },
-  "src/mobs-run.ts": {
-   "number": 2,
-   "name-compare": 1
-  },
-  "src/parts.ts": {
-   "number": 12,
-   "label": 10
-  },
-  "src/presence/chunk.ts": {
-   "compare": 1,
-   "name-compare": 1,
-   "number": 1
-  },
-  "src/presence/client.ts": {
-   "number": 8,
-   "name-compare": 1
-  },
-  "src/presence/draw.ts": {
-   "number": 3
-  },
-  "src/presence/rows.ts": {
-   "number": 3,
-   "name-compare": 3
-  },
-  "src/presence/wire.ts": {
-   "number": 22
-  },
-  "src/progression.ts": {
-   "label": 8,
-   "number": 7
-  },
-  "src/retry.ts": {
-   "label": 1,
-   "number": 2
-  },
-  "src/server-model/zone-model.ts": {
-   "label": 16,
-   "number": 34,
-   "name-compare": 3
-  },
-  "src/share-clip.ts": {
-   "number": 58,
-   "label": 3,
-   "name-compare": 25
-  },
-  "src/stars.ts": {
-   "number": 10,
-   "label": 16
-  },
-  "src/stubs.ts": {
-   "label": 13,
-   "name-compare": 3
-  },
-  "src/telemetry-rows.ts": {
-   "name-compare": 15,
-   "number": 6
-  },
-  "src/telemetry.ts": {
-   "label": 2,
-   "number": 11,
-   "compare": 1,
-   "name-compare": 2
-  },
-  "src/tune.ts": {
-   "label": 7,
-   "number": 3
-  },
-  "src/zoom-guard.ts": {
-   "number": 1
   }
  }
 }

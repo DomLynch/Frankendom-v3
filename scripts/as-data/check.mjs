@@ -225,8 +225,15 @@ export function run(root, { allowFile = join(HERE, 'allow.json'), baselineFile =
   exemptFiles.forEach((e, k) => { if (!usedExempt.has(k)) problems.push(`stale exempt file ${e.file} ${e.kind}: the file has no ${e.kind} hit (or is not in scope), delete the row`); });
   for (const f of Object.keys(rawBase)) if (!legacy.has(f) || !files.includes(f)) problems.push(`baseline names ${f}, which is not a scanned legacy file (scope.json legacy): delete its baseline row`);
   for (const f of Object.keys(totalsBase)) if (legacy.has(f) || !files.includes(f)) problems.push(`baseline totals name ${f}, which is gone, out of scope or a per-literal legacy file: delete its totals row`);
-  return { problems, exempt, scanned: files.length, tally, legacy, measured, areas };
+  // BACKLOG: allow rows whose reason starts with DEFERRED are tuning or player text still in code. They are counted apart, may only shrink (the recorded count in baseline.json `backlog`), target 0.
+  const backlog = allow.filter((a) => isBacklog(a)).length, backlogBase = Number.isInteger(baseJson.backlog) ? baseJson.backlog : 0;
+  if (backlog > backlogBase) problems.push(`backlog: ${backlog} DEFERRED allow row(s), the baseline says ${backlogBase}: a DEFERRED row cannot be added, move the value into a data row (or give the row a plain non-DEFERRED reason if it is not tuning)`);
+  else if (backlog < backlogBase) problems.push(`backlog: baseline says ${backlogBase} DEFERRED allow row(s), there are ${backlog}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
+  return { problems, exempt, scanned: files.length, tally, legacy, measured, areas, backlog };
 }
+
+/** An allow row whose reason starts with DEFERRED: a value that belongs in a data row and has not moved yet. */
+export const isBacklog = (row) => /^DEFERRED\b/.test(String(row?.reason ?? '').trim());
 
 /** The summary table, one row per area: files, hits by kind, and how each hit is covered. */
 export function summaryTable(r) {
@@ -253,8 +260,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       ...(old ? Object.entries(counts).flatMap(([f, c]) => Object.entries(c).filter(([k, v]) => v > (old[f]?.[k] ?? 0)).map(([k]) => `${f} ${k}`)) : []),
       ...Object.entries(totals).flatMap(([f, c]) => Object.entries(c).filter(([k, v]) => v > (oldTotals[f]?.[k] ?? 0)).map(([k]) => `${f} ${k}`)),
     ];
+    const oldBacklog = Number.isInteger(oldJson?.backlog) ? oldJson.backlog : null;
+    if (oldBacklog !== null && before.backlog > oldBacklog) grown.push(`backlog ${before.backlog} > ${oldBacklog}`);
     if (grown.length) { console.error(`as-data: not writing the baseline, the baseline only shrinks; new sites:\n${grown.slice(0, 10).join('\n')}`); process.exit(1); }
-    writeFileSync(file, `${JSON.stringify({ about: 'Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy): per literal. More of a literal than this is new; fewer must come down here. Only ever shrinks.', counts, totals_about: oldJson?.totals_about ?? '', totals }, null, 1)}\n`);
+    writeFileSync(file, `${JSON.stringify({ about: 'Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy): per literal. More of a literal than this is new; fewer must come down here. Only ever shrinks.', counts, backlog_about: 'Count of allow.json rows whose reason starts with DEFERRED (a value that belongs in a data row and has not moved yet). Shrink-only, target 0.', backlog: before.backlog, totals_about: oldJson?.totals_about ?? '', totals }, null, 1)}\n`);
     console.log(`as-data: wrote ${relative(root, file)} (${Object.keys(counts).length} per-literal files, ${Object.keys(totals).length} total-ratchet files)`);
     process.exit(0);
   }
@@ -262,5 +271,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const ex = Object.entries(r.exempt).map(([k, v]) => `${k} x${v}`).join(', ') || 'none';
   console.log(summaryTable(r));
   if (r.problems.length) { console.error(`as-data: ${r.problems.length} problem(s) in ${r.scanned} scanned file(s):\n${r.problems.slice(0, 60).join('\n')}${r.problems.length > 60 ? `\n... and ${r.problems.length - 60} more` : ''}`); process.exit(1); }
+  console.log(`as-data: backlog ${r.backlog} DEFERRED allow row(s) (shrink-only, target 0)`);
   console.log(`as-data: ${r.scanned} file(s) at or under their baseline (named exemptions: ${ex})`);
 }
