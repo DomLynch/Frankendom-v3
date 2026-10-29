@@ -166,16 +166,6 @@ test('rarity follows each kill: a 2-star boss then a 0-star one; the killing-blo
   hook.remove();
 });
 
-test('the page hands the star to the cut: ragdoll.ts reads kind and star at the kill, main.ts sets both', () => {
-  const rag = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8'), main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  // the life is noted at the TOP of the kill, before the finisher skip branch (a beheading finisher cuts through scene.finisherCut with mode 'skip' and never reaches the else branch)
-  const killAt = rag.indexOf('if (killed) {'), noteAt = rag.indexOf('noteLife(lifeProfiles, lifeId'), skipAt = rag.indexOf("mode = 'skip'", killAt), elseAt = rag.indexOf('rd.kill(blowImpulse', killAt);
-  assert.ok(killAt > 0 && noteAt > killAt && noteAt < skipAt && noteAt < elseAt, 'noteLife runs before the skip branch and the plain-death branch');
-  assert.equal(rag.split('noteLife(lifeProfiles').length - 1, 1, 'noted once, not per branch');
-  assert.match(rag, /star: lifeProfiles\.get\(corpseId\)\?\.star \?\? 0/);
-  assert.match(main, /setActiveKind\(k\.kind, k\.star \?\? 0\)/);
-});
-
 test('a finisher kill (skip mode, the head cut after the kill) yields a part of the kill\'s own star, and the next life never lends its', () => {
   const lives = new Map(), { box, hook } = page(freshSave());
   // the page's order on the default finisher path: kill frame (noteLife), later scene.finisherCut announces the head cut for that corpse id

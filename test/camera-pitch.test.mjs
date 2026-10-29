@@ -10,7 +10,6 @@ import { fovForZoom } from '../src/fight/camera-zoom.ts';
 import { validateFile } from '../src/sim/validate.js';
 
 const FIGHT = JSON.parse(readFileSync(new URL('../data/fight.json', import.meta.url), 'utf8'));
-const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const ROWS = FIGHT.camera.pitch;
 const errs = (mut) => { const c = structuredClone(FIGHT); mut(c.camera.pitch); return validateFile('fight', c); };
 
@@ -42,13 +41,9 @@ test('?pitch= picks a preset, off or a number inside the limits; the default is 
   assert.equal(pitchChoice({ ...ROWS, default: 'low' }, '?pitch=off'), null);
 });
 
-test('wiring pin: the page reads the row for the zone only, never under ?cam=v1, and the default is OFF (the camera is today\'s)', () => {
-  const main = read('../src/client/main.ts');
-  assert.match(main, /if \(ZONE && !\/\[\?&\]cam=v1\\b\/\.test\(search\)\) setCameraPitch\(pitchChoice\(FIGHT\.camera\.pitch, search\), FIGHT\.camera\.pitch, portraitPitch\(FIGHT\.camera\.pitch, search\)\);/);
+test('wiring pin: the page reads the row for the zone only, never under ?cam=v1, and the default is OFF (the camera is today\'s) (behaviour half; the source pins moved to test/source-pins/)', () => {
+
   assert.equal(pitchChoice(FIGHT.camera.pitch, ''), null);
-  const cam = read('../src/fight/camera.ts');
-  assert.match(cam, /let PITCH: [^\n]*= null;/);   // module default: no pitch
-  for (const f of ['../src/fight/combat.ts', '../src/fight/duel.ts', '../src/fight/moves.ts', '../src/fight/record.ts']) assert.doesNotMatch(read(f), /camera-pitch|camera\.pitch/, f);
 });
 
 const FOV = fovForZoom(FIGHT.camera.zoom), ASPECT = 375 / 812;

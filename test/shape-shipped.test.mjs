@@ -2,7 +2,7 @@
 // that was a 404 and a console error at page load. The shipped list is pinned to public/weapons/shapes/; files that ship are still asked for.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { SHIPPED_SHAPES, SHIPPING_SHAPES, shapeFor, shippedShape } from '../src/fight/weapon-shapes.ts';
 
 test('the shipped list is exactly the .glb files under public/weapons/shapes/', () => {
@@ -22,8 +22,4 @@ test('the BUILT url carries a content hash: shipped files are still asked for (t
     assert.equal(shippedShape(`${built}?v=1`), true, `${w} with a query`);
   }
   assert.equal(shippedShape('/weapons/shapes/scythe-plain.a3defee2.glb'), false);
-});
-test('scene.ts gates the fetch on the shipping table only (the ?shapes= local drop is never filtered)', () => {
-  const src = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(src, /shapeTable === SHIPPING_SHAPES && !shippedShape\(url\)/);
 });

@@ -122,10 +122,7 @@ test('?save=off switches it off, anything else leaves it on', () => {
   assert.equal(progressionOn(P, '?save=on'), true);
 });
 
-test('wiring: the page records kills in the zone loop, rebuilds the kinds, shows one discreet line, and the hero equip exists', () => {
-  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8'), scene = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(main, /onBossKilled\(spawns\[current\]!\.kind[,)]/); assert.match(main, /onBossKilled\(spawns\[a\.index\]!\.kind[,)]/);   // (the star bosses pass the dead one's star too, data/stars.json)
-  assert.match(main, /KINDS = kindTable\(KIND_CTX\)/); assert.match(main, /opponentId, undefined, HERO_WEAPON,/);
-  assert.match(scene, /weapons\/player\/cleaver\.glb/);
+test('wiring: the page records kills in the zone loop, rebuilds the kinds, shows one discreet line, and the hero equip exists (behaviour half; the source pins moved to test/source-pins/)', () => {
+
   assert.equal(P.bosses.some((b) => b.weapon === 'cleaver'), true);
 });

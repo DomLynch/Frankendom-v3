@@ -3,17 +3,16 @@
 // own globals, against red pixels found in the radar's canvas at that pixel). Prints one line per boss.
 //   <tag>-0-start / <tag>-0-start-radar, <tag>-1-turned / <tag>-1-turned-radar   (and -2-off for ?radar=off)
 //   node scripts/radar-stills.mjs <base url> <out dir> <tag> [query]
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = 'opener=off'] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/radar-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const DSF = Number(process.env.DSF ?? 3);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: DSF, isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(DSF));
+collectErrors(page, { echo: true });
 const cdp = await page.context().newCDPSession(page);
 const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([id, x, y]) => ({ id, x, y })) });
 const shot = async (n) => {

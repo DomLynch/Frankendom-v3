@@ -2,16 +2,15 @@
 // at flash-on. The radar canvas is read in the frame it is drawn (toDataURL right after a rAF), so the pulse is caught exactly; the three crops are laid on one 375-wide sheet at 4x.
 // The arm is the page's own debug handle (window.__v3Radar.armFlash, what a boss kill calls); the timing is the game's clock.
 //   node scripts/radar-flash-stills.mjs <base url> <out dir> <tag>
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/radar-flash-stills.mjs <base url> <out dir> <tag>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(3));
+collectErrors(page, { echo: true });
 await page.goto(`${base}/__reset`).catch(() => {});
 await page.goto(`${base}/?opener=off`);
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive' && globalThis.__v3Radar, null, { timeout: 180000 });

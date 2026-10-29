@@ -7,6 +7,7 @@
 //   node scripts/reach-stills.mjs <base url> <out dir> [query ...]   (on a Mac it uses Metal, elsewhere ANGLE's default)
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/reach-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
@@ -16,11 +17,11 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || un
 const TICK = 1000 / 60, MOVE = process.env.MOVE ?? 'thrust', GAP = Number(process.env.GAP ?? 2.0), AT = (process.env.AT ?? '10,18,34').split(',').map(Number);
 for (const query of queries.length ? queries : ['']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   await page.waitForTimeout(1500);
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));

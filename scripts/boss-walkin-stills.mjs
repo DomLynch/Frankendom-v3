@@ -1,19 +1,19 @@
 // Put the hero beside a zone boss in the real zone (Gargantua spawn x 28,z 12; Arachne x -14,z 31), 375 wide, and shoot it ready + mid-attack (+ guard if GUARD=1).
 // The hero is set down 3 m short of the boss's spawn (the sim's fighter position; aggro does the rest), no walking.
 //   node scripts/boss-walkin-stills.mjs <base url> <out dir> <gargantua|arachne> [query]   env: ATTACK_AGES=8,22  AFTER=<tag>
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 const [base, out, who, query = 'opener=off'] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
 const SPOT = { gargantua: [28, 12], arachne: [-14, 31] }[who];
 const AGES = (process.env.ATTACK_AGES ?? '8,22').split(',').map(Number), tag = process.env.TAG ?? who;
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=metal', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ angle: 'metal', chromeEnv: null });
+const page = await browser.newPage(phoneOptions(2));
 page.on('pageerror', (e) => console.error('pageerror', e.message));
 page.on('console', (m) => { if (m.type() === 'error' || /DBG/.test(m.text())) console.error('console', m.text().slice(0, 200)); });
 if (process.env.NET) page.on('request', (r) => { if (/\.js/.test(r.url())) console.log('req', r.url().slice(0, 140)); });
 await page.goto(`${base}/?${query}`);
-await page.waitForFunction(() => globalThis.__v3Zone && document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+await waitPlayable(page, { timeout: 180000, zone: true });
 await page.waitForTimeout(2000);
 const WP = process.env.WP?.split(',').map(Number);   // a waypoint to walk to first (to come at the boss from another side)
 const state = () => page.evaluate(() => { const z = globalThis.__v3Zone, f = globalThis.__v3Fight; return { zone: z?.current, engaged: z?.engaged, hero: f?.fighter && [+f.fighter.x.toFixed(1), +f.fighter.z.toFixed(1)], foe: f?.enemy && [+f.enemy.x.toFixed(1), +f.enemy.z.toFixed(1)], phase: f?.duel?.fighters?.map((x) => x.phase + ':' + x.age + ':' + x.weapon), hp: z?.foeHealth }; });

@@ -5,24 +5,23 @@
 //   SHOTS=0,4,8,14,22,34 ticks after the hit   FMT=jpg   DPR=2   MAXWAIT=2400 ticks to wait for the blow
 //   COST=1   no stills, no fake clock: the fight plays in real time for COST_S seconds with the hero standing; the hero ragdoll's per-frame cost (globalThis.__ragdollHero) and the foe's are printed
 //   playwright is not a repo dependency: npm i --no-save playwright@1.62.1
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/hero-feel-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, SHOTS = (process.env.SHOTS ?? '0,4,8,14,22,34').split(',').map(Number), MAXWAIT = Number(process.env.MAXWAIT ?? 2400);
 const EXT = process.env.FMT === 'jpg' ? 'jpg' : 'png', SHOT = { timeout: 600000, ...(EXT === 'jpg' ? { type: 'jpeg', quality: 70 } : {}) };
 const open = async () => {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DPR ?? 2), isMobile: true, hasTouch: true });
-  page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+  const page = await browser.newPage(phoneOptions(Number(process.env.DPR ?? 2)));
+  collectErrors(page, { echo: true });
   return page;
 };
 const ready = async (page, query) => {
   await page.goto(`${base}/${query ? `?${query}` : ''}`, { timeout: 180000 });
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 240000, polling: 'raf' });
 };
 const keep = (page) => page.evaluate(() => { const [h, f] = globalThis.__v3Fight.duel.fighters; h.health = h.maxHealth; h.stamina = h.maxStamina; f.health = Math.max(f.health, Math.ceil(f.maxHealth / 2)); });
 const tagOf = (q) => (q.includes('feel=hero') ? 'on' : 'off');

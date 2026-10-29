@@ -4,9 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import {
-  GOLDEN, bonusOf, bossDrop, boostedBy, cleanGolden, createGolden, dropGolden, freshGolden, goldenBlips, itemsNow, lineOf, loadWeapon, lose, nearest, pointAt, rowOf, spend, take, usableRows,
-} from '../src/zone/golden-drops.ts';
+import { GOLDEN, bonusOf, bossDrop, boostedBy, cleanGolden, createGolden, dropGolden, freshGolden, goldenBlips, itemsNow, lineOf, loadWeapon, lose, nearest, pointAt, rowOf, spend, take, usableRows } from '../src/zone/golden-drops.ts';
 import { clearOf, validateClearance, validateGolden } from '../src/fight/golden-check.ts';
 import { zoneFor } from '../src/stubs.ts';
 import { spotsFor } from '../src/zone/spawns.ts';
@@ -196,10 +194,4 @@ test('a tap on a pickup in reach takes it', () => {
   const gc = createGolden({ rows: GOLDEN, drawable: DRAW, ui, get: () => save, put: (n) => { save = n; }, now: () => 0, rng: seq(0.1) });
   gc.step({ x: 0, z: 0 }, true); assert.equal(gc.held(), null);
   tapFn('0', 'ground'); assert.deepEqual(gc.held(), { id: 'sunblade', charges: 5 });
-});
-
-test('as built: the module and the page wiring carry no literal beyond the rows (as-data), and main.ts stays a few lines', () => {
-  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /mountGolden/); assert.match(main, /practice = golden\.strike\(practice\)/);
-  assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation\(PROG\.save, PROG_ROWS\)\); KINDS = kindTable\(KIND_CTX\)/, 'the rider no longer rides the tune: the kill rebuild line is the original');
 });

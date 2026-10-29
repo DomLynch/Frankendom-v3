@@ -6,17 +6,16 @@
 //   <tag>-3-after    both lifted
 //   MODE=combat      waits for a boss to engage, then the same gesture: the yaw must not move (the drag does nothing in a fight)
 //   node scripts/look-thumb-stills.mjs <base url> <out dir> <tag> [query]
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/look-thumb-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const MODE = process.env.MODE ?? 'free', DRAG_PX = Number(process.env.DRAG_PX ?? 150), STEPS = Number(process.env.DRAG_STEPS ?? 15);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
+collectErrors(page, { echo: true });
 const cdp = await page.context().newCDPSession(page);
 const shot = async (n) => { await page.screenshot({ path: `${out}/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 }); };
 const where = () => page.evaluate(() => { const r = globalThis.__v3Roam, f = globalThis.__v3Fight?.fighter, p = r ?? f; return { yaw: globalThis.__v3Yaw, hero: [+p.x.toFixed(2), +p.z.toFixed(2)], engaged: !!globalThis.__v3Zone?.engaged, freeShare: globalThis.__v3FreeShare }; });

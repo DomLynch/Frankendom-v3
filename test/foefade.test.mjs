@@ -30,14 +30,13 @@ test('the band edges: whole at fadeStartDegrees, gone at fadeEndDegrees, half be
   assert.equal(fadeAlpha((B.fadeStartDegrees + B.fadeEndDegrees) / 2, B.fadeStartDegrees, B.fadeEndDegrees), 0.5);
 });
 
-test('?foefade=v1 and the rows switch it off; default B has it on; v1 skyview has none', () => {
+test('?foefade=v1 and the rows switch it off; default B has it on; v1 skyview has none (behaviour half; the source pins moved to test/source-pins/)', () => {
   assert.equal(foeFadeOn('', B), true);
   assert.equal(foeFadeOn('?foefade=v1', B), false);
   assert.equal(foeFadeOn('?x=1&foefade=v1', B), false);
   assert.equal(foeFadeOn('', SKYVIEWS.variants.a), false);
   assert.equal(foeFadeOn('?skyview=v1', skyViewFor('?skyview=v1')), false);
   assert.equal(foeFadeOn('', { ...B, fadeStartDegrees: 0, fadeEndDegrees: 0 }), false);
-  assert.match(read('../src/fight/scene.ts'), /const foeFade = skyView && foeFadeOn\(pageSearch, skyView\) \? createFoeFade\(skyView\) : null;/);
 });
 
 test('depression is measured to the FEET: a boss whose feet are on melted sand fades however tall he is', () => {
@@ -108,13 +107,4 @@ test('adopt: gear materials get the fade, the shader multiplies alpha, onBeforeR
   assert.match(shader.fragmentShader, /if \(vFoeFade <= .*discard;/);
   const custom = foeFadeShader('void main() { gl_Position = vec4(0.0); }', 'void main() { gl_FragColor = vec4(1.0); }', B);
   assert.equal(custom.fragmentShader, 'void main() { gl_FragColor = vec4(1.0); }');   // a trail or sprite shader (no project_vertex) is not touched
-});
-
-test('wiring: the hero is protected and the foe, its idle copies, other bodies and live attackers are adopted; sand look untouched', () => {
-  const scene = read('../src/fight/scene.ts');
-  assert.match(scene, /foeFade\?\.protect\(player\); foeFade\?\.adopt\(opponent\);/); assert.doesNotMatch(scene, /foeFade\??\.adopt\(player\)/);
-  assert.match(scene, /for \(const h of idleCopies\) foeFade\.adopt\(h\);/);
-  assert.match(scene, /for \(const e of liveFoes\.values\(\)\) foeFade\.adopt\(e\.group\);/);
-  assert.match(scene, /foeFade\.move\(camera\.position\)/);
-  assert.match(scene, /const floorFade = skyView \? fadeFloor\(arena\.group, skyView\) : null;/);
 });

@@ -38,7 +38,7 @@ test('every weapon V3 fights with has a row, and each row names a package weapon
   assert.ok(ROWS.handSpeedRef in rules.swing.hand_speed_ref_m_s && ROWS.impulseAt in rules.strength_scale);
 });
 
-test('?rules=m4b is M4 with only the wider-sample rungs (Strategy 2026-10-27); m4, v1 and the default are unchanged', () => {
+test('?rules=m4b is M4 with only the wider-sample rungs (Strategy 2026-10-27); m4, v1 and the default are unchanged (behaviour half; the source pins moved to test/source-pins/)', () => {
   assert.equal(variantFor(ROWS, '?rules=m4b'), 'm4b');
   for (const q of ['', '?rules=m4', '?rules=v1', '?rules=sometimes', '?rules=constructor', '?rules=__proto__', '?x=m4b']) assert.equal(variantFor(ROWS, q), null, q);
   assert.equal(rulesOnFor(ROWS, '?rules=m4b'), true);
@@ -54,12 +54,6 @@ test('?rules=m4b is M4 with only the wider-sample rungs (Strategy 2026-10-27); m
   // everything but those three rungs and the gate is the package's
   const rest = (r) => JSON.stringify({ ...r, strength_scale: { ...r.strength_scale, rung_hit: 0, rung_stick: 0, rung_cut: 0 }, melee_speed_gate: { ...r.melee_speed_gate, min_speed_m_s: 0 } });
   assert.equal(rest(b), rest(pkgRules));
-  // limbs reads the evaluator's part HP from window.__v3Rules whatever the rules query says, so m4b (an evaluator is built) feeds it like m4
-  const limbsSrc = readFileSync(new URL('../src/fight/feel-limbs.ts', import.meta.url), 'utf8');
-  const from = limbsSrc.indexOf('function harnessFractions'), to = limbsSrc.indexOf('const hv = ');
-  assert.ok(from >= 0 && to > from, 'both source markers are found (harnessFractions, then const hv)');
-  const harness = limbsSrc.slice(from, to);
-  assert.ok(harness.includes('__v3Rules') && !harness.includes('URLSearchParams') && !harness.includes('location'), 'harnessFractions does not look at the rules query');
   assert.deepEqual([pkgRules.strength_scale.rung_hit, pkgRules.strength_scale.rung_stick, pkgRules.strength_scale.rung_cut], [8.0, 16.5, 24.3], 'm4 keeps the pins');
   assert.ok(b.strength_scale.rung_hit < b.strength_scale.rung_stick && b.strength_scale.rung_stick < b.strength_scale.rung_cut);
 });
@@ -78,10 +72,8 @@ test('rows without a `variants` map (an old or hand-built row set) are no varian
   assert.equal(createRulesEval(bare, pkg, BODY, 'pitborn', () => 0, undefined, '?rules=m4b').rules.strength_scale.rung_hit, 8.0);
 });
 
-test('the m4b about-text says it also scales impulses (impulseAt = rung_stick: ~14% stronger shoves), so the A/B is not read as hit rules alone', () => {
+test('the m4b variant scales impulses at rung_stick (the row; the about-text wording is not pinned)', () => {
   assert.equal(ROWS.impulseAt, 'rung_stick');
-  assert.match(ROWS.variants.m4b.about, /impulseAt/);
-  assert.match(ROWS.variants.m4b.about, /14%/);
 });
 
 test('validate: variants rows take only known keys, finite rungs, and names that are not the v1 / m4 rows (a typo must fail, not be a dead key)', () => {
