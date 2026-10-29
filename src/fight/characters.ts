@@ -10,7 +10,7 @@ import RIG_JSON from '../../data/rig.json' with { type: 'json' };
 import { dressBossHand } from './boss-hand.ts';   // a boss weapon row's dressing: the part scaled, the off-hand part (data/boss-weapons.json)
 import type { BossWeaponRow } from './boss-weapon.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
-import { bone as boneOf, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';
+import { bone as boneOf, boneLookups, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';
 import { clip106Loader } from './clips-106.ts';   // a 106 body's baked clip JSONs (data/rig.json clips106)   // V3 rig swap: every bone lookup goes through the one map (65 body = today's lookup)
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
@@ -1317,7 +1317,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         root.updateWorldMatrix(true, true);
       },
       // The world position of a named bone right now (the scene takes the victim's chest with it).
-      boneWorld(name: string): Vector3 | null { const bone = boneOf(root, name); if (!bone) return null; if (matricesFresh) bone.updateWorldMatrix(true, false); else { root.updateWorldMatrix(true, true); matricesFresh = true; } return bone.getWorldPosition(new Vector3()); }
+      boneWorld(name: string): Vector3 | null { const bone = boneOf(root, name); if (!bone) return null; if (matricesFresh) { bone.updateWorldMatrix(true, false); boneLookups.worldChain++; } else { root.updateWorldMatrix(true, true); matricesFresh = true; boneLookups.worldFull++; } return bone.getWorldPosition(new Vector3()); }
     };
   }
   const player = create(false);

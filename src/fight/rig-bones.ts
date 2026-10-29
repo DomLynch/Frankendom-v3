@@ -43,7 +43,8 @@ export const boneName = (rig: Rig, name: string): string => rig === '106' ? TO_1
 // re-parent drops it and the next call searches again); a miss is never kept, so a bone that arrives later (a graft, a wear) is still found.
 const boneCache = new WeakMap<Object3D, Map<string, Object3D>>();
 /** Counters for the timing harness and the cache test: recursive searches run, cache hits served. */
-export const boneLookups = { searches: 0, hits: 0 };
+export const boneLookups = { searches: 0, hits: 0, worldFull: 0, worldChain: 0 };   // worldFull / worldChain: boneWorld subtree refreshes vs chain-only ones (characters.ts)
+(globalThis as { __boneLookups?: typeof boneLookups }).__boneLookups = boneLookups;   // read by scripts/perf-bone-cache.mjs
 const under = (node: Object3D, root: Object3D): boolean => { for (let n: Object3D | null = node; n; n = n.parent) if (n === root) return true; return false; };
 /** Drop every cached bone of `root` (a rig swap or a dispose; a stale entry is also caught lazily by the ancestor check). */
 export const clearBoneCache = (root: Object3D): void => { boneCache.delete(root); };
