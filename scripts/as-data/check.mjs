@@ -215,6 +215,7 @@ export function run(root, { allowFile = join(HERE, 'allow.json'), baselineFile =
         if (now > was) {
           a.new += now - was;
           const lines = newHits.filter((h) => totalKind(h) === k).map((h) => h.line);
+          if (was === 0) { for (const h of newHits.filter((x) => totalKind(x) === k)) problems.push(`${f}:${h.line} ${h.kind} ${JSON.stringify(h.literal)} belongs in a data row (or add an allow row with a reason)`); continue; }
           problems.push(`${f}: ${k} count ${now} is over the baseline ${was} (new hit(s) near line ${lines.slice(-(now - was)).join(', ')}): put the value in a data row, or add an allow row with a reason`);
         } else if (now < was) problems.push(`${f}: baseline says ${was} x ${k}, the file has ${now}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
       }
