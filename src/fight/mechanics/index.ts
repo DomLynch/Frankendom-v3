@@ -7,11 +7,13 @@ import { MECHANIC_SCALE } from './runtime.ts';
 import { createGourdBombsRuntime } from './gourd-bombs.ts';
 import { createKingAuraRuntime } from './king-aura.ts';
 import { createNanImpaleRuntime } from './nan-impale.ts';
+import { createShadowDashRuntime } from './kachujin-shadow-dash.ts';
 
 export const MECHANICS: Readonly<Record<string, (row: never) => MechanicRuntime>> = {
   'gourd-bombs': createGourdBombsRuntime as (row: never) => MechanicRuntime,
   'king-aura': createKingAuraRuntime as (row: never) => MechanicRuntime,
   'nan-impale': createNanImpaleRuntime as (row: never) => MechanicRuntime,
+  'shadow-dash': createShadowDashRuntime as (row: never) => MechanicRuntime,
 };
 
 /** The page hands the sim a spawn: `damage` is its multiplier (ring, star, Daily Pit), read by a mechanic that scales with it (the King's aura). */
