@@ -233,10 +233,8 @@ test('a close frame removes the player at once even when the peer never finishes
     const alice = await joinBot(p.port()), ghost = await rawJoin(p.port());
     await until(() => p.world.stats().players === 2);
     ghost.write(CLOSE_FRAME);   // ...and nothing more: no FIN, no end()
-    const t0 = Date.now();
-    await until(() => p.world.stats().players === 1, 1500);
+    await until(() => p.world.stats().players === 1, 1500);   // how quickly it happens (< 600 ms): test/perf/presence-close-latency.perf.mjs
     assert.equal(p.world.stats().players, 1, 'the world forgot him on the close frame, without waiting for the peer\'s FIN');
-    assert.ok(Date.now() - t0 < 600, `and quickly (${Date.now() - t0} ms)`);
     const open = () => new Promise((r) => p.server.getConnections((_e, n) => r(n)));
     let n = await open(); for (let i = 0; i < 60 && n > 1; i++) { await wait(50); n = await open(); }
     assert.equal(n, 1, 'the server destroyed the half-open socket after the grace (only alice is left)');

@@ -6,6 +6,7 @@ import { ARENA_MANIFEST, type ArenaCue } from './arena-manifest.ts';
 import { fetchAsset, loadFirst, pageUnloading, spriteFormats, type Format } from './sprite.ts';
 import { BELL_RATE, preparedBell } from './bell.ts';
 import { ROARS, momentsOf } from './crowd-rows.ts';
+import { ARENA_CUES, CROWD_PATTERNS, feel } from './audio-feel.ts';
 import type { Fatigue } from '../fight/fatigue.ts';
 
 // The crowd roar rows (crowd-rows.ts, crowd-defs.json): a roar plays its cue the frame its moment happens, on top of the reactions below.
@@ -22,6 +23,15 @@ async function loadArena(context: BaseAudioContext, formats: Format[] = spriteFo
 }
 
 // Independent voices/RNG: crowd cannot steal combat voices, change Foley variants or inherit the fatal gain boost.
+const F = {   // the crowd's numbers, rows in audio-feel-defs.json
+  wallGain: feel('wallGain'), wallReleaseStop: feel('wallReleaseStop'), wallSwapWindow: feel('wallSwapWindow'), wallSwapRelease: feel('wallSwapRelease'), wallRamp: feel('wallRamp'), stopPad: feel('stopPad'),
+  maxVoices: feel('maxVoices'), rateBase: feel('rateBase'), rateSpread: feel('rateSpread'), matchSeedXor: feel('matchSeedXor'), reactionFirstDelay: feel('reactionFirstDelay'), bellGain: feel('bellGain'),
+  accentFirstMin: feel('accentFirstMin'), accentFirstSpread: feel('accentFirstSpread'), bedGain: feel('bedGain'), bedOverlap: feel('bedOverlap'), bedRetry: feel('bedRetry'),
+  gruntGain: feel('gruntGain'), gruntDelay: feel('gruntDelay'), gruntCooldown: feel('gruntCooldown'), reactionGain: feel('reactionGain'), reactionDelay: feel('reactionDelay'),
+  reactionCooldown: feel('reactionCooldown'), reactionSpread: feel('reactionSpread'), accentAfterReaction: feel('accentAfterReaction'), jeerQuietAfter: feel('jeerQuietAfter'),
+  jeerGain: feel('jeerGain'), chantGain: feel('chantGain'), accentCooldown: feel('accentCooldown'), accentSpread: feel('accentSpread'), accentReactionGap: feel('accentReactionGap'),
+};
+const EXCITING_MOVE = CROWD_PATTERNS.exciting;
 const ARENA_LEVEL = audioRule('arenaLevel');   // owner 2026-09-20: the audience down with the rest of the mix (−30 % was inaudible on the phone: −3 dB, and the finish limiter ate it); the bell is exempt so it leads
 export function createArenaAudio(context: BaseAudioContext, destination: AudioNode, now: () => number, bellSource: () => Float32Array | undefined = preparedBell) {
   type Voice = { source: AudioBufferSourceNode; until: number };
@@ -36,20 +46,20 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
     for (const voice of voices) { try { voice.source.stop(time); } catch { /* ended */ } }
     voices.clear(); sleeping = true; wallStop(time, 0);
   }
-  const WALL_GAIN = .16;   // under ARENA_LEVEL like every other crowd cue: a bed under the mix, never a stinger
+  const WALL_GAIN = F.wallGain;   // under ARENA_LEVEL like every other crowd cue: a bed under the mix, never a stinger
   function wallStop(time: number, release: number) {
     if (!wall) return;
     const { source, envelope } = wall; wall = undefined;
     envelope.gain.cancelScheduledValues(time); envelope.gain.setValueAtTime(envelope.gain.value, time); envelope.gain.linearRampToValueAtTime(0, time + release);
-    try { source.stop(time + release + .01); } catch { /* ended */ }
+    try { source.stop(time + release + F.stopPad); } catch { /* ended */ }
     source.onended = () => { source.disconnect(); envelope.disconnect(); };
   }
   // Level 0..1 each frame: start a bed (random variant, never the last one) when the level rises from 0, follow it while it holds,
   // drop it with a short release when it returns to 0. A bed that runs out while he still hugs the wall starts the next one.
   function wallJeer(level: number, time: number) {
     if (!buffer) return;
-    if (level <= 0) { wallStop(time, .15); return; }
-    if (wall && wall.until <= time + .05) wallStop(time, .05);
+    if (level <= 0) { wallStop(time, F.wallReleaseStop); return; }
+    if (wall && wall.until <= time + F.wallSwapWindow) wallStop(time, F.wallSwapRelease);
     if (!wall) {
       const variants = ARENA_MANIFEST.jeer_wall, index = nextVariant(random, variants.length, last.jeer_wall ?? -1); last.jeer_wall = index;
       const [offset, seconds] = variants[index], source = context.createBufferSource(), envelope = context.createGain();
@@ -58,20 +68,20 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
       wall = { source, envelope, until: time + seconds };
     }
     wall.envelope.gain.cancelScheduledValues(time); wall.envelope.gain.setValueAtTime(wall.envelope.gain.value, time);
-    wall.envelope.gain.linearRampToValueAtTime(WALL_GAIN * ARENA_LEVEL * Math.min(1, level), time + .1);
+    wall.envelope.gain.linearRampToValueAtTime(WALL_GAIN * ARENA_LEVEL * Math.min(1, level), time + F.wallRamp);
   }
   function play(name: ArenaCue, cueGain: number, delay = 0, outlive = false) {   // outlive: not stopped by stop() (a kill roar rings over the end)
-    const gain = name === 'bell' ? cueGain : cueGain * ARENA_LEVEL;
+    const cue = ARENA_CUES[name], gain = cue.scaled ? cueGain * ARENA_LEVEL : cueGain;
     // No arena bank yet: the idle-built bell (bell.ts), or none this match. Never synthesised here, on the Draw tap.
-    const samples = name === 'bell' && !buffer && !bell ? bellSource() : undefined;
+    const samples = cue.fallback && !buffer && !bell ? bellSource() : undefined;
     if (samples) { bell = context.createBuffer(1, samples.length, BELL_RATE); bell.getChannelData(0).set(samples); }
-    const audio = buffer ?? (name === 'bell' ? bell : null);
-    if (!audio || voices.size >= 6) return 0;
+    const audio = buffer ?? (cue.fallback ? bell : null);
+    if (!audio || voices.size >= F.maxVoices) return 0;
     const variants = ARENA_MANIFEST[name], index = nextVariant(random, variants.length, last[name] ?? -1); last[name] = index;
-    const [offset, seconds] = variants[index], rate = name === 'bell' ? 1 : .98 + random() * .04;
+    const [offset, seconds] = variants[index], rate = cue.jitter ? F.rateBase + random() * F.rateSpread : 1;
     const time = now() + delay, duration = seconds / rate, source = context.createBufferSource(), envelope = context.createGain();
     source.buffer = audio; source.playbackRate.value = rate; source.connect(envelope); envelope.connect(destination);
-    const fade = name === 'bed' ? .9 : .008;
+    const fade = cue.fade;
     envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(gain, time + fade);
     envelope.gain.setValueAtTime(gain, time + duration - fade); envelope.gain.linearRampToValueAtTime(0, time + duration);
     const voice = { source, until: time + duration }; if (!outlive) voices.add(voice);
@@ -88,32 +98,32 @@ export function createArenaAudio(context: BaseAudioContext, destination: AudioNo
       // Expired nodes clean up onended; removing their accounting here also works with a scripted offline clock.
       for (const voice of voices) if (voice.until <= time) voices.delete(voice);
       if (match !== frame.match) {
-        stop(); match = frame.match; random = seeded(match ^ 0x6172656e); bellPlayed = false;
+        stop(); match = frame.match; random = seeded(match ^ F.matchSeedXor); bellPlayed = false;
         for (const name of Object.keys(last) as ArenaCue[]) delete last[name];
-        reactionAt = time + 2; gruntAt = time; contactAt = time;
+        reactionAt = time + F.reactionFirstDelay; gruntAt = time; contactAt = time;
       }
       const moments = ROARS.length ? momentsOf(events) : undefined;   // the crowd roar rows (crowd-defs.json): none ship, so nothing here runs
       if (frame.ended || events.some(e => e.type === 'Killed')) { stop(); if (moments) for (const r of ROARS) if (r.on === 'kill' && moments.has('kill')) play(r.cue, r.gain, 0, r.outlive === true); return; }
       wallJeer(frame.loiter ?? 0, time);
       // A bell that returns no duration made no sound (no bell built yet, voices full): it is not counted, so the zone's 'once' token is not spent on it (feedback.ts).
-      if (!bellPlayed && draw) { bellPlayed = true; if (play('bell', .9)) bells++; }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
+      if (!bellPlayed && draw) { bellPlayed = true; if (play('bell', F.bellGain)) bells++; }   // owner 2026-09-20 "double the loudness": the gain lives in the bell's audible partials (bell.ts); .62 keeps bell + fallback draw swing under the −6 dBFS headroom check
       if (!buffer) return; // Loading has no playback callback: only an active match update may start sound.
-      if (sleeping) { sleeping = false; bedAt = time; accentAt = time + 12 + random() * 10; }
-      if (time >= bedAt) { const duration = play('bed', .15); bedAt = time + (duration ? duration - .9 : .1); }
+      if (sleeping) { sleeping = false; bedAt = time; accentAt = time + F.accentFirstMin + random() * F.accentFirstSpread; }
+      if (time >= bedAt) { const duration = play('bed', F.bedGain); bedAt = time + (duration ? duration - F.bedOverlap : F.bedRetry); }
       const hit = events.find(e => e.type === 'Hit' && (e.target !== 1 || frame.opponent === undefined || hasBlood(frame.opponent)));
       if (events.some(e => e.type === 'Hit' || e.type === 'Blocked' || e.type === 'Parried' || e.type === 'GuardBroken')) contactAt = time;
-      if (hit && time >= gruntAt) { play('grunt', .20, .04); gruntAt = time + .9; }
+      if (hit && time >= gruntAt) { play('grunt', F.gruntGain, F.gruntDelay); gruntAt = time + F.gruntCooldown; }
       if (moments) for (const r of ROARS) if (r.on !== 'kill' && moments.has(r.on)) play(r.cue, r.gain);   // a roar row: that cue the frame its moment happens, no cooldown
-      const exciting = events.some(e => e.type === 'Parried' || e.type === 'GuardBroken' || (e.type === 'Hit' && (e.charged || /heavy|riposte|counter/.test(e.move ?? ''))));
+      const exciting = events.some(e => e.type === 'Parried' || e.type === 'GuardBroken' || (e.type === 'Hit' && (e.charged || EXCITING_MOVE.test(e.move ?? ''))));
       const roared = moments !== undefined && ROARS.some(r => r.on !== 'kill' && moments.has(r.on));   // a roar row answers this moment itself: it REPLACES the organic reaction (two reaction cues stacked on one hit is a double sound)
       if (exciting && time >= reactionAt) {
-        if (!roared) play('reaction', .20, .18);
-        reactionAt = time + 4 + random() * 2;
-        accentAt = Math.max(accentAt, time + 6);
+        if (!roared) play('reaction', F.reactionGain, F.reactionDelay);
+        reactionAt = time + F.reactionCooldown + random() * F.reactionSpread;
+        accentAt = Math.max(accentAt, time + F.accentAfterReaction);
       } else if (time >= accentAt && time >= reactionAt) {
-        if (time - contactAt > 3) play('jeer', .13);
-        else play('chant', .12);
-        accentAt = time + 14 + random() * 10; reactionAt = time + 4;
+        if (time - contactAt > F.jeerQuietAfter) play('jeer', F.jeerGain);
+        else play('chant', F.chantGain);
+        accentAt = time + F.accentCooldown + random() * F.accentSpread; reactionAt = time + F.accentReactionGap;
       }
     },
   };

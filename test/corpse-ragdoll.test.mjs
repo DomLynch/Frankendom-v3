@@ -1,7 +1,7 @@
 // M8 corpses in the live zone: a corpse keeps its own ragdoll in the ONE physics world (data/physics.json `corpse`: cuttable, slotSpacingM, event), so it can be cut again and its piece flies.
 // These pin, in Node and on the package's real Minotaur body row: the lanes (the live foe built beside a corpse never disturbs it), the corpse's rig made from the cloned bones AFTER the death
 // (the proxy trick in ragdoll.ts armCorpse: three-rig reads the ragdoll's pose once, at its making) puts the cloned bones where the live rig put the originals, a cut corpse's piece moves while the
-// other corpses and the live foe do not, and the frame cost of four corpses and one live foe (the package's 3 ms budget, the same shape as its test:budget).
+// other corpses and the live foe do not, and nothing else (the frame cost is a Mac-only perf row).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,7 +16,7 @@ import { validateFile } from '../src/sim/validate.js';
 
 const ROWS = JSON.parse(readFileSync(new URL('../data/physics.json', import.meta.url), 'utf8')), C = ROWS.corpse;
 const measure = JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${ROWS.opponents[0].measure['106'].split('/').pop()}`, import.meta.url), 'utf8'));
-const TICK = 1 / ROWS.tickHz, BUDGET_MS = Number(process.env.BUDGET_MS || 3);
+const TICK = 1 / ROWS.tickHz;
 
 // a fighter: the ragdoll in lane `slot`, a group at a moved and turned place (the sim frame), a bone per role at its rest pivot, the rig made at once (the page's build())
 function fighter(physics, slot) {
@@ -103,42 +103,7 @@ test('a corpse that kept its ragdoll: the cloned bones sit where the live rig pu
   physics.destroy();
 });
 
-// The budget stays 3 ms. A wall-clock row on a shared CI runner is noisy upward only (a neighbour's burst, a cold JIT), so the row is the best of RUNS fresh worlds: the cost is real only if every run is over.
-// Measured 2026-10-27 on the VPS at load 22: p95 0.58 to 0.86 ms, avg 0.35 to 0.45 ms; the first CI run read p95 3.93 ms (avg 0.80 ms) on a runner, one run.
-const RUNS = Number(process.env.BUDGET_RUNS || 3);
-async function frameCost() {
-  const physics = await createPhysics({ seed: ROWS.seed, states: ROWS.states });
-  const corpses = [];
-  for (let k = 0; k < C.max; k++) { const f = fighter(physics, k); for (let i = 0; i < 20; i++) { f.rig.drive(); physics.step(TICK); } kill(physics, f); corpses.push({ ...corpseOf(f), f }); }
-  const live = fighter(physics, C.max);
-  for (let i = 0; i < 30; i++) { live.rig.drive(); physics.step(TICK); }
-  const times = [], idle = [];
-  for (let t = 0; t < 360; t++) {
-    if (t === 120) corpses[0].f.rd.cut('arm_right', { helmet: false, impulse: [0, 6, 9] });   // a cut in progress, as the package's budget scene has
-    const t0 = performance.now();
-    live.rig.drive();
-    if (live.rd.state !== 'frozen' || live.rd.awake || corpses.some((c) => c.f.rd.awake)) physics.step(TICK);   // the page's rule (ragdoll.ts step)
-    for (const c of corpses) if (c.f.rd.awake) c.rig.applyPose();
-    const ms = performance.now() - t0;
-    if (t >= 30) (t < 120 ? idle : times).push(ms);
-  }
-  const stat = (a) => { a = a.slice().sort((x, y) => x - y); return { avg: a.reduce((s, x) => s + x, 0) / a.length, p95: a[Math.floor(a.length * 0.95)], max: a[a.length - 1] }; };
-  const all = stat([...idle, ...times]), cutting = stat(times);
-  console.log(`# 4 corpses + 1 live foe: avg ${all.avg.toFixed(3)} ms, p95 ${all.p95.toFixed(3)} ms, max ${all.max.toFixed(3)} ms; from the cut on: avg ${cutting.avg.toFixed(3)} ms, p95 ${cutting.p95.toFixed(3)} ms (budget ${BUDGET_MS})`);
-  physics.destroy();
-  return all;
-}
-
-test('frame cost: four corpses (one with a piece in flight) and one live foe, one world: under the package\'s 3 ms budget, average and p95 (best of three runs)', async () => {
-  let best;
-  for (let run = 0; run < RUNS; run++) {
-    const s = await frameCost();
-    if (!best || s.p95 < best.p95) best = s;
-    if (s.avg < BUDGET_MS && s.p95 < BUDGET_MS) break;
-  }
-  assert.ok(best.avg < BUDGET_MS, `average ${best.avg} ms`);
-  assert.ok(best.p95 < BUDGET_MS, `p95 ${best.p95} ms`);
-});
+// The frame-cost row (four corpses + one live foe, 3 ms) is wall-clock: test/perf/corpse-frame-cost.perf.mjs, npm run perf:rows.
 
 test('the bus: a cut is announced under the row\'s name with the corpseId, to a feel.on subscriber and the harness log', () => {
   const got = [], off = feel.on(C.event, (name, payload) => got.push([name, payload])), all = [], offAll = feel.on('*', (name) => all.push(name));

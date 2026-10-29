@@ -16,7 +16,7 @@ export type CorpseRows = {
   linger: { leashRadius: number; seconds: number };
   marker: { colour: string; ringPx: number; beamPx: number; widthPx: number; alpha: number; pulseSeconds: number; fadeWithinMetres: number; zIndex: number };
 };
-type Shipped = CorpseRows & { limits: Record<'perKill' | 'radiusMetres' | 'reachMetres' | 'leashRadius' | 'seconds' | 'ringPx' | 'beamPx' | 'widthPx' | 'alpha' | 'pulseSeconds' | 'fadeWithinMetres' | 'cap', Range> };
+type Shipped = CorpseRows & { limits: Record<'perKill' | 'radiusMetres' | 'reachMetres' | 'leashRadius' | 'seconds' | 'ringPx' | 'beamPx' | 'widthPx' | 'alpha' | 'pulseSeconds' | 'fadeWithinMetres' | 'cap' | 'pileCoordMax' | 'lostMax', Range> };   // pileCoordMax / lostMax: the top of the range is the stored-pile coordinate bound and the most lost weapons kept
 export const CORPSE = ROWS as unknown as Shipped;
 type Pt = { x: number; z: number };
 
@@ -48,7 +48,7 @@ export function cleanPile(p: unknown, rows: CorpseRows = CORPSE): Pile | null {
   try {
     const o = p as Partial<Pile> | null;
     if (!o || typeof o !== 'object' || o.v !== rows.version) return null;
-    if (typeof o.x !== 'number' || typeof o.z !== 'number' || !Number.isFinite(o.x) || !Number.isFinite(o.z) || Math.abs(o.x) > 1e5 || Math.abs(o.z) > 1e5) return null;
+    if (typeof o.x !== 'number' || typeof o.z !== 'number' || !Number.isFinite(o.x) || !Number.isFinite(o.z) || Math.abs(o.x) > CORPSE.limits.pileCoordMax[1] || Math.abs(o.z) > CORPSE.limits.pileCoordMax[1]) return null;
     if (typeof o.boss !== 'string' || !WORD.test(o.boss) || !(o.weapon === null || (typeof o.weapon === 'string' && WORD.test(o.weapon)))) return null;
     const coins = whole(o.coins, rows.coins.cap);
     if (coins === 0 && o.weapon === null) return null;   // an empty pile is no pile
@@ -58,7 +58,7 @@ export function cleanPile(p: unknown, rows: CorpseRows = CORPSE): Pile | null {
 /** The corpse-run fields of a stored save object (anything missing or wrong is the empty value). */
 export function cleanCorpse(j: { coins?: unknown; banked?: unknown; pile?: unknown; lost?: unknown }, rows: CorpseRows = CORPSE): Pick<Save, 'coins' | 'banked' | 'pile' | 'lost'> {
   const lost: string[] = [];
-  if (Array.isArray(j.lost)) for (const w of j.lost) if (typeof w === 'string' && WORD.test(w) && !lost.includes(w) && lost.length < 20) lost.push(w);
+  if (Array.isArray(j.lost)) for (const w of j.lost) if (typeof w === 'string' && WORD.test(w) && !lost.includes(w) && lost.length < CORPSE.limits.lostMax[1]) lost.push(w);
   return { coins: whole(j.coins, rows.coins.cap), banked: whole(j.banked, rows.coins.cap), pile: cleanPile(j.pile, rows), lost };
 }
 
