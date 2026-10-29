@@ -264,9 +264,149 @@ export function checkKingAura(id, r) {
   return e;
 }
 /** One checker per mechanic `type` (the registry of src/fight/mechanics/index.ts has the same ids). A new boss mechanic adds one line here. */
-const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura };
+const IMPALE_NUMS = { firstTicks: [0, 3600], cooldownTicks: [60, 7200], abortCooldownTicks: [0, 7200], gapMin: [0.5, 20], gapMax: [0.5, 20], parkTicks: [1, 53], freezeTicks: [1, 52], lungeSpeed: [0.01, 0.5], lungeTicks: [1, 120],
+  stopGap: [0.8, 3], dragM: [0, 6], dragTicks: [1, 90], dragStop: [0.9, 3], followWithinTicks: [1, 300], lineWidth: [0.1, 3], backTo: [0, 12], backSpeed: [0, 0.3],
+  giveUpTicks: [1, 600], wallPadM: [0, 2], lineOvershootM: [0, 3], lungeGraceTicks: [0, 300], attackStartTicks: [0, 30] };
+/** Nan's IMPALE AND DRAG row (type "nan-impale"). Returns one string per problem. */
+export function checkNanImpale(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const known = ['type', 'about', 'boss', 'move', 'followMove', 'lineColour', ...Object.keys(IMPALE_NUMS)];
+  for (const k of Object.keys(r)) if (!known.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  for (const [k, [lo, hi]] of Object.entries(IMPALE_NUMS)) if (!(Number.isFinite(r[k]) && r[k] >= lo && r[k] <= hi)) e.push(`${at}.${k}: a number from ${lo} to ${hi}`);
+  if (r.move !== 'heavy_thrust') e.push(`${at}.move: heavy_thrust (the held, chambered stab the engine charges)`);
+  if (r.followMove !== 'thrust') e.push(`${at}.followMove: thrust`);
+  if (!/^#[0-9a-fA-F]{6}$/.test(r.lineColour ?? '')) e.push(`${at}.lineColour: a #rrggbb`);
+  if (!(r.gapMax > r.gapMin)) e.push(`${at}: gapMax must be above gapMin`);
+  if (!(r.freezeTicks < r.parkTicks)) e.push(`${at}: freezeTicks must be shorter than parkTicks`);
+  if (!(r.dragStop >= r.stopGap - 0.2)) e.push(`${at}.dragStop: about the stopGap or more (the hook never pulls him through her)`);
+  if (!(r.backTo <= r.gapMax)) e.push(`${at}.backTo: inside gapMax`);
+  if (!(r.backTo - r.stopGap <= r.lungeSpeed * r.lungeTicks)) e.push(`${at}: the lunge (lungeSpeed x lungeTicks) must cover backTo minus stopGap`);
+  return e;
+}
+const ENVOY_KEYS = ['type', 'boss', 'about', 'firstCooldownTicks', 'cooldownTicks', 'lungeMinM', 'lungeMaxM', 'tellTicks', 'lungeTicks', 'contactM', 'latchGapM', 'drainPerSecond', 'drainFloor', 'slowPct', 'breakHits', 'breakWindowTicks', 'maxLatchTicks', 'guardChipStamina', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks', 'breakKnockM', 'tell'];
+/** The Titan's Envoy LATCH row (type "envoy-latch"). `ctx.rollCost` (optional, RULES.rollCost): the stamina floor must leave a roll affordable. Returns one string per problem. */
+export function checkEnvoyLatch(id, r, _moves = [], ctx = {}) {
+  const e = [], at = `mechanics.${id}`;
+  const num = (k, lo, hi, int) => { const v = r[k]; if (!(typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi && (!int || Number.isInteger(v)))) e.push(`${at}.${k}: ${int ? 'an integer' : 'a number'} from ${lo} to ${hi}`); };
+  for (const k of ['firstCooldownTicks', 'cooldownTicks', 'tellTicks', 'lungeTicks', 'breakWindowTicks', 'maxLatchTicks', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks']) num(k, 1, 3600, true);
+  num('breakHits', 1, 10, true); num('slowPct', 10, 100, true);
+  for (const k of ['lungeMinM', 'lungeMaxM', 'contactM', 'latchGapM', 'breakKnockM']) num(k, 0.1, 30);
+  num('drainPerSecond', 0, 100); num('drainFloor', 0, 100); num('guardChipStamina', 0, 100);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (!(r.lungeMaxM > r.lungeMinM)) e.push(`${at}.lungeMaxM must be above lungeMinM`);
+  if (!(r.contactM >= r.latchGapM)) e.push(`${at}.contactM must reach at least the latchGapM (a lunge that stops at the gap must latch)`);
+  if (ctx.rollCost !== undefined && !(r.drainFloor >= ctx.rollCost)) e.push(`${at}.drainFloor ${r.drainFloor} is below the roll cost ${ctx.rollCost}: the latch must always be breakable by a roll`);
+  if (!(r.maxLatchTicks > r.breakWindowTicks / 2)) e.push(`${at}.maxLatchTicks must outlast half the break window`);
+  const t = r.tell;
+  if (!t || typeof t !== 'object') e.push(`${at}.tell: an object`);
+  else {
+    for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM', 'beyondM', 'renderOrder', 'alphaFloor', 'alphaRise', 'pulseBase', 'pulseDepth'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
+    if (!Number.isInteger(t.renderOrder) || t.renderOrder < 0 || t.renderOrder > 32) e.push(`${at}.tell.renderOrder: an integer 0..32`);
+    for (const k of ['alphaFloor', 'alphaRise', 'pulseBase', 'pulseDepth']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
+    if (typeof t.colour !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(t.colour)) e.push(`${at}.tell.colour: a #rrggbb`);
+    for (const k of ['alpha', 'latchedAlpha']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
+    for (const k of ['widthM', 'liftM', 'beyondM']) if (!(t[k] >= 0 && t[k] <= 5)) e.push(`${at}.tell.${k}: from 0 to 5`);
+  }
+  for (const k of Object.keys(r)) if (!ENVOY_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  return e;
+}
+
+const LIMB_ACTIONS = ['light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill', 'skill2', 'heavy_right', 'heavy_left', 'heavy_thrust'];
+const LIMB_KEYS = ['id', 'region', 'name', 'belowPct', 'speedMult', 'forbids', 'swapTo', 'piece', 'stumpCaps', 'hitStopMs'];
+/** Sir Reginald's LIMB LOSS row (type "reginald-limb-loss"); the limbs' region/piece/cap names are checked against his cut manifest in test/mechanics.test.mjs. Returns one string per problem. */
+export function checkReginaldLimbLoss(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  for (const k of Object.keys(r)) if (!['type', 'boss', 'about', 'limbs'].includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (!Array.isArray(r.limbs) || !r.limbs.length) return [...e, `${at}.limbs: at least one limb`];
+  const seen = new Set();
+  r.limbs.forEach((l, i) => {
+    const p = `${at}.limbs[${i}]`;
+    for (const k of Object.keys(l)) if (!LIMB_KEYS.includes(k)) e.push(`${p}.${k}: unknown key`);
+    if (typeof l.id !== 'string' || !/^[a-z_]+$/.test(l.id) || seen.has(l.id)) e.push(`${p}.id: a unique lower-case id`); else seen.add(l.id);
+    if (typeof l.name !== 'string' || !l.name.trim()) e.push(`${p}.name: a non-empty string`);
+    if (!(Number.isFinite(l.belowPct) && l.belowPct > 0 && l.belowPct < 100)) e.push(`${p}.belowPct: a share between 0 and 100`);
+    if (!(Number.isFinite(l.speedMult) && l.speedMult >= 0.2 && l.speedMult <= 1)) e.push(`${p}.speedMult: 0.2..1`);
+    if (!Array.isArray(l.forbids) || !l.forbids.length || l.forbids.some((a) => !LIMB_ACTIONS.includes(a))) e.push(`${p}.forbids: a list of known actions`);
+    else if (l.swapTo !== null && l.forbids.includes(l.swapTo)) e.push(`${p}.swapTo: cannot be a forbidden action`);
+    if (l.swapTo !== null && !LIMB_ACTIONS.includes(l.swapTo)) e.push(`${p}.swapTo: null or a known action`);
+    if (!Number.isInteger(l.hitStopMs) || l.hitStopMs < 0 || l.hitStopMs > 400) e.push(`${p}.hitStopMs: 0..400`);
+    if (typeof l.region !== 'string' || typeof l.piece !== 'string' || !Array.isArray(l.stumpCaps) || l.stumpCaps.some((c) => typeof c !== 'string')) e.push(`${p}.region/piece/stumpCaps: node names`);
+  });
+  for (let i = 1; i < r.limbs.length; i++) if (!(r.limbs[i].belowPct < r.limbs[i - 1].belowPct)) e.push(`${at}.limbs: belowPct must fall from one limb to the next`);
+  return e;
+}
+
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'envoy-latch': checkEnvoyLatch, 'reginald-limb-loss': checkReginaldLimbLoss, 'accountant-parry-wall': checkAccountantParryWall, 'shadow-dash': checkShadowDash };
+const ACCOUNTANT_KEYS = ['type', 'about', 'boss', 'firstTicks', 'triggerRangeM', 'tellTicks', 'wallTicks', 'cooldownTicks', 'cancelCooldownTicks', 'arcDeg', 'parryStunTicks', 'riposteTicks', 'parriesToDrop', 'kickBreakStunTicks', 'specialBreakStunTicks', 'caption', 'breakMove', 'fx'];
+const ACCOUNTANT_FX = ['ledgerLines', 'texturePx', 'ruleThicknessPx', 'marginFrac', 'ringInnerFrac', 'ringSegments', 'mapTint', 'renderOrder', 'sparkRenderOrder', 'sparkPoolParries', 'ringLiftM', 'ringTellGain', 'ringUpBoost', 'ringPulseMin', 'ringPulseDepth', 'minRise', 'tellRiseShare', 'sparkBackShare', 'sparkSwirlShare', 'sparkArcShare', 'sparkLiftShare', 'parkY', 'colour', 'edgeColour', 'ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM', 'tellOpacity', 'wallOpacity', 'sparkCount', 'sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz'];
+/** The Accountant's PARRY WALL row (type "accountant-parry-wall"). Ranges keep the wall readable (a tell of 0.3 s or more) and fair (a window under 5 s, a cooldown longer than the wall). Returns one string per problem. */
+export function checkAccountantParryWall(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi, num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  for (const k of Object.keys(r)) if (!ACCOUNTANT_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (!int(r.firstTicks, 0, 3600)) e.push(`${at}.firstTicks: an integer 0..3600`);
+  if (!num(r.triggerRangeM, 1, 8)) e.push(`${at}.triggerRangeM: 1..8 metres`);
+  if (!int(r.tellTicks, 18, 120)) e.push(`${at}.tellTicks: an integer 18..120 (a warning of at least 0.3 s)`);
+  if (!int(r.wallTicks, 30, 300)) e.push(`${at}.wallTicks: an integer 30..300 (no wall stands over 5 s)`);
+  if (!int(r.cooldownTicks, 300, 7200)) e.push(`${at}.cooldownTicks: an integer 300..7200`);
+  if (!int(r.cancelCooldownTicks, 60, 7200)) e.push(`${at}.cancelCooldownTicks: an integer 60..7200`);
+  if (int(r.cooldownTicks, 0, 1e9) && int(r.wallTicks, 0, 1e9) && !(r.cooldownTicks > r.wallTicks)) e.push(`${at}.cooldownTicks must be longer than wallTicks`);
+  if (!num(r.arcDeg, 30, 240)) e.push(`${at}.arcDeg: 30..240 degrees (the front the wall covers; the rest is open)`);
+  if (!int(r.parryStunTicks, 1, 60)) e.push(`${at}.parryStunTicks: an integer 1..60`);
+  if (!int(r.riposteTicks, 1, 90)) e.push(`${at}.riposteTicks: an integer 1..90`);
+  if (!int(r.parriesToDrop, 1, 10)) e.push(`${at}.parriesToDrop: an integer 1..10`);
+  if (!int(r.kickBreakStunTicks, 1, 180)) e.push(`${at}.kickBreakStunTicks: an integer 1..180`);
+  if (!int(r.specialBreakStunTicks, 1, 180)) e.push(`${at}.specialBreakStunTicks: an integer 1..180`);
+  if (typeof r.caption !== 'string' || !r.caption) e.push(`${at}.caption: a data/commentator.json event id`);
+  if (typeof r.breakMove !== 'string' || !/^[a-z][a-z0-9_-]*$/.test(r.breakMove)) e.push(`${at}.breakMove: a move id (the move that breaks the wall)`);
+  const fx = r.fx;
+  if (!fx || typeof fx !== 'object' || Array.isArray(fx)) return [...e, `${at}.fx: an object`];
+  if (!int(fx.ledgerLines, 0, 16)) e.push(`${at}.fx.ledgerLines: an integer 0..16`);
+  if (!int(fx.texturePx, 16, 256)) e.push(`${at}.fx.texturePx: an integer 16..256`);
+  if (!int(fx.ruleThicknessPx, 1, 8)) e.push(`${at}.fx.ruleThicknessPx: an integer 1..8`);
+  if (!int(fx.ringSegments, 8, 128)) e.push(`${at}.fx.ringSegments: an integer 8..128`);
+  if (!int(fx.renderOrder, 0, 32)) e.push(`${at}.fx.renderOrder: an integer 0..32`);
+  if (!int(fx.sparkRenderOrder, 0, 32)) e.push(`${at}.fx.sparkRenderOrder: an integer 0..32`);
+  if (!int(fx.sparkPoolParries, 1, 8)) e.push(`${at}.fx.sparkPoolParries: an integer 1..8`);
+  if (typeof fx.mapTint !== 'string' || !HEX6.test(fx.mapTint)) e.push(`${at}.fx.mapTint: a #rrggbb`);
+  for (const k of ['marginFrac', 'ringInnerFrac', 'ringPulseMin', 'ringPulseDepth', 'tellRiseShare', 'sparkBackShare', 'sparkSwirlShare', 'sparkArcShare', 'sparkLiftShare']) if (!num(fx[k], 0, 1)) e.push(`${at}.fx.${k}: 0..1`);
+  if (!num(fx.ringLiftM, 0, 1)) e.push(`${at}.fx.ringLiftM: 0..1 metres`);
+  if (!num(fx.ringTellGain, 0, 10)) e.push(`${at}.fx.ringTellGain: 0..10`);
+  if (!num(fx.ringUpBoost, 0, 1)) e.push(`${at}.fx.ringUpBoost: 0..1`);
+  if (!num(fx.minRise, 0.001, 1)) e.push(`${at}.fx.minRise: 0.001..1`);
+  if (!num(fx.parkY, -1000, -10)) e.push(`${at}.fx.parkY: -1000..-10 metres (below the world, out of sight)`);
+  for (const k of Object.keys(fx)) if (!ACCOUNTANT_FX.includes(k)) e.push(`${at}.fx.${k}: unknown key`);
+  for (const k of ['colour', 'edgeColour']) if (typeof fx[k] !== 'string' || !HEX6.test(fx[k])) e.push(`${at}.fx.${k}: a #rrggbb`);
+  for (const k of ['ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM']) if (!num(fx[k], 0.1, 6)) e.push(`${at}.fx.${k}: 0.1..6 metres`);
+  for (const k of ['tellOpacity', 'wallOpacity']) if (!num(fx[k], 0, 1)) e.push(`${at}.fx.${k}: 0..1`);
+  if (!int(fx.sparkCount, 1, 24)) e.push(`${at}.fx.sparkCount: an integer 1..24`);
+  for (const k of ['sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz']) if (!num(fx[k], 0.01, 20)) e.push(`${at}.fx.${k}: 0.01..20`);
+  return e;
+}
+const DASH_NUMS = { firstTicks: [0, 3600, true], cooldownTicks: [60, 3600, true], triggerMinM: [1, 20], triggerMaxM: [1, 30], tellTicks: [18, 120, true], lockBeforeTicks: [0, 60, true], dashSpeedMps: [4, 30], dashMaxTicks: [4, 90, true],
+  stopGapM: [0.9, 4], slashReachM: [0.9, 6], slashMaxTicks: [10, 300, true], recoverTicks: [20, 240, true], lineWidth: [0.1, 3] };
+/** Kachujin's SHADOW DASH row (type "shadow-dash"). Returns one string per problem. */
+export function checkShadowDash(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  for (const k of Object.keys(r)) if (!['type', 'boss', 'about', 'slashAction', 'lineColour', ...Object.keys(DASH_NUMS)].includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  for (const [k, [lo, hi, whole]] of Object.entries(DASH_NUMS)) if (!(Number.isFinite(r[k]) && r[k] >= lo && r[k] <= hi && (!whole || Number.isInteger(r[k])))) e.push(`${at}.${k}: ${whole ? 'a whole number' : 'a number'} from ${lo} to ${hi}`);
+  if (!['light', 'thrust', 'heavy'].includes(r.slashAction)) e.push(`${at}.slashAction: light, thrust or heavy`);
+  if (!HEX6.test(r.lineColour ?? '')) e.push(`${at}.lineColour: a #rrggbb`);
+  if (!(r.triggerMinM < r.triggerMaxM)) e.push(`${at}: triggerMinM must be below triggerMaxM`);
+  if (!(r.lockBeforeTicks < r.tellTicks)) e.push(`${at}: lockBeforeTicks must be below tellTicks (a tell is readable before it locks)`);
+  if (!(r.stopGapM <= r.slashReachM)) e.push(`${at}: stopGapM must not exceed slashReachM (he must stop inside his own cut)`);
+  if (!(r.dashSpeedMps * r.dashMaxTicks / 60 >= r.triggerMaxM - r.stopGapM)) e.push(`${at}: the dash (dashSpeedMps x dashMaxTicks) must cover triggerMaxM minus stopGapM`);
+  return e;
+}
 /** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
-export function validateMechanics(json, kinds = [], moves = []) {
+export function validateMechanics(json, kinds = [], moves = [], ctx = {}) {
   const e = [], map = json?.mechanics;
   if (!map || typeof map !== 'object' || Array.isArray(map)) return ['mechanics.mechanics: a map of id -> row'];
   const seen = new Map();
@@ -276,7 +416,7 @@ export function validateMechanics(json, kinds = [], moves = []) {
     if (!check) { e.push(`mechanics.${id}.type: one of ${Object.keys(MECHANIC_TYPES).join(', ')}`); continue; }
     if (kinds.length && !kinds.includes(r.boss)) e.push(`mechanics.${id}.boss: no data/profiles.json row "${String(r.boss)}"`);
     if (seen.has(r.boss)) e.push(`mechanics.${id}.boss: "${String(r.boss)}" already has the row ${seen.get(r.boss)} (one signature move per boss)`); else seen.set(r.boss, id);
-    e.push(...check(id, r, moves));
+    e.push(...check(id, r, moves, ctx));
   }
   return e;
 }
@@ -488,7 +628,7 @@ function checkLegends(json) {
 }
 
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
-const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'parry_wall', 'wearing_parts', 'limb_loss'];
 const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
 export const COMMENTATOR_MIN_LINES = 6;
 export function checkCommentator(json) {

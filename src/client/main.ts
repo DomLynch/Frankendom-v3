@@ -39,6 +39,8 @@ import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, 
 import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { createAudioUnlock, rearmWhenLocked } from '../audio/unlock-once.ts';
 import { mountParts } from '../fight/parts-hook.ts';
+import { configureSimMechanics, mechCaption } from '../fight/mechanics/sim-hooks.ts';
+import MECHANICS_ROWS from '../../data/mechanics.json' with { type: 'json' };
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -66,7 +68,8 @@ import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wi
 import { goldenBlips } from '../zone/golden-drops.ts';
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createMobsRun } from '../mobs-run.ts';   // trash mob swarms (data/mobs.json, src/zone/mobs.ts)
-import { createMechanics, setMechanicScale } from '../fight/mechanics/index.ts';   // the bosses' signature mechanics (data/mechanics.json): Lord Gourd's pumpkin bombs
+import { createMechanics, setMechanicScale } from '../fight/mechanics/index.ts';
+import { mechanicView } from '../fight/mechanics/runtime.ts';   // the bosses' signature mechanics (data/mechanics.json): Lord Gourd's pumpkin bombs
 import { createInput } from '../fight/input.ts';
 import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
@@ -102,6 +105,7 @@ import type { DailyFile } from '../daily-pit.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
+configureSimMechanics(MECHANICS_ROWS.mechanics);   // the boss signature mechanics (the sim imports no data/ json: the driver lays the rows in, before any fight or effect is built)
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
@@ -194,7 +198,7 @@ let practice = fresh(), frameEvents: CombatEvent[] = [];
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
-let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0;
+let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0, tellStop = 0;   // tellStop: a boss mechanic's freeze (ms) for the tick it fired on (Sir Reginald's limb fails)
 const locked = true;
 let assetsReady = false, graphicsLost = false;
 const step = () => 1 / FIGHT.tempoHz;
@@ -513,7 +517,7 @@ function zoneStep(dt: number) {
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
         attackers = attackers.filter((a) => !gone.includes(a.index));
-        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai));   // each attacker fights as its own kind, its own brain
+        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai, ((m) => (m?.pure ? m : null))(mechanics?.of(spawns[i]!.kind))));   // each attacker fights as its own kind, its own brain, and wears a stateless signature mechanic (Sir Reginald's limbs; Nan's holds state, so only the held boss runs it)
       }
     }
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
@@ -624,13 +628,19 @@ function frame(now: number) {
       const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: lockOn, cancel: intent.cancel });
       const prior = practice;
-      practice = stepPractice(prior, duelIntent, aiProfile);
+      const mech = mechanics && engaged && !walkBack ? mechanics.of(spawns[current]!.kind) : undefined, shaping = mech?.layer ? mech : undefined;   // a boss whose signature move rewrites his intent (Nan's Impale): only while he is really fighting the hero
+      const pre = shaping?.pre?.(prior.duel, duelIntent);   // a signature move that acts on the hero's side first (the Envoy's latch): the duel and the intent the tick runs on
+      practice = pre ? stepPractice(pre.duel === prior.duel ? prior : { ...prior, duel: pre.duel }, pre.intent, aiProfile, shaping?.layer) : stepPractice(prior, duelIntent, aiProfile, shaping?.layer);
+      if (shaping?.settle) { const moved = shaping.settle(prior.duel, practice.duel); if (moved !== practice.duel) practice = { ...practice, duel: moved, fighter: moved.fighters[0].body, enemy: moved.fighters[1].body }; }   // the lunge and the drag move bodies after the tick
+      const tell = mech?.tell ? mech.tell(prior, practice) : null;   // Sir Reginald's armour fails: the caption (priority line) and a short freeze, the limb itself is drawn by the scene's view
+      if (tell) { commentator.say(tell.event, tell.params); tellStop = tell.hitStopMs; }
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
       }
       frameEvents.push(...practice.events); commentator.events(practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
+      { const line = mechCaption(practice.duel.fighters[1]); if (line) commentator.say(line); }   // a boss's signature mechanic announces itself on the first tick of its tell (data/mechanics.json caption -> data/commentator.json)
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)
@@ -666,7 +676,7 @@ function frame(now: number) {
       if (mechanics) practice = mechanics.tick(practice, spawns[current]!.kind, engaged && !walkBack, step());   // the engaged boss's signature move (data/mechanics.json): its hits land on the hero's health, it wipes itself when the fight ends
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
-      const stop = stopFor(practice.events);
+      const stop = Math.max(stopFor(practice.events), tellStop); tellStop = 0;
       if (stop) { hitStop = stop; accumulator = 0; previous = state; }
     }
   } else { accumulator = 0; previous = state; }
@@ -675,6 +685,7 @@ function frame(now: number) {
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Yaw?: number }).__v3Yaw = +view.yaw.toFixed(4);
   (globalThis as { __v3FreeShare?: number }).__v3FreeShare = +view.freeShare.toFixed(3);   // the stills read how far the camera has swung to the free follow camera (scripts/free-camera-stills.mjs)
+  (globalThis as { __v3Mech?: unknown }).__v3Mech = mechanicView(mechanics?.of(spawns[current]?.kind ?? ''));   // the held boss's signature move state (scripts/mechanic-nan-check.mjs reads it)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
   if (multi) {   // every live attacker stays in frame: the lock backs off by framingWiden, eased; the dead lie where they fell and no longer count; with none it snaps back to exactly 1

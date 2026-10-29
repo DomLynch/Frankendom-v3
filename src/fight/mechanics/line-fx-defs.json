@@ -1,0 +1,16 @@
+{
+  "about": "The ground line a straight-line boss move draws (Nan's Impale, Kachujin's Shadow Dash): thin and faint while the aim follows, wide and solid when it freezes, bright through the lunge. Presentation only; src/fight/mechanics/line-fx.ts reads this and throws if a field is missing or out of range.",
+  "colour": "#c9402a",
+  "followWidth": 0.4,
+  "followWidthRise": 0.6,
+  "followAlpha": 0.28,
+  "lockAlpha": 0.62,
+  "lungeAlpha": 0.8,
+  "liftM": 0.04,
+  "renderOrder": 5,
+  "pulseBase": 0.8,
+  "pulseDepth": 0.2,
+  "pulseRate": 0.9,
+  "hideBelowAlpha": 0.01,
+  "meshName": "mechanic line"
+}
