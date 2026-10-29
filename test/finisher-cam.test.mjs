@@ -22,14 +22,6 @@ test('the flag: NO finisher zoom by default (Dom 2026-10-28), ?finishercam=v1 re
   assert.deepEqual(Object.keys(cutBloodRows('')).sort(), Object.keys(ROWS).sort(), 'blood is not a camera effect: on by default');
 });
 
-test('the camera rig gates the push-in, the side reveal and the close view on the flag; the default frames a finish like normal combat', () => {
-  const cam = read('../src/fight/camera.ts');
-  assert.match(cam, /const FINISH_ZOOM = finisherCamOn\(/);
-  assert.match(cam, /if \(FINISH_ZOOM && finish && finish\.posed/, 'push-in gated');
-  assert.match(cam, /if \(FINISH_ZOOM && locked && !still && finish\?\.victim === 1 && open\)/, 'side reveal gated');
-  assert.match(cam, /const cutRow = CUT_CAM && finish/, 'close view gated by the null rows');
-});
-
 test('the rows are sound and every id is a real finisher', () => {
   assert.deepEqual(cutCamProblems(ROWS), []);
   const ids = new Set(DEFS.map((f) => f.id));
@@ -118,15 +110,7 @@ test('the stick beat: ?finishercam=v1 holds a stick through the whole ceremony o
   assert.equal(handsOver(FREE, false, true), true, 'no timing given: as before');
 });
 
-test('wired: the camera, the blood and the stick rule read the rows; no sim file knows them', () => {
-  assert.match(read('../src/fight/camera.ts'), /cutCamRows\(/);
-  assert.match(read('../src/fight/scene.ts'), /!CUT_STICK \? 0/, 'the stick beat follows the zoom flag');
-  assert.match(read('../src/fight/camera.ts'), /cutRow && finish!\.focus/);
-  assert.match(read('../src/fight/scene.ts'), /CUT_BLOOD\?\.\[finisher\]\?\.blood/);
-  assert.match(read('../src/fight/scene.ts'), /focus: cutBone \? cutFocus : null/);
-  assert.match(read('../src/fight/scene.ts'), /cutRigKey !== rigNow/);
-  assert.match(read('../src/client/main.ts'), /phase\.stickBeat/);
-  assert.match(read('../src/fight/scene.ts'), /: STICK_FIRST_FRAME;/, 'the killing frame holds a stick still down');
+test('wired: the camera, the blood and the stick rule read the rows; no sim file knows them (behaviour half; the source pins moved to test/source-pins/)', () => {
+
   for (const [id, r] of Object.entries(ROWS)) assert.ok(r.from + r.over <= 0.3 + 1e-9, `${id}: the close view is in place by kill+1 s (clock 0.3), so kill+1.5 s reads`);
-  for (const f of ['../src/fight/sim.ts', '../src/sim/validate.js']) assert.doesNotMatch(read(f), /finisher-cam|finishercam/);
 });

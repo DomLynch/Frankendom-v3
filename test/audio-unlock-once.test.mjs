@@ -2,7 +2,6 @@
 // Audit D: they used to stay for the page's life and every gesture ran the unlock (feedback.resume allocates a one-sample buffer each time).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { createAudioUnlock, rearmWhenLocked } from '../src/audio/unlock-once.ts';
 
 function fakeTarget() {
@@ -52,20 +51,4 @@ test('a statechange to a locked state re-arms the listeners; a statechange to ru
   running = false; fire();   // iOS: 'interrupted', no pageshow or focus
   assert.equal(target.count(), TYPES.length, 're-armed');
   fire(); assert.equal(target.count(), TYPES.length, 'idempotent');
-});
-
-test('feedback exposes the context statechange and main.ts hooks it', () => {
-  const fb = readFileSync(new URL('../src/fight/sound/feedback.ts', import.meta.url), 'utf8');
-  assert.match(fb, /addEventListener\?\.\('statechange'/);
-  assert.match(fb, /onStateChange\(fn: \(\) => void\)/);
-  const src = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
-  assert.match(src, /rearmWhenLocked\(\(fn\) => feedback\.onStateChange\(fn\), audioUnlock\.arm,/);
-});
-
-test('main.ts wires it: no bare window.addEventListener loop for the unlock family, the wake handler re-arms only while locked', () => {
-  const src = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
-  assert.match(src, /createAudioUnlock\(\{.*unlocked: \(\) => feedback\.unlocked\(\)/);
-  assert.match(src, /audioUnlock\.arm\(\);/);
-  assert.match(src, /if \(!feedback\.unlocked\(\)\) audioUnlock\.arm\(\)/);
-  assert.doesNotMatch(src, /for \(const type of v1Sound/, 'the old for-loop that kept the listeners for life is gone');
 });

@@ -165,11 +165,3 @@ test('the existing captureException seam feeds the sink and a throwing sink neve
   } finally { console.error = log; setErrorSink(null); }
   assert.equal(seen.length, 1);
 });
-
-test('main.ts reports the two fight events at the kill and at the death, and the index file needs no change (same-origin path, no CSP)', () => {
-  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /reportFight\('boss_kill', current\)/);
-  assert.match(main, /if \(sinceDeath === 0\) reportFight\('boss_death'/);
-  assert.match(main, /setErrorSink\(/);
-  assert.ok(!/connect-src|Content-Security-Policy/i.test(readFileSync(new URL('../index.html', import.meta.url), 'utf8')), 'no page CSP to widen');
-});

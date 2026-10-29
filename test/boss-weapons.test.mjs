@@ -103,7 +103,7 @@ test('a zone spawn of each kind fights with the row\'s weapon, and the duel hold
 const withRows = (...extra) => ({ ...clone(RAW), rows: [...clone(RAW).rows.filter((r) => !r.profile), ...extra] });   // the shipped profile rows are left out so a fixture can name its own
 const profRow = (id, profile, opponent, over = {}) => ({ ...clone(RAW).rows[0], id, profile, opponent, weapon: 'cleaver', equip: 'axe', ...over });
 
-test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had', () => {
+test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had (behaviour half; the source pins moved to test/source-pins/)', () => {
   assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe'], ['reginald-halberd', 'shieldmaiden', 'castle-guard', 'cleaver', 'halberd'], ['ryo-sword', 'pitborn', 'anime-boy-black', 'cleaver', 'sword'], ['lord-gourd-mace', 'pitborn', 'pumpkinhulk', 'maul', 'mace'], ['nan-spear-shield', 'shieldmaiden', 'sporty-granny', 'trident', 'spear'], ['kachujin-katana', 'pitborn', 'kachujin', 'cleaver', 'katana'], ['the-boss-mace', 'shieldmaiden', 'the-boss', 'cleaver', 'mace'], ['king-warhammer', 'pitborn', 'big-vegas', 'maul', 'warhammer'], ['akane-rapier', 'pitborn', 'anime-girl-blonde', 'cleaver', 'rapier']]);
   for (const p of PROFILES.profiles) {
     if (BOSS_WEAPONS.rows.some((r) => r.profile === p.id)) continue;   // a profile with its own row (Sir Reginald, Ryo, Lord Gourd) is pinned below
@@ -119,7 +119,6 @@ test('the shipped rows are unchanged by the profile key: Gargantua and Arachne r
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'castle-guard'), bossWeaponFor('pitborn', ''), 'the halberd is the castle-guard profile only');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black')?.id, 'ryo-sword', 'Ryo has his own row');
   for (const other of PROFILES.profiles.filter((q) => q.opponent === 'pitborn' && !BOSS_WEAPONS.rows.some((r) => r.profile === q.id))) assert.equal(bossWeaponFor('pitborn', '', undefined, other.id), undefined, `${other.id}: a pitborn profile with no row is on V1's weapon (only Ryo gets the sword, only Lord Gourd the mace)`);
-  assert.match(readFileSync(new URL('../src/fight/spawn-kind.ts', import.meta.url), 'utf8'), /bossOpponent\(base, ctx\.search, undefined, kind\)/, 'kindFightFor passes the spawn kind (the profile id)');
 });
 
 test('two profiles sharing one archetype can have different rows; a profile without a row falls back to the archetype row, else V1\'s weapon; unknown profiles are refused', () => {

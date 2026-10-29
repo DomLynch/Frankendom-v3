@@ -3,7 +3,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { connect } from 'node:net';
-import { readFileSync } from 'node:fs';
 import { LIMITS, PROTOCOL, PATH, createPresence, listenHost, trustsProxyHeader } from '../../server/presence/server.ts';
 import { PRESENCE } from '../../src/presence/rows.ts';
 import { RULES } from '../../server/presence/interest.ts';
@@ -109,13 +108,11 @@ test('X-Real-IP trust: with ipHeader on the per-IP cap keys on the header (two p
   } finally { await off.close(); }
 });
 
-test('trustsProxyHeader: only a loopback bind (127.0.0.1 or ::1) trusts X-Real-IP, and main.ts passes exactly that', () => {
+test('trustsProxyHeader: only a loopback bind (127.0.0.1 or ::1) trusts X-Real-IP, and main.ts passes exactly that (behaviour half; the source pins moved to test/source-pins/)', () => {
   for (const h of ['127.0.0.1', '::1']) assert.equal(trustsProxyHeader(h), true, h);
   for (const h of ['0.0.0.0', '::', '10.0.0.5', '203.0.113.7', 'localhost', '', '::ffff:127.0.0.1']) assert.equal(trustsProxyHeader(h), false, h || '(empty)');
   assert.equal(trustsProxyHeader(listenHost({})), true, 'the default host row is loopback');
   assert.equal(trustsProxyHeader(listenHost({ PRESENCE_HOST: '0.0.0.0' })), false, 'the env override to a public bind turns the trust off');
-  const main = readFileSync(new URL('../../server/presence/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /createPresence\(\{ ipHeader: trustsProxyHeader\(host\) \}\)/, 'main.ts derives ipHeader from the bind address, never a literal true');
 });
 
 // The Origin allow-list (data/presence.json origins): a raw handshake, because the platform WebSocket client cannot set Origin.

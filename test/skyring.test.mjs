@@ -141,7 +141,7 @@ test('createSkyline: ?skyring=v1 is today (no ring, the plate follows the view);
   old.dispose(); sky.dispose();
 });
 
-test('the baked pictures ship: WebP at the sizes the rows say, the first visit fetches none of them, the weights are in the budget table', () => {
+test('the baked pictures ship: WebP at the sizes the rows say, the first visit fetches none of them, the weights are in the budget table (behaviour half; the source pins moved to test/source-pins/)', () => {
   const dim = (buf) => { const vp8x = buf.toString('latin1', 12, 16) === 'VP8X'; return vp8x ? [1 + (buf[24] | (buf[25] << 8) | (buf[26] << 16)), 1 + (buf[27] | (buf[28] << 8) | (buf[29] << 16))] : [buf.readUInt16LE(26) & 0x3fff, buf.readUInt16LE(28) & 0x3fff]; };
   for (const p of R.plates) {
     const B = { ...R.bake, ...(p.bake.crop || {}) }, w = B.sourceWidthPx - B.cropLeftPx - B.cropRightPx, h = B.bottomPx - B.topPx;   // west bakes from its own native crop (1981 x 690), same pixels on phone and desktop
@@ -151,6 +151,4 @@ test('the baked pictures ship: WebP at the sizes the rows say, the first visit f
       assert.deepEqual(dim(buf), [ww, hh], file);
     }
   }
-  const main = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8') + readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.ok(!/ring-(east|south|west)/.test(main), 'no ring file is named in the first-visit code');
 });

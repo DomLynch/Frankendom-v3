@@ -67,11 +67,3 @@ test('every body has its owner, weapon and name: the held Minotaur fights and is
   assert.deepEqual(['executioner', 'shieldmaiden', 'pitborn'].map(foeDisplayName), ['Gargantua', 'Arachne', 'Minotaur']);
   setKindNames([]); setFoeName(null);
 });
-
-test('the page wires the order: zone and spots through orderedZone, the opener through orderProfile, the live rig armed from its boss row', () => {
-  const src = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8'), main = src('client/main.ts'), scene = src('fight/scene.ts');
-  assert.match(main, /orderedZone\(zoneFor\(search\), FIGHT\.order, search\)/);
-  assert.match(main, /orderProfile\(FIGHT\.profile, FIGHT\.order, search\)/);
-  assert.match(scene, /const liveBoss = bossRowOfBody\(foeBodyFile\(opponentId/);
-  assert.match(scene, /bossOpponent\(OPPONENTS\[opponentId\], pageSearch\)/);
-});
