@@ -272,7 +272,40 @@ export function checkNanImpale(id, r) {
   if (!(r.backTo - r.stopGap <= r.lungeSpeed * r.lungeTicks)) e.push(`${at}: the lunge (lungeSpeed x lungeTicks) must cover backTo minus stopGap`);
   return e;
 }
-const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale };
+const ACCOUNTANT_KEYS = ['type', 'about', 'boss', 'firstTicks', 'triggerRangeM', 'tellTicks', 'wallTicks', 'cooldownTicks', 'cancelCooldownTicks', 'arcDeg', 'parryStunTicks', 'riposteTicks', 'parriesToDrop', 'kickBreakStunTicks', 'specialBreakStunTicks', 'caption', 'fx'];
+const ACCOUNTANT_FX = ['colour', 'edgeColour', 'ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM', 'tellOpacity', 'wallOpacity', 'sparkCount', 'sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz'];
+/** The Accountant's PARRY WALL row (type "accountant-parry-wall"). Ranges keep the wall readable (a tell of 0.3 s or more) and fair (a window under 5 s, a cooldown longer than the wall). Returns one string per problem. */
+export function checkAccountantParryWall(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi, num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  for (const k of Object.keys(r)) if (!ACCOUNTANT_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (!int(r.firstTicks, 0, 3600)) e.push(`${at}.firstTicks: an integer 0..3600`);
+  if (!num(r.triggerRangeM, 1, 8)) e.push(`${at}.triggerRangeM: 1..8 metres`);
+  if (!int(r.tellTicks, 18, 120)) e.push(`${at}.tellTicks: an integer 18..120 (a warning of at least 0.3 s)`);
+  if (!int(r.wallTicks, 30, 300)) e.push(`${at}.wallTicks: an integer 30..300 (no wall stands over 5 s)`);
+  if (!int(r.cooldownTicks, 300, 7200)) e.push(`${at}.cooldownTicks: an integer 300..7200`);
+  if (!int(r.cancelCooldownTicks, 60, 7200)) e.push(`${at}.cancelCooldownTicks: an integer 60..7200`);
+  if (int(r.cooldownTicks, 0, 1e9) && int(r.wallTicks, 0, 1e9) && !(r.cooldownTicks > r.wallTicks)) e.push(`${at}.cooldownTicks must be longer than wallTicks`);
+  if (!num(r.arcDeg, 30, 240)) e.push(`${at}.arcDeg: 30..240 degrees (the front the wall covers; the rest is open)`);
+  if (!int(r.parryStunTicks, 1, 60)) e.push(`${at}.parryStunTicks: an integer 1..60`);
+  if (!int(r.riposteTicks, 1, 90)) e.push(`${at}.riposteTicks: an integer 1..90`);
+  if (!int(r.parriesToDrop, 1, 10)) e.push(`${at}.parriesToDrop: an integer 1..10`);
+  if (!int(r.kickBreakStunTicks, 1, 180)) e.push(`${at}.kickBreakStunTicks: an integer 1..180`);
+  if (!int(r.specialBreakStunTicks, 1, 180)) e.push(`${at}.specialBreakStunTicks: an integer 1..180`);
+  if (typeof r.caption !== 'string' || !r.caption) e.push(`${at}.caption: a data/commentator.json event id`);
+  const fx = r.fx;
+  if (!fx || typeof fx !== 'object' || Array.isArray(fx)) return [...e, `${at}.fx: an object`];
+  for (const k of Object.keys(fx)) if (!ACCOUNTANT_FX.includes(k)) e.push(`${at}.fx.${k}: unknown key`);
+  for (const k of ['colour', 'edgeColour']) if (typeof fx[k] !== 'string' || !HEX6.test(fx[k])) e.push(`${at}.fx.${k}: a #rrggbb`);
+  for (const k of ['ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM']) if (!num(fx[k], 0.1, 6)) e.push(`${at}.fx.${k}: 0.1..6 metres`);
+  for (const k of ['tellOpacity', 'wallOpacity']) if (!num(fx[k], 0, 1)) e.push(`${at}.fx.${k}: 0..1`);
+  if (!int(fx.sparkCount, 1, 24)) e.push(`${at}.fx.sparkCount: an integer 1..24`);
+  for (const k of ['sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz']) if (!num(fx[k], 0.01, 20)) e.push(`${at}.fx.${k}: 0.01..20`);
+  return e;
+}
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'accountant-parry-wall': checkAccountantParryWall };
 /** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
 export function validateMechanics(json, kinds = [], moves = []) {
   const e = [], map = json?.mechanics;
@@ -441,7 +474,7 @@ export function validateFile(name, json) {
 }
 
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
-const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'parry_wall', 'wearing_parts'];
 const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
 export const COMMENTATOR_MIN_LINES = 6;
 export function checkCommentator(json) {

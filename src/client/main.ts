@@ -38,6 +38,8 @@ import { rollStar, starMark, starTune, trophyText, validateStars, levelOf as sta
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { mountParts } from '../fight/parts-hook.ts';
+import { configureSimMechanics, mechCaption } from '../fight/mechanics/sim-hooks.ts';
+import MECHANICS_ROWS from '../../data/mechanics.json' with { type: 'json' };
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -100,6 +102,7 @@ import type { DailyFile } from '../daily-pit.ts';
 import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
+configureSimMechanics(MECHANICS_ROWS.mechanics);   // the boss signature mechanics (the sim imports no data/ json: the driver lays the rows in, before any fight or effect is built)
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
@@ -628,6 +631,7 @@ function frame(now: number) {
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
       }
       frameEvents.push(...practice.events); commentator.events(practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
+      { const line = mechCaption(practice.duel.fighters[1]); if (line) commentator.say(line); }   // a boss's signature mechanic announces itself on the first tick of its tell (data/mechanics.json caption -> data/commentator.json)
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)

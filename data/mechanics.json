@@ -88,6 +88,40 @@
       "followWithinTicks": 90,
       "lineWidth": 0.7,
       "lineColour": "#c9402a"
+    },
+    "accountant-parry-wall": {
+      "type": "accountant-parry-wall",
+      "boss": "the-boss",
+      "about": "THE ACCOUNTANT'S PARRY WALL: he plants his feet and a ledger wall rises in front of him (the tell). While it stands every ordinary weapon blow from the front is parried for zero damage (a spark, the attacker staggers, he gets a riposte window); a golden weapon is ordinary here. A kick breaks it, a hero special breaks it and still lands, a blow from behind lands in full, a blow in the tell lands in full and cancels it. He never attacks while it stands and nothing here can kill. The sim rules are in src/fight/mechanics/accountant-parry-wall.ts (called from the duel through sim-hooks.ts), the look is accountant-parry-wall-fx.ts.",
+      "firstTicks": 300,
+      "triggerRangeM": 3.2,
+      "tellTicks": 42,
+      "wallTicks": 150,
+      "cooldownTicks": 660,
+      "cancelCooldownTicks": 300,
+      "arcDeg": 150,
+      "parryStunTicks": 20,
+      "riposteTicks": 30,
+      "parriesToDrop": 2,
+      "kickBreakStunTicks": 54,
+      "specialBreakStunTicks": 72,
+      "caption": "parry_wall",
+      "fx": {
+        "colour": "#f2c14e",
+        "edgeColour": "#fff0b8",
+        "ringRadiusM": 1.5,
+        "wallHeightM": 2.1,
+        "wallWidthM": 2.4,
+        "wallDistanceM": 0.9,
+        "tellOpacity": 0.18,
+        "wallOpacity": 0.42,
+        "sparkCount": 10,
+        "sparkSpeedMps": 3.2,
+        "sparkLifeS": 0.35,
+        "sparkSizeM": 0.07,
+        "sparkGravityMps2": 6,
+        "ringPulseHz": 2.5
+      }
     }
   }
 }

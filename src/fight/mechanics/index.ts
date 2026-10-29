@@ -7,8 +7,10 @@ import { MECHANIC_SCALE } from './runtime.ts';
 import { createGourdBombsRuntime } from './gourd-bombs.ts';
 import { createKingAuraRuntime } from './king-aura.ts';
 import { createNanImpaleRuntime } from './nan-impale.ts';
+import { createAccountantRuntime } from './accountant-parry-wall-fx.ts';
 
 export const MECHANICS: Readonly<Record<string, (row: never) => MechanicRuntime>> = {
+  'accountant-parry-wall': createAccountantRuntime as (row: never) => MechanicRuntime,
   'gourd-bombs': createGourdBombsRuntime as (row: never) => MechanicRuntime,
   'king-aura': createKingAuraRuntime as (row: never) => MechanicRuntime,
   'nan-impale': createNanImpaleRuntime as (row: never) => MechanicRuntime,
