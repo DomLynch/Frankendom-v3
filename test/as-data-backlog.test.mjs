@@ -12,7 +12,8 @@ function tree(text, allow, backlog) {
   writeFileSync(join(root, 'src/a.ts'), text);
   writeFileSync(join(root, 'scope.json'), JSON.stringify({ globs: ['src/*.ts', 'src/**/*.ts'], exclude: [], legacy: [] }));
   writeFileSync(join(root, 'allow.json'), JSON.stringify({ allow, files: [] }));
-  writeFileSync(join(root, 'baseline.json'), JSON.stringify({ counts: {}, totals: {}, ...(backlog === undefined ? {} : { backlog }) }));
+  const plain = allow.filter((a) => !isBacklog(a)).length;   // the plain allow rows are recorded (allowTotals) so only the backlog count is under test here
+  writeFileSync(join(root, 'baseline.json'), JSON.stringify({ counts: {}, totals: {}, allowTotals: plain ? { 'src/a.ts': { number: plain } } : {}, ...(backlog === undefined ? {} : { backlog }) }));
   return { root, opts: { scopeFile: join(root, 'scope.json'), allowFile: join(root, 'allow.json'), baselineFile: join(root, 'baseline.json') } };
 }
 const check = (t, fn) => { try { return fn(run(t.root, t.opts)); } finally { rmSync(t.root, { recursive: true }); } };

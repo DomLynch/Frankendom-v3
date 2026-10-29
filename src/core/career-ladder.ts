@@ -21,6 +21,13 @@ type Rank = { title: string;numeral: string; level: number; label: string; next:
 // in this device's claims outbox (loot-claims.ts), else this device's count.
 // Beta award policy (owner 2026-09-20): every won duel in the arena earns one mark — a rematch or a journal-picked opponent included.
 const RANK_STEPS = NUMERALS.length;
+/** The ladderRule row checked at load: every title a real, distinct word, and one title per RANK_STEPS levels so the titles cover `maxLevel` exactly (a short or long list would index past the end or leave levels untitled). Throws with the row's path. */
+export function validateLadderTitles(titles: readonly unknown[], maxLevel: number, steps: number = RANK_STEPS): void {
+  if (!Array.isArray(titles) || titles.some((t) => typeof t !== 'string' || t.trim() === '')) throw Error('src/core/career-rules.json ladderRule.titles: every title must be a non-empty string');
+  if (new Set(titles).size !== titles.length) throw Error('src/core/career-rules.json ladderRule.titles: titles must be distinct');
+  if (titles.length * steps !== maxLevel) throw Error(`src/core/career-rules.json ladderRule.titles: ${titles.length} titles x ${steps} sub-ranks is ${titles.length * steps} levels, but maxLevel is ${maxLevel}; the title list and the tier count must match`);
+}
+validateLadderTitles(TITLES, MAX_LEVEL);
 // THE BETA CUT (Dom 2026-10-17; Strategy's lists): the Pit shows the first `titles` titles of the ladder and the signed-off spell list. A VIEW, not a rule: the server keeps every row, every mark and MAX_LEVEL / OLD_MAX_LEVEL
 // (a stored L16 account still loads and keeps its marks, it is shown at the cut); the client reads the cut through `betaMarks` / `betaLevel` and awards.ts judges a claim against the same cut, so a win fought at the cut counts.
 // Lifting the cut is the one row: `titles` of 10 (or more) lifts the level cap, an empty `spells` lifts the spell list.

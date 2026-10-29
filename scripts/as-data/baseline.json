@@ -144,6 +144,206 @@
  },
  "backlog_about": "Count of allow.json rows whose reason starts with DEFERRED (a value that belongs in a data row and has not moved yet). Shrink-only, target 0.",
  "backlog": 0,
+ "allowTotals_about": "Plain (non-DEFERRED) allow.json rows per file and kind. Shrink-only: a new allow row needs the same PR to lower another in that file or move a value into data.",
+ "allowTotals": {
+  "src/fight/camera.ts": {
+   "number": 3
+  },
+  "src/fight/camera-zoom.ts": {
+   "number": 3
+  },
+  "src/fight/camera-pitch.ts": {
+   "number": 2
+  },
+  "src/fight/follow-camera.ts": {
+   "number": 3
+  },
+  "src/fight/free-camera.ts": {
+   "number": 1
+  },
+  "src/fight/feel-clash.ts": {
+   "number": 2
+  },
+  "src/fight/feel-limbs.ts": {
+   "number": 5
+  },
+  "src/fight/armfeel-fx.ts": {
+   "number": 2
+  },
+  "src/fight/skyview.ts": {
+   "number": 2
+  },
+  "src/art-url.ts": {
+   "compare": 1
+  },
+  "src/auto-start.ts": {
+   "name-compare": 1
+  },
+  "src/brain.ts": {
+   "name-compare": 1
+  },
+  "src/commentator.ts": {
+   "number": 1,
+   "name-compare": 6,
+   "label": 2
+  },
+  "src/corpse-run.ts": {
+   "number": 3
+  },
+  "src/daily-pit-ui.ts": {
+   "label": 12,
+   "name-compare": 1
+  },
+  "src/daily-pit.ts": {
+   "number": 6,
+   "name-compare": 4
+  },
+  "src/difficulty.ts": {
+   "label": 1,
+   "number": 1
+  },
+  "src/hero-reach.ts": {
+   "name-compare": 2
+  },
+  "src/hit-stop.ts": {
+   "name-compare": 2
+  },
+  "src/mobs-run.ts": {
+   "number": 1,
+   "name-compare": 1
+  },
+  "src/parts.ts": {
+   "number": 10,
+   "label": 10
+  },
+  "src/progression.ts": {
+   "label": 8,
+   "number": 4
+  },
+  "src/share-clip.ts": {
+   "number": 23,
+   "name-compare": 9,
+   "label": 1
+  },
+  "src/stars.ts": {
+   "number": 6,
+   "label": 16
+  },
+  "src/stubs.ts": {
+   "name-compare": 3
+  },
+  "src/telemetry-rows.ts": {
+   "name-compare": 12,
+   "number": 5
+  },
+  "src/telemetry.ts": {
+   "number": 5,
+   "compare": 1,
+   "name-compare": 2
+  },
+  "src/tune.ts": {
+   "label": 7,
+   "number": 2
+  },
+  "src/zoom-guard.ts": {
+   "number": 1
+  },
+  "src/core/grades.ts": {
+   "name-compare": 3,
+   "label": 2
+  },
+  "src/core/registry.ts": {
+   "label": 16,
+   "name-compare": 3,
+   "number": 1
+  },
+  "src/client/main.ts": {
+   "name-compare": 9,
+   "number": 10,
+   "label": 2,
+   "compare": 1
+  },
+  "src/presence/chunk.ts": {
+   "compare": 1,
+   "name-compare": 1,
+   "number": 1
+  },
+  "src/presence/client.ts": {
+   "number": 6,
+   "name-compare": 1
+  },
+  "src/presence/draw.ts": {
+   "number": 1
+  },
+  "src/presence/rows.ts": {
+   "number": 2,
+   "name-compare": 3
+  },
+  "src/presence/wire.ts": {
+   "number": 11
+  },
+  "src/server-model/zone-model.ts": {
+   "label": 16,
+   "number": 20,
+   "name-compare": 1
+  },
+  "src/retry.ts": {
+   "number": 2
+  },
+  "src/audio/keep.ts": {
+   "number": 13
+  },
+  "src/audio/bell.ts": {
+   "number": 7
+  },
+  "src/audio/arena.ts": {
+   "name-compare": 6
+  },
+  "src/audio/crowd-rows.ts": {
+   "name-compare": 4
+  },
+  "src/audio/sprite.ts": {
+   "name-compare": 1
+  },
+  "src/audio/zone-cues.ts": {
+   "name-compare": 2
+  },
+  "src/fight/mechanics/accountant-parry-wall-fx.ts": {
+   "number": 4,
+   "name-compare": 3
+  },
+  "src/fight/mechanics/accountant-parry-wall.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/mechanics/envoy-latch-fx.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/mechanics/envoy-latch.ts": {
+   "number": 2,
+   "name-compare": 11
+  },
+  "src/fight/mechanics/kachujin-shadow-dash.ts": {
+   "number": 3,
+   "name-compare": 4
+  },
+  "src/fight/mechanics/sim-hooks.ts": {
+   "label": 2
+  },
+  "src/fight/mechanics/nan-impale.ts": {
+   "number": 3,
+   "name-compare": 6
+  },
+  "src/fight/mechanics/line-fx.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/mechanics/reginald-limb-loss.ts": {
+   "number": 1,
+   "label": 2
+  }
+ },
  "totals_about": "Per-file TOTAL hit counts per kind over all of src/**/*.ts, recorded on unchanged main e44150da before any other change. A file may only go down; see scripts/as-data/check.mjs.",
  "totals": {
   "src/fight/ai.ts": {

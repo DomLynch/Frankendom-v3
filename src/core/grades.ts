@@ -77,6 +77,13 @@ export const GRADES: Record<Tier, Grade> = {
   Origin:     { metal: { color: '#c9a233', metalness: 1, roughness: .22 }, trim: { color: '#4a0d18', metalness: .80, roughness: .35 }, leather: { color: '#3a2e1c', metalness: 0, roughness: .70 } },
 };
 
+/** The grade table and the career titles are one ladder: same names, same count. Throws at load so a title added to the data row without a grade (or the reverse) stops the page, not a loot draw. */
+export function validateGradeTiers(titles: readonly string[], grades: Readonly<Record<string, unknown>>): void {
+  const keys = Object.keys(grades);
+  if (keys.length !== titles.length || titles.some((t, i) => keys[i] !== t)) throw Error(`src/core/grades.ts GRADES has ${keys.length} tiers (${keys.join(', ')}) but the career titles are ${titles.length} (${titles.join(', ')}): they must match in count and order`);
+}
+validateGradeTiers(TIERS, GRADES);
+
 // The factors to write onto one draw's material, or null to leave it alone (bone, authored artwork, and cloth — cloth is the house dye).
 export function gradeFor(tier: Tier, material: string): Finish | null {
   const group = classOf(material);

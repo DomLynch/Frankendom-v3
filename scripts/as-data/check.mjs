@@ -168,6 +168,7 @@ export function run(root, { allowFile = join(HERE, 'allow.json'), baselineFile =
   const baseJson = existsSync(baselineFile) ? JSON.parse(readFileSync(baselineFile, 'utf8')) : {};
   const rawBase = baseJson.counts ?? {};
   const totalsBase = baseJson.totals ?? {};
+  const allowBase = baseJson.allowTotals ?? {};
   const base = Object.fromEntries(Object.entries(rawBase).filter(([f]) => legacy.has(f)));
   const problems = [];
   for (const e of exemptFiles) {
@@ -183,7 +184,7 @@ export function run(root, { allowFile = join(HERE, 'allow.json'), baselineFile =
   const files = walk(root, 'src').filter((f) => scope.some((re) => re.test(f)) && !excluded.some((re) => re.test(f))).sort();
   const used = new Set(), usedExempt = new Set(), exempt = {}, tally = {}, measured = {}, areas = {};
   const area = (f) => { const p = f.split('/'); return p.length > 2 ? p[1] : 'src-top'; };
-  const A = (f) => (areas[area(f)] ??= { files: 0, hits: {}, baselined: 0, allowed: 0, exempt: 0, new: 0 });
+  const A = (f) => (areas[area(f)] ??= { files: 0, hits: {}, baselined: 0, allowed: 0, exempt: 0, new: 0, plain: 0 });
   for (const f of files) {
     const a = A(f); a.files++;
     const found = scan(readFileSync(join(root, f), 'utf8'), ids);
@@ -229,7 +230,18 @@ export function run(root, { allowFile = join(HERE, 'allow.json'), baselineFile =
   const backlog = allow.filter((a) => isBacklog(a)).length, backlogBase = Number.isInteger(baseJson.backlog) ? baseJson.backlog : 0;
   if (backlog > backlogBase) problems.push(`backlog: ${backlog} DEFERRED allow row(s), the baseline says ${backlogBase}: a DEFERRED row cannot be added, move the value into a data row (or give the row a plain non-DEFERRED reason if it is not tuning)`);
   else if (backlog < backlogBase) problems.push(`backlog: baseline says ${backlogBase} DEFERRED allow row(s), there are ${backlog}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
-  return { problems, exempt, scanned: files.length, tally, legacy, measured, areas, backlog };
+  // PLAIN ALLOW ROWS (not DEFERRED): the count per file and kind may only shrink, so an allow row cannot be the way a value stays in code.
+  const allowTotals = {};
+  for (const r of allow) if (!isBacklog(r) && r.file && r.kind) { const t = (allowTotals[r.file] ??= {}); t[r.kind] = (t[r.kind] ?? 0) + 1; }
+  for (const r of allow) if (!isBacklog(r) && files.includes(r.file)) A(r.file).plain = (A(r.file).plain ?? 0) + 1;
+  for (const f of new Set([...Object.keys(allowTotals), ...Object.keys(allowBase)])) {
+    for (const k of new Set([...Object.keys(allowTotals[f] ?? {}), ...Object.keys(allowBase[f] ?? {})])) {
+      const now = allowTotals[f]?.[k] ?? 0, was = allowBase[f]?.[k] ?? 0;
+      if (now > was) problems.push(`${f}: ${now} plain ${k} allow row(s), the baseline says ${was}: a new allow row needs the same PR to lower another in that file or move a value into data`);
+      else if (now < was) problems.push(`${f}: baseline allowTotals says ${was} x ${k} allow row(s), there are ${now}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
+    }
+  }
+  return { problems, exempt, scanned: files.length, tally, legacy, measured, areas, backlog, allowTotals };
 }
 
 /** An allow row whose reason starts with DEFERRED: a value that belongs in a data row and has not moved yet. */
@@ -238,8 +250,8 @@ export const isBacklog = (row) => /^DEFERRED\b/.test(String(row?.reason ?? '').t
 /** The summary table, one row per area: files, hits by kind, and how each hit is covered. */
 export function summaryTable(r) {
   const KINDS = ['number', 'label', 'compare', 'name-compare', 'data-id'];
-  const head = ['area', 'files', ...KINDS, 'baselined', 'allowed', 'exempt', 'new'];
-  const rows = Object.entries(r.areas).sort(([x], [y]) => x.localeCompare(y)).map(([n, a]) => [n, a.files, ...KINDS.map((k) => a.hits[k] ?? 0), a.baselined, a.allowed, a.exempt, a.new]);
+  const head = ['area', 'files', ...KINDS, 'baselined', 'allowed', 'plain-allow', 'exempt', 'new'];
+  const rows = Object.entries(r.areas).sort(([x], [y]) => x.localeCompare(y)).map(([n, a]) => [n, a.files, ...KINDS.map((k) => a.hits[k] ?? 0), a.baselined, a.allowed, a.plain, a.exempt, a.new]);
   const sum = rows.reduce((t, row) => row.map((v, i) => (i === 0 ? 'total' : (t[i] ?? 0) + v)), []);
   const all = [head, ...rows, sum].map((row) => row.map(String));
   const w = head.map((_, i) => Math.max(...all.map((row) => row[i].length)));
@@ -261,9 +273,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       ...Object.entries(totals).flatMap(([f, c]) => Object.entries(c).filter(([k, v]) => v > (oldTotals[f]?.[k] ?? 0)).map(([k]) => `${f} ${k}`)),
     ];
     const oldBacklog = Number.isInteger(oldJson?.backlog) ? oldJson.backlog : null;
+    const oldAllow = oldJson?.allowTotals ?? {};
+    if (oldJson?.allowTotals) for (const [f, c] of Object.entries(before.allowTotals)) for (const [k, v] of Object.entries(c)) if (v > (oldAllow[f]?.[k] ?? 0)) grown.push(`${f} plain ${k} allow rows ${v} > ${oldAllow[f]?.[k] ?? 0}`);
     if (oldBacklog !== null && before.backlog > oldBacklog) grown.push(`backlog ${before.backlog} > ${oldBacklog}`);
     if (grown.length) { console.error(`as-data: not writing the baseline, the baseline only shrinks; new sites:\n${grown.slice(0, 10).join('\n')}`); process.exit(1); }
-    writeFileSync(file, `${JSON.stringify({ about: 'Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy): per literal. More of a literal than this is new; fewer must come down here. Only ever shrinks.', counts, backlog_about: 'Count of allow.json rows whose reason starts with DEFERRED (a value that belongs in a data row and has not moved yet). Shrink-only, target 0.', backlog: before.backlog, totals_about: oldJson?.totals_about ?? '', totals }, null, 1)}\n`);
+    writeFileSync(file, `${JSON.stringify({ about: 'Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy): per literal. More of a literal than this is new; fewer must come down here. Only ever shrinks.', counts, backlog_about: 'Count of allow.json rows whose reason starts with DEFERRED (a value that belongs in a data row and has not moved yet). Shrink-only, target 0.', backlog: before.backlog, allowTotals_about: 'Plain (non-DEFERRED) allow.json rows per file and kind. Shrink-only: a new allow row needs the same PR to lower another in that file or move a value into data.', allowTotals: before.allowTotals, totals_about: oldJson?.totals_about ?? '', totals }, null, 1)}\n`);
     console.log(`as-data: wrote ${relative(root, file)} (${Object.keys(counts).length} per-literal files, ${Object.keys(totals).length} total-ratchet files)`);
     process.exit(0);
   }
