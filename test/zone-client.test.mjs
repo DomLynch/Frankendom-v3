@@ -488,11 +488,39 @@ test('engage retry is capped: an unknown 4xx stops at once, 408/425/429 are retr
   await k.c.tick(at + 10 ** 9); assert.equal(f.log.engage.length, ER.maxTries, 'no further engage, ever');
 });
 
+test('engage: the wait action (zone not loaded) never counts toward maxTries; a delay-0 reengage refusal counts, waits at least minDelayMs, and ends at maxTries', async () => {
+  const ER = ROWS.engageRetry;
+  let loaded = false;
+  const w = fake({ engage: (q, log, n) => { if (!loaded) throw { kind: 'status', status: 409, code: 'O0010' }; return { token: 'token-aaaaaaaaaaaaaaaa', instance: q.instance, layer: q.layer, generation: 0, hp: 100, maxHp: 100 }; } });
+  const wk = client(w); await wk.c.start(0);
+  const step = T.engageRetryMs + ROWS.backoff.baseMs;
+  for (let n = 1; n <= ER.maxTries * 3; n++) await wk.c.tick(n * step);
+  assert.ok(w.log.engage.length > ER.maxTries * 2, `kept asking past maxTries (${w.log.engage.length})`);
+  assert.notEqual(wk.c.phase(), PHASE.off, 'a zone unloaded for a long time does not end shared hp');
+  loaded = true; await wk.c.tick((ER.maxTries * 3 + 1) * step);
+  assert.equal(wk.c.phase(), PHASE.engaged, 'and it engages as soon as the zone loads');
+
+  const row = ROWS.refusals.find((x) => x.delayMs === 0 && x.action === ACT.reengage);
+  assert.ok(row, 'a delay-0 reengage refusal row exists (moved / token)');
+  const m = fake({ engage: () => ({ refused: row.id }) });
+  const mk = client(m); await mk.c.start(0);
+  let at = 0;
+  for (let n = 1; n < ER.maxTries; n++) {
+    assert.equal(m.log.engage.length, n);
+    await mk.c.tick(at + ER.minDelayMs - 1); assert.equal(m.log.engage.length, n, `not sooner than minDelayMs (${ER.minDelayMs})`);
+    at += ER.minDelayMs; await mk.c.tick(at);
+  }
+  assert.equal(m.log.engage.length, ER.maxTries);
+  assert.equal(mk.c.phase(), PHASE.off, 'maxTries refusals in a row end the asking');
+  await mk.c.tick(at + 10 ** 9); assert.equal(m.log.engage.length, ER.maxTries);
+});
+
 test('parseClientRows refuses a missing or malformed engageRetry row', () => {
   const bad = (edit, re) => { const r = clone(RAW); edit(r); assert.throws(() => parseClientRows(r, SERVER), re); };
   bad((r) => { delete r.engageRetry; }, /engageRetry/);
   bad((r) => { r.engageRetry.maxTries = 0; }, /maxTries/);
   bad((r) => { r.engageRetry.factor = 0.5; }, /factor at least 1/);
+  bad((r) => { r.engageRetry.minDelayMs = 0; }, /minDelayMs/);
   bad((r) => { r.engageRetry.stopStatus = [[500, 400]]; }, /status ranges/);
 });
 

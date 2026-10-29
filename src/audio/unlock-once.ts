@@ -3,6 +3,11 @@
 // they are armed again only if the page is locked again (a call, Siri, an app switch: main.ts calls arm() from its wake handler while `unlocked()` is false). Pure DOM-event plumbing: no sound here.
 export type UnlockTarget = { addEventListener(type: string, fn: () => void, opts?: { passive: boolean }): void; removeEventListener(type: string, fn: () => void): void };
 
+/** Re-arm the gesture listeners whenever the context changes state and is no longer running (iOS 'interrupted' after a call or Siri sends only a statechange). */
+export function rearmWhenLocked(watch: (fn: () => void) => void, arm: () => void, unlocked: () => boolean): void {
+  watch(() => { if (!unlocked()) arm(); });
+}
+
 export function createAudioUnlock(o: { target: UnlockTarget; types: readonly string[]; run: () => void; unlocked: () => boolean }) {
   let armed = false;
   const onGesture = (): void => { o.run(); if (o.unlocked()) disarm(); };

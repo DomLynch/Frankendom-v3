@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createAudioUnlock } from '../src/audio/unlock-once.ts';
+import { createAudioUnlock, rearmWhenLocked } from '../src/audio/unlock-once.ts';
 
 function fakeTarget() {
   const map = new Map();
@@ -41,6 +41,25 @@ test('arm is idempotent (a wake handler may call it often) and a later lock re-a
   assert.equal(target.count(), TYPES.length);
   running = true; target.fire('keydown');
   assert.equal(runs, 2); assert.equal(target.count(), 0);
+});
+
+test('a statechange to a locked state re-arms the listeners; a statechange to running does not', () => {
+  const target = fakeTarget(); let running = true; let fire = () => {};
+  const u = createAudioUnlock({ target, types: TYPES, run: () => {}, unlocked: () => running });
+  rearmWhenLocked((fn) => { fire = fn; }, u.arm, () => running);
+  u.arm(); target.fire('click'); assert.equal(target.count(), 0);
+  fire(); assert.equal(target.count(), 0, 'still running: stays disarmed');
+  running = false; fire();   // iOS: 'interrupted', no pageshow or focus
+  assert.equal(target.count(), TYPES.length, 're-armed');
+  fire(); assert.equal(target.count(), TYPES.length, 'idempotent');
+});
+
+test('feedback exposes the context statechange and main.ts hooks it', () => {
+  const fb = readFileSync(new URL('../src/fight/sound/feedback.ts', import.meta.url), 'utf8');
+  assert.match(fb, /addEventListener\?\.\('statechange'/);
+  assert.match(fb, /onStateChange\(fn: \(\) => void\)/);
+  const src = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  assert.match(src, /rearmWhenLocked\(\(fn\) => feedback\.onStateChange\(fn\), audioUnlock\.arm,/);
 });
 
 test('main.ts wires it: no bare window.addEventListener loop for the unlock family, the wake handler re-arms only while locked', () => {

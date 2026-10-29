@@ -110,8 +110,8 @@ export const SCHEMA = {
   // Phase 3 step 1, the page side of shared boss health (docs/ZONE-CLIENT-CONTRACT.md, src/zone/shared-hp-client.ts): OFF unless ?sharedhp=. The client's own parseClientRows checks the values and the action vocabulary.
   'zone-client': { keys: ['about', 'query', 'path', 'hosts', 'routes', 'timing', 'sim', 'batch', 'backoff', 'engageRetry', 'kill', 'refusals', 'sqlClasses', 'transportClasses', 'fallback'],
     rows: { refusals: ['id', 'action', 'delayMs'], sqlClasses: ['id', 'match', 'action'], transportClasses: ['id', 'kinds', 'status', 'action'] },
-    maps: { routes: ['engage', 'touch', 'hits', 'state', 'kill'], timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['hit', 'heroSide', 'foeSide'], batch: ['idPrefix', 'idSep'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], engageRetry: ['maxTries', 'factor', 'maxMs', 'stopStatus'], kill: ['tries', 'retryMs', 'settled', 'unpaid'], fallback: ['sql', 'transport'] },
-    finite: { timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['heroSide', 'foeSide'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], engageRetry: ['maxTries', 'factor', 'maxMs'], kill: ['tries', 'retryMs'] } },
+    maps: { routes: ['engage', 'touch', 'hits', 'state', 'kill'], timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['hit', 'heroSide', 'foeSide'], batch: ['idPrefix', 'idSep'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], engageRetry: ['maxTries', 'factor', 'maxMs', 'minDelayMs', 'stopStatus'], kill: ['tries', 'retryMs', 'settled', 'unpaid'], fallback: ['sql', 'transport'] },
+    finite: { timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['heroSide', 'foeSide'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], engageRetry: ['maxTries', 'factor', 'maxMs', 'minDelayMs'], kill: ['tries', 'retryMs'] } },
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;

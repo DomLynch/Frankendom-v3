@@ -37,7 +37,7 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, starTune, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
-import { createAudioUnlock } from '../audio/unlock-once.ts';
+import { createAudioUnlock, rearmWhenLocked } from '../audio/unlock-once.ts';
 import { mountParts } from '../fight/parts-hook.ts';
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
@@ -158,6 +158,7 @@ if (!v1Sound) feedback.prepare();
 // (once the context is running the listeners remove themselves and stop allocating; a later lock re-arms them from the wake handler below: src/audio/unlock-once.ts)
 const audioUnlock = createAudioUnlock({ target: window, types: v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'], run: v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, unlocked: () => feedback.unlocked() });
 audioUnlock.arm();
+rearmWhenLocked((fn) => feedback.onStateChange(fn), audioUnlock.arm, () => feedback.unlocked());   // iOS 'interrupted' sends a statechange, not always a pageshow/focus
 const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
 const commentator = mountCommentator(document, Object.fromEntries(PROFILES.profiles.flatMap((p) => ((p as { name?: string }).name ? [[p.id, (p as { name?: string }).name!]] : []))));
 setHeroNoMana(heroNoManaFor(FIGHT.heroMana, search));   // V3 (Dom: "remove mana for now"): the hero has no MANA bar and casts free (data/fight.json heroMana); ?mana=v1 = the bar and the mana cost

@@ -26,7 +26,7 @@ export type ClientRows = {
   sim: { hit: string; heroSide: number; foeSide: number };
   batch: { idPrefix: string; idSep: string };
   backoff: { baseMs: number; factor: number; maxMs: number; offlineAfter: number };
-  engageRetry: { maxTries: number; factor: number; maxMs: number; stopStatus: [number, number][] };
+  engageRetry: { maxTries: number; factor: number; maxMs: number; minDelayMs: number; stopStatus: [number, number][] };
   kill: { tries: number; retryMs: number; settled: string; unpaid: string };
   refusals: { id: string; action: Action; delayMs?: number }[];
   sqlClasses: { id: string; match: string[]; action: Action }[];
@@ -51,7 +51,7 @@ export function parseClientRows(json: unknown, server: Rules): ClientRows {
   assert(typeof r.sim.hit === 'string' && r.sim.hit.length > 0, 'zone-client.sim.hit: an event type');
   for (const k of ['baseMs', 'factor', 'maxMs', 'offlineAfter'] as const) assert(positive(r.backoff[k]), `zone-client.backoff.${k}: a positive number`);
   assert(r.backoff.factor >= 1 && r.backoff.maxMs >= r.backoff.baseMs, 'zone-client.backoff: factor at least 1 and maxMs at least baseMs');
-  for (const k of ['maxTries', 'factor', 'maxMs'] as const) assert(positive(r.engageRetry?.[k]), `zone-client.engageRetry.${k}: a positive number`);
+  for (const k of ['maxTries', 'factor', 'maxMs', 'minDelayMs'] as const) assert(positive(r.engageRetry?.[k]), `zone-client.engageRetry.${k}: a positive number`);
   assert(r.engageRetry.factor >= 1 && r.engageRetry.maxMs >= r.timing.engageRetryMs, 'zone-client.engageRetry: factor at least 1 and maxMs at least timing.engageRetryMs');
   assert(Array.isArray(r.engageRetry.stopStatus) && r.engageRetry.stopStatus.every(([lo, hi]) => Number.isInteger(lo) && Number.isInteger(hi) && lo <= hi), 'zone-client.engageRetry.stopStatus: status ranges');
   assert(positive(r.kill.tries) && positive(r.kill.retryMs) && r.kill.settled !== r.kill.unpaid, 'zone-client.kill: tries, retryMs and two different states');
@@ -219,7 +219,13 @@ export function createSharedHp(o: Options): SharedHp {
         count.refused += 1;
         const ref = r as Refused, row = rows.refusals.find((x) => x.id === ref.refused);
         if (phase === PHASE.engaging) setPhase(before);
-        run[row ? row.action : rows.fallback.sql](now, { delayMs: row?.delayMs, respawnAt: ref.respawnAt });
+        const act = row ? row.action : rows.fallback.sql;
+        run[act](now, { delayMs: row?.delayMs, respawnAt: ref.respawnAt });
+        if (act === ACT.reengage) {   // a refusal that says "engage again" (moved, token, too-many) counts toward the cap and never asks faster than minDelayMs: a delay-0 row cannot loop at frame rate
+          engageFails += 1;
+          if (engageFails >= rows.engageRetry.maxTries) run[ACT.stop](now, {});
+          else engageAt = now + Math.max(row?.delayMs ?? T.engageRetryMs, rows.engageRetry.minDelayMs);
+        }
       } else {
         const ok = r as EngageOk;
         if (typeof ok.token !== 'string' || !Number.isFinite(ok.generation)) throw { kind: 'shape' };
@@ -236,9 +242,12 @@ export function createSharedHp(o: Options): SharedHp {
       const unrecoverable = typeof e.code !== 'string' && e.status !== undefined && classed === rows.fallback.transport && ER.stopStatus.some(([lo, hi]) => e.status! >= lo && e.status! <= hi);   // a bare 4xx no table row answered: asking again cannot help
       const action = unrecoverable ? ACT.stop : classed;
       run[action](now, {});
+      if (action === ACT.wait) { if (phase !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs; }   // the zone is not loaded yet: the server DID answer, so it never counts toward the cap (as before engageRetry existed)
+      else {
       engageFails += 1;
       if (action !== ACT.stop && engageFails >= ER.maxTries) run[ACT.stop](now, {});   // capped: this many lost engages in a row ends the asking
       else if (action !== ACT.stop && phase !== PHASE.off && engageAt === null) engageAt = now + Math.min(T.engageRetryMs * ER.factor ** (engageFails - 1), ER.maxMs);   // an engage that was lost is asked again, later each time
+      }
     } finally { busy.engage = false; }
   }
 
