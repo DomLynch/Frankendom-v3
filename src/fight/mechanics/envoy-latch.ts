@@ -103,7 +103,7 @@ export function createEnvoyLatch(row: EnvoyLatchRow = ENVOY_LATCH_ROW): EnvoyLat
         const riding: Fighter = { ...boss, body: { ...boss.body, x, z } };
         const drained: Fighter = { ...hero, stamina: Math.max(Math.min(hero.stamina, row.drainFloor), hero.stamina - drain), rest: Math.max(hero.rest, REST_HOLD) };   // never below the floor (and never lifted to it); no regen while latched
         show('latched', riding, hero, latchTicks / latchMax);
-        const walking = hero.phase !== 'roll' && intent.action !== 'dodge';   // a roll keeps its own direction and speed
+        const walking = intent.action !== 'dodge';   // a roll keeps its own direction and speed (a rolling hero already broke the latch above, so phase 'roll' cannot reach here)
         return pass({ ...duel, fighters: [drained, riding] }, walking ? { ...intent, move: { x: intent.move.x * slow, z: intent.move.z * slow, yaw: intent.move.yaw, run: false } } : intent);
       }
 
