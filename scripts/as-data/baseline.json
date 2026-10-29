@@ -147,34 +147,6 @@
   "src/art-url.ts": {
    "compare": 1
   },
-  "src/audio/arena-manifest.ts": {
-   "number": 36
-  },
-  "src/audio/arena.ts": {
-   "number": 33,
-   "name-compare": 17
-  },
-  "src/audio/bell.ts": {
-   "number": 66
-  },
-  "src/audio/crowd-rows.ts": {
-   "name-compare": 4
-  },
-  "src/audio/gate.ts": {
-   "number": 1
-  },
-  "src/audio/keep.ts": {
-   "number": 17
-  },
-  "src/audio/manifest.ts": {
-   "number": 163
-  },
-  "src/audio/sprite.ts": {
-   "name-compare": 1
-  },
-  "src/audio/zone-cues.ts": {
-   "name-compare": 3
-  },
   "src/auto-start.ts": {
    "name-compare": 1
   },
