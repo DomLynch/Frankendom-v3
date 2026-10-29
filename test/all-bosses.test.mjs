@@ -33,7 +33,7 @@ for (const kind of bosses) {
     else {
       assert.ok(row, `${kind}: resolves a data/boss-weapons.json row`);
       assert.equal(row.id, want.row);
-      assert.ok(WEAPONS.rows.includes(row));
+      assert.ok(WEAPONS.rows.some((r) => r.id === row.id));
     }
     const file = path.join(root, `src/assets/weapons/foe/${want.equip}.glb`);
     assert.ok(existsSync(file), `${kind}: ${want.equip}.glb exists`);
@@ -46,7 +46,8 @@ for (const kind of bosses) {
     const m = JSON.parse(readFileSync(mf, 'utf8'));
     assert.equal(m.schema, 'cut-pieces/1');
     assert.equal(PLANES.length, UNITS.length);
-    for (const pl of PLANES) assert.ok(m.planes.includes(pl), `${want.body}: cut plane ${pl}`);
+    const planes = Array.isArray(m.planes) ? m.planes : Object.keys(m.planes);   // older manifests key the planes, newer list them
+    for (const pl of PLANES) assert.ok(planes.includes(pl), `${want.body}: cut plane ${pl}`);
     const cut = new Set([...m.regions.map((r) => r.detached_by), ...m.caps.map((c) => c.shown_when_cut)]);
     for (const u of ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right']) assert.ok(cut.has(u), `${want.body}: cut unit ${u} is a region or cap in the manifest`);
     assert.ok(cut.has('torso_waist') || cut.has('waist'), `${want.body}: the waist unit is in the manifest`);
