@@ -73,6 +73,7 @@ test('the sim never sees the terrain: no sim, duel or replay file imports it, an
   const walk = (dir) => { for (const e of readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })) { if (e.isDirectory()) walk(`${dir}${e.name}/`); else if (/\.(ts|js)$/.test(e.name)) files.push(`${dir}${e.name}`); } };
   walk('../src/sim/'); walk('../src/core/');
   for (const f of ['sim', 'duel', 'replay', 'record', 'combat', 'detmath', 'moves', 'ai', 'world', 'world-combat', 'zone-loop', 'open-fight']) files.push(`../src/fight/${f}.ts`);
+  for (const e of readdirSync(new URL('../src/fight/', import.meta.url))) if (/^duel.*\.ts$/.test(e)) files.push(`../src/fight/${e}`);   // every duel*.ts, however many main adds
   files.push('../src/zone/spawns.ts', '../src/zone/attackers.ts', '../src/zone/walk-back.ts');
   for (const f of files.filter((x) => !x.endsWith('validate.js'))) assert.doesNotMatch(src(f), /terrain/i, `${f} must not know about the terrain`);
   assert.doesNotMatch(src('../src/zone/terrain.ts'), /from '\.\.\/(fight|sim)\//);
