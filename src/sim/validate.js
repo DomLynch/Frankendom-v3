@@ -59,6 +59,12 @@ export const SCHEMA = {
   'mobs': { keys: ['about', 'on', 'cap', 'capMax', 'scanSeconds', 'activateMetres', 'despawnMetres', 'spawnMinMetres', 'startClearMetres', 'padMetres', 'swingMetres', 'lod', 'hitScale', 'turnRate', 'speedEase', 'pitArea', 'grid', 'pack', 'separation', 'attack', 'hero', 'states', 'fall', 'corpse', 'farm', 'rings', 'respawnSeconds', 'kinds', 'limits'],
     maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], corpse: ['nearMetres', 'graceSeconds', 'holdSeconds', 'max'], farm: ['decay'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
   // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
+  // The ten Pit ranks' named opponents per ranked character (src/fight/catalogue-rows.ts joins them onto the catalogue rows; checkLegends below)
+  'legends': { keys: ['about', 'ranks'] },
+  // The practice HUD's one-line report (src/fight/practice-hints.ts; checkPracticeHints below): the text of every state and the move names a result line wears
+  // The fight HUD's own words (src/fight/hud-text.ts; checkHudText below)
+  'hud-text': { keys: ['about', 'rematchTail', 'dummyNeverAttacks', 'zoneDied', 'stamina', 'attack', 'reset'], maps: { stamina: ['plain', 'exhaustedMobile', 'woundMobile', 'exhaustedAria', 'woundAria'], attack: ['fight', 'light', 'mobileFight', 'mobileSlash'], reset: ['playNow', 'next', 'rematch'] } },
+  'practice-hints': { keys: ['about', 'defaultFoe', 'followUp', 'moves', 'lines', 'parts'], maps: { parts: ['wall', 'chip', 'hitKind', 'hurtKind', 'blockedKind', 'wallText'] } },
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
   'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap', 'pileCoordMax', 'lostMax'] } },
@@ -421,8 +427,63 @@ export function validateFile(name, json) {
     errors.push(...checkWideLens(json.camera.wide, name));
   }
   if (name === 'commentator') errors.push(...checkCommentator(json));
+  if (name === 'legends') errors.push(...checkLegends(json));
+  if (name === 'hud-text') errors.push(...checkHudText(json));
+  if (name === 'practice-hints') errors.push(...checkPracticeHints(json));
   banned(json, name, errors);
   return errors;
+}
+
+// The fight HUD's own words (data/hud-text.json): every leaf is a non-blank string (the key sets are SCHEMA's).
+function checkHudText(json) {
+  const e = [], walk = (v, p) => { if (v && typeof v === 'object') { for (const [k, x] of Object.entries(v)) if (k !== 'about') walk(x, `${p}.${k}`); } else if (typeof v !== 'string' || !v.trim()) e.push(`${p}: must be a non-blank string`); };
+  walk(json, 'hud-text');
+  return e;
+}
+
+// The practice HUD's lines (data/practice-hints.json): every named line and part exists as a string, and a {piece} in a text is one the code fills for that line.
+const HINT_PIECES = {
+  bothFell: [], fell: [], beatLegend: ['legend'], defeated: ['foe'], tapFight: ['counter'], counter: ['who'], classFoe: ['foe'], drawing: ['weapon'], postureBroken: [], chambered: [], charged: [], charging: [], exhausted: [], followThrough: [],
+  kicked: [], hit: ['kind', 'name', 'damage', 'wall'], miss: [], hurt: ['kind', 'damage', 'wall'], blocked: ['kind', 'stamina', 'chip'], parried: [], dodged: [], brokenCharged: [], brokenKick: [], broken: [], enemyBlocked: ['foe'], enemyBroken: [],
+  enemyParried: [], enemyDodged: ['foe'], enemyKicked: ['damage'], traded: ['dealt', 'damage'], postureBrokeSelf: [], enemyPostureBroken: [], guarding: [], parryMissed: [], postureBreaking: [],
+};
+function checkPracticeHints(json) {
+  const e = [], n = 'practice-hints', pieces = (t) => [...String(t).matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+  for (const k of ['defaultFoe', 'followUp']) if (typeof json[k] !== 'string' || !json[k].trim()) e.push(`${n}.${k}: must be a non-blank string`);
+  if (!json.moves || typeof json.moves !== 'object') e.push(`${n}.moves: must be an object of move id -> name`);
+  else for (const [id, t] of Object.entries(json.moves)) if (typeof t !== 'string' || !t.trim()) e.push(`${n}.moves.${id}: must be a non-blank string`);
+  const lines = json.lines ?? {};
+  for (const [id, want] of Object.entries(HINT_PIECES)) {
+    if (typeof lines[id] !== 'string') { e.push(`${n}.lines.${id}: must be a string`); continue; }
+    for (const p of pieces(lines[id])) if (!want.includes(p)) e.push(`${n}.lines.${id}: unknown piece {${p}}`);
+  }
+  for (const id of Object.keys(lines)) if (!(id in HINT_PIECES)) e.push(`${n}.lines.${id}: unknown line`);
+  const P = json.parts ?? {};
+  for (const [id, want] of [['wall', ['text']], ['chip', ['damage']]]) {
+    if (typeof P[id] !== 'string') e.push(`${n}.parts.${id}: must be a string`);
+    else for (const p of pieces(P[id])) if (!want.includes(p)) e.push(`${n}.parts.${id}: unknown piece {${p}}`);
+  }
+  for (const [id, keys] of [['hitKind', ['stop', 'counter', 'clean']], ['hurtKind', ['stop', 'trip', 'counter', 'plain']], ['blockedKind', ['perfect', 'plain']], ['wallText', ['hit', 'hurt']]]) {
+    const m = P[id];
+    if (!m || typeof m !== 'object') { e.push(`${n}.parts.${id}: must be an object`); continue; }
+    for (const k of keys) if (typeof m[k] !== 'string' || !m[k].trim()) e.push(`${n}.parts.${id}.${k}: must be a non-blank string`);
+    for (const k of Object.keys(m)) if (!keys.includes(k)) e.push(`${n}.parts.${id}.${k}: unknown key`);
+  }
+  return e;
+}
+
+// The Pit rank legends (data/legends.json): character id -> exactly ten rows of { name, source, backstory }, each a non-blank string, no other key.
+function checkLegends(json) {
+  const e = [], n = 'legends';
+  if (!json.ranks || typeof json.ranks !== 'object' || Array.isArray(json.ranks)) return [`${n}.ranks: must be an object keyed by character id`];
+  for (const [id, list] of Object.entries(json.ranks)) {
+    if (!Array.isArray(list) || list.length !== 10) { e.push(`${n}.ranks.${id}: must list exactly ten ranks`); continue; }
+    list.forEach((r, i) => {
+      for (const k of Object.keys(r ?? {})) if (!['name', 'source', 'backstory'].includes(k)) e.push(`${n}.ranks.${id}[${i}].${k}: unknown key`);
+      for (const k of ['name', 'source', 'backstory']) if (typeof r?.[k] !== 'string' || !r[k].trim()) e.push(`${n}.ranks.${id}[${i}].${k}: must be a non-blank string`);
+    });
+  }
+  return e;
 }
 
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.

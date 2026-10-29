@@ -5,6 +5,8 @@ import { accepts, counterLine, practiceHint, refusedButton, specialReach, specia
 import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
 import { won } from '../stubs.ts';   // V3: ladder.ts
 import { foeDisplayName } from './foe-name.ts';
+import { HUD_TEXT } from './hud-text.ts';
+import { HINTS } from './practice-hints.ts';
 import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../stubs.ts';   // V3: lessons.ts
 import { createGapHistory } from './kick-close.ts';
 import { staminaLow } from './fatigue-preview.ts';
@@ -67,8 +69,8 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
     },
     update(practice: Practice, view: HudView) {
       // The sparring dummy never attacks (src/sparring.ts), so the sheathed line's "will counterattack" is false there (Strategy 2026-09-26).
-      const foe = foeDisplayName(view.opponentId), nameOfSpecial = (skill: string) => specialName(practice.duel.fighters[0].weapon, skill, SKILL_ROWS[skill as keyof typeof SKILL_ROWS]?.name ?? '') || undefined, line = view.headline ? practiceHint(practice, foe, view.legend, nameOfSpecial).replace(' Ready for a rematch?', ` ${view.headline} Ready for a rematch?`) : practiceHint(practice, foe, view.legend, nameOfSpecial),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
-        hint = view.death ? view.death.line : view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.autoStart && practice.phase === 'sheathed' ? '' : view.dummy ? line.replace(counterLine(foe, view.legend), 'The dummy never attacks.') : view.zone ? (view.toastOver ? '' : line).replace(' Ready for a rematch?', '').replace('You fell. Rematch?', 'You died.').replace('You both fell. Rematch?', 'You died.') : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
+      const foe = foeDisplayName(view.opponentId), nameOfSpecial = (skill: string) => specialName(practice.duel.fighters[0].weapon, skill, SKILL_ROWS[skill as keyof typeof SKILL_ROWS]?.name ?? '') || undefined, line = view.headline ? practiceHint(practice, foe, view.legend, nameOfSpecial).replace(HUD_TEXT.rematchTail, ` ${view.headline}${HUD_TEXT.rematchTail}`) : practiceHint(practice, foe, view.legend, nameOfSpecial),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
+        hint = view.death ? view.death.line : view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.autoStart && practice.phase === 'sheathed' ? '' : view.dummy ? line.replace(counterLine(foe, view.legend), HUD_TEXT.dummyNeverAttacks) : view.zone ? (view.toastOver ? '' : line).replace(HUD_TEXT.rematchTail, '').replace(HINTS.lines.fell!, HUD_TEXT.zoneDied).replace(HINTS.lines.bothFell!, HUD_TEXT.zoneDied) : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
         controlsReady = view.controlsReady;
       const ok = (['light', 'heavy', 'kick', 'backstep', 'parry'] as const).map(
         (a) => accepts(practice, a) || (a === 'backstep' && accepts(practice, 'dodge')),
@@ -117,17 +119,17 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
       }
       combatStatus.textContent = hint;
       element('stamina-label').dataset.mobile = practice.exhausted
-        ? 'Stamina · exhausted'
+        ? HUD_TEXT.stamina.exhaustedMobile
         : practice.wound
-          ? 'Stamina · wound'
-          : 'Stamina';
+          ? HUD_TEXT.stamina.woundMobile
+          : HUD_TEXT.stamina.plain;
       stamina.setAttribute(
         'aria-label',
         practice.exhausted
-          ? 'Stamina — exhausted: no attacks or guard until it recovers'
+          ? HUD_TEXT.stamina.exhaustedAria
           : practice.wound
-            ? 'Stamina — wounded: recovery reduced 20 percent'
-            : 'Stamina',
+            ? HUD_TEXT.stamina.woundAria
+            : HUD_TEXT.stamina.plain,
       );
       kickButton.hidden =
         practice.phase === 'sheathed' || practice.phase === 'draw' || !practice.health || !practice.playerHealth;
@@ -137,13 +139,13 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
       combatStatus.dataset.move = practice.threatMove ?? '';
       // V3 autoStart (src/auto-start.ts): the fight starts by itself, so the button is the light attack from the first frame and never says Fight.
       const fightButton = practice.phase === 'sheathed' && !view.autoStart;
-      const attackLabel = fightButton ? 'Fight' : 'Light attack';
+      const attackLabel = fightButton ? HUD_TEXT.attack.fight : HUD_TEXT.attack.light;
       const labelNode = attackButton.firstChild;   // the text node; the side-mark SVG after it must survive the rewrite
       if (labelNode && labelNode.nodeType === 3) { if (labelNode.textContent !== attackLabel) labelNode.textContent = attackLabel; } else attackButton.textContent = attackLabel;
       // Side hint: the cuts alternate, so the button lights the side of the NEXT one (none while sheathed — the button says Fight).
       const nextCut = fightButton ? null : practice.duel.fighters[0].lastMove === 'light_right' ? 'left' : 'right';
       if ((attackButton.dataset.next ?? null) !== nextCut) { if (nextCut) attackButton.dataset.next = nextCut; else delete attackButton.dataset.next; }
-      attackButton.dataset.mobile = fightButton ? 'Fight' : 'Slash';
+      attackButton.dataset.mobile = fightButton ? HUD_TEXT.attack.mobileFight : HUD_TEXT.attack.mobileSlash;
       attackButton.setAttribute('aria-label', attackLabel);
       thrustButton.hidden = !practice.health || !practice.playerHealth || practice.phase === 'sheathed';
       thrustButton.setAttribute('aria-disabled', String(!controlsReady || !accepts(practice, 'thrust')));
@@ -180,7 +182,7 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
       resetButton.hidden = view.death ? !view.death.ready : !!view.zone || (!ended && !view.stalled);   // zone: no Rematch, the zone respawns the foe itself; a fallen hero gets Respawn instead (view.death)
       const next = ended && !view.practiceOnly && !view.replay && won(practice.finish) ? view.next : undefined;   // the page's own pick (match.ts nextRung): label and button agree
       // "PLAY NOW" on a shared link, not "Avenge him" (owner 2026-09-22): a stranger does not know whose death they are avenging.
-      resetButton.textContent = view.death ? view.death.button : view.replay || view.stalled ? 'PLAY NOW' : view.lessonFight ? LESSON_NEXT : next ? 'Next fight' : 'Rematch';
+      resetButton.textContent = view.death ? view.death.button : view.replay || view.stalled ? HUD_TEXT.reset.playNow : view.lessonFight ? LESSON_NEXT : next ? HUD_TEXT.reset.next : HUD_TEXT.reset.rematch;
       // On a viewer page PLAY NOW is the only live control on the screen (every combat button beside it is asleep), so it wears the
       // kill screen's primary rather than the dark glass it shares with Rematch — style.css `#reset-button[data-play='1']`.
       resetButton.dataset.play = view.replay || view.stalled ? '1' : '0';

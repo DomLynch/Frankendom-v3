@@ -217,7 +217,7 @@
    "number": 62
   },
   "src/fight/catalogue-data.ts": {
-   "label": 623,
+   "label": 339,
    "data-id": 7
   },
   "src/fight/catalogue-defs.ts": {
@@ -255,7 +255,7 @@
   "src/fight/combat.ts": {
    "number": 13,
    "name-compare": 99,
-   "label": 49
+   "label": 6
   },
   "src/fight/cone-era.ts": {
    "number": 1
@@ -438,8 +438,8 @@
   },
   "src/fight/hud.ts": {
    "number": 23,
-   "label": 21,
-   "name-compare": 21
+   "name-compare": 21,
+   "label": 2
   },
   "src/fight/impact-fx.ts": {
    "name-compare": 7,
