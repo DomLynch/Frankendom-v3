@@ -22,6 +22,8 @@ export type MechanicRuntime = {
   frame(dt: number): void;
   /** Only a mechanic that rewrites the boss's intent (Nan's Impale): stepPractice's `layer`, applied while this boss is engaged. */
   layer?(duel: Duel, warden: Intent): Intent;
+  /** Only a mechanic that acts on the HERO's side before the tick (the Envoy's latch: his drain, slowed walk and the lunge): the duel and the hero's intent the tick is stepped on. The returned object may be reused: read it, never keep it. */
+  pre?(duel: Duel, hero: Intent): { duel: Duel; intent: Intent };
   /** Only with `layer`: after the sim tick, the duel with any body the mechanic moves (the lunge, the drag); the same duel when nothing moved. */
   settle?(prior: Duel, stepped: Duel): Duel;
 };

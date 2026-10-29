@@ -620,7 +620,8 @@ function frame(now: number) {
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: lockOn, cancel: intent.cancel });
       const prior = practice;
       const mech = mechanics && engaged && !walkBack ? mechanics.of(spawns[current]!.kind) : undefined, shaping = mech?.layer ? mech : undefined;   // a boss whose signature move rewrites his intent (Nan's Impale): only while he is really fighting the hero
-      practice = stepPractice(prior, duelIntent, aiProfile, shaping?.layer);
+      const pre = shaping?.pre?.(prior.duel, duelIntent);   // a signature move that acts on the hero's side first (the Envoy's latch): the duel and the intent the tick runs on
+      practice = pre ? stepPractice(pre.duel === prior.duel ? prior : { ...prior, duel: pre.duel }, pre.intent, aiProfile, shaping?.layer) : stepPractice(prior, duelIntent, aiProfile, shaping?.layer);
       if (shaping?.settle) { const moved = shaping.settle(prior.duel, practice.duel); if (moved !== practice.duel) practice = { ...practice, duel: moved, fighter: moved.fighters[0].body, enemy: moved.fighters[1].body }; }   // the lunge and the drag move bodies after the tick
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)

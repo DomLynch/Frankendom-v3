@@ -272,9 +272,35 @@ export function checkNanImpale(id, r) {
   if (!(r.backTo - r.stopGap <= r.lungeSpeed * r.lungeTicks)) e.push(`${at}: the lunge (lungeSpeed x lungeTicks) must cover backTo minus stopGap`);
   return e;
 }
-const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale };
+const ENVOY_KEYS = ['type', 'boss', 'about', 'firstCooldownTicks', 'cooldownTicks', 'lungeMinM', 'lungeMaxM', 'tellTicks', 'lungeTicks', 'contactM', 'latchGapM', 'drainPerSecond', 'drainFloor', 'slowPct', 'breakHits', 'breakWindowTicks', 'maxLatchTicks', 'guardChipStamina', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks', 'breakKnockM', 'tell'];
+/** The Titan's Envoy LATCH row (type "envoy-latch"). `ctx.rollCost` (optional, RULES.rollCost): the stamina floor must leave a roll affordable. Returns one string per problem. */
+export function checkEnvoyLatch(id, r, _moves = [], ctx = {}) {
+  const e = [], at = `mechanics.${id}`;
+  const num = (k, lo, hi, int) => { const v = r[k]; if (!(typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi && (!int || Number.isInteger(v)))) e.push(`${at}.${k}: ${int ? 'an integer' : 'a number'} from ${lo} to ${hi}`); };
+  for (const k of ['firstCooldownTicks', 'cooldownTicks', 'tellTicks', 'lungeTicks', 'breakWindowTicks', 'maxLatchTicks', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks']) num(k, 1, 3600, true);
+  num('breakHits', 1, 10, true); num('slowPct', 10, 100, true);
+  for (const k of ['lungeMinM', 'lungeMaxM', 'contactM', 'latchGapM', 'breakKnockM']) num(k, 0.1, 30);
+  num('drainPerSecond', 0, 100); num('drainFloor', 0, 100); num('guardChipStamina', 0, 100);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (!(r.lungeMaxM > r.lungeMinM)) e.push(`${at}.lungeMaxM must be above lungeMinM`);
+  if (!(r.contactM >= r.latchGapM)) e.push(`${at}.contactM must reach at least the latchGapM (a lunge that stops at the gap must latch)`);
+  if (ctx.rollCost !== undefined && !(r.drainFloor >= ctx.rollCost)) e.push(`${at}.drainFloor ${r.drainFloor} is below the roll cost ${ctx.rollCost}: the latch must always be breakable by a roll`);
+  if (!(r.maxLatchTicks > r.breakWindowTicks / 2)) e.push(`${at}.maxLatchTicks must outlast half the break window`);
+  const t = r.tell;
+  if (!t || typeof t !== 'object') e.push(`${at}.tell: an object`);
+  else {
+    for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM', 'beyondM'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
+    if (typeof t.colour !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(t.colour)) e.push(`${at}.tell.colour: a #rrggbb`);
+    for (const k of ['alpha', 'latchedAlpha']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
+    for (const k of ['widthM', 'liftM', 'beyondM']) if (!(t[k] >= 0 && t[k] <= 5)) e.push(`${at}.tell.${k}: from 0 to 5`);
+  }
+  for (const k of Object.keys(r)) if (!ENVOY_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  return e;
+}
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'envoy-latch': checkEnvoyLatch };
 /** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
-export function validateMechanics(json, kinds = [], moves = []) {
+export function validateMechanics(json, kinds = [], moves = [], ctx = {}) {
   const e = [], map = json?.mechanics;
   if (!map || typeof map !== 'object' || Array.isArray(map)) return ['mechanics.mechanics: a map of id -> row'];
   const seen = new Map();
@@ -284,7 +310,7 @@ export function validateMechanics(json, kinds = [], moves = []) {
     if (!check) { e.push(`mechanics.${id}.type: one of ${Object.keys(MECHANIC_TYPES).join(', ')}`); continue; }
     if (kinds.length && !kinds.includes(r.boss)) e.push(`mechanics.${id}.boss: no data/profiles.json row "${String(r.boss)}"`);
     if (seen.has(r.boss)) e.push(`mechanics.${id}.boss: "${String(r.boss)}" already has the row ${seen.get(r.boss)} (one signature move per boss)`); else seen.set(r.boss, id);
-    e.push(...check(id, r, moves));
+    e.push(...check(id, r, moves, ctx));
   }
   return e;
 }
