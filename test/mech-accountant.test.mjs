@@ -179,7 +179,7 @@ test('the same fight twice is the same bytes (no clock, no random)', () => {
 
 test('the wall is DRAWN in the built scene: scene.ts builds createWallFx and feeds it every frame, and the fx shows a wall while the stage is up', async () => {
   const src = readFileSync(new URL('../src/fight/scene.ts', import.meta.url), 'utf8');
-  assert.match(src, /import \{ createWallFx \} from '\.\/mechanics\/accountant-parry-wall-fx\.ts'/, 'scene.ts must import createWallFx (zone-fx.ts is not called by anything in src/)');
+  assert.match(src, /import \{ createWallFx(?:, footMidpoint)? \} from '\.\/mechanics\/accountant-parry-wall-fx\.ts'/, 'scene.ts must import createWallFx (zone-fx.ts is not called by anything in src/)');
   assert.match(src, /const wallFx = createWallFx\(scene\)/, 'scene.ts must build the wall fx on its scene');
   assert.match(src, /wallFx\.update\(practice\.duel\.fighters\[1\]/, 'scene.ts must feed the wall fx the foe every frame');
   const THREE = await import('three');
