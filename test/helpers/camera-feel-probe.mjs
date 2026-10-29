@@ -3,6 +3,9 @@
 // holds what the code produced BEFORE its numbers moved to data rows; the test demands the same numbers, bit for bit. Regenerate only on a deliberate retune.
 import * as THREE from 'three';
 import { cameraPose, finisherSidePose, createCameraRig, setFightBack, setLockFrame, setCameraPitch, setLensBoost, framingTall, framingLow, SETTLE, TOUR, INTRO } from '../../src/fight/camera.ts';
+import { readFileSync } from 'node:fs';
+import { pitchChoice, portraitPitch } from '../../src/fight/camera-pitch.ts';
+import { setFreeCamera, setArenaClamp, setWalkClamp } from '../../src/fight/camera.ts';
 import { shoveFor } from '../../src/fight/camera-kick.ts';
 import { cameraZoom, fovForZoom, wideBoost, wideRow, BASE_FOV, ZOOM_LIMITS, WIDE_LIMITS } from '../../src/fight/camera-zoom.ts';
 import { createFollowCamera } from '../../src/fight/follow-camera.ts';
@@ -80,6 +83,26 @@ export function probe() {
     for (let i = 0; i < 40; i++) { rig.update(1 / 60, state(0, 0), { x: 0, z: 3 }, true, null); if (i % 10 === 0) rec.push(cam(camera)); }
     setCameraPitch(null, { heroY: 1.2, minEyeY: 0.8 });
   });
+  // the zone as the page sets it up (src/client/main.ts: lock lift/side and pitch rows from data/fight.json, the free-camera rows, the open-ground clamp): a hero chasing a big foe from 12 m to arm's length,
+  // engaged, then a kick, a finish and the free camera taking over (the King walk-in at 375 wide)
+  const FIGHT = JSON.parse(readFileSync(new URL('../../data/fight.json', import.meta.url), 'utf8')), FREE = JSON.parse(readFileSync(new URL('../../data/respawn.json', import.meta.url), 'utf8')).freeCamera;
+  setLockFrame(FIGHT.camera.lift, FIGHT.camera.side); setCameraPitch(pitchChoice(FIGHT.camera.pitch, ''), FIGHT.camera.pitch, portraitPitch(FIGHT.camera.pitch, '')); setFreeCamera(FREE); setArenaClamp(500);
+  for (const [name, aspect, foeScale, tall, low] of [['zone-chase-portrait', 0.4618, 1.3, 0, 0], ['zone-chase-landscape', 1.9, 1, 0, 0], ['zone-chase-wraith', 0.4618, 1, 0.35, 0], ['zone-chase-wolf', 0.4618, 0.8, 0, 1]]) run(name, (rig, camera, rec) => {
+    camera.aspect = aspect;
+    setWalkClamp(0);
+    const foe = { x: 90.5, z: 52.2 }, hero = { x: 84, z: 45 };
+    for (let i = 0; i < 1200; i++) {
+      const t = i / 60, dx = foe.x - hero.x, dz = foe.z - hero.z, d = Math.hypot(dx, dz);
+      if (d > 1.9) { hero.x += (dx / d) * 4.5 / 60; hero.z += (dz / d) * 4.5 / 60; }   // the hero runs in until the engage gap, then holds
+      foe.x += 0.2 * Math.sin(t) / 60; foe.z += 0.3 * Math.cos(t * 0.7) / 60;
+      const free = t < 3 || t > 14, fin = t > 12 && t < 14 ? { finisher: 'opened', posed: true, draw: false, victim: 1, clock: Math.min(3.2, t - 12), head: null, big: foeScale > 1, reach: 0 } : null;
+      if (i === 480) { const s = shoveFor({ type: 'Hit', charged: true, move: 'heavy_overhead' }); rig.shove(Math.atan2(dx, dz), { ...s, screen: 0.01, push: 0.02 }); }
+      rig.update(1 / 60, { x: hero.x, z: hero.z }, foe, !free, fin, foeScale, tall, low, 1, free); rig.settle(1 / 60);
+      if (i % 20 === 0) rec.push([...cam(camera), rig.freeShare, rig.yaw]);
+    }
+    setWalkClamp(40); for (let i = 0; i < 60; i++) { rig.update(1 / 60, { x: hero.x + 30, z: hero.z + 30 }, foe, false, null, 1, 0, 0, 1, true); rec.push([...cam(camera)]); }
+  });
+  setLockFrame(1, 0); setCameraPitch(null, { heroY: 1.2, minEyeY: 0.8 }); setFreeCamera(null); setArenaClamp(11.5); setWalkClamp(0);
   out.rigs = rigs;
 
   // 4. the kick table
