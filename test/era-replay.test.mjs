@@ -17,6 +17,7 @@ import { knockSimFor, setKnockSim } from '../src/fight/knock-sim.ts';
 import { setSpecialPace, specialPaceFor } from '../src/fight/special-pace.ts';
 import { setSpecialTerms, specialTermsFor } from '../src/fight/special-terms.ts';
 import { heroNoManaFor, setHeroNoMana } from '../src/fight/hero-mana.ts';
+import { knockRoundFor, setKnockRound } from '../src/fight/knock-round.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const FIGHT = read('../data/fight.json'), FEEL_SIM = read('../data/feel-sim.json'), FEEL_DEFAULTS = read('../data/feel-defaults.json');
@@ -28,6 +29,7 @@ const SETTERS = {
   'special-pace': (on) => setSpecialPace(on ? specialPaceFor(FIGHT.specialPace, '') : null),
   'special-terms': (on) => setSpecialTerms(on ? specialTermsFor(FIGHT.specialTerms, '') : null),
   'hero-mana': (on) => setHeroNoMana(on ? heroNoManaFor(FIGHT.heroMana, '') : false),
+  'knock-round': (on) => setKnockRound(on ? knockRoundFor(FIGHT.knockRound, '') : false),   // added with the audit's shove fix; born stamped
 };
 const IDS = Object.keys(SETTERS);
 const flags = (...on) => { for (const id of IDS) SETTERS[id](on.includes(id)); };
