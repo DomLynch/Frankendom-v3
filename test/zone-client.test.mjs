@@ -463,6 +463,67 @@ test('engage: a lost engage is asked again after engageRetryMs; dead waits for t
   await sk.c.tick(10 ** 6); assert.equal(s.log.engage.length, 1);
 });
 
+test('engage retry is capped: an unknown 4xx stops at once, 408/425/429 are retried, and a lost engage backs off by engageRetry rows then stops after maxTries (never an endless 2 s loop)', async () => {
+  const ER = ROWS.engageRetry;
+  const u = fake({ engage: () => { throw { kind: 'status', status: 418 }; } });
+  const uk = client(u); await uk.c.start(0);
+  assert.equal(uk.c.phase(), PHASE.off, 'an unrecoverable 4xx no table row names stops sharing');
+  await uk.c.tick(10 ** 9); assert.equal(u.log.engage.length, 1, 'and never asks again');
+  for (const status of [408, 425]) {
+    const r = fake({ engage: () => { throw { kind: 'status', status }; } });
+    const rk = client(r); await rk.c.start(0);
+    assert.notEqual(rk.c.phase(), PHASE.off, `${status} can pass: it is retried`);
+  }
+  const f = fake({ engage: () => { throw { kind: 'weird' }; } });
+  const k = client(f); await k.c.start(0);
+  let at = 0;
+  for (let n = 1; n < ER.maxTries; n++) {
+    const wait = Math.min(T.engageRetryMs * ER.factor ** (n - 1), ER.maxMs);
+    assert.equal(f.log.engage.length, n);
+    await k.c.tick(at + wait - 1); assert.equal(f.log.engage.length, n, `attempt ${n + 1} is not before ${wait} ms`);
+    at += wait; await k.c.tick(at); assert.equal(f.log.engage.length, n + 1);
+  }
+  assert.equal(f.log.engage.length, ER.maxTries);
+  assert.equal(k.c.phase(), PHASE.off, 'maxTries lost engages in a row end the asking');
+  await k.c.tick(at + 10 ** 9); assert.equal(f.log.engage.length, ER.maxTries, 'no further engage, ever');
+});
+
+test('engage: the wait action (zone not loaded) never counts toward maxTries; a delay-0 reengage refusal counts, waits at least minDelayMs, and ends at maxTries', async () => {
+  const ER = ROWS.engageRetry;
+  let loaded = false;
+  const w = fake({ engage: (q, log, n) => { if (!loaded) throw { kind: 'status', status: 409, code: 'O0010' }; return { token: 'token-aaaaaaaaaaaaaaaa', instance: q.instance, layer: q.layer, generation: 0, hp: 100, maxHp: 100 }; } });
+  const wk = client(w); await wk.c.start(0);
+  const step = T.engageRetryMs + ROWS.backoff.baseMs;
+  for (let n = 1; n <= ER.maxTries * 3; n++) await wk.c.tick(n * step);
+  assert.ok(w.log.engage.length > ER.maxTries * 2, `kept asking past maxTries (${w.log.engage.length})`);
+  assert.notEqual(wk.c.phase(), PHASE.off, 'a zone unloaded for a long time does not end shared hp');
+  loaded = true; await wk.c.tick((ER.maxTries * 3 + 1) * step);
+  assert.equal(wk.c.phase(), PHASE.engaged, 'and it engages as soon as the zone loads');
+
+  const row = ROWS.refusals.find((x) => x.delayMs === 0 && x.action === ACT.reengage);
+  assert.ok(row, 'a delay-0 reengage refusal row exists (moved / token)');
+  const m = fake({ engage: () => ({ refused: row.id }) });
+  const mk = client(m); await mk.c.start(0);
+  let at = 0;
+  for (let n = 1; n < ER.maxTries; n++) {
+    assert.equal(m.log.engage.length, n);
+    await mk.c.tick(at + ER.minDelayMs - 1); assert.equal(m.log.engage.length, n, `not sooner than minDelayMs (${ER.minDelayMs})`);
+    at += ER.minDelayMs; await mk.c.tick(at);
+  }
+  assert.equal(m.log.engage.length, ER.maxTries);
+  assert.equal(mk.c.phase(), PHASE.off, 'maxTries refusals in a row end the asking');
+  await mk.c.tick(at + 10 ** 9); assert.equal(m.log.engage.length, ER.maxTries);
+});
+
+test('parseClientRows refuses a missing or malformed engageRetry row', () => {
+  const bad = (edit, re) => { const r = clone(RAW); edit(r); assert.throws(() => parseClientRows(r, SERVER), re); };
+  bad((r) => { delete r.engageRetry; }, /engageRetry/);
+  bad((r) => { r.engageRetry.maxTries = 0; }, /maxTries/);
+  bad((r) => { r.engageRetry.factor = 0.5; }, /factor at least 1/);
+  bad((r) => { r.engageRetry.minDelayMs = 0; }, /minDelayMs/);
+  bad((r) => { r.engageRetry.stopStatus = [[500, 400]]; }, /status ranges/);
+});
+
 test('stop() ends everything: no claims, no calls', async () => {
   const f = fake(), { c } = await up(f);
   c.stop();

@@ -71,6 +71,7 @@ export function createFeedback(host?: FeedbackHost) {
   if (!host && enabled && typeof window !== 'undefined') { const idle = () => { if (enabled) prefetch(); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(idle, { timeout: 4000 }); else setTimeout(idle, 1500); }   // ?sound=0 (enabled false from the start): nothing is fetched
   // V3: open() is the first half of V1's unlock (make the context, build the graph, start the decode), callable with no gesture
   // (prepare() below); unlock() is V1's, unchanged in effect.
+  const stateWatchers: (() => void)[] = [];   // main.ts re-arms its gesture listeners from here when the context leaves 'running' (iOS 'interrupted') with no pageshow/focus
   function unlock() {
     if (!open()) return;
     quieted = false;
@@ -85,6 +86,7 @@ export function createFeedback(host?: FeedbackHost) {
       const session = host || typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
       if (session) try { session.type = 'playback'; } catch { /* unsupported value on older WebKit */ }
       build(context);
+      if (!host) (context as AudioContext).addEventListener?.('statechange', () => { for (const f of stateWatchers) f(); });
       specialLoad(); duelLoad();
       if (host && host.sprite !== undefined) sprite = host.sprite;
       else decode();
@@ -172,6 +174,10 @@ export function createFeedback(host?: FeedbackHost) {
   }
   return {
     unlock,
+    /** Whether the context is running (the gesture listeners in main.ts remove themselves once it is; src/audio/unlock-once.ts). */
+    unlocked: () => live(),
+    /** Call fn whenever the context's state changes (not on the offline host). */
+    onStateChange(fn: () => void) { stateWatchers.push(fn); },
     // V3 (V2 PR #65): the context is made at page load (it starts 'suspended') and the sprite decoded at once, so the first touch
     // only resumes it. V1 decoded on the first touch, and a phone took seconds to decode while the fight went on with the synth stand-ins.
     prepare() { if (!host) open(); },
