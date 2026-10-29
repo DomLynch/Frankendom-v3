@@ -81,10 +81,10 @@
       "freezeTicks": 20,
       "lungeSpeed": 0.17,
       "lungeTicks": 24,
-      "stopGap": 1.1,
-      "dragM": 1.4,
+      "stopGap": 1.3,
+      "dragM": 0.2,
       "dragTicks": 14,
-      "dragStop": 1.15,
+      "dragStop": 1.1,
       "followWithinTicks": 90,
       "lineWidth": 0.7,
       "lineColour": "#c9402a"
