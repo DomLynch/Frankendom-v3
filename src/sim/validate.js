@@ -62,6 +62,8 @@ export const SCHEMA = {
   // The ten Pit ranks' named opponents per ranked character (src/fight/catalogue-rows.ts joins them onto the catalogue rows; checkLegends below)
   'legends': { keys: ['about', 'ranks'] },
   // The practice HUD's one-line report (src/fight/practice-hints.ts; checkPracticeHints below): the text of every state and the move names a result line wears
+  // The fight HUD's own words (src/fight/hud-text.ts; checkHudText below)
+  'hud-text': { keys: ['about', 'rematchTail', 'dummyNeverAttacks', 'zoneDied', 'stamina', 'attack', 'reset'], maps: { stamina: ['plain', 'exhaustedMobile', 'woundMobile', 'exhaustedAria', 'woundAria'], attack: ['fight', 'light', 'mobileFight', 'mobileSlash'], reset: ['playNow', 'next', 'rematch'] } },
   'practice-hints': { keys: ['about', 'defaultFoe', 'followUp', 'moves', 'lines', 'parts'], maps: { parts: ['wall', 'chip', 'hitKind', 'hurtKind', 'blockedKind', 'wallText'] } },
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
@@ -422,9 +424,17 @@ export function validateFile(name, json) {
   }
   if (name === 'commentator') errors.push(...checkCommentator(json));
   if (name === 'legends') errors.push(...checkLegends(json));
+  if (name === 'hud-text') errors.push(...checkHudText(json));
   if (name === 'practice-hints') errors.push(...checkPracticeHints(json));
   banned(json, name, errors);
   return errors;
+}
+
+// The fight HUD's own words (data/hud-text.json): every leaf is a non-blank string (the key sets are SCHEMA's).
+function checkHudText(json) {
+  const e = [], walk = (v, p) => { if (v && typeof v === 'object') { for (const [k, x] of Object.entries(v)) if (k !== 'about') walk(x, `${p}.${k}`); } else if (typeof v !== 'string' || !v.trim()) e.push(`${p}: must be a non-blank string`); };
+  walk(json, 'hud-text');
+  return e;
 }
 
 // The practice HUD's lines (data/practice-hints.json): every named line and part exists as a string, and a {piece} in a text is one the code fills for that line.

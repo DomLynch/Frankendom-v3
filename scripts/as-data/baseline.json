@@ -513,8 +513,8 @@
   },
   "src/fight/hud.ts": {
    "number": 23,
-   "label": 21,
-   "name-compare": 21
+   "name-compare": 21,
+   "label": 2
   },
   "src/fight/impact-fx.ts": {
    "name-compare": 7,
