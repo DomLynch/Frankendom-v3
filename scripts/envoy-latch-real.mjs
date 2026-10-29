@@ -38,7 +38,7 @@ async function basis(code) { const a = (await state()).hero; await key(code, 'ke
 const fw = await basis('KeyW'), rt = await basis('KeyD');
 await key('ShiftLeft', 'keydown');
 for (let i = 0; i < 1500; i++) {
-  const s = await state(); if (s.engaged && s.current === spot.id) break;
+  const s = await state(); if (s.engaged && s.spawns[s.current]?.id === spot.id) break;
   const dx = spot.x - s.hero.x, dz = spot.z - s.hero.z, n = Math.hypot(dx, dz) || 1, f = (dx * fw[0] + dz * fw[1]) / n, r = (dx * rt[0] + dz * rt[1]) / n;
   for (const [c, on] of [['KeyW', f > 0.3], ['KeyS', f < -0.3], ['KeyD', r > 0.3], ['KeyA', r < -0.3]]) await key(c, on ? 'keydown' : 'keyup');
   await page.waitForTimeout(150);
