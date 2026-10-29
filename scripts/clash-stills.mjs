@@ -9,13 +9,13 @@
 //   node scripts/clash-stills.mjs <base url> <out dir> [query ...]    e.g. ... http://localhost:8733 out '' feel=clash
 // Frames: <out>/<tag>-<mode>/f0000.png ... (LEN frames from START ticks after the press); prints the tick the sim's event lands in and, under ?feel=clash,
 // the module's per-frame cost (globalThis.__feelClash.cost) and the whole rAF callback cost, so a number is on the page beside the picture.
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/clash-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, LEN = Number(process.env.LEN ?? 60), CLOSE_IN = Number(process.env.CLOSE_IN ?? 10), SKIP = !!process.env.NO_FRAMES;
 const MODES = {
   block: { move: 'light_right', side: 'ArrowLeft', guardAt: -30, start: Number(process.env.START_BLOCK ?? 6) },
@@ -29,13 +29,13 @@ if (process.env.COST) {
   // clashes happen all the time. Every rAF callback is timed (the render is inside it); under ?feel=clash the module's own per-frame cost (globalThis.__feelClash) is read too.
   const modeName = (process.env.COST_MODE ?? 'block'), m = MODES[modeName];
   for (const query of queries.length ? queries : ['', 'feel=clash']) {
-    const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const page = await browser.newPage(phoneOptions(2));
     await page.addInitScript(() => {
       const raf = window.requestAnimationFrame.bind(window), frames = globalThis.__cb = [], clashFrames = globalThis.__cbClash = []; let on = false; globalThis.__cbOn = (v) => { on = v; };
       window.requestAnimationFrame = (cb) => raf((t) => { const s = performance.now(); cb(t); if (on) frames.push(performance.now() - s); });
     });
     await page.goto(`${base}/${query ? `?${query}` : ''}`);
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await waitPlayable(page, { timeout: 180000 });
     if (/feel=/.test(query)) await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 60000 });
     await page.waitForTimeout(4000);
     await page.keyboard.down('KeyF'); await page.keyboard.up('KeyF'); await page.waitForTimeout(2500);   // the draw
@@ -63,11 +63,11 @@ for (const query of queries.length ? queries : ['', 'feel=clash']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
   for (const name of modes) {
     const m = MODES[name], dir = `${out}/${tag}-${name}`; mkdirSync(dir, { recursive: true });
-    const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
+    const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
     page.on('pageerror', (e) => console.error(`${tag}-${name}: pageerror ${e.message}`));
     await page.clock.install();
     await page.goto(`${base}/${query ? `?${query}` : ''}`);
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
+    await waitPlayable(page, { timeout: 180000, polling: 'raf' });
     await page.waitForTimeout(800);   // the fight draws itself (data/fight.json start.auto), in real time, as scripts/guard-stills.mjs waits for it
     await page.waitForFunction(() => !/Drawing/.test(document.body.innerText), null, { timeout: 60000 });
     await page.waitForTimeout(1200);

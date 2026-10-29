@@ -4,18 +4,17 @@
 //   node scripts/kick-clip.mjs <base url> <out dir> [query ...]     (default queries: '' and 'feel=kick'; SCENE=open|guard; TICKS=180 STEP=2; on a Mac it uses Metal)
 // Frames: <out>/<scene>-<tag>-NNN.png at the fight camera; stitch with ffmpeg (scripts print the command). The sim's events and the feel events are printed.
 // COST=1: no fake clock: the fight plays in real time, the hero kicks an open foe every second for COST_S seconds; the page's rAF callback median / p99 / max and the ragdoll's per-mode cost are printed.
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/kick-clip.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, SCENE = process.env.SCENE ?? 'open', TICKS = Number(process.env.TICKS ?? 180), STEP = Number(process.env.STEP ?? 2), GAP = Number(process.env.GAP ?? 1.0);
 const open = async () => {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
-  page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+  const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
+  collectErrors(page, { echo: true });
   return page;
 };
 // The staging, run in the page before every tick it is wanted: the foe `GAP` m in front of the hero, facing him, both at full health; scene 'guard' holds his guard up on a side that does not cover a low blow.
@@ -60,7 +59,7 @@ for (const query of queries.length ? queries : ['', 'feel=kick']) {
   const page = await open();
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 180000, polling: 'raf' });
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 300);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   await run(120);

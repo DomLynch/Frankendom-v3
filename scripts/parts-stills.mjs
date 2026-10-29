@@ -1,21 +1,21 @@
 // Frankendom parts (data/parts.json, src/fight/parts-hook.ts), 375 wide, on the BUILT game, through real taps (Playwright touchscreen): the hero kills the foe (held at 1 hp), the corpse freezes, three parts
 // are cut by a plain tap on them (no Take button), then the ☰ button is tapped, a part is equipped by a tap, the page is reloaded and the menu is read again (the save kept it).
 //   node scripts/parts-stills.mjs <base url> <out dir> <tag> [query]       stills: <tag>-1-closed (button, nothing on the body), <tag>-2-menu, <tag>-3-equipped, <tag>-4-reloaded
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/parts-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const TICK = 1000 / 60, CUT_EVERY = 55, MAX_TICKS = 3000, errors = [], UNITS = (process.env.UNITS ?? 'arm_left,leg_right,head').split(',');
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: process.env.GL_ARGS ? process.env.GL_ARGS.split(' ') : ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+const browser = await launchBrowser({ extra: ['--enable-unsafe-swiftshader'], glArgsEnv: true });
 const ctx = await browser.newContext({ viewport: { width: Number(process.env.W ?? 375), height: Number(process.env.H ?? 812) }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 let page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
 const boot = async () => {
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 600000 });
+  await waitPlayable(page, { timeout: 600000 });
   await page.waitForTimeout(2000);
 };
 const shoot = async (name) => { await page.waitForTimeout(350); await page.screenshot({ path: `${out}/${tag}-${name}.png` }); };

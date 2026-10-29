@@ -1,13 +1,13 @@
 // Star bosses (data/stars.json) at 375 wide, headless (software GL), on the BUILT dist: a 0-star Gargantua against a 2-star one (the roll forced through the page's own hook, globalThis.__v3Stars.force: no URL switch),
 // the HUD name with its gold stars, the foe's health, the ragdoll dying without a page error.
 //   node scripts/star-stills.mjs <base url> <out dir>
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, waitPlayable } from './lib/browser.mjs';
 
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/star-stills.mjs <base url> <out dir>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ angle: 'swiftshader', chromeEnv: null });
 const errors = [];
 const phone = { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const open = async (query, tag) => {
@@ -15,7 +15,7 @@ const open = async (query, tag) => {
   page.on('pageerror', (e) => { errors.push(`${tag}: pageerror ${e.message}`); });
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`${tag}: console ${m.text()}`); });
   await page.goto(`${base}/?${query}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+  await waitPlayable(page, { timeout: 240000 });
   await page.waitForTimeout(1500);
   return page;
 };
