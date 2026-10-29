@@ -21,7 +21,8 @@ import { knockRoundFor, setKnockRound } from '../src/fight/knock-round.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const FIGHT = read('../data/fight.json'), FEEL_SIM = read('../data/feel-sim.json'), FEEL_DEFAULTS = read('../data/feel-defaults.json');
-const foeId = FIGHT.opponentV1.opponent, opponent = OPPONENTS[foeId], profile = profileAt(opponent, FIGHT.level);
+// Two foes, because the flags bite on different ones: the page's default foe shrugs plain blows (poise: no shove, so knock-round has nothing to round) and the veteran does not.
+const FOES = [FIGHT.opponent, FIGHT.opponentV1.opponent];
 
 // The four long-standing flags, each turned on from the page's own rows (what src/client/main.ts does with an empty search).
 const SETTERS = {
@@ -35,8 +36,8 @@ const IDS = Object.keys(SETTERS);
 const flags = (...on) => { for (const id of IDS) SETTERS[id](on.includes(id)); };
 afterEach(() => flags());
 
-const eraOf = () => { setPlayScale(playScaleFor(foeId, RECORD_VERSION)); setLateNotice(true); setStab(true); setStanceRows(true); };
-const meta = () => ({ build: 'era-replay-test', opponent: foeId, weapon: FIGHT.weapon, skill: FIGHT.skill, level: FIGHT.level, seed: FIGHT.seed, specials: true, stances: FIGHT.stance, skill2: FIGHT.skill2 });
+const eraOf = (foeId) => { setPlayScale(playScaleFor(foeId, RECORD_VERSION)); setLateNotice(true); setStab(true); setStanceRows(true); };
+const meta = (foeId) => ({ build: 'era-replay-test', opponent: foeId, weapon: FIGHT.weapon, skill: FIGHT.skill, level: FIGHT.level, seed: FIGHT.seed, specials: true, stances: FIGHT.stance, skill2: FIGHT.skill2 });
 
 // A scripted hero: walk to the foe, then a mix of light, kick and both specials, so the flags (cooldowns, stamina, the mana pool, knockdown, pace) all have something to bite on.
 const intentAt = (t, practice) => {
@@ -46,10 +47,11 @@ const intentAt = (t, practice) => {
 };
 
 /** Plays TICKS live under the flags `on`, recording with the real recorder. Returns the finished record and the live duel as JSON. */
-function playLive(on, TICKS = 900) {
-  flags(...on); eraOf();
+function playLive(on, foeId, TICKS = 900) {
+  flags(...on); eraOf(foeId);
+  const opponent = OPPONENTS[foeId], profile = profileAt(opponent, FIGHT.level);
   let practice = initialPractice(FIGHT.seed, opponentAt(opponent, FIGHT.level), FIGHT.weapon, FIGHT.skill, recordSpecials({ specials: true, level: FIGHT.level, opponent: foeId }), undefined, FIGHT.stance, undefined, undefined, undefined, undefined, undefined, FIGHT.skill2);
-  const recorder = createRecorder(meta());
+  const recorder = createRecorder(meta(foeId));
   let ticks = 0;
   for (; ticks < TICKS && !practice.finish; ticks++) practice = stepPractice(practice, recorder.push(intentAt(ticks, practice)), profile);
   const f = practice.finish;
@@ -58,36 +60,37 @@ function playLive(on, TICKS = 900) {
 }
 const replayed = (record) => { const v = verifyRecord(record, undefined, { sheet: 'trust' }); return { v, replay: v.practice ? JSON.stringify(v.practice.duel) : null }; };
 
-test('the scripted fight really bites on every flag (each flag alone changes the live fight)', () => {
-  const base = playLive([]).live;
-  for (const id of IDS) assert.notEqual(playLive([id]).live, base, `${id} on must change the fight, or this test cannot see it`);
+test('the scripted fights really bite on every flag (each flag alone changes the live fight against at least one foe)', () => {
+  for (const id of IDS) assert.ok(FOES.some((foe) => playLive([id], foe).live !== playLive([], foe).live), `${id} on must change a fight, or this test cannot see it`);
 });
 
-test('a fight played with every era flag on replays to the same duel with the ambient flags OFF', () => {
-  const { record, live } = playLive(IDS);
-  flags();   // the replay process has none set (a server, Share's headless check, a test)
-  const { v, replay } = replayed(record);
-  assert.equal(replay, live, `the replay must end where the live fight did (${v.ok ? 'ok' : v.reason})`);
-  assert.ok(v.ok, v.ok ? '' : v.reason);
-});
+for (const foe of FOES) {
+  test(`${foe}: a fight played with every era flag on replays to the same duel with the ambient flags OFF`, () => {
+    const { record, live } = playLive(IDS, foe);
+    flags();   // the replay process has none set (a server, Share's headless check, a test)
+    const { v, replay } = replayed(record);
+    assert.equal(replay, live, `the replay must end where the live fight did (${v.ok ? 'ok' : v.reason})`);
+    assert.ok(v.ok, v.ok ? '' : v.reason);
+  });
 
-test('a fight played with every era flag OFF replays to the same duel with the ambient flags ON (a replay never inherits the process)', () => {
-  const { record, live } = playLive([]);
-  flags(...IDS);
-  const { v, replay } = replayed(record);
-  assert.equal(replay, live, `the replay must end where the live fight did (${v.ok ? 'ok' : v.reason})`);
-});
+  test(`${foe}: a fight played with every era flag OFF replays to the same duel with the ambient flags ON (a replay never inherits the process)`, () => {
+    const { record, live } = playLive([], foe);
+    flags(...IDS);
+    const { v, replay } = replayed(record);
+    assert.equal(replay, live, `the replay must end where the live fight did (${v.ok ? 'ok' : v.reason})`);
+  });
 
-test('each flag alone: live with it on, replay with every flag ambient-off and then ambient-on, both match', () => {
-  for (const id of IDS) {
-    const { record, live } = playLive([id]);
-    for (const ambient of [[], IDS]) { flags(...ambient); assert.equal(replayed(record).replay, live, `${id}: replay with ambient [${ambient}] must match the live fight`); }
-  }
-});
+  test(`${foe}: each flag alone: live with it on, replay with every flag ambient-off and then ambient-on, both match`, () => {
+    for (const id of IDS) {
+      const { record, live } = playLive([id], foe);
+      for (const ambient of [[], IDS]) { flags(...ambient); assert.equal(replayed(record).replay, live, `${id}: replay with ambient [${ambient}] must match the live fight`); }
+    }
+  });
 
-test('the stamp survives pack and unpack: the decoded record replays to the live duel', () => {
-  const { record, live } = playLive(IDS);
-  const again = unpackRecord(packRecord(record));
-  flags();
-  assert.equal(replayed(again).replay, live);
-});
+  test(`${foe}: the stamp survives pack and unpack: the decoded record replays to the live duel`, () => {
+    const { record, live } = playLive(IDS, foe);
+    const again = unpackRecord(packRecord(record));
+    flags();
+    assert.equal(replayed(again).replay, live);
+  });
+}
