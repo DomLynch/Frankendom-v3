@@ -6,6 +6,7 @@
   "needs": { "query": "rules", "value": "m4" },
   "events": { "limp": "feel:limp", "guardDrop": "feel:guard_drop", "weaponDrop": "feel:weapon_drop" },
   "levelStep": 0.25,
+  "dipAskBelow": 0.999,
   "limbs": {
     "parts": {
       "leg": {

@@ -22,3 +22,5 @@ export const ARMFEEL = {
   weaponHoldMs: { half: armfeelDial('weaponHoldHalf'), full: armfeelDial('weaponHoldFull'), kill: armfeelDial('weaponHoldKill') },
 } as const;
 export const GRAVITY = armfeelDial('gravity');
+/** The hero's share of a flinch (the opponent keeps all of it), the energy under which a flinch is over, the burst droplet's sphere segments and the burst's random seed. */
+export const FLINCH_GAIN_HERO = armfeelDial('flinchGainHero'), ENERGY_FLOOR = armfeelDial('energyFloor'), DROPLET_SEGMENTS = [armfeelDial('dropletSegmentsW'), armfeelDial('dropletSegmentsH')] as const, BURST_SEED = armfeelDial('burstSeed');

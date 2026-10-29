@@ -12,7 +12,7 @@ export type SkyView = SkyViews['variants']['a'];
 export const SKYVIEWS: SkyViews = STAGE.skyline.views;
 
 /** The floor draws right after the strip (which is first, SKYLINE_ORDER) and before every other transparent, so particles and trails stay over it. */
-export const FLOOR_ORDER = SKYLINE_ORDER + 100;
+export const FLOOR_ORDER = SKYLINE_ORDER + STAGE.skyline.views.floorOrderOffset;
 
 /** The look the link asks for: its variant (?skyview=a|b|c), null for the look before this (?skyview=v1), the row's `default` variant for no link or a word the rows do not have. */
 export function skyViewFor(search: string, rows: SkyViews = SKYVIEWS): SkyView | null {

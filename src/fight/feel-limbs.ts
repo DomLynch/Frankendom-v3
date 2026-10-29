@@ -158,7 +158,7 @@ type Env = {
 export function createLimbs(rows: LimbRows, env: Env) {
   const P = rowsOf(rows), levels = new Map<string, number>(), stepOf = (l: number) => Math.floor(l / rows.levelStep + 1e-9);
   let touched: string[] = [];   // the ragdoll parts whose motor strength this module set last frame
-  let t = 0, sinceStumble = 1e9, stumbleAge = -1, armZeroFor = -1, dropped = false, clone: THREE.Object3D | undefined, hidden: THREE.Object3D | undefined, fall: Fall | undefined;
+  let t = 0, sinceStumble = Infinity, stumbleAge = -1, armZeroFor = -1, dropped = false, clone: THREE.Object3D | undefined, hidden: THREE.Object3D | undefined, fall: Fall | undefined;
   const spin = new THREE.Vector3(), flat = new THREE.Quaternion(), from = new THREE.Quaternion(), tmpQ = new THREE.Quaternion();
   const cost = { frames: 0, totalMs: 0, maxMs: 0, stumbles: 0, last: null as null | { strength: Record<string, number>; share: Record<string, number> } };
   const api = {
@@ -172,7 +172,7 @@ export function createLimbs(rows: LimbRows, env: Env) {
     },
     /** The rematch: the body whole, the weapon back in his hand. */
     reset() {
-      levels.clear(); stumbleAge = -1; sinceStumble = 1e9; armZeroFor = -1; dropped = false; fall = undefined;
+      levels.clear(); stumbleAge = -1; sinceStumble = Infinity; armZeroFor = -1; dropped = false; fall = undefined;
       if (clone) { clone.removeFromParent(); clone = undefined; }
       if (hidden) { hidden.visible = true; hidden = undefined; }
       if (touched.length) env.rd()?.setMotorStrength(Object.fromEntries(touched.map((p) => [p, 1])));   // only the parts this module dipped: another module's dips (clash, hitreact) are theirs to end
@@ -198,7 +198,7 @@ export function createLimbs(rows: LimbRows, env: Env) {
       // it dipped last frame and no longer asks for go back to 1 once (never `all`, and never a rewritten 1.0 every frame: the engine keeps the last value written per part, so that would undo
       // clash's, hitreact's and kick's dips on the parts they share with the good leg's antiphase).
       const ask: Record<string, number> = {};
-      for (const [p, s] of Object.entries(plan.strength)) if (s < 0.999) ask[p] = s;
+      for (const [p, s] of Object.entries(plan.strength)) if (s < rows.dipAskBelow) ask[p] = s;
       const showing = plan.hurt.length > 0 || stumbleAge >= 0, undip = touched.filter((p) => !(p in ask)), asked = Object.keys(ask);
       if (env.active()) {
         if (undip.length || asked.length) { rd.setMotorStrength({ ...Object.fromEntries(undip.map((p) => [p, 1])), ...ask }); touched = asked; }
