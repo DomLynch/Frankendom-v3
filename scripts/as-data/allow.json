@@ -1,10 +1,1999 @@
 {
   "about": "Explicit exceptions to the as-data gate. `allow`: one row per file + kind + literal (kind: number | label | compare | name-compare | data-id), each with a reason of 12+ characters; a row nothing matches is stale and fails the gate. Prefer a data row; an entry here is for a value that is not tuning (a protocol constant, a unit). `files`: a WHOLE file exempt from ONE kind (today number only), each with a `category` (baked-geometry | vfx-table | asset-table) and a reason of 12+ characters; a row whose file has no hit of that kind is stale and fails. Only generated or pure-data tables belong here, never code with tuning in it.",
-  "allow": [],
+  "allow": [
+    {
+      "file": "src/art-url.ts",
+      "kind": "compare",
+      "literal": "{",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/auto-start.ts",
+      "kind": "name-compare",
+      "literal": "sheathed",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/brain.ts",
+      "kind": "name-compare",
+      "literal": "v1",
+      "reason": "The ?flag=v1 escape-hatch value (and its off word): the same word is the data row off value, compared against the query string."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "number",
+      "literal": "60",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "number",
+      "literal": "4294967296",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "number",
+      "literal": "15",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "number",
+      "literal": "0.05",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "name-compare",
+      "literal": "Hit",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "name-compare",
+      "literal": "AttackMissed",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "name-compare",
+      "literal": "ActionStarted",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "name-compare",
+      "literal": "roll",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "name-compare",
+      "literal": "GuardBroken",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "name-compare",
+      "literal": "off",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "label",
+      "literal": ".cm-line{position:fixed;left:50%;top: %;transform:translateX(-50%);z-index: ;pointer-events:none;opacity:0;transition:opacity  ms ease;text-align:center;",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/commentator.ts",
+      "kind": "label",
+      "literal": "max-width: %;color: ;font:italic  px/1.25 Georgia,'Times New Roman',serif;text-shadow: ;user-select:none;-webkit-user-select:none}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/corpse-run.ts",
+      "kind": "number",
+      "literal": "1000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/corpse-run.ts",
+      "kind": "number",
+      "literal": "1e5",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/corpse-run.ts",
+      "kind": "number",
+      "literal": "20",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/corpse-run.ts",
+      "kind": "number",
+      "literal": "0.75",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/corpse-run.ts",
+      "kind": "number",
+      "literal": "0.25",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-btn{position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 104px);z-index: ;padding:7px 12px;border-radius:999px;border:1px solid  ;background: ;color: ;",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": "font:11px/1 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-card{position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 140px);z-index: ;width:min(260px,calc(100vw - 16px));box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid  ;background: ;color: ;",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": "font:13px/1.35 Georgia,'Times New Roman',serif}",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-card h2,.dp-result h2{margin:0 0 6px;font:600 15px/1.2 Georgia,serif;font-variant-caps:all-small-caps;letter-spacing:.14em;color: }",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-card p,.dp-result p{margin:3px 0}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-card small,.dp-result small{display:block;opacity:.75;font-size:11px}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-row{display:flex;gap:8px;margin-top:10px}.dp-row button{flex:1;padding:9px 6px;border-radius:8px;border:1px solid  ;background:transparent;color: ;font:13px Georgia,serif;cursor:pointer;touch-action:manipulation}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-row button.dp-go{background: ;color:#171e20;font-weight:600}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": "color: ;font:11px/1.3 Georgia,serif;font-variant-caps:all-small-caps;letter-spacing:.14em;text-shadow:0 1px 3px rgba(0,0,0,.85)}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-banner small{display:block;color:",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "label",
+      "literal": ".dp-panel{width:min(320px,100%);box-sizing:border-box;padding:18px 18px 14px;border-radius:12px;border:1px solid  ;background: }",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/daily-pit-ui.ts",
+      "kind": "name-compare",
+      "literal": "done",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "number",
+      "literal": "10",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "name-compare",
+      "literal": "done",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "name-compare",
+      "literal": "idle",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "name-compare",
+      "literal": "fighting",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "name-compare",
+      "literal": "won",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "number",
+      "literal": "1e7",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "number",
+      "literal": "999",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "number",
+      "literal": "86400",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "number",
+      "literal": "600",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/daily-pit.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/difficulty.ts",
+      "kind": "label",
+      "literal": "?difficulty=  is not a difficulty row (1-  ); playing the default,  ",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/difficulty.ts",
+      "kind": "number",
+      "literal": "100",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/hero-reach.ts",
+      "kind": "name-compare",
+      "literal": "v1",
+      "reason": "The ?flag=v1 escape-hatch value (and its off word): the same word is the data row off value, compared against the query string."
+    },
+    {
+      "file": "src/hero-reach.ts",
+      "kind": "name-compare",
+      "literal": "clip",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/hit-stop-rules.ts",
+      "kind": "label",
+      "literal": "Hit",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/hit-stop-rules.ts",
+      "kind": "label",
+      "literal": "Blocked",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/hit-stop.ts",
+      "kind": "name-compare",
+      "literal": "Hit",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/hit-stop.ts",
+      "kind": "name-compare",
+      "literal": "Blocked",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/mobs-run.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/mobs-run.ts",
+      "kind": "name-compare",
+      "literal": "dead",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "60",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts. : a number in  .. ",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "99999",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts.slots: at least one slot",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts. : a unique lower-case id",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "24",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts. .units: a list",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts. .units: \" \" is not a unit name, or another slot has it",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts.slots: a \"weapon\" slot (the boss-weapon reward is shown there)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts.rarities: one row per data/stars.json level ( )",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts.rarities[ ].star:   (rows in star order)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "16",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts.rarities[ ].id: a lower-case word",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "label",
+      "literal": "parts.rarities[ ].colour: a #rrggbb colour",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "1000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "4",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "80",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "200",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "800",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/parts.ts",
+      "kind": "number",
+      "literal": "0.3",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": "progression. : a lower-case word",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": "progression.autoEquip: true or false (false = a kill saves its weapon but the hero keeps the fight row weapon)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": "progression.version: a whole number from 1",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "number",
+      "literal": "60",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "number",
+      "literal": "4",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": "progression. : 1 to 4 (a multiplier; 1 = no escalation)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": "progression.bosses: at least one boss",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": " : a unique data/profiles.json row id",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": " .weapon: \" \" is no src/fight/weapon-defs.json row",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "label",
+      "literal": " .weapon: \" \" is unlocked by another boss",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "number",
+      "literal": "24",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/progression.ts",
+      "kind": "number",
+      "literal": "99999",
+      "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
+    },
+    {
+      "file": "src/retry.ts",
+      "kind": "label",
+      "literal": "Warrior textures did not load",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/retry.ts",
+      "kind": "number",
+      "literal": "3",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/retry.ts",
+      "kind": "number",
+      "literal": "800",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "60",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "30",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "15",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "0.05",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "160",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "2160",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "3840",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "5",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "200_000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "20_000_000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "0.5",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "10",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "500",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "40",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "8",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "120",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "200",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "3",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "600",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "1000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "1e9",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "label",
+      "literal": "600  px Georgia, 'Times New Roman', serif",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "1.4",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "4",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "inactive",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "label",
+      "literal": ".sc-btn{position:fixed;left:50%;bottom:calc( px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index: ;padding:6px 14px;border:1px solid  ;border-radius:999px;background:rgba(10,8,6,.72);color: ;font: px/1.2 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;cursor:pointer}.sc-btn[disabled]{opacity:.6;cursor:default}",
+      "reason": "CSS stylesheet text for a presentation-only element; the colours, sizes and offsets that are tuned come from the rows interpolated into it."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "off",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "0.92",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "3000",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "ready",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "AbortError",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "NotAllowedError",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "60_000",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "number",
+      "literal": "2000",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "making",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "idle",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "buffering",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/share-clip.ts",
+      "kind": "name-compare",
+      "literal": "tail",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "number",
+      "literal": "99",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": "stars.minKills: a whole number 0 to 99",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": "stars.killsCap: a whole number 1 to 99",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "number",
+      "literal": "10000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": "stars.zeroWeight: a whole number 1 to 10000",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": "stars.salt: 1-16 lower-case letters",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": "stars.levels: star 0 and at least one star level",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " .star: must be   (levels run 0, 1, 2 in order)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "number",
+      "literal": "4",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " . : must not fall below the level before",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " .scaleX: must not fall below the level before",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " : star 0 is the identity (x1, x1, x1, no trophy, no tell)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " .tell: a #rrggbb colour and an intensity above 0 up to 2",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "number",
+      "literal": "24",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " .trophy: a tier from 1 and a name of 1-24 characters",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " .trophy.tier: must rise with the star",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " : a duplicate row",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "number",
+      "literal": "1000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": " . . : a whole number 0 to 1000",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": "stars.weights: no row for difficulty \" \"",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stars.ts",
+      "kind": "label",
+      "literal": "stars.weights. : no such difficulty row",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Trident",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Cleaver",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Knife",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Estoc",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Gladius",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Scythe",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Warhammer",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Maul",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Longsword",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Bow",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Staff",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "name-compare",
+      "literal": "Shield",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "name-compare",
+      "literal": "Recruit",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "name-compare",
+      "literal": "Crest",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "You fell. That was the lesson.",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/stubs.ts",
+      "kind": "label",
+      "literal": "Fight for real",
+      "reason": "DEFERRED (text): V1 donor stub text and slot names mirrored from the donor loot module; to move to a row with the loot rows."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "storageKey",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "number",
+      "literal": "65535",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "e",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "seconds",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "number",
+      "literal": "10",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "percent",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "number",
+      "literal": "100",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "int",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "number",
+      "literal": "10_000_000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "boss",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "message",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "source",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "stack",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "kind",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "line",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "name-compare",
+      "literal": "col",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry-rows.ts",
+      "kind": "number",
+      "literal": "6",
+      "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "label",
+      "literal": "local host",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "label",
+      "literal": "not a deployed build",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "number",
+      "literal": "1e9",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "number",
+      "literal": "60_000",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "number",
+      "literal": "80",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "number",
+      "literal": "1000",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "compare",
+      "literal": "1",
+      "reason": "The ?flag=v1 escape-hatch value (and its off word): the same word is the data row off value, compared against the query string."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "name-compare",
+      "literal": "yes",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "number",
+      "literal": "36",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "number",
+      "literal": "12",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/telemetry.ts",
+      "kind": "name-compare",
+      "literal": "hidden",
+      "reason": "Telemetry field type or event field name from the closed vocabulary in data/telemetry.json events (the type switch the sanitiser runs); the vocabulary is the data."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "label",
+      "literal": "tune.query: a lower-case word",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "label",
+      "literal": "tune.kinds. : \" \" is no profiles.json row",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "label",
+      "literal": "tune.kinds: at least one kind",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "label",
+      "literal": "tune.keys. : a unique lower-case word",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "label",
+      "literal": "tune.keys. : 0 < min <= 1 <= max (1 is the default, no override)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "label",
+      "literal": "tune.keys: at least one key",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "number",
+      "literal": "3",
+      "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
+    },
+    {
+      "file": "src/tune.ts",
+      "kind": "label",
+      "literal": "? =  clamped to   (  runs  - )",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/zoom-guard.ts",
+      "kind": "number",
+      "literal": "2000",
+      "reason": "Legal-range bound or length cap in a rows validator: it guards a data row and is not itself tuning."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Recruit",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Legionary",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Gladiator",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Veteran",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Champion",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Praetorian",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Master",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Primus",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Invictus",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "label",
+      "literal": "Origin",
+      "reason": "DEFERRED (text): the ten career title names; to move into src/core/career-rules.json with its validator in a follow-up."
+    },
+    {
+      "file": "src/core/career-ladder.ts",
+      "kind": "number",
+      "literal": "27",
+      "reason": "DEFERRED (tuning): a timing/limit left in code in this PR; to become a data row with its validator and a byte-pin test."
+    },
+    {
+      "file": "src/core/grades.ts",
+      "kind": "name-compare",
+      "literal": "cloth",
+      "reason": "Material group / metal name from the closed material union, branched on by the grade lookup."
+    },
+    {
+      "file": "src/core/grades.ts",
+      "kind": "name-compare",
+      "literal": "stone",
+      "reason": "Material group / metal name from the closed material union, branched on by the grade lookup."
+    },
+    {
+      "file": "src/core/grades.ts",
+      "kind": "name-compare",
+      "literal": "metal",
+      "reason": "Material group / metal name from the closed material union, branched on by the grade lookup."
+    },
+    {
+      "file": "src/core/grades.ts",
+      "kind": "label",
+      "literal": "Veteran",
+      "reason": "Armour tier name keying the grade material table (the Tier union), not free text."
+    },
+    {
+      "file": "src/core/grades.ts",
+      "kind": "label",
+      "literal": "Praetorian",
+      "reason": "Armour tier name keying the grade material table (the Tier union), not free text."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": " : a field spec is a type string or { type, min?, max? }",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": " : unknown spec key \" \" (a spec has type, min and max)",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": " : type must be one of  ",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": " :   must be a finite number",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "name-compare",
+      "literal": "integer",
+      "reason": "Rows-registry field type name from its closed FIELD_TYPES list (integer, array, any): the validator branches on the schema vocabulary."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": " : min/max need a number or integer field, not  ",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": " : min   is above max  ",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "  must be  ",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "  =   is outside  .. ",
+      "reason": "DEFERRED (text): left in code in this PR; to become a data row with its validator."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "name-compare",
+      "literal": "any",
+      "reason": "Rows-registry field type name from its closed FIELD_TYPES list (integer, array, any): the validator branches on the schema vocabulary."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "name-compare",
+      "literal": "array",
+      "reason": "Rows-registry field type name from its closed FIELD_TYPES list (integer, array, any): the validator branches on the schema vocabulary."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "table \" \" is also an external id set",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "key field \" \" must be a non-empty string",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "\" \" is already row   of  ",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "  refs table \" \", which is not registered",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "a row must be an object",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "  is required",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "    is already on  ",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/core/registry.ts",
+      "kind": "label",
+      "literal": "  =   is not a   id",
+      "reason": "Diagnostic message of a rows validator or a console warning (developer-facing, never shown in the game)."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "attack",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "v1",
+      "reason": "The ?flag=v1 escape-hatch value (and its off word): the same word is the data row off value, compared against the query string."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "1664525",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "1013904223",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "ready",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "label",
+      "literal": "Recruit",
+      "reason": "Tier id passed to the view (a Tier union member) or a CSS class list, not player text."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "label",
+      "literal": "opponent-class opponent-stars",
+      "reason": "Tier id passed to the view (a Tier union member) or a CSS class list, not player text."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "100",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "boss_kill",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "60",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "Killed",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "SpecialStarted",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "SpecialFizzled",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "SpecialInterrupted",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "name-compare",
+      "literal": "draw",
+      "reason": "Discriminant of a closed TypeScript union (a phase, state, CombatEvent type or error name) the code type-checks and branches on; not a content id."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "4",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "3",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "0.15",
+      "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "99",
+      "reason": "Layout/debug constant of the page entry (a rounding places, a tick-clock guard, a projection height): presentation only."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "number",
+      "literal": "7",
+      "reason": "Math identity, unit, hash or sentinel (halving, percent x100, rounding places, base 36, an LCG constant, an infinity stand-in): not a tuning value."
+    },
+    {
+      "file": "src/client/main.ts",
+      "kind": "compare",
+      "literal": "1",
+      "reason": "The ?flag=v1 escape-hatch value (and its off word): the same word is the data row off value, compared against the query string."
+    },
+    {
+      "file": "src/presence/chunk.ts",
+      "kind": "compare",
+      "literal": "1",
+      "reason": "Online protocol message/scheme name the wire format and the Origin allow-list branch on; changing it changes the protocol."
+    },
+    {
+      "file": "src/presence/chunk.ts",
+      "kind": "name-compare",
+      "literal": "https:",
+      "reason": "Online protocol message/scheme name the wire format and the Origin allow-list branch on; changing it changes the protocol."
+    },
+    {
+      "file": "src/presence/chunk.ts",
+      "kind": "number",
+      "literal": "500",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/client.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/client.ts",
+      "kind": "number",
+      "literal": "0.5",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/client.ts",
+      "kind": "number",
+      "literal": "256",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/client.ts",
+      "kind": "number",
+      "literal": "255",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/client.ts",
+      "kind": "number",
+      "literal": "100",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/client.ts",
+      "kind": "name-compare",
+      "literal": "hello",
+      "reason": "Online protocol message/scheme name the wire format and the Origin allow-list branch on; changing it changes the protocol."
+    },
+    {
+      "file": "src/presence/client.ts",
+      "kind": "number",
+      "literal": "1000",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/draw.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/rows.ts",
+      "kind": "number",
+      "literal": "0xffff",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/rows.ts",
+      "kind": "name-compare",
+      "literal": "walkHalfCm",
+      "reason": "Online protocol message/scheme name the wire format and the Origin allow-list branch on; changing it changes the protocol."
+    },
+    {
+      "file": "src/presence/rows.ts",
+      "kind": "number",
+      "literal": "100",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/rows.ts",
+      "kind": "name-compare",
+      "literal": "http:",
+      "reason": "Online protocol message/scheme name the wire format and the Origin allow-list branch on; changing it changes the protocol."
+    },
+    {
+      "file": "src/presence/rows.ts",
+      "kind": "name-compare",
+      "literal": "https:",
+      "reason": "Online protocol message/scheme name the wire format and the Origin allow-list branch on; changing it changes the protocol."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "2",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "8",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "11",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "4",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "255",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "3",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "6",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "7",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "9",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "5",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/presence/wire.ts",
+      "kind": "number",
+      "literal": "0xffff",
+      "reason": "Online wire/protocol constant (byte layout, centimetre and heading quantisation, backoff, pixel and unit maths): the presence protocol must not change, so it stays in code."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": " : a number from   to  ",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": " : a regular expression",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "writerRoles: at least one role name",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "12",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "64",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "30",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "1800",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "16",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "1000",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "200",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "0.1",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "10",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "3",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "hit.retryFailedBatch: must be false (a retried batch can double damage)",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "100",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "weapons: at least one row",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "weapons. : id fails ids.weaponPattern",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "1e-6",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "1e9",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "1e3",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "weapons: duplicate id",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "adminOnlyFunctions: a list of function names",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "3600",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "share.renormalise: a boolean",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "60",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "caps.cooldownAcrossLayers: a boolean",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "604800",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "2592000",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "refusals: no row for  ",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "payReasons: no row for  ",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "a bonus row is not allowed (no first-hit or last-hit bonus)",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "instance  : not a z<N>: id (z01: is refused)",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "name-compare",
+      "literal": "token",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "60_000",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "number",
+      "literal": "3_600_000",
+      "reason": "Legal-range bound of the server-model rows validator: it guards the data row and is not itself tuning; the model must not change."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "batch id: shape",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    },
+    {
+      "file": "src/server-model/zone-model.ts",
+      "kind": "label",
+      "literal": "a hit batch is an array of at most   rows",
+      "reason": "Diagnostic text of the server-model rows validator (a developer-facing refusal message, never player text)."
+    }
+  ],
   "files": [
-    { "file": "src/fight/blade-paths.ts", "kind": "number", "category": "baked-geometry", "reason": "Generated by scripts/bake-blades.mjs: V1 blade sweep frames baked from clips, coordinates not tuning; do not hand-edit." },
-    { "file": "src/fight/blade-minotaur.ts", "kind": "number", "category": "baked-geometry", "reason": "Generated by scripts/foe-body/bake-blades.mjs: the Minotaur cleaver sweep frames baked from his glb clips." },
-    { "file": "src/fight/blade-picks.ts", "kind": "number", "category": "baked-geometry", "reason": "Generated by scripts/hero-clips/bake-blades.mjs: the hero's picked-clip blade sweeps baked from warrior.glb." },
-    { "file": "src/fight/catalogue-data.ts", "kind": "number", "category": "asset-table", "reason": "Pure-data const (only literals) of the character catalogue rows; the numbers are the data rows themselves, read by catalogue-rows.ts. Its labels stay ratcheted." }
+    {
+      "file": "src/fight/blade-paths.ts",
+      "kind": "number",
+      "category": "baked-geometry",
+      "reason": "Generated by scripts/bake-blades.mjs: V1 blade sweep frames baked from clips, coordinates not tuning; do not hand-edit."
+    },
+    {
+      "file": "src/fight/blade-minotaur.ts",
+      "kind": "number",
+      "category": "baked-geometry",
+      "reason": "Generated by scripts/foe-body/bake-blades.mjs: the Minotaur cleaver sweep frames baked from his glb clips."
+    },
+    {
+      "file": "src/fight/blade-picks.ts",
+      "kind": "number",
+      "category": "baked-geometry",
+      "reason": "Generated by scripts/hero-clips/bake-blades.mjs: the hero's picked-clip blade sweeps baked from warrior.glb."
+    },
+    {
+      "file": "src/fight/catalogue-data.ts",
+      "kind": "number",
+      "category": "asset-table",
+      "reason": "Pure-data const (only literals) of the character catalogue rows; the numbers are the data rows themselves, read by catalogue-rows.ts. Its labels stay ratcheted."
+    },
+    {
+      "file": "src/core/grades.ts",
+      "kind": "number",
+      "category": "vfx-table",
+      "reason": "Per-tier PBR metalness and roughness numbers of the armour grade material table (a look table the renderer reads); the tier names and lookups around it stay ratcheted."
+    }
   ]
 }
