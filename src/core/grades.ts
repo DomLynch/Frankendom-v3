@@ -5,7 +5,7 @@
 //
 // One shared kit library dressed eight ways is what makes a 60-opponent roster affordable: 8 grades × N pieces costs N meshes, not 8N.
 // Pure data — no three, no loader. The runtime reads `gradeFor(tier, material)` and writes the factors onto the piece's own material.
-import { TITLES } from './career-ladder.ts';
+import { TITLES, WEAPON_IRON, WEAPON_METAL_FROM } from './career-ladder.ts';
 import { DEFINITIONS } from './contracts/definitions.ts';
    // a loot piece id, `<opponent>.<slot>` (src/core/loot-pieces.json); the loot module that exported this type is not in V3
 // The ladder is the CAREER ladder: a tier and a rank are the same word (owner via Strategy, 2026-09-22), so the journal can say
@@ -97,8 +97,6 @@ export function gradeFor(tier: Tier, material: string): Finish | null {
 }
 // The opponents' weapon materials of class 'metal' (blades, heads, bands), and the rung they stop being floored at.
 const WEAPON_METAL: ReadonlySet<string> = new Set(['WeaponLongsword', 'WeaponCleaver', 'WeaponKnife', 'WeaponEstoc', 'WeaponTrident', 'GladiusSteel', 'MaulIronBands', 'ScytheIron', 'WarhammerIron']);
-const WEAPON_METAL_FROM: Tier = 'Veteran';
-const WEAPON_IRON: Tier = 'Praetorian';
 // The house dye for a draw, or null if the draw is not cloth. Kept beside gradeFor so a caller walks a piece's draws once.
 // A grade record as it will sit on OPPONENTS (lead, 2026-09-22). Declared here so the shape is one thing; the field is the lead's to add,
 // and nothing in this lane reads OPPONENTS until it exists on trunk.

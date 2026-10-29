@@ -12,7 +12,7 @@ type ShareClipRows = {
   guard: { seconds: number; maxFrameMs: number };
   watermark: { text: string; sizePx: number; colour: string; alpha: number; marginPx: number; font: string; lineHeight: number };
   file: { prefix: string; title: string; stillType: string; stillQuality: number; revokeSeconds: number };
-  button: { label: string; stillLabel: string; making: string; saved: string; failed: string; failedSeconds: number; savedSeconds: number; hideSeconds: number; bottomPx: number; zIndex: number; colour: string; sizePx: number };
+  button: { label: string; stillLabel: string; making: string; saved: string; failed: string; failedSeconds: number; savedSeconds: number; hideSeconds: number; bottomPx: number; zIndex: number; colour: string; sizePx: number; css: string };
 };
 export const SHARE_CLIP = ROWS as unknown as ShareClipRows;
 const MOMENT_EVENT = 'v3:clip-moment';
@@ -39,7 +39,13 @@ export function validateShareClip(r: ShareClipRows): void {
   for (const k of ['label', 'stillLabel', 'making', 'saved', 'failed'] as const) word(`button.${k}`, r.button?.[k], 40);
   num('button.hideSeconds', r.button?.hideSeconds, 3, 600); num('button.bottomPx', r.button?.bottomPx, 0, 200); num('button.zIndex', r.button?.zIndex, 0, 1000); num('button.sizePx', r.button?.sizePx, 8, 30);
   if (!(typeof r.button?.colour === 'string' && HEX.test(r.button.colour))) throw new Error('share-clip.button.colour is a #rrggbb colour');
+  if (typeof r.button?.css !== 'string' || !r.button.css.trim()) throw new Error('share-clip.button.css is the button stylesheet (a non-empty string)');
+  const { css: sheet, ...slots } = r.button;
+  for (const [, slot] of sheet.matchAll(/\{(\w+)\}/g)) if (!(slot in slots)) throw new Error(`share-clip.button.css: {${slot}} is not a number or colour of the button row`);
 }
+
+/** The share button's stylesheet (data/share-clip.json button.css) with its {bottomPx} {zIndex} {colour} {sizePx} slots filled from the same row. */
+export const buttonCss = (b: ShareClipRows['button']): string => { const { css, ...slots } = b as Record<string, unknown> & { css: string }; return css.replace(/\{(\w+)\}/g, (m, k: string) => (k in slots ? String(slots[k]) : m)); };
 validateShareClip(SHARE_CLIP);
 
 /** The first type this browser records (V1 clipType). */
@@ -135,7 +141,7 @@ export function createShareClip(env: ClipEnv) {
   const removeButton = () => { button?.remove(); button = null; };
   const showButton = (label: string, enabled: boolean) => {
     try {
-      if (!style) { style = env.doc.createElement('style'); style.textContent = `.sc-btn{position:fixed;left:50%;bottom:calc(${B.bottomPx}px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:${B.zIndex};padding:6px 14px;border:1px solid ${B.colour};border-radius:999px;background:rgba(10,8,6,.72);color:${B.colour};font:${B.sizePx}px/1.2 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;cursor:pointer}.sc-btn[disabled]{opacity:.6;cursor:default}`; env.doc.head.append(style); }
+      if (!style) { style = env.doc.createElement('style'); style.textContent = buttonCss(B); env.doc.head.append(style); }
       if (!button) {
         button = env.doc.createElement('button'); button.className = 'sc-btn'; button.type = 'button'; button.dataset.shareClip = 'true';
         for (const ev of ['pointerdown', 'touchstart', 'mousedown'] as const) button.addEventListener(ev, (e) => e.stopPropagation());   // the game's own touch input never sees a tap on the button

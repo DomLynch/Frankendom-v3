@@ -12,7 +12,7 @@ type CommentatorEventRow = { about: string; cooldownSeconds: number; probability
 type CommentatorFile = {
   about: string; enabled: boolean; storageKey: string; seed: string;
   caps: { perSession: number; perMinute: number; gapSeconds: number; minuteSeconds: number };
-  caption: { seconds: number; fadeMs: number; maxChars: number; topPct: number; maxWidthPct: number; fontPx: number; colour: string; shadow: string; zIndex: number };
+  caption: { seconds: number; fadeMs: number; maxChars: number; topPct: number; maxWidthPct: number; fontPx: number; colour: string; shadow: string; zIndex: number; css: string };
   thresholds: { heroLowPct: number; bossLowPct: number; missStreak: number; rollCount: number; rollWindowSeconds: number; idleSeconds: number; lowResetPct: number; idleMoveEpsilon: number; starTwoLevel: number };
   partNames: Record<string, string>;
   events: Record<string, CommentatorEventRow>;
@@ -131,12 +131,13 @@ export function commentatorOn(rows: CommentatorFile, store: Store | null): boole
 }
 function storeOf(): Store | null { try { return (globalThis as { localStorage?: Store }).localStorage ?? null; } catch { return null; } }
 
+/** The caption's stylesheet (data/commentator.json caption.css) with its {topPct} {zIndex} {fadeMs} {maxWidthPct} {colour} {fontPx} {shadow} slots filled from the same row. */
+export const captionCss = (c: CommentatorFile['caption']): string => { const { css, ...slots } = c as Record<string, unknown> & { css: string }; return css.replace(/\{(\w+)\}/g, (m, k: string) => (k in slots ? String(slots[k]) : m)); };
+
 /** The caption: one fixed element near the top (pointer-events none, under the bars and the radar's corner, above nothing the player taps), faded in for `caption.seconds`; a new line replaces the old. */
 export function mountCaption(doc: Doc, rows: CommentatorFile, later: (fn: () => void, ms: number) => unknown = (fn, ms) => setTimeout(fn, ms), clear: (t: unknown) => void = (t) => clearTimeout(t as number)) {
   const c = rows.caption, style = doc.createElement('style');
-  style.textContent = `.cm-line{position:fixed;left:50%;top:${c.topPct}%;transform:translateX(-50%);z-index:${c.zIndex};pointer-events:none;opacity:0;transition:opacity ${c.fadeMs}ms ease;text-align:center;`
-    + `max-width:${c.maxWidthPct}%;color:${c.colour};font:italic ${c.fontPx}px/1.25 Georgia,'Times New Roman',serif;text-shadow:${c.shadow};user-select:none;-webkit-user-select:none}`
-    + '@media (prefers-reduced-motion:reduce){.cm-line{transition:none}}';
+  style.textContent = captionCss(c);
   doc.head.append(style);
   const el = doc.createElement('div'); el.className = 'cm-line'; el.dataset.commentator = 'true'; el.setAttribute('aria-hidden', 'true');
   doc.body.append(el);

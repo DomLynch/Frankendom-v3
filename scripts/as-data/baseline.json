@@ -184,23 +184,20 @@
   },
   "src/commentator.ts": {
    "number": 1,
-   "name-compare": 6,
-   "label": 2
+   "name-compare": 6
   },
   "src/corpse-run.ts": {
-   "number": 3
+   "number": 1
   },
   "src/daily-pit-ui.ts": {
-   "label": 12,
    "name-compare": 1
   },
   "src/daily-pit.ts": {
-   "number": 6,
+   "number": 4,
    "name-compare": 4
   },
   "src/difficulty.ts": {
-   "label": 1,
-   "number": 1
+   "label": 1
   },
   "src/hero-reach.ts": {
    "name-compare": 2
@@ -218,19 +215,15 @@
   },
   "src/progression.ts": {
    "label": 8,
-   "number": 4
+   "number": 3
   },
   "src/share-clip.ts": {
    "number": 23,
-   "name-compare": 9,
-   "label": 1
+   "name-compare": 9
   },
   "src/stars.ts": {
    "number": 6,
    "label": 16
-  },
-  "src/stubs.ts": {
-   "name-compare": 3
   },
   "src/telemetry-rows.ts": {
    "name-compare": 12,
@@ -249,8 +242,7 @@
    "number": 1
   },
   "src/core/grades.ts": {
-   "name-compare": 3,
-   "label": 2
+   "name-compare": 3
   },
   "src/core/registry.ts": {
    "label": 16,
@@ -259,7 +251,7 @@
   },
   "src/client/main.ts": {
    "name-compare": 9,
-   "number": 10,
+   "number": 6,
    "label": 2,
    "compare": 1
   },

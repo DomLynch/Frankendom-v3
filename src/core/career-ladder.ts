@@ -28,6 +28,12 @@ export function validateLadderTitles(titles: readonly unknown[], maxLevel: numbe
   if (titles.length * steps !== maxLevel) throw Error(`src/core/career-rules.json ladderRule.titles: ${titles.length} titles x ${steps} sub-ranks is ${titles.length * steps} levels, but maxLevel is ${maxLevel}; the title list and the tier count must match`);
 }
 validateLadderTitles(TITLES, MAX_LEVEL);
+/** The two rungs the opponents' weapon metal reads (ladderRule.weaponMetalFrom / weaponIron): below the first the weapon is floored at the second's iron (grades.ts gradeFor). Both must be titles. */
+export function validateLadderRungs(titles: readonly string[], rungs: Readonly<Record<string, unknown>>): void {
+  for (const k of ['weaponMetalFrom', 'weaponIron']) if (typeof rungs[k] !== 'string' || !titles.includes(rungs[k] as string)) throw Error(`src/core/career-rules.json ladderRule.${k}: ${String(rungs[k])} is not one of the ${titles.length} career titles`);
+}
+validateLadderRungs(TITLES, LADDER);
+export const WEAPON_METAL_FROM: string = LADDER.weaponMetalFrom, WEAPON_IRON: string = LADDER.weaponIron;
 // THE BETA CUT (Dom 2026-10-17; Strategy's lists): the Pit shows the first `titles` titles of the ladder and the signed-off spell list. A VIEW, not a rule: the server keeps every row, every mark and MAX_LEVEL / OLD_MAX_LEVEL
 // (a stored L16 account still loads and keeps its marks, it is shown at the cut); the client reads the cut through `betaMarks` / `betaLevel` and awards.ts judges a claim against the same cut, so a win fought at the cut counts.
 // Lifting the cut is the one row: `titles` of 10 (or more) lifts the level cap, an empty `spells` lifts the spell list.

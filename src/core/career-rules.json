@@ -81,7 +81,7 @@
     { "id": "level", "maxLevel": 100, "boss": "world-boss", "killBase": 1000, "killStep": 100, "earlyLevels": 5, "earlyKills": 2500, "ramp": 200, "rank": 2000, "rankLevels": 10, "opening": [1, 1, 1, 1, 1, 6, 6, 6, 6, 6] }
   ],
   "ladderRule": [
-    { "id": "ladder", "maxLevel": 50, "oldMaxLevel": 46, "dialTrail": 5, "firstFiftyVersion": 27, "titles": ["Recruit", "Legionary", "Gladiator", "Veteran", "Champion", "Praetorian", "Master", "Primus", "Invictus", "Origin"] }
+    { "id": "ladder", "maxLevel": 50, "oldMaxLevel": 46, "dialTrail": 5, "firstFiftyVersion": 27, "weaponMetalFrom": "Veteran", "weaponIron": "Praetorian", "titles": ["Recruit", "Legionary", "Gladiator", "Veteran", "Champion", "Praetorian", "Master", "Primus", "Invictus", "Origin"] }
   ],
   "betaCut": [
     { "id": "beta", "titles": 2, "maxLootRung": 4, "spellsOff": 1, "specialsFromVersion": 75, "specialSlots": 2, "utilitySpells": [], "specialPick": ["cleave", "reaping", "stomp", "lunge"], "slot1Default": "cleave", "slot1Alt": "reaping", "slot2Default": "reaping", "slot2Alt": "cleave", "specialRoles": { "cleave": "heavy", "reaping": "sweep", "stomp": "posture break", "lunge": "opener" }, "spells": ["brokkr", "scylla-pup", "baobhan-sith", "rubezahl", "eitri", "goibniu", "andvari", "kobold", "calydonian-boar", "nemean-cub", "tatzelwurm", "barghest", "cu-sith", "banshee", "black-annis", "dullahan", "puck", "puca", "kelpie", "melusine"] }
