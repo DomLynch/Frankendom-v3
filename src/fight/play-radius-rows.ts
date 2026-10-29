@@ -1,7 +1,7 @@
 // play-radius.ts's named numbers as PLAY_RADIUS_ROW_MAP (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). One row per playRadiusDial in play-radius-defs.json, manifest-loaded through
 // the shared registry; this file only hands play-radius.ts the values it always held, bit for bit. Presentation only: not a sim file, not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import PLAY_RADIUS_DEFS from './play-radius-defs.json' with { type: 'json' };
 import PLAY_RADIUS_MANIFEST from './play-radius-defs.manifest.json' with { type: 'json' };
 

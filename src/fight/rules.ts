@@ -4,7 +4,7 @@
 // The notes that sat beside the old literal (what each number means, which RV changed it) are kept in docs/specs/combat/rules-notes.md.
 // A sim file: it imports only the shared row loader, so moves.ts can import it without a cycle.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import RULE_DEFS from './rules-defs.json' with { type: 'json' };
 import RULE_MANIFEST from './rules-defs.manifest.json' with { type: 'json' };
 

@@ -1,7 +1,7 @@
 // Spell schools as data: the rows of src/fight/school-defs.json through the shared loader (src/core/registry.ts), not a union. A new school (earth and wind joined fire, shadow, poison,
 // holy and frost) is one row. A gear row's `resist` keys (gear-rows.ts) and a special's school name rows of this table, checked at load. No drawing code here: the sim side may import it.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import SCHOOL_DEFS from './school-defs.json' with { type: 'json' };
 import SCHOOL_MANIFEST from './school-defs.manifest.json' with { type: 'json' };
 

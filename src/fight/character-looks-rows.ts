@@ -2,7 +2,7 @@
 // was SOURCE_MAPPED) and how each opponent leans out of the player's way while holding a charged swing (`lean`, was CHARGE_LEAN + LEAN_OUT/LOW/HIGH). One row per opponent in character-looks-defs.json, manifest-loaded
 // through the shared registry; this file hands characters.ts the values it always held, bit for bit, in the same order. Presentation only: not a sim file, not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import DEFS from './character-looks-defs.json' with { type: 'json' };
 import MANIFEST from './character-looks-defs.manifest.json' with { type: 'json' };
 

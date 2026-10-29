@@ -1,7 +1,7 @@
 // The stance setting's labels, colours, icons, one-line effects, texts and button numbers as rows (Dom 2026-10-19: the stance is a character setting in the menu, not a fight-screen panel; "everything on the data layer").
 // Presentation only: not a sim file, not in the record digest. stance-panel.ts reads these; the ids are the record's own pick ids (stance.ts PICKS).
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import DEFS from './stance-picker-defs.json' with { type: 'json' };
 import MANIFEST from './stance-picker-defs.manifest.json' with { type: 'json' };
 

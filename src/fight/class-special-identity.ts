@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import { SPECIAL_RANK_LEVELS } from './special-set-rows.ts';
 import CLASS_DEFS from './class-special-defs.json' with { type: 'json' };
 import CLASS_MANIFEST from './class-special-defs.manifest.json' with { type: 'json' };

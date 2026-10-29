@@ -2,7 +2,7 @@
 // src/fight/duel.ts applies it inside the duel step (Duel.roll) and src/core/luck.ts shows the same numbers on the HUD, both importing THESE functions, so they cannot drift.
 // A sim file: the draw is a pure function of (fight seed, blow index) with no Math.random and no transcendental, so a replay reproduces it on any engine.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import SWARM_DEFS from './swarm-defs.json' with { type: 'json' };
 import SWARM_MANIFEST from './swarm-defs.manifest.json' with { type: 'json' };
 import { ROLL_BAND } from './roll-rows.ts';   // the dials are rows (roll-defs.json)

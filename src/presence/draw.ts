@@ -2,7 +2,7 @@
 // cut to the plain figure: no name tags, no crowd ladder, no cheap rungs (a later item). Others have NO collider and take no part in the fight: nothing here touches the sim, the hero or the opponent.
 // This file imports no THREE: the page hands it `spawn`, a body made from the hero's already-loaded rig (scene.ts `spawnRemote`: buildWarriors clones the hero's asset, so nothing is fetched or parsed and
 // the materials and shader programs are the hero's own). It is bundled into the presence chunk (chunk.ts), so a page without ?presence= carries none of it. Every number is a row (data/presence.json).
-import { PRESENCE, presenceRule } from './rows.ts';
+import { PRESENCE, presenceRule } from '../rows.ts';
 import type { Shown } from './track.ts';
 
 /** One drawn figure, as scene.ts builds it: `group` is its root in the scene (position, rotation.y, visible), `update` poses it for a gait speed (m/s) over dt seconds. */

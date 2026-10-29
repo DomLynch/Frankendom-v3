@@ -14,7 +14,7 @@ const detHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 import { specialFxMinorNum } from './special-fx-minor-rows.ts';
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import TEMPLATE_DEFS from './pitborn-templates-defs.json' with { type: 'json' };
 import TEMPLATE_MANIFEST from './pitborn-templates-defs.manifest.json' with { type: 'json' };
 import { fxNum } from './fx-rows.ts';

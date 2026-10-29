@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import { RULES } from './moves.ts';
 import { POOLS } from './pools.ts';
 import { simBound } from './sim-bounds-rows.ts';

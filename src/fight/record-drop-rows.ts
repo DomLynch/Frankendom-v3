@@ -1,7 +1,7 @@
 // Why a kill went to the server without a world record, as DATA (src/fight/record-drop-defs.json; P0-b). The page sends the row's `reason` on the kill report (`drop`), so the server can count
 // "dropped for a gear change" apart from "no record". Presentation of nothing: the sim never reads these rows (this file is outside SIM_FILES; no WORLD_SIM_VERSION or digest moves with an edit).
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import DEFS from './record-drop-defs.json' with { type: 'json' };
 import MANIFEST from './record-drop-defs.manifest.json' with { type: 'json' };
 

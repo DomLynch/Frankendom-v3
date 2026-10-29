@@ -4,7 +4,7 @@
 import ROWS from './bosses.json' with { type: 'json' };
 import MANIFEST from './bosses.manifest.json' with { type: 'json' };
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 
 export type BossRow = { id: string; label: string; opponent: string; rank: number; fx: string; at: 'feet' | 'head'; lift: number; cue: string; classSkill: string; travel?: string; held?: string; look?: { day: BossLook; night: BossLook } };
 export type BossLook = { core: readonly [number, number, number]; edge: readonly [number, number, number] };

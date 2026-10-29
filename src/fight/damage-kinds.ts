@@ -3,7 +3,7 @@
 // well (slash), `posture` = a multiplier on the posture the blow puts on the target (crush), `penetration` = the share of the target's armour dial the blow ignores (pierce; it reads the sheet's armour,
 // so a target with no armour dial is untouched). Rows through the shared loader (src/core/registry.ts): a new kind is one row, a weapon or creature opts in with one move field.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import KIND_DEFS from './damage-kind-defs.json' with { type: 'json' };
 import KIND_MANIFEST from './damage-kind-defs.manifest.json' with { type: 'json' };
 

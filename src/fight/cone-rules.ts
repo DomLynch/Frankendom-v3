@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import { kindOf } from './damage-kinds.ts';
 import { RULES, SPECIAL_SETS, specialOf } from './moves.ts';
 import CONE_MANIFEST from './cone-defs.manifest.json' with { type: 'json' };

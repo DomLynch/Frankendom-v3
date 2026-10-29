@@ -3,7 +3,7 @@
 // seeded circle draw per re-decide with a strafe cap that applies only while circling. Donors: EQEmu mob_movement_manager RotateToCommand (a per-mob rotate speed), AzerothCore chase / 2004Scape Npc.ts (walk to
 // range, stop, face, no strafing), Veloren (circle only close in). Read only by src/fight/open-fight.ts stepBout, so a Pit duel keeps the brain exactly as it was; a kind with no row also keeps it. A sim file.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import MOTION_DEFS from './creature-motion-defs.json' with { type: 'json' };
 import MOTION_MANIFEST from './creature-motion-defs.manifest.json' with { type: 'json' };
 

@@ -2,7 +2,7 @@
 // (`AiProfile.tactic`) that WEIGHTS a choice the warden already makes, keyed by situation. Rows live in tactic-defs.json, manifest-loaded through the shared
 // registry. A profile without `tactic` never reaches this file's table: no draw, no branch, the warden byte for byte. A sim file: it imports only the shared row loader.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import TACTIC_DEFS from './tactic-defs.json' with { type: 'json' };
 import TACTIC_MANIFEST from './tactic-defs.manifest.json' with { type: 'json' };
 

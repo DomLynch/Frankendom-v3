@@ -5,7 +5,7 @@
 //   `profileLevel`  the ladder level its BRAIN (AI profile, moves.ts profileAt) is built at, while its displayed level, loot and XP stay the mob's own: a Zone 2 creature shown at level 2 that reads and answers like a level-8 one.
 // Windups, windows and recoveries are never touched (timing is sacred): a profile moves who reads and answers, so the visible tells fire unchanged. A sim file: it imports only the shared row loader.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import WORLD_LEVEL_DEFS from './world-level-defs.json' with { type: 'json' };
 import WORLD_LEVEL_MANIFEST from './world-level-defs.manifest.json' with { type: 'json' };
 

@@ -5,7 +5,7 @@
 // The notes that sat beside the old literal (why each number is what it is, which ruling set it) are kept in docs/specs/combat/move-notes.md.
 // A sim file: it imports only the shared row loader and the types of moves.ts, so moves.ts can import it without a cycle.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import type { MoveDef, MoveId, PathId, PathSpec } from './moves.ts';
 import MOVE_DEFS from './move-defs.json' with { type: 'json' };
 import MOVE_MANIFEST from './move-defs.manifest.json' with { type: 'json' };

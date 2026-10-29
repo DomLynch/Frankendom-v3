@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import { WEAPONS, type MoveId, type WeaponId } from './moves.ts';
 import { ROWS84_ON, SANDBOX_ON } from './sandbox-era.ts';
 import BAND_DEFS from './band-defs.json' with { type: 'json' };

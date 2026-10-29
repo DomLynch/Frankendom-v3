@@ -7,7 +7,7 @@
 // Scope: a biped rig carrying all 65 hero bone names (the troll, the goblin). Anything else is refused loudly (NotHeroRig), never fitted on a guess and never passed through unfitted.
 import * as THREE from 'three';
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import RIG_MANIFEST from './piece-fit-rig.manifest.json' with { type: 'json' };
 import RIG_ROWS from './piece-fit-rig.json' with { type: 'json' };
 import { fxNum } from './fx-rows.ts';

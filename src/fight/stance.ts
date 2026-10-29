@@ -5,7 +5,7 @@
 import { rollUnit } from './roll.ts';
 import CATALOGUE_ROWS from './catalogue-data.ts';
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import { STANCE_ROWS_ON } from './stance-era.ts';
 import STANCE_DEFS from './stance-defs.json' with { type: 'json' };
 import STANCE_MANIFEST from './stance-defs.manifest.json' with { type: 'json' };

@@ -2,7 +2,7 @@
 // in the duel. There is NO union or switch over pool names here: a pool is whatever a definition row says it is. The sim reads `health` and `stamina` from the result (createFighter); every other pool is
 // carried as data until a rule reads it, and the Fighter has no field for it (a new field would change hashed state). Every default equals what the duel always used, so a row without pools fights byte for byte as before.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import POOL_DEFS from './pool-defs.json' with { type: 'json' };
 import POOL_MANIFEST from './pool-defs.manifest.json' with { type: 'json' };
 

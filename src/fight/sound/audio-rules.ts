@@ -2,7 +2,7 @@
 // voice and seed numbers, one row each (id, value, unit), plus the creature throats and the power-word casters as two tables, through the shared loader (src/core/registry.ts). Every default
 // equals the literal it replaced (tests/audio-rules.test.ts pins them). No sim file reads these, so this table is NOT part of the world digest. Pure; the page and the asset builder both read it.
 import { loadRegistry } from '../../core/registry.ts';
-import { tableOf } from '../../core/rows.ts';
+import { tableOf } from '../../rows.ts';
 import DEFS from './audio-rules-defs.json' with { type: 'json' };
 import MANIFEST from './audio-rules-defs.manifest.json' with { type: 'json' };
 

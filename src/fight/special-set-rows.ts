@@ -4,7 +4,7 @@
 // and in the same order. Identity only: windup, share, cooldown and the unblockable release are RULES.special for every special. The notes that sat beside the old literal are in docs/specs/combat/special-set-notes.md.
 // A sim file: it imports only the shared row loader.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import SET_DEFS from './special-set-defs.json' with { type: 'json' };
 import SET_MANIFEST from './special-set-defs.manifest.json' with { type: 'json' };
 

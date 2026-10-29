@@ -2,7 +2,7 @@
 // the rest (name, clip, bash, impactTint, fx) is presentation. Nothing here names a skill: the sim, the codec, the loot table and the HUD ask the rows. The `move` of a row is a verb that must exist in moves.ts MOVES,
 // so a row that names a missing move is refused at load, never found mid-fight. Structure (a missing or duplicate id, a mistyped field) goes through the shared loader (src/core/registry.ts).
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import SKILL_MANIFEST from './skill-defs.manifest.json' with { type: 'json' };
 
 export type SkillClip = 'heavy' | 'thrust' | 'light';

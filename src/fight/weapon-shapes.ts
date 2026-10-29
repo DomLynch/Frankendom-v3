@@ -12,7 +12,7 @@ import type { WeaponId } from './moves.ts';
 import { artUrl } from '../art-url.ts';
 import OVERRIDES from './shape-overrides.json' with { type: 'json' };
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import SHAPE_DEFS from './shipping-shapes-defs.json' with { type: 'json' };
 import SHAPE_MANIFEST from './shipping-shapes-defs.manifest.json' with { type: 'json' };
 

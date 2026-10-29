@@ -1,7 +1,7 @@
 // moves-dials.ts's named numbers as MOVES_DIALS_ROW_MAP (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). One row per movesDialsDial in moves-dials-defs.json, manifest-loaded through
 // the shared registry; this file only hands moves-dials.ts the values it always held, bit for bit. Presentation only: not a sim file, not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import MOVES_DIALS_DEFS from './moves-dials-defs.json' with { type: 'json' };
 import MOVES_DIALS_MANIFEST from './moves-dials-defs.manifest.json' with { type: 'json' };
 

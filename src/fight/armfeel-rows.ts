@@ -2,7 +2,7 @@
 // Low energy, the weapon's hit hold by tier) and the spark gravity live in armfeel-defs.json, manifest-loaded through the shared registry; armfeel.ts re-exports them under the names it always had.
 // Presentation only: nothing here is read by the simulation.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import ARMFEEL_DEFS from './armfeel-defs.json' with { type: 'json' };
 import ARMFEEL_MANIFEST from './armfeel-defs.manifest.json' with { type: 'json' };
 

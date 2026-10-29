@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import SCENE_MANIFEST from './scene-rows.manifest.json' with { type: 'json' };
 import SCENE_ROWS from './scene-rows.json' with { type: 'json' };
 

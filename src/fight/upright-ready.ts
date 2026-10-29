@@ -2,7 +2,7 @@
 // (degrees, about the bone's own X) is added on spine_02, spine_03 and neck_01 on the calm ready layer, restored before every update like the stance and tired layers. Presentation only: no sim or hitbox read.
 // ON by default; `?look=slouch` is the off-switch (the old stoop), for comparing.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import ROWS from './ready-pose.json' with { type: 'json' };
 import MANIFEST from './ready-pose.manifest.json' with { type: 'json' };
 

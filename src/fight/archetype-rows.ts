@@ -2,7 +2,7 @@
 // shared registry. A profile tier is `from` a shared tier of PROFILES (the old `...PROFILES.hard` spread) with `set` overrides, plus an optional named `identity` block (the Witch's WITCH_IDENTITY);
 // buildArchetypes composes them in moves.ts, handing in PROFILES and RULES.health so nothing circular is imported. A sim file: it imports only the shared row loader.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import ARCHETYPE_DEFS from './archetype-defs.json' with { type: 'json' };
 import ARCHETYPE_MANIFEST from './archetype-defs.manifest.json' with { type: 'json' };
 

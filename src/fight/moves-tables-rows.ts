@@ -1,7 +1,7 @@
 // moves-tables's tables as MOVES_TABLES_ROW_MAP (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). The numbers live in moves-tables-defs.json, manifest-loaded through the shared
 // registry; this file only rebuilds, key for key and in the same order, the objects the sim files always held. A sim file: it imports only the shared row loader.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import MOVES_TABLES_DEFS from './moves-tables-defs.json' with { type: 'json' };
 import MOVES_TABLES_MANIFEST from './moves-tables-defs.manifest.json' with { type: 'json' };
 

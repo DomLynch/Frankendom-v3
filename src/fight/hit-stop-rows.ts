@@ -2,7 +2,7 @@
 // while every sim tick still runs in order, and a live duel holds only what is drawn (pvp-hold.ts). The SIM never reads these rows (timing is sacred: a stop that moved a tick would move every window and
 // every net cadence), so this file is outside SIM_FILES and no RECORD_VERSION or digest moves with an edit. `knock` / `push` / `drop` are the camera's jolt (hit-impact.ts), metres.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import DEFS from './hit-stop-defs.json' with { type: 'json' };
 import MANIFEST from './hit-stop-defs.manifest.json' with { type: 'json' };
 

@@ -4,7 +4,7 @@
 // reports its amount; a new awareness ring is a row and the code that reads it. Pure: the sim reads only these numbers, so every default equals the literal it replaced (tests/threat-rows.test.ts
 // pins who fights whom tick for tick).
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import DEFS from './threat-defs.json' with { type: 'json' };
 import MANIFEST from './threat-defs.manifest.json' with { type: 'json' };
 

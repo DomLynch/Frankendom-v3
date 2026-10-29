@@ -1,7 +1,7 @@
 // stance-legacy's tables as STANCE_LEGACY_ROW_MAP (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). The numbers live in stance-legacy-defs.json, manifest-loaded through the shared
 // registry; this file only rebuilds, key for key and in the same order, the objects the sim files always held. A sim file: it imports only the shared row loader.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import STANCE_LEGACY_DEFS from './stance-legacy-defs.json' with { type: 'json' };
 import STANCE_LEGACY_MANIFEST from './stance-legacy-defs.manifest.json' with { type: 'json' };
 

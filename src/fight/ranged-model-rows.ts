@@ -4,7 +4,7 @@
 // game weapon is bound to a missile kind (sandbox-rules-defs.json missile rows say weapon "none"; the sandbox bound one by a URL param), so nothing asks for a model
 // until Strategy/Dom decide a bow weapon. The loader in characters.ts takes the row for kind `bow` only; the crossbow stays out (CS22, dropped by Dom).
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import DEFS from './ranged-model-defs.json' with { type: 'json' };
 import MANIFEST from './ranged-model-defs.manifest.json' with { type: 'json' };
 

@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import INPUT_MANIFEST from './input-rows.manifest.json' with { type: 'json' };
 import INPUT_ROWS from './input-rows.json' with { type: 'json' };
 

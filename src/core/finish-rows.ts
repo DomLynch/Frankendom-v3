@@ -1,5 +1,5 @@
 import { loadRegistry } from './registry.ts';
-import { rowsOf, tableOf } from './rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import FINISH_ROWS_MANIFEST from './finish-rows.manifest.json' with { type: 'json' };
 import FINISH_ROWS from './finish-rows.json' with { type: 'json' };
 import type { Finish } from './grades.ts';

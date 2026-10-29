@@ -1,7 +1,7 @@
 // ai-read's tables as AI_READ_ROW_MAP (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). The numbers live in ai-read-defs.json, manifest-loaded through the shared
 // registry; this file only rebuilds, key for key and in the same order, the objects the sim files always held. A sim file: it imports only the shared row loader.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import AI_READ_DEFS from './ai-read-defs.json' with { type: 'json' };
 import AI_READ_MANIFEST from './ai-read-defs.manifest.json' with { type: 'json' };
 

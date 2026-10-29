@@ -5,7 +5,7 @@
 //   const ROWS = loadRows<{ id: string; value: number }>(MANIFEST.tables[0], DEFS, 'x-defs.json');  // a table with no refs to a sibling: validated, typed and frozen in one call
 //   const rows = rowsOf<{ id: string; value: number }>(T);                                        // the typed rows of a table already built
 // No behaviour of its own: the rows are the very objects the registry reads, in file order.
-import { loadRegistry, tableFromFile, type Manifest, type TableData } from './registry.ts';
+import { loadRegistry, tableFromFile, type Manifest, type TableData } from './core/registry.ts';
 
 type RowShape = Record<string, unknown>;
 

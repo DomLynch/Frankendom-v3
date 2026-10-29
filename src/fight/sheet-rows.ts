@@ -7,7 +7,7 @@
 // placed against the level; `checkSheet` uses it too (sheets that did not come from a stored build), so no player number passes 100 and no career places a point past its level, at load, on the writer and
 // on a record's read.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import SHEET_DEFS from './sheet-defs.json' with { type: 'json' };
 import SHEET_MANIFEST from './sheet-defs.manifest.json' with { type: 'json' };
 

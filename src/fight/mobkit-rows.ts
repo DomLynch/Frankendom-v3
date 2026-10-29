@@ -1,7 +1,7 @@
 // mobkit.ts's named numbers as ROWS (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). One row per dial in mobkit-defs.json, manifest-loaded through
 // the shared registry; this file only hands mobkit.ts the values it always held, bit for bit. Presentation only: not a sim file, not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import DEFS from './mobkit-defs.json' with { type: 'json' };
 import MANIFEST from './mobkit-defs.manifest.json' with { type: 'json' };
 

@@ -2,7 +2,7 @@
 // (objects merge field by field, anything else replaces); a row with no `extends` is resolved over the ENGINE's base move and path tables (moves.ts MOVES / PATHS, the verbs). Nothing here names a weapon:
 // a new weapon is one row. The resolved table is checked whole, so a row that forgets a move, names an unknown material or extends itself is refused at load, never found mid-fight.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import type { MoveDef, PathSpec, Weapon } from './moves.ts';
 import WEAPON_MANIFEST from './weapon-defs.manifest.json' with { type: 'json' };
 

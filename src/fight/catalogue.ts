@@ -9,7 +9,7 @@ import { PLAIN_DEATH } from './finisher-look.ts';
 import type { LootId } from '../stubs.ts';   // V3: core/loot.ts
 import type { PickedStance } from './stance.ts';
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import LOOK_RULES from './look-rules.json' with { type: 'json' };
 import LOOK_RULES_MANIFEST from './look-rules.manifest.json' with { type: 'json' };
 

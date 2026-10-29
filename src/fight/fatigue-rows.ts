@@ -2,7 +2,7 @@
 // winded / tired lines, the band hysteresis, the guard sink) and the per-body tunes (Goblin quick and shallow, Executioner slow and deep) live in fatigue-defs.json, manifest-loaded through the shared registry.
 // This file only builds the values fatigue.ts and fatigue-tune.ts always exported, bit for bit: a rate is 1 / its tick count, the same double the literals gave. View layer: not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import FATIGUE_DEFS from './fatigue-defs.json' with { type: 'json' };
 import FATIGUE_MANIFEST from './fatigue-defs.manifest.json' with { type: 'json' };
 

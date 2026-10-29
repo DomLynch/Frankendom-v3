@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import SPECIAL_FX_CORE_ROWS_MANIFEST from './special-fx-core-rows.manifest.json' with { type: 'json' };
 import SPECIAL_FX_CORE_ROWS from './special-fx-core-rows.json' with { type: 'json' };
 

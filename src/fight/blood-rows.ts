@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import BLOOD_MANIFEST from './blood-rows.manifest.json' with { type: 'json' };
 import BLOOD_ROWS from './blood-rows.json' with { type: 'json' };
 

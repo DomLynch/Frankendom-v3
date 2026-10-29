@@ -1,7 +1,7 @@
 // Blood Tithe's look and timing numbers as ROWS (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json for special-tithe.ts). One row per dial in tithe-defs.json,
 // manifest-loaded through the shared registry; this file only hands special-tithe.ts the values it always held, bit for bit. Presentation only: not a sim file, not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import TITHE_DEFS from './tithe-defs.json' with { type: 'json' };
 import TITHE_MANIFEST from './tithe-defs.manifest.json' with { type: 'json' };
 

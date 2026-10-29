@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import { isSpellId, spellUsesCap } from './spell-cast.ts';
 import { POOLS } from './pools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };

@@ -1,7 +1,7 @@
 // gambit.ts's named numbers as GAMBIT_ROW_MAP (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). One row per gambitDial in gambit-defs.json, manifest-loaded through
 // the shared registry; this file only hands gambit.ts the values it always held, bit for bit. Presentation only: not a sim file, not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import GAMBIT_DEFS from './gambit-defs.json' with { type: 'json' };
 import GAMBIT_MANIFEST from './gambit-defs.manifest.json' with { type: 'json' };
 

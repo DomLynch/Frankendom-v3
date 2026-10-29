@@ -1,7 +1,7 @@
 // pack.ts's named numbers as ROWS (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json). One row per dial in pack-defs.json, manifest-loaded through
 // the shared registry; this file only hands pack.ts the values it always held, bit for bit. Presentation only: not a sim file, not in the record digest.
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import DEFS from './pack-defs.json' with { type: 'json' };
 import MANIFEST from './pack-defs.manifest.json' with { type: 'json' };
 

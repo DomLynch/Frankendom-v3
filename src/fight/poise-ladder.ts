@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import LADDER_MANIFEST from './poise-ladder-defs.manifest.json' with { type: 'json' };
 import LADDER_DEFS from './poise-ladder-defs.json' with { type: 'json' };
 

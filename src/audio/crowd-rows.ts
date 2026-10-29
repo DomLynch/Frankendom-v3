@@ -1,7 +1,7 @@
 // The crowd's roars as rows (crowd-defs.json; the Combat sandbox's CS31, donor: combat sandbox @93b1138c7). A roar row { id, on, cue, gain } plays that arena cue at `gain` the frame its moment happens, with no cooldown, on top of the
 // reactions arena.ts already has; `on` is one of ROAR_MOMENTS. Presentation only: it reads events, never the sim. No row ships, so the crowd is exactly as it was.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import type { CombatEvent } from '../fight/combat.ts';
 import type { ArenaCue } from './arena-manifest.ts';
 import DEFS from './crowd-defs.json' with { type: 'json' };

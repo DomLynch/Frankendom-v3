@@ -3,7 +3,7 @@
 // readers the same objects the literals held, bit for bit. A creature is a `wounds` row. The trunk is the root part; a head hangs from the neck and the neck from the trunk, so severing the neck takes the head.
 import type { Bodytype, Species } from './catalogue.ts';
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import DEFS from './body-tables-defs.json' with { type: 'json' };
 import MANIFEST from './body-tables-defs.manifest.json' with { type: 'json' };
 

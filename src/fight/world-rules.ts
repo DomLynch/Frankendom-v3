@@ -3,7 +3,7 @@
 // did, now read from the rows, so every default equals the literal it replaced (tests/world-rules.test.ts pins them). A new rule is a row and the code that reads it. The sim reads only these numbers: the rows file is
 // part of the world digest (tests/world-sim-guard.test.ts), so a retune needs a WORLD_SIM_VERSION bump. Pure.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import DEFS from './world-rules-defs.json' with { type: 'json' };
 import MANIFEST from './world-rules-defs.manifest.json' with { type: 'json' };
 

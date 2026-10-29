@@ -2,7 +2,7 @@
 // tour, the scene's compile and look-bake bounds, a severed head's life and the zone effects' idle time, one row each (id, value, unit) through the shared loader (src/core/registry.ts). Every
 // default equals the literal it replaced (tests/camera-rules.test.ts pins them). None is read by the sim, so this table is NOT part of the world digest. Pure.
 import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../core/rows.ts';
+import { tableOf } from '../rows.ts';
 import DEFS from './camera-rules-defs.json' with { type: 'json' };
 import MANIFEST from './camera-rules-defs.manifest.json' with { type: 'json' };
 

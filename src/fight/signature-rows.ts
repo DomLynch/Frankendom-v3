@@ -1,5 +1,5 @@
 import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../core/rows.ts';
+import { rowsOf, tableOf } from '../rows.ts';
 import SIG_MANIFEST from './signature-rows.manifest.json' with { type: 'json' };
 import SIG_ROWS from './signature-rows.json' with { type: 'json' };
 
