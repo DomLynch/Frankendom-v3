@@ -8,7 +8,8 @@ import type { FinisherId } from './finishers.ts';
 import { PLAIN_DEATH } from './finisher-look.ts';
 import type { LootId } from '../stubs.ts';   // V3: core/loot.ts
 import type { PickedStance } from './stance.ts';
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry } from '../core/registry.ts';
+import { tableOf } from '../core/rows.ts';
 import LOOK_RULES from './look-rules.json' with { type: 'json' };
 import LOOK_RULES_MANIFEST from './look-rules.manifest.json' with { type: 'json' };
 
@@ -54,7 +55,7 @@ export type RowCode = 'id' | 'asset' | 'budget' | 'armour' | 'stats' | 'animatio
 export type FieldDef = { id: string; sim: boolean; required?: boolean } & ({ kind: 'ref'; of: string } | { kind: 'number'; min?: number; max?: number } | { kind: 'boolean' });
 export type CatalogueDefs = { fields: readonly FieldDef[]; rigs: readonly { id: string }[] };
 export type RowIssue = { code: RowCode; path: string; message: string };
-loadRegistry(LOOK_RULES_MANIFEST.tables.map((t) => tableFromFile(t as unknown as Manifest, LOOK_RULES, 'look-rules.json')));
+loadRegistry(LOOK_RULES_MANIFEST.tables.map((t) => tableOf(t, LOOK_RULES, 'look-rules.json')));
 const HEX = /^#[0-9a-f]{6}$/i, WORLD_MAX_TRIS = LOOK_RULES.catalogueRule[0]!.worldMaxTris;   // the catalogueRule row (look-rules.json): the world ceiling a row may not raise (the world goblin is ~8k)
 
 /** The ways a row is bad, empty when it is good. `known` supplies what only the caller can know (the roster ids, loot ids, tables, finishers, archetypes). */

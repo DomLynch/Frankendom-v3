@@ -1,7 +1,8 @@
 // Weapons as data (Combat, core slice 4, 2026-10-12): the loader for src/fight/weapon-defs.json. A row is a weapon keyed by id; it may `extends` another row and then holds only the fields that differ
 // (objects merge field by field, anything else replaces); a row with no `extends` is resolved over the ENGINE's base move and path tables (moves.ts MOVES / PATHS, the verbs). Nothing here names a weapon:
 // a new weapon is one row. The resolved table is checked whole, so a row that forgets a move, names an unknown material or extends itself is refused at load, never found mid-fight.
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry } from '../core/registry.ts';
+import { tableOf } from '../core/rows.ts';
 import type { MoveDef, PathSpec, Weapon } from './moves.ts';
 import WEAPON_MANIFEST from './weapon-defs.manifest.json' with { type: 'json' };
 
@@ -23,7 +24,7 @@ const merge = (base: unknown, over: unknown): unknown => {
 };
 
 export function loadWeaponDefs(raw: { weapons?: readonly unknown[] }, base: WeaponBase, enums: WeaponEnums): { weapons: Record<string, Weapon>; weapons86: Record<string, Weapon>; player: string[]; offered: string[]; defaultId: string; natural: string[]; looks: Record<string, WeaponLook>; skills: Record<string, string> } {
-  loadRegistry([tableFromFile(WEAPON_MANIFEST.tables[0] as Manifest, raw, 'weapon-defs.json')]);   // the shared loader (src/core/registry.ts): a missing or duplicate id and an `extends` that names no weapon are refused as file:row:id + the rule
+  loadRegistry([tableOf(WEAPON_MANIFEST.tables[0], raw, 'weapon-defs.json')]);   // the shared loader (src/core/registry.ts): a missing or duplicate id and an `extends` that names no weapon are refused as file:row:id + the rule
   const rows = new Map<string, Obj>();
   for (const r of (raw.weapons ?? []) as Obj[]) rows.set(r.id as string, r);
   const resolved = new Map<string, Obj>();

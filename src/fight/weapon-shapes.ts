@@ -11,7 +11,8 @@
 import type { WeaponId } from './moves.ts';
 import { artUrl } from '../art-url.ts';
 import OVERRIDES from './shape-overrides.json' with { type: 'json' };
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry } from '../core/registry.ts';
+import { rowsOf, tableOf } from '../core/rows.ts';
 import SHAPE_DEFS from './shipping-shapes-defs.json' with { type: 'json' };
 import SHAPE_MANIFEST from './shipping-shapes-defs.manifest.json' with { type: 'json' };
 
@@ -33,9 +34,9 @@ export const byBand = (stem: string, bands: readonly Band[]): RankFiles => RANK_
 // The files that actually ship under public/weapons/shapes/ (shipping-shapes-defs.json `shipped`; a test pins it to the folder). The table names ranks whose
 // file is not shipped (scythe, maul-crafted...); asking for one is a 404 and a console error for no mesh, so the page never asks (shippedShape).
 export const SHIPPED_SHAPES: ReadonlySet<string> = new Set((SHAPE_DEFS as unknown as { shipped: string[] }).shipped);
-const SHAPE_TABLE = tableFromFile(SHAPE_MANIFEST.tables[0] as unknown as Manifest, SHAPE_DEFS, 'shipping-shapes-defs.json');
+const SHAPE_TABLE = tableOf(SHAPE_MANIFEST.tables[0], SHAPE_DEFS, 'shipping-shapes-defs.json');
 loadRegistry([SHAPE_TABLE]);
-export const SHIPPING_SHAPES: ShapeTable = Object.fromEntries((SHAPE_TABLE.rows as unknown as { id: string; ranks: (string | null)[] }[]).map((r) => {
+export const SHIPPING_SHAPES: ShapeTable = Object.fromEntries((rowsOf<{ id: string; ranks: (string | null)[] }>(SHAPE_TABLE)).map((r) => {
   if (r.ranks.length !== RANK_LEVELS.length || r.ranks.some((f) => f !== null && (typeof f !== 'string' || !f))) throw Error(`shipping-shapes-defs "${r.id}": one file (or null) per rank (${RANK_LEVELS.length})`);
   return [r.id, r.ranks.map((f) => f ?? undefined)];
 }));

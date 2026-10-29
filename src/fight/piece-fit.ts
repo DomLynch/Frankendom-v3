@@ -6,12 +6,13 @@
 // digest. The ratio limits are rows (fx-rows.json fit.*); the hero's 65 bone names are a row (piece-fit-rig.json).
 // Scope: a biped rig carrying all 65 hero bone names (the troll, the goblin). Anything else is refused loudly (NotHeroRig), never fitted on a guess and never passed through unfitted.
 import * as THREE from 'three';
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry } from '../core/registry.ts';
+import { tableOf } from '../core/rows.ts';
 import RIG_MANIFEST from './piece-fit-rig.manifest.json' with { type: 'json' };
 import RIG_ROWS from './piece-fit-rig.json' with { type: 'json' };
 import { fxNum } from './fx-rows.ts';
 
-loadRegistry([tableFromFile(RIG_MANIFEST.tables[0] as unknown as Manifest, RIG_ROWS, 'piece-fit-rig.json')]);
+loadRegistry([tableOf(RIG_MANIFEST.tables[0], RIG_ROWS, 'piece-fit-rig.json')]);
 /** The hero rig's bone names: the skeleton every loot piece is authored on, and the one a body must carry whole to be fitted. */
 export const HERO_BONES: readonly string[] = RIG_ROWS.heroRig[0]!.bones;
 

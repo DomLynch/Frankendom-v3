@@ -1,4 +1,5 @@
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry } from '../core/registry.ts';
+import { rowsOf, tableOf } from '../core/rows.ts';
 import { RULES } from './moves.ts';
 import { POOLS } from './pools.ts';
 import { simBound } from './sim-bounds-rows.ts';
@@ -36,16 +37,16 @@ export type Spell = {
 
 type Brick = { id: string; kind: string; school: string; cost: number; costPerLevel: number; effect: { magnitude: number; perLevel: number }; success: { critFailBelow: number; failBelow: number; partialBelow: number; critFrom: number; partialMult: number; critMult: number } };
 type CastRule = { id: string; spread: number; relDivisor: number; creditPerPoint: number; tenths: number; costWeight: number; drawSpan: number; levels: number; costCapFrom: number; hitsFrom: number };   // tenths: the fixed-point scale of rel and the bands; costWeight: the cost's weight in the relative level; drawSpan: the seeded unit draw maps onto +/- spread over this width; levels: the top spell level
-const TABLES = [tableFromFile(SCHOOL_MANIFEST.tables[0] as Manifest, SCHOOL_DEFS, 'school-defs.json'), tableFromFile(BRICK_MANIFEST.tables[0] as Manifest, BRICK_DEFS, 'brick-defs.json'), tableFromFile(CAST_MANIFEST.tables[0] as Manifest, CAST_RULES, 'cast-rules.json'), tableFromFile(HIT_MANIFEST.tables[0] as Manifest, HIT_DEFS, 'spell-hit-defs.json')];
+const TABLES = [tableOf(SCHOOL_MANIFEST.tables[0], SCHOOL_DEFS, 'school-defs.json'), tableOf(BRICK_MANIFEST.tables[0], BRICK_DEFS, 'brick-defs.json'), tableOf(CAST_MANIFEST.tables[0], CAST_RULES, 'cast-rules.json'), tableOf(HIT_MANIFEST.tables[0], HIT_DEFS, 'spell-hit-defs.json')];
 loadRegistry(TABLES);
-export const BRICKS: Readonly<Record<string, Brick>> = Object.fromEntries((TABLES[1]!.rows as unknown as Brick[]).map((b) => [b.id, b]));
-export const CAST: CastRule = (TABLES[2]!.rows as unknown as CastRule[]).find((r) => r.id === 'cast')!;
+export const BRICKS: Readonly<Record<string, Brick>> = Object.fromEntries(rowsOf<Brick>(TABLES[1]!).map((b) => [b.id, b]));
+export const CAST: CastRule = rowsOf<CastRule>(TABLES[2]!).find((r) => r.id === 'cast')!;
 if (!CAST || !(CAST.relDivisor > 0) || CAST.spread < 0 || CAST.creditPerPoint < 0 || ![CAST.tenths, CAST.costWeight, CAST.drawSpan, CAST.levels].every((n) => Number.isInteger(n) && n > 0) || !Number.isInteger(CAST.costCapFrom) || CAST.costCapFrom < 1 || !Number.isInteger(CAST.hitsFrom) || CAST.hitsFrom < CAST.costCapFrom) throw Error('cast-rules: the cast row needs spread >= 0, relDivisor > 0, creditPerPoint >= 0, tenths / costWeight / drawSpan / levels positive integers');
 const INDEX = (SPELL_INDEX as unknown as { spells: Record<string, readonly [string, number]> }).spells;
 for (const [id, [root, level]] of Object.entries(INDEX)) if (!Object.hasOwn(BRICKS, root) || !Number.isInteger(level) || level < 1 || level > CAST.levels) throw Error(`spell-index "${id}": root "${root}" is a brick row and level is a rank 1-10`);
 type HitRow = { id: string; every: number; ramp: readonly number[]; holds: number };
 /** The pulse rows by root (spell-hit-defs.json): a root with a row lands its share as pulses instead of one strike, from record version CAST.hitsFrom. */
-export const HITS: Readonly<Record<string, HitRow>> = Object.fromEntries((TABLES[3]!.rows as unknown as HitRow[]).map((h) => {
+export const HITS: Readonly<Record<string, HitRow>> = Object.fromEntries(rowsOf<HitRow>(TABLES[3]!).map((h) => {
   const bad = (why: string) => Error(`spell-hit-defs "${h.id}": ${why}`);
   if (!Object.hasOwn(BRICKS, h.id)) throw bad('is no root (brick-defs.json)');
   if (!Number.isInteger(h.every) || h.every < 1) throw bad('every is a whole number of ticks >= 1');

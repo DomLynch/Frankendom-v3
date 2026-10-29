@@ -1,4 +1,5 @@
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry } from '../core/registry.ts';
+import { rowsOf, tableOf } from '../core/rows.ts';
 import HERO_BODY_MANIFEST from './hero-body-rows.manifest.json' with { type: 'json' };
 import HERO_BODY_ROWS from './hero-body-rows.json' with { type: 'json' };
 
@@ -7,9 +8,9 @@ import HERO_BODY_ROWS from './hero-body-rows.json' with { type: 'json' };
 // V3 (Dom 2026-10-26): Mixamo's Psyche is the hero, on the 106-joint rig only (src/assets/psyche-106.glb; "no risk of going back to the old
 // 65 rig"). ?hero=v1 (V1's 65 warrior.glb) and the Exo / classic rows were removed with the 65 bodies; the 65 files stay in src/assets for the
 // tests and the bakes but are never shipped (data/build.json notShipped). No query picks the hero's body.
-const TABLE = tableFromFile(HERO_BODY_MANIFEST.tables[0] as Manifest, HERO_BODY_ROWS, 'hero-body-rows.json');
+const TABLE = tableOf(HERO_BODY_MANIFEST.tables[0], HERO_BODY_ROWS, 'hero-body-rows.json');
 loadRegistry([TABLE]);
-const ROW = (TABLE.rows as unknown as { id: string; fields: { body: string; files: Record<string, string>; contact: Record<string, Record<string, number>>; start: Record<string, Record<string, number>> } }[])[0];   // the table holds exactly one row
+const ROW = rowsOf<{ id: string; fields: { body: string; files: Record<string, string>; contact: Record<string, Record<string, number>>; start: Record<string, Record<string, number>> } }>(TABLE)[0];   // the table holds exactly one row
 if (TABLE.rows.length !== 1) throw new Error(`hero-body-rows.json must hold exactly one row, found ${TABLE.rows.length}`);
 if (!ROW.fields.files[ROW.fields.body]) throw new Error(`hero-body-rows.json: body "${ROW.fields.body}" has no file`);
 const body = ROW.fields.body;
