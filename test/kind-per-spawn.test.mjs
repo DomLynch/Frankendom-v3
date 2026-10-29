@@ -158,7 +158,7 @@ test('the page wires it: each spawn\'s kind on every hand-over, leash reset, ado
   assert.match(main, /make\(seed, poseFor\(index, at\), kindAt\(index\)\)/, 'a leash reset rebuilds the boss as its own kind');
   assert.match(main, /useKind\(kindAt\(current\)\);\s+\/\/ an attacker may take the sim/);
   assert.match(main, /useKind\(kindAt\(current\)\);\s+\/\/ the attacker's own kind is now the sim's opponent/);
-  assert.match(main, /joinAttacker\(i, make\([^;]*kindAt\(i\)\), kindAt\(i\)\.ai(?:, mechanicFor\(spawns\[i\]!\.kind\))?\)/, 'an attacker is built and stepped as its own kind (and with its own boss mechanic, src/fight/mechanics)');
+  assert.match(main, /joinAttacker\(i, make\([^;]*kindAt\(i\)\), kindAt\(i\)\.ai(?:, [^;]*mechanics\?\.of\(spawns\[i\]!\.kind\)\)\))?\)/, 'an attacker is built and stepped as its own kind (and with its own boss mechanic, src/fight/mechanics)');
   assert.match(main, /useKind\(kindAt\(current\)\); practice = fresh\(poseFor\(current, heroStart\)\)/, 'the page opens on the held spawn\'s kind');
   assert.match(main, /validateSpots\(SPOTS, initialState\(\), RADIUS, WORLD, kindIds\(KIND_CTX\.profiles\)\); for \(const s of SPOTS\) KINDS\(s\.kind\)/);
   assert.match(main, /zoneLoopFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\), search, kindIds\(KIND_CTX\.profiles\)\)/);
