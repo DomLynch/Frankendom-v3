@@ -41,8 +41,8 @@ const meta = () => ({ build: 'era-replay-test', opponent: foeId, weapon: FIGHT.w
 // A scripted hero: walk to the foe, then a mix of light, kick and both specials, so the flags (cooldowns, stamina, the mana pool, knockdown, pace) all have something to bite on.
 const intentAt = (t, practice) => {
   const gap = distance(practice.duel.fighters[0].body, practice.duel.fighters[1].body);
-  const action = t % 150 === 60 ? 'skill2' : t % 90 === 30 ? 'skill' : t % 200 === 120 ? 'kick' : t % 45 === 10 ? 'light' : null;
-  return { move: { x: 0, z: gap > 1.6 ? 1 : 0, yaw: 0, run: false }, action, guard: false, lock: true };
+  const action = t % 150 === 60 ? 'skill2' : t % 90 === 30 ? 'skill' : t % 200 === 120 ? 'kick' : t % 70 === 15 ? 'thrust' : t % 45 === 10 ? 'light' : null;
+  return { move: { x: 0, z: gap > 1.1 ? 1 : 0, yaw: 0, run: false }, action, guard: false, lock: true };   // closes to 1.1 m: the inner band, off the longsword's best, so thrusts and kicks glance (a fractional knockback)
 };
 
 /** Plays TICKS live under the flags `on`, recording with the real recorder. Returns the finished record and the live duel as JSON. */
