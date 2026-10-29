@@ -1,0 +1,6 @@
+{
+  "about": "The V1 donor stand-ins in src/stubs.ts that carry names or text. `weaponSlots`: the loot slot names that hold a weapon (V1 core/loot.ts WEAPON_SLOTS): the opponent's worn kit (kitWorn) leaves them out, the weapon comes from the fight row. `lessonFell` / `lessonNext`: V1 lessons.ts LESSON_FELL and LESSON_NEXT, kept because the donor feel layer imports them (V3 has no lesson fight). Presentation only.",
+  "weaponSlots": ["Trident", "Cleaver", "Knife", "Estoc", "Gladius", "Scythe", "Warhammer", "Maul", "Longsword", "Bow", "Staff"],
+  "lessonFell": "You fell. That was the lesson.",
+  "lessonNext": "Fight for real"
+}
