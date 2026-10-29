@@ -37,6 +37,7 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, starTune, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
+import { createAudioUnlock, rearmWhenLocked } from '../audio/unlock-once.ts';
 import { mountParts } from '../fight/parts-hook.ts';
 import { configureSimMechanics, mechCaption } from '../fight/mechanics/sim-hooks.ts';
 import MECHANICS_ROWS from '../../data/mechanics.json' with { type: 'json' };
@@ -158,8 +159,10 @@ const feedback = createFeedback();
 const snd = new URLSearchParams(search).get('snd'), v1Sound = snd === 'v1', keep = createKeep(SOUND.keep);
 if (!v1Sound) feedback.prepare();
 // :101 WebKit grants audio on touchend/click/keydown, not touch-start: the whole family unlocks
-for (const type of v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
-  window.addEventListener(type, v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, { passive: true });
+// (once the context is running the listeners remove themselves and stop allocating; a later lock re-arms them from the wake handler below: src/audio/unlock-once.ts)
+const audioUnlock = createAudioUnlock({ target: window, types: v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'], run: v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, unlocked: () => feedback.unlocked() });
+audioUnlock.arm();
+rearmWhenLocked((fn) => feedback.onStateChange(fn), audioUnlock.arm, () => feedback.unlocked());   // iOS 'interrupted' sends a statechange, not always a pageshow/focus
 const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
 const commentator = mountCommentator(document, Object.fromEntries(PROFILES.profiles.flatMap((p) => ((p as { name?: string }).name ? [[p.id, (p as { name?: string }).name!]] : []))));
 setHeroNoMana(heroNoManaFor(FIGHT.heroMana, search));   // V3 (Dom: "remove mana for now"): the hero has no MANA bar and casts free (data/fight.json heroMana); ?mana=v1 = the bar and the mana cost
@@ -268,7 +271,7 @@ document.addEventListener('visibilitychange', clearInput);
 // Back on the page (app switch, a call, the lock screen): clearInput hushed the sound and the context is suspended or interrupted; ask
 // again now (iOS grants it as soon as it allows) instead of waiting for the next touch. After clearInput, so it is not undone.
 if (!v1Sound) {
-  const rewake = () => { if (!document.hidden) feedback.unlock(); };
+  const rewake = () => { if (!document.hidden) { feedback.unlock(); if (!feedback.unlocked()) audioUnlock.arm(); } };
   window.addEventListener('pageshow', rewake); window.addEventListener('focus', rewake); document.addEventListener('visibilitychange', rewake);
 }
 document.addEventListener('pointerdown', () => { if (practice.finish && view.finishPhase().touring) view.stopTour(); });   // :1422

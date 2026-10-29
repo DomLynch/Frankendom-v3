@@ -111,11 +111,41 @@ test('X-Real-IP trust: with ipHeader on the per-IP cap keys on the header (two p
 
 test('trustsProxyHeader: only a loopback bind (127.0.0.1 or ::1) trusts X-Real-IP, and main.ts passes exactly that', () => {
   for (const h of ['127.0.0.1', '::1']) assert.equal(trustsProxyHeader(h), true, h);
-  for (const h of ['0.0.0.0', '::', '10.0.0.5', '49.12.7.18', 'localhost', '', '::ffff:127.0.0.1']) assert.equal(trustsProxyHeader(h), false, h || '(empty)');
+  for (const h of ['0.0.0.0', '::', '10.0.0.5', '203.0.113.7', 'localhost', '', '::ffff:127.0.0.1']) assert.equal(trustsProxyHeader(h), false, h || '(empty)');
   assert.equal(trustsProxyHeader(listenHost({})), true, 'the default host row is loopback');
   assert.equal(trustsProxyHeader(listenHost({ PRESENCE_HOST: '0.0.0.0' })), false, 'the env override to a public bind turns the trust off');
   const main = readFileSync(new URL('../../server/presence/main.ts', import.meta.url), 'utf8');
   assert.match(main, /createPresence\(\{ ipHeader: trustsProxyHeader\(host\) \}\)/, 'main.ts derives ipHeader from the bind address, never a literal true');
+});
+
+// The Origin allow-list (data/presence.json origins): a raw handshake, because the platform WebSocket client cannot set Origin.
+const handshake = (port, origin) => new Promise((resolve) => {
+  const s = connect({ port, host: '127.0.0.1' });
+  s.on('error', () => resolve('error'));
+  s.on('connect', () => s.write(`GET ${PATH} HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: ${PROTOCOL}\r\n${origin === undefined ? '' : `Origin: ${origin}\r\n`}\r\n`));
+  s.once('data', (d) => { resolve(String(d).split('\r\n')[0]); s.destroy(); });
+});
+
+test('origin allow-list: the live site, a dev host on any port and a client with no Origin may join; any other page gets 403 and holds no slot', async () => {
+  const p = await start({ limits: { ...LIMITS, ipSockets: 100, ipJoinsPerMinute: 100 } });
+  try {
+    for (const ok of [undefined, 'https://v3.frankendom.com', 'http://localhost:5173', 'http://127.0.0.1:8080', 'http://[::1]:3000']) assert.match(await handshake(p.port(), ok), /^HTTP\/1\.1 101/, String(ok));
+    for (const bad of ['https://evil.example', 'http://v3.frankendom.com', 'https://v3.frankendom.com.evil.example', 'https://v3.frankendom.com/x', 'null', 'https://localhost.evil.example', 'ftp://localhost', 'not a url']) assert.match(await handshake(p.port(), bad), /^HTTP\/1\.1 403/, bad);
+    assert.equal(p.stats().refused.origin, 8);
+    assert.equal(p.stats().joined, 5, 'a refused origin never joins the world');
+  } finally { await p.close(); }
+});
+
+test('origin allow-list: allowMissing=false refuses a client with no Origin, and the list is read from the options row', async () => {
+  const p = await start({ origins: { allowed: [], devHosts: [], allowMissing: false } });
+  try {
+    assert.match(await handshake(p.port(), undefined), /^HTTP\/1\.1 403/);
+    assert.match(await handshake(p.port(), 'http://localhost:1'), /^HTTP\/1\.1 403/);
+  } finally { await p.close(); }
+});
+
+test('the shipped origins row: v3.frankendom.com plus loopback dev hosts, nothing else', () => {
+  assert.deepEqual(PRESENCE.origins, { allowed: ['https://v3.frankendom.com'], devHosts: ['localhost', '127.0.0.1', '[::1]'], allowMissing: true });
 });
 
 test('the per-IP socket cap and the join rate refuse the extra join, and a refused join does not keep a slot', async () => {
