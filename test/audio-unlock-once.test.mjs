@@ -45,7 +45,7 @@ test('arm is idempotent (a wake handler may call it often) and a later lock re-a
 
 test('main.ts wires it: no bare window.addEventListener loop for the unlock family, the wake handler re-arms only while locked', () => {
   const src = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
-  assert.match(src, /createAudioUnlock\(\{[^}]*unlocked: \(\) => feedback\.unlocked\(\)/);
+  assert.match(src, /createAudioUnlock\(\{.*unlocked: \(\) => feedback\.unlocked\(\)/);
   assert.match(src, /audioUnlock\.arm\(\);/);
   assert.match(src, /if \(!feedback\.unlocked\(\)\) audioUnlock\.arm\(\)/);
   assert.doesNotMatch(src, /for \(const type of v1Sound/, 'the old for-loop that kept the listeners for life is gone');
