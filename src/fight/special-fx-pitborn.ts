@@ -13,7 +13,7 @@ import { atan2 as detAtan2, cos as detCos, sin as detSin } from './detmath.ts';
 const detHash = (i: number, salt: number) => { const x = detSin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 import { SPECIALS, dayNight, specialFamily, type SpecialRow } from './special-rows.ts';
 import { specialFxMinorNum } from './special-fx-minor-rows.ts';
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import TEMPLATE_DEFS from './pitborn-templates-defs.json' with { type: 'json' };
 import TEMPLATE_MANIFEST from './pitborn-templates-defs.manifest.json' with { type: 'json' };
 import { fxNum } from './fx-rows.ts';
@@ -55,10 +55,10 @@ export const isPitbornSpecial: typeof isHadesShadow = skillCast('cleave');
 // The kinds are the family's rows of src/fight/special-defs.json (special-rows.ts). The templates are this module's verbs, each its own painting:
 // crack (seams split out from his feet, clods lift and drop), ashfall (soot, low smoke, ash drifting over the arena), gale (strokes and sand torn
 // toward the target, the crowd banners snapping). A row carries its counts, its opacity ceilings (day / Night Pit) and its grit tint.
-const TEMPLATE_TABLE = tableFromFile(TEMPLATE_MANIFEST.tables[0] as unknown as Manifest, TEMPLATE_DEFS, 'pitborn-templates-defs.json');
+const TEMPLATE_TABLE = tableFromFile(TEMPLATE_MANIFEST.tables[0], TEMPLATE_DEFS, 'pitborn-templates-defs.json');
 loadRegistry([TEMPLATE_TABLE]);
 /** Verb id -> the params its row must carry (rows: pitborn-templates-defs.json; each verb's painting is this module's code). */
-export const PITBORN_TEMPLATES: Readonly<Record<string, readonly string[]>> = Object.fromEntries((TEMPLATE_TABLE.rows as unknown as { id: string; params: string[] }[]).map((r) => [r.id, r.params]));
+export const PITBORN_TEMPLATES: Readonly<Record<string, readonly string[]>> = Object.fromEntries((TEMPLATE_TABLE.rows as readonly { id: string; params: string[] }[]).map((r) => [r.id, r.params]));
 const ROWS = specialFamily(SPECIALS, 'pitborn', PITBORN_TEMPLATES);
 export type PitbornKind = string;
 export const PITBORN_KINDS: readonly PitbornKind[] = ROWS.map((r) => r.id);

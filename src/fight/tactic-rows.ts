@@ -1,7 +1,7 @@
 // The Gothic tactic table (spec docs/specs/combat/gothic-tactic-table.md, donor OpenGothic fightalgo.cpp fillQueue): a warden profile may name a tactic row
 // (`AiProfile.tactic`) that WEIGHTS a choice the warden already makes, keyed by situation. Rows live in tactic-defs.json, manifest-loaded through the shared
 // registry. A profile without `tactic` never reaches this file's table: no draw, no branch, the warden byte for byte. A sim file: it imports only the shared row loader.
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import TACTIC_DEFS from './tactic-defs.json' with { type: 'json' };
 import TACTIC_MANIFEST from './tactic-defs.manifest.json' with { type: 'json' };
 
@@ -12,17 +12,17 @@ export type Weighted<C extends string> = { readonly choice: C; readonly weight: 
 export type TacticBlock = { readonly heroWinding?: readonly Weighted<Reaction>[]; readonly holdBand?: boolean };   // holdBand (positioning gates, bands.ts): stand in the weapon's best band; acts only in a duel with bands on
 const REACTIONS: readonly string[] = ['parry', 'brace', 'backstep'];
 
-const LIMITS_T = tableFromFile(TACTIC_MANIFEST.tables[0] as unknown as Manifest, TACTIC_DEFS, 'tactic-defs.json');
-const TACTIC_T = tableFromFile(TACTIC_MANIFEST.tables[1] as unknown as Manifest, TACTIC_DEFS, 'tactic-defs.json');
+const LIMITS_T = tableFromFile(TACTIC_MANIFEST.tables[0], TACTIC_DEFS, 'tactic-defs.json');
+const TACTIC_T = tableFromFile(TACTIC_MANIFEST.tables[1], TACTIC_DEFS, 'tactic-defs.json');
 loadRegistry([LIMITS_T, TACTIC_T]);
-const MAX_ENTRIES = (LIMITS_T.rows as unknown as { id: string; value: number }[]).find((r) => r.id === 'maxEntries')!.value;   // the spec's six entries per list, a row
+const MAX_ENTRIES = (LIMITS_T.rows as readonly { id: string; value: number }[]).find((r) => r.id === 'maxEntries')!.value;   // the spec's six entries per list, a row
 // One check shared by the load and the tests: at most six entries, a known choice each, positive weights that are not all zero.
 export function checkTactic(id: string, list: readonly Weighted<string>[] | undefined): void {
   if (list === undefined) return;
   if (!list.length || list.length > MAX_ENTRIES) throw new Error(`tactic ${id}: heroWinding needs 1..${MAX_ENTRIES} entries`);
   for (const e of list) if (!REACTIONS.includes(e.choice) || !(e.weight > 0)) throw new Error(`tactic ${id}: heroWinding entry ${e.choice} is not a known reaction with a positive weight`);
 }
-export const TACTIC_ROWS: Readonly<Record<string, TacticBlock>> = Object.fromEntries((TACTIC_T.rows as unknown as ({ id: string } & TacticBlock)[]).map((r) => {
+export const TACTIC_ROWS: Readonly<Record<string, TacticBlock>> = Object.fromEntries((TACTIC_T.rows as readonly ({ id: string } & TacticBlock)[]).map((r) => {
   checkTactic(r.id, r.heroWinding);
   return [r.id, { heroWinding: r.heroWinding, ...(r.holdBand ? { holdBand: true } : {}) }];
 }));

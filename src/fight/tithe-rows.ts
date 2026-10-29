@@ -1,12 +1,12 @@
 // Blood Tithe's look and timing numbers as ROWS (Dom, "centralized game engine, no hard coding"; the debt entries in scripts/as-data/allow.json for special-tithe.ts). One row per dial in tithe-defs.json,
 // manifest-loaded through the shared registry; this file only hands special-tithe.ts the values it always held, bit for bit. Presentation only: not a sim file, not in the record digest.
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import TITHE_DEFS from './tithe-defs.json' with { type: 'json' };
 import TITHE_MANIFEST from './tithe-defs.manifest.json' with { type: 'json' };
 
-const TITHE_TABLE = tableFromFile(TITHE_MANIFEST.tables[0] as unknown as Manifest, TITHE_DEFS, 'tithe-defs.json');
+const TITHE_TABLE = tableFromFile(TITHE_MANIFEST.tables[0], TITHE_DEFS, 'tithe-defs.json');
 loadRegistry([TITHE_TABLE]);
-const ROWS = new Map((TITHE_TABLE.rows as unknown as { id: string; value: number }[]).map((r) => [r.id, r.value]));
+const ROWS = new Map((TITHE_TABLE.rows as readonly { id: string; value: number }[]).map((r) => [r.id, r.value]));
 const dial = (id: string): number => {
   const v = ROWS.get(id);
   if (v === undefined) throw Error(`tithe-defs: no dial ${id}`);
