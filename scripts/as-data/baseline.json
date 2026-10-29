@@ -1,5 +1,5 @@
 {
- "about": "Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy). More of a literal than this is new; fewer must come down here. Only ever shrinks.",
+ "about": "Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy): per literal. More of a literal than this is new; fewer must come down here. Only ever shrinks.",
  "counts": {
   "src/fight/open-fight.ts": {
    "number:60": 1,
@@ -247,15 +247,6 @@
   "src/fight/bands.ts": {
    "number": 8
   },
-  "src/fight/blade-minotaur.ts": {
-   "number": 3276
-  },
-  "src/fight/blade-paths.ts": {
-   "number": 48498
-  },
-  "src/fight/blade-picks.ts": {
-   "number": 2682
-  },
   "src/fight/blade.ts": {
    "number": 10
   },
@@ -302,7 +293,6 @@
   },
   "src/fight/catalogue-data.ts": {
    "label": 623,
-   "number": 305,
    "data-id": 7
   },
   "src/fight/catalogue-defs.ts": {
@@ -616,11 +606,6 @@
   "src/fight/nightfall-fx.ts": {
    "number": 74,
    "label": 3
-  },
-  "src/fight/open-fight.ts": {
-   "number": 4,
-   "name-compare": 36,
-   "label": 12
   },
   "src/fight/opened.ts": {
    "number": 88,
@@ -1001,23 +986,6 @@
    "number": 112,
    "name-compare": 3,
    "label": 2
-  },
-  "src/fight/world-combat.ts": {
-   "number": 7,
-   "name-compare": 22
-  },
-  "src/fight/world-level-rows.ts": {
-   "compare": 1
-  },
-  "src/fight/world-record.ts": {
-   "number": 66,
-   "name-compare": 7,
-   "label": 16
-  },
-  "src/fight/world.ts": {
-   "name-compare": 24,
-   "number": 8,
-   "label": 15
   },
   "src/fight/wound-notice.ts": {
    "number": 1,
