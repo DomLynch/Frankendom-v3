@@ -127,8 +127,7 @@ test('a failing network, a throwing send and refused storage never throw or bloc
   assert.doesNotThrow(() => { tel.event('nope', 1); tel.event(undefined); tel.event('boss_death', null); });
   const noStorage = mk({ storage: null });
   noStorage.tel.flush(); assert.equal(noStorage.sent.length, 1, 'storage unavailable: the visit sends under its own id');
-  const t0 = Date.now(); for (let i = 0; i < 2000; i++) tel.event('boss_death', { boss: 'a', sec: 1, heroHp: 0, bossHp: 1 });
-  assert.ok(Date.now() - t0 < 500, 'cheap even when everything fails');
+  assert.doesNotThrow(() => { for (let i = 0; i < 2000; i++) tel.event('boss_death', { boss: 'a', sec: 1, heroHp: 0, bossHp: 1 }); }, 'a flood of events never throws (its cost: test/perf/telemetry-cost.perf.mjs)');
 });
 
 test('startTelemetry wires the page: DNT and localhost stay silent; on a deployed host it installs the listeners and sends over beacon, then falls back to fetch keepalive that cannot reject', async () => {
