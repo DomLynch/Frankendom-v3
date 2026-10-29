@@ -59,6 +59,8 @@ export const SCHEMA = {
   'mobs': { keys: ['about', 'on', 'cap', 'capMax', 'scanSeconds', 'activateMetres', 'despawnMetres', 'spawnMinMetres', 'startClearMetres', 'padMetres', 'swingMetres', 'lod', 'hitScale', 'turnRate', 'speedEase', 'pitArea', 'grid', 'pack', 'separation', 'attack', 'hero', 'states', 'fall', 'corpse', 'farm', 'rings', 'respawnSeconds', 'kinds', 'limits'],
     maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], corpse: ['nearMetres', 'graceSeconds', 'holdSeconds', 'max'], farm: ['decay'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
   // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
+  // The ten Pit ranks' named opponents per ranked character (src/fight/catalogue-rows.ts joins them onto the catalogue rows; checkLegends below)
+  'legends': { keys: ['about', 'ranks'] },
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
   'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
@@ -417,8 +419,23 @@ export function validateFile(name, json) {
     errors.push(...checkWideLens(json.camera.wide, name));
   }
   if (name === 'commentator') errors.push(...checkCommentator(json));
+  if (name === 'legends') errors.push(...checkLegends(json));
   banned(json, name, errors);
   return errors;
+}
+
+// The Pit rank legends (data/legends.json): character id -> exactly ten rows of { name, source, backstory }, each a non-blank string, no other key.
+function checkLegends(json) {
+  const e = [], n = 'legends';
+  if (!json.ranks || typeof json.ranks !== 'object' || Array.isArray(json.ranks)) return [`${n}.ranks: must be an object keyed by character id`];
+  for (const [id, list] of Object.entries(json.ranks)) {
+    if (!Array.isArray(list) || list.length !== 10) { e.push(`${n}.ranks.${id}: must list exactly ten ranks`); continue; }
+    list.forEach((r, i) => {
+      for (const k of Object.keys(r ?? {})) if (!['name', 'source', 'backstory'].includes(k)) e.push(`${n}.ranks.${id}[${i}].${k}: unknown key`);
+      for (const k of ['name', 'source', 'backstory']) if (typeof r?.[k] !== 'string' || !r[k].trim()) e.push(`${n}.ranks.${id}[${i}].${k}: must be a non-blank string`);
+    });
+  }
+  return e;
 }
 
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
