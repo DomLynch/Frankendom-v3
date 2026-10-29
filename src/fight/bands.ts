@@ -1,5 +1,4 @@
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import { WEAPONS, type MoveId, type WeaponId } from './moves.ts';
 import { ROWS84_ON, SANDBOX_ON } from './sandbox-era.ts';
 import BAND_DEFS from './band-defs.json' with { type: 'json' };
@@ -10,15 +9,15 @@ import BAND_MANIFEST from './band-defs.manifest.json' with { type: 'json' };
 // A weapon has a bestBand (rows): its clean blow lands at x1.0 there and at offBandMult off it. A blow that is already a hard miss (inside minReach, out of reach) stays a miss: the factor is applied only
 // to a hit that landed. Chip through a block is never scaled (the band changes what lands, not what a block costs). Edges come from the weapon's own reach and minReach, not new metres per weapon.
 // A sim file: it imports only the shared row loader and the weapon rows. Pure: gap in, number out.
-const RULE_T = tableOf(BAND_MANIFEST.tables[0], BAND_DEFS, 'band-defs.json');
-const BAND_T = tableOf(BAND_MANIFEST.tables[1], BAND_DEFS, 'band-defs.json');
-const BLOW_T = tableOf(BAND_MANIFEST.tables[2], BAND_DEFS, 'band-defs.json');
-const WEAPON_T = tableOf(BAND_MANIFEST.tables[3], BAND_DEFS, 'band-defs.json');
-const WEAPON84_T = tableOf(BAND_MANIFEST.tables[4], BAND_DEFS, 'band-defs.json');
+const RULE_T = tableFromFile(BAND_MANIFEST.tables[0], BAND_DEFS, 'band-defs.json');
+const BAND_T = tableFromFile(BAND_MANIFEST.tables[1], BAND_DEFS, 'band-defs.json');
+const BLOW_T = tableFromFile(BAND_MANIFEST.tables[2], BAND_DEFS, 'band-defs.json');
+const WEAPON_T = tableFromFile(BAND_MANIFEST.tables[3], BAND_DEFS, 'band-defs.json');
+const WEAPON84_T = tableFromFile(BAND_MANIFEST.tables[4], BAND_DEFS, 'band-defs.json');
 loadRegistry([RULE_T, BAND_T, BLOW_T, WEAPON_T, WEAPON84_T]);
-const rule = (id: string): number => { const r = rowsOf<{ id: string; value: number }>(RULE_T).find((x) => x.id === id); if (!r || !(r.value >= 0)) throw Error(`band-defs: the rule "${id}" needs a row with a value >= 0`); return r.value; };
+const rule = (id: string): number => { const r = (RULE_T.rows as readonly { id: string; value: number }[]).find((x) => x.id === id); if (!r || !(r.value >= 0)) throw Error(`band-defs: the rule "${id}" needs a row with a value >= 0`); return r.value; };
 /** The ring ids from the innermost out (a row order). */
-export const BANDS: readonly string[] = rowsOf<{ id: string }>(BAND_T).map((r) => r.id);
+export const BANDS: readonly string[] = (BAND_T.rows as readonly { id: string }[]).map((r) => r.id);
 const CONTACT = rule('contactGap'), INNER_FRAC = rule('innerFrac'), MID_FRAC = rule('midFrac'), OFF_BAND_MULT = rule('offBandMult');
 for (const must of ['contactGap', 'offBandMult', 'holdForward', 'holdBack']) if (!(rule(must) > 0)) throw Error(`band-defs: "${must}" is above 0`);
 if (BANDS.length !== 3) throw Error('band-defs: exactly three bands (inner, mid, outer)');
@@ -31,13 +30,13 @@ const edgesFixed = (): boolean => EDGES_FIXED && SANDBOX_ON;   // era-keyed (san
 const INNER_EDGE = rule('innerEdgeCm') / 100, MID_EDGE = rule('midEdgeCm') / 100, OFF_BAND_FIXED = rule('offBandMultCm');
 if (EDGES_FIXED && !(INNER_EDGE < MID_EDGE && OFF_BAND_FIXED <= 1)) throw Error('band-defs: fixed edges need innerEdgeCm < midEdgeCm and offBandMultCm at most 1');
 /** Weapon id -> its best band. A weapon with no row has no band: its blows are never scaled. */
-export const BEST_BAND: Readonly<Record<string, string>> = Object.fromEntries(rowsOf<{ id: string; bestBand: string }>(WEAPON_T).map((r) => {
+export const BEST_BAND: Readonly<Record<string, string>> = Object.fromEntries((WEAPON_T.rows as readonly { id: string; bestBand: string }[]).map((r) => {
   if (!Object.hasOwn(WEAPONS, r.id)) throw Error(`band-defs: "${r.id}" is not a weapon row`);
   if (!BANDS.includes(r.bestBand)) throw Error(`band-defs: "${r.id}" bestBand "${r.bestBand}" is not one of ${BANDS.join(', ')}`);
   return [r.id, r.bestBand];
 }));
 /** RV84 (sandbox-era.ts rows84For): the sandbox's rows for the weapons band-defs.json did not carry (bite, warhammer, reaper, bow, staff); they apply for a live fight and a record at 84 or later, so a record below 84 replays the old, unscaled blows. */
-const BEST_BAND_RV84: Readonly<Record<string, string>> = Object.fromEntries(rowsOf<{ id: string; bestBand: string }>(WEAPON84_T).map((r) => {
+const BEST_BAND_RV84: Readonly<Record<string, string>> = Object.fromEntries((WEAPON84_T.rows as readonly { id: string; bestBand: string }[]).map((r) => {
   if (!Object.hasOwn(WEAPONS, r.id)) throw Error(`band-defs: "${r.id}" is not a weapon row`);
   if (!BANDS.includes(r.bestBand)) throw Error(`band-defs: "${r.id}" bestBand "${r.bestBand}" is not one of ${BANDS.join(', ')}`);
   if (Object.hasOwn(BEST_BAND, r.id)) throw Error(`band-defs: "${r.id}" is in both weapons and weaponsRv84`);
@@ -49,7 +48,7 @@ export const OFF_BAND = OFF_BAND_MULT;
 export const HOLD_FORWARD = rule('holdForward'), HOLD_BACK = rule('holdBack'), HOLD_MARGIN = rule('holdMargin'), HOLD_BACK_ON = rule('holdBackOn') > 0, HOLD_ONLY_IN_OPENING = rule('holdOnlyInOpening') > 0;   // margin: metres past a band edge before the AI steps; backOn: whether it also steps back from inside the band
 
 /** The blows that define a weapon's working span (rows: band-defs.json spanBlows): the weapon's own blows, not the shared skill moves or the kick. */
-const OWN_BLOWS: readonly MoveId[] = rowsOf<{ id: string }>(BLOW_T).map((r) => {
+const OWN_BLOWS: readonly MoveId[] = (BLOW_T.rows as readonly { id: string }[]).map((r) => {
   if (!Object.hasOwn(WEAPONS.longsword.moves, r.id)) throw Error(`band-defs: spanBlows "${r.id}" is not a move id`);
   return r.id as MoveId;
 });

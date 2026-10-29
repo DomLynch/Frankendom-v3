@@ -1,12 +1,11 @@
 // The ready and guard pose: the shared Armed clip carries a forward stoop (chest ~19 deg against ~3 deg in the plain Idle). Dom picked the mild counter-pitch (2026-10-13). Per body, the row in ready-pose.json
 // (degrees, about the bone's own X) is added on spine_02, spine_03 and neck_01 on the calm ready layer, restored before every update like the stance and tired layers. Presentation only: no sim or hitbox read.
 // ON by default; `?look=slouch` is the off-switch (the old stoop), for comparing.
-import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import ROWS from './ready-pose.json' with { type: 'json' };
 import MANIFEST from './ready-pose.manifest.json' with { type: 'json' };
 
-loadRegistry([tableOf(MANIFEST.tables[0], ROWS, 'ready-pose.json')]);
+loadRegistry([tableFromFile(MANIFEST.tables[0], ROWS, 'ready-pose.json')]);
 
 export type ReadyOffset = { readonly spine2: number; readonly spine3: number; readonly neck: number };   // radians
 

@@ -1,5 +1,4 @@
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import { isSpellId, spellUsesCap } from './spell-cast.ts';
 import { POOLS } from './pools.ts';
 import SPELL_INDEX from './spell-index.json' with { type: 'json' };
@@ -9,9 +8,9 @@ import SLOT_DEFS from './spell-slot-defs.json' with { type: 'json' };
 import SLOT_MANIFEST from './spell-slot-defs.manifest.json' with { type: 'json' };
 
 // The starter spell list and the special slots as rows (spec docs/specs/combat/spell-slots.md, rows PR: no behaviour, nothing in a fight reads these yet). A leaf: the registry loader, the spell resolver and the index.
-const LIST_T = tableOf(LIST_MANIFEST.tables[0], LIST_DEFS, 'spell-list-defs.json');
-const SLOT_T = tableOf(SLOT_MANIFEST.tables[0], SLOT_DEFS, 'spell-slot-defs.json');
-const SLOT_RULE_T = tableOf(SLOT_MANIFEST.tables[1], SLOT_DEFS, 'spell-slot-defs.json');
+const LIST_T = tableFromFile(LIST_MANIFEST.tables[0], LIST_DEFS, 'spell-list-defs.json');
+const SLOT_T = tableFromFile(SLOT_MANIFEST.tables[0], SLOT_DEFS, 'spell-slot-defs.json');
+const SLOT_RULE_T = tableFromFile(SLOT_MANIFEST.tables[1], SLOT_DEFS, 'spell-slot-defs.json');
 loadRegistry([LIST_T, SLOT_T, SLOT_RULE_T]);
 /** The stamina bar a spell must fit under (pool-defs.json, the same row the cost cap reads). */
 export const STAMINA_BAR: number = POOLS.find((d) => d.id === 'stamina')!.default;
@@ -26,12 +25,12 @@ export const checkSpellList = (rows: readonly SpellListEntry[]): SpellListEntry[
   if (spellUsesCap(r.id)) throw Error(`spell-list-defs "${r.id}": costs more than the stamina bar (the cost cap would hide it)`);   // the raw cost, not resolveSpell's capped one: min(COST_CAP, raw) can never exceed the bar
   return { id: r.id, name: r.name, level: r.level };
 });
-export const SPELL_LIST: readonly SpellListEntry[] = checkSpellList(rowsOf<SpellListEntry>(LIST_T));
+export const SPELL_LIST: readonly SpellListEntry[] = checkSpellList((LIST_T.rows as readonly SpellListEntry[]));
 
 export type SpellSlot = { readonly id: string; readonly action: string; readonly order: number };
 /** The slots in HUD order. An action is one verb per slot; at least one slot. */
-export const SPELL_SLOTS: readonly SpellSlot[] = rowsOf<SpellSlot>(SLOT_T).map((r) => ({ id: r.id, action: r.action, order: r.order })).sort((a, b) => a.order - b.order);
+export const SPELL_SLOTS: readonly SpellSlot[] = (SLOT_T.rows as readonly SpellSlot[]).map((r) => ({ id: r.id, action: r.action, order: r.order })).sort((a, b) => a.order - b.order);
 if (!SPELL_SLOTS.length) throw Error('spell-slot-defs: at least one slot');
 if (new Set(SPELL_SLOTS.map((s) => s.action)).size !== SPELL_SLOTS.length || new Set(SPELL_SLOTS.map((s) => s.order)).size !== SPELL_SLOTS.length) throw Error('spell-slot-defs: one action and one order per slot');
-const slotRule = (id: string): number => { const r = rowsOf<{ id: string; value: number }>(SLOT_RULE_T).find((x) => x.id === id); if (!r || !(r.value === 0 || r.value === 1)) throw Error(`spell-slot-defs: the rule "${id}" needs a row that is 0 or 1`); return r.value; };
+const slotRule = (id: string): number => { const r = (SLOT_RULE_T.rows as readonly { id: string; value: number }[]).find((x) => x.id === id); if (!r || !(r.value === 0 || r.value === 1)) throw Error(`spell-slot-defs: the rule "${id}" needs a row that is 0 or 1`); return r.value; };
 export const SHARED_COOLDOWN = slotRule('sharedCooldown') === 1, ALLOW_DUPLICATE = slotRule('allowDuplicate') === 1;

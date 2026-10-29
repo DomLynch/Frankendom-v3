@@ -1,17 +1,16 @@
 // The opponent archetypes' bodies and AI tables as ROWS (Dom, "centralized game engine, no hard coding"; recce #2554, sim batch A). One row per archetype in archetype-defs.json, manifest-loaded through the
 // shared registry. A profile tier is `from` a shared tier of PROFILES (the old `...PROFILES.hard` spread) with `set` overrides, plus an optional named `identity` block (the Witch's WITCH_IDENTITY);
 // buildArchetypes composes them in moves.ts, handing in PROFILES and RULES.health so nothing circular is imported. A sim file: it imports only the shared row loader.
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import ARCHETYPE_DEFS from './archetype-defs.json' with { type: 'json' };
 import ARCHETYPE_MANIFEST from './archetype-defs.manifest.json' with { type: 'json' };
 
-const ARCHETYPE_IDENTITY_TABLE = tableOf(ARCHETYPE_MANIFEST.tables[0], ARCHETYPE_DEFS, 'archetype-defs.json');
-const ARCHETYPE_TABLE = tableOf(ARCHETYPE_MANIFEST.tables[1], ARCHETYPE_DEFS, 'archetype-defs.json');
+const ARCHETYPE_IDENTITY_TABLE = tableFromFile(ARCHETYPE_MANIFEST.tables[0], ARCHETYPE_DEFS, 'archetype-defs.json');
+const ARCHETYPE_TABLE = tableFromFile(ARCHETYPE_MANIFEST.tables[1], ARCHETYPE_DEFS, 'archetype-defs.json');
 loadRegistry([ARCHETYPE_IDENTITY_TABLE, ARCHETYPE_TABLE]);
 type TierSpec = { from?: string; identity?: string; order?: string[]; set: Record<string, number> };
 type ArchetypeRow = { id: string; health: number | 'rules'; profiles: Record<string, TierSpec> } & Record<string, unknown>;
-const ARCHETYPE_IDENTITIES = new Map(rowsOf<{ id: string; values: Record<string, number> }>(ARCHETYPE_IDENTITY_TABLE).map((r) => [r.id, r.values]));
+const ARCHETYPE_IDENTITIES = new Map((ARCHETYPE_IDENTITY_TABLE.rows as readonly { id: string; values: Record<string, number> }[]).map((r) => [r.id, r.values]));
 // ARCHETYPES as the code held it before it became rows (comments are the owners' rulings):
 // | {
 // |   // Hard: pressure .7 and a discipline floor of 30 keep him cutting instead of resting (the shared hard was two wins tighter than normal;
@@ -148,6 +147,6 @@ const ordered = (o: Record<string, number>, order?: string[]): Record<string, nu
 export function buildArchetypes(profiles: Record<string, object>, rulesHealth: number): Record<string, unknown> {
   // a tier that is exactly a shared PROFILES tier IS that object (the Executioner's `easy: PROFILES.easy`), not a copy
   const tier = (spec: TierSpec): Record<string, number> => spec.from && !spec.identity && !spec.order && !Object.keys(spec.set).length ? (profiles[spec.from] as Record<string, number>) : ordered({ ...(spec.from ? profiles[spec.from] : {}), ...spec.set, ...(spec.identity ? ARCHETYPE_IDENTITIES.get(spec.identity) : {}) }, spec.order);
-  return Object.fromEntries(rowsOf<ArchetypeRow>(ARCHETYPE_TABLE).map((row) => [row.id, Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'id').map(([k, v]) => [k,
+  return Object.fromEntries((ARCHETYPE_TABLE.rows as readonly ArchetypeRow[]).map((row) => [row.id, Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'id').map(([k, v]) => [k,
     k === 'health' ? (v === 'rules' ? rulesHealth : v) : k === 'profiles' ? Object.fromEntries(Object.entries(row.profiles).map(([t, spec]) => [t, tier(spec)])) : v]))]));
 }

@@ -4,15 +4,14 @@
 //   `health`        the archetype health the creature has AT that level, before the novice body blend (a row of 45 at level 1 fights like an archetype of 45 would);
 //   `profileLevel`  the ladder level its BRAIN (AI profile, moves.ts profileAt) is built at, while its displayed level, loot and XP stay the mob's own: a Zone 2 creature shown at level 2 that reads and answers like a level-8 one.
 // Windups, windows and recoveries are never touched (timing is sacred): a profile moves who reads and answers, so the visible tells fire unchanged. A sim file: it imports only the shared row loader.
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import WORLD_LEVEL_DEFS from './world-level-defs.json' with { type: 'json' };
 import WORLD_LEVEL_MANIFEST from './world-level-defs.manifest.json' with { type: 'json' };
 
-const WORLD_LEVEL_TABLE = tableOf(WORLD_LEVEL_MANIFEST.tables[0], WORLD_LEVEL_DEFS, 'world-level-defs.json');
+const WORLD_LEVEL_TABLE = tableFromFile(WORLD_LEVEL_MANIFEST.tables[0], WORLD_LEVEL_DEFS, 'world-level-defs.json');
 loadRegistry([WORLD_LEVEL_TABLE]);
 type WorldLevelRow = { id: string; opponent: string; level: number; health?: number; profileLevel?: number };
-const ROWS = rowsOf<WorldLevelRow>(WORLD_LEVEL_TABLE);
+const ROWS = (WORLD_LEVEL_TABLE.rows as readonly WorldLevelRow[]);
 for (const r of ROWS) {
   if (r.id !== `${r.opponent}:${r.level}` || !Number.isInteger(r.level) || r.level < 1) throw Error(`world-level-defs: ${r.id} must be "<opponent>:<level>" with a whole level of at least 1`);
   if (r.health === undefined && r.profileLevel === undefined) throw Error(`world-level-defs: ${r.id} sets neither health nor profileLevel`);

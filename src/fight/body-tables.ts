@@ -2,12 +2,11 @@
 // A new body family is one `bodytypes` row, a new species one `species` row, in body-tables-defs.json (manifest-loaded through the shared registry, as ROWS: as-data check (i), id tables in code); this file only hands the
 // readers the same objects the literals held, bit for bit. A creature is a `wounds` row. The trunk is the root part; a head hangs from the neck and the neck from the trunk, so severing the neck takes the head.
 import type { Bodytype, Species } from './catalogue.ts';
-import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import DEFS from './body-tables-defs.json' with { type: 'json' };
 import MANIFEST from './body-tables-defs.manifest.json' with { type: 'json' };
 
-const TABLES = MANIFEST.tables.map((t) => tableOf(t, DEFS, 'body-tables-defs.json'));
+const TABLES = MANIFEST.tables.map((t) => tableFromFile(t, DEFS, 'body-tables-defs.json'));
 loadRegistry(TABLES);
 const byId = <T>(table: string): Record<string, T> => Object.fromEntries(TABLES.find((t) => t.manifest.table === table)!.rows.map(({ id, ...rest }) => [id as string, rest as unknown as T]));
 

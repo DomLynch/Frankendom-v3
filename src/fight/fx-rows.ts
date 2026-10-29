@@ -1,13 +1,12 @@
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import FX_MANIFEST from './fx-rows.manifest.json' with { type: 'json' };
 import FX_ROWS from './fx-rows.json' with { type: 'json' };
 
 // The view effects' numbers as rows (fx-rows.json; Dom's data-layer rule 2026-10-13): the Centurion charge's sprites and strides, the low-stamina bar thresholds, the kick-close window, the opening pose's fall and recovery shares,
 // the beast render scales, the fighter texture cap and the open-waist bake's step budgets. View layer only: none of these is read by the sim, a record or the digest. tests/fx-rows.test.ts pins every default.
-const TABLE = tableOf(FX_MANIFEST.tables[0], FX_ROWS, 'fx-rows.json');
+const TABLE = tableFromFile(FX_MANIFEST.tables[0], FX_ROWS, 'fx-rows.json');
 loadRegistry([TABLE]);
-const VALUES = new Map(rowsOf<{ id: string; fields: { value: number } }>(TABLE).map((r) => [r.id, r.fields.value]));
+const VALUES = new Map((TABLE.rows as readonly { id: string; fields: { value: number } }[]).map((r) => [r.id, r.fields.value]));
 
 /** Whether an fx row exists (a row can be a switch: `breath.<opponent>` is what makes a creature breathe fire). */
 export const fxHas = (id: string): boolean => VALUES.has(id);

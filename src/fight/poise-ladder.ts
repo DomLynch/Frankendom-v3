@@ -1,5 +1,4 @@
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import LADDER_MANIFEST from './poise-ladder-defs.manifest.json' with { type: 'json' };
 import LADDER_DEFS from './poise-ladder-defs.json' with { type: 'json' };
 
@@ -10,9 +9,9 @@ import LADDER_DEFS from './poise-ladder-defs.json' with { type: 'json' };
 //   stagger dealt >= staggerFrom x poise           the move's full stagger, and `immunity` ticks of poise-rest: a flinch in that window is a shrug, so one big hit cannot be chained into a stunlock
 // Timing is sacred: the ladder moves the stagger length and who is moved, never a wind-up, window or recovery. A sim file: integers and IEEE basic maths only. Era-keyed (poise-era.ts).
 type LadderRule = { id: string; flinchFrom: number; staggerFrom: number; flinchStagger: number; immunity: number };
-const POISE_TABLES = [tableOf(LADDER_MANIFEST.tables[0], LADDER_DEFS, 'poise-ladder-defs.json')];
+const POISE_TABLES = [tableFromFile(LADDER_MANIFEST.tables[0], LADDER_DEFS, 'poise-ladder-defs.json')];
 loadRegistry(POISE_TABLES);
-export const LADDER: LadderRule = rowsOf<LadderRule>(POISE_TABLES[0]!).find((r) => r.id === 'ladder')!;
+export const LADDER: LadderRule = (POISE_TABLES[0]!.rows as readonly LadderRule[]).find((r) => r.id === 'ladder')!;
 if (!LADDER || !(LADDER.flinchFrom > 0) || !(LADDER.staggerFrom > LADDER.flinchFrom) || !(LADDER.flinchStagger > 0 && LADDER.flinchStagger <= 1) || !Number.isInteger(LADDER.immunity) || LADDER.immunity < 0) throw Error('poise-ladder-defs: the ladder row needs 0 < flinchFrom < staggerFrom, 0 < flinchStagger <= 1 and a whole immunity >= 0');
 
 export type PoiseTier = 'shrug' | 'flinch' | 'stagger';

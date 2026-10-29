@@ -160,6 +160,9 @@ export function loadRegistry(tables: readonly TableData[], external: Readonly<Re
 }
 
 // Rows of a manifest out of its parsed rows file (the gate and the runtime both use this, so they read a file the same way).
+// A manifest entry straight from a parsed *.manifest.json is accepted as-is: JSON types its field specs as `string`, never the FieldType union, so a typed Manifest parameter forced every caller to cast.
+// The overload is a declaration only (no runtime code); the registry's own gate (loadRegistry) is what checks the manifest and the rows.
+export function tableFromFile(manifest: object, parsed: unknown, file?: string): TableData;
 export function tableFromFile(manifest: Manifest, parsed: unknown, file?: string): TableData {
   let cur: unknown = parsed;
   if (manifest.at) for (const seg of manifest.at.split('.')) cur = isObj(cur) ? cur[seg] : undefined;

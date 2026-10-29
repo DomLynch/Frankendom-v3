@@ -6,8 +6,7 @@
 // dial, a skill and the one points pool carry base, cap and pool, so a new dial or skill is a row and the rule does not move. ONE build validator (`validateBuild`) checks per-dial, per-skill and the points
 // placed against the level; `checkSheet` uses it too (sheets that did not come from a stored build), so no player number passes 100 and no career places a point past its level, at load, on the writer and
 // on a record's read.
-import { loadRegistry } from '../core/registry.ts';
-import { tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import SHEET_DEFS from './sheet-defs.json' with { type: 'json' };
 import SHEET_MANIFEST from './sheet-defs.manifest.json' with { type: 'json' };
 
@@ -19,7 +18,7 @@ export type Sheet = Readonly<Record<string, number>>;   // dial id -> the player
 // `values` = each skill's current value, practice's state (the Crawl use-pool moves it from the skill's base toward its ceiling); absent = at base. Dials and skills share the one budget.
 export type Build = { readonly level: number; readonly placed: Readonly<Record<string, number>>; readonly values?: Readonly<Record<string, number>> };
 
-const TABLES = SHEET_MANIFEST.tables.map((t) => tableOf(t, SHEET_DEFS, 'sheet-defs.json'));
+const TABLES = SHEET_MANIFEST.tables.map((t) => tableFromFile(t, SHEET_DEFS, 'sheet-defs.json'));
 loadRegistry(TABLES);
 const rows = <T>(i: number): readonly T[] => TABLES[i]!.rows as unknown as readonly T[];
 export const POINTS: PointsPool = rows<PointsPool>(0)[0]!;

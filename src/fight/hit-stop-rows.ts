@@ -1,21 +1,20 @@
 // Hit stop as DATA (src/fight/hit-stop-defs.json, one row per kind of contact; Combat, top-30 item 10). The pause a contact holds is PRESENTATION: main.ts pauses the picture for the stop length (hit-stop-rules.json, `ms` by event type) plus `frames` at 60 Hz
 // while every sim tick still runs in order, and a live duel holds only what is drawn (pvp-hold.ts). The SIM never reads these rows (timing is sacred: a stop that moved a tick would move every window and
 // every net cadence), so this file is outside SIM_FILES and no RECORD_VERSION or digest moves with an edit. `knock` / `push` / `drop` are the camera's jolt (hit-impact.ts), metres.
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import DEFS from './hit-stop-defs.json' with { type: 'json' };
 import MANIFEST from './hit-stop-defs.manifest.json' with { type: 'json' };
 
 export type ContactId = 'hitLight' | 'hitHeavy' | 'blockLight' | 'blockHeavy' | 'parry' | 'guardBreak' | 'special' | 'postureBreak' | 'kill' | 'kick';
 export type ContactRow = { order: number; frames: number; knock: number; push: number; drop?: number; flash?: number; ring?: number; tint?: string };   // flash / ring (metres) and tint: the contact's flash and ground ring (impact-fx.ts); a row without them draws nothing
-const TABLE = tableOf(MANIFEST.tables[0], DEFS, 'hit-stop-defs.json');
-const FEEL = tableOf(MANIFEST.tables[1], DEFS, 'hit-stop-defs.json');
+const TABLE = tableFromFile(MANIFEST.tables[0], DEFS, 'hit-stop-defs.json');
+const FEEL = tableFromFile(MANIFEST.tables[1], DEFS, 'hit-stop-defs.json');
 loadRegistry([TABLE, FEEL]);
-export const CONTACTS = Object.fromEntries(rowsOf<{ id: string } & ContactRow>(TABLE).map(({ id, ...row }) => [id, row])) as Readonly<Record<ContactId, ContactRow>>;
+export const CONTACTS = Object.fromEntries((TABLE.rows as readonly ({ id: string } & ContactRow)[]).map(({ id, ...row }) => [id, row])) as Readonly<Record<ContactId, ContactRow>>;
 export const KICK_DROP: number = CONTACTS.kick?.drop ?? (() => { throw Error('hit-stop-defs: the kick row needs a drop (the camera jolt)'); })();   // the one row that carries it, so the manifest cannot require it of all
 /** Seconds the camera's knock takes to settle back (hit-impact.ts): the `feel` row. */
-export const KNOCK_SETTLE: number = rowsOf<{ id: string; value: number }>(FEEL).find((r) => r.id === 'knockSettle')?.value ?? (() => { throw Error('hit-stop-defs: no knockSettle feel row'); })();
+export const KNOCK_SETTLE: number = (FEEL.rows as readonly { id: string; value: number }[]).find((r) => r.id === 'knockSettle')?.value ?? (() => { throw Error('hit-stop-defs: no knockSettle feel row'); })();
 /** A `feel` row's value by id (the impact flash and ring's life in seconds and heights in metres: impact-fx.ts); a missing id throws at load rather than answering NaN. */
-export const feelNum = (id: string): number => rowsOf<{ id: string; value: number }>(FEEL).find((r) => r.id === id)?.value ?? (() => { throw Error(`hit-stop-defs: no feel row "${id}"`); })();
+export const feelNum = (id: string): number => (FEEL.rows as readonly { id: string; value: number }[]).find((r) => r.id === id)?.value ?? (() => { throw Error(`hit-stop-defs: no feel row "${id}"`); })();
 /** Milliseconds a contact row's impact frames hold the picture at 60 Hz (the stop `ms` is Web's hit-stop-rules.json). */
 export const frameMs = (row: ContactRow): number => (row.frames * 1000) / 60;

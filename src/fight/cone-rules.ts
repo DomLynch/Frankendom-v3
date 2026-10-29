@@ -1,5 +1,4 @@
-import { loadRegistry } from '../core/registry.ts';
-import { rowsOf, tableOf } from '../rows.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import { kindOf } from './damage-kinds.ts';
 import { RULES, SPECIAL_SETS, specialOf } from './moves.ts';
 import CONE_MANIFEST from './cone-defs.manifest.json' with { type: 'json' };
@@ -11,9 +10,9 @@ import CONE_DEFS from './cone-defs.json' with { type: 'json' };
 // (specialRecover) until the breath and the usual recovery are over. A sim file: integers and IEEE basic maths only, no clock. Era-keyed (cone-era.ts); `creatures` is the list of fighters that have it and is
 // checked against SPECIAL_SETS at load, and `range` may not pass the special's reach (the AI casts and the commit gates on RULES.special.reach, so a longer cone needs an AI change, not a row).
 type ConeRow = { id: string; angle: number; range: number; every: number; ramp: readonly number[]; damageKind: string; creatures: readonly string[] };
-const CONE_TABLE = tableOf(CONE_MANIFEST.tables[0], CONE_DEFS, 'cone-defs.json');
+const CONE_TABLE = tableFromFile(CONE_MANIFEST.tables[0], CONE_DEFS, 'cone-defs.json');
 loadRegistry([CONE_TABLE]);
-export const CONES: Readonly<Record<string, ConeRow>> = Object.fromEntries(rowsOf<ConeRow>(CONE_TABLE).map((c) => {
+export const CONES: Readonly<Record<string, ConeRow>> = Object.fromEntries((CONE_TABLE.rows as readonly ConeRow[]).map((c) => {
   const bad = (why: string) => Error(`cone-defs "${c.id}": ${why}`);
   if (!Object.values(SPECIAL_SETS).some((set) => (set as readonly string[]).includes(c.id))) throw bad('is no special name (moves.ts SPECIAL_SETS)');
   if (!(c.angle > 0 && c.angle <= 360) || !(c.range > 0 && c.range <= RULES.special.reach)) throw bad(`angle is 0-360 degrees and range 0-${RULES.special.reach} m (the special's reach)`);
