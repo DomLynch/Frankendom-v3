@@ -37,8 +37,8 @@ for (let i = 0; i < 400 && /sheathed|draw/.test((await read()).hero); i++) await
 let s = await read(); console.log(`${tag}: engaged ${JSON.stringify({ current: s.current, health: s.health, max: s.max, phases: s.phases })}`);
 await shot('1-whole');
 const seen = { arm: new Set(), leg: new Set() };
-let armShot = false, legShot = false, started = Date.now(), loops = 0;
-while (Date.now() - started < 240000) {
+let lastD = null, stuck = 0, armShot = false, legShot = false, started = Date.now(), loops = 0;
+while (Date.now() - started < Number(process.env.LOOP_MS || 240000)) {
   s = await read();
   if (s.finish || s.foe === 'dead') break;
   const arm = s.phases.includes('limb:arm_right'), leg = s.phases.includes('limb:leg_right');
@@ -47,8 +47,15 @@ while (Date.now() - started < 240000) {
   if (s.foe === 'attack' && s.move) { if (arm) seen.arm.add(s.move); if (leg) seen.leg.add(s.move); }
   await topUp();
   const d = Math.hypot(s.x - s.hx, s.z - s.hz);
-  if (++loops % 15 === 1) console.log(`${tag}: gap ${d.toFixed(2)} m foe ${s.foe}/${s.move} hp ${s.health}/${s.max} hero ${s.hero} at ${s.hx.toFixed(1)},${s.hz.toFixed(1)} foe at ${s.x.toFixed(1)},${s.z.toFixed(1)}`);
-  if (d > 1.9) await press('KeyW', 160); else { await press(['KeyF', 'KeyF', 'KeyC', 'KeyF'][Math.floor(s.tick / 40) % 4], 70); await press('KeyQ', 90); }   // F strike, C kick, Q guard (data/input.json keys)
+  if (++loops % 15 === 1 || loops < 12) console.log(`${tag}: gap ${d.toFixed(2)} m foe ${s.foe}/${s.move} hp ${s.health}/${s.max} hero ${s.hero} at ${s.hx.toFixed(1)},${s.hz.toFixed(1)} foe at ${s.x.toFixed(1)},${s.z.toFixed(1)}`);
+  if (d > 1.9) {   // LOCAL FIX: W is the CAMERA's forward, not "toward him": measure the camera basis with W and D, then steer with the held keys by the sim's own positions (the held foe is Reginald while current === his spawn index)
+    if (lastD !== null && d > lastD - 0.02) stuck++; else stuck = 0;
+    if (!globalThis.__basis || stuck >= 8) { globalThis.__basis = null; stuck = 0; const pos = async () => { const r = await read(); return [r.hx, r.hz]; }; const bas = async (c) => { for (let hold = 400; hold <= 1600; hold *= 2) { const a = await pos(); await key(c, 'keydown'); await page.waitForTimeout(hold); await key(c, 'keyup'); await page.waitForTimeout(250); const b = await pos(), v = [b[0] - a[0], b[1] - a[1]], n = Math.hypot(...v); if (n > 0.15) return [v[0] / n, v[1] / n]; } return null; }; const fw = await bas('KeyW'), rt = await bas('KeyD'); console.log(`${tag}: basis fw ${JSON.stringify(fw)} rt ${JSON.stringify(rt)}`); if (!fw || !rt) { await page.waitForTimeout(500); continue; } globalThis.__basis = { fw, rt }; }
+    const { fw, rt } = globalThis.__basis, tx = s.current === spot.i ? s.x : spot.x, tz = s.current === spot.i ? s.z : spot.z, dx = tx - s.hx, dz = tz - s.hz, n = Math.hypot(dx, dz) || 1, f = (dx * fw[0] + dz * fw[1]) / n, r = (dx * rt[0] + dz * rt[1]) / n;
+    for (const [c, on] of [['KeyW', f > 0.3], ['KeyS', f < -0.3], ['KeyD', r > 0.3], ['KeyA', r < -0.3]]) await key(c, on ? 'keydown' : 'keyup');
+    await page.waitForTimeout(160); for (const c of ['KeyW', 'KeyS', 'KeyD', 'KeyA']) await key(c, 'keyup');
+    lastD = d;
+  } else { lastD = null; await press(['KeyF', 'KeyF', 'KeyC', 'KeyF'][Math.floor(s.tick / 40) % 4], 70); await press('KeyQ', 90); }   // F strike, C kick, Q guard (data/input.json keys)
 }
 const end = await read();
 console.log(`${tag}: ended ${JSON.stringify({ health: end.health, phases: end.phases, speed: end.speed })}`);
