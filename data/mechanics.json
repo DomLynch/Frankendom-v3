@@ -156,6 +156,26 @@
         "sparkGravityMps2": 6,
         "ringPulseHz": 2.5
       }
+    },
+    "shadow-dash": {
+      "type": "shadow-dash",
+      "boss": "kachujin",
+      "about": "KACHUJIN's one signature move, SHADOW DASH (ring 2; Dom 2026-10-28: each boss its own fighting identity). The fast swordsman stops and a line draws on the sand from him to where you stand; it follows you until it LOCKS lockBeforeTicks before he goes, then he dashes along it at dashSpeedMps and stops stopGapM short of the locked point. If you are within slashReachM when he arrives he throws one ordinary cut (slashAction: the engine's own wind-up, guard, parry, roll and damage rules decide it); if you left the line there is no cut and he stands open through recoverTicks. A stagger cancels it. Damage is the cut's own row (stars, ring multipliers and the Daily Pit scale it); this row only picks when, how fast and how far. Ticks are 60 Hz sim ticks, distances metres.",
+      "slashAction": "light",
+      "firstTicks": 180,
+      "cooldownTicks": 420,
+      "triggerMinM": 3.4,
+      "triggerMaxM": 7.5,
+      "tellTicks": 42,
+      "lockBeforeTicks": 24,
+      "dashSpeedMps": 13,
+      "dashMaxTicks": 30,
+      "stopGapM": 1.35,
+      "slashReachM": 1.8,
+      "slashMaxTicks": 90,
+      "recoverTicks": 54,
+      "lineWidth": 0.7,
+      "lineColour": "#ff7a1f"
     }
   }
 }

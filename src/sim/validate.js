@@ -326,7 +326,7 @@ export function checkReginaldLimbLoss(id, r) {
   return e;
 }
 
-const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'envoy-latch': checkEnvoyLatch, 'reginald-limb-loss': checkReginaldLimbLoss, 'accountant-parry-wall': checkAccountantParryWall };
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'envoy-latch': checkEnvoyLatch, 'reginald-limb-loss': checkReginaldLimbLoss, 'accountant-parry-wall': checkAccountantParryWall, 'shadow-dash': checkShadowDash };
 const ACCOUNTANT_KEYS = ['type', 'about', 'boss', 'firstTicks', 'triggerRangeM', 'tellTicks', 'wallTicks', 'cooldownTicks', 'cancelCooldownTicks', 'arcDeg', 'parryStunTicks', 'riposteTicks', 'parriesToDrop', 'kickBreakStunTicks', 'specialBreakStunTicks', 'caption', 'fx'];
 const ACCOUNTANT_FX = ['colour', 'edgeColour', 'ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM', 'tellOpacity', 'wallOpacity', 'sparkCount', 'sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz'];
 /** The Accountant's PARRY WALL row (type "accountant-parry-wall"). Ranges keep the wall readable (a tell of 0.3 s or more) and fair (a window under 5 s, a cooldown longer than the wall). Returns one string per problem. */
@@ -358,6 +358,22 @@ export function checkAccountantParryWall(id, r) {
   for (const k of ['tellOpacity', 'wallOpacity']) if (!num(fx[k], 0, 1)) e.push(`${at}.fx.${k}: 0..1`);
   if (!int(fx.sparkCount, 1, 24)) e.push(`${at}.fx.sparkCount: an integer 1..24`);
   for (const k of ['sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz']) if (!num(fx[k], 0.01, 20)) e.push(`${at}.fx.${k}: 0.01..20`);
+  return e;
+}
+const DASH_NUMS = { firstTicks: [0, 3600, true], cooldownTicks: [60, 3600, true], triggerMinM: [1, 20], triggerMaxM: [1, 30], tellTicks: [18, 120, true], lockBeforeTicks: [0, 60, true], dashSpeedMps: [4, 30], dashMaxTicks: [4, 90, true],
+  stopGapM: [0.9, 4], slashReachM: [0.9, 6], slashMaxTicks: [10, 300, true], recoverTicks: [20, 240, true], lineWidth: [0.1, 3] };
+/** Kachujin's SHADOW DASH row (type "shadow-dash"). Returns one string per problem. */
+export function checkShadowDash(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  for (const k of Object.keys(r)) if (!['type', 'boss', 'about', 'slashAction', 'lineColour', ...Object.keys(DASH_NUMS)].includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  for (const [k, [lo, hi, whole]] of Object.entries(DASH_NUMS)) if (!(Number.isFinite(r[k]) && r[k] >= lo && r[k] <= hi && (!whole || Number.isInteger(r[k])))) e.push(`${at}.${k}: ${whole ? 'a whole number' : 'a number'} from ${lo} to ${hi}`);
+  if (!['light', 'thrust', 'heavy'].includes(r.slashAction)) e.push(`${at}.slashAction: light, thrust or heavy`);
+  if (!HEX6.test(r.lineColour ?? '')) e.push(`${at}.lineColour: a #rrggbb`);
+  if (!(r.triggerMinM < r.triggerMaxM)) e.push(`${at}: triggerMinM must be below triggerMaxM`);
+  if (!(r.lockBeforeTicks < r.tellTicks)) e.push(`${at}: lockBeforeTicks must be below tellTicks (a tell is readable before it locks)`);
+  if (!(r.stopGapM <= r.slashReachM)) e.push(`${at}: stopGapM must not exceed slashReachM (he must stop inside his own cut)`);
+  if (!(r.dashSpeedMps * r.dashMaxTicks / 60 >= r.triggerMaxM - r.stopGapM)) e.push(`${at}: the dash (dashSpeedMps x dashMaxTicks) must cover triggerMaxM minus stopGapM`);
   return e;
 }
 /** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
