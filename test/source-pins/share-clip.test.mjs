@@ -14,10 +14,11 @@ import { readFileSync } from 'node:fs';
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
 test('the button sits on the bottom edge, below the cut hint box (pickup.json safe.bottomFrac), never mid-screen (source pin)', () => {
-  const src = read('../../src/share-clip.ts');
+  const css = JSON.parse(read('../../data/share-clip.json')).button.css;   // the stylesheet is a data row now (data/share-clip.json button.css); src/share-clip.ts only fills its slots
 
-  assert.match(src, /bottom:calc\(\$\{B\.bottomPx\}px \+ env\(safe-area-inset-bottom/);
-  assert.ok(!/top:\$\{|left:50%;top/.test(src));
+  assert.match(css, /bottom:calc\(\{bottomPx\}px \+ env\(safe-area-inset-bottom/);
+  assert.ok(!/top:\{|left:50%;top/.test(css));
+  assert.ok(!/\.sc-btn\{/.test(read('../../src/share-clip.ts')), 'the stylesheet is not written in the code');
 });
 
 test('the page wiring is small: one import, one mount, one frame call, the kill and death hooks; the file holds no player text or ids (source pin)', () => {
