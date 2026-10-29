@@ -40,7 +40,7 @@ type CutResult = { unit: string; gear_slots: string[]; carries_roles: string[]; 
 export type Ragdoll = {
   state: string; awake: boolean; partIds: string[]; cuts: readonly string[];
   row: { roles: { id: string; parent: string | null; radius_m: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[]; severable: { id: string; cut_role: string | null; visual_only?: boolean }[] };
-  applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; knockdown(kind: 'damage' | 'push', hit?: Hit): void;
+  applyImpulse(part: string, v: Vec3): void; setMotorStrength(rows: number | Record<string, number>): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; knockdown(kind: 'damage' | 'push', hit?: Hit): void;
   cut(unit: string, opts?: { helmet?: boolean; impulse?: Vec3 }): CutResult | null; readPose(): ArrayLike<number>;
   snapToTarget(): boolean; reset(): boolean; destroy(): void;
 };
@@ -91,14 +91,14 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
   const gore = !!foe && finisherModeFor(PHYSICS, search) === PHYSICS_MODE && new URLSearchParams(search).get('gore') !== 'v1';
   const cutIds = Object.keys(PHYSICS.finisherCuts.rows);   // once, not per call
   goreOn = gore; setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? cutIds : NO_FINISHERS) : null);
-  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as unknown as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
 /** held-body.ts: the ragdoll of a HELD spawn in another body than the page's own (`body`: the data/rig.json files stem the physics rows are keyed by). Null = no data/physics.json opponents row fitted to that id and body: that body dies the plain way. It is not the page's
  *  ragdoll until the scene mounts it (setHeldRagdoll). Its cost record is `__ragdoll:<body>`, so the page's own is never overwritten. */
 export function heldRagdollFor(search: string, opponentId: string, body: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId, body);
-  return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
+  return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as unknown as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
 }
 let goreOn = false;   // ?gore=v1 off (foeRagdollFor)
 let heldPlainOnly = false;   // the live foe wears a body other than the page's own: the baked finishers (Opened, Hamstrung, Execution, sever) are prepared on the first body alone, so every kill is the plain death
@@ -110,7 +110,7 @@ export function heroRagdollFor(search: string, deathOnly = false): FoeRagdoll | 
   const feelHero = feelNames(search).includes('hero');   // deathOnly (data/hero-death.json ragdoll, the zone): the same body with no hit reactions; the scene tells it only his killing blow
   if (!PHYSICS.on || !(feelHero || deathOnly) || new URLSearchParams(search).get(PHYSICS.query) === PHYSICS.v1) return null;
   const rows = { ...PHYSICS, cut: { ...PHYSICS.cut, on: false, onKill: {} } } as PhysicsRows;
-  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as Promise<Chunk>, false, false, false, feelHero ? activeFeels(search, undefined, true) : [], search, 0, '__ragdollHero');
+  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as unknown as Promise<Chunk>, false, false, false, feelHero ? activeFeels(search, undefined, true) : [], search, 0, '__ragdollHero');
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
  *  finisher's camera, blood and sound by its id and skips V1's victim clip and its bakes. */
@@ -358,7 +358,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   /** The zone loop respawns the foe: leave this dead one where it lies (a static copy that keeps its cuts) and stand the live rig up whole again, as a rematch does. false when there is no corpse to leave. */
   function leaveCorpse(): boolean {
     const row = rows.corpse as typeof rows.corpse | undefined;   // a physics.json without the row leaves no corpse (the old rematch behaviour)
-    if (disabled || mode !== 'dead' || !group || !rigged || !group.parent || !(row?.keepSeconds > 0)) return false;
+    if (disabled || mode !== 'dead' || !group || !rigged || !group.parent || !row || !((row.keepSeconds ?? 0) > 0)) return false;
     // a body the triangle cutter has cut draws its shared twin and pieces, which build() (cutter.restore) rewrites and releases: the copy gets geometry of its own then (the cut GLB's meshes are never released)
     const { copy, pieces, owned } = snapshotRig(group, !!cutter?.cut);
     const manifest = chunk && cutManifestOf(chunk) as { regions?: { mesh: string; detached_by?: string }[] } | undefined;
@@ -514,7 +514,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       return;
     }
     cutter ??= createPieceCutter(rigged.anchor);
-    cutter.prepare(rd.row.severable.map((s) => partBones[s.cut_role]).filter((b): b is THREE.Object3D => !!b));
+    cutter.prepare(rd.row.severable.map((s) => (s.cut_role === null ? undefined : partBones[s.cut_role])).filter((b): b is THREE.Object3D => !!b));
     capGeometry ??= new THREE.SphereGeometry(1, cutRows.cap.segments[0], cutRows.cap.segments[1]);
     if (!capMaterials.length) capMaterials = [cutRows.cap.color, cutRows.cap.pieceColor].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.4 }));
     const hidden = (mesh: THREE.Mesh) => { mesh.visible = false; mesh.castShadow = true; mesh.frustumCulled = false; group!.add(mesh); return mesh; };
@@ -586,7 +586,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // Built by listenTaps; moved to its bone each frame by updateCues; a tap on it cuts that unit (cutCue). Hidden whenever the corpse is not frozen, the unit is done, or the bone is behind the camera.
   // M8: one set of buttons per body that can be cut: the live foe's and each corpse that kept its ragdoll (a button carries data-corpse, its body's corpseId).
   /** Dom 2026-10-28 ("yellow circles with text look tacky"): the buttons are hidden by default (cut.cue.default false; the plain tap on the body still cuts); ?cues=v1 (cut.cue.query / v1) brings them back. */
-  function cueShown(cue: { on?: boolean; default?: boolean; query?: string; v1?: string } | undefined): boolean {
+  function cueShown(cue: { on?: boolean; default?: boolean; query?: string; v1?: string } | undefined): cue is NonNullable<typeof cutRows.cue> {
     return !!cue?.on && (!!cue.default || (!!cue.query && new URLSearchParams(search).get(cue.query) === cue.v1));
   }
   type CueSet = { id: () => string; els: { unit: string; el: HTMLButtonElement }[]; boneOf(unit: string): THREE.Object3D | undefined; ready(): boolean; isDone(unit: string): boolean };

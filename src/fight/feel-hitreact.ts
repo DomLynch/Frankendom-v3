@@ -44,7 +44,7 @@ export const soften = (ctx: { soften?: { impulse: number; blend: number; time: n
 
 /** The reaction a blow at `location` coming with `heading` plans, or null (no zone row, no heading). `scale` = the hit's strength (1 = a plain hit). */
 export function planHit(rows: Rows, location: string | undefined, heading: number | undefined, frameYaw: number, scale = 1, cls: ClassRow = FULL): Plan | null {   // cls: the blow class's multipliers (rows.classes); absent = the full reaction
-  const zone = location ? (rows.zones as Record<string, ZoneRow | undefined>)[location] : undefined;
+  const zone = location ? (rows.zones as unknown as Record<string, ZoneRow | undefined>)[location] : undefined;
   if (!zone || heading === undefined) return null;
   const { sector, dir } = sectorOf(heading, frameYaw, rows.frontCos);
   const side = sector === 'right' ? 'Right' : sector === 'left' ? 'Left' : (rows.defaultSide as 'Left' | 'Right');
