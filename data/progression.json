@@ -9,6 +9,7 @@
   "lineSeconds": 6,
   "healthCap": 1.6,
   "damageCap": 1.4,
+  "countCap": 99999,
   "bosses": [
     { "id": "gargantua", "weapon": "gladius", "name": "Gladius", "healthStep": 0.06, "damageStep": 0.04 },
     { "id": "arachne", "weapon": "cleaver", "name": "Cleaver", "healthStep": 0.06, "damageStep": 0.04 },

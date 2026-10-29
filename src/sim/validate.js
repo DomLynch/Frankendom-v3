@@ -8,11 +8,11 @@
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
   'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'skyline', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
-  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx', 'order', 'heroMana', 'knockRound'], maps: { heroMana: ['about', 'mana'], knockRound: ['about', 'round'], order: ['about', 'query', 'v1', 'opponent', 'profile', 'kinds'], specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch', 'wide'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
+  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'clockJumpS', 'buildLabelChars', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx', 'order', 'heroMana', 'knockRound'], maps: { heroMana: ['about', 'mana'], knockRound: ['about', 'round'], order: ['about', 'query', 'v1', 'opponent', 'profile', 'kinds'], specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch', 'wide'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
   // The difficulty ladder over an opponent profile row (src/difficulty.ts): a row names only the brain knobs and the two scales; checked by checkDifficulty below
-  'difficulty': { keys: ['about', 'default', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
+  'difficulty': { keys: ['about', 'default', 'attackDialScale', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
   'profiles': { keys: ['about', 'default', 'defaultBody', 'bodyQuery', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'body', 'name', 'brain', 'foeHealthScale', 'foeDamageScale', 'knobs'] } },   // knobs: optional, this kind's own brain knobs over the difficulty row's (checkKinds)
   // Boss tuning by URL (src/tune.ts validateTune checks the values)
   'free-moves': { keys: ['about', 'actions'] },   // src/fight/free-roam.ts validateFreeMoves checks the values
@@ -20,10 +20,10 @@ export const SCHEMA = {
   // Star bosses (src/stars.ts validateStars checks the values)
   'stars': { keys: ['about', 'minKills', 'killsCap', 'zeroWeight', 'salt', 'starGlyph', 'hudColour', 'levels', 'weights'], rows: { levels: ['star', 'healthX', 'damageX', 'scaleX', 'trophy', 'tell'], weights: ['id', 'star1', 'star2'] } },
   // Progression and saving (src/progression.ts validateProgression checks the values)
-  'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'autoEquip', 'lineSeconds', 'healthCap', 'damageCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
+  'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'autoEquip', 'lineSeconds', 'healthCap', 'damageCap', 'countCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
   // The Daily Pit (src/daily-pit.ts; checkDailyPit below checks the values and the cross-file rows)
-  'daily-pit': { keys: ['about', 'salt', 'attemptsPerDay', 'modeKey', 'event', 'cutLog', 'spawnId', 'respawnSeconds', 'resultDelaySeconds', 'bosses', 'modifiers', 'score', 'ui', 'later'], rows: { modifiers: ['id', 'name', 'about', 'tune', 'stars'], later: ['id', 'why'] },
-    maps: { resultDelaySeconds: ['won', 'lost'], score: ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max', 'fields'], ui: ['zIndex', 'colour', 'text'] } },
+  'daily-pit': { keys: ['about', 'salt', 'attemptsPerDay', 'saveCaps', 'modeKey', 'event', 'cutLog', 'spawnId', 'respawnSeconds', 'resultDelaySeconds', 'bosses', 'modifiers', 'score', 'ui', 'later'], rows: { modifiers: ['id', 'name', 'about', 'tune', 'stars'], later: ['id', 'why'] },
+    maps: { saveCaps: ['points', 'count'], resultDelaySeconds: ['won', 'lost'], score: ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max', 'fields'], ui: ['zIndex', 'css', 'colour', 'text'] } },
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)
   'hero-clips': { keys: ['about', 'sweeps', 'rig', 'weapon', 'blade', 'clips'], rows: { clips: ['role', 'clip', 'mixamo', 'name', 'mirror', 'from', 'to', 'contact', 'pullback', 'aim', 'aimFrom', 'paths', 'hold', 'about'] }, maps: { blade: ['about', 'node', 'contact'], sweeps: ['about', 'default', 'query'] } },
   // The 65 -> 106 rig swap (src/fight/rig-bones.ts): which rig each side draws, the bone map, the weapon nodes and sockets, the 106 files.
@@ -67,7 +67,7 @@ export const SCHEMA = {
   'practice-hints': { keys: ['about', 'defaultFoe', 'followUp', 'moves', 'lines', 'parts'], maps: { parts: ['wall', 'chip', 'hitKind', 'hurtKind', 'blockedKind', 'wallText'] } },
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
-  'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap', 'pileCoordMax', 'lostMax'] } },
+  'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'heightMetres', 'deadDistanceMetres', 'pulseMid', 'pulseSwing', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'heightMetres', 'deadDistanceMetres', 'cap', 'pileCoordMax', 'lostMax'] } },
   // Golden weapon drops (src/zone/golden-drops.ts validateGolden checks the values)
   'golden-weapons': { keys: ['about', 'version', 'halfTurnDegrees', 'limits', 'spend', 'pickup', 'weapons', 'drops', 'lines', 'marker', 'hud'], rows: { weapons: ['id', 'name', 'weapon', 'power', 'tell', 'charges', 'damageMul', 'tier', 'tint'] }, maps: { limits: ['charges', 'damageMul', 'tier', 'chance', 'metres', 'seconds', 'pulse', 'intensity', 'angle', 'coord', 'ground', 'px', 'alpha'], spend: ['event', 'actor', 'target'], pickup: ['reachMetres', 'tapReachMetres', 'tapRadiusPx', 'tapTopFrac', 'tapBottomFrac'], drops: ['bossKill', 'packChest', 'roaming', 'maxGround'], lines: ['pickup', 'spent', 'lost', 'seconds'], marker: ['colour', 'glow', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'showWithinMetres', 'zIndex'], hud: ['colour', 'zIndex', 'topPct', 'sizePx', 'backdropAlpha', 'padPx', 'text'] } },
   // Boss weapons (Dom + Strategy 2026-10-28, src/fight/boss-weapon.ts validateBossWeapons checks the values): one row per archetype a boss is built on; the weapon it fights with and is drawn with
@@ -88,9 +88,9 @@ export const SCHEMA = {
   // The art-load retry (src/retry.ts reads attempts / delayMs / missingTexturesMessage; test/data-top-rows.test.mjs pins them)
   'retry': { keys: ['about', 'attempts', 'delayMs', 'missingTexturesMessage'] },
   // The V1 donor stand-ins that carry names or text (src/stubs.ts)
-  'stubs': { keys: ['about', 'weaponSlots', 'lessonFell', 'lessonNext'] },
+  'stubs': { keys: ['about', 'weaponSlots', 'twoHandedHides', 'bareTier', 'bareTierHides', 'lessonFell', 'lessonNext'] },
   'share-clip': { keys: ['about', 'on', 'leadSeconds', 'tailSeconds', 'stopTimeoutSeconds', 'width', 'height', 'fps', 'bitsPerSecond', 'types', 'guard', 'watermark', 'file', 'button'],
-    maps: { guard: ['seconds', 'maxFrameMs'], watermark: ['text', 'sizePx', 'colour', 'alpha', 'marginPx', 'font', 'lineHeight'], file: ['prefix', 'title', 'stillType', 'stillQuality', 'revokeSeconds'], button: ['label', 'stillLabel', 'making', 'saved', 'failed', 'failedSeconds', 'savedSeconds', 'hideSeconds','bottomPx', 'zIndex', 'colour', 'sizePx'] } },
+    maps: { guard: ['seconds', 'maxFrameMs'], watermark: ['text', 'sizePx', 'colour', 'alpha', 'marginPx', 'font', 'lineHeight'], file: ['prefix', 'title', 'stillType', 'stillQuality', 'revokeSeconds'], button: ['label', 'stillLabel', 'making', 'saved', 'failed', 'failedSeconds', 'savedSeconds', 'hideSeconds','bottomPx', 'zIndex', 'colour', 'sizePx', 'css'] } },
   'pickup': { keys: ['about', 'on', 'query', 'off', 'units', 'delayS', 'hintSeconds', 'walkAwayM', 'zIndex', 'colour', 'text', 'arrow', 'safe', 'fadeS'],
     maps: { text: ['label', 'sizePx', 'letterSpacingEm', 'shadow', 'maxWidthPx', 'lineHeight'], arrow: ['sizePx', 'bobPx', 'bobS', 'liftPx', 'textGapPx'], safe: ['topFrac', 'bottomFrac', 'sideMarginPx'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
@@ -561,6 +561,10 @@ export function validateFile(name, json) {
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
+  if (name === 'fight') {   // clockJumpS: a frame gap this long or longer is a clock jump (a resync, not fight time), above the per-frame cap; buildLabelChars: how much of build.txt the page shows
+    if (!Number.isFinite(json.clockJumpS) || json.clockJumpS <= json.frameDtMaxS || json.clockJumpS > 3600) errors.push(`${name}.clockJumpS: must be a finite number of seconds above frameDtMaxS and at most 3600`);
+    if (!Number.isInteger(json.buildLabelChars) || json.buildLabelChars < 1 || json.buildLabelChars > 40) errors.push(`${name}.buildLabelChars: must be a whole number 1 to 40`);
+  }
   if (name === 'fight' && json.camera) {   // the lens zoom (src/fight/camera-zoom.ts): a finite number in 0.5..2 (1 = the camera as before); an absent one would reach the page as NaN
     const z = json.camera.zoom;
     if (!Number.isFinite(z) || z < 0.5 || z > 2) errors.push(`${name}.camera.zoom: must be a finite number in 0.5..2`);
@@ -638,10 +642,12 @@ export function checkCommentator(json) {
   if (typeof json.seed !== 'string' || !json.seed) e.push(`${n}.seed: must be a non-empty string`);
   const only = (p, o, keys) => { if (!o || typeof o !== 'object') { e.push(`${n}.${p}: must be an object`); return false; } for (const k of Object.keys(o)) if (!keys.includes(k)) e.push(`${n}.${p}.${k}: unknown key`); return true; };
   if (only('caps', json.caps, ['perSession', 'perMinute', 'gapSeconds', 'minuteSeconds'])) { fin('caps.minuteSeconds', json.caps.minuteSeconds, 1, 600); fin('caps.perSession', json.caps.perSession, 1, 1000); fin('caps.perMinute', json.caps.perMinute, 1, 60); fin('caps.gapSeconds', json.caps.gapSeconds, 0, 120); if (!Number.isInteger(json.caps.perMinute)) e.push(`${n}.caps.perMinute: must be an integer`); }
-  if (only('caption', json.caption, ['seconds', 'fadeMs', 'maxChars', 'topPct', 'maxWidthPct', 'fontPx', 'colour', 'shadow', 'zIndex'])) {
+  if (only('caption', json.caption, ['seconds', 'fadeMs', 'maxChars', 'topPct', 'maxWidthPct', 'fontPx', 'colour', 'shadow', 'zIndex', 'css'])) {
     const c = json.caption; fin('caption.seconds', c.seconds, 0.5, 20); fin('caption.fadeMs', c.fadeMs, 0, 2000); fin('caption.maxChars', c.maxChars, 10, 200); fin('caption.topPct', c.topPct, 0, 90); fin('caption.maxWidthPct', c.maxWidthPct, 20, 100); fin('caption.fontPx', c.fontPx, 8, 40); fin('caption.zIndex', c.zIndex, 0, 1000);
     if (!/^#[0-9a-f]{6}$/i.test(c.colour ?? '')) e.push(`${n}.caption.colour: must be #rrggbb`);
     if (typeof c.shadow !== 'string') e.push(`${n}.caption.shadow: must be a string`);
+    if (typeof c.css !== 'string' || !c.css.trim()) e.push(`${n}.caption.css: must be the caption stylesheet (a non-empty string)`);
+    else for (const [, slot] of c.css.matchAll(/\{(\w+)\}/g)) if (!['topPct', 'zIndex', 'fadeMs', 'maxWidthPct', 'colour', 'fontPx', 'shadow'].includes(slot)) e.push(`${n}.caption.css: {${slot}} is not a slot of the caption row`);
   }
   if (only('thresholds', json.thresholds, ['heroLowPct', 'bossLowPct', 'missStreak', 'rollCount', 'rollWindowSeconds', 'idleSeconds', 'lowResetPct', 'idleMoveEpsilon', 'starTwoLevel'])) {
     const t = json.thresholds; fin('thresholds.lowResetPct', t.lowResetPct, 1, 99); fin('thresholds.idleMoveEpsilon', t.idleMoveEpsilon, 0, 10); fin('thresholds.starTwoLevel', t.starTwoLevel, 1, 10);fin('thresholds.heroLowPct', t.heroLowPct, 1, 99); fin('thresholds.bossLowPct', t.bossLowPct, 1, 99); fin('thresholds.missStreak', t.missStreak, 2, 50); fin('thresholds.rollCount', t.rollCount, 2, 50); fin('thresholds.rollWindowSeconds', t.rollWindowSeconds, 0.5, 60); fin('thresholds.idleSeconds', t.idleSeconds, 3, 600);
@@ -1199,6 +1205,11 @@ export function validateZoneIndex(index, rows) {
 const KNOB_RANGE = { reaction: [1, 120, -1], accuracy: [0, 1, 1], parry: [0, 1, 1], dodge: [0, 1, 1], aggression: [0, 1, 1], pressure: [0, 1, 1], discipline: [0, 100, -1], lapse: [0, 1, -1], read: [0, 1, 1], foeHealthScale: [0.1, 1, 1], foeDamageScale: [0.1, 1, 1] };
 
 // data/difficulty.json + data/profiles.json: every row has every knob in range, the ladder runs 1..N with each knob moving one way (never back), the default and `profile` ids resolve, a profile's brain is a brains.json row
+/** data/progression.json countCap: the most one kill count or trophy count can reach (the save cleaner drops a stored count above it): a whole number from 1. */
+export function checkProgressionCaps(file) {
+  return Number.isSafeInteger(file.countCap) && file.countCap >= 1 ? [] : [`progression.countCap: ${String(file.countCap)} is not a whole number from 1 (the most one kill or trophy count can reach)`];
+}
+
 export function checkDifficulty(difficulty, profiles, brains, fight) {
   const errors = [];
   const rows = difficulty.rows ?? [];
@@ -1212,6 +1223,7 @@ export function checkDifficulty(difficulty, profiles, brains, fight) {
   rows.forEach((r, i) => { if (r.id !== i + 1) errors.push(`difficulty.rows[${i}]: id ${String(r.id)}, the ladder runs 1..${rows.length} in order`); check(r, `difficulty.rows[${r.id}]`); });
   (difficulty.named ?? []).forEach((r) => { if (typeof r.id !== 'string' || rows.some((x) => x.id === r.id)) errors.push(`difficulty.named[${String(r.id)}]: a named row has a string id of its own`); check(r, `difficulty.named[${r.id}]`); });
   for (const [k, [, , dir]] of Object.entries(KNOB_RANGE)) for (let i = 1; i < rows.length; i++) if ((rows[i][k] - rows[i - 1][k]) * dir < 0) errors.push(`difficulty.rows[${rows[i].id}].${k}: ${rows[i][k]} moves the wrong way from row ${rows[i - 1].id}'s ${rows[i - 1][k]} (the ladder is monotonic)`);
+  if (!Number.isInteger(difficulty.attackDialScale) || difficulty.attackDialScale < 1 || difficulty.attackDialScale > 1000) errors.push(`difficulty.attackDialScale: ${String(difficulty.attackDialScale)} is not a whole number from 1 to 1000 (the sheet attack dial is (damage scale - 1) x this)`);
   if (!rows.some((r) => r.id === difficulty.default)) errors.push(`difficulty.default: ${String(difficulty.default)} is not a ladder row`);
   for (const p of profiles.profiles ?? []) {
     if (p.brain !== null && !(brains.brains ?? []).some((b) => b.id === p.brain)) errors.push(`profiles.${p.id}.brain: '${p.brain}' is not a brains.json row`);
@@ -1317,6 +1329,7 @@ export function checkDailyPit(j, ctx) {
   const word = (v) => typeof v === 'string' && /^[a-z0-9-]{1,32}$/.test(v), text = (v, n) => typeof v === 'string' && v.trim().length > 0 && v.length <= n;
   if (typeof j.salt !== 'string' || !/^[a-z0-9]{1,16}$/.test(j.salt)) e.push(`${at}.salt: 1-16 lower-case letters or digits`);
   if (!Number.isInteger(j.attemptsPerDay) || j.attemptsPerDay < 1 || j.attemptsPerDay > 99) e.push(`${at}.attemptsPerDay: a whole number 1 to 99`);
+  for (const k of ['points', 'count']) if (!Number.isSafeInteger(j.saveCaps?.[k]) || j.saveCaps[k] < 1) e.push(`${at}.saveCaps.${k}: a whole number from 1 (the most a stored score or count can be before the save cleaner drops the field)`);
   if (typeof j.modeKey !== 'string' || !/^[A-Za-z0-9._-]{3,60}$/.test(j.modeKey)) e.push(`${at}.modeKey: 3-60 letters, digits, . _ -`);
   if (typeof j.event !== 'string' || !/^[a-z0-9:_-]{3,60}$/.test(j.event)) e.push(`${at}.event: 3-60 lower-case letters, digits, : _ -`);
   if (typeof j.cutLog !== 'string' || !/^[A-Za-z0-9_]{3,40}$/.test(j.cutLog)) e.push(`${at}.cutLog: the global name of the cut log`);
@@ -1350,6 +1363,9 @@ export function checkDailyPit(j, ctx) {
   if (!Array.isArray(sc.fields) || sc.fields.length !== FIELDS.length || !FIELDS.every((f) => sc.fields.includes(f))) e.push(`${at}.score.fields: the order of ${FIELDS.join(', ')} (each once)`);
   const ui = j.ui ?? {};
   if (!Number.isInteger(ui.zIndex) || ui.zIndex < 1 || ui.zIndex > 9999) e.push(`${at}.ui.zIndex: a whole number 1 to 9999`);
+  const CSS_SLOTS = ['z', 'zdown', 'zup', 'gold', 'ink', 'panel', 'line', 'win', 'lose'];   // the slots src/daily-pit-ui.ts dailyCss fills
+  if (!Array.isArray(ui.css) || !ui.css.length || ui.css.some((r) => typeof r !== 'string' || !r.trim())) e.push(`${at}.ui.css: a non-empty list of stylesheet rules (strings)`);
+  else for (const r of ui.css) for (const [, slot] of r.matchAll(/\{([a-z]+)\}/g)) if (!CSS_SLOTS.includes(slot)) e.push(`${at}.ui.css: {${slot}} is not a slot (${CSS_SLOTS.join(', ')})`);
   for (const k of ['gold', 'ink', 'panel', 'line', 'win', 'lose']) if (typeof ui.colour?.[k] !== 'string' || !/^(#[0-9a-fA-F]{6}|rgba?\([0-9., ]+\))$/.test(ui.colour[k])) e.push(`${at}.ui.colour.${k}: #rrggbb or rgb()/rgba()`);
   const TEXT = ['button', 'buttonLeave', 'cardTitle', 'cardToday', 'cardBoss', 'cardModifier', 'cardAttempts', 'cardBest', 'cardBestNone', 'cardBestEver', 'fight', 'close', 'banner', 'won', 'lost', 'score', 'time', 'damage', 'parts', 'newBest', 'again', 'back', 'noneLeft'];
   for (const k of TEXT) if (!text(ui.text?.[k], 80)) e.push(`${at}.ui.text.${k}: 1-80 characters`);

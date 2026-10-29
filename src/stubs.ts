@@ -8,6 +8,7 @@ import STUB_ROWS from '../data/stubs.json' with { type: 'json' };
 
 // data/stubs.json: the slot names and the two lesson lines (checked at load: a bad row stops the page, not a fight)
 if (!Array.isArray(STUB_ROWS.weaponSlots) || !STUB_ROWS.weaponSlots.length || STUB_ROWS.weaponSlots.some((s) => typeof s !== 'string' || !s.trim())) throw new Error('data/stubs.json: weaponSlots is a non-empty list of names');
+for (const k of ['twoHandedHides', 'bareTier', 'bareTierHides'] as const) if (typeof STUB_ROWS[k] !== 'string' || !STUB_ROWS[k].trim()) throw new Error(`data/stubs.json: ${k} is a non-empty name`);
 if (!STUB_ROWS.lessonFell.trim() || !STUB_ROWS.lessonNext.trim()) throw new Error('data/stubs.json: lessonFell and lessonNext are non-empty lines');
 
 // core/grades.ts, core/finish-rows.ts, core/contracts/definitions.ts: V1's rows, as they are (the opponent's grade at his rung, spark materials)
@@ -24,7 +25,7 @@ export const SKILLS = Object.fromEntries(Object.values(SKILL_ROWS).map((r) => [r
 export const skillOf = (opponent: OpponentId): SkillId | null => (Object.values(SKILL_ROWS).find((r) => r.opponent === opponent)?.id as SkillId | undefined) ?? null;   // core/loot.ts:65 skillOf
 const WEAPON_SLOTS: readonly string[] = STUB_ROWS.weaponSlots;   // core/loot.ts:23 WEAPON_SLOTS
 const notWorn = (opponent: string, tier?: string) => LOOT_PIECES.lootNotWorn.filter((r) => r.opponent === opponent && ('tier' in r ? r.tier === tier : true)).flatMap((r) => r.slots);   // core/loot.ts:139-141 NOT_WORN, NOT_WORN_AT
-export const kitWorn = (opponent: OpponentId, twoHanded: boolean, tier?: string): LootId[] => (LOOT_PIECES.lootPiece.find((r) => r.id === opponent)?.slots ?? []).filter((slot) => !WEAPON_SLOTS.includes(slot) && !(twoHanded && slot === 'Shield') && !(tier === 'Recruit' && slot === 'Crest') && !notWorn(opponent, tier).includes(slot)).map((slot) => `${opponent}.${slot}` as LootId);   // core/loot.ts:142 kitWorn
+export const kitWorn = (opponent: OpponentId, twoHanded: boolean, tier?: string): LootId[] => (LOOT_PIECES.lootPiece.find((r) => r.id === opponent)?.slots ?? []).filter((slot) => !WEAPON_SLOTS.includes(slot) && !(twoHanded && slot === STUB_ROWS.twoHandedHides) && !(tier === STUB_ROWS.bareTier && slot === STUB_ROWS.bareTierHides) && !notWorn(opponent, tier).includes(slot)).map((slot) => `${opponent}.${slot}` as LootId);   // core/loot.ts:142 kitWorn
 // arena.ts, arena-themes.ts: V2's flat stage instead of V1's pit (src/arena-stage.ts)
 export { arenaFor, buildArena, crowdWave, type Arena, type ArenaTheme } from './arena-stage.ts';   // arena.ts buildArena + crowdWave, arena-themes.ts arenaFor
 // sparring.ts: no sparring links in V3

@@ -2,6 +2,7 @@
 // picks, the run the page is built with (a ?tune= map over the day's boss, a star level, a one-boss zone), the score, the tracker that turns frames into a result, and the optional `daily` field of the
 // progression save. No DOM, no storage, no clock of its own (the caller hands in the time), so a fixed date is a fixed fight and a test needs no browser. The page side is src/daily-pit-ui.ts.
 // Nothing here is a sim rule: a modifier is a ?tune= multiplier (src/tune.ts, merged OVER the page's tune by the caller with src/progression.ts mergeTune) and/or a data/stars.json level.
+import DAILY_JSON from '../data/daily-pit.json' with { type: 'json' };
 import { hash32 } from './fight/bout-seed.ts';
 import type { TuneMap } from './tune.ts';
 import type { ZoneRow } from './zone/zone-rows.ts';
@@ -12,7 +13,7 @@ type DailyScoreRows = { base: number; perSecond: number; perDamage: number; perP
 export type DailyFile = {
   salt: string; attemptsPerDay: number; modeKey: string; event: string; cutLog: string; spawnId: string; respawnSeconds: number; resultDelaySeconds: { won: number; lost: number };
   bosses: readonly string[]; modifiers: readonly DailyModifier[]; score: DailyScoreRows;
-  ui: { zIndex: number; colour: Record<'gold' | 'ink' | 'panel' | 'line' | 'win' | 'lose', string>; text: Record<string, string> };
+  ui: { zIndex: number; css: readonly string[]; colour: Record<'gold' | 'ink' | 'panel' | 'line' | 'win' | 'lose', string>; text: Record<string, string> };
   later: readonly { id: string; why: string }[];
 };
 /** One finished attempt: what the result screen shows and the save keeps. */
@@ -100,11 +101,12 @@ export function stepTracker(t: Tracker, f: Frame, file: Pick<DailyFile, 'score' 
 
 // ---- the save field ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+const CAPS = DAILY_JSON.saveCaps;   // data/daily-pit.json saveCaps: the most a stored score / count may be (checkDailyPit)
 const WORD = /^[a-z0-9-]{1,32}$/, DATE = /^\d{4}-\d{2}-\d{2}$/;
 const whole = (v: unknown, max: number): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max ? v : null);
 function cleanRow(v: unknown): DailyRow | null {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
-  const r = v as Record<string, unknown>, score = whole(r.score, 1e7), damage = whole(r.damage, 1e7), parts = whole(r.parts, 999);
+  const r = v as Record<string, unknown>, score = whole(r.score, CAPS.points), damage = whole(r.damage, CAPS.points), parts = whole(r.parts, CAPS.count);
   const time = typeof r.timeSeconds === 'number' && Number.isFinite(r.timeSeconds) && r.timeSeconds >= 0 && r.timeSeconds <= 86400 ? r.timeSeconds : null;
   if (score === null || damage === null || parts === null || time === null || typeof r.won !== 'boolean' || typeof r.boss !== 'string' || !WORD.test(r.boss) || typeof r.modifier !== 'string' || !WORD.test(r.modifier)) return null;
   return { score, timeSeconds: time, damage, parts, won: r.won, boss: r.boss, modifier: r.modifier };
@@ -113,7 +115,7 @@ function cleanRow(v: unknown): DailyRow | null {
 export function cleanDaily(j: { daily?: unknown }): { daily?: DailyRecord } {
   const d = j.daily;
   if (!d || typeof d !== 'object' || Array.isArray(d)) return {};
-  const r = d as Record<string, unknown>, attempts = whole(r.attempts, 999), bestEver = whole(r.bestEver, 1e7);
+  const r = d as Record<string, unknown>, attempts = whole(r.attempts, CAPS.count), bestEver = whole(r.bestEver, CAPS.points);
   if (typeof r.date !== 'string' || !DATE.test(r.date) || attempts === null || bestEver === null) return {};
   return { daily: { date: r.date, attempts, best: cleanRow(r.best), last: cleanRow(r.last), bestEver } };
 }

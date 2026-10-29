@@ -4,7 +4,8 @@
   "storageKey": "fd3.commentator",
   "seed": "arena-commentator",
   "caps": { "perSession": 80, "perMinute": 6, "gapSeconds": 4, "minuteSeconds": 60 },
-  "caption": { "seconds": 3.4, "fadeMs": 350, "maxChars": 64, "topPct": 15.2, "maxWidthPct": 92, "fontPx": 12, "colour": "#fff3d6", "shadow": "0 1px 2px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.85)", "zIndex": 28 },
+  "caption": { "seconds": 3.4, "fadeMs": 350, "maxChars": 64, "topPct": 15.2, "maxWidthPct": 92, "fontPx": 12, "colour": "#fff3d6", "shadow": "0 1px 2px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.85)", "zIndex": 28,
+    "css": ".cm-line{position:fixed;left:50%;top:{topPct}%;transform:translateX(-50%);z-index:{zIndex};pointer-events:none;opacity:0;transition:opacity {fadeMs}ms ease;text-align:center;max-width:{maxWidthPct}%;color:{colour};font:italic {fontPx}px/1.25 Georgia,'Times New Roman',serif;text-shadow:{shadow};user-select:none;-webkit-user-select:none}@media (prefers-reduced-motion:reduce){.cm-line{transition:none}}" },
   "thresholds": { "heroLowPct": 25, "bossLowPct": 20, "missStreak": 4, "rollCount": 5, "rollWindowSeconds": 4, "idleSeconds": 20, "lowResetPct": 15, "idleMoveEpsilon": 0.05, "starTwoLevel": 2 },
   "partNames": { "arm_right": "right arm", "arm_left": "left arm", "leg_right": "right leg", "leg_left": "left leg", "head": "head", "head_split": "head", "belly_open": "belly", "arm_sword": "sword arm", "arm_off": "off arm" },
   "events": {

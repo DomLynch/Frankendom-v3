@@ -12,5 +12,6 @@
   "guard": { "seconds": 3, "maxFrameMs": 45 },
   "watermark": { "text": "frankendom.com", "sizePx": 30, "colour": "#ffffff", "alpha": 0.75, "marginPx": 28, "font": "600 {px}px Georgia, 'Times New Roman', serif", "lineHeight": 1.4 },
   "file": { "prefix": "frankendom", "title": "Frankendom", "stillType": "image/png", "stillQuality": 0.92, "revokeSeconds": 60 },
-  "button": { "label": "Share clip", "stillLabel": "Share picture", "making": "Making clip…", "saved": "Saved", "failed": "Couldn't make the clip", "failedSeconds": 3, "savedSeconds": 2,"hideSeconds": 40, "bottomPx": 14, "zIndex": 31, "colour": "#ffd34a", "sizePx": 12 }
+  "button": { "label": "Share clip", "stillLabel": "Share picture", "making": "Making clip…", "saved": "Saved", "failed": "Couldn't make the clip", "failedSeconds": 3, "savedSeconds": 2,"hideSeconds": 40, "bottomPx": 14, "zIndex": 31, "colour": "#ffd34a", "sizePx": 12,
+    "css": ".sc-btn{position:fixed;left:50%;bottom:calc({bottomPx}px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:{zIndex};padding:6px 14px;border:1px solid {colour};border-radius:999px;background:rgba(10,8,6,.72);color:{colour};font:{sizePx}px/1.2 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;cursor:pointer}.sc-btn[disabled]{opacity:.6;cursor:default}" }
 }
