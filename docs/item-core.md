@@ -1,7 +1,8 @@
 # Shared item core: row shape, core_version 1 (platform plan step 1, design only)
 
 Status: SIGNED by ARMAGEDOM Lead in PR #292 (answers folded in below). Still DESIGN ONLY: no code, no data row and no game behaviour changes with this doc. V3 facts checked against `main` 6e8cc81.
-Canonical copy: this file plus `docs/item-core.schema.json` in Frankendom-v3. ARMAGEDOM pins the commit sha later; neither repo writes into the other.
+Canonical copy (Dom's plan rewrite, 2026-10-29): the schema now lives in `DomLynch/games-platform` (`packages/item-core`, public, schema-only), pinned by commit sha like physics; this file stays V3's design note and `docs/item-core.schema.json` is a byte-identical copy of the one at games-platform `739c6e9`. Neither game repo writes into the other.
+Open for both Leads before any change: games-platform's `validate.mjs` is stricter than this doc. It rejects an unknown key beside the core ones (a game's extras go under `ext.<game_id>`), while the signed rule below allows extra keys beside the core ones. The schema file is the same either way; no core key is added or moved by this note.
 Plan (Strategy): shared item core = `id`, `game_id`, `type`, `asset` (Lead added `name`); optional typed `weapon` block (damage, rate, range, ammo) and `character` block (rig); cut/dismember stays in V3's extension, ballistics never in the core.
 
 Standing rules (Strategy): new gameplay data uses the core shape once published, no refactor of existing rows; before building loot, inventory, NPC AI or trading, check the other game first (reuse-first); no auth or database change in either repo except through ARMAGEDOM Server & Deploy.
