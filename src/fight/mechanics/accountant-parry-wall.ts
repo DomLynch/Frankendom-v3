@@ -13,7 +13,8 @@ export const ID = 'accountant-parry-wall';
 export type AccountantRow = {
   type: string; about: string; boss: string; firstTicks: number; triggerRangeM: number; tellTicks: number; wallTicks: number; cooldownTicks: number; cancelCooldownTicks: number; arcDeg: number;
   parryStunTicks: number; riposteTicks: number; parriesToDrop: number; kickBreakStunTicks: number; specialBreakStunTicks: number; caption: string;
-  fx: { colour: string; edgeColour: string; ringRadiusM: number; wallHeightM: number; wallWidthM: number; wallDistanceM: number; tellOpacity: number; wallOpacity: number; sparkCount: number; sparkSpeedMps: number; sparkLifeS: number; sparkSizeM: number; sparkGravityMps2: number; ringPulseHz: number };
+  breakMove: string;
+  fx: { ledgerLines: number; texturePx: number; ruleThicknessPx: number; marginFrac: number; ringInnerFrac: number; ringSegments: number; mapTint: string; renderOrder: number; sparkRenderOrder: number; sparkPoolParries: number; ringLiftM: number; ringTellGain: number; ringUpBoost: number; ringPulseMin: number; ringPulseDepth: number; minRise: number; tellRiseShare: number; sparkBackShare: number; sparkSwirlShare: number; sparkArcShare: number; sparkLiftShare: number; parkY: number; colour: string; edgeColour: string; ringRadiusM: number; wallHeightM: number; wallWidthM: number; wallDistanceM: number; tellOpacity: number; wallOpacity: number; sparkCount: number; sparkSpeedMps: number; sparkLifeS: number; sparkSizeM: number; sparkGravityMps2: number; ringPulseHz: number };
 };
 /** The row, filled in place by configure (a live view: every reader sees the configured numbers). */
 export const ROW = {} as AccountantRow;
@@ -59,7 +60,7 @@ function intercept(D: Fighter, d: Fighter, move: string | null, angle: number): 
   if (!d.mS || !D.health) return null;
   if (d.mS <= ROW.tellTicks) { end(D, ROW.cancelCooldownTicks); return null; }
   if (angle > HALF_ARC) return null;
-  return move === 'kick' ? 'break' : 'parry';
+  return move === ROW.breakMove ? 'break' : 'parry';
 }
 
 /** The wall took a parry: the attacker's stagger and his riposte window; after the last parry the wall drops. */

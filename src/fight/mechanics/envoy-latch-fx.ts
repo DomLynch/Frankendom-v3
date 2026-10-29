@@ -12,7 +12,7 @@ const FLAT = -Math.PI / 2;
 export function createEnvoyLineFx(parent: THREE.Object3D, tell: EnvoyLatchRow['tell']) {
   const material = new THREE.MeshBasicMaterial({ color: tell.colour, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(FLAT), material);
-  mesh.renderOrder = 5; mesh.visible = false; mesh.frustumCulled = false; parent.add(mesh);
+  mesh.renderOrder = tell.renderOrder; mesh.visible = false; mesh.frustumCulled = false; parent.add(mesh);
   return {
     update(view: LatchView | null, tick: number): void {
       if (!view) { mesh.visible = false; return; }
@@ -22,7 +22,7 @@ export function createEnvoyLineFx(parent: THREE.Object3D, tell: EnvoyLatchRow['t
       mesh.position.set(view.fromX + dx / 2, tell.liftM, view.fromZ + dz / 2);
       mesh.rotation.set(0, Math.atan2(dx, dz), 0);
       mesh.scale.set(tell.widthM, 1, length);
-      material.opacity = view.phase === 'latched' ? tell.latchedAlpha : tell.alpha * (0.35 + 0.65 * view.t) * (view.phase === 'tell' ? 0.8 + 0.2 * Math.sin(tick) : 1);
+      material.opacity = view.phase === 'latched' ? tell.latchedAlpha : tell.alpha * (tell.alphaFloor + tell.alphaRise * view.t) * (view.phase === 'tell' ? tell.pulseBase + tell.pulseDepth * Math.sin(tick) : 1);
     },
     dispose(): void { mesh.removeFromParent(); mesh.geometry.dispose(); material.dispose(); },
   };

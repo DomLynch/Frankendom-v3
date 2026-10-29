@@ -28,7 +28,7 @@ import { castOutcome, outcomeMult, splitDamage, spellRoot, type CastOutcome, typ
 import { stanced, woundsAt, woundCeil, type StanceId } from './stance.ts';
 import { ARC_HALF, BODY_SPACING, FULL_TURN, GAP_EPSILON, LORARIUS_SECTORS, MAX_PERK_TEMPLATES, MOVE_EPSILON, PERK_MAX, PER_MILLE, PUSH_SPLIT, ROLL_HALF } from './duel-rows.ts';   // the dials are rows (duel-defs.json)
 export { PERK_MAX };
-import { mechBroken, mechClock, mechFields, mechIntercept, mechLocked, mechParried, mechSpecialLanded } from './mechanics/sim-hooks.ts';   // boss signature mechanics (data/mechanics.json)
+import { WALL_EVENT, WALL_HIT, mechBroken, mechClock, mechFields, mechIntercept, mechLocked, mechParried, mechSpecialLanded } from './mechanics/sim-hooks.ts';   // boss signature mechanics (data/mechanics.json)
 import { DODGE_COUNTER, PHASES, attackerPerMille, interruptLockout, CAST_PUSHBACK, CAST_PUSHBACK_MAX, castWindup, executed, armourPerMille, ARMOUR_ON, OID_ON, commitOf, wardOf, braced, FLANK_DAMAGE, FLANK_POSTURE, poisonOf, poisonTick, bindOf, MANA_MAX, MANA_DELAY, manaCost, manaRegenPerTick, missileOf, laneOf, bowSpecialOf, MISSILE_GUARD_POSTURE, MISSILE_RADIUS, MISSILE_FAN, MISSILE_HOMING, missilePaysNoStamina, MISSILE_STUN, missileMinGap, missileTicks, ammoOf, missileTiming, spellRangeOf, spellRangeCue, paysMana, healOf, spellWindupOf } from './sandbox-rules.ts';   // never Math.<transcendental> in the sim: engines round them differently (tests/detmath.test.ts)
 
 // Symmetric 1v1 melee simulation. Both fighters obey the same rules through the same Intent; the AI is just another
@@ -621,13 +621,13 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
     const trip = d.phase === 'roll' && def.direction === 'low' && def.path !== null && d.age < R.roll / ROLL_HALF;
     const wallHit = d.mech ? mechIntercept(D, d, a.move, Math.abs(wrapAngle(aim(d.body, a.body) - d.body.heading))) : null;   // a boss's signature mechanic (the Accountant's parry wall): a blow in its tell cancels it; from the front in its window it is parried (a kick breaks it); null = the blow lands as usual
     if (d.phase === 'roll' && d.age >= R.safeStart && d.age <= R.safeEnd && !trip) { events.push({ tick, type: 'Dodged', actor: j, target: i, move: a.move }); if (DODGE_COUNTER > 0) D.counterWindow = DODGE_COUNTER; }   // sandbox-mech: a clean dodge opens the guard-counter window too
-    else if (wallHit === 'parry') {   // the wall: ZERO damage whatever the blade (a golden weapon too), the attacker staggers a moment, the boss's riposte opens; the spark is the Parried event
+    else if (wallHit === WALL_HIT.parry) {   // the wall: ZERO damage whatever the blade (a golden weapon too), the attacker staggers a moment, the boss's riposte opens; the spark is the Parried event
       const m = mechParried(D), stun = Math.max(1, stunned(A, 'parryStun', m.stun));
       A.phase = 'hurt'; A.age = 0; A.stun = stun; A.buffer = null; D.punish = m.riposte;
-      events.push({ tick, type: 'Parried', actor: j, target: i, move: a.move, wall: true, weapon: weapon.id, material: weapon.material }, { tick, type: 'Staggered', actor: i, ticks: stun });
-    } else if (wallHit === 'break') {   // a kick into the wall breaks it: no damage, the boss staggers
+      events.push({ tick, type: WALL_EVENT.parried, actor: j, target: i, move: a.move, wall: true, weapon: weapon.id, material: weapon.material }, { tick, type: WALL_EVENT.staggered, actor: i, ticks: stun });
+    } else if (wallHit === WALL_HIT.break) {   // a kick into the wall breaks it: no damage, the boss staggers
       const stun = mechBroken(D, 'kick');
-      events.push({ tick, type: 'Staggered', actor: j, ticks: stun, wall: true });
+      events.push({ tick, type: WALL_EVENT.staggered, actor: j, ticks: stun, wall: true });
     } else if (guarding && wardOf(d.oid) && (D.wardAt ?? 0) <= tick) {   // sandbox-mech ward: the first blow into the guard is thrown back, then the ward is down
       const w = wardOf(d.oid)!, back = Math.min(A.health - 1, Math.round(rolled(def.damage, i, j, pen) * w.reflect / 1000));
       D.wardAt = tick + w.down; A.health -= Math.max(0, back); A.phase = 'hurt'; A.age = 0; A.stun = Math.max(1, stunned(A, 'parryStun', R.parryStun)); A.buffer = null;

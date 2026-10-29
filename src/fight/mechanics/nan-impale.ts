@@ -23,18 +23,17 @@ export type ImpaleRow = {
   lungeSpeed: number; lungeTicks: number; stopGap: number;
   dragM: number; dragTicks: number; dragStop: number; followWithinTicks: number;
   lineWidth: number; lineColour: string;
+  giveUpTicks: number; wallPadM: number; lineOvershootM: number; lungeGraceTicks: number; attackStartTicks: number;   // a tell that never parks is dropped after giveUpTicks; the arena wall's pad; the drawn line's length past the stop gap; the stab's grace after the lunge; ticks before the attack phase must show
 };
 const IDLE = 0, TELL = 1, LUNGE = 2, DRAG = 3, FOLLOW = 4;
 const NAMES = ['idle', 'tell', 'lunge', 'drag', 'follow'] as const;
-const GIVE_UP = 150;   // ticks: a tell that never parks (a weapon with no chamber on this move) is dropped, never left hanging
-const WALL_PAD = 0.3;
 
 export function createNanImpale(row: ImpaleRow): Mechanic {
   const s = { stage: IDLE, t: 0, cd: row.firstTicks, last: -1, dx: 0, dz: 1, locked: false, x: 0, z: 0, charge: 0 };
-  const v: MechanicView = { id: 'nan-impale', stage: 'idle', t: 0, of: 1, lock: false, x: 0, z: 0, dx: 0, dz: 1, length: row.lungeSpeed * row.lungeTicks + row.stopGap + 0.8, width: row.lineWidth, colour: row.lineColour };
+  const v: MechanicView = { id: 'nan-impale', stage: 'idle', t: 0, of: 1, lock: false, x: 0, z: 0, dx: 0, dz: 1, length: row.lungeSpeed * row.lungeTicks + row.stopGap + row.lineOvershootM, width: row.lineWidth, colour: row.lineColour };
   const halt = (cooldown: number): void => { s.stage = IDLE; s.t = 0; s.cd = cooldown; s.locked = false; };
   const reset = (): void => { halt(row.firstTicks); s.last = -1; };
-  const inWall = (duel: Duel, x: number, z: number): boolean => M.hypot(x, z) <= (duel.radius ?? RADIUS) - WALL_PAD;
+  const inWall = (duel: Duel, x: number, z: number): boolean => M.hypot(x, z) <= (duel.radius ?? RADIUS) - row.wallPadM;
   const moved = (b: State, x: number, z: number, heading = b.heading): State => ({ ...b, x, z, heading });
 
   function layer(duel: Duel, warden: Intent): Intent {
@@ -51,7 +50,7 @@ export function createNanImpale(row: ImpaleRow): Mechanic {
     }
     switch (s.stage) {
       case TELL: {
-        if (me.phase === 'hurt' || s.t > GIVE_UP || (s.t > 0 && me.phase !== 'attack')) { halt(row.abortCooldownTicks); return warden; }   // she was hit (or thrown off) in the hold: it is cancelled
+        if (me.phase === 'hurt' || s.t > row.giveUpTicks || (s.t > 0 && me.phase !== 'attack')) { halt(row.abortCooldownTicks); return warden; }   // she was hit (or thrown off) in the hold: it is cancelled
         const ready = me.charge >= row.parkTicks;
         if (ready) { s.stage = LUNGE; s.t = 0; return { ...idleIntent(), held: false, lock: false }; }
         const frozen = me.charge >= row.parkTicks - row.freezeTicks;
@@ -62,7 +61,7 @@ export function createNanImpale(row: ImpaleRow): Mechanic {
       }
       case LUNGE:
         s.t++;
-        if (s.t > row.lungeTicks + 90 || (s.t > 2 && me.phase !== 'attack')) { halt(row.cooldownTicks); return warden; }   // the stab has run its course without landing
+        if (s.t > row.lungeTicks + row.lungeGraceTicks || (s.t > row.attackStartTicks && me.phase !== 'attack')) { halt(row.cooldownTicks); return warden; }   // the stab has run its course without landing
         return { ...idleIntent(), held: false, lock: false };
       case DRAG:
         s.t++;

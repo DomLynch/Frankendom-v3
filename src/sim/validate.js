@@ -265,7 +265,8 @@ export function checkKingAura(id, r) {
 }
 /** One checker per mechanic `type` (the registry of src/fight/mechanics/index.ts has the same ids). A new boss mechanic adds one line here. */
 const IMPALE_NUMS = { firstTicks: [0, 3600], cooldownTicks: [60, 7200], abortCooldownTicks: [0, 7200], gapMin: [0.5, 20], gapMax: [0.5, 20], parkTicks: [1, 53], freezeTicks: [1, 52], lungeSpeed: [0.01, 0.5], lungeTicks: [1, 120],
-  stopGap: [0.8, 3], dragM: [0, 6], dragTicks: [1, 90], dragStop: [0.9, 3], followWithinTicks: [1, 300], lineWidth: [0.1, 3], backTo: [0, 12], backSpeed: [0, 0.3] };
+  stopGap: [0.8, 3], dragM: [0, 6], dragTicks: [1, 90], dragStop: [0.9, 3], followWithinTicks: [1, 300], lineWidth: [0.1, 3], backTo: [0, 12], backSpeed: [0, 0.3],
+  giveUpTicks: [1, 600], wallPadM: [0, 2], lineOvershootM: [0, 3], lungeGraceTicks: [0, 300], attackStartTicks: [0, 30] };
 /** Nan's IMPALE AND DRAG row (type "nan-impale"). Returns one string per problem. */
 export function checkNanImpale(id, r) {
   const e = [], at = `mechanics.${id}`;
@@ -301,7 +302,9 @@ export function checkEnvoyLatch(id, r, _moves = [], ctx = {}) {
   const t = r.tell;
   if (!t || typeof t !== 'object') e.push(`${at}.tell: an object`);
   else {
-    for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM', 'beyondM'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
+    for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM', 'beyondM', 'renderOrder', 'alphaFloor', 'alphaRise', 'pulseBase', 'pulseDepth'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
+    if (!Number.isInteger(t.renderOrder) || t.renderOrder < 0 || t.renderOrder > 32) e.push(`${at}.tell.renderOrder: an integer 0..32`);
+    for (const k of ['alphaFloor', 'alphaRise', 'pulseBase', 'pulseDepth']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
     if (typeof t.colour !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(t.colour)) e.push(`${at}.tell.colour: a #rrggbb`);
     for (const k of ['alpha', 'latchedAlpha']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
     for (const k of ['widthM', 'liftM', 'beyondM']) if (!(t[k] >= 0 && t[k] <= 5)) e.push(`${at}.tell.${k}: from 0 to 5`);
@@ -338,8 +341,8 @@ export function checkReginaldLimbLoss(id, r) {
 }
 
 const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'envoy-latch': checkEnvoyLatch, 'reginald-limb-loss': checkReginaldLimbLoss, 'accountant-parry-wall': checkAccountantParryWall, 'shadow-dash': checkShadowDash };
-const ACCOUNTANT_KEYS = ['type', 'about', 'boss', 'firstTicks', 'triggerRangeM', 'tellTicks', 'wallTicks', 'cooldownTicks', 'cancelCooldownTicks', 'arcDeg', 'parryStunTicks', 'riposteTicks', 'parriesToDrop', 'kickBreakStunTicks', 'specialBreakStunTicks', 'caption', 'fx'];
-const ACCOUNTANT_FX = ['colour', 'edgeColour', 'ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM', 'tellOpacity', 'wallOpacity', 'sparkCount', 'sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz'];
+const ACCOUNTANT_KEYS = ['type', 'about', 'boss', 'firstTicks', 'triggerRangeM', 'tellTicks', 'wallTicks', 'cooldownTicks', 'cancelCooldownTicks', 'arcDeg', 'parryStunTicks', 'riposteTicks', 'parriesToDrop', 'kickBreakStunTicks', 'specialBreakStunTicks', 'caption', 'breakMove', 'fx'];
+const ACCOUNTANT_FX = ['ledgerLines', 'texturePx', 'ruleThicknessPx', 'marginFrac', 'ringInnerFrac', 'ringSegments', 'mapTint', 'renderOrder', 'sparkRenderOrder', 'sparkPoolParries', 'ringLiftM', 'ringTellGain', 'ringUpBoost', 'ringPulseMin', 'ringPulseDepth', 'minRise', 'tellRiseShare', 'sparkBackShare', 'sparkSwirlShare', 'sparkArcShare', 'sparkLiftShare', 'parkY', 'colour', 'edgeColour', 'ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM', 'tellOpacity', 'wallOpacity', 'sparkCount', 'sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz'];
 /** The Accountant's PARRY WALL row (type "accountant-parry-wall"). Ranges keep the wall readable (a tell of 0.3 s or more) and fair (a window under 5 s, a cooldown longer than the wall). Returns one string per problem. */
 export function checkAccountantParryWall(id, r) {
   const e = [], at = `mechanics.${id}`;
@@ -361,8 +364,23 @@ export function checkAccountantParryWall(id, r) {
   if (!int(r.kickBreakStunTicks, 1, 180)) e.push(`${at}.kickBreakStunTicks: an integer 1..180`);
   if (!int(r.specialBreakStunTicks, 1, 180)) e.push(`${at}.specialBreakStunTicks: an integer 1..180`);
   if (typeof r.caption !== 'string' || !r.caption) e.push(`${at}.caption: a data/commentator.json event id`);
+  if (typeof r.breakMove !== 'string' || !/^[a-z][a-z0-9_-]*$/.test(r.breakMove)) e.push(`${at}.breakMove: a move id (the move that breaks the wall)`);
   const fx = r.fx;
   if (!fx || typeof fx !== 'object' || Array.isArray(fx)) return [...e, `${at}.fx: an object`];
+  if (!int(fx.ledgerLines, 0, 16)) e.push(`${at}.fx.ledgerLines: an integer 0..16`);
+  if (!int(fx.texturePx, 16, 256)) e.push(`${at}.fx.texturePx: an integer 16..256`);
+  if (!int(fx.ruleThicknessPx, 1, 8)) e.push(`${at}.fx.ruleThicknessPx: an integer 1..8`);
+  if (!int(fx.ringSegments, 8, 128)) e.push(`${at}.fx.ringSegments: an integer 8..128`);
+  if (!int(fx.renderOrder, 0, 32)) e.push(`${at}.fx.renderOrder: an integer 0..32`);
+  if (!int(fx.sparkRenderOrder, 0, 32)) e.push(`${at}.fx.sparkRenderOrder: an integer 0..32`);
+  if (!int(fx.sparkPoolParries, 1, 8)) e.push(`${at}.fx.sparkPoolParries: an integer 1..8`);
+  if (typeof fx.mapTint !== 'string' || !HEX6.test(fx.mapTint)) e.push(`${at}.fx.mapTint: a #rrggbb`);
+  for (const k of ['marginFrac', 'ringInnerFrac', 'ringPulseMin', 'ringPulseDepth', 'tellRiseShare', 'sparkBackShare', 'sparkSwirlShare', 'sparkArcShare', 'sparkLiftShare']) if (!num(fx[k], 0, 1)) e.push(`${at}.fx.${k}: 0..1`);
+  if (!num(fx.ringLiftM, 0, 1)) e.push(`${at}.fx.ringLiftM: 0..1 metres`);
+  if (!num(fx.ringTellGain, 0, 10)) e.push(`${at}.fx.ringTellGain: 0..10`);
+  if (!num(fx.ringUpBoost, 0, 1)) e.push(`${at}.fx.ringUpBoost: 0..1`);
+  if (!num(fx.minRise, 0.001, 1)) e.push(`${at}.fx.minRise: 0.001..1`);
+  if (!num(fx.parkY, -1000, -10)) e.push(`${at}.fx.parkY: -1000..-10 metres (below the world, out of sight)`);
   for (const k of Object.keys(fx)) if (!ACCOUNTANT_FX.includes(k)) e.push(`${at}.fx.${k}: unknown key`);
   for (const k of ['colour', 'edgeColour']) if (typeof fx[k] !== 'string' || !HEX6.test(fx[k])) e.push(`${at}.fx.${k}: a #rrggbb`);
   for (const k of ['ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM']) if (!num(fx[k], 0.1, 6)) e.push(`${at}.fx.${k}: 0.1..6 metres`);

@@ -14,7 +14,7 @@ export type EnvoyLatchRow = {
   firstCooldownTicks: number; cooldownTicks: number; lungeMinM: number; lungeMaxM: number; tellTicks: number; lungeTicks: number; contactM: number; latchGapM: number;
   drainPerSecond: number; drainFloor: number; slowPct: number; breakHits: number; breakWindowTicks: number; maxLatchTicks: number; guardChipStamina: number;
   blockedRecoverTicks: number; whiffRecoverTicks: number; breakRecoverTicks: number; breakKnockM: number;
-  tell: { colour: string; alpha: number; widthM: number; latchedAlpha: number; liftM: number; beyondM: number };
+  tell: { colour: string; alpha: number; widthM: number; latchedAlpha: number; liftM: number; beyondM: number; renderOrder: number; alphaFloor: number; alphaRise: number; pulseBase: number; pulseDepth: number };
 };
 export const ENVOY_LATCH_ROW = (MECHANICS.mechanics as unknown as Record<string, EnvoyLatchRow>)['envoy-latch']!;
 

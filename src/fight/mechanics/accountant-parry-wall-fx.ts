@@ -14,42 +14,47 @@ export function createAccountantRuntime(row: AccountantRow): MechanicRuntime {
   return { boss: row.boss, group: null, core: null, ctx: null, reset(): void {}, tick: (practice: Practice): Practice => practice, frame(): void {} };
 }
 
-const LEDGER_LINES = 6, TEX_PX = 64;   // the ruled lines on the wall: a handful, so it reads as a ledger page at 375 wide
+/** The sim's fixed tick rate (the duel steps at 60 Hz): the ring's pulse is in Hz, the sim clock in ticks. */
+const SIM_HZ = 60;
 
 function ledgerTexture(FX: AccountantRow['fx']): THREE.Texture | null {
   if (typeof document === 'undefined') return null;
-  const c = document.createElement('canvas'); c.width = c.height = TEX_PX;
+  const px = FX.texturePx, rule = FX.ruleThicknessPx, half = rule >> 1;   // a rule is centred on its line (half its thickness back)
+  const c = document.createElement('canvas'); c.width = c.height = px;
   const g = c.getContext('2d'); if (!g) return null;
-  g.fillStyle = FX.colour; g.fillRect(0, 0, TEX_PX, TEX_PX);
+  g.fillStyle = FX.colour; g.fillRect(0, 0, px, px);
   g.fillStyle = FX.edgeColour;
-  for (let i = 1; i <= LEDGER_LINES; i++) g.fillRect(0, Math.round((i * TEX_PX) / (LEDGER_LINES + 1)) - 1, TEX_PX, 2);
-  g.fillRect(Math.round(TEX_PX * 0.2) - 1, 0, 2, TEX_PX);   // the ledger's margin rule
+  for (let i = 1; i <= FX.ledgerLines; i++) g.fillRect(0, Math.round((i * px) / (FX.ledgerLines + 1)) - half, px, rule);
+  g.fillRect(Math.round(px * FX.marginFrac) - half, 0, rule, px);   // the ledger's margin rule
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
-const NOOP = { update(_boss: Fighter | null, _at: THREE.Vector3 | null, _heading: number, _events: readonly CombatEvent[], _tick: number, _dt: number): void {}, hide(): void {}, dispose(): void {} };
+/** A boss's feet in world metres: the midpoint of the two foot bones on the ground (the lower foot's height), written into `out`. The scene and the zone effects both call it. */
+export const footMidpoint = (l: THREE.Vector3, r: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 => out.copy(l).add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y));
+
+const NOOP ={ update(_boss: Fighter | null, _at: THREE.Vector3 | null, _heading: number, _events: readonly CombatEvent[], _tick: number, _dt: number): void {}, hide(): void {}, dispose(): void {} };
 export function createWallFx(scene: THREE.Scene): typeof NOOP {
   if (!ROW.fx) return NOOP;   // mechanics not configured (a page or test that never called configureMechanics): nothing to draw
-  const FX = ROW.fx, POOL = FX.sparkCount * 4;   // the configured row (configureMechanics ran before the page built its effects); up to four parries' sparks alive at once
-  const root = new THREE.Group(); root.visible = false; root.renderOrder = 6;
+  const FX = ROW.fx, POOL = FX.sparkCount * FX.sparkPoolParries;   // the configured row (configureMechanics ran before the page built its effects); up to four parries' sparks alive at once
+  const root = new THREE.Group(); root.visible = false; root.renderOrder = FX.renderOrder;
   const tex = ledgerTexture(FX);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.88, 1, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: FX.colour, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
-  const wall = new THREE.Mesh(new THREE.PlaneGeometry(FX.wallWidthM, FX.wallHeightM), new THREE.MeshBasicMaterial({ color: tex ? 0xffffff : FX.colour, ...(tex ? { map: tex } : {}), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+  const ring = new THREE.Mesh(new THREE.RingGeometry(FX.ringInnerFrac, 1, FX.ringSegments).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: FX.colour, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(FX.wallWidthM, FX.wallHeightM), new THREE.MeshBasicMaterial({ color: tex ? FX.mapTint : FX.colour, ...(tex ? { map: tex } : {}), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
   const frame = new THREE.LineSegments(new THREE.EdgesGeometry(wall.geometry), new THREE.LineBasicMaterial({ color: FX.edgeColour, transparent: true, opacity: 0 }));
-  ring.renderOrder = wall.renderOrder = frame.renderOrder = 6;
+  ring.renderOrder = wall.renderOrder = frame.renderOrder = FX.renderOrder;
   root.add(ring, wall, frame); scene.add(root);
   // the spark pool: fixed arrays, a spark is a slot (age >= life = free)
   const pos = new Float32Array(POOL * 3), vel = new Float32Array(POOL * 3), age = new Float32Array(POOL).fill(Infinity);
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const sparks = new THREE.Points(geo, new THREE.PointsMaterial({ color: FX.edgeColour, size: FX.sparkSizeM, sizeAttenuation: true, transparent: true, depthWrite: false }));
-  sparks.frustumCulled = false; sparks.renderOrder = 7; scene.add(sparks);
+  sparks.frustumCulled = false; sparks.renderOrder = FX.sparkRenderOrder; scene.add(sparks);
   let cursor = 0, lastTick = -1;
   const burst = (x: number, y: number, z: number, dx: number, dz: number): void => {   // the wall's face is perpendicular to (dx, dz): sparks fly back off it and up, spread by the slot index (no random: a replay draws the same)
     for (let k = 0; k < FX.sparkCount; k++) {
       const i = cursor; cursor = (cursor + 1) % POOL;
       const t = (k / FX.sparkCount) * Math.PI * 2, s = FX.sparkSpeedMps;
       pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
-      vel[i * 3] = dx * s * 0.6 + Math.cos(t) * dz * s * 0.5; vel[i * 3 + 1] = Math.sin(t) * s * 0.6 + s * 0.3; vel[i * 3 + 2] = dz * s * 0.6 - Math.cos(t) * dx * s * 0.5;
+      vel[i * 3] = dx * s * FX.sparkBackShare + Math.cos(t) * dz * s * FX.sparkSwirlShare; vel[i * 3 + 1] = Math.sin(t) * s * FX.sparkArcShare + s * FX.sparkLiftShare; vel[i * 3 + 2] = dz * s * FX.sparkBackShare - Math.cos(t) * dx * s * FX.sparkSwirlShare;
       age[i] = 0;
     }
   };
@@ -60,12 +65,12 @@ export function createWallFx(scene: THREE.Scene): typeof NOOP {
       root.visible = stage !== 'none';
       if (at && boss && stage !== 'none') {
         const dx = Math.sin(heading), dz = Math.cos(heading), rise = riseOf(boss), up = stage === 'up';
-        const pulse = up ? 1 : 0.6 + 0.4 * Math.sin(tick * (Math.PI * 2 * FX.ringPulseHz) / 60);
+        const pulse = up ? 1 : FX.ringPulseMin + FX.ringPulseDepth * Math.sin(tick * (Math.PI * 2 * FX.ringPulseHz) / SIM_HZ);
         root.position.set(at.x, at.y, at.z);
-        ring.position.y = 0.03; ring.scale.setScalar(FX.ringRadiusM); (ring.material as THREE.MeshBasicMaterial).opacity = Math.min(1, FX.tellOpacity * 2.5 + (up ? 0.25 : 0)) * pulse;
-        wall.position.set(dx * FX.wallDistanceM, (FX.wallHeightM * rise) / 2, dz * FX.wallDistanceM); wall.rotation.y = heading; wall.scale.set(1, Math.max(0.01, rise), 1);
+        ring.position.y = FX.ringLiftM; ring.scale.setScalar(FX.ringRadiusM); (ring.material as THREE.MeshBasicMaterial).opacity = Math.min(1, FX.tellOpacity * FX.ringTellGain + (up ? FX.ringUpBoost : 0)) * pulse;
+        wall.position.set(dx * FX.wallDistanceM, (FX.wallHeightM * rise) / 2, dz * FX.wallDistanceM); wall.rotation.y = heading; wall.scale.set(1, Math.max(FX.minRise, rise), 1);
         frame.position.copy(wall.position); frame.rotation.y = heading; frame.scale.copy(wall.scale);
-        (wall.material as THREE.MeshBasicMaterial).opacity = up ? FX.wallOpacity : FX.tellOpacity + (FX.wallOpacity - FX.tellOpacity) * rise * 0.5;
+        (wall.material as THREE.MeshBasicMaterial).opacity = up ? FX.wallOpacity : FX.tellOpacity + (FX.wallOpacity - FX.tellOpacity) * rise * FX.tellRiseShare;
         (frame.material as THREE.LineBasicMaterial).opacity = up ? 1 : rise;
       }
       if (at && boss && tick !== lastTick) {   // a parry's spark: once per tick, at the wall's face, thrown back toward the attacker (also on the parry that drops the wall: the stage is already none)
@@ -74,7 +79,7 @@ export function createWallFx(scene: THREE.Scene): typeof NOOP {
         for (let k = 0; k < events.length; k++) { const e = events[k]!; if (e.type === 'Parried' && e.wall) burst(at.x + dx * FX.wallDistanceM, at.y + FX.wallHeightM * 0.5, at.z + dz * FX.wallDistanceM, dx, dz); }
       }
       for (let i = 0; i < POOL; i++) {   // the sparks fly and fade whatever the stage (a break leaves its last sparks to finish)
-        if (!(age[i]! < FX.sparkLifeS)) { pos[i * 3 + 1] = -100; continue; }
+        if (!(age[i]! < FX.sparkLifeS)) { pos[i * 3 + 1] = FX.parkY; continue; }
         age[i]! += dt; pos[i * 3] += vel[i * 3]! * dt; pos[i * 3 + 1] += vel[i * 3 + 1]! * dt; pos[i * 3 + 2] += vel[i * 3 + 2]! * dt; vel[i * 3 + 1] -= FX.sparkGravityMps2 * dt;
       }
       geo.attributes.position!.needsUpdate = true;

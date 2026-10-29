@@ -5,6 +5,10 @@
 import type { Fighter } from '../duel.ts';
 import { ID as ACCOUNTANT, mechanic as accountant } from './accountant-parry-wall.ts';
 
+/** The answers of intercept() the duel reads, and the two combat event type ids it pushes for a wall (the EventType union in duel.ts): named once here so the duel names no literal of its own. */
+export const WALL_HIT = { parry: 'parry', break: 'break' } as const;
+export const WALL_EVENT = { parried: 'Parried', staggered: 'Staggered' } as const;
+
 export interface Mechanic {
   /** Lay this mechanic's data/mechanics.json row into the module (the driver calls it once, before any fight; unconfigured = inert). */
   configure(row: never): void;
