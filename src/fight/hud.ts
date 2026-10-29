@@ -5,6 +5,8 @@ import { accepts, counterLine, practiceHint, refusedButton, specialReach, specia
 import { defenceGrade, GRADE_LABEL } from './defence-grade.ts';
 import { won } from '../stubs.ts';   // V3: ladder.ts
 import { foeDisplayName } from './foe-name.ts';
+import { HUD_TEXT } from './hud-text.ts';
+import { HINTS } from './practice-hints.ts';
 import { LESSON_FELL, LESSON_NEXT, lessonText, type LessonLine } from '../stubs.ts';   // V3: lessons.ts
 import { createGapHistory } from './kick-close.ts';
 import { staminaLow } from './fatigue-preview.ts';
@@ -16,47 +18,20 @@ import { specialName } from './special-names.ts';
 // Heavy-class contacts: bigger damage numbers here, a longer hit-stop in the frame loop.
 export const HEAVY_MOVES = new Set<string>(['heavy_overhead', 'heavy_riposte', 'heavy_counter', 'critical', ...DIRECTIONAL_HEAVY_IDS]);   // + V3's directional heavies (move-defs.json `directional`)
 // Lit = a kick pressed from here lands on a guard-raised foe. Measured 2026-10-07 (tests/hud.test.ts): the true far edge is 1.585 m (the 1.2 m cone plus the kick's .55 stride), so 1.5 keeps a margin for the foe's step.
-export const KICK_LANDS = fxNum('hud.kick-light-m');   // a HUD margin under the true edge (tests/hud.test.ts ties it to the live sim: 0 <= edge - this <= 0.15)
+const KICK_LANDS = fxNum('hud.kick-light-m');   // a HUD margin under the true edge (tests/hud.test.ts ties it to the live sim: 0 <= edge - this <= 0.15)
 
-export type HudView = { slotB?: boolean; slotBName?: string; slotAName?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; autoStart?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number; zone?: boolean; toastOver?: boolean; free?: { dodge: boolean; guard: boolean; guarding: boolean }; death?: { line: string; button: string; ready: boolean } };   // free: the hero walks after a kill (src/fight/free-roam.ts): ROLL and GUARD read the walking hero's own gate, not the finished fight's   // death: the hero is down in the zone (data/hero-death.json): the plain line replaces "You died." and the Rematch button reads Respawn once `ready`   // zone: the fight ended in the live zone (data/respawn.json): the kill is a toast ("Pitborn defeated."), a death reads "You died."; no rematch prompt, no Rematch button; the foe comes back by itself   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
+type HudView = { slotB?: boolean; slotBName?: string; slotAName?: string; legend?: string; controlsReady: boolean; debug: boolean; opponentId: OpponentId; next?: { name: string }; replay?: boolean; practiceOnly?: boolean; stalled?: boolean; dummy?: boolean; lesson?: LessonLine; lessonFight?: boolean; autoStart?: boolean; headline?: string | null; kickClose?: boolean; fatiguePreview?: boolean; staminaShown?: number; zone?: boolean; toastOver?: boolean; free?: { dodge: boolean; guard: boolean; guarding: boolean }; death?: { line: string; button: string; ready: boolean } };   // free: the hero walks after a kill (src/fight/free-roam.ts): ROLL and GUARD read the walking hero's own gate, not the finished fight's   // death: the hero is down in the zone (data/hero-death.json): the plain line replaces "You died." and the Rematch button reads Respawn once `ready`   // zone: the fight ended in the live zone (data/respawn.json): the kill is a toast ("Pitborn defeated."), a death reads "You died."; no rematch prompt, no Rematch button; the foe comes back by itself   // dummy: a sparring fight against the no-attack dummy   // replay: watching a record (PLAY NOW after); practiceOnly: that fight, no ladder step; stalled: the viewer page cannot go on
 // The one bar drawing: a meter's max, its value and the --fill custom property the style sheets draw it from (a <meter>'s own pseudo bars differ per engine).
-export function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
-export function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
+function fillMeter(meter: HTMLElement, value: number, max: number) { meter.style.setProperty('--fill', `${Math.max(0, value / max) * 100}%`); }   // never below 0 (a dead foe's bar at -2 hp, the zone bars' old clamp)
+function paintMeter(meter: HTMLMeterElement, value: number, max: number) { meter.max = max; meter.value = value; fillMeter(meter, value, max); }
 
 // The bars a zone shows over the walk are the Pit's own (Dom 2026-10-14, "the original ones look better"): the same .combat-hud markup and src/style.css, painted from plain numbers because the open-world loop has no
 // Practice. The foe's name over its bar, then HEALTH and STAMINA, are the Pit's #opponent-name / #target-health / #player-health / #stamina, drawn through the same fillMeter / paintMeter createHud uses; the page builds
 // nothing of its own (tests/fight-no-twins.test.ts). `shown` toggles body.zone-bars (origins/preview/index.html shows the Pit's .combat-hud only then); the hit vignette is the one element this adds.
-export type MeterState = { hp: number; maxHp: number; stamina: number; maxStamina: number; foe: { name: string; level?: number; hp: number; max: number } | null };
 type Lookup = <T extends HTMLElement>(id: string) => T;
-export function createZoneBars(element: Lookup, parent: HTMLElement) {
-  const flashEl = parent.ownerDocument.createElement('div'); flashEl.className = 'fm-flash'; parent.append(flashEl);
-  const name = element('opponent-name'), foe = element<HTMLMeterElement>('target-health'), hp = element<HTMLMeterElement>('player-health'), stamina = element<HTMLMeterElement>('stamina');
-  let flashTimer: ReturnType<typeof setTimeout> | undefined;
-  return {
-    /** Paint the Pit's bars; `shown` false hides them (the zone hides them while the hero is whole and nothing is in reach). */
-    update(state: MeterState, shown: boolean) {
-      parent.classList.toggle('zone-bars', shown);
-      paintMeter(hp, state.hp, state.maxHp); paintMeter(stamina, state.stamina, state.maxStamina);   // the hero's own bars and numbers are painted even while hidden, so the DOM never says the static "150 / 150" once the sheet's max is known
-      element('player-health-value').textContent = `${Math.round(state.hp)} / ${state.maxHp}`; element('stamina-value').textContent = `${Math.round(state.stamina)} / ${state.maxStamina}`;
-      if (!shown) return;
-      name.replaceChildren(state.foe ? state.foe.name.toUpperCase() : ''); name.dataset.mobile = state.foe ? state.foe.name : '';
-      if (state.foe?.level !== undefined) { const small = name.ownerDocument.createElement('small'); small.className = 'opponent-class'; small.textContent = `Lv ${state.foe.level}`; name.append(' ', small); }   // the Pit's own level slot (origins/preview/pit-duel.ts nameOpponent): the name large, the level small beside it   // the phone draws data-mobile (src/style.css .meter-label::after)
-      if (state.foe) paintMeter(foe, state.foe.hp, state.foe.max); else paintMeter(foe, 0, 1);
-      element('health-value').textContent = state.foe ? `${Math.round(state.foe.hp)} / ${state.foe.max}` : '';
-    },
-    /** Paint from the open-world loop itself (hero, the foe in reach, whether a fight is on); hidden while the hero is whole and nothing is in reach. */
-    feed(wc: { hero(): { health: number; max: number; stamina: number; maxStamina: number }; target(): { name: string; level?: number; health: number; max: number } | null; inCombat(): boolean }) {
-      const h = wc.hero(), t = wc.target(), full = h.health >= h.max - 0.5 && h.stamina >= h.maxStamina - 0.5;
-      this.update({ hp: h.health, maxHp: h.max, stamina: h.stamina, maxStamina: h.maxStamina, foe: t ? { name: t.name, level: t.level, hp: t.health, max: t.max } : null }, !(full && !t && !wc.inCombat()));
-    },
-    /** The hero was hit: a red vignette for a moment. */
-    flash() { flashEl.dataset.on = 'true'; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashEl.dataset.on = 'false'; }, 120); },
-  };
-}
-
 // The SPECIAL buttons' ready ring (data/fight.json readyRing; Dom 2026-10-26: "a thin yellow extra circle around it, not fat, that glows a little
 // when you can use it"). null = ?ring=v1: today's HUD exactly (accepts() and the skill's own cooldown test, no ring).
-export type ReadyRing = { colour: string; width: number; glow: number; gap: number; track: string; staminaTrack: string; pulseMs: number };
+type ReadyRing = { colour: string; width: number; glow: number; gap: number; track: string; staminaTrack: string; pulseMs: number };
 const ringKey = (r: SpecialReadiness | null): string => (r ? `${r.ready ? 'R' : r.reason}${r.short ? 's' : ''}${Math.round(r.cooldownFrac * 60)}` : '');   // the fill moves in 60ths: a repaint every 9 ticks of a 9 s cooldown, not every tick
 const ringState = (r: SpecialReadiness, live: boolean): string => (!live ? 'off' : r.ready ? 'ready' : r.reason ?? 'busy');
 
@@ -94,8 +69,8 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
     },
     update(practice: Practice, view: HudView) {
       // The sparring dummy never attacks (src/sparring.ts), so the sheathed line's "will counterattack" is false there (Strategy 2026-09-26).
-      const foe = foeDisplayName(view.opponentId), nameOfSpecial = (skill: string) => specialName(practice.duel.fighters[0].weapon, skill, SKILL_ROWS[skill as keyof typeof SKILL_ROWS]?.name ?? '') || undefined, line = view.headline ? practiceHint(practice, foe, view.legend, nameOfSpecial).replace(' Ready for a rematch?', ` ${view.headline} Ready for a rematch?`) : practiceHint(practice, foe, view.legend, nameOfSpecial),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
-        hint = view.death ? view.death.line : view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.autoStart && practice.phase === 'sheathed' ? '' : view.dummy ? line.replace(counterLine(foe, view.legend), 'The dummy never attacks.') : view.zone ? (view.toastOver ? '' : line).replace(' Ready for a rematch?', '').replace('You fell. Rematch?', 'You died.').replace('You both fell. Rematch?', 'You died.') : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
+      const foe = foeDisplayName(view.opponentId), nameOfSpecial = (skill: string) => specialName(practice.duel.fighters[0].weapon, skill, SKILL_ROWS[skill as keyof typeof SKILL_ROWS]?.name ?? '') || undefined, line = view.headline ? practiceHint(practice, foe, view.legend, nameOfSpecial).replace(HUD_TEXT.rematchTail, ` ${view.headline}${HUD_TEXT.rematchTail}`) : practiceHint(practice, foe, view.legend, nameOfSpecial),   // ?look=headline (victory-headline.ts): the earned line sits before the rematch prompt of a win
+        hint = view.death ? view.death.line : view.lesson ? lessonText(view.lesson) : view.lessonFight && !practice.playerHealth ? LESSON_FELL : view.autoStart && practice.phase === 'sheathed' ? '' : view.dummy ? line.replace(counterLine(foe, view.legend), HUD_TEXT.dummyNeverAttacks) : view.zone ? (view.toastOver ? '' : line).replace(HUD_TEXT.rematchTail, '').replace(HINTS.lines.fell!, HUD_TEXT.zoneDied).replace(HINTS.lines.bothFell!, HUD_TEXT.zoneDied) : line,   // lesson: a teaching beat the fight set (lessons.ts) wins the line while it is up
         controlsReady = view.controlsReady;
       const ok = (['light', 'heavy', 'kick', 'backstep', 'parry'] as const).map(
         (a) => accepts(practice, a) || (a === 'backstep' && accepts(practice, 'dodge')),
@@ -144,17 +119,17 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
       }
       combatStatus.textContent = hint;
       element('stamina-label').dataset.mobile = practice.exhausted
-        ? 'Stamina · exhausted'
+        ? HUD_TEXT.stamina.exhaustedMobile
         : practice.wound
-          ? 'Stamina · wound'
-          : 'Stamina';
+          ? HUD_TEXT.stamina.woundMobile
+          : HUD_TEXT.stamina.plain;
       stamina.setAttribute(
         'aria-label',
         practice.exhausted
-          ? 'Stamina — exhausted: no attacks or guard until it recovers'
+          ? HUD_TEXT.stamina.exhaustedAria
           : practice.wound
-            ? 'Stamina — wounded: recovery reduced 20 percent'
-            : 'Stamina',
+            ? HUD_TEXT.stamina.woundAria
+            : HUD_TEXT.stamina.plain,
       );
       kickButton.hidden =
         practice.phase === 'sheathed' || practice.phase === 'draw' || !practice.health || !practice.playerHealth;
@@ -164,13 +139,13 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
       combatStatus.dataset.move = practice.threatMove ?? '';
       // V3 autoStart (src/auto-start.ts): the fight starts by itself, so the button is the light attack from the first frame and never says Fight.
       const fightButton = practice.phase === 'sheathed' && !view.autoStart;
-      const attackLabel = fightButton ? 'Fight' : 'Light attack';
+      const attackLabel = fightButton ? HUD_TEXT.attack.fight : HUD_TEXT.attack.light;
       const labelNode = attackButton.firstChild;   // the text node; the side-mark SVG after it must survive the rewrite
       if (labelNode && labelNode.nodeType === 3) { if (labelNode.textContent !== attackLabel) labelNode.textContent = attackLabel; } else attackButton.textContent = attackLabel;
       // Side hint: the cuts alternate, so the button lights the side of the NEXT one (none while sheathed — the button says Fight).
       const nextCut = fightButton ? null : practice.duel.fighters[0].lastMove === 'light_right' ? 'left' : 'right';
       if ((attackButton.dataset.next ?? null) !== nextCut) { if (nextCut) attackButton.dataset.next = nextCut; else delete attackButton.dataset.next; }
-      attackButton.dataset.mobile = fightButton ? 'Fight' : 'Slash';
+      attackButton.dataset.mobile = fightButton ? HUD_TEXT.attack.mobileFight : HUD_TEXT.attack.mobileSlash;
       attackButton.setAttribute('aria-label', attackLabel);
       thrustButton.hidden = !practice.health || !practice.playerHealth || practice.phase === 'sheathed';
       thrustButton.setAttribute('aria-disabled', String(!controlsReady || !accepts(practice, 'thrust')));
@@ -207,7 +182,7 @@ export function createHud(element: Lookup, ring: ReadyRing | null = null) {
       resetButton.hidden = view.death ? !view.death.ready : !!view.zone || (!ended && !view.stalled);   // zone: no Rematch, the zone respawns the foe itself; a fallen hero gets Respawn instead (view.death)
       const next = ended && !view.practiceOnly && !view.replay && won(practice.finish) ? view.next : undefined;   // the page's own pick (match.ts nextRung): label and button agree
       // "PLAY NOW" on a shared link, not "Avenge him" (owner 2026-09-22): a stranger does not know whose death they are avenging.
-      resetButton.textContent = view.death ? view.death.button : view.replay || view.stalled ? 'PLAY NOW' : view.lessonFight ? LESSON_NEXT : next ? 'Next fight' : 'Rematch';
+      resetButton.textContent = view.death ? view.death.button : view.replay || view.stalled ? HUD_TEXT.reset.playNow : view.lessonFight ? LESSON_NEXT : next ? HUD_TEXT.reset.next : HUD_TEXT.reset.rematch;
       // On a viewer page PLAY NOW is the only live control on the screen (every combat button beside it is asleep), so it wears the
       // kill screen's primary rather than the dark glass it shares with Rematch — style.css `#reset-button[data-play='1']`.
       resetButton.dataset.play = view.replay || view.stalled ? '1' : '0';

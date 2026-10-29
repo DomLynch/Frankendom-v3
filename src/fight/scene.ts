@@ -14,6 +14,7 @@ import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
 import { firstFrameDrawn } from '../late-art.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
+import { createWallFx, footMidpoint } from './mechanics/accountant-parry-wall-fx.ts';   // the Accountant's parry wall (data/mechanics.json): drawn from the foe fighter's mech state, in the Pit scene
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -71,9 +72,11 @@ import './signature-veteran.ts';   // the Veteran's Battle Scars registers itsel
 import { settleWithin } from './warm-gate.ts';
 import { heroBodyFile } from './hero-body-rows.ts';
 import { applyStar } from './star-look.ts';
-import { bodyOwnerOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
+import { bodyOwnerOf, bodyProfileOf, foeBakedWeapon, foeBodyFile, foeBodySwapped, foeKitFile, profileBodyOf, spawnBodyFile } from './foe-body.ts';
+import { bossOfBody as bossOfBodyRow, ownerOfBody as ownerOfBodyOf, weaponOfBody as weaponOfBodyOf } from './boss-resolve.ts';
 import { bossOpponent, bossPreview, bossRowOfBody, bossWeaponFor } from './boss-weapon.ts';   // data/boss-weapons.json: the weapon a boss body is drawn with (Gargantua's maul, Arachne's axe and shield)
-import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD } from './rig-bones.ts';
+import { bone as boneOf, heroRigFile, rigStemOf, CLIP_LOAD, HELD, foeRigFile as foeRigFileOf } from './rig-bones.ts';
+import { MOBS, kindRow, type MobKind, type MobView } from '../zone/mobs.ts';   // trash mobs (data/mobs.json): the core's live arrays are drawn as pooled actors of one shared body (syncMobs)
 import { createHeldBodies } from './held-body.ts';   // the held foe wears its own body (PR 2 of "10 bosses": the live rig swaps at a hand-over)
 import { foeDrawnWeapon } from './foe-weapon.ts';
 import { fovForZoom, wideBoost, type WideRow } from './camera-zoom.ts';
@@ -81,7 +84,9 @@ import { createSkyline, skylineOn, SKYLINE } from './skyline.ts';
 import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
+import { setHeroLocator } from './cut-strike.ts';
 import { mountHint, pickupOn } from './pickup.ts';   // the cut hint (data/pickup.json)
+import { bodyMechanicFor, type BodyMechanic } from './mechanics/reginald-limb-loss.ts';   // boss signature mechanics (data/mechanics.json): a body draws what its mechanic did to it (Sir Reginald's lost limbs)
 import { foeRagdollFor, heldRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, setHeldRagdoll, snapshotRig, WARM_SCALE, type FoeRagdoll } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -108,12 +113,19 @@ const EQUIP_URLS: Record<string, string> = {
 const equipUrl = (weapon: WeaponId): string | undefined => EQUIP_URLS[`../assets/weapons/player/${weapon}.glb`];
 // V3: the opponent's DRAWN weapon over the one he fights with (foe-weapon.ts, data/fight.json foeWeapon: V1's Cleaver on the Minotaur, the
 // sim's gladius kept). Its equip file is the gladius's with the cleaver in the socket; fetched only when the row is in force (?foeweapon=v1: the gladius's).
-const FOE_EQUIP_URLS: Record<string, string> = {
+export const FOE_EQUIP_URLS: Record<string, string> = {
   '../assets/weapons/foe/cleaver.glb': new URL('../assets/weapons/foe/cleaver.glb', import.meta.url).href,
   '../assets/weapons/foe/maul.glb': new URL('../assets/weapons/foe/maul.glb', import.meta.url).href,   // Gargantua's maul (data/boss-weapons.json; library hammer-01): fetched only with his body
   '../assets/weapons/foe/axe.glb': new URL('../assets/weapons/foe/axe.glb', import.meta.url).href,   // Arachne's axe (library axe1h-208)
+  '../assets/weapons/foe/halberd.glb': new URL('../assets/weapons/foe/halberd.glb', import.meta.url).href,   // Sir Reginald's halberd (library polearm-200; the castle-guard profile row)
+  '../assets/weapons/foe/sword.glb': new URL('../assets/weapons/foe/sword.glb', import.meta.url).href,   // Ryo's sword (library sword1h-200): fetched only with his body
+  '../assets/weapons/foe/mace.glb': new URL('../assets/weapons/foe/mace.glb', import.meta.url).href,   // Lord Gourd's mace (library mace-204): the pumpkinhulk profile row, fetched only with his body
+  '../assets/weapons/foe/spear.glb': new URL('../assets/weapons/foe/spear.glb', import.meta.url).href,   // Nan the Impaler's spear (library polearm-206): fetched only with her body
+  '../assets/weapons/foe/katana.glb': new URL('../assets/weapons/foe/katana.glb', import.meta.url).href,   // Kachujin's blade (library sword1h-210): fetched only with her body
+  '../assets/weapons/foe/warhammer.glb': new URL('../assets/weapons/foe/warhammer.glb', import.meta.url).href,   // The King's war hammer (library hammer-200): fetched only with his body
+  '../assets/weapons/foe/rapier.glb': new URL('../assets/weapons/foe/rapier.glb', import.meta.url).href,   // Akane's blade (library sword1h-203): fetched only with her body
 };
-const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
+export const FOE_OFFHAND_URLS: Record<string, string> = { '../assets/weapons/foe/shield.glb': new URL('../assets/weapons/foe/shield.glb', import.meta.url).href };   // Arachne's shield (library shield-213): an offhand `file` row, fetched only with her body
 const offhandUrlOf = (row?: { offhand: { kind: string; file?: string } | null }): string | undefined => (row?.offhand?.kind === 'file' ? FOE_OFFHAND_URLS[`../assets/weapons/foe/${row.offhand.file}.glb`] : undefined);
 // The Pitborn (foe-pick.ts, Dom 2026-10-26) really fights with the cleaver: the same file, grafted over the trident his Minotaur body bakes.
 const pageSearch = typeof location === 'undefined' ? '' : location.search;   // the page's query, for the boss weapon rows (data/boss-weapons.json: ?bossweapon=v1 reverts, ?bossweapon=<opponent> is the stills flag)
@@ -298,7 +310,7 @@ export function createScene(
   // 106 ONLY (Dom 2026-10-26: "no risk of going back to the old 65 rig"; docs/PLAN.md section 10). The loader table holds the 106-joint
   // Psyche and Minotaur and nothing else: no 65 body (psyche.glb, minotaur.glb, warrior.glb, veteran.glb) is addressable, so none is
   // built into dist/ (data/build.json notShipped; test/rig-bones.test.mjs is the lock). No query picks a body.
-  const fighterUrls: Record<string, string> = { '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href, '../assets/gargantua-106.glb': new URL('../assets/gargantua-106.glb', import.meta.url).href, '../assets/arachne-106.glb': new URL('../assets/arachne-106.glb', import.meta.url).href, '../assets/pumpkinhulk-106.glb': new URL('../assets/pumpkinhulk-106.glb', import.meta.url).href, '../assets/parasite-106.glb': new URL('../assets/parasite-106.glb', import.meta.url).href, '../assets/sporty-granny-106.glb': new URL('../assets/sporty-granny-106.glb', import.meta.url).href, '../assets/big-vegas-106.glb': new URL('../assets/big-vegas-106.glb', import.meta.url).href, '../assets/castle-guard-106.glb': new URL('../assets/castle-guard-106.glb', import.meta.url).href, '../assets/kachujin-106.glb': new URL('../assets/kachujin-106.glb', import.meta.url).href, '../assets/the-boss-106.glb': new URL('../assets/the-boss-106.glb', import.meta.url).href, '../assets/anime-boy-black-106.glb': new URL('../assets/anime-boy-black-106.glb', import.meta.url).href, '../assets/anime-girl-blonde-106.glb': new URL('../assets/anime-girl-blonde-106.glb', import.meta.url).href };
+  const fighterUrls: Record<string, string> = { '../assets/psyche-106.glb': new URL('../assets/psyche-106.glb', import.meta.url).href, '../assets/minotaur-106.glb': new URL('../assets/minotaur-106.glb', import.meta.url).href, '../assets/gargantua-106.glb': new URL('../assets/gargantua-106.glb', import.meta.url).href, '../assets/arachne-106.glb': new URL('../assets/arachne-106.glb', import.meta.url).href, '../assets/pumpkinhulk-106.glb': new URL('../assets/pumpkinhulk-106.glb', import.meta.url).href, '../assets/parasite-106.glb': new URL('../assets/parasite-106.glb', import.meta.url).href, '../assets/sporty-granny-106.glb': new URL('../assets/sporty-granny-106.glb', import.meta.url).href, '../assets/big-vegas-106.glb': new URL('../assets/big-vegas-106.glb', import.meta.url).href, '../assets/castle-guard-106.glb': new URL('../assets/castle-guard-106.glb', import.meta.url).href, '../assets/kachujin-106.glb': new URL('../assets/kachujin-106.glb', import.meta.url).href, '../assets/the-boss-106.glb': new URL('../assets/the-boss-106.glb', import.meta.url).href, '../assets/anime-boy-black-106.glb': new URL('../assets/anime-boy-black-106.glb', import.meta.url).href, '../assets/anime-girl-blonde-106.glb': new URL('../assets/anime-girl-blonde-106.glb', import.meta.url).href, '../assets/mob-crowd-b1-05-106.glb': new URL('../assets/mob-crowd-b1-05-106.glb', import.meta.url).href };
   // The opponent's own cut of loot.glb (scripts/split-loot.mjs): none in V3. The Minotaur wears no kit (foe-body.ts) and the old cuts
   // (carriers-minotaur.glb, carriers-veteran.glb) are skinned to the 65 rig, so they are not shipped.
   const carrierUrls: Record<string, string> = {};
@@ -400,6 +412,7 @@ export function createScene(
   if (rankLook) (globalThis as { __rankLook?: typeof rankLook }).__rankLook = rankLook;
   let ragdoll: FoeRagdoll | null = typeof location === 'undefined' ? null : foeRagdollFor(location.search, opponentId);   // null under ?physics=v1 or for a foe without one   // let: a held spawn in another body swaps it (heldBodies below)
   ragdoll?.listenTaps(canvas, camera);   // data/physics.json cut.tap: a tap on his frozen corpse cuts the part it strikes (presentation only)
+  setHeroLocator(() => ({ x: player.position.x, z: player.position.z }));   // data/physics.json cut.strike: how near the hero stands to a fallen body
   const pickupV = new THREE.Vector3(), projectV = new THREE.Vector3();
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow and one line over a frozen corpse (presentation only)
     : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
@@ -577,6 +590,7 @@ export function createScene(
   const previewLighting = createTitheLighting(scene);
   const previewBackground = scene.background instanceof THREE.Color ? scene.background.clone() : null;
   const bossRing = typeof location !== 'undefined' && telegraphFlag(location.search);   // ?telegraph=1 look-test: the boss ring (boss-telegraph.ts); a spell cast's tell is always on
+  const wallFx = createWallFx(scene), wallFoot = new THREE.Vector3();   // the parry wall's mesh, ledger lines and sparks: built once, hidden while no boss holds the mechanic
   const castTells = [createBossTelegraph(scene), createBossTelegraph(scene)] as const;   // one ring per caster side, drawn under the other fighter
   const runtimeSpecial = specialId ? null : createSpecialPresentation(scene, theme.exposure, camera);
   const signatures = createSignatures(scene, opponentId);   // the opponent's signature effect (signature.ts); the ruled variant (SHIPPED) unless the admin select or ?signature= asks
@@ -596,17 +610,26 @@ export function createScene(
   const bodyAssets = new Map<string, { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> }>();   // `loaded`: the held foe's swap (heldBodies) awaits the same fetch a standing or attacking spawn started, one file once
   /** The loaded asset of boss body `file` (undefined while it loads or when it failed: the spawn is then not drawn, the fight goes on). The first ask starts the load. */
   // A boss body with a weapon row (data/boss-weapons.json; the body is found through the profile rows, foe-body.ts profileBodyOf) is armed with the row's weapon, scaled, with its off-hand part; any other body with the page's weapon, as before.
-  const bossOfBody = (file: string) => bossRowOfBody(file, profileBodyOf, pageSearch) ?? (file === liveBody || !bodyOwnerOf(file) ? undefined : bossWeaponFor(bodyOwnerOf(file)!, pageSearch));   // a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
+  const bossOfBody = (file: string) => bossOfBodyRow(file, liveBody, pageSearch);   // (src/fight/boss-resolve.ts, the one function the tests also call) a biome ring boss (data/rings.json) wears its own body: it takes the weapon row of the archetype it fights as
   // A body with no weapon row of its own (the Minotaur since the boss reorder: the live rig is the Gargantua's) fights and is drawn with the weapon of the archetype whose profile row names it (the Pitborn's cleaver), not the live rig's (the maul).
-  const ownerOfBody = (file: string): string | undefined => file === liveBody ? undefined : bodyOwnerOf(file);
-  const weaponOfBody = (file: string): WeaponId | undefined => bossOfBody(file)?.weapon ?? (ownerOfBody(file) ? bossOpponent(OPPONENTS[ownerOfBody(file)! as OpponentId], pageSearch).weapon : builtFoeWeapon);
+  const ownerOfBody = (file: string): string | undefined => ownerOfBodyOf(file, liveBody);
+  const weaponOfBody = (file: string): WeaponId | undefined => weaponOfBodyOf(file, liveBody, builtFoeWeapon, pageSearch);
+  // Read-only debug hook for the built-game boot check (scripts/boot-check.mjs; no URL flag): what boss body `file` resolves to through the very functions bodyRig above uses: the weapon row, the sim weapon, and the URLs it would fetch (the grafted part, the off-hand mesh).
+  const equipUrlOfBody = (file: string): string | undefined => {
+    const boss = bossOfBody(file), weapon = weaponOfBody(file);
+    return boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : !weapon || weapon === foeBakedWeapon(ownerOfBody(file) ?? opponentId, ROSTER[(ownerOfBody(file) ?? opponentId) as OpponentId].weapon) ? undefined : foeEquipUrl(ownerOfBody(file) ?? opponentId, weapon);
+  };
+  (globalThis as { __bossArms?: unknown }).__bossArms = (file: string) => {
+    const boss = bossOfBody(file);
+    return { row: boss?.id ?? null, weapon: weaponOfBody(file) ?? null, equip: equipUrlOfBody(file) ?? null, offhand: offhandUrlOf(boss) ?? null, offhandKind: boss?.offhand?.kind ?? null, body: fighterUrls[`../assets/${file}.glb`] ?? null };
+  };
   function bodyRig(file: string) {
     let entry = bodyAssets.get(file);
     if (!entry) {
       const row: { asset?: BodyAsset; failed?: boolean; loaded?: Promise<BodyAsset | undefined> } = entry = {}; bodyAssets.set(file, row);
       const boss = bossOfBody(file), url = fighterUrls[`../assets/${file}.glb`], weapon = weaponOfBody(file);
       if (!url || !weapon) row.failed = true;
-      else row.loaded = loadFoeBody(url, boss ? FOE_EQUIP_URLS[`../assets/weapons/foe/${boss.equip}.glb`] : weapon === foeBakedWeapon(ownerOfBody(file) ?? opponentId, ROSTER[(ownerOfBody(file) ?? opponentId) as OpponentId].weapon) ? undefined : foeEquipUrl(ownerOfBody(file) ?? opponentId, weapon), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss, offhandUrlOf(boss))
+      else row.loaded = loadFoeBody(url, equipUrlOfBody(file), (error) => captureException(error, { tags: { equip: weapon } }), SHIELD_CARRIERS.has(opponentId), boss, offhandUrlOf(boss))
         .then((asset) => { row.asset = asset; return asset; }, (error: unknown) => { row.failed = true; captureException(error); return undefined; });
     }
     return entry.asset;
@@ -709,7 +732,8 @@ export function createScene(
     });
   }
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
-  let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef }[] = [], frameWiden = 1;
+  let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef; star?: number }[] = [], frameWiden = 1;
+  let heldMech: BodyMechanic | null = null, heldPhases: readonly string[] | undefined;   // the boss mechanic of the spawn the sim holds (holdBody) and the phases list last handed to the ragdoll (it is told only when the list is a new one)
   const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
   let foeFadeTick = 0;
   function foeAdoptAll() {
@@ -736,8 +760,66 @@ export function createScene(
       live.group.visible = true; live.group.position.set(p.enemy.x, groundH(p.enemy.x, p.enemy.z), p.enemy.z); live.group.rotation.y = p.enemy.heading; applyStar(live.group, star ?? 0);
       live.actor.fatigue(p.fatigue[1], FOE_TUNE[opponentId]);
       live.actor.update(speed, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, f.guardDirection, CHARGE_LEAN[opponentId] ?? null, holdingCharge(f), pose.span ?? null);
+      bodyMechanicFor(spawn?.kind)?.view(live.group, f.phases);   // an attacker boss with a signature mechanic wears what it did (a lost limb), the same drawing as the held foe's
     }
     for (const [id, live] of liveFoes) if (!seen.has(id)) live.group.visible = false;
+    syncMobs(dt);   // the trash mobs are drawn beside the live attackers (syncMobs, below)
+  }
+  // TRASH MOBS (data/mobs.json, src/zone/mobs.ts; src/mobs-run.ts hands the core's live arrays in): each slot of the core is one pooled actor of ONE shared mob body (the first pack that goes live starts its fetch; nothing is
+  // requested before), scaled down, drawn with one tinted copy of the body's materials shared by every mob, the weapon hidden, posed at the rest pose the live foe was kept at with the walk driven by the mob's own speed.
+  // Presentation only: the lean back of a blow, the lean in of a wind-up and the topple of a kill are the group's tilt, not the skeleton's.
+  type MobSlot = { group: THREE.Group; actor: FoeActor; pending: number };
+  let mobView: MobView | null = null, mobFrame = 0;
+  const mobFrustum = new THREE.Frustum(), mobProj = new THREE.Matrix4(), mobSphere = new THREE.Sphere();   // made once: the per-frame visibility test allocates nothing
+  const mobSlots: MobSlot[] = [], mobTinted = new Map<THREE.Material, THREE.Material>();
+  function tintMobBody(root: THREE.Object3D, k: MobKind) {
+    root.traverse((o) => {
+      if (!(o instanceof THREE.SkinnedMesh)) return;
+      o.frustumCulled = true;   // a crowd mob off screen is neither skinned nor drawn
+      const one = (m: THREE.Material): THREE.Material => {
+        let t = mobTinted.get(m);
+        if (!t) { t = m.clone(); const c = (t as THREE.MeshStandardMaterial).color; if (c) c.lerp(new THREE.Color(k.tint), k.tintMix); mobTinted.set(m, t); }
+        return t;
+      };
+      o.material = Array.isArray(o.material) ? o.material.map(one) : one(o.material);
+    });
+    for (const name of [HELD.weapon, HELD.sword, HELD.sheath]) boneOf(root, name)?.traverse((o) => { o.visible = false; });   // a crowd mob goes bare-handed
+  }
+  function syncMobs(dt: number) {
+    const v = mobView;
+    if (!v) return;
+    mobFrame++;
+    mobProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); mobFrustum.setFromProjectionMatrix(mobProj);
+    const S = MOBS.states, MOB_LEAN_IN = 0.45, MOB_LEAN_BACK = 0.5, MOB_TOPPLE = Math.PI / 2;   // radians: in on the wind-up, back on a blow, flat on a kill
+    if (v.n === 0 && mobSlots.length === 0) return;
+    for (let i = 0; i < Math.max(v.n, mobSlots.length); i++) {
+      if (i >= v.n) { if (mobSlots[i]) mobSlots[i]!.group.visible = false; continue; }
+      const k = kindRow(v.kind[i]!), file = foeRigFileOf(k.body);
+      let slot = mobSlots[i];
+      if (!slot) {
+        bodyRig(file);   // the first live pack starts the one fetch
+        if (!restSnap) continue;
+        const asset = bodyRig(file), weapon = weaponOfBody(file);
+        if (!asset || !weapon || !warriors) continue;
+        const actor = warriors.spawnBody(asset, weapon, bossOfBody(file)?.clipsAs);   // no useClips106: a crowd mob never plays a finisher or a special, so the body's eight baked clip files (1.2 MB) are never fetched
+        const group = new THREE.Group(); group.rotation.order = 'YXZ';
+        group.add(actor.anchor); actor.setUpright(readyOffset(opponentId)); tintMobBody(actor.anchor, k); scene.add(group);
+        slot = mobSlots[i] = { group, actor, pending: 0 };
+      }
+      const g = slot.group, st = v.state[i]!, rest = restSnap!;
+      g.visible = true; g.position.set(v.x[i]!, 0, v.z[i]!); g.rotation.y = v.heading[i]!;
+      const lean = st === S.windup ? MOB_LEAN_IN : -v.hurt[i]! * MOB_LEAN_BACK;
+      g.rotation.x = st >= S.dying && st <= S.lying ? -v.fall[i]! * MOB_TOPPLE : lean;
+      g.scale.setScalar(k.scale * (1 - v.fade[i]!));
+      // level of detail: a mob beyond lod.nearMetres of the hero poses its skeleton only every lod.farStride-th frame (carrying the skipped time), and one outside the view is not skinned at all (frustum culling is on for them)
+      slot.pending += dt;
+      mobSphere.center.set(v.x[i]!, 0.8, v.z[i]!); mobSphere.radius = 1.6 * k.scale + 0.8;
+      if (!mobFrustum.intersectsSphere(mobSphere)) continue;   // off screen: no skeleton pose at all (it is not drawn either: frustum culling is on); the time it missed is carried to its next pose
+      const dx = v.x[i]! - v.hero[0]!, dz = v.z[i]! - v.hero[1]!;
+      if ((mobFrame + i) % (dx * dx + dz * dz > MOBS.lod.nearMetres * MOBS.lod.nearMetres ? MOBS.lod.farStride : MOBS.lod.nearStride) !== 0) continue;
+      const step = slot.pending; slot.pending = 0;
+      slot.actor.update(v.speed[i]!, step, rest.pose.pose, rest.pose.progress, rest.pose.attack, rest.pose.contact, 0, 0, rest.guard, CHARGE_LEAN[opponentId] ?? null, rest.holding, rest.pose.span ?? null);
+    }
   }
   // Kill dip: the killing blow darkens the frame 6 % for two frames and recovers over two more — the cinematic reserve (GAME_SPEC 80/15/5),
   // never on an ordinary hit. Applied around the draw on top of whatever exposure the renderer holds, so nothing else has to know.
@@ -822,6 +904,7 @@ export function createScene(
     // `spawn` (optional, the spawn's kind and its zone row's `body`): a spawn in another body than the live rig is drawn from that body's own rig (bodyRig); absent or the live body: the frozen copies as before.
     /** main.ts, every frame, with the spawn the sim HOLDS: when its body is not the one the live rig wears, the live rig is swapped for that body's (held-body.ts). 'same' at the default (every spawn the Minotaur): nothing is built. */
     holdBody(spawn: SpawnRef | null | undefined, near = true): string {
+      heldMech = bodyMechanicFor(spawn?.kind);
       if (!spawn || !warriors) return 'same';
       const body = bodyOfSpawn(spawn);
       if (body === activeBody() && !heldCtl) return 'same';   // the default: no controller is made
@@ -829,6 +912,7 @@ export function createScene(
       return heldBodies()?.hold(body) ?? 'same';
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
+    heroWeaponNode(): THREE.Object3D | undefined { return warriors?.player.heldWeaponNode(); },   // the node the hero's weapon hangs from (golden weapon tint, src/fight/golden-hud.ts)
     liveStar(star: number) { liveStarN = star; },   // data/stars.json: the star level of the spawn the live rig is (main.ts every frame); 0 = the body as built
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean; star?: number }[]) {
       const wears = activeBody();   // the body the live rig wears now (liveBody unless a held spawn swapped it): the frozen copies are snapshots of it
@@ -840,6 +924,10 @@ export function createScene(
     // The zone's live attackers (real-time aggro, main.ts every frame): each is another boss in its own fight with the hero, drawn as a second animated rig of the foe's own asset (spawnFoe: shared geometry, materials and
     // programs, its own bones and mixer), posed from that fight's own Practice. Presentation only; the first boss is the live rig above and is never in this list.
     liveFoes(list: readonly { id: string; practice: Practice; spawn?: SpawnRef; star?: number }[]) { liveList = list; },
+    /** A boss mechanic's drawing (src/fight/mechanics/): added to the scene once, then moved by its own frame step. */
+    addLayer(layer: THREE.Object3D): void { scene.add(layer); },
+    mobs(view: MobView | null) { mobView = view; },   // trash mobs (src/mobs-run.ts, every frame): the core's live arrays; null = none drawn
+    get mobDrawn() { return mobSlots.filter((s) => s.group.visible).length; },   // the stills and the cost table read how many mobs are on screen
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
     /** The zone's terrain (data/terrain.json, src/zone/terrain.ts), called after openGround: hills on the floor, the hero, the foes and the camera ride them; the pads stay level at 0. `scale`: the floor group's scale (world.pitScale). */
@@ -1123,7 +1211,10 @@ export function createScene(
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
       heldFinishing = !!practice.finish;
       if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
+      const phases = heldMech ? practice.duel.fighters[1].phases : undefined;   // boss mechanics (src/fight/mechanics): the ragdoll learns which cut units the fight already took off him, then draws them gone AFTER its cut rig's update
+      if (phases !== heldPhases) { heldPhases = phases; const mech = heldMech; ragdoll?.setLost(mech ? mech.lostUnits(phases) : [], mech ? (root) => mech.view(root, phases) : undefined); }   // on a NEW list only (a lost limb, or a new fight): the closure is made then, never per frame
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
+      if (heldMech) heldMech.view(opponent, phases);
       pickup?.frame(animationDt);   // data/pickup.json: the arrow, the selected part's outline and Take pill, the flying chip (DOM only; reads the corpses' cut parts after the ragdolls stepped)
       heroRagdoll?.frame(animationDt, heroFeel ? events : events.filter((e) => e.type === 'Killed'), practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
@@ -1239,6 +1330,11 @@ export function createScene(
       for (const side of SIDES) {
         const foe = (side === 0 ? warriors?.opponent : warriors?.player), l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r');
         castTells[side].update(practice.duel.fighters[side], l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null, practice.duel.tick, bossRing && side === 1);
+      }
+      {   // a boss with a standing mechanic (the parry wall): ring, ledger wall and parry sparks at his feet, facing the hero as the sim has him (a boss with none: hidden, one call)
+        const foe = warriors?.opponent, hero = warriors?.player, l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r'), h = hero?.boneWorld('foot_l');
+        if (practice.duel.fighters[1].mech && l && r && h) { footMidpoint(l, r, wallFoot); wallFx.update(practice.duel.fighters[1], wallFoot,Math.atan2(h.x - wallFoot.x, h.z - wallFoot.z), practice.events, practice.duel.tick, dt); }
+        else wallFx.update(null, null, 0, practice.events, 0, dt);
       }
       if (runtimeSpecial) {
         const feet = (w: NonNullable<typeof warriors>['player'] | undefined) => { const l = w?.boneWorld('foot_l'), r = w?.boneWorld('foot_r'); return l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null; };

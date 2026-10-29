@@ -7,13 +7,13 @@
 //   <tag>-cut-<age>       the right cut (D+F), `age` ticks into it
 //   <tag>-cut-after-<n>   n ticks after the cut ends
 //   node scripts/blend-stills.mjs <base url> <out dir> [query ...]   (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/blend-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60;
 const MOVES = [
   ['roll', 'roll', ['KeyA', 'KeyE'], [3, 8, 27, 33], [2, 6]],
@@ -22,11 +22,11 @@ const MOVES = [
 for (const query of queries.length ? queries : ['']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
   for (const [name, phase, keys, ages, afters] of MOVES) {
-    const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const page = await browser.newPage(phoneOptions(2));
     page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
     await page.clock.install();
     await page.goto(`${base}/${query ? `?${query}` : ''}`, { timeout: 120000 });
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await waitPlayable(page, { timeout: 180000 });
     await page.waitForTimeout(1500);
     await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
     const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));

@@ -69,10 +69,10 @@ export function impactTexture(splash: boolean) {
 
 /** What the effects need of a fighter's rig: the Pit's loadWarriors actors and a zone creature's actor both fit it. */
 export type FxRig = { anchor: THREE.Object3D; boneWorld(name: string): THREE.Vector3 | null };
-export type FxRigs = { player: FxRig; opponent: FxRig };
+type FxRigs = { player: FxRig; opponent: FxRig };
 
 /** The part of a Practice the effects read: the Pit's duel and a zone's per-pair stand-in both fill it. */
-export type ContactPractice = Pick<Practice, 'duel' | 'enemy' | 'enemyWoundSite' | 'woundSite' | 'health' | 'playerHealth'>;
+type ContactPractice = Pick<Practice, 'duel' | 'enemy' | 'enemyWoundSite' | 'woundSite' | 'health' | 'playerHealth'>;
 
 /** What one frame's contact effects need from the scene that owns the rigs, the camera and the feet. */
 export type ContactCtx = {

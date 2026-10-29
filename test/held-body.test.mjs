@@ -3,12 +3,13 @@
 // real second body is not exercised here (the PR body says so). The default (every spawn the Minotaur) must build nothing: pinned below.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import * as THREE from 'three';
 import { createHeldBodies } from '../src/fight/held-body.ts';
 import { createFoeRagdoll, heldRagdollFor, ragdollBody, ragdollFinisher, ragdollRowFor, setHeldRagdoll } from '../src/fight/ragdoll.ts';
 import { spawnBodyFile } from '../src/fight/foe-body.ts';
 import { rigStemOf } from '../src/fight/rig-bones.ts';
+import { cuttableBodies, listedCutManifests } from './helpers/boss-rows.mjs';
 
 const read = (n) => JSON.parse(readFileSync(new URL(`../data/${n}.json`, import.meta.url), 'utf8'));
 const PHYSICS = read('physics'), ZONE = JSON.parse(readFileSync(new URL('../data/zones/zone1.row.json', import.meta.url), 'utf8'));
@@ -131,7 +132,10 @@ test('ragdoll rows are per id AND body: a held body without a data/physics.json 
   assert.equal(rigStemOf('minotaur-106'), 'minotaur'); assert.equal(rigStemOf('unmapped-106'), 'unmapped-106');
   // a body whose physics row exists but whose cut GLB/manifest does not: the chunk lists no manifest, the physics-chunk table is the data
   const chunk = src('fight/physics-chunk.ts');
-  assert.match(chunk, /export const cutManifests: Record<string, unknown> = \{ minotaur: minotaurManifest, gargantua: gargantuaManifest, arachne: arachneManifest \};/);
+  // data-driven: the map lists exactly the bodies that have a data/physics.json opponents row AND a cut manifest beside their body file (data/rig.json files), nothing else
+  const listed = listedCutManifests(chunk), cuttable = cuttableBodies();
+  assert.ok(cuttable.length > 0, 'at least one body is cuttable');
+  assert.deepEqual(listed, cuttable, 'cutManifests lists every body with a physics row and a cut manifest, and no other');
   assert.match(src('fight/ragdoll.ts'), /c\.cutManifests\?\.\[foe\.body\] \?\? \(foe\.body === 'minotaur' \? c\.minotaurCutManifest : undefined\)/);
 });
 

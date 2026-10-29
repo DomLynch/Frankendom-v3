@@ -12,7 +12,7 @@ export const isShelved = (id: FinisherId | null): boolean => (id === null ? fals
 export const anyOfTemplate = (template: FinisherTemplate, supports: (id: FinisherId) => boolean): boolean => FINISHERS.rows.some((r) => r.template === template && supports(r.id));
 // The finisher body a rig pose word names (characters.ts): its row, which side it is, and the clip role it plays. A pose word no row names (a
 // combat pose: 'attack', 'guard', ...) is undefined.
-export type FinisherBodyPose = { row: FinisherRow; side: 'victim' | 'killer'; role: string };
+type FinisherBodyPose = { row: FinisherRow; side: 'victim' | 'killer'; role: string };
 const BODY_POSES = new Map<string, FinisherBodyPose>(FINISHERS.rows.flatMap((row) => row.body
   ? [[row.body.victim.pose, { row, side: 'victim' as const, role: row.body.victim.role }] as const, ...(row.body.killer ? [[row.body.killer.pose, { row, side: 'killer' as const, role: row.body.killer.role }] as const] : [])]
   : []));

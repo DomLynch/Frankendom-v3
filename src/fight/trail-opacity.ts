@@ -3,7 +3,7 @@
 // does not name (the Pommel Strike, `about`) keeps V1's. A melee special's own trail row is not scaled.
 import type { Attack } from './combat.ts';
 
-export const TRAIL_OPACITY_V1 = .12;
+const TRAIL_OPACITY_V1 = .12;
 let rows: Partial<Record<string, number>> | null = null;
 export const setTrailOpacity = (row: Partial<Record<string, number | string>> | null): void => {
   rows = row ? Object.fromEntries(Object.entries(row).filter(([, v]) => typeof v === 'number')) as Record<string, number> : null;

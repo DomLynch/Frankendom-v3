@@ -10,7 +10,7 @@ import RIG_JSON from '../../data/rig.json' with { type: 'json' };
 import { dressBossHand } from './boss-hand.ts';   // a boss weapon row's dressing: the part scaled, the off-hand part (data/boss-weapons.json)
 import type { BossWeaponRow } from './boss-weapon.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
-import { bone as boneOf, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';
+import { bone as boneOf, boneLookups, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';
 import { clip106Loader } from './clips-106.ts';   // a 106 body's baked clip JSONs (data/rig.json clips106)   // V3 rig swap: every bone lookup goes through the one map (65 body = today's lookup)
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
@@ -651,6 +651,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
     let clipBody: string | undefined;   // a 106 body's file stem (scene.ts useClips106): the folder of data/rig.json clips106 its baked clips come from
     let special: { samples: number; opacity: number; color: string } | null = null, trailKey = '';   // a melee special's weapon trail (sandbox specialTrail rows; the scene sets it while the special is in its swing): longer, brighter, on without the swing pose
     let trailK = 1;
+    let matricesFresh = false;   // audit 5: boneWorld refreshes the whole subtree once per update(); later calls that frame refresh only the asked bone's own chain
     let slam = 0;   // Shield Quake's weight, 0 none, 1 the shield held up, 2 driven down (the scene sets it from the cast)
     function carryShield(amount: number, lift: number, open: number) {
       const [upperL, lowerL, handL] = offHand;
@@ -902,6 +903,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
       // The clip carrying most of the pose right now and the node the weapon hangs from (the debug probe's word for what the rig is doing): `role:clip@node`.
       playing(): string { if (opened?.group.visible) return `Opened:WaistCut@${blade.name}`; let best: Role = 'Idle'; for (const role of roles) if (actions[role].getEffectiveWeight() > actions[best].getEffectiveWeight()) best = role; return `${best}:${clips[best].name}@${blade.name}`; },
       update(travelSpeed: number, dt: number, pose: BodyPose = 'sheathed', progress = 0, attack: Attack = 'light', contact = .35, lateral = 0, recoil = 0, guardSide: Direction | null = null, lean: ChargeLean | null = null, holding = false, span: BlendSpan | null = null) {
+        matricesFresh = false;
         // dt 0 evaluates the pose for the current tick without advancing anything (the frame loop's hit-stop): clip times still follow `progress`,
         // weights and gait hold, the mixer applies at zero, and no trail sample is taken.
         // A finisher body is its row's (finisher-look.ts): the clip role its pose word plays, which side it is, and its template's own code path
@@ -1118,6 +1120,8 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         bone.scale.setScalar(.0001);   // no clip tracks bone scale, so the collapse holds; the neck-blend smear hides under the sever burst
         return { group, radius: Math.max(PROP_RADIUS_MIN, Math.min(PROP_RADIUS_MAX, Math.max(size.x, size.z) * .38)) };
       },
+      /** The node the weapon in this rig's hand hangs from (golden weapon tint, src/fight/golden-hud.ts), or undefined. */
+      heldWeaponNode: (): Object3D | undefined => boneOf(root, HELD.weapon) ?? boneOf(root, HELD.sword),
       // A fresh match (rematch): the rig grows its head back; the caller has already disposed the world-parented prop.
       unsever() {
         opened?.dispose(); opened = undefined; root.visible = true;
@@ -1313,7 +1317,7 @@ export function buildWarriors(asset: FighterAsset, opponentAsset?: FighterAsset,
         root.updateWorldMatrix(true, true);
       },
       // The world position of a named bone right now (the scene takes the victim's chest with it).
-      boneWorld(name: string): Vector3 | null { const bone = boneOf(root, name); if (!bone) return null; root.updateWorldMatrix(true, true); return bone.getWorldPosition(new Vector3()); }
+      boneWorld(name: string): Vector3 | null { const bone = boneOf(root, name); if (!bone) return null; if (matricesFresh) { bone.updateWorldMatrix(true, false); boneLookups.worldChain++; } else { root.updateWorldMatrix(true, true); matricesFresh = true; boneLookups.worldFull++; } return bone.getWorldPosition(new Vector3()); }
     };
   }
   const player = create(false);

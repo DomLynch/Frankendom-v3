@@ -9,21 +9,21 @@ loadRegistry((MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile
 const LABEL = Object.fromEntries(DEFS.labels.map((l) => [l.id, l.text])) as Record<string, string>;
 const NUM = Object.fromEntries(DEFS.numbers.map((r) => [r.id, r.value])) as Record<string, number>;   // meanWeight (the mean of two), p90Rank (the nearest rank), copiedMs (how long the button says "copied"), panelLeftPx/panelRightPx/panelTopPx (where the panel sits: the band under the stance column, clear of every control at 320 and 375)
 
-export const TAP_LOG_QUERY = /[?&;]taplog=1\b/;
+const TAP_LOG_QUERY = /[?&;]taplog=1\b/;
 export const tapLogOn = (search: string): boolean => TAP_LOG_QUERY.test(search);
 
-export type TapStats = { n: number; median: number; p90: number };
+type TapStats = { n: number; median: number; p90: number };
 /** The median (the mean of the two middle values for an even n) and the nearest-rank p90 of the durations, in ms; zeros for none. */
-export function tapStats(durations: readonly number[]): TapStats {
+function tapStats(durations: readonly number[]): TapStats {
   const n = durations.length; if (n === 0) return { n: 0, median: 0, p90: 0 };
   const s = [...durations].sort((a, b) => a - b);
   return { n, median: (s[(n - 1) >> 1]! + s[n >> 1]!) * NUM.meanWeight!, p90: s[Math.ceil(NUM.p90Rank! * n) - 1]! };   // the two middle values coincide for an odd n
 }
 /** The panel's text, from the label rows: "STRIKE taps  n 30  median 84 ms  p90 112 ms". */
-export const tapText = (st: TapStats): string => `${LABEL.title}  ${LABEL.n} ${st.n}  ${LABEL.median} ${Math.round(st.median)} ${LABEL.unit}  ${LABEL.p90} ${Math.round(st.p90)} ${LABEL.unit}`;
+const tapText = (st: TapStats): string => `${LABEL.title}  ${LABEL.n} ${st.n}  ${LABEL.median} ${Math.round(st.median)} ${LABEL.unit}  ${LABEL.p90} ${Math.round(st.p90)} ${LABEL.unit}`;
 
 /** Times one button's presses. `down` and `up` take the event's pointer id and its high-resolution timeStamp; an up with no matching down (a pointer that began elsewhere) is ignored. */
-export function createTapTimer(onTap: (ms: number) => void) {
+function createTapTimer(onTap: (ms: number) => void) {
   const since = new Map<number, number>();
   return {
     down(id: number, at: number) { since.set(id, at); },

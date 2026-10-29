@@ -2,20 +2,20 @@
 //   node scripts/stills.mjs <base url> <out dir> [query ...]
 // For each query ('' = the default page) it writes <tag>-ready.png (art in; with start=v1, before Fight), <tag>-heavy.png (a heavy mid-swing) and
 // <tag>-guard-walk.png (guard held while backing off), tag = the query or 'default'. Keys are V1's (input.ts): F light, G heavy, Q guard, S back.
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ angle: 'swiftshader', chromeEnv: null });
 const pause = (page, ms) => page.waitForTimeout(ms);
 for (const query of queries.length ? queries : ['']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 120000 });
+  await waitPlayable(page, { timeout: 120000 });
   await pause(page, 1500);
   await page.screenshot({ path: `${out}/${tag}-ready.png` });
   // The fight starts by itself (src/auto-start.ts); only ?start=v1 still waits for the Fight press that draws.

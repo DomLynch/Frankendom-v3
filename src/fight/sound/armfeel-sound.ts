@@ -5,7 +5,7 @@ import { audioRule } from './audio-rules.ts';
 import type { CombatEvent } from '../combat.ts';
 import type { Feel } from '../armfeel.ts';
 
-export type Layer = { kind: 'tone'; from: number; to: number; seconds: number; volume: number; wave: 'triangle' | 'sine' } | { kind: 'noise'; seconds: number; volume: number; highpass: number };
+type Layer = { kind: 'tone'; from: number; to: number; seconds: number; volume: number; wave: 'triangle' | 'sine' } | { kind: 'noise'; seconds: number; volume: number; highpass: number };
 export const OUTPUT_GAIN = audioRule('outputGain');   // the prototype's output stage, before its compressor
 export const MAX_LAYERS = audioRule('maxLayers');       // live layers at once; a fight never needs more (the prototype caps its whole mix at 16)
 const HIT: readonly Layer[] = [{ kind: 'tone', from: 280, to: 130, seconds: 0.065, volume: 0.16, wave: 'triangle' }, { kind: 'noise', seconds: 0.03, volume: 0.1, highpass: 1700 }];

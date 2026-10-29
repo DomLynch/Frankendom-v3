@@ -4,16 +4,15 @@
 //   <tag>-3-framed     both attackers live, camera backed off: both in frame
 // Prints the hero's health and each attacker's state every half second. The hero is topped up between samples so the walk is not cut short by a death (health is only SAMPLED
 // before the top-up, and the top-up is logged).  node scripts/zone-aggro-stills.mjs <base url> <out dir> <tag> [query]      (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/zone-aggro-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser({ extra: ['--enable-unsafe-swiftshader'] });
+const page = await browser.newPage(phoneOptions(2));
+collectErrors(page, { echo: true });
 const shot = (n) => page.screenshot({ path: `${out}/${tag}-${n}.png` });
 const key = (code, type) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [code, type]);
 const hero = () => page.evaluate(() => ({ x: globalThis.__v3Fight.fighter.x, z: globalThis.__v3Fight.fighter.z }));

@@ -3,14 +3,14 @@
 // PRESENTATION ONLY and DOM/CSS (no art): pointer-events none, it never touches the sim, the camera or the input. The state (`plan`) and the safe box are pure (test/pickup.test.mjs); `mountHint` is the only DOM.
 import ROWS from '../../data/pickup.json' with { type: 'json' };
 
-export type Pt = { x: number; y: number; z: number };
+type Pt = { x: number; y: number; z: number };
 /** A frozen corpse with a unit still to cut (ragdoll.ts hintsOf): `cuts` units are cut already, `centre` its hips in world metres, `frozenS` seconds it has lain still. */
 export type HintBody = { corpseId: string; frozenS: number; cuts: number; centre: Pt };
-export type HintSource = (units: readonly string[]) => HintBody[];
+type HintSource = (units: readonly string[]) => HintBody[];
 /** A body as the camera sees it: cx/cy CSS px of its hips, `dist` metres from the hero (ground plane). */
-export type Seen = HintBody & { cx: number; cy: number; onScreen: boolean; dist: number };
+type Seen = HintBody & { cx: number; cy: number; onScreen: boolean; dist: number };
 
-export type PickupRows = {
+type PickupRows = {
   on: boolean; query: string; off: string; units: string[]; delayS: number; hintSeconds: number; walkAwayM: number; zIndex: number; colour: string; fadeS: number;
   text: { label: string; sizePx: number; letterSpacingEm: number; shadow: string; maxWidthPx: number; lineHeight: number };
   arrow: { sizePx: number; bobPx: number; bobS: number; liftPx: number; textGapPx: number };
@@ -41,7 +41,7 @@ export const pickupOn = (search: string, rows: PickupRows = PICKUP): boolean => 
 const sources = new Set<HintSource>();
 export function registerHintSource(s: HintSource): () => void { sources.add(s); return () => { sources.delete(s); }; }
 
-export type PickupState = { hintFor: string | null; hintAge: number; baseCuts: number; done: Set<string> };
+type PickupState = { hintFor: string | null; hintAge: number; baseCuts: number; done: Set<string> };
 export const newPickupState = (): PickupState => ({ hintFor: null, hintAge: 0, baseCuts: 0, done: new Set() });
 
 /** One frame of the hint's clock. The nearest frozen corpse (within `walkAwayM`) gets the arrow; it ends for that corpse at the first cut made while it shows, or after `hintSeconds`; walking away hides it without spending it. */
@@ -65,7 +65,7 @@ export function safeBox(rows: PickupRows, w: number, h: number): { left: number;
 }
 
 type Doc = { createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
-export type PickupHost = {
+type PickupHost = {
   canvas: { getBoundingClientRect(): { left: number; top: number; width: number; height: number } };
   /** World point to NDC (-1..1), or null when it cannot be projected. */
   project: (p: Pt) => Pt | null;

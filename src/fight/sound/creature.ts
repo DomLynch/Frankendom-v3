@@ -4,16 +4,15 @@
 // (2026-10-06), so ?look=creatures is a look test for him to hear, never on by default.
 import { THROAT_ROWS } from './audio-rules.ts';
 export type CreatureCue = 'growl' | 'bite' | 'death';
-export type Throat = { f0: number; formants: [number, number]; rasp: number };   // f0 Hz at rest; two vowel formants; the noise share 0..1
+type Throat = { f0: number; formants: [number, number]; rasp: number };   // f0 Hz at rest; two vowel formants; the noise share 0..1
 // The roster bodies a Frontier creature wears (mob-looks.ts `opponent`). A body with no row is silent.
-export const THROATS: Readonly<Record<string, Throat>> = THROAT_ROWS;   // rows (audio-rules-defs.json `throats`): the Zone 1 beasts (Characters 2026-10-09, K8) are starting points for Dom's ear to move: wolf a growl low in the 90-130 Hz band over an open vowel, half breath; boar a short chesty grunt with the most rasp; bear the lowest throat, a dark wide rough roar
+const THROATS: Readonly<Record<string, Throat>> = THROAT_ROWS;   // rows (audio-rules-defs.json `throats`): the Zone 1 beasts (Characters 2026-10-09, K8) are starting points for Dom's ear to move: wolf a growl low in the 90-130 Hz band over an open vowel, half breath; boar a short chesty grunt with the most rasp; bear the lowest throat, a dark wide rough roar
 // Length (s) and peak gain of each cue before the bus. bone_crack is .55 (audio/cues.ts), so every creature voice sits under an impact.
-export const CREATURE_CUES: Readonly<Record<CreatureCue, { length: number; gain: number }>> = { growl: { length: .9, gain: .2 }, bite: { length: .3, gain: .28 }, death: { length: 1.1, gain: .3 } };
-export const creaturesLook = (search: string): boolean => /[?&]look=creatures(?=&|$)/i.test(search);
+const CREATURE_CUES: Readonly<Record<CreatureCue, { length: number; gain: number }>> = { growl: { length: .9, gain: .2 }, bite: { length: .3, gain: .28 }, death: { length: 1.1, gain: .3 } };
 // A pitch (relative to f0) over a cue's 0..1 progress: the growl swells and sags, the bite snaps up, the death falls.
-export const pitchAt = (cue: CreatureCue, t: number): number => cue === 'growl' ? .85 + .15 * Math.sin(t * Math.PI) : cue === 'bite' ? 1.25 - .45 * t : 1 - .55 * t;
+const pitchAt = (cue: CreatureCue, t: number): number => cue === 'growl' ? .85 + .15 * Math.sin(t * Math.PI) : cue === 'bite' ? 1.25 - .45 * t : 1 - .55 * t;
 // Level over a cue's progress: a quick attack, a hold, a release.
-export const levelAt = (cue: CreatureCue, t: number): number => cue === 'bite' ? Math.min(t / .08, 1) * (1 - t) ** .7 : Math.min(t / .15, 1) * Math.min(1, (1 - t) / .45);
+const levelAt = (cue: CreatureCue, t: number): number => cue === 'bite' ? Math.min(t / .08, 1) * (1 - t) ** .7 : Math.min(t / .15, 1) * Math.min(1, (1 - t) / .45);
 
 // Say `cue` in `body`'s throat from `at`; returns when it ends (or `at` for a body with no throat). `out` is the combat bus, `noise` the mixer's shared noise buffer.
 export function voiceCreature(context: BaseAudioContext, out: AudioNode, noise: AudioBuffer, body: string, cue: CreatureCue, at: number, gain = 1): number {

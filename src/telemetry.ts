@@ -4,7 +4,7 @@
 // Identity: a random id kept in localStorage (try/catch; in memory when storage is refused) and a random id per visit. No IP, no cookie, no player text. The existing error seam (src/stubs.ts captureException) feeds js_error: reuse, not a second hook.
 import { TELEMETRY, cleanEvent, type TelemetryDefs, type TelemetryEvent } from './telemetry-rows.ts';
 
-export type TelemetryEnv = {
+type TelemetryEnv = {
   search: string; hostname: string; doNotTrack: boolean;
   sha: string | null;   // the deployed build id (null = a dev build: telemetry stays off)
   storage: { getItem(k: string): string | null; setItem(k: string, v: string): void } | null;
@@ -20,12 +20,12 @@ export function offReason(env: Pick<TelemetryEnv, 'search' | 'hostname' | 'doNot
   try { flag = new URLSearchParams(env.search).get(o.query); } catch { /* an unparsable query is no flag */ }
   if (flag === o.value) return `?${o.query}=${o.value}`;
   if (env.doNotTrack) return 'do-not-track';
-  if (!host || o.hosts.includes(host) || o.hostSuffixes.some((s) => host.endsWith(s))) return 'local host';
-  if (!env.sha || !/^[0-9a-f]{7,40}$/.test(env.sha)) return 'not a deployed build';
+  if (!host || o.hosts.includes(host) || o.hostSuffixes.some((s) => host.endsWith(s))) return o.reasons.localHost;
+  if (!env.sha || !/^[0-9a-f]{7,40}$/.test(env.sha)) return o.reasons.notDeployed;
   return null;
 }
 
-export type Telemetry = {
+type Telemetry = {
   readonly on: boolean;
   /** Queue one event (cleaned against the table, rate-limited). Never throws. */
   event(name: string, fields?: Record<string, unknown>): void;
@@ -66,7 +66,7 @@ export function createTelemetry(env: TelemetryEnv, defs: TelemetryDefs = TELEMET
       const e = cleanEvent({ ...fields, e: name }, defs);
       if (!e) return;
       const t = env.now();
-      minute = minute.filter((x) => t - x < 60_000);
+      minute = minute.filter((x) => t - x < c.rateWindowMs);
       const n = (perEvent.get(name) ?? 0) + 1;
       if (minute.length >= c.maxEventsPerMinute || n > c.maxPerEventPerVisit || queue.length >= c.maxQueue) return;
       perEvent.set(name, n); minute.push(t); queue.push(e);
@@ -77,7 +77,7 @@ export function createTelemetry(env: TelemetryEnv, defs: TelemetryDefs = TELEMET
       if (errors >= c.maxErrorsPerVisit) return;
       const o = (err && typeof err === 'object' ? err : {}) as { message?: unknown; stack?: unknown };
       const msg = typeof err === 'string' ? err : typeof o.message === 'string' ? o.message : String(err ?? 'error');
-      const line = where.line ?? undefined, key = `${kind}|${msg.slice(0, 80)}|${line ?? ''}`;
+      const line = where.line ?? undefined, key = `${kind}|${msg.slice(0, c.dedupeChars)}|${line ?? ''}`;
       if (seenErrors.has(key)) return;
       seenErrors.add(key); errors++;
       event('js_error', { kind, msg: stripQuery(msg), src: where.src ? stripQuery(where.src) : undefined, line, col: where.col, stack: typeof o.stack === 'string' ? stripQuery(o.stack) : undefined });

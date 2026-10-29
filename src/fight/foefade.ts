@@ -31,7 +31,7 @@ export function foeFadeShader(vertex: string, fragment: string, view: Pick<SkyVi
   };
 }
 
-export type FoeFade = {
+type FoeFade = {
   /** Every frame, with the camera's place (the shader reads the camera itself; this is for alphaOf). */
   move(eye: THREE.Vector3): void;
   /** Fades every mesh under `root` (an opponent's group; its origin is his feet). Safe to call again: materials already done are skipped. */

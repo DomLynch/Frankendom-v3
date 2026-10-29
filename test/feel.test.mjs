@@ -1,7 +1,6 @@
 // M7 fight-feel registry (src/fight/feel.ts): ?feel= names, registration, the event bus V3's sim subscribes to, and that the three call sites in ragdoll.ts exist.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { activeFeels, emitFeel, FEEL_LOG_MAX, feel, feelNames, registerFeel } from '../src/fight/feel.ts';
 
 test('?feel= lists module names, comma separated; absent or empty means none', () => {
@@ -30,11 +29,11 @@ test('a module of the feel chunk loads on demand: nothing without ?feel=, the ho
   assert.deepEqual(activeFeels('?feel=clash'), live, 'once loaded it is registered: a second ask has it at once');
 });
 
-test('feel-modules.ts and feel-chunk.ts agree: every FEEL_NAMES entry is exported by the chunk, main.js never imports a module statically', async () => {
-  const { FEEL_NAMES } = await import('../src/fight/feel-modules.ts');
-  const chunkSrc = readFileSync(new URL('../src/fight/feel-chunk.ts', import.meta.url), 'utf8');
-  for (const n of FEEL_NAMES) assert.match(chunkSrc, new RegExp(`as ${n} }`), `feel-chunk.ts exports ${n}`);
-  for (const f of ['ragdoll.ts', 'feel.ts', 'feel-modules.ts']) assert.doesNotMatch(readFileSync(new URL(`../src/fight/${f}`, import.meta.url), 'utf8'), /^import ['"]\.\/feel-(clash|hitreact|limbs|kick)\.ts/m, `${f} has no static module import`);
+test('feel-modules.ts and feel-chunk.ts agree: the chunk exports exactly the FEEL_NAMES, each a hooks object (behaviour: the real module is imported, not its text)', async () => {
+  const { FEEL_NAMES, loadFeelChunk } = await import('../src/fight/feel-modules.ts');
+  const chunk = await loadFeelChunk();
+  assert.deepEqual(Object.keys(chunk).sort(), [...FEEL_NAMES].sort(), 'no name listed without an export, no export unlisted');
+  for (const n of FEEL_NAMES) assert.equal(typeof chunk[n], 'object', `feel-chunk.ts exports ${n} as a hooks object`);
 });
 
 test('feel events reach the named subscriber and the "*" one, are readable on globalThis.__feelEvents, and stop after unsubscribe', () => {
@@ -63,10 +62,4 @@ test('limb state comes from the sim: feel.setLimbState hands the budget fraction
   assert.deepEqual(feel.limbs(), { leg_left: 0, head: 1 });
   feel.setLimbState(null);
   assert.deepEqual(feel.limbs(), {});
-});
-
-test('ragdoll.ts calls the registry at the three sites (a Hit on him, every frame, his killing blow) and takes the hooks from the page', () => {
-  const src = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8');
-  assert.ok(src.includes('blendToward: (share) => poseToward(1, share)'), 'the hook context can pose parts from the ragdoll');
-  for (const call of ['f.hit?.(e, feelCtx())', 'f.frame?.(dt, events, feelCtx())', 'f.kill?.(killed, feelCtx())', 'activeFeels(search, FEEL_DEFAULTS)']) assert.ok(src.includes(call), call);
 });

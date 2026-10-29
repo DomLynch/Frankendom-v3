@@ -8,8 +8,8 @@ import { afterFirstFrame } from '../late-art.ts';
 import { SKYLINE, SKYLINE_ORDER, skylineOn, type Skyline, type SkylineRow } from './skyline.ts';
 import type { SkyView } from './skyview.ts';
 
-export type FoldRow = typeof STAGE.skyline.fold;
-export type FoldVariant = FoldRow['variants']['a'];
+type FoldRow = typeof STAGE.skyline.fold;
+type FoldVariant = FoldRow['variants']['a'];
 export const FOLD: FoldRow = STAGE.skyline.fold;
 
 /** Draws after the strip (SKYLINE_ORDER) and before the sand (skyview.ts FLOOR_ORDER = SKYLINE_ORDER + 100); the row's offset sits between. */
@@ -65,7 +65,7 @@ export function foldGeometry(row: FoldRow, variant: FoldVariant): THREE.BufferGe
   return g;
 }
 
-export type Skyfold = {
+type Skyfold = {
   mesh: THREE.Mesh;
   /** Every frame before the draw: follows the eye (x, z; the height is the ground's), takes the strip's picture when it lands (variant A) and its fade-in. */
   update(camera: THREE.Vector3, dt: number, skyline: Skyline | null): void;

@@ -16,10 +16,10 @@ const WF = fxMove('witchfire');   // the move of the skill row whose fx is witch
 // One pool, one draw call, no per-frame allocation (the clash-sparks.ts pattern); no light, so no shader recompile when it starts.
 // The reference row's timing and reach (the longsword); the effect itself reads the caster's own weapon table (movesOf), so a per-weapon
 // row that changes the reach or the windup moves the fire with it.
-export const WITCHFIRE = { windup: MOVES[WF].windup, active: MOVES[WF].active, reach: MOVES[WF].reach, cone: 0.3 } as const;   // cone: half-angle, radians
+const WITCHFIRE = { windup: MOVES[WF].windup, active: MOVES[WF].active, reach: MOVES[WF].reach, cone: 0.3 } as const;   // cone: half-angle, radians
 const POOL = FEEL_RULES.witchfireRule[0]!.pool;   // a full gout (6 active ticks x 16 + the 8-tick tail) with the licks and embers, none recycled while still burning
-export type WitchfireStage = 'windup' | 'active' | 'recovery' | null;
-export function witchfireStage(f: Pick<Fighter, 'phase' | 'move' | 'age' | 'weapon'>): WitchfireStage {
+type WitchfireStage = 'windup' | 'active' | 'recovery' | null;
+function witchfireStage(f: Pick<Fighter, 'phase' | 'move' | 'age' | 'weapon'>): WitchfireStage {
   if (f.phase !== 'attack' || f.move !== WF) return null;
   const { windup, active } = movesOf(f)[WF];
   return f.age < windup ? 'windup' : f.age < windup + active ? 'active' : 'recovery';

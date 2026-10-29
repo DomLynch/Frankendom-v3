@@ -3,22 +3,21 @@
 //   <tag>-ready       the fight drawn, both standing
 //   <tag>-attack-<n>  his strike, n ticks into it (n = 8 and 22 by default; ATTACK_AGES=8,22)
 //   node scripts/boss-weapon-stills.mjs <base url> <out dir> [query ...]    e.g. "" "bossweapon=executioner" "bossweapon=shieldmaiden"
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/boss-weapon-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, AGES = (process.env.ATTACK_AGES ?? '8,22').split(',').map(Number), CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), MAX_TICKS = Number(process.env.MAX_TICKS ?? 2400);
 for (const query of queries.length ? queries : ['']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') console.error(`${tag}: console ${m.text()}`); });
+  const page = await browser.newPage(phoneOptions(2));
+  collectErrors(page, { echo: true, label: tag });
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   await page.waitForTimeout(1500);
   for (const ahead of [1500, 6000, 20000, 60000]) {   // the VPS is shared and loaded: a short pause point can already be past by the time the call lands, so widen it until it is not
     try { await page.clock.pauseAt(await page.evaluate(() => Date.now()) + ahead); break; } catch (e) { if (!/past/.test(String(e))) throw e; }

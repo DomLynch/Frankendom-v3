@@ -4,7 +4,7 @@
 // ?input=v1 clears on every hand-over, as before.
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 
-export type HandOverInputRows = { keepOnHandOver: boolean; query: string; off: string };
+type HandOverInputRows = { keepOnHandOver: boolean; query: string; off: string };
 export const HAND_OVER_INPUT = ROWS.input as HandOverInputRows;
 
 /** The page keeps the controls across a hand-over: the row says so and the link does not carry the off switch. */

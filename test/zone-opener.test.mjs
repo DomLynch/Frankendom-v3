@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { zoneFor } from '../src/zone/zone-rows.ts';
 import { OPENERS, inAggro, kill, leashed, openerLeashLift, openerOn, openerReach, spotsFor, tick, validateOpeners } from '../src/zone/spawns.ts';
 import { initialState } from '../src/fight/sim.ts';
-import { playScaleFor, setPlayScale } from '../src/fight/play-radius.ts';
+import { setPlayScale } from '../src/fight/play-radius.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ZONE = zoneFor(''), ROWS = read('../data/respawn.json'), FIGHT = read('../data/fight.json');
@@ -75,22 +75,4 @@ test('the leash lift is the opener fight\'s alone: an opener spawn gets reachMet
   assert.equal(openerLeashLift(undefined), 0);
   assert.equal(openerLeashLift(s[0], { ...OPENERS, spawns: [] }), 0);
   assert.equal(leashed(s[1], { x: s[1].x + s[1].leash + 0.5, z: s[1].z }, openerLeashLift(s[1])), true, 'so that boss resets at its plain leash');
-});
-
-test('the page sets the lift only from the spawn in aggro and clears it on every reset (hand-over, leash reset, respawn)', () => {
-  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /openerLift = openerLeashLift\(spawns\[near\]\);/);
-  assert.doesNotMatch(main, /openerLift = OPENERS\.reachMetres/);
-  const rematch = main.slice(main.indexOf('function rematch('), main.indexOf('const hand = '));
-  assert.match(rematch, /openerLift = 0;/, 'rematch is what hand() and the leash reset call');
-});
-
-test('the page wires it once: the clock runs when the assets are ready, any engagement/kill/death spends it, ?opener=off and ?postkill=v1 start spent', () => {
-  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /openerSpent = !ZONE \|\| !openerOn\(search\)/);
-  assert.match(main, /if \(engaged\) openerSpent = true;/);
-  assert.match(main, /leashed\(spawns\[current\]!, practice\.enemy, openerLift\)/);
-  assert.match(main, /if \(practice\.finish\) \{ openerSpent = true; openerLift = 0; \}/);
-  assert.match(main, /if \(!openerSpent && assetsReady\) openerIdle \+= dt;/);
-  assert.match(main, /inAggro\(openerSpent \? spawns : openerReach\(spawns, OPENERS, openerIdle, hero\), hero\)/);
 });

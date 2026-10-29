@@ -8,13 +8,13 @@ import { GROUND_LOOT_ROWS, type GroundLootRow } from './audio-rules.ts';
 import type { Cue } from './cues.ts';
 
 /** A ground-loot cue: a sprite cue with its pitch always set (the row has one). */
-export type GroundCue = Cue & { rate: number };
+type GroundCue = Cue & { rate: number };
 
-export const GROUND_LOOT_KINDS = ['drop', 'pickup', 'refuse'] as const;
+const GROUND_LOOT_KINDS = ['drop', 'pickup', 'refuse'] as const;
 export type GroundLootKind = typeof GROUND_LOOT_KINDS[number];
 
 /** The lookup: every row validated (a sprite cue that exists, level, room and pitch in range, a unique id, `<kind>` or `<kind>:<class>`), and each of the three kinds must have its default row. */
-export function loadGroundLoot(rows: readonly GroundLootRow[]): ReadonlyMap<string, GroundCue> {
+function loadGroundLoot(rows: readonly GroundLootRow[]): ReadonlyMap<string, GroundCue> {
   const out = new Map<string, GroundCue>();
   for (const r of rows) {
     const [kind, itemClass, ...extra] = r.id.split(':');

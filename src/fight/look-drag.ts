@@ -4,7 +4,7 @@
 // cuts it, ragdoll.listenTaps), and the glide after the finger lifts. Every number is a row (data/respawn.json look). The page decides WHEN it listens (the camera is free: nobody is fighting him).
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 
-export type LookRows = {
+type LookRows = {
   on: boolean; query: string; off: string;
   sensitivityDegPerPx: number;   // degrees of turn per pixel of horizontal drag
   deadzonePx: number;            // a drag shorter than this is a tap and turns nothing; past it the turn counts from where it crossed (no jump)
@@ -13,7 +13,7 @@ export type LookRows = {
   flingWindowMs: number;         // a finger that lifted this long after its last move is resting, not flinging: no glide
   flingSmoothing: number;        // how much of each move's turn rate enters the glide's rate (0..1; 1 = only the last move, so one jittery frame sets the fling; lower averages over the last few moves)
 };
-export type LookLimits = { sensitivityDegPerPx: [number, number]; deadzonePx: [number, number]; minXShare: [number, number]; inertiaSeconds: [number, number]; flingWindowMs: [number, number]; flingSmoothing: [number, number] };
+type LookLimits = { sensitivityDegPerPx: [number, number]; deadzonePx: [number, number]; minXShare: [number, number]; inertiaSeconds: [number, number]; flingWindowMs: [number, number]; flingSmoothing: [number, number] };
 
 /** Throws on a bad look row. */
 export function validateLook(rows: LookRows, limits: LookLimits): void {
