@@ -656,10 +656,11 @@ test('the chunk handle is inert until used: it opens no connection by itself, cr
 
 test('the as-data gate scans the client files at zero: src/zone/** is in scope and none of them is a legacy file with a baseline', () => {
   const scope = JSON.parse(readFileSync(new URL('../scripts/as-data/scope.json', import.meta.url), 'utf8'));
-  assert.ok(scope.globs.includes('src/zone/**'));
+  assert.ok(scope.globs.includes('src/**/*.ts'), 'src/zone/** is covered by the all-of-src glob');
   for (const f of ['shared-hp-client.ts', 'shared-hp-http.ts', 'shared-hp-chunk.ts']) assert.equal(scope.legacy.includes(`src/zone/${f}`), false, f);
   const base = JSON.parse(readFileSync(new URL('../scripts/as-data/baseline.json', import.meta.url), 'utf8'));
   assert.equal(Object.keys(base.counts).some((k) => k.includes('shared-hp')), false);
+  assert.equal(Object.keys(base.totals ?? {}).some((k) => k.startsWith('src/zone/')), false, 'no src/zone file has a total-ratchet row: they stay at zero');
 });
 
 test('the wiring is exactly one dynamic import in main.ts, behind the flag, and nothing in scene.ts or the sim names the client', () => {
