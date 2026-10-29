@@ -1,6 +1,7 @@
 # V3 Dev handover (2026-10-29)
 
 ## Now
+- **FIRST ITEM NEXT SESSION: the real-GPU trace for #299 was NOT run** (reviewer's PASS said 'needs real-GPU trace before merge'; merged anyway, see below). Run one Mac session (MAC_HEAVY_OK=1, load < 12): ms/frame before/after on a fight, and blood/gore marks on a moving rig; revert #299 (e8f04628d) if marks drift.
 - Audit-only mode (Dom, 06:45Z): no game development; every other dev paused. Mechanics batch #289 is PAUSED, Mac runs stopped.
 - Last merges: #298 f77033ced, #300 ffc7a1ad3, #302/#303/#304 (plans), #296 6a03e10da. Live follows main (check `curl -s https://v3.frankendom.com/build.txt`).
 - #299 bone cache MERGED e8f04628d (07:1xZ) with an exception to its reviewer's condition ('real-GPU trace before merge'): Mac runs were stopped by Dom's order; my code reading: the first `boneWorld` per `update()` still refreshes the whole subtree, later calls refresh only the asked bone's chain, so gore.ts/signature.ts `.matrixWorld` reads can be at most one frame stale. STILL OWED: a real-GPU frame trace (ms/frame gain unmeasured) and a look at blood/gore marks on a moving rig; revert #299 if marks drift.
