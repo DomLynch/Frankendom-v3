@@ -5,7 +5,7 @@
 //
 // Presentation only (camera kick, flash, sparks, trail opacity, sound gain): the sim never imports this file, so no digest or RECORD_VERSION moves and Gate 0
 // never sees it. OFF (null) unless the page sets it: `?fx=v1` leaves it off = today's numbers exactly.
-export type HeroSpecialFx = {
+type HeroSpecialFx = {
   readonly skills: readonly string[];       // the hero's picked specials (skill ids) the multipliers apply to
   readonly cameraKick: number;              // x the camera's push / knock / along / drop on the landing
   readonly flash: number;                   // x the impact flash's size
@@ -15,7 +15,7 @@ export type HeroSpecialFx = {
   readonly soundGain: number;               // x the gain of the specialSound rows named in soundRows
   readonly soundRows: readonly string[];    // specialSound row ids (sandbox-rules-defs.json)
 };
-export let HERO_SPECIAL_FX: HeroSpecialFx | null = null;
+let HERO_SPECIAL_FX: HeroSpecialFx | null = null;
 export function setHeroSpecialFx(fx: HeroSpecialFx | null): void { HERO_SPECIAL_FX = fx; }
 
 type Row = Partial<Record<keyof HeroSpecialFx | 'about', unknown>>;
@@ -31,7 +31,7 @@ export function heroSpecialFxFor(row: Row | undefined, search = ''): HeroSpecial
 }
 
 /** True for the hero's own picked special: slot 0 casting `skill_<id>` of a listed skill (an opponent's special, even the same skill, never matches). */
-export const heroSpecial = (attacker: number | undefined, move: string | undefined): boolean =>
+const heroSpecial = (attacker: number | undefined, move: string | undefined): boolean =>
   HERO_SPECIAL_FX !== null && attacker === 0 && !!move?.startsWith('skill_') && HERO_SPECIAL_FX.skills.includes(move.slice('skill_'.length));
 /** Multiplier on the camera kick (push, knock, along, drop) of a contact `attacker` lands with `move`; 1 for anything else. */
 export const kickScale = (attacker: number | undefined, move: string | undefined): number => (heroSpecial(attacker, move) ? HERO_SPECIAL_FX!.cameraKick : 1);

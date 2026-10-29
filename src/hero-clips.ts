@@ -14,7 +14,7 @@ import { mergeSweeps, type SweepTable } from './fight/foe-reach.ts';
 export { heroClipsAsked } from './hero-reach.ts';
 type Row = { role: string; clip: string; from: number; to: number; contact?: number; hold?: GuardHold };
 /** where the row's contact key sits in the baked clip (0-1): the clip starts at `from` and ends at `to`; a guard row (no contact key) holds its last key */
-export const sourceOf = (r: Row): number => r.contact === undefined ? 1 : (r.contact - r.from) / (r.to - r.from);
+const sourceOf = (r: Row): number => r.contact === undefined ? 1 : (r.contact - r.from) / (r.to - r.from);
 /** Set before the rigs are built and before the first sim step. Returns whether the picks are on. `foeSweeps`: the opponent's own override
  *  (src/fight/foe-reach.ts foeSweepsFor: the Minotaur's cleaver), laid over V1's beside the hero's. */
 export function applyHeroClips(search: string, foeSweeps: SweepTable | null = null): boolean {

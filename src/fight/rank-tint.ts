@@ -6,7 +6,7 @@
 // and takes the grade's hue at a mean brightness moved toward the grade's, rgb = chroma(grade) · L · gain, gain = luma(grade) / luma(source),
 // clamped so no rung blows a piece to white or crushes it to black. One program for every rung (the grade rides uniforms).
 import { Color, MeshStandardMaterial, type Texture } from 'three';
-import { GRADES, classOf, finishRow, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/finish-rows.ts
+import { GRADES, classOf, gradeFor, levelOf, type DrawClass, type Finish, type Tier } from '../stubs.ts';   // V3: core/grades.ts, core/finish-rows.ts
 import { fxNum } from './fx-rows.ts';
 const LUMA_MIN = fxNum('fx.rankTint.lumaMin');
 const METAL_RATIO_MIN = fxNum('fx.rankTint.metalRatioMin');
@@ -17,7 +17,7 @@ const ROUGH_RATIO_MAX = fxNum('fx.rankTint.roughRatioMax');
 // (boots, straps, belts) takes the rung's trim finish instead, so the kit below the helmet reads the ladder too.
 // metal: the metal pieces carry the ladder (Strategy's ruling, 2026-09-26: helmet, greaves, arms, shield boss read at fight-camera
 // distance), so metal takes the grade's hue in full, a wider gain and a stronger sheen push than trim and leather.
-export const TINT = {
+const TINT = {
   strength: 0.85, minGain: 0.35, maxGain: 2.5, mapMetal: 0.6, mapRough: 0.7, leatherAsTrim: true,
   metal: { strength: 1, maxGain: 3.2, metalCap: 2.2, roughFloor: 0.2 },
   // stone: a weapon's stone head keeps its own colour half-way (the Witch's stone stays green-led) and its glow runs glowMin..glowMax × its own
@@ -52,11 +52,6 @@ export function tinted(source: MeshStandardMaterial, tier: Tier): MeshStandardMa
 }
 // A named finish row (finish-rows.json, e.g. `rust`) on a piece's metal and trim; leather, cloth, bone and stone keep their own look. Same tint as a rung.
 // The cache key carries a `finish:` prefix, so a finish id equal to a rung title (Recruit, Master...) can never answer with the rung's material.
-export const finishedAs = (source: MeshStandardMaterial, id: string): MeshStandardMaterial => finishedBy(source, id, () => finishRow(id));
-export function finishedBy(source: MeshStandardMaterial, id: string, finish: () => Finish): MeshStandardMaterial {
-  const kind = classOf(source.name);
-  return kind === 'metal' || kind === 'trim' ? finishWith(source, finish(), kind, `finish:${id}`) : source;
-}
 function finishWith(source: MeshStandardMaterial, finish: Finish, kind: DrawClass | null | undefined, tier: string): MeshStandardMaterial {
   const stone = kind === 'stone';
   let byTier = cache.get(source); if (!byTier) cache.set(source, (byTier = new Map()));

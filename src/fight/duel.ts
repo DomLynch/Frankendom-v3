@@ -19,6 +19,7 @@ import { ROWS79_ON, SANDBOX_ON } from './sandbox-era.ts';
 import { foeSpecialFirst, specialCooldown, specialFirst } from './rows80.ts';   // RV80: the sandbox's 2 s / 6 s special timers, era-keyed
 import { heroPool, manaFree } from './hero-mana.ts';   // V3: the hero has no mana (data/fight.json heroMana); off in a headless run
 import { SPECIAL_TERMS, termCooldown, termed, termStamina } from './special-terms.ts';   // V3: the hero's specials every 9 s, no stamina; off in a headless run, so Gate 0 steps V1's numbers
+import { shoveSteps } from './knock-round.ts';   // V3 (audit C): a fractional knockback shoves whole rounded steps; off in a headless run
 import { paceTicks } from './special-pace.ts';   // V3: the player's paced special (the Skull Crack ×0.75); off in a headless run, so Gate 0 steps V1's ticks
 import { foeSpecialFizzles, foeStartReach } from './foe-special-reach.ts';
 import { SPECIAL_MELEE_REACH, meleeSpecialReach, meleeSpecialRelease, percentScaled, SPECIAL_MELEE_WINDUP, SPECIAL_REACT, SPECIAL_REACT_KNOCK, SPECIAL_REACT_POSTURE, SPECIAL_REACT_STAGGER, specialReactFloorOf } from './sandbox-rules.ts';
@@ -606,9 +607,10 @@ export function stepDuel(duel: Duel, intents: [Intent, Intent], R: typeof RULES 
         for (const id of woundsAt(location!, (D.health * 100) / D.maxHealth)) if (!D.scars?.includes(id)) { D.scars = [...(D.scars ?? []), id]; if (woundCeil(id)) { D.maxStamina = Math.max(R.attrition.floor, D.maxStamina - woundCeil(id)); D.stamina = Math.min(D.stamina, D.maxStamina); } }
       }
       const away = aim(d.body, a.body) + Math.PI;
-      for (let k = 0; k < knockback; k++) D.body = { ...advance(D.body, { x: M.sin(away), z: M.cos(away), yaw: 0, run: false }, A.body, 1, wall), heading: D.body.heading };
-      // The ring wall: knockback that ends against the wall is a second impact — extra stagger and posture (kicks shove; see stagger()).
-      walledHit = knockback > 0 && D.health > 0 && walled(D.body, M.sin(away), M.cos(away), wall);
+      const shove = shoveSteps(knockback);   // whole steps (knock-round.ts, audit C): V1 stepped a fraction as a whole extra step (a glancing 3 x 0.4 = 1.2 shoved twice); with the flag on it rounds like the two special-reaction shoves below, and a fraction under half a step is no shove. Off in a headless run (Gate 0 steps V1's ceil)
+      for (let k = 0; k < shove; k++) D.body = { ...advance(D.body, { x: M.sin(away), z: M.cos(away), yaw: 0, run: false }, A.body, 1, wall), heading: D.body.heading };
+      // The ring wall: knockback that ends against the wall is a second impact — extra stagger and posture (kicks shove; see stagger()). A blow rounded to no shove never moved him, so it is no wall impact either.
+      walledHit = shove > 0 && D.health > 0 && walled(D.body, M.sin(away), M.cos(away), wall);
       if (!D.health) { finish = finish ? { ...finish, draw: true } : { victim: j, location: location!, move: a.move!, heading: a.body.heading }; events.push({ tick, type: 'Killed', actor: i, target: j, move: a.move!, location: location!, heading: a.body.heading }); }
     };
     // A low blade (the sweep) trips a roll in its first half: the roller is going down into it. The kick has no blade and is rolled as before.

@@ -150,5 +150,9 @@
   "heroMana": {
     "about": "Dom 2026-10-28: 'remove mana for now'. The HERO has no mana: no MANA bar on the HUD (the STAMINA bar keeps the whole row) and no mana cost or gate on a spell, a heal or the staff's bolt, so they are free and held only by their own ~9 s cooldown (specialTerms) and the ready ring. `mana: false` = off. Opponents are untouched: the foes' spells and missiles still carry and spend their own pool (Dom: keep the opponent spells). src/fight/hero-mana.ts; off in headless runs (Gate 0). ?mana=v1 = the MANA bar and the mana cost, as before.",
     "mana": false
+  },
+  "knockRound": {
+    "about": "Audit C 2026-10-29: a blow's shove is whole steps, rounded. V1 looped `k < knockback`, so a fractional knockback (a glancing off-band blow's knockback x 0.4) shoved one step too many: a thrust of 3 shoved ceil(1.2) = 2, a kick of 6 shoved ceil(2.4) = 3, a sliver under half a step still shoved one and could count as a wall impact. `round: true` = Math.round (1.2 -> 1, 2.4 -> 2, 0.4 -> 0: no shove, no wall impact; a whole number is unchanged), like the two special-reaction shoves in duel.ts. `round: false` = V1's ceil. src/fight/knock-round.ts; off in headless runs (Gate 0 steps V1's numbers). ?knock=v1 = V1's shove.",
+    "round": true
   }
 }

@@ -14,7 +14,7 @@ type Rows = { flag: { query: string; off: string }; postKill: { roam: boolean; s
 const LOOP = ROWS as unknown as Rows;
 
 /** What the page plays: the zone's first spawn, the hero's down time, the roam hand-over. */
-export type Respawn = { readonly walkRadius: number; readonly cameraMetres: number; readonly startAfterSeconds: number; readonly minDistance: number; readonly diedSeconds: number; readonly fallSeconds: number; readonly zone: string; readonly spawn: { readonly id: string; readonly kind: string; readonly respawnSeconds: number } };
+type Respawn = { readonly walkRadius: number; readonly cameraMetres: number; readonly startAfterSeconds: number; readonly minDistance: number; readonly diedSeconds: number; readonly fallSeconds: number; readonly zone: string; readonly spawn: { readonly id: string; readonly kind: string; readonly respawnSeconds: number } };
 
 /** Throws on a bad roam row, or a first spawn whose `kind` is no opponent (`opponents`, optional). */
 export function validateLoop(rows: Rows, zone: ZoneRow, opponents?: readonly string[]): void {

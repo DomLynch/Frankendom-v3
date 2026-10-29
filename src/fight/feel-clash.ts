@@ -18,13 +18,13 @@ import { bone } from './rig-bones.ts';
 import type { FeelHooks } from './feel.ts';   // type only: this module ships in the feel chunk (feel-chunk.ts), which must not carry a second copy of the registry
 import type { CombatEvent } from './duel.ts';
 
-export type ClashRows = typeof ROWS;
-export type ClashKind = 'blocked' | 'perfect' | 'parried' | 'broken';
-export type Side = 0 | 1;
+type ClashRows = typeof ROWS;
+type ClashKind = 'blocked' | 'perfect' | 'parried' | 'broken';
+type Side = 0 | 1;
 type Vec3 = [number, number, number];
 
 /** One clash, worked out from a sim event: who struck, who took it, how hard, and every number the presentation needs. */
-export type Clash = {
+type Clash = {
   tick: number; kind: ClashKind; move: string | undefined; weapon: string | undefined; heavy: boolean; charged: boolean;
   attacker: Side; defender: Side; strength: number;   // strength: swing multiplier (light 1, heavy 1.92, charged 1.5)
   attackerImpulse: number; defenderImpulse: number;   // N s along the blow's line (clamped to the row's impulse.max)
@@ -101,7 +101,7 @@ export function sparkPoint(rows: ClashRows, from: Vec3, to: Vec3): Vec3 {
 type Rd = { applyImpulse(part: string, v: Vec3): void; stagger(hit?: { part: string; impulse: Vec3 }): void; setMotorStrength(rows: number | Record<string, number>): void; state: string };
 type Rigged = { anchor: THREE.Object3D };
 type Active = { clash: Clash; t: number; foeTouched: string[]; heroEnded: boolean };
-export type ClashContext = {
+type ClashContext = {
   rd?: Rd; foeHand?: THREE.Object3D; hero?: Rigged; parent?: THREE.Object3D; emit?: (name: string, payload?: unknown) => void;   // the foe's ragdoll (alive), his weapon hand, the hero's rig, where sparks are added, the sim-event emitter
   group?: THREE.Object3D;                                          // the foe's group (its yaw turns the impulse into world space for a spark's throw)
 };

@@ -15,13 +15,13 @@ import { specialLookOf, type SpecialLookRow } from './sandbox-rules.ts';
 
 // Each move's tint, keyed by SkillId (move id = skill_<id>; Lead fixed the ids 2026-09-26). Pommel is neutral steel, and nothing here is
 // green: green is Witch-fire's, and the warden's cue. A skill move not in the table yet flashes the neutral default the day it lands.
-export const IMPACT_TINT: Readonly<Record<string, string>> = Object.fromEntries(Object.values(SKILL_ROWS).filter((r) => r.impactTint).map((r) => [r.id, r.impactTint!]));   // the skill rows' impactTint (skill-defs.json; Characters owns the colours)
-export const IMPACT_DEFAULT = '#e6e0d4';
-export const IMPACT = FEEL_RULES.skillImpactRule[0]!;   // seconds, metres
+const IMPACT_TINT: Readonly<Record<string, string>> = Object.fromEntries(Object.values(SKILL_ROWS).filter((r) => r.impactTint).map((r) => [r.id, r.impactTint!]));   // the skill rows' impactTint (skill-defs.json; Characters owns the colours)
+const IMPACT_DEFAULT = '#e6e0d4';
+const IMPACT = FEEL_RULES.skillImpactRule[0]!;   // seconds, metres
 const HEIGHT = { head: 1.62, torso: 1.2, legs: 0.62 } as const;   // the contact's height on a scale-1 body, by the sim's hit location
 
 // What a landed skill blow throws, or null: a Hit on a `skill_*` move other than Witch-fire. A blow taken through a raised guard is half.
-export function impactOf(event: CombatEvent): { id: string; tint: string; strength: number; look?: SpecialLookRow } | null {
+function impactOf(event: CombatEvent): { id: string; tint: string; strength: number; look?: SpecialLookRow } | null {
   const landed = event.type === 'SpecialLanded' && !event.spell && event.target !== event.actor && specialLookOf(event.move?.slice('skill_'.length) ?? '') !== undefined;   // sandbox specialLook rows: a melee special that lands throws the same kit, shaped by its row
   if ((event.type !== 'Hit' && !landed) || event.target === undefined || !event.move?.startsWith('skill_')) return null;
   const id = event.move.slice('skill_'.length), row = SKILL_ROWS[id];

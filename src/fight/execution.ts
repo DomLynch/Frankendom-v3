@@ -28,7 +28,7 @@ export const EXECUTION_BEATS = {
 export const executionAt = (beat: number): number => (beat * duration) / speed;
 
 // Every playable (not held) body on the hero rig, exactly Hamstrung's victims; the clip is built on warrior.glb's proportions (the same pelvis).
-export const EXECUTION_VICTIMS: readonly OpponentId[] = HAMSTRUNG_VICTIMS;
+const EXECUTION_VICTIMS: readonly OpponentId[] = HAMSTRUNG_VICTIMS;
 export const EXECUTION_SOURCE_PELVIS = HAMSTRUNG_SOURCE_PELVIS;
 // Where adoptClip measures the body's own skin against the floor (the kneel and the fall differ in feet, chest and face from one body to the next): the pelvis path is lifted between these.
 export const EXECUTION_FLOOR_MARKS: readonly number[] = [.15, .2, EXECUTION_BEATS.kneel, EXECUTION_BEATS.strike, .66, .72, .78, .84, .87, EXECUTION_BEATS.fall];

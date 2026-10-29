@@ -7,11 +7,11 @@ import type { Practice } from './fight/combat.ts';
 import { brainProfile, type BrainRow } from './brain.ts';
 
 export const KNOBS = ['reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] as const;
-export type Knobs = Pick<AiProfile, (typeof KNOBS)[number]>;
-export type DifficultyRow = { id: string | number } & Knobs & { foeHealthScale: number; foeDamageScale: number; about?: string };
+type Knobs = Pick<AiProfile, (typeof KNOBS)[number]>;
+type DifficultyRow = { id: string | number } & Knobs & { foeHealthScale: number; foeDamageScale: number; about?: string };
 export type ProfileRow = { id: string; opponent: string; brain: string | null; foeHealthScale: number; foeDamageScale: number; knobs?: Partial<Knobs>; body?: string; name?: string; about?: string };   // knobs: this kind's own brain knobs, laid over the difficulty row's (a zone spawn `kind` is a profile id: src/fight/spawn-kind.ts)
 export type DifficultyFile = { default: number; rows: DifficultyRow[]; named: DifficultyRow[] };
-export type FightPick = { profile: string; difficulty: string | number };
+type FightPick = { profile: string; difficulty: string | number };
 
 /** The row `?difficulty=` names: 1..10 (or a named row such as `legacy`); anything else is the default row, with a console warning (never throws). */
 export function difficultyPick(file: { default: number; rows: readonly { id: string | number }[]; named?: readonly { id: string | number }[] }, search: string, warn: (m: string) => void = (m) => console.warn(m)): string | number {

@@ -3,7 +3,7 @@
 // Both mean the same thing to the eye and the ear: the cast began ('start') or it struck ('land'). Pure and presentation only: it reads events, writes nothing, imports no sim file.
 import type { CombatEvent } from './combat.ts';
 
-export type SpecialRequest = Readonly<{ skill: string; phase: 'start' | 'land'; actor: 0 | 1; target?: 0 | 1 }>;
+type SpecialRequest = Readonly<{ skill: string; phase: 'start' | 'land'; actor: 0 | 1; target?: 0 | 1 }>;
 
 export function specialRequestOf(e: CombatEvent): SpecialRequest | null {
   if (e.spell || !e.move?.startsWith('skill_')) return null;

@@ -12,7 +12,7 @@ const FLASH_LIFE = feelNum('impactFlashLife'), RING_LIFE = feelNum('impactRingLi
 const HEIGHT = { head: feelNum('impactHeightHead'), torso: feelNum('impactHeightTorso'), legs: feelNum('impactHeightLegs') } as const;   // a blow's height on the struck body, by hit location (metres)
 
 // The contact row a frame's event plays (hit-impact.ts tiers, refined by the rows' own names), or null.
-export function contactOf(e: CombatEvent): ContactId | null {
+function contactOf(e: CombatEvent): ContactId | null {
   if (e.type === 'GuardBroken') return 'guardBreak';
   const tier = impactTier(e);
   return tier === 'full' ? 'hitHeavy' : tier === 'half' ? 'hitLight' : tier === 'parry' ? 'parry' : tier === 'block' ? 'blockLight' : null;

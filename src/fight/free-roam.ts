@@ -9,7 +9,7 @@ import { legal, stepDuel, idleIntent, type Action, type Duel, type Fighter, type
 import type { State } from './sim.ts';
 import { roamStep } from './zone-loop.ts';
 
-export type FreeMovesRows = { actions: readonly Action[] };
+type FreeMovesRows = { actions: readonly Action[] };
 export const FREE_MOVES = ROWS as FreeMovesRows;
 const ACTIONS: readonly Action[] = ['dodge', 'backstep', 'parry'];
 
@@ -41,7 +41,7 @@ export const isFreeAction = (action: Action | null | undefined): boolean => !!ac
 /** A strike press the walking hero takes once the walk has begun. It is NOT a hand-over: a STRIKE mashed during the finisher never ends the ceremony or the finisher camera (only `isFreeAction` and the stick do). */
 export const isFreeStrike = (action: Action | null | undefined): boolean => !!action && STRIKES.includes(action);
 
-export type FreeStep = { free: FreeRoam; body: State };
+type FreeStep = { free: FreeRoam; body: State };
 
 /** One tick of the walk: `roam` is his body, `intent` the tick's quantized intent (stick, press, held guard and its side), `wall` the walking radius. */
 export function stepFreeRoam(free: FreeRoam, roam: State, intent: Intent, wall: number): FreeStep {

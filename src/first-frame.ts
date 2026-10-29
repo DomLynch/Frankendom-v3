@@ -2,7 +2,7 @@
 // instant it lifted and uploaded every map and buffer of both rigs and the arena in one 2-3 s long task (Chromium, 375 x 812, 4x CPU, software GL: veteran
 // 3005 ms, pitborn 2259 ms, setfoot 3242 ms). Here the maps go up a slice per frame, then one whole draw, all before the card may lift; a slow device
 // stops uploading after `budgetMs` and the card lifts anyway (the rest of the warm-up is dropped). Pixels are untouched: the draw is what the first frame was.
-export type FirstFrame = {
+type FirstFrame = {
   textures: readonly unknown[];               // every map in the scene
   upload(texture: unknown): void;             // renderer.initTexture
   draw(): void;                               // renderer.render(scene, camera)

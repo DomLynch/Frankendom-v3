@@ -34,7 +34,7 @@ export const portraitPitch = (rows: PitchRows, search: string): { degrees: numbe
   return { degrees: rows.presets[p.preset]!, belowAspect: p.belowAspect };
 };
 
-export type Pose ={ x: number; y: number; z: number };
+type Pose ={ x: number; y: number; z: number };
 /**
  * Re-pitch a lock pose: the view axis looks `degrees` down, and the eye height is set so the hero's `heroY` point sits at the same angle from the axis
  * as it did in the pose given (so his place on the screen is unchanged). Horizontal positions are untouched, so the framing of hero and boss (and the

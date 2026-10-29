@@ -8,14 +8,14 @@ import { levelOf, type StarsFile } from '../stars.ts';
 import type { ProgressionFile, Save } from '../progression.ts';
 import { mountPartsPanel } from './parts-panel.ts';
 
-export type PartsHookCtx = {
+type PartsHookCtx = {
   get(): Save | null;
   put(save: Save): void;
   profiles: readonly { id: string; name?: string }[];
   stars: StarsFile;
   prog: ProgressionFile;
 };
-export type PartsHook = { remove(): void };
+type PartsHook = { remove(): void };
 
 export function mountParts(ctx: PartsHookCtx, doc: Document = document): PartsHook {
   const bad = validateParts(PARTS, ctx.stars.levels.length);

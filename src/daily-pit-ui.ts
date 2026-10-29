@@ -7,7 +7,7 @@ import { loadSave, writeSave, type ProgressionFile, type Store } from './progres
 import type { TuneMap } from './tune.ts';
 import type { ZoneRow } from './zone/zone-rows.ts';
 
-export type DailyOptions = {
+type DailyOptions = {
   file: DailyFile; doc: Document; win: Window;
   /** The progression save's storage (localStorage) and its table; `useSave` false (?save=off, ?pitborn=v1) keeps the day's record in memory only. */
   store: Store | null; session: Store | null; progression: ProgressionFile; useSave: boolean;
@@ -15,7 +15,7 @@ export type DailyOptions = {
   /** A boss's name for the card: a profile row's `name`, else its id. */
   nameOf: (kind: string) => string;
 };
-export type Daily = {
+type Daily = {
   /** The day's run when this page IS the daily, else null. */
   readonly run: DailyRun | null;
   /** The ?tune= map the daily lays over the boss (empty outside the daily). */

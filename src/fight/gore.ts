@@ -4,7 +4,6 @@
 // with the scene's contact effects.
 import * as THREE from 'three';
 import { bloodiesMaterial, FLOOR_POOLS, FLOOR_SPLASHES, multiplyOnto } from './finisher-blood.ts';
-export { multiplyOnto };
 import type { HitLocation } from './blade.ts';
 import type { Direction } from './moves.ts';
 import { bloodDark, bloodHidden, type BloodMode } from './blood-mode.ts';
@@ -20,7 +19,6 @@ const surfaceRays = (): boolean => !phoneTier() || bloodNum('gore.phone-surface-
 const BLOODIED_METALNESS_MAX = fxNum('fx.gore.bloodiedMetalnessMax');
 const BLOODIED_ROUGHNESS_MIN = fxNum('fx.gore.bloodiedRoughnessMin');
 
-export type { BloodMode };
 type Rigs = { player: { anchor: THREE.Object3D }; opponent: { anchor: THREE.Object3D } };
 
 // Twelve pooled ground splats; a kill takes one as the corpse's spreading pool.
@@ -120,7 +118,7 @@ export function createSplatPool(scene: THREE.Scene, splatTexture: THREE.Texture 
 // top, a thrust on the front). Marks are pooled per fighter, ride their bone every frame, and show only once that fighter
 // is at 60 % health or below; from there the marks darken and the drips lengthen down to the death. Presentation only:
 // the simulation decides the hit, the damage and the location. Hidden in blood 'off', cleared on rematch.
-export const WOUND_THRESHOLD = bloodNum('gore.wound-threshold'), WOUNDS_PER_FIGHTER = bloodNum('gore.wounds-per-fighter');
+const WOUND_THRESHOLD = bloodNum('gore.wound-threshold'), WOUNDS_PER_FIGHTER = bloodNum('gore.wounds-per-fighter');
 const SIDES = [0, 1] as const;   // the two fighters: one shared tuple for the per-frame wound loop, not an array a frame
 export type WoundHit = { location: HitLocation; direction: Direction; heading: number };   // heading = the struck fighter's facing
 type WoundSite = { bone: string; dir: [number, number, number]; radius: number; width: number };
@@ -152,28 +150,28 @@ const BLOOD_TEXTURES = { floorPool: 'floor-pool.png', floorSplash: 'floor-splash
 // uniform… more dripping style not a star"; he picked B, C and D from four FLUX candidates): B a cut with uneven streaks, C a patch
 // with one trickle and a hanging drop, D loose teardrops. Each is 256×320, top edge = the cut, drawn upright — never spun, since the
 // run in the art must point down. Each hit picks one from its own seed, so a replay draws the same wound.
-export const WOUND_ART = ['b', 'c', 'd'].map((k) => ({ map: `blood-wound-${k}.png`, normal: `blood-wound-${k}-normal.png` }));
-export const WOUND_SIZE = { width: 0.1, height: 0.125, tilt: 0.2 } as const;   // metres (the art's 4:5), radians either way off upright
+const WOUND_ART = ['b', 'c', 'd'].map((k) => ({ map: `blood-wound-${k}.png`, normal: `blood-wound-${k}-normal.png` }));
+const WOUND_SIZE = { width: 0.1, height: 0.125, tilt: 0.2 } as const;   // metres (the art's 4:5), radians either way off upright
 // A run: after a landed hit each strand waits DRIP.start, then grows from a bead to a streak over DRIP.duration (both seeded
 // per strand), stops, and dries — roughness DRY.roughness[0] → [1] and the fresh tone → the dried tone over DRY.seconds.
 // New hits add fresh runs. Nothing here cycles: a run that has finished stays as it lies until the rematch clears it.
-export const DRIP = { start: [0, 0.3], duration: [1.5, 3], width: [0.75, 1.3], offset: 0.03, bead: 0.028, length: [0.11, 0.19] } as const;   // seconds, seconds, ×, metres, metres, metres at threshold → at death (a man's torso)
-export const DRY = bloodObj<{ readonly seconds: number; readonly roughness: readonly [number, number] }>('gore.dry');   // a thin wet edge, not a gloss coat
+const DRIP = { start: [0, 0.3], duration: [1.5, 3], width: [0.75, 1.3], offset: 0.03, bead: 0.028, length: [0.11, 0.19] } as const;   // seconds, seconds, ×, metres, metres, metres at threshold → at death (a man's torso)
+const DRY = bloodObj<{ readonly seconds: number; readonly roughness: readonly [number, number] }>('gore.dry');   // a thin wet edge, not a gloss coat
 // Drops to the floor (owner 2026-09-23: "drop from body onto the floor, like droplets… not a river, rather slowly"): once a run has
 // stopped growing its first run sheds a drop from its tip every `every` seconds (seeded per strand) until the wound is half dry. A drop falls
 // under gravity and leaves a small spot on the sand. Hard caps: `inFlight` drops in the air, `spots` on the floor (oldest recycled).
-export const DROPS = bloodObj<{ readonly every: readonly [number, number]; readonly until: number; readonly inFlight: number; readonly spots: number; readonly spot: readonly [number, number]; readonly gravity: number; readonly floor: number; readonly seconds: number }>('gore.drops');   // s, dry share, count, count, metres, m/s², metres, s
+const DROPS = bloodObj<{ readonly every: readonly [number, number]; readonly until: number; readonly inFlight: number; readonly spots: number; readonly spot: readonly [number, number]; readonly gravity: number; readonly floor: number; readonly seconds: number }>('gore.drops');   // s, dry share, count, count, metres, m/s², metres, s
 const ARM_SHARE = bloodNum('gore.arm-share');   // share of side cuts across the torso that land on the near arm instead (half upper arm, half wrist)
 const FRESH = new THREE.Color('#e0a0a0'), DRIED = new THREE.Color('#7a5456');   // multiplied over the art's own dark reds: a light hand, or it reads as soot (owner 2026-09-23: near-black on the hero's back)
 const CANVAS_FRESH = new THREE.Color('#581017'), CANVAS_DRIED = new THREE.Color('#2a1516');   // the tint the white canvas splat needs until the photo lands (and under node)
 const DARK_MODE = new THREE.Color('#5a4d4c');
 // Seeded per hit from what the simulation already decided — the fight's hit ordinal on this side, the blow's heading, its
 // location and direction — so a replay of the same fight draws the same runs. A small LCG, never Math.random.
-export function woundSeed(index: number, hit: Pick<WoundHit, 'location' | 'direction' | 'heading'>): number {
+function woundSeed(index: number, hit: Pick<WoundHit, 'location' | 'direction' | 'heading'>): number {
   const loc = { head: 1, torso: 2, legs: 3 }[hit.location], dir = { right: 1, left: 2, overhead: 3, thrust: 4, low: 5 }[hit.direction];
   return (Math.imul(index + 1, 2654435761) ^ Math.imul(Math.round(hit.heading * 1000) | 0, 40503) ^ (loc * 7919 + dir * 104729)) >>> 0;
 }
-export function lcg(state: number): number { return (Math.imul(state, 1664525) + 1013904223) >>> 0; }
+function lcg(state: number): number { return (Math.imul(state, 1664525) + 1013904223) >>> 0; }
 // Where the skin (or the armour over it) actually is along the wound normal: a ray from well outside back toward the bone, against
 // the rig's own skinned meshes in their current pose (owner 2026-09-22: "it floats off the chars" — the site table's radius is a
 // guess per slot, and on a bare shoulder the guess for a pauldron hangs in the air). The table value stands when nothing is met
@@ -282,9 +280,6 @@ function surfaceReach(root: THREE.Object3D, point: THREE.Vector3, normal: THREE.
   return reach;
 }
 // The radius that the site table's guess is clamped to when a surface was met, kept for the fallback path and the tests.
-export function clampRadius(measured: number, fallback: number): number {
-  return Math.min(fallback * SURFACE.clamp[1], Math.max(fallback * SURFACE.clamp[0], measured + SURFACE.proud));
-}
 export function createBodyWounds(scene: THREE.Scene, splatTexture: THREE.Texture | null) {
   type Strand = { mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>; map: THREE.Texture | null; start: number; duration: number; width: number; offset: number; live: boolean; drop: number; dropSeed: number };
   type Mark = { group: THREE.Group; mark: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>; art: number; strands: Strand[]; bone: THREE.Object3D | null; dir: THREE.Vector3; anchor: THREE.Vector3 | null; reach: number; radius: number; width: number; scale: number; age: number; used: boolean; runs: number };
