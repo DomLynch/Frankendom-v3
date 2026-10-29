@@ -7,7 +7,6 @@ import { SCHEMA, validateFile } from '../src/sim/validate.js';
 import { GROUND, anchorInto, checkGround, fogHidesAt, followSnap, groundFor, groundOn, groundSizing, sandOn, depthPushFor } from '../src/zone/ground.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
-const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const ROWS = read('../data/zone-ground.json'), STAGE = read('../data/stage.json'), RESPAWN = read('../data/respawn.json');
 const clone = (patch) => { const d = structuredClone(ROWS); patch(d); return d; };
 const d = STAGE.duel.fogDensity;
@@ -84,24 +83,7 @@ test('?ground=v1 keeps the pit\'s floor; the link flag reads the row', () => {
   assert.equal(groundOn('?postkill=v1'), true, 'a different flag does not touch it (the zone gate handles ?postkill=v1)');
 });
 
-test('the wiring: only the zone, behind the flag, builds the open ground; ?postkill=v1 (no zone) builds the old stage; the follow is the scene\'s and is off until opened', () => {
-  const main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts'), stage = src('../src/arena-stage.ts'), draw = src('../src/zone/ground-draw.ts');
-  assert.equal((main.match(/openGround\(/g) ?? []).length, 1, 'one call site');
-  assert.match(main, /if \(ZONE && groundOn\(search\)\) view\.openGround\(groundFor\(WORLD\.pitScale/);
-  assert.match(main, /const ZONE = zoneLoopFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\), search/, 'ZONE is null under ?postkill=v1');
-  assert.match(scene, /openGround\(sizing: GroundSizing\) \{ drawOpenGround\(arena\.group, camera, sizing\); groundSnap = sizing\.snap;/);
-  assert.match(scene, /let groundSnap = 0/, 'no follow until the zone opens the ground');
-  assert.match(scene, /if \(groundSnap > 0\) \{ anchorInto\(groundAt, state\.x, state\.z, groundSnap\);/);
-  assert.match(scene, /sun\.position\.set\(groundAt\.x \+ sunHome\.x \+ 0\.7/, 'the flickering key light also stands on the hero');
-  assert.match(scene, /get groundAnchor\(\)/, 'the hook the skyline follows');
-  assert.doesNotMatch(stage, /ground-draw|openGround|zone-ground/, 'the pit stage itself is unchanged: buildArena still draws the 400-unit floor');
-  assert.match(stage, /createGround\(STAGE\)/);
-  assert.match(draw, /group\.getObjectByName\('floor'\)/, 'the same floor mesh and material, only wider');
-  assert.doesNotMatch(draw, /TextureLoader|new THREE\.Texture|MeshStandardMaterial|MeshBasicMaterial/, 'no new texture or material');
-  assert.doesNotMatch(stage, /boundary|RingGeometry|wall/i, 'the stage draws no pit wall, rim or ring: nothing to hide in the zone');
-});
-
-test('sand quality: the floor depth push is a validated row, ?sand=v1 reverts it, the zone alone applies it', () => {
+test('sand quality: the floor depth push is a validated row, ?sand=v1 reverts it, the zone alone applies it (behaviour half; the source pins moved to test/source-pins/)', () => {
   assert.deepEqual(validateFile('zone-ground', ROWS), []);
   assert.deepEqual(ROWS.floorDepthPush.flag, { query: 'sand', off: 'v1' });
   assert.deepEqual(depthPushFor(GROUND, true), { factor: ROWS.floorDepthPush.factor, units: ROWS.floorDepthPush.units });
@@ -115,8 +97,4 @@ test('sand quality: the floor depth push is a validated row, ?sand=v1 reverts it
   const bad = (patch, re) => assert.match(checkGround(clone(patch), d).join('\n'), re);
   bad((r) => { r.floorDepthPush.units = 500; }, /floorDepthPush\.units 500 is not in/);
   bad((r) => { r.floorDepthPush.factor = NaN; }, /floorDepthPush\.factor NaN/);
-  const main = src('../src/client/main.ts'), draw = src('../src/zone/ground-draw.ts'), stage = src('../src/arena-stage.ts'), client = src('../src/client/stage.js');
-  assert.match(main, /groundFor\(WORLD\.pitScale, undefined, sandOn\(search\)\)/);
-  assert.match(draw, /if \(floor && s\.depthPush\) Object\.assign\(floor\.material as THREE\.Material, \{ polygonOffset: true, polygonOffsetFactor: s\.depthPush\.factor, polygonOffsetUnits: s\.depthPush\.units \}\)/);
-  assert.doesNotMatch(stage + client, /polygonOffset/, 'the pit floor (?ground=v1, ?postkill=v1) is untouched');
 });

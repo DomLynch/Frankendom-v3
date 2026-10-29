@@ -10,13 +10,8 @@ const rows = JSON.parse(readFileSync(new URL('../node_modules/@frankendom/physic
 const chunk = { admit, budgetRows: rows };
 const awake = (n) => Array.from({ length: n }, () => ({ awake: true }));
 
-test('the row is the package\'s (3 today) and V3 reads it, not a copy', () => {
+test('the row is the package\'s (3 today) and V3 reads it, not a copy (behaviour half; the source pins moved to test/source-pins/)', () => {
   assert.equal(rows.max_simultaneous_ragdolls, 3);
-  const src = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8');
-  assert.match(src, /admitRagdoll\(chunk!, worldRagdolls\)/);
-  assert.match(src, /const worldRagdolls = new Set/);
-  assert.doesNotMatch(src, /^const worldRagdolls/m);   // per foe (per Jolt world), never module-global
-  assert.doesNotMatch(src, /max_simultaneous_ragdolls\s*[:=]\s*\d/);
 });
 
 test('a single kill is admitted as before; with three active ragdolls the fourth is baked', () => {

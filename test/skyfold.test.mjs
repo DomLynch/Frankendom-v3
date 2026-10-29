@@ -87,7 +87,7 @@ test('the mesh: flat on the ground, the cylinder\'s angle mapping, the far rim i
   assert.equal(g.getAttribute('color').itemSize, 4);
 });
 
-test('draw order: after the strip, before the sand; no depth write, no fog, no tone map, no shadows', () => {
+test('draw order: after the strip, before the sand; no depth write, no fog, no tone map, no shadows (behaviour half; the source pins moved to test/source-pins/)', () => {
   assert.ok(SKYLINE_ORDER < FOLD_ORDER && FOLD_ORDER < FLOOR_ORDER, `${SKYLINE_ORDER} ${FOLD_ORDER} ${FLOOR_ORDER}`);
   const scene = new THREE.Scene();
   const fold = createSkyfold(scene, '', VIEW);
@@ -96,11 +96,6 @@ test('draw order: after the strip, before the sand; no depth write, no fog, no t
   assert.equal(m.material.depthWrite, false); assert.equal(m.material.fog, false); assert.equal(m.material.toneMapped, false);
   assert.equal(m.receiveShadow, false); assert.equal(m.castShadow, false); assert.equal(m.material.vertexColors, true);
   assert.equal(m.position.y, FOLD.groundY);
-  const src = read('../src/fight/skyfold.ts');
-  for (const k of ['farMetres', 'nearMetres', 'featherFraction', 'groundY', 'orderOffset', 'around', 'rings']) assert.match(src, new RegExp(`row\\.${k}|FOLD\\.${k}`));
-  assert.match(read('../src/fight/scene.ts'), /skyfold\?\.update\(camera\.position, dt, skyline\);/);
-  // the sand's depth push (zone-ground.json floorDepthPush) is untouched by this file
-  assert.doesNotMatch(src, /polygonOffset|floorDepthPush/);
 });
 
 test('A downloads nothing: it takes the strip\'s own picture when that lands, and follows the camera and the strip\'s fade', () => {

@@ -42,11 +42,9 @@ test('the designer layer set: every file the rows name ships, the plate is the c
   assert.ok(statSync(asset(P.file)).size < 200_000, 'the clean plate is recompressed (the designer original was 251 KB)');
 });
 
-test('the layers wired to rows: every layer has an on row, and a layer that looks poor ships off', () => {
+test('the layers wired to rows: every layer has an on row, and a layer that looks poor ships off (behaviour half; the source pins moved to test/source-pins/)', () => {
   for (const k of ['planet', 'globe', 'glisten']) assert.equal(typeof A[k].on, 'boolean', k);
   assert.equal(typeof A.globe.sprite.on, 'boolean'); assert.equal(typeof A.planet.glow.on, 'boolean'); assert.equal(typeof A.globe.spin.on, 'boolean');
-  const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
-  for (const k of ['secondsPerTurn', 'swingDegrees', 'frameSeconds', 'periodSeconds', 'sweepSeconds', 'spreadTexels', 'twinkle', 'readyTimeoutSeconds', 'respectReducedMotion', 'pulseSeconds', 'orbitSeconds', 'rects']) assert.match(src, new RegExp(`\\b${k}\\b`), k);
 });
 
 test('?skyanim=off and the row off stop the motion (the layers still composite); the default moves', () => {
@@ -135,7 +133,7 @@ test('breathing and bob: a feathered window (zero at the rect edge and outside, 
   const face = P.face; assert.ok(face.u > r.u0 && face.u < r.u1 && face.v > r.v0 && face.v < r.v1, 'the face is inside the breath');
 });
 
-test('sky life is presentation only and costs a clock: the shader gains the lines, ?skyanim=off stills all four, each effect row off stills just that one', () => {
+test('sky life is presentation only and costs a clock: the shader gains the lines, ?skyanim=off stills all four, each effect row off stills just that one (behaviour half; the source pins moved to test/source-pins/)', () => {
   const mk = (search, row) => { const a = createSkyAnim(search, 4096, 1024, row), m = new THREE.MeshBasicMaterial(); a.apply(m); const sh = { uniforms: {}, fragmentShader: '#include <common>\nvoid main(){\n#include <map_fragment>\n}' }; m.onBeforeCompile(sh, null); return { a, u: sh.uniforms, sh }; };
   const live = mk('', A); assert.match(live.sh.fragmentShader, /uBreathLift/); assert.match(live.sh.fragmentShader, /uSparkI/); assert.match(live.sh.fragmentShader, /uBob/); assert.match(live.sh.fragmentShader, /uCrownI/);
   for (let i = 0; i < 400; i++) live.a.update(0.05);
@@ -148,8 +146,6 @@ test('sky life is presentation only and costs a clock: the shader gains the line
   assert.equal(noB.u.uBreathLift.value, 0); assert.notEqual(noB.u.uBob.value, 0); assert.equal(noG.u.uBob.value, 0); assert.notEqual(noG.u.uBreathLift.value, 0);
   assert.equal(noC.u.uCrownI.value, 0); assert.equal(noS.u.uSparkI.value, 0);
   let seen = 0; const live2 = mk('', A); for (let i = 0; i < 1200; i++) { live2.a.update(0.05); if (live2.u.uSparkI.value > 0) seen++; } assert.ok(seen > 0, 'a sparkle fires within a minute');
-  const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
-  for (const k of ['featherFraction', 'amplitudePx', 'durationSeconds', 'minGapSeconds', 'maxGapSeconds', 'firstDelaySeconds', 'anchors', 'radiusU']) assert.match(src, new RegExp(`\\b${k}\\b`), k);
 });
 
 test('the skyline plate shows once its layers are in, carries the patched material, and the follow/fade path still runs', async () => {
@@ -164,7 +160,7 @@ test('the skyline plate shows once its layers are in, carries the patched materi
   sky.dispose();
 });
 
-test('pack 2 rows: eyes, drool and the planet sphere validate, each effect has its own on, bad rows are refused', () => {
+test('pack 2 rows: eyes, drool and the planet sphere validate, each effect has its own on, bad rows are refused (behaviour half; the source pins moved to test/source-pins/)', () => {
   for (const k of ['eyes', 'drool']) assert.equal(typeof A[k].on, 'boolean', k);
   for (const x of [A.eyes.blink, A.eyes.wink, A.drool.shimmer, A.drool.drop, A.planet.sphere]) assert.equal(typeof x.on, 'boolean');
   assert.deepEqual(A.eyes.rectPx, { x: 2246, y: 606, w: 227, h: 81 }, 'the manifest rect');
@@ -178,7 +174,6 @@ test('pack 2 rows: eyes, drool and the planet sphere validate, each effect has i
     (a) => { delete a.eyes.trim; }, (a) => { a.eyes.trim.ellipses.pop(); }, (a) => { a.eyes.trim.ellipses[0].rx = 0; }, (a) => { a.eyes.trim.featherFraction = 0; }, (a) => { a.eyes.trim.on = 'yes'; },
     (a) => { a.sparkle.armWeight = 9; }, (a) => { delete a.sparkle.coreSize; }, (a) => { a.sparkle.armThickness = 0; }];
   assert.ok(A.sparkle.anchors.find((x) => x.name === 'crown-top').scale <= 0.7, 'the crown-top glint is short (no long spike to the HUD)');
-  assert.doesNotMatch(readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8'), /\* 0\.85 \*|ss \* 0\.12|ss \* 0\.1\)/, 'the glint shape is rows, not literals');
   for (const [i, m] of cases.entries()) assert.ok(bad(m).length >= 1, `bad pack-2 row #${i} is refused`);
 });
 
@@ -210,7 +205,7 @@ test('drool: the droplet waits 6-10 s, falls its distance, goes plain then stret
   assert.equal(createDrooler(D).at(0).alpha, 0, 'nothing before the first spawn');
 });
 
-test('planet sphere: the turn wraps once per secondsPerTurn, ?skyanim=off holds it still, sphere.on false is the rollback, the shader wraps the surface and keeps the cut-out alpha; eyes and drop stop under off', () => {
+test('planet sphere: the turn wraps once per secondsPerTurn, ?skyanim=off holds it still, sphere.on false is the rollback, the shader wraps the surface and keeps the cut-out alpha; eyes and drop stop under off (behaviour half; the source pins moved to test/source-pins/)', () => {
   const S = A.planet.sphere; assert.ok(Math.abs(planetTurn(S.startTurns, S.secondsPerTurn, 0) - S.startTurns) < 1e-9);
   for (let t = 0; t < 400; t += 3.3) { const x = planetTurn(S.startTurns, S.secondsPerTurn, t); assert.ok(x >= 0 && x < 1); }
   assert.ok(Math.abs(planetTurn(S.startTurns, S.secondsPerTurn, S.secondsPerTurn) - S.startTurns) < 1e-9, 'one turn per secondsPerTurn');
@@ -222,7 +217,4 @@ test('planet sphere: the turn wraps once per secondsPerTurn, ?skyanim=off holds 
   const off = mk('?skyanim=off', A), o0 = off.u.uPlanetTurn.value; for (let i = 0; i < 2400; i++) off.a.update(0.05); assert.equal(off.u.uPlanetTurn.value, o0, '?skyanim=off holds the planet still'); assert.equal(off.u.uEyeAmt.value, 0); assert.equal(off.u.uDropA.value, 0);
   assert.equal(S.on, false, 'the sphere ships OFF (flatter than the painted cut-out); the code stays behind its row for a better texture');
   const noSphere = structuredClone(A); noSphere.planet.sphere.on = false; assert.equal(mk('', noSphere).u.uSphereOn.value, 0, 'rollback row: sphere.on false keeps the flat cut-out');
-  const src = readFileSync(new URL('../src/fight/skyanim.ts', import.meta.url), 'utf8');
-  for (const k of ['secondsPerTurn', 'startTurns', 'discFraction', 'featherPx', 'holdMinSeconds', 'everyEvents', 'spawnMinSeconds', 'fallDistancePx', 'accelPx', 'stretchFromSpeedPx', 'fadeOutPx', 'waves']) assert.match(src, new RegExp(`\\b${k}\\b`), k);
-  assert.match(src, /RepeatWrapping/); assert.match(src, /ClampToEdgeWrapping/);
 });
