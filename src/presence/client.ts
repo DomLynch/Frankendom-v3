@@ -2,7 +2,7 @@
 // metres. Cut from V1's: the Supabase token and guest offer (V3 has no accounts yet: the server mints the identity), the v1 legacy frame, warps and `enter` name records.
 // Everything fails quiet: no service, a refused or dropped socket leave the page playing exactly as before. No DOM, storage or clock read here: the socket, the clock and the timers are injected.
 import { decodeDown, encodeUp, type Entity } from './wire.ts';
-import { PRESENCE, presenceRule } from '../rows.ts';
+import { PRESENCE, presenceRule } from './rows.ts';
 
 export const POSE_EVERY_MS: number = presenceRule('tickMs');   // presence's tick (a row): one pose a tick is all it reads
 export const GIVE_UP_AFTER = presenceRule('giveUp');            // consecutive sockets that never reached `hello`: the service is off or refusing us, stop trying until the page reloads

@@ -3,7 +3,7 @@
 // reused id starts fresh, never easing from the old player's last pose) once it has had no update for `remoteExpire` ms. Each remote eases from where it is SHOWN to its newest position over the
 // time its last two updates were apart (a tick at least, the slowest tier's interval at most): no jump when a packet lands mid-ease, and a far player reads as smoothly as a near one.
 // A jump beyond `remoteSnap` metres is a teleport, not a run. The tick, the interest cap and the tiers are presence's rows (data/presence.json). No gameplay: this only says where to draw.
-import { presenceRule } from '../rows.ts';
+import { presenceRule } from './rows.ts';
 
 export type Remote = { id: number; x: number; z: number; heading: number; anim: number; flags: number };
 export type Shown = { id: number; x: number; z: number; heading: number; speed: number };   // speed: metres a second along the current ease (0 at rest, after a snap, or once the ease is done)

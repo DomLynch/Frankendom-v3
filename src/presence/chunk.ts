@@ -8,7 +8,7 @@
 //   p.self() -> { id, layer } | null;  p.state();  p.flush() (a pose now);  p.stop()
 // The hero's pose comes from `pose` (default: the page function named by data/presence.json `poseGlobal`, returning { x, z, heading } in metres or null).
 import { joinPresence, type Other, type Pose, type Presence, type Socket } from './client.ts';
-import { PRESENCE } from '../rows.ts';
+import { PRESENCE } from './rows.ts';
 import { createTrack, type Shown } from './track.ts';
 import { SEAM, createDraw, heroPoseFn, startDrawLoop, type RemoteBody } from './draw.ts';
 
