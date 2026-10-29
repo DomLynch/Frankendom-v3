@@ -11,8 +11,8 @@ export type ClassSpecial = 'wake' | 'stirring' | 'tempo' | 'pulse' | 'drag' | 's
 // The rig plays a slow gait through each of the Doctor's three steps and through the Knight's drag (special-modes.ts `travel`); the anchor does the actual moving.
 // The camera sits behind the player, so what the walkers leave behind them is hidden under the two bodies unless it lies in the open ground BEHIND the caster (first clips, 2026-10-02):
 // both walkers first back off BACK metres (the rig walks backwards, BACK_AT..BACK_AT + BACK_TICKS), then walk in from there, so the trench and the prints are laid in the clear.
-export const BACKS = { tempo: 0.9, drag: 1.2 } as const, BACK_TICKS = TIMING.backTicks, BACK_PACES = { tempo: -1.8, drag: -2.4 } as const, BACK_AT = { tempo: 0, drag: 4 } as const;
-export const LATERAL = TIMING.lateral;   // Ground Drag walks a gentle arc this wide (metres), so the rut curves out beside the two bodies instead of running behind them
+const BACKS = { tempo: 0.9, drag: 1.2 } as const, BACK_TICKS = TIMING.backTicks, BACK_PACES = { tempo: -1.8, drag: -2.4 } as const, BACK_AT = { tempo: 0, drag: 4 } as const;
+const LATERAL = TIMING.lateral;   // Ground Drag walks a gentle arc this wide (metres), so the rut curves out beside the two bodies instead of running behind them
 export const STEP_BEATS = [56, 88, LAND_AT] as const, STEP_WINDOW = TIMING.stepWindow, DRAG_FROM = TIMING.dragFrom;
 export const classTravel = (kind: ClassSpecial) => (side: 0 | 1, fighters: readonly [Fighter, Fighter]): number | undefined => {
   const left = fighters[1].special ?? 0;

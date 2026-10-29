@@ -10,8 +10,8 @@
 import * as THREE from 'three';
 import STAGE from '../../data/stage.json' with { type: 'json' };
 
-export type RingRow = typeof STAGE.skyline.ring;
-export type RingPlateRow = RingRow['plates'][number];
+type RingRow = typeof STAGE.skyline.ring;
+type RingPlateRow = RingRow['plates'][number];
 
 /** The ring is on: the row is on and the link does not ask for the look before (?skyring=v1). */
 export function ringOn(search: string, row: RingRow): boolean {
@@ -49,7 +49,7 @@ export function ringAlpha(plate: RingPlateRow, row: RingRow, u: number, v: numbe
 }
 /** The arc a plate covers (degrees): its own `spanDegrees` row when it has one (a narrower arc puts the same picture over less sky, so its subject reads smaller and further back; Dom 2026-10-28, "too close up"), else the ring's. */
 export function plateSpan(plate: { spanDegrees?: number }, row: RingRow): number { return plate.spanDegrees ?? row.spanDegrees; }
-export function ringAlphaMap(plate: RingPlateRow, row: RingRow, w = 256, h = 64): THREE.DataTexture {
+function ringAlphaMap(plate: RingPlateRow, row: RingRow, w = 256, h = 64): THREE.DataTexture {
   const data = new Uint8Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const a = Math.round(255 * ringAlpha(plate, row, (x + 0.5) / w, (y + 0.5) / h)), k = (y * w + x) * 4;
@@ -66,7 +66,7 @@ export function ringSize(row: RingRow, radius: number, imgW: number, imgH: numbe
   return { width, height: width * imgH / imgW };
 }
 /** The arc's centre height relative to the eye: its bottom edge (the horizon row of the picture) sits on the north plate's horizon (`horizonY`, m). */
-export function ringCentreY(horizonY: number, height: number): number { return horizonY + height / 2; }
+function ringCentreY(horizonY: number, height: number): number { return horizonY + height / 2; }
 /** World angle (radians, about the vertical, the CylinderGeometry's theta) of a compass bearing: north is -Z (theta 180), east +X (theta 90). */
 export function bearingTheta(compassDegrees: number): number { return THREE.MathUtils.degToRad(180 - compassDegrees); }
 
@@ -80,7 +80,7 @@ export function ringGeometry(plate: RingPlateRow, row: RingRow, radius: number, 
   return g;
 }
 
-export type RingPlateState = 'idle' | 'loading' | 'fading' | 'on' | 'failed';
+type RingPlateState = 'idle' | 'loading' | 'fading' | 'on' | 'failed';
 export type SkyRing = {
   /** The group that follows the eye; it is turned once to the north plate's yaw (call `yaw`). */
   readonly group: THREE.Group;
@@ -94,7 +94,7 @@ export type SkyRing = {
   dispose(): void;
 };
 
-export type RingOptions = {
+type RingOptions = {
   row: RingRow; radius: number; horizonY: number; shade: number; viewportWidth: number;
   /** The texture fetch for a baked file name (the page's own by default; the tests pass a stand-in). */
   load: (file: string) => Promise<THREE.Texture>;

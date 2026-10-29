@@ -8,7 +8,7 @@ import { BLADE_MINOTAUR } from './blade-minotaur.ts';
 import { foeBodyFile } from './foe-body.ts';
 
 export type SweepTable = Record<string, Record<string, Record<string, number[][]>>>;
-export type FoeReachRow = { opponent: string; body: string; rig: string; weapon: string; query: string; v1: string };
+type FoeReachRow = { opponent: string; body: string; rig: string; weapon: string; query: string; v1: string };
 const BAKES: Readonly<Record<string, Record<string, number[][]>>> = { minotaur: BLADE_MINOTAUR };
 
 /** Whether the page asks for V1's cleaver sweeps (?reach=v1). */

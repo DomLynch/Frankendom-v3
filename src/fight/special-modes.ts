@@ -42,7 +42,7 @@ const loadExecutioner = (scene: THREE.Scene, opponent: OpponentId, kind: BossKin
 // Blood Tithe's forward pose (Dom, 2026-10-01: the heavy's raise cocks the gladius back like a backhand, and the thrust held short of contact tucks the blade at his chest):
 // the thrust clip held AT its contact pose through the gather, drawn back to TITHE_CHAMBER of it by TITHE_STRIKE_FROM, then driven to full contact on the strike tick.
 const TITHE = TIMING_RULES.titheRule[0]!, SLAM = TIMING_RULES.shieldSlamRule[0]!;   // the titheRule and shieldSlamRule rows (src/fight/special-timing-rules.json)
-export const TITHE_CHAMBER = TITHE.chamber, TITHE_CHAMBER_FROM = TITHE.chamberFrom, TITHE_STRIKE_FROM = TITHE.strikeFrom;
+const TITHE_CHAMBER = TITHE.chamber, TITHE_CHAMBER_FROM = TITHE.chamberFrom, TITHE_STRIKE_FROM = TITHE.strikeFrom;
 
 const ease = (k: number) => k * k * (3 - 2 * k), clamp = (k: number) => Math.min(1, Math.max(0, k));
 
@@ -67,7 +67,7 @@ const boss = (kind: BossKind, at: SpecialMode['at'], lift: number, travel?: Spec
 const foretold: SpecialMode['travel'] = (side, fighters) => (side === 0 && (fighters[1].special ?? 0) > 0 && (fighters[1].special ?? 0) <= 23 ? 1.6 : undefined);
 
 // The verbs a bosses.json row names (src/fight/boss-rows.ts): `fx` picks the effect module, `travel` the gait the target's rig plays. A row naming a verb not here is a gate error (tests/boss-rows.test.ts); a new mechanic is a new entry here.
-export const FX_VERBS: Readonly<Record<string, (row: BossRow) => SpecialMode>> = {
+const FX_VERBS: Readonly<Record<string, (row: BossRow) => SpecialMode>> = {
   executioner: (r) => ({ load: (scene, opponent, exposure) => loadExecutioner(scene, opponent, r.id, exposure), at: r.at, lift: r.lift }),   // ground art off the feet, the caster in Combat's placeholder heavy raise
   boss: (r) => boss(r.id, r.at, r.lift, r.travel ? TRAVEL_VERBS[r.travel] : undefined),
   goblin: (r) => ({ load: (scene, opponent, exposure) => loadGoblin(r.id as GoblinSpecial, scene, opponent, exposure), at: r.at, lift: r.lift, hideTrail: true, extra: goblinExtra, ...(r.held ? { held: HELD_VERBS[r.held] } : {}) }),   // the Goblin's rank 8-10 bosses (special-fx-goblin.ts): the effect gets the target's feet, his rig anchor and head, and hides or shifts the caster itself, so nothing in scene.ts
@@ -77,7 +77,7 @@ export const FX_VERBS: Readonly<Record<string, (row: BossRow) => SpecialMode>> =
   pitborn: (r) => ({ load: (scene, opponent, exposure) => import('./special-fx-pitborn.ts').then(({ createPitbornSpecial }) => createPitbornSpecial(scene, opponent, r.id as 'antaeus' | 'surtr' | 'typhon', exposure)), at: r.at, lift: r.lift, extra: (w) => [w?.opponent.anchor ?? null] }),   // the Pitborn's rank 8-10: ground effects at the feet on the Cleave's placeholder raise; Typhon sways his body through the anchor, the other two ignore it
   nightfall: (r) => ({ load: (scene, opponent, _exposure, camera) => import('./nightfall-fx.ts').then(({ createNightfallFx }) => createNightfallFx(scene, camera, opponent)), at: r.at, lift: r.lift }),   // Nyx's Nightfall: the exposure drains to near-black, a cold moon rims the pair
 };
-export const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']>>> = {
+const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']>>> = {
   ready: (pose, side, fighters) => (side === 1 && specialStage(fighters[1]) ? { pose: { ...pose, pose: 'ready', progress: 0 } } : { pose }),   // plain stance, not Combat's blade-raise: Reynard's scoop is the tell
   thrust: (pose, side, fighters) => {   // he holds his blade out level through the windup (the thrust clip's extended contact pose, held) and eases back to stance as it scours
     if (side !== 1) return { pose };
@@ -87,7 +87,7 @@ export const HELD_VERBS: Readonly<Record<string, NonNullable<SpecialMode['held']
     return { pose: { pose: 'attack', attack: 'thrust', contact: c, progress: stage.stage === 'windup' ? c : c + (1 - c) * stage.progress } };
   },
 };
-export const TRAVEL_VERBS: Readonly<Record<string, NonNullable<SpecialMode['travel']>>> = { foretold };
+const TRAVEL_VERBS: Readonly<Record<string, NonNullable<SpecialMode['travel']>>> = { foretold };
 const bossModes = () => Object.fromEntries(BOSSES.map((r) => [r.id, FX_VERBS[r.fx](r)])) as Partial<Record<SpecialTest, SpecialMode>>;
 
 

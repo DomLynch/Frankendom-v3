@@ -8,8 +8,8 @@ import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts'
 import DEFS from './character-style-defs.json' with { type: 'json' };
 import MANIFEST from './character-style-defs.manifest.json' with { type: 'json' };
 
-export type ReadyStyle = { readonly id: string; readonly s1: number; readonly s2: number; readonly s3: number; readonly neck: number };
-export type HurtStyle = { readonly id: string; readonly weight: number; readonly s1: number; readonly s2: number; readonly twist: number };
+type ReadyStyle = { readonly id: string; readonly s1: number; readonly s2: number; readonly s3: number; readonly neck: number };
+type HurtStyle = { readonly id: string; readonly weight: number; readonly s1: number; readonly s2: number; readonly twist: number };
 
 loadRegistry((MANIFEST.tables as unknown as Manifest[]).map((m) => tableFromFile(m, DEFS, 'character-style-defs.json')));
 

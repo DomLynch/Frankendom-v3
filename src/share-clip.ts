@@ -7,7 +7,7 @@
 // Extension point (Daily Pit, Pit Crawl): dispatch window event `v3:clip-moment` with detail { label } at a result, or call window.__v3Clip.moment(label) / .arm(on).
 import ROWS from '../data/share-clip.json' with { type: 'json' };
 
-export type ShareClipRows = {
+type ShareClipRows = {
   on: boolean; leadSeconds: number; tailSeconds: number; stopTimeoutSeconds: number; width: number; height: number; fps: number; bitsPerSecond: number; types: string[];
   guard: { seconds: number; maxFrameMs: number };
   watermark: { text: string; sizePx: number; colour: string; alpha: number; marginPx: number };
@@ -15,7 +15,7 @@ export type ShareClipRows = {
   button: { label: string; stillLabel: string; making: string; saved: string; failed: string; hideSeconds: number; bottomPx: number; zIndex: number; colour: string; sizePx: number };
 };
 export const SHARE_CLIP = ROWS as unknown as ShareClipRows;
-export const MOMENT_EVENT = 'v3:clip-moment';
+const MOMENT_EVENT = 'v3:clip-moment';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 /** Throws a plain message for a bad row (a test loads the shipped file). */
@@ -53,7 +53,7 @@ export function cropRect(width: number, height: number, targetW: number, targetH
   return { x: 0, y: Math.round((height - h) / 2), w: width, h };
 }
 
-export type ClipEnv = {
+type ClipEnv = {
   rows: ShareClipRows;
   doc: Document;
   source: HTMLCanvasElement;
@@ -253,7 +253,7 @@ export function createShareClip(env: ClipEnv) {
     dispose(): void { disable(); },
   };
 }
-export type ShareClip = ReturnType<typeof createShareClip>;
+type ShareClip = ReturnType<typeof createShareClip>;
 
 /** The browser wiring: reads the real page, installs the window event and the debug handle (window.__v3Clip, like __v3Zone / __v3Radar). Never throws. */
 export function mountShareClip(opts: { source: HTMLCanvasElement; audio: () => MediaStream | null; untap: () => void; telemetry: ClipEnv['telemetry'] }): ShareClip {

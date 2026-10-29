@@ -5,37 +5,22 @@
 //
 // One shared kit library dressed eight ways is what makes a 60-opponent roster affordable: 8 grades × N pieces costs N meshes, not 8N.
 // Pure data — no three, no loader. The runtime reads `gradeFor(tier, material)` and writes the factors onto the piece's own material.
-import { TITLES, rankFor } from './career-ladder.ts';
+import { TITLES } from './career-ladder.ts';
 import { DEFINITIONS } from './contracts/definitions.ts';
-type LootId = string;   // a loot piece id, `<opponent>.<slot>` (src/core/loot-pieces.json); the loot module that exported this type is not in V3
-import type { OpponentId } from '../roster.ts';
-
+   // a loot piece id, `<opponent>.<slot>` (src/core/loot-pieces.json); the loot module that exported this type is not in V3
 // The ladder is the CAREER ladder: a tier and a rank are the same word (owner via Strategy, 2026-09-22), so the journal can say
 // "Praetorian iron" and mean one thing. `TIERS` is `career.ts`'s `TITLES` itself, not a copy — ten names that cannot drift from the
 // ranks they're named for, and `tests/grades.test.ts` holds them identical. A level is the rank's place on it, 1..10.
 export const TIERS = TITLES;
 export type Tier = (typeof TIERS)[number];
-export const isTier = (value: unknown): value is Tier => typeof value === 'string' && (TIERS as readonly string[]).includes(value);
 export const levelOf = (tier: Tier): number => TIERS.indexOf(tier) + 1;
 // ?tier=<Rank> (main.ts lookTier): any case ("recruit", "ORIGIN") names the canonical Tier; anything else is no tier (Dom 2026-09-28: "?tier=recruit
 // didn't load"). The search without it (every other param kept) is what main.ts writes back, so a reload or Next boots his real rank.
-export const urlTier = (search: string): Tier | undefined => {
-  const word = new URLSearchParams(search).get('tier')?.toLowerCase();
-  return word ? TIERS.find((t) => t.toLowerCase() === word) : undefined;
-};
 // The ?tier= pin survives a reload of the same tab (Strategy 2026-09-28, Dom's iPhone: every ?tier= link showed his gold Origin look). The
 // address loses ?tier at once (above), and iOS Safari reloads a heavy WebGL tab under memory pressure, which booted his career rank. So the
 // pin is kept in sessionStorage (TIER_PIN_KEY: this tab only, never in a link). Precedence: a URL tier wins and is stored; ?tier=off, or any
 // ?tier= that names no rank, clears it; no ?tier reads the stored pin (an unknown stored word is cleared); nothing else is his career rank.
 // `store`: the value to write (a Tier), null to remove, undefined to leave storage alone.
-export const TIER_PIN_KEY = 'frankendom.tier-pin';
-export const tierPin = (search: string, stored: string | null): { tier: Tier | undefined; store: Tier | null | undefined } => {
-  if (new URLSearchParams(search).has('tier')) { const tier = urlTier(search); return { tier, store: tier ?? null }; }
-  if (stored === null) return { tier: undefined, store: undefined };
-  return isTier(stored) ? { tier: stored, store: undefined } : { tier: undefined, store: null };
-};
-export const withoutTier = (search: string): string => { const params = new URLSearchParams(search); params.delete('tier'); const rest = params.toString(); return rest ? `?${rest}` : ''; };
-
 // The TIER an opponent is MET at (brief 14's kit ladder, brief 19's stats). Deliberately NOT a field on `ROSTER`: the same Centurion
 // is a Recruit's Centurion early and a Praetorian's later, so the tier belongs to the FIGHT, not to the recipe. Derived, never stored
 // — a tier and a rank are the same word (`TIERS` is `TITLES` itself), so this is that one title rather than a second ladder that could
@@ -44,16 +29,12 @@ export const withoutTier = (search: string): string => { const params = new URLS
 // It lives HERE rather than in roster.ts because roster.ts is a simulation module (eslint.config.js `SIM`, tests/sim-boundary.test.ts)
 // and may import only its siblings. A cosmetic ladder does not get to widen the simulation boundary, and a fighter's career rung has
 // no business inside a deterministic replay.
-export const tierAt = (marks: number): Tier => rankFor(marks).title;
 // An opponent as a fight sees him: who he is, and the rung he is met at. The shape the kit floor (loot.ts `WORN_FROM`) and the tier
 // stats both read. Nothing consumes it yet, which is deliberate — it lands once so two lanes build on one field.
-export type OpponentAt = { id: OpponentId; tier: Tier };
-export const opponentAt = (id: OpponentId, marks: number): OpponentAt => ({ id, tier: tierAt(marks) });
-
 // What a grade can repaint. The cloth is NOT here: a tunic's colour is the opponent's house dye (OPPONENTS.grade.house), so a Recruit
 // and a champion of the same house wear the same linen over different metal — which is how a house reads across a roster.
 export type Finish = { color: string; metalness: number; roughness: number };
-export type Grade = { metal: Finish; trim: Finish; leather: Finish };
+type Grade = { metal: Finish; trim: Finish; leather: Finish };
 
 // The palette material names that loot.glb actually carries (scripts/build-warrior.mjs's palette), mapped to what a grade repaints: ROWS (drawMaterials in
 // src/core/contracts/definitions.json, read by classOf below), not a table in code.
@@ -62,7 +43,6 @@ export type Grade = { metal: Finish; trim: Finish; leather: Finish };
 // Gambeson_<opponent> is the house dye's business. A material missing from this table is a build error, not a silent pass-through.
 // `<opponent>.<slot>.<material>`: the material is everything after the second dot, and a per-opponent tunic (Gambeson_veteran) grades as
 // its base (Gambeson).
-export const materialOf = (drawName: string): string => drawName.split('.').slice(2).join('.');
 // A piece cut from a TRELLIS surface (scripts/character/loot_dwarf.py) wears its family's baked maps as `<Family>Iron` (grades as metal)
 // or `<Family>Cloth` (a coat or hood: cloth); a built family's own bake (the Witch) adds `<Family>Leather`. A new family needs no row here.
 export type DrawClass = keyof Grade | 'cloth' | 'stone';
@@ -109,15 +89,11 @@ export function gradeFor(tier: Tier, material: string): Finish | null {
   return GRADES[tier][group];
 }
 // The opponents' weapon materials of class 'metal' (blades, heads, bands), and the rung they stop being floored at.
-export const WEAPON_METAL: ReadonlySet<string> = new Set(['WeaponLongsword', 'WeaponCleaver', 'WeaponKnife', 'WeaponEstoc', 'WeaponTrident', 'GladiusSteel', 'MaulIronBands', 'ScytheIron', 'WarhammerIron']);
-export const WEAPON_METAL_FROM: Tier = 'Veteran';
-export const WEAPON_IRON: Tier = 'Praetorian';
+const WEAPON_METAL: ReadonlySet<string> = new Set(['WeaponLongsword', 'WeaponCleaver', 'WeaponKnife', 'WeaponEstoc', 'WeaponTrident', 'GladiusSteel', 'MaulIronBands', 'ScytheIron', 'WarhammerIron']);
+const WEAPON_METAL_FROM: Tier = 'Veteran';
+const WEAPON_IRON: Tier = 'Praetorian';
 // The house dye for a draw, or null if the draw is not cloth. Kept beside gradeFor so a caller walks a piece's draws once.
-export function houseFor(house: string, material: string): string | null {
-  return classOf(material) === 'cloth' ? house : null;
-}
 // A grade record as it will sit on OPPONENTS (lead, 2026-09-22). Declared here so the shape is one thing; the field is the lead's to add,
 // and nothing in this lane reads OPPONENTS until it exists on trunk.
-export type GradeRecord = { level: number; tier: Tier; kit: LootId[]; epithet: string; house: string };
 // `level` and `tier` say the same thing twice by design (the lead's shape) — `levelOf` is the one that derives it, so a record whose
 // level and tier disagree is a data error, not a second meaning.

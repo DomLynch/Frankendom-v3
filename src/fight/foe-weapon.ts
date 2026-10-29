@@ -6,7 +6,7 @@
 // Since Dom's later 10-26 call the opponent fights as V1's Pitborn with his own cleaver (foe-pick.ts), so this row (keyed to `veteran`) is a no-op
 // by default and draws only under ?pitborn=v1, the fight before that call. Set by the page before the rigs load; null = the gladius as before. ?foeweapon=v1 = the gladius on the Minotaur.
 // (?foe=v1, the Centurion's 65 body with his gladius, was removed with the 65 bodies: 106 only.)
-export type FoeWeaponRow = { opponent: string; weapon: string; drawn: string };
+type FoeWeaponRow = { opponent: string; weapon: string; drawn: string };
 
 let row: FoeWeaponRow | null = null;
 /** The row in force for this page: null under ?foeweapon=v1. */

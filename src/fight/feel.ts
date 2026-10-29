@@ -44,7 +44,7 @@ export function activeFeels(search: string, defaults?: FeelDefaultRows, forHero 
 
 /** How many of the latest events `globalThis.__feelEvents` keeps. */
 export const FEEL_LOG_MAX = 200;
-export type FeelSink = (name: string, payload?: unknown) => void;
+type FeelSink = (name: string, payload?: unknown) => void;
 const listeners = new Map<string, Set<FeelSink>>();
 let limbState: (() => Record<string, number>) | undefined;
 /** The bus between the presentation hooks and V3's sim (V3 Dev's ruling 2026-10-27: the SIM computes every outcome itself from its own events and its own rows, never from a value that came out of

@@ -7,7 +7,7 @@ import ROWS from '../../data/mobs.json' with { type: 'json' };
 export type MobKind = { body: string; scale: number; tint: string; tintMix: number; hp: number; speed: number; wanderSpeed: number; damage: number; aggroMetres: number; leashMetres: number; reachMetres: number; bodyMetres: number; windupSeconds: number; recoverSeconds: number; hurtSeconds: number; knockSpeed: number; drag: number; fallSeconds: number; coins: number; xp: number; heat: number };
 type RingRow = { density: number; size: [number, number]; kinds: string[] };
 type Hash = { a: number; b: number; c: number; s1: number; s2: number; range: number };
-export type MobRows = {
+type MobRows = {
   on: boolean; cap: number; capMax: number; scanSeconds: number; activateMetres: number; despawnMetres: number; spawnMinMetres: number; startClearMetres: number; padMetres: number; swingMetres: number; lod: { nearMetres: number; nearStride: number; farStride: number }; hitScale: number; turnRate: number; speedEase: number; pitArea: string;
   grid: { cellMetres: number; keySpan: number; seed: number; hash: Hash; lcg: { mul: number; add: number; range: number }; salts: Record<'exists' | 'x' | 'z' | 'size' | 'kind' | 'member', number> };
   pack: { radiusMetres: number; wanderMetres: number; wanderSeconds: [number, number]; callMetres: number };
@@ -27,7 +27,7 @@ export type Hero = { x: number; z: number; heading: number; alive: boolean; defe
 /** The hero's swing this tick: `id` is the same for the whole swing (one hit per mob per swing); `hit` returns the damage the blow does to a mob at (x, z, heading, scale), 0 for a miss. */
 export type Swing = { active: boolean; id: number; x: number; z: number; heading: number; knockback: number; hit: (x: number, z: number, heading: number, scale: number) => number };
 export type Pad = { x: number; z: number; radius: number };
-export type Area = { id: string; x: number; z: number };
+type Area = { id: string; x: number; z: number };
 export type Killed = { kind: string; pack: number; x: number; z: number; coins: number; xp: number; heat: number; left: number; farm: number /* the payout multiplier this kill got: 1, less while the hero sits at the floor */ };
 /** What the scene and the radar read: the arrays are the core's own, live, never copied. */
 export type MobView = { n: number; kind: Uint8Array; state: Uint8Array; x: Float32Array; z: Float32Array; heading: Float32Array; speed: Float32Array; hurt: Float32Array; fall: Float32Array; fade: Float32Array; hero: Float32Array /* the hero's x, z as of the last tick: the scene's animation level of detail is by distance from him */ };
@@ -36,7 +36,6 @@ type Site = { id: number; x: number; z: number; kind: number; size: number; left
 const KIND_IDS = Object.keys(MOBS.kinds);
 export const kindIndex = (id: string): number => KIND_IDS.indexOf(id);
 export const kindRow = (index: number): MobKind => MOBS.kinds[KIND_IDS[index]!]!;
-export const kindIds = (): readonly string[] => KIND_IDS;
 const TAU = Math.PI + Math.PI;
 const wrap = (a: number): number => { let r = a % TAU; if (r > Math.PI) r -= TAU; else if (r < -Math.PI) r += TAU; return r; };
 
@@ -48,7 +47,7 @@ export function cellUnit(rows: MobRows, ix: number, iz: number, salt: number): n
   return (h >>> 0) / H.range;
 }
 
-export type Deps = {
+type Deps = {
   rows?: MobRows;
   areas?: readonly Area[];                                   // zone areas by id, centres in the pit frame (spawnPack)
   ringAt?: (dist: number) => string | undefined;              // data/rings.json ring id at a distance from the pit centre; absent = the rows' default
