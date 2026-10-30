@@ -36,7 +36,7 @@
     "typescript-eslint": "8.72.1"
   },
   "dependencies": {
-    "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/3bb5f80521e0635948efd990c451ef4a8dd1ff3e",
+    "@frankendom/physics": "https://codeload.github.com/DomLynch/physics/tar.gz/31e1ac93b2841f24130c3192086e43a89a7ab0ef",
     "three": "0.186.0"
   }
 }
