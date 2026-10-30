@@ -38,7 +38,7 @@ export function removePart<T extends InventorySave>(save: T, id: string): T | nu
   if (!own || own.sellable < 1) return null;
   const parts = { ...(save.parts ?? {}) };
   if (own.n <= 1) delete parts[id]; else parts[id] = { n: own.n - 1, star: own.star };
-  const next = { ...save, parts };
-  if (!Object.keys(parts).length) delete next.parts;
+  const next = { ...save, parts } as T;
+  if (!Object.keys(parts).length) delete (next as InventorySave).parts;
   return next;
 }
