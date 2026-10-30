@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { readAccessor, unpackMeshopt } from '../scripts/cut-glb-pack.mjs';
+import { readAccessor, repackCut, unpackMeshopt } from '../scripts/cut-glb-pack.mjs';
 import { optimizeGlb } from '../scripts/optimize-glb.mjs';
 import RIG from '../data/rig.json' with { type: 'json' };
 
@@ -56,8 +56,12 @@ test('every wear donor file (src/assets/wear, build.mjs CUT_GLBS) packs through 
   const build = readFileSync(new URL('../scripts/build.mjs', import.meta.url), 'utf8');
   for (const s of stems) {
     assert.ok(build.includes(`'${s}'`) && build.includes('src/assets/wear/${s}-106.hf.glb'), `${s} is in the build's cut pack list`);
-    const file = readFileSync(asset(`wear/${s}-106.hf.glb`)), A = await parse(file), B = await parse(await optimizeGlb(file, undefined, { cut: true }));
-    const tris = (g) => g.d.meshes.map((m) => [m.name, m.primitives.reduce((n, p) => n + g.d.accessors[p.indices].count / 3, 0)]);
-    assert.deepEqual(tris(B), tris(A), `${s}: every triangle of every piece kept`);
+    const A = await parse(readFileSync(asset(`wear/${s}-106.hf.glb`))), tris = (g) => g.d.meshes.map((m) => [m.name, m.primitives.reduce((n, p) => n + g.d.accessors[p.indices].count / 3, 0)]), before = tris(A);
+    await repackCut(A.d, A.bin);   // the geometry half of the cut path (the texture half needs jpegtran, which the CI image lacks)
+    assert.deepEqual(tris(A), before, `${s}: every triangle of every piece kept`);
+    const prims = A.d.meshes.flatMap((m) => m.primitives);
+    assert.ok(prims.every((p) => A.d.accessors[p.indices].componentType === 5123), `${s}: indices narrowed to uint16`);
+    const hand = A.d.meshes.find((m) => m.name === 'piece_hand_left').primitives[0], arm = A.d.meshes.find((m) => m.name === 'piece_arm_left').primitives[0];
+    assert.equal(hand.attributes.POSITION, arm.attributes.POSITION, `${s}: the hand shares its arm's vertex accessor, stacked once`);
   }
 });
