@@ -1,0 +1,10 @@
+{
+  "about": "Presence-proof zone writer (server/zone/, docs/PRESENCE-PROOF.md): the five routes of docs/ZONE-CLIENT-CONTRACT.md over the pure reference model src/server-model/zone-model.ts, in memory, loopback. PROOF ONLY: no database, no accounts (an account is a random cookie the writer mints), the page-supplied layer is trusted. `host`/`port`: bind (a new port, not presence's 8794). `path`: the route prefix (= data/zone-client.json path). `account`: cookie name and bytes. `character`: the label stored with a hit. `maxHp`: per spawn kind, in the sim's damage units (137 = Minotaur, Gargantua and Arachne at the default pick, docs/BOSS-BODIES.md); a spawn whose kind has no row here is refused. Kind and respawn seconds of an instance key z<id>:<spawn id> come from data/zones/zone<id>.row.json. `maxBodyBytes`: the largest request body read.",
+  "host": "127.0.0.1",
+  "port": 8795,
+  "path": "/zone",
+  "account": { "cookie": "fz_acct", "bytes": 16 },
+  "character": "proof",
+  "maxHp": { "gargantua": 137, "arachne": 137, "minotaur": 137 },
+  "maxBodyBytes": 4096
+}

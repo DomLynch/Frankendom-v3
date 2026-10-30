@@ -12,6 +12,8 @@
     "presence": "node server/presence/main.ts",
     "telemetry": "node server/telemetry/main.ts",
     "presence:smoke": "node server/presence/smoke.ts",
+    "zone-writer": "node server/zone/main.ts",
+    "presence:proof": "node scripts/presence-proof.mjs",
     "check:stubs": "node scripts/check-stubs.mjs",
     "check:as-data": "node scripts/as-data/check.mjs",
     "typecheck": "tsc -p tsconfig.json",
