@@ -6,8 +6,8 @@
 // This file is the cache and the swap rules only: no three.js, no DOM, so a test can drive it with stand-ins. What a swap does to the scene (anchors, ragdoll, fade) is the `mount` callback's.
 // PRESENTATION ONLY: the sim never sees it; the default (every spawn the Minotaur) never builds a second slot.
 /** One body the live foe can wear: its rig, its ragdoll (null = the body has no physics row/cut data: it dies the plain way), and whether it plays the plain death only (every body but the page's own: the baked finishers are prepared on the first body alone). */
-export type HeldSlot<Rig, Ragdoll> = { body: string; rig: Rig; ragdoll: Ragdoll | null; plainOnly: boolean };
-export type HeldDeps<Rig, Ragdoll> = {
+type HeldSlot<Rig, Ragdoll> = { body: string; rig: Rig; ragdoll: Ragdoll | null; plainOnly: boolean };
+type HeldDeps<Rig, Ragdoll> = {
   /** The page's own body, already built and in the scene. */
   home: HeldSlot<Rig, Ragdoll>;
   /** Build the live rig of `body` (loads its file the first time). Resolves null (or rejects) when the body cannot be built: the foe then keeps the body it wears. Called at most once per body. */
@@ -18,7 +18,7 @@ export type HeldDeps<Rig, Ragdoll> = {
   canSwap(): boolean;
   onError?(error: unknown): void;
 };
-export type HeldStatus = 'same' | 'swapped' | 'loading' | 'waiting' | 'failed';
+type HeldStatus = 'same' | 'swapped' | 'loading' | 'waiting' | 'failed';
 
 export function createHeldBodies<Rig, Ragdoll>(deps: HeldDeps<Rig, Ragdoll>) {
   const { home } = deps;

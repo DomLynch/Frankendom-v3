@@ -1,6 +1,6 @@
 #!/bin/bash
 # The keyboard/mouse + landscape stills on the VPS (headless Chromium, software GL), niced: build this tree, serve dist/, shoot the three screens (landscape phone 812x375, desktop 1280x720 and 1920x1080, portrait 375x812):
-#   ssh root@49.12.7.18 'cd <checkout> && nice -n 10 bash scripts/vps-kbm-stills.sh <out dir> <tag prefix> [query]'
+#   ssh <user>@<vps-host>'cd <checkout> && nice -n 10 bash scripts/vps-kbm-stills.sh <out dir> <tag prefix> [query]'
 set -euo pipefail
 OUT=${1:?out dir}; PRE=${2:?tag prefix}; QUERY=${3:-}
 [ -d node_modules/playwright ] || npm i --no-save --no-audit --no-fund playwright@1.62.1 >/dev/null 2>&1

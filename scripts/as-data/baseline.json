@@ -1,5 +1,5 @@
 {
- "about": "Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy). More of a literal than this is new; fewer must come down here. Only ever shrinks.",
+ "about": "Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy): per literal. More of a literal than this is new; fewer must come down here. Only ever shrinks.",
  "counts": {
   "src/fight/open-fight.ts": {
    "number:60": 1,
@@ -140,6 +140,965 @@
    "compare:Dodged": 2,
    "compare:Telegraph": 1,
    "compare:Staggered": 1
+  }
+ },
+ "backlog_about": "Count of allow.json rows whose reason starts with DEFERRED (a value that belongs in a data row and has not moved yet). Shrink-only, target 0.",
+ "backlog": 0,
+ "allowTotals_about": "Plain (non-DEFERRED) allow.json rows per file and kind. Shrink-only: a new allow row needs the same PR to lower another in that file or move a value into data.",
+ "allowTotals": {
+  "src/fight/camera.ts": {
+   "number": 3
+  },
+  "src/fight/camera-zoom.ts": {
+   "number": 3
+  },
+  "src/fight/camera-pitch.ts": {
+   "number": 2
+  },
+  "src/fight/follow-camera.ts": {
+   "number": 3
+  },
+  "src/fight/free-camera.ts": {
+   "number": 1
+  },
+  "src/fight/feel-clash.ts": {
+   "number": 2
+  },
+  "src/fight/feel-limbs.ts": {
+   "number": 5
+  },
+  "src/fight/armfeel-fx.ts": {
+   "number": 2
+  },
+  "src/fight/skyview.ts": {
+   "number": 2
+  },
+  "src/fight/terrain-draw.ts": {
+   "number": 3
+  },
+  "src/art-url.ts": {
+   "compare": 1
+  },
+  "src/auto-start.ts": {
+   "name-compare": 1
+  },
+  "src/brain.ts": {
+   "name-compare": 1
+  },
+  "src/commentator.ts": {
+   "number": 1,
+   "name-compare": 6
+  },
+  "src/corpse-run.ts": {
+   "number": 1
+  },
+  "src/daily-pit-ui.ts": {
+   "name-compare": 1
+  },
+  "src/daily-pit.ts": {
+   "number": 4,
+   "name-compare": 4
+  },
+  "src/difficulty.ts": {
+   "label": 1
+  },
+  "src/hero-reach.ts": {
+   "name-compare": 2
+  },
+  "src/hit-stop.ts": {
+   "name-compare": 2
+  },
+  "src/mobs-run.ts": {
+   "number": 1,
+   "name-compare": 1
+  },
+  "src/parts.ts": {
+   "number": 10,
+   "label": 10
+  },
+  "src/progression.ts": {
+   "label": 8,
+   "number": 3
+  },
+  "src/share-clip.ts": {
+   "number": 23,
+   "name-compare": 9
+  },
+  "src/stars.ts": {
+   "number": 6,
+   "label": 16
+  },
+  "src/telemetry-rows.ts": {
+   "name-compare": 12,
+   "number": 5
+  },
+  "src/telemetry.ts": {
+   "number": 5,
+   "compare": 1,
+   "name-compare": 2
+  },
+  "src/tune.ts": {
+   "label": 7,
+   "number": 2
+  },
+  "src/zoom-guard.ts": {
+   "number": 1
+  },
+  "src/core/grades.ts": {
+   "name-compare": 3
+  },
+  "src/core/registry.ts": {
+   "label": 16,
+   "name-compare": 3,
+   "number": 1
+  },
+  "src/client/main.ts": {
+   "name-compare": 9,
+   "number": 6,
+   "label": 2,
+   "compare": 1
+  },
+  "src/presence/chunk.ts": {
+   "compare": 1,
+   "name-compare": 1,
+   "number": 1
+  },
+  "src/presence/client.ts": {
+   "number": 6,
+   "name-compare": 1
+  },
+  "src/presence/draw.ts": {
+   "number": 1
+  },
+  "src/presence/rows.ts": {
+   "number": 2,
+   "name-compare": 3
+  },
+  "src/presence/wire.ts": {
+   "number": 11
+  },
+  "src/server-model/zone-model.ts": {
+   "label": 16,
+   "number": 20,
+   "name-compare": 1
+  },
+  "src/retry.ts": {
+   "number": 2
+  },
+  "src/audio/keep.ts": {
+   "number": 13
+  },
+  "src/audio/bell.ts": {
+   "number": 7
+  },
+  "src/audio/arena.ts": {
+   "name-compare": 6
+  },
+  "src/audio/crowd-rows.ts": {
+   "name-compare": 4
+  },
+  "src/audio/sprite.ts": {
+   "name-compare": 1
+  },
+  "src/audio/zone-cues.ts": {
+   "name-compare": 2
+  },
+  "src/fight/mechanics/accountant-parry-wall-fx.ts": {
+   "number": 4,
+   "name-compare": 3
+  },
+  "src/fight/mechanics/accountant-parry-wall.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/mechanics/envoy-latch-fx.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/mechanics/envoy-latch.ts": {
+   "number": 2,
+   "name-compare": 11
+  },
+  "src/fight/mechanics/kachujin-shadow-dash.ts": {
+   "number": 3,
+   "name-compare": 4
+  },
+  "src/fight/mechanics/sim-hooks.ts": {
+   "label": 2
+  },
+  "src/fight/mechanics/nan-impale.ts": {
+   "number": 3,
+   "name-compare": 6
+  },
+  "src/fight/mechanics/line-fx.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/mechanics/reginald-limb-loss.ts": {
+   "number": 1,
+   "label": 2
+  }
+ },
+ "totals_about": "Per-file TOTAL hit counts per kind over all of src/**/*.ts, recorded on unchanged main e44150da before any other change. A file may only go down; see scripts/as-data/check.mjs.",
+ "totals": {
+  "src/fight/ai.ts": {
+   "number": 33,
+   "name-compare": 103
+  },
+  "src/fight/anim-blend.ts": {
+   "label": 1,
+   "number": 5
+  },
+  "src/fight/archetype-rows.ts": {
+   "name-compare": 4
+  },
+  "src/fight/armfeel-fx.ts": {
+   "label": 1
+  },
+  "src/fight/armfeel.ts": {
+   "name-compare": 8
+  },
+  "src/fight/attacker-bout.ts": {
+   "name-compare": 12,
+   "label": 1
+  },
+  "src/fight/bands.ts": {
+   "number": 8
+  },
+  "src/fight/blade.ts": {
+   "number": 10
+  },
+  "src/fight/blood-edge.ts": {
+   "number": 4,
+   "name-compare": 3
+  },
+  "src/fight/blood-style.ts": {
+   "number": 46,
+   "name-compare": 4
+  },
+  "src/fight/boss-hand.ts": {
+   "number": 14,
+   "name-compare": 2
+  },
+  "src/fight/boss-order.ts": {
+   "data-id": 1,
+   "name-compare": 1
+  },
+  "src/fight/boss-telegraph.ts": {
+   "number": 19
+  },
+  "src/fight/boss-weapon.ts": {
+   "label": 24,
+   "number": 13,
+   "name-compare": 3
+  },
+  "src/fight/bout-seed.ts": {
+   "number": 8
+  },
+  "src/fight/camera-kick.ts": {
+   "name-compare": 5
+  },
+  "src/fight/camera-zoom.ts": {
+   "name-compare": 1
+  },
+  "src/fight/catalogue-data.ts": {
+   "label": 339,
+   "data-id": 7
+  },
+  "src/fight/catalogue-defs.ts": {
+   "number": 9
+  },
+  "src/fight/catalogue.ts": {
+   "data-id": 4,
+   "label": 41,
+   "number": 9,
+   "name-compare": 2
+  },
+  "src/fight/cc-ladder.ts": {
+   "number": 6,
+   "name-compare": 4
+  },
+  "src/fight/characters.ts": {
+   "label": 132,
+   "name-compare": 111,
+   "number": 182,
+   "compare": 9
+  },
+  "src/fight/charge-fx.ts": {
+   "number": 128,
+   "label": 1
+  },
+  "src/fight/charge-timing.ts": {
+   "name-compare": 1,
+   "number": 2
+  },
+  "src/fight/clash-sparks.ts": {
+   "name-compare": 7,
+   "number": 111,
+   "label": 2
+  },
+  "src/fight/combat.ts": {
+   "number": 13,
+   "name-compare": 99,
+   "label": 6
+  },
+  "src/fight/cone-era.ts": {
+   "number": 1
+  },
+  "src/fight/cone-rules.ts": {
+   "label": 7,
+   "number": 3
+  },
+  "src/fight/corpse-hud.ts": {
+   "label": 4,
+   "number": 5
+  },
+  "src/fight/cut-pieces.ts": {
+   "number": 37
+  },
+  "src/fight/defence-grade.ts": {
+   "label": 1,
+   "name-compare": 2,
+   "number": 15
+  },
+  "src/fight/detmath.ts": {
+   "number": 76
+  },
+  "src/fight/dropped-weapon.ts": {
+   "number": 25
+  },
+  "src/fight/duel.ts": {
+   "label": 39,
+   "number": 20,
+   "name-compare": 139,
+   "compare": 1
+  },
+  "src/fight/execution.ts": {
+   "number": 15
+  },
+  "src/fight/fatigue-layer.ts": {
+   "number": 18
+  },
+  "src/fight/fatigue-read.ts": {
+   "number": 21
+  },
+  "src/fight/fatigue.ts": {
+   "number": 12
+  },
+  "src/fight/feel-clash.ts": {
+   "name-compare": 10
+  },
+  "src/fight/feel-hero.ts": {
+   "name-compare": 2
+  },
+  "src/fight/feel-hitreact.ts": {
+   "label": 6,
+   "name-compare": 4
+  },
+  "src/fight/feel-kick.ts": {
+   "name-compare": 11
+  },
+  "src/fight/feel-limbs.ts": {
+   "name-compare": 19
+  },
+  "src/fight/feel.ts": {
+   "name-compare": 1
+  },
+  "src/fight/finisher-blood.ts": {
+   "name-compare": 9,
+   "label": 2,
+   "number": 87
+  },
+  "src/fight/finisher-cam.ts": {
+   "number": 4,
+   "name-compare": 1,
+   "label": 7
+  },
+  "src/fight/finisher-cuts.ts": {
+   "number": 1
+  },
+  "src/fight/finisher-look.ts": {
+   "name-compare": 2
+  },
+  "src/fight/finisher-rows.ts": {
+   "label": 15,
+   "name-compare": 4
+  },
+  "src/fight/finishers.ts": {
+   "name-compare": 2,
+   "number": 1
+  },
+  "src/fight/fire-breath.ts": {
+   "number": 10,
+   "label": 2
+  },
+  "src/fight/foe-body.ts": {
+   "name-compare": 1,
+   "label": 1
+  },
+  "src/fight/foe-name.ts": {
+   "number": 1
+  },
+  "src/fight/foe-pick.ts": {
+   "data-id": 1,
+   "name-compare": 1
+  },
+  "src/fight/foe-special-reach.ts": {
+   "name-compare": 1
+  },
+  "src/fight/foe-weapon.ts": {
+   "name-compare": 1
+  },
+  "src/fight/foefade.ts": {
+   "number": 2,
+   "label": 7
+  },
+  "src/fight/foot-dust.ts": {
+   "number": 72,
+   "label": 3
+  },
+  "src/fight/free-camera.ts": {
+   "name-compare": 3
+  },
+  "src/fight/free-roam.ts": {
+   "name-compare": 3
+  },
+  "src/fight/fx-math.ts": {
+   "number": 7
+  },
+  "src/fight/fx.ts": {
+   "number": 88,
+   "name-compare": 18
+  },
+  "src/fight/gambit.ts": {
+   "number": 3,
+   "label": 1
+  },
+  "src/fight/gfx-lift.ts": {
+   "label": 8
+  },
+  "src/fight/golden-check.ts": {
+   "label": 16
+  },
+  "src/fight/golden-hud.ts": {
+   "number": 15,
+   "label": 5
+  },
+  "src/fight/gore.ts": {
+   "number": 161,
+   "name-compare": 7,
+   "label": 1
+  },
+  "src/fight/guard-hold.ts": {
+   "number": 2
+  },
+  "src/fight/hamstrung.ts": {
+   "number": 4,
+   "name-compare": 1
+  },
+  "src/fight/hero-death.ts": {
+   "number": 3
+  },
+  "src/fight/hero-mana.ts": {
+   "name-compare": 1
+  },
+  "src/fight/hero-special-fx.ts": {
+   "name-compare": 1,
+   "compare": 1
+  },
+  "src/fight/hit-impact.ts": {
+   "name-compare": 16,
+   "number": 7
+  },
+  "src/fight/hit-stop-rows.ts": {
+   "name-compare": 1
+  },
+  "src/fight/hud.ts": {
+   "number": 23,
+   "name-compare": 21,
+   "label": 2
+  },
+  "src/fight/impact-fx.ts": {
+   "name-compare": 7,
+   "number": 22
+  },
+  "src/fight/input.ts": {
+   "number": 17,
+   "name-compare": 48,
+   "label": 14
+  },
+  "src/fight/kbm.ts": {
+   "label": 26,
+   "number": 6,
+   "compare": 1,
+   "name-compare": 4
+  },
+  "src/fight/kick-close.ts": {
+   "number": 2
+  },
+  "src/fight/knock-round.ts": {
+   "name-compare": 1
+  },
+  "src/fight/knock-sim.ts": {
+   "name-compare": 4,
+   "number": 2
+  },
+  "src/fight/legend-families.ts": {
+   "number": 1
+  },
+  "src/fight/level-anchor-rows.ts": {
+   "data-id": 1
+  },
+  "src/fight/lock-break.ts": {
+   "number": 3,
+   "name-compare": 1
+  },
+  "src/fight/look-drag.ts": {
+   "number": 4,
+   "name-compare": 1
+  },
+  "src/fight/mana-bar.ts": {
+   "label": 2
+  },
+  "src/fight/mechanics/gourd-bombs-view.ts": {
+   "number": 21,
+   "label": 1
+  },
+  "src/fight/mechanics/gourd-bombs.ts": {
+   "number": 4,
+   "name-compare": 5
+  },
+  "src/fight/mechanics/king-aura.ts": {
+   "name-compare": 3,
+   "number": 2
+  },
+  "src/fight/miasma-mark.ts": {
+   "number": 47,
+   "name-compare": 2,
+   "label": 1
+  },
+  "src/fight/missile-fx.ts": {
+   "number": 47,
+   "name-compare": 3
+  },
+  "src/fight/mob-swing.ts": {
+   "name-compare": 5
+  },
+  "src/fight/mobkit.ts": {
+   "number": 3,
+   "name-compare": 14
+  },
+  "src/fight/move-rows.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/moves-tables-rows.ts": {
+   "number": 2
+  },
+  "src/fight/moves.ts": {
+   "label": 4,
+   "name-compare": 1,
+   "number": 1
+  },
+  "src/fight/night-armour.ts": {
+   "number": 8,
+   "name-compare": 1,
+   "label": 1
+  },
+  "src/fight/nightfall-fx.ts": {
+   "number": 74,
+   "label": 3
+  },
+  "src/fight/opened.ts": {
+   "number": 88,
+   "label": 10
+  },
+  "src/fight/opening-pose.ts": {
+   "number": 7,
+   "name-compare": 1
+  },
+  "src/fight/parts-panel.ts": {
+   "number": 1,
+   "label": 1,
+   "name-compare": 1
+  },
+  "src/fight/pickup.ts": {
+   "number": 35,
+   "label": 4
+  },
+  "src/fight/play-radius.ts": {
+   "number": 2,
+   "data-id": 1
+  },
+  "src/fight/poise-era.ts": {
+   "number": 1
+  },
+  "src/fight/poise-ladder.ts": {
+   "name-compare": 1
+  },
+  "src/fight/pools.ts": {
+   "label": 2
+  },
+  "src/fight/quality.ts": {
+   "number": 5
+  },
+  "src/fight/radar.ts": {
+   "number": 38,
+   "name-compare": 8,
+   "label": 1
+  },
+  "src/fight/ragdoll.ts": {
+   "name-compare": 51,
+   "number": 61,
+   "label": 13
+  },
+  "src/fight/ranged-model-rows.ts": {
+   "name-compare": 1
+  },
+  "src/fight/rank-look.ts": {
+   "number": 96,
+   "data-id": 2,
+   "name-compare": 5
+  },
+  "src/fight/rank-tint.ts": {
+   "number": 29,
+   "name-compare": 4,
+   "label": 2
+  },
+  "src/fight/record.ts": {
+   "number": 319,
+   "data-id": 3
+  },
+  "src/fight/replay.ts": {
+   "number": 1,
+   "name-compare": 2,
+   "label": 9
+  },
+  "src/fight/rig-bones.ts": {
+   "compare": 10
+  },
+  "src/fight/roll.ts": {
+   "number": 10
+  },
+  "src/fight/rules-eval.ts": {
+   "name-compare": 7,
+   "number": 3,
+   "compare": 1
+  },
+  "src/fight/sandbox-era.ts": {
+   "number": 7
+  },
+  "src/fight/sandbox-rules.ts": {
+   "number": 36,
+   "name-compare": 3
+  },
+  "src/fight/scene.ts": {
+   "label": 21,
+   "name-compare": 29,
+   "number": 125
+  },
+  "src/fight/scorch.ts": {
+   "number": 53,
+   "name-compare": 2
+  },
+  "src/fight/severed-head.ts": {
+   "number": 10
+  },
+  "src/fight/sheet-rows.ts": {
+   "number": 4,
+   "label": 7
+  },
+  "src/fight/signature-veteran.ts": {
+   "number": 125,
+   "name-compare": 4,
+   "label": 4
+  },
+  "src/fight/signature.ts": {
+   "number": 15,
+   "label": 3,
+   "name-compare": 7
+  },
+  "src/fight/sim.ts": {
+   "number": 5
+  },
+  "src/fight/skill-impact.ts": {
+   "number": 83,
+   "name-compare": 2,
+   "label": 2
+  },
+  "src/fight/skills.ts": {
+   "compare": 1
+  },
+  "src/fight/skull.ts": {
+   "number": 39
+  },
+  "src/fight/skyanim.ts": {
+   "number": 36,
+   "label": 2
+  },
+  "src/fight/skyfold.ts": {
+   "number": 5
+  },
+  "src/fight/skyline.ts": {
+   "number": 10,
+   "name-compare": 3
+  },
+  "src/fight/skyplate.ts": {
+   "number": 25
+  },
+  "src/fight/skyring.ts": {
+   "number": 28,
+   "name-compare": 2
+  },
+  "src/fight/skyview.ts": {
+   "label": 6
+  },
+  "src/fight/sound/armfeel-sound.ts": {
+   "number": 18,
+   "name-compare": 3
+  },
+  "src/fight/sound/breath.ts": {
+   "number": 52
+  },
+  "src/fight/sound/creature.ts": {
+   "number": 26,
+   "name-compare": 4
+  },
+  "src/fight/sound/cues.ts": {
+   "name-compare": 32,
+   "number": 120
+  },
+  "src/fight/sound/feedback.ts": {
+   "number": 50,
+   "name-compare": 26
+  },
+  "src/fight/sound/ground-loot.ts": {
+   "number": 2
+  },
+  "src/fight/sound/power-word.ts": {
+   "number": 41
+  },
+  "src/fight/sparring-special-runtime.ts": {
+   "label": 4,
+   "name-compare": 1
+  },
+  "src/fight/sparring-specials.ts": {
+   "name-compare": 3
+  },
+  "src/fight/spawn-kind.ts": {
+   "label": 2,
+   "name-compare": 1
+  },
+  "src/fight/special-boss-timing.ts": {
+   "number": 4
+  },
+  "src/fight/special-class-timing.ts": {
+   "number": 11,
+   "name-compare": 7
+  },
+  "src/fight/special-counter.ts": {
+   "name-compare": 1
+  },
+  "src/fight/special-fx-boss.ts": {
+   "number": 429,
+   "name-compare": 7,
+   "label": 1
+  },
+  "src/fight/special-fx-class.ts": {
+   "number": 377,
+   "label": 3,
+   "name-compare": 9
+  },
+  "src/fight/special-fx-dwarf-shield.ts": {
+   "number": 717,
+   "label": 9,
+   "name-compare": 7
+  },
+  "src/fight/special-fx-executioner.ts": {
+   "data-id": 2,
+   "number": 445,
+   "label": 7,
+   "name-compare": 16
+  },
+  "src/fight/special-fx-goblin.ts": {
+   "number": 332,
+   "label": 2,
+   "name-compare": 17
+  },
+  "src/fight/special-fx-legion.ts": {
+   "number": 104,
+   "label": 2,
+   "name-compare": 5
+  },
+  "src/fight/special-fx-nightborn.ts": {
+   "number": 92,
+   "label": 3,
+   "name-compare": 5
+  },
+  "src/fight/special-fx-pitborn.ts": {
+   "number": 472,
+   "data-id": 1,
+   "label": 6,
+   "name-compare": 14
+  },
+  "src/fight/special-fx-quake.ts": {
+   "number": 298,
+   "label": 7,
+   "name-compare": 3
+  },
+  "src/fight/special-fx-wind.ts": {
+   "number": 205,
+   "label": 4,
+   "name-compare": 3
+  },
+  "src/fight/special-fx.ts": {
+   "number": 94,
+   "label": 1,
+   "name-compare": 5
+  },
+  "src/fight/special-identity.ts": {
+   "number": 1
+  },
+  "src/fight/special-lighting.ts": {
+   "number": 4,
+   "name-compare": 3
+  },
+  "src/fight/special-look.ts": {
+   "number": 46,
+   "data-id": 4
+  },
+  "src/fight/special-modes.ts": {
+   "number": 24,
+   "name-compare": 8,
+   "label": 3
+  },
+  "src/fight/special-pace.ts": {
+   "name-compare": 1
+  },
+  "src/fight/special-presentation.ts": {
+   "label": 1,
+   "name-compare": 7
+  },
+  "src/fight/special-request.ts": {
+   "name-compare": 4
+  },
+  "src/fight/special-rows.ts": {
+   "label": 2
+  },
+  "src/fight/special-shards.ts": {
+   "name-compare": 4,
+   "number": 32,
+   "label": 2
+  },
+  "src/fight/special-terms.ts": {
+   "name-compare": 1
+  },
+  "src/fight/special-timing.ts": {
+   "name-compare": 5
+  },
+  "src/fight/special-tithe.ts": {
+   "number": 135,
+   "label": 1,
+   "name-compare": 10
+  },
+  "src/fight/spectral.ts": {
+   "number": 16,
+   "label": 6
+  },
+  "src/fight/spell-cast.ts": {
+   "number": 3,
+   "name-compare": 5,
+   "label": 4
+  },
+  "src/fight/spell-rows.ts": {
+   "name-compare": 1
+  },
+  "src/fight/spell-school.ts": {
+   "number": 25,
+   "name-compare": 1
+  },
+  "src/fight/spell-vfx.ts": {
+   "number": 558,
+   "label": 10,
+   "name-compare": 5
+  },
+  "src/fight/stab-rule.ts": {
+   "number": 1
+  },
+  "src/fight/stance-era.ts": {
+   "number": 1
+  },
+  "src/fight/stance-panel.ts": {
+   "name-compare": 2,
+   "label": 1
+  },
+  "src/fight/stance-picker-rows.ts": {
+   "number": 1
+  },
+  "src/fight/stance-pose.ts": {
+   "number": 39,
+   "name-compare": 2
+  },
+  "src/fight/stance.ts": {
+   "number": 13,
+   "name-compare": 1
+  },
+  "src/fight/standoff.ts": {
+   "number": 1,
+   "name-compare": 2
+  },
+  "src/fight/tactic-rows.ts": {
+   "name-compare": 1
+  },
+  "src/fight/tap-log.ts": {
+   "label": 1
+  },
+  "src/fight/threat.ts": {
+   "name-compare": 3
+  },
+  "src/fight/touch-layout.ts": {
+   "number": 8,
+   "label": 4
+  },
+  "src/fight/trail-opacity.ts": {
+   "number": 1
+  },
+  "src/fight/twist.ts": {
+   "label": 2,
+   "name-compare": 2,
+   "number": 1
+  },
+  "src/fight/unlock-line.ts": {
+   "label": 2
+  },
+  "src/fight/upright-ready.ts": {
+   "number": 1
+  },
+  "src/fight/warm-gate.ts": {
+   "label": 1
+  },
+  "src/fight/weapon-shapes.ts": {
+   "number": 12
+  },
+  "src/fight/weapons.ts": {
+   "name-compare": 1
+  },
+  "src/fight/witchfire.ts": {
+   "number": 112,
+   "name-compare": 3,
+   "label": 2
+  },
+  "src/fight/wound-notice.ts": {
+   "number": 1,
+   "label": 2
+  },
+  "src/fight/wounds-fx.ts": {
+   "number": 22
+  },
+  "src/fight/zone-fx.ts": {
+   "number": 5,
+   "name-compare": 9,
+   "label": 2
   }
  }
 }

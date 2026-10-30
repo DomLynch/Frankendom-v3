@@ -1,9 +1,9 @@
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 // The look thumb after the first kill WITH a second boss already on him (zone aggro): fight boss 1, walk into boss 2's aggro, kill boss 1, then try the right-thumb drag as the ceremony ends, then run away from boss 2 and drag again.
 //   node scripts/look-after-kill-multi.mjs <base url> [query]
-import { chromium } from 'playwright';
 const [base, query = ''] = process.argv.slice(2);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', '--use-angle=metal', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ angle: 'metal' });
+const page = await browser.newPage(phoneOptions());
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 const cdp = await page.context().newCDPSession(page);
 const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([id, x, y]) => ({ id, x, y })) });

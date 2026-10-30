@@ -7,8 +7,7 @@ export type HeatHud = { update(h: Heat): void; remove(): void };
 
 export function mountHeatHud(doc: Doc, rows: HeatRows): HeatHud {
   const o = rows.hud, style = doc.createElement('style');
-  style.textContent = `.heat-line{position:fixed;left:50%;top:calc(18% + 8px + ${o.topOffsetPx}px);transform:translateX(-50%);z-index:${o.zIndex};pointer-events:none;white-space:nowrap;color:${o.colour};opacity:0;transition:opacity .4s ease;`
-    + "font:10px/1.25 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;text-shadow:0 1px 3px rgba(0,0,0,.85);user-select:none;-webkit-user-select:none}";
+  style.textContent = o.css.replace('{topOffsetPx}', String(o.topOffsetPx)).replace('{zIndex}', String(o.zIndex)).replace('{colour}', o.colour);   // the style is a data row (data/heat.json hud.css)
   doc.head.append(style);
   let el: HTMLElement | null = null, lastCount = 0;
   return {

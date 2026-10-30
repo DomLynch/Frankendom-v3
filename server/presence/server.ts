@@ -7,12 +7,12 @@ import { createServer, type Server } from 'node:http';
 import type { Socket } from 'node:net';
 import type { Duplex } from 'node:stream';
 import { decodeUp } from '../../src/presence/wire.ts';
-import { PRESENCE, presenceRule } from '../../src/presence/rows.ts';
+import { PRESENCE, originAllowed, presenceRule, type PresenceOrigins } from '../../src/presence/rows.ts';
 import { RULES, World, type Player, type Rules } from './interest.ts';
 
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 // The protocols' own numbers, not tuning: HTTP status codes (RFC 9110) and WebSocket framing (RFC 6455: header bits, opcodes, close codes; the 4000s are this service's own close codes).
-const HTTP_OK = 200, HTTP_BAD_REQUEST = 400, HTTP_NOT_FOUND = 404, HTTP_TOO_MANY = 429, HTTP_UNAVAILABLE = 503;
+const HTTP_OK = 200, HTTP_BAD_REQUEST = 400, HTTP_FORBIDDEN = 403, HTTP_NOT_FOUND = 404, HTTP_TOO_MANY = 429, HTTP_UNAVAILABLE = 503;
 const FIN = 0x80, MASKED = 0x80, OPCODE_BITS = 0x0f, LENGTH_BITS = 0x7f, RESERVED_BITS = 0x70, LENGTH_16 = 126, LENGTH_64 = 127;
 const OP_CONTINUATION = 0, OP_TEXT = 1, OP_BINARY = 2, OP_CLOSE = 8, OP_PING = 9, OP_PONG = 10;
 const CLOSE_NORMAL = 1000, CLOSE_PROTOCOL = 1002, CLOSE_UNSUPPORTED = 1003, CLOSE_TOO_BIG = 1009, CLOSE_IDLE = 4000, CLOSE_MESSAGE_RATE = 4008, CLOSE_TELEPORT = 4009, CLOSE_BACKLOG = 4010;
@@ -35,6 +35,7 @@ function frame(opcode: number, payload: Uint8Array): Buffer {
 export type PresenceOptions = {
   rules?: Rules; limits?: Limits; maxLayers?: number;
   now?: () => number; log?: (line: string) => void; logEveryMs?: number; sweepEveryMs?: number;
+  origins?: PresenceOrigins;   // the Origin allow-list (default: the `origins` row)
   ipHeader?: boolean;   // trust a reverse proxy's X-Real-IP for the per-IP limits (only behind nginx on 127.0.0.1)
 };
 export type Presence = { server: Server; world: World; port: () => number; stats: () => Record<string, unknown>; close: () => Promise<void> };
@@ -106,6 +107,7 @@ export function createPresence(opts: PresenceOptions = {}): Presence {
     const ip = String((opts.ipHeader ? req.headers['x-real-ip'] : null) ?? req.socket.remoteAddress ?? '?'), t = now();
     const refuse = (code: number, why: string): void => { refused(why); socket.end(`HTTP/1.1 ${code} Refused\r\nConnection: close\r\n\r\n`); };
     if (url.pathname !== PATH || typeof key !== 'string') return refuse(HTTP_BAD_REQUEST, 'bad-request');
+    if (!originAllowed(req.headers.origin, opts.origins)) return refuse(HTTP_FORBIDDEN, 'origin');   // before any per-IP bucket or world slot is touched
     // ONE bucket object per address for as long as it lives: a window roll resets the join count in place (V1: a copy once kept its count for ever and locked an address out until a restart).
     let b = perIp.get(ip); if (!b) { b = { sockets: 0, windowStart: t, joins: 0 }; perIp.set(ip, b); } else if (t - b.windowStart >= MINUTE_MS) { b.windowStart = t; b.joins = 0; }
     if (++b.joins > limits.ipJoinsPerMinute) return refuse(HTTP_TOO_MANY, 'join-rate');

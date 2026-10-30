@@ -6,6 +6,7 @@
 // the hook emits it by name (emitFeel) and V3's sim (a subscriber via `feel.on`, src/fight/feel-sim.ts) decides from its own events and rows. Names (agreed with V3 Dev): feel:limp {part, level},
 // feel:guard_drop {side}, feel:weapon_drop {}, feel:kick_result {outcome, finisherWindowS}, feel:clash {kind, pushbackM}.
 import type * as THREE from 'three';
+import { feelNum } from './hit-stop-rows.ts';
 import type { CombatEvent } from './duel.ts';
 import { type FeelDefaultRows, feelsOn } from './feel-defaults.ts';
 import { FEEL_NAMES, loadFeelChunk } from './feel-modules.ts';
@@ -43,8 +44,8 @@ export function activeFeels(search: string, defaults?: FeelDefaultRows, forHero 
 }
 
 /** How many of the latest events `globalThis.__feelEvents` keeps. */
-export const FEEL_LOG_MAX = 200;
-export type FeelSink = (name: string, payload?: unknown) => void;
+export const FEEL_LOG_MAX: number = feelNum('feelLogMax');   // src/fight/hit-stop-defs.json feel row
+type FeelSink = (name: string, payload?: unknown) => void;
 const listeners = new Map<string, Set<FeelSink>>();
 let limbState: (() => Record<string, number>) | undefined;
 /** The bus between the presentation hooks and V3's sim (V3 Dev's ruling 2026-10-27: the SIM computes every outcome itself from its own events and its own rows, never from a value that came out of

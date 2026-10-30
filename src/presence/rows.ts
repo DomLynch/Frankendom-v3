@@ -3,15 +3,16 @@
 // Pure: no DOM, no node API, so the same file is bundled into the page chunk and run by node.
 import DEFS from '../../data/presence.json' with { type: 'json' };
 
-export type PresenceRule = { readonly id: string; readonly value: number; readonly unit: string };
-export type PresenceDefs = { query: string; path: string; host: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; spawn: { x: number; z: number }; rules: readonly PresenceRule[] };
+type PresenceRule = { readonly id: string; readonly value: number; readonly unit: string };
+export type PresenceOrigins = { allowed: readonly string[]; devHosts: readonly string[]; allowMissing: boolean };
+type PresenceDefs = { origins: PresenceOrigins; query: string; path: string; host: string; protocol: string; poseGlobal: string; frame: { centreCm: number; sizeCm: number }; spawn: { x: number; z: number }; rules: readonly PresenceRule[] };
 
 /** Every rule the code reads by name (presenceRule's argument type). */
 export const NAMED = ['cellCm', 'radiusCm', 'nearCap', 'tier1Cm', 'tier1Every', 'tier2Cm', 'tier2Every', 'tier3Cm', 'tier3Every', 'tickMs', 'tickFloorMs', 'tickChecksPerTick', 'softCap', 'hardCap', 'maxLayers',
   'maxSpeedCmS', 'speedSlack', 'jitterMs', 'strikesToDrop', 'strikeWindowMs', 'emptyLayerMs', 'maxMessage', 'perSecond', 'idleMs', 'ipSockets', 'ipJoinsPerMinute', 'beatMs', 'maxWriteBytes', 'closeGraceMs', 'tickRing', 'logEveryMs',
   'sweepEveryMs', 'presencePort', 'walkHalfCm', 'giveUp', 'retryBaseMs', 'retryMaxMs', 'remoteSnap', 'remoteExpire',
   'drawMax', 'drawIdle', 'drawSmooth', 'animIdle', 'animWalk', 'animRun', 'animRunMps', 'poseMinDtMs', 'drawDtMaxS', 'drawContact'] as const;
-export type RuleId = (typeof NAMED)[number];
+type RuleId = (typeof NAMED)[number];
 
 /** The one loader: the file's shape, rules keyed by id (a duplicate is refused), a positive number for each, and a row for every rule read by name. */
 export function loadPresence(raw: Partial<PresenceDefs>): PresenceDefs {
@@ -21,6 +22,9 @@ export function loadPresence(raw: Partial<PresenceDefs>): PresenceDefs {
   const sp = raw.spawn, half = (raw.rules ?? []).find((r) => r.id === 'walkHalfCm')?.value ?? 0;
   if (!(sp && Number.isFinite(sp.x) && Number.isFinite(sp.z))) throw Error('presence: spawn is { x, z } in zone-frame metres');
   if (Math.abs(sp.x * 100) > half || Math.abs(sp.z * 100) > half) throw Error('presence: spawn must stand on the walkable ground (within walkHalfCm of the frame centre)');
+  const o = raw.origins;
+  if (!(o && Array.isArray(o.allowed) && Array.isArray(o.devHosts) && typeof o.allowMissing === 'boolean' && [...o.allowed, ...o.devHosts].every((x) => typeof x === 'string' && x.length > 0))) throw Error('presence: origins is { allowed: [origin], devHosts: [hostname], allowMissing: boolean }');
+  if (!o.allowed.every((x) => { try { return new URL(x).origin === x; } catch { return false; } })) throw Error('presence: every origins.allowed entry is an exact origin (scheme://host[:port], no path or trailing slash)');
   const rows = raw.rules ?? [], seen = new Set<string>();
   for (const r of rows) {
     if (typeof r.id !== 'string' || typeof r.unit !== 'string') throw Error(`presence: a rule row is { id, value, unit } (${JSON.stringify(r)})`);
@@ -33,6 +37,15 @@ export function loadPresence(raw: Partial<PresenceDefs>): PresenceDefs {
 }
 export const PRESENCE: PresenceDefs = loadPresence(DEFS as PresenceDefs);
 export const presenceRule = (id: RuleId): number => PRESENCE.rules.find((r) => r.id === id)!.value;
+
+/** Whether a WebSocket handshake's Origin header may open a socket (origins row): exact allowed origin, or an http(s) page on a dev host (any port); no header passes only when allowMissing. Anything unparseable is refused. */
+export function originAllowed(origin: string | undefined, o: PresenceOrigins = PRESENCE.origins): boolean {
+  if (origin === undefined || origin === '') return o.allowMissing;
+  let u: URL; try { u = new URL(origin); } catch { return false; }
+  if (u.origin !== origin) return false;   // a path, a trailing slash or "null" is not an origin
+  if (o.allowed.includes(origin)) return true;
+  return (u.protocol === 'http:' || u.protocol === 'https:') && o.devHosts.includes(u.hostname);
+}
 
 /** The interest-management rules, one row each (V1 interest.ts interestRules, same names). */
 export const interestRules = () => {

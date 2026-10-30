@@ -105,15 +105,9 @@ test('a hero beyond the pit wall enters a duel on the wall\'s edge, in line with
   } finally { setPlayScale(1); }
 });
 
-test('the page wires the free walk: the zone path passes the data row radius to roamStep and the follow camera; the flag path (ZONE null) has no roam and the pit wall', () => {
-  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /stepFreeRoam\(freeRoam, roam, duelIntent, ZONE!\.walkRadius\)/, 'the walk is zone-loop roamStep through free-roam.ts (idle it is roamStep to the bit)');
-  assert.match(readFileSync(new URL('../src/fight/free-roam.ts', import.meta.url), 'utf8'),/roamStep\(roam, move, corpse\.body, wall\)/);
-  assert.doesNotMatch(main, /roamStep\([^\n]*RADIUS\)/);
-  assert.match(main, /if \(ZONE\) validateWalk\(ZONE\.walkRadius, RADIUS\)/);
-  assert.match(main, /if \(ZONE\) setWalkClamp\(roam \? ZONE\.walkRadius \+ ZONE\.cameraMetres : 0\)/);
+test('the page wires the free walk: the zone path passes the data row radius to roamStep and the follow camera; the flag path (ZONE null) has no roam and the pit wall (behaviour half; the source pins moved to test/source-pins/)', () => {
+
   assert.equal(zoneLoopFor(ZONE, '?postkill=v1', ids), null, '?postkill=v1: no ZONE, so no roam, no radius, no clamp');
-  assert.match(main, /heroStands\(\)\) \{[^]*?roam = \{ \.\.\.practice\.fighter \}/, 'roam only exists inside heroStands (the zone)');
 });
 
 test('the duel sim stays stopped after the kill: bodies do not step, so the walk is presentation-only', () => {
@@ -158,22 +152,4 @@ test('the hero\'s death fall is a row: 1.4 s (V1 world rule `fall`), inside the 
   for (const bad of [0, -1, 11, NaN, '1.4']) assert.throws(() => validateLoop(loop((d) => { d.heroDeath.fallSeconds = bad; }), ZONE, ids), /fallSeconds/);
   assert.throws(() => validateLoop(ROWS, zone((z) => { z.respawn.downSeconds = 1; }), ids), /longer than/);
   assert.equal(zoneLoopFor(ZONE, '?postkill=v1', ids), null, 'no loop, no fall: the scene is told 0');
-});
-
-test('the page wires the fall: main tells the scene the row (0 without the loop), the scene drives the Death clip on a clock and holds it', () => {
-  const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8'), main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts');
-  assert.match(main, /view\.heroFall\(ZONE \? ZONE\.fallSeconds : 0\)/);
-  assert.match(scene, /heroFall\(seconds: number\) \{ fallSeconds = seconds; \}/);
-  assert.match(scene, /const mine = heroFalls\(stand\([^\n]*practice\.finish\?\.victim === 0, animationDt\)/);
-  assert.match(scene, /pose: 'death', progress: Math\.min\(1, fallAge \/ fallSeconds\)/);
-});
-
-test('the page wires the loop: the zone row via zoneFor, the corpse left BEFORE his sim body resets, the HUD drops the Rematch in the zone', () => {
-  const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8'), main = src('../src/client/main.ts'), hud = src('../src/fight/hud.ts');
-  assert.match(main, /zoneLoopFor\(orderedZone\(zoneFor\(search\), FIGHT\.order, search\), search/);
-  assert.match(main, /zone: heroStands\(\) \|\| heroDied\(\)/);
-  assert.match(main, /diedSeconds\) \{ respawnAsked = false; const who = killedBy \?\? current; rematch\(poseFor\(who, heroStart\), who\); \}/);
-  assert.match(main, /if \(ZONE\) view\.respawnFoe\(\);[^\n]*\n\s*seed = nextSeed/);
-  assert.match(src('../src/fight/scene.ts'), /respawnFoe\(\): boolean \{ return ragdoll\?\.leaveCorpse\(\)/);
-  assert.match(hud, /resetButton\.hidden = view\.death \? !view\.death\.ready : !!view\.zone/);   // a fallen hero gets Respawn (data/hero-death.json); everyone else in the zone still no Rematch
 });

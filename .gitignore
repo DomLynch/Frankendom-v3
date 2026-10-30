@@ -1,7 +1,9 @@
 node_modules
 boot-check-out/
-dist/
+# build output: no trailing slash, so a symlink named dist is ignored too (one was committed once)
+dist
 .DS_Store
+# video evidence is attached to the PR, never committed (ignore matches any depth; `git add -f` is not for this)
 *.mp4
 # local tool state (Claude Code worktrees and settings, Serena index): never part of the game
 .claude/

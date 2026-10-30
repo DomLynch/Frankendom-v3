@@ -28,13 +28,13 @@ export type CombatCam = { label: string; portrait: CombatFraming; landscape: Com
 export type CombatInput = { cam: CombatCam; portrait: boolean; foe: { x: number; z: number; size: number } | null; zoom?: number; flip?: number };
 const mix = (a: number, b: number, k: number) => a + (b - a) * k;
 
-const OPEN: Framing = { back: 5.2, up: 2.7 }, AHEAD = cameraRule('followAhead'), LOOK_Y = cameraRule('followLookY'), PITCH_MAX = cameraRule('combatPitchMax');
+const OPEN: Framing = { back: cameraRule('followOpenBack'), up: cameraRule('followOpenUp') }, FP_LOOK_M = cameraRule('followFpLookMetres'), FIT_UP = cameraRule('followFitUpShare'), CAP_UP = cameraRule('followCapUpShare'), STICK_DROP = cameraRule('followStickDrop'), STICK_GAZE = cameraRule('followStickGaze'), EASE_RATE = cameraRule('followEaseRate'), AHEAD = cameraRule('followAhead'), LOOK_Y = cameraRule('followLookY'), PITCH_MAX = cameraRule('combatPitchMax');
 const RAD = Math.PI / 180;   // degrees to radians
 
 export const inPassage = (p: Passage | undefined, x: number, z: number): boolean => !!p && z < p.zMax && z > p.zMin && (p.halfWidth === undefined || Math.abs(x) < p.halfWidth);
 
 export function createFollowCamera(camera: THREE.Camera, opts: { passage?: Passage; open?: Framing } = {}) {
-  const eye = new THREE.Vector3(), look = new THREE.Vector3(), at = new THREE.Vector3(0, 2.6, 8);
+  const eye = new THREE.Vector3(), look = new THREE.Vector3(), at = new THREE.Vector3(0, cameraRule('followStartY'), cameraRule('followStartZ'));
   let snap = true, passage = opts.passage, fight = 0, fitNow = 0;   // fight: 0 walking .. 1 in a fight, eased; fitNow: the foe-size and gap fit in metres, rate-limited
   let open = opts.open ?? OPEN;
   const view = { shiftY: 0, fov: 0, zoom: 1 };   // what the page applies to its camera this frame (the follow camera only places it)
@@ -61,7 +61,7 @@ export function createFollowCamera(camera: THREE.Camera, opts: { passage?: Passa
         const moved = Math.hypot(s.x - bobAt.x, s.z - bobAt.z), speed = dt > 0 ? moved / dt : 0; bobAt.x = s.x; bobAt.z = s.z;   // head bob (Daggerfall / Luanti / OpenMW: a gentle rise and fall with the steps, none standing still, off by a setting)
         if (s.fp.bobAmp > 0 && moved < s.fp.bobJumpM) { bobPhase += Math.min(speed, s.fp.bobSpeedCap) * dt * s.fp.bobStep; bobGain += ((speed > s.fp.bobWalkMps ? 1 : 0) - bobGain) * (1 - Math.exp(-dt * s.fp.bobFade)); } else bobGain = 0;
         eye.set(s.x + sx * s.fp.fwd, s.groundY + s.fp.eye + Math.sin(bobPhase) * s.fp.bobAmp * bobGain, s.z + cz * s.fp.fwd); at.copy(eye); snap = false;
-        look.set(eye.x + sx * 10, eye.y - s.fp.down + s.pitch * s.fp.tilt, eye.z + cz * 10);
+        look.set(eye.x + sx * FP_LOOK_M, eye.y - s.fp.down + s.pitch * s.fp.tilt, eye.z + cz * FP_LOOK_M);
         view.shiftY = 0; view.fov = s.fp.fovAdd; view.zoom = 1; fight = 0;
         camera.position.copy(at); camera.lookAt(look); return;
       }
@@ -75,14 +75,14 @@ export function createFollowCamera(camera: THREE.Camera, opts: { passage?: Passa
       fitNow = c?.fitRate !== undefined ? fitNow + Math.max(-c.fitRate * dt, Math.min(c.fitRate * dt, fitGoal - fitNow)) : fitGoal;   // never faster than fitRate m/s
       const rawBack = c ? (c.back + fitNow) * zoomK : t.back, capped = c ? Math.min(c.maxBack ?? Infinity, Math.max(c.minBack ?? 0, rawBack)) : t.back;   // a floor: never into the foe; a cap: never past the wall
       const pitchDeg = c?.pitch === undefined ? undefined : Math.min(c.maxPitch ?? PITCH_MAX, c.pitch + (c.pitchPerSize ?? 0) * size), cBack = capped;
-      const cUp = c ? (pitchDeg === undefined ? (c.up + fitNow * 0.5) * zoomK : (c.lookY ?? LOOK_Y) + cBack * Math.tan(pitchDeg * RAD)) + Math.max(0, rawBack - capped) * 0.5 : t.up;   // what the cap took off the distance goes into height instead (a steeper look), the camera stays in the room
-      const back = c ? mix(t.back, cBack, fight) : t.back, up = (c ? mix(t.up, cUp, fight) : t.up) - s.pitch * 0.9;   // the right stick's up lowers the camera and raises the gaze
+      const cUp = c ? (pitchDeg === undefined ? (c.up + fitNow * FIT_UP) * zoomK : (c.lookY ?? LOOK_Y) + cBack * Math.tan(pitchDeg * RAD)) + Math.max(0, rawBack - capped) * CAP_UP : t.up;   // what the cap took off the distance goes into height instead (a steeper look), the camera stays in the room
+      const back = c ? mix(t.back, cBack, fight) : t.back, up = (c ? mix(t.up, cUp, fight) : t.up) - s.pitch * STICK_DROP;   // the right stick's up lowers the camera and raises the gaze
       const side = c ? mix((t as Framing).side ?? 0, (c.side ?? 0) * (combat?.flip ?? 1), fight) : (t as Framing).side ?? 0, ahead = c ? mix((t as Framing).ahead ?? AHEAD, c.ahead ?? AHEAD, fight) : (t as Framing).ahead ?? AHEAD, lookY = c ? mix((t as Framing).lookY ?? LOOK_Y, c.lookY ?? LOOK_Y, fight) : (t as Framing).lookY ?? LOOK_Y;   // right of the hero's heading is (cos h, -sin h)
       eye.set(s.x - Math.sin(s.heading) * back + Math.cos(s.heading) * side, up + s.groundY, s.z - Math.cos(s.heading) * back - Math.sin(s.heading) * side);
-      if (snap) { at.copy(eye); snap = false; } else at.lerp(eye, 1 - Math.exp(-dt * 4));
+      if (snap) { at.copy(eye); snap = false; } else at.lerp(eye, 1 - Math.exp(-dt * EASE_RATE));
       let lx = s.x + Math.sin(s.heading) * ahead, lz = s.z + Math.cos(s.heading) * ahead;
       if (c && combat?.foe && c.mid) { const k = fight * c.mid; lx = mix(lx, mix(s.x, combat.foe.x, 0.5), k); lz = mix(lz, mix(s.z, combat.foe.z, 0.5), k); }   // the gaze moves toward the middle of the two, so both are in frame
-      look.set(lx, lookY + s.pitch * 1.6 + s.groundY, lz);
+      look.set(lx, lookY + s.pitch * STICK_GAZE + s.groundY, lz);
       view.shiftY = c ? fight * (c.shiftY ?? 0) : 0; view.fov = c ? fight * (c.fov ?? 0) : 0; view.zoom = c ? mix(1, c.zoom ?? 1, fight) : 1;
       camera.position.copy(at); camera.lookAt(look);
     },

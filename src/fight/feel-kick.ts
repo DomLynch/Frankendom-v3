@@ -35,7 +35,7 @@ export type KickResult = {
 /** One kick (or shove) into a result. force = (kicker mass / target mass, clamped)^massExp x stance multiplier x the shove's forceMult; knockdown at or over knockdownAt (never for a shove that cannot). */
 export function kickResult(rows: FeelKickRows, input: KickInput): KickResult {
   const [lo, hi] = rows.massClamp, ratio = Math.min(hi!, Math.max(lo!, input.kickerKg / input.targetKg));
-  const force = Math.pow(ratio, rows.massExp) * (rows.stance as Record<string, number>)[input.stance]! * (input.forceMult ?? 1);
+  const force = Math.pow(ratio, rows.massExp) * (rows.stance as unknown as Record<string, number>)[input.stance]! * (input.forceMult ?? 1);
   const outcome: Outcome = force >= rows.knockdownAt && input.canKnockdown !== false ? 'knockdown' : 'stagger';
   const [il, ih] = rows.push.impulseClamp, distance = rows.push.distanceM[outcome] * force;
   return {

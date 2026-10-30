@@ -3,7 +3,7 @@
 // Pure: the page hands the gate to the sound (src/fight/sound/feedback.ts); no gate (the single fight, ?postkill=v1) means every cue plays, exactly as before.
 import { checkSoundZone } from '../sim/validate.js';
 
-export type CueMode = 'on' | 'off' | 'once';
+type CueMode = 'on' | 'off' | 'once';
 export type ZoneSoundRows = { cues: Readonly<Record<string, CueMode>>; toastSeconds: number };
 export type CueGate = {
   /** Whether cue `name` plays now, spending a 'once' cue's token (for a cue that surely sounds: a one-shot from the cue list). */

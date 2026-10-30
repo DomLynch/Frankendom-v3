@@ -4,20 +4,20 @@
 //   FINISHERS=opened,runThrough,splitCrown,decapitation  (default the first three)   AFTER=4,20,60,160   JSON=out.json
 //   node scripts/finisher-cuts-stills.mjs <base url> <out dir> [query ...]   e.g. "ragdoll=finishers" "physics=v1"
 // Prints, per finisher and query, the console / page errors (must be 0), the ragdoll's state, cut list (__v3Cuts) and per-frame cost by mode (__ragdoll.byMode).
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/finisher-cuts-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: process.env.GL_ARGS ? process.env.GL_ARGS.split(' ') : ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });   // GL_ARGS: the T4's Vulkan flags (vps-heavy-jobs skill)
+const browser = await launchBrowser({ glArgsEnv: true });   // GL_ARGS: the T4's Vulkan flags (vps-heavy-jobs skill)
 const TICK = 1000 / 60, CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), MAX_TICKS = Number(process.env.MAX_TICKS ?? 3000);
 const AFTER = (process.env.AFTER ?? '4,20,60,160').split(',').map(Number);
 const FINISHERS = (process.env.FINISHERS ?? 'opened,runThrough,splitCrown').split(',');
 const REAL = !!process.env.REAL, CAM = process.env.CAM, report = [];   // CAM=belly|head: the close-up (below)
 for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const finisher of FINISHERS) {
   const tag = `${finisher}-${query.replace(/[^a-z0-9]+/gi, '-') || 'default'}`, errors = [];
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
   await page.addInitScript((id) => { globalThis.__finisherPick = id; }, finisher);
@@ -42,7 +42,7 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
       window.requestAnimationFrame = (cb) => raf((t) => { const s = performance.now(); if (last) last[1] = s - last[3]; cb(t); last = [performance.now() - s, 0, (globalThis.__v3Cuts ?? []).length, s, globalThis.__v3Fight?.finish ? 1 : 0]; frames.push(last); });
     });
     await page.goto(`${base}/${query ? `?${query}` : ''}`);
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await waitPlayable(page, { timeout: 180000 });
     await page.waitForTimeout(3000);
     await page.keyboard.down('KeyW');
     for (let t = 0; t < 120 && !(await page.evaluate(() => globalThis.__v3Fight.finish?.victim === 1)); t++) {
@@ -62,7 +62,7 @@ for (const query of queries.length ? queries : ['ragdoll=finishers']) for (const
   }
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   await page.waitForTimeout(3000);   // the late kit dresses and the physics chunk imports (loadAfterFirstFrameMs) after the first frame
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));

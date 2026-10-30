@@ -1,7 +1,7 @@
 // V3 (V2 PR #48, src/client/sound.js keepAwake): iOS keeps Web Audio under the ringer's silent switch unless the page is also playing a
 // media element. A looping clip of silence, started from the first touch, puts the page in "playback" like a game; V1's
 // navigator.audioSession 'playback' (feedback.ts) covers Safari 17+, this covers the rest. Its size, rate and volume are data/sound.json keep.
-export type KeepRow = { samples: number; rate: number; volume: number };
+type KeepRow = { samples: number; rate: number; volume: number };
 export function createKeep(row: KeepRow) {
   let keep: HTMLAudioElement | undefined;
   function wav(): Blob {   // 8-bit mono PCM, every sample at the midpoint (silence)

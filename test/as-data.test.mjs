@@ -59,14 +59,14 @@ test('dataIds reads the zone rows, the fight opponent and the brain ids from the
 });
 
 // a throwaway tree: scope, allow and baseline behave as the file says
-function tree(files, { allow = [], baseline, legacy = [] } = {}) {
+function tree(files, { allow = [], baseline, legacy = [], allowTotals } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'asdata-'));
   mkdirSync(join(root, 'src/zone'), { recursive: true });
   mkdirSync(join(root, 'data/zones'), { recursive: true });
   for (const [f, text] of Object.entries(files)) writeFileSync(join(root, f), text);
   writeFileSync(join(root, 'scope.json'), JSON.stringify({ globs: ['src/zone/**'], legacy }));
   writeFileSync(join(root, 'allow.json'), JSON.stringify({ allow }));
-  if (baseline) writeFileSync(join(root, 'baseline.json'), JSON.stringify({ counts: baseline }));
+  if (baseline || allowTotals) writeFileSync(join(root, 'baseline.json'), JSON.stringify({ counts: baseline ?? {}, ...(allowTotals ? { allowTotals } : {}) }));
   return { root, opts: { scopeFile: join(root, 'scope.json'), allowFile: join(root, 'allow.json'), baselineFile: join(root, 'baseline.json') } };
 }
 
@@ -77,7 +77,7 @@ test('a new file under src/zone with a hard-coded timer fails the gate; the same
     assert.equal(r.problems.length, 1);
     assert.match(r.problems[0], /src\/zone\/a\.ts:1 number "2000" belongs in a data row/);
   } finally { rmSync(root, { recursive: true }); }
-  const ok = tree({ 'src/zone/a.ts': 'export const wait = () => setTimeout(go, 2000);\n' }, { allow: [{ file: 'src/zone/a.ts', kind: 'number', literal: '2000', reason: 'a protocol timeout, not tuning' }] });
+  const ok = tree({ 'src/zone/a.ts': 'export const wait = () => setTimeout(go, 2000);\n' }, { allow: [{ file: 'src/zone/a.ts', kind: 'number', literal: '2000', reason: 'a protocol timeout, not tuning' }], allowTotals: { 'src/zone/a.ts': { number: 1 } } });   // a plain allow row passes only when the baseline records it (allowTotals)
   try { assert.deepEqual(run(ok.root, ok.opts).problems, []); } finally { rmSync(ok.root, { recursive: true }); }
 });
 

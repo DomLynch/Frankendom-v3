@@ -5,6 +5,7 @@ import { cameraRule, introRules, tourRules } from './camera-rules.ts';
 import * as THREE from 'three';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import type { Shove } from './camera-kick.ts';
+import { BASE_FOV } from './camera-zoom.ts';
 import { finisherRow, type FinisherId } from './finishers.ts';
 import { stepShare, swingAround, virtualFoe, yawBehind, type FreeCameraRows } from './free-camera.ts';
 import { repitch, type PitchRows } from './camera-pitch.ts';
@@ -15,6 +16,7 @@ const FINISH_ZOOM = finisherCamOn(typeof location === 'undefined' ? '' : locatio
 
 const LOOK_FOE = /[?&]look=foe(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
 
+const LOCK_BACK_PER_GAP = cameraRule('lockBackPerGap'), LOCK_BACK_BASE = cameraRule('lockBackBase'), LOCK_LIFT_PER_GAP = cameraRule('lockLiftPerGap'), WALK_ORBIT = cameraRule('walkOrbitRadius');   // the lock stands 0.62 m back per metre of gap + 2.8 m and 1.3 m up per metre; the walking orbit is 7.5 m out
 const LOCK_BACK_FLOOR = cameraRule('lockBackFloor'), LOCK_LIFT_FLOOR = cameraRule('lockLiftFloor'), LOCK_GAP_FLOOR = cameraRule('lockGapFloor');   // the lock camera never backs closer than 4.2 m, never sits lower than 3.2 m, and treats a foe nearer than 0.8 m as 0.8 m away
 let FIGHT_BACK = cameraRule('fightBackDefault');   // how much further back and up the lock camera stands (a zone's `camera.fightBack`, set by the page; the row's 1 = the duel as it always was)
 /** The page sets the zone's fight-back scale (1 = the lock camera as it was). Only the duel's lock camera uses it; the walking camera never does. */
@@ -40,12 +42,13 @@ export const setLockFrame = (lift: number, side: number): void => { LOCK_LIFT = 
 let LENS_BOOST = 1;
 /** The scene sets the wide-screen lens zoom on top of the page's (camera-zoom.ts wideBoost; 1 on every portrait screen): the finisher side view's fit is by the vertical field, which that zoom narrows. */
 export const setLensBoost = (boost: number): void => { LENS_BOOST = boost; };
+const LOCK_LOOK_Y = cameraRule('lockLookY'), ORBIT_PITCH_START = cameraRule('orbitPitchStart');   // the lock looks at 0.8 m; a fresh orbit pitch is 0.45 rad
 const AIM_PER_SHRINK = cameraRule('aimPerShrink');   // metres of look-point shift toward the camera per unit the play circle shrinks (0.9 m at 0.36)
 // How tall each foe LOOKS against a man's, for the camera only. The sim's `scale` (moves.ts OPPONENTS[id].scale) is a hitbox/rate number and stays put (it is in the record's
 // SIM_FILES); a foe whose body is not a man's by that number says so here. The Ash Wolf is ~.8 m at the back (the sim says .8 for its rates): behind the hero's head at bite range
 // without this. The Wraith is a tall rig whose head and scythe tip left the top of the lock frame. Every other foe is absent: the sim scale it always had.
 export const FRAMING_LOW: Readonly<Record<string, number>> = { wolf: 1 };   // a low quadruped (units of the LOW_* terms): the lock steps over the hero's shoulder and lifts at every gap, because the short-foe rule below only reacts to a MAN being hidden at this gap and the wolf is still behind the hero's head
-export const FRAMING_TALL: Readonly<Record<string, number>> = { wraith: 0.35 };   // looks taller (a man's height 1 + this) and carries a long weapon: the lock backs off and up (the sim scale of foes above a man, 1.03-1.36, frames as a man and stays so)
+export const FRAMING_TALL: Readonly<Record<string, number>> = { wraith: cameraRule('framingTallWraith') };   // looks taller (a man's height 1 + this) and carries a long weapon: the lock backs off and up (the sim scale of foes above a man, 1.03-1.36, frames as a man and stays so)
 export const framingLow = (id: string): number => FRAMING_LOW[id] ?? 0;
 export const framingTall = (id: string): number => FRAMING_TALL[id] ?? 0;
 const LOW_SIDE = cameraRule('lowSide'),   // metres beside the hero's spine that the lock camera's line to a low foe passes, per unit of FRAMING_LOW (the hero's shoulders are ~.25 either side)
@@ -75,10 +78,10 @@ export function cameraPose(
   // Duel lock sits ~30% closer and lower than the first pass; the distance terms still pull back to frame both fighters.
   const low = locked ? targetLow : 0, tall = locked ? targetTall : 0;   // a foe that looks tall (the Wraith): back off and up; nothing for any other foe
   const fightBack = locked ? backScale : 1;   // the walking camera is never scaled
-  const back = ((locked ? Math.max(LOCK_BACK_FLOOR, distance * 0.62 + 2.8) : 7.5 * Math.cos(pitch)) + tall * TALL_BACK) * fightBack;   // the original lock (Dom 2026-10-05 chose it over the 10-03 flatter one: HUD over sand, not the painting)
+  const back = ((locked ? Math.max(LOCK_BACK_FLOOR, distance * LOCK_BACK_PER_GAP + LOCK_BACK_BASE) : WALK_ORBIT * Math.cos(pitch)) + tall * TALL_BACK) * fightBack;   // the original lock (Dom 2026-10-05 chose it over the 10-03 flatter one: HUD over sand, not the painting)
   let x = state.x + Math.sin(yaw) * back,
     z = state.z + Math.cos(yaw) * back,
-    y = ((locked ? Math.max(LOCK_LIFT_FLOOR, distance * 1.3) * liftScale : 1 + 7.5 * Math.sin(pitch)) + tall * TALL_LIFT) * fightBack;
+    y = ((locked ? Math.max(LOCK_LIFT_FLOOR, distance * LOCK_LIFT_PER_GAP) * liftScale : 1 + WALK_ORBIT * Math.sin(pitch)) + tall * TALL_LIFT) * fightBack;
   if (locked && shoulderSide) {   // V3: over the right shoulder (the short-foe step below goes over the left)
     x += Math.cos(yaw) * shoulderSide;
     z -= Math.sin(yaw) * shoulderSide;
@@ -154,14 +157,15 @@ export function finisherSidePose(
   const beyond = view.beyond ?? Math.max(view.beyondBody! * bodyScale, reach + view.reachPad!);
   const back = Math.max(
     view.minBack,
-    (((gap / 2) * sideward + beyond) / (Math.tan((51 * Math.PI) / 360) * Math.min(aspect, 1))) * lensBoost,
+    (((gap / 2) * sideward + beyond) / (Math.tan((BASE_FOV * Math.PI) / 360) * Math.min(aspect, 1))) * lensBoost,
   );
+  const SIDE_LOOK_Y = cameraRule('sideLookY');
   const side = (sign: number, front = 1) => ({
     x: lookX + (-uz * sign * sideward - ux * rearward * front) * back,
     y: view.eyeY + (view.eyeYPerScale ?? 0) * (bodyScale - 1),
     z: lookZ + (ux * sign * sideward - uz * rearward * front) * back,
     lookX,
-    lookY: 0.85,
+    lookY: SIDE_LOOK_Y,
     lookZ,
   });
   // Large halves and a body lying full-length need the inward front-quarter options when the kill lands by the wall;
@@ -223,8 +227,8 @@ export const INTRO = introRules();   // seconds and metres, rows in camera-rules
 // camera has moved slower than SETTLE.speed for SETTLE.still seconds, and stays latched until the finish clears. `settledAt`
 // records the finish age at first latch — the arena cam starts TOUR.afterSettle seconds later, and moving again itself does
 // not unsettle the latch. The HUD reads `settled`, `touring` and `finishAge`.
-export const SETTLE = { min: 1.5, still: 0.4, speed: 0.02 } as const;   // seconds, seconds, metres per second
-const DEFAULT_DOLLY = { push: 0.38, slide: 0.95, turn: 0.6 };   // a posed finish with no finisher row (no ceremony picked): the ordinary push-in, the one every finisher row but Decapitation also carries
+export const SETTLE = { min: cameraRule('settleMin'), still: cameraRule('settleStill'), speed: cameraRule('settleSpeed') } as const;   // seconds, seconds, metres per second
+const DEFAULT_DOLLY = { push: cameraRule('dollyPush'), slide: cameraRule('dollySlide'), turn: cameraRule('dollyTurn') };   // a posed finish with no finisher row (no ceremony picked): the ordinary push-in, the one every finisher row but Decapitation also carries
 export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefersStillCamera()) {
   let finishPush = 0; // the authorized slow dolly over the death window (0 = off; respects prefers-reduced-motion)
   let shortFade = 1; // share of the short-opponent lock terms (cameraPose targetScale) in use: 1 in the fight, easing to 0 once a finish begins
@@ -239,7 +243,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
     eyeTarget = new THREE.Vector3(),
     lookTarget = new THREE.Vector3();   // scratch for the finisher-side, tour and gate-walk targets: set and consumed within the frame, never kept
   let yaw = 0,
-    pitch = 0.45,
+    pitch = ORBIT_PITCH_START,
     started = false;
   let freeShare = 0, swingLeft = 0;   // the free follow camera's share (0 = the lock, 1 = free) and the seconds the hand-over swing still runs
   // Camera kick: a blow nudges the camera a few centimetres along the blow's heading and it settles in ~0.15 s. Small on purpose
@@ -248,7 +252,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
   // flicks it sideways with the deflection. A push along the blow alone is a dolly down the view axis and reads as nothing on screen.
   let kick = 0,
     kickHold = 0, // a heavy-class contact holds its full displacement for two frames before settling: the weight lands, then the camera recovers
-    kickRate = 1 / 0.15, // 1/s: how fast the offset settles
+    kickRate = 1 / cameraRule('kickSettleDefault'), // 1/s: how fast the offset settles
     shoved = 0; // the kick applied to the camera for the last draw; taken off before the next frame's settle so it never compounds
   const kickOffset = new THREE.Vector3(), screenRight = new THREE.Vector3();
   // The roll tumble (hit-impact.ts ROLL_TUMBLE): a roll about the view axis plus a shift along the camera's right and a dip, all on one
@@ -265,12 +269,12 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       return started;
     },
     orbit(dx: number, dy: number) {
-      yaw -= dx * 0.005;
-      pitch = THREE.MathUtils.clamp(pitch + dy * 0.003, 0.22, 0.9);
+      yaw -= dx * cameraRule('orbitYawPerPx');
+      pitch = THREE.MathUtils.clamp(pitch + dy * cameraRule('orbitPitchPerPx'), cameraRule('orbitPitchMin'), cameraRule('orbitPitchMax'));
     },
     recenter() {
       yaw = 0;
-      pitch = 0.45;
+      pitch = ORBIT_PITCH_START;
       started = false;
     },
     // The zone's free camera: the view swings to stand behind a hero facing `heading` (the recenter button / R); no snap, the follow eases there.
@@ -319,7 +323,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
     tilt(angle: number, seconds: number, right = 0, drop = 0) { tiltAngle = angle; tiltFor = seconds; tiltAge = 0; swayRight = right; swayDrop = drop; },
     // Place the camera for this frame: lock or orbit framing, the finisher push-in, the side-view reveal, then the settle and the kick.
     update(dt: number, state: State, foe: { x: number; z: number }, locked: boolean, finish: CameraFinish | null, foeScale = 1, foeTall = 0, foeLow = 0, foeWiden = 1, free = false) {   // widen: the lock backs off by this when another boss is on him (src/zone/attackers.ts framingWiden); 1 = the one-boss frame, untouched. free: the zone's follow camera (src/fight/free-camera.ts): the foe is a point ahead of him, nothing is locked on
-      const blend = 1 - Math.exp(-dt * 8);
+      const blend = 1 - Math.exp(-dt * cameraRule('camSettleRate'));
       const was = freeShare;
       freeShare = FREE_CAM ? stepShare(freeShare, free, dt, FREE_CAM.handOverSeconds, !started) : 0;
       swingLeft = freeShare !== was ? (FREE_CAM?.swingTailSeconds ?? 0) : Math.max(0, swingLeft - dt);   // while the share moves (and a moment after) the camera swings round the hero to its new place, never through him
@@ -335,7 +339,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       shortFade = finish ? Math.max(0, shortFade - dt / SHORT_FADE) : 1;
       const shortShare = shortFade * shortFade * (3 - 2 * shortFade);   // smoothstep: no kink where the ease starts or ends
       const cameraTarget = cameraPose(state, yaw, pitch, locked, enemy, 1 - (1 - enemyScale) * shortShare, enemyTall * shortShare, enemyLow * shortShare, (1 + (FIGHT_BACK - 1) * shortShare) * (1 + (widen - 1) * shortShare), 1 + (LOCK_LIFT - 1) * shortShare, LOCK_SIDE * shortShare);   // a finish takes the fight-back scale out on the same ease as the short-foe lift, so it frames as it always did
-      look.set(cameraTarget.lookX, locked ? 0.8 : 1, cameraTarget.lookZ);
+      look.set(cameraTarget.lookX, locked ? LOCK_LOOK_Y : 1, cameraTarget.lookZ);
       desired.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
       const pitchNow = PITCH_PORTRAIT && camera.aspect < PITCH_PORTRAIT.belowAspect ? PITCH_PORTRAIT : PITCH;   // a portrait screen's own pitch, else the page's
       if (pitchNow && locked) {   // the zone's flatter pitch, shared out by the same ease as the short-foe terms: a finish frames as it always did
@@ -347,7 +351,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
       // never an FOV change. Off when the viewer prefers reduced motion; the frame loop's hit-stop stays the one impact pause.
       // Paced to the slowed finisher clock (1.3 s / 0.75); a plain-death pick gets no dolly — an ordinary kill stays ordinary.
       if (FINISH_ZOOM && finish && finish.posed && !finish.draw && !still)
-        finishPush = Math.min(1, finishPush + dt / (1.3 / 0.75));
+        finishPush = Math.min(1, finishPush + dt / (cameraRule('finishPushClock') / cameraRule('finishPushRate')));
       else if (!finish) finishPush = 0;
       if (finishPush > 0) {
         const fallen = finish!.victim === 1 ? enemy : state;
@@ -374,8 +378,8 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         look.x += (focusX - look.x) * turn * finishPush;
         look.z += (focusZ - look.z) * turn * finishPush;
         if (push) {
-          desired.y += (1.55 - desired.y) * 0.3 * finishPush;
-          look.y += (0.8 - look.y) * 0.7 * finishPush;
+          desired.y += (cameraRule('pushEyeY') - desired.y) * cameraRule('pushEyeShare') * finishPush;
+          look.y += (cameraRule('pushLookY') - look.y) * cameraRule('pushLookShare') * finishPush;
         }
       }
       const finisher = finish?.finisher ?? null, open = finisher !== null ? finisherRow(finisher)?.camera.reveal : undefined;
@@ -389,7 +393,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
           enemy,
           camera.aspect,
           open.side,
-          finish.big ? 1.5 : 1,
+          finish.big ? cameraRule('bigBodyScale') : 1,
           finish.reach ?? 0,
         );
         desired.lerp(eyeTarget.set(side.x, side.y, side.z), reveal);
@@ -436,7 +440,7 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         const focusX = finish.head ? (fallen.x + finish.head.x) / 2 : fallen.x, focusZ = finish.head ? (fallen.z + finish.head.z) / 2 : fallen.z;
         tourAngle ??= Math.atan2(camera.position.x - focusX, camera.position.z - focusZ);
         const angle = tourAngle + (t * 2 * Math.PI) / TOUR.lap, radius = TOUR.radius + TOUR.breath * Math.sin((t * 2 * Math.PI) / TOUR.breathe);
-        const height = (low ? 1.2 : 1.6) + (low ? 1 : 1.6) * (1 - Math.cos((t * 2 * Math.PI) / TOUR.rise)) / 2;
+        const height = (low ? cameraRule('tourEyeLow') : cameraRule('tourEyeHigh')) + (low ? cameraRule('tourRiseLow') : cameraRule('tourRiseHigh')) * (1 - Math.cos((t * 2 * Math.PI) / TOUR.rise)) / 2;
         const tour = eyeTarget.set(focusX + Math.sin(angle) * radius, height, focusZ + Math.cos(angle) * radius), r = Math.hypot(tour.x, tour.z);
         if (r > ARENA_CLAMP) { tour.x *= ARENA_CLAMP / r; tour.z *= ARENA_CLAMP / r; }
         const s = Math.min(1, t / TOUR.blendIn), blendIn = s * s * (3 - 2 * s);
@@ -454,8 +458,9 @@ export function createCameraRig(camera: THREE.PerspectiveCamera, still = prefers
         look.lerp(lookTarget.set(state.x, camera.aspect < 1 ? INTRO.lookYPortrait : INTRO.lookY, state.z), k);
       } else if (introShare === 0) { introAngle = null; introT = 0; }
       if (LOOK_FOE) {   // stills only (?look=foe, like ?tier=): the opponent from the front, 50° off the line to the player so the player never blocks him
-        const facing = Math.atan2(state.x - enemy.x, state.z - enemy.z) + 0.87;
-        desired.set(enemy.x + Math.sin(facing) * 4.4, 1.6, enemy.z + Math.cos(facing) * 4.4); look.set(enemy.x, 0.95, enemy.z);
+        const facing = Math.atan2(state.x - enemy.x, state.z - enemy.z) + cameraRule('lookFoeAngle');
+        const away = cameraRule('lookFoeDistance');
+        desired.set(enemy.x + Math.sin(facing) * away, cameraRule('lookFoeEyeY'), enemy.z + Math.cos(facing) * away); look.set(enemy.x, cameraRule('lookFoeLookY'), enemy.z);
       }
       camera.position.addScaledVector(kickOffset, -shoved); // last draw's shove comes off before the settle
       camera.position.sub(swayApplied); swayApplied.set(0, 0, 0);   // and the tumble's shift

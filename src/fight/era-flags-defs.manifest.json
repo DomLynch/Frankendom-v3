@@ -1,0 +1,5 @@
+{
+  "tables": [
+    { "table": "era-flag", "file": "era-flags-defs.json", "at": "flags", "key": "id", "required": { "bit": { "type": "integer", "min": 0, "max": 7 }, "module": "string" }, "unique": ["bit"] }
+  ]
+}

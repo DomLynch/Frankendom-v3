@@ -16,13 +16,13 @@ import { heldWeapon } from './rig-bones.ts';
 import { isHeavyMove } from './move-rows.ts';
 import type { CombatEvent } from './duel.ts';
 
-export type LimbRows = typeof ROWS;
+type LimbRows = typeof ROWS;
 /** The part state the plan reads: each part's budget (hp of max) and the sword side. The sim's fractions become hp = fraction, max = 1. */
-export type Fighter = { sword_side: string; parts: Record<string, { hp: number; max: number }> };
+type Fighter = { sword_side: string; parts: Record<string, { hp: number; max: number }> };
 type PartRow = { startFrac: number; sided: boolean; motor: Record<string, number>; blend: Record<string, number>; gait?: { periodS: number; dipTo: number; dipFrac: number; goodDipTo: number; hipsDropM: number; hipsTiltRad: number; hipsBaseFrac: number };
   stumble?: { heavyOnly: boolean; level: number; dipTo: number; inS: number; holdS: number; upS: number; cooldownS: number; blend: number; hipsDropM: number; hipsTiltRad: number };
   drop?: { afterS: number; velocity: number[]; spin: number[]; gravity: number; restitution: number; bounces: number; minBounceSpeed: number; bounceFriction: number; restHeightM: number; lieS: number } };
-export type RowKey = 'leg' | 'arm_sword' | 'arm_off' | 'torso' | 'head';
+type RowKey = 'leg' | 'arm_sword' | 'arm_off' | 'torso' | 'head';
 
 /** ?feel=limbs asked for (the registry runs the module only then) . The part budgets come from the sim; ?rules=m4 is needed only by the stills' fallback. */
 export function feelLimbsOn(rows: Pick<LimbRows, 'on' | 'query' | 'value'>, search: string): boolean {
@@ -71,7 +71,7 @@ export function stumbleDepth(s: { inS: number; holdS: number; upS: number }, age
   return age < s.inS ? age / s.inS : age < s.inS + s.holdS ? 1 : 1 - (age - s.inS - s.holdS) / s.upS;
 }
 
-export type Hurt = { id: string; key: RowKey; side: 'left' | 'right' | null; level: number };
+type Hurt = { id: string; key: RowKey; side: 'left' | 'right' | null; level: number };
 /** Every part of the fighter hurt enough to show (level above 0), with its row and side. */
 export function hurtParts(rows: LimbRows, f: Fighter): Hurt[] {
   const out: Hurt[] = [];
@@ -85,8 +85,8 @@ export function hurtParts(rows: LimbRows, f: Fighter): Hurt[] {
 }
 
 /** The pelvis: sunk `drop` metres and rolled `tilt` radians toward `side` (the bad leg's). */
-export type Hips = { drop: number; tilt: number; side: 'left' | 'right' };
-export type Plan = { strength: Record<string, number>; share: Record<string, number>; hurt: Hurt[]; hips: Hips | null };
+type Hips = { drop: number; tilt: number; side: 'left' | 'right' };
+type Plan = { strength: Record<string, number>; share: Record<string, number>; hurt: Hurt[]; hips: Hips | null };
 /** The motor strength and the share of the ragdoll's pose per ragdoll part this moment. `t`: seconds on the page's clock (the gait's phase); `stumbleAge`: seconds since the last stumble (negative: none). Pure. */
 export function planOf(rows: LimbRows, f: Fighter, t: number, stumbleAge: number): Plan {
   const strength: Record<string, number> = {}, share: Record<string, number> = {}, P = rowsOf(rows);
@@ -129,7 +129,7 @@ export function stumbles(rows: LimbRows, f: Fighter, heavy: boolean, sinceLast: 
 export const heavyHit = (e: Pick<CombatEvent, 'charged' | 'move'>): boolean => e.charged === true || isHeavyMove(e.move) || (e.move !== undefined && RULES.heavyMoves.includes(e.move));
 
 /** The dropped weapon's fall, stepped by dt in the world (an analytic prop): gravity, bounces that lose speed, then lying. Mutates and returns the state it is given. */
-export type Fall = { p: [number, number, number]; v: [number, number, number]; floor: number; bounces: number; landedFor: number; landed: boolean };
+type Fall = { p: [number, number, number]; v: [number, number, number]; floor: number; bounces: number; landedFor: number; landed: boolean };
 export function stepFall(d: Pick<NonNullable<PartRow['drop']>, 'gravity' | 'restitution' | 'bounces' | 'minBounceSpeed' | 'bounceFriction' | 'restHeightM'>, s: Fall, dt: number): Fall {
   if (s.landed) { s.landedFor += dt; return s; }
   s.v[1] -= d.gravity * dt;
@@ -145,7 +145,7 @@ export function stepFall(d: Pick<NonNullable<PartRow['drop']>, 'gravity' | 'rest
 
 // ---- the live part -----------------------------------------------------------------------------------------------------------------------------------
 /** What the module needs of the page, read fresh each call (the registry builds a ctx per call; the ragdoll may be rebuilt between). */
-export type Env = {
+type Env = {
   fighter(): Fighter | null;
   active(): boolean;   // alive and the ragdoll tracking the clip (not down, not dead)
   rd(): { setMotorStrength(rows: number | Record<string, number>): void } | undefined;
@@ -158,7 +158,7 @@ export type Env = {
 export function createLimbs(rows: LimbRows, env: Env) {
   const P = rowsOf(rows), levels = new Map<string, number>(), stepOf = (l: number) => Math.floor(l / rows.levelStep + 1e-9);
   let touched: string[] = [];   // the ragdoll parts whose motor strength this module set last frame
-  let t = 0, sinceStumble = 1e9, stumbleAge = -1, armZeroFor = -1, dropped = false, clone: THREE.Object3D | undefined, hidden: THREE.Object3D | undefined, fall: Fall | undefined;
+  let t = 0, sinceStumble = Infinity, stumbleAge = -1, armZeroFor = -1, dropped = false, clone: THREE.Object3D | undefined, hidden: THREE.Object3D | undefined, fall: Fall | undefined;
   const spin = new THREE.Vector3(), flat = new THREE.Quaternion(), from = new THREE.Quaternion(), tmpQ = new THREE.Quaternion();
   const cost = { frames: 0, totalMs: 0, maxMs: 0, stumbles: 0, last: null as null | { strength: Record<string, number>; share: Record<string, number> } };
   const api = {
@@ -172,7 +172,7 @@ export function createLimbs(rows: LimbRows, env: Env) {
     },
     /** The rematch: the body whole, the weapon back in his hand. */
     reset() {
-      levels.clear(); stumbleAge = -1; sinceStumble = 1e9; armZeroFor = -1; dropped = false; fall = undefined;
+      levels.clear(); stumbleAge = -1; sinceStumble = Infinity; armZeroFor = -1; dropped = false; fall = undefined;
       if (clone) { clone.removeFromParent(); clone = undefined; }
       if (hidden) { hidden.visible = true; hidden = undefined; }
       if (touched.length) env.rd()?.setMotorStrength(Object.fromEntries(touched.map((p) => [p, 1])));   // only the parts this module dipped: another module's dips (clash, hitreact) are theirs to end
@@ -198,7 +198,7 @@ export function createLimbs(rows: LimbRows, env: Env) {
       // it dipped last frame and no longer asks for go back to 1 once (never `all`, and never a rewritten 1.0 every frame: the engine keeps the last value written per part, so that would undo
       // clash's, hitreact's and kick's dips on the parts they share with the good leg's antiphase).
       const ask: Record<string, number> = {};
-      for (const [p, s] of Object.entries(plan.strength)) if (s < 0.999) ask[p] = s;
+      for (const [p, s] of Object.entries(plan.strength)) if (s < rows.dipAskBelow) ask[p] = s;
       const showing = plan.hurt.length > 0 || stumbleAge >= 0, undip = touched.filter((p) => !(p in ask)), asked = Object.keys(ask);
       if (env.active()) {
         if (undip.length || asked.length) { rd.setMotorStrength({ ...Object.fromEntries(undip.map((p) => [p, 1])), ...ask }); touched = asked; }

@@ -27,11 +27,9 @@ test('the shipped plate row validates; bad rows are refused', () => {
   assert.ok(validateFile('stage', none).length >= 1);
 });
 
-test('the shipped numbers: about 100 degrees, 4:1 window, the swap is rows only (file, cropAspect, horizonFraction, face)', () => {
+test('the shipped numbers: about 100 degrees, 4:1 window, the swap is rows only (file, cropAspect, horizonFraction, face) (behaviour half; the source pins moved to test/source-pins/)', () => {
   assert.equal(P.on, true); assert.equal(P.spanDegrees, 100); assert.equal(P.cropAspect, 4); assert.equal(P.query, 'skyplate'); assert.equal(P.v1, 'v1');
   assert.match(P.file, /\.webp$/);
-  const src = readFileSync(new URL('../src/fight/skyplate.ts', import.meta.url), 'utf8') + readFileSync(new URL('../src/fight/skyline.ts', import.meta.url), 'utf8');
-  for (const k of ['spanDegrees', 'cropAspect', 'faceElevationDegrees', 'edgeFadeFraction', 'turnDegrees', 'horizonFraction', 'file']) assert.match(src, new RegExp(`\\.${k}\\b`), k);
 });
 
 test('the plate picture ships: a WebP under 400 KB whose shape is exactly cropAspect (no stretch), and the old strip picture is still there for the rollback', () => {

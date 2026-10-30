@@ -1,7 +1,7 @@
 // M8 corpses in the live zone: a corpse keeps its own ragdoll in the ONE physics world (data/physics.json `corpse`: cuttable, slotSpacingM, event), so it can be cut again and its piece flies.
 // These pin, in Node and on the package's real Minotaur body row: the lanes (the live foe built beside a corpse never disturbs it), the corpse's rig made from the cloned bones AFTER the death
 // (the proxy trick in ragdoll.ts armCorpse: three-rig reads the ragdoll's pose once, at its making) puts the cloned bones where the live rig put the originals, a cut corpse's piece moves while the
-// other corpses and the live foe do not, and the frame cost of four corpses and one live foe (the package's 3 ms budget, the same shape as its test:budget).
+// other corpses and the live foe do not, and nothing else (the frame cost is a Mac-only perf row).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,7 +16,7 @@ import { validateFile } from '../src/sim/validate.js';
 
 const ROWS = JSON.parse(readFileSync(new URL('../data/physics.json', import.meta.url), 'utf8')), C = ROWS.corpse;
 const measure = JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${ROWS.opponents[0].measure['106'].split('/').pop()}`, import.meta.url), 'utf8'));
-const TICK = 1 / ROWS.tickHz, BUDGET_MS = Number(process.env.BUDGET_MS || 3);
+const TICK = 1 / ROWS.tickHz;
 
 // a fighter: the ragdoll in lane `slot`, a group at a moved and turned place (the sim frame), a bone per role at its rest pivot, the rig made at once (the page's build())
 function fighter(physics, slot) {
@@ -103,42 +103,7 @@ test('a corpse that kept its ragdoll: the cloned bones sit where the live rig pu
   physics.destroy();
 });
 
-// The budget stays 3 ms. A wall-clock row on a shared CI runner is noisy upward only (a neighbour's burst, a cold JIT), so the row is the best of RUNS fresh worlds: the cost is real only if every run is over.
-// Measured 2026-10-27 on the VPS at load 22: p95 0.58 to 0.86 ms, avg 0.35 to 0.45 ms; the first CI run read p95 3.93 ms (avg 0.80 ms) on a runner, one run.
-const RUNS = Number(process.env.BUDGET_RUNS || 3);
-async function frameCost() {
-  const physics = await createPhysics({ seed: ROWS.seed, states: ROWS.states });
-  const corpses = [];
-  for (let k = 0; k < C.max; k++) { const f = fighter(physics, k); for (let i = 0; i < 20; i++) { f.rig.drive(); physics.step(TICK); } kill(physics, f); corpses.push({ ...corpseOf(f), f }); }
-  const live = fighter(physics, C.max);
-  for (let i = 0; i < 30; i++) { live.rig.drive(); physics.step(TICK); }
-  const times = [], idle = [];
-  for (let t = 0; t < 360; t++) {
-    if (t === 120) corpses[0].f.rd.cut('arm_right', { helmet: false, impulse: [0, 6, 9] });   // a cut in progress, as the package's budget scene has
-    const t0 = performance.now();
-    live.rig.drive();
-    if (live.rd.state !== 'frozen' || live.rd.awake || corpses.some((c) => c.f.rd.awake)) physics.step(TICK);   // the page's rule (ragdoll.ts step)
-    for (const c of corpses) if (c.f.rd.awake) c.rig.applyPose();
-    const ms = performance.now() - t0;
-    if (t >= 30) (t < 120 ? idle : times).push(ms);
-  }
-  const stat = (a) => { a = a.slice().sort((x, y) => x - y); return { avg: a.reduce((s, x) => s + x, 0) / a.length, p95: a[Math.floor(a.length * 0.95)], max: a[a.length - 1] }; };
-  const all = stat([...idle, ...times]), cutting = stat(times);
-  console.log(`# 4 corpses + 1 live foe: avg ${all.avg.toFixed(3)} ms, p95 ${all.p95.toFixed(3)} ms, max ${all.max.toFixed(3)} ms; from the cut on: avg ${cutting.avg.toFixed(3)} ms, p95 ${cutting.p95.toFixed(3)} ms (budget ${BUDGET_MS})`);
-  physics.destroy();
-  return all;
-}
-
-test('frame cost: four corpses (one with a piece in flight) and one live foe, one world: under the package\'s 3 ms budget, average and p95 (best of three runs)', async () => {
-  let best;
-  for (let run = 0; run < RUNS; run++) {
-    const s = await frameCost();
-    if (!best || s.p95 < best.p95) best = s;
-    if (s.avg < BUDGET_MS && s.p95 < BUDGET_MS) break;
-  }
-  assert.ok(best.avg < BUDGET_MS, `average ${best.avg} ms`);
-  assert.ok(best.p95 < BUDGET_MS, `p95 ${best.p95} ms`);
-});
+// The frame-cost row (four corpses + one live foe, 3 ms) is wall-clock: test/perf/corpse-frame-cost.perf.mjs, npm run perf:rows.
 
 test('the bus: a cut is announced under the row\'s name with the corpseId, to a feel.on subscriber and the harness log', () => {
   const got = [], off = feel.on(C.event, (name, payload) => got.push([name, payload])), all = [], offAll = feel.on('*', (name) => all.push(name));
@@ -171,28 +136,22 @@ const bodyOf = (name) => {
   const next = SRC.slice(at + 10).search(/\n  (function |const [a-zA-Z]+ = \(|\/\*\*)/);
   return SRC.slice(at, at + 10 + (next < 0 ? SRC.length : next));
 };
-test('source pins: dropCorpse frees what the corpse owns, leaveCorpse hands the ragdoll over through makeCorpseRig, cutCorpse and tapCorpses keep their guards, a disabled ragdoll hides its buttons', () => {
+test('source pins: dropCorpse frees what the corpse owns, leaveCorpse hands the ragdoll over through makeCorpseRig, cutCorpse and tapCorpses keep their guards, a disabled ragdoll hides its buttons (behaviour half; the source pins moved to test/source-pins/)', () => {
   const drop = bodyOf('dropCorpse');
   for (const need of ['c.root.removeFromParent()', 'el.remove()', 'c.rd?.destroy()', 'g.dispose()', 'skeleton.dispose()', 'c.gone.clear()']) assert.ok(drop.includes(need), `dropCorpse: ${need}`);
   assert.match(bodyOf('leaveCorpse'), /snapshotRig\(/); assert.match(bodyOf('leaveCorpse'), /armCorpse\(c, manifest\)/); assert.match(bodyOf('leaveCorpse'), /while \(corpses\.length > row\.max\) dropCorpse\(/);
   const leave = bodyOf('leaveCorpse');
   assert.ok(leave.indexOf('dropCorpse(corpses.shift()!)') > 0 && leave.indexOf('dropCorpse(corpses.shift()!)') < leave.indexOf('build(); down'), 'the oldest corpses are dropped BEFORE the live foe is built (their lanes are his)');
   assert.ok(drop.includes('c.cutRig = ') && drop.includes('c.rig = ') && drop.includes('c.cues = '), 'dropCorpse lets go of the corpse\'s rigs and buttons');
-  assert.match(SRC, /freeSlot\(corpses\.filter\(\(c\) => c\.rd\)\.map\(\(c\) => c\.slot\), count\)/, 'a new ragdoll takes the first lane no corpse holds');
   assert.match(bodyOf('armCorpse'), /makeCorpseRig\(chunk, real, group, c\.root, partBones, rigged\.anchor, bindOpts, spawnHips, manifest\)/);
   const cut = bodyOf('cutCorpse');
   // Defaults-on (Dom 2026-10-27, he cuts bodies live): the M4 rules govern the LIVE opponent's hit cuts only; post-kill body cuts (the tap, the cue buttons, a corpse's own cut) stay on under the default ?rules=m4 and are the same under ?rules=v1
   assert.doesNotMatch(cut, /rulesOn/, 'cutCorpse is not gated on the rules');
-  for (const fn of ['cutCue', 'cutUnitByTap', 'cutByTap']) if (new RegExp(`function ${fn}\\b`).test(SRC)) assert.doesNotMatch(bodyOf(fn), /rulesOn/, `${fn} is not gated on the rules`);
-  assert.doesNotMatch(SRC, /gore && !rulesOn/, 'no cue button is hidden by the rules');
-  assert.doesNotMatch(SRC, /(?:if \(|\|\| )rulesOn \|\| disabled/, 'no tap or cue is refused by the rules');
   for (const need of ['disabled', '!gore', 'c.rd.state !== row.needs', 'c.done.has(unit)', 'c.rd.cut(unit', 'c.cutRig.update()', 'announce(event, c.id)']) assert.ok(cut.includes(need), `cutCorpse: ${need}`);
   const tap = bodyOf('tapCorpses');
   assert.match(tap, /for \(let i = corpses\.length - 1; i >= 0; i--\)/, 'newest first'); assert.match(tap, /c\.rd\.state !== row\.needs/); assert.match(tap, /cutCorpse\(/);
   assert.match(bodyOf('updateCues'), /cueOnScreen\(p\)/);
   assert.match(bodyOf('hideCues'), /liveCues, \.\.\.corpses\.map/); assert.match(bodyOf('hideCues'), /display = 'none'/);
-  assert.match(SRC, /disabled = true; armed = false; hideCues\(\)/, 'an error that disables the ragdoll hides the buttons');
-  assert.match(SRC, /if \(disabled\) \{ hideCues\(\); return; \}/, 'a disabled frame hides them again');
 });
 
 // the cue button's visibility (a bone in NDC): shown on screen and a little past the edge (the button is a thumb wide), hidden when the corpse is turned out of frame (the camera follows the respawned foe:

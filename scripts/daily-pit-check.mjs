@@ -4,11 +4,11 @@
 //   3 a win: the result screen, the DOM event, the record in the save   4 Try again -> a defeat: score 0, the best is kept   5 attempts spent: the card has no Fight button
 //   6 the UTC rollover (23:59:59.9 -> 00:00:00.1): new day, new attempts   7 an old save with no daily field loads   8 zero page errors, zero console errors
 //   node scripts/daily-pit-check.mjs <base url> <out dir>          (npm run build, then node scripts/serve.mjs 8733; playwright from the machine)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { pickFor, scoreOf } from '../src/daily-pit.ts';
+import { launchBrowser, waitPlayable } from './lib/browser.mjs';
 
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/daily-pit-check.mjs <base url> <out dir>'); process.exit(2); }
@@ -22,7 +22,7 @@ const at = (iso) => Date.parse(iso);
 const pick1 = pickFor(D, DAY1), pick2 = pickFor(D, DAY2);
 assert.deepEqual([pick1.boss, pick1.modifier.id], ['gargantua', 'double-damage']);
 
-const browser = await chromium.launch({ ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}), args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ angle: 'swiftshader', chromeEnv: 'CHROMIUM_PATH' });
 const phone = { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const errors = [];
 const ctx = await browser.newContext(phone);
@@ -37,7 +37,7 @@ const open = async (query, tag, { ready = true, pin, mode } = {}) => {
   }, { p: pin ?? 0, m: mode ?? '', key: D.modeKey });
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   if (ready) {
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+    await waitPlayable(page, { timeout: 240000 });
     await page.waitForTimeout(1200);
   } else await page.waitForFunction(() => !!globalThis.__v3DailyPit, null, { timeout: 60000 });
   return page;
@@ -68,7 +68,7 @@ assert.match(card, new RegExp(nameOf('gargantua'))); assert.match(card, /Double 
 await shot(page, '2-card');
 // 2 Fight: the page reloads INTO the daily
 await Promise.all([page.waitForEvent('load'), page.click('#daily-pit-fight')]);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+await waitPlayable(page, { timeout: 240000 });
 await page.waitForTimeout(1200);
 const run = await page.evaluate(() => globalThis.__v3DailyPit.run);
 assert.deepEqual([run.date, run.boss, run.modifier.id, run.stars], [DAY1, 'gargantua', 'double-damage', 0]);
@@ -101,7 +101,7 @@ assert.equal(await page.evaluate(() => globalThis.__v3DailyPit.run.boss), 'garga
 console.log(`win: ${JSON.stringify(win.row)}`);
 // 4 Try again -> a defeat
 await Promise.all([page.waitForEvent('load'), page.click('#daily-pit-again')]);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+await waitPlayable(page, { timeout: 240000 });
 assert.match(await page.textContent('#daily-pit-banner'), /Double damage/);
 await page.evaluate((ev) => { globalThis.__got = []; window.addEventListener(ev, (e) => globalThis.__got.push(e.detail)); }, D.event);
 await page.waitForFunction(() => globalThis.__v3Zone?.engaged === true, null, { timeout: 180000 });

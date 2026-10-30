@@ -9,7 +9,7 @@ import type { MarkLook, SignatureMarks } from './signature.ts';
 // whiffed cast leaves nothing. Charred black at the heart, a ring of the witch-green still smouldering at its edge, so the mark says whose
 // fire it was, never a bruise or a blood stain (it is not blood: it shows with blood off).
 // 0.36 m with a pale ash halo: at 0.24 m, char alone vanished on the Witch's dark robe and only a thin green ring read (375 still, 2026-09-25).
-export const SCORCH = { size: 0.36, opacity: 0.95, fadeIn: 0.08, tilt: 0.6 } as const;   // metres across; it chars over the gout's first frames
+const SCORCH = { size: 0.36, opacity: 0.95, fadeIn: 0.08, tilt: 0.6 } as const;   // metres across; it chars over the gout's first frames
 
 let art: THREE.Texture | null | undefined;
 function scorchArt(): THREE.Texture | null {
@@ -55,13 +55,13 @@ function scorchArt(): THREE.Texture | null {
   return (art = texture);
 }
 
-export const scorchLook = (tick: number): MarkLook => ({
+const scorchLook = (tick: number): MarkLook => ({
   width: SCORCH.size, height: SCORCH.size, map: scorchArt(), color: scorchArt() ? '#ffffff' : '#141210',
   opacity: SCORCH.opacity, roughness: 0.95, metalness: 0, fadeIn: SCORCH.fadeIn,
   tilt: ((Math.imul(tick, 2654435761) >>> 0) / 4294967296 * 2 - 1) * SCORCH.tilt,   // seeded from the tick: a replay scorches the same way
 });
 
-export const scorches = (event: CombatEvent): boolean => event.type === 'Hit' && fxOfMove(event.move) === 'witchfire' && event.target !== undefined && !!event.location;
+const scorches = (event: CombatEvent): boolean => event.type === 'Hit' && fxOfMove(event.move) === 'witchfire' && event.target !== undefined && !!event.location;
 
 // Burn this frame's landed Witch-fires onto their targets. `roots` and `scale` per side, as the signature frame carries them.
 export function scorch(events: readonly CombatEvent[], fighters: readonly Fighter[], roots: readonly (THREE.Object3D | null)[], scale: readonly number[], marks: Pick<SignatureMarks, 'body'>): number {

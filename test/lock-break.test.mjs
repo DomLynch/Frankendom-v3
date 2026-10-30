@@ -54,12 +54,10 @@ test('holding the stick away breaks the lock; a tap, a drift, a strafe and a bac
   assert.equal(run(s, 10, frame({ stick: AWAY })).broken, false);
 });
 
-test('no artificial gates: the break does not look at the hero, the foe, the stamina or the fight age', () => {
+test('no artificial gates: the break does not look at the hero, the foe, the stamina or the fight age (behaviour half; the source pins moved to test/source-pins/)', () => {
   // the frame carries only the stick, the view, the two positions and the pressed action; nothing else can hold the lock
   assert.equal(stepLock(R, fresh, frame({ stick: AWAY, action: 'dodge' })).state.broken, true, 'a roll away breaks on the first tick of the fight');
   assert.equal(run(fresh, 20, frame({ stick: AWAY })).broken, true, 'so does a held stick');
-  const src = read('../src/fight/lock-break.ts');
-  assert.doesNotMatch(src.replace(/\/\/.*$/gm, ''), /stamina|hurt|windup|minEngage|cooldown/i);
 });
 
 test('a roll pointed away breaks at once; a roll toward, sideways or with no stick does not', () => {
@@ -126,12 +124,4 @@ test('TRACE at 60 fps: push away, hold, release, jitter, roll; the time to break
   assert.ok(firstMs <= R.commitSeconds * 1000 + 2 * (1000 / 60), 'time to break is the debounce plus at most two frames');
   assert.ok(firstMs >= R.commitSeconds * 1000 - 1000 / 60, 'and not sooner than the debounce');
   assert.ok(!lines.slice(6 + 30 + 12, 6 + 30 + 12 + 8).some((l) => l.includes('BROKEN')), 'frame-flipping jitter never breaks it');
-});
-
-test('page wiring: the soft lock feeds the sim lock flag and the camera; no stamina is touched', () => {
-  const main = read('../src/client/main.ts');
-  assert.match(main, /lockBreakFor\(!!ZONE, search\)/);
-  assert.match(main, /lock: lockOn/);
-  assert.match(main, /broken: lockState\.broken/);
-  assert.doesNotMatch(main, /spendStamina/);
 });

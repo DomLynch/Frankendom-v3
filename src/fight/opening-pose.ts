@@ -11,7 +11,7 @@ export const openWeight = (o: Pick<Opening, 'left' | 'of'> | null): number => {
   const done = 1 - o.left / o.of;
   return ramp(done, 0, IN) * (1 - ramp(done, 1 - OUT, 1));
 };
-export type OpenPose = { lean: number; tilt: number; arm: number; guard: number };   // spine_01.x forward, spine_01.z off-balance side, upperarm_r.x tip down, raised-guard multiplier
+type OpenPose = { lean: number; tilt: number; arm: number; guard: number };   // spine_01.x forward, spine_01.z off-balance side, upperarm_r.x tip down, raised-guard multiplier
 export const NO_OPEN: OpenPose = { lean: 0, tilt: 0, arm: 0, guard: 1 };
 export const openPose = (w: number, kind: Opening['kind'] = 'parry'): OpenPose =>
   w <= 0 ? NO_OPEN : { lean: .22 * w, tilt: (kind === 'posture' ? .22 : .16) * w, arm: .45 * w, guard: 1 - .85 * w };

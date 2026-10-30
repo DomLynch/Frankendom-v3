@@ -2,19 +2,19 @@
 //   node scripts/kbm-stills.mjs <base url> <out dir> <tag> <WxH> <touch|desktop> [query]
 // touch: a phone (isMobile, hasTouch, 2x); desktop: a plain window with a mouse and keyboard (1x). Shots: <tag>-1-ready (the scene settled), <tag>-2-fight (a few seconds on, a key held so the layout is read
 // with a fight under way), and with kbm on desktop <tag>-3-click (a left click on the arena: a strike). Prints the page errors (must be 0), the layout attribute and the boxes of the HUD parts.
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, tag, size, kind, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag || !/^\d+x\d+$/.test(size ?? '') || !['touch', 'desktop'].includes(kind)) { console.error('usage: node scripts/kbm-stills.mjs <base url> <out dir> <tag> <WxH> <touch|desktop> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const [width, height] = size.split('x').map(Number), errors = [];
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: process.env.GL_ARGS ? process.env.GL_ARGS.split(' ') : ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ glArgsEnv: true });
 const page = await browser.newPage(kind === 'touch' ? { viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width, height }, deviceScaleFactor: 1 });
 page.on('pageerror', (e) => errors.push(`pageerror ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console ${m.text()}`); });
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+await waitPlayable(page, { timeout: 240000 });
 await page.waitForTimeout(3000);
 const shoot = async (name) => { await page.waitForTimeout(400); await page.screenshot({ path: `${out}/${tag}-${name}.png`, timeout: 300000 }); };   // software GL at a desktop size can take longer than the default 30 s for one frame
 const report = (label) => page.evaluate((label) => {

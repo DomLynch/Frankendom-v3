@@ -64,24 +64,20 @@ test('the build ships the baked file, the wrap is cross-faded, and it is lighter
   assert.ok(SKYLINE.seamOverlapPx > 0);
 });
 
-test('the fetch waits for the first frame and never blocks first paint (source pin)', () => {
-  const src = read('../src/fight/skyline.ts');
-  assert.match(src, /afterFirstFrame\(\)\s*\n?\s*\.then/);   // the fetch is chained behind the first-frame gate
-  assert.ok(src.indexOf('afterFirstFrame()') < src.indexOf('load()'));
-  assert.match(src, /loadAfterFirstFrameMs/);
-  assert.doesNotMatch(src, /\bawait\b/);   // nothing in the scene build awaits it
-  const scene = read('../src/fight/scene.ts');
-  assert.match(scene, /createSkyline\(scene, /);
-  assert.match(scene, /skyline\?\.update\(camera\.position, dt\)/);
-  assert.doesNotMatch(scene, /await[^\n]*skyline/);
-  assert.match(scene, /skyline\?\.update\(camera\.position, dt\);[^\n]*\n(\s*skyfold\?\.update\(camera\.position, dt, skyline\);[^\n]*\n)?\s*syncIdleFoes\(practice, dt\);/);   // after rig.update placed the camera, before the draw, and on its own line: a trailing // comment must never swallow the next statement (the #119 bug class)
-  assert.ok(scene.indexOf('rig.update(dt, state') < scene.indexOf('skyline?.update('));
-  assert.match(src, /depthWrite: false/); assert.match(src, /fog: false/); assert.match(src, /renderOrder = SKYLINE_ORDER/); assert.match(src, /SKYLINE_ORDER = -1000/);
-});
-
-test('no literals: the strip is built from the row, not from numbers in TS', () => {
-  const src = read('../src/fight/skyline.ts');
-  for (const k of ['radius', 'heightMetres', 'horizonFraction', 'yawDegrees', 'brightness', 'fadeSeconds', 'file']) assert.match(src, new RegExp(`row\\.${k}`));
+test('no literals: the whole strip (?skyplate=v1) is built from the row; each knob moves the thing it names', () => {
+  const mk = (patch) => createSkyline(new THREE.Scene(), '?skyplate=v1', { ...SKYLINE, ...patch }, () => new Promise(() => {}));
+  const base = mk({}), g = base.mesh.geometry.parameters;
+  const moved = mk({ radius: g.radiusTop + 7, heightMetres: g.height + 5, brightness: 0.37, yawDegrees: SKYLINE.yawDegrees + 11 });
+  assert.equal(moved.mesh.geometry.parameters.radiusTop, g.radiusTop + 7, 'radius');
+  assert.equal(moved.mesh.geometry.parameters.height, g.height + 5, 'heightMetres');
+  assert.equal(moved.mesh.material.color.r, 0.37, 'brightness');
+  assert.ok(Math.abs(moved.mesh.rotation.y - THREE.MathUtils.degToRad(SKYLINE.yawDegrees + 11)) < 1e-12, 'yawDegrees');
+  for (const horizonFraction of [0.3, 0.8]) {
+    const row = { ...SKYLINE, horizonFraction }, sky = mk({ horizonFraction });
+    sky.update(new THREE.Vector3(0, 0, 0), 0);
+    assert.equal(sky.mesh.position.y, centreOffsetY(row), `horizonFraction ${horizonFraction} sets the strip's height`);
+  }
+  assert.notEqual(centreOffsetY({ ...SKYLINE, horizonFraction: 0.3 }), centreOffsetY({ ...SKYLINE, horizonFraction: 0.8 }));
 });
 
 test('a landed strip fades in over the row time; a failed fetch leaves the flat sky', async () => {
