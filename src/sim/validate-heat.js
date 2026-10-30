@@ -38,6 +38,9 @@ export function validateHeat(rows, ringIds = [], profileIds = [], starLevels = [
   const u = rows.hunt;
   if (!u) e.push('heat.hunt: missing');
   else {
+    if (typeof u.on !== 'boolean') e.push('heat.hunt.on: true or false');
+    if (typeof u.query !== 'string' || !/^[a-z][a-z0-9-]{0,15}$/.test(u.query)) e.push('heat.hunt.query: a short lowercase word');
+    if (typeof u.value !== 'string' || !u.value.trim()) e.push('heat.hunt.value: a non-empty string');
     if (!profileIds.includes(u.kind)) e.push(`heat.hunt.kind: "${String(u.kind)}" is no data/profiles.json row`);
     inside('hunt.maxHunters', u.maxHunters, 'maxHunters');
     for (const k of ['arrivalDelaySeconds', 'spawnCooldownSeconds', 'respawnDelaySeconds', 'minSeconds', 'warningSeconds', 'retrySeconds']) inside(`hunt.${k}`, u[k], 'seconds', false);

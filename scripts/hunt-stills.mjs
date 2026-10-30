@@ -24,7 +24,7 @@ const look = () => page.evaluate(() => {
   const f = globalThis.__v3Fight?.fighter;
   return { heat: h.heat.count, hud: q('.heat-line')?.textContent ?? null, line: q('.ul-line')?.textContent ?? null, hero: f ? { x: +f.x.toFixed(1), z: +f.z.toFixed(1) } : null, hunters, held: z ? { current: z.current, engaged: z.engaged, attackers: z.attackers.map((a) => a.id) } : null };
 });
-await page.goto(`${base}/`);
+await page.goto(`${base}/?heat=1&hunt=1`);   // both flags are default OFF (data/heat.json on / hunt.on): heat=1 shows the HUD line, hunt=1 parks the hunters
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 180000 });
 await page.waitForTimeout(3000);
 const ready = await look(); console.log(`${tag} ready`, JSON.stringify(ready));

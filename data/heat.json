@@ -14,6 +14,9 @@
     { "minHeat": 4, "name": "Marked", "timeScale": 0.35, "hunters": 2, "stars": [{ "stars": 1, "chance": 0.2 }, { "stars": 2, "chance": 0.05 }] }
   ],
   "hunt": {
+    "on": false,
+    "query": "hunt",
+    "value": "1",
     "kind": "hunter",
     "maxHunters": 2,
     "arrivalDelaySeconds": 60,

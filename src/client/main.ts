@@ -67,7 +67,7 @@ import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
 import { CORPSE, coinsFor, atCamp, bank, carriedSave, dropPile, earn, inReach, lineOf, lingerSpot, regain, retrieve, validateCorpseRun } from '../corpse-run.ts';   // the corpse run (data/corpse-run.json; rides the progression save)
 import { mountCorpseHud } from '../fight/corpse-hud.ts';
-import { HEAT, heatOn, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
+import { HEAT, heatOn, huntOn, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
 import { mountHeatHud } from '../fight/heat-hud.ts';
 import { freshHunt, hunterSpawns, stepHunt } from '../zone/hunters.ts';   // the hunt (data/heat.json hunt): a hunter walks at a hero who has heat
 import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wire.ts';   // golden weapon drops (data/golden-weapons.json): the rest of the wiring lives there
@@ -330,13 +330,14 @@ let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
 const SPOTS = ZONE ? spotsFor(orderedZone(zoneFor(search), FIGHT.order, search)) : [];
+const HUNT_ON = ZONE && huntOn(search);   // the hunt (data/heat.json hunt on/query/value): default OFF, ?hunt=1 adds the parked hunter slots and the chase; it reads the silent heat tally, so it needs no ?heat=1 (that flag only shows the HUD line)
 if (ZONE) { validateSpots(SPOTS, initialState(), RADIUS, WORLD, kindIds(KIND_CTX.profiles)); for (const s of SPOTS) KINDS(s.kind); KINDS(HEAT.hunt.kind); }   // every spawn fights as its own kind: each must be a profile row whose opponent is an archetype (built now, so a bad row fails at load)
 if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
 if (ZONE) setArenaClamp(OPEN_RADIUS);   // endless open ground: every camera clamp (walk, finisher side view, tour, intro orbit) is out of reach in the zone, so the camera follows the hero wherever he runs
 if (ZONE) { const bad = spotBodyProblems(SPOTS); if (bad.length) throw new Error(`zone row bodies: ${bad.join('; ')}`); }   // a spawn's own body (zone row spawns[].body) is a usable boss body; none in the shipped zone
 let openerIdle = 0, openerLift = 0, openerSpent = !ZONE || !openerOn(search);   // the opener (data/respawn.json openers): idle seconds since the page was ready with nobody engaged; spent for the visit once anyone is engaged, killed or dead
-let spawns: Spawn[] = [...SPOTS.map((s) => ({ ...s, deadFor: null })), ...(ZONE ? hunterSpawns(HEAT) : [])], current = 0, engaged = false, killMarked = false;
+let spawns: Spawn[] = [...SPOTS.map((s) => ({ ...s, deadFor: null })), ...(HUNT_ON ? hunterSpawns(HEAT) : [])], current = 0, engaged = false, killMarked = false;
 // Real-time aggro (data/respawn.json attackers, src/zone/attackers.ts, src/fight/attacker-bout.ts): while the hero fights the held boss, every other standing spawn whose aggro he enters fights him too, in its own duel on his one health pool.
 // `attackers` holds them (a killed one stays, lying, until its own timer stands it again); `killedBy` is the attacker whose blow killed the hero (that boss starts again at full health). ?aggro=v1 / row off / ?postkill=v1: none, the others are frozen copies.
 const multi = !!ZONE && attackersOn(search);
@@ -467,7 +468,7 @@ const heat = freshHeat(), heatHud = ZONE && heatOn(search) ? mountHeatHud(docume
 let heatClock = 0;
 // THE HUNT (src/zone/hunters.ts): while he has heat a hunter is announced, arrives behind him and walks at him; close enough it stands as an ordinary boss and the existing aggro hand-over (or attacker join) starts the 1v1.
 // PLACEHOLDER body: Gargantua's (data/profiles.json `hunter`); the line is the discreet HUD line the unlocks use. Session only, nothing saved.
-const hunt = ZONE ? freshHunt(SPOTS.length, HEAT) : null;
+const hunt = HUNT_ON ? freshHunt(SPOTS.length, HEAT) : null;
 const huntLine = (text: string) => { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); };
 const inFightWith = (i: number) => (i === current && engaged) || attackers.some((a) => a.index === i && !a.dead);
 function huntStep(dt: number) {

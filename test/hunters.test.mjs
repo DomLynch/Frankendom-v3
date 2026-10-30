@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HEAT, addHeat, freshHeat, heatSeconds, heatStar, huntersAllowed, resetHeat, validateHeat } from '../src/heat.ts';
+import { HEAT, huntOn, addHeat, freshHeat, heatSeconds, heatStar, huntersAllowed, resetHeat, validateHeat } from '../src/heat.ts';
 import { freshHunt, hunterSpawns, stepHunt } from '../src/zone/hunters.ts';
 import { inAggro, isStanding, kill, tick } from '../src/stubs.ts';
 import { RADAR, bossBlips, classOf, validateRadar } from '../src/fight/radar.ts';
@@ -35,6 +35,24 @@ test('the table validates (hunter kind is a profile, star levels exist, tiers ca
   assert.match(patch((d) => { d.hunt.lines.gone = ' '; }), /lines\.gone/);
   assert.ok(U.speedMetresPerSecond > 3 && U.speedMetresPerSecond < 5.2, 'slower than his run (5.2), faster than his walk (3)');
   assert.equal(PROFILES.profiles.find((p) => p.id === U.kind).opponent, 'executioner', 'the hunter is the Executioner archetype');
+});
+
+test('the hunt flag row: default OFF, ?hunt=1 runs it (alone, without ?heat=1), hunt.on: true runs it for all; a bad flag row is refused; the page parks hunters only through HUNT_ON; the stills pass both flags', () => {
+  assert.equal(HEAT.hunt.on, false);
+  assert.equal(huntOn(''), false);
+  assert.equal(huntOn('?hunt=0'), false);
+  assert.equal(huntOn('?heat=1'), false);
+  assert.equal(huntOn(`?${HEAT.hunt.query}=${HEAT.hunt.value}`), true);
+  assert.equal(huntOn('', { ...HEAT, hunt: { ...HEAT.hunt, on: true } }), true);
+  const bad = (f) => { const d = structuredClone(HEAT); f(d); return validateHeat(d, RINGS.rings.map((r) => r.id), PROFILES.profiles.map((p) => p.id), STARS.levels.map((l) => l.star)).join(';'); };
+  assert.match(bad((d) => { d.hunt.on = 1; }), /hunt\.on/);
+  assert.match(bad((d) => { d.hunt.query = 'Hunt!'; }), /hunt\.query/);
+  assert.match(bad((d) => { d.hunt.value = ''; }), /hunt\.value/);
+  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
+  assert.match(main, /const HUNT_ON = ZONE && huntOn\(search\)/);
+  assert.match(main, /\.\.\.\(HUNT_ON \? hunterSpawns\(HEAT\) : \[\]\)/);   // off = no parked slot in the spawn list
+  assert.match(main, /const hunt = HUNT_ON \? freshHunt\(/);               // off = no chase, no hunter dot
+  assert.match(readFileSync(new URL('../scripts/hunt-stills.mjs', import.meta.url), 'utf8'), /\?heat=1&hunt=1/);
 });
 
 test('heat scales the hunt: waits shrink with the tier (never under the floor), one hunter then two (never past the cap), stars only at the top tier', () => {

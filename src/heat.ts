@@ -6,7 +6,7 @@ import { validateHeat as validateHeatRows } from './sim/validate-heat.js';
 export type HeatStarChance = { stars: number; chance: number };
 export type HeatTier = { minHeat: number; name: string; timeScale: number; hunters: number; stars: readonly HeatStarChance[] };
 export type HuntRows = {
-  kind: string; maxHunters: number; arrivalDelaySeconds: number; spawnCooldownSeconds: number; respawnDelaySeconds: number; minSeconds: number; warningSeconds: number; retrySeconds: number;
+  on: boolean; query: string; value: string; kind: string; maxHunters: number; arrivalDelaySeconds: number; spawnCooldownSeconds: number; respawnDelaySeconds: number; minSeconds: number; warningSeconds: number; retrySeconds: number;
   spawnDistanceMetres: number; campClearMetres: number; speedMetresPerSecond: number; aggro: number; leash: number; giveUpMetres: number; parkedSeconds: number;
   lines: { warning: string; arrived: string; gone: string };
 };
@@ -20,7 +20,9 @@ export type HeatRows = {
 };
 export const HEAT = ROWS as unknown as HeatRows;
 /** Whether the heat HUD line shows for this address: the row's `on`, or `?<query>=<value>` (default off; the flag row names the query and the value). The tally itself counts silently either way. */
-export const heatOn = (search: string, f: HeatRows = HEAT): boolean => f.on || new URLSearchParams(search).get(f.query) === f.value;
+/** Whether the hunt runs for this address: `hunt.on`, or `?<hunt.query>=<hunt.value>` (default off). The hunt reads the heat tally, which counts silently whether or not the HUD line shows, so ?hunt=1 alone is enough. */
+export const huntOn = (search: string, f: HeatRows = HEAT): boolean => f.hunt.on || new URLSearchParams(search).get(f.hunt.query) === f.hunt.value;
+export const heatOn =(search: string, f: HeatRows = HEAT): boolean => f.on || new URLSearchParams(search).get(f.query) === f.value;
 
 /** The live heat: the count, when it last rose (page seconds), and the coin remainder not yet worth a mark. */
 export type Heat = { count: number; lastAt: number; coinBank: number };
