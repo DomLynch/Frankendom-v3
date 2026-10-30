@@ -3,9 +3,10 @@
   "enabled": true,
   "storageKey": "fd3.commentator",
   "seed": "arena-commentator",
-  "caps": { "perSession": 80, "perMinute": 6, "gapSeconds": 4 },
-  "caption": { "seconds": 3.4, "fadeMs": 350, "maxChars": 64, "topPct": 15.2, "maxWidthPct": 92, "fontPx": 12, "colour": "#fff3d6", "shadow": "0 1px 2px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.85)", "zIndex": 28 },
-  "thresholds": { "heroLowPct": 25, "bossLowPct": 20, "missStreak": 4, "rollCount": 5, "rollWindowSeconds": 4, "idleSeconds": 20 },
+  "caps": { "perSession": 80, "perMinute": 6, "gapSeconds": 4, "minuteSeconds": 60 },
+  "caption": { "seconds": 3.4, "fadeMs": 350, "maxChars": 64, "topPct": 15.2, "maxWidthPct": 92, "fontPx": 12, "colour": "#fff3d6", "shadow": "0 1px 2px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.85)", "zIndex": 28,
+    "css": ".cm-line{position:fixed;left:50%;top:{topPct}%;transform:translateX(-50%);z-index:{zIndex};pointer-events:none;opacity:0;transition:opacity {fadeMs}ms ease;text-align:center;max-width:{maxWidthPct}%;color:{colour};font:italic {fontPx}px/1.25 Georgia,'Times New Roman',serif;text-shadow:{shadow};user-select:none;-webkit-user-select:none}@media (prefers-reduced-motion:reduce){.cm-line{transition:none}}" },
+  "thresholds": { "heroLowPct": 25, "bossLowPct": 20, "missStreak": 4, "rollCount": 5, "rollWindowSeconds": 4, "idleSeconds": 20, "lowResetPct": 15, "idleMoveEpsilon": 0.05, "starTwoLevel": 2 },
   "partNames": { "arm_right": "right arm", "arm_left": "left arm", "leg_right": "right leg", "leg_left": "left leg", "head": "head", "head_split": "head", "belly_open": "belly", "arm_sword": "sword arm", "arm_off": "off arm" },
   "events": {
     "fight_start": { "about": "a boss engages the hero (params: boss)", "cooldownSeconds": 20, "probability": 1, "priority": true, "params": ["boss"], "lines": [
@@ -148,6 +149,15 @@
       "Take your time. We have eternity.",
       "Any day now. Really, no hurry."
     ] },
+    "parry_wall": { "about": "the Accountant raises his parry wall (data/mechanics.json accountant-parry-wall; said on the first tick of the tell)", "cooldownSeconds": 20, "probability": 1, "priority": true, "lines": [
+      "The Accountant raises a wall of fine print. Kick it.",
+      "A contract wall. Swords are not legally binding.",
+      "Your blade has been parried by paperwork.",
+      "Audit in progress. Please stop hitting the auditor.",
+      "He is filing a ruling. Step around the paperwork.",
+      "That wall disputes every blow. Kick it, or wait it out.",
+      "Terms and conditions apply. Try kicking them."
+    ] },
     "wearing_parts": { "about": "EXTENSION POINT, not hooked yet: the Frankendom equip feature calls commentator.say('wearing_parts', { partName }) when a taken part is worn (params: partName)", "cooldownSeconds": 40, "probability": 0.8, "params": ["partName"], "lines": [
       "Nice {partName}. It looks borrowed.",
       "Wearing a {partName} now? Fashion has fallen.",
@@ -156,6 +166,14 @@
       "Fresh {partName}, still slightly warm.",
       "Bold choice, the {partName}. Very you.",
       "The {partName} suits you. Sadly."
+    ] },
+    "limb_loss": { "about": "a boss's armour fails and a limb comes off mid-fight (src/fight/mechanics, data/mechanics.json reginald-limb-loss; params: limb); always said, it is the tell", "cooldownSeconds": 0, "probability": 1, "priority": true, "params": ["limb"], "lines": [
+      "Sir Reginald's {limb} just left the group chat.",
+      "There goes the {limb}. He did not use it much.",
+      "The {limb} is gone. Armour was a suggestion.",
+      "That {limb} was on a short lease.",
+      "Down a {limb}. The knight is rethinking his plan.",
+      "The {limb} fell off. Nobody told the knight."
     ] }
   }
 }

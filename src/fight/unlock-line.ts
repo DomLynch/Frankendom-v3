@@ -1,7 +1,7 @@
 // The discreet "Unlocked: <weapon>" line (data/progression.json) shown on a boss's first kill. One small line of small caps in the pickup hint's gold, top centre under the bars, no panel, no button, no sound,
 // pointer-events none (it never takes a touch from the stick or the look thumb), gone after `lineSeconds`. Presentation only: it touches nothing of the sim, and the elements exist only after the first unlock.
 type Doc = { createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
-export type UnlockLine = { show(text: string): void; remove(): void };
+type UnlockLine = { show(text: string): void; remove(): void };
 
 /** Mounts the line (hidden) in `doc`. `show(text)` fades it in for `seconds`; a second `show` replaces the text and restarts the time. `later`: the timer (a test passes its own). */
 export function mountUnlockLine(doc: Doc, seconds: number, later: (fn: () => void, ms: number) => unknown = (fn, ms) => setTimeout(fn, ms), clear: (t: unknown) => void = (t) => clearTimeout(t as number)): UnlockLine {

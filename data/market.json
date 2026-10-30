@@ -12,6 +12,15 @@
     "trophy": { "1": 100, "2": 300 }
   },
   "caps": { "buyMax": 2000, "sellPerDay": 400 },
+  "limits": {
+    "about": "Legal ranges the validator holds this file to, and the few engine numbers the market code reads: nothing here is tuning the player feels.",
+    "range": { "text": [1, 80], "name": [1, 24], "kind": [1, 40], "salt": [1, 40], "offset": [-40, 40], "open": [1, 20], "close": [1, 40], "load": [5, 200], "stockSize": [1, 6], "weight": [0, 1000], "coins": [1, 100000], "buyX": [1, 20], "sellX": [0, 0.5], "buyMax": [1, 1000000], "sellPerDay": [0, 1000000], "zIndex": [0, 1000], "sheetFrac": [0.3, 0.9], "uiText": [1, 40] },
+    "save": { "idChars": 80, "weapons": 64, "bought": 16, "trades": 999999 },
+    "attempts": 40,
+    "hashRange": 4294967296,
+    "sheetPct": 100,
+    "chip": { "edgeX": 44, "edgeY": 28, "headM": 2.15, "noScreen": 1000000000 }
+  },
   "lines": {
     "greet": ["Fresh ones, still warm.", "Mind the floor. It is mostly you."],
     "buy": ["No refunds. No questions. Mostly no questions.", "It will grow on you. Literally."],
@@ -26,6 +35,30 @@
   "ui": {
     "zIndex": 31,
     "sheetHeightFrac": 0.62,
+    "css": [
+      "#flesh-market{display:contents}",
+      "#flesh-market .fm-chip{position:fixed;left:0;top:0;z-index:{z};min-width:56px;min-height:48px;padding:0 14px;border:1px solid #1b1916;border-radius:24px;background:#f6f2eaf2;color:#1b1916;font:600 13px/1 'Instrument Sans',Arial,sans-serif;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 10px #0006}",
+      "#flesh-market .fm-chip[hidden],#flesh-market .fm-sheet[hidden],#flesh-market .fm-back[hidden]{display:none}",
+      "#flesh-market .fm-back{position:fixed;inset:0;z-index:{z};background:#0000}",
+      "#flesh-market .fm-sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100vw;max-width:480px;height:{vh}vh;z-index:{z1};box-sizing:border-box;display:flex;flex-direction:column;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));border-radius:16px 16px 0 0;background:#f6f2ea;color:#1b1916;font:13px/1.35 'Instrument Sans',Arial,sans-serif;box-shadow:0 -8px 36px #0009}",
+      "#flesh-market .fm-head{display:flex;align-items:center;justify-content:space-between;gap:8px}",
+      "#flesh-market h3{margin:0;font:600 17px/1.2 Georgia,'Iowan Old Style','Times New Roman',serif}",
+      "#flesh-market .fm-line{margin:2px 0 8px;color:#7a746a;font-size:12px;font-style:italic;min-height:16px}",
+      "#flesh-market .fm-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}",
+      "#flesh-market .fm-bar b{font-weight:600}",
+      "#flesh-market .fm-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}",
+      "#flesh-market button{font:600 12px/1 'Instrument Sans',Arial,sans-serif;min-height:34px;padding:0 12px;border:1px solid #dcd4c6;border-radius:9px;background:#fff;color:#1b1916;cursor:pointer;touch-action:manipulation}",
+      "#flesh-market button[data-on=true]{background:#1b1916;color:#fff;border-color:#1b1916}",
+      "#flesh-market button:disabled{opacity:.45;cursor:default}",
+      "#flesh-market .fm-close{min-width:48px;min-height:40px}",
+      "#flesh-market .fm-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;padding:6px 0;border-top:1px solid #dcd4c6}",
+      "#flesh-market .fm-row div{min-width:0}",
+      "#flesh-market .fm-row strong{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "#flesh-market .fm-chiptag{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:8px;color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.04em}",
+      "#flesh-market .fm-sub{color:#7a746a;font-size:11.5px}",
+      "#flesh-market .fm-act{min-width:84px;min-height:40px}",
+      "#flesh-market .fm-empty{padding:18px 0;color:#7a746a;text-align:center}"
+    ],
     "text": { "chip": "Trade", "title": "Gristle", "close": "Close", "buy": "Buy", "sell": "Sell", "tabBuy": "Buy", "tabSell": "Sell", "banked": "Banked", "coins": "coins", "sold": "Sold", "owned": "Owned", "ownedN": "Owned x{n}", "short": "Need {n} more", "sure": "Sure?", "weapon": "weapon", "trophy": "Trophy", "nothing": "Nothing to sell", "none": "Not today" }
   }
 }

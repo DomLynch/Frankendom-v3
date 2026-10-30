@@ -41,7 +41,7 @@ test('who joins: a standing boss the hero is inside the aggro of, nearest first,
   assert.deepEqual(joiners(s, 0, [], far), [], 'out of every aggro nobody joins');
 });
 
-test('the camera framing row: one boss is exactly the old frame, a far attacker widens it in proportion, capped; bad rows are refused', () => {
+test('the camera framing row: one boss is exactly the old frame, a far attacker widens it in proportion, capped; bad rows are refused (behaviour half; the source pins moved to test/source-pins/)', () => {
   const rows = ATTACKERS.camera, c = { x: 0, z: 0 };
   assert.equal(framingWiden(c, []), 1, 'one boss live: no widening at all');
   assert.equal(framingWiden(c, [{ x: rows.widenAtMetres, z: 0 }]), 1, 'inside the row\'s distance: still 1');
@@ -51,9 +51,6 @@ test('the camera framing row: one boss is exactly the old frame, a far attacker 
   assert.equal(framingWiden(c, [{ x: rows.widenAtMetres * 1.1, z: 0 }, { x: 0, z: rows.widenAtMetres * 1.3 }]), 1.3, 'the farthest attacker decides');
   assert.doesNotThrow(() => validateFraming(rows));
   for (const bad of [{ widenAtMetres: 0 }, { maxWiden: 0.5 }, { easeSeconds: 0 }, { maxWiden: NaN }]) assert.throws(() => validateFraming({ ...rows, ...bad }), /attackers\.camera/);
-  const cam = read('../src/fight/camera.ts');
-  assert.match(cam, /foeLow = 0, foeWiden = 1, free = false\)/);   // re-pinned with the free camera: the arguments are foe*, and `widen` below is their value after the free camera's share is taken off (equal to the argument while the lock is on)
-  assert.match(cam, /widen = on \? 1 \+ \(foeWiden - 1\) \* keep : foeWiden/); assert.match(cam, /\* \(1 \+ \(widen - 1\) \* shortShare\)/);
 });
 
 test('the camera composes with the lens zoom: one boss is byte-identical to main\'s frame, and with two live the second attacker is inside the 375 frame at zoom 1.1 and 1.0', async () => {
@@ -143,22 +140,4 @@ test('when the first boss dies the second one\'s fight goes on: its own health, 
   const mine = { ...fight(7, poseOf(hero0, mark)).duel.fighters[0], health: 55 };
   const next = adopt({ index: 1, practice: hurt, dead: false }, mine);
   assert.equal(next.duel.fighters[1].health, 40); assert.equal(next.health, 40); assert.equal(next.playerHealth, 55); assert.equal(next.finish, null);
-});
-
-test('the sim is untouched: no file the Gate 0 table pins is edited by this change, the new modules import none of the page', () => {
-  for (const f of ['../src/fight/attacker-bout.ts', '../src/zone/attackers.ts']) assert.doesNotMatch(read(f), /from '\.\.\/client|from 'three'|document\.|window\./);
-  assert.doesNotMatch(read('../src/fight/attacker-bout.ts'), /Math\.random|Date\.now|performance\.now/, 'deterministic');
-});
-
-test('the page wiring is pinned: gated by the row, the same intent for every duel, joins only while engaged, the cap row, adoption, the killer, the rigs', () => {
-  const main = read('../src/client/main.ts'), scene = read('../src/fight/scene.ts'), ch = read('../src/fight/characters.ts');
-  assert.match(main, /const multi = !!ZONE && attackersOn\(search\)/);
-  assert.match(main, /stepAttackers\(prior, practice, duelIntent, attackers, aiProfile\)/, 'every duel takes the hero\'s one intent');
-  assert.match(main, /if \(attackers\.length\)/, 'nothing steps when nobody is on him');
-  assert.match(main, /for \(const i of joiners\(spawns, current, alive\(\), hero\)\)/);
-  assert.match(main, /make\(nextSeed\(/, 'an attacker is built by the same factory as the first fight: the difficulty rows\' health and damage scales apply');
-  assert.match(main, /adoptAttacker\(live, hero\)/); assert.match(main, /killedBy \?\? current/);
-  assert.match(main, /view\.liveFoes\(/); assert.match(main, /filter\(\(s\) => !attackers\.some/, 'a live attacker is not also drawn as a frozen copy');
-  assert.match(scene, /liveFoes\(list/); assert.match(scene, /warriors\.spawnFoe\(\)/);
-  assert.match(ch, /spawnFoe: \(\) => create\(true\)/);
 });

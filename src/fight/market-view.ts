@@ -17,28 +17,8 @@ export type PanelCtx = {
   onToggle(open: boolean): void;
 };
 
-const CSS = (r: MarketFile) => `#flesh-market{display:contents}
-#flesh-market .fm-chip{position:fixed;left:0;top:0;z-index:${r.ui.zIndex};min-width:56px;min-height:48px;padding:0 14px;border:1px solid #1b1916;border-radius:24px;background:#f6f2eaf2;color:#1b1916;font:600 13px/1 "Instrument Sans",Arial,sans-serif;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 10px #0006}
-#flesh-market .fm-chip[hidden],#flesh-market .fm-sheet[hidden],#flesh-market .fm-back[hidden]{display:none}
-#flesh-market .fm-back{position:fixed;inset:0;z-index:${r.ui.zIndex};background:#0000}
-#flesh-market .fm-sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100vw;max-width:480px;height:${Math.round(r.ui.sheetHeightFrac * 100)}vh;z-index:${r.ui.zIndex + 1};box-sizing:border-box;display:flex;flex-direction:column;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));border-radius:16px 16px 0 0;background:#f6f2ea;color:#1b1916;font:13px/1.35 "Instrument Sans",Arial,sans-serif;box-shadow:0 -8px 36px #0009}
-#flesh-market .fm-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-#flesh-market h3{margin:0;font:600 17px/1.2 Georgia,"Iowan Old Style","Times New Roman",serif}
-#flesh-market .fm-line{margin:2px 0 8px;color:#7a746a;font-size:12px;font-style:italic;min-height:16px}
-#flesh-market .fm-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
-#flesh-market .fm-bar b{font-weight:600}
-#flesh-market .fm-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
-#flesh-market button{font:600 12px/1 "Instrument Sans",Arial,sans-serif;min-height:34px;padding:0 12px;border:1px solid #dcd4c6;border-radius:9px;background:#fff;color:#1b1916;cursor:pointer;touch-action:manipulation}
-#flesh-market button[data-on=true]{background:#1b1916;color:#fff;border-color:#1b1916}
-#flesh-market button:disabled{opacity:.45;cursor:default}
-#flesh-market .fm-close{min-width:48px;min-height:40px}
-#flesh-market .fm-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;padding:6px 0;border-top:1px solid #dcd4c6}
-#flesh-market .fm-row div{min-width:0}
-#flesh-market .fm-row strong{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#flesh-market .fm-chiptag{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:8px;color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.04em}
-#flesh-market .fm-sub{color:#7a746a;font-size:11.5px}
-#flesh-market .fm-act{min-width:84px;min-height:40px}
-#flesh-market .fm-empty{padding:18px 0;color:#7a746a;text-align:center}`;
+const TAB = { buy: 'buy', sell: 'sell' } as const, ST = { ok: 'ok', sold: 'sold', owned: 'owned', broke: 'broke' } as const;   // the sheet's two tabs and a stock row's four states
+const CSS = (r: MarketFile): string => r.ui.css.join('\n').replaceAll('{z1}', String(r.ui.zIndex + 1)).replaceAll('{z}', String(r.ui.zIndex)).replaceAll('{vh}', String(Math.round(r.ui.sheetHeightFrac * r.limits.sheetPct)));
 
 /** Mounts the (hidden) chip and sheet. `chipAt` moves the chip to a screen spot (null hides it, and closes nothing); `refresh()` redraws from `ctx.model()` and runs after every trade. */
 export function mountMarketPanel(doc: Doc, ctx: PanelCtx): MarketPanel {
@@ -60,22 +40,22 @@ export function mountMarketPanel(doc: Doc, ctx: PanelCtx): MarketPanel {
     const line = el('p', 'fm-line', m.line); line.dataset.market = 'line';
     const bar = el('div', 'fm-bar'), banked = el('b', undefined, `${T.banked} ${m.banked}`); banked.dataset.market = 'banked';
     const tabs = el('span');
-    for (const t of ['buy', 'sell'] as const) {
-      const b = el('button', undefined, t === 'buy' ? T.tabBuy : T.tabSell); b.dataset.market = `tab-${t}`; b.dataset.on = String(tab === t); b.onclick = () => { tab = t; sureKey = ''; draw(); };
+    for (const t of [TAB.buy, TAB.sell]) {
+      const b = el('button', undefined, t === TAB.buy ? T.tabBuy : T.tabSell); b.dataset.market = `tab-${t}`; b.dataset.on = String(tab === t); b.onclick = () => { tab = t; sureKey = ''; draw(); };
       b.style.marginLeft = '6px'; tabs.append(b);
     }
     bar.append(banked, tabs);
     const list = el('div', 'fm-list'); list.dataset.market = 'list';
-    if (tab === 'buy') {
+    if (tab === TAB.buy) {
       if (!m.buys.length) list.append(el('div', 'fm-empty', T.none));
       for (const b of m.buys) {
         const row = el('div', 'fm-row'); row.dataset.market = 'row'; row.dataset.key = b.key;
         const left = el('div'), name = el('strong', undefined, b.name), tag = el('span', 'fm-chiptag', b.tag); tag.style.background = b.colour;
-        const sub = el('span', 'fm-sub', b.state === 'owned' ? `${T.owned} - ${b.price} ${T.coins}` : b.ownedN > 0 ? `${(T.ownedN ?? '').replace('{n}', String(b.ownedN))} - ${b.price} ${T.coins}` : `${b.price} ${T.coins}`);
+        const sub = el('span', 'fm-sub', b.state === ST.owned ? `${T.owned} - ${b.price} ${T.coins}` : b.ownedN > 0 ? `${(T.ownedN ?? '').replace('{n}', String(b.ownedN))} - ${b.price} ${T.coins}` : `${b.price} ${T.coins}`);
         const sub2 = el('div'); sub2.append(tag, sub); left.append(name, sub2);
-        const act = el('button', 'fm-act', b.state === 'sold' ? T.sold : b.state === 'owned' ? T.owned : b.state === 'broke' ? (T.short ?? '').replace('{n}', String(b.short)) : T.buy);
-        act.dataset.market = 'buy'; act.dataset.key = b.key; (act as HTMLButtonElement).disabled = b.state !== 'ok';
-        act.onclick = () => { if (b.state === 'ok') ctx.buy(b.key); };
+        const act = el('button', 'fm-act', b.state === ST.sold ? T.sold : b.state === ST.owned ? T.owned : b.state === ST.broke ? (T.short ?? '').replace('{n}', String(b.short)) : T.buy);
+        act.dataset.market = 'buy'; act.dataset.key = b.key; (act as HTMLButtonElement).disabled = b.state !== ST.ok;
+        act.onclick = () => { if (b.state === ST.ok) ctx.buy(b.key); };
         row.append(left, act); list.append(row);
       }
     } else {

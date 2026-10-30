@@ -16,11 +16,11 @@ export const fatigueReadFrom = (search: string): boolean => !offFlag(search, 'fa
 type In = Pick<Fatigue, 'level' | 'gassed' | 'second'>;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 /** How much of the full tired pose shows: 0 fresh, partial when winded, 1 by level .85 or when gassed; the second wind lifts it off. */
-export const readWeight = (f: In): number => clamp01(Math.max((f.level - .2) / .65, f.gassed)) * (1 - clamp01(f.second) * .7);
+const readWeight = (f: In): number => clamp01(Math.max((f.level - .2) / .65, f.gassed)) * (1 - clamp01(f.second) * .7);
 /** Breath phase rate (rad/s): a 1.6 s cycle when winded, 1.2 s when gassed, scaled by the body's own `rate`. */
 export const readRate = (f: In, t?: FatigueTune): number => 2 * Math.PI * (1 / 1.6 + (1 / 1.2 - 1 / 1.6) * clamp01(Math.max((f.level - .5) / .4, f.gassed))) * (t?.rate ?? 1);
 
-export type FatigueReadPose = { spine1: number; spine2: number; spine3: number; neck: number; head: number; shrug: number; heave: number; guard: number; arm: number };
+type FatigueReadPose = { spine1: number; spine2: number; spine3: number; neck: number; head: number; shrug: number; heave: number; guard: number; arm: number };
 // Radians, rig convention (+x on a spine bone leans forward). `shrug` and `heave` are the shoulder lift (both clavicles, about the fighter's forward axis)
 // and its breath term. `guard` is 0..1 of the off hand's extra sink. `arm` is the live layer's sword-arm sag, passed through unchanged.
 export function fatigueRead(f: In, phase: number, calm: number, live: { arm: number }, t?: FatigueTune): FatigueReadPose {

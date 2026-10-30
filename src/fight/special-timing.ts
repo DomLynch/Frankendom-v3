@@ -9,8 +9,7 @@ import TIMING_RULES from './special-timing-rules.json' with { type: 'json' };
 // like special-look.ts beside it. Ticks at the sim's 60 Hz from the SpecialStarted tick: the strike
 // lands on SpecialLanded at start + RULES.special.windup − 1 (the cast tick counts), so the windup stays the one source of the 120.
 const TIMING = TIMING_RULES.specialTimingRule[0]!;   // the specialTimingRule row (src/fight/special-timing-rules.json)
-export const DROP_TICKS = TIMING.dropTicks;   // the cloud's drop onto the head, ending on the landing tick
-export { SPECIAL_RECOVER };
+const DROP_TICKS = TIMING.dropTicks;   // the cloud's drop onto the head, ending on the landing tick
 export const LAND_AT = RULES.special.windup - 1;
 export const FALL_AT = LAND_AT - DROP_TICKS;
 export const RIPPLE = TIMING.ripple;   // Shield Quake: the ticks the ground ripple runs, the slam to the landing (0.5 s; Dom: a 1-2 s build-up was too slow)
@@ -33,7 +32,7 @@ export const isHadesShadow = skillCast('lunge');
 export const isBloodTithe = skillCast('shove');
 
 export type Cast = { actor: number; start: number; landed: number | null; fizzled: number | null };
-export type ShadowPhase = { phase: 'gather' | 'fall' | 'recover' | 'dissolve' | 'done'; k: number; age: number };
+type ShadowPhase = { phase: 'gather' | 'fall' | 'recover' | 'dissolve' | 'done'; k: number; age: number };
 
 // Where a cast is at sim time `now` (fractional ticks allowed): the cloud gathers above the head from the start, drops onto it so it arrives on the
 // landing tick; after SpecialLanded it covers the head, then thins and clears, after SpecialFizzled it dissolves where it hangs. k runs 0..1 in each phase.
@@ -73,9 +72,9 @@ export const castPhase = shadowPhase;
 // The Dwarf's and the Shieldmaiden's boss moves' clock (special-fx-boss.ts), pure like shadowPhase: `rel` is ticks relative to the landing (negative before it), frozen
 // where a fizzle stops the cast; `fade` is 1 while the cast stands and runs to 0 over the dissolve after a fizzle; `done` once nothing is left to draw. The landing is the
 // SpecialLanded tick when it is known, else the tick the wind-up predicts; the timeout ends a cast that never gets an event.
-export const DISSOLVE_TICKS = TIMING.dissolveTicks;
-export const BOSS_TAIL = TIMING.bossTail;   // the boss moves' payoff stays legible ~1.4 s after the landing: longer than SPECIAL_RECOVER (45), so the effect keeps its own cast past the shared timeline's end (special-fx-boss.ts), never the sim
-export type BossClock = { rel: number; fade: number; struck: boolean; done: boolean };
+const DISSOLVE_TICKS = TIMING.dissolveTicks;
+const BOSS_TAIL = TIMING.bossTail;   // the boss moves' payoff stays legible ~1.4 s after the landing: longer than SPECIAL_RECOVER (45), so the effect keeps its own cast past the shared timeline's end (special-fx-boss.ts), never the sim
+type BossClock = { rel: number; fade: number; struck: boolean; done: boolean };
 export function bossClock(cast: Cast, now: number): BossClock {
   const land = cast.landed ?? cast.start + LAND_AT;
   if (cast.fizzled !== null) {

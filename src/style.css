@@ -625,12 +625,7 @@ dialog>p {
 .versus[data-out] {
   opacity: 0;
 }
-#versus-still {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 40%;
-}
+
 .versus-caption {
   position: absolute;
   left: 0;
@@ -681,12 +676,7 @@ dialog>p {
 /* Legends (Dom via Strategy, 2026-09-27): the opponent's legend name is the large word of the pair, in the house serif and its own
    case; under the pair, small, "the Pitborn · Champion", then the one-line source and backstory. Phone first: the block sits in the
    band below the caption (bottom 14%) and holds three lines of lore at 375 before it clips. */
-#versus-foe {
-  font: 26px Georgia,'Times New Roman',serif;
-  letter-spacing: 0.5px;
-  text-transform: none;
-  color: #f3e7cf;
-}
+
 .versus-legend {
   position: absolute;
   left: 16px;
@@ -1051,26 +1041,10 @@ dialog>p {
     gap: 0;
     z-index: 2;
   }
-  header .brand,header #sound-button,.identity,.place,.instructions,#performance,.actions #camera-button,.actions #run-button {
+  header .brand,.identity,.place,.instructions,#performance,.actions #camera-button,.actions #run-button {
     display: none;
   }
-  #journal-button {
-    font-size: 0;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border-radius: 50%;
-    background: #172329b0;
-    backdrop-filter: none;
-  }
-  #journal-button span {
-    display: none;
-  }
-  #journal-button::after {
-    content: '☰';
-    font: 20px Arial;
-    color: #eee9df;
-  }
+
   .combat-hud {
     top: max(15px,env(safe-area-inset-top));
     left: max(16px,env(safe-area-inset-left));
@@ -1194,9 +1168,7 @@ dialog>p {
      (owner 2026-09-22 move; fight HUD, Dom 2026-09-24) and needs their own explicit full-width span and row, or the grid auto-places each into a single half-width column. */
   /* The banner (sparring, replay) reads under the HUD's status line, measured in main.ts (--hud-bottom): at a fixed 56 px it sat
      on the HEALTH / STAMINA labels (Lead 2026-09-28). The stale line keeps its own slot above PLAY NOW. */
-  #replay-banner:not([data-stale='1']) {
-    top: calc(var(--hud-bottom, 124px) + 6px);
-  }
+
   #fight-rank {
     grid-column: 1/-1;
     grid-row: 7;
@@ -1597,9 +1569,7 @@ dialog>p {
   }
   /* SPARRING / replay banner: at 56px it ran through the header band under Sound on (#853); it reads just under the header. The stale
      line keeps its own slot above PLAY NOW. */
-  #replay-banner:not([data-stale='1']) {
-    top: 88px;
-  }
+
 }
 
 /* Combat debug overlay: developer readout of simulation state, presentation-only. */
@@ -1707,8 +1677,7 @@ dialog button {
 }
 dialog button:hover { border-color: var(--jf); background: #fff; }
 dialog button[aria-pressed=true] { border-color: var(--jf); background: var(--jf); color: #fff; }
-dialog #close-journal { position: absolute; top: 12px; right: 14px; width: 34px; height: 34px; min-height: 0; padding: 0; z-index: 1; }   /* no heading row (owner, 2026-09-20): the sheet opens on the fighter card */
-dialog #mobile-name { align-self: end; }   /* Rename sits at the foot of the card row, clear of the close button above it */
+
 dialog .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 dialog .chips.quiet button { color: var(--jm); border-style: dashed; }
 .fighter {
@@ -1734,17 +1703,15 @@ dialog .chips.quiet button { color: var(--jm); border-style: dashed; }
    pushed Rename past the sheet's edge. The column may shrink and the journal's bar takes all of it: its segments narrow (to 4 px, then
    clip); the two class names never shrink (an ellipsis fires on a sub-pixel share, so they take none). */
 .fighter > div { min-width: 0; }
-#journal-rank .rank-now, #journal-rank .rank-next { flex-shrink: 0; }
-#journal-rank .rank-bar { min-width: 0; overflow: hidden; }
-#journal-rank .rank-seg { flex: 0 1 14px; min-width: 4px; }
+
 .account { padding: 14px 0; border-bottom: 1px solid var(--jl); overflow-wrap: anywhere; }
 .account > strong { display: block; font: 600 11px "Instrument Sans", Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #9a7a3a; }
 .account p { margin: 4px 0 10px; font-size: 14px; }
-#account-status:empty { display: none; }   /* signed in and saved: the fighter card's save line already says so */
+
 .account small { display: block; margin-top: 8px; font-size: 12px; color: var(--jm); }
 .account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .account-actions button { flex: 1 1 140px; min-height: 44px; border-radius: 12px; }
-dialog #account-login { flex-basis: 100%; min-height: 48px; background: #fff; border-color: var(--jf); }
+
 .menu-select {
   display: inline-flex; align-items: center; gap: 8px;
   font: 600 11px "Instrument Sans", Arial, sans-serif;
@@ -1788,9 +1755,9 @@ dialog output { display: block; margin-top: 8px; font: 12px "Instrument Sans", A
 .tab-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; margin: 12px 0 4px; background: var(--jp); border-radius: 12px; }
 .tab-strip label { text-align: center; padding: 9px 6px; border-radius: 9px; font: 600 12.5px "Instrument Sans", Arial, sans-serif; color: var(--jm); cursor: pointer; white-space: nowrap; overflow: hidden; -webkit-tap-highlight-color: transparent; }
 .tab-strip label[hidden] { display: none; }   /* a player's journal: Profile / Stats / Settings, three equal tabs */
-#journal-tab-fighter:checked ~ .tab-strip .tab-fighter, #journal-tab-career:checked ~ .tab-strip .tab-career, #journal-tab-profile:checked ~ .tab-strip .tab-profile, #journal-tab-arena:checked ~ .tab-strip .tab-arena, #journal-tab-settings:checked ~ .tab-strip .tab-settings { background: #fff; color: var(--jf); box-shadow: 0 1px 2px #0002; }
+
 .tab-pane { display: none; padding-top: 4px; }
-#journal-tab-fighter:checked ~ .pane-fighter, #journal-tab-career:checked ~ .pane-career, #journal-tab-profile:checked ~ .pane-profile, #journal-tab-arena:checked ~ .pane-arena, #journal-tab-settings:checked ~ .pane-settings { display: block; }
+
 .tab-pane .chips + .chips { margin-top: 8px; }
 .tab-pane .note { margin: 12px 0 0; }
 dialog .references { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--jl); }
@@ -1819,70 +1786,7 @@ dialog .scorecard-table tr:last-child td { color: var(--jf); font-weight: 600; }
 .doll-layer { position: absolute; inset: 0; background: center / 100% 100% no-repeat; pointer-events: none; }
 /* loot-layers:start (generated by scripts/loot-layers.mjs, do not edit) */
 /* loot-layers: rendered from loot.glb 2ac1175b0099 warrior.glb 6f40b825b420 */
-.doll:has(#slot-arms[data-loot='dwarf.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/dwarf.Arms.webp); }
-.doll:has(#slot-chest[data-loot='dwarf.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/dwarf.Body.webp); }
-.doll:has(#slot-feet[data-loot='dwarf.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/dwarf.Boots.webp); }
-.doll:has(#slot-hands[data-loot='dwarf.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/dwarf.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='dwarf.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/dwarf.Greaves.webp); }
-.doll:has(#slot-head[data-loot='dwarf.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/dwarf.Helmet.webp); }
-.doll:has(#slot-arms[data-loot='executioner.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/executioner.Arms.webp); }
-.doll:has(#slot-chest[data-loot='executioner.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/executioner.Body.webp); }
-.doll:has(#slot-feet[data-loot='executioner.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/executioner.Boots.webp); }
-.doll:has(#slot-crest[data-loot='executioner.Crest']) .doll-layer[data-layer='crest'] { background-image: url(/game/img/loot/executioner.Crest.webp); }
-.doll:has(#slot-hands[data-loot='executioner.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/executioner.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='executioner.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/executioner.Greaves.webp); }
-.doll:has(#slot-head[data-loot='executioner.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/executioner.Helmet.webp); }
-.doll:has(#slot-arms[data-loot='goblin.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/goblin.Arms.webp); }
-.doll:has(#slot-chest[data-loot='goblin.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/goblin.Body.webp); }
-.doll:has(#slot-feet[data-loot='goblin.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/goblin.Boots.webp); }
-.doll:has(#slot-hands[data-loot='goblin.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/goblin.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='goblin.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/goblin.Greaves.webp); }
-.doll:has(#slot-head[data-loot='goblin.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/goblin.Helmet.webp); }
-.doll:has(#slot-arms[data-loot='knight.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/knight.Arms.webp); }
-.doll:has(#slot-chest[data-loot='knight.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/knight.Body.webp); }
-.doll:has(#slot-feet[data-loot='knight.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/knight.Boots.webp); }
-.doll:has(#slot-hands[data-loot='knight.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/knight.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='knight.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/knight.Greaves.webp); }
-.doll:has(#slot-head[data-loot='knight.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/knight.Helmet.webp); }
-.doll:has(#slot-arms[data-loot='nightborn.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/nightborn.Arms.webp); }
-.doll:has(#slot-chest[data-loot='nightborn.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/nightborn.Body.webp); }
-.doll:has(#slot-feet[data-loot='nightborn.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/nightborn.Boots.webp); }
-.doll:has(#slot-hands[data-loot='nightborn.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/nightborn.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='nightborn.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/nightborn.Greaves.webp); }
-.doll:has(#slot-head[data-loot='nightborn.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/nightborn.Helmet.webp); }
-.doll:has(#slot-arms[data-loot='pitborn.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/pitborn.Arms.webp); }
-.doll:has(#slot-chest[data-loot='pitborn.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/pitborn.Body.webp); }
-.doll:has(#slot-feet[data-loot='pitborn.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/pitborn.Boots.webp); }
-.doll:has(#slot-hands[data-loot='pitborn.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/pitborn.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='pitborn.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/pitborn.Greaves.webp); }
-.doll:has(#slot-head[data-loot='pitborn.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/pitborn.Helmet.webp); }
-.doll:has(#slot-arms[data-loot='plaguedoctor.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/plaguedoctor.Arms.webp); }
-.doll:has(#slot-chest[data-loot='plaguedoctor.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/plaguedoctor.Body.webp); }
-.doll:has(#slot-feet[data-loot='plaguedoctor.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/plaguedoctor.Boots.webp); }
-.doll:has(#slot-hands[data-loot='plaguedoctor.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/plaguedoctor.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='plaguedoctor.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/plaguedoctor.Greaves.webp); }
-.doll:has(#slot-head[data-loot='plaguedoctor.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/plaguedoctor.Helmet.webp); }
-.doll:has(#slot-arms[data-loot='shieldmaiden.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/shieldmaiden.Arms.webp); }
-.doll:has(#slot-chest[data-loot='shieldmaiden.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/shieldmaiden.Body.webp); }
-.doll:has(#slot-feet[data-loot='shieldmaiden.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/shieldmaiden.Boots.webp); }
-.doll:has(#slot-hands[data-loot='shieldmaiden.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/shieldmaiden.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='shieldmaiden.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/shieldmaiden.Greaves.webp); }
-.doll:has(#slot-head[data-loot='shieldmaiden.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/shieldmaiden.Helmet.webp); }
-.doll:has(#slot-off[data-loot='shieldmaiden.Shield']) .doll-layer[data-layer='off'] { background-image: url(/game/img/loot/shieldmaiden.Shield.webp); }
-.doll:has(#slot-arms[data-loot='veteran.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/veteran.Arms.webp); }
-.doll:has(#slot-chest[data-loot='veteran.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/veteran.Body.webp); }
-.doll:has(#slot-feet[data-loot='veteran.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/veteran.Boots.webp); }
-.doll:has(#slot-crest[data-loot='veteran.Crest']) .doll-layer[data-layer='crest'] { background-image: url(/game/img/loot/veteran.Crest.webp); }
-.doll:has(#slot-hands[data-loot='veteran.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/veteran.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='veteran.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/veteran.Greaves.webp); }
-.doll:has(#slot-head[data-loot='veteran.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/veteran.Helmet.webp); }
-.doll:has(#slot-off[data-loot='veteran.Shield']) .doll-layer[data-layer='off'] { background-image: url(/game/img/loot/veteran.Shield.webp); }
-.doll:has(#slot-arms[data-loot='witch.Arms']) .doll-layer[data-layer='arms'] { background-image: url(/game/img/loot/witch.Arms.webp); }
-.doll:has(#slot-chest[data-loot='witch.Body']) .doll-layer[data-layer='chest'] { background-image: url(/game/img/loot/witch.Body.webp); }
-.doll:has(#slot-feet[data-loot='witch.Boots']) .doll-layer[data-layer='feet'] { background-image: url(/game/img/loot/witch.Boots.webp); }
-.doll:has(#slot-hands[data-loot='witch.Gloves']) .doll-layer[data-layer='hands'] { background-image: url(/game/img/loot/witch.Gloves.webp); }
-.doll:has(#slot-legs[data-loot='witch.Greaves']) .doll-layer[data-layer='legs'] { background-image: url(/game/img/loot/witch.Greaves.webp); }
-.doll:has(#slot-head[data-loot='witch.Helmet']) .doll-layer[data-layer='head'] { background-image: url(/game/img/loot/witch.Helmet.webp); }
+
 /* loot-layers:end */
 .doll .slot { display: flex; flex-direction: column; justify-content: center; min-height: 72px; }   /* room for the 40 px Store button */
 .doll .slot { position: relative; z-index: 1; }   /* above .doll-figure: its frame is wider than its column, and a worn shield reaches the FEET card */
@@ -2063,62 +1967,37 @@ dialog .slot-off:disabled { opacity: .45; cursor: not-allowed; }
 }
 #actions .share-button:active { background: none; transform: none; }
 #actions .share-button span { display: block; margin: 0; color: inherit; }
-#actions #clip-button small { display: block; font: 700 9px system-ui, -apple-system, sans-serif; letter-spacing: 1px; line-height: 1.15; text-align: center; white-space: normal; width: 64px; }
-#actions #clip-button[data-state='recording'] svg { display: none; }   /* recording: the seconds left and TAP TO STOP take the icon's place (mockup B, screen 3) */
-#actions #clip-button[data-state='recording'] span { font-size: 16px; letter-spacing: .5px; }   /* the phone rule `.actions button span { display: none }` and the global `button span` margin + gold would drop or shift the label */
+
 @media (max-width: 900px), (pointer: coarse) {
   /* The cluster box's origin is Next's top-left minus (0, 75): at 375x812 that is (175, 562), so the mockup's (20, 590) is (-155, 28). */
   /* Sparring's kill screen (Dom 2026-09-26): CHANGE and LEAVE take SHARE and CLIP's two slots (a sparring fight has no share), left of Rematch. */
   .actions[data-gestures=cluster] .spar-end { position: absolute; top: 28px; width: 60px; height: 60px; }
-  .actions[data-gestures=cluster] #spar-change { left: -155px; }
-  .actions[data-gestures=cluster] #spar-leave { left: -81px; }
+
   /* Export clip B (Dom 2026-09-26, evidence/export-clip-mockups @ 6663c070): SHARE and CLIP in two slots. One tap (Dom 2026-09-28):
      they show at once on the end screen; the old SHARE step that led to them is gone. */
   .actions[data-gestures=cluster] .clip-pick { position: absolute; top: 28px; width: 60px; height: 60px; }
   /* DUEL, LINK, CLIP (Strategy 2026-10-02): one row of three, DUEL first and a little larger, off the bodies and the stick. Landscape: the
      two old slots plus DUEL on their left. Portrait (below): the row sits in the clear sand above the fighters' heads. */
-  .actions[data-gestures=cluster] #duel-button { left: -229px; width: 68px; height: 68px; top: 24px; font-size: 12px; }
-  .actions[data-gestures=cluster] #share-link { left: -155px; }
-  .actions[data-gestures=cluster] #clip-button { left: -81px; }
-  .actions[data-gestures=cluster] #share-status {
-    position: absolute;
-    left: -155px;
-    bottom: 196px;
-    max-width: 150px;
-    margin: 0;
-    text-align: left;
-    font: 12px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif;
-    text-shadow: 0 1px 2px #000c, 0 0 14px #0009;
-    opacity: 1;
-  }
+
 }
 @media (orientation: portrait) and (max-width: 900px), (orientation: portrait) and (pointer: coarse) {
   /* Portrait phone: the row is fixed to the screen, centred, about 190 px below the top: the far wall and the sand behind the fighters (the camera keeps
      both bodies in the lower two thirds), clear of the thumb row. The corpse and the pool lie below it. */
   .actions[data-gestures=cluster] .clip-pick { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 188px); }
-  .actions[data-gestures=cluster] #duel-button { left: calc(50% - 105px); top: calc(env(safe-area-inset-top, 0px) + 184px); }
-  .actions[data-gestures=cluster] #share-link { left: calc(50% - 25px); }
-  .actions[data-gestures=cluster] #clip-button { left: calc(50% + 45px); }
+
   /* No DUEL (a player not on the admins roster): LINK and CLIP centre as a pair, no empty slot where DUEL would be (Strategy 2026-10-02). */
-  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #share-link { left: calc(50% - 65px); }
-  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #clip-button { left: calc(50% + 5px); }
+
 }
 /* Until Dom opens duels (Strategy 2026-10-02) only the admins roster (and ?debug on a local build) see DUEL: no player taps it into "admins only". LINK and CLIP stay for everyone. */
-:root:not([data-duel-tools='true']) #duel-button { display: none !important; }
+
 /* Desktop (one tap, Dom 2026-09-28): SHARE and CLIP sit side by side right of Rematch (CLIP in a fourth column on that row) instead
    of CLIP wrapping onto a third grid row under the controls. The phone cluster places them absolutely (above), so this stays off phones. */
-@media (min-width: 901px) and (not (pointer: coarse)) {
-  #actions #duel-button { grid-row: 1; grid-column: 3; }
-  #actions #share-link { grid-row: 1; grid-column: 4; }
-  #actions #clip-button { grid-row: 1; grid-column: 5; }
-  :root:not([data-duel-tools='true']) #actions #share-link { grid-column: 3; }
-  :root:not([data-duel-tools='true']) #actions #clip-button { grid-column: 4; }
-}
+
 /* The rank row (Dom 2026-09-23), one component in three places: the account panel (#rank), the journal's fighter card
    (#journal-rank) and the fight-end panel (#fight-rank, where the death-screen autopsy was, win and loss). Class + numeral left, a
    segmented bar across the whole class (one segment per numeral, the current one part-filled via --fill from main.ts renderRank),
    the next class right and dimmer. The account panel's type: 12 px, #eee7d9. Ids, not a class, so it outranks .identity div>span. */
-#rank, #journal-rank, #fight-rank {
+#rank,#fight-rank {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2153,7 +2032,7 @@ dialog .rank-seg { --rank-fill: var(--js); }
    touch or Rematch). main.ts's updateHud() toggles :root.endgame-fade from finishPhase() every frame. The buttons go inert
    while faded (lead review, 2026-09-22): an invisible Rematch under the player's thumb during the tour must not fire — the
    first tap during the tour reaches the arena instead, which is what stops it (scene.ts), and the HUD returns at 250 ms. */
-#fight-rank, #reset-button, #share-status, .spar-end, .clip-pick {
+#fight-rank,#reset-button,.spar-end,.clip-pick {
   transition: opacity 250ms ease-out;
 }
 /* One exemption (Lead 2026-09-27, the live CLIP receipt): while a made clip waits for SEND (main.ts clipState 'ready' sets
@@ -2161,11 +2040,7 @@ dialog .rank-seg { --rank-fill: var(--js); }
    tap sends it; on a phone the first tap otherwise fell through to the arena. The pre-settle hush (.endgame-hush) still fades
    them, and Rematch, an idle SHARE + CLIP and the sparring pair stay faded and inert through the tour as above. The precedent is PLAY NOW on a
    viewer page (main.ts `watching`). */
-:root.endgame-fade #reset-button,
-:root.endgame-fade .spar-end,
-:root.endgame-fade:not(.clip-ready) .clip-pick,
-:root.endgame-hush .clip-pick,
-:root.endgame-fade #share-status {
+:root.endgame-fade #reset-button,:root.endgame-fade .spar-end,:root.endgame-fade:not(.clip-ready) .clip-pick,:root.endgame-hush .clip-pick {
   opacity: 0;
 }
 :root.endgame-fade #reset-button,
@@ -2180,12 +2055,11 @@ dialog .rank-seg { --rank-fill: var(--js); }
    took his shield. While the tour rolls a touch anywhere only stops it (main.ts: document pointerdown -> view.stopTour()); the
    tiles and Undo come back with the HUD 250 ms later, and then a tap is the take. Leave it sits in the thumb row, outside the
    arena's touch path, and stays live. */
-:root.endgame-fade .loot-pieces button,
-:root.endgame-fade #loot-undo {
+:root.endgame-fade .loot-pieces button {
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  #fight-rank, #reset-button, #share-status, .clip-pick { transition: none; }
+  #fight-rank,#reset-button,.clip-pick { transition: none; }
 }
 
 /* First-fight cues (brief 8, copy approved by the lead 2026-09-21: "Block it." / "Other side." / "Now."). One line in the
@@ -2229,10 +2103,10 @@ dialog .rank-seg { --rank-fill: var(--js); }
 #actions .loot-panel-actions button:disabled { opacity: .4; cursor: default; }
 /* With Take gone, Leave it is alone in the row and nothing else covers the sleeping Step and Guard underneath it, so the ghost
    gets the cluster's own dark glass rather than full transparency — the label was reading on top of the round buttons. */
-#actions .loot-panel-actions #loot-decline { background: #1a2224cc; border-color: #e9d9b380; color: #f3e9cf; box-shadow: 0 1px 3px #0006; }
+
 /* E2: Take (the offer on the card) above Leave, dark on the sand like the card's ink. */
 .loot-panel-actions { flex-direction: column; }
-#actions .loot-panel-actions #loot-take { min-height: 46px !important; background: #2d2c29; border-color: #2d2c29; color: #f3ead6; }
+
 /* While the take-one offer is up the fight is over, so its controls leave the screen outright (Lead 2026-09-25, from the #753
    375 stills: Step and Guard read through Leave it at the cluster's half-fade and the pad stayed up). Keyed on the offer's own
    row: loot-panel.ts unhides #loot-panel-actions on show and Undo and hides it on Take, Leave it and close, so the controls
@@ -2243,8 +2117,7 @@ dialog .rank-seg { --rank-fill: var(--js); }
 /* The line that replaces the tiles after a take, with Undo beside it. Undo is the ONLY way back from a mis-tap, so it is a pill in
    the card's own ink, not a quiet link; it takes pointers (the card does not) and is on screen for the caller's 4 s. */
 .loot-panel-note { display: flex; align-items: center; gap: 8px; margin: 0; color: #1b1916; font: 15px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif; }
-#loot-undo { pointer-events: auto; flex: 0 0 auto; margin-left: auto; min-height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid #1b191633; background: #1b1916; color: #f3e9cf; font: 700 13px/1 "Instrument Sans", Arial, sans-serif; letter-spacing: .04em; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
-#loot-undo:active { background: #2b2822; }
+
 @media (prefers-reduced-motion: reduce) { .loot-panel { transition: none; } }
 @media (max-width: 900px), (pointer: coarse) {
   .actions[data-gestures=cluster] .loot-panel-actions { position: absolute; left: 0; top: 137px; width: 176px; justify-content: center; }
@@ -2252,24 +2125,24 @@ dialog .rank-seg { --rank-fill: var(--js); }
 
 /* The admin Sparring tab (Dom 2026-09-29, via Strategy): the one tab of test picks (Opponent, Difficulty level, Stage, Move, Weapon,
    Finisher) wrapping as the journal's chips, then Start sparring. Players never see it (main.ts / account.ts hide #sparring-tab). */
-#spar-start { margin-left: auto; background: var(--js); border-color: var(--jse); color: var(--jf); }
+
 /* Every Sparring select shrinks to the line (the Difficulty labels "50 · Origin · …" ran past 375): a flex item's min-width:auto is its content. */
 .sparring-row .menu-select { max-width: 100%; min-width: 0; }
 .sparring-row .menu-select select { flex: 0 1 auto; min-width: 0; max-width: 100%; background: var(--jp); color: var(--jf); color-scheme: dark; }
 .sparring-row .menu-select select:disabled { opacity: 1; color: var(--jm); }
 .sparring-fighter { width: 100%; min-width: 0; }
-#spar-special-status, #spar-player-status { width: 100%; margin: 0; color: var(--jf); font: 13px/1.5 "Instrument Sans", Arial, sans-serif; }
+
 .dev-kit-line { margin: 8px 0 0; color: var(--jm); font: 600 12px "Instrument Sans", Arial, sans-serif; }   /* a Dev-kit fight moves nothing (main.ts sayTested) */
 .sparring-row strong { width: 100%; }
 /* The glint (Dom 2026-09-29, final: no star, no outline): the item itself (icon and label) turns gold (#f2d27a) and back; the glint takes
    the first 30% of each cycle and the rest is still. SHARE and CLIP glint every 3 s while they show ([hidden] stops it). The menu (the
    phone's ☰, the desktop's "Field journal" text) glints stronger on the same 3 s (Dom): a brighter gold held full from 60% to 82% (~0.7 s). Colour only: nothing moves and no tap target changes. Reduced motion: at rest. */
-#journal-button, #journal-button::after { animation: glint-menu 3s ease-in-out infinite; }   /* the text (desktop) and the ☰ (phone) */
+
 #actions .share-button { animation: glint-share 3s ease-in-out infinite; }
 @keyframes glint-menu { 0%, 50%, 92%, 100% { color: #eee9df; } 60%, 82% { color: #ffd24d; } }   /* at rest: the :root ink both already wear */
 @keyframes glint-share { 0%, 30%, 100% { color: #fff; } 15% { color: #f2d27a; } }
 @media (prefers-reduced-motion: reduce) {
-  #journal-button, #journal-button::after, #actions .share-button { animation: none; }
+  #actions .share-button { animation: none; }
 }
 
 /* The kill screen's one action column (Web 2026-10-07, Dom's iPhone shots: the Pit pill sat on the move pad, LINK and CLIP collided with it
@@ -2288,16 +2161,11 @@ dialog .rank-seg { --rank-fill: var(--js); }
   }
   .actions[data-gestures=cluster] #reset-button:not([data-play='1']) { bottom: var(--end-base); background: #b7a276; border: 1px solid #e9d9b3; color: #1b1916; font-weight: 700; box-shadow: inset 0 0 0 3px #f0e3c93d, 0 2px 10px #0007; }   /* Next is the primary: solid sand, dark ink */
   .actions[data-gestures=cluster] .clip-pick { position: fixed; top: auto; left: auto; bottom: calc(var(--end-base) + 112px); }
-  .actions[data-gestures=cluster] #clip-button { left: auto; right: var(--end-gutter); }
-  .actions[data-gestures=cluster] #share-link { left: auto; right: calc(var(--end-gutter) + 66px); }
-  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #share-link { left: auto; right: calc(var(--end-gutter) + 66px); }
-  :root:not([data-duel-tools='true']) .actions[data-gestures=cluster] #clip-button { left: auto; right: var(--end-gutter); }
-  .actions[data-gestures=cluster] #duel-button { top: auto; left: auto; bottom: calc(var(--end-base) + 180px); right: var(--end-gutter); }   /* admin-only: a third row of the column, so it never reaches the pad */
-  .actions[data-gestures=cluster] #share-status { position: fixed; left: auto; right: var(--end-gutter); bottom: calc(var(--end-base) + 256px); max-width: var(--end-width); text-align: right; }
+
   /* While the take-one offer is up it takes the column's slot above Next (it sat at left 0 / top 137 of the old cluster and covered Next, so Next could not
      be tapped: release rows 16, 21 and 25, Lead 2026-10-07). The rest of the column waits (visibility: nothing reflows) and returns with the offer's close. */
   :root:has(#loot-panel-actions:not([hidden])) .actions[data-gestures=cluster] .loot-panel-actions { position: fixed; left: auto; top: auto; right: var(--end-gutter); bottom: calc(var(--end-base) + 56px); width: var(--end-width); }
-  :root:has(#loot-panel-actions:not([hidden])) .actions[data-gestures=cluster] :is(#share-link, #clip-button, .clip-pick, #share-status) { visibility: hidden; }
+
   /* Once the fight is over and Next fight is up, the fight buttons have nothing to do: ROLL and GUARD sat under it and showed through at 375
      (Lead 2026-10-15, scripts/end-overlap-check.mjs). Hidden and inert, nothing reflows; they return with the next fight (Next fight hides again). */
   :root:has(#reset-button:not([hidden], [data-play='1'])) .actions[data-gestures=cluster] :is(#attack-button, #heavy-button, #skill-button, #thrust-button, #kick-button, #dodge-button, #guard-button, #run-button) { visibility: hidden; pointer-events: none; }
@@ -2310,12 +2178,10 @@ dialog .rank-seg { --rank-fill: var(--js); }
   dialog#journal { width: 100vw; height: 100dvh; max-height: none; margin: 0; border-radius: 0; padding: 0; display: none; flex-direction: column; overflow-y: auto; touch-action: pan-y; background: var(--jb); }
   dialog#journal[open] { display: flex; }
 }
-#journal[data-gear='live']:has(#journal-tab-profile:checked) { background: transparent; }
-#journal[data-gear='live']:has(#journal-tab-profile:checked)::backdrop { background: none; backdrop-filter: none; }
+
 #journal .fighter { margin: 0; padding: 14px 64px 4px 16px; background: var(--jb); border: 0; display: grid; grid-template-columns: 1fr; gap: 2px; }
-#journal .fighter-sigil, #journal #mobile-name { display: none; }
-#journal #journal-name { cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; font: 600 28px/1 "Cormorant", Georgia, serif; letter-spacing: .02em; color: var(--jf); }
-#journal #journal-name::after { content: "✎"; font-size: .55em; margin-left: 10px; opacity: .55; }
+#journal .fighter-sigil { display: none; }
+
 #journal .fighter-rank { color: var(--jg2); }
 #journal .fighter-save { font-size: 11px; }
 #journal .journal-close { top: 10px; right: 10px; width: 44px; height: 44px; background: var(--jp); border: 1px solid var(--jl); color: var(--jf); }
@@ -2330,8 +2196,7 @@ dialog .rank-seg { --rank-fill: var(--js); }
 #journal .tab-strip label { padding: 0 12px; letter-spacing: .1em; }
 #journal .app-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* minmax(0, ..): a long exit label ("Back to <zone name>") shrinks and ellipsizes inside its column; with plain 1fr it widened the column and pushed the Gear tab under the Settings cog */
 #journal .app-nav button { min-height: 48px; background: none; border: 0; border-radius: 0; color: var(--jm); font: 600 10px "Cinzel", Georgia, serif; letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
-#journal #journal-tab-profile:checked ~ .app-nav #nav-gear { color: var(--jg2); box-shadow: inset 0 -2px 0 var(--jg); }
-#journal #journal-tab-fighter:checked ~ .tab-strip .tab-fighter, #journal #journal-tab-career:checked ~ .tab-strip .tab-career, #journal #journal-tab-profile:checked ~ .tab-strip .tab-profile, #journal #journal-tab-arena:checked ~ .tab-strip .tab-arena, #journal #journal-tab-settings:checked ~ .tab-strip .tab-settings { background: none; box-shadow: inset 0 -2px 0 var(--jg); color: var(--jg2); }
+
 #journal .tab-pane { background: var(--jb); padding: 12px 16px; }
 #journal .pane-profile { padding: 0; background: transparent; }
 #journal .references { background: var(--jb); margin: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); }
@@ -2362,16 +2227,11 @@ body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journa
 #journal .fitting-head { display: flex; gap: 12px; align-items: center; }
 #journal .fitting-head img { width: 48px; height: 48px; object-fit: contain; flex: none; }
 #journal .fitting-head > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-#journal #fitting-name { font: 600 22px/1.1 "Cormorant", Georgia, serif; color: var(--jf); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#journal #fitting-rank, #journal #fitting-note { font: 500 12px/1.3 "Instrument Sans", Arial, sans-serif; color: var(--jm); }
+
 #journal .fitting-actions { display: flex; gap: 10px; margin-top: 12px; }
 #journal .fitting-actions { position: sticky; bottom: 0; z-index: 2; padding: 8px 0 max(4px, env(safe-area-inset-bottom)); background: var(--jp); }   /* Cancel / Wear this stay in view while a 375-high landscape screen scrolls the compare under them */
 #journal .fitting-actions button { min-height: 48px; border-radius: 6px; font: 600 14px "Instrument Sans", Arial, sans-serif; }
-#journal #fitting-cancel { flex: 0 0 104px; background: none; border: 1px solid var(--jl); color: var(--jf); }
-#journal #fitting-wear { flex: 1; background: var(--jg); border: 1px solid var(--jg2); color: #14110c; }
-#journal #fitting-store { flex: 0 0 auto; min-height: 44px; padding: 0 18px; background: none; border: 1px solid var(--jl); color: var(--jm); font-size: 12px; }
-#journal #fitting-store:disabled { opacity: .45; }
-#journal #stored-heading { margin: 0; padding: 14px 16px 6px; background: var(--jb); font: 600 10px "Cinzel", Georgia, serif; letter-spacing: .2em; text-transform: uppercase; color: var(--jm); }
+
 #journal .pack { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0 16px 8px; background: var(--jb); list-style: none; }
 #journal .pack li { position: relative; display: flex; flex-direction: row; align-items: center; gap: 12px; min-height: 64px; padding: 6px 4px; border: 0; border-bottom: 1px solid var(--jl); border-radius: 0; background: none; color: var(--jf); font: 500 13px "Instrument Sans", Arial, sans-serif; }
 #journal .pack li img.pack-thumb { width: 48px; height: 48px; object-fit: contain; flex: none; order: 0; }
@@ -2390,11 +2250,10 @@ body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journa
    Fitting rail. Layout and the live 3D mannequin are unchanged; every piece is a CSS background, so none is fetched until the sheet is shown. ---- */
 #journal { --gu: url(/gear-ui/); }
 /* the dialog is clear (the stage window shows the canvas), so the painted ground goes on every block that is not the stage */
-#journal .fighter, #journal #account, #journal .tab-strip, #journal .tab-pane:not(.pane-profile), #journal #stored-heading, #journal .pack, #journal .references { background: var(--jb) url(/gear-ui/sheet-ground.png) 0 0 / 256px 256px repeat fixed; }
+#journal .fighter,#journal #account,#journal .tab-strip,#journal .tab-pane:not(.pane-profile),#journal .pack,#journal .references { background: var(--jb) url(/gear-ui/sheet-ground.png) 0 0 / 256px 256px repeat fixed; }
 #journal .pane-profile { background: transparent; }
 #journal .journal-close { background: transparent url(/gear-ui/close.png) center / 24px no-repeat; border: 0; outline: 0; box-shadow: none; font-size: 0; color: transparent; text-indent: -9999px; overflow: hidden; }
-#journal #journal-name::after { content: ""; width: 24px; height: 24px; margin-left: 6px; opacity: 1; background: url(/gear-ui/edit.png) center / 24px no-repeat; }
-#journal #stored-heading { background: url(/gear-ui/section-rule.png) left bottom / 100% 2px no-repeat, var(--jb) url(/gear-ui/sheet-ground.png) 0 0 / 256px 256px repeat fixed; margin: 0; padding: 14px 16px 12px; background-origin: padding-box, padding-box; }
+
 /* the stage: the vignette over the live mannequin */
 #journal[data-gear='live'] .doll { background: url(/gear-ui/stage-vignette.png) center / 100% 100% no-repeat; }
 /* the rail: painted tiles, glyph for an empty slot, the piece's picture for a worn one; the word is for screen readers */
@@ -2420,13 +2279,7 @@ body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journa
 /* the fitting panel and its buttons */
 #journal .fitting { border: 8px solid transparent; border-image: url(/gear-ui/fitting-panel-ground.png) 24 fill / 8px / 0 stretch; background: none; padding: 8px 8px 12px; }
 #journal .fitting-actions button { border: 6px solid transparent; border-radius: 0; background: none; color: var(--jf); }
-#journal #fitting-cancel { flex: 0 0 100px; border-image: url(/gear-ui/cancel-rest.png) 18 fill / 6px / 0 stretch; }
-#journal #fitting-wear { border-image: url(/gear-ui/wear-this-rest.png) 18 fill / 6px / 0 stretch; color: #14110c; }
-#journal #fitting-wear:active { border-image-source: url(/gear-ui/wear-this-pressed.png); }
-#journal #fitting-wear:disabled { border-image-source: url(/gear-ui/wear-this-disabled.png); }
-#journal #fitting-store { flex: 0 0 72px; min-height: 48px; padding: 0; border-image: url(/gear-ui/store-rest.png) 18 fill / 6px / 0 stretch; color: var(--jf); opacity: 1; }
-#journal #fitting-store:active { border-image-source: url(/gear-ui/store-pressed.png); }
-#journal #fitting-store:disabled { border-image-source: url(/gear-ui/store-disabled.png); opacity: 1; }
+
 /* stored rows: painted plates, the chevron, the rank chip */
 #journal .pack { gap: 6px; padding-bottom: 12px; }
 #journal .pack li { min-height: 64px; padding: 0 12px; border: 8px solid transparent; border-image: url(/gear-ui/stored-row-rest.png) 24 fill / 8px / 0 stretch; }
@@ -2441,7 +2294,6 @@ body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journa
 /* the bottom bar: the painted plate (its 32 px safe-area strip stretches to the real inset) and the three tabs */
 #journal .app-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 6px solid transparent; border-image: url(/gear-ui/bottom-bar-safe32.png) 18 fill / 6px / 0 stretch; background: var(--jb); padding: 0 0 env(safe-area-inset-bottom, 0); }
 #journal .app-nav button { min-height: 48px; background: url(/gear-ui/bottom-tab-rest.png) center / 100% 100% no-repeat; }
-#journal #journal-tab-profile:checked ~ .app-nav #nav-gear { box-shadow: none; background-image: url(/gear-ui/bottom-tab-active.png); }
 
 /* the account block on the dark sheet (the base dialog button is a white plate with light text here: unreadable) */
 #journal .account-actions button { background: var(--jp); color: var(--jf); border: 1px solid var(--jg); border-radius: 6px; min-height: 48px; }
@@ -2459,12 +2311,12 @@ body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journa
 #journal .tab-strip .tab-fighter, #journal .tab-strip .tab-career { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 21V11h4.5v10zM9.75 21V3h4.5v18zM16.5 21v-7H21v7z'/%3E%3C/svg%3E"); }
 #journal .tab-strip .tab-settings { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='3.3' stroke-width='2.2'/%3E%3Ccircle cx='12' cy='12' r='6.6' stroke-width='2.2'/%3E%3Cpath d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1' stroke-width='2.6'/%3E%3C/svg%3E"); }
 #journal .tab-strip .tab-arena { --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-linecap='round' stroke-width='2.4'%3E%3Cpath d='M4 20L18 6M14 4h6v6M20 20L6 6M4 10V4h6'/%3E%3C/svg%3E"); }
-#journal #journal-tab-fighter:checked ~ .tab-strip .tab-fighter, #journal #journal-tab-career:checked ~ .tab-strip .tab-career, #journal #journal-tab-arena:checked ~ .tab-strip .tab-arena, #journal #journal-tab-settings:checked ~ .tab-strip .tab-settings { color: var(--jg2); box-shadow: inset 0 -2px 0 var(--jg); }
+
 /* the tab bar under the header: sticky, so Gear & pack | Arena stay in reach while a long screen scrolls */
 #journal .app-nav { order: -1; position: sticky; top: 0; bottom: auto; margin: 0; z-index: 3; padding: 0; border: 0; border-image: none; border-top: 1px solid #c8a45e66; border-bottom: 1px solid #c8a45e66; background: var(--jb); }
 #journal .app-nav button { min-height: 52px; font-size: 12px; letter-spacing: .14em; color: var(--jm); background: none; border-radius: 0; }
 #journal .app-nav button + button { border-left: 1px solid var(--jl); }
-#journal #journal-tab-profile:checked ~ .app-nav #nav-gear { background: none; color: var(--jg2); box-shadow: inset 0 -2px 0 var(--jg); }
+
 /* Gear: the stage window (#gear-window, where the live hero shows through) with the rail on its right, then Main hand and Off hand as two wide tiles */
 #journal .doll { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 54px; align-items: center; justify-items: end; gap: 0 6px; height: auto; padding: 0 8px 10px; overflow: hidden; }
 #journal .gear-window { grid-column: 1 / 3; grid-row: 1 / 8; width: 100%; height: 100%; pointer-events: none; }
@@ -2480,8 +2332,7 @@ body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journa
 #journal .doll [data-slot='main'] i, #journal .doll [data-slot='off'] i { position: static; width: auto; height: auto; clip-path: none; display: block; font: 600 14px/1.2 "Cormorant", Georgia, serif; font-style: normal; color: var(--jf); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #journal .doll [data-slot='main'].on.noart span, #journal .doll [data-slot='off'].on.noart span { display: block; }
 /* Stats (concept 04): the portrait takes the header's sigil, then the career tiles, one card per opponent, the gear you wear, and the way back */
-#journal:has(#journal-tab-fighter:checked) .fighter { display: grid; grid-template-columns: 56px 1fr; column-gap: 12px; align-items: center; }
-#journal:has(#journal-tab-fighter:checked) .fighter-sigil { display: block; grid-row: 1 / span 3; width: 54px; height: 54px; border-radius: 50%; border: 2px solid var(--jg); font-size: 0; background: url(/game/img/fighter.webp) 45% 20% / 300% auto no-repeat, var(--jp); }
+
 #journal .pane-fighter { padding: 8px 16px 24px; }
 #journal .pane-fighter h4 { margin: 8px 0 12px; font: 600 34px/1.05 "Cormorant", Georgia, serif; letter-spacing: 0; text-transform: none; color: var(--jf); }
 #journal .record-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -2501,12 +2352,6 @@ body[data-gear='live']:has(#journal[open]) > :not(#world):not(#view):not(#journa
 #journal .stats-gear-icon img { max-width: 100%; max-height: 100%; object-fit: contain; }
 #journal .stats-gear button { flex: none; min-height: 44px; padding: 0 6px; border: 0; background: none; color: var(--jg2); font: 600 14px "Instrument Sans", Arial, sans-serif; }
 #journal .stats-return { width: 100%; min-height: 56px; margin-top: 20px; border: 1px solid var(--jg); border-radius: 4px; background: linear-gradient(#4a1a18, #2f1110); color: var(--jf); font: 600 17px "Cormorant", Georgia, serif; letter-spacing: .04em; }
-
-#journal:has(#sparring-tab:not([hidden])) .fighter { padding-right: 212px; }   /* a third icon (admins, or a sparring link) widens the corner */
-#journal:has(#journal-tab-fighter:checked) #journal-name { font-size: 24px; white-space: nowrap; }
-#journal:has(#journal-tab-fighter:checked) #journal-name::after { margin-left: 2px; width: 20px; background-size: 18px; }
-#journal:has(#journal-tab-fighter:checked) .fighter { padding-right: 140px; }
-#journal:has(#journal-tab-fighter:checked):has(#sparring-tab:not([hidden])) .fighter { padding-right: 212px; }
 
 /* The tutorial start scene (?tutorial=1, src/tutorial-ui.ts): one big word and a short how-line under the HUD, above the fight. Reads in one glance at 375 wide. */
 #tutorial-prompt {
@@ -2621,9 +2466,7 @@ html[data-tutorial] #combat-status { visibility: hidden; }   /* the prompt is th
 .gear-stats dd { margin: 0; color: var(--jf2, #f3ead6); font: 600 14px/1.5 "Instrument Sans", Arial, sans-serif; font-variant-numeric: tabular-nums; }
 /* Landscape part B (Web, 2026-10-12; scripts/pit-landscape-check.mjs). The journal name no longer runs under the Stats / Career / Settings icons:
    it ellipsizes before them (the pencil is the name's own background so a long name keeps it). */
-#journal #journal-name { display: block; width: fit-content; max-width: calc(100% - 180px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 44px; padding-right: 30px; background: url(/gear-ui/edit.png) right center / 24px no-repeat; }
-#journal #journal-name::after { content: none; }
-#journal:has(#sparring-tab:not([hidden])) #journal-name { max-width: calc(100% - 240px); }
+
 /* The stance setting (Dom 2026-10-19: a character setting in the menu, beside gear; src/fight/stance-panel.ts): four buttons in a row at the top of the Gear tab, above the paperdoll (#3379), the lit one ringed in its colour, the effect line and the lock hint under them. The fighter card names the stance in its colour. */
 #journal .stance-menu { margin: 0; padding: 10px 16px 12px; border-bottom: 1px solid var(--jl); background: var(--jb); }   /* Lead 2026-10-19: the stance block is the first thing on the Gear tab, above the paperdoll, so it shows without scrolling */
 #journal .stance-menu[hidden] { display: none; }
@@ -2641,9 +2484,9 @@ html[data-tutorial] #combat-status { visibility: hidden; }   /* the prompt is th
 /* part B, round 2: iPad: clear of the menu button; very short landscape: SKILL below the menu button;
    the journal header's right padding goes (the name ellipsizes itself) and the rank row starts under the tab icons so the rank bar keeps its width */
 @media (orientation: landscape) and (max-height: 360px) { .actions[data-gestures=cluster] #skill-button, .actions[data-gestures=cluster] #skill2-button:not([hidden]) { top: -44px; } }
-#journal .fighter, #journal:has(#journal-tab-fighter:checked) .fighter { padding-right: 16px; }
-#journal #journal-rank { margin-top: 6px; }
-@media (max-width: 440px) { #journal #journal-name, #journal:has(#journal-tab-fighter:checked) #journal-name { display: block; font-size: 20px; max-width: calc(100vw - 204px); padding-right: 22px; background-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 44px; min-height: 44px; } }   /* vw, not %: the header cell is shrink-wrapped (a % of it cut "Wanderer" to "Wa…"); 262 = the avatar, the three tabs and a Safari margin (Safari's wider fallback face broke "Wander|er" at 254); a name that does not fit ends in an ellipsis, never mid-word */
+#journal .fighter { padding-right: 16px; }
+
+   /* vw, not %: the header cell is shrink-wrapped (a % of it cut "Wanderer" to "Wa…"); 262 = the avatar, the three tabs and a Safari margin (Safari's wider fallback face broke "Wander|er" at 254); a name that does not fit ends in an ellipsis, never mid-word */
 @media (max-width: 440px) { #journal .tab-strip label { min-width: 52px; letter-spacing: .04em; padding: 0 2px; } }   /* three icon tabs = ~170 px, not 220: the name keeps its room */
 
 /* The try-on compare (Dom's in-world pickup reference): NEW beside EQUIPPED in the fitting panel, the strip's rows under each card, the change in green / red. */
@@ -2679,7 +2522,7 @@ html[data-tutorial] #combat-status { visibility: hidden; }   /* the prompt is th
 #journal .cmp-delta[data-sign='up'] { color: #6fcf6f; }
 #journal .cmp-delta[data-sign='down'] { color: #e0584f; }
 #journal .stats-gear strong { white-space: normal; overflow-wrap: break-word; }   /* a worn piece's long name wraps instead of ending in an ellipsis (Safari run: 270 px of name in 168) */
-@media (max-width: 440px) { #journal:has(#journal-tab-fighter:checked) .fighter { grid-template-columns: 46px 1fr; column-gap: 10px; } #journal:has(#journal-tab-fighter:checked) .fighter-sigil { width: 44px; height: 44px; } #journal:has(#journal-tab-fighter:checked) #journal-name { max-width: calc(100vw - 250px); padding-right: 16px; background-size: 16px; } }   /* Stats tab: a smaller avatar gives the name its room beside the tabs */
+   /* Stats tab: a smaller avatar gives the name its room beside the tabs */
 /* The NEW-vs-EQUIPPED compare (Dom's pickup-compare reference, 2026-10-11): two cards in the take panel's head when the offer would replace a worn piece. */
 .loot-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; padding: 10px 0; border-bottom: 1px solid #1b191630; }
 .loot-compare[hidden] { display: none; }
@@ -2692,8 +2535,7 @@ html[data-tutorial] #combat-status { visibility: hidden; }   /* the prompt is th
 .loot-card-name { max-width: 100%; color: #1b1916; font: 600 15px/1.1 "Iowan Old Style", Palatino, Georgia, serif; overflow-wrap: anywhere; }
 .loot-card-slot { color: #7a5c18; font: 700 10px/1.2 "Instrument Sans", Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
 /* "Place your point" (build-screen.ts): a dialog, phone first; every control is 44 px or more. */
-#build-dot { display: inline-block; width: 9px; height: 9px; margin-left: 6px; border-radius: 50%; background: var(--jg2, #e7cf93); box-shadow: 0 0 0 3px #e7cf9355; vertical-align: middle; }
-#build-dot[hidden] { display: none; }
+
 #journal .build-open { width: 100%; min-height: 44px; margin: 0 0 10px; border: 1px solid #c8a45e99; border-radius: 4px; background: transparent; color: var(--jf); font: 600 13px "Instrument Sans", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
 #journal .build-open span:not(:empty) { margin-left: 8px; color: var(--jg2); }
 .build-dialog { touch-action: pan-y; box-sizing: border-box; width: min(440px, 100vw - 16px); max-height: calc(100dvh - 16px); margin: auto; padding: 14px 14px 12px; overflow-y: auto; border: 1px solid #c8a45e99; border-radius: 6px; background: #12100d; color: #e9e3d6; font: 500 13px "Instrument Sans", Arial, sans-serif; }
@@ -2736,8 +2578,8 @@ html[data-tutorial] #combat-status { visibility: hidden; }   /* the prompt is th
 
 /* The armour weight badge (gear-sheet.ts weightOf): the piece's class from the gear rows, read only, on the fitting card, the pack and the rack. */
 #journal [data-weight]::after { content: attr(data-weight); display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid currentColor; border-radius: 8px; font: 600 10px/16px "Instrument Sans", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .75; vertical-align: middle; }
-#journal #fitting-name[data-weight], #journal .pack li strong[data-weight] { white-space: normal; overflow: visible; text-overflow: clip; }   /* a badged name wraps instead of truncating: Safari's ellipsis swallowed the pill (the WebKit row, 2026-10-13) */
-#journal #fitting-name[data-weight]::after, #journal .pack li strong[data-weight]::after { white-space: nowrap; }
+#journal .pack li strong[data-weight] { white-space: normal; overflow: visible; text-overflow: clip; }   /* a badged name wraps instead of truncating: Safari's ellipsis swallowed the pill (the WebKit row, 2026-10-13) */
+#journal .pack li strong[data-weight]::after { white-space: nowrap; }
 /* Phone-layout audit, Pit side (Web, 2026-10-20, live at 375). The backing plate is the zone page's (#3423): the same tokens, so both HUDs match. */
 :root { --c-plate: rgba(18, 12, 8, 0.62); --plate-r: 6px; --plate-pad: 2px 8px; --tab-gap: 6px; }
 @media (max-width: 700px) { .combat-hud > span:first-child, #fight-rank { background: var(--c-plate); border-radius: var(--plate-r); padding: var(--plate-pad); } }   /* the foe's name and the rank row read on the busy sky, statue and torches */

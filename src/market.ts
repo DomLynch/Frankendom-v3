@@ -2,6 +2,7 @@
 // selling are functions from a save to a save, and every refusal is a named reason. Coins are the BANKED coins of data/corpse-run.json. No DOM, no storage, no clock (the day is passed in), no Math.random.
 // The parts inventory is reached only through src/market-inventory.ts; the save field is the optional `market` (absent until the first trade, so an older save is byte for byte the same).
 import { hash32 } from './fight/bout-seed.ts';
+import { dayKey as utcDay } from './daily-pit.ts';
 import { PARTS } from './parts.ts';
 import MARKET_JSON from '../data/market.json' with { type: 'json' };
 import { addPart, listParts, removePart, type InventorySave } from './market-inventory.ts';
@@ -13,25 +14,31 @@ export type MarketFile = {
   weights: { common: number; rare: number; epic: number; weapon: number } & Record<string, number>;
   price: { base: Record<string, number>; buyX: number; sellX: number; weapon: Record<string, number>; trophy: Record<string, number> };
   caps: { buyMax: number; sellPerDay: number };
+  limits: { range: Record<string, [number, number]>; save: { idChars: number; weapons: number; bought: number; trades: number }; attempts: number; hashRange: number; sheetPct: number; chip: { edgeX: number; edgeY: number; headM: number; noScreen: number } };
   lines: Record<'greet' | 'buy' | 'sell' | 'broke' | 'soldOut' | 'capped' | 'restock' | 'leave', string[]>;
   events: Record<'open' | 'buy' | 'sell' | 'refuse' | 'restock', string>;
-  ui: { zIndex: number; sheetHeightFrac: number; text: Record<string, string> };
+  ui: { zIndex: number; sheetHeightFrac: number; css: string[]; text: Record<string, string> };
 };
 /** The part of a save the market reads and writes. */
 export type TradeSave = InventorySave & { banked: number; unlocked: string[]; trophies?: Record<string, number>; market?: MarketSave };
 /** One of the day's items. `key` names it for the save (`part:<id>:<star>` or `weapon:<id>`). */
 export type StockItem = { key: string; cls: 'part' | 'weapon'; id: string; star: number; rarity: string; price: number };
+/** The two kinds of stock item, and the two refusals that have a line of their own: named once, so no branch compares a bare word. */
+export const CLS = { part: 'part', weapon: 'weapon' } as const, SLOT = { part: 'part', any: 'any' } as const;
+export const REFUSAL = { broke: 'broke', capped: 'capped' } as const;
 export type Refusal = 'broke' | 'soldOut' | 'capped' | 'owned' | 'unknown' | 'none';
 export type Trade<T> = { ok: true; save: T; price: number; item: string } | { ok: false; reason: Refusal; short?: number };
 
+const EPOCH_DAY = '1970-01-01';
 const DAY = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/, ID = /^[a-z0-9][a-z0-9-]*$/;
 
 /** The UTC date (YYYY-MM-DD) of `ms`: the stock rolls over at 00:00 UTC for everyone. */
-export const dayKey = (ms: number): string => (Number.isFinite(ms) ? new Date(ms).toISOString().slice(0, 10) : '1970-01-01');
+export const dayKey = (ms: number): string => (Number.isFinite(ms) ? utcDay(ms) : EPOCH_DAY);
 
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+/** A seeded draw in [0, 1): the integer hash of the seed and a counter over its range (data/market.json limits.hashRange): the same numbers on every engine. */
+function drawer(seed: string, range: number): () => number {
+  let n = 0;
+  return () => hash32(seed, n++) / range;
 }
 
 /** What the merchant asks for a part of `star` or a weapon: base x buyX, rounded up. */
@@ -46,7 +53,7 @@ export const trophySellPrice = (f: MarketFile, tier: string): number => sellPric
 
 /** The day's stock: a pure function of the salt and the date. `profileIds`: the boss profiles whose parts he may carry (data/profiles.json order). Same arguments, same items, always. */
 export function stockFor(f: MarketFile, day: string, profileIds: readonly string[]): StockItem[] {
-  const rng = mulberry32(hash32(`${f.salt}:${day}`, 0)), slots = PARTS.slots.filter((s) => s.units.length), weapons = Object.keys(f.price.weapon);
+  const rng = drawer(`${f.salt}:${day}`, f.limits.hashRange), slots = PARTS.slots.filter((s) => s.units.length), weapons = Object.keys(f.price.weapon);
   const rar = PARTS.rarities, rw = rar.map((r) => f.weights[r.id] ?? 0), rsum = rw.reduce((a, b) => a + b, 0);
   const part = (): StockItem => {
     const profile = profileIds[Math.floor(rng() * profileIds.length)]!, slot = slots[Math.floor(rng() * slots.length)]!.id;
@@ -59,8 +66,8 @@ export function stockFor(f: MarketFile, day: string, profileIds: readonly string
   const out: StockItem[] = [];
   for (const slot of f.stock.slots.slice(0, f.stock.size)) {
     let item: StockItem | null = null;
-    for (let tries = 0; tries < 40; tries++) {
-      const wantWeapon = slot === 'any' && weapons.length > 0 && rng() * (rsum + f.weights.weapon) < f.weights.weapon;
+    for (let tries = 0; tries < f.limits.attempts; tries++) {
+      const wantWeapon = slot === SLOT.any && weapons.length > 0 && rng() * (rsum + f.weights.weapon) < f.weights.weapon;
       const next = wantWeapon ? weapon() : part();
       if (!out.some((o) => o.key === next.key)) { item = next; break; }
     }
@@ -82,11 +89,11 @@ export function buy<T extends TradeSave>(f: MarketFile, save: T, key: string, da
   const item = stockFor(f, day, profileIds).find((s) => s.key === key), m = marketOf(save, day);
   if (!item) return { ok: false, reason: 'unknown' };
   if (m.bought.includes(key)) return { ok: false, reason: 'soldOut' };
-  if (item.cls === 'weapon' && ownsWeapon(save, item.id)) return { ok: false, reason: 'owned' };
+  if (item.cls === CLS.weapon && ownsWeapon(save, item.id)) return { ok: false, reason: 'owned' };
   if (!Number.isInteger(save.banked) || save.banked < item.price) return { ok: false, reason: 'broke', short: Math.max(0, item.price - (Number.isInteger(save.banked) ? save.banked : 0)) };
   let next: T = { ...save, banked: save.banked - item.price };
-  const market: MarketSave = { ...m, bought: [...m.bought, key], trades: m.trades + 1, weapons: item.cls === 'weapon' ? [...m.weapons, item.id] : m.weapons };
-  if (item.cls === 'part') next = addPart(next, item.id, item.star);
+  const market: MarketSave = { ...m, bought: [...m.bought, key], trades: m.trades + 1, weapons: item.cls === CLS.weapon ? [...m.weapons, item.id] : m.weapons };
+  if (item.cls === CLS.part) next = addPart(next, item.id, item.star);
   return { ok: true, save: { ...next, market }, price: item.price, item: item.id };
 }
 
@@ -106,7 +113,7 @@ export function sell<T extends TradeSave>(f: MarketFile, save: T, key: string, d
   if (!row) return { ok: false, reason: 'none' };
   if (m.soldToday + row.price > f.caps.sellPerDay || save.banked + row.price > bankCap) return { ok: false, reason: 'capped' };
   let next: T | null;
-  if (row.cls === 'part') next = removePart(save, row.id);
+  if (row.cls === CLS.part) next = removePart(save, row.id);
   else { const trophies = { ...(save.trophies ?? {}) }; if ((trophies[row.id] ?? 0) <= 1) delete trophies[row.id]; else trophies[row.id] = trophies[row.id]! - 1; next = { ...save, trophies }; if (!Object.keys(trophies).length) delete next.trophies; }
   if (!next) return { ok: false, reason: 'none' };
   return { ok: true, save: { ...next, banked: save.banked + row.price, market: { ...m, soldToday: m.soldToday + row.price, trades: m.trades + 1 } }, price: row.price, item: row.id };
@@ -122,13 +129,13 @@ export function lineFor(f: MarketFile, event: keyof MarketFile['lines'], day: st
 export function cleanMarket(j: { market?: unknown }, f: MarketFile = MARKET): { market?: MarketSave } {
   const m = j.market as { day?: unknown; bought?: unknown; soldToday?: unknown; weapons?: unknown; trades?: unknown } | undefined;
   if (!m || typeof m !== 'object' || Array.isArray(m)) return {};
-  const strs = (v: unknown, ok: (s: string) => boolean, max: number): string[] => (Array.isArray(v) ? [...new Set(v.filter((s): s is string => typeof s === 'string' && s.length <= 80 && ok(s)))].slice(0, max) : []);
+  const strs = (v: unknown, ok: (s: string) => boolean, max: number): string[] => (Array.isArray(v) ? [...new Set(v.filter((s): s is string => typeof s === 'string' && s.length <= f.limits.save.idChars && ok(s)))].slice(0, max) : []);
   const day = typeof m.day === 'string' && DAY.test(m.day) ? m.day : '1970-01-01', fresh = day === m.day;
-  const weapons = strs(m.weapons, (s) => ID.test(s) && f.price.weapon[s] !== undefined, 64);
+  const weapons = strs(m.weapons, (s) => ID.test(s) && f.price.weapon[s] !== undefined, f.limits.save.weapons);
   const out: MarketSave = {
-    day, bought: fresh ? strs(m.bought, (s) => /^(part:[a-z0-9-]+:[a-z_]+:[0-9]|weapon:[a-z0-9-]+)$/.test(s), 16) : [],
+    day, bought: fresh ? strs(m.bought, (s) => /^(part:[a-z0-9-]+:[a-z_]+:[0-9]|weapon:[a-z0-9-]+)$/.test(s), f.limits.save.bought) : [],
     soldToday: fresh && typeof m.soldToday === 'number' && Number.isInteger(m.soldToday) && m.soldToday >= 0 ? Math.min(f.caps.sellPerDay, m.soldToday) : 0,
-    weapons, trades: typeof m.trades === 'number' && Number.isInteger(m.trades) && m.trades >= 0 ? Math.min(999999, m.trades) : 0,
+    weapons, trades: typeof m.trades === 'number' && Number.isInteger(m.trades) && m.trades >= 0 ? Math.min(f.limits.save.trades, m.trades) : 0,
   };
   return out.bought.length || out.weapons.length || out.soldToday || out.trades ? { market: out } : {};
 }
@@ -136,38 +143,41 @@ export function cleanMarket(j: { market?: unknown }, f: MarketFile = MARKET): { 
 export type MarketCtx = { weaponIds: readonly string[]; tiers: readonly number[] };
 /** Why `f` is not a good market table (one string per problem; empty = fine). The exploit rules live here: for every rarity a sale must pay less than the rebuy of the same thing costs. */
 export function validateMarket(f: MarketFile, ctx: MarketCtx): string[] {
-  const e: string[] = [], num = (at: string, v: unknown, lo: number, hi: number) => { if (!(typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi)) e.push(`market.${at}: a number in ${lo}..${hi}`); };
-  const whole = (at: string, v: unknown, lo: number, hi: number) => { if (!(typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi)) e.push(`market.${at}: a whole number in ${lo}..${hi}`); };
-  const word = (at: string, v: unknown, max = 80) => { if (!(typeof v === 'string' && v.trim().length > 0 && v.length <= max)) e.push(`market.${at}: 1-${max} characters`); };
+  const e: string[] = [], num = (at: string, v: unknown, lo: number, hi: number) => { if (!(typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi)) fail(new Error(`market.${at}: a number in ${lo}..${hi}`)); };
+  const whole = (at: string, v: unknown, lo: number, hi: number) => { if (!(typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi)) fail(new Error(`market.${at}: a whole number in ${lo}..${hi}`)); };
+  const fail = (err: Error): void => { e.push(err.message); };   // a diagnostic about the data file, not game text
+  const L = f.limits, R = (key: string): [number, number] => { const r = L?.range?.[key]; return [r?.[0] ?? 0, r?.[1] ?? 0]; };
+  if (!L?.range) { fail(new Error('market.limits.range: the validator ranges are missing')); return e; }
+  const word = (at: string, v: unknown, key = 'text') => { const max = R(key)[1]; if (!(typeof v === 'string' && v.trim().length > 0 && v.length <= max)) fail(new Error(`market.${at}: 1-${max} characters`)); };
   const m = f.merchant;
-  word('merchant.id', m?.id, 24); word('merchant.name', m?.name, 24); word('merchant.kind', m?.kind, 40); word('merchant.body', m?.body, 40);
-  num('merchant.dx', m?.dx, -40, 40); num('merchant.dz', m?.dz, -40, 40);
-  num('merchant.openMetres', m?.openMetres, 1, 20); num('merchant.closeMetres', m?.closeMetres, 1, 40); num('merchant.loadMetres', m?.loadMetres, 5, 200);
-  if (m && m.closeMetres < m.openMetres) e.push('market.merchant.closeMetres: at least openMetres (the sheet must not close the moment it opens)');
-  word('salt', f.salt, 40);
-  whole('stock.size', f.stock?.size, 1, 6);
-  if (!Array.isArray(f.stock?.slots) || f.stock.slots.length !== f.stock.size || f.stock.slots.some((s) => s !== 'part' && s !== 'any')) e.push('market.stock.slots: size entries, each "part" or "any"');
+  word('merchant.id', m?.id, 'name'); word('merchant.name', m?.name, 'name'); word('merchant.kind', m?.kind, 'kind'); word('merchant.body', m?.body, 'kind');
+  num('merchant.dx', m?.dx, ...R('offset')); num('merchant.dz', m?.dz, ...R('offset'));
+  num('merchant.openMetres', m?.openMetres, ...R('open')); num('merchant.closeMetres', m?.closeMetres, ...R('close')); num('merchant.loadMetres', m?.loadMetres, ...R('load'));
+  if (m && m.closeMetres < m.openMetres) fail(new Error('market.merchant.closeMetres: at least openMetres (the sheet must not close the moment it opens)'));
+  word('salt', f.salt, 'salt');
+  whole('stock.size', f.stock?.size, ...R('stockSize'));
+  if (!Array.isArray(f.stock?.slots) || f.stock.slots.length !== f.stock.size || f.stock.slots.some((s) => s !== SLOT.part && s !== SLOT.any)) fail(new Error('market.stock.slots: size entries, each "part" or "any"'));
   const rar = PARTS.rarities.map((r) => r.id);
-  for (const r of rar) { whole(`weights.${r}`, f.weights?.[r], 0, 1000); whole(`price.base.${r}`, f.price?.base?.[r], 1, 100000); }
-  if (rar.every((r) => f.weights?.[r] === 0)) e.push('market.weights: at least one rarity weight above 0');
-  whole('weights.weapon', f.weights?.weapon, 0, 1000);
-  for (const k of Object.keys(f.price?.base ?? {})) if (!rar.includes(k)) e.push(`market.price.base.${k}: not a data/parts.json rarity`);
-  num('price.buyX', f.price?.buyX, 1, 20); num('price.sellX', f.price?.sellX, 0, 0.5);
+  for (const r of rar) { whole(`weights.${r}`, f.weights?.[r], ...R('weight')); whole(`price.base.${r}`, f.price?.base?.[r], ...R('coins')); }
+  if (rar.every((r) => f.weights?.[r] === 0)) fail(new Error('market.weights: at least one rarity weight above 0'));
+  whole('weights.weapon', f.weights?.weapon, ...R('weight'));
+  for (const k of Object.keys(f.price?.base ?? {})) if (!rar.includes(k)) fail(new Error(`market.price.base.${k}: not a data/parts.json rarity`));
+  num('price.buyX', f.price?.buyX, ...R('buyX')); num('price.sellX', f.price?.sellX, ...R('sellX'));
   const ids = Object.keys(f.price?.weapon ?? {});
-  for (const id of ids) { if (!ctx.weaponIds.includes(id)) e.push(`market.price.weapon.${id}: not a weapon-defs row`); whole(`price.weapon.${id}`, f.price.weapon[id], 1, 100000); }
-  if (!ids.length && f.weights?.weapon > 0) e.push('market.weights.weapon: above 0 needs at least one price.weapon row');
-  for (const t of Object.keys(f.price?.trophy ?? {})) { if (!ctx.tiers.includes(Number(t)) || Number(t) < 1) e.push(`market.price.trophy.${t}: not a star tier with a trophy`); whole(`price.trophy.${t}`, f.price.trophy[t], 1, 100000); }
-  whole('caps.buyMax', f.caps?.buyMax, 1, 1000000); whole('caps.sellPerDay', f.caps?.sellPerDay, 0, 1000000);
+  for (const id of ids) { if (!ctx.weaponIds.includes(id)) fail(new Error(`market.price.weapon.${id}: not a weapon-defs row`)); whole(`price.weapon.${id}`, f.price.weapon[id], ...R('coins')); }
+  if (!ids.length && f.weights?.weapon > 0) fail(new Error('market.weights.weapon: above 0 needs at least one price.weapon row'));
+  for (const t of Object.keys(f.price?.trophy ?? {})) { if (!ctx.tiers.includes(Number(t)) || Number(t) < 1) fail(new Error(`market.price.trophy.${t}: not a star tier with a trophy`)); whole(`price.trophy.${t}`, f.price.trophy[t], ...R('coins')); }
+  whole('caps.buyMax', f.caps?.buyMax, ...R('buyMax')); whole('caps.sellPerDay', f.caps?.sellPerDay, ...R('sellPerDay'));
   // No sell-then-rebuy gain: what he pays for a thing is below what he asks for it, for every rarity and every weapon, after rounding.
   if (Number.isFinite(f.price?.buyX) && Number.isFinite(f.price?.sellX)) {
-    for (const r of rar) { const b = f.price.base[r]; if (typeof b === 'number' && sellPrice(f, b) >= buyPrice(f, b)) e.push(`market.price: a ${r} part sells for ${sellPrice(f, b)} and rebuys for ${buyPrice(f, b)} (a sale must pay less than the rebuy)`); }
-    for (const id of ids) { const b = f.price.weapon[id]; if (typeof b === 'number' && f.caps && buyPrice(f, b) > f.caps.buyMax) e.push(`market.price.weapon.${id}: asks more than caps.buyMax`); }
-    for (const r of rar) { const b = f.price.base[r]; if (typeof b === 'number' && f.caps && buyPrice(f, b) > f.caps.buyMax) e.push(`market.price.base.${r}: asks more than caps.buyMax`); }
+    for (const r of rar) { const b = f.price.base[r]; if (typeof b === 'number' && sellPrice(f, b) >= buyPrice(f, b)) fail(new Error(`market.price: a ${r} part sells for ${sellPrice(f, b)} and rebuys for ${buyPrice(f, b)} (a sale must pay less than the rebuy)`)); }
+    for (const id of ids) { const b = f.price.weapon[id]; if (typeof b === 'number' && f.caps && buyPrice(f, b) > f.caps.buyMax) fail(new Error(`market.price.weapon.${id}: asks more than caps.buyMax`)); }
+    for (const r of rar) { const b = f.price.base[r]; if (typeof b === 'number' && f.caps && buyPrice(f, b) > f.caps.buyMax) fail(new Error(`market.price.base.${r}: asks more than caps.buyMax`)); }
   }
-  for (const [k, rows] of Object.entries(f.lines ?? {})) if (!Array.isArray(rows) || !rows.length || rows.some((s) => typeof s !== 'string' || !s.trim() || s.length > 80)) e.push(`market.lines.${k}: at least one line of 1-80 characters`);
-  for (const [k, v] of Object.entries(f.events ?? {})) if (!/^market:[a-z]+$/.test(String(v))) e.push(`market.events.${k}: "market:<word>"`);
-  whole('ui.zIndex', f.ui?.zIndex, 0, 1000); num('ui.sheetHeightFrac', f.ui?.sheetHeightFrac, 0.3, 0.9);
-  for (const [k, v] of Object.entries(f.ui?.text ?? {})) word(`ui.text.${k}`, v, 40);
+  for (const [k, rows] of Object.entries(f.lines ?? {})) if (!Array.isArray(rows) || !rows.length || rows.some((s) => typeof s !== 'string' || !s.trim() || s.length > R('text')[1])) fail(new Error(`market.lines.${k}: at least one line of ${R('text').join('-')} characters`));
+  for (const [k, v] of Object.entries(f.events ?? {})) if (!/^market:[a-z]+$/.test(String(v))) fail(new Error(`market.events.${k}: "market:<word>"`));
+  whole('ui.zIndex', f.ui?.zIndex, ...R('zIndex')); num('ui.sheetHeightFrac', f.ui?.sheetHeightFrac, ...R('sheetFrac'));
+  for (const [k, v] of Object.entries(f.ui?.text ?? {})) word(`ui.text.${k}`, v, 'uiText');
   return e;
 }
 

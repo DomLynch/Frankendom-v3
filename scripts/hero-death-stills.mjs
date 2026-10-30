@@ -4,14 +4,14 @@
 //   <tag>-3-respawn   a tap on Respawn (v1: the automatic stand-up): the hero stands at the pit's mark at full health
 // It prints the page state at each beat and fails on a page error, a console error, or a page that stops stepping (rAF frames counted across each wait).
 //   node scripts/hero-death-stills.mjs <base url> <out dir> <tag> [query]      (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/hero-death-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 2), isMobile: true, hasTouch: true });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 2)));
 let bad = 0;
 page.on('pageerror', (e) => { bad++; console.error(`pageerror ${e.message}`); });
 page.on('console', (m) => { if (m.type() === 'error') { bad++; console.error(`console ${m.text()}`); } });

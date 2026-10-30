@@ -4,7 +4,7 @@
 import { decodeDown, encodeUp, type Entity } from './wire.ts';
 import { PRESENCE, presenceRule } from './rows.ts';
 
-export const POSE_EVERY_MS: number = presenceRule('tickMs');   // presence's tick (a row): one pose a tick is all it reads
+const POSE_EVERY_MS: number = presenceRule('tickMs');   // presence's tick (a row): one pose a tick is all it reads
 export const GIVE_UP_AFTER = presenceRule('giveUp');            // consecutive sockets that never reached `hello`: the service is off or refusing us, stop trying until the page reloads
 // V1's reconnect schedule (World of Claudecraft src/net/backoff.ts, MIT, via V1 src/net/backoff.ts): step = min(max, base * 2 ** (attempt - 1)), spread across 0.5x..1.5x and clamped to max.
 export const backoffMs = (attempt: number, baseMs: number, maxMs: number, rng: () => number): number => Math.min(maxMs, Math.min(maxMs, baseMs * 2 ** (attempt - 1)) * (0.5 + rng()));
@@ -13,7 +13,7 @@ export const headingByte = (radians: number): number => Math.round((((radians % 
 export type Pose = { x: number; z: number; heading: number; anim?: number; flags?: number };   // metres in the world frame, heading in radians
 export type Other = { id: number; x: number; z: number; heading: number; anim: number; flags: number };
 export type Socket = { binaryType: string; readyState: number; send(data: Uint8Array | string): void; close(code?: number): void; onopen: (() => void) | null; onmessage: ((e: { data: unknown }) => void) | null; onclose: (() => void) | null; onerror: (() => void) | null };
-export type Deps = {
+type Deps = {
   url: string;
   open: (url: string, protocols: string[]) => Socket;
   pose: () => Pose | null;                              // where the hero stands now; null while the page has no hero to show

@@ -3,17 +3,20 @@
 // ?tune= map (src/tune.ts), so it multiplies the profile and difficulty rows' own scales and never replaces them. No kills = an empty map, `mergeTune` returns the page's tune object itself and
 // `heroWeapon` returns the fight row's weapon: the game with no save is byte for byte the game before this file. Storage is never trusted: every read and write is inside try/catch, a
 // missing, blocked, corrupt or wrong-version save is a fresh game, and nothing here throws or touches any key but the table's own.
+import PROGRESSION_JSON from '../data/progression.json' with { type: 'json' };
+import { checkProgressionCaps } from './sim/validate.js';
 import type { TuneMap } from './tune.ts';
 import { cleanCorpse, type Pile } from './corpse-run.ts';
 import { cleanMarket, type MarketSave } from './market.ts';   // The Flesh Market (data/market.json): the optional `market` save field
 import { cleanParts, type PartRow } from './parts.ts';   // Frankendom parts (data/parts.json): optional `parts` / `equipped` save fields
 import { cleanDaily, type DailyRecord } from './daily-pit.ts';
+import { cleanGolden, type GoldenSave } from './zone/golden-drops.ts';
 
 export type BossRow = { id: string; weapon: string; name: string; healthStep: number; damageStep: number };
-export type ProgressionFile = { query: string; off: string; key: string; version: number; weaponQuery: string; lineSeconds: number; healthCap: number; damageCap: number; bosses: readonly BossRow[] };
+export type ProgressionFile = { query: string; off: string; key: string; version: number; weaponQuery: string; autoEquip: boolean; lineSeconds: number; healthCap: number; damageCap: number; countCap: number; bosses: readonly BossRow[] };
 /** The save: `kills` per boss id, `ladder` the boss ids in the order each was first killed, `unlocked` the weapons that opened (always the ladder's weapons, in ladder order). */
 /** The corpse run's fields (data/corpse-run.json, src/corpse-run.ts) ride in the same save: `coins` carried (unbanked), `banked`, the ONE `pile` a death left, and `lost` weapons (a replaced pile's) until their boss falls again. */
-export type Save = { v: number; kills: Record<string, number>; ladder: string[]; unlocked: string[]; trophies?: Record<string, number>; coins: number; banked: number; pile: Pile | null; lost: string[]; daily?: DailyRecord; parts?: Record<string, PartRow>; equipped?: Record<string, string>; market?: MarketSave };   // market (src/market.ts): absent until the first trade.   // parts / equipped (src/parts.ts): absent until the first cut part, so an older save is byte for byte the same. daily (data/daily-pit.json, src/daily-pit.ts): today's Daily Pit attempts and best, absent until the first attempt, so an old save loads as it was. trophies (data/stars.json): star kills per trophy tier; absent until the first star kill, so a save without stars is byte for byte the one before
+export type Save = { v: number; kills: Record<string, number>; ladder: string[]; unlocked: string[]; trophies?: Record<string, number>; coins: number; banked: number; pile: Pile | null; lost: string[]; daily?: DailyRecord; golden?: GoldenSave; parts?: Record<string, PartRow>; equipped?: Record<string, string>; market?: MarketSave };   // market (src/market.ts): absent until the first trade.   // golden (data/golden-weapons.json, src/zone/golden-drops.ts): absent in a save from before it. parts / equipped (src/parts.ts): absent until the first cut part, so an older save is byte for byte the same. daily (data/daily-pit.json, src/daily-pit.ts): today's Daily Pit attempts and best, absent until the first attempt, so an old save loads as it was. trophies (data/stars.json): star kills per trophy tier; absent until the first star kill, so a save without stars is byte for byte the one before
 /** The slice of Storage this module uses (a test passes a Map-backed one). */
 export type Store = { getItem(k: string): string | null; setItem(k: string, v: string): void };
 
@@ -22,9 +25,11 @@ export function validateProgression(file: ProgressionFile, profileIds: readonly 
   const e: string[] = [];
   for (const k of ['query', 'off', 'weaponQuery'] as const) if (typeof file[k] !== 'string' || !/^[a-z]+$/.test(file[k])) e.push(`progression.${k}: a lower-case word`);
   if (typeof file.key !== 'string' || !/^[A-Za-z0-9._-]{3,60}$/.test(file.key)) e.push('progression.key: 3-60 letters, digits, . _ -');
+  if (typeof file.autoEquip !== 'boolean') e.push('progression.autoEquip: true or false (false = a kill saves its weapon but the hero keeps the fight row weapon)');
   if (!Number.isInteger(file.version) || file.version < 1) e.push('progression.version: a whole number from 1');
   if (!(Number.isFinite(file.lineSeconds) && file.lineSeconds > 0 && file.lineSeconds <= 60)) e.push('progression.lineSeconds: 0 to 60');
   for (const k of ['healthCap', 'damageCap'] as const) if (!(Number.isFinite(file[k]) && file[k] >= 1 && file[k] <= 4)) e.push(`progression.${k}: 1 to 4 (a multiplier; 1 = no escalation)`);
+  e.push(...(checkProgressionCaps(file) as string[]));
   const seen = new Set<string>(), weapons = new Set<string>();
   if (!Array.isArray(file.bosses) || !file.bosses.length) e.push('progression.bosses: at least one boss');
   for (const b of file.bosses ?? []) {
@@ -51,13 +56,14 @@ export function parseSave(raw: string | null | undefined, file: ProgressionFile)
     const j = JSON.parse(raw) as { v?: unknown; kills?: unknown; ladder?: unknown; trophies?: unknown; coins?: unknown; banked?: unknown; pile?: unknown; lost?: unknown; daily?: unknown };
     if (!j || typeof j !== 'object' || j.v !== file.version || !j.kills || typeof j.kills !== 'object' || Array.isArray(j.kills) || !Array.isArray(j.ladder)) return freshSave();
     const known = new Set(file.bosses.map((b) => b.id)), kills: Record<string, number> = {};
-    for (const [id, n] of Object.entries(j.kills as Record<string, unknown>)) if (known.has(id) && typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 99999) kills[id] = n;
+    for (const [id, n] of Object.entries(j.kills as Record<string, unknown>)) if (known.has(id) && typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= file.countCap) kills[id] = n;
     const ladder: string[] = [];
     for (const id of j.ladder) if (typeof id === 'string' && kills[id] !== undefined && !ladder.includes(id)) ladder.push(id);
     for (const id of Object.keys(kills)) if (!ladder.includes(id)) delete kills[id];   // a kill count with no ladder step is not a kill the ladder saw
     const trophies: Record<string, number> = {};
-    if (j.trophies && typeof j.trophies === 'object' && !Array.isArray(j.trophies)) for (const [tier, n] of Object.entries(j.trophies as Record<string, unknown>)) if (/^[0-9]{1,2}$/.test(tier) && typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 99999) trophies[tier] = n;
-    return { v: file.version, kills, ladder, unlocked: weaponsOf(ladder, file), ...(Object.keys(trophies).length ? { trophies } : {}), ...cleanCorpse(j), ...cleanDaily(j), ...cleanParts(j as { parts?: unknown; equipped?: unknown }), ...cleanMarket(j as { market?: unknown }) };   // a save from before the corpse run has none of its fields: the empty values
+    if (j.trophies && typeof j.trophies === 'object' && !Array.isArray(j.trophies)) for (const [tier, n] of Object.entries(j.trophies as Record<string, unknown>)) if (/^[0-9]{1,2}$/.test(tier) && typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= file.countCap) trophies[tier] = n;
+    const golden = cleanGolden((j as { golden?: unknown }).golden);
+    return { v: file.version, kills, ladder, unlocked: weaponsOf(ladder, file), ...(Object.keys(trophies).length ? { trophies } : {}), ...cleanCorpse(j), ...cleanDaily(j), ...(golden ? { golden } : {}), ...cleanParts(j as { parts?: unknown; equipped?: unknown }), ...cleanMarket(j as { market?: unknown }) };   // a save from before the corpse run has none of its fields: the empty values
   } catch { return freshSave(); }
 }
 
@@ -71,7 +77,7 @@ export function loadSave(store: Store | null, file: ProgressionFile): Save {
 }
 /** Writes the save; false when the store refuses (blocked, full, private mode). Never throws. */
 export function writeSave(store: Store | null, file: ProgressionFile, save: Save): boolean {
-  try { if (!store) return false; store.setItem(file.key, JSON.stringify({ v: file.version, kills: save.kills, ladder: save.ladder, unlocked: save.unlocked, ...(save.trophies ? { trophies: save.trophies } : {}), coins: save.coins, banked: save.banked, pile: save.pile, lost: save.lost, ...(save.daily ? { daily: save.daily } : {}), ...(save.parts ? { parts: save.parts } : {}), ...(save.equipped ? { equipped: save.equipped } : {}), ...(save.market ? { market: save.market } : {}) })); return true; } catch { return false; }
+  try { if (!store) return false; store.setItem(file.key, JSON.stringify({ v: file.version, kills: save.kills, ladder: save.ladder, unlocked: save.unlocked, ...(save.trophies ? { trophies: save.trophies } : {}), coins: save.coins, banked: save.banked, pile: save.pile, lost: save.lost, ...(save.daily ? { daily: save.daily } : {}), ...(save.golden ? { golden: save.golden } : {}), ...(save.parts ? { parts: save.parts } : {}), ...(save.equipped ? { equipped: save.equipped } : {}), ...(save.market ? { market: save.market } : {}) })); return true; } catch { return false; }
 }
 
 /** The save after boss `id` falls (a new object), and the row it unlocked (null on a repeat kill or a kind that is no ladder boss). */
@@ -79,11 +85,11 @@ export function recordKill(save: Save, id: string, file: ProgressionFile): { sav
   const row = file.bosses.find((b) => b.id === id);
   if (!row) return { save, unlocked: null };
   const first = !save.ladder.includes(id), ladder = first ? [...save.ladder, id] : save.ladder;
-  return { save: { ...save, v: save.v, kills: { ...save.kills, [id]: Math.min(99999, (save.kills[id] ?? 0) + 1) }, ladder, unlocked: weaponsOf(ladder, file), ...(save.trophies ? { trophies: save.trophies } : {}) }, unlocked: first ? row : null };
+  return { save: { ...save, v: save.v, kills: { ...save.kills, [id]: Math.min(file.countCap, (save.kills[id] ?? 0) + 1) }, ladder, unlocked: weaponsOf(ladder, file), ...(save.trophies ? { trophies: save.trophies } : {}) }, unlocked: first ? row : null };
 }
 
 /** The save with one more trophy of `tier` (data/stars.json trophy rows: a star boss's kill); a new object. */
-export const addTrophy = (save: Save, tier: number): Save => ({ ...save, trophies: { ...(save.trophies ?? {}), [tier]: Math.min(99999, (save.trophies?.[tier] ?? 0) + 1) } });
+export const addTrophy = (save: Save, tier: number, cap: number = PROGRESSION_JSON.countCap): Save => ({ ...save, trophies: { ...(save.trophies ?? {}), [tier]: Math.min(cap,(save.trophies?.[tier] ?? 0) + 1) } });
 
 /** The ?tune= map the kills make: every boss in the table at 1 + the sum of each kill's step, held at the caps. Empty with no kills. */
 export function escalation(save: Save, file: ProgressionFile): TuneMap {
@@ -111,7 +117,7 @@ export function heroWeapon(save: Save, file: ProgressionFile, fallback: string, 
   const asked = new URLSearchParams(search).get(file.weaponQuery);
   const owned = [...save.unlocked, ...(save.market?.weapons ?? [])];   // the weapons the boss ladder opened, then the ones bought at the Flesh Market (data/market.json)
   if (asked && (asked === fallback || owned.includes(asked)) && drawable.includes(asked)) return asked;
-  for (let i = owned.length - 1; i >= 0; i--) if (drawable.includes(owned[i]!)) return owned[i]!;
+  if (file.autoEquip) for (let i = owned.length - 1; i >= 0; i--) if (drawable.includes(owned[i]!)) return owned[i]!;
   return fallback;
 }
 

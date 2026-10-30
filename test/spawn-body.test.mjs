@@ -8,6 +8,8 @@ import { heroBodyFile } from '../src/fight/hero-body-rows.ts';
 import { foeBodyFile, setBossBody, spawnBodyFile, spotBodyProblems } from '../src/fight/foe-body.ts';
 import { spotsFor } from '../src/zone/spawns.ts';
 import { buildZoneSet } from '../src/zone/zone-rows.ts';
+import { bossOfBody, weaponOfBody } from '../src/fight/boss-resolve.ts';
+import { bossBodyCases, expectedWeaponOfProfile, weaponRowOfProfile } from './helpers/boss-rows.mjs';
 
 const read = (n) => JSON.parse(readFileSync(new URL(`../data/${n}.json`, import.meta.url), 'utf8'));
 const RIG = read('rig'), PROFILES = read('profiles');
@@ -77,7 +79,15 @@ test('the scene: rig cache keyed by body file stem, the live body takes the old 
   assert.match(src, /const bodyAssets = new Map<string,/, 'the cache is keyed by the body id (its 106 file stem)');
   assert.match(src, /if \(file === liveBody\) return warriors\.spawnFoe\(\);/, 'a spawn in the live body is the opponent\'s own spawnFoe, as before');
   assert.match(src, /warriors\.spawnBody\(asset, weapon, bossOfBody\(file\)\?\.clipsAs\)/, 'a body is armed with its boss weapon row (data/boss-weapons.json), else the page\'s foe weapon (weaponOfBody)');
-  assert.match(src, /const weaponOfBody = \(file: string\): WeaponId \| undefined => bossOfBody\(file\)\?\.weapon \?\? \(ownerOfBody\(file\) \? bossOpponent\(OPPONENTS\[ownerOfBody\(file\)! as OpponentId\], pageSearch, undefined, bodyProfileOf\(file\)\)\.weapon : builtFoeWeapon\);/, 'no boss row: the weapon of the archetype whose profile row names the body (the Minotaur\'s cleaver, since he is no longer the live rig), else the page-wide foe weapon');
+  assert.match(src, /const weaponOfBody = \(file: string\): WeaponId \| undefined => weaponOfBodyOf\(file, liveBody, builtFoeWeapon, pageSearch\);/, 'the scene asks src/fight/boss-resolve.ts (the one function test/boss-expect.test.mjs also calls)');
+  // no boss row: the weapon of the archetype whose profile row names the body, else V1's. Read from the data rows (test/helpers/boss-rows.mjs), so a new weapon row needs no edit here.
+  setBossBody('');
+  const cases = bossBodyCases();
+  assert.ok(cases.length > 0, 'the rows name at least one boss body to resolve');
+  for (const c of cases) {
+    assert.equal(bossOfBody(c.file, '', '')?.id, weaponRowOfProfile(c.profile)?.id, `${c.label}: ${c.file} finds the weapon row the data keys for profile ${c.profile}`);
+    assert.equal(weaponOfBody(c.file, '', undefined, ''), expectedWeaponOfProfile(c.profile), `${c.label}: ${c.file} fights with its row's weapon, else its archetype's V1 weapon`);
+  }
   assert.match(src, /if \(!actor\) continue;/, 'a body still loading is not drawn yet');
   const chars = readFileSync(new URL('../src/fight/characters.ts', import.meta.url), 'utf8');
   assert.match(chars, /spawnBody: \(body: FighterAsset, weapon: WeaponId, clipsAs: WeaponId = weapon\) => create\(true,/, 'clipsAs defaults to the weapon: every body without a boss row takes its own clip family');

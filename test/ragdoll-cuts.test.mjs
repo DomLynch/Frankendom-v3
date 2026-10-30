@@ -26,12 +26,15 @@ const frozen = async () => {
   return s;
 };
 
-test('the cut rows name the package\'s units, parts and gear slots, and the validator accepts them', async () => {
+test('the cut rows name the package\'s units, parts and gear slots, and the validator accepts them (behaviour half; the source pins moved to test/source-pins/)', async () => {
   const { physics, rd, row } = await standing(), C = ROWS.cut, units = rd.row.severable.map((s) => s.id), slots = new Set(rd.row.severable.flatMap((s) => s.gear_slots));
   // M9a (physics 9056ef7): the package also lists two VISUAL-ONLY units (head_split, belly_open: no bone, no piece to tap or to put a button on). They are the finishers' (finisherCuts), never the tap's or the cue's.
   const visual = rd.row.severable.filter((s) => s.visual_only).map((s) => s.id), real = units.filter((u) => !visual.includes(u));
   assert.deepEqual(visual.sort(), ['belly_open', 'head_split']);
-  assert.deepEqual([...real].sort(), [...C.tap.order].sort(), 'the tap order lists each of the six real units once');
+  // Physics 3bb5f80 (#102, deliberate): hands and feet are now severable units too. Re-pinned, not reverted: the tap order stays the six it lists today; wiring taps/cues to the four new units is a follow-up.
+  const handsFeet = ['hand_left', 'hand_right', 'foot_left', 'foot_right'];
+  assert.deepEqual(real.filter((u) => handsFeet.includes(u)).sort(), [...handsFeet].sort(), 'the package lists the four hand and foot units');
+  assert.deepEqual(real.filter((u) => !handsFeet.includes(u)).sort(), [...C.tap.order].sort(), 'the tap order lists each of the six original real units once');
   assert.ok(!C.tap.order.some((u) => visual.includes(u)) && !C.cue.units.some((u) => visual.includes(u)), 'no tap or cue on a visual unit');
   for (const [location, unit] of Object.entries(C.onKill)) { assert.ok(['head', 'torso', 'legs'].includes(location), `${location} is a sim hit location`); assert.ok(units.includes(unit), `onKill.${location} = ${unit} is a unit`); }
   assert.ok(C.kill.impulse > 0 && C.kill.lift >= 0);
@@ -43,7 +46,6 @@ test('the cut rows name the package\'s units, parts and gear slots, and the vali
   assert.ok(C.tap.maxMovePx > 0 && C.tap.maxMs > 0 && C.tap.needs === 'frozen');
   // the cue (a "cut" button on each cuttable part of the frozen corpse): every unit it lists is one the tap can cut, and its numbers are real
   assert.ok(C.cue.on && C.cue.default === false && C.cue.query === 'cues' && C.cue.v1 === 'v1', 'Dom 2026-10-28: the cut buttons are hidden by default, ?cues=v1 brings them back');
-  assert.match(readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8'), /!cueShown\(cue\) \|\| !cueCamera[\s\S]*!cueShown\(cue\) \|\| !canvas\.parentElement/, 'both cue builders go through cueShown');
   assert.ok(C.cue.units.length === C.tap.order.length && C.cue.units.every((u) => C.tap.order.includes(u)), 'the cue covers every tap unit, the head included');
   assert.ok(C.cue.units.every((u) => typeof C.cue.labels[u] === 'string' && C.cue.labels[u]) && /^#[0-9a-f]{6}$/i.test(C.cue.color), 'every cue unit has a label and the colour is #rrggbb');
   assert.ok(C.cue.units.includes('head') && C.cue.sizePx >= 32 && C.cue.pulseS > 0 && C.cue.delayS >= 0, 'a thumb-sized cue, on the head too');

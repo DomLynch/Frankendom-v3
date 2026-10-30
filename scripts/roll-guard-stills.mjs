@@ -7,14 +7,14 @@
 //   <tag>-5-walk-guard  GUARD held on the walk after the kill
 //   node scripts/roll-guard-stills.mjs <base url> <out dir> <tag> [query]      (on a Mac it uses Metal, elsewhere SwiftShader; CHROME=<path> for a browser)
 // Prints one JSON line per check and exits 1 when any check fails.
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/roll-guard-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(1));
 const cdp = await page.context().newCDPSession(page);
 let failed = 0;
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));

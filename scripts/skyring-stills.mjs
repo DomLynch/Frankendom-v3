@@ -4,20 +4,21 @@
 //   CHROME=<chromium path> node scripts/skyring-stills.mjs <base url> <out dir> [name=query ...]     env BEARINGS=0,90,180,270  DSF=1  WAIT=3500
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...specs] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/skyring-stills.mjs <base url> <out dir> [name=query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const BEARINGS = (process.env.BEARINGS ?? '0,90,180,270,45,135,225,315').split(',').map(Number), WAIT = Number(process.env.WAIT ?? 3500);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const report = {};
 for (const spec of specs.length ? specs : ['ring=', 'v1=skyring=v1']) {
   const [name, ...rest] = spec.split('='), query = rest.join('=');
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
   page.on('pageerror', (e) => console.error(`${name}: pageerror ${e.message}`));
   const fetched = []; page.on('request', (r) => { if (/\/ring-/.test(r.url())) fetched.push(r.url().split('/').pop()); });
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+  await waitPlayable(page, { timeout: 240000 });
   await page.waitForFunction(() => globalThis.__v3Scene?.getObjectByName('skyline')?.visible === true, null, { timeout: 60000 });
   await page.waitForTimeout(4000);
   const firstVisitRingFetches = fetched.length;

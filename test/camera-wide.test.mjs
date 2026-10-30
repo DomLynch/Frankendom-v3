@@ -99,6 +99,4 @@ test('wiring: the page sets the row on the view, the view applies it on every re
   assert.match(cam, /\* lensBoost,\s*\);/);
   assert.doesNotMatch(cam.slice(cam.indexOf('export function cameraPose'), cam.indexOf('export function finisherSidePose')), /aspect/, 'the lock pose has no aspect term: one framing for every shape');
   for (const f of ['../src/fight/combat.ts', '../src/fight/duel.ts', '../src/fight/moves.ts', '../src/fight/record.ts']) assert.doesNotMatch(code(f), /camera\.wide|wideBoost/, f);
-  // the #119 bug class: a trailing // comment after a one-line call chain that continues on the next line swallows nothing today, but the added lines must each be a whole statement
-  for (const line of read('../src/client/main.ts').split('\n').filter((l) => /setWide\(/.test(l))) assert.match(line, /^view\.setWide\(.*\);\s+\/\/ /);
 });

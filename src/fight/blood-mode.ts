@@ -3,8 +3,8 @@
 import rows from './arena-defs.json' with { type: 'json' };
 
 export type BloodMode = string;
-export type BloodModeRow = { order: number; hidden?: boolean; dark?: boolean };
-export const BLOOD_MODES = rows.bloodModes as Readonly<Record<string, BloodModeRow>>;
-export const bloodModeRow = (mode: BloodMode): BloodModeRow => BLOOD_MODES[mode] ?? (() => { throw new Error(`unknown blood mode "${mode}" (src/fight/arena-defs.json)`); })();
+type BloodModeRow = { order: number; hidden?: boolean; dark?: boolean };
+const BLOOD_MODES = rows.bloodModes as Readonly<Record<string, BloodModeRow>>;
+const bloodModeRow = (mode: BloodMode): BloodModeRow => BLOOD_MODES[mode] ?? (() => { throw new Error(`unknown blood mode "${mode}" (src/fight/arena-defs.json)`); })();
 export const bloodHidden = (mode: BloodMode): boolean => !!bloodModeRow(mode).hidden;
 export const bloodDark = (mode: BloodMode): boolean => !!bloodModeRow(mode).dark;

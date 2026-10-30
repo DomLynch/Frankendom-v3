@@ -8,10 +8,10 @@ import { bloodNum } from './blood-rows.ts';
 // A fizzle returns the light from wherever the drain had got to. A cast whose end event never comes (Finishers' guard in special-timing.ts drops it
 // LAND_AT + SPECIAL_RECOVER + CAST_MARGIN ticks after the start) is treated as a fizzle at LAND_AT + CAST_MARGIN, so the light is fully back (RETURN ticks
 // later, before the guard's drop) and the dark never snaps off. Nothing here touches the sim.
-export const STUCK_AT = LAND_AT + CAST_MARGIN;
-export const VEIL_HOLD = bloodNum('nightfall-timing.veil-hold'), DRAIN_DONE = LAND_AT - VEIL_HOLD, RETURN = bloodNum('nightfall-timing.return'), VEIL = bloodNum('nightfall-timing.veil');
+const STUCK_AT = LAND_AT + CAST_MARGIN;
+const VEIL_HOLD = bloodNum('nightfall-timing.veil-hold'), DRAIN_DONE = LAND_AT - VEIL_HOLD, RETURN = bloodNum('nightfall-timing.return'), VEIL = bloodNum('nightfall-timing.veil');
 
-export type Nightfall = { drain: number; veil: number | null };
+type Nightfall = { drain: number; veil: number | null };
 
 // `drain` 0..1 is how dark the arena is (0 = the light of the theme); `veil` 0..1 is the cloak's sweep from the caster to past the target, null when none.
 export function nightfall(cast: Cast, now: number): Nightfall {

@@ -3,14 +3,14 @@
 import ROWS from '../../data/zone-ground.json' with { type: 'json' };
 import STAGE from '../../data/stage.json' with { type: 'json' };
 
-export type GroundRows = {
+type GroundRows = {
   flag: { query: string; off: string }; groundRadiusMetres: number; gridRadiusMetres: number; edgeVisibility: number; cameraFarMetres: number; cameraOffsetMetres: number;
   groundFollow: { on: boolean; snapMetres: number };
   floorDepthPush: { flag: { query: string; off: string }; factor: number; units: number };
   limits: { groundRadiusMetres: [number, number]; gridRadiusMetres: [number, number]; edgeVisibility: [number, number]; cameraFarMetres: [number, number]; cameraOffsetMetres: [number, number]; snapMetres: [number, number]; depthFactor: [number, number]; depthUnits: [number, number] };
 };
 /** The floor's depth push (three.js polygonOffset), so the grid on the floor wins the depth test out to the far plane; null = none (?sand=v1). */
-export type DepthPush = { factor: number; units: number } | null;
+type DepthPush = { factor: number; units: number } | null;
 /** Sizes in the floor group's own units (the group is scaled with the start area, world.pitScale), what the drawing needs; `snap`: world metres the follow moves in (0 = it does not follow). */
 export type Sizing = { floorSide: number; gridSize: number; gridDivisions: number; far: number; snap: number; depthPush: DepthPush };
 

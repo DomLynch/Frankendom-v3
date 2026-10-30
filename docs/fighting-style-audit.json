@@ -1,0 +1,596 @@
+{
+ "about": "Generated from data/profiles.json, data/boss-weapons.json, data/rings.json and src/fight/archetype-defs.json at main e3e94a5 (2026-10-28). Read-only audit; nothing here is read by the game. hpAtDefaultDifficulty5 = base health x profile foeHealthScale x difficulty row 5 foeHealthScale 0.72 (src/difficulty.ts resolveFight/scaledOpponent). AI knobs are not per boss: see docs/fighting-style-audit.md section 1.",
+ "source": "main@e3e94a5",
+ "rows": [
+  {
+   "boss": "Gargantua",
+   "profileId": "gargantua",
+   "ring": "zone1",
+   "bodyFile": "gargantua",
+   "profileBodyField": "gargantua",
+   "v1Archetype": "executioner",
+   "v1RosterWeapon": "scythe",
+   "bossWeaponRow": "gargantua-maul",
+   "bossWeaponRowKind": "archetype row (shared)",
+   "pendingWeaponPr": null,
+   "simWeapon": "maul",
+   "clipsAs": "cleaver",
+   "drawnEquip": "maul",
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.36,
+    "baseHealth": 160,
+    "poise": 12,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1.19,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 137.1,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": "data/zones/zone1.row.json spawns[].behaviour",
+   "inTuneKinds": true,
+   "inProgressionBosses": true,
+   "inDailyPit": true,
+   "sharedWith": []
+  },
+  {
+   "boss": "Arachne",
+   "profileId": "arachne",
+   "ring": "zone1",
+   "bodyFile": "arachne",
+   "profileBodyField": "arachne",
+   "v1Archetype": "shieldmaiden",
+   "v1RosterWeapon": "gladius",
+   "bossWeaponRow": "arachne-axe-shield",
+   "bossWeaponRowKind": "archetype row (shared)",
+   "pendingWeaponPr": null,
+   "simWeapon": "cleaver",
+   "clipsAs": "cleaver",
+   "drawnEquip": "axe",
+   "offhand": "shield",
+   "archetypeStats": {
+    "bodyScale": 1,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": "data/zones/zone1.row.json spawns[].behaviour",
+   "inTuneKinds": true,
+   "inProgressionBosses": true,
+   "inDailyPit": true,
+   "sharedWith": [
+    "sporty-granny",
+    "castle-guard",
+    "the-boss"
+   ]
+  },
+  {
+   "boss": "Minotaur",
+   "profileId": "pitborn",
+   "ring": "zone1",
+   "bodyFile": "minotaur",
+   "profileBodyField": "minotaur",
+   "v1Archetype": "pitborn",
+   "v1RosterWeapon": "cleaver",
+   "bossWeaponRow": null,
+   "bossWeaponRowKind": "none (V1 roster weapon)",
+   "pendingWeaponPr": null,
+   "simWeapon": "cleaver",
+   "clipsAs": null,
+   "drawnEquip": null,
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.13,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": "data/zones/zone1.row.json spawns[].behaviour",
+   "inTuneKinds": true,
+   "inProgressionBosses": true,
+   "inDailyPit": true,
+   "sharedWith": [
+    "pumpkinhulk",
+    "kachujin",
+    "big-vegas",
+    "parasite",
+    "anime-girl-blonde",
+    "anime-boy-black"
+   ]
+  },
+  {
+   "boss": "Lord Gourd",
+   "profileId": "pumpkinhulk",
+   "ring": "ring2",
+   "bodyFile": "pumpkinhulk",
+   "profileBodyField": "minotaur",
+   "v1Archetype": "pitborn",
+   "v1RosterWeapon": "cleaver",
+   "bossWeaponRow": "lord-gourd-mace",
+   "bossWeaponRowKind": "profile row",
+   "pendingWeaponPr": null,
+   "simWeapon": "maul",
+   "clipsAs": "cleaver",
+   "drawnEquip": "mace",
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.13,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 90
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "pitborn",
+    "kachujin",
+    "big-vegas",
+    "parasite",
+    "anime-girl-blonde",
+    "anime-boy-black"
+   ]
+  },
+  {
+   "boss": "Kachujin",
+   "profileId": "kachujin",
+   "ring": "ring2",
+   "bodyFile": "kachujin",
+   "profileBodyField": "minotaur",
+   "v1Archetype": "pitborn",
+   "v1RosterWeapon": "cleaver",
+   "bossWeaponRow": null,
+   "bossWeaponRowKind": "none (V1 roster weapon)",
+   "pendingWeaponPr": "PR #251 katana (open)",
+   "simWeapon": "cleaver",
+   "clipsAs": null,
+   "drawnEquip": null,
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.13,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 90
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "pitborn",
+    "pumpkinhulk",
+    "big-vegas",
+    "parasite",
+    "anime-girl-blonde",
+    "anime-boy-black"
+   ]
+  },
+  {
+   "boss": "Sir Reginald",
+   "profileId": "castle-guard",
+   "ring": "ring2",
+   "bodyFile": "castle-guard",
+   "profileBodyField": "arachne",
+   "v1Archetype": "shieldmaiden",
+   "v1RosterWeapon": "gladius",
+   "bossWeaponRow": "reginald-halberd",
+   "bossWeaponRowKind": "profile row",
+   "pendingWeaponPr": null,
+   "simWeapon": "cleaver",
+   "clipsAs": "cleaver",
+   "drawnEquip": "halberd",
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 90
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "arachne",
+    "sporty-granny",
+    "the-boss"
+   ]
+  },
+  {
+   "boss": "Nan the Impaler",
+   "profileId": "sporty-granny",
+   "ring": "ring2",
+   "bodyFile": "sporty-granny",
+   "profileBodyField": "arachne",
+   "v1Archetype": "shieldmaiden",
+   "v1RosterWeapon": "gladius",
+   "bossWeaponRow": "arachne-axe-shield",
+   "bossWeaponRowKind": "archetype row (shared)",
+   "pendingWeaponPr": "PR #248 polearm-206 (draft)",
+   "simWeapon": "cleaver",
+   "clipsAs": "cleaver",
+   "drawnEquip": "axe",
+   "offhand": "shield",
+   "archetypeStats": {
+    "bodyScale": 1,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 90
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "arachne",
+    "castle-guard",
+    "the-boss"
+   ]
+  },
+  {
+   "boss": "The Accountant",
+   "profileId": "the-boss",
+   "ring": "ring2",
+   "bodyFile": "the-boss",
+   "profileBodyField": "arachne",
+   "v1Archetype": "shieldmaiden",
+   "v1RosterWeapon": "gladius",
+   "bossWeaponRow": "arachne-axe-shield",
+   "bossWeaponRowKind": "archetype row (shared)",
+   "pendingWeaponPr": "PR #254 mace-204 (open)",
+   "simWeapon": "cleaver",
+   "clipsAs": "cleaver",
+   "drawnEquip": "axe",
+   "offhand": "shield",
+   "archetypeStats": {
+    "bodyScale": 1,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 120
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "arachne",
+    "sporty-granny",
+    "castle-guard"
+   ]
+  },
+  {
+   "boss": "The Titan's Envoy",
+   "profileId": "parasite",
+   "ring": "ring3",
+   "bodyFile": "parasite",
+   "profileBodyField": "minotaur",
+   "v1Archetype": "pitborn",
+   "v1RosterWeapon": "cleaver",
+   "bossWeaponRow": null,
+   "bossWeaponRowKind": "none (V1 roster weapon)",
+   "pendingWeaponPr": null,
+   "simWeapon": "cleaver",
+   "clipsAs": null,
+   "drawnEquip": null,
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.13,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 120
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "pitborn",
+    "pumpkinhulk",
+    "kachujin",
+    "big-vegas",
+    "anime-girl-blonde",
+    "anime-boy-black"
+   ]
+  },
+  {
+   "boss": "Ryo",
+   "profileId": "anime-boy-black",
+   "ring": "ring3",
+   "bodyFile": "anime-boy-black",
+   "profileBodyField": "minotaur",
+   "v1Archetype": "pitborn",
+   "v1RosterWeapon": "cleaver",
+   "bossWeaponRow": "ryo-sword",
+   "bossWeaponRowKind": "profile row",
+   "pendingWeaponPr": null,
+   "simWeapon": "cleaver",
+   "clipsAs": "cleaver",
+   "drawnEquip": "sword",
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.13,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 120
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "pitborn",
+    "pumpkinhulk",
+    "kachujin",
+    "big-vegas",
+    "parasite",
+    "anime-girl-blonde"
+   ]
+  },
+  {
+   "boss": "Akane",
+   "profileId": "anime-girl-blonde",
+   "ring": "ring3",
+   "bodyFile": "anime-girl-blonde",
+   "profileBodyField": "minotaur",
+   "v1Archetype": "pitborn",
+   "v1RosterWeapon": "cleaver",
+   "bossWeaponRow": null,
+   "bossWeaponRowKind": "none (V1 roster weapon)",
+   "pendingWeaponPr": null,
+   "simWeapon": "cleaver",
+   "clipsAs": null,
+   "drawnEquip": null,
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.13,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 120
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "pitborn",
+    "pumpkinhulk",
+    "kachujin",
+    "big-vegas",
+    "parasite",
+    "anime-boy-black"
+   ]
+  },
+  {
+   "boss": "The King",
+   "profileId": "big-vegas",
+   "ring": "ring3",
+   "bodyFile": "big-vegas",
+   "profileBodyField": "minotaur",
+   "v1Archetype": "pitborn",
+   "v1RosterWeapon": "cleaver",
+   "bossWeaponRow": null,
+   "bossWeaponRowKind": "none (V1 roster weapon)",
+   "pendingWeaponPr": null,
+   "simWeapon": "cleaver",
+   "clipsAs": null,
+   "drawnEquip": null,
+   "offhand": null,
+   "archetypeStats": {
+    "bodyScale": 1.13,
+    "baseHealth": 190,
+    "poise": 16,
+    "guardOverride": null,
+    "speed": null,
+    "regen": null
+   },
+   "profileScales": {
+    "health": 1,
+    "damage": 1
+   },
+   "hpAtDefaultDifficulty5": 136.8,
+   "brainRow": null,
+   "profileKnobs": null,
+   "mechanic": null,
+   "spawnBehaviour": {
+    "aggro": 2.5,
+    "leash": 20,
+    "roam": 2.6,
+    "campSize": [
+     1,
+     1
+    ],
+    "respawnSeconds": 120
+   },
+   "inTuneKinds": false,
+   "inProgressionBosses": false,
+   "inDailyPit": false,
+   "sharedWith": [
+    "pitborn",
+    "pumpkinhulk",
+    "kachujin",
+    "parasite",
+    "anime-girl-blonde",
+    "anime-boy-black"
+   ]
+  }
+ ]
+}

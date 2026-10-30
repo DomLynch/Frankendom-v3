@@ -88,15 +88,3 @@ test('re-aggro: only inside the leash and with the hero inside its aggro (from w
   assert.equal(reaggro(A, inside, { x: inside.x + A.aggro + 0.1, z: inside.z }), false, 'out of its aggro');
   assert.equal(reaggro(A, outside, { x: outside.x + 0.5, z: outside.z }), false, 'still past the leash: no re-aggro');
 });
-
-test('the page: a leash starts the walk when alone, keeps the instant reset with another boss on him, and every exit clears it', () => {
-  const main = read('../src/client/main.ts');
-  assert.match(main, /leashed\(spawns\[current\]!, practice\.enemy, openerLift\)\) \{ if \(walkBackEnabled && !attackers\.some\(\(a\) => !a\.dead\)\) \{ walkBack = true; engaged = false; \} else leashReset\(current, hero\); \}/);
-  assert.match(main, /if \(walkBack\) practice = holdBack\(prior, practice, spawns\[current\]!\);/);
-  assert.match(main, /reaggro\(spawns\[current\]!, practice\.enemy, hero\)\) \{ walkBack = false; engaged = true; \}/);
-  assert.match(main, /arrived\(spawns\[current\]!, practice\.enemy\)\) leashReset\(current, hero\);/);
-  for (const fn of ['function rematch', 'function leashReset', 'function adoptAttacker']) {
-    const at = main.indexOf(fn);
-    assert.match(main.slice(at, at + 1200), /walkBack = false/, `${fn} clears the walk`);
-  }
-});

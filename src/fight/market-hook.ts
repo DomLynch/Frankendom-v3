@@ -2,7 +2,7 @@
 // near, and the sheet buys and sells for BANKED coins. The save is the page's own: read through `get` at each use and written through `put` (so a corpse-run write in between is never overwritten by a stale copy).
 // The merchant's body is drawn by the scene as one more standing figure (`stand()` goes to view.idleFoes). No save (?save=off) mounts nothing. Events for the commentator go out on the feel bus (data/market.json events).
 import { emitFeel } from './feel.ts';
-import { MARKET, buy, dayKey, lineFor, marketOf, ownsWeapon, sell, sellList, stockFor, validateMarket, type MarketFile, type Refusal } from '../market.ts';
+import { CLS, MARKET, REFUSAL, buy, dayKey, lineFor, marketOf, ownsWeapon, sell, sellList, stockFor, validateMarket, type MarketFile, type Refusal } from '../market.ts';
 import { PARTS, splitPart } from '../parts.ts';
 import { countOf } from '../market-inventory.ts';
 import { levelOf, type StarsFile } from '../stars.ts';
@@ -44,7 +44,7 @@ export function mountMarket(ctx: MarketHookCtx, doc: Document = document, file: 
   const partName = (id: string): string => { const p = splitPart(id); const slot = PARTS.slots.find((s) => s.id === p?.slot); return p ? `${names.get(p.profile) ?? p.profile} ${(slot?.label ?? p.slot).toLowerCase()}` : id; };
   const trophyName = (tier: number): string => levelOf(ctx.stars, tier).trophy?.name ?? `${T.trophy} ${tier}`;
   const refuse = (reason: Refusal, key: string) => {
-    say(reason === 'broke' ? 'broke' : reason === 'capped' ? 'capped' : 'soldOut');
+    say(reason === REFUSAL.broke || reason === REFUSAL.capped ? reason : 'soldOut');
     emitFeel(file.events.refuse, { reason, key, line });
   };
 
@@ -53,16 +53,16 @@ export function mountMarket(ctx: MarketHookCtx, doc: Document = document, file: 
     if (!s) return { banked: 0, line, buys: [], sells: [] };
     const m = marketOf(s, day);
     const buys: BuyView[] = stockFor(file, day, ids).map((it) => {
-      const sold = m.bought.includes(it.key), owned = it.cls === 'weapon' && ownsWeapon(s, it.id);
+      const sold = m.bought.includes(it.key), owned = it.cls === CLS.weapon && ownsWeapon(s, it.id);
       const rar = PARTS.rarities[it.star];
       return {
-        key: it.key, name: it.cls === 'weapon' ? ctx.weaponName(it.id) : partName(it.id), tag: it.cls === 'weapon' ? T.weapon! : rar?.label ?? it.rarity, colour: it.cls === 'weapon' ? '#1b1916' : rar?.colour ?? '#7a746a',
-        price: it.price, state: sold ? 'sold' : owned ? 'owned' : s.banked < it.price ? 'broke' : 'ok', ownedN: it.cls === 'part' ? countOf(s, it.id) : 0, short: Math.max(0, it.price - s.banked),
+        key: it.key, name: it.cls === CLS.weapon ? ctx.weaponName(it.id) : partName(it.id), tag: it.cls === CLS.weapon ? T.weapon! : rar?.label ?? it.rarity, colour: it.cls === CLS.weapon ? '#1b1916' : rar?.colour ?? '#7a746a',
+        price: it.price, state: sold ? 'sold' : owned ? 'owned' : s.banked < it.price ? 'broke' : 'ok', ownedN: it.cls === CLS.part ? countOf(s, it.id) : 0, short: Math.max(0, it.price - s.banked),
       };
     });
     const sells: SellView[] = sellList(file, s).map((r) => {
       const rar = PARTS.rarities[r.star];
-      return r.cls === 'part'
+      return r.cls === CLS.part
         ? { key: r.key, name: partName(r.id), tag: rar?.label ?? r.rarity, colour: rar?.colour ?? '#7a746a', n: r.n, price: r.price, sure: r.star >= 1 }
         : { key: r.key, name: trophyName(Number(r.id)), tag: T.trophy!, colour: '#b7791f', n: r.n, price: r.price, sure: true };
     });
@@ -100,14 +100,14 @@ export function mountMarket(ctx: MarketHookCtx, doc: Document = document, file: 
     },
   });
 
-  const xy: [number, number] = [0, 0];
+  const xy: [number, number] = [0, 0], C = file.limits.chip;
   return {
     step(hero, alive, calm = true) {   // `calm` false (a fight is on): no new chip; a sheet already open stays until he dies or walks off
       if (!ctx.get()) { panel.chipAt(null); return; }
       const d = Math.hypot(hero.x - at.x, hero.z - at.z);
       if (panel.isOpen() && (!alive || d > M.closeMetres)) panel.close();
-      const w = (doc as { documentElement?: { clientWidth?: number; clientHeight?: number } }).documentElement, W = w?.clientWidth || 1e9, H = w?.clientHeight || 1e9;
-      const on = alive && calm && d <= M.openMetres && ctx.project(at.x, 2.15, at.z, xy) && xy[0] >= 44 && xy[0] <= W - 44 && xy[1] >= 28 && xy[1] <= H - 28;   // the chip never sits off the screen: with the merchant behind the camera or out of frame there is nothing to tap
+      const w = (doc as { documentElement?: { clientWidth?: number; clientHeight?: number } }).documentElement, W = w?.clientWidth || C.noScreen, H = w?.clientHeight || C.noScreen;
+      const on = alive && calm && d <= M.openMetres && ctx.project(at.x, C.headM, at.z, xy) && xy[0] >= C.edgeX && xy[0] <= W - C.edgeX && xy[1] >= C.edgeY && xy[1] <= H - C.edgeY;   // the chip never sits off the screen: with the merchant behind the camera or out of frame there is nothing to tap
       panel.chipAt(on ? xy : null);
     },
     stand(hero) {

@@ -2,9 +2,9 @@
 // Positions are centimetres inside the frame (u16, so the frame is at most 655 m), heading a byte (0..255 round the compass), `anim` and `flags` a byte each.
 // The layout is the protocol itself: the byte positions both sides agree on. An up packet is [type 0, x 1, z 3, heading 5, anim 6, flags 7]; an entity is
 // [id 0, x 2, z 4, heading 6, anim 7, flags 8, tick 9] from its start in a down packet.
-export const UP = 2;       // client -> server: [type u8, x u16, z u16, heading u8, anim u8, flags u8] = 8 bytes
-export const DOWN = 1;     // server -> client: [type u8, tick u16, count u8] then `count` entities
-export const UP_BYTES = 8;
+const UP = 2;       // client -> server: [type u8, x u16, z u16, heading u8, anim u8, flags u8] = 8 bytes
+const DOWN = 1;     // server -> client: [type u8, tick u16, count u8] then `count` entities
+const UP_BYTES = 8;
 export const ENTITY_BYTES = 11;   // id u16, x u16, z u16, heading u8, anim u8, flags u8, entity tick u16
 export const HEAD_BYTES = 4;
 export const MAX_ENTITIES = 255;   // the packet's count is one byte

@@ -4,8 +4,8 @@
 // above SWING_PX) and the settle time (s after the blow until the deviation stays under SETTLE_PX). Blows are sim-shaped Hit events added after the sim's step, as scripts/hitreact-clip.mjs does,
 // so the sim never sees them. Playwright is not a repo dependency, install it beside the script.
 //   SHOTS=1 node scripts/sway-trace.mjs <base url> <out dir> [query]     (SHOTS: 375 stills at +0,+4,+8,+14,+22,+34 ticks for the front torso blows)
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, query = ''] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
@@ -20,11 +20,11 @@ const CASES = [
 ];
 // CASES=a,b limits the run to those cases; DSF=2 takes the stills at 2x; on a Mac it uses Metal (CHROME=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome), elsewhere SwiftShader
 if (process.env.CASES) CASES.splice(0, CASES.length, ...CASES.filter((c) => process.env.CASES.split(',').includes(c.name)));
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const PATCH = /(\w+)\.push\(\.\.\.(\w+)\.events\)/;
 
 async function run(blows) {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
   await page.addInitScript(() => {
     globalThis.__hitInject = (p) => {
@@ -48,7 +48,7 @@ async function run(blows) {
   });
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 240000, polling: 'raf' });
   for (let tries = 0; ; tries++) { try { await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20 + 250 * tries); break; } catch (e) { if (tries >= 6) throw e; } }
   const step = (n) => page.clock.runFor(Math.round(n * TICK));
   await step(120);

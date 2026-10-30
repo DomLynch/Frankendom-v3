@@ -19,7 +19,7 @@ export function listParts(save: InventorySave): OwnedPart[] {
     out.push({ id, profile: p.profile, slot: p.slot, n: row.n, star: row.star, sellable: Math.max(0, row.n - worn) });
   }
   const order = new Map(PARTS.slots.map((s, i) => [s.id, i]));
-  return out.sort((a, b) => (order.get(a.slot) ?? 99) - (order.get(b.slot) ?? 99) || b.star - a.star || a.id.localeCompare(b.id));
+  return out.sort((a, b) => (order.get(a.slot) ?? order.size) - (order.get(b.slot) ?? order.size) || b.star - a.star || a.id.localeCompare(b.id));
 }
 
 /** How many of `id` the player owns (0 when none). */

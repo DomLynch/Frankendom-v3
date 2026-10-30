@@ -1,11 +1,11 @@
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import SPECIAL_FX_MINOR_ROWS_MANIFEST from './special-fx-minor-rows.manifest.json' with { type: 'json' };
 import SPECIAL_FX_MINOR_ROWS from './special-fx-minor-rows.json' with { type: 'json' };
 
 // The Legion's, the Nightborn's and the Pitborn's effect ring, cap and build-up as rows (special-fx-legion.ts, special-fx-nightborn.ts, special-fx-pitborn.ts) (Dom's data-layer rule 2026-10-13). View layer only: none of these is read by the sim, a record or the digest. tests/special-fx-minor-rows.test.ts pins every default to the literal the code held before.
-const TABLE = tableFromFile(SPECIAL_FX_MINOR_ROWS_MANIFEST.tables[0] as Manifest, SPECIAL_FX_MINOR_ROWS, 'special-fx-minor-rows.json');
+const TABLE = tableFromFile(SPECIAL_FX_MINOR_ROWS_MANIFEST.tables[0], SPECIAL_FX_MINOR_ROWS, 'special-fx-minor-rows.json');
 loadRegistry([TABLE]);
-const VALUES = new Map((TABLE.rows as unknown as { id: string; fields: { value: number } }[]).map((r) => [r.id, r.fields.value]));
+const VALUES = new Map((TABLE.rows as readonly { id: string; fields: { value: number } }[]).map((r) => [r.id, r.fields.value]));
 
 /** The value of a row; a missing id throws at load rather than answering NaN. */
 export function specialFxMinorNum(id: string): number {

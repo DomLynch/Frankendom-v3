@@ -3,13 +3,13 @@
 // tick and the follow-through (move-defs.json windup / active), plus a heavy held at its chamber: <tag>-<strike>-<moment>.png.
 //   node scripts/clip-stills.mjs <base url> <out dir> [query ...]     (CHROME=<path> picks the browser; on a Mac it uses Metal, elsewhere SwiftShader)
 // Keys are V1's (input.ts): D+F the right cut, A+F the left cut, T the thrust, G the heavy (held: it charges), W closes in.
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/clip-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 // LAG: ticks from the key press to the swing's first tick (the press is read on the next frame and the sim takes it a step later), measured
 // 2026-10-26: the stab's blood shows 3-4 ticks after its windup. Every moment below is a tick of the swing (age), so the shot waits LAG more.
 const LAG = 3;
@@ -27,11 +27,11 @@ if (process.env.ONLY) { const [n, t] = process.env.ONLY.split(':'), s = STRIKES.
 for (const query of queries.length ? queries : ['']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
   for (const [name, keys, release, moments] of STRIKES) {
-    const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const page = await browser.newPage(phoneOptions(2));
     page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
     await page.clock.install();
     await page.goto(`${base}/${query ? `?${query}` : ''}`);
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await waitPlayable(page, { timeout: 180000 });
     await page.waitForTimeout(800);
     await page.click('#attack-button');   // Fight: draw
     await page.waitForFunction(() => !/Drawing/.test(document.body.innerText), null, { timeout: 60000 });

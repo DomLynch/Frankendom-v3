@@ -2,21 +2,21 @@
 // then the hero strafes round the boss (KeyD) so the camera turns: a shot after each hold, with the camera's heading read back; then one mid-fight (heavy swing) at the end.
 //   node scripts/sky-alien-stills.mjs <base url> <out dir> [query ...]      env HOLDS=1200,2500,4000 (ms of strafe added before each heading shot)
 // Headless Chromium (Metal on a Mac). Waits for the strip to land. Writes <out>/<tag>-ready.png, -turn1..N.png, -heavy.png and headings.json.
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/sky-alien-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const HOLDS = (process.env.HOLDS ?? '1200,1400,1600').split(',').map(Number);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const report = {};
 for (const query of queries.length ? queries : ['', 'skyfollow=v1']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+  await waitPlayable(page, { timeout: 240000 });
   await page.waitForFunction(() => globalThis.__v3Scene?.getObjectByName('skyline')?.visible === true, null, { timeout: 60000 });
   if (process.env.HACK) {   // what-if rows with no rebuild: {"h":metres,"drop":metres,"yawOff":degrees} replaces the strip's height, drop and turn at run time (the same maths as skyline.ts centreOffsetY)
     await page.evaluate((hack) => {

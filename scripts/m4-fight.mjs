@@ -3,22 +3,21 @@
 // moves the corpse aside (ASIDE metres, as scripts/cut-stills.mjs on #71) and shoots stills.
 //   node m4-fight.mjs <base> <out> <query> [attacks]     env: ZONE (head|torso|legs: force the hit location of the finishing blow, see below), ASIDE (m, default 3), AFTER (ticks after the freeze, default 0,10,40,120), GAP (ticks between attacks), MIXJSON (the key combos)
 // The table's `anim_m_s` is the hero's measured hand speed, `used_m_s` what the evaluator took (light-equivalent, clamped); `outcome` kill = a deferred kill (shown as a knockdown).
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 const [base, out, query = '', ATT = '34'] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, ASIDE = Number(process.env.ASIDE ?? 3), AFTER = (process.env.AFTER ?? '0,10,40,120').split(',').map(Number), GAP = Number(process.env.GAP ?? 75);
 const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const page = await browser.newPage(phoneOptions(2));
+collectErrors(page, { echo: true });
 await page.clock.install();
 // ZONE=head|torso|legs: the harness cannot aim (the sim's hit location is the blade's geometry against his body, bladeImpact), so it rewrites the location of every Hit / Killed event aimed at the
 // opponent as the events are queued for the scene (presentation only; the sim's own finish record is untouched). Without ZONE nothing is patched.
 if (process.env.ZONE) await page.addInitScript(([zone, counter]) => { const push = Array.prototype.push; Array.prototype.push = function (...a) { for (const e of a) if (e && typeof e === 'object' && (e.type === 'Hit' || e.type === 'Killed') && e.target === 1 && e.location && !e.missile && globalThis.__zoneOn) { e.location = zone; if (counter && e.type === 'Hit') e.counter = true; } return push.apply(this, a); }; }, [process.env.ZONE, process.env.COUNTER === '1']);   // COUNTER=1 also marks the forced Hit a counter-hit (the evaluator's strength rung up), for a finishing heavy whose clip speed reads low   // armed only for the finishing blow (below)
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
+await waitPlayable(page, { timeout: 240000, polling: 'raf' });
 await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20);
 const run = (t) => page.clock.runFor(Math.round(t * TICK));
 await run(120);

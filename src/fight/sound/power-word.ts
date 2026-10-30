@@ -5,7 +5,7 @@ import { audioRule, CASTER_ROWS } from './audio-rules.ts';
 const FORMANTS: Record<string, [number, number]> = { a: [800, 1200], e: [530, 1850], i: [300, 2300], y: [300, 2300], o: [500, 900], u: [350, 800] };
 const CASTERS: Record<string, { f0: number; breath: number; syllable: number }> = CASTER_ROWS;   // rows (audio-rules-defs.json `casters`)
 export const POWER_WORD_LOOK_GAIN = audioRule('powerWordLookGain');   // peak of the loudest syllable before the bus; bone_crack is .55 (audio/cues.ts), so the word always sits under an impact
-export const syllables = (word: string): { onset: string; vowels: string; coda: string }[] => {
+const syllables = (word: string): { onset: string; vowels: string; coda: string }[] => {
   const parts = word.toLowerCase().match(/[^aeiouy]*[aeiouy]+/g) ?? [], rest = word.toLowerCase().slice(parts.join('').length);
   return parts.map((p, i) => {
     const v = p.search(/[aeiouy]/), vowels = p.slice(v), tail = i === parts.length - 1 ? rest : '';

@@ -4,7 +4,7 @@
 // A sim file: no Math.random, no clock, no transcendental. The numbers are Dom's table; the damage delta starts at +-5% (Lead), his +-10% is the ceiling the battery may raise it to.
 import { rollUnit } from './roll.ts';
 import CATALOGUE_ROWS from './catalogue-data.ts';
-import { loadRegistry, tableFromFile, type Manifest } from '../core/registry.ts';
+import { loadRegistry, tableFromFile } from '../core/registry.ts';
 import { STANCE_ROWS_ON } from './stance-era.ts';
 import STANCE_DEFS from './stance-defs.json' with { type: 'json' };
 import STANCE_MANIFEST from './stance-defs.manifest.json' with { type: 'json' };
@@ -20,10 +20,10 @@ export const PICKS: readonly PickedStance[] = ['neutral', 'aggressive', 'defensi
 export const STANCE_KEYS = ['damage', 'heavyDamage', 'posture', 'kickPosture', 'block', 'feint', 'recover', 'damageTaken', 'poise'] as const;
 export type StanceKey = (typeof STANCE_KEYS)[number];
 type Deltas = Readonly<Partial<Record<StanceKey, number>>>;
-const TABLE = tableFromFile(STANCE_MANIFEST.tables[0] as Manifest, STANCE_DEFS, 'stance-defs.json');
-const WOUND_TABLE = tableFromFile(STANCE_MANIFEST.tables[1] as Manifest, STANCE_DEFS, 'stance-defs.json');
-const TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[0] as Manifest, ROWS79_DEFS, 'rows79-defs.json');   // RV79 (sandbox-era.ts): the stance numbers 2x bigger (Dom 2026-10-13), for a live fight and a record at 79 or later
-const CAP_TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[2] as Manifest, ROWS79_DEFS, 'rows79-defs.json');   // a floor per stance quantity (rows79-defs.json stanceCaps): a specific Dom value beats the 2x multiplier
+const TABLE = tableFromFile(STANCE_MANIFEST.tables[0], STANCE_DEFS, 'stance-defs.json');
+const WOUND_TABLE = tableFromFile(STANCE_MANIFEST.tables[1], STANCE_DEFS, 'stance-defs.json');
+const TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[0], ROWS79_DEFS, 'rows79-defs.json');   // RV79 (sandbox-era.ts): the stance numbers 2x bigger (Dom 2026-10-13), for a live fight and a record at 79 or later
+const CAP_TABLE_79 = tableFromFile(ROWS79_MANIFEST.tables[2], ROWS79_DEFS, 'rows79-defs.json');   // a floor per stance quantity (rows79-defs.json stanceCaps): a specific Dom value beats the 2x multiplier
 loadRegistry([TABLE, WOUND_TABLE, TABLE_79, CAP_TABLE_79]);
 export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<Record<StanceId, Deltas>> {
   const out: Record<string, Record<string, number>> = {};
@@ -36,14 +36,14 @@ export function stanceRows(rows: readonly Record<string, unknown>[]): Readonly<R
   }
   return out as Readonly<Record<StanceId, Deltas>>;
 }
-export const STANCES: Readonly<Record<StanceId, Deltas>> = stanceRows(TABLE.rows as unknown as Record<string, unknown>[]);
-const STANCE_FLOORS_79 = new Map((CAP_TABLE_79.rows as unknown as { id: string; floor: number }[]).map((r) => {
+export const STANCES: Readonly<Record<StanceId, Deltas>> = stanceRows((TABLE.rows as readonly Record<string, unknown>[]));
+const STANCE_FLOORS_79 = new Map((CAP_TABLE_79.rows as readonly { id: string; floor: number }[]).map((r) => {
   if (!(STANCE_KEYS as readonly string[]).includes(r.id)) throw Error(`rows79-defs stanceCaps "${r.id}": not a stance quantity (${STANCE_KEYS.join(', ')})`);
   if (!Number.isInteger(r.floor) || r.floor > 0) throw Error(`rows79-defs stanceCaps "${r.id}": floor is a whole per-mille delta at or below 0 (the capped rows are range-checked by stanceRows)`);
   return [r.id, r.floor] as const;
 }));
 const capStances79 = (rows: Readonly<Record<StanceId, Deltas>>): Readonly<Record<StanceId, Deltas>> => Object.fromEntries(Object.entries(rows).map(([id, deltas]) => [id, Object.fromEntries(Object.entries(deltas).map(([k, v]) => [k, Math.max(v as number, STANCE_FLOORS_79.get(k) ?? -Infinity)]))])) as Readonly<Record<StanceId, Deltas>>;
-const STANCES_79: Readonly<Record<StanceId, Deltas>> = stanceRows(Object.entries(capStances79(stanceRows(TABLE_79.rows as unknown as Record<string, unknown>[]))).map(([id, d]) => ({ id, ...d })));   // stances 2x sandbox, feint cap Dom-held (the doubled rows, then each quantity floored by its stanceCaps row)
+const STANCES_79: Readonly<Record<StanceId, Deltas>> = stanceRows(Object.entries(capStances79(stanceRows((TABLE_79.rows as readonly Record<string, unknown>[])))).map(([id, d]) => ({ id, ...d })));   // stances 2x sandbox, feint cap Dom-held (the doubled rows, then each quantity floored by its stanceCaps row)
 // The Defensive stance BEFORE v52 (stance-era.ts): the same deltas plus a parry window and a guard-counter window a quarter longer. Read only while a record below 52 replays.
 const LEGACY_DEFENSIVE: Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>> = LEGACY_DEFENSIVE_ROWS as unknown as Readonly<Partial<Record<StanceId, Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>>>>>;
 const rowOf = (f: { stance?: StanceId }): Readonly<Partial<Record<StanceKey | 'window' | 'counter', number>>> | undefined => (f.stance ? (STANCE_ROWS_ON ? undefined : LEGACY_DEFENSIVE[f.stance]) ?? (ROWS79_ON ? STANCES_79 : STANCES)[f.stance] : undefined);
@@ -54,7 +54,7 @@ const SITES = ['head', 'torso', 'legs'];
 const WOUND_TEXT: Record<string, { label: string; note: string }> = {};   // optional label + note columns: what the on-screen notice says (wound-notice.ts)
 const WOUND_BELOW: Record<string, number> = {};   // optional `below` column: the scar only forms once the defender is at or under this percent of max health (arm wound: 10)
 const WOUND_CEIL: Record<string, number> = {};   // optional `ceil` column: stamina points the scar takes off the ceiling for the rest of the duel (UO Mortal Strike / SWG wounds)
-const WOUNDS: Readonly<Record<string, Deltas & { site: string }>> = Object.fromEntries((WOUND_TABLE.rows as unknown as Record<string, unknown>[]).map(({ id, site, label, note, ceil, below, ...deltas }) => {
+const WOUNDS: Readonly<Record<string, Deltas & { site: string }>> = Object.fromEntries((WOUND_TABLE.rows as readonly Record<string, unknown>[]).map(({ id, site, label, note, ceil, below, ...deltas }) => {
   if (below !== undefined) { if (typeof below !== 'number' || !Number.isInteger(below) || below < 1 || below > 100) throw Error(`stance-defs wound "${String(id)}": below is a whole percent of max health, 1 to 100`); WOUND_BELOW[id as string] = below; }
   if (ceil !== undefined) { if (typeof ceil !== 'number' || !Number.isInteger(ceil) || ceil < 0 || ceil > 100) throw Error(`stance-defs wound "${String(id)}": ceil is whole stamina points, 0 to 100`); WOUND_CEIL[id as string] = ceil; }
   if (typeof site !== 'string' || !SITES.includes(site)) throw Error(`stance-defs wound "${String(id)}": site is one of ${SITES.join(', ')}`);

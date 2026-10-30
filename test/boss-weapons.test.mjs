@@ -60,7 +60,7 @@ test('boss 2 Gargantua (executioner) wields a maul; boss 3 Arachne (shieldmaiden
   assert.equal(a.weapon, 'cleaver'); assert.equal(weaponOf('cleaver').grip, 'one-hand');   // V1's axe-skill one-hander
   assert.equal(a.offhand.kind, 'file'); assert.equal(a.offhand.file, 'shield'); assert.equal(a.offhand.hand, 'lowerarm_l');   // the left forearm, not the hand: a board on the hand sat in front of her face (Dom review 2026-10-28)
   assert.deepEqual([g.equip, a.equip], ['maul', 'axe'], 'Dom picked these three library props (2026-10-28): hammer-01, axe1h-208, shield-213');
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'pitborn', 'pitborn', 'shieldmaiden', 'shieldmaiden']);   // Gargantua, Arachne, Sir Reginald (castle-guard), Ryo (pitborn, anime-boy-black), Lord Gourd (pitborn, pumpkinhulk)
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => r.opponent).sort(), ['executioner', 'pitborn', 'pitborn', 'pitborn', 'pitborn', 'pitborn', 'shieldmaiden', 'shieldmaiden', 'shieldmaiden', 'shieldmaiden']);   // + Nan, Kachujin, The Accountant, The King, Akane;   // Gargantua, Arachne, Sir Reginald (castle-guard), Ryo (pitborn, anime-boy-black), Lord Gourd (pitborn, pumpkinhulk)
   assert.equal(OPPONENTS.executioner.weapon, 'scythe', "V1's row for the executioner is untouched");
   assert.equal(OPPONENTS.shieldmaiden.weapon, 'gladius', "V1's row for the shieldmaiden is untouched");
   for (const r of BOSS_WEAPONS.rows) {
@@ -103,8 +103,8 @@ test('a zone spawn of each kind fights with the row\'s weapon, and the duel hold
 const withRows = (...extra) => ({ ...clone(RAW), rows: [...clone(RAW).rows.filter((r) => !r.profile), ...extra] });   // the shipped profile rows are left out so a fixture can name its own
 const profRow = (id, profile, opponent, over = {}) => ({ ...clone(RAW).rows[0], id, profile, opponent, weapon: 'cleaver', equip: 'axe', ...over });
 
-test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had', () => {
-  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe'], ['reginald-halberd', 'shieldmaiden', 'castle-guard', 'cleaver', 'halberd'], ['ryo-sword', 'pitborn', 'anime-boy-black', 'cleaver', 'sword'], ['lord-gourd-mace', 'pitborn', 'pumpkinhulk', 'maul', 'mace']]);
+test('the shipped rows are unchanged by the profile key: Gargantua and Arachne resolve to exactly the rows and weapons they had (behaviour half; the source pins moved to test/source-pins/)', () => {
+  assert.deepEqual(BOSS_WEAPONS.rows.map((r) => [r.id, r.opponent, r.profile ?? null, r.weapon, r.equip]), [['gargantua-maul', 'executioner', null, 'maul', 'maul'], ['arachne-axe-shield', 'shieldmaiden', null, 'cleaver', 'axe'], ['reginald-halberd', 'shieldmaiden', 'castle-guard', 'cleaver', 'halberd'], ['ryo-sword', 'pitborn', 'anime-boy-black', 'cleaver', 'sword'], ['lord-gourd-mace', 'pitborn', 'pumpkinhulk', 'maul', 'mace'], ['nan-spear-shield', 'shieldmaiden', 'sporty-granny', 'trident', 'spear'], ['kachujin-katana', 'pitborn', 'kachujin', 'cleaver', 'katana'], ['the-boss-mace', 'shieldmaiden', 'the-boss', 'cleaver', 'mace'], ['king-warhammer', 'pitborn', 'big-vegas', 'maul', 'warhammer'], ['akane-rapier', 'pitborn', 'anime-girl-blonde', 'cleaver', 'rapier']]);
   for (const p of PROFILES.profiles) {
     if (BOSS_WEAPONS.rows.some((r) => r.profile === p.id)) continue;   // a profile with its own row (Sir Reginald, Ryo, Lord Gourd) is pinned below
     const base = OPPONENTS[p.opponent];
@@ -114,12 +114,11 @@ test('the shipped rows are unchanged by the profile key: Gargantua and Arachne r
   assert.equal(bossWeaponFor('executioner', '', undefined, 'gargantua')?.id, 'gargantua-maul');
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'arachne')?.id, 'arachne-axe-shield');
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'castle-guard')?.id, 'reginald-halberd', 'Sir Reginald has his own profile row (library polearm-200)');
-  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'sporty-granny')?.id, 'arachne-axe-shield', 'any other shieldmaiden profile keeps the archetype row');
+  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'sporty-granny')?.id, 'nan-spear-shield', 'Nan has her own profile row (library polearm-206)');
   assert.equal(bossWeaponFor('shieldmaiden', '')?.id, 'arachne-axe-shield', 'no profile = the archetype row, unchanged');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'castle-guard'), bossWeaponFor('pitborn', ''), 'the halberd is the castle-guard profile only');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black')?.id, 'ryo-sword', 'Ryo has his own row');
-  for (const other of PROFILES.profiles.filter((q) => q.opponent === 'pitborn' && q.id !== 'anime-boy-black' && q.id !== 'pumpkinhulk')) assert.equal(bossWeaponFor('pitborn', '', undefined, other.id), undefined, `${other.id}: a pitborn profile with no row is on V1's weapon (only Ryo gets the sword, only Lord Gourd the mace)`);
-  assert.match(readFileSync(new URL('../src/fight/spawn-kind.ts', import.meta.url), 'utf8'), /bossOpponent\(base, ctx\.search, undefined, kind\)/, 'kindFightFor passes the spawn kind (the profile id)');
+  for (const other of PROFILES.profiles.filter((q) => q.opponent === 'pitborn' && !BOSS_WEAPONS.rows.some((r) => r.profile === q.id))) assert.equal(bossWeaponFor('pitborn', '', undefined, other.id), undefined, `${other.id}: a pitborn profile with no row is on V1's weapon (only Ryo gets the sword, only Lord Gourd the mace)`);
 });
 
 test('two profiles sharing one archetype can have different rows; a profile without a row falls back to the archetype row, else V1\'s weapon; unknown profiles are refused', () => {
@@ -179,9 +178,9 @@ test('Lord Gourd alone wields the mace: his profile row wins, every other pitbor
   for (const p of PROFILES.profiles.filter((q) => q.id !== 'pumpkinhulk')) {
     assert.notEqual(bossWeaponFor(p.opponent, '', undefined, p.id)?.id, 'lord-gourd-mace', `${p.id} does not get the mace`);
   }
-  for (const id of ['kachujin', 'big-vegas', 'parasite', 'anime-girl-blonde']) assert.equal(bossWeaponFor('pitborn', '', undefined, id), undefined, `${id} (pitborn) has no row: V1's cleaver`);
+  assert.equal(bossWeaponFor('pitborn', '', undefined, 'parasite'), undefined, 'parasite (the Titan\'s Envoy, pitborn) has no row: V1\'s cleaver');
   assert.equal(bossWeaponFor('pitborn', '', undefined, 'anime-boy-black')?.id, 'ryo-sword', 'Ryo keeps his sword');
-  for (const id of ['sporty-granny', 'the-boss']) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, id)?.id, 'arachne-axe-shield', `${id} keeps the archetype row`);
+  assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'sporty-granny')?.id, 'nan-spear-shield'); assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'the-boss')?.id, 'the-boss-mace');
   assert.equal(bossWeaponFor('shieldmaiden', '', undefined, 'castle-guard')?.id, 'reginald-halberd', 'Sir Reginald keeps his halberd');
   assert.equal(bossWeaponFor('pitborn', ''), undefined, 'the plain Pitborn (no profile) keeps the cleaver');
   assert.equal(bossWeaponFor('pitborn', '?bossweapon=v1', undefined, 'pumpkinhulk'), undefined, '?bossweapon=v1 puts him back on V1');
@@ -292,8 +291,8 @@ test('Ryo\'s row: his profile only, the plain sword, the sim\'s cleaver family u
   assert.equal(r.id, 'ryo-sword'); assert.equal(r.opponent, 'pitborn'); assert.equal(r.equip, 'sword'); assert.equal(r.offhand, null);
   assert.equal(r.weapon, OPPONENTS.pitborn.weapon, 'the sim keeps the pitborn\'s own weapon: Ryo fights exactly as before, only the drawing changes');
   assert.equal(bossOpponent(OPPONENTS.pitborn, '', undefined, 'anime-boy-black'), OPPONENTS.pitborn, 'same weapon id: the very same object, nothing in the sim moves');
-  for (const p of PROFILES.profiles.filter((q) => q.id !== 'anime-boy-black' && q.id !== 'pumpkinhulk' && q.opponent !== 'executioner' && q.opponent !== 'shieldmaiden')) assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), undefined, `${p.id}: no sword`);
-  for (const p of PROFILES.profiles.filter((q) => q.opponent === 'shieldmaiden')) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, p.id)?.id, p.id === 'castle-guard' ? 'reginald-halberd' : 'arachne-axe-shield', `${p.id}: Sir Reginald has his own row, every other shieldmaiden keeps Arachne's archetype row`);
+  for (const p of PROFILES.profiles.filter((q) => q.id !== 'anime-boy-black' && !BOSS_WEAPONS.rows.some((r) => r.profile === q.id) && q.opponent !== 'executioner' && q.opponent !== 'shieldmaiden')) assert.equal(bossWeaponFor(p.opponent, '', undefined, p.id), undefined, `${p.id}: no sword`);
+  for (const p of PROFILES.profiles.filter((q) => q.opponent === 'shieldmaiden')) assert.equal(bossWeaponFor('shieldmaiden', '', undefined, p.id)?.id, { 'castle-guard': 'reginald-halberd', 'sporty-granny': 'nan-spear-shield', 'the-boss': 'the-boss-mace' }[p.id] ?? 'arachne-axe-shield', `${p.id}: Sir Reginald has his own row, every other shieldmaiden keeps Arachne's archetype row`);
   assert.equal(bossWeaponFor('pitborn', '', undefined), undefined, 'the archetype itself (the Minotaur) has no row');
   assert.equal(bossWeaponFor('pitborn', '?bossweapon=v1', undefined, 'anime-boy-black'), undefined, '?bossweapon=v1 puts V1 back on Ryo');
   assert.equal(bossPreview('?bossweapon=anime-boy-black')?.id, 'ryo-sword', 'the stills flag draws his row on the page\'s own foe');

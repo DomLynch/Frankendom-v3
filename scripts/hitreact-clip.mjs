@@ -6,15 +6,15 @@
 //   node scripts/hitreact-clip.mjs <base url> <out dir> [query ...]        default queries: '' and 'feel=hitreact'   -> <out>/<tag>/f-0000.png ...
 //   COST=1 node scripts/hitreact-clip.mjs <base url> <out dir> [query ...]  real time, COST_S seconds of a blow every 0.6 s: the ragdoll's per-frame cost (globalThis.__ragdoll.byMode.alive) per query
 // On a Mac it uses Metal (CHROME=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome), elsewhere SwiftShader.
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/hitreact-clip.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const TICK = 1000 / 60, SHOT_EVERY = Number(process.env.SHOT_EVERY ?? 2), TOTAL = Number(process.env.TOTAL ?? 180);
 const BLOWS = process.env.BLOWS ? JSON.parse(process.env.BLOWS) : [{ at: 15, location: 'head', rel: Math.PI }, { at: 75, location: 'torso', rel: Math.PI }, { at: 135, location: 'torso', rel: Math.PI / 2 }];   // rel: the attacker's heading minus his (PI = in front, PI/2 = on his right). BLOWS='[{"at":15,"location":"legs","rel":1.57}]' replaces them
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 
 // Before any page script: window.__v3Fight becomes an accessor whose setter adds the pending scripted blow to the frame's events.
 const INIT = () => {
@@ -40,14 +40,13 @@ async function patchMain(page) {
 
 async function ready(page, query) {
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 180000, polling: 'raf' });
 }
 
 for (const query of queries.length ? queries : ['', 'feel=hitreact']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') console.error(`${tag}: console ${m.text()}`); });
+  const page = await browser.newPage(phoneOptions(2));
+  collectErrors(page, { echo: true, label: tag });
   await page.addInitScript(INIT); await patchMain(page);
   if (process.env.COST) {
     await ready(page, query);

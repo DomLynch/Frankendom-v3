@@ -79,8 +79,9 @@ test('a weapon bought is owned, drawn by heroWeapon, and not bought twice', () =
   const out = buy(MARKET, rich(), key, day, IDS);
   assert.ok(out.ok); const id = key.slice(7);
   assert.deepEqual(out.save.market.weapons, [id]);
-  assert.equal(heroWeapon(out.save, P, 'longsword', ['longsword', id], ''), id);
-  assert.equal(heroWeapon(rich(), P, 'longsword', ['longsword', id], ''), 'longsword');
+  assert.equal(heroWeapon(out.save, P, 'longsword', ['longsword', id], `?weapon=${id}`), id);   // asked for by name, a bought weapon is the hero's
+  assert.equal(heroWeapon(out.save, P, 'longsword', ['longsword', id], ''), 'longsword');   // re-pinned: main's progression.autoEquip is false (a kill or a purchase never swaps the hero's weapon unasked)
+  assert.equal(heroWeapon(rich(), P, 'longsword', ['longsword', id], `?weapon=${id}`), 'longsword');   // not bought: asking for it gives nothing
   const again = buy(MARKET, { ...out.save, market: { ...out.save.market, bought: [] } }, key, day, IDS);
   assert.deepEqual(again, { ok: false, reason: 'owned' });
 });
