@@ -38,12 +38,13 @@ test('the table validates (hunter kind is a profile, star levels exist, tiers ca
 });
 
 test('the hunt flag row: default OFF, ?hunt=1 runs it (alone, without ?heat=1), hunt.on: true runs it for all; a bad flag row is refused; the page parks hunters only through HUNT_ON; the stills pass both flags', () => {
-  assert.equal(HEAT.hunt.on, false);
-  assert.equal(huntOn(''), false);
-  assert.equal(huntOn('?hunt=0'), false);
-  assert.equal(huntOn('?heat=1'), false);
-  assert.equal(huntOn(`?${HEAT.hunt.query}=${HEAT.hunt.value}`), true);
-  assert.equal(huntOn('', { ...HEAT, hunt: { ...HEAT.hunt, on: true } }), true);
+  assert.equal(HEAT.hunt.on, true);   // ON for players (Dom 2026-10-30; rollback = hunt.on false)
+  assert.equal(huntOn(''), true);
+  const dark = { ...HEAT, hunt: { ...HEAT.hunt, on: false } };
+  assert.equal(huntOn('', dark), false);
+  assert.equal(huntOn('?hunt=0', dark), false);
+  assert.equal(huntOn('?heat=1', dark), false);
+  assert.equal(huntOn(`?${HEAT.hunt.query}=${HEAT.hunt.value}`, dark), true);
   const bad = (f) => { const d = structuredClone(HEAT); f(d); return validateHeat(d, RINGS.rings.map((r) => r.id), PROFILES.profiles.map((p) => p.id), STARS.levels.map((l) => l.star)).join(';'); };
   assert.match(bad((d) => { d.hunt.on = 1; }), /hunt\.on/);
   assert.match(bad((d) => { d.hunt.query = 'Hunt!'; }), /hunt\.query/);

@@ -13,13 +13,14 @@ const src = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 const RING_IDS = read('rings').rings.map((r) => r.id);
 const patch = (f) => { const d = structuredClone(HEAT); f(d); return d; };
 
-test('the flag row: default OFF, ?heat=1 shows the line, on: true shows it for all; a bad flag row is refused; the page mounts the HUD only through heatOn', () => {
-  assert.equal(HEAT.on, false);
-  assert.equal(heatOn(''), false);
-  assert.equal(heatOn('?heat=0'), false);
-  assert.equal(heatOn('?other=1'), false);
-  assert.equal(heatOn(`?${HEAT.query}=${HEAT.value}`), true);
-  assert.equal(heatOn('', { ...HEAT, on: true }), true);
+test('the flag row: ON for players (Dom 2026-10-30; rollback = on false), off with on: false unless ?heat=1; a bad flag row is refused; the page mounts the HUD only through heatOn', () => {
+  assert.equal(HEAT.on, true);
+  assert.equal(heatOn(''), true);
+  const dark = { ...HEAT, on: false };
+  assert.equal(heatOn('', dark), false);
+  assert.equal(heatOn('?heat=0', dark), false);
+  assert.equal(heatOn('?other=1', dark), false);
+  assert.equal(heatOn(`?${HEAT.query}=${HEAT.value}`, dark), true);
   assert.equal(HEAT.query, 'heat'); assert.equal(HEAT.value, '1');
   assert.match(validateHeat(patch((d) => { d.on = 'yes'; }), RING_IDS).join(';'), /heat\.on/);
   assert.match(validateHeat(patch((d) => { d.query = 'Heat!'; }), RING_IDS).join(';'), /heat\.query/);
