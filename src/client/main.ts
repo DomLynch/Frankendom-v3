@@ -65,8 +65,10 @@ import { setBossBody, spotBodyProblems } from '../fight/foe-body.ts';
 import { foeSweepsFor } from '../fight/foe-reach.ts';
 import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
-import { CORPSE, atCamp, bank, carriedSave, dropPile, earn, inReach, lineOf, lingerSpot, regain, retrieve, validateCorpseRun } from '../corpse-run.ts';   // the corpse run (data/corpse-run.json; rides the progression save)
+import { CORPSE, coinsFor, atCamp, bank, carriedSave, dropPile, earn, inReach, lineOf, lingerSpot, regain, retrieve, validateCorpseRun } from '../corpse-run.ts';   // the corpse run (data/corpse-run.json; rides the progression save)
 import { mountCorpseHud } from '../fight/corpse-hud.ts';
+import { HEAT, heatOn, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
+import { mountHeatHud } from '../fight/heat-hud.ts';
 import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wire.ts';   // golden weapon drops (data/golden-weapons.json): the rest of the wiring lives there
 import { goldenBlips } from '../zone/golden-drops.ts';
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
@@ -107,7 +109,7 @@ import { createDaily, sessionOf } from '../daily-pit-ui.ts';   // the Daily Pit 
 import type { DailyFile } from '../daily-pit.ts';
 import { GROUND, groundFor, groundOn, sandOn } from '../zone/ground.ts';
 import { TERRAIN, terrainFor } from '../zone/terrain.ts';
-import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
+import { ringLook, ringOfSpawn, ringTune, RINGS } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
 configureSimMechanics(MECHANICS_ROWS.mechanics);   // the boss signature mechanics (the sim imports no data/ json: the driver lays the rows in, before any fight or effect is built)
 
@@ -457,6 +459,14 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
   resetInput(walking); state = previous = practice.fighter;
   updateHud();
 }
+// HEAT (data/heat.json, src/heat.ts; Dom 2026-10-28, ported from Armagedom): each boss kill (and its stars, ring and coins) raises a number that cools with quiet time and clears on the hero's death. It lives in these
+// variables only: never saved, never sent, so ?save=off or a reload starts cold and the save string is untouched. The HUD is one DOM line written when the count changes. No URL flag.
+{ const bad = validateHeat(HEAT, RINGS.rings.map((r) => r.id)); if (bad.length) throw new Error(`data/heat.json: ${bad.join('; ')}`); }
+const heat = freshHeat(), heatHud = ZONE && heatOn(search) ? mountHeatHud(document, HEAT) : null;
+let heatClock = 0;
+function heatKill(spawn: Spawn) { heatOnKill(heat, HEAT, heatClock, starById[spawn.id] ?? 0, ringOfSpawn(spawn.id)?.id ?? null, coinsFor(CORPSE, spawn.kind)); }
+function heatStep(dt: number) { heatClock += dt; stepHeat(heat, HEAT, heatClock); heatHud?.update(heat); }
+(globalThis as { __v3Heat?: unknown }).__v3Heat = { heat, add: (n: number) => { addHeat(heat, HEAT, n, heatClock); } };   // the stills and tests read and raise it
 /** A boss falls to the hero (the zone loop; data/progression.json): the kill goes on the ladder and in the save, the boss's first kill shows the discreet "Unlocked: <weapon>" line, and the kinds are rebuilt at the raised scales so the next respawn or fight meets them. Nothing here throws. */
 let unlockLine: ReturnType<typeof mountUnlockLine> | null = null;
 function onBossKilled(kind: string, star = 0, at?: { x: number; z: number }) {
@@ -492,14 +502,15 @@ function zoneStep(dt: number) {
   if (engaged && !practice.finish) fightSec += dt;
   spawns = timers.spawns;
   corpseStep(dt);
+  heatStep(dt);
   MARKET_HOOK?.step(state, practice.playerHealth > 0, !engaged);   // mid-fight there is no new Trade chip; an open sheet closes only on death or walking away
   for (const i of timers.due) rollStarFor(spawns[i]!);   // a spawn stands again: its next star, before anything builds its fight
   if (multi) {   // a killed attacker lies until its own timer stands it again; the moment it dies its own timer starts (nobody else's moves)
     attackers = attackers.filter((a) => !(a.dead && timers.due.includes(a.index)));
-    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { onBossKilled(spawns[a.index]!.kind, starById[spawns[a.index]!.id] ?? 0, a.practice.enemy); spawns = kill(spawns, a.index); }
+    for (const a of attackers) if (a.dead && isStanding(spawns[a.index]!)) { heatKill(spawns[a.index]!); onBossKilled(spawns[a.index]!.kind, starById[spawns[a.index]!.id] ?? 0, a.practice.enemy); spawns = kill(spawns, a.index); }
   }
   if (practice.finish) { openerSpent = true; openerLift = 0; }   // opener: a kill or a death spends it (no re-arm)
-  if (heroStands() && !killMarked) { killMarked = true; engaged = false; reportFight('boss_kill', current); onBossKilled(spawns[current]!.kind, starById[spawns[current]!.id] ?? 0, practice.enemy); spawns = kill(spawns, current); if (!attackers.some((a) => !a.dead)) radar?.armFlash(); }   // the radar's red dots pulse yellow until the next fight (data/radar.json flash; not while another boss is already on him); this spawn's timer starts; nobody else's moves
+  if (heroStands() && !killMarked) { killMarked = true; engaged = false; reportFight('boss_kill', current); heatKill(spawns[current]!); onBossKilled(spawns[current]!.kind, starById[spawns[current]!.id] ?? 0, practice.enemy); spawns = kill(spawns, current); if (!attackers.some((a) => !a.dead)) radar?.armFlash(); }   // the radar's red dots pulse yellow until the next fight (data/radar.json flash; not while another boss is already on him); this spawn's timer starts; nobody else's moves
   if (heroStands()) {   // walking on: a standing spawn he walks up to takes the sim; the held one's own timer coming due stands it (or the nearest) again
     const live = attackers.find((a) => !a.dead), phase = view.finishPhase();
     if (live) { if (roam || freeAfterKill || phase.complete || killAge >= ZONE!.startAfterSeconds) adoptAttacker(live, hero); }   // another boss is already on him: once the kill's ceremony lets go, that fight goes on as THE fight (its health, its place), not a fresh boss
@@ -510,6 +521,7 @@ function zoneStep(dt: number) {
   } else if (heroDied()) {
     if (sinceDeath === 0) reportFight('boss_death', killedBy ?? current);
     if (sinceDeath === 0) onHeroDied();   // the first frame of the death: what he carries drops where he fell
+    if (sinceDeath === 0) resetHeat(heat, heatClock);   // death clears heat (src/heat.ts)
     sinceDeath += dt;
     if (DEATH ? standUpDue(DEATH, sinceDeath, respawnAsked) : sinceDeath >= ZONE!.diedSeconds) { respawnAsked = false; const who = killedBy ?? current; rematch(poseFor(who, heroStart), who); }   // "You died" for diedSeconds, then the pit's mark at full health; the boss that killed him starts again at full health, the rest untouched
   } else if (!practice.finish && walkBack) {   // the held boss walks home (frame(): holdBack moves it): it arrives and resets to full; the hero re-aggroing it inside its leash cancels the walk; walking into another standing boss's aggro hands the sim to that one
