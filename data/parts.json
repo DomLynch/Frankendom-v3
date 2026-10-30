@@ -17,6 +17,38 @@
   ],
   "button": { "label": "☰", "aria": "Frankendom: your body parts", "sizePx": 36, "topPx": 170, "rightPx": 10, "zIndex": 30 },
   "panel": { "zIndex": 80, "maxWidthPx": 420, "maxHeightFrac": 0.82 },
+  "fit": {
+    "about": "Stage 2 fit rules (src/fight/parts-fit.ts, ported from OpenTrident's MIT parts-fit.js; the per-body rows are data/parts-fit-rows.json). `limits`: the clamps on the stretch of a donor bone to the hero's (boneLo..boneHi) and on the hips-to-head height ratio used for thickness (heightLo..heightHi); a leg outside them leaves a lift (liftRow). `limits.coverFrac` / `limits.meanK` (OpenTrident PR #12 collar rule): when the donor's own cut ring is at least coverFrac x the hero's ring at the same plane the donor covers the hole itself and gets NO collar, else a collar at the mean of the two radii x meanK in the donor's texel. `seam`: how a cut ring is measured (src/fight/parts-fit.ts seamRing): the vertices within `bandM` metres of the cut plane (at least `minVerts` of them), radius = that `percentile` of their distance from the axis, texel = the `uvPercentile` of their uvs. `eps`: lengths in metres below which a bone or a hips-to-head distance counts as zero. `bones`: the two joints the height ratio is read between. `lift`: the unit that moves the feet and the two measure keys summed to a leg length. `skin`: three.js skin attributes carry `influences` bone slots per vertex; a uv has `uvStride` numbers. `collar`: a short open tube over each cut seam, `segments` round, rows rounded to 1/`roundScale` m; `joints` = where (bone, `at` fraction of the bone's length to its first child) and which `rule` sizes it; `rules`: radius = rK x the measure `rOf`, height = max(hMin, hK x the measure `hOf`); `fallback`: a measure the body row lacks = k x `of` (or just k, in metres, when no `of`).",
+    "limits": { "boneLo": 0.4, "boneHi": 2.5, "heightLo": 0.6, "heightHi": 1.6, "coverFrac": 0.98, "meanK": 1.02 },
+    "seam": { "bandM": 0.02, "minVerts": 8, "percentile": 0.7, "uvPercentile": 0.5 },
+    "eps": { "heightM": 0.0001, "boneM": 0.00001 },
+    "bones": { "hips": "mixamorigHips", "head": "mixamorigHead" },
+    "lift": { "unit": "legs", "keys": ["thigh_len", "shin_len"] },
+    "skin": { "influences": 4, "uvStride": 2 },
+    "collar": {
+      "segments": 16,
+      "roundScale": 10000,
+      "heightKey": "height_m",
+      "fallback": {
+        "shoulder_w": { "of": "height_m", "k": 0.19 },
+        "upper_arm_r": { "of": "height_m", "k": 0.04 },
+        "thigh_r": { "of": "height_m", "k": 0.06 },
+        "neck_len": { "k": 0.08 }
+      },
+      "joints": [
+        { "id": "neck", "bone": "mixamorigNeck", "at": 0.5, "rule": "neck" },
+        { "id": "shoulder_l", "bone": "mixamorigLeftArm", "at": 0, "rule": "shoulder" },
+        { "id": "shoulder_r", "bone": "mixamorigRightArm", "at": 0, "rule": "shoulder" },
+        { "id": "hip_l", "bone": "mixamorigLeftUpLeg", "at": 0, "rule": "hip" },
+        { "id": "hip_r", "bone": "mixamorigRightUpLeg", "at": 0, "rule": "hip" }
+      ],
+      "rules": {
+        "neck": { "rOf": "shoulder_w", "rK": 0.19, "hOf": "neck_len", "hK": 0.8, "hMin": 0.04 },
+        "shoulder": { "rOf": "upper_arm_r", "rK": 1.05, "hOf": "upper_arm_r", "hK": 1, "hMin": 0.04 },
+        "hip": { "rOf": "thigh_r", "rK": 1.05, "hOf": "thigh_r", "hK": 0.9, "hMin": 0.05 }
+      }
+    }
+  },
   "text": {
     "title": "Frankendom",
     "close": "Close",

@@ -3,12 +3,26 @@
 // empty, and a save with none is byte for byte the one before. Nothing here touches storage, the DOM or the sim; the page (src/fight/parts-hook.ts) and the menu (parts-panel.ts) call these.
 import ROWS from '../data/parts.json' with { type: 'json' };
 import PROFILE_ROWS from '../data/profiles.json' with { type: 'json' };
+import { validateFit } from './sim/validate-parts-fit.js';
 const KNOWN_PROFILES: ReadonlySet<string> = new Set((PROFILE_ROWS.profiles as { id: string }[]).map((p) => p.id));   // the bosses a part can come from (data/profiles.json)
 
 type SlotRow = { id: string; label: string; units: string[] };
 type RarityRow = { star: number; id: string; label: string; colour: string };
+/** One collar seam: the bone it rides, `at` (fraction of the bone's length to its first child) and the sizing rule it takes. */
+export type CollarJoint = { id: string; bone: string; at: number; rule: string };
+export type CollarRule = { rOf: string; rK: number; hOf: string; hK: number; hMin: number };
+/** data/parts.json `fit`: every tuning number of src/fight/parts-fit.ts. */
+export type FitRules = {
+  limits: { boneLo: number; boneHi: number; heightLo: number; heightHi: number; coverFrac: number; meanK: number };
+  seam: { bandM: number; minVerts: number; percentile: number; uvPercentile: number };
+  eps: { heightM: number; boneM: number };
+  bones: { hips: string; head: string };
+  lift: { unit: string; keys: string[] };
+  skin: { influences: number; uvStride: number };
+  collar: { segments: number; roundScale: number; heightKey: string; fallback: Record<string, { of?: string; k: number }>; joints: CollarJoint[]; rules: Record<string, CollarRule> };
+};
 export type PartsFile = {
-  maxCount: number; slots: SlotRow[]; rarities: RarityRow[];
+  maxCount: number; slots: SlotRow[]; rarities: RarityRow[]; fit: FitRules;
   button: { label: string; aria: string; sizePx: number; topPx: number; rightPx: number; zIndex: number };
   panel: { zIndex: number; maxWidthPx: number; maxHeightFrac: number };
   text: Record<'title' | 'close' | 'hint' | 'empty' | 'equip' | 'unequip' | 'equipped' | 'none' | 'weaponDefault' | 'weaponReward', string>;
@@ -46,6 +60,7 @@ export function validateParts(file: PartsFile, stars: number): string[] {
   word('button.label', file.button?.label, 4); word('button.aria', file.button?.aria, 80);
   num('panel.zIndex', file.panel?.zIndex, 0, 1000); num('panel.maxWidthPx', file.panel?.maxWidthPx, 200, 800); num('panel.maxHeightFrac', file.panel?.maxHeightFrac, 0.3, 1);
   for (const [k, v] of Object.entries(file.text ?? {})) word(`text.${k}`, v, 80);
+  e.push(...validateFit(file.fit));   // src/sim/validate-parts-fit.js (diagnostics are plain words and src/*.ts is scanned for them: the same split as validate-rings.js)
   return e;
 }
 export const PARTS = ROWS as unknown as PartsFile;
