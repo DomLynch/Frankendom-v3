@@ -7,6 +7,7 @@ import PROGRESSION_JSON from '../data/progression.json' with { type: 'json' };
 import { checkProgressionCaps } from './sim/validate.js';
 import type { TuneMap } from './tune.ts';
 import { cleanCorpse, type Pile } from './corpse-run.ts';
+import { cleanMarket, type MarketSave } from './market.ts';   // The Flesh Market (data/market.json): the optional `market` save field
 import { cleanParts, type PartRow } from './parts.ts';   // Frankendom parts (data/parts.json): optional `parts` / `equipped` save fields
 import { cleanDaily, type DailyRecord } from './daily-pit.ts';
 import { cleanGolden, type GoldenSave } from './zone/golden-drops.ts';
@@ -15,7 +16,7 @@ export type BossRow = { id: string; weapon: string; name: string; healthStep: nu
 export type ProgressionFile = { query: string; off: string; key: string; version: number; weaponQuery: string; autoEquip: boolean; lineSeconds: number; healthCap: number; damageCap: number; countCap: number; bosses: readonly BossRow[] };
 /** The save: `kills` per boss id, `ladder` the boss ids in the order each was first killed, `unlocked` the weapons that opened (always the ladder's weapons, in ladder order). */
 /** The corpse run's fields (data/corpse-run.json, src/corpse-run.ts) ride in the same save: `coins` carried (unbanked), `banked`, the ONE `pile` a death left, and `lost` weapons (a replaced pile's) until their boss falls again. */
-export type Save = { v: number; kills: Record<string, number>; ladder: string[]; unlocked: string[]; trophies?: Record<string, number>; coins: number; banked: number; pile: Pile | null; lost: string[]; daily?: DailyRecord; golden?: GoldenSave; parts?: Record<string, PartRow>; equipped?: Record<string, string> };   // golden (data/golden-weapons.json, src/zone/golden-drops.ts): absent in a save from before it. parts / equipped (src/parts.ts): absent until the first cut part, so an older save is byte for byte the same. daily (data/daily-pit.json, src/daily-pit.ts): today's Daily Pit attempts and best, absent until the first attempt, so an old save loads as it was. trophies (data/stars.json): star kills per trophy tier; absent until the first star kill, so a save without stars is byte for byte the one before
+export type Save = { v: number; kills: Record<string, number>; ladder: string[]; unlocked: string[]; trophies?: Record<string, number>; coins: number; banked: number; pile: Pile | null; lost: string[]; daily?: DailyRecord; golden?: GoldenSave; parts?: Record<string, PartRow>; equipped?: Record<string, string>; market?: MarketSave };   // market (src/market.ts): absent until the first trade.   // golden (data/golden-weapons.json, src/zone/golden-drops.ts): absent in a save from before it. parts / equipped (src/parts.ts): absent until the first cut part, so an older save is byte for byte the same. daily (data/daily-pit.json, src/daily-pit.ts): today's Daily Pit attempts and best, absent until the first attempt, so an old save loads as it was. trophies (data/stars.json): star kills per trophy tier; absent until the first star kill, so a save without stars is byte for byte the one before
 /** The slice of Storage this module uses (a test passes a Map-backed one). */
 export type Store = { getItem(k: string): string | null; setItem(k: string, v: string): void };
 
@@ -62,7 +63,7 @@ export function parseSave(raw: string | null | undefined, file: ProgressionFile)
     const trophies: Record<string, number> = {};
     if (j.trophies && typeof j.trophies === 'object' && !Array.isArray(j.trophies)) for (const [tier, n] of Object.entries(j.trophies as Record<string, unknown>)) if (/^[0-9]{1,2}$/.test(tier) && typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= file.countCap) trophies[tier] = n;
     const golden = cleanGolden((j as { golden?: unknown }).golden);
-    return { v: file.version, kills, ladder, unlocked: weaponsOf(ladder, file), ...(Object.keys(trophies).length ? { trophies } : {}), ...cleanCorpse(j), ...cleanDaily(j), ...(golden ? { golden } : {}), ...cleanParts(j as { parts?: unknown; equipped?: unknown }) };   // a save from before the corpse run has none of its fields: the empty values
+    return { v: file.version, kills, ladder, unlocked: weaponsOf(ladder, file), ...(Object.keys(trophies).length ? { trophies } : {}), ...cleanCorpse(j), ...cleanDaily(j), ...(golden ? { golden } : {}), ...cleanParts(j as { parts?: unknown; equipped?: unknown }), ...cleanMarket(j as { market?: unknown }) };   // a save from before the corpse run has none of its fields: the empty values
   } catch { return freshSave(); }
 }
 
@@ -76,7 +77,7 @@ export function loadSave(store: Store | null, file: ProgressionFile): Save {
 }
 /** Writes the save; false when the store refuses (blocked, full, private mode). Never throws. */
 export function writeSave(store: Store | null, file: ProgressionFile, save: Save): boolean {
-  try { if (!store) return false; store.setItem(file.key, JSON.stringify({ v: file.version, kills: save.kills, ladder: save.ladder, unlocked: save.unlocked, ...(save.trophies ? { trophies: save.trophies } : {}), coins: save.coins, banked: save.banked, pile: save.pile, lost: save.lost, ...(save.daily ? { daily: save.daily } : {}), ...(save.golden ? { golden: save.golden } : {}), ...(save.parts ? { parts: save.parts } : {}), ...(save.equipped ? { equipped: save.equipped } : {}) })); return true; } catch { return false; }
+  try { if (!store) return false; store.setItem(file.key, JSON.stringify({ v: file.version, kills: save.kills, ladder: save.ladder, unlocked: save.unlocked, ...(save.trophies ? { trophies: save.trophies } : {}), coins: save.coins, banked: save.banked, pile: save.pile, lost: save.lost, ...(save.daily ? { daily: save.daily } : {}), ...(save.golden ? { golden: save.golden } : {}), ...(save.parts ? { parts: save.parts } : {}), ...(save.equipped ? { equipped: save.equipped } : {}), ...(save.market ? { market: save.market } : {}) })); return true; } catch { return false; }
 }
 
 /** The save after boss `id` falls (a new object), and the row it unlocked (null on a repeat kill or a kind that is no ladder boss). */
@@ -114,8 +115,9 @@ export function mergeTune(base: TuneMap, extra: TuneMap): TuneMap {
  */
 export function heroWeapon(save: Save, file: ProgressionFile, fallback: string, drawable: readonly string[], search: string): string {
   const asked = new URLSearchParams(search).get(file.weaponQuery);
-  if (asked && (asked === fallback || save.unlocked.includes(asked)) && drawable.includes(asked)) return asked;
-  if (file.autoEquip) for (let i = save.unlocked.length - 1; i >= 0; i--) if (drawable.includes(save.unlocked[i]!)) return save.unlocked[i]!;
+  const owned = [...save.unlocked, ...(save.market?.weapons ?? [])];   // the weapons the boss ladder opened, then the ones bought at the Flesh Market (data/market.json)
+  if (asked && (asked === fallback || owned.includes(asked)) && drawable.includes(asked)) return asked;
+  if (file.autoEquip) for (let i = owned.length - 1; i >= 0; i--) if (drawable.includes(owned[i]!)) return owned[i]!;
   return fallback;
 }
 
