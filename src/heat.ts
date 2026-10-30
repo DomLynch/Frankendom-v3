@@ -3,24 +3,33 @@
 import ROWS from '../data/heat.json' with { type: 'json' };
 import { validateHeat as validateHeatRows } from './sim/validate-heat.js';
 
-export type HeatTier = { minHeat: number; name: string };
+export type HeatStarChance = { stars: number; chance: number };
+export type HeatTier = { minHeat: number; name: string; timeScale: number; hunters: number; stars: readonly HeatStarChance[] };
+export type HuntRows = {
+  on: boolean; query: string; value: string; kind: string; maxHunters: number; arrivalDelaySeconds: number; spawnCooldownSeconds: number; respawnDelaySeconds: number; minSeconds: number; warningSeconds: number; retrySeconds: number;
+  spawnDistanceMetres: number; campClearMetres: number; speedMetresPerSecond: number; aggro: number; leash: number; giveUpMetres: number; parkedSeconds: number;
+  lines: { warning: string; arrived: string; gone: string };
+};
 export type HeatRows = {
-  version: number; on: boolean; query: string; value: string; maxHeat: number; decay: { secondsPerMark: number };
+  version: number; on: boolean; query: string; value: string; maxHeat: number; seed: number; decay: { secondsPerMark: number };
   gain: { kill: number; perStar: number; ring: Record<string, number>; coinsPerHeat: number };
-  tiers: readonly HeatTier[];
+  tiers: readonly HeatTier[]; hunt: HuntRows;
+  hash: { golden: number; mulA: number; mulB: number; shiftA: number; shiftB: number; range: number };
   hud: { label: string; colour: string; zIndex: number; topOffsetPx: number; css: string };
   limits: Record<string, [number, number]>;
 };
 export const HEAT = ROWS as unknown as HeatRows;
 /** Whether the heat HUD line shows for this address: the row's `on`, or `?<query>=<value>` (default off; the flag row names the query and the value). The tally itself counts silently either way. */
-export const heatOn = (search: string, f: HeatRows = HEAT): boolean => f.on || new URLSearchParams(search).get(f.query) === f.value;
+/** Whether the hunt runs for this address: `hunt.on`, or `?<hunt.query>=<hunt.value>` (default off). The hunt reads the heat tally, which counts silently whether or not the HUD line shows, so ?hunt=1 alone is enough. */
+export const huntOn = (search: string, f: HeatRows = HEAT): boolean => f.hunt.on || new URLSearchParams(search).get(f.hunt.query) === f.hunt.value;
+export const heatOn =(search: string, f: HeatRows = HEAT): boolean => f.on || new URLSearchParams(search).get(f.query) === f.value;
 
 /** The live heat: the count, when it last rose (page seconds), and the coin remainder not yet worth a mark. */
 export type Heat = { count: number; lastAt: number; coinBank: number };
 export const freshHeat = (): Heat => ({ count: 0, lastAt: 0, coinBank: 0 });
 
 /** Why `rows` is not a good heat table (one string per problem; empty = fine). `ringIds`: the data/rings.json ring ids. The checks live in src/sim/validate-heat.js. */
-export const validateHeat = (rows: HeatRows = HEAT, ringIds: readonly string[] = []): string[] => validateHeatRows(rows, [...ringIds]) as string[];
+export const validateHeat = (rows: HeatRows = HEAT, ringIds: readonly string[] = [], profileIds: readonly string[] = [], starLevels: readonly number[] = []): string[] => validateHeatRows(rows, [...ringIds], [...profileIds], [...starLevels]) as string[];
 
 /** What one boss kill is worth: the kill, its stars, its ring (`ringId` null = none), and nothing for coins (see `addCoins`). */
 export const killHeat = (rows: HeatRows, star: number, ringId: string | null): number => rows.gain.kill + rows.gain.perStar * Math.max(0, star) + (ringId ? (rows.gain.ring[ringId] ?? 0) : 0);
@@ -60,6 +69,28 @@ export function resetHeat(h: Heat, now: number): void { h.count = 0; h.coinBank 
 export function heatTier(h: Heat, rows: HeatRows = HEAT): HeatTier | null {
   for (let i = rows.tiers.length - 1; i >= 0; i--) if (rows.tiers[i]!.minHeat <= h.count) return rows.tiers[i]!;
   return null;
+}
+
+/** A hunt wait scaled by the tier (never below hunt.minSeconds, never above the base wait); no tier = the base wait. */
+export function heatSeconds(h: Heat, seconds: number, rows: HeatRows = HEAT): number {
+  const tier = heatTier(h, rows);
+  return tier ? Math.min(seconds, Math.max(rows.hunt.minSeconds, seconds * tier.timeScale)) : seconds;
+}
+
+/** The hunters the tier allows at once (0 below the first tier), never past hunt.maxHunters. */
+export const huntersAllowed = (h: Heat, rows: HeatRows = HEAT): number => Math.min(rows.hunt.maxHunters, heatTier(h, rows)?.hunters ?? 0);
+
+/** Deterministic star level of the `n`th hunter to arrive: the tier's chances against a hash of the seed and `n` (no Math.random, no clock; a replay or a test rolls the same star). 0 = no star. */
+export function heatStar(h: Heat, n: number, rows: HeatRows = HEAT): number {
+  const tier = heatTier(h, rows);
+  if (!tier || !tier.stars.length) return 0;
+  const k = rows.hash;   // the mix constants are a data row (data/heat.json hash)
+  let x = (rows.seed ^ Math.imul(n + 1, k.golden)) >>> 0;   // a 32-bit integer mix (murmur3 finaliser), the roll in [0, 1)
+  x = Math.imul(x ^ (x >>> k.shiftA), k.mulA) >>> 0; x = Math.imul(x ^ (x >>> k.shiftB), k.mulB) >>> 0; x = (x ^ (x >>> k.shiftA)) >>> 0;
+  const roll = x / k.range;
+  let edge = 0;
+  for (const s of tier.stars) { edge += s.chance; if (roll < edge) return s.stars; }
+  return 0;
 }
 
 /** The HUD line for the count: '' at 0, else `Heat 3 · Hunted`. Built only when the count changes. */

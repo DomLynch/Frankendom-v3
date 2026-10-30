@@ -3,6 +3,7 @@
   "liveBody": "gargantua-106",
   "bosses": {
     "gargantua": { "body": "gargantua-106", "cutShaPinned": false, "row": "gargantua-maul", "rowProfile": null, "weapon": "maul", "equip": "maul", "offhand": null },
+    "hunter": { "body": "gargantua-106", "cutShaPinned": false, "row": "gargantua-maul", "rowProfile": null, "weapon": "maul", "equip": "maul", "offhand": null },
     "arachne": { "body": "arachne-106", "cutShaPinned": false, "row": "arachne-axe-shield", "rowProfile": null, "weapon": "cleaver", "equip": "axe", "offhand": "shield" },
     "pitborn": { "body": "minotaur-106", "cutShaPinned": false, "row": null, "rowProfile": null, "weapon": "cleaver", "equip": "cleaver", "offhand": null },
     "pumpkinhulk": { "body": "pumpkinhulk-106", "row": "lord-gourd-mace", "rowProfile": "pumpkinhulk", "weapon": "maul", "equip": "mace", "offhand": null },
@@ -15,7 +16,7 @@
     "anime-girl-blonde": { "body": "anime-girl-blonde-106", "row": "akane-rapier", "rowProfile": "anime-girl-blonde", "weapon": "cleaver", "equip": "rapier", "offhand": null },
     "anime-boy-black": { "body": "anime-boy-black-106", "row": "ryo-sword", "rowProfile": "anime-boy-black", "weapon": "cleaver", "equip": "sword", "offhand": null }
   },
-  "pending": ["hunter"],
+  "pending": [],
   "weaponRowExceptions": {
     "pitborn": "the Minotaur keeps the Centurion's gladius and scutum (Dom ruling); no boss-weapons row",
     "parasite": "no boss-weapons row yet: fights with its archetype's V1 weapon"
