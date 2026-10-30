@@ -105,9 +105,9 @@ test('slot -> unit -> region: every slot of data/parts.json is either worn throu
     const regions = MANIFEST.regions.filter((r) => r.detached_by === unit);
     assert.ok(regions.length >= 1, `${slot.id}: the hero's manifest has a region detached by ${unit}`);
     for (const r of regions) assert.ok(isPieceOf(r.mesh, row.piece ?? unit), `${r.mesh} is a piece of ${row.piece ?? unit}`);
-    // a hand or foot (slot `pair`) is cut by the hf file at the wrist or ankle with NO cap (OpenTrident PR #13): the hero's wrist and ankle stump hides inside the worn cuff
+    // Physics' hf cut (tools/cut-batch.mjs --hands-feet) gives the hero a cap on the wrist and ankle stump too (cap_wrist_*_arm, cap_ankle_*_leg), so a hand or foot has a remaining-side cap like every other unit
     const cap = MANIFEST.caps.some((c) => c.shown_when_cut === unit && !regions.some((r) => r.id === c.region));
-    assert.equal(cap, !slot.pair, `${slot.id}: a hero stump cap on the remaining side shows for ${unit} (hands and feet have none)`);
+    assert.equal(cap, true, `${slot.id}: a hero stump cap on the remaining side shows for ${unit}`);
     if (row.collar) assert.ok(PARTS.fit.collar.joints.some((j) => j.id === row.collar), `${slot.id}: collar joint ${row.collar}`);
     else assert.equal(unit, 'torso_waist', 'only the torso has no seam collar (its seams are the arms and the head, which are the hero pieces or other parts)');
     if (row.lift) assert.equal(row.lift, PARTS.fit.lift.unit);

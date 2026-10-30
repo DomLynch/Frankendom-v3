@@ -12,7 +12,7 @@ import type { Practice } from '../combat.ts';
 import type { BodyNode, MechanicRuntime, Tell } from './runtime.ts';
 
 export const MECHANIC_ID = 'reginald-limb-loss';   // the row's `type`
-export type LimbRow = { id: string; region: string; name: string; belowPct: number; speedMult: number; forbids: Action[]; swapTo: Action | null; piece: string; stumpCaps: string[]; hitStopMs: number };
+export type LimbRow = { id: string; region: string; name: string; belowPct: number; speedMult: number; forbids: Action[]; swapTo: Action | null; piece: string; stumpCaps: string[]; hangs?: { region: string; piece: string }[]; hitStopMs: number };   // hangs: the hand or foot that hangs from the limb (cut pieces too): lost with it
 export type LimbLossRow = { type: string; boss: string; limbs: LimbRow[] };
 export const ROW: LimbLossRow = Object.values(ROWS.mechanics as unknown as Record<string, LimbLossRow>).find((r) => r.type === MECHANIC_ID)!;
 const TAGS: readonly string[] = ROW.limbs.map((l) => `limb:${l.id}`);   // the tags are built once; nothing below builds a string
@@ -24,6 +24,7 @@ export function limbManifestProblems(row: LimbLossRow, m: Manifest): string[] {
   row.limbs.forEach((l, i) => {
     const p = `mechanics.${MECHANIC_ID}.limbs[${i}]`;
     if (!m.regions.some((r) => r.id === l.region && r.mesh === l.piece)) e.push(`${p}: manifest has no region ${l.region} with mesh ${l.piece}`);
+    for (const h of l.hangs ?? []) if (!m.regions.some((r) => r.id === h.region && r.mesh === h.piece)) e.push(`${p}.hangs: manifest has no region ${h.region} with mesh ${h.piece}`);
     for (const c of l.stumpCaps) if (!m.caps.some((x) => x.mesh === c && x.shown_when_cut === l.region && x.region !== l.region)) e.push(`${p}.stumpCaps: ${c} is not a stump cap of ${l.region}`);
   });
   return e;
@@ -35,6 +36,8 @@ export const limbLost = (phases: readonly string[] | undefined, i: number): bool
 export const anyLost = (phases: readonly string[] | undefined): boolean => { if (phases) for (let i = 0; i < TAGS.length; i++) if (phases.includes(TAGS[i]!)) return true; return false; };
 /** The cut units (manifest regions) whose limbs are lost: a corpse cannot cut them again (nothing is there), and they yield no part. */
 export const lostUnits = (phases: readonly string[] | undefined): string[] => ROW.limbs.filter((_, i) => limbLost(phases, i)).map((l) => l.region);
+/** The hand and foot regions that hang from the lost limbs (the row's `hangs`): they go with the limb, so a corpse cannot cut them either (hands and feet are cuttable under ?hands=1). */
+export const hungUnits = (phases: readonly string[] | undefined): string[] => ROW.limbs.flatMap((l, i) => (limbLost(phases, i) ? (l.hangs ?? []).map((h) => h.region) : []));
 
 /** The world layer: the warden's intent with the lost limbs' moves taken out (each thrown as the row's `swapTo` if the sim allows it now, else nothing). The same object when nothing changes. */
 export function limbIntent(duel: Duel, intent: Intent): Intent {
@@ -91,9 +94,11 @@ export function applyLimbs(root: BodyNode, phases: readonly string[] | undefined
     const piece = root.getObjectByName(l.piece);
     if (lost) {
       if (piece) piece.visible = false;
+      for (let h = 0; h < (l.hangs?.length ?? 0); h++) { const hung = root.getObjectByName(l.hangs![h]!.piece); if (hung) hung.visible = false; }
       for (let c = 0; c < l.stumpCaps.length; c++) { const cap = root.getObjectByName(l.stumpCaps[c]!); if (cap) cap.visible = true; }
     } else {
       if (piece) piece.visible = true;
+      for (let h = 0; h < (l.hangs?.length ?? 0); h++) { const hung = root.getObjectByName(l.hangs![h]!.piece); if (hung) hung.visible = true; }
       for (let c = 0; c < l.stumpCaps.length; c++) { const cap = root.getObjectByName(l.stumpCaps[c]!); if (cap) cap.visible = false; }
     }
     before[i] = lost;
@@ -101,9 +106,9 @@ export function applyLimbs(root: BodyNode, phases: readonly string[] | undefined
 }
 
 /** What a scene draws on a boss body of this mechanic: the view and the cut units a corpse cannot cut again. */
-export type BodyMechanic = { view: (root: BodyNode, phases: readonly string[] | undefined) => void; lostUnits: (phases: readonly string[] | undefined) => string[] };
+export type BodyMechanic = { view: (root: BodyNode, phases: readonly string[] | undefined) => void; lostUnits: (phases: readonly string[] | undefined) => string[]; hungUnits?: (phases: readonly string[] | undefined) => string[] };
 /** The body mechanic of the boss whose profile id is `kind` (the row's `boss`), or null. */
-export const bodyMechanicFor = (kind: string | undefined): BodyMechanic | null => (kind !== undefined && kind === ROW.boss ? { view: applyLimbs, lostUnits } : null);
+export const bodyMechanicFor = (kind: string | undefined): BodyMechanic | null => (kind !== undefined && kind === ROW.boss ? { view: applyLimbs, lostUnits, hungUnits } : null);
 
 /** The page's runtime (src/fight/mechanics/index.ts, one line): nothing drawn on the ground and no state of its own; the layer, the settle (marks the failed limbs) and the tell do the work. */
 export function createLimbLossRuntime(row: LimbLossRow): MechanicRuntime {

@@ -1,5 +1,5 @@
-// The hero is a cut GLB (parts-wear step 1, "you become what you kill"): src/assets/psyche-106.glb is OpenTrident's derived Psyche cut with the hair repaired
-// (scripts/hero-body/repair-psyche-cut-hair.mjs), the same seven piece_* + cap_* meshes and manifest schema as the bosses (docs/CUT-CONTRACT.md).
+// The hero is a cut GLB (parts-wear step 1, "you become what you kill"): src/assets/psyche-106.glb is Physics Dev's Psyche cut with hands and feet
+// (tools/cut-batch.mjs --hands-feet, sha 98775863; its hair is whole on piece_head, so scripts/hero-body/repair-psyche-cut-hair.mjs is no longer applied), the same seven piece_* + cap_* meshes and manifest schema as the bosses (docs/CUT-CONTRACT.md).
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -17,9 +17,10 @@ const hairPrims = d.meshes.flatMap((m) => m.primitives.filter((p) => d.materials
 test('the hero file is the cut body: the manifest names every piece and cap, one 106-joint skin, no Steel draw', () => {
   assert.equal(manifest.schema, 'cut-pieces/1'); assert.equal(manifest.body, 'psyche-106'); assert.equal(RIG.files.psyche, 'psyche-106');
   assert.deepEqual(d.meshes.map((m) => m.name).sort(), [...manifest.regions.map((r) => r.mesh), ...manifest.caps.map((c) => c.mesh)].sort());
-  assert.equal(manifest.regions.length, 11, 'seven pieces + the hand and foot pieces of the hands-and-feet cut (OpenTrident PR #13): piece_arm_* and piece_leg_* stop at the wrist and ankle');
+  assert.equal(manifest.regions.length, 11, 'seven pieces + the hand and foot pieces of the hands-and-feet cut (Physics tools/cut-batch.mjs --hands-feet): piece_arm_* and piece_leg_* stop at the wrist and ankle');
   assert.deepEqual(manifest.regions.filter((r) => /^(hand|foot)_/.test(r.id)).map((r) => r.mesh).sort(), ['piece_foot_left', 'piece_foot_right', 'piece_hand_left', 'piece_hand_right']);
-  assert.equal(manifest.caps.length, 12, 'no cap on the hand and foot cuts');
+  assert.equal(manifest.caps.length, 20, 'twelve limb, head and waist caps + eight wrist and ankle caps (Physics psyche-106, hands_feet 98775863: a severed hand or foot shows a cap, and so does the stump)');
+  assert.deepEqual(manifest.caps.filter((c) => /^hand_|^foot_/.test(c.shown_when_cut)).map((c) => c.mesh).sort(), ['cap_ankle_left_foot', 'cap_ankle_left_leg', 'cap_ankle_right_foot', 'cap_ankle_right_leg', 'cap_wrist_left_arm', 'cap_wrist_left_hand', 'cap_wrist_right_arm', 'cap_wrist_right_hand']);
   assert.equal(d.skins.length, 1); assert.equal(d.skins[0].joints.length, 106);
   assert.ok(!d.nodes.some((n) => n.name === 'Steel' || n.name === 'Ch22_Eyelashes'), 'the old one-draw nodes are gone');
   assert.equal(d.animations.length, 32);
@@ -47,8 +48,7 @@ test('the shipped copy packs through the cut path (uint16 indices, one skin)', a
   const tris = (g) => Object.fromEntries(g.d.meshes.map((m) => [m.name, m.primitives.reduce((n, p) => n + g.d.accessors[p.indices].count / 3, 0)]));
   assert.deepEqual(tris(B), tris({ d, bin }));
   assert.ok(tris(B).piece_hand_left > 0 && tris(B).piece_foot_right > 0);
-  const base = d.meshes.find((m) => m.name === 'piece_arm_left').primitives[0].attributes.POSITION;
-  assert.equal(d.meshes.find((m) => m.name === 'piece_hand_left').primitives[0].attributes.POSITION, base, 'the hand shares the arm piece vertex accessor');
+  // (Physics' own hf cut writes each piece its own vertices; the OpenTrident donor files under src/assets/wear are the ones that share an accessor, checked below)
 });
 
 test('every wear donor file (src/assets/wear, build.mjs CUT_GLBS) packs through the cut path with every triangle kept', async () => {

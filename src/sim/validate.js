@@ -44,7 +44,7 @@ export const SCHEMA = {
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
   'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'hero', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
     maps: { bones: ['hips', 'spine', 'spine1', 'spine2', 'neck', 'head', 'armLeft', 'forearmLeft', 'handLeft', 'armRight', 'forearmRight', 'handRight', 'thighLeft', 'shinLeft', 'footLeft', 'toeLeft', 'thighRight', 'shinRight', 'footRight', 'toeRight'],
-      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'strike', 'cue', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max', 'cuttable', 'slotSpacingM', 'event'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows', 'halves'] },
+      states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'strike', 'cue', 'units', 'hands', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max', 'cuttable', 'slotSpacingM', 'event'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows', 'halves'] },
     // an object of rows keyed by id: path -> the keys each row may carry
     rowMaps: { 'finisherCuts.rows': ['unit', 'also', 'alsoAtS', 'fallback', 'atS', 'push', 'kill', 'plane'] },
     finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.strike': ['nearM', 'pendingS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
@@ -324,7 +324,7 @@ export function checkEnvoyLatch(id, r, _moves = [], ctx = {}) {
 }
 
 const LIMB_ACTIONS = ['light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill', 'skill2', 'heavy_right', 'heavy_left', 'heavy_thrust'];
-const LIMB_KEYS = ['id', 'region', 'name', 'belowPct', 'speedMult', 'forbids', 'swapTo', 'piece', 'stumpCaps', 'hitStopMs'];
+const LIMB_KEYS = ['id', 'region', 'name', 'belowPct', 'speedMult', 'forbids', 'swapTo', 'piece', 'stumpCaps', 'hangs', 'hitStopMs'];   // `hangs` (optional): the hand or foot region that hangs from the limb (it goes with the limb: hidden, and not cuttable on the corpse)
 /** Sir Reginald's LIMB LOSS row (type "reginald-limb-loss"); the limbs' region/piece/cap names are checked against his cut manifest in test/mechanics.test.mjs. Returns one string per problem. */
 export function checkReginaldLimbLoss(id, r) {
   const e = [], at = `mechanics.${id}`;
@@ -344,6 +344,7 @@ export function checkReginaldLimbLoss(id, r) {
     else if (l.swapTo !== null && l.forbids.includes(l.swapTo)) e.push(`${p}.swapTo: cannot be a forbidden action`);
     if (l.swapTo !== null && !LIMB_ACTIONS.includes(l.swapTo)) e.push(`${p}.swapTo: null or a known action`);
     if (!Number.isInteger(l.hitStopMs) || l.hitStopMs < 0 || l.hitStopMs > 400) e.push(`${p}.hitStopMs: 0..400`);
+    if (l.hangs !== undefined && (!Array.isArray(l.hangs) || l.hangs.some((h) => !h || typeof h.region !== 'string' || typeof h.piece !== 'string' || Object.keys(h).length !== 2))) e.push(`${p}.hangs: a list of { region, piece }`);
     if (typeof l.region !== 'string' || typeof l.piece !== 'string' || !Array.isArray(l.stumpCaps) || l.stumpCaps.some((c) => typeof c !== 'string')) e.push(`${p}.region/piece/stumpCaps: node names`);
   });
   for (let i = 1; i < r.limbs.length; i++) if (!(r.limbs[i].belowPct < r.limbs[i - 1].belowPct)) e.push(`${at}.limbs: belowPct must fall from one limb to the next`);
@@ -514,10 +515,26 @@ export function validateFile(name, json) {
   }
   if (name === 'feel-limbs') checkFeelLimbs(json, errors);
   if (name === 'physics' && json.cut?.cue) {   // the cue's units are the package's severable ids, every unit has a label, and the colour is pasted into CSS: a plain #rrggbb only
-    const cue = json.cut.cue, UNITS = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'];
+    const cue = json.cut.cue, UNITS = json.cut.units?.real ?? [];
     for (const u of cue.units ?? []) if (!UNITS.includes(u)) errors.push(`${name}.cut.cue.units: unknown unit ${u}`);
     for (const u of cue.units ?? []) if (typeof cue.labels?.[u] !== 'string' || !cue.labels[u].trim()) errors.push(`${name}.cut.cue.labels.${u}: a unit needs a label`);
     if (!/^#[0-9a-fA-F]{6}$/.test(cue.color ?? '')) errors.push(`${name}.cut.cue.color: must be #rrggbb`);
+  }
+  if (name === 'physics' && json.cut) {   // cut.units: the package's unit ids (every other unit list reads them); cut.hands: the flag row that adds the four hand and foot units to the tap, the strike, the cue and the hint
+    const u = json.cut.units, h = json.cut.hands, ids = (v) => Array.isArray(v) && v.every((x) => typeof x === 'string' && /^[a-z_]+$/.test(x)) && new Set(v).size === v.length;
+    if (!u || !ids(u.real) || !u.real.length || !ids(u.visual) || u.visual.some((x) => u.real.includes(x))) errors.push(`${name}.cut.units: real and visual are lists of distinct unit ids, none in both`);
+    else if (h !== undefined) {
+      if (typeof h.on !== 'boolean') errors.push(`${name}.cut.hands.on: must be true or false`);
+      for (const k of ['query', 'value']) if (typeof h[k] !== 'string' || !h[k].trim()) errors.push(`${name}.cut.hands.${k}: must be a non-empty string`);
+      for (const k of Object.keys(h)) if (!['about', 'on', 'query', 'value', 'units', 'order', 'labels'].includes(k)) errors.push(`${name}.cut.hands.${k}: unknown key`);
+      if (!ids(h.units) || !h.units.length || h.units.some((x) => !u.real.includes(x))) errors.push(`${name}.cut.hands.units: a list of distinct real unit ids`);
+      else {
+        const base = json.cut.tap?.order ?? [];
+        if (!ids(h.order) || h.order.length !== base.length + h.units.length || [...base, ...h.units].some((x) => !h.order.includes(x))) errors.push(`${name}.cut.hands.order: must list each tap.order unit and each hands.units unit exactly once`);
+        for (const x of h.units) if (base.includes(x)) errors.push(`${name}.cut.hands.units: ${x} is already a tap unit`);
+        for (const x of h.units) if (typeof h.labels?.[x] !== 'string' || !h.labels[x].trim()) errors.push(`${name}.cut.hands.labels.${x}: a unit needs a label`);
+      }
+    }
   }
   if (name === 'physics' && json.hero !== undefined) {   // the hero's ragdoll row (?feel=hero): an opponent-shaped row, no helmet, no gear, a 106-rig measure file the package ships, and not an opponent's id
     const h = json.hero, at = `${name}.hero`;
@@ -536,7 +553,7 @@ export function validateFile(name, json) {
     }
   }
   if (name === 'physics' && json.finisherCuts?.rows) {   // a finisher row's units are the package's severable ids: the six real cuts and the two visual-only ones (physics 9056ef7); the fallback stand-in must be a real cut (a body without the visual unit gets it), and `also` holds no duplicate of `unit`
-    const REAL = ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso_waist'], VISUAL = ['head_split', 'belly_open'];
+    const REAL = json.cut?.units?.real ?? [], VISUAL = json.cut?.units?.visual ?? [];   // the unit ids are the cut.units row (kept equal to the package's severable list by test/ragdoll-cuts.test.mjs)
     for (const [id, row] of Object.entries(json.finisherCuts.rows)) {
       const at = `${name}.finisherCuts.rows.${id}`;
       if (row.unit !== null && ![...REAL, ...VISUAL].includes(row.unit)) errors.push(`${at}.unit: unknown unit ${row.unit}`);
