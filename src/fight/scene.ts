@@ -87,7 +87,7 @@ import { createSkyfold } from './skyfold.ts';
 import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
 import { setHeroLocator } from './cut-strike.ts';
-import { mountHint, pickupOn } from './pickup.ts';   // the cut hint (data/pickup.json)
+import { mountHint, pickupOn, pickupRowsFor } from './pickup.ts';   // the cut hint (data/pickup.json)
 import { bodyMechanicFor, type BodyMechanic } from './mechanics/reginald-limb-loss.ts';   // boss signature mechanics (data/mechanics.json): a body draws what its mechanic did to it (Sir Reginald's lost limbs)
 import { foeRagdollFor, heldRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, setHeldRagdoll, snapshotRig, WARM_SCALE, type FoeRagdoll } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
@@ -434,7 +434,7 @@ export function createScene(
   setHeroLocator(() => ({ x: player.position.x, z: player.position.z }));   // data/physics.json cut.strike: how near the hero stands to a fallen body
   const pickupV = new THREE.Vector3(), projectV = new THREE.Vector3();
   const pickup = typeof location === 'undefined' || typeof document === 'undefined' || !pickupOn(location.search) ? null   // data/pickup.json (?pickup=v1 = off): the arrow and one line over a frozen corpse (presentation only)
-    : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) });
+    : mountHint(document, { canvas, project: (p) => { pickupV.set(p.x, p.y, p.z).project(camera); return { x: pickupV.x, y: pickupV.y, z: pickupV.z }; }, hero: () => ({ x: player.position.x, y: player.position.y, z: player.position.z }) }, pickupRowsFor(location.search));   // pickupRowsFor: PICKUP itself, the ten units under ?hands=1
   let heroRagdoll = typeof location === 'undefined' ? null : heroRagdollFor(location.search);   // ?feel=hero (feel-hero.ts): the hero's own presentation ragdoll; null without the flag, nothing is created   // let: the zone page may ask for the death-only one (heroDeath below) before the rigs load
   let heroLies = false, fallenAt: THREE.Vector3 | null = null;   // the death camera looks at the hero's hips while the death-only ragdoll has him down (heroDeath below)
   const heroFeel = typeof location !== 'undefined' && !!heroRagdoll;   // ?feel=hero: the ragdoll hears every blow (hit reactions); the death-only one hears the killing blow alone
@@ -1236,7 +1236,7 @@ export function createScene(
       heldFinishing = !!practice.finish;
       if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
       const phases = heldMech ? practice.duel.fighters[1].phases : undefined;   // boss mechanics (src/fight/mechanics): the ragdoll learns which cut units the fight already took off him, then draws them gone AFTER its cut rig's update
-      if (phases !== heldPhases) { heldPhases = phases; const mech = heldMech; ragdoll?.setLost(mech ? mech.lostUnits(phases) : [], mech ? (root) => mech.view(root, phases) : undefined); }   // on a NEW list only (a lost limb, or a new fight): the closure is made then, never per frame
+      if (phases !== heldPhases) { heldPhases = phases; const mech = heldMech; ragdoll?.setLost(mech ? [...mech.lostUnits(phases), ...(mech.hungUnits?.(phases) ?? [])] : [], mech ? (root) => mech.view(root, phases) : undefined); }   // on a NEW list only (a lost limb, or a new fight): the closure is made then, never per frame
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
       if (heldMech) heldMech.view(opponent, phases);
       pickup?.frame(animationDt);   // data/pickup.json: the arrow, the selected part's outline and Take pill, the flying chip (DOM only; reads the corpses' cut parts after the ragdolls stepped)

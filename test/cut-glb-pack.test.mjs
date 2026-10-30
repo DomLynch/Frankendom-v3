@@ -23,9 +23,9 @@ test('size: the shipped body is about half the source', () => {
 
 test('structure: pieces, caps, skin joints, nodes and the 26 clips survive', () => {
   assert.deepEqual(B.d.meshes.map((m) => m.name), A.d.meshes.map((m) => m.name));
-  // M9a: the file is made with --head-split --belly-open: 8 pieces (the head is its two halves) and 16 caps (3 more than the plain 12 + the neck caps per half), each named in the manifest
-  assert.equal(B.d.meshes.length, 24);
-  assert.ok(B.d.meshes.slice(0, 8).every((m) => m.name.startsWith('piece_')) && B.d.meshes.slice(8).every((m) => m.name.startsWith('cap_')));
+  // M9a + hands and feet: the file is made with --head-split --belly-open --hands-feet: 12 pieces (the head is its two halves, plus a hand and a foot piece a side) and 24 caps (16 + the eight wrist and ankle caps), each named in the manifest
+  assert.equal(B.d.meshes.length, 36);
+  assert.ok(B.d.meshes.slice(0, 12).every((m) => m.name.startsWith('piece_')) && B.d.meshes.slice(12).every((m) => m.name.startsWith('cap_')));
   const manifest = JSON.parse(readFileSync(new URL('../src/assets/minotaur-106.cut.manifest.json', import.meta.url), 'utf8'));
   assert.deepEqual(B.d.meshes.map((m) => m.name).sort(), [...manifest.regions.map((r) => r.mesh), ...manifest.caps.map((c) => c.mesh)].sort(), 'every piece and cap the manifest names is in the packed file, and no other mesh');
   for (const name of ['piece_head_left', 'piece_head_right', 'cap_split_head_left', 'cap_split_head_right', 'cap_belly_opening']) assert.ok(B.d.meshes.some((m) => m.name === name), name);
@@ -113,5 +113,5 @@ test('animation: times exact, translations within 0.1 mm, rotations within 0.006
 });
 
 test('the strict path is untouched: a meshopt source is refused without the cut option', async () => {
-  await assert.rejects(() => optimizeGlb(source), /one embedded buffer|uncompressed/);
+  await assert.rejects(() => optimizeGlb(packed), /one embedded buffer|uncompressed/);   // the packed file is the meshopt source (Physics' own cut GLBs are plain, not meshopt, since the hands-and-feet batch)
 });

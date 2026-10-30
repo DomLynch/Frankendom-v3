@@ -27,6 +27,7 @@ import { getActiveKind, getActiveStar, noteLife } from './foe-name.ts';   // the
 import { isNear, nextUnit, registerCorpseSource, registerDyingSource, registerStrikeSource, setPendingWindow, strikeBinds, strikeOnce, strikeReplay, type Pt } from './cut-strike.ts';   // a strike cuts the fallen body (data/physics.json cut.strike)
 import { registerHintSource, type HintBody } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
+import { cutRowsFor } from './hands-flag.ts';   // data/physics.json cut.hands (?hands=1): hands and feet cuttable, default off
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
 import { createLateCuts, finisherCutRow, finisherPush, finisherUnits, halvesApart, PHYSICS_MODE, VISUAL_UNITS, type FinisherCutRows } from './finisher-cuts.ts';   // ?ragdoll=finishers: V1's finishers with the physics body
 
@@ -281,7 +282,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // Cuts (data/physics.json `cut`): the pieces taken off the skinned body, the caps over the seams, the helmet props.
   // The cap and helmet meshes, their materials and the body's twin are built once at load, hidden, and their programs compiled behind the first frame (prepareCutArt):
   // a cut frame only shows them (M5 follow-up; the cut frame was ~12 ms over the others, the first cut's cap programs and the carve).
-  const cutRows: CutRows = rows.cut, gearRow = foe as { helmet?: boolean; gear?: Record<string, readonly string[]> };
+  const cutRows: CutRows = cutRowsFor(rows.cut, search), gearRow = foe as { helmet?: boolean; gear?: Record<string, readonly string[]> };
   let warm = 0, cutter: PieceCutter | undefined, gore = true, capGeometry: THREE.SphereGeometry | undefined, capMaterials: THREE.MeshStandardMaterial[] = [], helmetMaterial: THREE.MeshStandardMaterial | undefined, helmetGeometry: THREE.SphereGeometry | undefined;
   const capPool: THREE.Mesh[] = [], helmetPool: THREE.Mesh[] = [], cutBones: { bone: THREE.Object3D; home: THREE.Vector3 }[] = [];   // cutBones: where each cut bone sat (the package's applyPose moves it to its capsule's joint; the rematch puts it back)
   // M8 (data/physics.json `corpse`): the live body's life (corpseId `<foe>#<n>`, kept by his corpse), his lane in the world, where his rig was made and the untouched scene it reads the bind pose from

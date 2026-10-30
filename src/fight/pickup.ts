@@ -2,6 +2,7 @@
 // with ONE short line of small caps above the corpse, a hint that it can be cut. It shows once the corpse has frozen (`delayS`), and goes after the first cut, after `hintSeconds`, or when the hero walks `walkAwayM` away.
 // PRESENTATION ONLY and DOM/CSS (no art): pointer-events none, it never touches the sim, the camera or the input. The state (`plan`) and the safe box are pure (test/pickup.test.mjs); `mountHint` is the only DOM.
 import ROWS from '../../data/pickup.json' with { type: 'json' };
+import { hintUnitsFor } from './hands-flag.ts';   // ?hands=1: the hint counts the hand and foot units too
 
 type Pt = { x: number; y: number; z: number };
 /** A frozen corpse with a unit still to cut (ragdoll.ts hintsOf): `cuts` units are cut already, `centre` its hips in world metres, `frozenS` seconds it has lain still. */
@@ -33,6 +34,12 @@ export function validatePickup(r: PickupRows): void {
 }
 export const PICKUP = ROWS as unknown as PickupRows;
 validatePickup(PICKUP);
+
+/** The hint's rows as this page plays them: PICKUP itself, except under ?hands=1 (data/physics.json cut.hands) where it counts the hand and foot units too. */
+export function pickupRowsFor(search: string, rows: PickupRows = PICKUP): PickupRows {
+  const units = hintUnitsFor(rows.units, search);
+  return units === rows.units ? rows : { ...rows, units: [...units] };
+}
 
 /** The hint is on: the row says so and the link does not carry the off switch (?pickup=v1). */
 export const pickupOn = (search: string, rows: PickupRows = PICKUP): boolean => rows.on && new URLSearchParams(search).get(rows.query) !== rows.off;

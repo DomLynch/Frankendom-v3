@@ -216,5 +216,5 @@ test('the cut GLB\'s cap_* meshes ship visible and hideCutCaps hides every one a
   assert.equal(hideCutCaps(group), 1);   // the group alone: showing it (cutRig.update) shows both primitives
   assert.deepEqual(group.children.map((c) => c.visible), [true, true]);
   const b = readFileSync(new URL('../src/assets/minotaur-106.glb', import.meta.url)), gl = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString());
-  assert.equal(gl.nodes.filter((n) => n.name?.startsWith('cap_')).length, 16);   // the file carries them (12 stump caps + the head_split and belly_open faces, M9a) (glTF nodes are visible by default): hiding is the loader's job
+  assert.equal(gl.nodes.filter((n) => n.name?.startsWith('cap_')).length, 24);   // the file carries them (12 stump caps + the head_split and belly_open faces, M9a, + the eight wrist and ankle caps) (glTF nodes are visible by default): hiding is the loader's job
 });

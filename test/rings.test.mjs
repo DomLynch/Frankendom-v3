@@ -41,7 +41,7 @@ test('every spawned ring boss body has a cut row (data/cut-bodies.json) and a me
     assert.ok(row, `${b.kind}: body ${stem} has no row in the pinned physics data/cut-bodies.json`);
     assert.match(row.expect_sha256, /^[0-9a-f]{64}$/, `${stem}: the cut row records its cut GLB hash`);
     // spawned means cuttable: the body file IS the physics cut GLB (sha256 = the row's), its manifest ships beside it, is wired in physics-chunk.ts, and a physics.json row fits the body
-    assert.equal(createHash('sha256').update(readFileSync(new URL(`../src/assets/${stem}.glb`, import.meta.url))).digest('hex'), row.expect_sha256, `${stem}.glb is the cut GLB of the physics row`);
+    assert.equal(createHash('sha256').update(readFileSync(new URL(`../src/assets/${stem}.glb`, import.meta.url))).digest('hex'), row.expect_sha256_hands_feet, `${stem}.glb is the hands-and-feet cut GLB of the physics row (expect_sha256_hands_feet; expect_sha256 is the same body without hand and foot pieces)`);
     const manifest = JSON.parse(readFileSync(new URL(`../src/assets/${stem}.cut.manifest.json`, import.meta.url), 'utf8'));
     assert.equal(manifest.schema, 'cut-pieces/1'); assert.equal(manifest.body, stem);
     assert.match(readFileSync(new URL('../src/fight/physics-chunk.ts', import.meta.url), 'utf8'), new RegExp(`'?${b.body}'?: \\w+Manifest`), `${b.body}: wired in physics-chunk.ts cutManifests`);

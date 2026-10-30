@@ -25,9 +25,19 @@
    "detached_by": "arm_left"
   },
   {
+   "id": "hand_left",
+   "mesh": "piece_hand_left",
+   "detached_by": "hand_left"
+  },
+  {
    "id": "arm_right",
    "mesh": "piece_arm_right",
    "detached_by": "arm_right"
+  },
+  {
+   "id": "hand_right",
+   "mesh": "piece_hand_right",
+   "detached_by": "hand_right"
   },
   {
    "id": "leg_left",
@@ -35,9 +45,19 @@
    "detached_by": "leg_left"
   },
   {
+   "id": "foot_left",
+   "mesh": "piece_foot_left",
+   "detached_by": "foot_left"
+  },
+  {
    "id": "leg_right",
    "mesh": "piece_leg_right",
    "detached_by": "leg_right"
+  },
+  {
+   "id": "foot_right",
+   "mesh": "piece_foot_right",
+   "detached_by": "foot_right"
   }
  ],
  "caps": [
@@ -112,6 +132,54 @@
    "mesh": "cap_waist_root",
    "region": "root",
    "shown_when_cut": "torso_waist"
+  },
+  {
+   "id": "cap_wrist_left_hand",
+   "mesh": "cap_wrist_left_hand",
+   "region": "hand_left",
+   "shown_when_cut": "hand_left"
+  },
+  {
+   "id": "cap_wrist_left_arm",
+   "mesh": "cap_wrist_left_arm",
+   "region": "arm_left",
+   "shown_when_cut": "hand_left"
+  },
+  {
+   "id": "cap_wrist_right_hand",
+   "mesh": "cap_wrist_right_hand",
+   "region": "hand_right",
+   "shown_when_cut": "hand_right"
+  },
+  {
+   "id": "cap_wrist_right_arm",
+   "mesh": "cap_wrist_right_arm",
+   "region": "arm_right",
+   "shown_when_cut": "hand_right"
+  },
+  {
+   "id": "cap_ankle_left_foot",
+   "mesh": "cap_ankle_left_foot",
+   "region": "foot_left",
+   "shown_when_cut": "foot_left"
+  },
+  {
+   "id": "cap_ankle_left_leg",
+   "mesh": "cap_ankle_left_leg",
+   "region": "leg_left",
+   "shown_when_cut": "foot_left"
+  },
+  {
+   "id": "cap_ankle_right_foot",
+   "mesh": "cap_ankle_right_foot",
+   "region": "foot_right",
+   "shown_when_cut": "foot_right"
+  },
+  {
+   "id": "cap_ankle_right_leg",
+   "mesh": "cap_ankle_right_leg",
+   "region": "leg_right",
+   "shown_when_cut": "foot_right"
   }
  ],
  "planes": {
@@ -209,6 +277,130 @@
    "source": "internal: midline plane (the thighs are parallel, so the bisector of the two hip planes is undefined), normal left to right between the UpLeg joints, separates the legs where both hip half-spaces overlap (its wall caps are triangles of the two leg caps)"
   }
  },
+ "optional_units": {
+  "hands_feet": {
+   "enabled": true,
+   "kind": "split",
+   "unit": "hands_feet",
+   "units": [
+    "hand_left",
+    "hand_right",
+    "foot_left",
+    "foot_right"
+   ],
+   "planes": [
+    "wrist_left",
+    "wrist_right",
+    "ankle_left",
+    "ankle_right"
+   ],
+   "regions": [
+    "hand_left",
+    "hand_right",
+    "foot_left",
+    "foot_right"
+   ],
+   "caps": [
+    "cap_wrist_left_hand",
+    "cap_wrist_left_arm",
+    "cap_wrist_right_hand",
+    "cap_wrist_right_arm",
+    "cap_ankle_left_foot",
+    "cap_ankle_left_leg",
+    "cap_ankle_right_foot",
+    "cap_ankle_right_leg"
+   ],
+   "about": "piece_arm_* end at the wrist plane and piece_hand_* hold everything beyond it (hand, fingers, gear on those bones); piece_leg_* end at the ankle plane and piece_foot_* hold foot and toes. Each is detached by its own unit (hand_left ...); the arm and leg regions keep their ids and detached_by. Every piece is bound only to the bones on its own side of its plane",
+   "params": {
+    "wrist_frac": 0,
+    "ankle_frac": 0.08
+   },
+   "stats": {
+    "hand_left": {
+     "cut_from": "arm_left",
+     "plane": "wrist_left",
+     "triangles_in": 1812,
+     "triangles_kept": 512,
+     "triangles_beyond": 1348
+    },
+    "hand_right": {
+     "cut_from": "arm_right",
+     "plane": "wrist_right",
+     "triangles_in": 1050,
+     "triangles_kept": 500,
+     "triangles_beyond": 594
+    },
+    "foot_left": {
+     "cut_from": "leg_left",
+     "plane": "ankle_left",
+     "triangles_in": 945,
+     "triangles_kept": 635,
+     "triangles_beyond": 346
+    },
+    "foot_right": {
+     "cut_from": "leg_right",
+     "plane": "ankle_right",
+     "triangles_in": 921,
+     "triangles_kept": 611,
+     "triangles_beyond": 346
+    }
+   }
+  }
+ },
+ "optional_planes": {
+  "wrist_left": {
+   "point": [
+    0.9847,
+    1.3993,
+    -0.1339
+   ],
+   "normal": [
+    0.999721,
+    -0.003942,
+    0.023291
+   ],
+   "source": "LeftHand joint, normal along LeftForeArm to LeftHand"
+  },
+  "wrist_right": {
+   "point": [
+    -0.984,
+    1.3986,
+    -0.1322
+   ],
+   "normal": [
+    -0.999837,
+    -0.003266,
+    0.017783
+   ],
+   "source": "RightHand joint, normal along RightForeArm to RightHand"
+  },
+  "ankle_left": {
+   "point": [
+    0.187368,
+    0.291092,
+    -0.025096
+   ],
+   "normal": [
+    0.001231,
+    -0.984863,
+    -0.173329
+   ],
+   "source": "LeftFoot joint, 0.08 of the way back toward LeftLeg, normal along LeftLeg to LeftFoot"
+  },
+  "ankle_right": {
+   "point": [
+    -0.190992,
+    0.293232,
+    -0.023844
+   ],
+   "normal": [
+    -0.008056,
+    -0.984963,
+    -0.172578
+   ],
+   "source": "RightFoot joint, 0.08 of the way back toward RightLeg, normal along RightLeg to RightFoot"
+  }
+ },
  "plane_frame": {
   "about": "plane points are in the measure row's coordinates (floor-lifted bind pose, metres); add bind_offset to get the GLB's bind-pose world space; vertex_to_world is the identity in the cut GLB (written in metres); source_vertex_to_world is the matrix the source GLB's stored vertex space needed",
   "bind_offset": [
@@ -256,12 +448,12 @@
  },
  "stats": {
   "vertices_in": 5002,
-  "vertices_out": 5944,
-  "cap_vertices": 862,
+  "vertices_out": 6116,
+  "cap_vertices": 1026,
   "triangles_in": 7760,
-  "triangles_out": 8620,
+  "triangles_out": 8784,
   "triangles_split": 397,
-  "split_vertices_created": 479,
+  "split_vertices_created": 565,
   "watertight": false,
   "watertight_at_cuts": false,
   "open_edges": 0,
@@ -276,10 +468,10 @@
   "fragments": 23,
   "fragments_reassigned_by_bones": 0,
   "triangles_reassigned_by_bones": 0,
-  "weights_rebound": 4856,
+  "weights_rebound": 5262,
   "weights_truncated_to_4": 0,
   "caps_missing": [],
-  "cap_loops": 19,
+  "cap_loops": 27,
   "cap_holes": 0,
   "cap_open_chains": 0,
   "cap_gaps_bridged": 0,
@@ -303,20 +495,36 @@
     "triangles": 2760
    },
    "arm_left": {
-    "vertices": 1172,
-    "triangles": 1812
+    "vertices": 357,
+    "triangles": 512
+   },
+   "hand_left": {
+    "vertices": 865,
+    "triangles": 1348
    },
    "arm_right": {
-    "vertices": 674,
-    "triangles": 1050
+    "vertices": 350,
+    "triangles": 500
+   },
+   "hand_right": {
+    "vertices": 370,
+    "triangles": 594
    },
    "leg_left": {
-    "vertices": 746,
-    "triangles": 945
+    "vertices": 518,
+    "triangles": 635
+   },
+   "foot_left": {
+    "vertices": 266,
+    "triangles": 346
    },
    "leg_right": {
-    "vertices": 722,
-    "triangles": 921
+    "vertices": 494,
+    "triangles": 611
+   },
+   "foot_right": {
+    "vertices": 266,
+    "triangles": 346
    }
   },
   "caps": {
@@ -367,6 +575,38 @@
    "cap_waist_root": {
     "vertices": 64,
     "triangles": 62
+   },
+   "cap_wrist_left_hand": {
+    "vertices": 24,
+    "triangles": 22
+   },
+   "cap_wrist_left_arm": {
+    "vertices": 24,
+    "triangles": 22
+   },
+   "cap_wrist_right_hand": {
+    "vertices": 22,
+    "triangles": 20
+   },
+   "cap_wrist_right_arm": {
+    "vertices": 22,
+    "triangles": 20
+   },
+   "cap_ankle_left_foot": {
+    "vertices": 18,
+    "triangles": 16
+   },
+   "cap_ankle_left_leg": {
+    "vertices": 18,
+    "triangles": 16
+   },
+   "cap_ankle_right_foot": {
+    "vertices": 18,
+    "triangles": 16
+   },
+   "cap_ankle_right_leg": {
+    "vertices": 18,
+    "triangles": 16
    }
   },
   "watertight_by_region": {
@@ -402,7 +642,23 @@
     "degenerate_triangles": 0,
     "at_cuts": []
    },
+   "hand_left": {
+    "boundary_edges": 0,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 0,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
    "arm_right": {
+    "boundary_edges": 0,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 0,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "hand_right": {
     "boundary_edges": 0,
     "open_edges_at_cuts": 0,
     "open_edges_native": 0,
@@ -418,11 +674,27 @@
     "degenerate_triangles": 0,
     "at_cuts": []
    },
+   "foot_left": {
+    "boundary_edges": 0,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 0,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
    "leg_right": {
     "boundary_edges": 0,
     "open_edges_at_cuts": 0,
     "open_edges_native": 0,
     "non_manifold_edges": 4,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "foot_right": {
+    "boundary_edges": 0,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 0,
+    "non_manifold_edges": 0,
     "degenerate_triangles": 0,
     "at_cuts": []
    }
