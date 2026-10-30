@@ -81,12 +81,12 @@ export const SCHEMA = {
   // The hero's death and respawn loop (src/fight/hero-death.ts validateHeroDeath checks the values): the death-only ragdoll, the death camera, the 'You fell' line and Respawn button
   'hero-death': { keys: ['about', 'on', 'query', 'off', 'ragdoll', 'line', 'button', 'keys', 'respawn', 'cam', 'limits'], maps: { respawn: ['minSeconds', 'autoSeconds'], cam: ['seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'], limits: ['minSeconds', 'autoSeconds', 'seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'] } },
   // Frankendom parts (src/parts.ts validateParts checks the values): closed key sets
-  'parts': { keys: ['about', 'maxCount', 'slots', 'rarities', 'button', 'panel', 'fit', 'text'],
+  'parts': { keys: ['about', 'maxCount', 'slots', 'rarities', 'button', 'panel', 'fit', 'wear', 'text'],
     rows: { slots: ['id', 'label', 'units'], rarities: ['star', 'id', 'label', 'colour'] },
-    maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], fit: ['about', 'limits', 'seam', 'eps', 'bones', 'lift', 'skin', 'collar'], text: ['title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] },
-    finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'] } },
+    maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], fit: ['about', 'limits', 'seam', 'eps', 'bones', 'lift', 'skin', 'collar'], wear: ['about', 'flags', 'mesh', 'units', 'heroHost', 'budget'], text: ['notWearable', 'title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] },
+    finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'], 'wear.budget': ['skinnedDrawsMax', 'partsMax'] } },
   // Frankendom parts, stage 2 per-body fit rows (src/parts-fit-rows.ts validateFitRows checks the values)
-  'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'measure', 'collars'] } },
+  'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'stem', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'measure', 'collars'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
   // Share clip (src/share-clip.ts validateShareClip checks the values): a closed key set; presentation only
   // The art-load retry (src/retry.ts reads attempts / delayMs / missingTexturesMessage; test/data-top-rows.test.mjs pins them)

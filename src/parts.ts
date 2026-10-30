@@ -3,7 +3,7 @@
 // empty, and a save with none is byte for byte the one before. Nothing here touches storage, the DOM or the sim; the page (src/fight/parts-hook.ts) and the menu (parts-panel.ts) call these.
 import ROWS from '../data/parts.json' with { type: 'json' };
 import PROFILE_ROWS from '../data/profiles.json' with { type: 'json' };
-import { validateFit } from './sim/validate-parts-fit.js';
+import { validateFit, validateWear } from './sim/validate-parts-fit.js';
 const KNOWN_PROFILES: ReadonlySet<string> = new Set((PROFILE_ROWS.profiles as { id: string }[]).map((p) => p.id));   // the bosses a part can come from (data/profiles.json)
 
 type SlotRow = { id: string; label: string; units: string[] };
@@ -21,11 +21,19 @@ export type FitRules = {
   skin: { influences: number; uvStride: number };
   collar: { segments: number; roundScale: number; heightKey: string; fallback: Record<string, { of?: string; k: number }>; joints: CollarJoint[]; rules: Record<string, CollarRule> };
 };
+/** data/parts.json `wear`: the rules of src/parts-wear.ts and src/fight/parts-wear.ts (the flags, the mesh-name prefixes, which units can be worn and where their seam is, the budget). */
+export type WearRules = {
+  flags: { off: { query: string; value: string }; force: { query: string } };
+  mesh: { piece: string; cap: string };
+  units: Record<string, { collar: string; lift?: string }>;
+  heroHost: Record<string, string>;
+  budget: { skinnedDrawsMax: number; partsMax: number };
+};
 export type PartsFile = {
-  maxCount: number; slots: SlotRow[]; rarities: RarityRow[]; fit: FitRules;
+  maxCount: number; slots: SlotRow[]; rarities: RarityRow[]; fit: FitRules; wear: WearRules;
   button: { label: string; aria: string; sizePx: number; topPx: number; rightPx: number; zIndex: number };
   panel: { zIndex: number; maxWidthPx: number; maxHeightFrac: number };
-  text: Record<'title' | 'close' | 'hint' | 'empty' | 'equip' | 'unequip' | 'equipped' | 'none' | 'weaponDefault' | 'weaponReward', string>;
+  text: Record<'notWearable' | 'title' | 'close' | 'hint' | 'empty' | 'equip' | 'unequip' | 'equipped' | 'none' | 'weaponDefault' | 'weaponReward', string>;
 };
 /** One owned part: how many times it was cut (all stars) and the best star level it was cut at. */
 export type PartRow = { n: number; star: number };
@@ -60,6 +68,7 @@ export function validateParts(file: PartsFile, stars: number): string[] {
   word('button.label', file.button?.label, 4); word('button.aria', file.button?.aria, 80);
   num('panel.zIndex', file.panel?.zIndex, 0, 1000); num('panel.maxWidthPx', file.panel?.maxWidthPx, 200, 800); num('panel.maxHeightFrac', file.panel?.maxHeightFrac, 0.3, 1);
   for (const [k, v] of Object.entries(file.text ?? {})) word(`text.${k}`, v, 80);
+  e.push(...validateWear(file.wear, file.fit, file.slots));
   e.push(...validateFit(file.fit));   // src/sim/validate-parts-fit.js (diagnostics are plain words and src/*.ts is scanned for them: the same split as validate-rings.js)
   return e;
 }
@@ -119,7 +128,7 @@ export function cleanParts(j: { parts?: unknown; equipped?: unknown }, file: Par
 }
 
 /** One line of the menu: a part to show. `name`: the boss's name + the slot's label. */
-type PartView = { id: string; name: string; boss: string; n: number; star: number; rarity: RarityRow; trophy: string | null; worn: boolean };
+type PartView = { id: string; profile: string; name: string; boss: string; n: number; star: number; rarity: RarityRow; trophy: string | null; worn: boolean };
 export type SlotView = { slot: SlotRow; worn: PartView | null; parts: PartView[] };
 /** The menu's rows, pure: every slot with the parts owned for it (best star first, then by boss name). `bossName`: profile id -> display name; `trophyOf`: star -> trophy name (null for none). The weapon slot has no parts (the page shows its reward). */
 export function slotViews(save: PartsSave, bossName: (profile: string) => string, trophyOf: (star: number) => string | null, file: PartsFile = PARTS): SlotView[] {
@@ -129,7 +138,7 @@ export function slotViews(save: PartsSave, bossName: (profile: string) => string
       const p = splitPart(id, file);
       if (!p || p.slot !== slot.id) continue;
       const boss = bossName(p.profile), rarity = file.rarities[row.star] ?? file.rarities[0]!;
-      parts.push({ id, name: `${boss} ${slot.label.toLowerCase()}`, boss, n: row.n, star: row.star, rarity, trophy: trophyOf(row.star), worn: save.equipped?.[slot.id] === id });
+      parts.push({ id, profile: p.profile, name: `${boss} ${slot.label.toLowerCase()}`, boss, n: row.n, star: row.star, rarity, trophy: trophyOf(row.star), worn: save.equipped?.[slot.id] === id });
     }
     parts.sort((a, b) => b.star - a.star || a.boss.localeCompare(b.boss));
     return { slot, worn: parts.find((p) => p.worn) ?? null, parts };

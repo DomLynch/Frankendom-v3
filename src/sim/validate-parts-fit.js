@@ -64,6 +64,33 @@ export function validateFit(fit) {
   return e;
 }
 
+/** `wear`: data/parts.json `wear`; `fit` its fit rules (the joint ids a unit's collar names); `slots` its slots (the units a row may name). One string per problem. */
+export function validateWear(wear, fit, slots) {
+  const e = [], at0 = 'parts.wear', joints = new Set((isObj(fit) && isObj(fit.collar) && Array.isArray(fit.collar.joints) ? fit.collar.joints : []).map((j) => j.id));
+  if (!isObj(wear)) return [`${at0}: missing`];
+  const keys = (at, o, want) => { if (!isObj(o)) { e.push(`${at0}.${at}: an object`); return false; } for (const k of Object.keys(o)) if (!want.includes(k)) e.push(`${at0}.${at}.${k}: unknown key`); return true; };
+  const word = (at, v, re) => { if (!(typeof v === 'string' && re.test(v))) e.push(`${at0}.${at}: a lower-case word`); };
+  if (keys('flags', wear.flags, ['off', 'force'])) {
+    if (keys('flags.off', wear.flags.off, ['query', 'value'])) { word('flags.off.query', wear.flags.off.query, /^[a-z]+$/); word('flags.off.value', wear.flags.off.value, /^[a-z0-9]+$/); }
+    if (keys('flags.force', wear.flags.force, ['query'])) word('flags.force.query', wear.flags.force.query, /^[a-z]+$/);
+    if (isObj(wear.flags.off) && isObj(wear.flags.force) && wear.flags.off.query === wear.flags.force.query) e.push(`${at0}.flags: the off switch and the force list need two different query names`);
+  }
+  if (keys('mesh', wear.mesh, ['piece', 'cap'])) { word('mesh.piece', wear.mesh.piece, /^[a-z]+_$/); word('mesh.cap', wear.mesh.cap, /^[a-z]+_$/); }
+  const units = new Set((Array.isArray(slots) ? slots : []).flatMap((s) => (Array.isArray(s.units) ? s.units : [])));
+  if (isObj(wear.units)) {
+    for (const [u, row] of Object.entries(wear.units)) {
+      if (!units.has(u)) e.push(`${at0}.units.${u}: not a unit of any slot`);
+      if (!keys(`units.${u}`, row, ['collar', 'lift'])) continue;
+      if (!joints.has(row.collar)) e.push(`${at0}.units.${u}.collar: "${String(row.collar)}" is not a fit.collar.joints id`);
+      if ('lift' in row && row.lift !== fit?.lift?.unit) e.push(`${at0}.units.${u}.lift: "${String(row.lift)}" is not fit.lift.unit`);
+    }
+  } else e.push(`${at0}.units: an object`);
+  if (isObj(wear.heroHost)) { for (const j of joints) if (typeof wear.heroHost[j] !== 'string' || !/^[a-z_]+$/.test(wear.heroHost[j])) e.push(`${at0}.heroHost.${j}: the hero piece the collar takes its skin from`); }
+  else e.push(`${at0}.heroHost: an object`);
+  if (keys('budget', wear.budget, ['skinnedDrawsMax', 'partsMax'])) for (const k of ['skinnedDrawsMax', 'partsMax']) if (!(Number.isInteger(wear.budget[k]) && wear.budget[k] >= 1 && wear.budget[k] <= 200)) e.push(`${at0}.budget.${k}: an integer in 1..200`);
+  return e;
+}
+
 /**
  * `file`: data/parts-fit-rows.json. `fit`: data/parts.json `fit` (the joints a body's collars must name). `profileIds`: the data/profiles.json ids (optional: every row but the hero must be one).
  * A `measure` is null (no row: the lift is 0 and there are no collars) or an object of positive finite metres over MEASURE_KEYS with height, thigh and shin present.
@@ -81,6 +108,7 @@ export function validateFitRows(file, fit, profileIds) {
     ids.add(b.id);
     if (profileIds && b.id !== file.hero && !profileIds.has(b.id)) e.push(`${at}.id: "${b.id}" is neither the hero nor a data/profiles.json id`);
     if (typeof b.measuredOn !== 'string' || !ID.test(b.measuredOn)) e.push(`${at}.measuredOn: the OpenTrident body id the numbers came from`);
+    if ('stem' in b && (typeof b.stem !== 'string' || !ID.test(b.stem))) e.push(`${at}.stem: the data/rig.json files key of the body (absent = the id)`);
     if (b.id === file.hero) { for (const k of ['source', 'wearable', 'quality', 'reason']) if (k in b) e.push(`${at}.${k}: the hero row has none (it is worn on, not worn)`); }
     else {
       if (!SOURCES.includes(b.source)) e.push(`${at}.source: one of ${SOURCES.join(', ')}`);

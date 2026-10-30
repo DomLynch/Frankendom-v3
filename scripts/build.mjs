@@ -182,7 +182,9 @@ for (const glb of PACKED) {
 const CUT_GLBS = ['src/assets/psyche-106.glb', 'src/assets/minotaur-106.glb','src/assets/gargantua-106.glb', 'src/assets/arachne-106.glb',
   // the nine biome-ring boss bodies (data/rings.json): physics cut GLBs, each sha256 pinned to its row in the physics package's data/cut-bodies.json (test/rings.test.mjs)
   // (sporty-granny-106 is not in the list: its file carries TEXCOORD_1 and _2, which the lossy cut pack refuses; it ships as the physics tool wrote it, 1.8 MB, fetched only near her)
-  ...['pumpkinhulk', 'kachujin', 'castle-guard', 'parasite', 'anime-boy-black', 'the-boss', 'anime-girl-blonde', 'big-vegas'].map((s) => `src/assets/${s}-106.glb`)];
+  ...['pumpkinhulk', 'kachujin', 'castle-guard', 'parasite', 'anime-boy-black', 'the-boss', 'anime-girl-blonde', 'big-vegas'].map((s) => `src/assets/${s}-106.glb`),
+  // the two donor bodies whose worn parts load OpenTrident's derived copy (data/parts-fit-rows.json source derived: winding fixed, the King's collar flaps trimmed); fetched only when one of their parts is worn
+  'src/assets/castle-guard-106.derived.glb', 'src/assets/big-vegas-106.derived.glb'];
 for (const glb of CUT_GLBS) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target), undefined, { cut: true }));

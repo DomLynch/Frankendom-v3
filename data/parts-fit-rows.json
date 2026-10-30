@@ -10,7 +10,7 @@
        {"id": "shoulder_r", "bone": "mixamorigRightArm", "at": 0, "r": 0.0474, "h": 0.0451},
        {"id": "hip_l", "bone": "mixamorigLeftUpLeg", "at": 0, "r": 0.0757, "h": 0.0649},
        {"id": "hip_r", "bone": "mixamorigRightUpLeg", "at": 0, "r": 0.0757, "h": 0.0649}]},
-    {"id": "pitborn", "measuredOn": "ch25-nonpbr", "source": "original", "wearable": true, "quality": 4, "reason": "Minotaur: good, one dark skin tone across head, arm and leg; thick limbs need the lift row.",
+    {"id": "pitborn", "stem": "minotaur", "measuredOn": "ch25-nonpbr", "source": "original", "wearable": true, "quality": 4, "reason": "Minotaur: good, one dark skin tone across head, arm and leg; thick limbs need the lift row.",
      "measure": {"height_m": 1.7715, "thigh_len": 0.431, "shin_len": 0.3808, "foot_len": 0.1956, "upper_arm_len": 0.2362, "forearm_len": 0.2523, "neck_len": 0.0994, "torso_len": 0.5183, "shoulder_w": 0.4239, "upper_arm_r": 0.0766, "thigh_r": 0.0956},
      "collars": [
        {"id": "neck", "bone": "mixamorigNeck", "at": 0.5, "r": 0.0805, "h": 0.0795},

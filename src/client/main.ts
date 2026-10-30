@@ -39,6 +39,7 @@ import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, 
 import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { createAudioUnlock, rearmWhenLocked } from '../audio/unlock-once.ts';
 import { mountParts } from '../fight/parts-hook.ts';
+import { wearFlags, wornParts } from '../parts-wear.ts';
 import { configureSimMechanics, mechCaption } from '../fight/mechanics/sim-hooks.ts';
 import MECHANICS_ROWS from '../../data/mechanics.json' with { type: 'json' };
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
@@ -353,7 +354,11 @@ const pileXY: [number, number] = [0, 0];   // the pile marker's screen spot, rew
 let carriedWeapon: string = REWARD_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
 const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
 function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
-const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
+// Frankendom parts, stage 2 (data/parts.json wear; Dom 2026-10-30 "you become what you kill"): an equipped part visibly replaces the hero's matching piece (look only). On by default; ?parts=off wears nothing; ?wear=<profile>:<slot>,... wears exactly that list without a save (the stills).
+const WEAR = wearFlags(search), wearNow = (equipped?: Readonly<Record<string, string>>) => (WEAR.on ? wornParts(WEAR.force ?? equipped ?? PROG?.save?.equipped) : []);
+(globalThis as { __v3Wear?: unknown }).__v3Wear = { info: () => view.wearInfo(), render: () => ({ calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }) };   // the stills and the perf row read what the hero wears
+view.wear(wearNow());   // the saved loadout (or the forced one) is laid after the first frame; none worn = no import and no fetch
+const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS, onWorn: (equipped) => view.wear(wearNow(equipped)) }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
 function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
 function startLinger(idx: number) {
   const pile = PROG?.save?.pile;

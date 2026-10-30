@@ -10,7 +10,7 @@ export type Measure = Partial<Record<string, number>>;
 /** One collar ring: `bone`, `at` (fraction of the bone's length to its first child), radius `r` and height `h` in metres. */
 export type CollarRow = { id: string; bone: string; at: number; r: number; h: number };
 /** `source`, `wearable`, `quality` and `reason` are absent on the hero row. */
-export type FitBody = { id: string; measuredOn: string; source?: 'derived' | 'original'; wearable?: boolean; quality?: number; reason?: string; measure: Measure | null; collars: CollarRow[] };
+export type FitBody = { id: string; stem?: string; measuredOn: string; source?: 'derived' | 'original'; wearable?: boolean; quality?: number; reason?: string; measure: Measure | null; collars: CollarRow[] };
 export type FitRowsFile = { hero: string; bodies: FitBody[] };
 
 export const FIT_ROWS = ROWS as unknown as FitRowsFile;

@@ -211,7 +211,7 @@ export const loadTextured = (url: string, load: () => Promise<FighterAsset>, sle
     if (missing) throw new MissingTextures(url, missing, i);
     return asset;
   }, 3, 800, sleep);
-async function loadFighter(url: string) {
+export async function loadFighter(url: string) {   // exported: src/fight/parts-wear.ts loads a donor boss body the same way (textures checked, phone cap, caps hidden)
   const asset = await loadTextured(url, () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url));
   // A 106 body: OpenTrident's armour layers off (data/rig.json hide), and no loot or kit on it: every loot.glb/kit draw is skinned to the 65 skeleton's bind.
   if (rigOf(asset.scene) === '106') { for (const name of HIDDEN_ON_106) asset.scene.getObjectByName(name)?.removeFromParent(); asset.scene.userData.noLoot = true; }

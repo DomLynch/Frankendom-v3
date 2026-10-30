@@ -11,6 +11,8 @@ type PanelCtx = {
   /** The save with part `id` worn (or the slot emptied when `id` is null): the page writes it. */
   onEquip(slot: string, id: string | null): void;
   bossName(profile: string): string;
+  /** Whether part `profile`:`slot` can be worn (src/parts-wear.ts canWear): only those get an Equip button, the others stay listed as collected. */
+  canWear(profile: string, slot: string): boolean;
   trophyOf(star: number): string | null;
   /** The weapon slot: the newest boss-weapon reward, or null for the starting weapon. */
   weapon(): { name: string; boss: string } | null;
@@ -70,6 +72,7 @@ export function mountPartsPanel(doc: Doc, ctx: PanelCtx): PartsPanel {
       const info = el('div'), name = el('strong', undefined, p.name), sub = el('span', 'fp-sub');
       const chip = el('span', 'fp-chip', p.rarity.label); chip.style.background = p.rarity.colour;
       sub.append(chip); sub.append(`x${p.n}${p.trophy ? ` · ${p.trophy}` : ''}`);
+      if (!p.worn && !ctx.canWear(p.profile, v.slot.id)) { sub.append(` · ${T.notWearable}`); info.append(name, sub); row.dataset.wearable = 'false'; row.append(info); box.append(row); continue; }
       info.append(name, sub);
       const act = el('button', undefined, p.worn ? T.unequip : T.equip) as HTMLButtonElement; act.type = 'button'; act.dataset.on = String(p.worn); act.dataset.frank = p.worn ? 'unequip' : 'equip';
       act.onclick = () => { ctx.onEquip(v.slot.id, p.worn ? null : p.id); draw(); };
