@@ -9,6 +9,6 @@
     { "minHeat": 2, "name": "Hunted" },
     { "minHeat": 4, "name": "Marked" }
   ],
-  "hud": { "label": "Heat", "colour": "#ff9a50", "zIndex": 29, "topOffsetPx": 36 },
-  "limits": { "maxHeat": [1, 99], "gain": [0, 20], "coinsPerHeat": [1, 100000], "secondsPerMark": [5, 3600], "minHeat": [1, 99], "zIndex": [0, 100], "topOffsetPx": [0, 200] }
+  "hud": { "label": "Heat", "colour": "#ff9a50", "zIndex": 29, "topOffsetPx": 36, "css": ".heat-line{position:fixed;left:50%;top:calc(18% + 8px + {topOffsetPx}px);transform:translateX(-50%);z-index:{zIndex};pointer-events:none;white-space:nowrap;color:{colour};opacity:0;transition:opacity .4s ease;font:10px/1.25 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;text-shadow:0 1px 3px rgba(0,0,0,.85);user-select:none;-webkit-user-select:none}" },
+  "limits": { "nameChars": 16, "labelChars": 12, "maxHeat": [1, 99], "gain": [0, 20], "coinsPerHeat": [1, 100000], "secondsPerMark": [5, 3600], "minHeat": [1, 99], "zIndex": [0, 100], "topOffsetPx": [0, 200] }
 }

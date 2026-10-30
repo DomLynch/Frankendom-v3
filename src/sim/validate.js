@@ -54,8 +54,8 @@ export const SCHEMA = {
   // The radar (src/fight/radar.ts validateRadar checks the values): a closed key set; presentation only
   'radar': { keys: ['about', 'on', 'query', 'off', 'corner', 'sizePx', 'marginPx', 'offsetPx', 'zIndex', 'rangeMetres', 'rimInset', 'dprMax', 'disc', 'rim', 'edgeAlpha', 'hero', 'classes', 'flash', 'kinds', 'defaultKind'],
     maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead', 'pile', 'golden', 'mob'] } },
-  // Heat (src/heat.ts validateHeat checks the values): session only, never saved
-  'heat': { keys: ['about', 'version', 'maxHeat', 'decay', 'gain', 'tiers', 'hud', 'limits'], rows: { tiers: ['minHeat', 'name'] }, maps: { decay: ['secondsPerMark'], gain: ['kill', 'perStar', 'ring', 'coinsPerHeat'], hud: ['label', 'colour', 'zIndex', 'topOffsetPx'] } },
+  // Heat (src/sim/validate-heat.js checks the values): session only, never saved
+  'heat': { keys: ['about', 'version', 'maxHeat', 'decay', 'gain', 'tiers', 'hud', 'limits'], rows: { tiers: ['minHeat', 'name'] }, maps: { decay: ['secondsPerMark'], gain: ['kill', 'perStar', 'ring', 'coinsPerHeat'], hud: ['label', 'colour', 'zIndex', 'topOffsetPx', 'css'] } },
   // Boss signature mechanics (validateMechanics below checks the values; src/fight/mechanics/ reads the rows): a map, mechanic id -> row; each row's keys are checked by its type's checker
   'mechanics': { keys: ['about', 'mechanics'] },
   // Trash mob swarms (src/sim/validate-mobs.js checks the values; src/zone/mobs.ts reads the rows)
