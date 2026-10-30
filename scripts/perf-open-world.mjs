@@ -10,6 +10,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { loadavg, cpus } from 'node:os';
+import { phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...argQueries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/perf-open-world.mjs <base url> <out dir> [query ...]'); process.exit(2); }
@@ -30,7 +31,7 @@ async function one(query) {   // a fresh browser per run: a crashed one (the cor
 }
 
 async function measure(browser, query) {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.text().startsWith('dbg ')) console.error(m.text()); });
   await page.addInitScript(() => {
@@ -38,7 +39,7 @@ async function measure(browser, query) {
     window.requestAnimationFrame = (cb) => raf((t) => { const s = performance.now(); cb(t); if (on) frames.push(performance.now() - s); });
   });
   await page.goto(`${base}/${query ? `?${query}` : ''}`, { timeout: 240000 });
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 240000, polling: 'raf' });
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 180000 });
   await page.waitForTimeout(3000);
   // the corpses: kill the live foe (health 1, a kick), let the body freeze, leave it where it lies (the zone loop's call at a respawn), repeat

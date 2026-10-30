@@ -14,9 +14,9 @@ export type CorpseRows = {
   bank: { radiusMetres: number; line: string };
   pile: { reachMetres: number; line: string; lineWeapon: string; lostLine: string };
   linger: { leashRadius: number; seconds: number };
-  marker: { colour: string; ringPx: number; beamPx: number; widthPx: number; alpha: number; pulseSeconds: number; fadeWithinMetres: number; zIndex: number };
+  marker: { colour: string; ringPx: number; beamPx: number; widthPx: number; alpha: number; pulseSeconds: number; heightMetres: number; deadDistanceMetres: number; pulseMid: number; pulseSwing: number; fadeWithinMetres: number; zIndex: number };
 };
-type Shipped = CorpseRows & { limits: Record<'perKill' | 'radiusMetres' | 'reachMetres' | 'leashRadius' | 'seconds' | 'ringPx' | 'beamPx' | 'widthPx' | 'alpha' | 'pulseSeconds' | 'fadeWithinMetres' | 'cap', Range> };
+type Shipped = CorpseRows & { limits: Record<'perKill' | 'radiusMetres' | 'reachMetres' | 'leashRadius' | 'seconds' | 'ringPx' | 'beamPx' | 'widthPx' | 'alpha' | 'pulseSeconds' | 'fadeWithinMetres' | 'heightMetres' | 'deadDistanceMetres' | 'cap' | 'pileCoordMax' | 'lostMax', Range> };   // pileCoordMax / lostMax: the top of the range is the stored-pile coordinate bound and the most lost weapons kept
 export const CORPSE = ROWS as unknown as Shipped;
 type Pt = { x: number; z: number };
 
@@ -35,6 +35,10 @@ export function validateCorpseRun(r: Shipped = CORPSE, bossIds: readonly string[
   const m = r.marker;
   if (!/^#[0-9a-fA-F]{6}$/.test(m.colour)) throw new Error(`corpse-run.json marker.colour ${String(m.colour)} is not a #rrggbb colour`);
   for (const k of ['ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres'] as const) inside(`marker.${k}`, m[k], L[k]);
+  inside('marker.heightMetres', m.heightMetres, L.heightMetres); inside('marker.deadDistanceMetres', m.deadDistanceMetres, L.deadDistanceMetres);   // the dead-on-the-spot distance must be past the fade so the marker stays full
+  if (m.deadDistanceMetres <= r.pile.reachMetres + m.fadeWithinMetres) throw new Error('corpse-run.json marker.deadDistanceMetres is inside the fade, so the marker would dim for a hero who is dead on the spot');
+  inside('marker.pulseMid', m.pulseMid, L.alpha); inside('marker.pulseSwing', m.pulseSwing, L.alpha);   // the pulse runs pulseMid +- pulseSwing of the row's alpha, so it never goes below zero or above the row's alpha
+  if (m.pulseSwing > m.pulseMid || m.pulseMid + m.pulseSwing > 1) throw new Error('corpse-run.json marker.pulseSwing is wider than the pulse can swing (mid - swing >= 0 and mid + swing <= 1)');
   inside('marker.zIndex', m.zIndex, [0, 1000]);
   if (r.pile.reachMetres > r.linger.leashRadius) throw new Error('corpse-run.json pile.reachMetres is longer than linger.leashRadius');
 }
@@ -48,7 +52,7 @@ export function cleanPile(p: unknown, rows: CorpseRows = CORPSE): Pile | null {
   try {
     const o = p as Partial<Pile> | null;
     if (!o || typeof o !== 'object' || o.v !== rows.version) return null;
-    if (typeof o.x !== 'number' || typeof o.z !== 'number' || !Number.isFinite(o.x) || !Number.isFinite(o.z) || Math.abs(o.x) > 1e5 || Math.abs(o.z) > 1e5) return null;
+    if (typeof o.x !== 'number' || typeof o.z !== 'number' || !Number.isFinite(o.x) || !Number.isFinite(o.z) || Math.abs(o.x) > CORPSE.limits.pileCoordMax[1] || Math.abs(o.z) > CORPSE.limits.pileCoordMax[1]) return null;
     if (typeof o.boss !== 'string' || !WORD.test(o.boss) || !(o.weapon === null || (typeof o.weapon === 'string' && WORD.test(o.weapon)))) return null;
     const coins = whole(o.coins, rows.coins.cap);
     if (coins === 0 && o.weapon === null) return null;   // an empty pile is no pile
@@ -58,7 +62,7 @@ export function cleanPile(p: unknown, rows: CorpseRows = CORPSE): Pile | null {
 /** The corpse-run fields of a stored save object (anything missing or wrong is the empty value). */
 export function cleanCorpse(j: { coins?: unknown; banked?: unknown; pile?: unknown; lost?: unknown }, rows: CorpseRows = CORPSE): Pick<Save, 'coins' | 'banked' | 'pile' | 'lost'> {
   const lost: string[] = [];
-  if (Array.isArray(j.lost)) for (const w of j.lost) if (typeof w === 'string' && WORD.test(w) && !lost.includes(w) && lost.length < 20) lost.push(w);
+  if (Array.isArray(j.lost)) for (const w of j.lost) if (typeof w === 'string' && WORD.test(w) && !lost.includes(w) && lost.length < CORPSE.limits.lostMax[1]) lost.push(w);
   return { coins: whole(j.coins, rows.coins.cap), banked: whole(j.banked, rows.coins.cap), pile: cleanPile(j.pile, rows), lost };
 }
 
@@ -119,7 +123,7 @@ export const lineOf = (template: string, vars: { coins?: number; weapon?: string
 
 /** The marker's opacity 0..1: the row's alpha pulsing over `pulseSeconds` (never below half), fading to nothing as the hero nears the pile (he is about to take it). */
 export function markerAlpha(rows: CorpseRows, distMetres: number, seconds: number): number {
-  const m = rows.marker, pulse = 0.75 + 0.25 * Math.sin((seconds / m.pulseSeconds) * Math.PI * 2);
+  const m = rows.marker, pulse = m.pulseMid + m.pulseSwing * Math.sin((seconds / m.pulseSeconds) * Math.PI * 2);
   const near = m.fadeWithinMetres > 0 ? Math.min(1, Math.max(0, (distMetres - rows.pile.reachMetres) / m.fadeWithinMetres)) : 1;
   return m.alpha * pulse * near;
 }

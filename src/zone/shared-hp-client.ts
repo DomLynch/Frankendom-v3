@@ -14,10 +14,10 @@ import CLIENT_RAW from '../../data/zone-client.json' with { type: 'json' };
 import { parseRules, weaponCaps, type Rules } from '../server-model/zone-model.ts';
 
 export const ACT = { lost: 'lost', reengage: 'reengage', dead: 'dead', backoff: 'backoff', wait: 'wait', stop: 'stop', block: 'block' } as const;
-export type Action = (typeof ACT)[keyof typeof ACT];
+type Action = (typeof ACT)[keyof typeof ACT];
 export const ACTIONS: readonly Action[] = Object.values(ACT);
 export const PHASE = { idle: 'idle', engaging: 'engaging', engaged: 'engaged', dead: 'dead', off: 'off' } as const;
-export type Phase = (typeof PHASE)[keyof typeof PHASE];
+type Phase = (typeof PHASE)[keyof typeof PHASE];
 
 export type ClientRows = {
   query: string; path: string; hosts: string[];
@@ -26,6 +26,7 @@ export type ClientRows = {
   sim: { hit: string; heroSide: number; foeSide: number };
   batch: { idPrefix: string; idSep: string };
   backoff: { baseMs: number; factor: number; maxMs: number; offlineAfter: number };
+  engageRetry: { maxTries: number; factor: number; maxMs: number; minDelayMs: number; stopStatus: [number, number][] };
   kill: { tries: number; retryMs: number; settled: string; unpaid: string };
   refusals: { id: string; action: Action; delayMs?: number }[];
   sqlClasses: { id: string; match: string[]; action: Action }[];
@@ -50,6 +51,9 @@ export function parseClientRows(json: unknown, server: Rules): ClientRows {
   assert(typeof r.sim.hit === 'string' && r.sim.hit.length > 0, 'zone-client.sim.hit: an event type');
   for (const k of ['baseMs', 'factor', 'maxMs', 'offlineAfter'] as const) assert(positive(r.backoff[k]), `zone-client.backoff.${k}: a positive number`);
   assert(r.backoff.factor >= 1 && r.backoff.maxMs >= r.backoff.baseMs, 'zone-client.backoff: factor at least 1 and maxMs at least baseMs');
+  for (const k of ['maxTries', 'factor', 'maxMs', 'minDelayMs'] as const) assert(positive(r.engageRetry?.[k]), `zone-client.engageRetry.${k}: a positive number`);
+  assert(r.engageRetry.factor >= 1 && r.engageRetry.maxMs >= r.timing.engageRetryMs, 'zone-client.engageRetry: factor at least 1 and maxMs at least timing.engageRetryMs');
+  assert(Array.isArray(r.engageRetry.stopStatus) && r.engageRetry.stopStatus.every(([lo, hi]) => Number.isInteger(lo) && Number.isInteger(hi) && lo <= hi), 'zone-client.engageRetry.stopStatus: status ranges');
   assert(positive(r.kill.tries) && positive(r.kill.retryMs) && r.kill.settled !== r.kill.unpaid, 'zone-client.kill: tries, retryMs and two different states');
   const batchSample = [r.batch.idPrefix, 'session', '0'].join(r.batch.idSep);
   assert(new RegExp(server.ids.batchIdPattern).test(batchSample), `zone-client.batch: ${batchSample} does not match ids.batchIdPattern`);
@@ -70,19 +74,19 @@ export function parseClientRows(json: unknown, server: Rules): ClientRows {
 
 export const SERVER: Rules = parseRules(SERVER_RAW);
 export const ROWS: ClientRows = parseClientRows(CLIENT_RAW, SERVER);
-export type Caps = Map<string, { maxDamage: number; maxHitsPerS: number }>;
+type Caps = Map<string, { maxDamage: number; maxHitsPerS: number }>;
 export const CAPS: Caps = weaponCaps(SERVER);
 
 // ---- the wire shapes (docs/ZONE-CLIENT-CONTRACT.md) ---------------------------------------------------------------------------------------------------------------------------------------
 
 /** A whole call that failed: kind is offline or timeout (no answer), or status (an HTTP error); code is the SQLSTATE / O-code the writer relays when a SQL function raised. */
 export type TransportError = { kind: string; status?: number; code?: string; message?: string };
-export type EngageOk = { token: string; instance: string; layer: number; generation: number; hp: number; maxHp: number; expiresAt?: unknown };
-export type Refused = { refused: string; respawnAt?: unknown };
-export type HitRowOut = { token: string; weapon: string; claimed: number; hits: number; layer: number };
-export type Slot = { token?: string; error?: string; message?: string; refused?: string; respawnAt?: unknown; applied?: number; hp?: number; maxHp?: number; killed?: boolean };
-export type View = { instance: string; layer?: number; alive: boolean; hp: number; maxHp: number; respawnAt?: unknown; generation: number };
-export type KillAnswer = { state: string; paid?: boolean; reason?: string; sharePct?: number; payShare?: number };
+type EngageOk = { token: string; instance: string; layer: number; generation: number; hp: number; maxHp: number; expiresAt?: unknown };
+type Refused = { refused: string; respawnAt?: unknown };
+type HitRowOut = { token: string; weapon: string; claimed: number; hits: number; layer: number };
+type Slot = { token?: string; error?: string; message?: string; refused?: string; respawnAt?: unknown; applied?: number; hp?: number; maxHp?: number; killed?: boolean };
+type View = { instance: string; layer?: number; alive: boolean; hp: number; maxHp: number; respawnAt?: unknown; generation: number };
+type KillAnswer = { state: string; paid?: boolean; reason?: string; sharePct?: number; payShare?: number };
 export type Transport = {
   engage(q: { instance: string; layer: number }): Promise<EngageOk | Refused>;
   touch(q: { token: string }): Promise<unknown>;
@@ -92,11 +96,11 @@ export type Transport = {
 };
 
 /** The sim's CombatEvent, the few fields the claim reads. */
-export type SimEvent = { type: string; actor?: number; target?: number; damage?: number; weapon?: string };
+type SimEvent = { type: string; actor?: number; target?: number; damage?: number; weapon?: string };
 /** The shared bar as the page may draw it. `stale`: the server has not answered for offlineAfter calls in a row (the last known value, not a live one). */
-export type Bar = { instance: string; hp: number; maxHp: number; fraction: number; alive: boolean; generation: number; respawnAt: unknown; stale: boolean };
-export type KillNote = { instance: string; generation: number; state: string | null; paid: boolean | null; reason: string | null; sharePct: number | null; payShare: number | null };
-export type Counters = { sent: number; lost: number; replays: number; clamped: number; dropped: number; refused: number; errors: number; applied: number };
+type Bar = { instance: string; hp: number; maxHp: number; fraction: number; alive: boolean; generation: number; respawnAt: unknown; stale: boolean };
+type KillNote = { instance: string; generation: number; state: string | null; paid: boolean | null; reason: string | null; sharePct: number | null; payShare: number | null };
+type Counters = { sent: number; lost: number; replays: number; clamped: number; dropped: number; refused: number; errors: number; applied: number };
 
 export type Options = {
   transport: Transport;
@@ -140,7 +144,7 @@ export function createSharedHp(o: Options): SharedHp {
   let phase: Phase = PHASE.idle, token: string | null = null, generation = -1, bar: Bar | null = null, stopped = false;
   let contributed = false, settled: KillNote | null = null, killAt: number | null = null, killTries = 0;
   let lastSentMs: number | null = null, lastActiveMs = 0, lastStateMs: number | null = null, engageAt: number | null = null;
-  let backoffUntil = 0, failures = 0, seq = 0;
+  let backoffUntil = 0, failures = 0, seq = 0, engageFails = 0;   // engageFails: lost engages in a row (rows.engageRetry caps it)
   const pending = new Map<string, { claimed: number; hits: number }>(), blocked = new Set<string>();
   const busy = { hits: false, state: false, touch: false, engage: false, kill: false };
   const count: Counters = { sent: 0, lost: 0, replays: 0, clamped: 0, dropped: 0, refused: 0, errors: 0, applied: 0 };
@@ -215,11 +219,18 @@ export function createSharedHp(o: Options): SharedHp {
         count.refused += 1;
         const ref = r as Refused, row = rows.refusals.find((x) => x.id === ref.refused);
         if (phase === PHASE.engaging) setPhase(before);
-        run[row ? row.action : rows.fallback.sql](now, { delayMs: row?.delayMs, respawnAt: ref.respawnAt });
+        const act = row ? row.action : rows.fallback.sql;
+        run[act](now, { delayMs: row?.delayMs, respawnAt: ref.respawnAt });
+        if (act === ACT.reengage) {   // a refusal that says "engage again" (moved, token, too-many) counts toward the cap and never asks faster than minDelayMs: a delay-0 row cannot loop at frame rate
+          engageFails += 1;
+          if (engageFails >= rows.engageRetry.maxTries) run[ACT.stop](now, {});
+          else engageAt = now + Math.max(row?.delayMs ?? T.engageRetryMs, rows.engageRetry.minDelayMs);
+        }
       } else {
         const ok = r as EngageOk;
         if (typeof ok.token !== 'string' || !Number.isFinite(ok.generation)) throw { kind: 'shape' };
         if (ok.generation !== generation) newLife(ok.generation);
+        engageFails = 0;
         token = ok.token; lastSentMs = null; lastActiveMs = now; pending.clear();
         setPhase(PHASE.engaged);
         setBar(ok.hp, ok.maxHp, ok.generation, true, null);
@@ -227,9 +238,16 @@ export function createSharedHp(o: Options): SharedHp {
     } catch (err) {
       count.errors += 1;
       if (phase === PHASE.engaging) setPhase(before);
-      const action = classify(err);
+      const e = (err ?? {}) as TransportError, ER = rows.engageRetry, classed = classify(err);
+      const unrecoverable = typeof e.code !== 'string' && e.status !== undefined && classed === rows.fallback.transport && ER.stopStatus.some(([lo, hi]) => e.status! >= lo && e.status! <= hi);   // a bare 4xx no table row answered: asking again cannot help
+      const action = unrecoverable ? ACT.stop : classed;
       run[action](now, {});
-      if (action !== ACT.stop && phase !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs;   // an engage that was lost is asked again
+      if (action === ACT.wait) { if ((phase as Phase) !== PHASE.off && engageAt === null) engageAt = now + T.engageRetryMs; }   // the zone is not loaded yet: the server DID answer, so it never counts toward the cap (as before engageRetry existed)
+      else {
+      engageFails += 1;
+      if (action !== ACT.stop && engageFails >= ER.maxTries) run[ACT.stop](now, {});   // capped: this many lost engages in a row ends the asking
+      else if (action !== ACT.stop && (phase as Phase) !== PHASE.off && engageAt === null) engageAt = now + Math.min(T.engageRetryMs * ER.factor ** (engageFails - 1), ER.maxMs);   // an engage that was lost is asked again, later each time
+      }
     } finally { busy.engage = false; }
   }
 

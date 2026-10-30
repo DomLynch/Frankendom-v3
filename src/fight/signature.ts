@@ -15,14 +15,13 @@ const FADE_IN_MIN = fxNum('fx.signature.fadeInMin');
 // a pure trigger (`when`, tested under node) plus what it draws (`fire`, and `update` for anything that lives over time). The marks it
 // leaves come from capped pools that last the fight and are cleared with the fighters' wounds; the oldest mark is the one reused.
 // `ship` is what players get: the variant Dom ruled for this opponent (SHIPPED), or nothing. `on` / A–C are the admin preview.
-export type SignatureMode = 'off' | 'ship' | 'on' | 'A' | 'B' | 'C';
-export type SignatureVariant = 'A' | 'B' | 'C';
-export const SIGNATURE_MODES: readonly SignatureMode[] = ['off', 'ship', 'on', 'A', 'B', 'C'];
+type SignatureMode = 'off' | 'ship' | 'on' | 'A' | 'B' | 'C';
+type SignatureVariant = 'A' | 'B' | 'C';
 // The ruled variant per opponent (Strategy for Dom, 2026-09-24): on by default for every player. An opponent missing here (anyone not
 // yet ruled) shows nothing outside the admin preview. A letter whose effect is not registered yet also shows nothing.
-export const SHIPPED = sigGroup<{ variant: SignatureVariant; name: string }>('shipped') as Partial<Record<OpponentId, { variant: SignatureVariant; name: string }>>;   // one row per opponent in signature-rows.json (`shipped.<opponent>`)
+const SHIPPED = sigGroup<{ variant: SignatureVariant; name: string }>('shipped') as Partial<Record<OpponentId, { variant: SignatureVariant; name: string }>>;   // one row per opponent in signature-rows.json (`shipped.<opponent>`)
 // Hard caps per fight (brief rule 4, Lead's numbers): marks on one body, on one shield, on the floor.
-export const SIGNATURE_CAPS = { body: 6, shield: 4, floor: 8 } as const;
+const SIGNATURE_CAPS = { body: 6, shield: 4, floor: 8 } as const;
 export const OPPONENT_SIDE: Side = 1;   // the signature is the opponent's: the player's fighter is side 0 in every fight
 
 // What an effect is handed when its trigger fires or each frame after the rigs have posed.
@@ -44,7 +43,7 @@ export type SignatureEffect = {
   clear?: () => void;
   blood?: boolean;   // the effect is blood (a stain, a spray, a drip): it stands down while the player has blood off
 };
-export type MarkSite = { bone: string; dir: [number, number, number]; radius: number };   // the struck fighter's frame: +x his left, +z his front
+type MarkSite = { bone: string; dir: [number, number, number]; radius: number };   // the struck fighter's frame: +x his left, +z his front
 // How a mark looks: the effect owns the art, the pool owns the slot and its lifetime.
 export type MarkLook = {
   width: number; height: number;          // metres
@@ -57,36 +56,22 @@ export type MarkLook = {
 // Trigger helpers for the ten rows of the brief. A landed blow names the attacker `actor` and the struck `target`; a defence names the
 // defender `actor` (duel.ts). `on` = the event concerns the opponent the signature belongs to, from the side the row names.
 export const isHeavy = (event: CombatEvent) => HEAVY_CLASS.has(event.move ?? '');
-export const hitBy = (event: CombatEvent) => event.type === 'Hit' && event.actor === OPPONENT_SIDE && event.move !== 'kick';
-export const hitOn = (event: CombatEvent) => event.type === 'Hit' && event.target === OPPONENT_SIDE;
-export const heavyHitBy = (event: CombatEvent) => hitBy(event) && isHeavy(event);
 export const defendedBy = (event: CombatEvent, type: 'Blocked' | 'Parried' | 'Dodged') => event.type === type && event.actor === OPPONENT_SIDE;
 
 // Which of an opponent's effects the mode selects: off → none, ship → the ruled variant or none, on → the A (or the first built), a letter →
 // that variant only.
-export function pickSignature(effects: readonly SignatureEffect[] | undefined, mode: SignatureMode, shipped?: SignatureVariant): SignatureEffect | null {
+function pickSignature(effects: readonly SignatureEffect[] | undefined, mode: SignatureMode, shipped?: SignatureVariant): SignatureEffect | null {
   if (!effects?.length || mode === 'off') return null;
   if (mode === 'ship') return shipped ? effects.find((e) => e.variant === shipped) ?? null : null;
   if (mode === 'on') return effects.find((e) => e.variant === 'A') ?? effects[0];
   return effects.find((e) => e.variant === mode) ?? null;
 }
 // The pick main.ts hands over (`?signature=`, else the admin select's stored value) read as a mode. Unknown = off; absent = ship.
-export function signatureMode(asked: string | null | undefined): SignatureMode {
-  if (!asked) return 'ship';
-  const mode = (asked.length === 1 ? asked.toUpperCase() : asked.toLowerCase()) as SignatureMode;
-  return SIGNATURE_MODES.includes(mode) ? mode : 'off';
-}
-
 // Which mode applies, from `?signature=` (wins), else the admin select's value. The preview is a TEST TOOL: it counts only while the test tools
 // are open (the admins roster or ?debug, the same gate as the Arena pick). Closed tools = ship, whatever the URL or a stale session says
 // (Lead, #655 review: a player typing ?signature=on must not see an effect Dom has not passed).
-export function resolveSignature(search: string, selected: string | null, toolsOpen: boolean): SignatureMode {
-  if (!toolsOpen) return 'ship';
-  return signatureMode(/[?&]signature=(\w+)/.exec(search)?.[1] ?? selected);
-}
-
 // The registry: one list per opponent, A first. Effects register from their own modules (one PR each).
-export const SIGNATURES: Partial<Record<OpponentId, SignatureEffect[]>> = {};
+const SIGNATURES: Partial<Record<OpponentId, SignatureEffect[]>> = {};
 export function registerSignature(effect: SignatureEffect): void {
   const list = (SIGNATURES[effect.opponent] ??= []);
   if (!list.some((e) => e.variant === effect.variant)) list.push(effect);
@@ -96,7 +81,7 @@ export function registerSignature(effect: SignatureEffect): void {
 // flat on the sand. Each slot owns its material so marks fade independently; nothing is allocated per hit or per frame.
 type Slot = { mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>; parent: THREE.Object3D | null; point: THREE.Vector3; normal: THREE.Vector3; age: number; fadeIn: number; opacity: number; used: boolean; order: number; side: Side | null };
 export type SignatureMarks = ReturnType<typeof createSignatureMarks>;
-export function createSignatureMarks(scene: THREE.Scene) {
+function createSignatureMarks(scene: THREE.Scene) {
   let order = 0;
   const pool = (count: number, side: Side | null): Slot[] => Array.from({ length: count }, () => {
     const onBody = side !== null;

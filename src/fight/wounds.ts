@@ -3,24 +3,12 @@
 // `wounds`, or a species with no blood, draws nothing here (the Pit's own gore stays the men's and the goblin's). Presentation only: nothing here is read by the simulation, and every roll
 // comes from a seed the caller derives from the fight's own tick, so a replay draws the same wounds. Donor: Cataclysm-DDA (CC BY-SA, shape only): body_parts hit_size -> Part.weight,
 // monster bleed_rate -> Wounds.bleedRate.
-import { BODYTYPES, SPECIES } from './body-tables.ts';
 import { makeRng } from './blood-style.ts';
-import { catalogueRow } from './catalogue-rows.ts';
 import type { Part, Species, Wounds } from './catalogue.ts';
 
 export type WoundSpec = { id: string; wounds: Wounds; parts: readonly Part[]; species: Species };
 
-const specs = new Map<string, WoundSpec | null>();
-/** The wound spec of a creature: its catalogue row by the `character:` id (the Ember wolf's own row), else by its body's roster id (the Ash wolf is the `wolf` row); null = it draws no wounds. */
-export function woundSpec(character: string, body: string): WoundSpec | null {
-  const key = `${character}|${body}`;
-  if (specs.has(key)) return specs.get(key)!;
-  const row = catalogueRow(character.replace(/^character:/, '')) ?? catalogueRow(body), w = row?.wounds, bt = w && BODYTYPES[w.body], sp = w && SPECIES[w.species];
-  const out = row && w && bt && sp ? { id: row.id, wounds: w, parts: bt.parts, species: sp } : null;
-  specs.set(key, out);
-  return out;
-}
-
+export const specs = new Map<string, WoundSpec | null>();
 /** One unit-interval stream from a seed (mulberry32), so a roll is the fight's, not the clock's. */
 export const unit = (seed: number): number => makeRng(seed)();
 
@@ -38,14 +26,14 @@ export function sprayOf(spec: WoundSpec): { amount: number; start: string; end: 
 }
 
 /** The deepest tier an hp fraction has fallen below (tiers are strictly descending), or -1 while it is still whole enough. */
-export function tierAt(w: Wounds, hpFrac: number): number {
+function tierAt(w: Wounds, hpFrac: number): number {
   let at = -1;
   for (let i = 0; i < w.tiers.length; i++) if (hpFrac < w.tiers[i]!.below) at = i;
   return at;
 }
 
 /** Drips per second at an hp fraction: the row's bleed rate x the species spray x its size x the tier's drip (0 above the first tier, or for a species that does not bleed). */
-export function dripRate(spec: WoundSpec, hpFrac: number): number {
+function dripRate(spec: WoundSpec, hpFrac: number): number {
   const t = tierAt(spec.wounds, hpFrac);
   return t < 0 || !spec.species.blood ? 0 : spec.wounds.bleedRate * spec.species.spray * spec.wounds.size * spec.wounds.tiers[t]!.drip;
 }

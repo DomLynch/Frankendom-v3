@@ -9,7 +9,7 @@
 // frame; carve() itself is typed-array passes only (no per-vertex closures, no growing arrays), and the twin outlives the rematch (restore() resets it).
 import { BufferAttribute, BufferGeometry, type Object3D, type Raycaster, SkinnedMesh, Vector3 } from 'three';
 
-export type Seam = { piece: number; bodyKeepBelow: number };
+type Seam = { piece: number; bodyKeepBelow: number };
 
 /** What a cut bone's subtree can touch on one draw, from the body's own skin (found at load): the bones it carries, the vertices with any carried influence, and the offsets of the triangles that use one. */
 type Reach = { carried: Uint8Array; verts: Uint32Array; tris: Uint32Array };

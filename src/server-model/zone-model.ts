@@ -68,11 +68,11 @@ export function checkWeaponCoverage(rules: Rules, ids: readonly string[]): void 
   if (missing.length) throw new Error(`no weapon rule for: ${missing.join(', ')}`);
 }
 
-export type Spawn = { instance: string; layer: number; zone: string; kind: string; maxHp: number; respawnS: number; hp: number; alive: boolean; generation: number; respawnAtMs: number | null; killedAtMs: number | null };
-export type Engage = { token: string; account: string; character: string; instance: string; layer: number; generation: number; lastHitAtMs: number | null; expiresAtMs: number; used: boolean; result: 'killed' | 'dead' | 'expired' | 'moved' | null };
-export type HitRow = { instance: string; layer: number; generation: number; account: string; character: string; atMs: number; applied: number; hits: number; claimed: number };
-export type Credit = { instance: string; layer: number; generation: number; account: string; character: string; atMs: number; damage: number; sharePct: number; payShare: number; paid: boolean; reason: string };
-export type World = { rules: Rules; spawns: Map<string, Spawn>; engages: Map<string, Engage>; hits: HitRow[]; credits: Credit[]; batches: Map<string, unknown> };
+type Spawn = { instance: string; layer: number; zone: string; kind: string; maxHp: number; respawnS: number; hp: number; alive: boolean; generation: number; respawnAtMs: number | null; killedAtMs: number | null };
+type Engage = { token: string; account: string; character: string; instance: string; layer: number; generation: number; lastHitAtMs: number | null; expiresAtMs: number; used: boolean; result: 'killed' | 'dead' | 'expired' | 'moved' | null };
+type HitRow = { instance: string; layer: number; generation: number; account: string; character: string; atMs: number; applied: number; hits: number; claimed: number };
+type Credit = { instance: string; layer: number; generation: number; account: string; character: string; atMs: number; damage: number; sharePct: number; payShare: number; paid: boolean; reason: string };
+type World = { rules: Rules; spawns: Map<string, Spawn>; engages: Map<string, Engage>; hits: HitRow[]; credits: Credit[]; batches: Map<string, unknown> };
 
 export const newWorld = (rules: Rules): World => ({ rules, spawns: new Map(), engages: new Map(), hits: [], credits: [], batches: new Map() });
 export class ModelError extends Error { code: string; constructor(code: string, msg: string) { super(msg); this.code = code; } }
@@ -90,7 +90,7 @@ export function view(w: World, s: Spawn, nowMs: number): { alive: boolean; hp: n
   return { alive: false, hp: 0, maxHp: s.maxHp, generation: s.generation, respawnAtMs: s.respawnAtMs };
 }
 
-export type EngageReq = { account: string; character: string; token: string; instance: string; layer: number; kind: string; maxHp: number; respawnS?: number };
+type EngageReq = { account: string; character: string; token: string; instance: string; layer: number; kind: string; maxHp: number; respawnS?: number };
 
 /** Engage a live spawn: create it on first engage (kind, max hp and respawn seconds are then FIXED), bring it back at its respawn time, hand out a one-use token. */
 export function engage(w: World, q: EngageReq, nowMs: number): Record<string, unknown> {
@@ -127,7 +127,7 @@ export function touch(w: World, account: string, token: string, nowMs: number): 
   return { expiresAtMs: e.expiresAtMs };
 }
 
-export type HitReq = { account: string; token: string; weapon: string; claimed: number; hits: number; layer: number };
+type HitReq = { account: string; token: string; weapon: string; claimed: number; hits: number; layer: number };
 
 /** One hit report. The phone claims; the store applies at most what the weapon rows and the real elapsed time allow, and never more than the hp that is left. A claimed kill does not exist:
  *  the spawn dies only when its ONE hp reaches 0, and the same call settles credit. */
@@ -182,7 +182,7 @@ export function settle(w: World, s: Spawn, nowMs: number): Credit[] {
   return out;
 }
 
-export type BatchRow = HitReq & { respawnS?: never };
+type BatchRow = HitReq & { respawnS?: never };
 
 /** One tick = one batch. Rows are applied in order; a row that fails is reported in its slot and does not stop the others. A batch id seen before returns the stored receipt and applies
  *  NOTHING (the second lock behind "a failed batch is never retried"). The caller must still never resend. */

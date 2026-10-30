@@ -19,7 +19,10 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REASON_MIN = 12;
-const TYPEOF = new Set(['undefined', 'object', 'string', 'number', 'boolean', 'function', 'symbol', 'bigint']);
+export const EXEMPT_CATEGORIES = ['baked-geometry', 'vfx-table', 'asset-table'];   // a whole-file exemption names why the file is numbers by nature
+/** The kind a hit is totalled under: a compare against an id-like string (a boss, move or event name) is its own `name-compare`, so it ratchets on its own. */
+export const totalKind = (h) => (h.kind === 'compare' && /^[A-Za-z][\w:.-]*$/.test(h.literal) ? 'name-compare' : h.kind);
+const TYPEOF =new Set(['undefined', 'object', 'string', 'number', 'boolean', 'function', 'symbol', 'bigint']);
 
 // ---- the scanner: source text -> findings. Pure, so the test can point it at fixtures. -------------------------------------------------------
 
@@ -157,36 +160,102 @@ export function dataIds(root) {
 export function run(root, { allowFile = join(HERE, 'allow.json'), baselineFile = join(HERE, 'baseline.json'), scopeFile = join(HERE, 'scope.json') } = {}) {
   const scopeJson = JSON.parse(readFileSync(scopeFile, 'utf8'));
   const scope = scopeJson.globs.map(globToRe);
-  const legacy = new Set(scopeJson.legacy ?? []);   // only these files may carry a baseline; every other file in scope starts at zero
-  const allow = existsSync(allowFile) ? JSON.parse(readFileSync(allowFile, 'utf8')).allow ?? [] : [];
-  const rawBase = existsSync(baselineFile) ? JSON.parse(readFileSync(baselineFile, 'utf8')).counts ?? {} : {};
+  const excluded = (scopeJson.exclude ?? []).map(globToRe);
+  const legacy = new Set(scopeJson.legacy ?? []);   // these files carry a per-literal baseline (`counts`); every other file carries a per-kind TOTAL (`totals`) or starts at zero
+  const allowJson = existsSync(allowFile) ? JSON.parse(readFileSync(allowFile, 'utf8')) : {};
+  const allow = allowJson.allow ?? [];
+  const exemptFiles = allowJson.files ?? [];        // whole-file exemptions from one kind, each with a category and a reason
+  const baseJson = existsSync(baselineFile) ? JSON.parse(readFileSync(baselineFile, 'utf8')) : {};
+  const rawBase = baseJson.counts ?? {};
+  const totalsBase = baseJson.totals ?? {};
+  const allowBase = baseJson.allowTotals ?? {};
   const base = Object.fromEntries(Object.entries(rawBase).filter(([f]) => legacy.has(f)));
   const problems = [];
+  for (const e of exemptFiles) {
+    if (!e.file || !e.kind) problems.push(`exempt file row needs file and kind: ${JSON.stringify(e)}`);
+    if (!e.reason || e.reason.trim().length < REASON_MIN) problems.push(`exempt file ${e.file} ${e.kind} needs a real reason (${REASON_MIN}+ characters)`);
+    if (!e.category || !EXEMPT_CATEGORIES.includes(e.category)) problems.push(`exempt file ${e.file} ${e.kind} needs a category tag, one of: ${EXEMPT_CATEGORIES.join(', ')}`);
+  }
   for (const a of allow) {
     if (!a.file || !a.kind || a.literal === undefined) problems.push(`allow entry needs file, kind and literal: ${JSON.stringify(a)}`);
     if (!a.reason || a.reason.trim().length < REASON_MIN) problems.push(`allow entry ${a.file} ${a.kind} ${a.literal} needs a real reason (${REASON_MIN}+ characters)`);
   }
   const ids = dataIds(root);
-  const files = walk(root, 'src').map((f) => f).filter((f) => scope.some((re) => re.test(f))).sort();
-  const used = new Set(), exempt = {}, tally = {};
+  const files = walk(root, 'src').filter((f) => scope.some((re) => re.test(f)) && !excluded.some((re) => re.test(f))).sort();
+  const used = new Set(), usedExempt = new Set(), exempt = {}, tally = {}, measured = {}, areas = {};
+  const area = (f) => { const p = f.split('/'); return p.length > 2 ? p[1] : 'src-top'; };
+  const A = (f) => (areas[area(f)] ??= { files: 0, hits: {}, baselined: 0, allowed: 0, exempt: 0, new: 0, plain: 0 });
   for (const f of files) {
+    const a = A(f); a.files++;
     const found = scan(readFileSync(join(root, f), 'utf8'), ids);
-    const counts = {};
+    const counts = {}, kinds = {};
+    const newHits = [];
     for (const h of found) {
       if (h.kind === 'exempt') { exempt[h.literal] = (exempt[h.literal] ?? 0) + 1; continue; }
-      const entry = allow.findIndex((a) => a.file === f && a.kind === h.kind && String(a.literal) === h.literal);
-      if (entry >= 0) { used.add(entry); continue; }
+      const k2 = totalKind(h);
+      a.hits[k2] = (a.hits[k2] ?? 0) + 1;
+      const ex = exemptFiles.findIndex((e) => e.file === f && e.kind === h.kind);
+      if (ex >= 0) { usedExempt.add(ex); a.exempt++; continue; }
+      const entry = allow.findIndex((r) => r.file === f && (r.kind === h.kind || r.kind === k2) && String(r.literal) === h.literal);
+      if (entry >= 0) { used.add(entry); a.allowed++; continue; }
       const key = `${h.kind}:${h.literal}`;
       counts[key] = (counts[key] ?? 0) + 1;
-      const seen = counts[key];
-      if (seen > (base[f]?.[key] ?? 0)) problems.push(`${f}:${h.line} ${h.kind} ${JSON.stringify(h.literal)} belongs in a data row (or add an allow row with a reason)`);
+      kinds[k2] = (kinds[k2] ?? 0) + 1;
+      if (legacy.has(f)) {
+        if (counts[key] > (base[f]?.[key] ?? 0)) { problems.push(`${f}:${h.line} ${h.kind} ${JSON.stringify(h.literal)} belongs in a data row (or add an allow row with a reason)`); a.new++; } else a.baselined++;
+      } else newHits.push(h);
     }
     if (Object.keys(counts).length) tally[f] = counts;
-    for (const [key, was] of Object.entries(base[f] ?? {})) if ((counts[key] ?? 0) < was) problems.push(`${f}: baseline says ${was} x ${key}, the file has ${counts[key] ?? 0}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
+    if (!legacy.has(f) && Object.keys(kinds).length) measured[f] = kinds;
+    if (legacy.has(f)) for (const [key, was] of Object.entries(base[f] ?? {})) if ((counts[key] ?? 0) < was) problems.push(`${f}: baseline says ${was} x ${key}, the file has ${counts[key] ?? 0}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
+    if (!legacy.has(f)) {          // the per-file TOTAL ratchet: a count may only go down
+      const tb = totalsBase[f] ?? {};
+      for (const k of new Set([...Object.keys(tb), ...Object.keys(kinds)])) {
+        const now = kinds[k] ?? 0, was = tb[k] ?? 0;
+        a.baselined += Math.min(now, was);
+        if (now > was) {
+          a.new += now - was;
+          const lines = newHits.filter((h) => totalKind(h) === k).map((h) => h.line);
+          if (was === 0) { for (const h of newHits.filter((x) => totalKind(x) === k)) problems.push(`${f}:${h.line} ${h.kind} ${JSON.stringify(h.literal)} belongs in a data row (or add an allow row with a reason)`); continue; }
+          problems.push(`${f}: ${k} count ${now} is over the baseline ${was} (new hit(s) near line ${lines.slice(-(now - was)).join(', ')}): put the value in a data row, or add an allow row with a reason`);
+        } else if (now < was) problems.push(`${f}: baseline says ${was} x ${k}, the file has ${now}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
+      }
+    }
   }
-  allow.forEach((a, k) => { if (!used.has(k) && files.includes(a.file)) problems.push(`stale allow entry ${a.file} ${a.kind} ${a.literal}: nothing matches it any more, delete the row`); else if (!files.includes(a.file)) problems.push(`stale allow entry ${a.file} ${a.kind} ${a.literal}: the file is not in scope or is gone`); });
+  allow.forEach((r, k) => { if (!used.has(k) && files.includes(r.file)) problems.push(`stale allow entry ${r.file} ${r.kind} ${r.literal}: nothing matches it any more, delete the row`); else if (!files.includes(r.file)) problems.push(`stale allow entry ${r.file} ${r.kind} ${r.literal}: the file is not in scope or is gone`); });
+  exemptFiles.forEach((e, k) => { if (!usedExempt.has(k)) problems.push(`stale exempt file ${e.file} ${e.kind}: the file has no ${e.kind} hit (or is not in scope), delete the row`); });
   for (const f of Object.keys(rawBase)) if (!legacy.has(f) || !files.includes(f)) problems.push(`baseline names ${f}, which is not a scanned legacy file (scope.json legacy): delete its baseline row`);
-  return { problems, exempt, scanned: files.length, tally, legacy };
+  for (const f of Object.keys(totalsBase)) if (legacy.has(f) || !files.includes(f)) problems.push(`baseline totals name ${f}, which is gone, out of scope or a per-literal legacy file: delete its totals row`);
+  // BACKLOG: allow rows whose reason starts with DEFERRED are tuning or player text still in code. They are counted apart, may only shrink (the recorded count in baseline.json `backlog`), target 0.
+  const backlog = allow.filter((a) => isBacklog(a)).length, backlogBase = Number.isInteger(baseJson.backlog) ? baseJson.backlog : 0;
+  if (backlog > backlogBase) problems.push(`backlog: ${backlog} DEFERRED allow row(s), the baseline says ${backlogBase}: a DEFERRED row cannot be added, move the value into a data row (or give the row a plain non-DEFERRED reason if it is not tuning)`);
+  else if (backlog < backlogBase) problems.push(`backlog: baseline says ${backlogBase} DEFERRED allow row(s), there are ${backlog}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
+  // PLAIN ALLOW ROWS (not DEFERRED): the count per file and kind may only shrink, so an allow row cannot be the way a value stays in code.
+  const allowTotals = {};
+  for (const r of allow) if (!isBacklog(r) && r.file && r.kind) { const t = (allowTotals[r.file] ??= {}); t[r.kind] = (t[r.kind] ?? 0) + 1; }
+  for (const r of allow) if (!isBacklog(r) && files.includes(r.file)) A(r.file).plain = (A(r.file).plain ?? 0) + 1;
+  for (const f of new Set([...Object.keys(allowTotals), ...Object.keys(allowBase)])) {
+    for (const k of new Set([...Object.keys(allowTotals[f] ?? {}), ...Object.keys(allowBase[f] ?? {})])) {
+      const now = allowTotals[f]?.[k] ?? 0, was = allowBase[f]?.[k] ?? 0;
+      if (now > was) problems.push(`${f}: ${now} plain ${k} allow row(s), the baseline says ${was}: a new allow row needs the same PR to lower another in that file or move a value into data`);
+      else if (now < was) problems.push(`${f}: baseline allowTotals says ${was} x ${k} allow row(s), there are ${now}: lower scripts/as-data/baseline.json in this PR (npm run check:as-data -- --write-baseline)`);
+    }
+  }
+  return { problems, exempt, scanned: files.length, tally, legacy, measured, areas, backlog, allowTotals };
+}
+
+/** An allow row whose reason starts with DEFERRED: a value that belongs in a data row and has not moved yet. */
+export const isBacklog = (row) => /^DEFERRED\b/.test(String(row?.reason ?? '').trim());
+
+/** The summary table, one row per area: files, hits by kind, and how each hit is covered. */
+export function summaryTable(r) {
+  const KINDS = ['number', 'label', 'compare', 'name-compare', 'data-id'];
+  const head = ['area', 'files', ...KINDS, 'baselined', 'allowed', 'plain-allow', 'exempt', 'new'];
+  const rows = Object.entries(r.areas).sort(([x], [y]) => x.localeCompare(y)).map(([n, a]) => [n, a.files, ...KINDS.map((k) => a.hits[k] ?? 0), a.baselined, a.allowed, a.plain, a.exempt, a.new]);
+  const sum = rows.reduce((t, row) => row.map((v, i) => (i === 0 ? 'total' : (t[i] ?? 0) + v)), []);
+  const all = [head, ...rows, sum].map((row) => row.map(String));
+  const w = head.map((_, i) => Math.max(...all.map((row) => row[i].length)));
+  return all.map((row) => row.map((c, i) => (i === 0 ? c.padEnd(w[i]) : c.padStart(w[i]))).join('  ')).join('\n');
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -194,18 +263,28 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (process.argv.includes('--write-baseline')) {
     // lowers the backlog only: refuses while anything is new (a new site is fixed or allow-listed with a reason, never blessed here)
     const file = join(HERE, 'baseline.json');
-    const old = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).counts ?? {} : null;
-    const before = run(root, { baselineFile: join(HERE, 'no-such-baseline.json') });   // measured against an empty baseline: every site in a legacy file is "new" here
+    const oldJson = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
+    const old = oldJson?.counts ?? null, oldTotals = oldJson?.totals ?? {};
+    const before = run(root);
     const counts = Object.fromEntries(Object.entries(before.tally).filter(([f]) => before.legacy.has(f)));
-    const fresh = before.problems.filter((p) => !/^(?:stale allow|baseline names)/.test(p) && !before.legacy.has(p.split(/[: ]/)[0]));
-    const grown = old ? Object.entries(counts).flatMap(([f, c]) => Object.entries(c).filter(([k, v]) => v > (old[f]?.[k] ?? 0)).map(([k]) => `${f} ${k}`)) : [];
-    if (fresh.length || grown.length) { console.error(`as-data: not writing the baseline, the baseline only shrinks; new sites:\n${[...fresh, ...grown].slice(0, 10).join('\n')}`); process.exit(1); }
-    writeFileSync(file, `${JSON.stringify({ about: 'Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy). More of a literal than this is new; fewer must come down here. Only ever shrinks.', counts }, null, 1)}\n`);
-    console.log(`as-data: wrote ${relative(root, file)} (${Object.keys(before.tally).length} files)`);
+    const totals = before.measured;
+    const grown = [
+      ...(old ? Object.entries(counts).flatMap(([f, c]) => Object.entries(c).filter(([k, v]) => v > (old[f]?.[k] ?? 0)).map(([k]) => `${f} ${k}`)) : []),
+      ...Object.entries(totals).flatMap(([f, c]) => Object.entries(c).filter(([k, v]) => v > (oldTotals[f]?.[k] ?? 0)).map(([k]) => `${f} ${k}`)),
+    ];
+    const oldBacklog = Number.isInteger(oldJson?.backlog) ? oldJson.backlog : null;
+    const oldAllow = oldJson?.allowTotals ?? {};
+    if (oldJson?.allowTotals) for (const [f, c] of Object.entries(before.allowTotals)) for (const [k, v] of Object.entries(c)) if (v > (oldAllow[f]?.[k] ?? 0)) grown.push(`${f} plain ${k} allow rows ${v} > ${oldAllow[f]?.[k] ?? 0}`);
+    if (oldBacklog !== null && before.backlog > oldBacklog) grown.push(`backlog ${before.backlog} > ${oldBacklog}`);
+    if (grown.length) { console.error(`as-data: not writing the baseline, the baseline only shrinks; new sites:\n${grown.slice(0, 10).join('\n')}`); process.exit(1); }
+    writeFileSync(file, `${JSON.stringify({ about: 'Counts already in the legacy files (V1 donor code that existed before the gate; scope.json legacy): per literal. More of a literal than this is new; fewer must come down here. Only ever shrinks.', counts, backlog_about: 'Count of allow.json rows whose reason starts with DEFERRED (a value that belongs in a data row and has not moved yet). Shrink-only, target 0.', backlog: before.backlog, allowTotals_about: 'Plain (non-DEFERRED) allow.json rows per file and kind. Shrink-only: a new allow row needs the same PR to lower another in that file or move a value into data.', allowTotals: before.allowTotals, totals_about: oldJson?.totals_about ?? '', totals }, null, 1)}\n`);
+    console.log(`as-data: wrote ${relative(root, file)} (${Object.keys(counts).length} per-literal files, ${Object.keys(totals).length} total-ratchet files)`);
     process.exit(0);
   }
   const r = run(root);
   const ex = Object.entries(r.exempt).map(([k, v]) => `${k} x${v}`).join(', ') || 'none';
-  if (r.problems.length) { console.error(`as-data: ${r.problems.length} problem(s) in ${r.scanned} scanned file(s):\n${r.problems.join('\n')}`); process.exit(1); }
-  console.log(`as-data: ${r.scanned} file(s) clean (named exemptions: ${ex})`);
+  console.log(summaryTable(r));
+  if (r.problems.length) { console.error(`as-data: ${r.problems.length} problem(s) in ${r.scanned} scanned file(s):\n${r.problems.slice(0, 60).join('\n')}${r.problems.length > 60 ? `\n... and ${r.problems.length - 60} more` : ''}`); process.exit(1); }
+  console.log(`as-data: backlog ${r.backlog} DEFERRED allow row(s) (shrink-only, target 0)`);
+  console.log(`as-data: ${r.scanned} file(s) at or under their baseline (named exemptions: ${ex})`);
 }

@@ -9,9 +9,9 @@ import SPECIAL_MANIFEST from './special-defs.manifest.json' with { type: 'json' 
 // handler's parameters; no code copied). Presentation only: no special row reaches the sim.
 export type SpecialRow = { id: string; family: string; template: string; opponent: string; cast: { actor: number; move?: string }; params: Record<string, unknown> };
 // A family's templates and, per template, the params a row of it must carry.
-export type Templates = Readonly<Record<string, readonly string[]>>;
+type Templates = Readonly<Record<string, readonly string[]>>;
 
-export function loadSpecialDefs(raw: unknown, manifest: Manifest, file = 'special-defs.json'): readonly SpecialRow[] {
+function loadSpecialDefs(raw: unknown, manifest: Manifest, file = 'special-defs.json'): readonly SpecialRow[] {
   const table = tableFromFile(manifest, raw, file);
   loadRegistry([table]);   // bad key, duplicate id, missing field, wrong type: file:row:id + the rule
   return table.rows as readonly SpecialRow[];

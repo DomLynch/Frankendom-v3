@@ -6,18 +6,18 @@
 // COST=1: no stills and no fake clock (performance.now is real): the fight plays in real time for COST_S seconds, then the kick kill, and the
 // ragdoll's own per-frame cost (globalThis.__ragdoll.byMode: alive / dead) is printed.
 //   node scripts/ragdoll-stills.mjs <base url> <out dir> [query ...]   (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/ragdoll-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), KICK_EVERY = Number(process.env.KICK_EVERY ?? 40), MAX_TICKS = Number(process.env.MAX_TICKS ?? 4000);
 const HIT_AT = [0, 4, 10, 20, 35, 55], DEATH_AT = [0, 2, 4, 8, 16, 26, 40, 60, 90, 140, 220];
 const report = {};
 if (process.env.COST) {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => console.error(`cost: pageerror ${e.message}`));
   await page.goto(`${base}/${queries[0] ? `?${queries[0]}` : ''}`);
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 120000 });
@@ -40,14 +40,13 @@ if (process.env.COST) {
 }
 for (const query of queries.length ? queries : ['', 'physics=v1']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') console.error(`${tag}: console ${m.text()}`); });
+  const page = await browser.newPage(phoneOptions(2));
+  collectErrors(page, { echo: true, label: tag });
   // The clock is paused the moment the fight is ready, so every query plays (nearly) the same ticks from there.
   if (process.env.TUNE) await page.addInitScript((t) => { globalThis.__ragdollTune = t; }, JSON.parse(process.env.TUNE));   // TUNE='{"solveHinges":false}': ragdoll.ts's tuning hook
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 180000, polling: 'raf' });
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   // the physics chunk loads after the first frame (data/physics.json loadAfterFirstFrameMs): the same 2 s of ticks for every query, then (the

@@ -5,15 +5,15 @@
 //   <tag>-3-retrieved after walking onto the pile: "Recovered 30 coins and the Gladius", the pile gone from the save and the screen
 // It prints the save and the HUD at each beat and fails on a page error, a console error, or a pile that did not behave.
 //   node scripts/corpse-run-stills.mjs <base url> <out dir> <tag>      (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/corpse-run-stills.mjs <base url> <out dir> <tag>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const PROG = JSON.parse(readFileSync(new URL('../data/progression.json', import.meta.url), 'utf8'));
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 2), isMobile: true, hasTouch: true });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 2)));
 let bad = 0;
 const fail = (m) => { bad++; console.error(`${tag} FAIL ${m}`); };
 page.on('pageerror', (e) => { bad++; console.error(`pageerror ${e.message}`); });

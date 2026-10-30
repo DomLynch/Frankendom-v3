@@ -2,7 +2,7 @@
 # The look-thumb 375 stills on the VPS (headless Chromium, software GL, real two-finger touches), niced: build this tree, serve dist/, run scripts/look-thumb-stills.mjs:
 #   free    the gesture with nobody fighting him (opener off so nothing engages)       combat    the same gesture while a boss fights him (the yaw must not move)
 #   off     ?look=off: the plain drag the free camera shipped with
-#   ssh root@49.12.7.18 'cd <checkout> && nice -n 10 capture --prio 3 v3 bash scripts/vps-look-stills.sh <out dir>'
+#   ssh <user>@<vps-host>'cd <checkout> && nice -n 10 capture --prio 3 v3 bash scripts/vps-look-stills.sh <out dir>'
 set -euo pipefail
 OUT=${1:?out dir}
 [ -d node_modules/playwright ] || npm i --no-save --no-audit --no-fund playwright@1.62.1 >/dev/null 2>&1

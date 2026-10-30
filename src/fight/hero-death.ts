@@ -4,13 +4,13 @@
 import ROWS from '../../data/hero-death.json' with { type: 'json' };
 
 export type DeathCamRows = { seconds: number; pullBackMetres: number; riseMetres: number; orbitDegrees: number; releaseSeconds: number; lookY: number };
-export type HeroDeathRows = {
+type HeroDeathRows = {
   on: boolean; query: string; off: string; ragdoll: boolean; line: string; button: string; keys: string[];
   respawn: { minSeconds: number; autoSeconds: number };   // the Respawn button and keys work from minSeconds after the death; he stands up by himself at autoSeconds
   cam: DeathCamRows;
 };
 type Range = [number, number];
-export type HeroDeathLimits = Record<'minSeconds' | 'autoSeconds' | 'seconds' | 'pullBackMetres' | 'riseMetres' | 'orbitDegrees' | 'releaseSeconds' | 'lookY', Range>;
+type HeroDeathLimits = Record<'minSeconds' | 'autoSeconds' | 'seconds' | 'pullBackMetres' | 'riseMetres' | 'orbitDegrees' | 'releaseSeconds' | 'lookY', Range>;
 type Shipped = HeroDeathRows & { limits: HeroDeathLimits };
 const SHIPPED = ROWS as unknown as Shipped;
 

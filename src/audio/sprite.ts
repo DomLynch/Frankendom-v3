@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
 }
 export const pageUnloading = (): boolean => unloading;
 export const fetchAsset: typeof fetch = (input, init) => fetch(input, { ...init, signal: aborter?.signal });
-export const nextTask = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
+const nextTask = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 // Fetch and decode the first format that works; null when none does (or the page is leaving), and the caller keeps its fallback.
 // The one codec-fallback loop: every audio loader (sprite, arena, gate, duel, special) is this call with its own URL map.
 export async function loadFirst(urls: Record<Format, string>, context: BaseAudioContext, formats: Format[] = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> {
@@ -39,10 +39,10 @@ export async function loadFirst(urls: Record<Format, string>, context: BaseAudio
   }
   return null;
 }
-export const loadSprite = (context: BaseAudioContext, formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> => loadFirst(SPRITE_URLS, context, formats, fetchImpl, leaving);
+const loadSprite = (context: BaseAudioContext, formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<AudioBuffer | null> => loadFirst(SPRITE_URLS, context, formats, fetchImpl, leaving);
 /** The sprite's bytes and the format they are in, fetched with no gesture and no AudioContext (decoding needs the context, fetching does not). */
 export type Prefetched = { format: Format; bytes: ArrayBuffer };
-export async function prefetchSprite(formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<Prefetched | null> {
+async function prefetchSprite(formats = spriteFormats(), fetchImpl: typeof fetch = fetchAsset, leaving = pageUnloading): Promise<Prefetched | null> {
   for (const [attempt, format] of formats.entries()) {
     if (attempt) await nextTask();
     if (leaving()) break;

@@ -12,16 +12,16 @@ import { weaponOf, type Direction } from './moves.ts';
 import { bloodNum } from './blood-rows.ts';
 import { artUrl } from '../art-url.ts';
 
-export type Edge = 'left' | 'right';
-export const EDGE: Record<Direction, Edge | 'both'> = { right: 'left', left: 'right', overhead: 'both', thrust: 'both', low: 'both' };
-export const STRIPS = ['wet-smear', 'soft-bleed', 'dragged-streak'] as const;
-export const EDGE_MS = bloodNum('blood-edge.edge-ms');
-export const PEAK = [0.12, 0.43];   // opacity holds from 58 ms to 206 ms (~150 ms); the effect easing is linear (an effect-level ease-out warps the whole timeline), ease-out is on the fade keyframe only
-export const HEAD_ON = bloodNum('blood-edge.head-on');         // peak opacity of each edge for a head-on blow (Strategy's default until Dom rules)
-export const WIDTH_VW = bloodNum('blood-edge.width-vw'), SPAN = bloodNum('blood-edge.span');   // each strip is 6 % of the screen width, the middle 68 % of its height
+type Edge = 'left' | 'right';
+const EDGE: Record<Direction, Edge | 'both'> = { right: 'left', left: 'right', overhead: 'both', thrust: 'both', low: 'both' };
+const STRIPS = ['wet-smear', 'soft-bleed', 'dragged-streak'] as const;
+const EDGE_MS = bloodNum('blood-edge.edge-ms');
+const PEAK = [0.12, 0.43];   // opacity holds from 58 ms to 206 ms (~150 ms); the effect easing is linear (an effect-level ease-out warps the whole timeline), ease-out is on the fade keyframe only
+const HEAD_ON = bloodNum('blood-edge.head-on');         // peak opacity of each edge for a head-on blow (Strategy's default until Dom rules)
+const WIDTH_VW = bloodNum('blood-edge.width-vw'), SPAN = bloodNum('blood-edge.span');   // each strip is 6 % of the screen width, the middle 68 % of its height
 const SIDES: readonly Edge[] = ['left', 'right'];
 
-export const edgesOf = (e: CombatEvent, duel: Duel): Edge[] | null => {
+const edgesOf = (e: CombatEvent, duel: Duel): Edge[] | null => {
   if (e.type !== 'Hit' || e.target !== 0 || !e.move) return null;
   const direction = weaponOf(duel.fighters[e.actor].weapon).moves[e.move]?.direction;
   const edge = direction && EDGE[direction];
@@ -29,7 +29,7 @@ export const edgesOf = (e: CombatEvent, duel: Duel): Edge[] | null => {
 };
 
 // What the overlay needs from the page (the real document in the game; a stand-in in the tests).
-export type Page = { document: Pick<Document, 'createElement'> };
+type Page = { document: Pick<Document, 'createElement'> };
 const browserPage = (): Page => ({ document });
 
 type Img = { style: CSSStyleDeclaration; animate: HTMLElement['animate'] };

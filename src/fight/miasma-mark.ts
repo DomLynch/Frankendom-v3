@@ -5,16 +5,16 @@ import { fxOfMove } from './moves.ts';
 // LOOK TEST behind `?look=marks` (Lead's ruling 2026-10-07, Strategy brief #1507 item 7): v1 is MIASMA ONLY. A landed Plague Doctor skill_miasma blow leaves a small poison
 // icon over the victim's head and a soft green wash on his body for MARK.seconds. Presentation only, driven by the Hit event alone (the skill-impact.ts pattern): the sim has no
 // status state, so there is no bleed/sunder/slow mark (it would lie), no numbers, and nothing persists past MARK.seconds. The body "tint" is a billboard glow, not a material change.
-export const MARK = { seconds: 2, fade: 0.4, iconSize: 0.32, glowSize: 1.1, headRise: 0.38, glowAlpha: 0.35, torso: 1.1 } as const;   // seconds, metres (scale-1 body)
+const MARK = { seconds: 2, fade: 0.4, iconSize: 0.32, glowSize: 1.1, headRise: 0.38, glowAlpha: 0.35, torso: 1.1 } as const;   // seconds, metres (scale-1 body)
 export const marksFlag = (search: string) => (new URLSearchParams(search).get('look') ?? '').split(',').includes('marks');
 
 // The fighter the blow poisoned, or null: a landed skill_miasma Hit (a guarded one marks at half strength).
-export function miasmaOf(event: CombatEvent): { target: number; strength: number } | null {
+function miasmaOf(event: CombatEvent): { target: number; strength: number } | null {
   if (event.type !== 'Hit' || event.target === undefined || fxOfMove(event.move) !== 'miasma') return null;
   return { target: event.target, strength: event.guarded ? 0.5 : 1 };
 }
 // 1 while it lasts, easing out over the last `fade` seconds, 0 once it is over.
-export const markAlpha = (left: number) => left <= 0 ? 0 : Math.min(1, left / MARK.fade);
+const markAlpha = (left: number) => left <= 0 ? 0 : Math.min(1, left / MARK.fade);
 
 function texture(draw: (g: CanvasRenderingContext2D, n: number) => void) {
   const n = 64, canvas = document.createElement('canvas'); canvas.width = canvas.height = n;

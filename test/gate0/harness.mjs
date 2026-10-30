@@ -211,6 +211,7 @@ export function startedMoves(side, config, seed, script) {
 export async function loadV3Copy() {
   const dir = mkdtempSync(join(tmpdir(), 'gate0-v3-'));
   cpSync(join(V3_DIR, 'src'), join(dir, 'src'), { recursive: true, filter: (p) => !p.includes(`${join('src', 'assets')}`) });
+  cpSync(join(V3_DIR, 'data'), join(dir, 'data'), { recursive: true });   // src/fight now reads data/*.json rows (practice-hints, legends) by ../../data
   return { side: await loadSide(dir), dispose: () => rmSync(dir, { recursive: true, force: true }) };
 }
 // Every V3-only (config, seed, script) row, side a against side b.

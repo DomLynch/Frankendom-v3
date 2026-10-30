@@ -5,11 +5,11 @@
 import { hash32 } from './fight/bout-seed.ts';
 import type { TuneMap } from './tune.ts';
 
-export type StarTell = { colour: string; intensity: number };
-export type StarTrophy = { tier: number; name: string };
-export type StarLevel = { star: number; healthX: number; damageX: number; scaleX: number; trophy: StarTrophy | null; tell: StarTell | null };
-export type StarWeight = { base: number; perKill: number };
-export type StarWeights = { id: string; star1: StarWeight; star2: StarWeight };
+type StarTell = { colour: string; intensity: number };
+type StarTrophy = { tier: number; name: string };
+type StarLevel = { star: number; healthX: number; damageX: number; scaleX: number; trophy: StarTrophy | null; tell: StarTell | null };
+type StarWeight = { base: number; perKill: number };
+type StarWeights = { id: string; star1: StarWeight; star2: StarWeight };
 export type StarsFile = { minKills: number; killsCap: number; zeroWeight: number; salt: string; starGlyph: string; hudColour: string; levels: readonly StarLevel[]; weights: readonly StarWeights[] };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;

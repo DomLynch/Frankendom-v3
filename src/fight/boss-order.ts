@@ -3,7 +3,7 @@
 // the revert row, data/fight.json `order`: ?order=v1 (and ?pitborn=v1, the Centurion's fight, which keeps the Minotaur's body) plays the order before, Minotaur first.
 import type { ZoneRow } from '../zone/zone-rows.ts';
 
-export type OrderRow = { query: string; v1: string; opponent: string; profile: string; kinds: Readonly<Record<string, string>> };
+type OrderRow = { query: string; v1: string; opponent: string; profile: string; kinds: Readonly<Record<string, string>> };
 
 /** Whether this page plays the order before (?order=v1, or ?pitborn=v1). */
 export const orderV1 = (row: Pick<OrderRow, 'query' | 'v1'>, search: string): boolean => {

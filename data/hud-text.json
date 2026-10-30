@@ -1,0 +1,15 @@
+{
+  "about": "The words the fight HUD (src/fight/hud.ts) writes itself: the stamina label, the attack button, the reset button, and the three edits it makes to the practice line (src/fight/practice-hints.ts / data/practice-hints.json). Moved byte-for-byte from the code (test/hud-text.test.mjs).",
+  "rematchTail": " Ready for a rematch?",
+  "dummyNeverAttacks": "The dummy never attacks.",
+  "zoneDied": "You died.",
+  "stamina": {
+    "plain": "Stamina",
+    "exhaustedMobile": "Stamina · exhausted",
+    "woundMobile": "Stamina · wound",
+    "exhaustedAria": "Stamina — exhausted: no attacks or guard until it recovers",
+    "woundAria": "Stamina — wounded: recovery reduced 20 percent"
+  },
+  "attack": { "fight": "Fight", "light": "Light attack", "mobileFight": "Fight", "mobileSlash": "Slash" },
+  "reset": { "playNow": "PLAY NOW", "next": "Next fight", "rematch": "Rematch" }
+}

@@ -31,7 +31,7 @@ const WHIP_RAISE = audioRule('whipRaise');   // seconds of the raise cue — the
 const whipRate = (guard?: number) => guard === undefined ? 1 : audioRule('whipRateBase') + Math.min(audioRule('whipGuardCap'), Math.max(0, guard)) * audioRule('whipGuardStep');   // the base, the guard cap and the step are audio-rules rows
 export type DeathPresentation = { finish: Finish; weapons: readonly [WeaponId, WeaponId]; override?: FinisherId | null; gore?: boolean };
 // Dom has not signed off the interrupt voice (he rejected the first grunt, 2026-10-06): the slot is wired and tested but SILENT until he picks. His OK is this one constant.
-export const EFFORT_VOICE = false;
+const EFFORT_VOICE = false;
 export function cuesFor(events: CombatEvent[], presentation?: DeathPresentation, opponent?: OpponentId, clarity: readonly ClarityEvent[] = [], voice: boolean = EFFORT_VOICE, defence = false): Cue[] {
   const impacts: Cue[] = [], air: Cue[] = [], deaths = events.filter(e => e.type === 'Killed');
   const pick = presentation && deaths.length === 1 ? selectFinisher(presentation.finish, presentation.weapons) : null;

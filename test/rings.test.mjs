@@ -21,13 +21,17 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 const ZONE1 = read('zones/zone1.row'), PROFILES = read('profiles'), RIG = read('rig'), STAGE = read('stage'), PHYSICS = read('physics'), BOSSW = read('boss-weapons');
 const PLATES = STAGE.skyline.ring.plates.map((p) => p.id);
 const origin = ringOrigin(ZONE1);
-const check = (rows = RINGS, zone = ZONE1) => validateRings(rows, zone, ringOrigin(zone), PROFILES.profiles.map((p) => p.id), RIG, PLATES);
+const MECHANICS = read('mechanics').mechanics;
+const check = (rows = RINGS, zone = ZONE1) => validateRings(rows, zone, ringOrigin(zone), PROFILES.profiles.map((p) => p.id), RIG, PLATES, MECHANICS);
 
 test('the shipped rings validate against the profiles, the rig, the sky plates and the zone row', () => {
   assert.deepEqual(check(), []);
   assert.deepEqual(RINGS.rings.map((r) => r.id), ['ring-1', 'ring-2', 'ring-3']);
   assert.deepEqual(RINGS.bosses.map((b) => b.kind), ['pumpkinhulk', 'kachujin', 'castle-guard', 'sporty-granny', 'the-boss', 'parasite', 'anime-boy-black', 'anime-girl-blonde', 'big-vegas']);
-  assert.ok(RINGS.bosses.every((b) => b.mechanic === null), 'one signature mechanic each, later: the row is null today');
+  assert.ok(RINGS.bosses.every((b) => b.mechanic === null || MECHANICS[b.mechanic]?.boss === b.kind), 'one signature mechanic each: null until built, else a data/mechanics.json row that names this boss');
+  assert.equal(RINGS.bosses[0].mechanic, 'gourd', 'Lord Gourd throws pumpkin bombs');
+  assert.equal(RINGS.bosses.find((b) => b.kind === 'big-vegas').mechanic, 'king-aura', 'The King has his aura');
+  assert.equal(RINGS.bosses.find((b) => b.kind === 'castle-guard').mechanic, 'reginald-limb-loss', 'Sir Reginald loses his limbs');
 });
 
 test('every spawned ring boss body has a cut row (data/cut-bodies.json) and a measure row in the pinned physics package', () => {
@@ -105,6 +109,7 @@ test('refusals: each bad row names its problem', () => {
   refuse((r) => { r.bosses[0].body = 'psyche'; r.bosses[0].body = 'nobody'; }, /body/);
   refuse((r) => { r.bosses[0].kind = 'nobody'; }, /no data\/profiles\.json row/);
   refuse((r) => { r.bosses[0].mechanic = 'spin'; }, /mechanic/);
+  refuse((r) => { r.bosses[1].mechanic = 'gourd'; }, /belongs to boss/);
   refuse((r) => { r.rings[2].spawns[1].kind = r.rings[2].spawns[0].kind; }, /two places/);
   refuse((r) => { r.bosses[0].leash = r.bosses[0].aggro; }, /leash/);
   refuse((r) => { r.rings[1].spawns[0].count = 0; }, /count/);
@@ -170,7 +175,7 @@ test('the bodies: each is in rig.json with its clips, drawn with its archetype\'
   }
   assert.ok(BOSSW.rows.some((r) => r.opponent === 'shieldmaiden'), 'the shieldmaiden clones take Arachne\'s axe and shield row');
   assert.equal(BOSSW.rows.some((r) => r.opponent === 'pitborn' && r.profile == null), false, 'the pitborn clones take the Minotaur\'s own cleaver, unless a profile row of their own says otherwise');
-  assert.deepEqual(BOSSW.rows.filter((r) => r.opponent === 'pitborn').map((r) => r.profile), ['anime-boy-black', 'pumpkinhulk'], 'only Ryo (the sword) and Lord Gourd (the mace) have a pitborn profile row; the other pitborn clones are unchanged');
+  assert.deepEqual(BOSSW.rows.filter((r) => r.opponent === 'pitborn').map((r) => r.profile), ['anime-boy-black', 'pumpkinhulk', 'kachujin', 'big-vegas', 'anime-girl-blonde'], 'every pitborn clone but the Envoy (parasite) has a profile row');
 });
 
 test('wiring pins: the page lays the ring tune under the address\'s, mixes the look per frame, and scene arms ring bodies by their archetype', () => {
@@ -178,7 +183,9 @@ test('wiring pins: the page lays the ring tune under the address\'s, mixes the l
   assert.match(main, /const BASE_TUNE = mergeTune\(mergeTune\(TUNED, ringTune\(\)\), daily\.tune\)/);   // re-pinned for the Daily Pit: its modifier tune (empty outside the daily, the same object) is laid over the rings' and the address's
   assert.match(main, /KIND_CTX\.tune = mergeTune\(BASE_TUNE, escalation/);
   assert.match(main, /view\.ringLook\(look\.tintA, look\.tintB, look\.t, look\.plates\)/);
-  assert.match(scene, /bossWeaponFor\(bodyOwnerOf\(file\)!, pageSearch, undefined, bodyProfileOf\(file\)\)/);
+  // re-pinned for CI hardening 2026-10-28: the expression moved verbatim to src/fight/boss-resolve.ts (the one function the scene and test/boss-expect.test.mjs both call); the scene must call it
+  assert.match(scene, /bossOfBodyRow\(file, liveBody, pageSearch\)/);
+  assert.match(readFileSync(new URL('../src/fight/boss-resolve.ts', import.meta.url), 'utf8'), /bossWeaponFor\(bodyOwnerOf\(file\)!, search, undefined, bodyProfileOf\(file\)\)/);
   assert.match(scene, /plateWeights\(plates\)/);
 });
 

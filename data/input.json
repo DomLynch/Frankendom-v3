@@ -4,7 +4,7 @@
   "on": true,
   "query": "input",
   "off": "v1",
-  "detect": { "media": "(hover: hover) and (pointer: fine)", "attribute": "kbm", "mouseMovePx": 8 },
+  "detect": { "media": "(hover: hover) and (pointer: fine)", "attribute": "kbm", "mouseMovePx": 8, "doubleTapMs": 350 },
   "hide": ["#joystick", "#run-button", "#attack-button", "#heavy-button", "#thrust-button", "#dodge-button", "#guard-button", "#kick-button", "#touch-zones"],
   "keys": {
     "forward": ["KeyW"],

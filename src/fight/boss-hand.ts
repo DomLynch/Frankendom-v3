@@ -7,7 +7,7 @@ import type { BossWeaponRow, DiscRow, MaterialRow } from './boss-weapon.ts';
 
 export const SHIELD_NAME = 'BossShield';
 /** The board of an `offhand` row, in metres, axis along its local Y: a thin cylinder (face = a cap) with a darker rim ring. Pure geometry and materials, no bone. */
-export function discShield(o: DiscRow): Group {
+function discShield(o: DiscRow): Group {
   const g = new Group(); g.name = SHIELD_NAME;
   const face = new Mesh(new CylinderGeometry(o.radius, o.radius, o.thickness, 40), new MeshStandardMaterial({ color: o.colour, roughness: 0.7, metalness: 0.2 }));
   const rim = new Mesh(new CylinderGeometry(o.radius * 1.04, o.radius * 1.04, o.thickness * 0.8, 40, 1, true), new MeshStandardMaterial({ color: o.rim, roughness: 0.5, metalness: 0.6 }));
