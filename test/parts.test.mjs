@@ -19,13 +19,14 @@ test('data/parts.json is valid, every unit is one the physics cut cues', () => {
   assert.deepEqual(validateParts(PARTS, STARS.levels.length), []);
   assert.deepEqual(validateFile('parts', RAW), []);
   const cue = new Set(read('pickup').units);
-  for (const s of PARTS.slots) for (const u of s.units) assert.ok(cue.has(u), `${s.id}: ${u} is a cut unit`);
+  // the hand and foot slots (`pair`) are ahead of the cut event: nothing cuts them until the physics step adds them to data/pickup.json (docs/six-parts-plan.md step 2); every other slot's unit is a cue unit now
+  for (const s of PARTS.slots) for (const u of s.units) assert.ok(cue.has(u) || s.pair, `${s.id}: ${u} is a cut unit`);
   for (const u of cue) assert.ok(slotOfUnit(u), `${u} fills a slot`);
   assert.equal(PHYS.corpse.event, 'corpse:cut');
 });
 
 test('a bad table is named', () => {
-  const bad = clone(PARTS); bad.slots[1].id = 'head'; bad.rarities.pop(); bad.rarities[0].colour = 'red'; bad.slots[6].id = 'x';
+  const bad = clone(PARTS); bad.slots[1].id = 'head'; bad.rarities.pop(); bad.rarities[0].colour = 'red'; bad.slots.find((s) => s.id === 'weapon').id = 'x';
   const e = validateParts(bad, 3).join('\n');
   assert.match(e, /unique lower-case id/); assert.match(e, /one row per data\/stars\.json level/); assert.match(e, /colour/); assert.match(e, /"weapon" slot/);
   assert.match(validateFile('parts', { ...RAW, extra: 1 }).join(), /extra: unknown key/);
@@ -81,7 +82,8 @@ test('slotViews: rarity from star, trophy tie-in, worn marked, best first', () =
   assert.equal(head.worn.id, 'arachne:head');
   assert.equal(v.find((x) => x.slot.id === 'arm_left').parts[0].rarity.label, 'Rare');
   assert.equal(v.find((x) => x.slot.id === 'weapon').parts.length, 0);
-  assert.equal(v.length, 7);
+  assert.equal(v.length, 11, 'head, two arms, two hands, two legs, two feet, torso, weapon');
+  assert.deepEqual(v.filter((x) => x.slot.pair).map((x) => [x.slot.id, x.slot.pair]), [['hand_left', 'hands'], ['hand_right', 'hands'], ['foot_left', 'feet'], ['foot_right', 'feet']], 'hands and feet sit side by side in the menu');
 });
 
 // ---- the menu and the hook, with a tiny DOM (click = the handler a finger reaches) and the real feel bus ----

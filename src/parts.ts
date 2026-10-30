@@ -6,7 +6,7 @@ import PROFILE_ROWS from '../data/profiles.json' with { type: 'json' };
 import { validateFit, validateWear } from './sim/validate-parts-fit.js';
 const KNOWN_PROFILES: ReadonlySet<string> = new Set((PROFILE_ROWS.profiles as { id: string }[]).map((p) => p.id));   // the bosses a part can come from (data/profiles.json)
 
-type SlotRow = { id: string; label: string; units: string[] };
+type SlotRow = { id: string; label: string; units: string[]; pair?: string };   // `pair`: slots sharing one group id sit side by side in the menu (hands, feet)
 type RarityRow = { star: number; id: string; label: string; colour: string };
 /** One collar seam: the bone it rides, `at` (fraction of the bone's length to its first child) and the sizing rule it takes. */
 export type CollarJoint = { id: string; bone: string; at: number; rule: string };
@@ -54,6 +54,7 @@ export function validateParts(file: PartsFile, stars: number): string[] {
     const at = `slots.${String(s.id)}`;
     if (typeof s.id !== 'string' || !/^[a-z][a-z_]*$/.test(s.id) || ids.has(s.id)) e.push(`parts.${at}: a unique lower-case id`); else ids.add(s.id);
     word(`${at}.label`, s.label, 24);
+    if ('pair' in s) word(`${at}.pair`, s.pair, 24);
     if (!Array.isArray(s.units)) e.push(`parts.${at}.units: a list`);
     else for (const u of s.units) if (typeof u !== 'string' || !/^[a-z_]+$/.test(u) || units.has(u)) e.push(`parts.${at}.units: "${String(u)}" is not a unit name, or another slot has it`); else units.add(u);
   }

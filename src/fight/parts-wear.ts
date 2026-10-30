@@ -19,17 +19,19 @@ import { loadFighter } from './characters.ts';
 type HeroManifest = { regions: { id: string; mesh: string; detached_by: string | null }[]; caps: { id: string; mesh: string; region: string; shown_when_cut: string }[] };
 const MANIFEST = HERO_MANIFEST as unknown as HeroManifest;
 
-/** The donor GLBs: `<data/rig.json files stem>` (V3's own cut file) and `<stem>.derived` (OpenTrident's derived copy, data/parts-fit-rows.json source derived). Literal `new URL`s so the build ships and hashes them. */
+/** The donor GLBs: `<data/rig.json files stem>.hf`, OpenTrident's hands-and-feet cut of the donor (PR #13: piece_arm_* and piece_leg_* WITHOUT the hand and foot, plus piece_hand_* and piece_foot_*; Reginald and the King are cut from the derived copy). Every donor and the hero
+ *  are hf: an original arm piece carries its own hand, so mixing one with a worn hand would draw two. They sit under src/assets/wear/ beside their manifests and are fetched only when a part of that donor is worn (the bosses' own bodies are untouched).
+ *  Literal `new URL`s so the build ships and hashes them. */
 export const DONOR_URLS: Record<string, string> = {
-  'minotaur-106': new URL('../assets/minotaur-106.glb', import.meta.url).href,
-  'gargantua-106': new URL('../assets/gargantua-106.glb', import.meta.url).href,
-  'arachne-106': new URL('../assets/arachne-106.glb', import.meta.url).href,
-  'sporty-granny-106': new URL('../assets/sporty-granny-106.glb', import.meta.url).href,
-  'parasite-106': new URL('../assets/parasite-106.glb', import.meta.url).href,
-  'anime-girl-blonde-106': new URL('../assets/anime-girl-blonde-106.glb', import.meta.url).href,
-  'anime-boy-black-106': new URL('../assets/anime-boy-black-106.glb', import.meta.url).href,
-  'castle-guard-106.derived': new URL('../assets/castle-guard-106.derived.glb', import.meta.url).href,
-  'big-vegas-106.derived': new URL('../assets/big-vegas-106.derived.glb', import.meta.url).href,
+  'minotaur-106.hf': new URL('../assets/wear/minotaur-106.hf.glb', import.meta.url).href,
+  'gargantua-106.hf': new URL('../assets/wear/gargantua-106.hf.glb', import.meta.url).href,
+  'arachne-106.hf': new URL('../assets/wear/arachne-106.hf.glb', import.meta.url).href,
+  'sporty-granny-106.hf': new URL('../assets/wear/sporty-granny-106.hf.glb', import.meta.url).href,
+  'parasite-106.hf': new URL('../assets/wear/parasite-106.hf.glb', import.meta.url).href,
+  'anime-girl-blonde-106.hf': new URL('../assets/wear/anime-girl-blonde-106.hf.glb', import.meta.url).href,
+  'anime-boy-black-106.hf': new URL('../assets/wear/anime-boy-black-106.hf.glb', import.meta.url).href,
+  'castle-guard-106.hf': new URL('../assets/wear/castle-guard-106.hf.glb', import.meta.url).href,
+  'big-vegas-106.hf': new URL('../assets/wear/big-vegas-106.hf.glb', import.meta.url).href,
 };
 export const donorKey = (part: Pick<WornPart, 'stem' | 'source'>, rules = PARTS.wear): string => `${part.stem}-106${rules.mesh.source[part.source]}`;
 

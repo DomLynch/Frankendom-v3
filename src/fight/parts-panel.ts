@@ -1,4 +1,4 @@
-// The Frankendom menu (data/parts.json; Dom 2026-10-28): a small ☰ button under the radar opens a sheet listing the seven slots (head, arms, legs, torso, weapon) and the parts cut for each, with Equip / Unequip.
+// The Frankendom menu (data/parts.json; Dom 2026-10-28): a small ☰ button under the radar opens a sheet listing the eleven slots (head, arms, hands, legs, feet, torso, weapon; hands and feet side by side) and the parts cut for each, with Equip / Unequip.
 // DOM and injected CSS only, in the palette of V1's journal (--jb paper, --jf ink, --jl line, --ja red), no art: a part is its boss's name and a rarity chip. Nothing here touches the sim, the camera or the
 // input except that the sheet and button are interactive HUD (#frank-parts, touch-router.ts), so a tap on them never turns the camera. The rows come from src/parts.ts slotViews (pure, tested).
 import { slotViews, type PartsFile, type PartsSave, type SlotView } from '../parts.ts';
@@ -31,6 +31,9 @@ const CSS = (r: PartsFile) => `#frank-parts{display:contents}
 #frank-parts button{font:600 12px/1 "Instrument Sans",Arial,sans-serif;min-height:34px;padding:0 12px;border:1px solid #dcd4c6;border-radius:9px;background:#fff;color:#1b1916;cursor:pointer;touch-action:manipulation}
 #frank-parts button[data-on=true]{background:#1b1916;color:#fff;border-color:#1b1916}
 #frank-parts .fp-slot{margin:0 0 8px;padding:8px 10px;border:1px dashed #dcd4c6;border-radius:12px;background:#fff6}
+#frank-parts .fp-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}
+#frank-parts .fp-pair .fp-slot{margin:0;min-width:0;padding:8px}
+#frank-parts .fp-pair .fp-part{flex-wrap:wrap}
 #frank-parts .fp-slot[data-worn=true]{border-style:solid;border-color:#1b1916;background:#fff}
 #frank-parts .fp-slot>b{display:flex;justify-content:space-between;gap:8px;font:600 11px/1.3 "Instrument Sans",Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#7a746a}
 #frank-parts .fp-slot>b span{color:#1b1916;letter-spacing:0;text-transform:none;font-size:13px}
@@ -57,7 +60,12 @@ export function mountPartsPanel(doc: Doc, ctx: PanelCtx): PartsPanel {
     const x = el('button', undefined, T.close) as HTMLButtonElement; x.type = 'button'; x.dataset.frank = 'close'; x.onclick = () => api.close(); head.append(x);
     sheet.append(head, el('p', 'fp-hint', T.hint));
     const save = ctx.get() ?? {};
-    for (const v of slotViews(save, ctx.bossName, ctx.trophyOf, r)) sheet.append(slotBox(v));
+    let pair: HTMLElement | null = null, pairId = '';   // slots sharing a `pair` id sit side by side (hands, feet): the sheet stays one screen at 375
+    for (const v of slotViews(save, ctx.bossName, ctx.trophyOf, r)) {
+      if (!v.slot.pair) { pair = null; sheet.append(slotBox(v)); continue; }
+      if (!pair || pairId !== v.slot.pair) { pair = el('div', 'fp-pair'); pairId = v.slot.pair; sheet.append(pair); }
+      pair.append(slotBox(v));
+    }
   }
   function slotBox(v: SlotView): HTMLElement {
     const box = el('div', 'fp-slot'); box.dataset.slot = v.slot.id; box.dataset.worn = String(!!v.worn);

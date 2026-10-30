@@ -69,10 +69,11 @@ test('liftRow: matched legs need no lift; a clamp-bound pair reports the leftove
   assert.deepEqual(liftRow(unit, null, m(0.3, 0.3)), { scale: 1, lift_y: 0 }, 'a body with no measure row lifts 0');
 });
 
-test('collars: five rows from a measure row, a ring centred on its joint with the row radius, a missing bone gives null', () => {
+test('collars: nine rows from a measure row (neck, shoulders, hips, wrists, ankles), a ring centred on its joint with the row radius, a missing bone gives null', () => {
   const rows = collarRows({ height_m: 1.7, shoulder_w: 0.3, neck_len: 0.1, upper_arm_r: 0.04, thigh_r: 0.07 });
   assert.deepEqual(rows.map((r) => r.id), PARTS.fit.collar.joints.map((j) => j.id));
-  assert.equal(rows.length, 5);
+  assert.deepEqual(rows.map((r) => r.id), ['neck', 'shoulder_l', 'shoulder_r', 'hip_l', 'hip_r', 'wrist_l', 'wrist_r', 'ankle_l', 'ankle_r']);
+  assert.ok(rows.filter((r) => /^(wrist|ankle)/.test(r.id)).every((r) => r.r < rows.find((x) => x.id === (r.id.startsWith('wrist') ? 'shoulder_l' : 'hip_l')).r), 'a wrist ring is narrower than the shoulder, an ankle than the hip');
   assert.deepEqual(collarRows(null), []);
   const hipRow = rows.find((r) => r.id === 'hip_l'), collar = buildCollar(hipRow, target.nodes, new MeshBasicMaterial(), [0.25, 0.5]);
   target.root.add(collar); target.root.updateMatrixWorld(true);
@@ -157,7 +158,7 @@ test('the stored collar rows equal what the rules give from the measure row (so 
 const MAPPING = { psyche: 'ch22-nonpbr', pitborn: 'ch25-nonpbr', gargantua: 'ch43-nonpbr', arachne: 'ch47-nonpbr' };
 test('the V3 mapping covers the hero and the three first donors, and every profile that has a cut GLB', () => {
   assert.equal(heroFitBody().id, 'psyche');
-  for (const [id, ot] of Object.entries(MAPPING)) { const b = fitBodyOf(id); assert.equal(b.measuredOn, ot, id); assert.ok(b.measure && b.measure.height_m > 0 && b.collars.length === 5, `${id} has a measure row and five collars`); }
+  for (const [id, ot] of Object.entries(MAPPING)) { const b = fitBodyOf(id); assert.equal(b.measuredOn, ot, id); assert.ok(b.measure && b.measure.height_m > 0 && b.collars.length === PARTS.fit.collar.joints.length, `${id} has a measure row and a collar per joint`); }
   const stem = (p) => RIG.files[p.id] ?? RIG.files[p.body];
   const cut = PROFILES.profiles.filter((p) => stem(p) && existsSync(new URL(`../src/assets/${stem(p)}.cut.manifest.json`, import.meta.url)));
   assert.ok(cut.length >= 12, 'the twelve cut bodies');
