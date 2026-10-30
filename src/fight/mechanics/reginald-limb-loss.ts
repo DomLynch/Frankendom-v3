@@ -23,8 +23,7 @@ export function limbManifestProblems(row: LimbLossRow, m: Manifest): string[] {
   const e: string[] = [];
   row.limbs.forEach((l, i) => {
     const p = `mechanics.${MECHANIC_ID}.limbs[${i}]`;
-    if (!m.regions.some((r) => r.id === l.region && r.mesh === l.piece)) e.push(`${p}: manifest has no region ${l.region} with mesh ${l.piece}`);
-    for (const h of l.hangs ?? []) if (!m.regions.some((r) => r.id === h.region && r.mesh === h.piece)) e.push(`${p}.hangs: manifest has no region ${h.region} with mesh ${h.piece}`);
+    for (const x of [{ region: l.region, piece: l.piece }, ...(l.hangs ?? [])]) if (!m.regions.some((r) => r.id === x.region && r.mesh === x.piece)) e.push(`${p}: manifest has no region ${x.region} with mesh ${x.piece}`);   // the limb's piece, then the hand or foot that hangs from it
     for (const c of l.stumpCaps) if (!m.caps.some((x) => x.mesh === c && x.shown_when_cut === l.region && x.region !== l.region)) e.push(`${p}.stumpCaps: ${c} is not a stump cap of ${l.region}`);
   });
   return e;

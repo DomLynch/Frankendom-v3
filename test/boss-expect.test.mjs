@@ -64,7 +64,7 @@ for (const [kind, want] of Object.entries(EXPECT.bosses)) {
     const bodyStem = file, cutRow = CUT.find((r) => r.name === bodyStem);
     assert.ok(cutRow, `${kind}: ${bodyStem} has a row in the pinned physics data/cut-bodies.json`);
     assert.match(cutRow.expect_sha256, /^[0-9a-f]{64}$/, `${bodyStem}: the physics row records its cut GLB hash`);
-    if (want.cutShaPinned !== false) assert.equal(createHash('sha256').update(readFileSync(path.join(root, `src/assets/${bodyStem}.glb`))).digest('hex'), cutRow.expect_sha256, `${bodyStem}.glb is the cut GLB the physics row pins`);
+    if (want.cutShaPinned !== false) assert.equal(createHash('sha256').update(readFileSync(path.join(root, `src/assets/${bodyStem}.glb`))).digest('hex'), cutRow.expect_sha256_hands_feet, `${bodyStem}.glb is the hands-and-feet cut GLB the physics row pins (expect_sha256_hands_feet, physics 31e1ac9; the default cut's expect_sha256 is the same body without hand and foot pieces)`);
     const manifest = read(`src/assets/${bodyStem}.cut.manifest.json`);
     assert.equal(manifest.schema, 'cut-pieces/1'); assert.equal(manifest.body, bodyStem);
     const bodyKey = bodyStem.replace(/-106$/, '');

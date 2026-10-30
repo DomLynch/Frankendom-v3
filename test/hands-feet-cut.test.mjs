@@ -147,7 +147,7 @@ test('Sir Reginald: a lost arm or leg takes its hand or foot with it (hidden, no
   applyLimbs(root, undefined);
   assert.ok(nodes.piece_hand_right.visible && nodes.piece_foot_right.visible, 'whole again: back');
   const bad = clone(ROW); bad.limbs[0].hangs[0].piece = 'piece_nothing';
-  assert.match(limbManifestProblems(bad, man).join('|'), /hangs: manifest has no region hand_right/);
+  assert.match(limbManifestProblems(bad, man).join('|'), /manifest has no region hand_right with mesh piece_nothing/);
 });
 
 test('the page wiring (static): the ragdoll reads the flag row, the hint takes its rows from it, the build lists the files, and the pin is the current physics main', () => {
