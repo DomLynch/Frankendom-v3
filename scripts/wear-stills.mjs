@@ -2,7 +2,7 @@
 // at the fight camera and through a close 3/4 front lens (src/fight/camera.ts __v3CamShot, as scripts/boss-weapon-hand-stills.mjs) so the seams can be judged.
 //   MAC_HEAVY_OK=1 node scripts/wear-stills.mjs <dist dir> <out dir> [name=loadout ...]      loadout = comma list of profile:slot ('none' = nothing worn); default: the Dom set
 // Writes <out>/<name>-{idle,walk,attack}.png (fight camera, 375 wide) and <name>-{idle,walk,attack}-close.png (the lens); prints one line per loadout: what was worn and the hero's skinned draws.
-// env: W (375) H (812) DPR (2), EXTRA (more query, e.g. "opener=off"), SETTLE (ms, 3000), LENS_DIST (2.3 m), LENS_SIDE (1 = the hero's left, -1 right), LENS_LOOK (1.15 m, the aim height).
+// env: SHOTS (walk,attack: which shots follow the idle one), ANGLE (metal on the Mac; swiftshader on the VPS), W (375) H (812) DPR (2), EXTRA (more query, e.g. "opener=off"), SETTLE (ms, 3000), LENS_DIST (2.3 m), LENS_SIDE (1 = the hero's left, -1 right), LENS_LOOK (1.15 m, the aim height).
 import { mkdirSync } from 'node:fs';
 import { collectErrors, launchBrowser, phoneOptions, serveDist, waitPlayable } from './lib/browser.mjs';
 
@@ -10,7 +10,7 @@ const [dist, out, ...named] = process.argv.slice(2);
 if (!dist || !out) { console.error('usage: node scripts/wear-stills.mjs <dist dir> <out dir> [name=loadout ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const SET = {
-  none: 'none', 'minotaur-head': 'pitborn:head', 'minotaur-arm-left': 'pitborn:arm_left', 'reginald-leg-left': 'castle-guard:leg_left', 'anime-girl-arm-right': 'anime-girl-blonde:arm_right',
+  none: 'none', 'minotaur-head': 'pitborn:head', 'minotaur-arm-left': 'pitborn:arm_left', 'reginald-leg-left': 'castle-guard:leg_left', 'reginald-leg-right': 'castle-guard:leg_right','anime-girl-arm-right': 'anime-girl-blonde:arm_right',
   'anime-boy-head': 'anime-boy-black:head', 'arachne-arm-left': 'arachne:arm_left', 'gargantua-arm-left': 'gargantua:arm_left', 'gargantua-head': 'gargantua:head', 'king-arm-left': 'big-vegas:arm_left', 'king-head': 'big-vegas:head',
   'minotaur-torso': 'pitborn:torso', 'reginald-torso': 'castle-guard:torso', 'anime-boy-torso': 'anime-boy-black:torso', 'arachne-torso': 'arachne:torso', 'gargantua-torso': 'gargantua:torso',
   'minotaur-hand-left': 'pitborn:hand_left', 'minotaur-hand-right': 'pitborn:hand_right', 'reginald-foot-left': 'castle-guard:foot_left', 'reginald-foot-right': 'castle-guard:foot_right', 'arachne-hand-left': 'arachne:hand_left', 'anime-girl-hand-left': 'anime-girl-blonde:hand_left',
@@ -21,7 +21,8 @@ const SET = {
 const jobs = named.length ? named.map((s) => { const i = s.indexOf('='); return i < 0 ? [s, SET[s] ?? s] : [s.slice(0, i), s.slice(i + 1)]; }) : Object.entries(SET);
 const num = (k, d) => Number(process.env[k] ?? d);
 const W = num('W', 375), H = num('H', 812), DPR = num('DPR', 2), extra = process.env.EXTRA ? `&${process.env.EXTRA}` : '';
-const server = await serveDist(dist), browser = await launchBrowser({ angle: 'metal' });
+const shots = new Set((process.env.SHOTS ?? 'walk,attack').split(','));   // idle is always taken; SHOTS=attack (or walk) keeps a run short
+const server = await serveDist(dist), browser = await launchBrowser({ angle: process.env.ANGLE ?? 'metal', chromeEnv: null });   // ANGLE=swiftshader on the VPS
 for (const [name, loadout] of jobs) {
   const page = await browser.newPage(phoneOptions(DPR, { viewport: { width: W, height: H } }));
   const errors = collectErrors(page);
@@ -49,11 +50,8 @@ for (const [name, loadout] of jobs) {
   };
   await shoot('idle');
   const info = await page.evaluate(() => ({ ...globalThis.__v3Wear.info(), phase: globalThis.__v3Fight.duel.fighters[0].phase }));
-  await page.keyboard.down('KeyW'); await page.waitForTimeout(700);
-  await shoot('walk');
-  await page.keyboard.up('KeyW');
-  await page.keyboard.press('KeyF'); await page.waitForTimeout(240);
-  await shoot('attack');
+  if (shots.has('walk')) { await page.keyboard.down('KeyW'); await page.waitForTimeout(700); await shoot('walk'); await page.keyboard.up('KeyW'); }
+  if (shots.has('attack')) { await page.keyboard.press('KeyF'); await page.waitForTimeout(240); await shoot('attack'); }
   console.log(`${name}: ${JSON.stringify(info)}${errors.length ? ` ERRORS ${JSON.stringify(errors.slice(0, 3))}` : ''}`);
   await page.close();
 }

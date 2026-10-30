@@ -88,7 +88,7 @@ export const SCHEMA = {
     maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], fit: ['about', 'limits', 'seam', 'eps', 'bones', 'lift', 'skin', 'collar'], wear: ['about', 'flags', 'mesh', 'units', 'heroHost', 'heroCollars', 'budget'], text: ['notWearable', 'title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] },
     finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'], 'wear.budget': ['skinnedDrawsMax', 'partsMax', 'frameMsMedianExtra'] } },
   // Frankendom parts, stage 2 per-body fit rows (src/parts-fit-rows.ts validateFitRows checks the values)
-  'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'stem', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'measure', 'collars'] } },
+  'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'stem', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'tune', 'measure', 'collars'] } },
   // The Flesh Market (src/market.ts validateMarket checks the values): closed key sets
   'market': { keys: ['about', 'on', 'query', 'value', 'merchant', 'salt', 'stock', 'weights', 'price', 'caps', 'limits', 'lines', 'events', 'ui'],
     maps: { merchant: ['id', 'name', 'kind', 'body', 'dx', 'dz', 'openMetres', 'closeMetres', 'loadMetres'], stock: ['size', 'slots'], weights: ['common', 'rare', 'epic', 'weapon'], price: ['base', 'buyX', 'sellX', 'weapon', 'trophy'], caps: ['buyMax', 'sellPerDay'],

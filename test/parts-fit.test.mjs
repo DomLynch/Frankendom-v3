@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { Bone, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3, Box3, DoubleSide } from 'three';
 import { PARTS } from '../src/parts.ts';
-import { FIT_ROWS, fitBodyOf, heroFitBody, isWearable, validateRows, wearableDonors } from '../src/parts-fit-rows.ts';
-import { bindPiece, buildCollar, collarFor, collarRows, fitMatrices, liftRow, seamRing } from '../src/fight/parts-fit.ts';
+import { FIT_ROWS, fitBodyOf, heroFitBody, isWearable, tuneOf, validateRows, wearableDonors } from '../src/parts-fit-rows.ts';
+import { bindPiece, buildCollar, collarFor, collarRows, fitMatrices, liftRow, seamRing, tuneCollar } from '../src/fight/parts-fit.ts';
 import { validateFile } from '../src/sim/validate.js';
 import { validateFit, validateFitRows } from '../src/sim/validate-parts-fit.js';
 import { scan } from '../scripts/as-data/check.mjs';
@@ -45,6 +45,45 @@ test('fitMatrices: the shin stretches along its axis by target/donor, the foot t
   const fm = fitMatrices(piece.skeleton, target.nodes);
   near(fm[3].elements[5], 0.6, 1e-6, 'shin scale along its axis');
   near(fm[4].elements[5], 0.4 / 0.6, 1e-6, 'foot scale = height ratio');
+});
+
+test('fitMatrices thick: a donor row nudge multiplies the thickness scale only, never the stretch along the bone; 1 (or absent) is unchanged', () => {
+  const base = fitMatrices(piece.skeleton, target.nodes), slim = fitMatrices(piece.skeleton, target.nodes, PARTS.fit, 0.5);
+  near(slim[4].elements[0], base[4].elements[0] * 0.5, 1e-9, 'foot thickness x0.5');
+  near(slim[3].elements[5], base[3].elements[5], 1e-9, 'the shin stretch along its axis is untouched');
+  assert.deepEqual(fitMatrices(piece.skeleton, target.nodes, PARTS.fit, 1).map((m) => m.elements), base.map((m) => m.elements));
+});
+
+test('tuneCollar: the row radius and height are multiplied (rounded like collarRows); no nudge changes nothing; the other fields stay', () => {
+  const row = { id: 'hip_l', bone: 'mixamorigLeftUpLeg', at: 0, r: 0.1607, h: 0.1377 };
+  assert.deepEqual(tuneCollar(row, {}), row);
+  assert.deepEqual(tuneCollar(row, { collarR: 0.5, collarH: 0.25 }), { ...row, r: 0.0804, h: 0.0344 });
+  assert.deepEqual(tuneCollar(row, { thick: 0.7 }), row, 'thick is the part, not the collar');
+});
+
+test('shipped tune rows: each is a donor row of a unit that can be worn; Reginald\'s thick leg plates are slimmed, the anime boy\'s neck collar is drawn in a skin texel; the hero row has none', () => {
+  const units = new Set(Object.keys(PARTS.wear.units));
+  for (const b of FIT_ROWS.bodies) for (const u of Object.keys(b.tune ?? {})) { assert.ok(units.has(u), `${b.id}.${u} is a wearable unit`); assert.ok(b.wearable, `${b.id} is a donor that can be worn`); assert.notEqual(b.id, FIT_ROWS.hero); }
+  for (const u of ['leg_left', 'leg_right']) assert.ok(tuneOf('castle-guard', u).thick < 1, `Reginald ${u} thickness`);
+  assert.equal(tuneOf('castle-guard', 'leg_left').thick, tuneOf('castle-guard', 'leg_right').thick, 'both legs the same');
+  assert.equal(tuneOf('anime-boy-black', 'head').uv.length, 2, 'the anime boy\'s neck collar takes a skin texel (his ring\'s median lands on the dark clothing patch of the atlas)');
+  assert.deepEqual(tuneOf('pitborn', 'head'), {}, 'a donor with no row is not nudged (Minotaur head stays as shipped)');
+  assert.deepEqual(tuneOf('nobody', 'head'), {});
+});
+
+test('a bad tune row is named: the hero has none, a unit id, a known key, a multiplier in range', () => {
+  const bad = (f) => { const r = clone(ROWS); f(r); return validateFitRows(r, PARTS.fit, new Set(PROFILES.profiles.map((p) => p.id))).join('\n'); };
+  assert.match(bad((r) => { r.bodies[0].tune = { arm_left: { thick: 0.8 } }; }), /hero row has none/);
+  assert.match(bad((r) => { r.bodies[1].tune = []; }), /tune: an object of cut units/);
+  assert.match(bad((r) => { r.bodies[1].tune = { Arm: { thick: 0.8 } }; }), /a cut unit id/);
+  assert.match(bad((r) => { r.bodies[1].tune = { arm_left: {} }; }), /at least one of/);
+  assert.match(bad((r) => { r.bodies[1].tune = { arm_left: { width: 1 } }; }), /width: unknown key/);
+  assert.match(bad((r) => { r.bodies[1].tune = { arm_left: { thick: 0 } }; }), /thick: a multiplier in/);
+  assert.match(bad((r) => { r.bodies[1].tune = { arm_left: { collarR: 'big' } }; }), /collarR: a multiplier in/);
+  assert.match(bad((r) => { r.bodies[1].tune = { head: { uv: [0.5] } }; }), /uv: \[u, v\]/);
+  assert.match(bad((r) => { r.bodies[1].tune = { head: { uv: [0.5, 2] } }; }), /uv: \[u, v\]/);
+  assert.equal(bad((r) => { r.bodies[1].tune = { arm_left: { thick: 0.8, collarR: 1, collarH: 0.9, uv: [0.2, 0.3] } }; }), '');
+  assert.deepEqual(validateFile('parts-fit-rows', ROWS), [], 'the shipped file (tune rows included) passes the key check');
 });
 
 test('bindPiece: the donor knee and ankle land on the target joints; unfitted keeps the donor offsets', () => {

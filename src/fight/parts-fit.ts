@@ -23,7 +23,7 @@ const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.m
  * height ratio. Multiplied into the donor's inverse binds, a vertex then sits at the same place relative to the TARGET's joint as it did to the donor's, so wrists, ankles and the neck land
  * on the target's own joints. `nodes`: the target's bones by name; call after updateMatrixWorld.
  */
-export function fitMatrices(sk: Skeleton, nodes: BoneNodes, rules: FitRules = PARTS.fit): Matrix4[] {
+export function fitMatrices(sk: Skeleton, nodes: BoneNodes, rules: FitRules = PARTS.fit, thick = 1): Matrix4[] {
   const { limits, eps, bones } = rules;
   const bone = (name: string) => sk.bones.find((b) => b.name === name), wp = (o: Object3D) => new Vector3().setFromMatrixPosition(o.matrixWorld);
   const dH = bone(bones.hips), dHead = bone(bones.head), tH = nodes.get(bones.hips), tHead = nodes.get(bones.head);
@@ -32,6 +32,7 @@ export function fitMatrices(sk: Skeleton, nodes: BoneNodes, rules: FitRules = PA
     const a = wp(dHead).distanceTo(wp(dH)), b = wp(tHead).distanceTo(wp(tH));
     if (a > eps.heightM && b > eps.heightM) g = clamp(b / a, limits.heightLo, limits.heightHi);
   }
+  g *= thick;   // the donor row's own nudge (data/parts-fit-rows.json tune.<unit>.thick): a bulky unit is slimmed on its own, the clamp above is shared
   return sk.bones.map((b) => {
     let kid: Object3D | null = null, kl = 0;
     for (const c of b.children) if ((c as Bone).isBone && c.position.length() > kl) { kid = c; kl = c.position.length(); }
@@ -49,8 +50,8 @@ export function fitMatrices(sk: Skeleton, nodes: BoneNodes, rules: FitRules = PA
 }
 
 /** Bind a donor's SkinnedMesh to the target's bones by name (a bone the target lacks falls back to its nearest named ancestor). `fitted` false keeps the donor's own inverse binds. */
-export function bindPiece(src: SkinnedMesh, geo: BufferGeometry, nodes: BoneNodes, fitted = true, rules: FitRules = PARTS.fit): SkinnedMesh {
-  const sk = src.skeleton, bones: Bone[] = [], inv: Matrix4[] = [], fm = fitted ? fitMatrices(sk, nodes, rules) : null, first = nodes.values().next().value as Object3D;
+export function bindPiece(src: SkinnedMesh, geo: BufferGeometry, nodes: BoneNodes, fitted = true, rules: FitRules = PARTS.fit, thick = 1): SkinnedMesh {
+  const sk = src.skeleton, bones: Bone[] = [], inv: Matrix4[] = [], fm = fitted ? fitMatrices(sk, nodes, rules, thick) : null, first = nodes.values().next().value as Object3D;
   for (let i = 0; i < sk.bones.length; i++) {
     let a: Object3D | null = sk.bones[i]!;
     while (a && !nodes.has(a.name)) a = a.parent;
@@ -93,6 +94,12 @@ export function collarRows(m: Measure | null | undefined, rules: FitRules = PART
     const rule = c.rules[j.rule]!;
     return { id: j.id, bone: j.bone, at: j.at, r: round(rule.rK * read(rule.rOf)), h: round(Math.max(rule.hMin, rule.hK * read(rule.hOf))) };
   });
+}
+
+/** A collar row with the donor row's own nudge applied (tune.<unit>.collarR / collarH; absent = unchanged), rounded like collarRows. */
+export function tuneCollar(row: CollarRow, tune: { collarR?: number; collarH?: number }, rules: FitRules = PARTS.fit): CollarRow {
+  const round = (v: number) => Math.round(v * rules.collar.roundScale) / rules.collar.roundScale;
+  return { ...row, r: round(row.r * (tune.collarR ?? 1)), h: round(row.h * (tune.collarH ?? 1)) };
 }
 
 /** The uv of the donor vertex nearest `worldPos` (the joint, in the donor's bind pose): one texel of the donor's skin, used for the whole collar so it matches the part it covers. */
