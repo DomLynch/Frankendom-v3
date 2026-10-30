@@ -33,12 +33,13 @@ test('the flag: wear is ON by default; ?parts=off is the kill-switch; ?wear= for
 
 // ---- the gating: which parts can be worn --------------------------------------------------------------------------------------------------------------------------------------------------------
 test('wearable gating: only a wearable donor body and a unit with a wear row; the torso, the weapon and the unwearable bodies (Kachujin, the Accountant, the Gourd) are not', () => {
-  for (const p of wearableDonors().map((b) => b.id)) for (const slot of ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right']) assert.equal(canWear(p, slot), true, `${p}:${slot}`);
+  for (const p of wearableDonors().map((b) => b.id)) for (const slot of ['head', 'arm_left', 'arm_right', 'leg_left', 'leg_right', 'torso']) assert.equal(canWear(p, slot), true, `${p}:${slot}`);
   for (const p of ['kachujin', 'the-boss', 'pumpkinhulk']) assert.equal(canWear(p, 'arm_left'), false, `${p} is not wearable`);
-  assert.equal(canWear('pitborn', 'torso'), false, 'the torso has no wear row yet');
-  assert.equal(canWear('pitborn', 'weapon'), false);
+  assert.equal(canWear('pitborn', 'weapon'), false, 'the weapon slot is a reward, not a body part');
   assert.equal(canWear('nobody', 'head'), false, 'no fit row = not wearable');
-  assert.deepEqual(wornParts(['pitborn:head', 'kachujin:arm_left', 'pitborn:torso', 'castle-guard:leg_left', 'junk', 'pitborn:arm_left:x']).map((p) => p.id), ['pitborn:head', 'castle-guard:leg_left']);
+  const noTorso = clone(PARTS); delete noTorso.wear.units.torso_waist;
+  assert.equal(canWear('pitborn', 'torso', noTorso), false, 'a unit with no wear row is not wearable (the way the torso was before it looked right)');
+  assert.deepEqual(wornParts(['pitborn:head', 'kachujin:arm_left', 'pitborn:torso', 'castle-guard:leg_left', 'junk', 'pitborn:arm_left:x']).map((p) => p.id), ['pitborn:head', 'castle-guard:leg_left', 'pitborn:torso']);
   assert.deepEqual(wornParts(['arachne:arm_left', 'pitborn:arm_left']).map((p) => p.id), ['arachne:arm_left'], 'one part per slot: the first stands');
   assert.deepEqual(wornParts({ leg_left: 'pitborn:leg_left', head: 'arachne:head' }).map((p) => p.id), ['arachne:head', 'pitborn:leg_left'], 'worn in slot order, whatever order the map has');
   assert.deepEqual(wornParts(null), []); assert.deepEqual(wornParts(undefined), []);
@@ -64,12 +65,12 @@ test('the Equip button is offered only for a wearable part; the others stay list
   mountParts({ get: () => box.save, put: (s) => { box.save = s; }, profiles: PROFILES.profiles, stars: STARS, prog: PROGRESSION, onWorn: (e) => worn.push({ ...e }) }, doc);
   doc.body.all().find((e) => e.dataset.frank === 'button').onclick();
   const buttons = doc.body.all().filter((e) => e.dataset.frank === 'equip'), sheet = doc.body.all().find((e) => e.dataset.frank === 'sheet');
-  assert.equal(buttons.length, 1, 'one Equip button: Arachne arm');
+  assert.equal(buttons.length, 2, 'an Equip button for each wearable part: Arachne arm, Minotaur torso');
   const rows = doc.body.all().filter((e) => e.dataset.part);
   assert.equal(rows.length, 3, 'all three collected parts are still listed');
-  assert.deepEqual(rows.filter((r) => r.dataset.wearable === 'false').map((r) => r.dataset.part).sort(), ['kachujin:head', 'pitborn:torso']);
+  assert.deepEqual(rows.filter((r) => r.dataset.wearable === 'false').map((r) => r.dataset.part), ['kachujin:head'], 'Kachujin is not a wearable donor');
   assert.match(sheet.text(), new RegExp(PARTS.text.notWearable));
-  buttons[0].onclick();
+  buttons.find((b) => b.parent?.dataset.part === 'arachne:arm_left').onclick();
   assert.deepEqual(worn, [{ arm_left: 'arachne:arm_left' }]);
 });
 
@@ -99,12 +100,13 @@ test('slot -> unit -> region: every slot of data/parts.json is either worn throu
     if (!row) { notWearable.push(slot.id); continue; }
     const regions = MANIFEST.regions.filter((r) => r.detached_by === unit);
     assert.ok(regions.length >= 1, `${slot.id}: the hero's manifest has a region detached by ${unit}`);
-    for (const r of regions) assert.ok(isPieceOf(r.mesh, unit), `${r.mesh} is a piece of ${unit}`);
+    for (const r of regions) assert.ok(isPieceOf(r.mesh, row.piece ?? unit), `${r.mesh} is a piece of ${row.piece ?? unit}`);
     assert.ok(MANIFEST.caps.some((c) => c.shown_when_cut === unit && !regions.some((r) => r.id === c.region)), `${slot.id}: a hero stump cap on the remaining side shows for ${unit}`);
-    assert.ok(PARTS.fit.collar.joints.some((j) => j.id === row.collar), `${slot.id}: collar joint ${row.collar}`);
+    if (row.collar) assert.ok(PARTS.fit.collar.joints.some((j) => j.id === row.collar), `${slot.id}: collar joint ${row.collar}`);
+    else assert.equal(unit, 'torso_waist', 'only the torso has no seam collar (its seams are the arms and the head, which are the hero pieces or other parts)');
     if (row.lift) assert.equal(row.lift, PARTS.fit.lift.unit);
   }
-  assert.deepEqual(notWearable.sort(), ['torso', 'weapon'], 'the torso (last, only if it looks right) and the weapon');
+  assert.deepEqual(notWearable.sort(), ['weapon'], 'only the weapon slot (a boss-weapon reward, no hero piece); the torso went last, after the stills looked right');
   for (const j of PARTS.fit.collar.joints) assert.ok(W.heroHost[j.id], `heroHost row for ${j.id}`);
   assert.ok(Array.isArray(W.heroCollars));
 });
@@ -224,6 +226,16 @@ test('unequip restores the hero: every hero piece visible, every cap hidden, no 
   await s2.wearer.apply(wornParts(['pitborn:arm_left']));
   assert.ok(freed2.length > 0, 'the replaced donor was freed'); assert.deepEqual(s2.wearer.worn().map((p) => p.id), ['pitborn:arm_left']);
   assert.equal(s2.worn().filter((m) => m.name.includes('arachne')).length, 0);
+});
+
+test('the torso: the donor piece_upper_torso (the unit torso_waist is the region upper_torso) replaces the hero torso, the hero waist stump shows, no collar; off again restores', async () => {
+  const s = stage();
+  await s.wearer.apply(wornParts(['arachne:torso']));
+  assert.equal(s.vis('piece_upper_torso'), false); assert.equal(s.vis('piece_root'), true);
+  assert.equal(s.vis('cap_waist_root'), true, 'the hero root keeps its own waist stump cap'); assert.equal(s.vis('cap_waist_torso'), false);
+  assert.deepEqual(s.worn().map((m) => m.name), ['wear_arachne:torso'], 'one draw, no collar');
+  await s.wearer.apply([]);
+  assert.equal(s.vis('piece_upper_torso'), true); assert.equal(s.vis('cap_waist_root'), false);
 });
 
 test('calls queue and the last loadout wins; the same loadout twice changes nothing; a donor that fails to load is reported and the hero is left whole', async () => {

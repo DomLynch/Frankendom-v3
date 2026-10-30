@@ -84,7 +84,7 @@ export const SCHEMA = {
   'parts': { keys: ['about', 'maxCount', 'slots', 'rarities', 'button', 'panel', 'fit', 'wear', 'text'],
     rows: { slots: ['id', 'label', 'units'], rarities: ['star', 'id', 'label', 'colour'] },
     maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], fit: ['about', 'limits', 'seam', 'eps', 'bones', 'lift', 'skin', 'collar'], wear: ['about', 'flags', 'mesh', 'units', 'heroHost', 'heroCollars', 'budget'], text: ['notWearable', 'title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] },
-    finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'], 'wear.budget': ['skinnedDrawsMax', 'partsMax'] } },
+    finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'], 'wear.budget': ['skinnedDrawsMax', 'partsMax', 'frameMsMedianExtra'] } },
   // Frankendom parts, stage 2 per-body fit rows (src/parts-fit-rows.ts validateFitRows checks the values)
   'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'stem', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'measure', 'collars'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only

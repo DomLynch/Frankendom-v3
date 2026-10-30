@@ -12,6 +12,8 @@ mkdirSync(out, { recursive: true });
 const SET = {
   none: 'none', 'minotaur-head': 'pitborn:head', 'minotaur-arm-left': 'pitborn:arm_left', 'reginald-leg-left': 'castle-guard:leg_left', 'anime-girl-arm-right': 'anime-girl-blonde:arm_right',
   'anime-boy-head': 'anime-boy-black:head', 'arachne-arm-left': 'arachne:arm_left', 'gargantua-arm-left': 'gargantua:arm_left', 'gargantua-head': 'gargantua:head', 'king-arm-left': 'big-vegas:arm_left', 'king-head': 'big-vegas:head',
+  'minotaur-torso': 'pitborn:torso', 'reginald-torso': 'castle-guard:torso', 'anime-boy-torso': 'anime-boy-black:torso', 'arachne-torso': 'arachne:torso', 'gargantua-torso': 'gargantua:torso',
+  'loadout-3': 'pitborn:head,arachne:arm_left,castle-guard:leg_left', 'loadout-5': 'anime-boy-black:head,pitborn:arm_left,arachne:arm_right,castle-guard:leg_left,anime-girl-blonde:leg_right',
 };
 const jobs = named.length ? named.map((s) => { const i = s.indexOf('='); return i < 0 ? [s, SET[s] ?? s] : [s.slice(0, i), s.slice(i + 1)]; }) : Object.entries(SET);
 const num = (k, d) => Number(process.env[k] ?? d);

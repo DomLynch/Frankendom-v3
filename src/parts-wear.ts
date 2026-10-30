@@ -5,7 +5,7 @@ import { PARTS, slotOfUnit, type PartsFile, type WearRules } from './parts.ts';
 import { fitBodyOf, isWearable, type FitRowsFile, FIT_ROWS } from './parts-fit-rows.ts';
 
 /** One part on the body: `id` = `<profile>:<slot>`, `unit` the cut unit it replaces, `stem` the donor's data/rig.json `files` key, `source` which GLB of it loads. */
-export type WornPart = { id: string; profile: string; slot: string; unit: string; stem: string; source: 'derived' | 'original'; collar: string; lift: string | undefined };
+export type WornPart = { id: string; profile: string; slot: string; unit: string; stem: string; source: 'derived' | 'original'; piece: string; collar: string | undefined; lift: string | undefined };
 export type WearFlags = { on: boolean; force: string[] | null };
 
 /** The page's wear switches (?parts=off wears nothing; ?wear=<id>,<id> wears exactly those ids and ignores the save). Pure on the search string, like every flag row (radar.ts radarOn). */
@@ -37,7 +37,7 @@ export function wornParts(equipped: Readonly<Record<string, string>> | readonly 
     const p = typeof id === 'string' ? splitId(id) : null;
     if (!p || bySlot.has(p.slot) || !canWear(p.profile, p.slot, file, rows)) continue;
     const unit = unitOfSlot(p.slot, file)!, row = file.wear.units[unit]!, body = fitBodyOf(p.profile, rows)!;
-    bySlot.set(p.slot, { id, profile: p.profile, slot: p.slot, unit, stem: stemOf(p.profile, rows), source: body.source ?? 'original', collar: row.collar, lift: row.lift });
+    bySlot.set(p.slot, { id, profile: p.profile, slot: p.slot, unit, stem: stemOf(p.profile, rows), source: body.source ?? 'original', piece: row.piece ?? unit, collar: row.collar, lift: row.lift });
   }
   return file.slots.flatMap((s) => (bySlot.has(s.id) ? [bySlot.get(s.id)!] : [])).slice(0, file.wear.budget.partsMax);
 }
@@ -48,7 +48,7 @@ export function wearDiff(prev: readonly WornPart[], next: readonly WornPart[]): 
   return { remove: prev.filter((p) => !keep.has(p.id)), add: next.filter((p) => !had.has(p.id)) };
 }
 
-/** Whether a donor GLB node name is a piece of cut `unit`: `piece_<unit>` or `piece_<unit>_*` (the Minotaur's head is two pieces, piece_head_left and piece_head_right). */
+/** Whether a donor GLB node name is a piece named `piece` (WornPart.piece: the unit, or the data/parts.json wear row's own name): `piece_<piece>` or `piece_<piece>_*` (the Minotaur's head is two pieces, piece_head_left and piece_head_right). */
 export const isPieceOf = (name: string, unit: string, rules: WearRules = PARTS.wear): boolean => name === rules.mesh.piece + unit || name.startsWith(rules.mesh.piece + unit + rules.mesh.join);
 
 /** The slot a unit fills (re-export for the scene work: one import for the wear module). */

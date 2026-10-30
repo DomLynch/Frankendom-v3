@@ -25,10 +25,10 @@ export type FitRules = {
 export type WearRules = {
   flags: { off: { query: string; value: string }; force: { query: string } };
   mesh: { piece: string; cap: string; join: string; source: Record<'derived' | 'original', string> };
-  units: Record<string, { collar: string; lift?: string }>;
+  units: Record<string, { piece?: string; collar?: string; lift?: string }>;
   heroHost: Record<string, string>;
   heroCollars: string[];
-  budget: { skinnedDrawsMax: number; partsMax: number };
+  budget: { skinnedDrawsMax: number; partsMax: number; frameMsMedianExtra: number };
 };
 export type PartsFile = {
   maxCount: number; slots: SlotRow[]; rarities: RarityRow[]; fit: FitRules; wear: WearRules;

@@ -83,15 +83,19 @@ export function validateWear(wear, fit, slots) {
   if (isObj(wear.units)) {
     for (const [u, row] of Object.entries(wear.units)) {
       if (!units.has(u)) e.push(`${at0}.units.${u}: not a unit of any slot`);
-      if (!keys(`units.${u}`, row, ['collar', 'lift'])) continue;
-      if (!joints.has(row.collar)) e.push(`${at0}.units.${u}.collar: "${String(row.collar)}" is not a fit.collar.joints id`);
+      if (!keys(`units.${u}`, row, ['piece', 'collar', 'lift'])) continue;
+      if ('piece' in row && !/^[a-z_]+$/.test(row.piece)) e.push(`${at0}.units.${u}.piece: the name of the unit's piece mesh without the prefix (absent = the unit)`);
+      if ('collar' in row && !joints.has(row.collar)) e.push(`${at0}.units.${u}.collar: "${String(row.collar)}" is not a fit.collar.joints id`);
       if ('lift' in row && row.lift !== fit?.lift?.unit) e.push(`${at0}.units.${u}.lift: "${String(row.lift)}" is not fit.lift.unit`);
     }
   } else e.push(`${at0}.units: an object`);
   if (isObj(wear.heroHost)) { for (const j of joints) if (typeof wear.heroHost[j] !== 'string' || !/^[a-z_]+$/.test(wear.heroHost[j])) e.push(`${at0}.heroHost.${j}: the hero piece the collar takes its skin from`); }
   else e.push(`${at0}.heroHost: an object`);
   if (!Array.isArray(wear.heroCollars) || wear.heroCollars.some((j) => !joints.has(j))) e.push(`${at0}.heroCollars: a list of fit.collar.joints ids`);
-  if (keys('budget', wear.budget, ['skinnedDrawsMax', 'partsMax'])) for (const k of ['skinnedDrawsMax', 'partsMax']) if (!(Number.isInteger(wear.budget[k]) && wear.budget[k] >= 1 && wear.budget[k] <= 200)) e.push(`${at0}.budget.${k}: an integer in 1..200`);
+  if (keys('budget', wear.budget, ['skinnedDrawsMax', 'partsMax', 'frameMsMedianExtra'])) {
+    for (const k of ['skinnedDrawsMax', 'partsMax']) if (!(Number.isInteger(wear.budget[k]) && wear.budget[k] >= 1 && wear.budget[k] <= 200)) e.push(`${at0}.budget.${k}: an integer in 1..200`);
+    if (!(typeof wear.budget.frameMsMedianExtra === 'number' && wear.budget.frameMsMedianExtra >= 0 && wear.budget.frameMsMedianExtra <= 50)) e.push(`${at0}.budget.frameMsMedianExtra: milliseconds in 0..50`);
+  }
   return e;
 }
 

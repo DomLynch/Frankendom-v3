@@ -130,7 +130,7 @@ export function createWearer(deps: WearDeps): Wearer {
   function fit(part: WornPart, donor: Donor): Fitted {
     donor.scene.updateMatrixWorld(true);
     const dn = byName(donor.scene), meshes = new Set<SkinnedMesh>();
-    donor.scene.traverse((o) => { if (isPieceOf(o.name, part.unit)) for (const m of skinnedIn(o)) meshes.add(m); });
+    donor.scene.traverse((o) => { if (isPieceOf(o.name, part.piece)) for (const m of skinnedIn(o)) meshes.add(m); });
     if (!meshes.size) throw new Error(`${donor.key}: no piece for unit ${part.unit}`);
     const bound = [...meshes].map((m) => { const b = retarget(bindPiece(m, m.geometry, bind), live); b.name = `wear_${part.id}`; b.receiveShadow = true; b.userData.worn = true; liveRoot.add(b); return b; });
     const dm = textured([...meshes])[0], row = fitBodyOf(part.profile, fitRows)?.collars.find((c) => c.id === part.collar);
