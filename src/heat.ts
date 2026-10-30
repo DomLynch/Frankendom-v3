@@ -18,7 +18,7 @@ export type Heat = { count: number; lastAt: number; coinBank: number };
 export const freshHeat = (): Heat => ({ count: 0, lastAt: 0, coinBank: 0 });
 
 /** Why `rows` is not a good heat table (one string per problem; empty = fine). `ringIds`: the data/rings.json ring ids. The checks live in src/sim/validate-heat.js. */
-export const validateHeat = (rows: HeatRows = HEAT, ringIds: readonly string[] = []): string[] => validateHeatRows(rows, ringIds) as string[];
+export const validateHeat = (rows: HeatRows = HEAT, ringIds: readonly string[] = []): string[] => validateHeatRows(rows, [...ringIds]) as string[];
 
 /** What one boss kill is worth: the kill, its stars, its ring (`ringId` null = none), and nothing for coins (see `addCoins`). */
 export const killHeat = (rows: HeatRows, star: number, ringId: string | null): number => rows.gain.kill + rows.gain.perStar * Math.max(0, star) + (ringId ? (rows.gain.ring[ringId] ?? 0) : 0);
