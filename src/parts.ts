@@ -80,7 +80,7 @@ export const partId = (profile: string, slot: string): string => `${profile}:${s
 /** The slot a cut unit fills, or null (a visual unit such as head_split, or a unit the table does not name). */
 export const slotOfUnit = (unit: string, file: PartsFile = PARTS): string | null => file.slots.find((s) => s.units.includes(unit))?.id ?? null;
 /** `profile:slot` split, or null when it is not an id of this table's shape. */
-function splitPart(id: string, file: PartsFile = PARTS): { profile: string; slot: string } | null {
+export function splitPart(id: string, file: PartsFile = PARTS): { profile: string; slot: string } | null {
   const i = id.indexOf(':');
   if (i < 1) return null;
   const profile = id.slice(0, i), slot = id.slice(i + 1);
