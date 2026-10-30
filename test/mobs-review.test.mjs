@@ -41,8 +41,10 @@ test('a STRIKE press is never a hand-over: the kill\'s ceremony and the finisher
   assert.equal(step.free.duel.fighters[0].phase, 'attack', 'once the walk has begun a STRIKE swings');
 });
 
+const cutList = [];   // the cut state (PR #252 corpseCutState): the test says which corpses still have units to cut
 const corpseRun = () => {
-  const run = createMobsRun({ zone: ZONE, origin: { x: 0, z: 0 }, bosses: () => [], suppress: () => false, coins: () => {}, rangeMetres: 30 });
+  cutList.length = 0;
+  const run = createMobsRun({ zone: ZONE, origin: { x: 0, z: 0 }, bosses: () => [], suppress: () => false, coins: () => {}, rangeMetres: 30, cutState: () => cutList });
   run.core.rows.spawnMinMetres = 0;
   for (const ring of Object.values(run.core.rows.rings)) ring.density = 0;   // no grid packs: only the ones the test makes
   const p0 = first();
@@ -60,6 +62,7 @@ test('the fallen boss: packs stay quiet through the grace and while the hero sta
   assert.ok(run.core.count > 0, 'before the kill the pack came in');
   run.core.reset();
   run.core.spawnPackAt(70, 0, 'goblin', 6);
+  cutList.push({ x: 52, z: 0, remainingUnits: 6 });
   step(kill(at(50, 0), 52, 0), C.graceSeconds - 1);
   assert.equal(run.corpses.length, 1);
   assert.equal(run.core.count, 0, 'no pack comes in during the grace after the kill');
@@ -70,8 +73,10 @@ test('the fallen boss: packs stay quiet through the grace and while the hero sta
   step(near, 2);
   assert.equal(run.core.takeHeroDamage(), 0);
   assert.equal(run.core.alive, 0, 'a hero cutting the corpse is left alone');
-  step(near, C.holdSeconds);
-  assert.equal(run.corpses.length, 0, 'the corpse is forgotten after holdSeconds');
+  assert.equal(run.corpses.length, 0, 'with the cut state the time corpse ends with the grace');
+  cutList.length = 0;   // fully cut (or gone): released
+  step(near, 1);
+  assert.equal(run.core.count > 0 || run.core.alive === 0, true);
 });
 
 test('a mob walked into the corpse pad is walked out of it', () => {

@@ -6,6 +6,7 @@ import { Mobs, MOBS, kindIndex, type Hero, type Killed, type MobView, type Pad }
 import { validateMobs } from './sim/validate-mobs.js';
 import { swingOf, defenceOf } from './fight/mob-swing.ts';
 import { setRoamStrikes } from './fight/free-roam.ts';
+import { corpseCutState } from './fight/cut-strike.ts';
 import { RINGS, ringOf } from './zone/rings.ts';
 import RIG from '../data/rig.json' with { type: 'json' };
 import PHYSICS from '../data/physics.json' with { type: 'json' };
@@ -19,7 +20,8 @@ export type MobsRunDeps = {
   bosses: () => readonly { x: number; z: number; leash: number }[];   // the boss spots in the pit frame (live: a lingering boss moves its spot)
   suppress: () => boolean;                                            // a boss fight is on, or the hero is down
   coins: (n: number) => void;                                         // pays a kill's coins (the corpse run's carried coins)
-  rangeMetres: number;                                                // the radar's range: only mobs inside it are dots
+  cutState?: () => readonly { x: number; z: number; remainingUnits: number }[];   // the frozen corpses with units left (src/fight/cut-strike.ts corpseCutState, the default); a test or still may pass its own
+  rangeMetres: number;                                              // the radar's range: only mobs inside it are dots
 };
 
 /** Throws on a bad data/mobs.json row (the page stops at load, like every data row). */
@@ -37,26 +39,35 @@ export function createMobsRun(d: MobsRunDeps) {
   const corpses: { x: number; z: number; age: number }[] = [];   // where held bosses fell (the corpse the any-attack-press cut works on, PR #252 cut.strike.nearM)
   let lastFinish: unknown = null;
   const buf: Pad[] = [];
-  const pads = (): readonly Pad[] => {   // the boss circles, then one corpse-cut pad per remembered corpse (nearMetres + the pad margin: nobody spawns or stands where the hero cuts)
-    const b = d.bosses(), total = b.length + corpses.length;
+  // PR #252's cut state (src/fight/cut-strike.ts corpseCutState): every frozen corpse (the live foe's and the kept ones) with units still to cut, read once a tick. A corpse is protected while it has units left and
+  // released the moment it has none or is gone. The time rows (graceSeconds after a kill, holdSeconds) are the FALLBACK: grace always applies (the kill's own finisher), and holdSeconds stands in for the
+  // cut state only if reading it fails (no cut state provider).
+  const cutState = d.cutState ?? corpseCutState;
+  let cut: readonly { x: number; z: number; remainingUnits: number }[] | null = null;
+  const pads = (): readonly Pad[] => {   // the boss circles, then one corpse-cut pad per protected corpse (nearMetres + the pad margin: nobody spawns or stands where the hero cuts)
+    const b = d.bosses(), n = cut ? cut.length : 0, total = b.length + n + corpses.length;
     while (buf.length < total) buf.push({ x: 0, z: 0, radius: 0 });
     buf.length = total;
     for (let i = 0; i < b.length; i++) { const p = buf[i]!; p.x = b[i]!.x; p.z = b[i]!.z; p.radius = b[i]!.leash; }
-    for (let i = 0; i < corpses.length; i++) { const p = buf[b.length + i]!; p.x = corpses[i]!.x; p.z = corpses[i]!.z; p.radius = C.nearMetres + MOBS.padMetres; }
+    for (let i = 0; i < n; i++) { const p = buf[b.length + i]!; p.x = cut![i]!.x; p.z = cut![i]!.z; p.radius = C.nearMetres + MOBS.padMetres; }
+    for (let i = 0; i < corpses.length; i++) { const p = buf[b.length + n + i]!; p.x = corpses[i]!.x; p.z = corpses[i]!.z; p.radius = C.nearMetres + MOBS.padMetres; }
     return buf;
   };
-  /** Remembers a boss kill's corpse, ages the list, and says whether the hero is cutting it now: within the grace after the kill, or within nearMetres of a corpse that still stands. */
+  /** Remembers a boss kill's corpse (the grace and the fallback), reads the cut state, and says whether the hero is cutting a corpse now: within the grace after a kill, or within nearMetres of a corpse that still has units to cut. */
   const corpseHold = (practice: Practice, dt: number, hx: number, hz: number): boolean => {
     const fin = practice.finish;
     if (fin && fin.victim === 1 && !fin.draw) {
       if (fin !== lastFinish) { lastFinish = fin; corpses.push({ x: practice.enemy.x, z: practice.enemy.z, age: 0 }); if (corpses.length > C.max) corpses.shift(); }
     } else if (!fin) lastFinish = null;
+    try { cut = cutState(); } catch { cut = null; }
+    const stateOk = cut !== null;
     let hold = false;
     for (let i = corpses.length - 1; i >= 0; i--) {
       const c = corpses[i]!; c.age += dt;
-      if (c.age >= C.holdSeconds) { corpses.splice(i, 1); continue; }
+      if (c.age >= (stateOk ? C.graceSeconds : C.holdSeconds)) { corpses.splice(i, 1); continue; }   // with the cut state a time corpse only covers the grace; without it, holdSeconds
       if (c.age < C.graceSeconds || Math.hypot(c.x - hx, c.z - hz) <= C.nearMetres) hold = true;
     }
+    if (cut) for (let i = 0; i < cut.length; i++) if (cut[i]!.remainingUnits > 0 && Math.hypot(cut[i]!.x - hx, cut[i]!.z - hz) <= C.nearMetres) hold = true;
     return hold;
   };
   const core = new Mobs({ areas, ringAt, pads });
