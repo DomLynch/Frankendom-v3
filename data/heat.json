@@ -1,6 +1,9 @@
 {
   "about": "HEAT (Dom 2026-10-28, ported from Armagedom's wanted tally, docs/hunter-port.md): a number that rises with every kill and cools while the hero rests. Session only: it lives in memory, is never saved and never sent (the save string is byte for byte the same with or without it), a reload starts cold, and the hero's death sets it to 0. `maxHeat` is the ceiling. `gain`: what raises it. V3 has only bosses, so each boss kill adds `kill`; each star of the boss killed adds `perStar` (data/stars.json); a boss of a biome ring adds the ring's number in `ring` (data/rings.json ring ids; a ring with no row adds 0); and the kill coins (data/corpse-run.json) count too: every `coinsPerHeat` coins earned add 1 (the remainder carries over). `decay.secondsPerMark`: with no kill for that long the heat drops by 1, then by 1 more every further period. `tiers`: from `minHeat` up the hero is at that tier (ascending, the first at 1); the hunt (src/zone/hunters.ts, a later change) reads the tier, this change only names it on the HUD. `hud`: the one small line under the coin line and the unlock line (so the two never overlap), plain DOM text, written only when the count changes (no canvas, no texture, no per-frame work). No URL flag: it is on, and every number is a row, checked by src/heat.ts validateHeat and test/heat.test.mjs.",
   "version": 1,
+  "on": false,
+  "query": "heat",
+  "value": "1",
   "maxHeat": 10,
   "decay": { "secondsPerMark": 120 },
   "gain": { "kill": 1, "perStar": 1, "ring": { "ring-2": 1, "ring-3": 1 }, "coinsPerHeat": 50 },

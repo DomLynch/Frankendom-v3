@@ -9,6 +9,9 @@ export function validateHeat(rows, ringIds = []) {
     if (!r || !(typeof v === 'number' && Number.isFinite(v) && v >= r[0] && v <= r[1] && (!whole || Number.isInteger(v)))) e.push(`heat.${name}: ${String(v)} is not ${whole ? 'a whole number ' : ''}in ${r ? `${r[0]}..${r[1]}` : 'a limits row'}`);
   };
   if (!Number.isInteger(rows.version) || rows.version < 1) e.push('heat.version: a whole number from 1');
+  if (typeof rows.on !== 'boolean') e.push('heat.on: true or false');
+  if (typeof rows.query !== 'string' || !/^[a-z][a-z0-9-]{0,15}$/.test(rows.query)) e.push('heat.query: a short lowercase word');
+  if (typeof rows.value !== 'string' || !rows.value.trim()) e.push('heat.value: a non-empty string');
   inside('maxHeat', rows.maxHeat, 'maxHeat');
   inside('decay.secondsPerMark', rows.decay?.secondsPerMark, 'secondsPerMark', false);
   inside('gain.kill', rows.gain?.kill, 'gain'); inside('gain.perStar', rows.gain?.perStar, 'gain'); inside('gain.coinsPerHeat', rows.gain?.coinsPerHeat, 'coinsPerHeat');

@@ -67,7 +67,7 @@ import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
 import { CORPSE, coinsFor, atCamp, bank, carriedSave, dropPile, earn, inReach, lineOf, lingerSpot, regain, retrieve, validateCorpseRun } from '../corpse-run.ts';   // the corpse run (data/corpse-run.json; rides the progression save)
 import { mountCorpseHud } from '../fight/corpse-hud.ts';
-import { HEAT, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
+import { HEAT, heatOn, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
 import { mountHeatHud } from '../fight/heat-hud.ts';
 import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wire.ts';   // golden weapon drops (data/golden-weapons.json): the rest of the wiring lives there
 import { goldenBlips } from '../zone/golden-drops.ts';
@@ -462,7 +462,7 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 // HEAT (data/heat.json, src/heat.ts; Dom 2026-10-28, ported from Armagedom): each boss kill (and its stars, ring and coins) raises a number that cools with quiet time and clears on the hero's death. It lives in these
 // variables only: never saved, never sent, so ?save=off or a reload starts cold and the save string is untouched. The HUD is one DOM line written when the count changes. No URL flag.
 { const bad = validateHeat(HEAT, RINGS.rings.map((r) => r.id)); if (bad.length) throw new Error(`data/heat.json: ${bad.join('; ')}`); }
-const heat = freshHeat(), heatHud = ZONE ? mountHeatHud(document, HEAT) : null;
+const heat = freshHeat(), heatHud = ZONE && heatOn(search) ? mountHeatHud(document, HEAT) : null;
 let heatClock = 0;
 function heatKill(spawn: Spawn) { heatOnKill(heat, HEAT, heatClock, starById[spawn.id] ?? 0, ringOfSpawn(spawn.id)?.id ?? null, coinsFor(CORPSE, spawn.kind)); }
 function heatStep(dt: number) { heatClock += dt; stepHeat(heat, HEAT, heatClock); heatHud?.update(heat); }
