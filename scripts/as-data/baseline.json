@@ -170,11 +170,11 @@
   "src/fight/armfeel-fx.ts": {
    "number": 2
   },
-  "src/fight/skyview.ts": {
-   "number": 2
-  },
   "src/fight/terrain-draw.ts": {
    "number": 3
+  },
+  "src/fight/skyview.ts": {
+   "number": 2
   },
   "src/art-url.ts": {
    "compare": 1
@@ -744,7 +744,7 @@
   },
   "src/fight/radar.ts": {
    "number": 38,
-   "name-compare": 8,
+   "name-compare": 6,
    "label": 1
   },
   "src/fight/ragdoll.ts": {

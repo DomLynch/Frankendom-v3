@@ -45,6 +45,8 @@ export function validateHeat(rows, ringIds = [], profileIds = [], starLevels = [
     for (const k of ['warning', 'arrived', 'gone']) if (typeof u.lines?.[k] !== 'string' || !u.lines[k].trim()) e.push(`heat.hunt.lines.${k}: a line of text`);
   }
   inside('seed', rows.seed, 'seed');
+  for (const k of ['golden', 'mulA', 'mulB', 'range']) inside(`hash.${k}`, rows.hash?.[k], 'word');
+  for (const k of ['shiftA', 'shiftB']) inside(`hash.${k}`, rows.hash?.[k], 'shift');
   if (rows.tiers?.length && rows.tiers[0].minHeat !== 1) e.push('heat.tiers: the first tier starts at heat 1');
   if (rows.tiers?.length && rows.tiers[rows.tiers.length - 1].minHeat > rows.maxHeat) e.push('heat.maxHeat: below the top tier, which could never be reached');
   const h = rows.hud;

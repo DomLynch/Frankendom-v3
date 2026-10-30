@@ -28,6 +28,7 @@
     "parkedSeconds": 1000000000,
     "lines": { "warning": "A hunter is on your trail", "arrived": "The hunter closes in", "gone": "The hunter lost your trail" }
   },
+  "hash": { "golden": 2654435761, "mulA": 2246822507, "mulB": 3266489909, "shiftA": 16, "shiftB": 13, "range": 4294967296 },
   "hud": { "label": "Heat", "colour": "#ff9a50", "zIndex": 29, "topOffsetPx": 36, "css": ".heat-line{position:fixed;left:50%;top:calc(18% + 8px + {topOffsetPx}px);transform:translateX(-50%);z-index:{zIndex};pointer-events:none;white-space:nowrap;color:{colour};opacity:0;transition:opacity .4s ease;font:10px/1.25 Georgia,'Times New Roman',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;text-shadow:0 1px 3px rgba(0,0,0,.85);user-select:none;-webkit-user-select:none}" },
-  "limits": { "nameChars": 16, "labelChars": 12, "maxHeat": [1, 99], "gain": [0, 20], "coinsPerHeat": [1, 100000], "secondsPerMark": [5, 3600], "minHeat": [1, 99], "zIndex": [0, 100], "topOffsetPx": [0, 200], "timeScale": [0.05, 1], "hunters": [0, 4], "maxHunters": [1, 4], "seconds": [1, 3600], "metres": [1, 400], "speed": [0.5, 20], "parked": [1000, 1000000000000], "seed": [0, 2147483647] }
+  "limits": { "nameChars": 16, "labelChars": 12, "maxHeat": [1, 99], "gain": [0, 20], "coinsPerHeat": [1, 100000], "secondsPerMark": [5, 3600], "minHeat": [1, 99], "zIndex": [0, 100], "topOffsetPx": [0, 200], "timeScale": [0.05, 1], "hunters": [0, 4], "maxHunters": [1, 4], "seconds": [1, 3600], "metres": [1, 400], "speed": [0.5, 20], "parked": [1000, 1000000000000], "seed": [0, 2147483647], "word": [1, 4294967296], "shift": [1, 31] }
 }

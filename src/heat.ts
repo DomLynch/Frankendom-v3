@@ -14,6 +14,7 @@ export type HeatRows = {
   version: number; maxHeat: number; seed: number; decay: { secondsPerMark: number };
   gain: { kill: number; perStar: number; ring: Record<string, number>; coinsPerHeat: number };
   tiers: readonly HeatTier[]; hunt: HuntRows;
+  hash: { golden: number; mulA: number; mulB: number; shiftA: number; shiftB: number; range: number };
   hud: { label: string; colour: string; zIndex: number; topOffsetPx: number; css: string };
   limits: Record<string, [number, number]>;
 };
@@ -79,9 +80,10 @@ export const huntersAllowed = (h: Heat, rows: HeatRows = HEAT): number => Math.m
 export function heatStar(h: Heat, n: number, rows: HeatRows = HEAT): number {
   const tier = heatTier(h, rows);
   if (!tier || !tier.stars.length) return 0;
-  let x = (rows.seed ^ Math.imul(n + 1, 0x9e3779b1)) >>> 0;   // a 32-bit integer mix (murmur3 finaliser), the roll in [0, 1)
-  x = Math.imul(x ^ (x >>> 16), 0x85ebca6b) >>> 0; x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0; x = (x ^ (x >>> 16)) >>> 0;
-  const roll = x / 0x100000000;
+  const k = rows.hash;   // the mix constants are a data row (data/heat.json hash)
+  let x = (rows.seed ^ Math.imul(n + 1, k.golden)) >>> 0;   // a 32-bit integer mix (murmur3 finaliser), the roll in [0, 1)
+  x = Math.imul(x ^ (x >>> k.shiftA), k.mulA) >>> 0; x = Math.imul(x ^ (x >>> k.shiftB), k.mulB) >>> 0; x = (x ^ (x >>> k.shiftA)) >>> 0;
+  const roll = x / k.range;
   let edge = 0;
   for (const s of tier.stars) { edge += s.chance; if (roll < edge) return s.stars; }
   return 0;
