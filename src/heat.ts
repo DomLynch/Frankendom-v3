@@ -11,7 +11,7 @@ export type HuntRows = {
   lines: { warning: string; arrived: string; gone: string };
 };
 export type HeatRows = {
-  version: number; maxHeat: number; seed: number; decay: { secondsPerMark: number };
+  version: number; on: boolean; query: string; value: string; maxHeat: number; seed: number; decay: { secondsPerMark: number };
   gain: { kill: number; perStar: number; ring: Record<string, number>; coinsPerHeat: number };
   tiers: readonly HeatTier[]; hunt: HuntRows;
   hash: { golden: number; mulA: number; mulB: number; shiftA: number; shiftB: number; range: number };
@@ -19,6 +19,8 @@ export type HeatRows = {
   limits: Record<string, [number, number]>;
 };
 export const HEAT = ROWS as unknown as HeatRows;
+/** Whether the heat HUD line shows for this address: the row's `on`, or `?<query>=<value>` (default off; the flag row names the query and the value). The tally itself counts silently either way. */
+export const heatOn = (search: string, f: HeatRows = HEAT): boolean => f.on || new URLSearchParams(search).get(f.query) === f.value;
 
 /** The live heat: the count, when it last rose (page seconds), and the coin remainder not yet worth a mark. */
 export type Heat = { count: number; lastAt: number; coinBank: number };

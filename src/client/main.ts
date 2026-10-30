@@ -67,7 +67,7 @@ import { setBlend } from '../fight/anim-blend.ts';
 import { createHud } from '../fight/hud.ts';
 import { CORPSE, coinsFor, atCamp, bank, carriedSave, dropPile, earn, inReach, lineOf, lingerSpot, regain, retrieve, validateCorpseRun } from '../corpse-run.ts';   // the corpse run (data/corpse-run.json; rides the progression save)
 import { mountCorpseHud } from '../fight/corpse-hud.ts';
-import { HEAT, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
+import { HEAT, heatOn, addHeat, freshHeat, onKill as heatOnKill, resetHeat, stepHeat, validateHeat } from '../heat.ts';   // heat (data/heat.json): session only, never saved
 import { mountHeatHud } from '../fight/heat-hud.ts';
 import { freshHunt, hunterSpawns, stepHunt } from '../zone/hunters.ts';   // the hunt (data/heat.json hunt): a hunter walks at a hero who has heat
 import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wire.ts';   // golden weapon drops (data/golden-weapons.json): the rest of the wiring lives there
@@ -463,7 +463,7 @@ function adoptAttacker(a: Attacker, at: { x: number; z: number; heading: number 
 // HEAT (data/heat.json, src/heat.ts; Dom 2026-10-28, ported from Armagedom): each boss kill (and its stars, ring and coins) raises a number that cools with quiet time and clears on the hero's death. It lives in these
 // variables only: never saved, never sent, so ?save=off or a reload starts cold and the save string is untouched. The HUD is one DOM line written when the count changes. No URL flag.
 { const bad = validateHeat(HEAT, RINGS.rings.map((r) => r.id), PROFILES.profiles.map((p) => p.id), STAR_ROWS.levels.map((l) => l.star)); if (bad.length) throw new Error(`data/heat.json: ${bad.join('; ')}`); }
-const heat = freshHeat(), heatHud = ZONE ? mountHeatHud(document, HEAT) : null;
+const heat = freshHeat(), heatHud = ZONE && heatOn(search) ? mountHeatHud(document, HEAT) : null;
 let heatClock = 0;
 // THE HUNT (src/zone/hunters.ts): while he has heat a hunter is announced, arrives behind him and walks at him; close enough it stands as an ordinary boss and the existing aggro hand-over (or attacker join) starts the 1v1.
 // PLACEHOLDER body: Gargantua's (data/profiles.json `hunter`); the line is the discreet HUD line the unlocks use. Session only, nothing saved.

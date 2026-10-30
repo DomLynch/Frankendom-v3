@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HEAT, addCoins, addHeat, freshHeat, heatText, heatTier, killHeat, onKill, resetHeat, stepHeat, validateHeat } from '../src/heat.ts';
+import { HEAT, heatOn, addCoins, addHeat, freshHeat, heatText, heatTier, killHeat, onKill, resetHeat, stepHeat, validateHeat } from '../src/heat.ts';
 import { mountHeatHud } from '../src/fight/heat-hud.ts';
 import { validateFile } from '../src/sim/validate.js';
 import { freshSave, parseSave, writeSave } from '../src/progression.ts';
@@ -12,6 +12,22 @@ const read = (f) => JSON.parse(readFileSync(new URL(`../data/${f}.json`, import.
 const src = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 const RING_IDS = read('rings').rings.map((r) => r.id);
 const patch = (f) => { const d = structuredClone(HEAT); f(d); return d; };
+
+test('the flag row: default OFF, ?heat=1 shows the line, on: true shows it for all; a bad flag row is refused; the page mounts the HUD only through heatOn', () => {
+  assert.equal(HEAT.on, false);
+  assert.equal(heatOn(''), false);
+  assert.equal(heatOn('?heat=0'), false);
+  assert.equal(heatOn('?other=1'), false);
+  assert.equal(heatOn(`?${HEAT.query}=${HEAT.value}`), true);
+  assert.equal(heatOn('', { ...HEAT, on: true }), true);
+  assert.equal(HEAT.query, 'heat'); assert.equal(HEAT.value, '1');
+  assert.match(validateHeat(patch((d) => { d.on = 'yes'; }), RING_IDS).join(';'), /heat\.on/);
+  assert.match(validateHeat(patch((d) => { d.query = 'Heat!'; }), RING_IDS).join(';'), /heat\.query/);
+  assert.match(validateHeat(patch((d) => { d.value = ''; }), RING_IDS).join(';'), /heat\.value/);
+  const main = src('src/client/main.ts');
+  assert.match(main, /heatHud = ZONE && heatOn\(search\) \? mountHeatHud\(/);   // off = no HUD element, no style
+  assert.doesNotMatch(main, /[?&]heat=/);   // the query string lives in the row
+});
 
 test('the table validates and a bad row is named', () => {
   assert.deepEqual(validateFile('heat', read('heat')), []);
