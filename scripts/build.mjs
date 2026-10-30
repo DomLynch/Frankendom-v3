@@ -178,10 +178,13 @@ for (const glb of PACKED) {
 }
 // The Minotaur cut GLB (physics tool output, float32 + meshopt filter NONE, 2.37 MB in git, kept so: Blender and the cut validator read it plain)
 // ships through the lossy cut path (scripts/cut-glb-pack.mjs): positions within 0.1 mm, rotations within 0.006 degrees, 1.2 MB. Only this file.
-const CUT_GLBS = ['src/assets/minotaur-106.glb', 'src/assets/gargantua-106.glb', 'src/assets/arachne-106.glb',
+// The hero's psyche-106.glb is OpenTrident's derived Psyche cut (seven piece_* + twelve cap_*, parts-wear step 1): plain 4.9 MB in git, 1.8 MB shipped.
+const CUT_GLBS = ['src/assets/psyche-106.glb', 'src/assets/minotaur-106.glb','src/assets/gargantua-106.glb', 'src/assets/arachne-106.glb',
   // the nine biome-ring boss bodies (data/rings.json): physics cut GLBs, each sha256 pinned to its row in the physics package's data/cut-bodies.json (test/rings.test.mjs)
   // (sporty-granny-106 is not in the list: its file carries TEXCOORD_1 and _2, which the lossy cut pack refuses; it ships as the physics tool wrote it, 1.8 MB, fetched only near her)
-  ...['pumpkinhulk', 'kachujin', 'castle-guard', 'parasite', 'anime-boy-black', 'the-boss', 'anime-girl-blonde', 'big-vegas'].map((s) => `src/assets/${s}-106.glb`)];
+  ...['pumpkinhulk', 'kachujin', 'castle-guard', 'parasite', 'anime-boy-black', 'the-boss', 'anime-girl-blonde', 'big-vegas'].map((s) => `src/assets/${s}-106.glb`),
+  // the two donor bodies whose worn parts load OpenTrident's derived copy (data/parts-fit-rows.json source derived: winding fixed, the King's collar flaps trimmed); fetched only when one of their parts is worn
+  'src/assets/castle-guard-106.derived.glb', 'src/assets/big-vegas-106.derived.glb'];
 for (const glb of CUT_GLBS) {
   const target = join(out, glb);
   if (existsSync(target)) writeFileSync(target, await optimizeGlb(readFileSync(target), undefined, { cut: true }));

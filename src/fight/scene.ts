@@ -12,7 +12,9 @@ import { gait, SPECIAL_MODES, type SpecialFx as ModeFx } from './special-modes.t
 import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-school.ts';
 import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
-import { firstFrameDrawn } from '../late-art.ts';
+import { afterFirstFrame, firstFrameDrawn } from '../late-art.ts';
+import type { WornPart } from '../parts-wear.ts';   // Frankendom parts, stage 2 (data/parts.json wear): the hero wears the equipped boss parts; the module itself is a lazy import below
+import type { Wearer } from './parts-wear.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
 import { createWallFx, footMidpoint } from './mechanics/accountant-parry-wall-fx.ts';   // the Accountant's parry wall (data/mechanics.json): drawn from the foe fighter's mech state, in the Pit scene
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
@@ -297,6 +299,23 @@ export function createScene(
   // load (main.ts shows the card only once its image arrives), so every opponent switch flashed two blocks in the arena.
   player.visible = opponent.visible = false;
   let warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
+  // Frankendom parts, stage 2: the loadout the page wants worn (main.ts wear()) and the wearer that lays it on the hero. Nothing is imported or fetched until a part is wanted, and then only after the first frame.
+  let wearWant: readonly WornPart[] = [], wearer: Wearer | undefined, wearing = false;
+  const wearSoon = (): void => {
+    if (!warriors || wearing || (!wearer && !wearWant.length)) return;
+    wearing = true;
+    void (async () => {
+      try {
+        for (let want = wearWant; ; want = wearWant) {   // a loadout asked for while this one was going on is laid next
+          if (want.length) await afterFirstFrame();
+          wearer ??= (await import('./parts-wear.ts')).createWearer({ anchor: warriors!.player.anchor, bind: warriors!.asset.scene, report: captureException });
+          await wearer.apply(want);
+          if (want === wearWant) break;
+        }
+      } catch (error) { captureException(error); }
+      wearing = false;
+    })();
+  };
   let homeActor: NonNullable<typeof warriors>['opponent'] | undefined;   // the page's own foe rig (its body: liveBody). `warriors.opponent` is the LIVE rig, which a held spawn in another body swaps (heldBodies); the baked finishers, the kit and the rank look are the home rig's alone
   const atHome = (): boolean => !heldCtl || heldCtl.atHome;
   const dustFeet: (THREE.Object3D | null)[] = [],
@@ -466,6 +485,7 @@ export function createScene(
       ragdoll?.attach(opponent, loaded.opponent, loaded.player).catch(captureException);   // his presentation ragdoll (ragdoll.ts): the chunk loads after the first frame
       heroRagdoll?.attach(player, loaded.player).catch(captureException);   // ?feel=hero: hers, the same way
       player.visible = opponent.visible = true;
+      wearSoon();   // the parts the hero already wears (a save's equipped map, ?wear=): after the first frame
       foeFade?.protect(player); foeFade?.adopt(opponent);
       for (const rig of [loaded.player, loaded.opponent])
         for (const name of ['foot_l', 'foot_r']) dustFeet.push(boneOf(rig.anchor, name) ?? null);
@@ -912,6 +932,10 @@ export function createScene(
       return heldBodies()?.hold(body) ?? 'same';
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
+    /** Frankendom parts, stage 2 (src/parts-wear.ts wornParts): the hero wears exactly this loadout (look only). Safe before the hero has loaded: it is laid when he has. */
+    wear(worn: readonly WornPart[]): void { wearWant = worn; wearSoon(); },
+    /** The stills and the perf row read what is on the hero: the worn ids and the skinned draws (the wear's share of them). */
+    wearInfo(): { worn: string[]; draws: { hero: number; wear: number } | null } { return { worn: wearer?.worn().map((p) => p.id) ?? [], draws: wearer?.draws() ?? (warriors ? (() => { let n = 0; warriors.player.anchor.traverse((o) => { if ((o as THREE.SkinnedMesh).isSkinnedMesh && o.visible) n++; }); return { hero: n, wear: 0 }; })() : null) }; },
     heroWeaponNode(): THREE.Object3D | undefined { return warriors?.player.heldWeaponNode(); },   // the node the hero's weapon hangs from (golden weapon tint, src/fight/golden-hud.ts)
     liveStar(star: number) { liveStarN = star; },   // data/stars.json: the star level of the spawn the live rig is (main.ts every frame); 0 = the body as built
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean; star?: number }[]) {

@@ -4,7 +4,7 @@ Dom: "you become what you kill": cut a boss, keep the part, wear it. Cut stays t
 
 ## What exists (read from main 8e95e94)
 
-- **Hero**: `psyche-106.glb`, 1.6 MB, Mixamo 106 rig. Two skinned draws (`Steel` 24.8k verts = body and kit in one draw, `Ch22_Eyelashes`). No cut version.
+- **Hero**: `psyche-106.glb`, now the cut body (parts-wear step 1): OpenTrident's derived Psyche cut, 7 `piece_*` + 12 `cap_*`, `psyche-106.cut.manifest.json` beside it, hair repaired onto `piece_head` by `scripts/hero-body/repair-psyche-cut-hair.mjs` (4.4 MB in git, 1.69 MB shipped through the cut pack; was 1.60 MB, one `Steel` draw + `Ch22_Eyelashes`).
 - **Boss cut GLBs**: `minotaur|gargantua|arachne-106.glb` (2.4 / 2.8 / 3.3 MB) are the whole body already split: `piece_root`, `piece_upper_torso`, `piece_head` (Minotaur: `head_left` + `head_right`), `piece_arm_left/right`, `piece_leg_left/right`, plus `cap_*` stump meshes. All are skinned to the same 106 skeleton; `*.cut.manifest.json` maps region id to mesh and to the cut unit (`head`, `arm_left`, `arm_right`, `leg_left`, `leg_right`, `torso_waist`). Only these three bosses have cut GLBs; the other ring bosses wear one of the three bodies.
 - **Cut event**: `corpse:cut` on the feel bus, payload `{ unit, gear, source, corpseId }`, `corpseId = <archetype>#<life>` (e.g. `pitborn#3`). The archetype is shared by several profiles (Arachne, Sir Reginald and The Accountant are all `shieldmaiden`), so the profile id has to be added to the payload or read from the zone loop's last-killed kind (`onBossKilled(kind, star)` in `src/client/main.ts` already has both kind and star).
 - **Save**: `frankendom.v3.progress` v1 (`src/progression.ts` parseSave/writeSave). Fields are optional and cleaned on read, so an `inventory`/`equipped` pair can be added without bumping the version. Old saves load with empty values.
@@ -43,6 +43,10 @@ Fit risks, honest: a leg far longer than the hero's changes his height and foot 
 
 - **Stage 1** (no rendering): collection on `corpse:cut` (part id = `<profileId>:<unit>`, one row each, re-cut of the same boss only raises its count), rarity from the killing star (0/1/2 = common/rare/epic via `data/stars.json`), trophy tie-in (a star kill's part carries its tier). Save `parts: {id: {n, rarity}}` and `equipped: {slot: partId}`, validated like `progression.json`. ☰ button and a Frankendom panel at 375: seven slots (head, arm L, arm R, leg L, leg R, torso, weapon), boss name and rarity text per part (no new art), Equip / Unequip. Weapon slot shows `heroWeapon`.
 - **Stage 2** (if the re-bind passes a still at 375): render equipped parts on the hero with the plan above; stats from data rows (health/damage/speed nudge per rarity) and one set-bonus row (3 parts of one boss).
+
+## Stage 2 as built (parts-wear, look only)
+
+An equipped part visibly replaces the hero's piece. ON by default; `?parts=off` is the kill-switch; `?wear=pitborn:arm_left,castle-guard:leg_left` wears exactly that list without a save (stills). Rules: `src/parts-wear.ts` (pure: flags, gating, loadout diff), scene work `src/fight/parts-wear.ts` (a lazy import, after the first frame, only when something is worn), rows `data/parts.json` `wear`, donors `data/parts-fit-rows.json`. Per slot: hero piece hidden (cut manifest `detached_by`), hero stump cap shown unless the donor's ring covers the hole, donor `piece_*` bound to the hero's bones (`bindPiece`), a seam collar from the real cut rings (`seamRing`, `collarFor`), the donor never carries a cap, the leg lift row applied to the root. Wearable = a donor row with `wearable` true and a unit row in `wear.units`; the others stay listed with "Cannot be worn yet". Torso works (`piece_upper_torso`). Hands and feet: not possible, V3's cut GLBs have only head, arm, leg and torso units (OpenTrident's 6-unit cuts are not in our assets). Stills: `scripts/wear-stills.mjs`; perf: `test/perf/parts-wear-cost.perf.mjs`.
 
 ## Decision needed from Dom
 
