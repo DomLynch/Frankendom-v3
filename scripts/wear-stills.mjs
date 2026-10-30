@@ -13,6 +13,9 @@ const SET = {
   none: 'none', 'minotaur-head': 'pitborn:head', 'minotaur-arm-left': 'pitborn:arm_left', 'reginald-leg-left': 'castle-guard:leg_left', 'anime-girl-arm-right': 'anime-girl-blonde:arm_right',
   'anime-boy-head': 'anime-boy-black:head', 'arachne-arm-left': 'arachne:arm_left', 'gargantua-arm-left': 'gargantua:arm_left', 'gargantua-head': 'gargantua:head', 'king-arm-left': 'big-vegas:arm_left', 'king-head': 'big-vegas:head',
   'minotaur-torso': 'pitborn:torso', 'reginald-torso': 'castle-guard:torso', 'anime-boy-torso': 'anime-boy-black:torso', 'arachne-torso': 'arachne:torso', 'gargantua-torso': 'gargantua:torso',
+  'minotaur-hand-left': 'pitborn:hand_left', 'minotaur-hand-right': 'pitborn:hand_right', 'reginald-foot-left': 'castle-guard:foot_left', 'reginald-foot-right': 'castle-guard:foot_right', 'arachne-hand-left': 'arachne:hand_left', 'anime-girl-hand-left': 'anime-girl-blonde:hand_left',
+  'granny-foot-left': 'sporty-granny:foot_left', 'gargantua-hand-left': 'gargantua:hand_left', 'king-hand-left': 'big-vegas:hand_left', 'parasite-foot-left': 'parasite:foot_left', 'anime-boy-foot-left': 'anime-boy-black:foot_left',
+  'loadout-hf5': 'pitborn:head,arachne:arm_left,pitborn:hand_left,castle-guard:leg_left,castle-guard:foot_left',
   'loadout-3': 'pitborn:head,arachne:arm_left,castle-guard:leg_left', 'loadout-5': 'anime-boy-black:head,pitborn:arm_left,arachne:arm_right,castle-guard:leg_left,anime-girl-blonde:leg_right',
 };
 const jobs = named.length ? named.map((s) => { const i = s.indexOf('='); return i < 0 ? [s, SET[s] ?? s] : [s.slice(0, i), s.slice(i + 1)]; }) : Object.entries(SET);

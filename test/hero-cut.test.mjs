@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { readAccessor, unpackMeshopt } from '../scripts/cut-glb-pack.mjs';
+import { readAccessor, repackCut, unpackMeshopt } from '../scripts/cut-glb-pack.mjs';
 import { optimizeGlb } from '../scripts/optimize-glb.mjs';
 import RIG from '../data/rig.json' with { type: 'json' };
 
@@ -17,7 +17,9 @@ const hairPrims = d.meshes.flatMap((m) => m.primitives.filter((p) => d.materials
 test('the hero file is the cut body: the manifest names every piece and cap, one 106-joint skin, no Steel draw', () => {
   assert.equal(manifest.schema, 'cut-pieces/1'); assert.equal(manifest.body, 'psyche-106'); assert.equal(RIG.files.psyche, 'psyche-106');
   assert.deepEqual(d.meshes.map((m) => m.name).sort(), [...manifest.regions.map((r) => r.mesh), ...manifest.caps.map((c) => c.mesh)].sort());
-  assert.equal(manifest.regions.length, 7);
+  assert.equal(manifest.regions.length, 11, 'seven pieces + the hand and foot pieces of the hands-and-feet cut (OpenTrident PR #13): piece_arm_* and piece_leg_* stop at the wrist and ankle');
+  assert.deepEqual(manifest.regions.filter((r) => /^(hand|foot)_/.test(r.id)).map((r) => r.mesh).sort(), ['piece_foot_left', 'piece_foot_right', 'piece_hand_left', 'piece_hand_right']);
+  assert.equal(manifest.caps.length, 12, 'no cap on the hand and foot cuts');
   assert.equal(d.skins.length, 1); assert.equal(d.skins[0].joints.length, 106);
   assert.ok(!d.nodes.some((n) => n.name === 'Steel' || n.name === 'Ch22_Eyelashes'), 'the old one-draw nodes are gone');
   assert.equal(d.animations.length, 32);
@@ -41,4 +43,25 @@ test('the shipped copy packs through the cut path (uint16 indices, one skin)', a
   assert.ok(packed.length < 2_000_000, `packed ${packed.length}`);
   const B = await parse(packed);
   assert.deepEqual(B.d.meshes.map((m) => m.name), d.meshes.map((m) => m.name));
+  // the hf cut shares one vertex accessor between a limb piece and its hand or foot piece and writes uint32 index lists: the pack stacks each accessor once and narrows the indices; every triangle survives
+  const tris = (g) => Object.fromEntries(g.d.meshes.map((m) => [m.name, m.primitives.reduce((n, p) => n + g.d.accessors[p.indices].count / 3, 0)]));
+  assert.deepEqual(tris(B), tris({ d, bin }));
+  assert.ok(tris(B).piece_hand_left > 0 && tris(B).piece_foot_right > 0);
+  const base = d.meshes.find((m) => m.name === 'piece_arm_left').primitives[0].attributes.POSITION;
+  assert.equal(d.meshes.find((m) => m.name === 'piece_hand_left').primitives[0].attributes.POSITION, base, 'the hand shares the arm piece vertex accessor');
+});
+
+test('every wear donor file (src/assets/wear, build.mjs CUT_GLBS) packs through the cut path with every triangle kept', async () => {
+  const stems = ['minotaur', 'gargantua', 'arachne', 'parasite', 'anime-boy-black', 'anime-girl-blonde', 'castle-guard', 'big-vegas'];   // sporty-granny ships as written (TEXCOORD_1), as the build says
+  const build = readFileSync(new URL('../scripts/build.mjs', import.meta.url), 'utf8');
+  for (const s of stems) {
+    assert.ok(build.includes(`'${s}'`) && build.includes('src/assets/wear/${s}-106.hf.glb'), `${s} is in the build's cut pack list`);
+    const A = await parse(readFileSync(asset(`wear/${s}-106.hf.glb`))), tris = (g) => g.d.meshes.map((m) => [m.name, m.primitives.reduce((n, p) => n + g.d.accessors[p.indices].count / 3, 0)]), before = tris(A);
+    await repackCut(A.d, A.bin);   // the geometry half of the cut path (the texture half needs jpegtran, which the CI image lacks)
+    assert.deepEqual(tris(A), before, `${s}: every triangle of every piece kept`);
+    const prims = A.d.meshes.flatMap((m) => m.primitives);
+    assert.ok(prims.every((p) => A.d.accessors[p.indices].componentType === 5123), `${s}: indices narrowed to uint16`);
+    const hand = A.d.meshes.find((m) => m.name === 'piece_hand_left').primitives[0], arm = A.d.meshes.find((m) => m.name === 'piece_arm_left').primitives[0];
+    assert.equal(hand.attributes.POSITION, arm.attributes.POSITION, `${s}: the hand shares its arm's vertex accessor, stacked once`);
+  }
 });

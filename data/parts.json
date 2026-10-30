@@ -7,6 +7,10 @@
     { "id": "arm_right", "label": "Right arm", "units": ["arm_right"] },
     { "id": "leg_left", "label": "Left leg", "units": ["leg_left"] },
     { "id": "leg_right", "label": "Right leg", "units": ["leg_right"] },
+    { "id": "hand_left", "label": "Left hand", "units": ["hand_left"], "pair": "hands" },
+    { "id": "hand_right", "label": "Right hand", "units": ["hand_right"], "pair": "hands" },
+    { "id": "foot_left", "label": "Left foot", "units": ["foot_left"], "pair": "feet" },
+    { "id": "foot_right", "label": "Right foot", "units": ["foot_right"], "pair": "feet" },
     { "id": "torso", "label": "Torso", "units": ["torso_waist"] },
     { "id": "weapon", "label": "Weapon", "units": [] }
   ],
@@ -40,30 +44,40 @@
         { "id": "shoulder_l", "bone": "mixamorigLeftArm", "at": 0, "rule": "shoulder" },
         { "id": "shoulder_r", "bone": "mixamorigRightArm", "at": 0, "rule": "shoulder" },
         { "id": "hip_l", "bone": "mixamorigLeftUpLeg", "at": 0, "rule": "hip" },
-        { "id": "hip_r", "bone": "mixamorigRightUpLeg", "at": 0, "rule": "hip" }
+        { "id": "hip_r", "bone": "mixamorigRightUpLeg", "at": 0, "rule": "hip" },
+        { "id": "wrist_l", "bone": "mixamorigLeftForeArm", "at": 1, "rule": "wrist" },
+        { "id": "wrist_r", "bone": "mixamorigRightForeArm", "at": 1, "rule": "wrist" },
+        { "id": "ankle_l", "bone": "mixamorigLeftLeg", "at": 1, "rule": "ankle" },
+        { "id": "ankle_r", "bone": "mixamorigRightLeg", "at": 1, "rule": "ankle" }
       ],
       "rules": {
         "neck": { "rOf": "shoulder_w", "rK": 0.19, "hOf": "neck_len", "hK": 0.8, "hMin": 0.04 },
         "shoulder": { "rOf": "upper_arm_r", "rK": 1.05, "hOf": "upper_arm_r", "hK": 1, "hMin": 0.04 },
-        "hip": { "rOf": "thigh_r", "rK": 1.05, "hOf": "thigh_r", "hK": 0.9, "hMin": 0.05 }
+        "hip": { "rOf": "thigh_r", "rK": 1.05, "hOf": "thigh_r", "hK": 0.9, "hMin": 0.05 },
+        "wrist": { "rOf": "upper_arm_r", "rK": 0.75, "hOf": "upper_arm_r", "hK": 0.1, "hMin": 0.04 },
+        "ankle": { "rOf": "thigh_r", "rK": 0.55, "hOf": "thigh_r", "hK": 0.1, "hMin": 0.05 }
       }
     }
   },
   "wear": {
-    "about": "Stage 2 wear (Dom 2026-10-30: 'you become what you kill'; src/parts-wear.ts the rules, src/fight/parts-wear.ts the scene work). An equipped part VISIBLY replaces the matching piece of the hero (look only, no stat changes). ON by default; `flags.off` is the kill-switch (?parts=off wears nothing and fetches no donor) and `flags.force` is the stills way to wear a loadout without playing (?wear=pitborn:arm_left,castle-guard:leg_left: `profile:slot` ids, wearable donors only, bypasses the save). `mesh`: the name prefixes of the cut GLB contract (docs/CUT-CONTRACT.md): a unit's pieces are `piece_<unit>` and, for a unit cut in two (the Minotaur's head), `piece_<unit>_*`; the donor's own `cap_*` stump meshes are never worn (OpenTrident psyche-seam-fix: a worn donor part carries no cap, its end sits inside the hero). `units`: per cut unit that can be worn (a unit with no row, the torso, is not wearable yet and its Equip button is not offered): `collar` = the data/parts.json fit.collar.joints id of the seam the donor part meets the hero at, `lift` = the fit.lift.unit key liftRow reads for this unit (absent = no lift). `heroHost`: the hero's permanent collar rows (data/parts-fit-rows.json, the hero row) are drawn in the skin of this hero piece. `heroCollars`: the joint ids whose permanent hero collar (the hero row of data/parts-fit-rows.json) is drawn while anything is worn; empty, because the stills (scripts/wear-stills.mjs) show the hero's own seams closed and the neck collar reads as a turtleneck (OpenTrident's note said the same). `budget` (test/perf/parts-wear-cost.perf.mjs, Mac, measured 2026-10-30 on the three-part loadout Minotaur head + Arachne left arm + Reginald left leg): `skinnedDrawsMax` = the most skinned draws the worn hero may have (the bare cut hero is 8, which is OpenTrident's cap for a whole loaded group; three parts measured 12; 16 = twice the bare hero), `frameMsMedianExtra` = the most the median frame may cost over the bare hero (measured +0.2 ms and -0.5 ms, vsync off), `partsMax` = the most parts worn at once.",
+    "about": "Stage 2 wear (Dom 2026-10-30: 'you become what you kill'; src/parts-wear.ts the rules, src/fight/parts-wear.ts the scene work). An equipped part VISIBLY replaces the matching piece of the hero (look only, no stat changes). ON by default; `flags.off` is the kill-switch (?parts=off wears nothing and fetches no donor) and `flags.force` is the stills way to wear a loadout without playing (?wear=pitborn:arm_left,castle-guard:leg_left: `profile:slot` ids, wearable donors only, bypasses the save). `mesh`: the name prefixes of the cut GLB contract (docs/CUT-CONTRACT.md): a unit's pieces are `piece_<unit>` and, for a unit cut in two (the Minotaur's head), `piece_<unit>_*`; the donor's own `cap_*` stump meshes are never worn (OpenTrident psyche-seam-fix: a worn donor part carries no cap, its end sits inside the hero). `units`: per cut unit that can be worn (a unit with no row, the torso, is not wearable yet and its Equip button is not offered): `collar` = the data/parts.json fit.collar.joints id of the seam the donor part meets the hero at, `lift` = the fit.lift.unit key liftRow reads for this unit (absent = no lift). Hands and feet (docs/six-parts-plan.md steps 3 and 4; OpenTrident PR #13): the hero (src/assets/psyche-106.glb) and every donor (src/assets/wear/<stem>-106.hf.glb, `mesh.source` = the .hf suffix for both fit sources) are the hand-and-foot cut, where piece_arm_* and piece_leg_* stop at the wrist and ankle and piece_hand_* / piece_foot_* are pieces of their own with no cap: a worn arm leaves the hero's hand, a worn hand leaves the hero's arm, and a donor is never mixed with its original arm or leg (the hand would show twice). The four hand and foot slots (`pair`) are wearable now but nothing cuts a hand or foot yet (the physics step, data/pickup.json), so ?wear= is their way in. `heroHost`: the hero's permanent collar rows (data/parts-fit-rows.json, the hero row) are drawn in the skin of this hero piece. `heroCollars`: the joint ids whose permanent hero collar (the hero row of data/parts-fit-rows.json) is drawn while anything is worn; empty, because the stills (scripts/wear-stills.mjs) show the hero's own seams closed and the neck collar reads as a turtleneck (OpenTrident's note said the same). `budget` (test/perf/parts-wear-cost.perf.mjs, Mac, measured 2026-10-30 on the three-part loadout Minotaur head + Arachne left arm + Reginald left leg): `skinnedDrawsMax` = the most skinned draws the worn hero may have (the bare cut hero was 8, OpenTrident's cap for a whole loaded group, until the hands-and-feet cut: four more pieces make the bare hero 12; three parts measured 16, the five-part loadout with a hand and a foot 16, all ten wearable slots at once 24 on 2026-10-30; 24 = twice the bare hero, as 16 was twice the old bare hero), `frameMsMedianExtra` = the most the median frame may cost over the bare hero (measured +0.2 ms and -0.5 ms, vsync off), `partsMax` = the most parts worn at once.",
     "flags": { "off": { "query": "parts", "value": "off" }, "force": { "query": "wear" } },
-    "mesh": { "piece": "piece_", "cap": "cap_", "join": "_", "source": { "derived": ".derived", "original": "" } },
+    "mesh": { "piece": "piece_", "cap": "cap_", "join": "_", "source": { "derived": ".hf", "original": ".hf" } },
     "units": {
       "head": { "collar": "neck" },
       "arm_left": { "collar": "shoulder_l" },
       "arm_right": { "collar": "shoulder_r" },
       "leg_left": { "collar": "hip_l", "lift": "legs" },
       "leg_right": { "collar": "hip_r", "lift": "legs" },
+      "hand_left": { "collar": "wrist_l" },
+      "hand_right": { "collar": "wrist_r" },
+      "foot_left": { "collar": "ankle_l" },
+      "foot_right": { "collar": "ankle_r" },
       "torso_waist": { "piece": "upper_torso" }
     },
-    "heroHost": { "neck": "piece_upper_torso", "shoulder_l": "piece_upper_torso", "shoulder_r": "piece_upper_torso", "hip_l": "piece_root", "hip_r": "piece_root" },
+    "heroHost": { "neck": "piece_upper_torso", "shoulder_l": "piece_upper_torso", "shoulder_r": "piece_upper_torso", "hip_l": "piece_root", "hip_r": "piece_root", "wrist_l": "piece_arm_left", "wrist_r": "piece_arm_right", "ankle_l": "piece_leg_left", "ankle_r": "piece_leg_right" },
     "heroCollars": [],
-    "budget": { "skinnedDrawsMax": 16, "partsMax": 5, "frameMsMedianExtra": 1 }
+    "budget": { "skinnedDrawsMax": 24, "partsMax": 10, "frameMsMedianExtra": 1 }
   },
   "text": {
     "notWearable": "Cannot be worn yet",

@@ -82,7 +82,7 @@ export const SCHEMA = {
   'hero-death': { keys: ['about', 'on', 'query', 'off', 'ragdoll', 'line', 'button', 'keys', 'respawn', 'cam', 'limits'], maps: { respawn: ['minSeconds', 'autoSeconds'], cam: ['seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'], limits: ['minSeconds', 'autoSeconds', 'seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'] } },
   // Frankendom parts (src/parts.ts validateParts checks the values): closed key sets
   'parts': { keys: ['about', 'maxCount', 'slots', 'rarities', 'button', 'panel', 'fit', 'wear', 'text'],
-    rows: { slots: ['id', 'label', 'units'], rarities: ['star', 'id', 'label', 'colour'] },
+    rows: { slots: ['id', 'label', 'units', 'pair'], rarities: ['star', 'id', 'label', 'colour'] },
     maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], fit: ['about', 'limits', 'seam', 'eps', 'bones', 'lift', 'skin', 'collar'], wear: ['about', 'flags', 'mesh', 'units', 'heroHost', 'heroCollars', 'budget'], text: ['notWearable', 'title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] },
     finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'], 'wear.budget': ['skinnedDrawsMax', 'partsMax', 'frameMsMedianExtra'] } },
   // Frankendom parts, stage 2 per-body fit rows (src/parts-fit-rows.ts validateFitRows checks the values)

@@ -38,6 +38,30 @@
    "id": "leg_right",
    "mesh": "piece_leg_right",
    "detached_by": "leg_right"
+  },
+  {
+   "id": "hand_left",
+   "mesh": "piece_hand_left",
+   "detached_by": "hand_left",
+   "cut": "wrist (ForeArm to Hand)"
+  },
+  {
+   "id": "foot_left",
+   "mesh": "piece_foot_left",
+   "detached_by": "foot_left",
+   "cut": "ankle (Leg to Foot)"
+  },
+  {
+   "id": "hand_right",
+   "mesh": "piece_hand_right",
+   "detached_by": "hand_right",
+   "cut": "wrist (ForeArm to Hand)"
+  },
+  {
+   "id": "foot_right",
+   "mesh": "piece_foot_right",
+   "detached_by": "foot_right",
+   "cut": "ankle (Leg to Foot)"
   }
  ],
  "caps": [
@@ -715,6 +739,20 @@
      }
     ]
    }
+  }
+ },
+ "handsfeet": {
+  "schema_note": "hand/foot pieces split from the arm/leg pieces by skin weight, no caps (collars hide the step)",
+  "tool": "tools/parts-lab/cut_hands_feet.mjs",
+  "stats": {
+   "piece_hand_left": 3358,
+   "piece_arm_left kept": 1928,
+   "piece_foot_left": 4831,
+   "piece_leg_left kept": 4060,
+   "piece_hand_right": 3342,
+   "piece_arm_right kept": 1931,
+   "piece_foot_right": 4774,
+   "piece_leg_right kept": 3364
   }
  }
 }
