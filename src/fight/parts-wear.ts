@@ -11,7 +11,7 @@ import type { SkinnedMesh } from 'three';
 import type { Bone, Material, Mesh, Object3D, Texture } from 'three';
 import HERO_MANIFEST from '../assets/psyche-106.cut.manifest.json' with { type: 'json' };
 import { PARTS } from '../parts.ts';
-import { fitBodyOf, heroFitBody, type CollarRow } from '../parts-fit-rows.ts';
+import { FIT_ROWS, fitBodyOf, heroFitBody, type CollarRow, type FitRowsFile } from '../parts-fit-rows.ts';
 import { isPieceOf, wearDiff, type WornPart } from '../parts-wear.ts';
 import { bindPiece, buildCollar, collarFor, liftRow, seamRing, skinUvNear, type BoneNodes, type SeamRing } from './parts-fit.ts';
 import { loadFighter } from './characters.ts';
@@ -43,6 +43,8 @@ export type WearDeps = {
   /** A donor boss body (default: the page's fighter loader on DONOR_URLS). */
   load?(key: string): Promise<Object3D>;
   report?(error: unknown): void;
+  /** The per-body fit rows (default data/parts-fit-rows.json; the tests pass others). */
+  rows?: FitRowsFile;
 };
 export type Wearer = {
   /** Makes the hero wear exactly `next` (parts already worn stay; the rest come off / go on). Calls queue; resolves when this loadout is on. A failed part is reported and left off. */
@@ -87,7 +89,7 @@ function disposeTree(root: Object3D): void {
 }
 
 export function createWearer(deps: WearDeps): Wearer {
-  const rules = PARTS.wear, hero = heroFitBody(), report = deps.report ?? ((e: unknown) => console.warn('parts-wear:', e));
+  const rules = PARTS.wear, fitRows = deps.rows ?? FIT_ROWS, hero = heroFitBody(fitRows), report = deps.report ?? ((e: unknown) => console.warn('parts-wear:', e));
   const bind = byName(deps.bind), live = byName(deps.anchor);
   deps.bind.updateMatrixWorld(true);
   const liveRoot = (live.get('piece_root')?.parent ?? deps.anchor) as Object3D;
@@ -121,7 +123,7 @@ export function createWearer(deps: WearDeps): Wearer {
     }
   }
   function applyLift(): void {
-    const next = Math.max(0, ...[...fitted.values()].map((f) => (f.part.lift ? liftRow(f.part.lift, fitBodyOf(f.part.profile)?.measure, hero?.measure).lift_y : 0)));
+    const next = [...fitted.values()].reduce((best, f) => { const y = f.part.lift ? liftRow(f.part.lift, fitBodyOf(f.part.profile, fitRows)?.measure, hero?.measure).lift_y : 0; return Math.abs(y) > Math.abs(best) ? y : best; }, 0);   // the leg that is off the most decides (a negative lift lowers the root: the feet float)
     if (next !== liftY) { liveRoot.position.y += next - liftY; liftY = next; }
   }
 
@@ -131,7 +133,7 @@ export function createWearer(deps: WearDeps): Wearer {
     donor.scene.traverse((o) => { if (isPieceOf(o.name, part.unit)) for (const m of skinnedIn(o)) meshes.add(m); });
     if (!meshes.size) throw new Error(`${donor.key}: no piece for unit ${part.unit}`);
     const bound = [...meshes].map((m) => { const b = retarget(bindPiece(m, m.geometry, bind), live); b.name = `wear_${part.id}`; b.receiveShadow = true; b.userData.worn = true; liveRoot.add(b); return b; });
-    const dm = textured([...meshes])[0], row = fitBodyOf(part.profile)?.collars.find((c) => c.id === part.collar);
+    const dm = textured([...meshes])[0], row = fitBodyOf(part.profile, fitRows)?.collars.find((c) => c.id === part.collar);
     let collar: SkinnedMesh | null = null, covered = false;
     if (dm && row) {
       const d = jointOf(dn, row), h = jointOf(bind, row);
