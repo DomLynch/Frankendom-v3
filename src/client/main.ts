@@ -330,7 +330,7 @@ let killAge = 0, freeAfterKill = false, freeNow = false;
 const heroStands = () => !!ZONE && !!practice.finish && !practice.finish.draw && practice.finish.victim === 1 && practice.playerHealth > 0;
 const heroDied = () => !!ZONE && !!practice.finish && practice.playerHealth === 0;
 const SPOTS = ZONE ? spotsFor(orderedZone(zoneFor(search), FIGHT.order, search)) : [];
-const HUNT_ON = ZONE && huntOn(search);   // the hunt (data/heat.json hunt on/query/value): default OFF, ?hunt=1 adds the parked hunter slots and the chase; it reads the silent heat tally, so it needs no ?heat=1 (that flag only shows the HUD line)
+const HUNT_ON = ZONE && huntOn(search);   // the hunt (data/heat.json hunt on/query/value): default OFF, ?hunt=1 adds the parked hunter slots and the chase; it reads the silent heat tally, so it needs no heat flag (that flag only shows the HUD line)
 if (ZONE) { validateSpots(SPOTS, initialState(), RADIUS, WORLD, kindIds(KIND_CTX.profiles)); for (const s of SPOTS) KINDS(s.kind); KINDS(HEAT.hunt.kind); }   // every spawn fights as its own kind: each must be a profile row whose opponent is an archetype (built now, so a bad row fails at load)
 if (ZONE) validateWalk(ZONE.walkRadius, RADIUS);
 if (ZONE) validateOpeners(OPENERS, SPOTS);
