@@ -5,6 +5,10 @@ const BONE = /^[A-Za-z0-9_]+$/, KEY = /^[a-z][a-z_]*$/, ID = /^[a-z0-9][a-z0-9-]
 /** The measure keys a body row may carry (data/parts-fit-rows.json `measure`; metres, from the body's bind pose). */
 export const MEASURE_KEYS = ['height_m', 'thigh_len', 'shin_len', 'foot_len', 'upper_arm_len', 'forearm_len', 'neck_len', 'torso_len', 'shoulder_w', 'upper_arm_r', 'thigh_r'];
 
+/** The keys of a donor row's per-unit `tune` (data/parts-fit-rows.json): multipliers on the part's thickness and on the radius and height of its seam collar, each within TUNE_RANGE (1 = unchanged), plus `uv` (the collar's skin texel, checked apart). */
+export const TUNE_KEYS = ['thick', 'collarR', 'collarH'];
+export const TUNE_RANGE = [0.3, 1.5];
+
 /** Which GLB a donor loads: OpenTrident's derived copy (winding fixed) or V3's own file. */
 export const SOURCES = ['derived', 'original'];
 const isObj =(o) => !!o && typeof o === 'object' && !Array.isArray(o);
@@ -123,6 +127,19 @@ export function validateFitRows(file, fit, profileIds) {
       if (typeof b.wearable !== 'boolean') e.push(`${at}.wearable: true or false`);
       if (!Number.isInteger(b.quality) || b.quality < 1) e.push(`${at}.quality: a rank, 1 = best`); else if (ranks.has(b.quality)) e.push(`${at}.quality: rank ${b.quality} twice`); else ranks.add(b.quality);
       if (typeof b.reason !== 'string' || !b.reason.trim()) e.push(`${at}.reason: why, in words`);
+    }
+    if ('tune' in b) {
+      if (b.id === file.hero) e.push(`${at}.tune: the hero row has none (a donor part is nudged, the hero is not)`);
+      else if (!isObj(b.tune)) e.push(`${at}.tune: an object of cut units`);
+      else for (const [unit, t] of Object.entries(b.tune)) {
+        if (!KEY.test(unit)) e.push(`${at}.tune.${unit}: a cut unit id`);
+        else if (!isObj(t) || !Object.keys(t).length) e.push(`${at}.tune.${unit}: an object with at least one of ${TUNE_KEYS.join(', ')}`);
+        else for (const [k, v] of Object.entries(t)) {
+          if (k === 'uv') { if (!(Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'number' && x >= 0 && x <= 1))) e.push(`${at}.tune.${unit}.uv: [u, v], two numbers in 0..1`); }
+          else if (!TUNE_KEYS.includes(k)) e.push(`${at}.tune.${unit}.${k}: unknown key`);
+          else if (!(typeof v === 'number' && Number.isFinite(v) && v >= TUNE_RANGE[0] && v <= TUNE_RANGE[1])) e.push(`${at}.tune.${unit}.${k}: a multiplier in ${TUNE_RANGE[0]}..${TUNE_RANGE[1]}`);
+        }
+      }
     }
     if (b.measure === null) { if (Array.isArray(b.collars) && b.collars.length) e.push(`${at}.collars: none without a measure row`); }
     else if (!isObj(b.measure)) e.push(`${at}.measure: null or an object`);

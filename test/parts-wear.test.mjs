@@ -223,6 +223,23 @@ test('wear: a donor arm replaces the hero arm (piece hidden, stump cap shown, do
   assert.equal(s.wearer.draws().wear, parts.length);
 });
 
+test('a donor row tune: collarR / collarH scale the seam collar, thick slims the worn piece around its bone; a donor with no tune row is worn exactly as before', async () => {
+  const width = (s, prefix, axis) => { const c = s.worn().find((m) => m.name.startsWith(prefix)); c.geometry.computeBoundingBox(); const b = c.geometry.boundingBox; return b.max[axis] - b.min[axis]; };
+  const plain = stage(); await plain.wearer.apply(wornParts(['arachne:arm_left']));
+  const rows = clone(FIT_ROWS); fitBodyOf('arachne', rows).tune = { arm_left: { thick: 0.5, collarR: 0.5, collarH: 0.5, uv: [0.25, 0.75] } };
+  const tuned = stage({ rows }); await tuned.wearer.apply(wornParts(['arachne:arm_left']));
+  const ratio = width(tuned, 'wearcollar_', 'y') / width(plain, 'wearcollar_', 'y');
+  assert.ok(Math.abs(ratio - 0.5) < 0.02, `the collar is half as wide (${ratio})`);
+  assert.ok(width(tuned, 'wearcollar_', 'x') < width(plain, 'wearcollar_', 'x'), 'and shorter along the arm');
+  const uvOf = (s) => { const u = s.worn().find((m) => m.name.startsWith('wearcollar_')).geometry.attributes.uv; return [u.getX(0), u.getY(0)]; };
+  assert.deepEqual(uvOf(tuned), [0.25, 0.75], 'the collar is drawn in the texel the row names'); assert.notDeepEqual(uvOf(plain), [0.25, 0.75]);
+  const piece = (s) => s.worn().find((m) => m.name === 'wear_arachne:arm_left');
+  assert.ok(Math.abs(piece(tuned).skeleton.boneInverses[4].elements[5] / piece(plain).skeleton.boneInverses[4].elements[5] - 0.5) < 1e-9, 'the piece\'s thickness scale is x0.5 on the arm bone');
+  const other = stage({ rows }); await other.wearer.apply(wornParts(['castle-guard:leg_left']));
+  const base = stage(); await base.wearer.apply(wornParts(['castle-guard:leg_left']));
+  assert.deepEqual(other.worn().map((m) => m.name), base.worn().map((m) => m.name), 'a donor the tune row does not name is untouched');
+});
+
 test('a donor limb as wide as the hero hole covers it: no collar, no hero stump cap; two head pieces (the Minotaur) are both worn', async () => {
   const s = stage();
   await s.wearer.apply(wornParts(['pitborn:arm_left']));

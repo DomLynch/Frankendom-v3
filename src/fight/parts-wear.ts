@@ -11,9 +11,9 @@ import type { SkinnedMesh } from 'three';
 import type { Bone, Material, Mesh, Object3D, Texture } from 'three';
 import HERO_MANIFEST from '../assets/psyche-106.cut.manifest.json' with { type: 'json' };
 import { PARTS } from '../parts.ts';
-import { FIT_ROWS, fitBodyOf, heroFitBody, type CollarRow, type FitRowsFile } from '../parts-fit-rows.ts';
+import { FIT_ROWS, fitBodyOf, heroFitBody, tuneOf, type CollarRow, type FitRowsFile } from '../parts-fit-rows.ts';
 import { isPieceOf, wearDiff, type WornPart } from '../parts-wear.ts';
-import { bindPiece, buildCollar, collarFor, liftRow, seamRing, skinUvNear, type BoneNodes, type SeamRing } from './parts-fit.ts';
+import { bindPiece, buildCollar, collarFor, liftRow, seamRing, skinUvNear, tuneCollar, type BoneNodes, type SeamRing } from './parts-fit.ts';
 import { loadFighter } from './characters.ts';
 
 type HeroManifest = { regions: { id: string; mesh: string; detached_by: string | null }[]; caps: { id: string; mesh: string; region: string; shown_when_cut: string }[] };
@@ -134,19 +134,21 @@ export function createWearer(deps: WearDeps): Wearer {
     const dn = byName(donor.scene), meshes = new Set<SkinnedMesh>();
     donor.scene.traverse((o) => { if (isPieceOf(o.name, part.piece)) for (const m of skinnedIn(o)) meshes.add(m); });
     if (!meshes.size) throw new Error(`${donor.key}: no piece for unit ${part.unit}`);
-    const bound = [...meshes].map((m) => { const b = retarget(bindPiece(m, m.geometry, bind), live); b.name = `wear_${part.id}`; b.receiveShadow = true; b.userData.worn = true; liveRoot.add(b); return b; });
+    const tune = tuneOf(part.profile, part.unit, fitRows), thick = tune.thick ?? 1;
+    const bound = [...meshes].map((m) => { const b = retarget(bindPiece(m, m.geometry, bind, true, PARTS.fit, thick), live); b.name = `wear_${part.id}`; b.receiveShadow = true; b.userData.worn = true; liveRoot.add(b); return b; });
     const dm = textured([...meshes])[0], row = fitBodyOf(part.profile, fitRows)?.collars.find((c) => c.id === part.collar);
     let collar: SkinnedMesh | null = null, covered = false;
     if (dm && row) {
       const d = jointOf(dn, row), h = jointOf(bind, row);
       let ring: SeamRing | null = null, hring: SeamRing | null = null;
       if (d) for (const m of textured([...meshes])) { ring = seamRing(m, d.joint, d.axis); if (ring) break; }
+      if (ring) ring = { ...ring, r: ring.r * thick };   // a slimmed part's ring is slimmed too: the cover test below sees what is drawn
       const heroHole = h ? textured(skinnedIn(deps.bind.getObjectByName(regionsOf(part.unit)[0]?.mesh ?? ''))) : [];
       if (h) for (const m of heroHole) { hring = seamRing(m, h.joint, h.axis); if (hring) break; }
       const made = collarFor(row, ring, hring);
       covered = made === null && !!ring && !!hring;
       if (made && d) {
-        const c = buildCollar(made.row, bind, dm.material as Material, made.uv ?? skinUvNear(dm, d.at));
+        const c = buildCollar(tuneCollar(made.row, tune), bind, dm.material as Material, tune.uv ?? made.uv ?? skinUvNear(dm, d.at));
         if (c) { c.name = `wearcollar_${part.id}`; c.userData.worn = true; liveRoot.add(retarget(c, live)); collar = c; }
       }
     }

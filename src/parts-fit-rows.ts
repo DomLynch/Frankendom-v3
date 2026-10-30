@@ -9,8 +9,10 @@ import { validateFitRows } from './sim/validate-parts-fit.js';
 export type Measure = Partial<Record<string, number>>;
 /** One collar ring: `bone`, `at` (fraction of the bone's length to its first child), radius `r` and height `h` in metres. */
 export type CollarRow = { id: string; bone: string; at: number; r: number; h: number };
-/** `source`, `wearable`, `quality` and `reason` are absent on the hero row. */
-export type FitBody = { id: string; stem?: string; measuredOn: string; source?: 'derived' | 'original'; wearable?: boolean; quality?: number; reason?: string; measure: Measure | null; collars: CollarRow[] };
+/** A per-donor, per-unit nudge (data/parts-fit-rows.json `tune`, keyed by cut unit): `thick` x the thickness scale fitMatrices gives the part, `collarR` / `collarH` x the radius / height of the collar its seam gets, `uv` the texel of the donor's own skin the collar is drawn in (instead of the median of its cut ring, which can land on a dark patch of the atlas). Absent = 1 / the ring's. */
+export type Tune = { thick?: number; collarR?: number; collarH?: number; uv?: [number, number] };
+/** `source`, `wearable`, `quality`, `reason` and `tune` are absent on the hero row. */
+export type FitBody = { id: string; stem?: string; measuredOn: string; source?: 'derived' | 'original'; wearable?: boolean; quality?: number; reason?: string; measure: Measure | null; collars: CollarRow[]; tune?: Record<string, Tune> };
 export type FitRowsFile = { hero: string; bodies: FitBody[] };
 
 export const FIT_ROWS = ROWS as unknown as FitRowsFile;
@@ -21,6 +23,8 @@ export const validateRows = (file: FitRowsFile = FIT_ROWS, fit: FitRules = PARTS
 
 /** The row of a boss body by its data/profiles.json id, or undefined (no row: lift 0, no collars). */
 export const fitBodyOf = (profile: string, file: FitRowsFile = FIT_ROWS): FitBody | undefined => file.bodies.find((b) => b.id === profile);
+/** The tune row of a donor's unit (an empty object = no nudge). */
+export const tuneOf = (profile: string, unit: string, file: FitRowsFile = FIT_ROWS): Tune => fitBodyOf(profile, file)?.tune?.[unit] ?? {};
 /** Whether a part of boss `profile` may be offered for Equip (a donor row with `wearable` true; no row = not wearable). */
 export const isWearable = (profile: string, file: FitRowsFile = FIT_ROWS): boolean => fitBodyOf(profile, file)?.wearable === true;
 /** The wearable donors, best quality first. */
