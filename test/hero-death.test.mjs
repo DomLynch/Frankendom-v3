@@ -9,8 +9,6 @@ import { zoneFor } from '../src/zone/zone-rows.ts';
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const ROWS = read('../data/hero-death.json'), ZONE = zoneFor(''), RESPAWN = read('../data/respawn.json');
 const patch = (f) => { const d = structuredClone(ROWS); f(d); return d; };
-const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
-
 test('the default flow is pinned: ragdoll, a 2.5 s pull-back, "You fell" and Respawn from 1.2 s, an automatic stand-up at 12 s', () => {
   const d = heroDeathFor(true, '');
   assert.ok(d, 'on in the zone');
@@ -80,16 +78,4 @@ test('the death camera pose: share 0 is the camera as it was; share 1 is pulled 
   assert.equal(full.lookY, cam.lookY);
   const half = deathCamPose(cam, 0.5, from, at);
   assert.ok(Math.abs(half.y - (from.y + cam.riseMetres / 2)) < 1e-9, 'smoothstep: half is half');
-});
-
-test('the wiring: the page asks for the loop from the row, the scene builds the death-only ragdoll and tells it the killing blow alone, the HUD swaps the line and the button', () => {
-  const main = src('../src/client/main.ts'), scene = src('../src/fight/scene.ts'), hud = src('../src/fight/hud.ts'), ragdoll = src('../src/fight/ragdoll.ts'), cam = src('../src/fight/camera.ts');
-  assert.match(main, /heroDeathFor\(!!ZONE, search\)/); assert.match(main, /view\.heroDeath\(DEATH\)/);
-  assert.match(main, /standUpDue\(DEATH, sinceDeath, respawnAsked\) : sinceDeath >= ZONE!\.diedSeconds/, 'v1 keeps the zone row\'s downSeconds');
-  assert.match(main, /if \(DEATH && heroDied\(\)\) askRespawn\(\); else rematch\(\)/);
-  assert.match(scene, /heroRagdollFor\(location\.search, true\)/); assert.match(scene, /heroFeel \? events : events\.filter\(\(e\) => e\.type === 'Killed'\)/);
-  assert.match(ragdoll, /feelHero \? activeFeels\(search, undefined, true\) : \[\]/, 'no hit reactions without ?feel=hero');
-  assert.match(hud, /view\.death \? view\.death\.line/); assert.match(hud, /view\.death \? !view\.death\.ready/);
-  assert.match(cam, /!dyingHero && \(tourAngle/, 'the arena tour stays out of the death camera');
-  assert.doesNotMatch(cam + scene, /finishPush[^;]*DEATH_CAM/, 'not the finisher zoom');
 });

@@ -2,11 +2,11 @@
 // Pure: no DOM, no node API, so the same file is bundled into the page and run by node. A bad row throws when the file loads (a test loads it).
 import DEFS from '../data/telemetry.json' with { type: 'json' };
 
-export type FieldType = 'seconds' | 'percent' | 'boss' | 'message' | 'source' | 'stack' | 'int' | 'kind';
+type FieldType = 'seconds' | 'percent' | 'boss' | 'message' | 'source' | 'stack' | 'int' | 'kind';
 export type TelemetryDefs = {
   path: string;
-  off: { query: string; value: string; hosts: string[]; hostSuffixes: string[] };
-  client: { flushMs: number; maxQueue: number; maxBatch: number; maxEventsPerMinute: number; maxErrorsPerVisit: number; maxPerEventPerVisit: number; storageKey: string };
+  off: { query: string; value: string; hosts: string[]; hostSuffixes: string[]; reasons: { localHost: string; notDeployed: string } };
+  client: { flushMs: number; maxQueue: number; maxBatch: number; maxEventsPerMinute: number; maxErrorsPerVisit: number; maxPerEventPerVisit: number; rateWindowMs: number; dedupeChars: number; storageKey: string };
   caps: { maxBodyBytes: number; maxId: number; maxSha: number; maxMessage: number; maxSource: number; maxStack: number; maxBoss: number; maxSeconds: number };
   server: { host: string; port: number; logDir: string; logName: string; maxFileBytes: number; keepFiles: number; perIdEventsPerMinute: number; perIdRequestsPerMinute: number; globalEventsPerMinute: number; maxTrackedIds: number };
   events: Record<string, { about: string; fields: Record<string, FieldType> }>;
@@ -45,7 +45,7 @@ const text = (v: unknown, max: number, keepNewlines = false): string | null => {
 const num = (v: unknown, lo: number, hi: number): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : null);
 
 /** One field, cleaned to its type and cap (null = refused). */
-export function cleanField(type: FieldType, v: unknown, defs: TelemetryDefs = TELEMETRY): string | number | null {
+function cleanField(type: FieldType, v: unknown, defs: TelemetryDefs = TELEMETRY): string | number | null {
   const c = defs.caps;
   switch (type) {
     case 'seconds': { const n = num(v, 0, c.maxSeconds); return n === null ? null : Math.round(n * 10) / 10; }

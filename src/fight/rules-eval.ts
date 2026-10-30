@@ -6,11 +6,11 @@ import RULES from '../../data/rules.json' with { type: 'json' };
 import { isHeavyMove, isStabMove } from './move-rows.ts';
 import type { CombatEvent } from './duel.ts';
 
-export type RuleRows = typeof RULES;
+type RuleRows = typeof RULES;
 type Kind = 'slash' | 'stab' | 'blunt';
 type Zone = 'head' | 'torso' | 'legs';
 /** The evaluator's input for one landed blow (docs/API.md 'Rules evaluator'): a hand speed, never a tip speed (the lever is the evaluator's). */
-export type EvalHit = { weapon: string; kind: Kind; zone: Zone; side?: 'left' | 'right'; armour: string; handSpeed: number; swing: 'light' | 'heavy'; counterHit: boolean; t: number };
+type EvalHit = { weapon: string; kind: Kind; zone: Zone; side?: 'left' | 'right'; armour: string; handSpeed: number; swing: 'light' | 'heavy'; counterHit: boolean; t: number };
 type EvalResult = {
   outcome: 'miss' | 'hit' | 'stick' | 'cut' | 'knockdown' | 'kill'; strength: number; damage: number; part: string | null; partHpAfter: number | null;
   knockdown: { fallSeconds: number; downSeconds: number; cause: 'damage' | 'push' } | null; cut: { unit: string } | null; bleed: boolean; events: { type: string }[];
@@ -128,7 +128,7 @@ export function evaluatorTakesKill(rows: Pick<RuleRows, 'cut'>, location: string
 }
 
 /** The package's fighter state, the part of it ?feel=limbs reads (docs/API.md 'Rules evaluator': `parts[id] = { hp, max, gone }`, ids head, torso, arm_left, arm_right, leg_left, leg_right). */
-export type FighterView = { alive: boolean; sword_side: 'left' | 'right'; parts: Record<string, { hp: number; max: number; gone: boolean }>; limp: boolean; weapon_dropped: boolean; outgoing_damage_mult: number };
+type FighterView = { alive: boolean; sword_side: 'left' | 'right'; parts: Record<string, { hp: number; max: number; gone: boolean }>; limp: boolean; weapon_dropped: boolean; outgoing_damage_mult: number };
 
 /** Set one part's HP the way a landed blow would leave it: at 0 the part is gone, the sword arm's loss drops the weapon (outgoing damage x the package's row), a leg's loss is the limp. Pure on the state (the stills' hook). */
 export function setPartHp(state: FighterView, part: string, hp: number, armGoneMult = 1): boolean {
@@ -143,7 +143,7 @@ export function setPartHp(state: FighterView, part: string, hp: number, armGoneM
 }
 
 /** The page's rules (globalThis.__v3Rules and window.__v3Fight.rules): the totals, the last results, the cuts, the per-hit cost. */
-export type RulesDebug = {
+type RulesDebug = {
   fighter?: () => FighterView; partFractions?: () => Record<string, number>; setPartHp?: (part: string, hp: number) => boolean;
   on: true; hits: number; skipped: number; byOutcome: Record<string, number>; deferredKills: number; renewals: number; cuts: { unit: string; tick: number; weapon: string }[];
   last: { input: EvalHit; measured: number | null; source: 'measured' | 'ref'; result: Omit<EvalResult, 'events'> & { events: string[] }; presentation: Presentation }[]; cost: { calls: number; totalMs: number; maxMs: number };

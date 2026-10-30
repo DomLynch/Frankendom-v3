@@ -5,17 +5,16 @@
 //   <tag>-<at>-2-high   4 m up, looking out and down at the floor's far reach
 //   <tag>-<at>-3-side   from the hero looking sideways (+x), where the pit's grid used to end
 //   node scripts/ground-stills.mjs <base url> <out dir> <tag> [query]      (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/ground-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const AT = (process.env.AT ?? '7.18,0,500,20000').split(',').map(Number);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
+collectErrors(page, { echo: true });
 console.log(`${tag} goto`);
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive' && globalThis.__v3Renderer, null, { timeout: 240000 });

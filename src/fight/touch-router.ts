@@ -20,7 +20,7 @@ export interface TouchContext {
 }
 
 /** Anything the player taps that is not the arena: the action cluster and its buttons, the end-screen buttons and panels, the header. */
-export const INTERACTIVE_SELECTORS = ['#actions', '#joystick', '#reset-button', '.share-button', '#camera-button', '#recenter-button', '.loot-panel', '.loot-panel-actions', '#journal', 'header'] as const;
+export const INTERACTIVE_SELECTORS = ['#actions', '#joystick', '#reset-button', '.share-button', '#camera-button', '#recenter-button', '.loot-panel', '.loot-panel-actions', '#journal', '#frank-parts', '#flesh-market', 'header'] as const;
 
 export const isInteractiveHud = (target: TouchTarget | null): boolean => !!target && INTERACTIVE_SELECTORS.some((selector) => target.closest(selector));
 

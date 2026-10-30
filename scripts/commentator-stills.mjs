@@ -5,13 +5,13 @@
 //   4 a corpse part is cut -> the 'cut' line (the ragdoll's frankendom:cut event)
 //   5 the same page with localStorage fd3.commentator = off says nothing
 //   node scripts/commentator-stills.mjs <base url> <out dir>      (serve dist/ first: node scripts/serve.mjs <port>)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, waitPlayable } from './lib/browser.mjs';
 
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/commentator-stills.mjs <base url> <out dir>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ ...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}), args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--mute-audio'] });
+const browser = await launchBrowser({ angle: 'swiftshader', extra: ['--enable-unsafe-swiftshader', '--mute-audio'] });
 const phone = { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const errors = [];
 const open = async (ctx, tag) => {
@@ -19,7 +19,7 @@ const open = async (ctx, tag) => {
   page.on('pageerror', (e) => { errors.push(`${tag}: ${e.message}`); console.error(`${tag}: pageerror ${e.message}`); });
   page.on('console', (m) => { if (m.type() === 'error') { errors.push(`${tag}: console ${m.text()}`); console.error(`${tag}: console.error ${m.text()}`); } });
   await page.goto(`${base}/`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   return page;
 };
 const caption = (page) => page.evaluate(() => { const el = document.querySelector('[data-commentator]'); return el ? { text: el.textContent, opacity: el.style.opacity, box: (({ x, y, width, height }) => ({ x: Math.round(x), y: Math.round(y), w: Math.round(width), h: Math.round(height) }))(el.getBoundingClientRect()), said: globalThis.__v3Commentator?.said } : null; });

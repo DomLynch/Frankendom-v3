@@ -18,7 +18,7 @@ import { missileOf } from './sandbox-rules.ts';
 import { ROWS83_ON, ROWS84_ON, ROWS85_ON, SANDBOX_ON } from './sandbox-era.ts';
 
 /** One fight: slot 0 is a player (the "hero" of the Pit's duel); slot 1 is a creature, another player, or nobody (`foe: null`, a dummy far away: the hero alone, swinging, guarding, rolling, regaining stamina). */
-export type Motion = { hold: boolean; circling: boolean; left: number; seed: number };   // a world creature's stand / circle state (creature-motion-defs.json): hold = inside its stop band, circling = this re-decide drew a circle, left = ticks to the next draw
+type Motion = { hold: boolean; circling: boolean; left: number; seed: number };   // a world creature's stand / circle state (creature-motion-defs.json): hold = inside its stop band, circling = this re-decide drew a circle, left = ticks to the next draw
 export type Bout = { foe: string | null; duel: Duel; ai: AiState | null; profile: AiProfile | null; joined?: Bout[]; motion?: Motion };   // joined: the other creatures on this player, each its own duel against him (zone1.ts MAX_ATTACKERS)
 // open-world: the guard-side thumbs exist here as they always have in the Pit (Dom 2026-10-13): the world steps the Pit's RULES unchanged (directionalGuard on) and carries the held side in the Input (intentOf).
 const TICK = 1 / 60, FAR_M = worldRule('farM');   // FAR_M: the world-rules row `farM`

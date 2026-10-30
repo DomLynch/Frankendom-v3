@@ -4,7 +4,7 @@
 import type { Opponent } from './fight/moves.ts';
 import type { Resolved } from './difficulty.ts';
 
-export type TuneKey = { id: string; min: number; max: number; about?: string };
+type TuneKey = { id: string; min: number; max: number; about?: string };
 export type TuneFile = { query: string; kinds: Record<string, string>; keys: readonly TuneKey[] };
 /** profile id -> key id -> multiplier (only what the address named). */
 export type TuneMap = Readonly<Record<string, Readonly<Record<string, number>>>>;

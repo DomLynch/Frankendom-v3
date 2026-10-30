@@ -1,12 +1,12 @@
 // Cold first-visit weight at 375x812: wire (encodedDataLength) and raw (decoded dataLength) bytes per request, via CDP.
 //   node scripts/weight-receipt.mjs <url> <out.json>      (e.g. https://v3.frankendom.com/ docs/V3-WEIGHT-RECEIPT-<date>.json)
 // Cache off, fresh context; waits for STRIKE enabled (#attack-button aria-disabled=false), then 3 s more. On a Mac it uses Metal, elsewhere SwiftShader.
-import { chromium } from 'playwright';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 const [url, out] = process.argv.slice(2);
 if (!url || !out) { console.error('usage: node scripts/weight-receipt.mjs <url> <out.json>'); process.exit(2); }
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const browser = await launchBrowser();
+const ctx = await browser.newContext(phoneOptions(2));
 const page = await ctx.newPage();
 const cdp = await ctx.newCDPSession(page);
 await cdp.send('Network.enable');
@@ -18,7 +18,7 @@ cdp.on('Network.dataReceived', (e) => { const r = req.get(e.requestId); if (r) r
 cdp.on('Network.loadingFinished', (e) => { const r = req.get(e.requestId); if (r) r.wire = e.encodedDataLength; });
 const t0 = Date.now();
 await page.goto(url);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
+await waitPlayable(page, { timeout: 180000, polling: 'raf' });
 const playableMs = Date.now() - t0;
 await page.waitForTimeout(3000);
 const rows = [...req.values()].filter((r) => r.url.startsWith('http')).sort((a, b) => b.wire - a.wire);

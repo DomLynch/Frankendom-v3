@@ -20,7 +20,7 @@ import type { Feel } from '../armfeel.ts';
 // page's AudioContext and its wall clock, so a fixed exchange renders to the same WAV every time. `sprite` null forces the
 // synth fallback; a buffer skips loading. Absent in the game.
 type FeedbackHost = { context: BaseAudioContext; now: () => number; seed?: number; sprite?: AudioBuffer | null; balance?: { combat: number; finish: number } };   // balance: evidence renders of the mix stage at other levels
-export const VOICES = audioRule('voices');   // simultaneous sample voices; the oldest-ending one is stolen past that
+const VOICES = audioRule('voices');   // simultaneous sample voices; the oldest-ending one is stolen past that
 const BASE_SEED = audioRule('baseSeed');
 let breathing = false;   // the breathing layer's one switch: OFF until Dom signs the sound off (2026-10-06, he had just rejected a synth voice). His OK is flipping this to true; until then only ?look=fatigue-preview turns it on (breathing(on) below).
 const RISE = audioRule('rise'), RISE_FLOOR = audioRule('riseFloor'), CUT = audioRule('cut');   // the opponent's charge: rate ×1.6 and level from 35 % over the hold; a 35 ms fade when it ends
@@ -31,7 +31,7 @@ const RISE = audioRule('rise'), RISE_FLOOR = audioRule('riseFloor'), CUT = audio
 const MIX = audioRule('mix');
 // Owner 2026-09-22, after the live set: "reduce all combat noise by 25 %, keep the crowd, opening bell and death all same — it's
 // overpowering." Combat balance x.75; the finish balance (death sequence), the arena bank (crowd) and the bell are untouched.
-export const COMBAT_LEVEL = .375 * MIX, FINISH_LEVEL = 1.5 * MIX;
+const COMBAT_LEVEL = .375 * MIX, FINISH_LEVEL = 1.5 * MIX;
 
 // Combat Foley: the simulation's events pick cues from one decoded sprite (src/audio/manifest.ts, built by
 // scripts/build-audio.mjs); seeded variant rotation and ±5 % pitch keep two hits from ever sounding identical. Voices feed a
@@ -71,6 +71,7 @@ export function createFeedback(host?: FeedbackHost) {
   if (!host && enabled && typeof window !== 'undefined') { const idle = () => { if (enabled) prefetch(); }; if (typeof requestIdleCallback === 'function') requestIdleCallback(idle, { timeout: 4000 }); else setTimeout(idle, 1500); }   // ?sound=0 (enabled false from the start): nothing is fetched
   // V3: open() is the first half of V1's unlock (make the context, build the graph, start the decode), callable with no gesture
   // (prepare() below); unlock() is V1's, unchanged in effect.
+  const stateWatchers: (() => void)[] = [];   // main.ts re-arms its gesture listeners from here when the context leaves 'running' (iOS 'interrupted') with no pageshow/focus
   function unlock() {
     if (!open()) return;
     quieted = false;
@@ -85,6 +86,7 @@ export function createFeedback(host?: FeedbackHost) {
       const session = host || typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
       if (session) try { session.type = 'playback'; } catch { /* unsupported value on older WebKit */ }
       build(context);
+      if (!host) (context as AudioContext).addEventListener?.('statechange', () => { for (const f of stateWatchers) f(); });
       specialLoad(); duelLoad();
       if (host && host.sprite !== undefined) sprite = host.sprite;
       else decode();
@@ -172,6 +174,10 @@ export function createFeedback(host?: FeedbackHost) {
   }
   return {
     unlock,
+    /** Whether the context is running (the gesture listeners in main.ts remove themselves once it is; src/audio/unlock-once.ts). */
+    unlocked: () => live(),
+    /** Call fn whenever the context's state changes (not on the offline host). */
+    onStateChange(fn: () => void) { stateWatchers.push(fn); },
     // V3 (V2 PR #65): the context is made at page load (it starts 'suspended') and the sprite decoded at once, so the first touch
     // only resumes it. V1 decoded on the first touch, and a phone took seconds to decode while the fight went on with the synth stand-ins.
     prepare() { if (!host) open(); },

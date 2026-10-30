@@ -8,22 +8,22 @@
 // The hero closes in (W) and cuts (D+F) every CUT_EVERY ticks. Stills only: the hero's health is held full so the fight lasts to the Quake,
 // and once every other shot is in, his health is set to 1 so the next cut kills him (a finisher was never reached by script in 400 exchanges, PR #25).
 //   node scripts/foe-stills.mjs <base url> <out dir> [query ...]   (on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/foe-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, ATTACK_AGE = Number(process.env.ATTACK_AGE ?? 14), CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), MAX_TICKS = Number(process.env.MAX_TICKS ?? 5400);
 const DEATH_AT = [20, 70, 160];
 for (const query of queries.length ? queries : ['']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default';
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(2));
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+  await waitPlayable(page, { timeout: 180000 });
   await page.waitForTimeout(1500);   // the late kit (his scutum) dresses after the first frame
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));

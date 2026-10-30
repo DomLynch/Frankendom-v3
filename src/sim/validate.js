@@ -8,11 +8,11 @@
 // file -> { keys: top-level keys, rows: { arrayKey: row keys }, maps: { objectKey: its keys } }
 export const SCHEMA = {
   'stage': { keys: ['source', 'sky', 'fog', 'ground', 'grid', 'skyline', 'ruler', 'light', 'duel'], maps: { duel: ['about', 'id', 'fogDensity', 'sunPosition', 'floor'] } },
-  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx', 'order', 'heroMana'], maps: { heroMana: ['about', 'mana'], order: ['about', 'query', 'v1', 'opponent', 'profile', 'kinds'], specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch', 'wide'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
+  'fight': { keys: ['about', 'opponent', 'profile', 'level', 'seed', 'weapon', 'skill', 'skill2', 'stance', 'specials', 'tempoHz', 'frameDtMaxS', 'clockJumpS', 'buildLabelChars', 'gfx', 'camera', 'ai', 'guardWalk', 'specialPace', 'start', 'trail', 'specialTerms', 'readyRing', 'foeWeapon', 'foeName', 'opponentV1', 'blendMs', 'settleMs', 'bladeTables', 'foeReach', 'specialSink', 'foeSpecialReach', 'specialFx', 'order', 'heroMana', 'knockRound'], maps: { heroMana: ['about', 'mana'], knockRound: ['about', 'round'], order: ['about', 'query', 'v1', 'opponent', 'profile', 'kinds'], specialSink: ['about', 'sink'], opponentV1: ['about', 'opponent'], bladeTables: ['about', 'hero'], foeReach: ['about', 'opponent', 'body', 'rig', 'weapon', 'query', 'v1'], blendMs: ['about', 'locomotion', 'attackIn', 'attackOut', 'specialIn', 'specialOut', 'hurtIn', 'hurtOut', 'rollIn', 'rollOut'], settleMs: ['about', 'roll'], camera: ['about', 'lift', 'side', 'zoom', 'pitch', 'wide'], guardWalk: ['about', 'lowerBones'], specialPace: ['about', 'skill', 'scale'], start: ['about', 'auto'], trail: ['about', 'light', 'return', 'heavy', 'riposte', 'slashRiposte', 'thrust', 'pommel'], specialTerms: ['about', 'cooldown', 'stamina'], readyRing: ['about', 'colour', 'width', 'glow', 'gap', 'track', 'staminaTrack', 'pulseMs'], foeWeapon: ['about', 'opponent', 'weapon', 'drawn'], foeName: ['about', 'opponent', 'name'], foeSpecialReach: ['about', 'on', 'start', 'release'], specialFx: ['about', 'skills', 'cameraKick', 'flash', 'sparks', 'trailSkill', 'trailReaping', 'soundGain', 'soundRows'] } },
   // V3's opponent brains (src/brain.ts): a row names only V1 AiProfile knobs (src/fight/moves.ts)
   'brains': { keys: ['about', 'brains'], rows: { brains: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] } },
   // The difficulty ladder over an opponent profile row (src/difficulty.ts): a row names only the brain knobs and the two scales; checked by checkDifficulty below
-  'difficulty': { keys: ['about', 'default', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
+  'difficulty': { keys: ['about', 'default', 'attackDialScale', 'rows', 'named'], rows: { rows: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'], named: ['id', 'reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read', 'foeHealthScale', 'foeDamageScale', 'about'] } },
   'profiles': { keys: ['about', 'default', 'defaultBody', 'bodyQuery', 'profiles'], rows: { profiles: ['id', 'about', 'opponent', 'body', 'name', 'brain', 'foeHealthScale', 'foeDamageScale', 'knobs'] } },   // knobs: optional, this kind's own brain knobs over the difficulty row's (checkKinds)
   // Boss tuning by URL (src/tune.ts validateTune checks the values)
   'free-moves': { keys: ['about', 'actions'] },   // src/fight/free-roam.ts validateFreeMoves checks the values
@@ -20,10 +20,10 @@ export const SCHEMA = {
   // Star bosses (src/stars.ts validateStars checks the values)
   'stars': { keys: ['about', 'minKills', 'killsCap', 'zeroWeight', 'salt', 'starGlyph', 'hudColour', 'levels', 'weights'], rows: { levels: ['star', 'healthX', 'damageX', 'scaleX', 'trophy', 'tell'], weights: ['id', 'star1', 'star2'] } },
   // Progression and saving (src/progression.ts validateProgression checks the values)
-  'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'lineSeconds', 'healthCap', 'damageCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
+  'progression': { keys: ['about', 'query', 'off', 'key', 'version', 'weaponQuery', 'autoEquip', 'lineSeconds', 'healthCap', 'damageCap', 'countCap', 'bosses'], rows: { bosses: ['id', 'weapon', 'name', 'healthStep', 'damageStep'] } },
   // The Daily Pit (src/daily-pit.ts; checkDailyPit below checks the values and the cross-file rows)
-  'daily-pit': { keys: ['about', 'salt', 'attemptsPerDay', 'modeKey', 'event', 'cutLog', 'spawnId', 'respawnSeconds', 'resultDelaySeconds', 'bosses', 'modifiers', 'score', 'ui', 'later'], rows: { modifiers: ['id', 'name', 'about', 'tune', 'stars'], later: ['id', 'why'] },
-    maps: { resultDelaySeconds: ['won', 'lost'], score: ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max', 'fields'], ui: ['zIndex', 'colour', 'text'] } },
+  'daily-pit': { keys: ['about', 'salt', 'attemptsPerDay', 'saveCaps', 'modeKey', 'event', 'cutLog', 'spawnId', 'respawnSeconds', 'resultDelaySeconds', 'bosses', 'modifiers', 'score', 'ui', 'later'], rows: { modifiers: ['id', 'name', 'about', 'tune', 'stars'], later: ['id', 'why'] },
+    maps: { saveCaps: ['points', 'count'], resultDelaySeconds: ['won', 'lost'], score: ['base', 'perSecond', 'perDamage', 'perPart', 'min', 'max', 'fields'], ui: ['zIndex', 'css', 'colour', 'text'] } },
   // Dom's picked hero strike and guard clips (src/hero-clips.ts, scripts/hero-clips/; `hold`: the guard's, src/fight/guard-hold.ts)
   'hero-clips': { keys: ['about', 'sweeps', 'rig', 'weapon', 'blade', 'clips'], rows: { clips: ['role', 'clip', 'mixamo', 'name', 'mirror', 'from', 'to', 'contact', 'pullback', 'aim', 'aimFrom', 'paths', 'hold', 'about'] }, maps: { blade: ['about', 'node', 'contact'], sweeps: ['about', 'default', 'query'] } },
   // The 65 -> 106 rig swap (src/fight/rig-bones.ts): which rig each side draws, the bone map, the weapon nodes and sockets, the 106 files.
@@ -32,13 +32,14 @@ export const SCHEMA = {
   // The zone loop's roam rows and way-back flag (src/fight/zone-loop.ts validateLoop checks the values); spawns, respawnSeconds and the hero's respawn are the zone row's
   'respawn': { keys: ['about', 'flag', 'postKill', 'freeCamera', 'look', 'lockBreak', 'lockSwitch', 'spawn', 'world', 'heroDeath', 'openers', 'attackers', 'walkBack', 'input', 'limits'], maps: { flag: ['query', 'off'], postKill: ['about', 'roam', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres'], freeCamera: ['about', 'on', 'query', 'off', 'gapMetres', 'handOverSeconds', 'swingTailSeconds', 'swingRate', 'stickEndsCeremony', 'fight'], lockSwitch: ['about', 'on', 'query', 'off', 'tapMaxMs', 'tapMaxMovePx', 'pickRadiusPx', 'aimHeightMetres'], lockBreak: ['about', 'on', 'query', 'off', 'breakAngleDeg', 'minPush', 'commitSeconds','relockAngleDeg', 'relockSeconds'], look: ['about', 'on', 'query', 'off', 'sensitivityDegPerPx', 'deadzonePx', 'minXShare', 'inertiaSeconds', 'flingWindowMs', 'flingSmoothing'], spawn: ['about', 'minDistance'], world: ['about', 'pitArea', 'centre', 'retargetMargin', 'edgeMetres', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres', 'loadWithinMetres', 'loadAfterKill', 'loadRadiusAfterKillMetres', 'loadQuery', 'loadOff'], heroDeath: ['about', 'fallSeconds'], openers: ['about', 'on', 'delaySeconds', 'count', 'reachMetres', 'withinMetres', 'spawns', 'query', 'off'], attackers: ['about', 'on', 'query', 'off', 'camera'], walkBack: ['about', 'on', 'query', 'off', 'speedMetresPerSecond', 'regenPerSecond', 'arriveMetres'], input: ['about', 'keepOnHandOver', 'query', 'off'], limits: ['about', 'walkSpeedMetresPerSecond', 'walkRegenPerSecond', 'walkArriveMetres','delaySeconds', 'count', 'reachMetres', 'withinMetres','fallSeconds', 'startAfterSeconds', 'walkRadiusMetres', 'cameraMetres', 'freeCamGapMetres', 'handOverSeconds', 'swingTailSeconds', 'swingRate', 'lookSensitivityDegPerPx', 'lookDeadzonePx', 'lookMinXShare', 'lookInertiaSeconds', 'lookFlingWindowMs', 'lookFlingSmoothing', 'minDistance', 'retargetMargin', 'edgeMetres', 'centre', 'minSpacing', 'startClearance', 'leashMargin', 'pitScale', 'spreadRadiusMetres', 'loadWithinMetres', 'loadRadiusAfterKillMetres', 'lockBreak', 'lockSwitch'] } },
   // The zone's endless open ground (src/zone/ground.ts checkGround checks the values against the fog)
+  terrain: { keys: ['about', 'on', 'seed', 'heightMetres', 'scaleMetres', 'octaves', 'lacunarity', 'gain', 'level', 'ridge', 'maxSlope', 'smooth', 'hash', 'pads', 'rings', 'mesh', 'camera', 'limits'], maps: { ridge: ['mix', 'fold', 'mid'], smooth: ['a', 'b', 'samples'], hash: ['primeX', 'primeZ', 'primeSeed', 'mix1', 'mix2', 'shifts', 'modulus'], pads: ['pit', 'camp', 'boss', 'bossMarginMetres'], rings: ['multipliers', 'maxMultiplier'], mesh: ['radiusMetres', 'gridCellsPerVertex', 'anchorCells', 'edgeTaperMetres', 'floorDropMetres', 'gridLiftMetres', 'fadeFlat'], camera: ['clearanceMetres'] } },
   'zone-ground': { keys: ['about', 'flag', 'groundRadiusMetres', 'gridRadiusMetres', 'edgeVisibility', 'cameraFarMetres', 'cameraOffsetMetres', 'groundFollow', 'floorDepthPush', 'limits'], maps: { flag: ['query', 'off'], groundFollow: ['on', 'snapMetres'], floorDepthPush: ['about', 'flag', 'factor', 'units'], limits: ['about', 'groundRadiusMetres', 'gridRadiusMetres', 'edgeVisibility', 'cameraFarMetres', 'cameraOffsetMetres', 'snapMetres', 'depthFactor', 'depthUnits'] } },
   // What scripts/build.mjs never ships (106 only: the 65 bodies, kits and 65-keyed clip JSONs; test/rig-bones.test.mjs)
   'build': { keys: ['about', 'clipDecimals', 'firstVisitBytes', 'notShipped'] },
   // The presence service and its page client (server/presence/, src/presence/): V1's presence rule rows (id, value, unit); src/presence/rows.ts also checks every rule the code reads by name exists
-  'presence': { keys: ['about', 'query', 'path', 'host', 'protocol', 'poseGlobal', 'frame', 'spawn', 'spawnAbout', 'rules'], rows: { rules: ['id', 'value', 'unit'] }, maps: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] }, finite: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] } },
+  'presence': { keys: ['about', 'query', 'path', 'host', 'protocol', 'poseGlobal', 'frame', 'spawn', 'spawnAbout', 'originsAbout', 'origins', 'rules'], rows: { rules: ['id', 'value', 'unit'] }, maps: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'], origins: ['allowed', 'devHosts', 'allowMissing'] }, finite: { frame: ['centreCm', 'sizeCm'], spawn: ['x', 'z'] } },
   // The deaths-and-errors telemetry (src/telemetry-rows.ts loads and checks the rest: event field types, caps, the 50 MB log ceiling; test/telemetry.test.mjs pins them)
-  'telemetry': { keys: ['about', 'path', 'off', 'client', 'caps', 'server', 'events', 'kinds'], maps: { off: ['query', 'value', 'hosts', 'hostSuffixes'], client: ['flushMs', 'maxQueue', 'maxBatch', 'maxEventsPerMinute', 'maxErrorsPerVisit', 'maxPerEventPerVisit', 'storageKey'], caps: ['maxBodyBytes', 'maxId', 'maxSha', 'maxMessage', 'maxSource', 'maxStack', 'maxBoss', 'maxSeconds'], server: ['host', 'port', 'logDir', 'logName', 'maxFileBytes', 'keepFiles', 'perIdEventsPerMinute', 'perIdRequestsPerMinute', 'globalEventsPerMinute', 'maxTrackedIds'] } },
+  'telemetry': { keys: ['about', 'path', 'off', 'client', 'caps', 'server', 'events', 'kinds'], maps: { off: ['query', 'value', 'hosts', 'hostSuffixes', 'reasons'], client: ['flushMs', 'maxQueue', 'maxBatch', 'maxEventsPerMinute', 'maxErrorsPerVisit', 'maxPerEventPerVisit', 'rateWindowMs', 'dedupeChars', 'storageKey'], caps: ['maxBodyBytes', 'maxId', 'maxSha', 'maxMessage', 'maxSource', 'maxStack', 'maxBoss', 'maxSeconds'], server: ['host', 'port', 'logDir', 'logName', 'maxFileBytes', 'keepFiles', 'perIdEventsPerMinute', 'perIdRequestsPerMinute', 'globalEventsPerMinute', 'maxTrackedIds'] } },
   'sound': { keys: ['about', 'keep', 'statusMs', 'zone'], maps: { keep: ['about', 'samples', 'rate', 'volume'] } },
   // The opponent's presentation ragdoll (src/fight/ragdoll.ts, @frankendom/physics); `rigs` rows map the package's 20 part ids to bone names
   'physics': { keys: ['about', 'on', 'query', 'v1', 'seed', 'tickHz', 'maxTicksPerFrame', 'loadAfterFirstFrameMs', 'opponents', 'hero', 'bones', 'motorTuning', 'solveHinges', 'states', 'hit', 'kill', 'cut', 'corpse', 'finisher', 'finisherCuts'], rows: { opponents: ['id', 'body', 'measure', 'helmet', 'gear'] },
@@ -46,33 +47,58 @@ export const SCHEMA = {
       states: ['stagger', 'death'], hit: ['parts', 'impulse', 'lift', 'blend'], kill: ['parts', 'impulse', 'lift', 'blendInS'], cut: ['about', 'on', 'log', 'onKill', 'sever', 'kill', 'tap', 'strike', 'cue', 'seam', 'cap', 'helmet'], corpse: ['about', 'keepSeconds', 'pieceSeconds', 'max', 'cuttable', 'slotSpacingM', 'event'], finisher: ['default', 'query', 'values'], finisherCuts: ['about', 'rows', 'halves'] },
     // an object of rows keyed by id: path -> the keys each row may carry
     rowMaps: { 'finisherCuts.rows': ['unit', 'also', 'alsoAtS', 'fallback', 'atS', 'push', 'kill', 'plane'] },
-    finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.strike': ['nearM'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
+    finite: { 'corpse': ['keepSeconds', 'pieceSeconds', 'max', 'slotSpacingM'], 'cut.cue': ['sizePx', 'pulseS', 'delayS'], 'cut.strike': ['nearM', 'pendingS'], 'cut.tap': ['maxMovePx', 'maxMs', 'impulse', 'lift', 'awayMult', 'sideMult'], 'finisherCuts.halves': ['apartM', 'overS'] } },
   // The package's M4 hit/cut rules evaluator driving that ragdoll (src/fight/rules-eval.ts), played by ?rules=m4 (and by a bare link when `default` is m4; it is v1 for now); `armour` and `weapons` are keyed by opponent / weapon ids
   'rules': { keys: ['about', 'on', 'default', 'query', 'v1', 'm4', 'variants', 'tickHz', 'handSpeedRef', 'handBone', 'handFrom', 'speedSpanS', 'speedWindow', 'speedScale', 'heavyDivisor', 'snapOver', 'speedMin', 'speedMaxRef', 'budgets', 'swordSide', 'legHp', 'legSide', 'heavyMoves', 'killAs', 'killAsSwings', 'knockdownSwing', 'renewOnKill', 'cut', 'impulseAt', 'impulseClamp', 'getUpS', 'log', 'armour', 'weapons'],
     maps: { budgets: ['head', 'torso', 'arm_sword', 'arm_off'], cut: ['about', 'precedence'] } },
   // The radar (src/fight/radar.ts validateRadar checks the values): a closed key set; presentation only
   'radar': { keys: ['about', 'on', 'query', 'off', 'corner', 'sizePx', 'marginPx', 'offsetPx', 'zIndex', 'rangeMetres', 'rimInset', 'dprMax', 'disc', 'rim', 'edgeAlpha', 'hero', 'classes', 'flash', 'kinds', 'defaultKind'],
-    maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead', 'pile', 'mob'] } },
+    maps: { disc: ['colour', 'alpha'], rim: ['colour', 'alpha', 'widthPx'], hero: ['colour', 'alpha', 'sizePx'], classes: ['hostile', 'player', 'npc', 'dead', 'pile', 'golden', 'mob'] } },
+  // Boss signature mechanics (validateMechanics below checks the values; src/fight/mechanics/ reads the rows): a map, mechanic id -> row; each row's keys are checked by its type's checker
+  'mechanics': { keys: ['about', 'mechanics'] },
   // Trash mob swarms (src/sim/validate-mobs.js checks the values; src/zone/mobs.ts reads the rows)
   'mobs': { keys: ['about', 'on', 'cap', 'capMax', 'scanSeconds', 'activateMetres', 'despawnMetres', 'spawnMinMetres', 'startClearMetres', 'padMetres', 'swingMetres', 'lod', 'hitScale', 'turnRate', 'speedEase', 'pitArea', 'grid', 'pack', 'separation', 'attack', 'hero', 'states', 'fall', 'corpse', 'farm', 'rings', 'respawnSeconds', 'kinds', 'limits'],
     maps: { lod: ['nearMetres', 'nearStride', 'farStride'], grid: ['cellMetres', 'keySpan', 'seed', 'hash', 'lcg', 'salts'], pack: ['radiusMetres', 'wanderMetres', 'wanderSeconds', 'callMetres'], separation: ['metres', 'speed'], attack: ['maxAttackers', 'orbitMetres', 'slackMetres', 'ringMetres', 'arcRadians', 'spreadRadians'], hero: ['radiusMetres', 'lethal', 'floorHealth', 'guard', 'roll', 'roamStrikes'], states: ['idle', 'chase', 'windup', 'recover', 'hurt', 'dying', 'lying', 'home'], fall: ['lyingSeconds', 'fadeSeconds'], corpse: ['nearMetres', 'graceSeconds', 'holdSeconds', 'max'], farm: ['decay'], limits: ['cap', 'metres', 'seconds', 'hp', 'speed', 'damage', 'scale', 'density', 'size', 'coins', 'tintMix'] } },
   // The arena commentator (checkCommentator below checks the values; src/commentator.ts)
+  // The ten Pit ranks' named opponents per ranked character (src/fight/catalogue-rows.ts joins them onto the catalogue rows; checkLegends below)
+  'legends': { keys: ['about', 'ranks'] },
+  // The practice HUD's one-line report (src/fight/practice-hints.ts; checkPracticeHints below): the text of every state and the move names a result line wears
+  // The fight HUD's own words (src/fight/hud-text.ts; checkHudText below)
+  'hud-text': { keys: ['about', 'rematchTail', 'dummyNeverAttacks', 'zoneDied', 'stamina', 'attack', 'reset'], maps: { stamina: ['plain', 'exhaustedMobile', 'woundMobile', 'exhaustedAria', 'woundAria'], attack: ['fight', 'light', 'mobileFight', 'mobileSlash'], reset: ['playNow', 'next', 'rematch'] } },
+  'practice-hints': { keys: ['about', 'defaultFoe', 'followUp', 'moves', 'lines', 'parts'], maps: { parts: ['wall', 'chip', 'hitKind', 'hurtKind', 'blockedKind', 'wallText'] } },
   'commentator': { keys: ['about', 'enabled', 'storageKey', 'seed', 'caps', 'caption', 'thresholds', 'partNames', 'events'] },
   // The corpse run (src/corpse-run.ts validateCorpseRun checks the values)
-  'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'cap'] } },
+  'corpse-run': { keys: ['about', 'version', 'coins', 'bank', 'pile', 'linger', 'marker', 'limits'], maps: { coins: ['perKill', 'perBoss', 'cap', 'hud'], bank: ['radiusMetres', 'line'], pile: ['reachMetres', 'line', 'lineWeapon', 'lostLine'], linger: ['leashRadius', 'seconds'], marker: ['colour', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'heightMetres', 'deadDistanceMetres', 'pulseMid', 'pulseSwing', 'fadeWithinMetres', 'zIndex'], limits: ['perKill', 'radiusMetres', 'reachMetres', 'leashRadius', 'seconds', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'fadeWithinMetres', 'heightMetres', 'deadDistanceMetres', 'cap', 'pileCoordMax', 'lostMax'] } },
+  // Golden weapon drops (src/zone/golden-drops.ts validateGolden checks the values)
+  'golden-weapons': { keys: ['about', 'version', 'halfTurnDegrees', 'limits', 'spend', 'pickup', 'weapons', 'drops', 'lines', 'marker', 'hud'], rows: { weapons: ['id', 'name', 'weapon', 'power', 'tell', 'charges', 'damageMul', 'tier', 'tint'] }, maps: { limits: ['charges', 'damageMul', 'tier', 'chance', 'metres', 'seconds', 'pulse', 'intensity', 'angle', 'coord', 'ground', 'px', 'alpha'], spend: ['event', 'actor', 'target'], pickup: ['reachMetres', 'tapReachMetres', 'tapRadiusPx', 'tapTopFrac', 'tapBottomFrac'], drops: ['bossKill', 'packChest', 'roaming', 'maxGround'], lines: ['pickup', 'spent', 'lost', 'seconds'], marker: ['colour', 'glow', 'ringPx', 'beamPx', 'widthPx', 'alpha', 'pulseSeconds', 'showWithinMetres', 'zIndex'], hud: ['colour', 'zIndex', 'topPct', 'sizePx', 'backdropAlpha', 'padPx', 'text'] } },
   // Boss weapons (Dom + Strategy 2026-10-28, src/fight/boss-weapon.ts validateBossWeapons checks the values): one row per archetype a boss is built on; the weapon it fights with and is drawn with
   'boss-weapons': { keys: ['about', 'query', 'v1', 'rows'], rows: { rows: ['id', 'opponent', 'profile', 'weapon', 'clipsAs', 'equip', 'scale', 'grip', 'material', 'offhand', 'placeholder'] } },
   // The biome rings (src/zone/rings.ts; src/sim/validate-rings.js checks the values): ring bands, per-ring spawns, difficulty, look; the ring bosses' display names and behaviour
-  'rings': { keys: ['about', 'roundTo', 'halfTurnDegrees', 'limits', 'rings', 'bosses'], maps: { limits: ['about', 'distance', 'multiplier', 'plateWeight', 'angleDeg', 'count', 'respawnSeconds'] }, rows: { rings: ['id', 'minDist', 'maxDist', 'blendAtMetres', 'groundTint', 'skyPlates', 'health', 'damage', 'loadAfterKillMetres', 'spawns'], bosses: ['kind', 'name', 'body', 'respawnSeconds', 'aggro', 'leash', 'roam', 'campSize', 'mechanic'] } },
+  'rings': { keys: ['about', 'spacing', 'roundTo', 'halfTurnDegrees', 'limits', 'rings', 'bosses'], maps: { spacing: ['marginMetres', 'hopSeconds', 'firstBossSeconds'], limits: ['about', 'distance', 'multiplier', 'plateWeight', 'angleDeg', 'count', 'respawnSeconds'] }, rows: { rings: ['id', 'minDist', 'maxDist', 'blendAtMetres', 'groundTint', 'skyPlates', 'health', 'damage', 'loadAfterKillMetres', 'spawns'], bosses: ['kind', 'name', 'body', 'respawnSeconds', 'aggro', 'leash', 'roam', 'campSize', 'mechanic'] } },
   // Keyboard + mouse and the wide screen (src/fight/kbm.ts validateInput checks the values): a closed key set; input and presentation only
   'input': { keys: ['about', 'schema_version', 'on', 'query', 'off', 'detect', 'hide', 'keys', 'mouseButtons', 'mouse', 'strike', 'partJoin', 'keyNames', 'mouseNames', 'hints', 'layout'],
-    maps: { detect: ['media', 'attribute', 'mouseMovePx'], keys: ['forward', 'back', 'left', 'right', 'run', 'strike', 'heavy', 'stab', 'roll', 'guard', 'kick', 'skill', 'skill2', 'lock', 'recenter', 'escape'], mouse: ['strike', 'guard', 'lookDragPx'], strike: ['forwardStab', 'slidePx'], layout: ['attribute', 'wideAttribute', 'wideAspect', 'rows'] } },
+    maps: { detect: ['media', 'attribute', 'mouseMovePx', 'doubleTapMs'], keys: ['forward', 'back', 'left', 'right', 'run', 'strike', 'heavy', 'stab', 'roll', 'guard', 'kick', 'skill', 'skill2', 'lock', 'recenter', 'escape'], mouse: ['strike', 'guard', 'lookDragPx'], strike: ['forwardStab', 'slidePx'], layout: ['attribute', 'wideAttribute', 'wideAspect', 'rows'] } },
   // The hero's death and respawn loop (src/fight/hero-death.ts validateHeroDeath checks the values): the death-only ragdoll, the death camera, the 'You fell' line and Respawn button
   'hero-death': { keys: ['about', 'on', 'query', 'off', 'ragdoll', 'line', 'button', 'keys', 'respawn', 'cam', 'limits'], maps: { respawn: ['minSeconds', 'autoSeconds'], cam: ['seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'], limits: ['minSeconds', 'autoSeconds', 'seconds', 'pullBackMetres', 'riseMetres', 'orbitDegrees', 'releaseSeconds', 'lookY'] } },
+  // Frankendom parts (src/parts.ts validateParts checks the values): closed key sets
+  'parts': { keys: ['about', 'maxCount', 'slots', 'rarities', 'button', 'panel', 'fit', 'wear', 'text'],
+    rows: { slots: ['id', 'label', 'units', 'pair'], rarities: ['star', 'id', 'label', 'colour'] },
+    maps: { button: ['label', 'aria', 'sizePx', 'topPx', 'rightPx', 'zIndex'], panel: ['zIndex', 'maxWidthPx', 'maxHeightFrac'], fit: ['about', 'limits', 'seam', 'eps', 'bones', 'lift', 'skin', 'collar'], wear: ['about', 'flags', 'mesh', 'units', 'heroHost', 'heroCollars', 'budget'], text: ['notWearable', 'title', 'close', 'hint', 'empty', 'equip', 'unequip', 'equipped', 'none', 'weaponDefault', 'weaponReward'] },
+    finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'], 'wear.budget': ['skinnedDrawsMax', 'partsMax', 'frameMsMedianExtra'] } },
+  // Frankendom parts, stage 2 per-body fit rows (src/parts-fit-rows.ts validateFitRows checks the values)
+  'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'stem', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'measure', 'collars'] } },
+  // The Flesh Market (src/market.ts validateMarket checks the values): closed key sets
+  'market': { keys: ['about', 'on', 'query', 'value', 'merchant', 'salt', 'stock', 'weights', 'price', 'caps', 'limits', 'lines', 'events', 'ui'],
+    maps: { merchant: ['id', 'name', 'kind', 'body', 'dx', 'dz', 'openMetres', 'closeMetres', 'loadMetres'], stock: ['size', 'slots'], weights: ['common', 'rare', 'epic', 'weapon'], price: ['base', 'buyX', 'sellX', 'weapon', 'trophy'], caps: ['buyMax', 'sellPerDay'],
+      lines: ['greet', 'buy', 'sell', 'broke', 'soldOut', 'capped', 'restock', 'leave'], events: ['open', 'buy', 'sell', 'refuse', 'restock'], ui: ['zIndex', 'sheetHeightFrac', 'css', 'text'], limits: ['about', 'range', 'save', 'attempts', 'hashRange', 'sheetPct', 'chip'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
   // Share clip (src/share-clip.ts validateShareClip checks the values): a closed key set; presentation only
+  // The art-load retry (src/retry.ts reads attempts / delayMs / missingTexturesMessage; test/data-top-rows.test.mjs pins them)
+  'retry': { keys: ['about', 'attempts', 'delayMs', 'missingTexturesMessage'] },
+  // The V1 donor stand-ins that carry names or text (src/stubs.ts)
+  'stubs': { keys: ['about', 'weaponSlots', 'twoHandedHides', 'bareTier', 'bareTierHides', 'lessonFell', 'lessonNext'] },
   'share-clip': { keys: ['about', 'on', 'leadSeconds', 'tailSeconds', 'stopTimeoutSeconds', 'width', 'height', 'fps', 'bitsPerSecond', 'types', 'guard', 'watermark', 'file', 'button'],
-    maps: { guard: ['seconds', 'maxFrameMs'], watermark: ['text', 'sizePx', 'colour', 'alpha', 'marginPx'], file: ['prefix', 'title', 'stillType'], button: ['label', 'stillLabel', 'making', 'saved', 'failed', 'hideSeconds', 'bottomPx', 'zIndex', 'colour', 'sizePx'] } },
+    maps: { guard: ['seconds', 'maxFrameMs'], watermark: ['text', 'sizePx', 'colour', 'alpha', 'marginPx', 'font', 'lineHeight'], file: ['prefix', 'title', 'stillType', 'stillQuality', 'revokeSeconds'], button: ['label', 'stillLabel', 'making', 'saved', 'failed', 'failedSeconds', 'savedSeconds', 'hideSeconds','bottomPx', 'zIndex', 'colour', 'sizePx', 'css'] } },
   'pickup': { keys: ['about', 'on', 'query', 'off', 'units', 'delayS', 'hintSeconds', 'walkAwayM', 'zIndex', 'colour', 'text', 'arrow', 'safe', 'fadeS'],
     maps: { text: ['label', 'sizePx', 'letterSpacingEm', 'shadow', 'maxWidthPx', 'lineHeight'], arrow: ['sizePx', 'bobPx', 'bobS', 'liftPx', 'textGapPx'], safe: ['topFrac', 'bottomFrac', 'sideMarginPx'] } },
   // M7 knockback, shove and kick (src/fight/feel-kick.ts), opt-in ?feel=kick; presentation rows (value checks: validateFile 'feel-kick')
@@ -89,10 +115,10 @@ export const SCHEMA = {
   // The weapon clash on a block or parry (src/fight/feel-clash.ts, ?feel=clash): presentation rows; checkFeelClash below checks the values
   'feel-hitreact': { keys: ['about', 'frontCos', 'knockdownQuietS', 'defaultSide', 'classes', 'zones'] },
   'feel-clash': { keys: ['about', 'on', 'query', 'value', 'tickHz', 'refKg', 'weaponKg', 'swing', 'impulse', 'kinds', 'parts', 'dipParts', 'timing', 'pushback', 'event', 'hero', 'spark', 'perf'],
-    maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale'], pushback: ['metres', 'heavyOnly'], event: ['type', 'log'],
-      hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
+    maps: { swing: ['light', 'heavy', 'charged'], impulse: ['base', 'lift', 'min', 'max'], kinds: ['blocked', 'perfect', 'parried', 'broken'], parts: ['attacker', 'defender'], dipParts: ['arm', 'forearm', 'hand', 'spine'], timing: ['easeInS', 'holdS', 'upS', 'lightScale', 'dipFloor'], pushback: ['metres', 'heavyOnly', 'digits'], event: ['type', 'log'],
+      hero: ['about', 'bones', 'weaponArmRad', 'guardArmRad', 'spineRad', 'maxStrength', 'minScale'], spark: ['on', 'at', 'liftM', 'count', 'countHeavy', 'speedMps', 'lifeS', 'sizePx', 'color', 'handBones', 'max', 'gravityMps2', 'hideY', 'spin', 'upBase', 'upMul', 'speedBase', 'speedMul', 'mod'], perf: ['frameBudgetMs'] } },   // (values: checkFeelClash)
   // M7 limb damage that changes the fight (src/fight/feel-limbs.ts), opt-in ?feel=limbs (needs ?rules=m4); one row per part (leg, arm_sword, arm_off, torso, head). checked by the 'feel-limbs' block below
-  'feel-limbs': { keys: ['about', 'on', 'query', 'value', 'needs', 'events', 'levelStep', 'limbs'], maps: { needs: ['query', 'value'], events: ['limp', 'guardDrop', 'weaponDrop'], limbs: ['parts'] },
+  'feel-limbs': { keys: ['about', 'on', 'query', 'value', 'needs', 'events', 'levelStep', 'dipAskBelow', 'limbs'], maps: { needs: ['query', 'value'], events: ['limp', 'guardDrop', 'weaponDrop'], limbs: ['parts'] },
     rowMaps: { 'limbs.parts': ['startFrac', 'sided', 'motor', 'blend', 'gait', 'stumble', 'drop', 'sim'] } },
   // Phase 3 design rows (docs/ZONE-SERVER-DESIGN.md, src/server-model/zone-model.ts): nothing in the game reads them yet. The model's own parseRules checks values.
   'zone-server-rules': { keys: ['about', 'writerRoles', 'adminOnlyFunctions', 'ids', 'engage', 'hit', 'progression', 'weapons', 'share', 'caps', 'respawn', 'log', 'refusals', 'payReasons'],
@@ -100,10 +126,10 @@ export const SCHEMA = {
     maps: { ids: ['instancePattern', 'tokenPattern', 'batchIdPattern', 'weaponPattern', 'note'], engage: ['tokenBytes', 'ttlS', 'maxOpenPerAccount', 'note'], hit: ['maxBatchRows', 'maxHitsPerRow', 'firstHitAllowanceS', 'maxElapsedS', 'dpsSlack', 'retryFailedBatch', 'note'],
       progression: ['maxDamageMult', 'note'], share: ['minSharePct', 'floorEqualShareFraction', 'renormalise', 'hitExpiryS', 'note'], caps: ['killsPerMin', 'killsPerHour', 'cooldownAcrossLayers', 'note'], respawn: ['minS', 'maxS', 'defaultS', 'note'], log: ['keepS', 'note'] } },
   // Phase 3 step 1, the page side of shared boss health (docs/ZONE-CLIENT-CONTRACT.md, src/zone/shared-hp-client.ts): OFF unless ?sharedhp=. The client's own parseClientRows checks the values and the action vocabulary.
-  'zone-client': { keys: ['about', 'query', 'path', 'hosts', 'routes', 'timing', 'sim', 'batch', 'backoff', 'kill', 'refusals', 'sqlClasses', 'transportClasses', 'fallback'],
+  'zone-client': { keys: ['about', 'query', 'path', 'hosts', 'routes', 'timing', 'sim', 'batch', 'backoff', 'engageRetry', 'kill', 'refusals', 'sqlClasses', 'transportClasses', 'fallback'],
     rows: { refusals: ['id', 'action', 'delayMs'], sqlClasses: ['id', 'match', 'action'], transportClasses: ['id', 'kinds', 'status', 'action'] },
-    maps: { routes: ['engage', 'touch', 'hits', 'state', 'kill'], timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['hit', 'heroSide', 'foeSide'], batch: ['idPrefix', 'idSep'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], kill: ['tries', 'retryMs', 'settled', 'unpaid'], fallback: ['sql', 'transport'] },
-    finite: { timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['heroSide', 'foeSide'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], kill: ['tries', 'retryMs'] } },
+    maps: { routes: ['engage', 'touch', 'hits', 'state', 'kill'], timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['hit', 'heroSide', 'foeSide'], batch: ['idPrefix', 'idSep'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], engageRetry: ['maxTries', 'factor', 'maxMs', 'minDelayMs', 'stopStatus'], kill: ['tries', 'retryMs', 'settled', 'unpaid'], fallback: ['sql', 'transport'] },
+    finite: { timing: ['tickMs', 'flushMs', 'stateMs', 'touchMs', 'timeoutMs', 'engageRetryMs'], sim: ['heroSide', 'foeSide'], backoff: ['baseMs', 'factor', 'maxMs', 'offlineAfter'], engageRetry: ['maxTries', 'factor', 'maxMs', 'minDelayMs'], kill: ['tries', 'retryMs'] } },
 };
 
 const BANNED = /^(block|blocks|immune|immunity)$/i;
@@ -160,6 +186,7 @@ function checkFeelLimbs(json, errors) {
   const num = (path, v, lo, hi) => { if (!fin(v) || v < lo || v > hi) errors.push(`${n}.${path}: must be a finite number in [${lo}, ${hi}]`); };
   for (const k of ['query', 'value']) if (typeof json[k] !== 'string' || !json[k]) errors.push(`${n}.${k}: must be a non-empty string`);
   if (typeof json.on !== 'boolean') errors.push(`${n}.on: must be a boolean`);
+  num('dipAskBelow', json.dipAskBelow, 0.5, 1);
   for (const k of ['query', 'value']) if (typeof json.needs?.[k] !== 'string' || !json.needs[k]) errors.push(`${n}.needs.${k}: must be a non-empty string`);
   for (const k of ['limp', 'guardDrop', 'weaponDrop']) if (typeof json.events?.[k] !== 'string' || !json.events[k]) errors.push(`${n}.events.${k}: must be a non-empty string`);
   num('levelStep', json.levelStep, 0.01, 1);
@@ -195,6 +222,211 @@ function checkFeelLimbs(json, errors) {
   if (!parts.leg?.gait) errors.push(`${n}.limbs.parts.leg.gait: missing`);
   if (!parts.leg?.stumble) errors.push(`${n}.limbs.parts.leg.stumble: missing`);
   if (!parts.arm_sword?.drop) errors.push(`${n}.limbs.parts.arm_sword.drop: missing`);
+}
+
+// ---- boss signature mechanics (data/mechanics.json; read by src/fight/mechanics/). A map, id -> row; each `type` has its own closed key set and ranges (MECHANIC_TYPES: one line per type). ----
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+const GOURD_KEYS = ['type', 'boss', 'about', 'engageMetres', 'firstSeconds', 'cooldownSeconds', 'stompSeconds', 'flightSeconds', 'fuseSeconds', 'burstSeconds', 'count', 'countLow', 'lowShare', 'radiusMetres', 'heroRadiusMetres', 'scatterMetres', 'launchHeightMetres', 'arcMetres', 'damageMove', 'damageShare', 'guardShare', 'knockbackMetres', 'shoveSeconds', 'waitWhileHeroHurt', 'lethal', 'floorHealth', 'pool', 'look'];
+const GOURD_LOOK = ['core', 'edge', 'fuse', 'gourd', 'gourdRadiusMetres', 'groundY', 'ringWidth', 'segments', 'alpha', 'markAlpha', 'stompColour', 'stompAlpha', 'pulseHz', 'burstScale'];
+/** Lord Gourd's PUMPKIN BOMBS row (type "gourd-bombs"). `moves`: the move ids of the weapon tables (damageMove must be one). Returns one string per problem. */
+export function checkGourdBombs(id, r, moves = []) {
+  const e = [], at = `mechanics.${id}`, within = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  for (const k of Object.keys(r)) if (!GOURD_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  const num = (k, lo, hi, int = false) => { if (!within(r[k], lo, hi) || (int && !Number.isInteger(r[k]))) e.push(`${at}.${k}: ${int ? 'a whole number' : 'a number'} from ${lo} to ${hi}`); };
+  num('engageMetres', 2, 60); num('firstSeconds', 0, 120); num('cooldownSeconds', 1, 120); num('stompSeconds', 0.2, 5); num('flightSeconds', 0.1, 3); num('fuseSeconds', 0.5, 5); num('burstSeconds', 0.1, 2);
+  num('count', 1, 6, true); num('countLow', 1, 6, true); num('lowShare', 0, 1); num('radiusMetres', 0.5, 6); num('heroRadiusMetres', 0, 2); num('scatterMetres', 0, 12);
+  num('launchHeightMetres', 0.5, 10); num('arcMetres', 0, 10); num('damageShare', 0.05, 1); num('guardShare', 0, 1); num('knockbackMetres', 0, 6); num('shoveSeconds', 0.05, 1); num('floorHealth', 0, 1000); num('pool', 1, 32, true);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.damageMove !== 'string' || (moves.length && !moves.includes(r.damageMove))) e.push(`${at}.damageMove: one of the weapon move rows (${moves.join(', ')})`);
+  if (typeof r.waitWhileHeroHurt !== 'boolean') e.push(`${at}.waitWhileHeroHurt: true or false`);
+  if (r.lethal !== false) e.push(`${at}.lethal: false (a bomb never ends a fight; the duel's own blows do)`);
+  if (within(r.count, 1, 6) && within(r.countLow, 1, 6) && r.countLow < r.count) e.push(`${at}.countLow: at least count (more gourds when he is low)`);
+  if (within(r.pool, 1, 32) && within(r.countLow, 1, 6) && r.pool < r.countLow * 2) e.push(`${at}.pool: room for two casts at once (twice countLow)`);
+  if (within(r.cooldownSeconds, 1, 120) && within(r.stompSeconds, 0.2, 5) && within(r.flightSeconds, 0.1, 3) && within(r.fuseSeconds, 0.5, 5) && r.cooldownSeconds <= r.stompSeconds + r.flightSeconds + r.fuseSeconds) e.push(`${at}.cooldownSeconds: longer than one cast from stomp to burst (no overlapping casts)`);
+  const L = r.look;
+  if (!L || typeof L !== 'object') return [...e, `${at}.look: missing`];
+  for (const k of Object.keys(L)) if (!GOURD_LOOK.includes(k)) e.push(`${at}.look.${k}: unknown key`);
+  for (const k of ['core', 'edge', 'fuse', 'gourd', 'stompColour']) if (typeof L[k] !== 'string' || !HEX6.test(L[k])) e.push(`${at}.look.${k}: a #rrggbb`);
+  const lnum = (k, lo, hi, int = false) => { if (!within(L[k], lo, hi) || (int && !Number.isInteger(L[k]))) e.push(`${at}.look.${k}: ${int ? 'a whole number' : 'a number'} from ${lo} to ${hi}`); };
+  lnum('gourdRadiusMetres', 0.05, 2); lnum('groundY', 0, 1); lnum('ringWidth', 0.02, 1); lnum('segments', 8, 128, true); lnum('alpha', 0, 1); lnum('markAlpha', 0, 1); lnum('stompAlpha', 0, 1); lnum('pulseHz', 0, 20); lnum('burstScale', 1, 4);
+  return e;
+}
+const KING_NUMBERS = { radiusMetres: [1, 20], minRadiusMetres: [0.5, 20], regenFactor: [0, 1], tickEveryTicks: [1, 600, true], tickDamageFraction: [0, 0.05], pulsePeriodTicks: [60, 1800, true], frenzyBelowFraction: [0, 1], frenzyPeriodTicks: [60, 1800, true], pulseTellTicks: [1, 300, true], pulseWaveTicks: [1, 300, true], pulseDamageFraction: [0, 0.2], pulseStaminaFraction: [0, 1] };
+const KING_LOOK = { colours: ['core', 'edge', 'wave'], numbers: { discOpacity: [0, 1], edgeOpacity: [0, 1], tellOpacity: [0, 1], waveOpacity: [0, 1], lift: [0, 0.5], segments: [8, 128, true], edgeWidth: [0.01, 0.5] } };
+const KING_ORDER = [['minRadiusMetres', 'radiusMetres'], ['frenzyPeriodTicks', 'pulsePeriodTicks'], ['pulseTellTicks', 'frenzyPeriodTicks'], ['pulseWaveTicks', 'frenzyPeriodTicks']];   // [a, b]: a must not exceed b (the wave and the tell fit in the shortest period)
+/** The King's AURA row (type "king-aura"): its numbers with [lo, hi, whole?], its look, and the pairs that must order. Returns one string per problem. */
+export function checkKingAura(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const num = (where, v, [lo, hi, whole]) => { if (!Number.isFinite(v) || v < lo || v > hi || (whole && !Number.isInteger(v))) e.push(`${where}: must be ${whole ? 'a whole number' : 'a number'} in ${lo}..${hi}`); };
+  const keys = ['type', 'boss', 'about', ...Object.keys(KING_NUMBERS), 'look'];
+  for (const k of Object.keys(r)) if (!keys.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  for (const [k, range] of Object.entries(KING_NUMBERS)) num(`${at}.${k}`, r[k], range);
+  for (const [a, b] of KING_ORDER) if (Number.isFinite(r[a]) && Number.isFinite(r[b]) && r[a] > r[b]) e.push(`${at}: ${a} must not exceed ${b}`);
+  const L = r.look;
+  if (!L || typeof L !== 'object') return [...e, `${at}.look: missing`];
+  const lookKeys = [...KING_LOOK.colours, ...Object.keys(KING_LOOK.numbers)];
+  for (const k of Object.keys(L)) if (!lookKeys.includes(k)) e.push(`${at}.look.${k}: unknown key`);
+  for (const k of KING_LOOK.colours) if (typeof L[k] !== 'string' || !HEX6.test(L[k])) e.push(`${at}.look.${k}: a #rrggbb colour`);
+  for (const [k, range] of Object.entries(KING_LOOK.numbers)) num(`${at}.look.${k}`, L[k], range);
+  return e;
+}
+/** One checker per mechanic `type` (the registry of src/fight/mechanics/index.ts has the same ids). A new boss mechanic adds one line here. */
+const IMPALE_NUMS = { firstTicks: [0, 3600], cooldownTicks: [60, 7200], abortCooldownTicks: [0, 7200], gapMin: [0.5, 20], gapMax: [0.5, 20], parkTicks: [1, 53], freezeTicks: [1, 52], lungeSpeed: [0.01, 0.5], lungeTicks: [1, 120],
+  stopGap: [0.8, 3], dragM: [0, 6], dragTicks: [1, 90], dragStop: [0.9, 3], followWithinTicks: [1, 300], lineWidth: [0.1, 3], backTo: [0, 12], backSpeed: [0, 0.3],
+  giveUpTicks: [1, 600], wallPadM: [0, 2], lineOvershootM: [0, 3], lungeGraceTicks: [0, 300], attackStartTicks: [0, 30] };
+/** Nan's IMPALE AND DRAG row (type "nan-impale"). Returns one string per problem. */
+export function checkNanImpale(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const known = ['type', 'about', 'boss', 'move', 'followMove', 'lineColour', ...Object.keys(IMPALE_NUMS)];
+  for (const k of Object.keys(r)) if (!known.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  for (const [k, [lo, hi]] of Object.entries(IMPALE_NUMS)) if (!(Number.isFinite(r[k]) && r[k] >= lo && r[k] <= hi)) e.push(`${at}.${k}: a number from ${lo} to ${hi}`);
+  if (r.move !== 'heavy_thrust') e.push(`${at}.move: heavy_thrust (the held, chambered stab the engine charges)`);
+  if (r.followMove !== 'thrust') e.push(`${at}.followMove: thrust`);
+  if (!/^#[0-9a-fA-F]{6}$/.test(r.lineColour ?? '')) e.push(`${at}.lineColour: a #rrggbb`);
+  if (!(r.gapMax > r.gapMin)) e.push(`${at}: gapMax must be above gapMin`);
+  if (!(r.freezeTicks < r.parkTicks)) e.push(`${at}: freezeTicks must be shorter than parkTicks`);
+  if (!(r.dragStop >= r.stopGap - 0.2)) e.push(`${at}.dragStop: about the stopGap or more (the hook never pulls him through her)`);
+  if (!(r.backTo <= r.gapMax)) e.push(`${at}.backTo: inside gapMax`);
+  if (!(r.backTo - r.stopGap <= r.lungeSpeed * r.lungeTicks)) e.push(`${at}: the lunge (lungeSpeed x lungeTicks) must cover backTo minus stopGap`);
+  return e;
+}
+const ENVOY_KEYS = ['type', 'boss', 'about', 'firstCooldownTicks', 'cooldownTicks', 'lungeMinM', 'lungeMaxM', 'tellTicks', 'lungeTicks', 'contactM', 'latchGapM', 'drainPerSecond', 'drainFloor', 'slowPct', 'breakHits', 'breakWindowTicks', 'maxLatchTicks', 'guardChipStamina', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks', 'breakKnockM', 'tell'];
+/** The Titan's Envoy LATCH row (type "envoy-latch"). `ctx.rollCost` (optional, RULES.rollCost): the stamina floor must leave a roll affordable. Returns one string per problem. */
+export function checkEnvoyLatch(id, r, _moves = [], ctx = {}) {
+  const e = [], at = `mechanics.${id}`;
+  const num = (k, lo, hi, int) => { const v = r[k]; if (!(typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi && (!int || Number.isInteger(v)))) e.push(`${at}.${k}: ${int ? 'an integer' : 'a number'} from ${lo} to ${hi}`); };
+  for (const k of ['firstCooldownTicks', 'cooldownTicks', 'tellTicks', 'lungeTicks', 'breakWindowTicks', 'maxLatchTicks', 'blockedRecoverTicks', 'whiffRecoverTicks', 'breakRecoverTicks']) num(k, 1, 3600, true);
+  num('breakHits', 1, 10, true); num('slowPct', 10, 100, true);
+  for (const k of ['lungeMinM', 'lungeMaxM', 'contactM', 'latchGapM', 'breakKnockM']) num(k, 0.1, 30);
+  num('drainPerSecond', 0, 100); num('drainFloor', 0, 100); num('guardChipStamina', 0, 100);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (!(r.lungeMaxM > r.lungeMinM)) e.push(`${at}.lungeMaxM must be above lungeMinM`);
+  if (!(r.contactM >= r.latchGapM)) e.push(`${at}.contactM must reach at least the latchGapM (a lunge that stops at the gap must latch)`);
+  if (ctx.rollCost !== undefined && !(r.drainFloor >= ctx.rollCost)) e.push(`${at}.drainFloor ${r.drainFloor} is below the roll cost ${ctx.rollCost}: the latch must always be breakable by a roll`);
+  if (!(r.maxLatchTicks > r.breakWindowTicks / 2)) e.push(`${at}.maxLatchTicks must outlast half the break window`);
+  const t = r.tell;
+  if (!t || typeof t !== 'object') e.push(`${at}.tell: an object`);
+  else {
+    for (const k of Object.keys(t)) if (!['colour', 'alpha', 'widthM', 'latchedAlpha', 'liftM', 'beyondM', 'renderOrder', 'alphaFloor', 'alphaRise', 'pulseBase', 'pulseDepth'].includes(k)) e.push(`${at}.tell.${k}: unknown key`);
+    if (!Number.isInteger(t.renderOrder) || t.renderOrder < 0 || t.renderOrder > 32) e.push(`${at}.tell.renderOrder: an integer 0..32`);
+    for (const k of ['alphaFloor', 'alphaRise', 'pulseBase', 'pulseDepth']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
+    if (typeof t.colour !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(t.colour)) e.push(`${at}.tell.colour: a #rrggbb`);
+    for (const k of ['alpha', 'latchedAlpha']) if (!(t[k] >= 0 && t[k] <= 1)) e.push(`${at}.tell.${k}: from 0 to 1`);
+    for (const k of ['widthM', 'liftM', 'beyondM']) if (!(t[k] >= 0 && t[k] <= 5)) e.push(`${at}.tell.${k}: from 0 to 5`);
+  }
+  for (const k of Object.keys(r)) if (!ENVOY_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  return e;
+}
+
+const LIMB_ACTIONS = ['light', 'light_left', 'light_right', 'heavy', 'thrust', 'kick', 'dodge', 'backstep', 'parry', 'skill', 'skill2', 'heavy_right', 'heavy_left', 'heavy_thrust'];
+const LIMB_KEYS = ['id', 'region', 'name', 'belowPct', 'speedMult', 'forbids', 'swapTo', 'piece', 'stumpCaps', 'hitStopMs'];
+/** Sir Reginald's LIMB LOSS row (type "reginald-limb-loss"); the limbs' region/piece/cap names are checked against his cut manifest in test/mechanics.test.mjs. Returns one string per problem. */
+export function checkReginaldLimbLoss(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  for (const k of Object.keys(r)) if (!['type', 'boss', 'about', 'limbs'].includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (!Array.isArray(r.limbs) || !r.limbs.length) return [...e, `${at}.limbs: at least one limb`];
+  const seen = new Set();
+  r.limbs.forEach((l, i) => {
+    const p = `${at}.limbs[${i}]`;
+    for (const k of Object.keys(l)) if (!LIMB_KEYS.includes(k)) e.push(`${p}.${k}: unknown key`);
+    if (typeof l.id !== 'string' || !/^[a-z_]+$/.test(l.id) || seen.has(l.id)) e.push(`${p}.id: a unique lower-case id`); else seen.add(l.id);
+    if (typeof l.name !== 'string' || !l.name.trim()) e.push(`${p}.name: a non-empty string`);
+    if (!(Number.isFinite(l.belowPct) && l.belowPct > 0 && l.belowPct < 100)) e.push(`${p}.belowPct: a share between 0 and 100`);
+    if (!(Number.isFinite(l.speedMult) && l.speedMult >= 0.2 && l.speedMult <= 1)) e.push(`${p}.speedMult: 0.2..1`);
+    if (!Array.isArray(l.forbids) || !l.forbids.length || l.forbids.some((a) => !LIMB_ACTIONS.includes(a))) e.push(`${p}.forbids: a list of known actions`);
+    else if (l.swapTo !== null && l.forbids.includes(l.swapTo)) e.push(`${p}.swapTo: cannot be a forbidden action`);
+    if (l.swapTo !== null && !LIMB_ACTIONS.includes(l.swapTo)) e.push(`${p}.swapTo: null or a known action`);
+    if (!Number.isInteger(l.hitStopMs) || l.hitStopMs < 0 || l.hitStopMs > 400) e.push(`${p}.hitStopMs: 0..400`);
+    if (typeof l.region !== 'string' || typeof l.piece !== 'string' || !Array.isArray(l.stumpCaps) || l.stumpCaps.some((c) => typeof c !== 'string')) e.push(`${p}.region/piece/stumpCaps: node names`);
+  });
+  for (let i = 1; i < r.limbs.length; i++) if (!(r.limbs[i].belowPct < r.limbs[i - 1].belowPct)) e.push(`${at}.limbs: belowPct must fall from one limb to the next`);
+  return e;
+}
+
+const MECHANIC_TYPES = { 'gourd-bombs': checkGourdBombs, 'king-aura': checkKingAura, 'nan-impale': checkNanImpale, 'envoy-latch': checkEnvoyLatch, 'reginald-limb-loss': checkReginaldLimbLoss, 'accountant-parry-wall': checkAccountantParryWall, 'shadow-dash': checkShadowDash };
+const ACCOUNTANT_KEYS = ['type', 'about', 'boss', 'firstTicks', 'triggerRangeM', 'tellTicks', 'wallTicks', 'cooldownTicks', 'cancelCooldownTicks', 'arcDeg', 'parryStunTicks', 'riposteTicks', 'parriesToDrop', 'kickBreakStunTicks', 'specialBreakStunTicks', 'caption', 'breakMove', 'fx'];
+const ACCOUNTANT_FX = ['ledgerLines', 'texturePx', 'ruleThicknessPx', 'marginFrac', 'ringInnerFrac', 'ringSegments', 'mapTint', 'renderOrder', 'sparkRenderOrder', 'sparkPoolParries', 'ringLiftM', 'ringTellGain', 'ringUpBoost', 'ringPulseMin', 'ringPulseDepth', 'minRise', 'tellRiseShare', 'sparkBackShare', 'sparkSwirlShare', 'sparkArcShare', 'sparkLiftShare', 'parkY', 'colour', 'edgeColour', 'ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM', 'tellOpacity', 'wallOpacity', 'sparkCount', 'sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz'];
+/** The Accountant's PARRY WALL row (type "accountant-parry-wall"). Ranges keep the wall readable (a tell of 0.3 s or more) and fair (a window under 5 s, a cooldown longer than the wall). Returns one string per problem. */
+export function checkAccountantParryWall(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi, num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  for (const k of Object.keys(r)) if (!ACCOUNTANT_KEYS.includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  if (typeof r.boss !== 'string' || !r.boss) e.push(`${at}.boss: a profile id`);
+  if (!int(r.firstTicks, 0, 3600)) e.push(`${at}.firstTicks: an integer 0..3600`);
+  if (!num(r.triggerRangeM, 1, 8)) e.push(`${at}.triggerRangeM: 1..8 metres`);
+  if (!int(r.tellTicks, 18, 120)) e.push(`${at}.tellTicks: an integer 18..120 (a warning of at least 0.3 s)`);
+  if (!int(r.wallTicks, 30, 300)) e.push(`${at}.wallTicks: an integer 30..300 (no wall stands over 5 s)`);
+  if (!int(r.cooldownTicks, 300, 7200)) e.push(`${at}.cooldownTicks: an integer 300..7200`);
+  if (!int(r.cancelCooldownTicks, 60, 7200)) e.push(`${at}.cancelCooldownTicks: an integer 60..7200`);
+  if (int(r.cooldownTicks, 0, 1e9) && int(r.wallTicks, 0, 1e9) && !(r.cooldownTicks > r.wallTicks)) e.push(`${at}.cooldownTicks must be longer than wallTicks`);
+  if (!num(r.arcDeg, 30, 240)) e.push(`${at}.arcDeg: 30..240 degrees (the front the wall covers; the rest is open)`);
+  if (!int(r.parryStunTicks, 1, 60)) e.push(`${at}.parryStunTicks: an integer 1..60`);
+  if (!int(r.riposteTicks, 1, 90)) e.push(`${at}.riposteTicks: an integer 1..90`);
+  if (!int(r.parriesToDrop, 1, 10)) e.push(`${at}.parriesToDrop: an integer 1..10`);
+  if (!int(r.kickBreakStunTicks, 1, 180)) e.push(`${at}.kickBreakStunTicks: an integer 1..180`);
+  if (!int(r.specialBreakStunTicks, 1, 180)) e.push(`${at}.specialBreakStunTicks: an integer 1..180`);
+  if (typeof r.caption !== 'string' || !r.caption) e.push(`${at}.caption: a data/commentator.json event id`);
+  if (typeof r.breakMove !== 'string' || !/^[a-z][a-z0-9_-]*$/.test(r.breakMove)) e.push(`${at}.breakMove: a move id (the move that breaks the wall)`);
+  const fx = r.fx;
+  if (!fx || typeof fx !== 'object' || Array.isArray(fx)) return [...e, `${at}.fx: an object`];
+  if (!int(fx.ledgerLines, 0, 16)) e.push(`${at}.fx.ledgerLines: an integer 0..16`);
+  if (!int(fx.texturePx, 16, 256)) e.push(`${at}.fx.texturePx: an integer 16..256`);
+  if (!int(fx.ruleThicknessPx, 1, 8)) e.push(`${at}.fx.ruleThicknessPx: an integer 1..8`);
+  if (!int(fx.ringSegments, 8, 128)) e.push(`${at}.fx.ringSegments: an integer 8..128`);
+  if (!int(fx.renderOrder, 0, 32)) e.push(`${at}.fx.renderOrder: an integer 0..32`);
+  if (!int(fx.sparkRenderOrder, 0, 32)) e.push(`${at}.fx.sparkRenderOrder: an integer 0..32`);
+  if (!int(fx.sparkPoolParries, 1, 8)) e.push(`${at}.fx.sparkPoolParries: an integer 1..8`);
+  if (typeof fx.mapTint !== 'string' || !HEX6.test(fx.mapTint)) e.push(`${at}.fx.mapTint: a #rrggbb`);
+  for (const k of ['marginFrac', 'ringInnerFrac', 'ringPulseMin', 'ringPulseDepth', 'tellRiseShare', 'sparkBackShare', 'sparkSwirlShare', 'sparkArcShare', 'sparkLiftShare']) if (!num(fx[k], 0, 1)) e.push(`${at}.fx.${k}: 0..1`);
+  if (!num(fx.ringLiftM, 0, 1)) e.push(`${at}.fx.ringLiftM: 0..1 metres`);
+  if (!num(fx.ringTellGain, 0, 10)) e.push(`${at}.fx.ringTellGain: 0..10`);
+  if (!num(fx.ringUpBoost, 0, 1)) e.push(`${at}.fx.ringUpBoost: 0..1`);
+  if (!num(fx.minRise, 0.001, 1)) e.push(`${at}.fx.minRise: 0.001..1`);
+  if (!num(fx.parkY, -1000, -10)) e.push(`${at}.fx.parkY: -1000..-10 metres (below the world, out of sight)`);
+  for (const k of Object.keys(fx)) if (!ACCOUNTANT_FX.includes(k)) e.push(`${at}.fx.${k}: unknown key`);
+  for (const k of ['colour', 'edgeColour']) if (typeof fx[k] !== 'string' || !HEX6.test(fx[k])) e.push(`${at}.fx.${k}: a #rrggbb`);
+  for (const k of ['ringRadiusM', 'wallHeightM', 'wallWidthM', 'wallDistanceM']) if (!num(fx[k], 0.1, 6)) e.push(`${at}.fx.${k}: 0.1..6 metres`);
+  for (const k of ['tellOpacity', 'wallOpacity']) if (!num(fx[k], 0, 1)) e.push(`${at}.fx.${k}: 0..1`);
+  if (!int(fx.sparkCount, 1, 24)) e.push(`${at}.fx.sparkCount: an integer 1..24`);
+  for (const k of ['sparkSpeedMps', 'sparkLifeS', 'sparkSizeM', 'sparkGravityMps2', 'ringPulseHz']) if (!num(fx[k], 0.01, 20)) e.push(`${at}.fx.${k}: 0.01..20`);
+  return e;
+}
+const DASH_NUMS = { firstTicks: [0, 3600, true], cooldownTicks: [60, 3600, true], triggerMinM: [1, 20], triggerMaxM: [1, 30], tellTicks: [18, 120, true], lockBeforeTicks: [0, 60, true], dashSpeedMps: [4, 30], dashMaxTicks: [4, 90, true],
+  stopGapM: [0.9, 4], slashReachM: [0.9, 6], slashMaxTicks: [10, 300, true], recoverTicks: [20, 240, true], lineWidth: [0.1, 3] };
+/** Kachujin's SHADOW DASH row (type "shadow-dash"). Returns one string per problem. */
+export function checkShadowDash(id, r) {
+  const e = [], at = `mechanics.${id}`;
+  for (const k of Object.keys(r)) if (!['type', 'boss', 'about', 'slashAction', 'lineColour', ...Object.keys(DASH_NUMS)].includes(k)) e.push(`${at}.${k}: unknown key`);
+  if (typeof r.about !== 'string' || !r.about.trim()) e.push(`${at}.about: a non-empty string`);
+  for (const [k, [lo, hi, whole]] of Object.entries(DASH_NUMS)) if (!(Number.isFinite(r[k]) && r[k] >= lo && r[k] <= hi && (!whole || Number.isInteger(r[k])))) e.push(`${at}.${k}: ${whole ? 'a whole number' : 'a number'} from ${lo} to ${hi}`);
+  if (!['light', 'thrust', 'heavy'].includes(r.slashAction)) e.push(`${at}.slashAction: light, thrust or heavy`);
+  if (!HEX6.test(r.lineColour ?? '')) e.push(`${at}.lineColour: a #rrggbb`);
+  if (!(r.triggerMinM < r.triggerMaxM)) e.push(`${at}: triggerMinM must be below triggerMaxM`);
+  if (!(r.lockBeforeTicks < r.tellTicks)) e.push(`${at}: lockBeforeTicks must be below tellTicks (a tell is readable before it locks)`);
+  if (!(r.stopGapM <= r.slashReachM)) e.push(`${at}: stopGapM must not exceed slashReachM (he must stop inside his own cut)`);
+  if (!(r.dashSpeedMps * r.dashMaxTicks / 60 >= r.triggerMaxM - r.stopGapM)) e.push(`${at}: the dash (dashSpeedMps x dashMaxTicks) must cover triggerMaxM minus stopGapM`);
+  return e;
+}
+/** data/mechanics.json against the profile ids (`kinds`) and the move ids of the weapon tables (`moves`). Returns one string per problem, [] = fine. */
+export function validateMechanics(json, kinds = [], moves = [], ctx = {}) {
+  const e = [], map = json?.mechanics;
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return ['mechanics.mechanics: a map of id -> row'];
+  const seen = new Map();
+  for (const [id, r] of Object.entries(map)) {
+    if (!/^[a-z][a-z0-9-]*$/.test(id)) e.push(`mechanics.${id}: an id of lower-case letters, digits and dashes`);
+    const check = MECHANIC_TYPES[r?.type];
+    if (!check) { e.push(`mechanics.${id}.type: one of ${Object.keys(MECHANIC_TYPES).join(', ')}`); continue; }
+    if (kinds.length && !kinds.includes(r.boss)) e.push(`mechanics.${id}.boss: no data/profiles.json row "${String(r.boss)}"`);
+    if (seen.has(r.boss)) e.push(`mechanics.${id}.boss: "${String(r.boss)}" already has the row ${seen.get(r.boss)} (one signature move per boss)`); else seen.set(r.boss, id);
+    e.push(...check(id, r, moves, ctx));
+  }
+  return e;
 }
 
 // one file: returns a list of error strings (empty = valid)
@@ -337,6 +569,10 @@ export function validateFile(name, json) {
   if (name === 'feel-sim') errors.push(...checkFeelSim(json));
   if (name === 'feel-clash') errors.push(...checkFeelClash(json));
   if (name === 'feel-hitreact') errors.push(...checkHitreact(json));
+  if (name === 'fight') {   // clockJumpS: a frame gap this long or longer is a clock jump (a resync, not fight time), above the per-frame cap; buildLabelChars: how much of build.txt the page shows
+    if (!Number.isFinite(json.clockJumpS) || json.clockJumpS <= json.frameDtMaxS || json.clockJumpS > 3600) errors.push(`${name}.clockJumpS: must be a finite number of seconds above frameDtMaxS and at most 3600`);
+    if (!Number.isInteger(json.buildLabelChars) || json.buildLabelChars < 1 || json.buildLabelChars > 40) errors.push(`${name}.buildLabelChars: must be a whole number 1 to 40`);
+  }
   if (name === 'fight' && json.camera) {   // the lens zoom (src/fight/camera-zoom.ts): a finite number in 0.5..2 (1 = the camera as before); an absent one would reach the page as NaN
     const z = json.camera.zoom;
     if (!Number.isFinite(z) || z < 0.5 || z > 2) errors.push(`${name}.camera.zoom: must be a finite number in 0.5..2`);
@@ -344,12 +580,67 @@ export function validateFile(name, json) {
     errors.push(...checkWideLens(json.camera.wide, name));
   }
   if (name === 'commentator') errors.push(...checkCommentator(json));
+  if (name === 'legends') errors.push(...checkLegends(json));
+  if (name === 'hud-text') errors.push(...checkHudText(json));
+  if (name === 'practice-hints') errors.push(...checkPracticeHints(json));
   banned(json, name, errors);
   return errors;
 }
 
+// The fight HUD's own words (data/hud-text.json): every leaf is a non-blank string (the key sets are SCHEMA's).
+function checkHudText(json) {
+  const e = [], walk = (v, p) => { if (v && typeof v === 'object') { for (const [k, x] of Object.entries(v)) if (k !== 'about') walk(x, `${p}.${k}`); } else if (typeof v !== 'string' || !v.trim()) e.push(`${p}: must be a non-blank string`); };
+  walk(json, 'hud-text');
+  return e;
+}
+
+// The practice HUD's lines (data/practice-hints.json): every named line and part exists as a string, and a {piece} in a text is one the code fills for that line.
+const HINT_PIECES = {
+  bothFell: [], fell: [], beatLegend: ['legend'], defeated: ['foe'], tapFight: ['counter'], counter: ['who'], classFoe: ['foe'], drawing: ['weapon'], postureBroken: [], chambered: [], charged: [], charging: [], exhausted: [], followThrough: [],
+  kicked: [], hit: ['kind', 'name', 'damage', 'wall'], miss: [], hurt: ['kind', 'damage', 'wall'], blocked: ['kind', 'stamina', 'chip'], parried: [], dodged: [], brokenCharged: [], brokenKick: [], broken: [], enemyBlocked: ['foe'], enemyBroken: [],
+  enemyParried: [], enemyDodged: ['foe'], enemyKicked: ['damage'], traded: ['dealt', 'damage'], postureBrokeSelf: [], enemyPostureBroken: [], guarding: [], parryMissed: [], postureBreaking: [],
+};
+function checkPracticeHints(json) {
+  const e = [], n = 'practice-hints', pieces = (t) => [...String(t).matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+  for (const k of ['defaultFoe', 'followUp']) if (typeof json[k] !== 'string' || !json[k].trim()) e.push(`${n}.${k}: must be a non-blank string`);
+  if (!json.moves || typeof json.moves !== 'object') e.push(`${n}.moves: must be an object of move id -> name`);
+  else for (const [id, t] of Object.entries(json.moves)) if (typeof t !== 'string' || !t.trim()) e.push(`${n}.moves.${id}: must be a non-blank string`);
+  const lines = json.lines ?? {};
+  for (const [id, want] of Object.entries(HINT_PIECES)) {
+    if (typeof lines[id] !== 'string') { e.push(`${n}.lines.${id}: must be a string`); continue; }
+    for (const p of pieces(lines[id])) if (!want.includes(p)) e.push(`${n}.lines.${id}: unknown piece {${p}}`);
+  }
+  for (const id of Object.keys(lines)) if (!(id in HINT_PIECES)) e.push(`${n}.lines.${id}: unknown line`);
+  const P = json.parts ?? {};
+  for (const [id, want] of [['wall', ['text']], ['chip', ['damage']]]) {
+    if (typeof P[id] !== 'string') e.push(`${n}.parts.${id}: must be a string`);
+    else for (const p of pieces(P[id])) if (!want.includes(p)) e.push(`${n}.parts.${id}: unknown piece {${p}}`);
+  }
+  for (const [id, keys] of [['hitKind', ['stop', 'counter', 'clean']], ['hurtKind', ['stop', 'trip', 'counter', 'plain']], ['blockedKind', ['perfect', 'plain']], ['wallText', ['hit', 'hurt']]]) {
+    const m = P[id];
+    if (!m || typeof m !== 'object') { e.push(`${n}.parts.${id}: must be an object`); continue; }
+    for (const k of keys) if (typeof m[k] !== 'string' || !m[k].trim()) e.push(`${n}.parts.${id}.${k}: must be a non-blank string`);
+    for (const k of Object.keys(m)) if (!keys.includes(k)) e.push(`${n}.parts.${id}.${k}: unknown key`);
+  }
+  return e;
+}
+
+// The Pit rank legends (data/legends.json): character id -> exactly ten rows of { name, source, backstory }, each a non-blank string, no other key.
+function checkLegends(json) {
+  const e = [], n = 'legends';
+  if (!json.ranks || typeof json.ranks !== 'object' || Array.isArray(json.ranks)) return [`${n}.ranks: must be an object keyed by character id`];
+  for (const [id, list] of Object.entries(json.ranks)) {
+    if (!Array.isArray(list) || list.length !== 10) { e.push(`${n}.ranks.${id}: must list exactly ten ranks`); continue; }
+    list.forEach((r, i) => {
+      for (const k of Object.keys(r ?? {})) if (!['name', 'source', 'backstory'].includes(k)) e.push(`${n}.ranks.${id}[${i}].${k}: unknown key`);
+      for (const k of ['name', 'source', 'backstory']) if (typeof r?.[k] !== 'string' || !r[k].trim()) e.push(`${n}.ranks.${id}[${i}].${k}: must be a non-blank string`);
+    });
+  }
+  return e;
+}
+
 // The arena commentator (src/commentator.ts, data/commentator.json): event id -> lines, cooldown, probability, optional params; caps, caption box, thresholds. Values are checked here so a bad row stops the page at load, not mid-fight.
-const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'wearing_parts'];
+const COMMENTATOR_EVENTS = ['fight_start', 'first_hit', 'miss_streak', 'guard_break', 'hero_low', 'boss_low', 'boss_kill', 'star_1', 'star_2', 'cut', 'hero_death', 'respawn', 'retrieve', 'roll_spam', 'idle', 'parry_wall', 'wearing_parts', 'limb_loss'];
 const COMMENTATOR_DENY = /\b(?:fuck\w*|shit\w*|cunt|nigg\w*|fag\w*|retard\w*|rape\w*|whore|slut|bitch\w*|trump|biden|obama|putin|hitler|elon|musk)\b/i;   // PG-13: no strong profanity, slurs or real people
 export const COMMENTATOR_MIN_LINES = 6;
 export function checkCommentator(json) {
@@ -358,14 +649,16 @@ export function checkCommentator(json) {
   if (typeof json.storageKey !== 'string' || !json.storageKey) e.push(`${n}.storageKey: must be a non-empty string`);
   if (typeof json.seed !== 'string' || !json.seed) e.push(`${n}.seed: must be a non-empty string`);
   const only = (p, o, keys) => { if (!o || typeof o !== 'object') { e.push(`${n}.${p}: must be an object`); return false; } for (const k of Object.keys(o)) if (!keys.includes(k)) e.push(`${n}.${p}.${k}: unknown key`); return true; };
-  if (only('caps', json.caps, ['perSession', 'perMinute', 'gapSeconds'])) { fin('caps.perSession', json.caps.perSession, 1, 1000); fin('caps.perMinute', json.caps.perMinute, 1, 60); fin('caps.gapSeconds', json.caps.gapSeconds, 0, 120); if (!Number.isInteger(json.caps.perMinute)) e.push(`${n}.caps.perMinute: must be an integer`); }
-  if (only('caption', json.caption, ['seconds', 'fadeMs', 'maxChars', 'topPct', 'maxWidthPct', 'fontPx', 'colour', 'shadow', 'zIndex'])) {
+  if (only('caps', json.caps, ['perSession', 'perMinute', 'gapSeconds', 'minuteSeconds'])) { fin('caps.minuteSeconds', json.caps.minuteSeconds, 1, 600); fin('caps.perSession', json.caps.perSession, 1, 1000); fin('caps.perMinute', json.caps.perMinute, 1, 60); fin('caps.gapSeconds', json.caps.gapSeconds, 0, 120); if (!Number.isInteger(json.caps.perMinute)) e.push(`${n}.caps.perMinute: must be an integer`); }
+  if (only('caption', json.caption, ['seconds', 'fadeMs', 'maxChars', 'topPct', 'maxWidthPct', 'fontPx', 'colour', 'shadow', 'zIndex', 'css'])) {
     const c = json.caption; fin('caption.seconds', c.seconds, 0.5, 20); fin('caption.fadeMs', c.fadeMs, 0, 2000); fin('caption.maxChars', c.maxChars, 10, 200); fin('caption.topPct', c.topPct, 0, 90); fin('caption.maxWidthPct', c.maxWidthPct, 20, 100); fin('caption.fontPx', c.fontPx, 8, 40); fin('caption.zIndex', c.zIndex, 0, 1000);
     if (!/^#[0-9a-f]{6}$/i.test(c.colour ?? '')) e.push(`${n}.caption.colour: must be #rrggbb`);
     if (typeof c.shadow !== 'string') e.push(`${n}.caption.shadow: must be a string`);
+    if (typeof c.css !== 'string' || !c.css.trim()) e.push(`${n}.caption.css: must be the caption stylesheet (a non-empty string)`);
+    else for (const [, slot] of c.css.matchAll(/\{(\w+)\}/g)) if (!['topPct', 'zIndex', 'fadeMs', 'maxWidthPct', 'colour', 'fontPx', 'shadow'].includes(slot)) e.push(`${n}.caption.css: {${slot}} is not a slot of the caption row`);
   }
-  if (only('thresholds', json.thresholds, ['heroLowPct', 'bossLowPct', 'missStreak', 'rollCount', 'rollWindowSeconds', 'idleSeconds'])) {
-    const t = json.thresholds; fin('thresholds.heroLowPct', t.heroLowPct, 1, 99); fin('thresholds.bossLowPct', t.bossLowPct, 1, 99); fin('thresholds.missStreak', t.missStreak, 2, 50); fin('thresholds.rollCount', t.rollCount, 2, 50); fin('thresholds.rollWindowSeconds', t.rollWindowSeconds, 0.5, 60); fin('thresholds.idleSeconds', t.idleSeconds, 3, 600);
+  if (only('thresholds', json.thresholds, ['heroLowPct', 'bossLowPct', 'missStreak', 'rollCount', 'rollWindowSeconds', 'idleSeconds', 'lowResetPct', 'idleMoveEpsilon', 'starTwoLevel'])) {
+    const t = json.thresholds; fin('thresholds.lowResetPct', t.lowResetPct, 1, 99); fin('thresholds.idleMoveEpsilon', t.idleMoveEpsilon, 0, 10); fin('thresholds.starTwoLevel', t.starTwoLevel, 1, 10);fin('thresholds.heroLowPct', t.heroLowPct, 1, 99); fin('thresholds.bossLowPct', t.bossLowPct, 1, 99); fin('thresholds.missStreak', t.missStreak, 2, 50); fin('thresholds.rollCount', t.rollCount, 2, 50); fin('thresholds.rollWindowSeconds', t.rollWindowSeconds, 0.5, 60); fin('thresholds.idleSeconds', t.idleSeconds, 3, 600);
     for (const k of ['missStreak', 'rollCount']) if (!Number.isInteger(t[k])) e.push(`${n}.thresholds.${k}: must be an integer`);
   }
   if (!json.partNames || typeof json.partNames !== 'object' || Object.values(json.partNames).some((v) => typeof v !== 'string' || !v)) e.push(`${n}.partNames: must map unit ids to non-empty names`);
@@ -687,7 +980,8 @@ export const SKYVIEW_KEYS = ['fogColor', 'fogDensity', 'fadeStartDegrees', 'fade
 function checkSkyViews(s) {
   const e = [], at = (p, m) => e.push(`stage.skyline.views.${p}: ${m}`), v = s.views;
   if (v === null || typeof v !== 'object' || Array.isArray(v)) return ['stage.skyline.views: must be an object'];
-  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'foeFadeQuery', 'foeFadeV1', 'default', 'variants'].includes(k)) at(k, 'unknown key');
+  for (const k of Object.keys(v)) if (!['about', 'query', 'v1', 'foeFadeQuery', 'foeFadeV1', 'floorOrderOffset', 'default', 'variants'].includes(k)) at(k, 'unknown key');
+  if (!Number.isInteger(v.floorOrderOffset) || v.floorOrderOffset < 1 || v.floorOrderOffset > 1000) at('floorOrderOffset', 'must be an integer 1..1000 (the floor draws this many render orders after the strip)');
   if (typeof v.query !== 'string' || !/^[a-z0-9]+$/i.test(v.query) || v.query === s.query) at('query', 'must be a plain word other than skyline.query');
   if (typeof v.v1 !== 'string' || !/^[a-z0-9]+$/i.test(v.v1)) at('v1', 'must be a plain word (the link value for the look before the variants)');
   for (const k of ['foeFadeQuery', 'foeFadeV1']) if (typeof v[k] !== 'string' || !/^[a-z0-9]+$/i.test(v[k])) at(k, 'must be a plain word');
@@ -799,7 +1093,9 @@ export function checkFeelClash(j) {
   if (typeof j.pushback?.heavyOnly !== 'boolean') at('pushback.heavyOnly', 'must be a boolean');
   if (typeof j.event?.type !== 'string' || !j.event.type || typeof j.event?.log !== 'string' || !j.event.log) at('event', 'type and log must be non-empty strings');
   for (const k of ['weaponArmRad', 'guardArmRad', 'spineRad']) if (!Array.isArray(j.hero?.[k]) || j.hero[k].length !== 3 || j.hero[k].some((v) => !fin(v) || Math.abs(v) > 1.5)) at(`hero.${k}`, 'must be [x, y, z] radians, each within +-1.5');
-  range('hero.maxStrength', j.hero?.maxStrength, 1, 10);
+  range('hero.maxStrength', j.hero?.maxStrength, 1, 10); range('hero.minScale', j.hero?.minScale, 0.01, 1); range('timing.dipFloor', j.timing?.dipFloor, 0.001, 1);
+  if (!Number.isInteger(j.pushback?.digits) || j.pushback.digits < 0 || j.pushback.digits > 8) at('pushback.digits', 'must be an integer 0..8');
+  for (const [k, lo, hi] of [['gravityMps2', 0, 100], ['hideY', -100000, 0], ['spin', -10, 10], ['upBase', 0, 10], ['upMul', 1, 1000], ['speedBase', 0, 10], ['speedMul', 1, 1000], ['mod', 1, 1000]]) range(`spark.${k}`, j.spark?.[k], lo, hi);
   for (const k of ['weaponArm', 'guardArm', 'spine']) if (typeof j.hero?.bones?.[k] !== 'string' || !j.hero.bones[k]) at(`hero.bones.${k}`, 'must be a bone name');
   const s = j.spark ?? {};
   if (typeof s.on !== 'boolean') at('spark.on', 'must be a boolean');
@@ -917,6 +1213,11 @@ export function validateZoneIndex(index, rows) {
 const KNOB_RANGE = { reaction: [1, 120, -1], accuracy: [0, 1, 1], parry: [0, 1, 1], dodge: [0, 1, 1], aggression: [0, 1, 1], pressure: [0, 1, 1], discipline: [0, 100, -1], lapse: [0, 1, -1], read: [0, 1, 1], foeHealthScale: [0.1, 1, 1], foeDamageScale: [0.1, 1, 1] };
 
 // data/difficulty.json + data/profiles.json: every row has every knob in range, the ladder runs 1..N with each knob moving one way (never back), the default and `profile` ids resolve, a profile's brain is a brains.json row
+/** data/progression.json countCap: the most one kill count or trophy count can reach (the save cleaner drops a stored count above it): a whole number from 1. */
+export function checkProgressionCaps(file) {
+  return Number.isSafeInteger(file.countCap) && file.countCap >= 1 ? [] : [`progression.countCap: ${String(file.countCap)} is not a whole number from 1 (the most one kill or trophy count can reach)`];
+}
+
 export function checkDifficulty(difficulty, profiles, brains, fight) {
   const errors = [];
   const rows = difficulty.rows ?? [];
@@ -930,6 +1231,7 @@ export function checkDifficulty(difficulty, profiles, brains, fight) {
   rows.forEach((r, i) => { if (r.id !== i + 1) errors.push(`difficulty.rows[${i}]: id ${String(r.id)}, the ladder runs 1..${rows.length} in order`); check(r, `difficulty.rows[${r.id}]`); });
   (difficulty.named ?? []).forEach((r) => { if (typeof r.id !== 'string' || rows.some((x) => x.id === r.id)) errors.push(`difficulty.named[${String(r.id)}]: a named row has a string id of its own`); check(r, `difficulty.named[${r.id}]`); });
   for (const [k, [, , dir]] of Object.entries(KNOB_RANGE)) for (let i = 1; i < rows.length; i++) if ((rows[i][k] - rows[i - 1][k]) * dir < 0) errors.push(`difficulty.rows[${rows[i].id}].${k}: ${rows[i][k]} moves the wrong way from row ${rows[i - 1].id}'s ${rows[i - 1][k]} (the ladder is monotonic)`);
+  if (!Number.isInteger(difficulty.attackDialScale) || difficulty.attackDialScale < 1 || difficulty.attackDialScale > 1000) errors.push(`difficulty.attackDialScale: ${String(difficulty.attackDialScale)} is not a whole number from 1 to 1000 (the sheet attack dial is (damage scale - 1) x this)`);
   if (!rows.some((r) => r.id === difficulty.default)) errors.push(`difficulty.default: ${String(difficulty.default)} is not a ladder row`);
   for (const p of profiles.profiles ?? []) {
     if (p.brain !== null && !(brains.brains ?? []).some((b) => b.id === p.brain)) errors.push(`profiles.${p.id}.brain: '${p.brain}' is not a brains.json row`);
@@ -1035,6 +1337,7 @@ export function checkDailyPit(j, ctx) {
   const word = (v) => typeof v === 'string' && /^[a-z0-9-]{1,32}$/.test(v), text = (v, n) => typeof v === 'string' && v.trim().length > 0 && v.length <= n;
   if (typeof j.salt !== 'string' || !/^[a-z0-9]{1,16}$/.test(j.salt)) e.push(`${at}.salt: 1-16 lower-case letters or digits`);
   if (!Number.isInteger(j.attemptsPerDay) || j.attemptsPerDay < 1 || j.attemptsPerDay > 99) e.push(`${at}.attemptsPerDay: a whole number 1 to 99`);
+  for (const k of ['points', 'count']) if (!Number.isSafeInteger(j.saveCaps?.[k]) || j.saveCaps[k] < 1) e.push(`${at}.saveCaps.${k}: a whole number from 1 (the most a stored score or count can be before the save cleaner drops the field)`);
   if (typeof j.modeKey !== 'string' || !/^[A-Za-z0-9._-]{3,60}$/.test(j.modeKey)) e.push(`${at}.modeKey: 3-60 letters, digits, . _ -`);
   if (typeof j.event !== 'string' || !/^[a-z0-9:_-]{3,60}$/.test(j.event)) e.push(`${at}.event: 3-60 lower-case letters, digits, : _ -`);
   if (typeof j.cutLog !== 'string' || !/^[A-Za-z0-9_]{3,40}$/.test(j.cutLog)) e.push(`${at}.cutLog: the global name of the cut log`);
@@ -1068,6 +1371,9 @@ export function checkDailyPit(j, ctx) {
   if (!Array.isArray(sc.fields) || sc.fields.length !== FIELDS.length || !FIELDS.every((f) => sc.fields.includes(f))) e.push(`${at}.score.fields: the order of ${FIELDS.join(', ')} (each once)`);
   const ui = j.ui ?? {};
   if (!Number.isInteger(ui.zIndex) || ui.zIndex < 1 || ui.zIndex > 9999) e.push(`${at}.ui.zIndex: a whole number 1 to 9999`);
+  const CSS_SLOTS = ['z', 'zdown', 'zup', 'gold', 'ink', 'panel', 'line', 'win', 'lose'];   // the slots src/daily-pit-ui.ts dailyCss fills
+  if (!Array.isArray(ui.css) || !ui.css.length || ui.css.some((r) => typeof r !== 'string' || !r.trim())) e.push(`${at}.ui.css: a non-empty list of stylesheet rules (strings)`);
+  else for (const r of ui.css) for (const [, slot] of r.matchAll(/\{([a-z]+)\}/g)) if (!CSS_SLOTS.includes(slot)) e.push(`${at}.ui.css: {${slot}} is not a slot (${CSS_SLOTS.join(', ')})`);
   for (const k of ['gold', 'ink', 'panel', 'line', 'win', 'lose']) if (typeof ui.colour?.[k] !== 'string' || !/^(#[0-9a-fA-F]{6}|rgba?\([0-9., ]+\))$/.test(ui.colour[k])) e.push(`${at}.ui.colour.${k}: #rrggbb or rgb()/rgba()`);
   const TEXT = ['button', 'buttonLeave', 'cardTitle', 'cardToday', 'cardBoss', 'cardModifier', 'cardAttempts', 'cardBest', 'cardBestNone', 'cardBestEver', 'fight', 'close', 'banner', 'won', 'lost', 'score', 'time', 'damage', 'parts', 'newBest', 'again', 'back', 'noneLeft'];
   for (const k of TEXT) if (!text(ui.text?.[k], 80)) e.push(`${at}.ui.text.${k}: 1-80 characters`);

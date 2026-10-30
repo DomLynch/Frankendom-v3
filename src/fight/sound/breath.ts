@@ -9,8 +9,7 @@ import type { OpponentId } from '../../roster.ts';
 //   winded  faint, slow, nose-soft close-mic breath · tired  faster, heavier, mouth-bright · gassed  short ragged gasps ·
 //   second wind  one long release exhale as he leaves exhaustion.
 // ?look=fatigue-preview (Web's preview, Dom's spec: breathing may carry the winded/tired bands): the breathing layer's only switch while Dom has not signed the sound off.
-export const breathLook = (search: string): boolean => (new URLSearchParams(search).get('look') ?? '').split(',').includes('fatigue-preview');
-export type Body = { period: number; depth: number; pitch: number };   // × the man's pace · × level · × the band-pass centre
+type Body = { period: number; depth: number; pitch: number };   // × the man's pace · × level · × the band-pass centre
 const MAN: Body = { period: 1, depth: 1, pitch: 1 };
 // Per body: Goblin quick and shallow, big bodies slow and deep, the undead have no lungs. The hero is a man.
 const BODIES: Partial<Record<OpponentId, Body | null>> = {
@@ -19,12 +18,12 @@ const BODIES: Partial<Record<OpponentId, Body | null>> = {
   dwarf: { period: 1.1, depth: 1.1, pitch: .85 }, nightborn: { period: 1.2, depth: .5, pitch: .9 },
   skeleton: null, wraith: null,
 };
-export const bodyOf = (opponent: OpponentId | undefined): Body | null => opponent === undefined ? MAN : opponent in BODIES ? BODIES[opponent]! : MAN;
+const bodyOf = (opponent: OpponentId | undefined): Body | null => opponent === undefined ? MAN : opponent in BODIES ? BODIES[opponent]! : MAN;
 
-export type Plan = { period: number; peak: number; centre: number; inhale: number; ragged: boolean };
+type Plan = { period: number; peak: number; centre: number; inhale: number; ragged: boolean };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * Math.min(1, Math.max(0, t));
 // What the next breath is, or null while he is fresh. Winded starts at level .5 (fatigue.ts WINDED), so the first breath is the faintest.
-export function breathPlan(f: Fatigue, body: Body = MAN): Plan | null {
+function breathPlan(f: Fatigue, body: Body = MAN): Plan | null {
   if (f.band === 0) return null;
   const t = (f.level - .5) / .5, gassed = f.band === 3;
   return {

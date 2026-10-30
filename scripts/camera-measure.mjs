@@ -3,6 +3,7 @@
 // For each of 375x812 (portrait phone), 812x375 (landscape phone) and 1440x900 (desktop) it takes two states: `fight` (the hero engaged with the first boss) and `walk` (the boss killed,
 // the hero walking away from the corpse). One JSON line per state and a <tag>-<shape>-<state>.jpg still. The hero is measured as a 1.8 m column on his own position.
 import { mkdirSync } from 'node:fs';
+import { launchBrowser } from './lib/browser.mjs';
 const { chromium } = await import(process.env.PLAYWRIGHT_MOD ?? 'playwright');
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
@@ -11,7 +12,7 @@ mkdirSync(out, { recursive: true });
 const SHAPES = [['portrait', 375, 812], ['landscape', 812, 375], ['desktop', 1440, 900]];
 const only = process.env.SHAPES ? process.env.SHAPES.split(',') : null;
 const HERO_M = Number(process.env.HERO_M ?? 1.8);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 for (const [shape, width, height] of SHAPES) {
   if (only && !only.includes(shape)) continue;
   const mobile = shape !== 'desktop';

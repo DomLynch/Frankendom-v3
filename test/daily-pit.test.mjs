@@ -37,13 +37,13 @@ test('the table validates, with the cross-file rows: wired, cuttable bosses and 
   for (const id of later) assert.ok(!D.modifiers.some((m) => m.id === id), `${id} is listed as later, not shipped`);
 });
 
-test('every boss in the pool is cuttable: a physics opponents row with a 106 measure AND a cut manifest in physics-chunk.ts', () => {
-  const chunk = readFileSync(new URL('../src/fight/physics-chunk.ts', import.meta.url), 'utf8');
-  const manifests = /export const cutManifests[^=]*=\s*\{([^}]*)\}/.exec(chunk)?.[1] ?? '';
+test('every boss in the pool is cuttable: a physics opponents row with a 106 measure AND a cut manifest in physics-chunk.ts', async () => {
+  const { cutManifests } = await import('../src/fight/physics-chunk.ts');   // the real table, not its text
   for (const id of D.bosses) {
     const body = PROFILES.profiles.find((p) => p.id === id).body ?? PROFILES.defaultBody;
     assert.ok(PHYSICS.opponents.some((o) => o.body === body && o.measure['106']), `${id}: ${body} has a physics row`);
-    assert.match(manifests, new RegExp(`\\b${body}\\b`), `${id}: ${body} has a cut manifest`);
+    assert.equal(typeof cutManifests[body], 'object', `${id}: ${body} has a cut manifest`);
+    assert.ok(cutManifests[body] && Object.keys(cutManifests[body]).length > 0, `${id}: ${body}'s cut manifest is not empty`);
   }
 });
 

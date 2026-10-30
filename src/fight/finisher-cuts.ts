@@ -3,7 +3,7 @@
 // finisher's own camera, blood and sound by its id (finisher-defs.json); the victim's body is the ragdoll, cut where the row says.
 import type { FinisherId } from './finishers.ts';
 
-export type FinisherCutRow = {
+type FinisherCutRow = {
   unit: string | null;                                  // the package's cut unit, or null = no cut (Run Through: the blade stays)
   also?: string[];                                      // M9a: units cut with the same blow after `unit` (Split Crown: head_split with head); a body whose cut GLB lacks one simply leaves it out
   fallback?: string | null;                             // M9a: the unit that stands in when the body's cut GLB does not carry `unit` (a visual unit such as belly_open): null = no cut

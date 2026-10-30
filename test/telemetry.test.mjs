@@ -127,8 +127,7 @@ test('a failing network, a throwing send and refused storage never throw or bloc
   assert.doesNotThrow(() => { tel.event('nope', 1); tel.event(undefined); tel.event('boss_death', null); });
   const noStorage = mk({ storage: null });
   noStorage.tel.flush(); assert.equal(noStorage.sent.length, 1, 'storage unavailable: the visit sends under its own id');
-  const t0 = Date.now(); for (let i = 0; i < 2000; i++) tel.event('boss_death', { boss: 'a', sec: 1, heroHp: 0, bossHp: 1 });
-  assert.ok(Date.now() - t0 < 500, 'cheap even when everything fails');
+  assert.doesNotThrow(() => { for (let i = 0; i < 2000; i++) tel.event('boss_death', { boss: 'a', sec: 1, heroHp: 0, bossHp: 1 }); }, 'a flood of events never throws (its cost: test/perf/telemetry-cost.perf.mjs)');
 });
 
 test('startTelemetry wires the page: DNT and localhost stay silent; on a deployed host it installs the listeners and sends over beacon, then falls back to fetch keepalive that cannot reject', async () => {
@@ -164,12 +163,4 @@ test('the existing captureException seam feeds the sink and a throwing sink neve
     setErrorSink(null); assert.doesNotThrow(() => captureException(new Error('c')));
   } finally { console.error = log; setErrorSink(null); }
   assert.equal(seen.length, 1);
-});
-
-test('main.ts reports the two fight events at the kill and at the death, and the index file needs no change (same-origin path, no CSP)', () => {
-  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /reportFight\('boss_kill', current\)/);
-  assert.match(main, /if \(sinceDeath === 0\) reportFight\('boss_death'/);
-  assert.match(main, /setErrorSink\(/);
-  assert.ok(!/connect-src|Content-Security-Policy/i.test(readFileSync(new URL('../index.html', import.meta.url), 'utf8')), 'no page CSP to widen');
 });

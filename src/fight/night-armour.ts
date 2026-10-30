@@ -5,7 +5,7 @@ import { MeshStandardMaterial, type Mesh } from 'three';
 import { fieldOf } from './catalogue-rows.ts';
 import type { RankLook } from './characters.ts';
 
-export const NIGHT_BRONZE = { color: [0.34, 0.215, 0.1], gain: 1.5, metalness: 0.55, roughness: 0.62, env: 0.55 } as const;
+const NIGHT_BRONZE = { color: [0.34, 0.215, 0.1], gain: 1.5, metalness: 0.55, roughness: 0.62, env: 0.55 } as const;
 export const nightBronzeApplies = (arenaId: string, opponent: string, level: number): boolean => arenaId === 'a' && level === fieldOf(opponent, 'nightBronze');
 
 export function toneNightBronze(look: RankLook): void {

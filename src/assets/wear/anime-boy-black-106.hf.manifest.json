@@ -1,0 +1,473 @@
+{
+ "schema": "cut-pieces/1",
+ "body": "anime-boy-black-106",
+ "rig": "mixamo-106",
+ "source": "anime-boy-black-106.source-plain.glb",
+ "regions": [
+  {
+   "id": "root",
+   "mesh": "piece_root",
+   "detached_by": null
+  },
+  {
+   "id": "upper_torso",
+   "mesh": "piece_upper_torso",
+   "detached_by": "torso_waist"
+  },
+  {
+   "id": "head",
+   "mesh": "piece_head",
+   "detached_by": "head"
+  },
+  {
+   "id": "arm_left",
+   "mesh": "piece_arm_left",
+   "detached_by": "arm_left"
+  },
+  {
+   "id": "arm_right",
+   "mesh": "piece_arm_right",
+   "detached_by": "arm_right"
+  },
+  {
+   "id": "leg_left",
+   "mesh": "piece_leg_left",
+   "detached_by": "leg_left"
+  },
+  {
+   "id": "leg_right",
+   "mesh": "piece_leg_right",
+   "detached_by": "leg_right"
+  },
+  {
+   "id": "hand_left",
+   "mesh": "piece_hand_left",
+   "detached_by": "hand_left",
+   "cut": "wrist (ForeArm to Hand)"
+  },
+  {
+   "id": "foot_left",
+   "mesh": "piece_foot_left",
+   "detached_by": "foot_left",
+   "cut": "ankle (Leg to Foot)"
+  },
+  {
+   "id": "hand_right",
+   "mesh": "piece_hand_right",
+   "detached_by": "hand_right",
+   "cut": "wrist (ForeArm to Hand)"
+  },
+  {
+   "id": "foot_right",
+   "mesh": "piece_foot_right",
+   "detached_by": "foot_right",
+   "cut": "ankle (Leg to Foot)"
+  }
+ ],
+ "caps": [
+  {
+   "id": "cap_neck_head",
+   "mesh": "cap_neck_head",
+   "region": "head",
+   "shown_when_cut": "head"
+  },
+  {
+   "id": "cap_neck_torso",
+   "mesh": "cap_neck_torso",
+   "region": "upper_torso",
+   "shown_when_cut": "head"
+  },
+  {
+   "id": "cap_shoulder_left_arm",
+   "mesh": "cap_shoulder_left_arm",
+   "region": "arm_left",
+   "shown_when_cut": "arm_left"
+  },
+  {
+   "id": "cap_shoulder_left_torso",
+   "mesh": "cap_shoulder_left_torso",
+   "region": "upper_torso",
+   "shown_when_cut": "arm_left"
+  },
+  {
+   "id": "cap_shoulder_right_arm",
+   "mesh": "cap_shoulder_right_arm",
+   "region": "arm_right",
+   "shown_when_cut": "arm_right"
+  },
+  {
+   "id": "cap_shoulder_right_torso",
+   "mesh": "cap_shoulder_right_torso",
+   "region": "upper_torso",
+   "shown_when_cut": "arm_right"
+  },
+  {
+   "id": "cap_hip_left_leg",
+   "mesh": "cap_hip_left_leg",
+   "region": "leg_left",
+   "shown_when_cut": "leg_left"
+  },
+  {
+   "id": "cap_hip_left_root",
+   "mesh": "cap_hip_left_root",
+   "region": "root",
+   "shown_when_cut": "leg_left"
+  },
+  {
+   "id": "cap_hip_right_leg",
+   "mesh": "cap_hip_right_leg",
+   "region": "leg_right",
+   "shown_when_cut": "leg_right"
+  },
+  {
+   "id": "cap_hip_right_root",
+   "mesh": "cap_hip_right_root",
+   "region": "root",
+   "shown_when_cut": "leg_right"
+  },
+  {
+   "id": "cap_waist_torso",
+   "mesh": "cap_waist_torso",
+   "region": "upper_torso",
+   "shown_when_cut": "torso_waist"
+  },
+  {
+   "id": "cap_waist_root",
+   "mesh": "cap_waist_root",
+   "region": "root",
+   "shown_when_cut": "torso_waist"
+  }
+ ],
+ "planes": {
+  "neck": {
+   "point": [
+    -0.0007,
+    1.58165,
+    -0.0041
+   ],
+   "normal": [
+    0.002216,
+    0.987188,
+    0.159546
+   ],
+   "source": "half way from the Neck joint to the Head joint, normal along Neck to Head"
+  },
+  "shoulder_left": {
+   "point": [
+    0.147,
+    1.4853,
+    0.0011
+   ],
+   "normal": [
+    0.999977,
+    0,
+    0.006834
+   ],
+   "source": "LeftArm joint, normal along the upper arm bone with its vertical part dropped (a plane square to a drooping arm would cut into the flank)"
+  },
+  "shoulder_right": {
+   "point": [
+    -0.1485,
+    1.4853,
+    0.0011
+   ],
+   "normal": [
+    -0.999977,
+    0,
+    0.00683
+   ],
+   "source": "RightArm joint, normal along the upper arm bone with its vertical part dropped (a plane square to a drooping arm would cut into the flank)"
+  },
+  "hip_left": {
+   "point": [
+    0.0841,
+    1.0451,
+    0.011
+   ],
+   "normal": [
+    0.616702,
+    -0.772336,
+    0.152234
+   ],
+   "source": "LeftUpLeg joint, normal along the thigh turned the least that puts the plane through the crotch apex"
+  },
+  "hip_right": {
+   "point": [
+    -0.0856,
+    1.0451,
+    0.011
+   ],
+   "normal": [
+    -0.616702,
+    -0.772336,
+    0.152234
+   ],
+   "source": "RightUpLeg joint, normal along the thigh turned the least that puts the plane through the crotch apex"
+  },
+  "waist": {
+   "point": [
+    -0.0008,
+    1.2295,
+    0.0078
+   ],
+   "normal": [
+    0,
+    0.999984,
+    0.005694
+   ],
+   "source": "Spine joint, normal along Hips to Spine"
+  }
+ },
+ "internal_planes": {
+  "hip_split": {
+   "point": [
+    -0.00075,
+    1.0451,
+    0.011
+   ],
+   "normal": [
+    1,
+    0,
+    0
+   ],
+   "source": "internal: bisector of the two hip planes, separates the legs where both hip half-spaces overlap (no cap of its own)"
+  }
+ },
+ "plane_frame": {
+  "about": "plane points are in the measure row's coordinates (floor-lifted bind pose, metres); add bind_offset to get the GLB's bind-pose world space; vertex_to_world is the identity in the cut GLB (written in metres); source_vertex_to_world is the matrix the source GLB's stored vertex space needed",
+  "bind_offset": [
+   0.000024,
+   0.045453,
+   0.000018
+  ],
+  "crotch_apex": [
+   -0.00075,
+   0.9731,
+   -0.010553
+  ],
+  "vertex_to_world": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1
+  ],
+  "source_vertex_to_world": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0.999999966,
+   0,
+   0,
+   0,
+   0,
+   0.999999966,
+   0,
+   0,
+   2e-9,
+   0,
+   1
+  ]
+ },
+ "stats": {
+  "vertices_in": 29220,
+  "vertices_out": 30676,
+  "cap_vertices": 1196,
+  "triangles_in": 39548,
+  "triangles_out": 41068,
+  "triangles_split": 754,
+  "split_vertices_created": 818,
+  "watertight": false,
+  "watertight_at_cuts": false,
+  "open_edges": 584,
+  "open_edges_at_cuts": 0,
+  "open_edges_native": 584,
+  "source_open_edges": 584,
+  "source_non_manifold_edges": 142,
+  "non_manifold_edges": 136,
+  "orphan_weights": 0,
+  "hair_triangles": 0,
+  "hair_vertices": 0,
+  "fragments": 140,
+  "fragments_reassigned_by_bones": 0,
+  "triangles_reassigned_by_bones": 0,
+  "weights_rebound": 6414,
+  "weights_truncated_to_4": 0,
+  "caps_missing": [],
+  "cap_loops": 32,
+  "cap_holes": 2,
+  "cap_open_chains": 0,
+  "cap_gaps_bridged": 0,
+  "crack_vertices_snapped": 0,
+  "cap_fallback_loops": 0,
+  "cap_nonplanar_loops": 2,
+  "cap_forced_ears": 0,
+  "cap_bridge_fallbacks": 0,
+  "cap_inward_triangles": 0,
+  "pieces": {
+   "root": {
+    "vertices": 1000,
+    "triangles": 1372
+   },
+   "upper_torso": {
+    "vertices": 1762,
+    "triangles": 2454
+   },
+   "head": {
+    "vertices": 22126,
+    "triangles": 28618
+   },
+   "arm_left": {
+    "vertices": 1402,
+    "triangles": 2063
+   },
+   "arm_right": {
+    "vertices": 1402,
+    "triangles": 2063
+   },
+   "leg_left": {
+    "vertices": 1492,
+    "triangles": 2249
+   },
+   "leg_right": {
+    "vertices": 1492,
+    "triangles": 2249
+   }
+  },
+  "caps": {
+   "cap_neck_head": {
+    "vertices": 148,
+    "triangles": 144
+   },
+   "cap_neck_torso": {
+    "vertices": 148,
+    "triangles": 144
+   },
+   "cap_shoulder_left_arm": {
+    "vertices": 87,
+    "triangles": 83
+   },
+   "cap_shoulder_left_torso": {
+    "vertices": 87,
+    "triangles": 83
+   },
+   "cap_shoulder_right_arm": {
+    "vertices": 87,
+    "triangles": 83
+   },
+   "cap_shoulder_right_torso": {
+    "vertices": 87,
+    "triangles": 83
+   },
+   "cap_hip_left_leg": {
+    "vertices": 95,
+    "triangles": 89
+   },
+   "cap_hip_left_root": {
+    "vertices": 89,
+    "triangles": 83
+   },
+   "cap_hip_right_leg": {
+    "vertices": 95,
+    "triangles": 89
+   },
+   "cap_hip_right_root": {
+    "vertices": 89,
+    "triangles": 83
+   },
+   "cap_waist_torso": {
+    "vertices": 92,
+    "triangles": 88
+   },
+   "cap_waist_root": {
+    "vertices": 92,
+    "triangles": 88
+   }
+  },
+  "watertight_by_region": {
+   "root": {
+    "boundary_edges": 10,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 10,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "upper_torso": {
+    "boundary_edges": 34,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 34,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "head": {
+    "boundary_edges": 516,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 516,
+    "non_manifold_edges": 136,
+    "degenerate_triangles": 54,
+    "at_cuts": []
+   },
+   "arm_left": {
+    "boundary_edges": 0,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 0,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "arm_right": {
+    "boundary_edges": 0,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 0,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "leg_left": {
+    "boundary_edges": 12,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 12,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   },
+   "leg_right": {
+    "boundary_edges": 12,
+    "open_edges_at_cuts": 0,
+    "open_edges_native": 12,
+    "non_manifold_edges": 0,
+    "degenerate_triangles": 0,
+    "at_cuts": []
+   }
+  }
+ },
+ "handsfeet": {
+  "schema_note": "hand/foot pieces split from the arm/leg pieces by skin weight, no caps (collars hide the step)",
+  "tool": "tools/parts-lab/cut_hands_feet.mjs",
+  "stats": {
+   "piece_hand_left": 1127,
+   "piece_arm_left kept": 552,
+   "piece_foot_left": 691,
+   "piece_leg_left kept": 1558,
+   "piece_hand_right": 1128,
+   "piece_arm_right kept": 551,
+   "piece_foot_right": 691,
+   "piece_leg_right kept": 1558
+  }
+ }
+}

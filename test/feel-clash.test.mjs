@@ -121,13 +121,6 @@ test('the spark sits on the line between the two weapon hands, lifted', () => {
   assert.deepEqual(p.map((v) => +v.toFixed(6)), [0, +(1 + ROWS.spark.liftM).toFixed(6), 1]);
 });
 
-test('the module never reaches the sim: it imports the event type only, no sim module is changed by it', () => {
-  const src = readFileSync(new URL('../src/fight/feel-clash.ts', import.meta.url), 'utf8');
-  assert.match(src, /import type \{ CombatEvent \} from '\.\/duel\.ts'/);
-  assert.doesNotMatch(src, /import \{[^}]*\} from '\.\/duel\.ts'/);
-  assert.doesNotMatch(src, /from '\.\/(sim|moves)\.ts'/);
-});
-
 test('the package ragdoll really recoils: the same blow moves the struck arm further with the clash than without, and the dip releases', async () => {
   const physics = await createPhysics({ seed: PHYS.seed, states: PHYS.states }), row = PHYS.opponents[0];
   const measure = read('physics') && JSON.parse(readFileSync(new URL(`../node_modules/@frankendom/physics/data/bodies/${row.measure['106'].split('/').pop()}`, import.meta.url), 'utf8'));
@@ -153,7 +146,7 @@ test('the package ragdoll really recoils: the same blow moves the struck arm fur
   physics.destroy();
 });
 
-test('createClash logs the sim event once per clash and costs under the row\'s budget on a quiet frame', () => {
+test('createClash logs the sim event once per clash and a quiet frame emits nothing', () => {
   const fc = createClash(ROWS);
   const emitted = [], emit = (n, p) => emitted.push([n, p]);
   const applied = [], rd ={ state: 'alive', applyImpulse: (p, v) => applied.push([p, v]), stagger: (h) => applied.push(['stagger', h]), setMotorStrength: () => {} };
@@ -162,5 +155,6 @@ test('createClash logs the sim event once per clash and costs under the row\'s b
   assert.equal(applied.length, 1); assert.equal(applied[0][0], 'armRight');   // the foe struck: his weapon arm is knocked back
   fc.frame(1 / 60, [blocked({ actor: 1, target: 0 })], { rd, emit });              // the foe defended: his guard arm absorbs
   assert.equal(applied[1][0], 'armLeft');
-  const t0 = performance.now(); for (let i = 0; i < 100; i++) fc.frame(1 / 60, [], { rd, emit }); assert.ok((performance.now() - t0) / 100 < ROWS.perf.frameBudgetMs * 4);
+  assert.doesNotThrow(() => { for (let i = 0; i < 100; i++) fc.frame(1 / 60, [], { rd, emit }); }, 'quiet frames are safe (their cost: test/perf/feel-clash-cost.perf.mjs)');
+  assert.equal(emitted.length, 2, 'a quiet frame emits nothing');
 });

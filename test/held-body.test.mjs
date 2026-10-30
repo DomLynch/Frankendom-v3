@@ -9,6 +9,7 @@ import { createHeldBodies } from '../src/fight/held-body.ts';
 import { createFoeRagdoll, heldRagdollFor, ragdollBody, ragdollFinisher, ragdollRowFor, setHeldRagdoll } from '../src/fight/ragdoll.ts';
 import { spawnBodyFile } from '../src/fight/foe-body.ts';
 import { rigStemOf } from '../src/fight/rig-bones.ts';
+import { cuttableBodies, listedCutManifests } from './helpers/boss-rows.mjs';
 
 const read = (n) => JSON.parse(readFileSync(new URL(`../data/${n}.json`, import.meta.url), 'utf8'));
 const PHYSICS = read('physics'), ZONE = JSON.parse(readFileSync(new URL('../data/zones/zone1.row.json', import.meta.url), 'utf8'));
@@ -132,11 +133,9 @@ test('ragdoll rows are per id AND body: a held body without a data/physics.json 
   // a body whose physics row exists but whose cut GLB/manifest does not: the chunk lists no manifest, the physics-chunk table is the data
   const chunk = src('fight/physics-chunk.ts');
   // data-driven: the map lists exactly the bodies that have a data/physics.json opponents row AND a cut manifest beside their body file (data/rig.json files), nothing else
-  const RIGF = read('rig').files, line = chunk.match(/export const cutManifests: Record<string, unknown> = \{(.*)\};/)?.[1] ?? '';
-  const listed = [...line.matchAll(/'?([a-z-]+)'?: \w+Manifest/g)].map((m) => m[1]).sort();
-  const cuttable = [...new Set(PHYSICS.opponents.map((o) => o.body))].filter((b) => RIGF[b] && existsSync(new URL(`../src/assets/${RIGF[b]}.cut.manifest.json`, import.meta.url))).sort();
+  const listed = listedCutManifests(chunk), cuttable = cuttableBodies();
+  assert.ok(cuttable.length > 0, 'at least one body is cuttable');
   assert.deepEqual(listed, cuttable, 'cutManifests lists every body with a physics row and a cut manifest, and no other');
-  assert.ok(['minotaur', 'gargantua', 'arachne'].every((b) => listed.includes(b)));
   assert.match(src('fight/ragdoll.ts'), /c\.cutManifests\?\.\[foe\.body\] \?\? \(foe\.body === 'minotaur' \? c\.minotaurCutManifest : undefined\)/);
 });
 

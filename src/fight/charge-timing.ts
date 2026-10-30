@@ -3,7 +3,7 @@ import { CAST_MARGIN, LAND_AT, type Cast } from './special-timing.ts';
 import { SPECIAL_RECOVER } from './special-look.ts';
 import { smooth } from './fx-math.ts';
 import { RACE, DISSOLVE, CUE_LEAD, GATHER, RIDE, BACK_PACE, RUN_PACE } from './charge-timing-rows.ts';   // the dials are rows (charge-timing-defs.json)
-export { RACE, DISSOLVE, CUE_LEAD, GATHER, RIDE, BACK_PACE, RUN_PACE };
+export { RACE };
 
 // The Centurion's Charge (Alexander, his rank-9 boss special), the presentation timeline (World, 2026-10-01; Strategy's brief
 // docs/briefs/specials/centurion-l8-l10-2026-10-01.md). Three-free, like nightfall-timing.ts, whose Cast it reads. No horse: for the last RACE ticks
@@ -22,7 +22,7 @@ export const isCharge = (opponent: string, actor: number, move?: string) => acto
 
 // `front` 0..1: how far the dust has raced (eased in: a gallop gathers speed). `settle` 0..1 after the landing (null before). `fade` 1..0 on a fizzle.
 // Null when nothing is drawn.
-export type Charge = { front: number; settle: number | null; fade: number };
+type Charge = { front: number; settle: number | null; fade: number };
 export function charge(cast: Cast, now: number): Charge | null {
   const age = now - cast.start, run = (at: number) => Math.min(1, Math.max(0, (at - RACE_FROM) / RACE)) ** 1.5;
   const end = cast.landed ?? cast.fizzled ?? (age >= STUCK_AT ? cast.start + STUCK_AT : null);

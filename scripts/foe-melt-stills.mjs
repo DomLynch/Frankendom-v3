@@ -2,16 +2,16 @@
 // origin, the boss is pinned DIST metres behind him (the game's own camera, nothing overridden), the page waits for the strip, then one still per distance.
 //   DISTS=26,34,42 node scripts/foe-melt-stills.mjs <base url> <out dir>
 // Writes <out>/<tag>-<dist>.png for tag in default, foefade-v1. Headless Chromium (Metal on a Mac).
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/foe-melt-stills.mjs <base url> <out dir>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const DISTS = (process.env.DISTS ?? '26,34,42').split(',').map(Number), WAIT = Number(process.env.WAIT_MS ?? 12000);
-const browser = await chromium.launch({ args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ chromeEnv: null });
 for (const [tag, query] of [['default', ''], ['foefade-v1', 'foefade=v1']]) {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
   page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
   await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 240000 });

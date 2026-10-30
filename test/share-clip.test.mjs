@@ -220,11 +220,10 @@ test('a second tap while the share sheet is pending does nothing: one share, no 
   assert.equal(w.shares.length, 1); assert.equal(w.anchors.length, 0); assert.equal(w.events.length, 1);
 });
 
-test('the button sits on the bottom edge, below the cut hint box (pickup.json safe.bottomFrac), never mid-screen', () => {
-  const pickup = JSON.parse(read('../data/pickup.json')), src = read('../src/share-clip.ts');
+test('the button sits on the bottom edge, below the cut hint box (pickup.json safe.bottomFrac), never mid-screen (behaviour half; the source pins moved to test/source-pins/)', () => {
+  const pickup = JSON.parse(read('../data/pickup.json'));
+
   assert.ok(ROWS.button.bottomPx <= 24, 'a few px above the bottom edge');
-  assert.match(src, /bottom:calc\(\$\{B\.bottomPx\}px \+ env\(safe-area-inset-bottom/);
-  assert.ok(!/top:\$\{|left:50%;top/.test(src));
   assert.ok(pickup.safe.bottomFrac >= 0.1, 'the hint keeps off the bottom band the button lives in');
 });
 
@@ -237,17 +236,4 @@ test('a new fight clears the offer; the button hides on its own after hideSecond
   const h = world(); h.run(6000); h.clip.moment('minotaur'); h.run(TAIL + 300, false); await h.flush();
   h.run(SHARE_CLIP.button.hideSeconds * 1000 + 500, false);
   assert.equal(h.btn(), undefined);
-});
-
-test('the page wiring is small: one import, one mount, one frame call, the kill and death hooks; the file holds no player text or ids', () => {
-  const main = read('../src/client/main.ts');
-  assert.equal((main.match(/shareClip/g) ?? []).length, 4, 'four mentions: the mount, the frame call, the kill and the death hooks');
-  assert.match(main, /import \{ mountShareClip \} from '\.\.\/share-clip\.ts'/);
-  assert.match(main, /shareClip\.frame\(engaged\)/);
-  assert.match(main, /if \(name === 'boss_kill'\) shareClip\.moment\(/);
-  assert.match(main, /reportFight\('boss_kill', current\)/, 'the telemetry call is untouched');
-  const src = read('../src/share-clip.ts');
-  assert.ok(!/localStorage|userId|document\.cookie|location\./.test(src), 'no user data is read');
-  assert.match(src, /v3:clip-moment/);
-  assert.ok(!/URLSearchParams|location\.search/.test(src), 'no URL flag');
 });

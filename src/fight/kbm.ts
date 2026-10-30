@@ -5,7 +5,7 @@
 // end of src/style.css, every rule of it scoped to html[data-kbm] or html[data-layout=...] so a portrait phone (no keyboard, no mouse) matches none of it.
 import ROWS from '../../data/input.json' with { type: 'json' };
 
-export type LayoutRow = { id: string; minAspect?: number; maxAspect?: number; minHeight?: number; maxHeight?: number };
+type LayoutRow = { id: string; minAspect?: number; maxAspect?: number; minHeight?: number; maxHeight?: number };
 export type KbmRows = {
   on: boolean; query: string; off: string;
   detect: { media: string; attribute: string; mouseMovePx: number };
@@ -77,7 +77,7 @@ export function validateInput(r: KbmRows): string[] {
   return e;
 }
 
-export const SHIPPED = ROWS as unknown as KbmRows;
+const SHIPPED = ROWS as unknown as KbmRows;
 { const bad = validateInput(SHIPPED); if (bad.length) throw new Error(`data/input.json: ${bad.join('; ')}`); }
 
 /** The rows this page plays: null when the row is off or the link says `?input=v1` (the controls and the screen exactly as before). Throws on a bad row. */

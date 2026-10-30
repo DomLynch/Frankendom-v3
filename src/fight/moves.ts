@@ -168,7 +168,7 @@ export type Level = keyof typeof PROFILES;
 // counter-hits, stop-hits, rear hits and charged blows always do. 0 = staggered by everything, the human default.
 // guard: how this man's guard behaves on top of his weapon's (`Fighter.guardProfile`): the Nightborn's parry window is longer than a man's
 // and a parry of his that meets nothing leaves him open longer — the one mechanism behind "bait him" (see OPPONENTS.nightborn).
-export type Opponent = { id: OpponentId; weapon: WeaponId; rig: RigId; scale: number; health: number; poise: number; profiles: Record<Level, AiProfile>; guard?: Partial<GuardProfile>; regen?: number; speed?: number; pools?: PoolValues; sheet?: Sheet };   // regen: stamina regeneration multiplier; speed: pace multiplier for walking, lunging and stepping (a small fighter is quick on his feet)
+export type Opponent = { id: OpponentId; weapon: WeaponId; rig: RigId; scale: number; health: number; poise: number; profiles: Record<Level, AiProfile>; guard?: Partial<GuardProfile>; regen?: number; speed?: number; pools?: PoolValues; sheet?: Sheet; mechanic?: string };   // regen: stamina regeneration multiplier; mechanic: a boss's signature mechanic id (data/mechanics.json, set per KIND by spawn-kind.ts from data/rings.json; absent = none); speed: pace multiplier for walking, lunging and stepping (a small fighter is quick on his feet)
 export const ARCHETYPES: Record<(typeof ROSTER)[OpponentId]['archetype'], Omit<Opponent, 'id' | 'weapon' | 'rig'>> = buildArchetypes(PROFILES, RULES.health) as unknown as Record<(typeof ROSTER)[OpponentId]['archetype'], Omit<Opponent, 'id' | 'weapon' | 'rig'>>;
 
 // Knobs one opponent carries on top of an archetype he shares (the Skeleton is the Centurion's archetype and stays as he was).
@@ -223,7 +223,7 @@ export function opponentAt(o: Opponent, level: number): Opponent {
   const l = Math.min(LEVELS, Math.max(1, Math.round(level)));
   const poiseAt = POISE_FULL_AT[o.id] ?? LEVEL_ANCHORS.easy, kit = LOADOUT_FROM[o.id], armed = kit && l >= kit.from;
   if (l >= Math.max(LEVEL_ANCHORS.easy, poiseAt) && !armed) return o;
-  const key = `${o.id}:${l}`, hit = bodyCache.get(key);
+  const key = o.mechanic ? `${o.id}:${l}:${o.mechanic}` : `${o.id}:${l}`, hit = bodyCache.get(key);   // a mechanic is part of the body (a clone archetype without one is another body)
   if (hit) return hit;
   const along = (full: number) => Math.min(1, (l - LEVEL_ANCHORS.novice) / (full - LEVEL_ANCHORS.novice));
   const body = { ...o, ...(armed ? { weapon: kit.weapon, guard: { ...o.guard, ...kit.guard } } : {}), poise: Math.round(NOVICE_BODY.poise + (o.poise - NOVICE_BODY.poise) * along(poiseAt)), health: Math.round(o.health * (NOVICE_BODY.health + (1 - NOVICE_BODY.health) * along(LEVEL_ANCHORS.easy))) };

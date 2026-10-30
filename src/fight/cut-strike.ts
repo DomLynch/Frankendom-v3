@@ -33,12 +33,42 @@ export function nextUnit(order: readonly string[], done: { has(unit: string): bo
 export const isNear = (hero: Pt | null, cx: number, cz: number, nearM: number): boolean => !!hero && Math.hypot(cx - hero.x, cz - hero.z) <= nearM;
 
 /** One press: the aimed pass (only when it carries a point), then the next-unit pass. Returns the first event, or null when nothing was cut. */
-export function strikeCut(aim: Aim | null): unknown | null {
+export function strikeCut(aim: Aim | null, nowS: number = clockS()): unknown | null {
   const hero = heroAt ? heroAt() : null;
+  const out = passes(aim, hero);
+  if (out) { pending = null; return out; }
+  if (pendingS > 0 && !pending) for (const d of dyingSources) if (d(hero)) { pending = { aim, at: nowS }; break; }   // nothing cut, a body is still dying near him: keep this press once
+  return null;
+}
+
+/** A ragdoll tells whether a body of its own is still dying (not yet frozen) within nearM of the hero (ragdoll.ts listenTaps). */
+export type DyingSource = (hero: Pt | null) => boolean;
+const dyingSources = new Set<DyingSource>();
+export function registerDyingSource(s: DyingSource): () => void { dyingSources.add(s); return () => { dyingSources.delete(s); }; }
+
+// A press that cut nothing because the body is still dying (cut.tap.needs is 'frozen'; the physics keeps a kill 'dying' for ~2.6 s) is kept ONCE and replayed when a body near the hero freezes.
+// `pendingS` (data/physics.json cut.strike.pendingS, set by the ragdoll from its row) is how long it waits; 0 = never kept. One slot: a press while one waits does not queue another.
+let pendingS = 0;
+let pending: { aim: Aim | null; at: number } | null = null;
+export function setPendingWindow(seconds: number): void { pendingS = seconds; if (!(seconds > 0)) pending = null; }
+const clockS = (): number => (globalThis.performance?.now() ?? Date.now()) / 1000;
+/** Is a press waiting for a body to freeze? (the stills and tests read it) */
+export const strikePending = (): boolean => pending !== null;
+
+function passes(aim: Aim | null, hero: Pt | null): unknown | null {
   for (const pass of aim ? (['aimed', 'next'] as const) : (['next'] as const)) {
     for (const s of [...sources]) { const out = s({ aim, hero, pass }); if (out) return out; }
   }
   return null;
+}
+
+/** Each frame a body is dead: the kept press, if any, is tried again (a frozen body near the hero takes its cut); dropped once it cuts or after `pendingS`. */
+export function strikeReplay(nowS: number = clockS()): unknown | null {
+  if (!pending) return null;
+  if (nowS - pending.at > pendingS) { pending = null; return null; }
+  const out = passes(pending.aim, heroAt ? heroAt() : null);
+  if (out) pending = null;
+  return out;
 }
 
 /** A frozen body that still has units to cut: where it lies (world metres) and how many. */

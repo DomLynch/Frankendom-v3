@@ -22,6 +22,8 @@
     "specialKickAlong": {"value": 0.05},
     "specialKickDrop": {"value": 0.06},
     "specialKickHoldFrames": {"value": 2},
-    "specialKickSettle": {"value": 0.22}
+    "specialKickSettle": {"value": 0.22},
+    "frameRate": {"value": 60},
+    "feelLogMax": {"value": 200}
   }
 }

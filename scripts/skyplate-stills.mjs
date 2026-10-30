@@ -4,11 +4,12 @@
 //   CHROME=<chromium path> node scripts/skyplate-stills.mjs <base url> <out dir> [name=query ...]     e.g.  before='skyplate=v1&pitch=off' after=''
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...specs] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/skyplate-stills.mjs <base url> <out dir> [name=query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const calc = await browser.newPage();
 const sandStart = (a, b) => calc.evaluate(async ([a, b]) => {
   const load = (s) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = `data:image/png;base64,${s}`; });
@@ -21,10 +22,10 @@ const sandStart = (a, b) => calc.evaluate(async ([a, b]) => {
 const results = {};
 for (const spec of specs.length ? specs : ['default=']) {
   const [name, ...rest] = spec.split('='), query = rest.join('=');
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  const page = await browser.newPage(phoneOptions(1));
   page.on('pageerror', (e) => console.error(`${name}: pageerror ${e.message}`));
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000 });
+  await waitPlayable(page, { timeout: 240000 });
   await page.waitForFunction(() => globalThis.__v3Scene, null, { timeout: 60000 }).catch(() => console.error(`${name}: no __v3Scene`));
   await page.waitForTimeout(5000);   // the skyline lands after the first frame and fades in over about a second
   await page.screenshot({ path: `${out}/${name}-ready-375.png` });
