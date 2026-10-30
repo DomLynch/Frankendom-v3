@@ -74,6 +74,7 @@
        {"id": "wrist_r", "bone": "mixamorigRightForeArm", "at": 1, "r": 0.0455, "h": 0.04},
        {"id": "ankle_l", "bone": "mixamorigLeftLeg", "at": 1, "r": 0.0312, "h": 0.05},
        {"id": "ankle_r", "bone": "mixamorigRightLeg", "at": 1, "r": 0.0312, "h": 0.05}]},
+    {"id": "hunter", "measuredOn": "ch43-nonpbr", "source": "original", "wearable": false, "quality": 12, "reason": "The Hunter (data/heat.json hunt.kind): wears Gargantua's placeholder body, so no donor row of its own; not a part donor, no measure row.", "measure": null, "collars": []},
     {"id": "kachujin", "measuredOn": "kachujin", "source": "original", "wearable": false, "quality": 11, "reason": "Kachujin: the leg unit is a boot only, a stray floating ring, a dark scarf neck; no measure row.", "measure": null, "collars": []},
     {"id": "castle-guard", "measuredOn": "castle-guard-01", "source": "derived", "wearable": true, "quality": 1, "reason": "Sir Reginald: best; helmet, pauldron and greave are one armour set with no visible seam (derived GLB, 12 winding fixes).",
      "measure": {"height_m": 2.116, "thigh_len": 0.359, "shin_len": 0.4058, "foot_len": 0.2378, "upper_arm_len": 0.3233, "forearm_len": 0.3183, "neck_len": 0.0895, "torso_len": 0.6177, "shoulder_w": 0.4962, "upper_arm_r": 0.1495, "thigh_r": 0.153},
