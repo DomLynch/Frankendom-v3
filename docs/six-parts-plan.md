@@ -2,6 +2,11 @@
 
 Dom 2026-10-30: hands and feet must be severable and wearable, six parts as always agreed. Limbs, head and torso wear shipped in #319. This is the plan for hands and feet. Plan only.
 
+## Status (2026-10-30)
+- Step 1 (assets) DONE for the hero and the twelve boss bodies: Physics Dev's own hands-and-feet cuts (physics 31e1ac9, `tools/cut-batch.mjs --hands-feet`, sha256 = `expect_sha256_hands_feet` in the package's data/cut-bodies.json) with `piece_hand_*`/`piece_foot_*` AND the wrist/ankle stump caps. The Boss carries four extra accessory caps per foot cut (shoe + trouser collar). The hero's hair is whole on `piece_head` in Physics' file, so `scripts/hero-body/repair-psyche-cut-hair.mjs` is no longer applied to it. The wear donors under `src/assets/wear` stay OpenTrident's no-cap hf files: a worn part carries no cap, and the wear rows were fitted to them.
+- Step 2 (cut event) DONE behind a flag, DEFAULT OFF: `?hands=1` (data/physics.json `cut.hands`; `on` true = everyone). Off, the tap order, the strike, the cue buttons and the hint stay the six old units, the same objects as before. On, `cut.hands.order` (head, hand_left, hand_right, foot_left, foot_right, arm_left, arm_right, leg_left, leg_right, torso_waist) replaces them. `cut.units` is the one copy of the package's unit ids (src/sim/validate.js reads it). Collection needs no code: `corpse:cut` carries `unit`, and data/parts.json already maps hand_*/foot_* to slots.
+- Step 5 (finishers) checked: the finisher rows cut head, limbs and waist; with a hand already off the package's arm cut carries no hand (order rule), with the hand still on it carries it. Sir Reginald's lost arm or leg takes its hand or foot piece with it (`hangs` in data/mechanics.json).
+
 ## What the rest of the game already gives us
 - Physics (3bb5f80, pin PR #320): severable units `hand_left/right`, `foot_left/right`; `rd.cut` carries only what is still attached (a hand goes before its arm). Cut tool opt-in `--hands-feet` adds `piece_hand_*`, `piece_foot_*`, caps `cap_wrist_*`, `cap_ankle_*` (`shown_when_cut` = the unit).
 - OpenTrident PR #13: `<body>-106.cut.hf.glb` + `.hf.manifest.json` for Psyche and 9 donors (no caps), wrist/ankle collar rows in parts-manifest.json.
