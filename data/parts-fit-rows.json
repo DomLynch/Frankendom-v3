@@ -64,6 +64,7 @@
        {"id": "ankle_l", "bone": "mixamorigLeftLeg", "at": 1, "r": 0.0794, "h": 0.05},
        {"id": "ankle_r", "bone": "mixamorigRightLeg", "at": 1, "r": 0.0794, "h": 0.05}]},
     {"id": "sporty-granny", "measuredOn": "sporty-granny", "source": "original", "wearable": true, "quality": 7, "reason": "Nan the Impaler: toon proportions but consistent (blue sleeve and leg, curler head).",
+     "tune": {"foot_left": {"collarR": 0.75, "collarH": 0.8}, "foot_right": {"collarR": 0.75, "collarH": 0.8}},
      "measure": {"height_m": 1.9511, "thigh_len": 0.3292, "shin_len": 0.3207, "foot_len": 0.19, "upper_arm_len": 0.3129, "forearm_len": 0.3172, "neck_len": 0.1046, "torso_len": 0.4654, "shoulder_w": 0.257, "upper_arm_r": 0.0607, "thigh_r": 0.0568},
      "collars": [
        {"id": "neck", "bone": "mixamorigNeck", "at": 0.5, "r": 0.0488, "h": 0.0837},
