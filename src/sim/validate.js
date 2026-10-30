@@ -89,6 +89,10 @@ export const SCHEMA = {
     finite: { 'fit.limits': ['boneLo', 'boneHi', 'heightLo', 'heightHi', 'coverFrac', 'meanK'], 'fit.seam': ['bandM', 'minVerts', 'percentile', 'uvPercentile'], 'fit.eps': ['heightM', 'boneM'], 'fit.skin': ['influences', 'uvStride'], 'wear.budget': ['skinnedDrawsMax', 'partsMax', 'frameMsMedianExtra'] } },
   // Frankendom parts, stage 2 per-body fit rows (src/parts-fit-rows.ts validateFitRows checks the values)
   'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'stem', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'measure', 'collars'] } },
+  // The Flesh Market (src/market.ts validateMarket checks the values): closed key sets
+  'market': { keys: ['about', 'on', 'query', 'value', 'merchant', 'salt', 'stock', 'weights', 'price', 'caps', 'limits', 'lines', 'events', 'ui'],
+    maps: { merchant: ['id', 'name', 'kind', 'body', 'dx', 'dz', 'openMetres', 'closeMetres', 'loadMetres'], stock: ['size', 'slots'], weights: ['common', 'rare', 'epic', 'weapon'], price: ['base', 'buyX', 'sellX', 'weapon', 'trophy'], caps: ['buyMax', 'sellPerDay'],
+      lines: ['greet', 'buy', 'sell', 'broke', 'soldOut', 'capped', 'restock', 'leave'], events: ['open', 'buy', 'sell', 'refuse', 'restock'], ui: ['zIndex', 'sheetHeightFrac', 'css', 'text'], limits: ['about', 'range', 'save', 'attempts', 'hashRange', 'sheetPct', 'chip'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
   // Share clip (src/share-clip.ts validateShareClip checks the values): a closed key set; presentation only
   // The art-load retry (src/retry.ts reads attempts / delayMs / missingTexturesMessage; test/data-top-rows.test.mjs pins them)
