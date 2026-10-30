@@ -11,6 +11,7 @@ import { dressBossHand } from './boss-hand.ts';   // a boss weapon row's dressin
 import type { BossWeaponRow } from './boss-weapon.ts';
 import { heroContact, heroSwing } from './hero-body-rows.ts';
 import { bone as boneOf, boneLookups, boneName, gapFillFor, GRIP_65, HELD, HIDDEN_ON_106, rigOf, trackAs65, trackOn } from './rig-bones.ts';
+import { hideCutCaps } from './ragdoll.ts';   // cut GLB cap meshes hidden until a cut (the one function the opponent's ragdoll uses)
 import { clip106Loader } from './clips-106.ts';   // a 106 body's baked clip JSONs (data/rig.json clips106)   // V3 rig swap: every bone lookup goes through the one map (65 body = today's lookup)
 export { swingProgress } from './blade.ts';
 import { attackSpecs, POMMEL_BASH, TRAIL_FROM, type Attack, type Practice } from './combat.ts';
@@ -214,6 +215,7 @@ async function loadFighter(url: string) {
   const asset = await loadTextured(url, () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url));
   // A 106 body: OpenTrident's armour layers off (data/rig.json hide), and no loot or kit on it: every loot.glb/kit draw is skinned to the 65 skeleton's bind.
   if (rigOf(asset.scene) === '106') { for (const name of HIDDEN_ON_106) asset.scene.getObjectByName(name)?.removeFromParent(); asset.scene.userData.noLoot = true; }
+  hideCutCaps(asset.scene);   // a cut GLB (the hero's psyche-106.glb since parts-wear step 1, as the bosses'): its cap_* stump meshes ship visible and show only for a cut; a body with none is untouched
   // The owner's iPhone defect (2026-09-18): under GPU memory pressure iOS silently drops uploaded fighter
   // textures — black mannequins. On phones we cap the skins at 1K before the first upload (the 2K Gambeson
   // atlas is the offender); desktop keeps the full set. three.js uploads lazily, so this runs pre-render.
