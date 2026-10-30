@@ -1,16 +1,15 @@
 // Trash mobs on the BUILT dist at 375 (data/mobs.json). One Chromium run: frame time idle vs a live swarm (relative numbers only: headless software GL), a real STRIKE kill through the keyboard
 // (the page's own input layer), and 375 stills of a pack. On a build without the feature (no window.__v3Mobs) only the idle frame time is taken, which is the "before" number.
 //   node scripts/mobs-run.mjs <base url> <out dir> <tag>
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/mobs-run.mjs <base url> <out dir> <tag>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
+collectErrors(page, { echo: true });
 let bytes = 0;   // bytes on the wire (CDP encodedDataLength: after compression)
 const cdp = await page.context().newCDPSession(page);
 await cdp.send('Network.enable');

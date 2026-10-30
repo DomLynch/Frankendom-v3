@@ -4,8 +4,8 @@
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { adopt, joinAttacker, type Attacker } from './attacker-bout.ts';
 
-export type LockSwitchRows = { on: boolean; query: string; off: string; tapMaxMs: number; tapMaxMovePx: number; pickRadiusPx: number; aimHeightMetres: number };
-export type LockSwitchLimits = { [K in keyof Omit<LockSwitchRows, 'on' | 'query' | 'off'>]: [number, number] };
+type LockSwitchRows = { on: boolean; query: string; off: string; tapMaxMs: number; tapMaxMovePx: number; pickRadiusPx: number; aimHeightMetres: number };
+type LockSwitchLimits = { [K in keyof Omit<LockSwitchRows, 'on' | 'query' | 'off'>]: [number, number] };
 
 /** Throws on a bad lock-switch row. */
 export function validateLockSwitch(rows: LockSwitchRows, limits: LockSwitchLimits): void {

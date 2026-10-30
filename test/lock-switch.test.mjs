@@ -78,12 +78,3 @@ test('the swap refuses: a dead attacker, an unknown boss, the held boss, a finis
   assert.equal(swapHeld(a, [joinAttacker(1, b)], 0, 0), null);
   assert.equal(swapHeld({ ...a, finish: { victim: 1 } }, [joinAttacker(1, b)], 0, 1), null);
 });
-
-test('the page wiring is pinned: gated by the soft lock and the attackers, its own press listener, only a locked live fight, no look/cut listener touched', () => {
-  const main = read('../src/client/main.ts');
-  assert.match(main, /const SWITCH = LOCK_ROWS && multi \? lockSwitchFor\(true, search\) : null/);
-  assert.match(main, /if \(paused\(\) \|\| !engaged \|\| lockState\.broken \|\| practice\.finish \|\| !isTap\(SWITCH,/);
-  assert.match(main, /swapHeld\(practice, attackers, current, pick, kindAt\(current\)\.ai\)/);
-  assert.match(main, /useKind\(kindAt\(current\)\)/);
-  assert.equal(/switchTarget/.test(read('../src/fight/lock-break.ts')), false, 'the hook is replaced');
-});

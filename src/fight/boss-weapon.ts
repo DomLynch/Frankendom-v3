@@ -7,16 +7,16 @@ import { OPPONENTS, isWeaponId, type Opponent } from './moves.ts';
 
 export type DiscRow = { kind: 'disc'; hand: string; radius: number; thickness: number; colour: string; rim: string; offset: [number, number, number]; rotationDeg: [number, number, number] };
 /** kind `file`: a mesh file under src/assets/weapons/foe/ (`file` = its stem; root node BossShield, 1 unit = 1 m), loaded with the boss body only; `scale` grows it about its own origin. */
-export type FileRow = { kind: 'file'; file: string; hand: string; scale: number; offset: [number, number, number]; rotationDeg: [number, number, number] };
-export type OffhandRow = DiscRow | FileRow;
+type FileRow = { kind: 'file'; file: string; hand: string; scale: number; offset: [number, number, number]; rotationDeg: [number, number, number] };
+type OffhandRow = DiscRow | FileRow;
 /** The file stems under src/assets/weapons/foe/ a row may graft (`equip`) or seat (`offhand.file`). */
-export const FOE_PART_STEMS: readonly string[] = ['cleaver', 'maul', 'axe', 'shield', 'halberd', 'sword', 'mace', 'spear', 'katana', 'warhammer', 'rapier'];
+const FOE_PART_STEMS: readonly string[] = ['cleaver', 'maul', 'axe', 'shield', 'halberd', 'sword', 'mace', 'spear', 'katana', 'warhammer', 'rapier'];
 /** `grip`: where the drawn part sits in the hand, on top of the socket's own frame: metres and Euler XYZ degrees (the seat's frame; the sim's contact segment is not moved, this is the drawing). `material`: the part's own look replaced (null = the file's). */
-export type GripRow = { offset: [number, number, number]; rotationDeg: [number, number, number] };
+type GripRow = { offset: [number, number, number]; rotationDeg: [number, number, number] };
 export type MaterialRow = { colour: string; metalness: number; roughness: number };
 /** `opponent`: the V1 archetype; `profile` (optional): a data/profiles.json id whose `opponent` is that archetype, making the row that profile's own (absent or null = the archetype's row, shared by every profile of it that has no row of its own). */
 export type BossWeaponRow = { id: string; opponent: string; profile?: string | null; weapon: string; clipsAs: string; equip: string; scale: number; grip: GripRow; material: MaterialRow | null; offhand: OffhandRow | null; placeholder: string[] };
-export type BossWeaponFile = { query: string; v1: string; rows: BossWeaponRow[] };
+type BossWeaponFile = { query: string; v1: string; rows: BossWeaponRow[] };
 
 const HEX = /^#[0-9a-f]{6}$/i, fin = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 /** Why `file` is not a good set of boss weapon rows (one string per problem; empty = fine). `equips`: the file stems under src/assets/weapons/foe/ a row may graft. */

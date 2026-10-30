@@ -3,15 +3,38 @@
 // empty, and a save with none is byte for byte the one before. Nothing here touches storage, the DOM or the sim; the page (src/fight/parts-hook.ts) and the menu (parts-panel.ts) call these.
 import ROWS from '../data/parts.json' with { type: 'json' };
 import PROFILE_ROWS from '../data/profiles.json' with { type: 'json' };
+import { validateFit, validateWear } from './sim/validate-parts-fit.js';
 const KNOWN_PROFILES: ReadonlySet<string> = new Set((PROFILE_ROWS.profiles as { id: string }[]).map((p) => p.id));   // the bosses a part can come from (data/profiles.json)
 
-export type SlotRow = { id: string; label: string; units: string[] };
-export type RarityRow = { star: number; id: string; label: string; colour: string };
+type SlotRow = { id: string; label: string; units: string[]; pair?: string };   // `pair`: slots sharing one group id sit side by side in the menu (hands, feet)
+type RarityRow = { star: number; id: string; label: string; colour: string };
+/** One collar seam: the bone it rides, `at` (fraction of the bone's length to its first child) and the sizing rule it takes. */
+export type CollarJoint = { id: string; bone: string; at: number; rule: string };
+export type CollarRule = { rOf: string; rK: number; hOf: string; hK: number; hMin: number };
+/** data/parts.json `fit`: every tuning number of src/fight/parts-fit.ts. */
+export type FitRules = {
+  limits: { boneLo: number; boneHi: number; heightLo: number; heightHi: number; coverFrac: number; meanK: number };
+  seam: { bandM: number; minVerts: number; percentile: number; uvPercentile: number };
+  eps: { heightM: number; boneM: number };
+  bones: { hips: string; head: string };
+  lift: { unit: string; keys: string[] };
+  skin: { influences: number; uvStride: number };
+  collar: { segments: number; roundScale: number; heightKey: string; fallback: Record<string, { of?: string; k: number }>; joints: CollarJoint[]; rules: Record<string, CollarRule> };
+};
+/** data/parts.json `wear`: the rules of src/parts-wear.ts and src/fight/parts-wear.ts (the flags, the mesh-name prefixes, which units can be worn and where their seam is, the budget). */
+export type WearRules = {
+  flags: { off: { query: string; value: string }; force: { query: string } };
+  mesh: { piece: string; cap: string; join: string; source: Record<'derived' | 'original', string> };
+  units: Record<string, { piece?: string; collar?: string; lift?: string }>;
+  heroHost: Record<string, string>;
+  heroCollars: string[];
+  budget: { skinnedDrawsMax: number; partsMax: number; frameMsMedianExtra: number };
+};
 export type PartsFile = {
-  maxCount: number; slots: SlotRow[]; rarities: RarityRow[];
+  maxCount: number; slots: SlotRow[]; rarities: RarityRow[]; fit: FitRules; wear: WearRules;
   button: { label: string; aria: string; sizePx: number; topPx: number; rightPx: number; zIndex: number };
   panel: { zIndex: number; maxWidthPx: number; maxHeightFrac: number };
-  text: Record<'title' | 'close' | 'hint' | 'empty' | 'equip' | 'unequip' | 'equipped' | 'none' | 'weaponDefault' | 'weaponReward', string>;
+  text: Record<'notWearable' | 'title' | 'close' | 'hint' | 'empty' | 'equip' | 'unequip' | 'equipped' | 'none' | 'weaponDefault' | 'weaponReward', string>;
 };
 /** One owned part: how many times it was cut (all stars) and the best star level it was cut at. */
 export type PartRow = { n: number; star: number };
@@ -31,6 +54,7 @@ export function validateParts(file: PartsFile, stars: number): string[] {
     const at = `slots.${String(s.id)}`;
     if (typeof s.id !== 'string' || !/^[a-z][a-z_]*$/.test(s.id) || ids.has(s.id)) e.push(`parts.${at}: a unique lower-case id`); else ids.add(s.id);
     word(`${at}.label`, s.label, 24);
+    if ('pair' in s) word(`${at}.pair`, s.pair, 24);
     if (!Array.isArray(s.units)) e.push(`parts.${at}.units: a list`);
     else for (const u of s.units) if (typeof u !== 'string' || !/^[a-z_]+$/.test(u) || units.has(u)) e.push(`parts.${at}.units: "${String(u)}" is not a unit name, or another slot has it`); else units.add(u);
   }
@@ -46,6 +70,8 @@ export function validateParts(file: PartsFile, stars: number): string[] {
   word('button.label', file.button?.label, 4); word('button.aria', file.button?.aria, 80);
   num('panel.zIndex', file.panel?.zIndex, 0, 1000); num('panel.maxWidthPx', file.panel?.maxWidthPx, 200, 800); num('panel.maxHeightFrac', file.panel?.maxHeightFrac, 0.3, 1);
   for (const [k, v] of Object.entries(file.text ?? {})) word(`text.${k}`, v, 80);
+  e.push(...validateWear(file.wear, file.fit, file.slots));
+  e.push(...validateFit(file.fit));   // src/sim/validate-parts-fit.js (diagnostics are plain words and src/*.ts is scanned for them: the same split as validate-rings.js)
   return e;
 }
 export const PARTS = ROWS as unknown as PartsFile;
@@ -54,7 +80,7 @@ export const partId = (profile: string, slot: string): string => `${profile}:${s
 /** The slot a cut unit fills, or null (a visual unit such as head_split, or a unit the table does not name). */
 export const slotOfUnit = (unit: string, file: PartsFile = PARTS): string | null => file.slots.find((s) => s.units.includes(unit))?.id ?? null;
 /** `profile:slot` split, or null when it is not an id of this table's shape. */
-export function splitPart(id: string, file: PartsFile = PARTS): { profile: string; slot: string } | null {
+function splitPart(id: string, file: PartsFile = PARTS): { profile: string; slot: string } | null {
   const i = id.indexOf(':');
   if (i < 1) return null;
   const profile = id.slice(0, i), slot = id.slice(i + 1);
@@ -104,7 +130,7 @@ export function cleanParts(j: { parts?: unknown; equipped?: unknown }, file: Par
 }
 
 /** One line of the menu: a part to show. `name`: the boss's name + the slot's label. */
-export type PartView = { id: string; name: string; boss: string; n: number; star: number; rarity: RarityRow; trophy: string | null; worn: boolean };
+type PartView = { id: string; profile: string; name: string; boss: string; n: number; star: number; rarity: RarityRow; trophy: string | null; worn: boolean };
 export type SlotView = { slot: SlotRow; worn: PartView | null; parts: PartView[] };
 /** The menu's rows, pure: every slot with the parts owned for it (best star first, then by boss name). `bossName`: profile id -> display name; `trophyOf`: star -> trophy name (null for none). The weapon slot has no parts (the page shows its reward). */
 export function slotViews(save: PartsSave, bossName: (profile: string) => string, trophyOf: (star: number) => string | null, file: PartsFile = PARTS): SlotView[] {
@@ -114,7 +140,7 @@ export function slotViews(save: PartsSave, bossName: (profile: string) => string
       const p = splitPart(id, file);
       if (!p || p.slot !== slot.id) continue;
       const boss = bossName(p.profile), rarity = file.rarities[row.star] ?? file.rarities[0]!;
-      parts.push({ id, name: `${boss} ${slot.label.toLowerCase()}`, boss, n: row.n, star: row.star, rarity, trophy: trophyOf(row.star), worn: save.equipped?.[slot.id] === id });
+      parts.push({ id, profile: p.profile, name: `${boss} ${slot.label.toLowerCase()}`, boss, n: row.n, star: row.star, rarity, trophy: trophyOf(row.star), worn: save.equipped?.[slot.id] === id });
     }
     parts.sort((a, b) => b.star - a.star || a.boss.localeCompare(b.boss));
     return { slot, worn: parts.find((p) => p.worn) ?? null, parts };

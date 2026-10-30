@@ -5,13 +5,13 @@
 // Inputs (input.ts): G = the overhead; D+G / A+G = heavy_right / heavy_left (keyboard); heavy_thrust is touch-only: hold STRIKE past
 // input.heavy-hold-ms (220) and slide up inside the grace. Under ?heavy=v1 the same inputs all give V1's overhead (touch fires it at 220 ms of
 // hold, before the slide: HOLD_V1 counts from there, so its ages line up within a tick).
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/heavy-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const LAG = 3, TICK = 1000 / 60, CLOSE_IN = Number(process.env.CLOSE_IN ?? 10);   // LAG: ticks from the press to the swing's first tick (clip-stills.mjs)
 const HOLD = 16, HOLD_V1 = 14;   // ticks STRIKE is held before the slide: past 220 ms and inside the 100 ms grace; V1 fires its heavy on the 14th
 const SWING = [['windup', 20], ['contact', 32], ['follow', 44]], HELD = [['held', 30]];
@@ -24,11 +24,11 @@ if (process.env.ONLY) { const [n, t] = process.env.ONLY.split(':'), s = HEAVIES.
 for (const query of queries.length ? queries : ['']) {
   const tag = query ? query.replace(/[^a-z0-9]+/gi, '-') : 'default', v1 = /heavy=v1/.test(query);
   for (const [name, how, held, moments] of HEAVIES) {
-    const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const page = await browser.newPage(phoneOptions(2));
     page.on('pageerror', (e) => console.error(`${tag}: pageerror ${e.message}`));
     await page.clock.install();
     await page.goto(`${base}/${query ? `?${query}` : ''}`);
-    await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000 });
+    await waitPlayable(page, { timeout: 180000 });
     await page.waitForTimeout(800);
     if (/start=v1/.test(query)) await page.click('#attack-button');   // the Fight button: since #15 the fight starts by itself, and a click there throws a strike
     await page.waitForFunction(() => !/Drawing/.test(document.body.innerText), null, { timeout: 60000 });

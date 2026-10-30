@@ -4,17 +4,16 @@
 //   <tag>-1-kill        the kill, the stick pushed the same instant
 //   <tag>-2-walk-<n>    after n steps of STEP_S seconds (default 1.2) walking away
 //   node scripts/free-camera-stills.mjs <base url> <out dir> <tag> [query]      (query ?freecam=v1 = the lock camera as it was; ?postkill=v1 = the single fight)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/free-camera-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const STEP_S = Number(process.env.STEP_S ?? 1.2), STEPS = Number(process.env.STEPS ?? 4);
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
-page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+const browser = await launchBrowser();
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
+collectErrors(page, { echo: true });
 const shot = async (n) => { await page.screenshot({ path: `${out}/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 }); };
 const key = (code, type) => page.evaluate(([c, t]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [code, type]);
 const where = () => page.evaluate(() => { const r = globalThis.__v3Roam, f = globalThis.__v3Fight?.fighter, p = r ?? f, e = globalThis.__v3Fight?.enemy; return { roam: !!r, hero: [+p.x.toFixed(2), +p.z.toFixed(2)], toCorpse: +Math.hypot(p.x - e.x, p.z - e.z).toFixed(2), freeShare: globalThis.__v3FreeShare ?? null }; });

@@ -12,20 +12,18 @@ import type { Direction } from './moves.ts';
 import { kickScale } from './hero-special-fx.ts';   // V3 (data/fight.json specialFx): the hero's own specials throw a lighter camera kick; ?fx=v1 = today's
 import { CONTACTS, KICK_DROP, KNOCK_SETTLE, feelNum, frameMs } from './hit-stop-rows.ts';   // the numbers below are ROWS (hit-stop-defs.json): the frames and the camera jolt per contact; presentation only, outside the sim
 
-export type Tier = 'special' | 'full' | 'half' | 'parry' | 'block' | 'glance';
+type Tier = 'special' | 'full' | 'half' | 'parry' | 'block' | 'glance';
 // Guard tiers (Dom 2026-09-29, "implement this also"): a PARRY is the longest beat in the game (70 ms + 11 frames = 253 ms, a heavy hit is
 // 90 + 5 = 173) with a small jolt TOWARD the attacker; a BLOCK is a short freeze with a half-strength knock back from the blow.
-export const IMPACT = {
+const IMPACT = {
   special: { frames: CONTACTS.special.frames, knock: CONTACTS.special.knock, push: CONTACTS.special.push },   // a skill's contact is its own beat, heavier than a heavy (the `special` row; was the heavy's 5 frames)
   full: { frames: CONTACTS.hitHeavy.frames, knock: CONTACTS.hitHeavy.knock, push: CONTACTS.hitHeavy.push }, half: { frames: CONTACTS.hitLight.frames, knock: CONTACTS.hitLight.knock, push: CONTACTS.hitLight.push },
   parry: { frames: CONTACTS.parry.frames, knock: CONTACTS.parry.knock, push: CONTACTS.parry.push }, block: { frames: CONTACTS.blockLight.frames, knock: CONTACTS.blockLight.knock, push: CONTACTS.blockLight.push },
 } as const;
-/** The tier the weapon's own hold (armfeel.weaponHoldMs) sees: a skill holds as the heavy it always was; parries and blocks hold nothing extra. */
-export const HOLD_TIER: Readonly<Record<Tier, 'full' | 'half' | null>> = { special: 'full', full: 'full', half: 'half', parry: null, block: null, glance: null };
 // sandbox-mech reach bands: a blow outside its weapon's band (event.glance) lands dull: no impact frames, no camera knock; the foe's recoil is cut in the sim. Kept out of IMPACT so that table stays what the rows say.
-export const GLANCE = { frames: 0, knock: 0, push: 0 } as const;
+const GLANCE = { frames: 0, knock: 0, push: 0 } as const;
 const impactOf = (tier: Tier) => (tier === 'glance' ? GLANCE : IMPACT[tier]);
-export { KNOCK_SETTLE };   // seconds: the knock is back in 120 ms (a `feel` row in hit-stop-defs.json)
+   // seconds: the knock is back in 120 ms (a `feel` row in hit-stop-defs.json)
 // Kick and roll (Dom 2026-09-30, pick C of the ?look=hitfx-kick / hitfx-roll clips: "implement and get live"). A LANDED kick, either side,
 // is its own beat: the whole stop is 2 frames (not a hit's 50 ms + 3) and the camera drops 10 cm straight down, back in 120 ms. The
 // player's roll tumbles the frame: 8° into the roll, an 8 cm dip and a 4.6 cm (~3 % of the frame) shift the way of the roll, up and back

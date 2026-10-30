@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import type { ShardRow } from './sandbox-rules.ts';
 
-export type ShardKind = 'stone' | 'metal';
+type ShardKind = 'stone' | 'metal';
 const KINDS: readonly ShardKind[] = ['stone', 'metal'];
 
 type Batch = { mesh: THREE.Mesh<THREE.InstancedBufferGeometry, THREE.ShaderMaterial>; ends: Float64Array };

@@ -5,7 +5,7 @@
 import { bareName } from '../roster.ts';
 import type { OpponentId } from '../roster.ts';
 
-export type FoeNameRow = { opponent: string; name: string };
+type FoeNameRow = { opponent: string; name: string };
 
 let row: FoeNameRow | null = null;
 let kindNames: Record<string, string> = {};
@@ -24,7 +24,7 @@ export const setActiveKind = (kind: string | null, star = 0): void => { activeKi
 export const getActiveStar = (): number => activeStar;
 let activeStar = 0;
 /** One life's profile and star, written ONCE at the top of the kill (before any finisher/skip branch: every cut of that corpse, the finisher's beheading included, reads it), the newest `cap` kept. */
-export type LifeRow = { profile: string; star: number };
+type LifeRow = { profile: string; star: number };
 export function noteLife(lives: Map<string, LifeRow>, id: string, profile: string, star: number, cap = 16): void {
   lives.set(id, { profile, star }); if (lives.size > cap) lives.delete(lives.keys().next().value!);
 }

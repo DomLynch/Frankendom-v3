@@ -63,27 +63,24 @@ export const SHIPPING_LOOKS: Readonly<Record<string, readonly number[]>> = { gob
 // materials, skin and bones are the desktop file's own, except a draw the file names in extras.rebaked (too seam-dense to simplify in place:
 // the Knight's L2–L6/L9/L10 armour, the Nightborn's armour and closed helm; one new atlas per file), and a draw it names in extras.resized
 // (same mesh, material and texture slots, each desktop map downsized: the Nightborn L1 head, Lead + Strategy 2026-09-30). The phone tier streams it; desktop keeps the full file.
-export const PHONE_LOOKS: ReadonlySet<string> = new Set(['plaguedoctor', 'knight', 'nightborn', 'dwarf', 'witch', 'pitborn', 'veteran', 'shieldmaiden', 'executioner']);
+const PHONE_LOOKS: ReadonlySet<string> = new Set(['plaguedoctor', 'knight', 'nightborn', 'dwarf', 'witch', 'pitborn', 'veteran', 'shieldmaiden', 'executioner']);
 // Row 5b (map upload, MiB, RGBA + mips) by tier (Strategy 2026-09-30, Dom's AAA-quality ask): a -phone file, and the one file of a set without
 // LODs, keeps 22 MiB (the phone's VRAM). A full-tier file of a PHONE_LOOKS set is served to fine-pointer desktops only (quality.ts
 // detectPhoneTier), one look on screen, and integrated GPUs carry ~100 MiB of maps: 96 MiB, so GPT's 2048 maps can ship as delivered.
-export const lookMapCapMiB = (opponent: string, phone: boolean): number => (phone || !PHONE_LOOKS.has(opponent) ? 22 : 96);
 // His look file at the rank level he is met at, or none (his rig as shipped).
 export const rankLookFor = (opponent: string, level: number, phone = false): string | undefined =>
   SHIPPING_LOOKS[opponent]?.includes(level) ? `/looks/${opponent}-L${level}${phone && PHONE_LOOKS.has(opponent) ? '-phone' : ''}.glb` : undefined;
 // A rung change that changes his look file: the look streams once per page, so the rematch takes a fresh page (main.ts, Auditer #961).
-export const rankLookMoves = (opponent: string, from: number, to: number): boolean => rankLookFor(opponent, from) !== rankLookFor(opponent, to);
-
 // The idle beat: neither fighter is in an exchange (attack, riposte, parry, stagger, a roll) and no finish is playing. Ready, sheathed, the
 // draw and a held guard are the quiet phases (a guard with its parry window open is not); a backstep is footwork out of an exchange, so it
 // waits. A guard counts because a fighter who holds it all fight (the AI hero, measured: no beat in a whole replay without it) would
 // otherwise never see his look.
 const QUIET: readonly Phase[] = ['ready', 'sheathed', 'draw', 'guard'];
-export const idleBeat = (practice: Practice): boolean =>
+const idleBeat = (practice: Practice): boolean =>
   !practice.finish && practice.duel.fighters.every((f) => QUIET.includes(f.phase) && !f.parrying);   // a stagger is the 'hurt' phase (`stun` is its length, left stale after it)
 
 // 'none': this fight has no look (his rank has none); nothing is fetched and nothing is reported.
-export type RankLookState = 'waiting' | 'none' | 'loading' | 'ready' | 'on' | 'failed';
+type RankLookState = 'waiting' | 'none' | 'loading' | 'ready' | 'on' | 'failed';
 // One look for one fight's opponent. `tick` is called every rendered frame with the practice on screen: the first frame the fight clock has
 // moved (tick > 0, which only happens once the fight is playable) starts the fetch if nothing has, and the first idle beat of the running
 // fight after it lands applies it. `prefetch` starts it earlier, once his rung is known and his rig is in (scene.ts setTier, before the
@@ -132,7 +129,7 @@ export const bakeSafeFinisher = (finisher: FinisherId | null, victim: number, pe
 // Forced, not a fallback (Strategy 22:27 via Lead): until the pre-swap bake passes row C with its three conditions, the closed helms at
 // L8–L10 play runThrough wherever opened was picked, and no waist-cut bake is taken for these looks at all (none before the swap, none
 // stepped after it, none at a rematch). The Dwarf (#1030) is ruled the same. Remove a set here once its row C passes.
-export const RUN_THROUGH_LOOKS: Readonly<Record<string, readonly number[]>> = { nightborn: [8, 9, 10], dwarf: [8, 9, 10] };
+const RUN_THROUGH_LOOKS: Readonly<Record<string, readonly number[]>> = { nightborn: [8, 9, 10], dwarf: [8, 9, 10] };
 export const runThroughForced = (url: string | undefined): boolean => {
   const m = url?.match(/^\/looks\/([a-z]+)-L(\d+)(?:-phone)?\.glb$/);
   return !!m && !!RUN_THROUGH_LOOKS[m[1]!]?.includes(Number(m[2]));

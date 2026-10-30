@@ -11,6 +11,11 @@
     {"id":"weaponHoldHalf","value":40},
     {"id":"weaponHoldFull","value":60},
     {"id":"weaponHoldKill","value":80},
-    {"id":"gravity","value":8}
+    {"id":"gravity","value":8},
+    {"id":"flinchGainHero","value":0.25},
+    {"id":"energyFloor","value":0.001},
+    {"id":"dropletSegmentsW","value":8},
+    {"id":"dropletSegmentsH","value":6},
+    {"id":"burstSeed","value":1592594996}
   ]
 }

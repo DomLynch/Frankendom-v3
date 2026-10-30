@@ -8,24 +8,24 @@ import COMMENTATOR from '../data/commentator.json' with { type: 'json' };
 import { checkCommentator } from './sim/validate.js';
 import { hash32 } from './fight/bout-seed.ts';
 
-export type CommentatorEventRow = { about: string; cooldownSeconds: number; probability: number; priority?: boolean; params?: string[]; lines: string[] };
-export type CommentatorFile = {
+type CommentatorEventRow = { about: string; cooldownSeconds: number; probability: number; priority?: boolean; params?: string[]; lines: string[] };
+type CommentatorFile = {
   about: string; enabled: boolean; storageKey: string; seed: string;
-  caps: { perSession: number; perMinute: number; gapSeconds: number };
-  caption: { seconds: number; fadeMs: number; maxChars: number; topPct: number; maxWidthPct: number; fontPx: number; colour: string; shadow: string; zIndex: number };
-  thresholds: { heroLowPct: number; bossLowPct: number; missStreak: number; rollCount: number; rollWindowSeconds: number; idleSeconds: number };
+  caps: { perSession: number; perMinute: number; gapSeconds: number; minuteSeconds: number };
+  caption: { seconds: number; fadeMs: number; maxChars: number; topPct: number; maxWidthPct: number; fontPx: number; colour: string; shadow: string; zIndex: number; css: string };
+  thresholds: { heroLowPct: number; bossLowPct: number; missStreak: number; rollCount: number; rollWindowSeconds: number; idleSeconds: number; lowResetPct: number; idleMoveEpsilon: number; starTwoLevel: number };
   partNames: Record<string, string>;
   events: Record<string, CommentatorEventRow>;
 };
-export type SayParams = Record<string, string>;
+type SayParams = Record<string, string>;
 /** The sim's events, as far as the commentator reads them (src/fight/duel.ts CombatEvent). */
-export type SimEvent = { type: string; actor: number; target?: number; action?: string };
+type SimEvent = { type: string; actor: number; target?: number; action?: string };
 
 export const ROWS = COMMENTATOR as unknown as CommentatorFile;
 /** A bad row stops the page at load (the same rule as every data file); an empty list = fine. */
 export function validateCommentator(rows: CommentatorFile = ROWS): string[] { return checkCommentator(rows); }
 
-export type Commentator = {
+type Commentator = {
   /** Say event `id` if the caps, the cooldown and the probability allow it: returns the line, or null. `params` fills {name} in the line; a line needing a param the call lacks is not said. */
   say(id: string, params?: SayParams): string | null;
   /** Advance the clock by dt seconds (frame() does this too). */
@@ -58,7 +58,7 @@ export function createCommentator(rows: CommentatorFile, sink: (line: string) =>
     const row = rows.events[id];
     if (!enabled || !row || said >= caps.perSession) return null;
     if (clock - lastAt[id]! < row.cooldownSeconds) return null;
-    if (!row.priority && (clock - lastAny < caps.gapSeconds || clock - stamps[ring]! < 60)) return null;
+    if (!row.priority && (clock - lastAny < caps.gapSeconds || clock - stamps[ring]! < caps.minuteSeconds)) return null;
     const need = row.params;
     if (need) for (let i = 0; i < need.length; i++) if (!params || typeof params[need[i]!] !== 'string') return null;
     if (row.probability < 1 && hash32(`${rows.seed}:p:${id}`, rolls[id]!++) / 4294967296 >= row.probability) return null;
@@ -81,7 +81,7 @@ export function createCommentator(rows: CommentatorFile, sink: (line: string) =>
       if (dt > 0) clock += dt;
       if (engaged && !wasEngaged && !heroDown) {   // a fight begins: its counters restart; a star boss gets his own introduction
         firstHit = false; misses = 0; heroLow = false; bossLow = false; rollTimes.fill(-Infinity);
-        if (star > 0) { if (!say(star >= 2 ? 'star_2' : 'star_1', { boss: bossName(kind) })) say('fight_start', { boss: bossName(kind) }); }
+        if (star > 0) { if (!say(star >= th.starTwoLevel ?'star_2' : 'star_1', { boss: bossName(kind) })) say('fight_start', { boss: bossName(kind) }); }
         else say('fight_start', { boss: bossName(kind) });
       }
       wasEngaged = engaged;
@@ -92,12 +92,12 @@ export function createCommentator(rows: CommentatorFile, sink: (line: string) =>
       wasBossDown = bossDown;
       if (engaged && !heroDown && !bossDown) {
         if (!heroLow && heroPct <= th.heroLowPct) { heroLow = true; say('hero_low'); }
-        else if (heroLow && heroPct > th.heroLowPct + 15) heroLow = false;
+        else if (heroLow && heroPct > th.heroLowPct + th.lowResetPct) heroLow = false;
         if (!bossLow && bossPct <= th.bossLowPct) { bossLow = true; say('boss_low'); }
-        else if (bossLow && bossPct > th.bossLowPct + 15) bossLow = false;
+        else if (bossLow && bossPct > th.bossLowPct + th.lowResetPct) bossLow = false;
       }
       if (!engaged && !heroDown && !bossDown) {   // idling: standing in the same place with nobody fighting him
-        if (Math.abs(x - lastX) + Math.abs(z - lastZ) > 0.05 || lastX !== lastX) idleFor = 0; else idleFor += dt;
+        if (Math.abs(x - lastX) + Math.abs(z - lastZ) > th.idleMoveEpsilon|| lastX !== lastX) idleFor = 0; else idleFor += dt;
         if (idleFor >= th.idleSeconds) { idleFor = 0; say('idle'); }
       } else idleFor = 0;
       lastX = x; lastZ = z;
@@ -131,12 +131,13 @@ export function commentatorOn(rows: CommentatorFile, store: Store | null): boole
 }
 function storeOf(): Store | null { try { return (globalThis as { localStorage?: Store }).localStorage ?? null; } catch { return null; } }
 
+/** The caption's stylesheet (data/commentator.json caption.css) with its {topPct} {zIndex} {fadeMs} {maxWidthPct} {colour} {fontPx} {shadow} slots filled from the same row. */
+export const captionCss = (c: CommentatorFile['caption']): string => { const { css, ...slots } = c as Record<string, unknown> & { css: string }; return css.replace(/\{(\w+)\}/g, (m, k: string) => (k in slots ? String(slots[k]) : m)); };
+
 /** The caption: one fixed element near the top (pointer-events none, under the bars and the radar's corner, above nothing the player taps), faded in for `caption.seconds`; a new line replaces the old. */
 export function mountCaption(doc: Doc, rows: CommentatorFile, later: (fn: () => void, ms: number) => unknown = (fn, ms) => setTimeout(fn, ms), clear: (t: unknown) => void = (t) => clearTimeout(t as number)) {
   const c = rows.caption, style = doc.createElement('style');
-  style.textContent = `.cm-line{position:fixed;left:50%;top:${c.topPct}%;transform:translateX(-50%);z-index:${c.zIndex};pointer-events:none;opacity:0;transition:opacity ${c.fadeMs}ms ease;text-align:center;`
-    + `max-width:${c.maxWidthPct}%;color:${c.colour};font:italic ${c.fontPx}px/1.25 Georgia,'Times New Roman',serif;text-shadow:${c.shadow};user-select:none;-webkit-user-select:none}`
-    + '@media (prefers-reduced-motion:reduce){.cm-line{transition:none}}';
+  style.textContent = captionCss(c);
   doc.head.append(style);
   const el = doc.createElement('div'); el.className = 'cm-line'; el.dataset.commentator = 'true'; el.setAttribute('aria-hidden', 'true');
   doc.body.append(el);

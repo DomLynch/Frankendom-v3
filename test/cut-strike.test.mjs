@@ -9,7 +9,7 @@ import { createInput } from '../src/fight/input.ts';
 import { initialPractice } from '../src/fight/combat.ts';
 import { validateFile } from '../src/sim/validate.js';
 import { kbmFor } from '../src/fight/kbm.ts';
-import { corpseCutState, isAttackAction, isNear, nextUnit, registerCorpseSource, registerStrikeSource, setHeroLocator, strikeBinds, strikeCut, strikeOnce } from '../src/fight/cut-strike.ts';
+import { corpseCutState, isAttackAction, isNear, nextUnit, registerCorpseSource, registerDyingSource, registerStrikeSource, setHeroLocator, setPendingWindow, strikeBinds, strikeCut, strikeOnce, strikePending, strikeReplay } from '../src/fight/cut-strike.ts';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const PHYSICS = JSON.parse(read('../data/physics.json')), STRIKE = PHYSICS.cut.strike, ORDER = PHYSICS.cut.tap.order;
@@ -184,6 +184,65 @@ test('a tap is one cut however many ragdolls listen to it', () => {
     assert.equal(a.done.size + b.done.size, 1);
     assert.ok(strikeOnce(1300, { x: 1, y: 1 }), 'the next tap is a new key');
   } finally { la(); lb(); }
+});
+
+// Early cuts (Dom 2026-10-29): a kill stays 'dying' ~2.6 s; an attack press then cut nothing. The press is kept ONCE (cut.strike.pendingS) and replayed when the body freezes.
+// A stand-in body with the ragdoll's contract: its sources cut only once `frozen`; its dying source says it is near and not yet frozen.
+function dyingBody(at) {
+  const b = body({ at }), state = { frozen: false };
+  const src = (req) => (state.frozen ? b.src(req) : null);
+  return { ...b, state, src, dying: (hero) => !state.frozen && isNear(hero, at.x, at.z, STRIKE.nearM) };
+}
+
+test('early cuts: the row validates and a press during the dying phase is replayed once when the body freezes', () => {
+  assert.ok(STRIKE.pendingS > 0 && Number.isFinite(STRIKE.pendingS), 'pendingS is a data row');
+  const bad = structuredClone(PHYSICS); bad.cut.strike.pendingS = 'soon';
+  assert.match(validateFile('physics', bad).join('|'), /strike\.pendingS/);
+  setHeroLocator(() => ({ x: 0, z: 0 })); setPendingWindow(STRIKE.pendingS);
+  const b = dyingBody({ x: 1, z: 0 }), l1 = registerStrikeSource(b.src), l2 = registerDyingSource(b.dying);
+  try {
+    assert.equal(strikeCut(null, 100), null, 'dying: nothing to cut yet');
+    assert.equal(strikePending(), true, 'the press is kept');
+    assert.equal(strikeCut(null, 100.5), null); assert.equal(strikeCut(null, 101), null);   // more presses while dying: still ONE kept press
+    assert.equal(strikeReplay(101.5), null, 'still dying: replay does nothing');
+    b.state.frozen = true;
+    assert.equal(strikeReplay(102).unit, 'head', 'frozen: the kept press cuts, once');
+    assert.equal(strikePending(), false);
+    assert.equal(strikeReplay(102.1), null, 'no second replay: no double cut');
+    assert.deepEqual([...b.done], ['head']);
+    assert.equal(strikeCut(null, 103).unit, 'arm_left', 'a fresh press after: one cut per press');
+  } finally { l1(); l2(); setPendingWindow(0); setHeroLocator(null); }
+});
+
+test('early cuts: a kept press expires after pendingS; a far body keeps nothing; the row at 0 keeps nothing; a press that cuts clears the kept one', () => {
+  setHeroLocator(() => ({ x: 0, z: 0 }));
+  const b = dyingBody({ x: 1, z: 0 }), l1 = registerStrikeSource(b.src), l2 = registerDyingSource(b.dying);
+  try {
+    setPendingWindow(STRIKE.pendingS);
+    strikeCut(null, 0); assert.equal(strikePending(), true);
+    b.state.frozen = true;
+    assert.equal(strikeReplay(STRIKE.pendingS + 1), null, 'expired: dropped, not replayed');
+    assert.equal(strikePending(), false);
+    b.state.frozen = false;
+    strikeCut(null, 10); b.state.frozen = true;
+    assert.equal(strikeCut(null, 10.2).unit, 'head', 'a press on a frozen body cuts at once');
+    assert.equal(strikePending(), false, 'and the kept press is gone: no extra cut');
+    assert.equal(strikeReplay(10.3), null);
+    setPendingWindow(0); b.state.frozen = false; b.done.clear();
+    strikeCut(null, 20); assert.equal(strikePending(), false, 'pendingS 0: never kept');
+    setPendingWindow(STRIKE.pendingS);
+    setHeroLocator(() => ({ x: 50, z: 0 }));
+    strikeCut(null, 30); assert.equal(strikePending(), false, 'dying body out of reach: nothing kept');
+  } finally { l1(); l2(); setPendingWindow(0); setHeroLocator(null); }
+});
+
+test('early cuts: only attack presses reach strikeCut (guard, roll, kick wiring unchanged) and the ragdoll wires the dying source and the per-frame replay', () => {
+  const rd = read('../src/fight/ragdoll.ts');
+  assert.match(rd, /registerDyingSource\(/); assert.match(rd, /setPendingWindow\(/); assert.match(rd, /strikeReplay\(\)/);
+  const r = rig();
+  r.els['guard-button'].fire('pointerdown'); r.els['guard-button'].fire('pointerup');
+  r.els['dodge-button'].fire('pointerdown'); r.els['dodge-button'].fire('pointerup');
+  assert.deepEqual(r.calls, [], 'guard and roll never ask for a strike, so they never keep a press');
 });
 
 test('wiring: the page asks for the strike only while the foe is down; the ragdoll joins and its tap goes through the strike; the row off keeps the old tap', () => {

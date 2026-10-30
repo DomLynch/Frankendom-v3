@@ -24,19 +24,34 @@ jobs:
       # Gate 0 (test/gate0) replays input scripts through V1's sim at the seed tag; the default checkout is shallow and tagless
       - name: Fetch the V1 seed tag for Gate 0
         run: git fetch --no-tags --depth=1 origin refs/tags/v1-seed-82a994d15:refs/tags/v1-seed-82a994d15
+      # the build packs the Centurion's GLBs as V1 does (scripts/optimize-glb.mjs), which recodes their JPEGs losslessly with jpegtran; test/hero-cut.test.mjs packs the wear donor files the same way, so it is installed before the tests
+      - name: jpegtran
+        run: command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)
       - run: npm test
       - name: Gate 0 table
         run: npm run --silent gate0:table >> "$GITHUB_STEP_SUMMARY"
       # V3-only rows (test/gate0/v3-scripts): no V1 reference; this tree twice + the pinned hashes in test/gate0/v3-golden.json
       - name: Gate 0 V3-only table
         run: npm run --silent gate0:v3 >> "$GITHUB_STEP_SUMMARY"
-      # the build packs the Centurion's GLBs as V1 does (scripts/optimize-glb.mjs), which recodes their JPEGs losslessly with jpegtran
-      - name: jpegtran
-        run: command -v jpegtran || (sudo apt-get update -qq && sudo apt-get install -y -qq libjpeg-turbo-progs)
       - run: npm run build
       # 106 only: the built dist/ holds no 65 body, kit or 65-keyed clip JSON, and no bundle names one (data/build.json notShipped)
       - name: No 65 file in dist/
         run: DIST_REQUIRED=1 node --test test/rig-bones.test.mjs
+
+  # Static checks (audit A, 2026-10-29): `tsc --noEmit` over src/ (tsconfig.json, strict) and ESLint (eslint.config.js). Beside `test`, not after it; NOT a required check yet.
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
 
   # The PRODUCTION build booted in headless Chromium (scripts/boot-check.mjs): hero and first boss spawned, the hero's sword loaded, the loop alive,
   # zero console errors, zero failed or 404 requests. Two live breaks (the Gargantua freeze, the hero sword missing on live) shipped because nothing booted the BUILT game.

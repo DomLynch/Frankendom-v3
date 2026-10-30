@@ -3,6 +3,8 @@
   "query": "presence",
   "path": "/presence",
   "spawnAbout": "ZONE FRAME (fix: the seam used to send the pit's own frame, around world (0, 0), while the zone's yard and pit stand at x 190 to 235). The wire now carries ZONE-frame metres: the page adds the pit's centre in the zone row (src/zone/spawns.ts pitOrigin, from data/zones + data/respawn.json world) to the hero before it is sent and takes it off a remote before it is drawn (src/presence/chunk.ts `origin`), so the offset has one source and is not copied here. `spawn`: where the SERVICE places a join, in zone-frame metres (the pit's centre, 226 / 47 in zone 1), so a first pose from the pit is a short step, not a teleport; a test pins it to pitOrigin. Only ?presence= pages are affected; a page without it sends and draws nothing.",
+  "originsAbout": "The WebSocket Origin allow-list (server/presence/server.ts, src/presence/rows.ts originAllowed). A browser always sends Origin; a page on any other site is refused with 403 (refused.origin) so it cannot open a socket as a visitor. `allowed`: exact origins. `devHosts`: hostnames allowed on any port over http or https (local dev). `allowMissing`: a client that sends no Origin header (not a browser: the bots, tests, curl) is let through, because only browsers can be driven by a third-party page.",
+  "origins": { "allowed": ["https://v3.frankendom.com"], "devHosts": ["localhost", "127.0.0.1", "[::1]"], "allowMissing": true },
   "host": "127.0.0.1",
   "protocol": "frankendom.v3.presence.1",
   "poseGlobal": "__v3HeroPose",

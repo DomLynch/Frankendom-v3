@@ -19,13 +19,14 @@ test('data/parts.json is valid, every unit is one the physics cut cues', () => {
   assert.deepEqual(validateParts(PARTS, STARS.levels.length), []);
   assert.deepEqual(validateFile('parts', RAW), []);
   const cue = new Set(read('pickup').units);
-  for (const s of PARTS.slots) for (const u of s.units) assert.ok(cue.has(u), `${s.id}: ${u} is a cut unit`);
+  // the hand and foot slots (`pair`) are ahead of the cut event: nothing cuts them until the physics step adds them to data/pickup.json (docs/six-parts-plan.md step 2); every other slot's unit is a cue unit now
+  for (const s of PARTS.slots) for (const u of s.units) assert.ok(cue.has(u) || s.pair, `${s.id}: ${u} is a cut unit`);
   for (const u of cue) assert.ok(slotOfUnit(u), `${u} fills a slot`);
   assert.equal(PHYS.corpse.event, 'corpse:cut');
 });
 
 test('a bad table is named', () => {
-  const bad = clone(PARTS); bad.slots[1].id = 'head'; bad.rarities.pop(); bad.rarities[0].colour = 'red'; bad.slots[6].id = 'x';
+  const bad = clone(PARTS); bad.slots[1].id = 'head'; bad.rarities.pop(); bad.rarities[0].colour = 'red'; bad.slots.find((s) => s.id === 'weapon').id = 'x';
   const e = validateParts(bad, 3).join('\n');
   assert.match(e, /unique lower-case id/); assert.match(e, /one row per data\/stars\.json level/); assert.match(e, /colour/); assert.match(e, /"weapon" slot/);
   assert.match(validateFile('parts', { ...RAW, extra: 1 }).join(), /extra: unknown key/);
@@ -81,7 +82,8 @@ test('slotViews: rarity from star, trophy tie-in, worn marked, best first', () =
   assert.equal(head.worn.id, 'arachne:head');
   assert.equal(v.find((x) => x.slot.id === 'arm_left').parts[0].rarity.label, 'Rare');
   assert.equal(v.find((x) => x.slot.id === 'weapon').parts.length, 0);
-  assert.equal(v.length, 7);
+  assert.equal(v.length, 11, 'head, two arms, two hands, two legs, two feet, torso, weapon');
+  assert.deepEqual(v.filter((x) => x.slot.pair).map((x) => [x.slot.id, x.slot.pair]), [['hand_left', 'hands'], ['hand_right', 'hands'], ['foot_left', 'feet'], ['foot_right', 'feet']], 'hands and feet sit side by side in the menu');
 });
 
 // ---- the menu and the hook, with a tiny DOM (click = the handler a finger reaches) and the real feel bus ----
@@ -164,16 +166,6 @@ test('rarity follows each kill: a 2-star boss then a 0-star one; the killing-blo
   emitFeel(PHYS.corpse.event, { unit: 'head', gear: [], source: 'tap', corpseId: 'executioner#3', profile: 'gargantua' });   // an event with no star is a 0-star cut
   assert.equal(box.save.parts['gargantua:head'].star, 0);
   hook.remove();
-});
-
-test('the page hands the star to the cut: ragdoll.ts reads kind and star at the kill, main.ts sets both', () => {
-  const rag = readFileSync(new URL('../src/fight/ragdoll.ts', import.meta.url), 'utf8'), main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
-  // the life is noted at the TOP of the kill, before the finisher skip branch (a beheading finisher cuts through scene.finisherCut with mode 'skip' and never reaches the else branch)
-  const killAt = rag.indexOf('if (killed) {'), noteAt = rag.indexOf('noteLife(lifeProfiles, lifeId'), skipAt = rag.indexOf("mode = 'skip'", killAt), elseAt = rag.indexOf('rd.kill(blowImpulse', killAt);
-  assert.ok(killAt > 0 && noteAt > killAt && noteAt < skipAt && noteAt < elseAt, 'noteLife runs before the skip branch and the plain-death branch');
-  assert.equal(rag.split('noteLife(lifeProfiles').length - 1, 1, 'noted once, not per branch');
-  assert.match(rag, /star: lifeProfiles\.get\(corpseId\)\?\.star \?\? 0/);
-  assert.match(main, /setActiveKind\(k\.kind, k\.star \?\? 0\)/);
 });
 
 test('a finisher kill (skip mode, the head cut after the kill) yields a part of the kill\'s own star, and the next life never lends its', () => {

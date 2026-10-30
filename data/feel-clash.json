@@ -22,8 +22,8 @@
     "defender": { "guard": ["armLeft", "forearmLeft", "handLeft"], "spine": ["spine2"] }
   },
   "dipParts": { "arm": 1.0, "forearm": 1.0, "hand": 1.0, "spine": 0.6 },
-  "timing": { "easeInS": 0.04, "holdS": 0.12, "upS": 0.3, "lightScale": 0.7 },
-  "pushback": { "metres": { "blocked": 0.25, "perfect": 0.1, "parried": 0.0, "broken": 0.6 }, "heavyOnly": false },
+  "timing": { "easeInS": 0.04, "holdS": 0.12, "upS": 0.3, "lightScale": 0.7, "dipFloor": 0.01 },
+  "pushback": { "metres": { "blocked": 0.25, "perfect": 0.1, "parried": 0.0, "broken": 0.6 }, "heavyOnly": false, "digits": 4 },
   "event": { "type": "feel:clash", "log": "__feelClash" },
   "hero": {
     "about": "bone lean, radians at full strength, applied after the clip: the struck weapon arm swings back, the spine rocks away from the blow",
@@ -31,11 +31,13 @@
     "weaponArmRad": [-0.5, 0.0, 0.25],
     "guardArmRad": [-0.2, 0.0, 0.0],
     "spineRad": [-0.1, 0.0, 0.0],
-    "maxStrength": 1.92
+    "maxStrength": 1.92,
+    "minScale": 0.25
   },
   "spark": {
     "on": true, "at": 0.5, "liftM": 0.05, "count": 10, "countHeavy": 18, "speedMps": 3.2, "lifeS": 0.22, "sizePx": 5,
-    "color": "#ffd9a0", "handBones": { "hero": "hand_r", "foe": "handRight" }, "max": 24
+    "color": "#ffd9a0", "handBones": { "hero": "hand_r", "foe": "handRight" }, "max": 24,
+    "gravityMps2": 9.8, "hideY": -1000, "spin": 0.7, "upBase": 0.4, "upMul": 37, "speedBase": 0.5, "speedMul": 53, "mod": 10
   },
   "perf": { "frameBudgetMs": 0.25 }
 }

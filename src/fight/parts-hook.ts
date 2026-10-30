@@ -4,18 +4,21 @@
 import { feel } from './feel.ts';
 import PHYSICS from '../../data/physics.json' with { type: 'json' };
 import { PARTS, collect, equip, unequip, validateParts } from '../parts.ts';
+import { canWear } from '../parts-wear.ts';
 import { levelOf, type StarsFile } from '../stars.ts';
 import type { ProgressionFile, Save } from '../progression.ts';
 import { mountPartsPanel } from './parts-panel.ts';
 
-export type PartsHookCtx = {
+type PartsHookCtx = {
   get(): Save | null;
   put(save: Save): void;
   profiles: readonly { id: string; name?: string }[];
   stars: StarsFile;
   prog: ProgressionFile;
+  /** Called after an Equip / Unequip wrote the save, with the new `equipped` map: the page lays the hero's loadout (src/fight/parts-wear.ts). */
+  onWorn?(equipped: Readonly<Record<string, string>>): void;
 };
-export type PartsHook = { remove(): void };
+type PartsHook = { remove(): void };
 
 export function mountParts(ctx: PartsHookCtx, doc: Document = document): PartsHook {
   const bad = validateParts(PARTS, ctx.stars.levels.length);
@@ -25,7 +28,8 @@ export function mountParts(ctx: PartsHookCtx, doc: Document = document): PartsHo
   const panel = mountPartsPanel(doc as unknown as Parameters<typeof mountPartsPanel>[0], {
     rows: PARTS,
     get: () => ctx.get(),
-    onEquip(slot, id) { const s = ctx.get(); if (!s) return; const next = id === null ? unequip(s, slot) : equip(s, id); if (next !== s) write(next); },
+    onEquip(slot, id) { const s = ctx.get(); if (!s) return; const next = id === null ? unequip(s, slot) : equip(s, id); if (next !== s) { write(next); ctx.onWorn?.(next.equipped ?? {}); } },
+    canWear,
     bossName: (profile) => names.get(profile) ?? profile,
     trophyOf: (star) => levelOf(ctx.stars, star).trophy?.name ?? null,
     weapon() {

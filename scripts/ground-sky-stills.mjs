@@ -1,15 +1,15 @@
 // The skyline against the zone's ground (#129 skyline, #127 open ground), 375 wide, the game's OWN camera (nothing is overridden): the hero is pinned at a place, the page waits for the
 // skyline strip to load and fade in (it is fetched after the first frame), then one still. Run on each tree (origin/main alone, and main + the ground branch) and compare.
 //   AT=0,500 WAIT_MS=12000 node scripts/ground-sky-stills.mjs <base url> <out dir> <tag> [query]      (query e.g. pitch=horizon)
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag, query = ''] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/ground-sky-stills.mjs <base url> <out dir> <tag> [query]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const AT = (process.env.AT ?? '0,500').split(',').map(Number), WAIT = Number(process.env.WAIT_MS ?? 12000);
-const browser = await chromium.launch({ args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 1), isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ chromeEnv: null });
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 1)));
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 240000 });

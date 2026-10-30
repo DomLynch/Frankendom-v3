@@ -2,13 +2,13 @@
 // Lands LIGHT blows (KeyF) on the opponent, one per GAP ticks, and logs per tick from each blow's landing: the sim's foe phase / stun / down, the ragdoll state, the evaluator's last result
 // (window.__v3Rules.last) and the Hit events. A tick where the ragdoll state turns 'knockdown' is printed with every input of that tick. Playwright is not a repo dependency, install it beside the script.
 //   node light-hit-trace.mjs <base> <out> [query] [blows]     env: ZONE (head|torso|legs: rewrite the location of every Hit on the foe), KEYS (default KeyF; KeyG = heavy, KeyC = kick), GAP (default 90), CHROME
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 const [base, out, query = '', BLOWS = '12'] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser({ angle: 'swiftshader' });
 const TICK = 1000 / 60, GAP = Number(process.env.GAP ?? 90), KEYS = (process.env.KEYS ?? 'KeyF').split(','), ZONE = process.env.ZONE ?? '';
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+const page = await browser.newPage(phoneOptions(1));
 page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
 await page.addInitScript((zone) => {
   globalThis.__hits = [];
@@ -16,7 +16,7 @@ await page.addInitScript((zone) => {
   Array.prototype.push = function (...a) { for (const e of a) if (e && typeof e === 'object' && (e.type === 'Hit' || e.type === 'KnockedDown' || e.type === 'Staggered' || e.type === 'Killed') && e.target !== 0) { if (zone && e.type === 'Hit' && e.location && !e.missile) e.location = zone; push.call(globalThis.__hits, { ...e }); } return push.apply(this, a); };
 }, ZONE);
 await page.goto(`${base}/${query ? `?${query}` : ''}`);
-await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 240000, polling: 'raf' });
+await waitPlayable(page, { timeout: 240000, polling: 'raf' });
 await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 20);
 const run = (t) => page.clock.runFor(Math.round(t * TICK));
 await run(120);

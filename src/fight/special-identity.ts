@@ -6,7 +6,7 @@ import IDENTITY from './special-identity.json' with { type: 'json' };
 // resolve these keys outside the simulation; this module activates nothing.
 const BOSS_SPECIAL_IDS: Readonly<Record<string, string>> = Object.fromEntries((IDENTITY.rows as readonly { id: string; key: string }[]).map((r) => [r.id, r.key]));   // the rows: special name -> preview key
 
-export type BossSpecialId = string;
+type BossSpecialId = string;
 
 // Resolve the name captured by the accepted event, independently of later UI state.
 export function bossSpecialId(name: SpecialName | null): BossSpecialId | null {

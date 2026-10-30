@@ -5,7 +5,7 @@
 // A jump beyond `remoteSnap` metres is a teleport, not a run. The tick, the interest cap and the tiers are presence's rows (data/presence.json). No gameplay: this only says where to draw.
 import { presenceRule } from './rows.ts';
 
-export type Remote = { id: number; x: number; z: number; heading: number; anim: number; flags: number };
+type Remote = { id: number; x: number; z: number; heading: number; anim: number; flags: number };
 export type Shown = { id: number; x: number; z: number; heading: number; speed: number };   // speed: metres a second along the current ease (0 at rest, after a snap, or once the ease is done)
 type Rec = { fx: number; fz: number; fh: number; tx: number; tz: number; th: number; t0: number; dur: number; last: number; snapped: boolean };
 

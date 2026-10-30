@@ -24,7 +24,7 @@ export type MobsRunDeps = {
 
 /** Throws on a bad data/mobs.json row (the page stops at load, like every data row). */
 export function checkMobs(areaIds: readonly string[]): void {
-  const bad = validateMobs(MOBS as never, RIG, RINGS.rings.map((r) => r.id), areaIds, PHYSICS);
+  const bad = validateMobs(MOBS as never, RIG, RINGS.rings.map((r) => r.id), [...areaIds], PHYSICS as never);
   if (bad.length) throw new Error(`data/mobs.json: ${bad.join('; ')}`);
 }
 

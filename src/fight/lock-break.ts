@@ -7,7 +7,7 @@
 import ROWS from '../../data/respawn.json' with { type: 'json' };
 import { wrapAngle } from './sim.ts';
 
-export type LockBreakRows = {
+type LockBreakRows = {
   on: boolean; query: string; off: string;
   breakAngleDeg: number;       // the stick must point this far from the foe (0 = at him, 180 = straight away) to break the lock
   minPush: number;             // the stick must be pushed at least this far (0..1) to count
@@ -15,7 +15,7 @@ export type LockBreakRows = {
   relockAngleDeg: number;      // a stick pointing within this of the foe ...
   relockSeconds: number;       // ... for this long locks on again
 };
-export type LockBreakLimits = { [K in keyof Omit<LockBreakRows, 'on' | 'query' | 'off'>]: [number, number] };
+type LockBreakLimits = { [K in keyof Omit<LockBreakRows, 'on' | 'query' | 'off'>]: [number, number] };
 
 /** Throws on a bad lock-break row. */
 export function validateLockBreak(rows: LockBreakRows, limits: LockBreakLimits): void {
@@ -52,13 +52,13 @@ export function awayAngleDeg(dir: { x: number; z: number }, hero: { x: number; z
   return Math.abs(wrapAngle(Math.atan2(dir.x, dir.z) - Math.atan2(fx, fz))) * 180 / Math.PI;
 }
 
-export type LockState = { broken: boolean; engagedFor: number; away: number; toward: number; manual?: boolean };   // manual: the player let go of the lock with the lock key (data/input.json keys.lock); only the key locks on again
+type LockState = { broken: boolean; engagedFor: number; away: number; toward: number; manual?: boolean };   // manual: the player let go of the lock with the lock key (data/input.json keys.lock); only the key locks on again
 export const freshLock = (): LockState => ({ broken: false, engagedFor: 0, away: 0, toward: 0 });
 
 /** The lock key (Tab, keyboard + mouse only): a held lock is let go and stays so (the camera is the player's: mouse look, free run); a broken lock (by the stick or by this key) locks on again. */
 export const toggleLock = (s: LockState): LockState => (s.broken ? { ...s, broken: false, manual: undefined, away: 0, toward: 0 } : { ...s, broken: true, manual: true, away: 0, toward: 0 });
 
-export type LockFrame = {
+type LockFrame = {
   dt: number; fighting: boolean;                      // fighting: a boss (or an attacker) is engaged with him
   stick: { x: number; z: number }; yaw: number; hero: { x: number; z: number }; foe: { x: number; z: number };
   action: string | null;

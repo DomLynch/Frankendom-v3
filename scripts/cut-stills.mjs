@@ -7,20 +7,19 @@
 // COST=1: no stills, no fake clock: the fight plays in real time, the kick kill and (CUT_AT s later) the head cut and a tap on each arm; the ragdoll's own
 // per-frame cost by mode is printed (globalThis.__ragdoll.byMode: alive / dead).
 //   node scripts/cut-stills.mjs <base url> <out dir> [query ...]     (HEAD=1 or TAP=armLeft; on a Mac it uses Metal, elsewhere SwiftShader)
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { collectErrors, launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const [base, out, ...queries] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node scripts/cut-stills.mjs <base url> <out dir> [query ...]'); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchBrowser();
 const TICK = 1000 / 60, KICK_EVERY = Number(process.env.KICK_EVERY ?? 40), CUT_EVERY = Number(process.env.CUT_EVERY ?? 55), MAX_TICKS = Number(process.env.MAX_TICKS ?? 4000);
 const AFTER = (process.env.AFTER ?? '0,4,10,20,40,90,200').split(',').map(Number), TAP = process.env.TAP, HEAD = !!process.env.HEAD;
 const report = {};
 const open = async (query, tune) => {
-  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  page.on('pageerror', (e) => console.error(`pageerror ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') console.error(`console ${m.text()}`); });
+  const page = await browser.newPage(phoneOptions(2));
+  collectErrors(page, { echo: true });
   if (process.env.CUTDEBUG) await page.addInitScript((v) => { globalThis.__cutDebug = v; }, process.env.CUTDEBUG);
   if (tune) await page.addInitScript((t) => { globalThis.__ragdollTune = t; }, tune);
   return page;
@@ -74,7 +73,7 @@ for (const query of queries.length ? queries : ['', 'physics=v1']) {
   const page = await open(query, HEAD ? { onKill: { torso: 'head' } } : undefined);
   await page.clock.install();
   await page.goto(`${base}/${query ? `?${query}` : ''}`);
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: 180000, polling: 'raf' });
+  await waitPlayable(page, { timeout: 180000, polling: 'raf' });
   await page.clock.pauseAt(await page.evaluate(() => Date.now()) + Number(process.env.PAUSE_MARGIN ?? 20));   // PAUSE_MARGIN=500 on a loaded or software-GL box (the evaluate can take longer than 20 ms: "Cannot fast-forward to the past")
   const run = (ticks) => page.clock.runFor(Math.round(ticks * TICK));
   await run(120);

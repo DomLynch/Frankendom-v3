@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { launchBrowser, phoneOptions, waitPlayable } from './lib/browser.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outArg = process.argv.indexOf('--out');
@@ -27,7 +28,7 @@ const server = spawn(process.execPath, [path.join(root, 'scripts/serve.mjs'), St
 const origin = `http://localhost:${port}`;
 const t0 = Date.now(), log = [], problems = [];
 const note = (l) => { const s = `${((Date.now() - t0) / 1000).toFixed(1)}s ${l}`; log.push(s); console.log(s); };
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--mute-audio'] });
+const browser = await launchBrowser({ angle: 'swiftshader', extra: ['--enable-unsafe-swiftshader', '--mute-audio'], chromeEnv: null });
 let page, done = false;
 async function finish(code) {
   if (done) return; done = true;
@@ -40,14 +41,14 @@ async function finish(code) {
 }
 setTimeout(() => { problems.push(`timeout: exceeded ${TOTAL_MS / 1000} s`); void finish(1); }, TOTAL_MS);
 try {
-  page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  page = await browser.newPage(phoneOptions(2));
   page.on('console', (m) => { if (m.type() === 'error') problems.push(`console.error: ${m.text().slice(0, 300)}`); });
   page.on('pageerror', (e) => problems.push(`uncaught page error: ${String(e.stack ?? e).slice(0, 500)}`));
   page.on('requestfailed', (r) => { if (r.url().startsWith(origin)) problems.push(`request failed: ${r.url()} ${r.failure()?.errorText}`); });
   page.on('response', (r) => { if (r.url().startsWith(origin) && r.status() >= 400) problems.push(`HTTP ${r.status()}: ${r.url()}`); });
   note('load');
   await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => document.getElementById('attack-button')?.getAttribute('aria-disabled') === 'false', null, { timeout: READY_MS });
+  await waitPlayable(page, { timeout: READY_MS });
   note('playable');
   const sim = () => page.evaluate(() => { const p = globalThis.__v3Fight, f = p?.duel?.fighters; return { tick: p?.duel?.tick ?? -1, hero: f?.[0]?.health ?? 0, boss: f?.[1]?.health ?? 0 }; });
   const a = await sim();

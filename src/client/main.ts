@@ -37,7 +37,11 @@ import STARS from '../../data/stars.json' with { type: 'json' };
 import { rollStar, starMark, starTune, trophyText, validateStars, levelOf as starLevel, type StarsFile } from '../stars.ts';
 import { addTrophy, escalation, heroWeapon, loadSave, mergeTune, progressionOn, recordKill, storageOf, unlockText, validateProgression, writeSave, type BossRow, type ProgressionFile } from '../progression.ts';
 import { mountUnlockLine } from '../fight/unlock-line.ts';
+import { createAudioUnlock, rearmWhenLocked } from '../audio/unlock-once.ts';
 import { mountParts } from '../fight/parts-hook.ts';
+import { wearFlags, wornParts } from '../parts-wear.ts';
+import { configureSimMechanics, mechCaption } from '../fight/mechanics/sim-hooks.ts';
+import MECHANICS_ROWS from '../../data/mechanics.json' with { type: 'json' };
 import { mountCommentator } from '../commentator.ts';   // the arena commentator (data/commentator.json): text lines on events, presentation only
 import { setArenaClamp, setCameraPitch, setFreeCamera, setLockFrame, setWalkClamp } from '../fight/camera.ts';
 import { freeCameraFor, handsOver, lookStarts, wantsFreeCamera } from '../fight/free-camera.ts';import { dropsInput, keepsInput } from '../fight/hand-over-input.ts';
@@ -65,11 +69,13 @@ import { checkGolden, goldenWeaponAtLoad, mountGolden } from '../fight/golden-wi
 import { goldenBlips } from '../zone/golden-drops.ts';
 import { RADAR, bossBlips, mountRadar, pileBlip, playerBlips, radarOn } from '../fight/radar.ts';   // the radar (data/radar.json; ?radar=off): presentation only
 import { createMobsRun } from '../mobs-run.ts';   // trash mob swarms (data/mobs.json, src/zone/mobs.ts)
-import { createMechanics, setMechanicScale } from '../fight/mechanics/index.ts';   // the bosses' signature mechanics (data/mechanics.json): Lord Gourd's pumpkin bombs
+import { createMechanics, setMechanicScale } from '../fight/mechanics/index.ts';
+import { mechanicView } from '../fight/mechanics/runtime.ts';   // the bosses' signature mechanics (data/mechanics.json): Lord Gourd's pumpkin bombs
 import { createInput } from '../fight/input.ts';
 import { strikeCut } from '../fight/cut-strike.ts';
 import { mountManaBar } from '../fight/mana-bar.ts';
 import { heroNoManaFor, setHeroNoMana } from '../fight/hero-mana.ts';
+import { knockRoundFor, setKnockRound } from '../fight/knock-round.ts';
 import { createFeedback } from '../fight/sound/feedback.ts';
 import { toastOver, zoneSoundRows, type ZoneSoundRows } from '../audio/zone-cues.ts';
 import { createKeep } from '../audio/keep.ts';
@@ -97,9 +103,11 @@ import { zoneFor as plainZoneFor } from '../stubs.ts';
 import DAILY_ROWS from '../../data/daily-pit.json' with { type: 'json' };
 import { createDaily, sessionOf } from '../daily-pit-ui.ts';   // the Daily Pit (data/daily-pit.json, src/daily-pit.ts): a button on every page; inside the daily the zone is the day's one boss with its modifier
 import type { DailyFile } from '../daily-pit.ts';
-import { groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { GROUND, groundFor, groundOn, sandOn } from '../zone/ground.ts';
+import { TERRAIN, terrainFor } from '../zone/terrain.ts';
 import { ringLook, ringTune } from '../zone/rings.ts';   // the biome rings (data/rings.json): difficulty per ring, the ground tint and the sky plates by the hero's distance
 import type { DuelPose } from '../fight/duel.ts';
+configureSimMechanics(MECHANICS_ROWS.mechanics);   // the boss signature mechanics (the sim imports no data/ json: the driver lays the rows in, before any fight or effect is built)
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;   // :84
 const search = location.search;
@@ -121,7 +129,7 @@ const STAR_ROWS = STARS as unknown as StarsFile;
 const starById: Record<string, number> = {}, spawnKills: Record<string, number> = {}, kindKills: Record<string, number> = {};   // by spawn id / by kind: this visit's star level, kills of that spawn, kills of that boss kind
 const PROG_ROWS = PROGRESSION as unknown as ProgressionFile;
 { const bad = validateProgression(PROG_ROWS, PROFILES.profiles.map((p) => p.id), isWeaponId); if (bad.length) throw new Error(`data/progression.json: ${bad.join('; ')}`); }
-const daily = createDaily({ file: DAILY_ROWS as unknown as DailyFile, doc: document, win: window, store: storageOf(), session: sessionOf(window), progression: PROG_ROWS, useSave: progressionOn(PROG_ROWS, search) && !pitbornV1(search), now: () => Date.now(), reload: () => location.reload(), cuts: () => ((globalThis as Record<string, unknown[] | undefined>)[DAILY_ROWS.cutLog]?.length ?? 0), nameOf: (k) => PROFILES.profiles.find((p) => p.id === k)?.name ?? k });
+const daily = createDaily({ file: DAILY_ROWS as unknown as DailyFile, doc: document, win: window, store: storageOf(), session: sessionOf(window), progression: PROG_ROWS, useSave: progressionOn(PROG_ROWS, search) && !pitbornV1(search), now: () => Date.now(), reload: () => location.reload(), cuts: () => ((globalThis as unknown as Record<string, unknown[] | undefined>)[DAILY_ROWS.cutLog]?.length ?? 0), nameOf: (k) => PROFILES.profiles.find((p) => p.id === k)?.name ?? k });
 const zoneFor = (s: string) => daily.zoneFor(plainZoneFor(s));   // the daily's one-boss zone inside the Daily Pit, else the zone as it is
 if (daily.run) starById[daily.run.spawnId] = daily.stars;   // the day's star modifier: the boss stands with its star from the first frame
 // inside the Daily Pit the save is not read for the fight (no escalation, no unlock, no corpse run): the same fight for everyone
@@ -135,7 +143,7 @@ const BASE_TUNE = mergeTune(mergeTune(TUNED, ringTune()), daily.tune);   // + th
 const KIND_CTX: KindCtx = { stars: STAR_ROWS, tune: PROG?.save ? mergeTune(BASE_TUNE, escalation(PROG.save, PROG_ROWS)) : BASE_TUNE, profiles: PROFILES.profiles as ProfileRow[], difficulty: DIFFICULTY as DifficultyFile, brains: BRAINS.brains as BrainRow[], pick: difficultyPick(DIFFICULTY, search), search, level, ai: FIGHT.ai,
   override: pitbornV1(search) ? FIGHT.opponentV1.opponent : null, weapon: HERO_WEAPON, skill: FIGHT.skill as SkillId, skill2: FIGHT.skill2 as SkillId, stance: FIGHT.stance as PickedStance, specials: FIGHT.specials };
 let KINDS = kindTable(KIND_CTX);   // rebuilt after a kill (onBossKilled): the next respawn or fight is built from the raised scales
-let foe: KindFight, opponentId: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
+let foe: KindFight, opponentId!: OpponentId, opponent: Opponent, difficultyOn: boolean, aiProfile: AiProfile;
 function useKind(k: KindFight) {
   const changed = !foe || foe.opponentId !== k.opponentId || foe.kind !== k.kind || (foe.star ?? 0) !== (k.star ?? 0);   // two bosses on one archetype (a ring boss cloned from Arachne) differ by their profile row
   setActiveKind(k.kind, k.star ?? 0);
@@ -154,11 +162,14 @@ const feedback = createFeedback();
 const snd = new URLSearchParams(search).get('snd'), v1Sound = snd === 'v1', keep = createKeep(SOUND.keep);
 if (!v1Sound) feedback.prepare();
 // :101 WebKit grants audio on touchend/click/keydown, not touch-start: the whole family unlocks
-for (const type of v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
-  window.addEventListener(type, v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, { passive: true });
+// (once the context is running the listeners remove themselves and stop allocating; a later lock re-arms them from the wake handler below: src/audio/unlock-once.ts)
+const audioUnlock = createAudioUnlock({ target: window, types: v1Sound ? ['pointerdown', 'touchend', 'click', 'keydown'] : ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'], run: v1Sound ? () => feedback.unlock() : () => { keep.play(); feedback.resume(); }, unlocked: () => feedback.unlocked() });
+audioUnlock.arm();
+rearmWhenLocked((fn) => feedback.onStateChange(fn), audioUnlock.arm, () => feedback.unlocked());   // iOS 'interrupted' sends a statechange, not always a pageshow/focus
 const hud = createHud(element, /[?&]ring=v1\b/.test(search) ? null : FIGHT.readyRing);   // the SPECIAL buttons' ready ring (data/fight.json readyRing); ?ring=v1 = today's HUD exactly
 const commentator = mountCommentator(document, Object.fromEntries(PROFILES.profiles.flatMap((p) => ((p as { name?: string }).name ? [[p.id, (p as { name?: string }).name!]] : []))));
 setHeroNoMana(heroNoManaFor(FIGHT.heroMana, search));   // V3 (Dom: "remove mana for now"): the hero has no MANA bar and casts free (data/fight.json heroMana); ?mana=v1 = the bar and the mana cost
+setKnockRound(knockRoundFor(FIGHT.knockRound, search));   // V3 (audit C): a glancing blow's fractional knockback shoves rounded whole steps, not ceil'd (data/fight.json knockRound); ?knock=v1 = V1's shove
 mountManaBar();
 
 // The fight (match.ts begin('career') :144-176 for a guest at level 1): the live era flags, then initialPractice on the career's picks.
@@ -189,7 +200,7 @@ let practice = fresh(), frameEvents: CombatEvent[] = [];
 const identity = () => ({ opponent: opponentId, level });   // match.ts specialIdentity, no presets
 
 // :530 the render pair and the accumulator; the camera stays locked (V1's default)
-let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0;
+let state = practice.fighter, previous = state, accumulator = 0, hitStop = 0, tellStop = 0;   // tellStop: a boss mechanic's freeze (ms) for the tick it fired on (Sir Reginald's limb fails)
 const locked = true;
 let assetsReady = false, graphicsLost = false;
 const step = () => 1 / FIGHT.tempoHz;
@@ -264,7 +275,7 @@ document.addEventListener('visibilitychange', clearInput);
 // Back on the page (app switch, a call, the lock screen): clearInput hushed the sound and the context is suspended or interrupted; ask
 // again now (iOS grants it as soon as it allows) instead of waiting for the next touch. After clearInput, so it is not undone.
 if (!v1Sound) {
-  const rewake = () => { if (!document.hidden) feedback.unlock(); };
+  const rewake = () => { if (!document.hidden) { feedback.unlock(); if (!feedback.unlocked()) audioUnlock.arm(); } };
   window.addEventListener('pageshow', rewake); window.addEventListener('focus', rewake); document.addEventListener('visibilitychange', rewake);
 }
 document.addEventListener('pointerdown', () => { if (practice.finish && view.finishPhase().touring) view.stopTour(); });   // :1422
@@ -285,6 +296,7 @@ function nameOpponent() {   // :397 without the legend
 // (`engaged`, which gates the auto-draw); a hero beyond its leash resets it; a kill starts only that spawn's timer; walking into another standing spawn's aggro hands the sim to it.
 // ?postkill=v1 (ZONE null) = the frozen end screen with Rematch.
 if (ZONE && groundOn(search)) view.openGround(groundFor(WORLD.pitScale, undefined, sandOn(search)));   // the zone's open ground beyond the pit (data/zone-ground.json); ?ground=v1 and ?postkill=v1 keep the pit's floor
+if (ZONE && groundOn(search)) { const zoneRow = orderedZone(zoneFor(search), FIGHT.order, search), hills = terrainFor(zoneRow, pitOrigin(zoneRow, WORLD)); if (hills) view.openTerrain(hills, TERRAIN, WORLD.pitScale, GROUND.gridRadiusMetres); }   // the zone's hills from a seed (data/terrain.json): flat pads at the pit, the camp and every boss, render only; no flag of its own (?ground=v1 and ?postkill=v1 stay flat)
 if (ZONE) (globalThis as { __v3Renderer?: unknown }).__v3Renderer = view.renderer;   // the stills put the camera at the pit's edge (scripts/ground-stills.mjs)
 const DEATH = heroDeathFor(!!ZONE, search);   // data/hero-death.json: the death ragdoll, camera, 'You fell' line and Respawn button; null = ?herodeath=v1 (or ?postkill=v1): the fall, 'You died' and the automatic stand-up as before
 let respawnAsked = false;
@@ -342,7 +354,11 @@ const pileXY: [number, number] = [0, 0];   // the pile marker's screen spot, rew
 let carriedWeapon: string = REWARD_WEAPON, lingerIdx = -1, lingerLeft = 0, crClock = 0;
 const weaponName = (w: string) => PROG_ROWS.bosses.find((b) => b.weapon === w)?.name ?? w;
 function crPut(save: ReturnType<typeof loadSave>) { if (!PROG) return; PROG.save = save; writeSave(PROG.store, PROG_ROWS, save); }
-const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
+// Frankendom parts, stage 2 (data/parts.json wear; Dom 2026-10-30 "you become what you kill"): an equipped part visibly replaces the hero's matching piece (look only). On by default; ?parts=off wears nothing; ?wear=<profile>:<slot>,... wears exactly that list without a save (the stills).
+const WEAR = wearFlags(search), wearNow = (equipped?: Readonly<Record<string, string>>) => (WEAR.on ? wornParts(WEAR.force ?? equipped ?? PROG?.save?.equipped) : []);
+(globalThis as { __v3Wear?: unknown }).__v3Wear = { info: () => view.wearInfo(), render: () => ({ calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }) };   // the stills and the perf row read what the hero wears
+view.wear(wearNow());   // the saved loadout (or the forced one) is laid after the first frame; none worn = no import and no fetch
+const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS, onWorn: (equipped) => view.wear(wearNow(equipped)) }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
 function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
 function startLinger(idx: number) {
   const pile = PROG?.save?.pile;
@@ -508,7 +524,7 @@ function zoneStep(dt: number) {
         const alive = () => attackers.filter((a) => !a.dead).map((a) => a.index);
         const gone = dropped(spawns, alive(), (i) => attackers.find((a) => a.index === i)!.practice.enemy);
         attackers = attackers.filter((a) => !gone.includes(a.index));
-        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai));   // each attacker fights as its own kind, its own brain
+        for (const i of joiners(spawns, current, alive(), hero)) attackers.push(joinAttacker(i, make(nextSeed((seed ^ (i + 1)) >>> 0), poseOfAttacker(i, hero), kindAt(i)), kindAt(i).ai, ((m) => (m?.pure ? m : null))(mechanics?.of(spawns[i]!.kind))));   // each attacker fights as its own kind, its own brain, and wears a stateless signature mechanic (Sir Reginald's limbs; Nan's holds state, so only the held boss runs it)
       }
     }
     else if (near >= 0) { if (near === current) engaged = true; else hand(near, hero); }   // walked into aggro: this one fights
@@ -590,7 +606,7 @@ function frame(now: number) {
   syncSpecialAudio();
   if (view.renderer.getContext().isContextLost()) { graphicsLost = true; requestAnimationFrame(frame); return; }
   graphicsLost = false;
-  const raw = (now - last) / 1000, elapsed = raw >= 0 && raw < 60 ? raw : 0;   // :1508 a clock jump is a resync, not fight time
+  const raw = (now - last) / 1000, elapsed = raw >= 0 && raw < FIGHT.clockJumpS ? raw : 0;   // :1508 a clock jump is a resync, not fight time
   last = now;
   const dt = Math.min(elapsed, FIGHT.frameDtMaxS);
   if (!paused()) {
@@ -619,13 +635,19 @@ function frame(now: number) {
       const duelIntent = quantizeIntent({ move: { x: intent.x, z: intent.z, yaw: view.yaw, run: intent.run }, action: startAction(autoStart && (!ZONE || engaged), practice, intent.action), guard: intent.guard,
         guardDirection: intent.guardDirection ?? undefined, held: intent.held, lock: lockOn, cancel: intent.cancel });
       const prior = practice;
-      practice = stepPractice(prior, duelIntent, aiProfile);
+      const mech = mechanics && engaged && !walkBack ? mechanics.of(spawns[current]!.kind) : undefined, shaping = mech?.layer ? mech : undefined;   // a boss whose signature move rewrites his intent (Nan's Impale): only while he is really fighting the hero
+      const pre = shaping?.pre?.(prior.duel, duelIntent);   // a signature move that acts on the hero's side first (the Envoy's latch): the duel and the intent the tick runs on
+      practice = pre ? stepPractice(pre.duel === prior.duel ? prior : { ...prior, duel: pre.duel }, pre.intent, aiProfile, shaping?.layer) : stepPractice(prior, duelIntent, aiProfile, shaping?.layer);
+      if (shaping?.settle) { const moved = shaping.settle(prior.duel, practice.duel); if (moved !== practice.duel) practice = { ...practice, duel: moved, fighter: moved.fighters[0].body, enemy: moved.fighters[1].body }; }   // the lunge and the drag move bodies after the tick
+      const tell = mech?.tell ? mech.tell(prior, practice) : null;   // Sir Reginald's armour fails: the caption (priority line) and a short freeze, the limb itself is drawn by the scene's view
+      if (tell) { commentator.say(tell.event, tell.params); tellStop = tell.hitStopMs; }
       if (walkBack) practice = holdBack(prior, practice, spawns[current]!);   // the leashed boss walks home, regenerating; nothing lands on either side
       if (attackers.length) {   // real-time aggro: each live attacker steps its own duel from the hero as he stood, the same intent; their damage lands on his one pool (src/fight/attacker-bout.ts)
         const stepped = stepAttackers(prior, practice, duelIntent, attackers, aiProfile);
         practice = stepped.practice; attackers = stepped.list; if (stepped.killer !== null) killedBy = stepped.killer;
       }
       frameEvents.push(...practice.events); commentator.events(practice.events); if (golden) practice = golden.strike(practice);   // each blow he lands hurts the boss more and spends a golden charge, now
+      { const line = mechCaption(practice.duel.fighters[1]); if (line) commentator.say(line); }   // a boss's signature mechanic announces itself on the first tick of its tell (data/mechanics.json caption -> data/commentator.json)
       // :1552 the death's sound follows the renderer's own finisher pick
       const weapons = [practice.duel.fighters[0].weapon, practice.duel.fighters[1].weapon] as const;
       const pick = executionPick(hamstrungPick(ragdollFinisher(practice.events), view.hamstrungInstalled()), view.executionInstalled());   // ?ragdoll=always: the plain death's cue, as the picture (ragdoll.ts)
@@ -661,7 +683,7 @@ function frame(now: number) {
       if (mechanics) practice = mechanics.tick(practice, spawns[current]!.kind, engaged && !walkBack, step());   // the engaged boss's signature move (data/mechanics.json): its hits land on the hero's health, it wipes itself when the fight ends
       accumulator -= step();
       // :1656 freeze on the contact tick: the frame ends here, the leftover time is dropped, the frozen frames show the contact tick's bodies
-      const stop = stopFor(practice.events);
+      const stop = Math.max(stopFor(practice.events), tellStop); tellStop = 0;
       if (stop) { hitStop = stop; accumulator = 0; previous = state; }
     }
   } else { accumulator = 0; previous = state; }
@@ -670,6 +692,7 @@ function frame(now: number) {
   (globalThis as { __v3Roam?: State | null }).__v3Roam = roam;   // the stills read the hero's walk after the kill (scripts/roam-stills.mjs)
   (globalThis as { __v3Yaw?: number }).__v3Yaw = +view.yaw.toFixed(4);
   (globalThis as { __v3FreeShare?: number }).__v3FreeShare = +view.freeShare.toFixed(3);   // the stills read how far the camera has swung to the free follow camera (scripts/free-camera-stills.mjs)
+  (globalThis as { __v3Mech?: unknown }).__v3Mech = mechanicView(mechanics?.of(spawns[current]?.kind ?? ''));   // the held boss's signature move state (scripts/mechanic-nan-check.mjs reads it)
   (globalThis as { __v3Fight?: Practice }).__v3Fight = practice;   // the stills read the sim's state here (scripts/foe-stills.mjs), as they read __weaponShapes
   const alpha = accumulator / step();
   if (multi) {   // every live attacker stays in frame: the lock backs off by framingWiden, eased; the dead lie where they fell and no longer count; with none it snaps back to exactly 1
@@ -699,7 +722,7 @@ function frame(now: number) {
   if (engaged) radar?.stopFlash();   // the next fight began: the kill flash ends
   radar?.frame(state.x, state.z, view.yaw);
   golden?.step(state, practice.playerHealth > 0);
-  if (crHud && PROG?.save) { const p = PROG.save.pile; crHud.marker(p && view.projectInto(p.x, 0.15, p.z, pileXY) ? pileXY : null,p && !heroDied() ? Math.hypot(p.x - state.x, p.z - state.z) : 99, crClock); crHud.coins(PROG.save.coins, PROG.save.banked); }   // (dead on the spot, the marker stays full: it shows where he fell)
+  if (crHud && PROG?.save) { const p = PROG.save.pile; crHud.marker(p && view.projectInto(p.x, CORPSE.marker.heightMetres, p.z, pileXY) ? pileXY : null,p && !heroDied() ? Math.hypot(p.x - state.x, p.z - state.z) : CORPSE.marker.deadDistanceMetres, crClock); crHud.coins(PROG.save.coins, PROG.save.banked); }   // (dead on the spot, the marker stays full: it shows where he fell)
   updateHud();
   requestAnimationFrame(frame);
 }
@@ -711,7 +734,7 @@ const radarLive = (i: number) => { if (i === current) return practice.enemy; for
 const radar = ZONE && radarOn(search) ? mountRadar(document, { each: (emit) => { bossBlips(RADAR, spawns, radarLive, emit); playerBlips((window as unknown as { __v3Presence?: Parameters<typeof playerBlips>[0] }).__v3Presence, performance.now(), radarOrigin, emit); if (CR) pileBlip(PROG?.save?.pile, emit); if (golden) goldenBlips(golden.items(), emit); mobsRun?.radar(state.x, state.z, emit); } }) : null;
 (globalThis as { __v3Radar?: unknown }).__v3Radar = radar;   // debug handle for the stills (armFlash / stopFlash / flashPhase), like __v3Zone
 let buildLabel = '';
-fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, 7); element('build').textContent = buildLabel; }).catch(() => {});
+fetch('./build.txt?v=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { buildLabel = t.slice(0, FIGHT.buildLabelChars); element('build').textContent = buildLabel; }).catch(() => {});
 // ?snd=1: the audio state beside the build label, e.g. "f297c4e running+sprite+keep 12" (context, sprite decoded, silent clip, cues played)
 if (snd === '1') setInterval(() => { element('build').textContent = `${buildLabel} ${feedback.state()}${keep.playing() ? '+keep' : ''}`; }, SOUND.statusMs);
 // Other players (data/presence.json, src/presence/chunk.ts): OFF unless the link has ?presence=1 or ?presence=ws(s)://... Then the client chunk (its own file, nothing in this bundle) joins the presence

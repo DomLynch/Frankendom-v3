@@ -1,6 +1,12 @@
 // Page zoom is locked (owner, 2026-09-17: an accidental pinch cost the HUD mid-fight; the accessibility trade is recorded in
 // tests/input.test.ts). One helper for every entry (the game and the Origins preview, Dom 2026-10-07: the preview zoomed on his
 // iPhone because its entry had no guard), so the next entry cannot miss it.
+import INPUT from '../data/input.json' with { type: 'json' };
+
+// The double-tap window in ms is a row (data/input.json detect.doubleTapMs): a second single-finger touchend inside it is refused.
+const DOUBLE_TAP_MS: number = INPUT.detect.doubleTapMs;
+if (!(Number.isFinite(DOUBLE_TAP_MS) && DOUBLE_TAP_MS > 0 && DOUBLE_TAP_MS <= 2000)) throw new Error('data/input.json: detect.doubleTapMs must be a number from 1 to 2000');
+
 export function lockPageZoom(doc: Document, doubleTap: { surface: string; clickDriven: string }): void {   // doc: the caller's document (a test harness lends its own)
   // iOS Safari ignores the viewport meta in the browser, so the pinch gesture itself is blocked here.
   for (const type of ['gesturestart', 'gesturechange', 'gestureend'])
@@ -18,7 +24,7 @@ export function lockPageZoom(doc: Document, doubleTap: { surface: string; clickD
     const target = event.target instanceof Element ? event.target : null;
     const onSurface = target === doc.body || target === doc.documentElement
       || (!!target?.closest(doubleTap.surface) && !(doubleTap.clickDriven && target.closest(doubleTap.clickDriven)));
-    if (event.touches.length === 0 && event.timeStamp - lastTouchEnd < 350 && onSurface) event.preventDefault();
+    if (event.touches.length === 0 && event.timeStamp - lastTouchEnd < DOUBLE_TAP_MS && onSurface) event.preventDefault();
     lastTouchEnd = event.timeStamp;
   }, { passive: false });
 }

@@ -39,7 +39,7 @@ Not proxied on purpose: `/presence/health`. Read it on the box: `curl -s http://
 ## Before you start
 
 1. Merge this PR and pick the commit to run. `SHA=<full 40-char sha of main>`. Everything below pins that sha.
-2. Keep the ssh key out of every file and log. All VPS commands: `ssh -o BatchMode=yes -i ~/.ssh/binance_futures_tool root@49.12.7.18`.
+2. Keep the ssh key out of every file and log. All VPS commands run as `ssh -o BatchMode=yes -i <ssh-key> <user>@<vps-host>`; the host, user and key are not in this repo: ask the Deploy lane.
 3. Check the load first (`uptime`). The box is shared; apply only while the 1-minute load is under 20 (Strategy's gate); above that, wait.
 4. Do not touch `/var/www/frankendom`, `/srv/frankendom-v3/live` (the game's own deploy), V1's presence unit, or any other lane's service.
 

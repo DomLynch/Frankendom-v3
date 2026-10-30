@@ -1,7 +1,7 @@
 #!/bin/bash
 # The free-camera 375 stills on the VPS (headless Chromium, software GL), niced: build this tree, serve dist/, run scripts/free-camera-stills.mjs three ways:
 #   after   the free camera (the default)       before  ?freecam=v1 (the lock camera as it was)       flag  ?postkill=v1 (the single fight)
-#   ssh root@49.12.7.18 'cd <checkout> && nice -n 10 capture --prio 3 v3 bash scripts/vps-freecam-stills.sh <out dir>'
+#   ssh <user>@<vps-host>'cd <checkout> && nice -n 10 capture --prio 3 v3 bash scripts/vps-freecam-stills.sh <out dir>'
 set -euo pipefail
 OUT=${1:?out dir}
 [ -d node_modules/playwright ] || npm i --no-save --no-audit --no-fund playwright@1.62.1 >/dev/null 2>&1

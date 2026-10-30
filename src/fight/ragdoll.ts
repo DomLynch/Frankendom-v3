@@ -24,7 +24,7 @@ import type { FinisherId } from './finishers.ts';
 import { setGoreEvery } from './finishers.ts';
 import { setRagdollPlays } from '../roster.ts';
 import { getActiveKind, getActiveStar, noteLife } from './foe-name.ts';   // the profile id a kill is of (data/parts.json: the cut event names it)
-import { isNear, nextUnit, registerCorpseSource, registerStrikeSource, strikeBinds, strikeOnce, type Pt } from './cut-strike.ts';   // a strike cuts the fallen body (data/physics.json cut.strike)
+import { isNear, nextUnit, registerCorpseSource, registerDyingSource, registerStrikeSource, setPendingWindow, strikeBinds, strikeOnce, strikeReplay, type Pt } from './cut-strike.ts';   // a strike cuts the fallen body (data/physics.json cut.strike)
 import { registerHintSource, type HintBody } from './pickup.ts';   // taking a corpse's cut parts (data/pickup.json)
 import { activeFeels, emitFeel, feel, feelNames, type FeelCtx, type FeelHooks } from './feel.ts';   // M7 fight feel: the registry the ?feel=<name> modules plug into (three call sites below)
 import { clone as cloneRig } from 'three/addons/utils/SkeletonUtils.js';   // leaveCorpse: a frozen copy of the dead rig (the Goblin's Loki afterimages do the same)
@@ -40,7 +40,7 @@ type CutResult = { unit: string; gear_slots: string[]; carries_roles: string[]; 
 export type Ragdoll = {
   state: string; awake: boolean; partIds: string[]; cuts: readonly string[];
   row: { roles: { id: string; parent: string | null; radius_m: number; rest: { centre: Vec3; pivot: Vec3; quat: [number, number, number, number] } }[]; severable: { id: string; cut_role: string | null; visual_only?: boolean }[] };
-  applyImpulse(part: string, v: Vec3): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; knockdown(kind: 'damage' | 'push', hit?: Hit): void;
+  applyImpulse(part: string, v: Vec3): void; setMotorStrength(rows: number | Record<string, number>): void; stagger(hit?: Hit): void; kill(hit?: Hit): void; knockdown(kind: 'damage' | 'push', hit?: Hit): void;
   cut(unit: string, opts?: { helmet?: boolean; impulse?: Vec3 }): CutResult | null; readPose(): ArrayLike<number>;
   snapToTarget(): boolean; reset(): boolean; destroy(): void;
 };
@@ -91,14 +91,14 @@ export function foeRagdollFor(search: string, opponentId: string): FoeRagdoll | 
   const gore = !!foe && finisherModeFor(PHYSICS, search) === PHYSICS_MODE && new URLSearchParams(search).get('gore') !== 'v1';
   const cutIds = Object.keys(PHYSICS.finisherCuts.rows);   // once, not per call
   goreOn = gore; setGoreEvery(gore); setRagdollPlays(gore ? () => (page?.takesFinisher() ? cutIds : NO_FINISHERS) : null);
-  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
+  page = foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as unknown as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search) : null;   // ?rules=m4 (data/rules.json): the package's M4 evaluator decides each blow's reaction
   return page;
 }
 /** held-body.ts: the ragdoll of a HELD spawn in another body than the page's own (`body`: the data/rig.json files stem the physics rows are keyed by). Null = no data/physics.json opponents row fitted to that id and body: that body dies the plain way. It is not the page's
  *  ragdoll until the scene mounts it (setHeldRagdoll). Its cost record is `__ragdoll:<body>`, so the page's own is never overwritten. */
 export function heldRagdollFor(search: string, opponentId: string, body: string): FoeRagdoll | null {
   const foe = ragdollRowFor(PHYSICS, search, opponentId, body);
-  return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
+  return foe ? createFoeRagdoll(PHYSICS, foe, () => import('./physics-chunk.ts') as unknown as Promise<Chunk>, finisherModeFor(PHYSICS, search) === 'skip', finisherModeFor(PHYSICS, search) === PHYSICS_MODE, rulesOnFor(RULES, search), activeFeels(search, FEEL_DEFAULTS), search, 1, `__ragdoll:${body}`) : null;
 }
 let goreOn = false;   // ?gore=v1 off (foeRagdollFor)
 let heldPlainOnly = false;   // the live foe wears a body other than the page's own: the baked finishers (Opened, Hamstrung, Execution, sever) are prepared on the first body alone, so every kill is the plain death
@@ -110,7 +110,7 @@ export function heroRagdollFor(search: string, deathOnly = false): FoeRagdoll | 
   const feelHero = feelNames(search).includes('hero');   // deathOnly (data/hero-death.json ragdoll, the zone): the same body with no hit reactions; the scene tells it only his killing blow
   if (!PHYSICS.on || !(feelHero || deathOnly) || new URLSearchParams(search).get(PHYSICS.query) === PHYSICS.v1) return null;
   const rows = { ...PHYSICS, cut: { ...PHYSICS.cut, on: false, onKill: {} } } as PhysicsRows;
-  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as Promise<Chunk>, false, false, false, feelHero ? activeFeels(search, undefined, true) : [], search, 0, '__ragdollHero');
+  return createFoeRagdoll(rows, PHYSICS.hero as OpponentRow, () => import('./physics-chunk.ts') as unknown as Promise<Chunk>, false, false, false, feelHero ? activeFeels(search, undefined, true) : [], search, 0, '__ragdollHero');
 }
 /** scene.ts: does the ragdoll play this finisher's victim (?ragdoll=finishers, a row in finisherCuts, the ragdoll built and standing)? Then the scene keeps the
  *  finisher's camera, blood and sound by its id and skips V1's victim clip and its bakes. */
@@ -267,6 +267,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   let cutRig: CutRig | undefined;   // the body is the physics cut GLB (piece_* and cap_* meshes, docs/CUT-CONTRACT.md): a cut shows the caps and the piece flies with its bones. Undefined = the old triangle cutter and ball caps
   let group: THREE.Object3D | undefined, rigged: Rigged | undefined, partBones: Record<string, THREE.Object3D> = {};
   const worldRagdolls = new Set<Pick<Ragdoll, 'awake'>>();   // this foe's world only: his live ragdoll and the corpses that kept one
+  let lostUnits: readonly string[] = [], drawLost: ((root: THREE.Object3D) => void) | undefined;   // boss mechanics (setLost): the cut units already gone from the live body, and how a copy of it draws them gone
   let capped = false, slain = false, sawFinish = false, mode: 'alive' | 'dead' | 'skip' = 'alive', acc = 0, stagger = -1, dying = 0, snap = true, armed = false, disabled = false;
   const late = createLateCuts();   // a finisher row's cut made some seconds after the killing blow (finisherCuts atS)
   // ?rules=m4 (rules-eval.ts): `rules` is the evaluator, `down` the seconds a knockdown has left (the bones follow the ragdoll), `getUp` the seconds left of the blend back to the clip
@@ -341,7 +342,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // loses flies. The package steps one world: the corpse's bodies sleep until a cut wakes one, so a standing corpse costs the world nothing but a sleep test (cost.byMode.corpses has the rest).
   type Corpse = { id: string; root: THREE.Object3D; age: number; piecesHidden: boolean; pieces: THREE.Object3D[]; owned: THREE.BufferGeometry[]; slot: number;
     rd?: Ragdoll; rig?: Rig; cutRig?: CutRig; bones?: Bones; anchor?: THREE.Object3D; cutter?: PieceCutter; cues?: CueSet;
-    done: Set<string>; gone: Set<THREE.Object3D>; hideAt: { mesh: THREE.Object3D; at: number }[]; dirty: boolean; frozenFor: number };
+    done: Set<string>; gone: Set<THREE.Object3D>; hideAt: { mesh: THREE.Object3D; at: number }[]; dirty: boolean; frozenFor: number; draw?: (root: THREE.Object3D) => void };   // draw: a boss mechanic's lost units drawn gone on this copy (setLost); cutRig.update re-shows every piece, so it runs after each
   let corpses: Corpse[] = [], idleAcc = 0;   // idleAcc: idleFrame's physics clock
   const dropCorpse = (c: Corpse) => {
     c.root.removeFromParent();
@@ -358,13 +359,13 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   /** The zone loop respawns the foe: leave this dead one where it lies (a static copy that keeps its cuts) and stand the live rig up whole again, as a rematch does. false when there is no corpse to leave. */
   function leaveCorpse(): boolean {
     const row = rows.corpse as typeof rows.corpse | undefined;   // a physics.json without the row leaves no corpse (the old rematch behaviour)
-    if (disabled || mode !== 'dead' || !group || !rigged || !group.parent || !(row?.keepSeconds > 0)) return false;
+    if (disabled || mode !== 'dead' || !group || !rigged || !group.parent || !row || !((row.keepSeconds ?? 0) > 0)) return false;
     // a body the triangle cutter has cut draws its shared twin and pieces, which build() (cutter.restore) rewrites and releases: the copy gets geometry of its own then (the cut GLB's meshes are never released)
     const { copy, pieces, owned } = snapshotRig(group, !!cutter?.cut);
     const manifest = chunk && cutManifestOf(chunk) as { regions?: { mesh: string; detached_by?: string }[] } | undefined;
     if (cutRig && rd && manifest?.regions) for (const r of manifest.regions) { const m = r.detached_by && rd.cuts.includes(r.detached_by) ? copy.getObjectByName(r.mesh) : undefined; if (m) pieces.push(m); }
     group.parent.add(copy);
-    const c: Corpse = { id: lifeId, root: copy, age: 0, piecesHidden: false, pieces, owned, slot, done: new Set(rd?.cuts ?? []), gone: new Set(), hideAt: [], dirty: false, frozenFor: 0 };
+    const c: Corpse = { id: lifeId, root: copy, age: 0, piecesHidden: false, pieces, owned, slot, done: new Set([...(rd?.cuts ?? []), ...lostUnits]), gone: new Set(), hideAt: [], dirty: false, frozenFor: 0, ...(drawLost ? { draw: drawLost } : {}) };   // a lost unit counts as done: its cue never shows and a tap never cuts it (nothing is there), and no cut event means no part
     if (row.cuttable && cutRig && rd && manifest) {
       try { armCorpse(c, manifest); } catch (error) { cost.state = `corpse stays static: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }   // a static copy, as before M8
     }
@@ -400,6 +401,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       for (const prop of result.props) prop.destroy();
       c.cutRig.update();   // shows the new stump caps (and every piece again: the ones already gone are hidden again below)
       for (const m of c.gone) m.visible = false;
+      c.draw?.(c.root);   // the limbs the fight took off him stay gone (cutRig.update shows every piece again)
       const manifest = chunk && cutManifestOf(chunk) as { regions?: { id: string; detached_by?: string }[] } | undefined;
       for (const id of piecesOfUnit(manifest, unit)) { const m = c.cutRig.pieces[id]; if (m) c.hideAt.push({ mesh: m, at: c.age + (rows.corpse as { pieceSeconds: number }).pieceSeconds }); }   // this piece goes pieceSeconds after ITS cut
       c.dirty = true;
@@ -467,6 +469,19 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
     } catch (error) { cost.state = `strike failed: ${error instanceof Error ? error.message : String(error)}`; captureException(error, { tags: { ragdoll: foe.id } }); }
     return null;
   }
+  /** cut-strike.ts registerDyingSource: a body of this ragdoll that is dead but not yet frozen (cut.tap.needs) within cut.strike.nearM of the hero: a press now cuts nothing, so it waits. */
+  function dyingNear(hero: Pt | null): boolean {
+    const row = cutRows.tap, strike = (cutRows as { strike?: { on: boolean; nearM: number } }).strike;
+    if (!strike?.on || disabled || !row.on || !cutRows.on || !gore) return false;
+    const hips = partBones.hips;
+    if (rd && mode === 'dead' && rd.state !== row.needs && hips) { hips.getWorldPosition(stateV); if (isNear(hero, stateV.x, stateV.z, strike.nearM)) return true; }
+    for (const c of corpses) {
+      const h = c.bones?.hips;
+      if (!c.rd || !h || c.rd.state === row.needs) continue;
+      h.getWorldPosition(stateV); if (isNear(hero, stateV.x, stateV.z, strike.nearM)) return true;
+    }
+    return false;
+  }
   /** cut-strike.ts corpseCutState: each frozen body of this ragdoll (the live foe's, then the kept corpses) with at least one unit of cut.tap.order still on it. */
   function corpseState(push: (x: number, z: number, remaining: number) => void): void {
     const row = cutRows.tap;
@@ -501,7 +516,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       return;
     }
     cutter ??= createPieceCutter(rigged.anchor);
-    cutter.prepare(rd.row.severable.map((s) => partBones[s.cut_role]).filter((b): b is THREE.Object3D => !!b));
+    cutter.prepare(rd.row.severable.map((s) => (s.cut_role === null ? undefined : partBones[s.cut_role])).filter((b): b is THREE.Object3D => !!b));
     capGeometry ??= new THREE.SphereGeometry(1, cutRows.cap.segments[0], cutRows.cap.segments[1]);
     if (!capMaterials.length) capMaterials = [cutRows.cap.color, cutRows.cap.pieceColor].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.4 }));
     const hidden = (mesh: THREE.Mesh) => { mesh.visible = false; mesh.castShadow = true; mesh.frustumCulled = false; group!.add(mesh); return mesh; };
@@ -521,7 +536,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // follows them, caps cover the two ends of the seam, and the event goes on the page's list. `impulse`: the piece's push in the ragdoll's frame.
   // Only on a corpse (the ragdoll's bones follow its capsules) and with gore shown (blood 'off' keeps the body whole, as for the finisher's head).
   function cutUnit(unit: string, source: string, impulse?: Vec3): CutEvent | null {
-    if (!rd || !group || !rigged || !cutRows.on || !gore || done.has(unit)) return null;
+    if (!rd || !group || !rigged || !cutRows.on || !gore || done.has(unit) || lostUnits.includes(unit)) return null;   // a unit the fight already took off (setLost) is not there to cut: no event, no part
     if (!hasUnit(unit)) return null;   // a visual unit the body's cut GLB does not carry: no cut (never the triangle cutter, which would carve the torso at its cap part)
     const t0 = performance.now(), steps: Record<string, number> = {};
     const result = rd.cut(unit, { helmet: !!gearRow.helmet, impulse });
@@ -573,7 +588,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   // Built by listenTaps; moved to its bone each frame by updateCues; a tap on it cuts that unit (cutCue). Hidden whenever the corpse is not frozen, the unit is done, or the bone is behind the camera.
   // M8: one set of buttons per body that can be cut: the live foe's and each corpse that kept its ragdoll (a button carries data-corpse, its body's corpseId).
   /** Dom 2026-10-28 ("yellow circles with text look tacky"): the buttons are hidden by default (cut.cue.default false; the plain tap on the body still cuts); ?cues=v1 (cut.cue.query / v1) brings them back. */
-  function cueShown(cue: { on?: boolean; default?: boolean; query?: string; v1?: string } | undefined): boolean {
+  function cueShown(cue: { on?: boolean; default?: boolean; query?: string; v1?: string } | undefined): cue is NonNullable<typeof cutRows.cue> {
     return !!cue?.on && (!!cue.default || (!!cue.query && new URLSearchParams(search).get(cue.query) === cue.v1));
   }
   type CueSet = { id: () => string; els: { unit: string; el: HTMLButtonElement }[]; boneOf(unit: string): THREE.Object3D | undefined; ready(): boolean; isDone(unit: string): boolean };
@@ -705,6 +720,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
   const blend: Record<string, number> = tune?.blend ?? rows.hit.blend, blendOn = Object.values(blend).some((w) => w > 0);
 
   return {
+    /** Boss mechanics (src/fight/mechanics, scene.ts every time the boss's phases list changes): the cut units this fight already took off him (Sir Reginald's lost limbs). They can no longer be cut (nothing is there: no cut event, so no part is counted), a corpse keeps them gone, and `draw` shows them gone on a corpse's copy. An empty list = whole. */
+    setLost(units: readonly string[], draw?: (root: THREE.Object3D) => void) { lostUnits = units; drawLost = units.length ? draw : undefined; },
     // scene.ts, once the rigs are in: the opponent's group (the sim frame) and his rig. The chunk and the body row load after the first frame.
     attach(opponentGroup: THREE.Object3D, opponentRig: Rigged, heroRig?: Rigged) {
       group = opponentGroup; rigged = opponentRig;
@@ -748,6 +765,8 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
       // data/physics.json cut.strike: this body joins the strike (an attack press, or the tap below): the AIMED pass is the tap on a part, the NEXT pass the next uncut unit near the hero
       const strike = (cutRows as { strike?: { on: boolean } }).strike;
       registerCorpseSource(corpseState);
+      setPendingWindow((cutRows as { strike?: { pendingS?: number } }).strike?.pendingS ?? 0);
+      registerDyingSource((hero) => dyingNear(hero));
       registerStrikeSource((req) => req.pass === 'aimed' ? (req.aim ? this.tap(aim(req.aim.x, req.aim.y)) : null) : strikeNext(req.hero, camera));
       canvas.addEventListener('pointerup', (e) => {
         const d = down; down = null;
@@ -920,6 +939,7 @@ export function createFoeRagdoll(rows: PhysicsRows, foe: OpponentRow, load: () =
         lyingHips.copy(partBones.hips!.position);
       } else if (mode === 'alive' && getUp > 0) { getUp -= dt; fromLying(getUp > 0 ? 1 - getUp / RULES.getUpS : 1); if (getUp <= 0) getUp = -1;
       } else if (stagger >= 0 && blendOn) poseToward(staggerDepth(rows.states.stagger, stagger * staggerK.time) * staggerK.blend, blend);   // the stagger on screen, the most at the dip's deepest
+      if (mode === 'dead') strikeReplay();   // a press kept while the body was still dying cuts now if a body near the hero has frozen (cut-strike.ts)
       if (mode === 'dead' && follow.length + props.length) followCuts();
       if (cutRig && warm === 0) { cutRig.update(); slideHalves(dt); }   // the caps of every unit in rd.cuts show, the rest hide (during the warm-up draws they stay the speck update() would hide)
       const ms = performance.now() - start, by = (cost.byMode[mode] ??= { frames: 0, totalMs: 0, maxMs: 0 });

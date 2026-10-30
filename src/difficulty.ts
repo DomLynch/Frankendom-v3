@@ -2,16 +2,17 @@
 // a DIFFICULTY row overrides only the brain knobs and the two stat scales. Nothing here touches the sim's rules: the knobs are the argument
 // stepPractice takes (src/brain.ts); the scales go into the opponent's body (health), his sheet (attack dial) and his special's share before the
 // fight is built. The result is plain data (`FightPick`: profile id + difficulty row id), so a server can choose it per encounter and replay it.
+import DIFFICULTY_JSON from '../data/difficulty.json' with { type: 'json' };
 import type { Opponent, AiProfile } from './fight/moves.ts';
 import type { Practice } from './fight/combat.ts';
 import { brainProfile, type BrainRow } from './brain.ts';
 
 export const KNOBS = ['reaction', 'accuracy', 'parry', 'dodge', 'aggression', 'pressure', 'discipline', 'lapse', 'read'] as const;
-export type Knobs = Pick<AiProfile, (typeof KNOBS)[number]>;
-export type DifficultyRow = { id: string | number } & Knobs & { foeHealthScale: number; foeDamageScale: number; about?: string };
+type Knobs = Pick<AiProfile, (typeof KNOBS)[number]>;
+type DifficultyRow = { id: string | number } & Knobs & { foeHealthScale: number; foeDamageScale: number; about?: string };
 export type ProfileRow = { id: string; opponent: string; brain: string | null; foeHealthScale: number; foeDamageScale: number; knobs?: Partial<Knobs>; body?: string; name?: string; about?: string };   // knobs: this kind's own brain knobs, laid over the difficulty row's (a zone spawn `kind` is a profile id: src/fight/spawn-kind.ts)
 export type DifficultyFile = { default: number; rows: DifficultyRow[]; named: DifficultyRow[] };
-export type FightPick = { profile: string; difficulty: string | number };
+type FightPick = { profile: string; difficulty: string | number };
 
 /** The row `?difficulty=` names: 1..10 (or a named row such as `legacy`); anything else is the default row, with a console warning (never throws). */
 export function difficultyPick(file: { default: number; rows: readonly { id: string | number }[]; named?: readonly { id: string | number }[] }, search: string, warn: (m: string) => void = (m) => console.warn(m)): string | number {
@@ -47,7 +48,7 @@ export const profileFor = (v1: AiProfile, r: Resolved, v1Ai: boolean): AiProfile
 export function scaledOpponent(body: Opponent, r: Resolved): Opponent {
   const { foeHealthScale: h, foeDamageScale: d } = r;
   if (h === 1 && d === 1) return body;
-  return { ...body, health: Math.max(1, Math.round(body.health * h)), ...(d === 1 ? {} : { sheet: { ...body.sheet, attack: Math.round((d - 1) * 100) } }) };
+  return { ...body, health: Math.max(1, Math.round(body.health * h)), ...(d === 1 ? {} : { sheet: { ...body.sheet, attack: Math.round((d - 1) * DIFFICULTY_JSON.attackDialScale) } }) };
 }
 
 /** A fight's opening Practice with the damage scale also on the opponent's special (its share of the hero's health, which the sheet's attack dial does not reach). Scale 1 returns the practice untouched. */

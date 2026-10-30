@@ -5,16 +5,16 @@
 //   <tag>-3-spent     after the last charge: the counter gone, the toast "is spent", the weapon its own colour again
 // Prints the save and the HUD at each beat; fails on a page error, a console error, or a beat that did not happen.
 //   node scripts/golden-stills.mjs <base url> <out dir> <tag>      (a Mac uses Metal, elsewhere SwiftShader; CHROME=<path> picks the browser)
-import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
+import { launchBrowser, phoneOptions } from './lib/browser.mjs';
 
 const [base, out, tag] = process.argv.slice(2);
 if (!base || !out || !tag) { console.error('usage: node scripts/golden-stills.mjs <base url> <out dir> <tag>'); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const PROG = JSON.parse(readFileSync(new URL('../data/progression.json', import.meta.url), 'utf8'));
 const GOLD = JSON.parse(readFileSync(new URL('../data/golden-weapons.json', import.meta.url), 'utf8'));
-const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--use-gl=angle', process.platform === 'darwin' ? '--use-angle=metal' : '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--mute-audio'] });
-const page = await browser.newPage({ viewport: { width: 375, height: 812 }, deviceScaleFactor: Number(process.env.DSF ?? 2), isMobile: true, hasTouch: true });
+const browser = await launchBrowser({ extra: ['--enable-unsafe-swiftshader', '--mute-audio'] });
+const page = await browser.newPage(phoneOptions(Number(process.env.DSF ?? 2)));
 let bad = 0;
 const fail = (m) => { bad++; console.error(`${tag} FAIL ${m}`); };
 page.on('pageerror', (e) => { bad++; console.error(`pageerror ${e.message}`); });

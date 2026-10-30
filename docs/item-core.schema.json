@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "item-core.schema.json",
+  "title": "Shared item core, core_version 1",
+  "description": "ADDITIVE ONLY after signing: new optional keys, new enum values and new blocks may be added within core_version 1; nothing is removed, renamed, retyped or tightened. A breaking change is core_version 2 with ARMAGEDOM Lead sign-off. Canonical copy lives in Frankendom-v3 (docs/item-core.md). Ids are stable keys, never infer meaning from one. Extra keys beside the core ones are allowed (each game's extension); a consumer ignores keys it does not know. Ballistics, per-move maps, charges and cut units are never core.",
+  "type": "object",
+  "required": ["core_version", "rows"],
+  "properties": {
+    "core_version": { "const": 1 },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/itemCore" }
+    }
+  },
+  "definitions": {
+    "itemCore": {
+      "type": "object",
+      "required": ["id", "game_id", "type", "name", "asset"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]{1,48}$" },
+        "game_id": { "enum": ["armagedom", "frankendom-v3"] },
+        "type": { "enum": ["weapon", "character", "consumable", "part", "relic", "bodypart"] },
+        "name": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "asset": {
+          "type": "string",
+          "minLength": 1,
+          "not": { "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:|^//" },
+          "description": "Path relative to the owning game's public asset root, extension preferred; a bare stem only where that game's loader documents it. Never a URL."
+        },
+        "weapon": { "$ref": "#/definitions/weaponBlock" },
+        "character": { "$ref": "#/definitions/characterBlock" }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        { "if": { "required": ["weapon"] }, "then": { "properties": { "type": { "const": "weapon" } } } },
+        { "if": { "required": ["character"] }, "then": { "properties": { "type": { "const": "character" } } } }
+      ]
+    },
+    "weaponBlock": {
+      "type": "object",
+      "properties": {
+        "damage": { "type": "number", "minimum": 0, "description": "One base value: a fully mastered hit in the held-fire mode." },
+        "rate": { "type": "number", "exclusiveMinimum": 0, "description": "Attacks per second, one base value, same mode." },
+        "range": { "type": "number", "exclusiveMinimum": 0, "description": "Metres from the wielder's grip." },
+        "ammo": { "type": ["integer", "null"], "minimum": 0, "description": "Finite rounds carried; null = infinite." }
+      },
+      "additionalProperties": false
+    },
+    "characterBlock": {
+      "type": "object",
+      "properties": {
+        "rig": { "enum": ["mixamo-106", "v1-65", "mixamo-19"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}

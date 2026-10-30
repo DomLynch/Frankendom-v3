@@ -10,7 +10,7 @@ import { project, type Practice } from '../fight/combat.ts';
 import type { Fighter } from '../fight/duel.ts';
 import { leashed, type Spawn } from '../stubs.ts';   // spawns.ts is reached through the stub boundary (scripts/check-stubs.mjs)
 
-export type WalkBackRows = { on: boolean; query: string; off: string; speedMetresPerSecond: number; regenPerSecond: number; arriveMetres: number };
+type WalkBackRows = { on: boolean; query: string; off: string; speedMetresPerSecond: number; regenPerSecond: number; arriveMetres: number };
 type Limits = { walkSpeedMetresPerSecond: [number, number]; walkRegenPerSecond: [number, number]; walkArriveMetres: [number, number] };
 export const WALK_BACK = ROWS.walkBack as WalkBackRows;
 const LIMITS = ROWS.limits as unknown as Limits;

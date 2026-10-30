@@ -23,8 +23,8 @@ const effectMoves = (opponent: string): readonly string[] => [...new Set([...(Ob
 
 type Pair<T> = readonly [T, T];
 type Warriors = Parameters<NonNullable<SpecialMode['extra']>>[0];
-export const casterPair = <T>(pair: Pair<T>, actor: Side): Pair<T> => actor === 1 ? pair : [pair[1], pair[0]];
-export const casterEvent = (event: CombatEvent, actor: Side): CombatEvent => actor === 1 ? event : { ...event, actor: (1 - event.actor) as Side, ...(event.target === undefined ? {} : { target: (1 - event.target) as Side }) };
+const casterPair = <T>(pair: Pair<T>, actor: Side): Pair<T> => actor === 1 ? pair : [pair[1], pair[0]];
+const casterEvent = (event: CombatEvent, actor: Side): CombatEvent => actor === 1 ? event : { ...event, actor: (1 - event.actor) as Side, ...(event.target === undefined ? {} : { target: (1 - event.target) as Side }) };
 type SpecialId = string;   // an open set (typing only): a preview id is a bosses.json row id or a hand-written one
 export type SpecialFightIdentity = Readonly<{ opponent: OpponentId; level: number; presets?: readonly [SpecialTest | null, SpecialTest | null] }>;
 const modes: Partial<Record<SpecialId, SpecialMode>> = SPECIAL_MODES;

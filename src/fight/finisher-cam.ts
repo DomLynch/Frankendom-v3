@@ -4,8 +4,8 @@
 // ?finishercam=v1 restores the old zoom (the row's dolly, the side reveal, the close view of the cut, the stick beat). The blood boosts are not a camera effect and stay on in both.
 import ROWS from './finisher-cam.json' with { type: 'json' };
 
-export type CutCamRow = { from: number; over: number; bone: string; mix: number; angle: number; dist: number; span: number; rise: number; stickBeatS: number; blood: { burst: number; pool: number } };
-export type CutFocus = { x: number; y: number; z: number };
+type CutCamRow = { from: number; over: number; bone: string; mix: number; angle: number; dist: number; span: number; rise: number; stickBeatS: number; blood: { burst: number; pool: number } };
+type CutFocus = { x: number; y: number; z: number };
 export type CutCamPose = { x: number; y: number; z: number; lookX: number; lookY: number; lookZ: number };
 export const MIN_EYE: number = ROWS.minEye;   // metres: the lens never stands lower than this over a lying foe
 export const STICK_FIRST_FRAME = 0.25;         // seconds: the stick beat before the scene has seen the finish (the killing frame), until its own row's beat is known

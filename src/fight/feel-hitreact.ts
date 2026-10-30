@@ -9,13 +9,13 @@ import type { FeelCtx, FeelHooks } from './feel.ts';   // TYPES only: the feel c
 import type { CombatEvent } from './duel.ts';
 import { isHeavyMove } from './move-rows.ts';
 
-export type Vec3 = [number, number, number];
-export type Sector = 'front' | 'back' | 'left' | 'right';
-export type Rows = typeof ROWS;
+type Vec3 = [number, number, number];
+type Sector = 'front' | 'back' | 'left' | 'right';
+type Rows = typeof ROWS;
 type ZoneRow = Rows['zones']['head'];
-export type BlowClass = 'light' | 'heavy' | 'counter';
-export type ClassRow = Rows['classes']['light'];
-export type Plan = {
+type BlowClass = 'light' | 'heavy' | 'counter';
+type ClassRow = Rows['classes']['light'];
+type Plan = {
   zone: string; sector: Sector; side: 'Left' | 'Right';
   dips: Record<string, number>;               // part id -> the strength its motor falls to at the deepest (1 = untouched)
   blend: Record<string, number>;              // part id -> share of the ragdoll's pose on that bone at the deepest
@@ -44,7 +44,7 @@ export const soften = (ctx: { soften?: { impulse: number; blend: number; time: n
 
 /** The reaction a blow at `location` coming with `heading` plans, or null (no zone row, no heading). `scale` = the hit's strength (1 = a plain hit). */
 export function planHit(rows: Rows, location: string | undefined, heading: number | undefined, frameYaw: number, scale = 1, cls: ClassRow = FULL): Plan | null {   // cls: the blow class's multipliers (rows.classes); absent = the full reaction
-  const zone = location ? (rows.zones as Record<string, ZoneRow | undefined>)[location] : undefined;
+  const zone = location ? (rows.zones as unknown as Record<string, ZoneRow | undefined>)[location] : undefined;
   if (!zone || heading === undefined) return null;
   const { sector, dir } = sectorOf(heading, frameYaw, rows.frontCos);
   const side = sector === 'right' ? 'Right' : sector === 'left' ? 'Left' : (rows.defaultSide as 'Left' | 'Right');
@@ -75,7 +75,7 @@ export function strengthsAt(p: Pick<Plan, 'dips'>, k: number): Record<string, nu
 }
 
 /** What the ragdoll hook needs of the package's ragdoll. */
-export type Motors = { setMotorStrength(rows: number | Record<string, number>): void; applyImpulse(part: string, v: Vec3): void };
+type Motors = { setMotorStrength(rows: number | Record<string, number>): void; applyImpulse(part: string, v: Vec3): void };
 
 /** The stateful part. `hit` plans and applies a blow's impulses and starts the clock; `frame` advances it by `dt` presentation seconds, writes the motor
  *  strengths and returns the bones' blend ({ w, share }, for the hook's poseToward) or null when nothing is active (the dips have been put back). */
@@ -105,8 +105,6 @@ export function createHitReact(rows: Rows = ROWS) {
     reset(rd?: Motors) { if (rd) restore(rd); touched = []; plan = null; t = 0; },
   };
 }
-export type HitReact = ReturnType<typeof createHitReact>;
-
 // ---- the hooks (feel-chunk.ts exports them as `hitreact`; feel.ts runs them only under ?feel=hitreact) ----
 // hit: plan the blow by zone and side and write its impulses and motor dips. It runs BEFORE ragdoll.ts's own stagger, whose dip and impulse stay: the zone reaction is added to it.
 // frame: advance the dips and put them back, and show the zone's bones (the rows' `blend`) by depth through ctx.blendToward. kill: forget the blow (the death ramp takes the motors).

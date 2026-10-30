@@ -12,8 +12,11 @@ import { gait, SPECIAL_MODES, type SpecialFx as ModeFx } from './special-modes.t
 import { SCHOOL_OF, schoolTinter, schoolsFlag, schoolsStrength } from './spell-school.ts';
 import { createTitheLighting } from './special-lighting.ts';
 import { warmFirstFrame } from '../first-frame.ts';
-import { firstFrameDrawn } from '../late-art.ts';
+import { afterFirstFrame, firstFrameDrawn } from '../late-art.ts';
+import type { WornPart } from '../parts-wear.ts';   // Frankendom parts, stage 2 (data/parts.json wear): the hero wears the equipped boss parts; the module itself is a lazy import below
+import type { Wearer } from './parts-wear.ts';
 import { createBossTelegraph, telegraphFlag } from './boss-telegraph.ts';
+import { createWallFx, footMidpoint } from './mechanics/accountant-parry-wall-fx.ts';   // the Accountant's parry wall (data/mechanics.json): drawn from the foe fighter's mech state, in the Pit scene
 import { createSpecialPresentation, disposeSpecialGroup, type SpecialFightIdentity } from './special-presentation.ts';
 import { captureException } from '../stubs.ts';   // V3: @sentry/browser
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -35,6 +38,8 @@ import { createHamstrungAssets } from './hamstrung-assets.ts';
 import { PLAY_SCALE, TARGET, wrapAngle, type State } from './sim.ts';
 import { drawOpenGround } from '../zone/ground-draw.ts';
 import { anchorInto, type Sizing as GroundSizing } from '../zone/ground.ts';
+import type { Terrain, TerrainRows } from '../zone/terrain.ts';
+import { drawTerrain, type TerrainDraw } from './terrain-draw.ts';
 import { arenaFor, buildArena } from '../stubs.ts';   // V3: arena.ts, arena-themes.ts (V2's flat stage)
 import { nightBronzeApplies, toneNightBronze } from './night-armour.ts';
 import { createFootDust, dustToneFor } from './foot-dust.ts';
@@ -83,6 +88,7 @@ import { applyFog, fadeFloor, skyViewFor } from './skyview.ts';
 import { createFoeFade, foeFadeOn } from './foefade.ts';
 import { setHeroLocator } from './cut-strike.ts';
 import { mountHint, pickupOn } from './pickup.ts';   // the cut hint (data/pickup.json)
+import { bodyMechanicFor, type BodyMechanic } from './mechanics/reginald-limb-loss.ts';   // boss signature mechanics (data/mechanics.json): a body draws what its mechanic did to it (Sir Reginald's lost limbs)
 import { foeRagdollFor, heldRagdollFor, heroRagdollFor, ragdollBody, ragdollFinisher, setHeldRagdoll, snapshotRig, WARM_SCALE, type FoeRagdoll } from './ragdoll.ts';
 /** A 106 body file that failed to load (106 only: there is no other body to fall back to). `files`: the hero's and the opponent's URLs asked for. */
 export class RigLoadError extends Error {
@@ -266,6 +272,8 @@ export function createScene(
   const foeFade = skyView && foeFadeOn(pageSearch, skyView) ? createFoeFade(skyView) : null;   // the far opponent melts into the clouds where the sand does (foefade.ts); ?foefade=v1 or no band: null, nothing below runs
   scene.userData.foeFade = foeFade;   // read by the stills' probe only
   missileFx.warm(() => renderer.compile(scene, camera));   // sandbox heal: its shader programs and its light are compiled now, not at the first cast
+  let terrainDraw: TerrainDraw | null = null, terrainRows!: TerrainRows, terrainLift = 0, terrainHero = 0;   // the zone's hills (openTerrain below); null = the floor stays flat, every height below is 0
+  const fadeEye = new THREE.Vector3(), groundH = (x: number, z: number): number => (terrainDraw ? terrainDraw.height(x, z) : 0);
   let floorBase: THREE.Color | undefined; const ringTintA = new THREE.Color(), ringTintB = new THREE.Color();   // the sand's own colour and scratch colours for the biome ring's tint (ringLook below)
   let groundSnap = 0, groundAt = { x: 0, z: 0 };   // the zone's endless ground (openGround below); 0 = the floor stays on the pit
   arena.group.scale.setScalar(PLAY_SCALE); { const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // from the first frame; render() follows a new fight's circle
@@ -291,6 +299,23 @@ export function createScene(
   // load (main.ts shows the card only once its image arrives), so every opponent switch flashed two blocks in the arena.
   player.visible = opponent.visible = false;
   let warriors: Awaited<ReturnType<typeof loadWarriors>> | undefined;
+  // Frankendom parts, stage 2: the loadout the page wants worn (main.ts wear()) and the wearer that lays it on the hero. Nothing is imported or fetched until a part is wanted, and then only after the first frame.
+  let wearWant: readonly WornPart[] = [], wearer: Wearer | undefined, wearing = false;
+  const wearSoon = (): void => {
+    if (!warriors || wearing || (!wearer && !wearWant.length)) return;
+    wearing = true;
+    void (async () => {
+      try {
+        for (let want = wearWant; ; want = wearWant) {   // a loadout asked for while this one was going on is laid next
+          if (want.length) await afterFirstFrame();
+          wearer ??= (await import('./parts-wear.ts')).createWearer({ anchor: warriors!.player.anchor, bind: warriors!.asset.scene, report: captureException });
+          await wearer.apply(want);
+          if (want === wearWant) break;
+        }
+      } catch (error) { captureException(error); }
+      wearing = false;
+    })();
+  };
   let homeActor: NonNullable<typeof warriors>['opponent'] | undefined;   // the page's own foe rig (its body: liveBody). `warriors.opponent` is the LIVE rig, which a held spawn in another body swaps (heldBodies); the baked finishers, the kit and the rank look are the home rig's alone
   const atHome = (): boolean => !heldCtl || heldCtl.atHome;
   const dustFeet: (THREE.Object3D | null)[] = [],
@@ -460,6 +485,7 @@ export function createScene(
       ragdoll?.attach(opponent, loaded.opponent, loaded.player).catch(captureException);   // his presentation ragdoll (ragdoll.ts): the chunk loads after the first frame
       heroRagdoll?.attach(player, loaded.player).catch(captureException);   // ?feel=hero: hers, the same way
       player.visible = opponent.visible = true;
+      wearSoon();   // the parts the hero already wears (a save's equipped map, ?wear=): after the first frame
       foeFade?.protect(player); foeFade?.adopt(opponent);
       for (const rig of [loaded.player, loaded.opponent])
         for (const name of ['foot_l', 'foot_r']) dustFeet.push(boneOf(rig.anchor, name) ?? null);
@@ -584,6 +610,7 @@ export function createScene(
   const previewLighting = createTitheLighting(scene);
   const previewBackground = scene.background instanceof THREE.Color ? scene.background.clone() : null;
   const bossRing = typeof location !== 'undefined' && telegraphFlag(location.search);   // ?telegraph=1 look-test: the boss ring (boss-telegraph.ts); a spell cast's tell is always on
+  const wallFx = createWallFx(scene), wallFoot = new THREE.Vector3();   // the parry wall's mesh, ledger lines and sparks: built once, hidden while no boss holds the mechanic
   const castTells = [createBossTelegraph(scene), createBossTelegraph(scene)] as const;   // one ring per caster side, drawn under the other fighter
   const runtimeSpecial = specialId ? null : createSpecialPresentation(scene, theme.exposure, camera);
   const signatures = createSignatures(scene, opponentId);   // the opponent's signature effect (signature.ts); the ruled variant (SHIPPED) unless the admin select or ?signature= asks
@@ -705,7 +732,7 @@ export function createScene(
           }
         }
         if (!entry) continue;
-        entry.group.visible = true; entry.group.position.set(at.x, 0, at.z); entry.group.rotation.y = at.heading; applyStar(entry.group, at.star);
+        entry.group.visible = true; entry.group.position.set(at.x, groundH(at.x, at.z), at.z); entry.group.rotation.y = at.heading; applyStar(entry.group, at.star);
         const { pose } = entry;
         entry.actor.update(0, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, entry.guard, CHARGE_LEAN[opponentId] ?? null, entry.holding, pose.span ?? null);   // the rest pose it was made in, held (speed 0)
       }
@@ -725,7 +752,8 @@ export function createScene(
     });
   }
   // The zone's live attackers (src/fight/attacker-bout.ts): one animated rig per attacking boss, built the first time it is needed from the foe's own asset, then pooled (hidden when it lets go).
-  let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef }[] = [], frameWiden = 1;
+  let liveList: readonly { id: string; practice: Practice; spawn?: SpawnRef; star?: number }[] = [], frameWiden = 1;
+  let heldMech: BodyMechanic | null = null, heldPhases: readonly string[] | undefined;   // the boss mechanic of the spawn the sim holds (holdBody) and the phases list last handed to the ragdoll (it is told only when the list is a new one)
   const liveFoes = new Map<string, { group: THREE.Group; actor: NonNullable<typeof warriors>['opponent']; x: number; z: number }>();
   let foeFadeTick = 0;
   function foeAdoptAll() {
@@ -749,9 +777,10 @@ export function createScene(
       }
       const pose = actorPose(p, 1), f = p.duel.fighters[1], speed = dt > 0 ? Math.hypot(p.enemy.x - live.x, p.enemy.z - live.z) / dt : 0;
       live.x = p.enemy.x; live.z = p.enemy.z;
-      live.group.visible = true; live.group.position.set(p.enemy.x, 0, p.enemy.z); live.group.rotation.y = p.enemy.heading; applyStar(live.group, star ?? 0);
+      live.group.visible = true; live.group.position.set(p.enemy.x, groundH(p.enemy.x, p.enemy.z), p.enemy.z); live.group.rotation.y = p.enemy.heading; applyStar(live.group, star ?? 0);
       live.actor.fatigue(p.fatigue[1], FOE_TUNE[opponentId]);
       live.actor.update(speed, dt, pose.pose, pose.progress, pose.attack, pose.contact, 0, 0, f.guardDirection, CHARGE_LEAN[opponentId] ?? null, holdingCharge(f), pose.span ?? null);
+      bodyMechanicFor(spawn?.kind)?.view(live.group, f.phases);   // an attacker boss with a signature mechanic wears what it did (a lost limb), the same drawing as the held foe's
     }
     for (const [id, live] of liveFoes) if (!seen.has(id)) live.group.visible = false;
     syncMobs(dt);   // the trash mobs are drawn beside the live attackers (syncMobs, below)
@@ -895,6 +924,7 @@ export function createScene(
     // `spawn` (optional, the spawn's kind and its zone row's `body`): a spawn in another body than the live rig is drawn from that body's own rig (bodyRig); absent or the live body: the frozen copies as before.
     /** main.ts, every frame, with the spawn the sim HOLDS: when its body is not the one the live rig wears, the live rig is swapped for that body's (held-body.ts). 'same' at the default (every spawn the Minotaur): nothing is built. */
     holdBody(spawn: SpawnRef | null | undefined, near = true): string {
+      heldMech = bodyMechanicFor(spawn?.kind);
       if (!spawn || !warriors) return 'same';
       const body = bodyOfSpawn(spawn);
       if (body === activeBody() && !heldCtl) return 'same';   // the default: no controller is made
@@ -902,6 +932,10 @@ export function createScene(
       return heldBodies()?.hold(body) ?? 'same';
     },
     get heldBody(): string { return activeBody(); },   // the stills and the tests read which body the live foe wears
+    /** Frankendom parts, stage 2 (src/parts-wear.ts wornParts): the hero wears exactly this loadout (look only). Safe before the hero has loaded: it is laid when he has. */
+    wear(worn: readonly WornPart[]): void { wearWant = worn; wearSoon(); },
+    /** The stills and the perf row read what is on the hero: the worn ids and the skinned draws (the wear's share of them). */
+    wearInfo(): { worn: string[]; draws: { hero: number; wear: number } | null } { return { worn: wearer?.worn().map((p) => p.id) ?? [], draws: wearer?.draws() ?? (warriors ? (() => { let n = 0; warriors.player.anchor.traverse((o) => { if ((o as THREE.SkinnedMesh).isSkinnedMesh && o.visible) n++; }); return { hero: n, wear: 0 }; })() : null) }; },
     heroWeaponNode(): THREE.Object3D | undefined { return warriors?.player.heldWeaponNode(); },   // the node the hero's weapon hangs from (golden weapon tint, src/fight/golden-hud.ts)
     liveStar(star: number) { liveStarN = star; },   // data/stars.json: the star level of the spawn the live rig is (main.ts every frame); 0 = the body as built
     idleFoes(list: readonly { x: number; z: number; heading: number; id?: string; spawn?: SpawnRef; near?: boolean; star?: number }[]) {
@@ -920,11 +954,19 @@ export function createScene(
     get mobDrawn() { return mobSlots.filter((s) => s.group.visible).length; },   // the stills and the cost table read how many mobs are on screen
     setWiden(k: number) { frameWiden = k; },   // main.ts every frame: how far the lock camera backs off for the attackers on him (data/respawn.json attackers.camera); 1 = none
     get liveFoeCount() { return [...liveFoes.values()].filter((l) => l.group.visible).length; },
+    /** The zone's terrain (data/terrain.json, src/zone/terrain.ts), called after openGround: hills on the floor, the hero, the foes and the camera ride them; the pads stay level at 0. `scale`: the floor group's scale (world.pitScale). */
+    openTerrain(terrain: Terrain, rows: TerrainRows, scale: number, gridRadiusMetres: number) {
+      const floor = arena.group.getObjectByName('floor') as THREE.Mesh | null;
+      if (!floor || terrainDraw) return;
+      const oldGrid = arena.group.children.find((c) => c instanceof THREE.GridHelper); if (oldGrid) oldGrid.visible = false;
+      terrainDraw = drawTerrain({ parent: scene, floor, scale, gridRadiusMetres, terrain, rows, fade: floorFade });
+      floor.position.y = -rows.mesh.floorDropMetres / scale; terrainRows = rows;
+    },
     openGround(sizing: GroundSizing) { drawOpenGround(arena.group, camera, sizing); groundSnap = sizing.snap; floorFade?.adopt(arena.group); if (groundSnap > 0) scene.add(sun.target); },
     /** The biome ring's look at the hero's distance (data/rings.json via src/zone/rings.ts ringLook): the sand's colour is its own colour times the tint mixed `t` of the way from `tintA` to `tintB`, and the sky ring's plates take their brightness weights. Presentation only. */
     ringLook(tintA: string, tintB: string, t: number, plates: Readonly<Record<string, number>>) {
       const floor = arena.group.getObjectByName('floor') as THREE.Mesh | null, mat = floor?.material as THREE.MeshStandardMaterial | undefined;
-      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); }
+      if (mat) { floorBase ??= mat.color.clone(); mat.color.copy(floorBase).multiply(ringTintA.set(tintA).lerp(ringTintB.set(tintB), t)); (terrainDraw?.material as THREE.MeshStandardMaterial | undefined)?.color.copy(mat.color); }   // the hills' clone of the sand takes the same tint
       skyline?.plateWeights(plates);
     },
     get groundAnchor() { return groundAt; },   // the point the endless floor is centred on (the hero's place, snapped): the hook a camera-following backdrop can read; openGround (main.ts, the zone only, data/zone-ground.json) turns the follow on, ?postkill=v1 / ?ground=v1 never call it
@@ -976,6 +1018,7 @@ export function createScene(
       freeCamera = false,   // the zone's free follow camera (data/respawn.json freeCamera, src/fight/free-camera.ts): no finisher camera, no lock on the corpse; the hero keeps whatever pose he holds until `roamed`
     ) {
       if (arena.group.scale.x !== PLAY_SCALE) { arena.group.scale.setScalar(PLAY_SCALE); const ring = arena.group.getObjectByName('boundary'); if (ring) ring.visible = PLAY_SCALE === 1; }   // the painted boundary ring is the full arena's circle: in a smaller one the wall is the edge   // the floor, ring, backdrop and props come inward with the play circle of the fight on screen (play-radius.ts; Match sets it)
+      terrainDraw?.update(state.x, state.z);   // the terrain mesh re-centres in whole lattice steps (terrain-draw.ts)
       if (groundSnap > 0) { anchorInto(groundAt, state.x, state.z, groundSnap); arena.group.position.set(groundAt.x, 0, groundAt.z); sun.position.set(sunHome.x + groundAt.x, sunHome.y, sunHome.z + groundAt.z); sun.target.position.set(groundAt.x, 0, groundAt.z); }   // the zone's endless ground (data/zone-ground.json groundFollow): the floor, its grid and the sun's shadow frustum stand on the hero, in whole grid cells
       if (specialId && (previewEpoch !== specialEpoch || practice.duel.tick < previewTick)) {
         previewGeneration++; specialFx?.clear(); previewBlocked = false; if (!specialFx) { specialFxLoading = false; if (previewGroup) disposeSpecialGroup(previewGroup); }
@@ -1080,8 +1123,8 @@ export function createScene(
         rig.started && dt > 0
           ? Math.hypot(practice.enemy.x - opponent.position.x, practice.enemy.z - opponent.position.z) / dt
           : 0;
-      player.position.set(state.x, 0, state.z);
-      opponent.position.set(practice.enemy.x, 0, practice.enemy.z); applyStar(opponent, liveStarN);   // data/stars.json: the live rig's star scale and glow
+      player.position.set(state.x, groundH(state.x, state.z), state.z);
+      opponent.position.set(practice.enemy.x, groundH(practice.enemy.x, practice.enemy.z), practice.enemy.z); applyStar(opponent, liveStarN);   // data/stars.json: the live rig's star scale and glow
       const playerDefence = defenceReaction(practice),
         enemyDefence = defenceReaction(practice, true);
       // Both actors present the same per-move combat state; the rig's clip and contact pose come from the simulation's data.
@@ -1192,7 +1235,10 @@ export function createScene(
         warriors?.opponent.splitCrown(victimProgress, bloodMode);
       heldFinishing = !!practice.finish;
       if (heldCtl) for (const s of heldCtl.slots()) if (s.ragdoll && s.ragdoll !== ragdoll && s.ragdoll.corpseCount) s.ragdoll.idleFrame(animationDt);   // a body the live foe left keeps its corpses ageing out (held-body.ts)
+      const phases = heldMech ? practice.duel.fighters[1].phases : undefined;   // boss mechanics (src/fight/mechanics): the ragdoll learns which cut units the fight already took off him, then draws them gone AFTER its cut rig's update
+      if (phases !== heldPhases) { heldPhases = phases; const mech = heldMech; ragdoll?.setLost(mech ? mech.lostUnits(phases) : [], mech ? (root) => mech.view(root, phases) : undefined); }   // on a NEW list only (a lost limb, or a new fight): the closure is made then, never per frame
       ragdoll?.frame(animationDt, events, practice.finish, finisher, !bloodHidden(bloodMode));   // data/physics.json: his stagger on a landed blow, his plain death as a ragdoll (presentation only)
+      if (heldMech) heldMech.view(opponent, phases);
       pickup?.frame(animationDt);   // data/pickup.json: the arrow, the selected part's outline and Take pill, the flying chip (DOM only; reads the corpses' cut parts after the ragdolls stepped)
       heroRagdoll?.frame(animationDt, heroFeel ? events : events.filter((e) => e.type === 'Killed'), practice.finish?.victim === 0 || practice.duel.fighters[0].health <= 0 ? { victim: 0 } : null, null, false);   // ?feel=hero: a down hero keeps lying (a finish is passed while she is dead); the rematch (health back) stands her up
       // Decapitation (owner 2026-09-18): when the seeded rotation picks it, the head comes off just after the skull-gives jolt
@@ -1309,6 +1355,11 @@ export function createScene(
         const foe = (side === 0 ? warriors?.opponent : warriors?.player), l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r');
         castTells[side].update(practice.duel.fighters[side], l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null, practice.duel.tick, bossRing && side === 1);
       }
+      {   // a boss with a standing mechanic (the parry wall): ring, ledger wall and parry sparks at his feet, facing the hero as the sim has him (a boss with none: hidden, one call)
+        const foe = warriors?.opponent, hero = warriors?.player, l = foe?.boneWorld('foot_l'), r = foe?.boneWorld('foot_r'), h = hero?.boneWorld('foot_l');
+        if (practice.duel.fighters[1].mech && l && r && h) { footMidpoint(l, r, wallFoot); wallFx.update(practice.duel.fighters[1], wallFoot,Math.atan2(h.x - wallFoot.x, h.z - wallFoot.z), practice.events, practice.duel.tick, dt); }
+        else wallFx.update(null, null, 0, practice.events, 0, dt);
+      }
       if (runtimeSpecial) {
         const feet = (w: NonNullable<typeof warriors>['player'] | undefined) => { const l = w?.boneWorld('foot_l'), r = w?.boneWorld('foot_r'); return l && r ? l.add(r).multiplyScalar(0.5).setY(Math.min(l.y, r.y)) : null; };
         runtimeSpecial.render(dt, practice.duel.fighters, practice.duel.tick, [feet(warriors?.player), feet(warriors?.opponent)], [warriors?.player.boneWorld('Head') ?? null, warriors?.opponent.boneWorld('Head') ?? null], warriors, !!practice.finish);
@@ -1391,6 +1442,7 @@ export function createScene(
         }
       }
       // roamed or free: no finisher camera, the follow lock on the walking hero
+      camera.position.y -= terrainLift;   // the terrain's lift (below) comes off before the rig reads its own place and goes back on after it
       rig.update(dt, state, practice.enemy, locked, practice.finish && !roamed && !freeCamera ? {
         finisher, posed: !!finisherPose, draw: !!practice.finish.draw, victim: practice.finish.victim, clock: finishClock,
         head: severHead ? { x: severHead.group.position.x, z: severHead.group.position.z } : null,
@@ -1399,6 +1451,12 @@ export function createScene(
         focus: cutBone ? cutFocus : null,
         fallen: heroLies && practice.finish.victim === 0 ? (fallenAt = warriors?.player.boneWorld('pelvis') ?? fallenAt) : null,
       } : null, OPPONENTS[opponentId].scale, framingTall(opponentId), framingLow(opponentId), frameWiden, freeCamera);
+      if (terrainDraw) {   // the camera rides the hero's ground (a translation, so its aim is kept) and never sinks into the hill behind him
+        terrainHero = groundH(state.x, state.z);
+        const floorAt = groundH(camera.position.x, camera.position.z) + terrainRows.camera.clearanceMetres;
+        terrainLift = Math.max(terrainHero, floorAt - camera.position.y);
+        camera.position.y += terrainLift;
+      }
       // Finisher complete (Lead brief 2026-09-22): the kill has finished PLAYING, read off what the scene is actually doing
       // rather than a guessed delay — (1) the victim's clip has run out (`victimProgress`: the slowed 0.75× finisher clock
       // for a posed finisher, the plain fall's own progress for a plain death, so the plain death completes earlier and the
@@ -1417,7 +1475,7 @@ export function createScene(
       const specialDim = runtimeSpecial?.exposure ?? (specialFx as ModeFx | undefined)?.exposure ?? 1;   // Nyx's Nightfall drain
       if (dip > 0 || specialDim !== 1) renderer.toneMappingExposure = exposure * (dip > 0 ? 1 - DIP_DEPTH * Math.min(1, dip / (DIP_FRAMES - 1)) : 1) * specialDim;   // the kill dip held then eased back
       if (specialId) previewLighting.apply(specialDim);
-      floorFade?.move(camera.position);
+      floorFade?.move(terrainDraw ? fadeEye.copy(camera.position).setY(camera.position.y - terrainHero) : camera.position);   // the sand-melt reads the eye's height over the hero's ground
       if (foeFade) { foeFade.move(camera.position); if ((foeFadeTick++ & 15) === 0) foeAdoptAll(); }   // the opponents' fade is measured from the eye; new gear and pooled bodies are picked up within 16 frames
       skyline?.heading(camera);
       skyline?.update(camera.position, dt);   // the backdrop follows the eye (skyline.ts); the camera was placed by rig.update above

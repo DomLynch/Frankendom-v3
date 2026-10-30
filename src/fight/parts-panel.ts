@@ -1,16 +1,18 @@
-// The Frankendom menu (data/parts.json; Dom 2026-10-28): a small ☰ button under the radar opens a sheet listing the seven slots (head, arms, legs, torso, weapon) and the parts cut for each, with Equip / Unequip.
+// The Frankendom menu (data/parts.json; Dom 2026-10-28): a small ☰ button under the radar opens a sheet listing the eleven slots (head, arms, hands, legs, feet, torso, weapon; hands and feet side by side) and the parts cut for each, with Equip / Unequip.
 // DOM and injected CSS only, in the palette of V1's journal (--jb paper, --jf ink, --jl line, --ja red), no art: a part is its boss's name and a rarity chip. Nothing here touches the sim, the camera or the
 // input except that the sheet and button are interactive HUD (#frank-parts, touch-router.ts), so a tap on them never turns the camera. The rows come from src/parts.ts slotViews (pure, tested).
 import { slotViews, type PartsFile, type PartsSave, type SlotView } from '../parts.ts';
 
-type Doc = { createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
-export type PartsPanel = { refresh(): void; open(): void; close(): void; isOpen(): boolean; remove(): void };
-export type PanelCtx = {
+type Doc = { createElement<K extends keyof HTMLElementTagNameMap>(tag: K): HTMLElementTagNameMap[K]; createElement(tag: string): HTMLElement; body: HTMLElement; head: HTMLElement };
+type PartsPanel = { refresh(): void; open(): void; close(): void; isOpen(): boolean; remove(): void };
+type PanelCtx = {
   rows: PartsFile;
   get(): PartsSave | null;
   /** The save with part `id` worn (or the slot emptied when `id` is null): the page writes it. */
   onEquip(slot: string, id: string | null): void;
   bossName(profile: string): string;
+  /** Whether part `profile`:`slot` can be worn (src/parts-wear.ts canWear): only those get an Equip button, the others stay listed as collected. */
+  canWear(profile: string, slot: string): boolean;
   trophyOf(star: number): string | null;
   /** The weapon slot: the newest boss-weapon reward, or null for the starting weapon. */
   weapon(): { name: string; boss: string } | null;
@@ -29,6 +31,9 @@ const CSS = (r: PartsFile) => `#frank-parts{display:contents}
 #frank-parts button{font:600 12px/1 "Instrument Sans",Arial,sans-serif;min-height:34px;padding:0 12px;border:1px solid #dcd4c6;border-radius:9px;background:#fff;color:#1b1916;cursor:pointer;touch-action:manipulation}
 #frank-parts button[data-on=true]{background:#1b1916;color:#fff;border-color:#1b1916}
 #frank-parts .fp-slot{margin:0 0 8px;padding:8px 10px;border:1px dashed #dcd4c6;border-radius:12px;background:#fff6}
+#frank-parts .fp-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}
+#frank-parts .fp-pair .fp-slot{margin:0;min-width:0;padding:8px}
+#frank-parts .fp-pair .fp-part{flex-wrap:wrap}
 #frank-parts .fp-slot[data-worn=true]{border-style:solid;border-color:#1b1916;background:#fff}
 #frank-parts .fp-slot>b{display:flex;justify-content:space-between;gap:8px;font:600 11px/1.3 "Instrument Sans",Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#7a746a}
 #frank-parts .fp-slot>b span{color:#1b1916;letter-spacing:0;text-transform:none;font-size:13px}
@@ -55,7 +60,12 @@ export function mountPartsPanel(doc: Doc, ctx: PanelCtx): PartsPanel {
     const x = el('button', undefined, T.close) as HTMLButtonElement; x.type = 'button'; x.dataset.frank = 'close'; x.onclick = () => api.close(); head.append(x);
     sheet.append(head, el('p', 'fp-hint', T.hint));
     const save = ctx.get() ?? {};
-    for (const v of slotViews(save, ctx.bossName, ctx.trophyOf, r)) sheet.append(slotBox(v));
+    let pair: HTMLElement | null = null, pairId = '';   // slots sharing a `pair` id sit side by side (hands, feet): the sheet stays one screen at 375
+    for (const v of slotViews(save, ctx.bossName, ctx.trophyOf, r)) {
+      if (!v.slot.pair) { pair = null; sheet.append(slotBox(v)); continue; }
+      if (!pair || pairId !== v.slot.pair) { pair = el('div', 'fp-pair'); pairId = v.slot.pair; sheet.append(pair); }
+      pair.append(slotBox(v));
+    }
   }
   function slotBox(v: SlotView): HTMLElement {
     const box = el('div', 'fp-slot'); box.dataset.slot = v.slot.id; box.dataset.worn = String(!!v.worn);
@@ -70,6 +80,7 @@ export function mountPartsPanel(doc: Doc, ctx: PanelCtx): PartsPanel {
       const info = el('div'), name = el('strong', undefined, p.name), sub = el('span', 'fp-sub');
       const chip = el('span', 'fp-chip', p.rarity.label); chip.style.background = p.rarity.colour;
       sub.append(chip); sub.append(`x${p.n}${p.trophy ? ` · ${p.trophy}` : ''}`);
+      if (!p.worn && !ctx.canWear(p.profile, v.slot.id)) { sub.append(` · ${T.notWearable}`); info.append(name, sub); row.dataset.wearable = 'false'; row.append(info); box.append(row); continue; }
       info.append(name, sub);
       const act = el('button', undefined, p.worn ? T.unequip : T.equip) as HTMLButtonElement; act.type = 'button'; act.dataset.on = String(p.worn); act.dataset.frank = p.worn ? 'unequip' : 'equip';
       act.onclick = () => { ctx.onEquip(v.slot.id, p.worn ? null : p.id); draw(); };

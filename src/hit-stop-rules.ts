@@ -6,4 +6,5 @@ import type { CombatEvent } from './fight/combat.ts';
 const ms = (rows: { id: string; ms: number }[]): Record<string, number> => Object.fromEntries(rows.map((r) => [r.id, r.ms]));
 export const HIT_STOP: Partial<Record<CombatEvent['type'], number>> = ms(RULES.stop);
 const HEAVY = ms(RULES.heavy);
-export const HEAVY_HIT = HEAVY['Hit']!, HEAVY_BLOCK = HEAVY['Blocked']!;   // a heavy-class contact stops longer whether it lands or is blocked
+const ROLE = RULES.heavyRoles;   // which event type is the heavy hit and which the heavy block (hit-stop-rules.json heavyRoles)
+export const HEAVY_HIT = HEAVY[ROLE.hit]!, HEAVY_BLOCK = HEAVY[ROLE.block]!;   // a heavy-class contact stops longer whether it lands or is blocked

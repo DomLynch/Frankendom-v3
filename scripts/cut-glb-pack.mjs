@@ -93,7 +93,8 @@ export async function repackCut(d, bin, bits = BITS) {
     assert(!p.targets && p.indices !== undefined, 'cut pack: no morph targets, indexed');
     for (const k of Object.keys(p.attributes)) assert(['POSITION', 'NORMAL', 'TEXCOORD_0', 'JOINTS_0', 'WEIGHTS_0'].includes(k), `cut pack: unexpected attribute ${k}`);
   }
-  const collect = (semantic) => prims.map((p) => ({ p, a: d.accessors[p.attributes[semantic]] }));
+  // a hands-and-feet cut (OpenTrident hf files) shares one vertex accessor between a limb piece and its hand or foot piece (only the index lists differ): an accessor is stacked once
+  const collect = (semantic) => { const seen = new Set(); return prims.flatMap((p) => (seen.has(p.attributes[semantic]) ? [] : (seen.add(p.attributes[semantic]), [{ p, a: d.accessors[p.attributes[semantic]] }]))); };
   const old = new Set();
   for (const p of prims) { for (const ai of [...Object.values(p.attributes), p.indices]) { assert(!d.accessors[ai].sparse, 'cut pack: sparse'); old.add(d.accessors[ai].bufferView); } }
   const stack = (semantic, width, fill) => {   // per-primitive start offsets (in elements) into one column
@@ -164,11 +165,11 @@ export async function repackCut(d, bin, bits = BITS) {
   {   // indices: one TRIANGLES view
     const rows = prims.map((p) => ({ a: d.accessors[p.indices] })), starts = [];
     let total = 0;
-    for (const r of rows) { assert(r.a.count % 3 === 0 && r.a.componentType === 5123, 'cut pack: uint16 triangle indices'); starts.push(total); total += r.a.count; }
+    for (const r of rows) { assert(r.a.count % 3 === 0 && (r.a.componentType === 5123 || r.a.componentType === 5125), 'cut pack: uint16 triangle indices'); starts.push(total); total += r.a.count; }   // (a uint32 list, as the hf cut writes them, is narrowed when every index fits)
     const raw = new Uint8Array(total * 2), out = new Uint16Array(raw.buffer);
-    rows.forEach((r, i) => out.set(readAccessor(d, bin, r.a, false), starts[i]));
+    rows.forEach((r, i) => { const ix = readAccessor(d, bin, r.a, false); assert(ix.every((x) => x < 65536), 'cut pack: uint16 triangle indices'); out.set(ix, starts[i]); });
     const { index } = addView('indices', raw, 2, 'TRIANGLES', 'NONE', 34963);
-    rows.forEach((r, i) => retarget(r, starts[i], index, 2, {}));
+    rows.forEach((r, i) => retarget(r, starts[i], index, 2, { componentType: 5123 }));
   }
 
   // ---- animation ----
