@@ -281,14 +281,15 @@ test('the merchant is a standing figure at the camp plus the row\'s offset, faci
   done();
 });
 
-test('default off: the flag row hides the market unless ?market=1 (or on: true); the page mounts it only through marketOn; a bad flag row is refused', () => {
+test('the flag row: on for players (Dom 2026-10-30), off with on: false unless ?market=1; the page mounts it only through marketOn; a bad flag row is refused', () => {
   const ctx = { weaponIds: Object.keys(MARKET.price.weapon), tiers: [1, 2] };
-  assert.equal(MARKET.on, false);
-  assert.equal(marketOn(''), false);
-  assert.equal(marketOn('?market=0'), false);
-  assert.equal(marketOn('?other=1'), false);
-  assert.equal(marketOn(`?${MARKET.query}=${MARKET.value}`), true);
-  assert.equal(marketOn('', { ...MARKET, on: true }), true);
+  assert.equal(MARKET.on, true);
+  assert.equal(marketOn(''), true);
+  const dark = { ...MARKET, on: false };
+  assert.equal(marketOn('', dark), false);
+  assert.equal(marketOn('?market=0', dark), false);
+  assert.equal(marketOn('?other=1', dark), false);
+  assert.equal(marketOn(`?${MARKET.query}=${MARKET.value}`, dark), true);
   assert.deepEqual(validateMarket(MARKET, ctx), []);
   assert.ok(validateMarket({ ...MARKET, on: 'yes' }, ctx).some((p) => /market\.on/.test(p)));
   assert.ok(validateMarket({ ...MARKET, query: 'Market!' }, ctx).some((p) => /market\.query/.test(p)));
