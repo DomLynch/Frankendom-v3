@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { MARKET, buy, cleanMarket, dayKey, lineFor, partSellPrice, sell, sellList, stockFor, validateMarket, buyPrice, sellPrice } from '../src/market.ts';
+import { MARKET, marketOn, buy, cleanMarket, dayKey, lineFor, partSellPrice, sell, sellList, stockFor, validateMarket, buyPrice, sellPrice } from '../src/market.ts';
 import { listParts, removePart, addPart } from '../src/market-inventory.ts';
 import { PARTS, collect, equip } from '../src/parts.ts';
 import { freshSave, heroWeapon, loadSave, parseSave, writeSave } from '../src/progression.ts';
@@ -279,4 +279,23 @@ test('the merchant is a standing figure at the camp plus the row\'s offset, faci
   assert.equal(a.near, true); assert.equal(hook.stand(far).near, false); assert.equal(a.star, 0);
   assert.ok(Math.abs(a.heading - Math.atan2(near.x - a.x, near.z - a.z)) < 1e-9);
   done();
+});
+
+test('default off: the flag row hides the market unless ?market=1 (or on: true); the page mounts it only through marketOn; a bad flag row is refused', () => {
+  const ctx = { weaponIds: Object.keys(MARKET.price.weapon), tiers: [1, 2] };
+  assert.equal(MARKET.on, false);
+  assert.equal(marketOn(''), false);
+  assert.equal(marketOn('?market=0'), false);
+  assert.equal(marketOn('?other=1'), false);
+  assert.equal(marketOn(`?${MARKET.query}=${MARKET.value}`), true);
+  assert.equal(marketOn('', { ...MARKET, on: true }), true);
+  assert.deepEqual(validateMarket(MARKET, ctx), []);
+  assert.ok(validateMarket({ ...MARKET, on: 'yes' }, ctx).some((p) => /market\.on/.test(p)));
+  assert.ok(validateMarket({ ...MARKET, query: 'Market!' }, ctx).some((p) => /market\.query/.test(p)));
+  assert.ok(validateMarket({ ...MARKET, value: '' }, ctx).some((p) => /market\.value/.test(p)));
+  const main = readFileSync(new URL('../src/client/main.ts', import.meta.url), 'utf8');
+  assert.match(main, /const MARKET_HOOK = marketOn\(search\) && PROG && CR \? mountMarket\(/);   // off = no hook: no merchant figure, chip, sheet, event or body fetch
+  assert.doesNotMatch(main, /[?&]market=/);   // the query string lives in the row, not in the page code
+  const stills = readFileSync(new URL('../scripts/market-stills.mjs', import.meta.url), 'utf8');
+  assert.match(stills, /\?market=1/);
 });

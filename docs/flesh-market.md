@@ -1,5 +1,7 @@
 # The Flesh Market: where it lives, the rows, the panel, the anti-exploit rules (stage 0)
 
+**Default OFF** (Dom): `data/market.json` `on: false`; `?market=1` (row `query`/`value`) shows it; nothing mounts or loads when off, and the `market` save field stays readable.
+
 Dom: a shady merchant. Trade harvested body parts, rare weapons and monster trophies. 3 items a day, seeded. Sell parts for coins (the #240 corpse-run coins), buy parts and weapons with coins. Local only; a server market is later. Docs only: nothing here changes the game.
 
 ## Read first (main 8e95e94, draft #255, Armagedom PRs #479/#483/#481)

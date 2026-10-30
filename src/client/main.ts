@@ -40,6 +40,7 @@ import { mountUnlockLine } from '../fight/unlock-line.ts';
 import { createAudioUnlock, rearmWhenLocked } from '../audio/unlock-once.ts';
 import { mountParts } from '../fight/parts-hook.ts';
 import { mountMarket } from '../fight/market-hook.ts';
+import { marketOn } from '../market.ts';
 import { wearFlags, wornParts } from '../parts-wear.ts';
 import { configureSimMechanics, mechCaption } from '../fight/mechanics/sim-hooks.ts';
 import MECHANICS_ROWS from '../../data/mechanics.json' with { type: 'json' };
@@ -360,7 +361,7 @@ const WEAR = wearFlags(search), wearNow = (equipped?: Readonly<Record<string, st
 (globalThis as { __v3Wear?: unknown }).__v3Wear = { info: () => view.wearInfo(), render: () => ({ calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles }) };   // the stills and the perf row read what the hero wears
 view.wear(wearNow());   // the saved loadout (or the forced one) is laid after the first frame; none worn = no import and no fetch
 const PARTS_HOOK = PROG ? mountParts({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, prog: PROG_ROWS, onWorn: (equipped) => view.wear(wearNow(equipped)) }) : null;   // Frankendom parts (data/parts.json): cut parts are kept automatically; the ☰ menu
-const MARKET_HOOK = PROG && CR ? mountMarket({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, isWeapon: isWeaponId, weaponName, bankCap: CORPSE.coins.cap, camp: heroStart, now: Date.now, project: (x, y, z, out) => view.projectInto(x, y, z, out) }) : null;   // The Flesh Market (data/market.json): a merchant in the yard, banked coins for parts and weapons
+const MARKET_HOOK = marketOn(search) && PROG && CR ? mountMarket({ get: () => PROG.save, put: crPut, profiles: PROFILES.profiles, stars: STAR_ROWS, isWeapon: isWeaponId, weaponName, bankCap: CORPSE.coins.cap, camp: heroStart, now: Date.now, project: (x, y, z, out) => view.projectInto(x, y, z, out) }) : null;   // The Flesh Market (data/market.json): a merchant in the yard, banked coins for parts and weapons
 const idleFoes = (list: Parameters<typeof view.idleFoes>[0]) => { const m = MARKET_HOOK?.stand(state); view.idleFoes(m ? [...list, m] : list); };   // the zone's standing figures, and the merchant
 function crLine(text: string) { (unlockLine ??= mountUnlockLine(document, PROG_ROWS.lineSeconds)).show(text); }
 function startLinger(idx: number) {

@@ -9,6 +9,7 @@ import { addPart, listParts, removePart, type InventorySave } from './market-inv
 
 export type MarketSave = { day: string; bought: string[]; soldToday: number; weapons: string[]; trades: number };
 export type MarketFile = {
+  on: boolean; query: string; value: string;
   merchant: { id: string; name: string; kind: string; body: string; dx: number; dz: number; openMetres: number; closeMetres: number; loadMetres: number };
   salt: string; stock: { size: number; slots: ('part' | 'any')[] };
   weights: { common: number; rare: number; epic: number; weapon: number } & Record<string, number>;
@@ -149,6 +150,8 @@ export function validateMarket(f: MarketFile, ctx: MarketCtx): string[] {
   const L = f.limits, R = (key: string): [number, number] => { const r = L?.range?.[key]; return [r?.[0] ?? 0, r?.[1] ?? 0]; };
   if (!L?.range) { fail(new Error('market.limits.range: the validator ranges are missing')); return e; }
   const word = (at: string, v: unknown, key = 'text') => { const max = R(key)[1]; if (!(typeof v === 'string' && v.trim().length > 0 && v.length <= max)) fail(new Error(`market.${at}: 1-${max} characters`)); };
+  if (typeof f.on !== 'boolean') fail(new Error('market.on: true or false'));
+  for (const key of ['query', 'value'] as const) if (typeof f[key] !== 'string' || !/^[a-z0-9]{1,16}$/.test(f[key])) fail(new Error(`market.${key}: 1-16 lower-case letters or digits`));
   const m = f.merchant;
   word('merchant.id', m?.id, 'name'); word('merchant.name', m?.name, 'name'); word('merchant.kind', m?.kind, 'kind'); word('merchant.body', m?.body, 'kind');
   num('merchant.dx', m?.dx, ...R('offset')); num('merchant.dz', m?.dz, ...R('offset'));
@@ -182,3 +185,5 @@ export function validateMarket(f: MarketFile, ctx: MarketCtx): string[] {
 }
 
 export const MARKET = MARKET_JSON as unknown as MarketFile;
+/** Whether the market is on for this address: the row's `on`, or `?<query>=<value>` (default off; the flag row names the query and the value). */
+export const marketOn = (search: string, f: MarketFile = MARKET): boolean => f.on || new URLSearchParams(search).get(f.query) === f.value;

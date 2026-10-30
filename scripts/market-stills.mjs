@@ -27,7 +27,7 @@ const save = () => page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?
 const tap = async (sel) => { const b = await page.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, sel); if (!b) throw new Error(`nothing to tap: ${sel}`); await page.touchscreen.tap(b[0], b[1]); await page.waitForTimeout(250); };
 const rows = () => page.evaluate(() => [...document.querySelectorAll('#flesh-market [data-market=row]')].map((r) => ({ key: r.dataset.key, text: r.textContent, disabled: r.querySelector('button')?.disabled })));
 const sheet = () => page.evaluate(() => { const s = document.querySelector('#flesh-market [data-market=sheet]'); if (!s || s.hidden) return null; const r = s.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, banked: document.querySelector('#flesh-market [data-market=banked]')?.textContent, line: document.querySelector('#flesh-market [data-market=line]')?.textContent }; });
-await page.goto(`${base}/`);
+await page.goto(`${base}/?market=1`);   // default off: the flag row (data/market.json) turns it on
 await page.waitForFunction(() => globalThis.__ragdoll?.state === 'alive', null, { timeout: 180000 });
 await page.waitForTimeout(3500);
 const chipUp = await page.evaluate(() => { const c = document.querySelector('#flesh-market [data-market=chip]'); if (!c || c.hidden) return null; const r = c.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; });

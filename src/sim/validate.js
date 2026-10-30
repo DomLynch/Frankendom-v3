@@ -88,7 +88,7 @@ export const SCHEMA = {
   // Frankendom parts, stage 2 per-body fit rows (src/parts-fit-rows.ts validateFitRows checks the values)
   'parts-fit-rows': { keys: ['about', 'hero', 'bodies'], rows: { bodies: ['id', 'stem', 'measuredOn', 'source', 'wearable', 'quality', 'reason', 'measure', 'collars'] } },
   // The Flesh Market (src/market.ts validateMarket checks the values): closed key sets
-  'market': { keys: ['about', 'merchant', 'salt', 'stock', 'weights', 'price', 'caps', 'limits', 'lines', 'events', 'ui'],
+  'market': { keys: ['about', 'on', 'query', 'value', 'merchant', 'salt', 'stock', 'weights', 'price', 'caps', 'limits', 'lines', 'events', 'ui'],
     maps: { merchant: ['id', 'name', 'kind', 'body', 'dx', 'dz', 'openMetres', 'closeMetres', 'loadMetres'], stock: ['size', 'slots'], weights: ['common', 'rare', 'epic', 'weapon'], price: ['base', 'buyX', 'sellX', 'weapon', 'trophy'], caps: ['buyMax', 'sellPerDay'],
       lines: ['greet', 'buy', 'sell', 'broke', 'soldOut', 'capped', 'restock', 'leave'], events: ['open', 'buy', 'sell', 'refuse', 'restock'], ui: ['zIndex', 'sheetHeightFrac', 'css', 'text'], limits: ['about', 'range', 'save', 'attempts', 'hashRange', 'sheetPct', 'chip'] } },
   // The cut hint (src/fight/pickup.ts validatePickup checks the values): a closed key set; presentation only
