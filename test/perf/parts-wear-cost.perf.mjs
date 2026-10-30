@@ -33,14 +33,21 @@ async function measure(server, browser, loadout) {
   return { ...out, draws: info.draws, worn: info.worn.length };
 }
 
-test('a hero wearing three parts: skinned draws within budget and frame time within budget of the bare hero', { skip, timeout: 600000 }, async () => {
+// the hands-and-feet cut (OpenTrident PR #13) is the hero's body now: four more pieces, so the bare hero is 12 skinned draws. Three cases against the bare hero: the original three parts, the five-part
+// loadout with a hand and a foot (head, arm, hand, leg, foot), and every wearable slot at once (budget.partsMax, ten parts).
+const HF5 = 'pitborn:head,arachne:arm_left,pitborn:hand_left,castle-guard:leg_left,castle-guard:foot_left';
+const ALL = ['head', 'arm_left', 'arm_right', 'hand_left', 'hand_right', 'leg_left', 'leg_right', 'foot_left', 'foot_right', 'torso'].map((s) => `pitborn:${s}`).join(',');
+test('a hero wearing three, five (with a hand and a foot) and ten parts: skinned draws within budget and frame time within budget of the bare hero', { skip, timeout: 900000 }, async () => {
   const server = await serveDist(DIST), browser = await launchBrowser({ angle: 'metal', extra: ['--disable-frame-rate-limit', '--disable-gpu-vsync'] });   // vsync off: the frame time is what the frame costs, not the 60 Hz tick
   try {
-    const bare = await measure(server, browser, ''), worn = await measure(server, browser, LOADOUT);
-    const f = (n) => n.toFixed(2);
-    console.log(`parts-wear cost: bare hero ${bare.draws.hero} skinned draws, frame median ${f(bare.median)} ms p95 ${f(bare.p95)} ms | 3 parts ${worn.draws.hero} skinned draws (${worn.draws.wear} worn), frame median ${f(worn.median)} ms p95 ${f(worn.p95)} ms | budget ${B.skinnedDrawsMax} draws, +${B.frameMsMedianExtra} ms`);
-    assert.equal(worn.worn, 3); assert.equal(bare.draws.wear, 0);
-    assert.ok(worn.draws.hero <= B.skinnedDrawsMax, `${worn.draws.hero} skinned draws over the budget ${B.skinnedDrawsMax}`);
-    assert.ok(worn.median - bare.median <= B.frameMsMedianExtra, `median frame +${f(worn.median - bare.median)} ms over the budget +${B.frameMsMedianExtra} ms`);
+    const bare = await measure(server, browser, ''), f = (n) => n.toFixed(2);
+    assert.equal(bare.draws.wear, 0);
+    for (const [label, loadout, n] of [['3 parts', LOADOUT, 3], ['5 parts (hand, foot)', HF5, 5], [`${B.partsMax} parts (every slot)`, ALL, B.partsMax]]) {
+      const worn = await measure(server, browser, loadout);
+      console.log(`parts-wear cost: bare hero ${bare.draws.hero} skinned draws, frame median ${f(bare.median)} ms p95 ${f(bare.p95)} ms | ${label} ${worn.draws.hero} skinned draws (${worn.draws.wear} worn), frame median ${f(worn.median)} ms p95 ${f(worn.p95)} ms | budget ${B.skinnedDrawsMax} draws, +${B.frameMsMedianExtra} ms`);
+      assert.equal(worn.worn, n, label);
+      assert.ok(worn.draws.hero <= B.skinnedDrawsMax, `${label}: ${worn.draws.hero} skinned draws over the budget ${B.skinnedDrawsMax}`);
+      assert.ok(worn.median - bare.median <= B.frameMsMedianExtra, `${label}: median frame +${f(worn.median - bare.median)} ms over the budget +${B.frameMsMedianExtra} ms`);
+    }
   } finally { await browser.close(); await server.close(); }
 });
