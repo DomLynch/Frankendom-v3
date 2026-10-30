@@ -173,7 +173,7 @@ test('the donor ranking: nine wearable bodies in order, quality 1..12, derived o
   assert.equal(fitBodyOf('pumpkinhulk').reason, "giant pumpkin head, Dom's call");
   assert.equal(isWearable('nobody'), false);
   const donors = FIT_ROWS.bodies.filter((b) => b.id !== FIT_ROWS.hero);
-  assert.deepEqual(donors.map((b) => b.quality).sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  assert.deepEqual(donors.map((b) => b.quality).sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);   // 13: the Hunter's non-donor row (placeholder Gargantua body, last rank; re-pinned with the hunt PR)
   assert.deepEqual(donors.filter((b) => b.source === 'derived').map((b) => b.id).sort(), ['big-vegas', 'castle-guard', 'pumpkinhulk']);
 });
 
