@@ -31,7 +31,7 @@ export const DONOR_URLS: Record<string, string> = {
   'castle-guard-106.derived': new URL('../assets/castle-guard-106.derived.glb', import.meta.url).href,
   'big-vegas-106.derived': new URL('../assets/big-vegas-106.derived.glb', import.meta.url).href,
 };
-export const donorKey = (part: Pick<WornPart, 'stem' | 'source'>): string => `${part.stem}-106${part.source === 'derived' ? '.derived' : ''}`;
+export const donorKey = (part: Pick<WornPart, 'stem' | 'source'>, rules = PARTS.wear): string => `${part.stem}-106${rules.mesh.source[part.source]}`;
 
 type Donor = { key: string; scene: Object3D; uses: number };
 type Fitted = { part: WornPart; donor: Donor; meshes: SkinnedMesh[]; collar: SkinnedMesh | null; heroCap: boolean };
@@ -111,13 +111,13 @@ export function createWearer(deps: WearDeps): Wearer {
     const want = fitted.size > 0;
     if (!want) { for (const c of heroCollars) { c.removeFromParent(); c.geometry.dispose(); (c.material as Material).dispose(); } heroCollars = []; return; }
     if (heroCollars.length || !hero) return;
-    for (const row of hero.collars) {
+    for (const row of hero.collars.filter((c) => rules.heroCollars.includes(c.id))) {
       const host = textured(skinnedIn(deps.bind.getObjectByName(rules.heroHost[row.id] ?? '')))[0];
       const at = jointOf(bind, row);
       if (!host || !at) continue;
       const c = buildCollar(row, bind, host.material as Material, skinUvNear(host, at.at));
       if (!c) continue;
-      c.name = `herocollar_${row.id}`; c.userData.region = 'wear'; liveRoot.add(retarget(c, live)); heroCollars.push(c);
+      c.name = `herocollar_${row.id}`; c.userData.worn = true; liveRoot.add(retarget(c, live)); heroCollars.push(c);
     }
   }
   function applyLift(): void {
@@ -130,7 +130,7 @@ export function createWearer(deps: WearDeps): Wearer {
     const dn = byName(donor.scene), meshes = new Set<SkinnedMesh>();
     donor.scene.traverse((o) => { if (isPieceOf(o.name, part.unit)) for (const m of skinnedIn(o)) meshes.add(m); });
     if (!meshes.size) throw new Error(`${donor.key}: no piece for unit ${part.unit}`);
-    const bound = [...meshes].map((m) => { const b = retarget(bindPiece(m, m.geometry, bind), live); b.name = `wear_${part.id}`; b.receiveShadow = true; b.userData.region = 'wear'; liveRoot.add(b); return b; });
+    const bound = [...meshes].map((m) => { const b = retarget(bindPiece(m, m.geometry, bind), live); b.name = `wear_${part.id}`; b.receiveShadow = true; b.userData.worn = true; liveRoot.add(b); return b; });
     const dm = textured([...meshes])[0], row = fitBodyOf(part.profile)?.collars.find((c) => c.id === part.collar);
     let collar: SkinnedMesh | null = null, covered = false;
     if (dm && row) {
@@ -143,7 +143,7 @@ export function createWearer(deps: WearDeps): Wearer {
       covered = made === null && !!ring && !!hring;
       if (made && d) {
         const c = buildCollar(made.row, bind, dm.material as Material, made.uv ?? skinUvNear(dm, d.at));
-        if (c) { c.name = `wearcollar_${part.id}`; c.userData.region = 'wear'; liveRoot.add(retarget(c, live)); collar = c; }
+        if (c) { c.name = `wearcollar_${part.id}`; c.userData.worn = true; liveRoot.add(retarget(c, live)); collar = c; }
       }
     }
     return { part, donor, meshes: bound, collar, heroCap: !covered };
@@ -187,7 +187,7 @@ export function createWearer(deps: WearDeps): Wearer {
     worn: () => [...fitted.values()].map((f) => f.part),
     draws() {
       let hero = 0, wear = 0;
-      deps.anchor.traverse((o) => { if ((o as SkinnedMesh).isSkinnedMesh) { let v = true; for (let p: Object3D | null = o; p; p = p.parent) if (!p.visible) { v = false; break; } if (v) { hero++; if (o.userData.region === 'wear') wear++; } } });
+      deps.anchor.traverse((o) => { if ((o as SkinnedMesh).isSkinnedMesh) { let v = true; for (let p: Object3D | null = o; p; p = p.parent) if (!p.visible) { v = false; break; } if (v) { hero++; if (o.userData.worn) wear++; } } });
       return { hero, wear };
     },
     dispose() { disposed = true; for (const f of [...fitted.values()]) takeOff(f); fitted.clear(); showHero(); ensureHeroCollars(); applyLift(); },

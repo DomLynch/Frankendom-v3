@@ -52,7 +52,7 @@
   "wear": {
     "about": "Stage 2 wear (Dom 2026-10-30: 'you become what you kill'; src/parts-wear.ts the rules, src/fight/parts-wear.ts the scene work). An equipped part VISIBLY replaces the matching piece of the hero (look only, no stat changes). ON by default; `flags.off` is the kill-switch (?parts=off wears nothing and fetches no donor) and `flags.force` is the stills way to wear a loadout without playing (?wear=pitborn:arm_left,castle-guard:leg_left: `profile:slot` ids, wearable donors only, bypasses the save). `mesh`: the name prefixes of the cut GLB contract (docs/CUT-CONTRACT.md): a unit's pieces are `piece_<unit>` and, for a unit cut in two (the Minotaur's head), `piece_<unit>_*`; the donor's own `cap_*` stump meshes are never worn (OpenTrident psyche-seam-fix: a worn donor part carries no cap, its end sits inside the hero). `units`: per cut unit that can be worn (a unit with no row, the torso, is not wearable yet and its Equip button is not offered): `collar` = the data/parts.json fit.collar.joints id of the seam the donor part meets the hero at, `lift` = the fit.lift.unit key liftRow reads for this unit (absent = no lift). `heroHost`: the hero's permanent collar rows (data/parts-fit-rows.json, the hero row) are drawn in the skin of this hero piece. `budget`: `skinnedDrawsMax` = the most skinned draws the worn hero may have (OpenTrident's cap for a loaded group is 8; the cut hero alone already draws more, see test/parts-wear.test.mjs), `partsMax` = the most parts worn at once.",
     "flags": { "off": { "query": "parts", "value": "off" }, "force": { "query": "wear" } },
-    "mesh": { "piece": "piece_", "cap": "cap_" },
+    "mesh": { "piece": "piece_", "cap": "cap_", "join": "_", "source": { "derived": ".derived", "original": "" } },
     "units": {
       "head": { "collar": "neck" },
       "arm_left": { "collar": "shoulder_l" },
@@ -61,6 +61,7 @@
       "leg_right": { "collar": "hip_r", "lift": "legs" }
     },
     "heroHost": { "neck": "piece_upper_torso", "shoulder_l": "piece_upper_torso", "shoulder_r": "piece_upper_torso", "hip_l": "piece_root", "hip_r": "piece_root" },
+    "heroCollars": [],
     "budget": { "skinnedDrawsMax": 40, "partsMax": 5 }
   },
   "text": {

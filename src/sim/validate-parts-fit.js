@@ -75,7 +75,10 @@ export function validateWear(wear, fit, slots) {
     if (keys('flags.force', wear.flags.force, ['query'])) word('flags.force.query', wear.flags.force.query, /^[a-z]+$/);
     if (isObj(wear.flags.off) && isObj(wear.flags.force) && wear.flags.off.query === wear.flags.force.query) e.push(`${at0}.flags: the off switch and the force list need two different query names`);
   }
-  if (keys('mesh', wear.mesh, ['piece', 'cap'])) { word('mesh.piece', wear.mesh.piece, /^[a-z]+_$/); word('mesh.cap', wear.mesh.cap, /^[a-z]+_$/); }
+  if (keys('mesh', wear.mesh, ['piece', 'cap', 'join', 'source'])) {
+    word('mesh.piece', wear.mesh.piece, /^[a-z]+_$/); word('mesh.cap', wear.mesh.cap, /^[a-z]+_$/); word('mesh.join', wear.mesh.join, /^_$/);
+    if (keys('mesh.source', wear.mesh.source, SOURCES)) for (const s of SOURCES) if (typeof wear.mesh.source[s] !== 'string' || !/^(\.[a-z]+)?$/.test(wear.mesh.source[s])) e.push(`${at0}.mesh.source.${s}: the file-name suffix of that source ("" or ".derived")`);
+  }
   const units = new Set((Array.isArray(slots) ? slots : []).flatMap((s) => (Array.isArray(s.units) ? s.units : [])));
   if (isObj(wear.units)) {
     for (const [u, row] of Object.entries(wear.units)) {
@@ -87,6 +90,7 @@ export function validateWear(wear, fit, slots) {
   } else e.push(`${at0}.units: an object`);
   if (isObj(wear.heroHost)) { for (const j of joints) if (typeof wear.heroHost[j] !== 'string' || !/^[a-z_]+$/.test(wear.heroHost[j])) e.push(`${at0}.heroHost.${j}: the hero piece the collar takes its skin from`); }
   else e.push(`${at0}.heroHost: an object`);
+  if (!Array.isArray(wear.heroCollars) || wear.heroCollars.some((j) => !joints.has(j))) e.push(`${at0}.heroCollars: a list of fit.collar.joints ids`);
   if (keys('budget', wear.budget, ['skinnedDrawsMax', 'partsMax'])) for (const k of ['skinnedDrawsMax', 'partsMax']) if (!(Number.isInteger(wear.budget[k]) && wear.budget[k] >= 1 && wear.budget[k] <= 200)) e.push(`${at0}.budget.${k}: an integer in 1..200`);
   return e;
 }

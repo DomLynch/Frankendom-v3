@@ -24,9 +24,10 @@ export type FitRules = {
 /** data/parts.json `wear`: the rules of src/parts-wear.ts and src/fight/parts-wear.ts (the flags, the mesh-name prefixes, which units can be worn and where their seam is, the budget). */
 export type WearRules = {
   flags: { off: { query: string; value: string }; force: { query: string } };
-  mesh: { piece: string; cap: string };
+  mesh: { piece: string; cap: string; join: string; source: Record<'derived' | 'original', string> };
   units: Record<string, { collar: string; lift?: string }>;
   heroHost: Record<string, string>;
+  heroCollars: string[];
   budget: { skinnedDrawsMax: number; partsMax: number };
 };
 export type PartsFile = {

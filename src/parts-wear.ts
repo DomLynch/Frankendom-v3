@@ -49,7 +49,7 @@ export function wearDiff(prev: readonly WornPart[], next: readonly WornPart[]): 
 }
 
 /** Whether a donor GLB node name is a piece of cut `unit`: `piece_<unit>` or `piece_<unit>_*` (the Minotaur's head is two pieces, piece_head_left and piece_head_right). */
-export const isPieceOf = (name: string, unit: string, rules: WearRules = PARTS.wear): boolean => name === `${rules.mesh.piece}${unit}` || name.startsWith(`${rules.mesh.piece}${unit}_`);
+export const isPieceOf = (name: string, unit: string, rules: WearRules = PARTS.wear): boolean => name === rules.mesh.piece + unit || name.startsWith(rules.mesh.piece + unit + rules.mesh.join);
 
 /** The slot a unit fills (re-export for the scene work: one import for the wear module). */
 export const slotOf = (unit: string, file: PartsFile = PARTS): string | null => slotOfUnit(unit, file);
