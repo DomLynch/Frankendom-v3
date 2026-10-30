@@ -31,7 +31,10 @@ test('the cut rows name the package\'s units, parts and gear slots, and the vali
   // M9a (physics 9056ef7): the package also lists two VISUAL-ONLY units (head_split, belly_open: no bone, no piece to tap or to put a button on). They are the finishers' (finisherCuts), never the tap's or the cue's.
   const visual = rd.row.severable.filter((s) => s.visual_only).map((s) => s.id), real = units.filter((u) => !visual.includes(u));
   assert.deepEqual(visual.sort(), ['belly_open', 'head_split']);
-  assert.deepEqual([...real].sort(), [...C.tap.order].sort(), 'the tap order lists each of the six real units once');
+  // Physics 3bb5f80 (#102, deliberate): hands and feet are now severable units too. Re-pinned, not reverted: the tap order stays the six it lists today; wiring taps/cues to the four new units is a follow-up.
+  const handsFeet = ['hand_left', 'hand_right', 'foot_left', 'foot_right'];
+  assert.deepEqual(real.filter((u) => handsFeet.includes(u)).sort(), [...handsFeet].sort(), 'the package lists the four hand and foot units');
+  assert.deepEqual(real.filter((u) => !handsFeet.includes(u)).sort(), [...C.tap.order].sort(), 'the tap order lists each of the six original real units once');
   assert.ok(!C.tap.order.some((u) => visual.includes(u)) && !C.cue.units.some((u) => visual.includes(u)), 'no tap or cue on a visual unit');
   for (const [location, unit] of Object.entries(C.onKill)) { assert.ok(['head', 'torso', 'legs'].includes(location), `${location} is a sim hit location`); assert.ok(units.includes(unit), `onKill.${location} = ${unit} is a unit`); }
   assert.ok(C.kill.impulse > 0 && C.kill.lift >= 0);
